@@ -39,9 +39,8 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_get_folder_property(const char *dir,
-	uint32_t cpid, uint64_t folder_id,
-	uint32_t proptag, void **ppval)
+BOOL exmdb_client_get_folder_property(const char *dir, cpid_t cpid,
+    uint64_t folder_id, uint32_t proptag, void **ppval)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -57,9 +56,8 @@ BOOL exmdb_client_get_folder_property(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_get_message_property(const char *dir,
-	const char *username, uint32_t cpid, uint64_t message_id,
-	uint32_t proptag, void **ppval)
+BOOL exmdb_client_get_message_property(const char *dir, const char *username,
+    cpid_t cpid, uint64_t message_id, uint32_t proptag, void **ppval)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -74,9 +72,8 @@ BOOL exmdb_client_get_message_property(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_delete_message(const char *dir,
-	int account_id, uint32_t cpid, uint64_t folder_id,
-	uint64_t message_id, BOOL b_hard, BOOL *pb_done)
+BOOL exmdb_client_delete_message(const char *dir, int account_id, cpid_t cpid,
+    uint64_t folder_id, uint64_t message_id, BOOL b_hard, BOOL *pb_done)
 {
 	BOOL b_partial;
 	EID_ARRAY message_ids;
@@ -139,7 +136,7 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 }
 
 BOOL exmdb_client_remove_message_property(const char *dir,
-	uint32_t cpid, uint64_t message_id, uint32_t proptag)
+    cpid_t cpid, uint64_t message_id, uint32_t proptag)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	

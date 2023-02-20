@@ -16,7 +16,7 @@ struct STAT {
 	int32_t delta;
 	uint32_t num_pos;
 	uint32_t total_rec;
-	uint32_t codepage;
+	cpid_t codepage;
 	uint32_t template_locale;
 	uint32_t sort_locale;
 };

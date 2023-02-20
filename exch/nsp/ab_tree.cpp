@@ -1017,7 +1017,7 @@ abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
 	return iter->second->node_type;
 }
 
-void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
+void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
     char *str_dname, size_t dn_size)
 {
 	char *ptoken;
@@ -1159,7 +1159,7 @@ void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 		*plist_privilege = obj->list_priv;
 }
 
-void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
+void ab_tree_get_mlist_title(cpid_t codepage, char *str_title)
 {
 	if (cpl_get_string(codepage, "mlist", str_title, 256) != 0)
 		strcpy(str_title, "Address List");
@@ -1281,7 +1281,7 @@ ec_error_t ab_tree_proplist(const tree_node *node, std::vector<uint32_t> &tags)
 	return ecSuccess;
 }
 
-ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, unsigned int codepage,
+ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node, cpid_t codepage,
     unsigned int proptag, PROPERTY_VALUE *prop)
 {
 	auto node_type = ab_tree_get_node_type(node);

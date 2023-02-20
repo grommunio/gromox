@@ -14,7 +14,7 @@
 
 namespace exmdb_client = exmdb_client_remote;
 using namespace gromox;
-static constexpr unsigned int codepage = CP_UTF8;
+static constexpr cpid_t codepage = CP_UTF8;
 static unsigned int g_dry_run;
 static char *g_primail;
 

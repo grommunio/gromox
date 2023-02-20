@@ -39,7 +39,7 @@ extern void register_proc(void *);
 }
 
 extern void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag);
-extern int instance_get_message_body(MESSAGE_CONTENT *, unsigned int tag, unsigned int cpid, TPROPVAL_ARRAY *);
+extern int instance_get_message_body(MESSAGE_CONTENT *, unsigned int tag, cpid_t, TPROPVAL_ARRAY *);
 
 extern unsigned int g_dbg_synth_content;
 extern unsigned int exmdb_body_autosynthesis;

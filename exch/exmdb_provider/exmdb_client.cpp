@@ -27,9 +27,8 @@ int exmdb_client_run_front(const char *dir)
 /* Caution. This function is not a common exmdb service,
 	it only can be called by message_rule_new_message to
 	pass a message to the delegate's mailbox. */
-BOOL exmdb_client_relay_delivery(const char *dir,
-	const char *from_address, const char *account,
-	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
+BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
+    const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult)
 {
 	BOOL b_private;

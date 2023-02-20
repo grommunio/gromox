@@ -19,7 +19,8 @@
 
 using namespace gromox;
 
-static unsigned int g_tobin, g_tojson, g_cpid, g_dogap;
+static unsigned int g_tobin, g_tojson, g_dogap;
+static cpid_t g_cpid = CP_ACP;
 
 static constexpr struct HXoption g_options_table[] = {
 	{nullptr, 'b', HXTYPE_NONE, &g_tobin, nullptr, nullptr, 0, "Select (from-json-)to-binary mode"},

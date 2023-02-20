@@ -35,12 +35,12 @@ extern int (*nsp_interface_seek_entries)(NSP_HANDLE, uint32_t resv, STAT *, PROP
 extern int (*nsp_interface_get_matches)(NSP_HANDLE, uint32_t resv1, STAT *, const MID_ARRAY *resv, uint32_t resv2, const NSPRES *filter, const NSP_PROPNAME *, uint32_t requested, MID_ARRAY **outmids, const LPROPTAG_ARRAY *, NSP_ROWSET **);
 extern int (*nsp_interface_resort_restriction)(NSP_HANDLE, uint32_t resv, STAT *, const MID_ARRAY *inmids, MID_ARRAY **outmids);
 extern int (*nsp_interface_dntomid)(NSP_HANDLE, uint32_t resv, const STRINGS_ARRAY *names, MID_ARRAY **outmids);
-extern int (*nsp_interface_get_proplist)(NSP_HANDLE, uint32_t flags, uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **);
+extern int (*nsp_interface_get_proplist)(NSP_HANDLE, uint32_t flags, uint32_t mid, cpid_t, LPROPTAG_ARRAY **);
 extern int (*nsp_interface_get_props)(NSP_HANDLE, uint32_t flags, const STAT *, const LPROPTAG_ARRAY *, NSP_PROPROW **);
 extern int (*nsp_interface_compare_mids)(NSP_HANDLE, uint32_t resv, const STAT *, uint32_t mid1, uint32_t mid2, uint32_t *result);
 extern int (*nsp_interface_mod_props)(NSP_HANDLE, uint32_t resv, const STAT *, const LPROPTAG_ARRAY *, const NSP_PROPROW *);
 extern int (*nsp_interface_get_specialtable)(NSP_HANDLE, uint32_t flags, const STAT *, uint32_t *version, NSP_ROWSET **);
-extern int (*nsp_interface_get_templateinfo)(NSP_HANDLE, uint32_t flags, uint32_t type, const char *dn, uint32_t codepage, uint32_t locale_id, NSP_PROPROW **);
+extern int (*nsp_interface_get_templateinfo)(NSP_HANDLE, uint32_t flags, uint32_t type, const char *dn, cpid_t, uint32_t locale_id, NSP_PROPROW **);
 extern int (*nsp_interface_mod_linkatt)(NSP_HANDLE, uint32_t flags, uint32_t proptag, uint32_t mid, const BINARY_ARRAY *entry_ids);
 extern int (*nsp_interface_query_columns)(NSP_HANDLE, uint32_t resv, uint32_t flags, LPROPTAG_ARRAY **cols);
 extern int (*nsp_interface_resolve_namesw)(NSP_HANDLE, uint32_t resv, const STAT *, LPROPTAG_ARRAY *&, const STRING_ARRAY *, MID_ARRAY **, NSP_ROWSET **);

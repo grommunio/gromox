@@ -89,7 +89,7 @@ message_object::message_object()
 }
 
 std::unique_ptr<message_object> message_object::create(logon_object *plogon,
-    BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
+    BOOL b_new, cpid_t cpid, uint64_t message_id, void *pparent,
     uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ICS_STATE> pstate)
 {
 	uint64_t *pchange_num;
@@ -213,7 +213,7 @@ message_object::~message_object()
 	double_list_free(&pmessage->stream_list);
 }
 
-errno_t message_object::init_message(bool fai, uint32_t new_cpid)
+errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;

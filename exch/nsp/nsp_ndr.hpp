@@ -137,7 +137,7 @@ struct NSPIGETPROPLIST_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	uint32_t mid;
-	uint32_t codepage;
+	cpid_t codepage;
 };
 
 struct NSPIGETPROPLIST_OUT {
@@ -200,7 +200,7 @@ struct NSPIGETTEMPLATEINFO_IN {
 	uint32_t flags;
 	uint32_t type;
 	char *pdn;
-	uint32_t codepage;
+	cpid_t codepage;
 	uint32_t locale_id;
 };
 

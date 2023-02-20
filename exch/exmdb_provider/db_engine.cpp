@@ -52,7 +52,7 @@ struct POPULATING_NODE {
 
 	std::string dir;
 	uint64_t folder_id = 0;
-	uint32_t cpid = CP_ACP;
+	cpid_t cpid = CP_ACP;
 	BOOL b_recursive = false;
 	RESTRICTION *prestriction = nullptr;
 	LONGLONG_ARRAY folder_ids{};
@@ -404,9 +404,8 @@ static void *mdpeng_scanwork(void *param)
 	return nullptr;
 }
 
-static BOOL db_engine_search_folder(const char *dir,
-	uint32_t cpid, uint64_t search_fid, uint64_t scope_fid,
-	const RESTRICTION *prestriction)
+static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
+    uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction)
 {
 	char sql_string[128];
 	auto pdb = db_engine_get_db(dir);
@@ -764,7 +763,7 @@ void db_engine_stop()
 	sqlite3_shutdown();
 }
 
-BOOL db_engine_enqueue_populating_criteria(const char *dir, uint32_t cpid,
+BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t cpid,
     uint64_t folder_id, BOOL b_recursive, const RESTRICTION *prestriction,
     const LONGLONG_ARRAY *pfolder_ids) try
 {
@@ -871,7 +870,7 @@ void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
 	}
 }
 
-static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
+static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
     uint64_t id2, uint64_t id3, uint32_t folder_type,
     const DYNAMIC_NODE *pdynamic, size_t i)
 {
@@ -937,7 +936,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, uint32_t cpid, uint64_t id1,
 	}
 }
 
-static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
+static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
     uint64_t id1, uint64_t id2, const DYNAMIC_NODE *pdynamic, size_t i)
 {
 	BOOL b_exist;
@@ -1048,7 +1047,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, uint32_t cpid, int event_type,
 	}
 }
 
-void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
+void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	uint32_t folder_type;
@@ -2332,9 +2331,9 @@ static void db_engine_update_prev_id(DOUBLE_LIST *plist,
 	}
 }
 
-static void* db_engine_get_extremum_value(db_item_ptr &pdb,
-	uint32_t cpid, uint32_t table_id, uint32_t extremum_tag,
-	uint64_t parent_id, uint8_t table_sort)
+static void *db_engine_get_extremum_value(db_item_ptr &pdb, cpid_t cpid,
+    uint32_t table_id, uint32_t extremum_tag, uint64_t parent_id,
+    uint8_t table_sort)
 {
 	int result;
 	BOOL b_first;

@@ -103,7 +103,7 @@ static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
 
 static void *zcoreab_scanwork(void *);
-static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
+static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, cpid_t codepage, char *str_dname, size_t dn_size);
 static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type, char *value, size_t vsize);
 
 uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
@@ -934,7 +934,7 @@ abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
 }
 
 static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
-    uint32_t codepage, char *str_dname, size_t dn_size)
+    cpid_t codepage, char *str_dname, size_t dn_size)
 {
 	char *ptoken;
 	char lang_string[256];
@@ -1293,7 +1293,7 @@ static std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 
 /* Returns: TRUE (success or notfound), FALSE (fatal error/enomem/etc.) */
 static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, uint32_t proptag, void **ppvalue)
+    cpid_t codepage, uint32_t proptag, void **ppvalue)
 {
 	int minid;
 	void *pvalue;
@@ -1673,7 +1673,7 @@ BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *pnode,
 }
 
 static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, const char *pstr)
+    cpid_t codepage, const char *pstr)
 {
 	char dn[1024];
 	
@@ -1730,7 +1730,7 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	return FALSE;
 }
 
-bool ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage, char *pstr,
+bool ab_tree_resolvename(AB_BASE *pbase, cpid_t codepage, char *pstr,
     stn_list_t &result_list) try
 {
 	result_list.clear();
@@ -1745,7 +1745,7 @@ bool ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage, char *pstr,
 	return false;
 }
 
-static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
+static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
     const RESTRICTION *pfilter)
 {
 	int len;
@@ -1890,7 +1890,7 @@ uint32_t ab_tree_hidden(const tree_node *node)
 }
 
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
-    uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids) try
+    cpid_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids) try
 {
 	std::vector<const tree_node *> tlist;
 	

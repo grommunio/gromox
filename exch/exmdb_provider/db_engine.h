@@ -51,7 +51,7 @@ struct TABLE_NODE {
 	uint64_t folder_id;
 	GUID handle_guid;
 	uint32_t table_flags;
-	uint32_t cpid;
+	cpid_t cpid;
 	char *username;
 	RESTRICTION *prestriction;
 	SORTORDER_SET *psorts;
@@ -82,7 +82,7 @@ struct instance_node {
 	void release();
 
 	uint32_t instance_id = 0, parent_id = 0, folder_id = 0, last_id = 0;
-	uint32_t cpid = CP_ACP;
+	cpid_t cpid = CP_ACP;
 	enum instance_type type = instance_type::message;
 	BOOL b_new = false;
 	uint8_t change_mask{};
@@ -128,14 +128,11 @@ using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
 extern db_item_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
-BOOL db_engine_enqueue_populating_criteria(
-	const char *dir, uint32_t cpid, uint64_t folder_id,
-	BOOL b_recursive, const RESTRICTION *prestriction,
-	const LONGLONG_ARRAY *pfolder_ids);
+extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
 extern void db_engine_update_dynamic(db_item_ptr &, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 extern void db_engine_delete_dynamic(db_item_ptr &, uint64_t folder_id);
-extern void db_engine_proc_dynamic_event(db_item_ptr &, uint32_t cpid, int event_type, uint64_t id1, uint64_t id2, uint64_t id3);
+extern void db_engine_proc_dynamic_event(db_item_ptr &, cpid_t, int event_type, uint64_t id1, uint64_t id2, uint64_t id3);
 extern void db_engine_notify_new_mail(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
 extern void db_engine_notify_message_creation(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
 extern void db_engine_notify_link_creation(db_item_ptr &, uint64_t parent_id, uint64_t msg_id);

@@ -355,7 +355,7 @@ BOOL exmdb_server::get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::create_folder_by_properties(const char *dir, uint32_t cpid,
+BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
     TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id)
 {
 	BOOL b_result;
@@ -569,7 +569,7 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 	return false;
 }
 
-BOOL exmdb_server::get_folder_properties(const char *dir, uint32_t cpid,
+BOOL exmdb_server::get_folder_properties(const char *dir, cpid_t cpid,
     uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
@@ -581,7 +581,7 @@ BOOL exmdb_server::get_folder_properties(const char *dir, uint32_t cpid,
 }
 
 /* no PROPERTY_PROBLEM for PidTagChangeNumber and PR_CHANGE_KEY */
-BOOL exmdb_server::set_folder_properties(const char *dir, uint32_t cpid,
+BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
     uint64_t folder_id, const TPROPVAL_ARRAY *pproperties,
     PROBLEM_ARRAY *pproblems)
 {
@@ -632,7 +632,7 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	return TRUE;
 }
 
-static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
+static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	const char *username, uint64_t folder_id, BOOL b_hard,
 	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial,
 	uint64_t *pnormal_size, uint64_t *pfai_size,
@@ -926,7 +926,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 }
 
 /* only delete empty generic folder or search folder itself, not content */
-BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
+BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	uint64_t folder_id, BOOL b_hard, BOOL *pb_result)
 {
 	char sql_string[256];
@@ -1045,7 +1045,7 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server::empty_folder(const char *dir, uint32_t cpid,
+BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 	const char *username, uint64_t folder_id, BOOL b_hard,
 	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial)
 {
@@ -1214,7 +1214,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 }
 
 static BOOL folder_copy_search_folder(db_item_ptr &pdb,
-	uint32_t cpid, BOOL b_guest, const char *username,
+    cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, uint64_t dst_pid, uint64_t *pdst_fid)
 {
 	uint32_t art;
@@ -1306,7 +1306,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 }
 
 static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
-    uint32_t cpid, BOOL b_guest,
+    cpid_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, BOOL b_normal,
 	BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_partial,
 	uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pfolder_count)
@@ -1563,7 +1563,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 
 /* set hierarchy change number when finish action */
 BOOL exmdb_server::copy_folder_internal(const char *dir,
-	int account_id, uint32_t cpid, BOOL b_guest, const char *username,
+    int account_id, cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, BOOL b_normal, BOOL b_fai, BOOL b_sub,
 	uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
 {
@@ -1615,7 +1615,7 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 
 /* set hierarchy change number when finish action */
 BOOL exmdb_server::movecopy_folder(const char *dir,
-	int account_id, uint32_t cpid, BOOL b_guest, const char *username,
+    int account_id, cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid,
 	const char *str_new, BOOL b_copy, BOOL *pb_exist,
 	BOOL *pb_partial)
@@ -1835,7 +1835,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 }
 
 static BOOL folder_clear_search_folder(db_item_ptr &pdb,
-	uint32_t cpid, uint64_t folder_id)
+    cpid_t cpid, uint64_t folder_id)
 {
 	char sql_string[128];
 	
@@ -1856,7 +1856,7 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	return TRUE;
 }
 
-BOOL exmdb_server::set_search_criteria(const char *dir, uint32_t cpid,
+BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
     uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction,
     const LONGLONG_ARRAY *pfolder_ids, BOOL *pb_result) try
 {

@@ -40,7 +40,7 @@ struct CONDITION_NODE {
 };
 
 struct CONTENT_ROW_PARAM {
-	uint32_t cpid;
+	cpid_t cpid;
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
@@ -54,7 +54,7 @@ struct CONTENT_ROW_PARAM {
 };
 
 struct HIERARCHY_ROW_PARAM {
-	uint32_t cpid;
+	cpid_t cpid;
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
 	uint64_t folder_id;
@@ -586,7 +586,7 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
 }
 
 /* under public mode username always available for read state */
-static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
+static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	uint64_t fid_val, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
@@ -1188,7 +1188,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server::load_content_table(const char *dir, uint32_t cpid,
+BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 	uint64_t folder_id, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
@@ -1814,7 +1814,7 @@ static BOOL table_column_content_tmptbl(
 	return TRUE;
 }
 
-static void table_truncate_string(uint32_t cpid, char *pstring)
+static void table_truncate_string(cpid_t cpid, char *pstring)
 {
 	size_t in_len;
 	size_t out_len;
@@ -1866,7 +1866,7 @@ static const TABLE_NODE *find_table(db_item_ptr &pdb, uint32_t table_id)
 /* every property value returned in a row MUST
 be less than or equal to 510 bytes in size. */
 BOOL exmdb_server::query_table(const char *dir, const char *username,
-	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
+    cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	int i;
@@ -2415,7 +2415,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 	return FALSE;
 }
 
-static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
+static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
@@ -2495,7 +2495,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	return TRUE;
 }
 
-static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
+static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb,
     const TABLE_NODE *ptnode)
@@ -2606,7 +2606,7 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	return TRUE;
 }
 
-static BOOL match_tbl_rule(uint32_t cpid, uint32_t table_id, BOOL b_forward,
+static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
@@ -2668,7 +2668,7 @@ static BOOL match_tbl_rule(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 }
 
 BOOL exmdb_server::match_table(const char *dir, const char *username,
-	uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
+    cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
@@ -2762,7 +2762,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 	return TRUE;
 }
 
-static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
+static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
@@ -2834,7 +2834,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 	return TRUE;
 }
 
-static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
+static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const TABLE_NODE *ptnode)
 {
@@ -2918,7 +2918,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 }
 
 BOOL exmdb_server::read_table_row(const char *dir, const char *username,
-	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
+    cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);

@@ -137,12 +137,12 @@ struct message_object {
 
 	public:
 	~message_object();
-	static std::unique_ptr<message_object> create(store_object *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, std::shared_ptr<ics_state>);
+	static std::unique_ptr<message_object> create(store_object *, BOOL b_new, cpid_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, std::shared_ptr<ics_state>);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_original_touched(BOOL *touched);
 	bool importing() const { return message_id != 0 && pstate != nullptr; }
 	bool writable() const { return b_writable; }
-	gromox::errno_t init_message(bool fai, uint32_t cpid);
+	gromox::errno_t init_message(bool fai, cpid_t);
 	uint64_t get_id() const { return message_id; }
 	store_object *get_store() const { return pstore; }
 	ec_error_t save();
@@ -169,9 +169,9 @@ struct message_object {
 	store_object *pstore = nullptr;
 	BOOL b_new = false, b_writable = false, b_touched = false;
 	uint64_t change_num = 0, message_id = 0, folder_id = 0;
-	uint32_t cpid = CP_ACP, instance_id = 0;
+	cpid_t cpid = CP_ACP;
+	uint32_t instance_id = 0, tag_access = 0;
 	attachment_object *pembedding = nullptr;
-	uint32_t tag_access = 0;
 	std::shared_ptr<ics_state> pstate;
 	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
 };

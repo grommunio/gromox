@@ -97,7 +97,7 @@ BOOL get_named_propname(const char *dir, uint16_t propid,
 	return TRUE;
 }
 
-BOOL get_store_property(const char *dir, uint32_t cpid,
+BOOL get_store_property(const char *dir, cpid_t cpid,
     uint32_t proptag, void **ppval)
 {
 	PROPTAG_ARRAY tmp_proptags;
@@ -112,7 +112,7 @@ BOOL get_store_property(const char *dir, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL get_folder_property(const char *dir, uint32_t cpid, uint64_t folder_id,
+BOOL get_folder_property(const char *dir, cpid_t cpid, uint64_t folder_id,
     uint32_t proptag, void **ppval)
 {
 	PROPTAG_ARRAY tmp_proptags;
@@ -127,7 +127,7 @@ BOOL get_folder_property(const char *dir, uint32_t cpid, uint64_t folder_id,
 	return TRUE;
 }
 
-BOOL delete_message(const char *dir, int account_id, uint32_t cpid,
+BOOL delete_message(const char *dir, int account_id, cpid_t cpid,
     uint64_t folder_id, uint64_t message_id, BOOL b_hard, BOOL *pb_done)
 {
 	BOOL b_partial;
@@ -185,7 +185,7 @@ BOOL remove_instance_property(const char *dir, uint32_t instance_id,
 }
 
 BOOL get_message_property(const char *dir, const char *username,
-    uint32_t cpid, uint64_t message_id, uint32_t proptag, void **ppval)
+    cpid_t cpid, uint64_t message_id, uint32_t proptag, void **ppval)
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -200,7 +200,7 @@ BOOL get_message_property(const char *dir, const char *username,
 }
 
 BOOL set_message_property(const char *dir, const char *username,
-    uint32_t cpid, uint64_t message_id, TAGGED_PROPVAL *ppropval,
+    cpid_t cpid, uint64_t message_id, TAGGED_PROPVAL *ppropval,
     uint32_t *presult)
 {
 	PROBLEM_ARRAY tmp_problems;
@@ -212,7 +212,7 @@ BOOL set_message_property(const char *dir, const char *username,
 	return TRUE;
 }
 
-BOOL remove_message_property(const char *dir, uint32_t cpid,
+BOOL remove_message_property(const char *dir, cpid_t cpid,
     uint64_t message_id, uint32_t proptag)
 {
 	PROPTAG_ARRAY tmp_proptags;

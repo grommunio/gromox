@@ -70,7 +70,7 @@ struct ECDOCONNECTEX_IN {
 	uint32_t flags;
 	uint32_t conmod;
 	uint32_t limit;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint32_t lcid_string;
 	uint32_t lcid_sort;
 	uint32_t cxr_link;

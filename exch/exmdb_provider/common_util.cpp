@@ -75,11 +75,11 @@ decltype(ems_send_mail) ems_send_mail;
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
-static bool cu_eval_subobj_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
+static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
-static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, uint32_t);
+static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t);
 
 void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
 {
@@ -229,8 +229,7 @@ char* common_util_dup(const char *pstr)
 	return pstr1;
 }
 
-char* common_util_convert_copy(BOOL to_utf8,
-	uint32_t cpid, const char *pstring)
+char *common_util_convert_copy(BOOL to_utf8, cpid_t cpid, const char *pstring)
 {
 	size_t in_len;
 	size_t out_len;
@@ -269,8 +268,8 @@ char* common_util_convert_copy(BOOL to_utf8,
 	return pstr_out;
 }
 
-STRING_ARRAY *common_util_convert_copy_string_array(
-	BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *parray)
+STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8,
+    cpid_t cpid, const STRING_ARRAY *parray)
 {
 	auto parray1 = cu_alloc<STRING_ARRAY>();
 	if (parray1 == nullptr)
@@ -1312,9 +1311,8 @@ static void* common_util_get_message_parent_display(
 	return pvalue;
 }
 
-static BOOL common_util_get_message_subject(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	uint32_t proptag, void **ppvalue)
+static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
+    uint64_t message_id, uint32_t proptag, void **ppvalue)
 {
 	const char *psubject_prefix, *pnormalized_subject;
 	
@@ -1381,7 +1379,7 @@ static BOOL common_util_get_message_subject(
 }
 	
 static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
-    uint32_t cpid, uint64_t message_id, uint32_t proptag, void **ppvalue) try
+    cpid_t cpid, uint64_t message_id, uint32_t proptag, void **ppvalue) try
 {
 	void *pvalue;
 	uint64_t rcpt_id;
@@ -1456,10 +1454,10 @@ std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try
 	return {};
 }
 
-static void *cu_get_object_text_v0(const char *, uint64_t, uint32_t, uint32_t, uint32_t);
+static void *cu_get_object_text_v0(const char *, uint64_t, uint32_t, uint32_t, cpid_t);
 
 static void *cu_get_object_text_vx(const char *dir, uint64_t cid,
-    uint32_t proptag, uint32_t db_proptag, uint32_t cpid, unsigned int type)
+    uint32_t proptag, uint32_t db_proptag, cpid_t cpid, unsigned int type)
 {
 	BINARY dxbin{};
 	errno = gx_decompress_file(cu_cid_path(dir, cid, type).c_str(), dxbin,
@@ -1486,7 +1484,7 @@ static void *cu_get_object_text_vx(const char *dir, uint64_t cid,
 }
 
 static void *cu_get_object_text(sqlite3 *psqlite,
-	uint32_t cpid, uint64_t message_id, uint32_t proptag)
+    cpid_t cpid, uint64_t message_id, uint32_t proptag)
 {
 	char sql_string[128];
 	
@@ -1541,7 +1539,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 }
 
 static void *cu_get_object_text_v0(const char *dir, uint64_t cid,
-    uint32_t proptag, uint32_t proptag1, uint32_t cpid)
+    uint32_t proptag, uint32_t proptag1, cpid_t cpid)
 {
 	wrapfd fd = open(cu_cid_path(dir, cid, 0).c_str(), O_RDONLY);
 	struct stat node_stat;
@@ -1581,8 +1579,7 @@ static void *cu_get_object_text_v0(const char *dir, uint64_t cid,
 }
 
 BOOL cu_get_property(mapi_object_type table_type, uint64_t id,
-	uint32_t cpid, sqlite3 *psqlite, uint32_t proptag,
-	void **ppvalue)
+    cpid_t cpid, sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
 {
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -1722,7 +1719,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 }
 
 static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
-    uint64_t id, uint32_t cpid)
+    uint64_t id, cpid_t cpid)
 {
 	switch (tag) {
 	case PR_ENTRYID:
@@ -1892,7 +1889,7 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 }
 
 static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
-    TAGGED_PROPVAL &pv, sqlite3 *db, uint64_t id, uint32_t cpid)
+    TAGGED_PROPVAL &pv, sqlite3 *db, uint64_t id, cpid_t cpid)
 {
 	pv.proptag = tag;
 	switch (tag) {
@@ -1938,9 +1935,8 @@ static GP_RESULT gp_fallbackprop(sqlite3 *db, mapi_object_type table_type,
 	       gp_rcptprop_synth(db, proptag, stm) : GP_UNHANDLED;
 }
 
-BOOL cu_get_properties(mapi_object_type table_type,
-	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
+    sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	sqlite3_stmt *pstmt = nullptr;
 	
@@ -2212,7 +2208,7 @@ static bool gp_prepare_default(sqlite3 *psqlite, mapi_object_type table_type,
 }
 
 static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
-    uint16_t proptype, uint32_t cpid)
+    uint16_t proptype, cpid_t cpid)
 {
 	EXT_PULL ext_pull;
 	void *pvalue;
@@ -2532,8 +2528,7 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
-static BOOL common_util_set_message_subject(
-	uint32_t cpid, uint64_t message_id,
+static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 	sqlite3_stmt *pstmt, const TAGGED_PROPVAL *ppropval)
 {
 	char *pstring;
@@ -2581,9 +2576,8 @@ static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
 	return TRUE;
 }
 
-static BOOL common_util_set_message_body(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	const TAGGED_PROPVAL *ppropval)
+static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
+    uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
 	void *pvalue;
 	uint32_t proptag;
@@ -2753,7 +2747,7 @@ static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, mapi_object_type table_type,
 	return TRUE;
 }
 
-BOOL cu_set_property(mapi_object_type table_type, uint64_t id, uint32_t cpid,
+BOOL cu_set_property(mapi_object_type table_type, uint64_t id, cpid_t cpid,
     sqlite3 *psqlite, uint32_t tag, const void *data, BOOL *pb_result)
 {
 	PROBLEM_ARRAY tmp_problems;
@@ -2766,9 +2760,8 @@ BOOL cu_set_property(mapi_object_type table_type, uint64_t id, uint32_t cpid,
 	return TRUE;
 }
 
-BOOL cu_set_properties(mapi_object_type table_type,
-	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
+BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
+    sqlite3 *psqlite, const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
 	int s_result;
 	char *pstring;
@@ -3932,7 +3925,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static bool cu_eval_subitem_restriction(sqlite3 *psqlite, uint32_t cpid,
+static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
     mapi_object_type table_type, uint64_t id, const RESTRICTION *pres)
 {
 	int len;
@@ -4055,9 +4048,8 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, uint32_t cpid,
 	return FALSE;
 }
 
-static bool cu_eval_msgsubs_restriction(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	uint32_t proptag, const RESTRICTION *pres)
+static bool cu_eval_msgsubs_restriction(sqlite3 *psqlite, cpid_t cpid,
+    uint64_t message_id, uint32_t proptag, const RESTRICTION *pres)
 {
 	uint64_t id;
 	uint32_t count;
@@ -4093,7 +4085,7 @@ static bool cu_eval_msgsubs_restriction(
 	return pres->rt == RES_COUNT && pres->count->count == count;
 }
 
-static bool cu_eval_subobj_restriction(sqlite3 *psqlite, uint32_t cpid,
+static bool cu_eval_subobj_restriction(sqlite3 *psqlite, cpid_t cpid,
     uint64_t message_id, uint32_t proptag, const RESTRICTION *pres)
 {
 	switch (pres->rt) {
@@ -4263,7 +4255,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 }
 
 bool cu_eval_msg_restriction(sqlite3 *psqlite,
-	uint32_t cpid, uint64_t message_id, const RESTRICTION *pres)
+    cpid_t cpid, uint64_t message_id, const RESTRICTION *pres)
 {
 	void *pvalue;
 	void *pvalue1;

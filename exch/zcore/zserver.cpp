@@ -5157,7 +5157,6 @@ ec_error_t zs_setpasswd(const char *username,
 ec_error_t zs_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid)
 {
-	uint32_t cpid;
 	BOOL b_result;
 	BOOL b_private;
 	BOOL b_private1;
@@ -5199,7 +5198,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 			return ecAccessDenied;
 	}
 	gx_strlcpy(maildir, pstore->get_dir(), arsizeof(maildir));
-	cpid = pinfo->cpid;
+	auto cpid = pinfo->cpid;
 	pinfo.reset();
 	return exmdb_client::link_message(maildir, cpid, folder_id, message_id,
 	       &b_result) && b_result ? ecSuccess : ecError;

@@ -181,7 +181,7 @@ static int cpl_read(const char *filename, const char *dirs, Json::Value &dict)
 	return 0;
 }
 
-errno_t cpl_get_string(uint32_t codepage, const char *tag, char *value, size_t len)
+errno_t cpl_get_string(cpid_t codepage, const char *tag, char *value, size_t len)
 {
 	const auto &dict = g_cpl_dict;
 	auto l1key = std::to_string(codepage);
@@ -211,13 +211,13 @@ bool verify_cpid(uint32_t id)
 	       id != CP_UTF7 && id != CP_UTF8;
 }
 
-const char *cpid_to_cset(uint32_t id)
+const char *cpid_to_cset(cpid_t id)
 {
 	auto i = g_cpid2name_map.find(id);
 	return i != g_cpid2name_map.cend() ? i->second.c_str() : nullptr;
 }
 
-uint32_t cset_to_cpid(const char *s)
+cpid_t cset_to_cpid(const char *s)
 {
 	auto i = g_cpname2id_map.find(s);
 	return i != g_cpname2id_map.cend() ? i->second : CP_ACP;

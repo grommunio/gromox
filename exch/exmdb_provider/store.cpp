@@ -145,9 +145,8 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::get_store_properties(const char *dir,
-	uint32_t cpid, const PROPTAG_ARRAY *pproptags,
-	TPROPVAL_ARRAY *ppropvals)
+BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
+    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -156,9 +155,8 @@ BOOL exmdb_server::get_store_properties(const char *dir,
 	       pproptags, ppropvals);
 }
 
-BOOL exmdb_server::set_store_properties(const char *dir,
-	uint32_t cpid, const TPROPVAL_ARRAY *ppropvals,
-	PROBLEM_ARRAY *pproblems)
+BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
+    const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)

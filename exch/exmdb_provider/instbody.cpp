@@ -96,8 +96,8 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	ret = html_to_plain(bin->pc, bin->cb, plainbuf);
 	if (ret < 0)
 		return 0;
-	auto cpraw = mc->proplist.getval(PR_INTERNET_CPID);
-	uint32_t orig_cpid = cpraw != nullptr ? *static_cast<uint32_t *>(cpraw) : CP_UTF8;
+	auto cpraw = mc->proplist.get<const uint32_t>(PR_INTERNET_CPID);
+	cpid_t orig_cpid = cpraw == nullptr ? *cpraw : CP_UTF8;
 	if (ret != CP_UTF8 && orig_cpid != CP_UTF8) {
 		bin->pv = common_util_convert_copy(TRUE, orig_cpid, plainbuf.c_str());
 		return bin->pv != nullptr ? 1 : -1;
@@ -111,7 +111,7 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 }
 
 static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
-    unsigned int cpid, BINARY *&bin)
+    cpid_t cpid, BINARY *&bin)
 {
 	auto ret = instance_get_raw(mc, bin, ID_TAG_BODY);
 	if (ret == 0) {
@@ -135,7 +135,8 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	return 1;
 }
 
-static int instance_conv_rtfcpfromlower(MESSAGE_CONTENT *mc, unsigned int cpid, BINARY *&bin)
+static int instance_conv_rtfcpfromlower(MESSAGE_CONTENT *mc,
+    cpid_t cpid, BINARY *&bin)
 {
 	auto ret = instance_conv_htmlfromlower(mc, cpid, bin);
 	if (ret <= 0)
@@ -185,7 +186,7 @@ static int instance_get_body_unspec(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
 }
 
 /* Get UTF plaintext body, fallback to autogeneration. */
-static int instance_get_body_utf8(MESSAGE_CONTENT *mc, unsigned int cpid,
+static int instance_get_body_utf8(MESSAGE_CONTENT *mc, cpid_t cpid,
     TPROPVAL_ARRAY *pval)
 {
 	BINARY *bin = nullptr;
@@ -211,7 +212,7 @@ static int instance_get_body_utf8(MESSAGE_CONTENT *mc, unsigned int cpid,
 }
 
 /* Get 8-bit plaintext body, fallback to autogeneration. */
-static int instance_get_body_8bit(MESSAGE_CONTENT *mc, unsigned int cpid,
+static int instance_get_body_8bit(MESSAGE_CONTENT *mc, cpid_t cpid,
     TPROPVAL_ARRAY *pval)
 {
 	BINARY *bin = nullptr;
@@ -242,7 +243,7 @@ static int instance_get_body_8bit(MESSAGE_CONTENT *mc, unsigned int cpid,
 	return 1;
 }
 
-static int instance_get_html(MESSAGE_CONTENT *mc, unsigned int cpid,
+static int instance_get_html(MESSAGE_CONTENT *mc, cpid_t cpid,
     TPROPVAL_ARRAY *pval)
 {
 	BINARY *bin = nullptr;
@@ -262,7 +263,7 @@ static int instance_get_html(MESSAGE_CONTENT *mc, unsigned int cpid,
 	return 1;
 }
 
-static int instance_get_html_unspec(MESSAGE_CONTENT *mc, unsigned int cpid,
+static int instance_get_html_unspec(MESSAGE_CONTENT *mc, cpid_t cpid,
     TPROPVAL_ARRAY *pval)
 {
 	auto ret = instance_get_html(mc, cpid, pval);
@@ -281,7 +282,7 @@ static int instance_get_html_unspec(MESSAGE_CONTENT *mc, unsigned int cpid,
 }
 
 /* Get RTFCP, fallback to autogeneration. */
-static int instance_get_rtfcp(MESSAGE_CONTENT *mc, unsigned int cpid,
+static int instance_get_rtfcp(MESSAGE_CONTENT *mc, cpid_t cpid,
     TPROPVAL_ARRAY *pval)
 {
 	BINARY *bin = nullptr;
@@ -297,8 +298,8 @@ static int instance_get_rtfcp(MESSAGE_CONTENT *mc, unsigned int cpid,
 	return 1;
 }
 
-int instance_get_message_body(MESSAGE_CONTENT *mc, unsigned int tag, unsigned int cpid,
-    TPROPVAL_ARRAY *pv)
+int instance_get_message_body(MESSAGE_CONTENT *mc, unsigned int tag,
+    cpid_t cpid, TPROPVAL_ARRAY *pv)
 {
 	switch (tag) {
 	case PR_BODY_A:

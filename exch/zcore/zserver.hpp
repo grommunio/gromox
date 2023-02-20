@@ -37,7 +37,8 @@ struct USER_INFO {
 	std::atomic<int> reference{0};
 	int user_id = 0, domain_id = 0, org_id = 0;
 	std::string username, lang, maildir, homedir;
-	uint32_t cpid = CP_ACP, flags = 0;
+	cpid_t cpid = CP_ACP;
+	uint32_t flags = 0;
 	time_t last_time = 0, reload_time = 0;
 	std::unique_ptr<OBJECT_TREE> ptree;
 	std::list<sink_node> sink_list;

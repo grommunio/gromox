@@ -1326,7 +1326,7 @@ BOOL common_util_send_message(store_object *pstore,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
-	uint32_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
+	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return FALSE;
@@ -1931,7 +1931,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		return false;
 	}
 	auto pinfo = zs_get_info();
-	uint32_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
+	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
@@ -2040,7 +2040,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
-	uint32_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
+	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
@@ -2112,7 +2112,7 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
-	uint32_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
+	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;

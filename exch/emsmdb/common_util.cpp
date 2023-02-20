@@ -93,7 +93,7 @@ void* common_util_alloc(size_t size)
 	return ndr_stack_alloc(NDR_STACK_IN, size);
 }
 
-ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src,
+ssize_t common_util_mb_from_utf8(cpid_t cpid, const char *src,
     char *dst, size_t len)
 {
 	size_t in_len;
@@ -119,7 +119,7 @@ ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src,
 	return out_len - len;
 }
 
-ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
+ssize_t common_util_mb_to_utf8(cpid_t cpid, const char *src,
     char *dst, size_t len)
 {
 	size_t in_len;
@@ -144,8 +144,7 @@ ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src,
 	return out_len - len;
 }
 
-static char* common_util_dup_mb_to_utf8(
-	uint32_t cpid, const char *src)
+static char *common_util_dup_mb_to_utf8(cpid_t cpid, const char *src)
 {
 	cpid_cstr_compatible(cpid);
 	auto len = mb_to_utf8_len(src);
@@ -867,7 +866,7 @@ BOOL common_util_propvals_to_row(
 	return TRUE;
 }
 
-BOOL common_util_convert_unspecified(uint32_t cpid,
+BOOL common_util_convert_unspecified(cpid_t cpid,
 	BOOL b_unicode, TYPED_PROPVAL *ptyped)
 {
 	if (b_unicode) {
@@ -896,7 +895,7 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 	return TRUE;
 }
 
-BOOL common_util_propvals_to_row_ex(uint32_t cpid,
+BOOL common_util_propvals_to_row_ex(cpid_t cpid,
 	BOOL b_unicode, const TPROPVAL_ARRAY *ppropvals,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
@@ -957,7 +956,7 @@ BOOL common_util_row_to_propvals(
 	return TRUE;
 }
 
-static BOOL common_util_propvals_to_recipient(uint32_t cpid,
+static BOOL common_util_propvals_to_recipient(cpid_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	RECIPIENT_ROW *prow)
 {
@@ -1038,7 +1037,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	return common_util_propvals_to_row(ppropvals, pcolumns, &prow->properties);
 }
 
-static BOOL common_util_recipient_to_propvals(uint32_t cpid,
+static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 	RECIPIENT_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals)
 {
@@ -1113,7 +1112,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	return TRUE;
 }
 
-BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
+BOOL common_util_propvals_to_openrecipient(cpid_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	OPENRECIPIENT_ROW *prow)
 {
@@ -1125,7 +1124,7 @@ BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
 		ppropvals, pcolumns, &prow->recipient_row);
 }
 
-BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
+BOOL common_util_propvals_to_readrecipient(cpid_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	READRECIPIENT_ROW *prow)
 {
@@ -1141,9 +1140,9 @@ BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 		ppropvals, pcolumns, &prow->recipient_row);
 }
 
-BOOL common_util_modifyrecipient_to_propvals(
-	 uint32_t cpid, const MODIFYRECIPIENT_ROW *prow,
-	const PROPTAG_ARRAY *pcolumns, TPROPVAL_ARRAY *ppropvals)
+BOOL common_util_modifyrecipient_to_propvals(cpid_t cpid,
+    const MODIFYRECIPIENT_ROW *prow, const PROPTAG_ARRAY *pcolumns,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(16 + pcolumns->count);
@@ -1530,7 +1529,7 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = plogon->get_dir();
-	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
+	cpid_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		mlog2(LV_ERR, "E-1289: Cannot get parent folder_id of mid:%llu",

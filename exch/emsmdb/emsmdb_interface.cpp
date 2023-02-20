@@ -293,7 +293,7 @@ HANDLE_DATA::~HANDLE_DATA()
 }
 
 static BOOL emsmdb_interface_create_handle(const char *username,
-	uint16_t client_version[4], uint16_t client_mode, uint32_t cpid,
+    uint16_t client_version[4], uint16_t client_mode, cpid_t cpid,
 	uint32_t lcid_string, uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
 {
 	HANDLE_DATA temp_handle;
@@ -507,10 +507,9 @@ static void emsmdb_interface_encode_version(BOOL high_bit,
  * 		CONNECT_USE_ADMIN_PRIVILEGE = 0x1U,
  * 		CONNECT_IGNORE_NO_PF = 0x8000U,
  */
-int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
-	const char *puser_dn, uint32_t flags, uint32_t con_mode,
-	uint32_t limit, uint32_t cpid, uint32_t lcid_string,
-	uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps,
+int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
+    uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t cpid,
+    uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps,
 	uint32_t *pmax_polls, uint32_t *pmax_retry, uint32_t *pretry_delay,
 	uint16_t *pcxr, char *pdn_prefix, char *pdisplayname,
 	const uint16_t pclient_vers[3], uint16_t pserver_vers[3],

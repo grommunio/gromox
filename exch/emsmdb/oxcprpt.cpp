@@ -128,7 +128,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
     uint8_t logon_id, uint32_t hin)
 {
 	int i;
-	uint32_t cpid;
+	cpid_t cpid;
 	ems_objtype object_type;
 	uint16_t proptype;
 	uint32_t total_size;
@@ -226,7 +226,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
     TPROPVAL_ARRAY *ppropvals, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int i;
-	uint32_t cpid;
+	cpid_t cpid;
 	BOOL b_unicode = false;
 	ems_objtype object_type;
 	PROPTAG_ARRAY proptags;

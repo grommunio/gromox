@@ -2700,7 +2700,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	auto cpid = cset_to_cpid(charset);
 	if (cpid == CP_ACP)
-		cpid = static_cast<nlscp_t>(1252);
+		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
@@ -2906,7 +2906,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	auto cpid = cset_to_cpid(charset);
 	if (cpid == CP_ACP)
-		cpid = static_cast<nlscp_t>(1252);
+		cpid = static_cast<cpid_t>(1252);
 	ec_error_t e_result = ecRpcFailed;
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||

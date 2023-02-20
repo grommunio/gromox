@@ -669,7 +669,7 @@ bool cu_validate_msgclass(const char *k)
 	return true;
 }
 
-bool cpid_cstr_compatible(uint32_t cpid)
+bool cpid_cstr_compatible(cpid_t cpid)
 {
 	if (cpid == CP_UTF16 || cpid == CP_UTF16BE ||
 	    cpid == CP_UTF32 || cpid == CP_UTF32BE) {

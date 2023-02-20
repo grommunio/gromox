@@ -339,7 +339,7 @@ static uint32_t next_instance_id(db_item_ptr &db)
 }
 
 BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
-    uint32_t cpid, BOOL b_new, uint64_t folder_id, uint64_t message_id,
+    cpid_t cpid, BOOL b_new, uint64_t folder_id, uint64_t message_id,
     uint32_t *pinstance_id) try
 {
 	uint64_t mid_val;
@@ -1617,7 +1617,7 @@ BOOL exmdb_server::get_instance_all_proptags(const char *dir,
 }
 
 static BOOL instance_get_message_display_recipients(TARRAY_SET *prcpts,
-    uint32_t cpid, uint32_t proptag, void **ppvalue) try
+    cpid_t cpid, uint32_t proptag, void **ppvalue) try
 {
 	std::string dr;
 	uint32_t recipient_type = 0;
@@ -1695,9 +1695,8 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 	return message_flags;
 }
 
-static BOOL instance_get_message_subject(
-	TPROPVAL_ARRAY *pproplist, uint16_t cpid,
-	uint32_t proptag, void **ppvalue)
+static BOOL instance_get_message_subject(TPROPVAL_ARRAY *pproplist,
+    cpid_t cpid, uint32_t proptag, void **ppvalue)
 {
 	auto pnormalized_subject = pproplist->get<const char>(PR_NORMALIZED_SUBJECT);
 	if (NULL == pnormalized_subject) {
@@ -1734,7 +1733,7 @@ static BOOL instance_get_message_subject(
 	return *ppvalue != nullptr ? TRUE : false;
 }
 
-static BOOL instance_get_attachment_properties(uint32_t cpid,
+static BOOL instance_get_attachment_properties(cpid_t cpid,
 	const uint64_t *pmessage_id, ATTACHMENT_CONTENT *pattachment,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {

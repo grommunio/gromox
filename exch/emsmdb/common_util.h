@@ -28,8 +28,8 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-extern ssize_t common_util_mb_from_utf8(uint32_t cpid, const char *src, char *dst, size_t len);
-extern ssize_t common_util_mb_to_utf8(uint32_t cpid, const char *src, char *dst, size_t len);
+extern ssize_t common_util_mb_from_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
+extern ssize_t common_util_mb_to_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
 extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
@@ -73,23 +73,14 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags);
 BOOL common_util_propvals_to_row(
 	const TPROPVAL_ARRAY *ppropvals,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow);
-BOOL common_util_convert_unspecified(uint32_t cpid,
-	BOOL b_unicode, TYPED_PROPVAL *ptyped);
-BOOL common_util_propvals_to_row_ex(uint32_t cpid,
-	BOOL b_unicode, const TPROPVAL_ARRAY *ppropvals,
-	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow);
-BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
-	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
-	OPENRECIPIENT_ROW *prow);
-BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
-	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
-	READRECIPIENT_ROW *prow);
+extern BOOL common_util_convert_unspecified(cpid_t, BOOL unicode, TYPED_PROPVAL *);
+extern BOOL common_util_propvals_to_row_ex(cpid_t, BOOL unicode, const TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, PROPERTY_ROW *row);
+extern BOOL common_util_propvals_to_openrecipient(cpid_t, TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, OPENRECIPIENT_ROW *row);
+extern BOOL common_util_propvals_to_readrecipient(cpid_t, TPROPVAL_ARRAY *, const PROPTAG_ARRAY *cols, READRECIPIENT_ROW *row);
 BOOL common_util_row_to_propvals(
 	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals);
-BOOL common_util_modifyrecipient_to_propvals(
-	 uint32_t cpid, const MODIFYRECIPIENT_ROW *prow,
-	const PROPTAG_ARRAY *pcolumns, TPROPVAL_ARRAY *ppropvals);
+extern BOOL common_util_modifyrecipient_to_propvals(cpid_t, const MODIFYRECIPIENT_ROW *, const PROPTAG_ARRAY *cols, TPROPVAL_ARRAY *vals);
 BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval);
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);

@@ -98,7 +98,7 @@ static int (*asyncemsmdb_interface_async_wait)(uint32_t async_id, ECDOASYNCWAITE
 static void (*asyncemsmdb_interface_register_active)(void *);
 static void (*asyncemsmdb_interface_remove)(CONTEXT_HANDLE *);
 
-static int (*emsmdb_interface_connect_ex)(uint64_t, CONTEXT_HANDLE *, const char *, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint16_t, uint32_t *, uint32_t *, uint32_t *, uint16_t *, char *, char *, const uint16_t *, uint16_t *, uint16_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *);
+static int (*emsmdb_interface_connect_ex)(uint64_t hrpc, CXH *, const char *user_dn, uint32_t flags, uint32_t con_mode, uint32_t limit, cpid_t, uint32_t lcid_string, uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps, uint32_t *max_polls, uint32_t *max_retry, uint32_t *retry_delay, uint16_t *cxr, char *dn_prefix, char *dispname, const uint16_t client_vers[3], uint16_t server_vers[3], uint16_t best_vers[3], uint32_t *timestamp, const uint8_t *auxin, uint32_t cb_auxin, uint8_t *auxout, uint32_t *cb_auxout);
 static int (*emsmdb_interface_rpc_ext2)(CONTEXT_HANDLE &, uint32_t *flags, const uint8_t *, uint32_t, uint8_t *, uint32_t *, const uint8_t *, uint32_t, uint8_t *, uint32_t *, uint32_t *);
 static int (*emsmdb_interface_disconnect)(CONTEXT_HANDLE &);
 static void (*emsmdb_interface_touch_handle)(const CONTEXT_HANDLE &);
@@ -110,7 +110,9 @@ namespace {
 
 struct connect_request {
 	char *userdn;
-	uint32_t flags, cpid, lcid_string, lcid_sort, cb_auxin;
+	uint32_t flags;
+	cpid_t cpid;
+	uint32_t lcid_string, lcid_sort, cb_auxin;
 	uint8_t *auxin;
 };
 

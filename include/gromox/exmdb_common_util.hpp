@@ -70,9 +70,8 @@ template<typename T> T *cu_alloc(size_t elem)
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
 char* common_util_dup(const char *pstr);
-char* common_util_convert_copy(BOOL to_utf8,
-	uint32_t cpid, const char *pstring);
-extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *);
+extern char *common_util_convert_copy(BOOL to_utf8, cpid_t, const char *s);
+extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, cpid_t, const STRING_ARRAY *);
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid);
 BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t *peid);
@@ -86,10 +85,10 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
 BOOL common_util_begin_message_optimize(sqlite3 *psqlite);
 extern void common_util_end_message_optimize();
-extern BOOL cu_get_property(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, uint32_t proptag, void **out);
-extern BOOL cu_get_properties(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
-extern BOOL cu_set_property(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
-extern BOOL cu_set_properties(mapi_object_type, uint64_t id, uint32_t cpid, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
+extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t proptag, void **out);
+extern BOOL cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+extern BOOL cu_set_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t tag, const void *data, BOOL *result);
+extern BOOL cu_set_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 extern BOOL cu_remove_property(mapi_object_type, uint64_t id, sqlite3 *, uint32_t proptag);
 extern BOOL cu_remove_properties(mapi_object_type, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
 BOOL common_util_get_rule_property(uint64_t rule_id,
@@ -132,7 +131,7 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids);
 extern bool cu_eval_folder_restriction(sqlite3 *, uint64_t folder_id, const RESTRICTION *);
-extern bool cu_eval_msg_restriction(sqlite3 *, uint32_t cpid, uint64_t msgid, const RESTRICTION *);
+extern bool cu_eval_msg_restriction(sqlite3 *, cpid_t, uint64_t msgid, const RESTRICTION *);
 BOOL common_util_check_search_result(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist);
 BOOL common_util_get_mid_string(sqlite3 *psqlite,

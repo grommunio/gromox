@@ -92,7 +92,7 @@ static void nsp_trace(const char *func, bool is_exit, const STAT *s,
 }
 
 static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
-    BOOL b_ephid, uint32_t codepage, uint32_t proptag, PROPERTY_VALUE *pprop,
+    BOOL b_ephid, cpid_t codepage, uint32_t proptag, PROPERTY_VALUE *pprop,
     void *pbuff, size_t pbsize)
 {
 	int minid;
@@ -485,7 +485,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 }		
 
 static uint32_t nsp_interface_fetch_row(const SIMPLE_TREE_NODE *pnode,
-    BOOL b_ephid, uint32_t codepage, const LPROPTAG_ARRAY *pproptags,
+    BOOL b_ephid, cpid_t codepage, const LPROPTAG_ARRAY *pproptags,
     NSP_PROPROW *prow)
 {
 	uint32_t err_val;
@@ -1170,7 +1170,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
-    uint32_t codepage, const NSPRES *pfilter)
+    cpid_t codepage, const NSPRES *pfilter)
 {
 	char *ptoken;
 	char temp_buff[1024];
@@ -1728,7 +1728,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 }
 
 int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
-    uint32_t mid, uint32_t codepage, LPROPTAG_ARRAY **tags)
+    uint32_t mid, cpid_t codepage, LPROPTAG_ARRAY **tags)
 {
 	int base_id;
 	char temp_buff[1024];
@@ -1996,7 +1996,7 @@ int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
-	BOOL b_unicode, uint32_t codepage, BOOL has_child,
+    BOOL b_unicode, cpid_t codepage, BOOL has_child,
 	unsigned int depth, int container_id, const char *str_dname,
 	PERMANENT_ENTRYID *ppermeid_parent, PERMANENT_ENTRYID *ppermeid)
 {
@@ -2091,7 +2091,7 @@ static BOOL nsp_interface_has_child(const SIMPLE_TREE_NODE *pnode)
 
 static uint32_t nsp_interface_get_specialtables_from_node(
     const SIMPLE_TREE_NODE *pnode, PERMANENT_ENTRYID *ppermeid_parent,
-	BOOL b_unicode, uint32_t codepage, NSP_ROWSET *prows)
+    BOOL b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
 	GUID tmp_guid;
 	BOOL has_child;
@@ -2135,7 +2135,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 }
 
 static uint32_t nsp_interface_get_tree_specialtables(const SIMPLE_TREE *ptree,
-    BOOL b_unicode, uint32_t codepage, NSP_ROWSET *prows)
+    BOOL b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
 	auto pnode = ptree->get_root();
 	if (pnode == nullptr)
@@ -2159,7 +2159,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		return ecSuccess;
 	}
 	BOOL b_unicode = (flags & NspiUnicodeStrings) ? TRUE : false;
-	uint32_t codepage = pstat == nullptr ? 1252 : pstat->codepage;
+	cpid_t codepage = pstat == nullptr ? 1252 : pstat->codepage;
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
 	if (!b_unicode && codepage == CP_WINUNICODE) {
 		*pprows = NULL;
@@ -2363,7 +2363,7 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 }
 
 static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
-	uint32_t codepage, const char *pstr)
+    cpid_t codepage, const char *pstr)
 {
 	char dn[1024];
 	
@@ -2411,7 +2411,7 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 }
 
 static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const gal_list_t &plist,
-	uint32_t codepage, char *pstr, BOOL *pb_ambiguous)
+    cpid_t codepage, char *pstr, BOOL *pb_ambiguous)
 {
 	const SIMPLE_TREE_NODE *ptnode = nullptr;
 	
@@ -2622,7 +2622,7 @@ void nsp_interface_unbind_rpc_handle(uint64_t hrpc)
 }
 
 int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
-    uint32_t type, const char *dn, uint32_t codepage, uint32_t locale_id,
+    uint32_t type, const char *dn, cpid_t codepage, uint32_t locale_id,
     NSP_PROPROW **ppdata)
 {
 	*ppdata = nullptr;

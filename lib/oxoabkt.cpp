@@ -86,7 +86,7 @@ static inline bool cttype_uses_pattern(unsigned int t)
 // DTBLLBX has two proptags: ulPRSetProperty [PT_*], ulPRTableName [PT_OBJECT]
 
 static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
-    unsigned int vers, unsigned int cpid)
+    unsigned int vers, cpid_t cpid)
 {
 	jrow["posx"]  = bin.r4();
 	jrow["sizex"] = bin.r4();
@@ -133,7 +133,7 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
 		jrow["pattern"] = std::move(text);
 }
 
-static void abkt_read(lb_reader &bin, Json::Value &tpl, unsigned int cpid)
+static void abkt_read(lb_reader &bin, Json::Value &tpl, cpid_t cpid)
 {
 	auto vers = bin.r4();
 	if (vers != 1 && vers != 2)
@@ -146,7 +146,7 @@ static void abkt_read(lb_reader &bin, Json::Value &tpl, unsigned int cpid)
 	}
 }
 
-static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, unsigned int cpid)
+static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, cpid_t cpid)
 {
 	unsigned int ct_type = abkt_cttype2int(jrow["ct_type"].asString().c_str());
 	unsigned int flags = _DT_NONE;
@@ -195,7 +195,7 @@ static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, unsi
 }
 
 static void abkt_write(Json::Value &tpl, lb_writer &bin,
-    unsigned int cpid, bool dogap)
+    cpid_t cpid, bool dogap)
 {
 	bin.w4(1);
 	if (!tpl.isMember("rowdata")) {
@@ -219,7 +219,7 @@ static void abkt_write(Json::Value &tpl, lb_writer &bin,
 
 namespace gromox {
 
-std::string abkt_tojson(std::string_view bin, unsigned int codepage)
+std::string abkt_tojson(std::string_view bin, cpid_t codepage)
 {
 	lb_reader reader(bin.data(), bin.size());
 	Json::Value jval;
@@ -227,7 +227,7 @@ std::string abkt_tojson(std::string_view bin, unsigned int codepage)
 	return Json::writeString(Json::StreamWriterBuilder(), std::move(jval));
 }
 
-std::string abkt_tobinary(std::string_view json, unsigned int codepage, bool dogap)
+std::string abkt_tobinary(std::string_view json, cpid_t codepage, bool dogap)
 {
 	Json::Value jval;
 	if (!json_from_str(std::move(json), jval))

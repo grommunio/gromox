@@ -1127,8 +1127,7 @@ static void tnef_tpropval_array_to_unicode(
 	}
 }
 
-static void tnef_message_to_unicode(
-	uint32_t cpid, MESSAGE_CONTENT *pmsg)
+static void tnef_message_to_unicode(cpid_t cpid, MESSAGE_CONTENT *pmsg)
 {
 	auto charset = cpid_to_cset(cpid);
 	if (NULL == charset) {
@@ -1256,7 +1255,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		mlog(LV_DEBUG, "tnef: cannot find PrimaryCodePage");
 		return NULL;
 	}
-	uint32_t cpid = static_cast<LONG_ARRAY *>(attribute.pvalue)->pl[0];
+	cpid_t cpid = static_cast<LONG_ARRAY *>(attribute.pvalue)->pl[0];
 	b_props = FALSE;
 	cur_lvl = LVL_MESSAGE;
 	powner = NULL;

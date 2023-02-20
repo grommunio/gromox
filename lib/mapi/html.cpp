@@ -1289,7 +1289,7 @@ static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
 	}
 }
 
-static void html_string_to_utf8(uint32_t cpid,
+static void html_string_to_utf8(cpid_t cpid,
 	const char *src, char *dst, size_t len)
 {
 	size_t in_len;
@@ -1315,7 +1315,7 @@ static void html_string_to_utf8(uint32_t cpid,
 	iconv_close(conv_id);
 }
 
-BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
+BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
     char **pbuff_out, size_t *plength)
 {
 	RTF_WRITER writer;

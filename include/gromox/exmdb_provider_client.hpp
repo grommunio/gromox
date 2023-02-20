@@ -6,10 +6,7 @@
 #include <gromox/mapi_types.hpp>
 
 extern int exmdb_client_run_front(const char *);
-BOOL exmdb_client_relay_delivery(const char *dir,
-	const char *from_address, const char *account,
-	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
-	const char *pdigest, uint32_t *presult);
+extern BOOL exmdb_client_relay_delivery(const char *dir, const char *ev_from, const char *ev_to, cpid_t, const MESSAGE_CONTENT *, const char *digest, uint32_t *result);
 
 namespace exmdb_client_local {
 #define IDLOUT

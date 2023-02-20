@@ -186,12 +186,12 @@ struct exreq_get_mapping_replid : public exreq {
 };
 
 struct exreq_get_store_properties : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	PROPTAG_ARRAY *pproptags;
 };
 
 struct exreq_set_store_properties : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	TPROPVAL_ARRAY *ppropvals;
 };
 
@@ -235,12 +235,12 @@ struct exreq_get_folder_perm : public exreq {
 };
 
 struct exreq_create_folder_by_properties : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	TPROPVAL_ARRAY *pproperties;
 };
 
 struct exreq_delete_folder : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	BOOL b_hard;
 };
@@ -250,13 +250,13 @@ struct exreq_get_folder_all_proptags : public exreq {
 };
 
 struct exreq_get_folder_properties : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
 struct exreq_set_folder_properties : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	TPROPVAL_ARRAY *pproperties;
 };
@@ -267,7 +267,7 @@ struct exreq_remove_folder_properties : public exreq {
 };
 
 struct exreq_empty_folder : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	char *username;
 	uint64_t folder_id;
 	BOOL b_hard;
@@ -283,7 +283,7 @@ struct exreq_check_folder_cycle : public exreq {
 
 struct exreq_copy_folder_internal : public exreq {
 	uint32_t account_id;
-	uint32_t cpid;
+	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
 	uint64_t src_fid;
@@ -298,7 +298,7 @@ struct exreq_get_search_criteria : public exreq {
 };
 
 struct exreq_set_search_criteria : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	uint32_t search_flags;
 	RESTRICTION *prestriction;
@@ -307,7 +307,7 @@ struct exreq_set_search_criteria : public exreq {
 
 struct exreq_movecopy_message : public exreq {
 	uint32_t account_id;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t message_id;
 	uint64_t dst_fid;
 	uint64_t dst_id;
@@ -316,7 +316,7 @@ struct exreq_movecopy_message : public exreq {
 
 struct exreq_movecopy_messages : public exreq {
 	uint32_t account_id;
-	uint32_t cpid;
+	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
 	uint64_t src_fid;
@@ -327,7 +327,7 @@ struct exreq_movecopy_messages : public exreq {
 
 struct exreq_movecopy_folder : public exreq {
 	uint32_t account_id;
-	uint32_t cpid;
+	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
 	uint64_t src_pid;
@@ -339,7 +339,7 @@ struct exreq_movecopy_folder : public exreq {
 
 struct exreq_delete_messages : public exreq {
 	uint32_t account_id;
-	uint32_t cpid;
+	cpid_t cpid;
 	char *username;
 	uint64_t folder_id;
 	EID_ARRAY *pmessage_ids;
@@ -347,7 +347,7 @@ struct exreq_delete_messages : public exreq {
 };
 
 struct exreq_get_message_brief : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t message_id;
 };
 
@@ -371,7 +371,7 @@ struct exreq_load_hierarchy_table : public exreq {
 };
 
 struct exreq_load_content_table : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	char *username;
 	uint8_t table_flags;
@@ -409,7 +409,7 @@ struct exreq_sum_table : public exreq {
 
 struct exreq_query_table : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint32_t table_id;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t start_pos;
@@ -418,7 +418,7 @@ struct exreq_query_table : public exreq {
 
 struct exreq_match_table : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint32_t table_id;
 	BOOL b_forward;
 	uint32_t start_pos;
@@ -434,7 +434,7 @@ struct exreq_locate_table : public exreq {
 
 struct exreq_read_table_row : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint32_t table_id;
 	PROPTAG_ARRAY *pproptags;
 	uint64_t inst_id;
@@ -482,7 +482,7 @@ struct exreq_check_message_deleted : public exreq {
 
 struct exreq_load_message_instance : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	BOOL b_new;
 	uint64_t folder_id;
 	uint64_t message_id;
@@ -638,14 +638,14 @@ struct exreq_get_message_rcpts : public exreq {
 
 struct exreq_get_message_properties : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t message_id;
 	PROPTAG_ARRAY *pproptags;
 };
 
 struct exreq_set_message_properties : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t message_id;
 	TPROPVAL_ARRAY *pproperties;
 };
@@ -657,7 +657,7 @@ struct exreq_set_message_read_state : public exreq {
 };
 
 struct exreq_remove_message_properties : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t message_id;
 	PROPTAG_ARRAY *pproptags;
 };
@@ -701,13 +701,13 @@ struct exreq_clear_submit : public exreq {
 };
 
 struct exreq_link_message : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
 struct exreq_unlink_message : public exreq {
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
@@ -715,7 +715,7 @@ struct exreq_unlink_message : public exreq {
 struct exreq_rule_new_message : public exreq {
 	char *username;
 	char *account;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
 };
@@ -753,21 +753,21 @@ struct exreq_update_folder_rule : public exreq {
 struct exreq_deliver_message : public exreq {
 	char *from_address;
 	char *account;
-	uint32_t cpid;
+	cpid_t cpid;
 	MESSAGE_CONTENT *pmsg;
 	char *pdigest;
 };
 
 struct exreq_write_message : public exreq {
 	char *account;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;
 };
 
 struct exreq_read_message : public exreq {
 	char *username;
-	uint32_t cpid;
+	cpid_t cpid;
 	uint64_t message_id;
 };
 
@@ -778,7 +778,7 @@ struct exreq_get_content_sync : public exreq {
 	IDSET *pseen;
 	IDSET *pseen_fai;
 	IDSET *pread;
-	uint32_t cpid;
+	cpid_t cpid;
 	RESTRICTION *prestriction;
 	BOOL b_ordered;
 };

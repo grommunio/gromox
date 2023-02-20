@@ -68,7 +68,7 @@ struct seen_list {
 
 }
 
-static ec_error_t message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, seen_list &);
+static ec_error_t message_rule_new_message(BOOL, const char *, const char *, cpid_t, sqlite3 *, uint64_t, uint64_t, const char *, seen_list &);
 
 static constexpr uint8_t fake_true = true;
 static constexpr uint32_t dummy_rcpttype = MAPI_TO;
@@ -81,7 +81,7 @@ static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
 
 /* can be used when submitting message */
 BOOL exmdb_server::movecopy_message(const char *dir,
-	int account_id, uint32_t cpid, uint64_t message_id,
+    int account_id, cpid_t cpid, uint64_t message_id,
 	uint64_t dst_fid, uint64_t dst_id, BOOL b_move,
 	BOOL *pb_result)
 {
@@ -221,7 +221,7 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 }
 
 BOOL exmdb_server::movecopy_messages(const char *dir,
-	int account_id, uint32_t cpid, BOOL b_guest,
+    int account_id, cpid_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, uint64_t dst_fid,
 	BOOL b_copy, const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
 {
@@ -421,7 +421,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 }
 
 BOOL exmdb_server::delete_messages(const char *dir,
-	int account_id, uint32_t cpid, const char *username,
+    int account_id, cpid_t cpid, const char *username,
 	uint64_t folder_id, const EID_ARRAY *pmessage_ids,
 	BOOL b_hard, BOOL *pb_partial)
 {
@@ -681,7 +681,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 	return false;
 }
 
-BOOL exmdb_server::get_message_brief(const char *dir, uint32_t cpid,
+BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	uint64_t message_id, MESSAGE_CONTENT **ppbrief)
 {
 	uint32_t count;
@@ -833,7 +833,7 @@ BOOL exmdb_server::get_message_rcpts(const char *dir,
 }
 
 BOOL exmdb_server::get_message_properties(const char *dir,
-	const char *username, uint32_t cpid, uint64_t message_id,
+    const char *username, cpid_t cpid, uint64_t message_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pdb = db_engine_get_db(dir);
@@ -849,7 +849,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 
 /* message_size will not be updated in the function! */
 BOOL exmdb_server::set_message_properties(const char *dir,
-	const char *username, uint32_t cpid, uint64_t message_id,
+    const char *username, cpid_t cpid, uint64_t message_id,
 	const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
 	BOOL b_result;
@@ -883,7 +883,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::remove_message_properties(const char *dir, uint32_t cpid,
+BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
     uint64_t message_id, const PROPTAG_ARRAY *pproptags)
 {
 	BOOL b_result;
@@ -1245,7 +1245,7 @@ BOOL exmdb_server::clear_submit(const char *dir,
 }
 
 /* private only */
-BOOL exmdb_server::link_message(const char *dir, uint32_t cpid,
+BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	uint64_t folder_id, uint64_t message_id, BOOL *pb_result)
 {
 	uint64_t fid_val;
@@ -1290,7 +1290,7 @@ BOOL exmdb_server::link_message(const char *dir, uint32_t cpid,
 
 /* private only */
 BOOL exmdb_server::unlink_message(const char *dir,
-	uint32_t cpid, uint64_t folder_id, uint64_t message_id)
+    cpid_t cpid, uint64_t folder_id, uint64_t message_id)
 {
 	uint64_t fid_val;
 	uint64_t mid_val;
@@ -1364,7 +1364,7 @@ BOOL exmdb_server::get_message_timer(const char *dir,
 	return TRUE;
 }
 
-static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
+static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
     uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt) try
 {
 	uint32_t count;
@@ -1750,7 +1750,7 @@ static BOOL message_rectify_message(const char *account,
 }
 	
 static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
-	const char *account, uint32_t cpid, BOOL b_embedded,
+    const char *account, cpid_t cpid, BOOL b_embedded,
 	uint64_t parent_id, const MESSAGE_CONTENT *pmsgctnt,
 	uint64_t *pmessage_id)
 {
@@ -2674,7 +2674,7 @@ static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
 }
 
 static ec_error_t message_forward_message(const char *from_address,
-	const char *username, sqlite3 *psqlite, uint32_t cpid,
+    const char *username, sqlite3 *psqlite, cpid_t cpid,
 	uint64_t message_id, const char *pdigest, uint32_t action_flavor,
 	BOOL b_extended, uint32_t count, void *pblock)
 {
@@ -2957,7 +2957,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 }
 
 static ec_error_t op_move_same(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del)
@@ -3106,7 +3106,7 @@ static ec_error_t op_defer(uint64_t folder_id, uint64_t message_id,
 }
 
 static ec_error_t op_forward(const char *from_address, const char *account,
-    uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+    cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
@@ -3125,7 +3125,7 @@ static ec_error_t op_forward(const char *from_address, const char *account,
 }
 
 static ec_error_t op_delegate(const char *from_address, const char *account,
-    uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+    cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, seen_list &seen, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
@@ -3221,7 +3221,7 @@ static ec_error_t op_delegate(const char *from_address, const char *account,
 }
 
 static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
@@ -3291,7 +3291,7 @@ static ec_error_t op_switcheroo(BOOL b_oof, const char *from_address,
 }
 
 static ec_error_t op_process(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
     std::list<DAM_NODE> &dam_list)
@@ -3357,7 +3357,7 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 }
 
 static ec_error_t opx_move(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode,
     BOOL &b_del)
@@ -3475,7 +3475,7 @@ static ec_error_t opx_reply(const char *from_address, const char *account,
 }
 
 static ec_error_t opx_delegate(const char *from_address, const char *account,
-    uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+    cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode)
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
@@ -3565,7 +3565,7 @@ static ec_error_t opx_delegate(const char *from_address, const char *account,
 }
 
 static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const EXT_ACTION_BLOCK &block, size_t rule_idx,
     const RULE_NODE *prnode, BOOL &b_del)
@@ -3634,7 +3634,7 @@ static ec_error_t opx_switcheroo(BOOL b_oof, const char *from_address,
 }
 
 static ec_error_t opx_process(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen,
     const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
 {
@@ -3689,7 +3689,7 @@ static ec_error_t opx_process(BOOL b_oof, const char *from_address,
 
 /* extended rules do not produce DAM or DEM */
 static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
-    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    const char *account, cpid_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, seen_list &seen)
 {
 	std::list<RULE_NODE> rule_list, ext_rule_list;
@@ -3746,7 +3746,7 @@ static ec_error_t message_rule_new_message(BOOL b_oof, const char *from_address,
 
 /* 0 means success, 1 means mailbox full, other unknown error */
 BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
-    const char *account, uint32_t cpid, const MESSAGE_CONTENT *pmsg,
+    const char *account, cpid_t cpid, const MESSAGE_CONTENT *pmsg,
     const char *pdigest, uint32_t *presult)
 {
 	int fd;
@@ -3925,7 +3925,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 /* create or cover message under folder, if message exists
 	in somewhere except the folder, result will be FALSE */
 BOOL exmdb_server::write_message(const char *dir, const char *account,
-    uint32_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
+    cpid_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
     ec_error_t *pe_result)
 {
 	BOOL b_exist;
@@ -3994,7 +3994,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 }
 
 BOOL exmdb_server::read_message(const char *dir, const char *username,
-	uint32_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt)
+    cpid_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt)
 {
 	uint64_t mid_val;
 	auto pdb = db_engine_get_db(dir);
@@ -4017,7 +4017,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 }
 
 BOOL exmdb_server::rule_new_message(const char *dir,
-	const char *username, const char *account, uint32_t cpid,
+    const char *username, const char *account, cpid_t cpid,
 	uint64_t folder_id, uint64_t message_id)
 {
 	int fd, len;

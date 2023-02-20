@@ -24,7 +24,7 @@ struct attachment_object {
 	uint32_t get_tag_access() const { return pparent->tag_access; }
 	uint8_t get_open_flags() const { return open_flags; }
 	void set_open_flags(uint8_t open_flags);
-	uint32_t get_cpid() const { return pparent->cpid; }
+	cpid_t get_cpid() const { return pparent->cpid; }
 	ec_error_t save();
 	BOOL append_stream_object(stream_object *);
 	BOOL commit_stream_object(stream_object *);

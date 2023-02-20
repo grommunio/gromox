@@ -50,7 +50,7 @@ enum {
 	NP_STRBUF_SIZE = 36 + 11 + NP_NAMEBUF_SIZE, /* "GUID=<>,NAME=<>" */
 };
 
-enum nlscp_t : int {
+enum {
 	CP_ACP = 0,
 	CP_UTF16 = 1200,
 	CP_WINUNICODE = CP_UTF16,
@@ -61,6 +61,7 @@ enum nlscp_t : int {
 	CP_UTF7 = 65000,
 	CP_UTF8 = 65001,
 };
+using cpid_t = uint32_t;
 
 extern GX_EXPORT const char *mapi_errname_r(unsigned int, char *, size_t);
 extern GX_EXPORT const char *mapi_strerror(unsigned int);

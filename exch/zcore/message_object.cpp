@@ -36,7 +36,7 @@ BOOL message_object::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
 }
 
 std::unique_ptr<message_object> message_object::create(store_object *pstore,
-    BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
+    BOOL b_new, cpid_t cpid, uint64_t message_id, void *pparent,
     uint32_t tag_access, BOOL b_writable, std::shared_ptr<ics_state> pstate)
 {
 	uint64_t *pchange_num;
@@ -134,7 +134,7 @@ message_object::~message_object()
 		proptag_array_free(pmessage->premoved_proptags);
 }
 
-errno_t message_object::init_message(bool fai, uint32_t new_cpid)
+errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;
