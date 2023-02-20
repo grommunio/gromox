@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 
 #include <algorithm>
@@ -56,12 +56,17 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 /**
  * Mapping of request names to handler functions.
  */
-const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap = {
-	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
-	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
+
+const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
+{
+	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
+	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
+	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
+	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,10 +152,11 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
 		return unauthed(ctx_id);
-	auto[response, code] = dispatch(ctx_id, auth_info, content, len);
-	if(response_logging >= 2)
+	bool enableLog = false;
+	auto[response, code] = dispatch(ctx_id, auth_info, content, len, enableLog);
+	if(enableLog && response_logging >= 2)
 		mlog(LV_DEBUG, "[ews] Response: %s", response.c_str());
-	if(response_logging)
+	if(enableLog && response_logging)
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
@@ -175,21 +181,31 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  *
  * @return     Pair of response content and HTTP response code
  */
-std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
+std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len,
+                                                bool& enableLog) try
 {
+	enableLog = false;
 	using namespace std::string_literals;
 	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
-	if(request_logging >= 2)
-		mlog(LV_DEBUG, "[ews] Incoming data: %.*s",
-			len > INT_MAX ? INT_MAX : static_cast<int>(len),
-			static_cast<const char *>(data));
 	if(!rpc_new_stack())
-		mlog(LV_ERR, "[ews]: Failed to allocate stack, exmdb might not work");
+		mlog(LV_WARN, "[ews]: Failed to allocate stack, exmdb might not work");
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
+	if(request_logging >= 2)
+	{
+		for(const XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
+			enableLog = enableLog || logEnabled(xml->Name());
+		if(enableLog)
+			mlog(LV_DEBUG, "[ews] Incoming data: %.*s", len > INT_MAX ? INT_MAX : static_cast<int>(len),
+			     static_cast<const char *>(data));
+	}
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
+		bool logThis = request_logging && response_logging && logEnabled(xml->Name());
+		enableLog = enableLog || logThis;
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
-		if(request_logging)
+		responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
+		responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
+		if(logThis && request_logging)
 			mlog(LV_DEBUG, "[ews] Processing %s", xml->Name());
 		auto handler = requestMap.find(xml->Name());
 		if(handler == requestMap.end())
@@ -206,6 +222,16 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	return {SOAP::Envelope::fault("Server", err.what()), 500};
 }
 
+/**
+ * @brief     Check if logging is enabled for this request
+ *
+ * @param     requestName  Name of the request
+ *
+ * @return    true if logging is enabled, false otherwise
+ */
+bool EWSPlugin::logEnabled(const std::string_view& requestName) const
+{return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;}
+
 EWSPlugin::EWSPlugin()
 {loadConfig();}
 
@@ -218,6 +244,8 @@ EWSPlugin::_mysql::_mysql()
 	if (query_service2(# f, f) == nullptr) \
 		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
 
+	getService(get_domain_info);
+	getService(get_homedir);
 	getService(get_maildir);
 	getService(get_username_from_id);
 #undef getService
@@ -243,6 +271,8 @@ static constexpr cfg_directive x500_defaults[] = {
 };
 
 static constexpr cfg_directive ews_cfg_defaults[] = {
+	{"ews_experimental", "0", CFG_BOOL},
+	{"ews_log_filter", "!"},
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
@@ -259,9 +289,21 @@ void EWSPlugin::loadConfig()
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 
 	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
-	pretty_response = cfg->get_ll("ews_pretty_response");
-	request_logging = cfg->get_ll("ews_request_logging");
-	response_logging = cfg->get_ll("ews_response_logging");
+	cfg->get_int("ews_experimental", &experimental);
+	cfg->get_int("ews_pretty_response", &pretty_response);
+	cfg->get_int("ews_request_logging", &request_logging);
+	cfg->get_int("ews_response_logging", &response_logging);
+	const char* logFilter = cfg->get_value("ews_log_filter");
+	if(logFilter && strlen(logFilter))
+	{
+		invertFilter = *logFilter == '!';
+		logFilter += invertFilter;
+		for(const char* sep = strchr(logFilter, ','); sep != nullptr; logFilter = ++sep, sep = strchr(sep, ','))
+			logFilters.emplace_back(std::string_view(logFilter, sep-logFilter));
+		if(*logFilter)
+			logFilters.emplace_back(logFilter);
+		std::sort(logFilters.begin(), logFilters.end());
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

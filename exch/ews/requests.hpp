@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -13,10 +13,18 @@ namespace tinyxml2
 namespace gromox::EWS::Requests
 {
 
-extern void process(gromox::EWS::Structures::mGetMailTipsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
-extern void process(gromox::EWS::Structures::mGetServiceConfigurationRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
-extern void process(gromox::EWS::Structures::mGetUserAvailabilityRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
-extern void process(gromox::EWS::Structures::mGetUserOofSettingsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
-extern void process(gromox::EWS::Structures::mSetUserOofSettingsRequest&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
+#define EWSFUNC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&)
+
+EWSFUNC(mGetFolderRequest);
+EWSFUNC(mGetMailTipsRequest);
+EWSFUNC(mGetMailTipsRequest);
+EWSFUNC(mGetServiceConfigurationRequest);
+EWSFUNC(mGetUserAvailabilityRequest);
+EWSFUNC(mGetUserOofSettingsRequest);
+EWSFUNC(mSetUserOofSettingsRequest);
+EWSFUNC(mSyncFolderHierarchyRequest);
+EWSFUNC(mSyncFolderItemsRequest);
+
+#undef EWSFUNC
 
 }

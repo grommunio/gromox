@@ -1,65 +1,257 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
+/**
+ * @brief      Implementation of EWS structure methods
+ *
+ * This file only contains data type logic, the implementation
+ * of (de-)serialization functions was moved to serialization.cpp.
+ */
+#include <algorithm>
+#include <iterator>
 
+#include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
+#include <gromox/mapi_types.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/ical.hpp>
-#include "serialization.hpp"
-#include "soaputil.hpp"
+
+#include "ews.hpp"
 #include "structures.hpp"
 
 using namespace gromox::EWS;
-using namespace gromox::EWS::Serialization;
+using namespace gromox::EWS::Exceptions;
 using namespace gromox::EWS::Structures;
+using namespace std::string_literals;
 using namespace tinyxml2;
 
-//Shortcuts to call toXML* and fromXML* functions on members
-#define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, # name))
-#define XMLDUMP(name) toXMLNode(xml, # name, name)
-#define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, # name))
-#define XMLDUMPA(name) toXMLAttr(xml, # name, name)
-
-using namespace std::string_literals;
-using namespace Exceptions;
-using gromox::EWS::SOAP::NS_MSGS;
-using gromox::EWS::SOAP::NS_TYPS;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLElement* xml, gromox::time_point& value)
+namespace
 {
-	const char* data = xml->GetText();
-	if(!data)
-		return tinyxml2::XML_NO_TEXT_NODE;
-	tm t{};
-	float seconds = 0, unused;
-	int tz_hour = 0, tz_min = 0;
-	if(std::sscanf(data, "%4d-%02d-%02dT%02d:%02d:%f%03d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min,
-	               &seconds, &tz_hour, &tz_min) < 6) //Timezone info is optional, date and time values mandatory
-		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	t.tm_sec = int(seconds);
-	t.tm_year -= 1900;
-	t.tm_mon -= 1;
-	t.tm_hour -= tz_hour;
-	t.tm_min -= tz_hour	< 0? -tz_min : tz_min;
-	time_t timestamp = mktime(&t)-timezone;
-	if(timestamp == time_t(-1))
-		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	value = gromox::time_point::clock::from_time_t(timestamp);
-	seconds = std::modf(seconds, &unused);
-	value += std::chrono::microseconds(int(seconds*1000000));
-	return tinyxml2::XML_SUCCESS;
+
+inline gromox::time_point nttime_to_time_point(uint64_t nttime)
+{return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-sTime::sTime(const XMLElement* xml)
+/**
+ * @brief     Initilize binary data from tagged propval
+ *
+ * Propval type must be PT_BINARY.
+ */
+sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 {
-	const char* data = xml->GetText();
-	if(!data)
-		throw DeserializationError("Element '"s+xml->Name()+"'is empty");
-	if(sscanf(data, "%02hhu:%02hhu:%02hhu", &hour, &minute, &second) != 3)
-		throw DeserializationError("Element "s+xml->Name()+"="+xml->GetText()+"' has bad format (expected hh:mm:ss)");
+	if(PROP_TYPE(tp.proptag) != PT_BINARY)
+		throw DispatchError(E3049);
+	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
+	assign(bin->pb, bin->pb+bin->cb);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define TRY(expr) EWSContext::ext_error(expr)
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+sFolderEntryId::sFolderEntryId(const void* data, uint64_t size)
+{init(data, size);}
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+void sFolderEntryId::init(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size >	std::numeric_limits<uint32_t>::max())
+		throw DeserializationError(E3050);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_folder_eid(this));
+}
+
+/**
+ * @brief     Retrieve account ID from entry ID
+ *
+ * @return    User or domain ID (depending on isPrivate())
+ */
+uint32_t sFolderEntryId::accountId() const
+{return database_guid.time_low;}
+
+/**
+ * @brief     Retrieve folder ID from entryID
+ *
+ * @return    Folder ID
+ */
+uint64_t sFolderEntryId::folderId() const
+{return rop_util_gc_to_value(global_counter);}
+
+/**
+ * @brief     Retrieve folder type
+ *
+ * @return    true if folder is private, false otherwise
+ */
+bool sFolderEntryId::isPrivate() const
+{return folder_type == EITLT_PRIVATE_FOLDER;}
+
+#undef TRY
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * List of known distinguished folder IDs
+ *
+ * Must be sorted alphabetically by name.
+ */
+decltype(sFolderSpec::distNameInfo) sFolderSpec::distNameInfo = {{
+    {"calendar", PRIVATE_FID_CALENDAR, true},
+    {"conflicts", PRIVATE_FID_CONFLICTS, true},
+    {"contacts", PRIVATE_FID_CONTACTS, true},
+    {"deleteditems", PRIVATE_FID_DELETED_ITEMS, true},
+    {"drafts", PRIVATE_FID_DRAFT, true},
+    {"imcontactlist", PRIVATE_FID_IMCONTACTLIST, true},
+    {"inbox", PRIVATE_FID_INBOX, true},
+    {"journal", PRIVATE_FID_JOURNAL, true},
+    {"junkemail", PRIVATE_FID_JUNK, true},
+    {"localfailures", PRIVATE_FID_LOCAL_FAILURES, true},
+    {"msgfolderroot", PRIVATE_FID_IPMSUBTREE, true},
+    {"notes", PRIVATE_FID_NOTES, true},
+    {"outbox", PRIVATE_FID_OUTBOX, true},
+    {"publicfoldersroot", PUBLIC_FID_IPMSUBTREE, false},
+    {"quickcontacts", PRIVATE_FID_QUICKCONTACTS, true},
+    {"root", PRIVATE_FID_ROOT, true},
+    {"scheduled", PRIVATE_FID_SCHEDULE, true},
+    {"sentitems", PRIVATE_FID_SENT_ITEMS, true},
+    {"serverfailures", PRIVATE_FID_SERVER_FAILURES, true},
+    {"syncissues", PRIVATE_FID_SYNC_ISSUES, true},
+    {"tasks", PRIVATE_FID_TASKS, true},
+}};
+
+/**
+ * @brief     Derive folder specification from distinguished ID
+ *
+ * @param     folder  Distinguished ID
+ */
+sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
+{
+	auto it = std::find_if(distNameInfo.begin(), distNameInfo.end(),
+	                       [&folder](const auto& elem){return folder.Id == elem.name;});
+	if(it == distNameInfo.end())
+		throw DeserializationError(E3051(folder.Id));
+	folderId = rop_util_make_eid_ex(1, it->id);
+	location = it->isPrivate? PRIVATE : PUBLIC;
+	if(folder.Mailbox)
+		target = folder.Mailbox->EmailAddress;
+}
+
+/**
+ * @brief     Explicit initialization for direct serialization
+ */
+sFolderSpec::sFolderSpec(const std::string& target, uint64_t folderId) :
+    target(target), folderId(folderId)
+{}
+
+/**
+ * @brief     Trim target specification according to location
+ */
+sFolderSpec& sFolderSpec::normalize()
+{
+	if(location != PUBLIC || !target)
+		return *this;
+	size_t at = target->find('@');
+	if(at == std::string::npos)
+		return *this;
+	target->erase(0, at+1);
+	return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief     Default constructor
+ *
+ * Initializes given and seen member for deserialization
+ */
+sSyncState::sSyncState() :
+    given(false, REPL_TYPE_ID),
+    seen(false, REPL_TYPE_ID),
+    read(false, REPL_TYPE_ID),
+    seen_fai(false, REPL_TYPE_ID)
+{}
+
+/**
+ * @brief     Deserialize sync state
+ *
+ * @param     data64  Base64 encoded data
+ */
+void sSyncState::init(const std::string& data64)
+{
+	EXT_PULL ext_pull;
+	TPROPVAL_ARRAY propvals;
+
+	std::string data = base64_decode(data64);
+
+	seen.clear();
+	given.clear();
+	read.clear();
+	seen_fai.clear();
+	if(data.size() <= 16)
+		return;
+	if(data.size() > std::numeric_limits<uint32_t>::max())
+		throw InputError(E3052);
+	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
+	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
+		return;
+	for (TAGGED_PROPVAL* propval = propvals.ppropval; propval < propvals.ppropval+propvals.count; ++propval)
+	{
+		switch (propval->proptag) {
+		case MetaTagIdsetGiven1:
+			if(!given.deserialize(static_cast<BINARY *>(propval->pvalue)) || !given.convert())
+				throw InputError(E3053);
+			break;
+		case MetaTagCnsetSeen:
+			if(!seen.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen.convert())
+				throw InputError(E3054);
+			break;
+		case MetaTagCnsetRead:
+			if(!read.deserialize(static_cast<BINARY *>(propval->pvalue)) || !read.convert())
+				throw InputError(E3055);
+			break;
+		case MetaTagCnsetSeenFAI:
+			if(!seen_fai.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen_fai.convert())
+				throw InputError(E3056);
+			break;
+		}
+	}
+}
+
+/**
+ * @brief     Update sync state with given and seen information
+ *
+ * @param     given_fids  Ids marked as given
+ * @param     lastCn      Change number marked as seen
+ */
+void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
+{
+	seen.clear();
+	given.convert();
+	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
+		given.remove(*pid);
+	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
+		if(!given.append(*pid))
+			throw DispatchError(E3057);
+	seen.convert();
+	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
+		throw DispatchError(E3058);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 sTimePoint::sTimePoint(const gromox::time_point& tp) : time(tp)
 {}
@@ -68,156 +260,516 @@ sTimePoint::sTimePoint(const gromox::time_point& tp, const tSerializableTimeZone
     time(tp), offset(tz.offset(tp))
 {}
 
-void sTimePoint::serialize(XMLElement* xml) const
-{
-	tm t;
-	time_t timestamp = gromox::time_point::clock::to_time_t(time-offset);
-	gmtime_r(&timestamp, &t);
-	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
-	long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
-	int off = -int(offset.count());
-	if(offset.count() == 0)
-		xml->SetText(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
-	else
-		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}",
-			t, fsec, off / 60, abs(off) % 60).c_str());
-}
+/**
+ * @brief      Generate time point from NT timestamp
+ */
+sTimePoint sTimePoint::fromNT(uint64_t timestamp)
+{return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(timestamp));}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Request implementation
+// Types implementation
 
-void tCalendarEventDetails::serialize(tinyxml2::XMLElement* xml) const
+/**
+ * @brief     Convert propvals to structured folder information
+ *
+ * @param     folderProps     folder property values
+ */
+tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps)
 {
-	XMLDUMP(ID);
-	XMLDUMP(Subject);
-	XMLDUMP(Location);
-	XMLDUMP(IsMeeting);
-	XMLDUMP(IsRecurring);
-	XMLDUMP(IsException);
-	XMLDUMP(IsReminderSet);
-	XMLDUMP(IsPrivate);
+	tFolderId& fId = FolderId.emplace();
+	for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
+	{
+		switch(tp->proptag)
+		{
+		case PR_CONTENT_UNREAD:
+			break;
+		case PR_CHANGE_KEY:
+			fId.ChangeKey.emplace(*tp); break;
+		case PR_CONTAINER_CLASS:
+			FolderClass = reinterpret_cast<const char*>(tp->pvalue); break;
+		case PR_CONTENT_COUNT:
+			TotalCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
+		case PR_DISPLAY_NAME:
+			DisplayName = reinterpret_cast<const char*>(tp->pvalue); break;
+		case PR_ENTRYID:
+			fId.Id = *tp; break;
+		case PR_FOLDER_CHILD_COUNT:
+			ChildFolderCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
+		case PR_PARENT_ENTRYID:
+			ParentFolderId.emplace().Id = *tp; break;
+		default:
+			ExtendedProperty.emplace_back(*tp);
+		}
+	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-
-void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
+/**
+ * @brief     Create folder from properties
+ *
+ * Automatically uses information from the tags to fill in folder id and type.
+ *
+ * @param     folderProps     Folder properties
+ *
+ * @return    Variant containing the folder information struct
+ */
+sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 {
-	XMLDUMP(StartTime);
-	XMLDUMP(EndTime);
-	XMLDUMP(BusyType);
-	XMLDUMP(CalenderEventDetails);
+	enum Type : uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
+	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
+	Type folderType = NORMAL;
+	if(frClass)
+	{
+		if(!strncmp(frClass, "IPF.Appointment", 15))
+			folderType = CALENDAR;
+		else if(!strncmp(frClass, "IPF.Contact", 11))
+			folderType = CONTACTS;
+		else if(!strncmp(frClass, "IPF.Task", 8))
+			folderType = TASKS;
+	}
+	switch(folderType)
+	{
+	case CALENDAR:
+		return tCalendarFolderType(folderProps);
+	case CONTACTS:
+		return tContactsFolderType(folderProps);
+	case SEARCH:
+		return tSearchFolderType(folderProps);
+	case TASKS:
+		return tTasksFolderType(folderProps);
+	default:
+		return tFolderType(folderProps);
+	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-tDuration::tDuration(const XMLElement* xml) :
-    XMLINIT(StartTime), XMLINIT(EndTime)
-{}
-
-void tDuration::serialize(XMLElement* xml) const
-{
-	XMLDUMP(StartTime);
-	XMLDUMP(EndTime);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Name),
-    XMLINIT(EmailAddress),
-    XMLINIT(RoutingType),
-    XMLINIT(MailboxType),
-    XMLINIT(ItemId),
-    XMLINIT(OriginalDisplayName)
-{}
-
-void tEmailAddressType::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMP(Name);
-    XMLDUMP(EmailAddress);
-    XMLDUMP(RoutingType);
-    XMLDUMP(MailboxType);
-    XMLDUMP(ItemId);
-    XMLDUMP(OriginalDisplayName);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void tFreeBusyView::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_TYPS);
-	XMLDUMP(FreeBusyViewType);
-	XMLDUMP(MergedFreeBusy);
-	XMLDUMP(CalendarEventArray);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
-    XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tMailbox::tMailbox(const XMLElement* xml) :
-    XMLINIT(Name), XMLINIT(Address), XMLINIT(RoutingType)
-{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tMailboxData::tMailboxData(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Email), XMLINIT(AttendeeType), XMLINIT(ExcludeConflicts)
+tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBase64Binary>& chKey) :
+    Id(fEntryID), ChangeKey(chKey)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void tMailTips::serialize(XMLElement* xml) const
+tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
+    Id(name)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
+decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
+	{"ApplicationTime", PT_APPTIME},
+	{"ApplicationTimeArray", PT_MV_APPTIME},
+	{"Binary", PT_BINARY},
+	{"BinaryArray", PT_MV_BINARY},
+	{"Boolean", PT_BOOLEAN},
+	{"CLSID", PT_CLSID},
+	{"CLSIDArray", PT_MV_CLSID},
+	{"Currency", PT_CURRENCY},
+	{"CurrencyArray", PT_MV_CURRENCY},
+	{"Double", PT_DOUBLE},
+	{"DoubleArray", PT_MV_DOUBLE},
+	{"Error", PT_ERROR},
+	{"Float", PT_FLOAT},
+	{"FloatArray", PT_MV_FLOAT},
+	{"Integer", PT_LONG},
+	{"IntegerArray", PT_MV_LONG},
+	{"Long", PT_I8},
+	{"LongArray", PT_MV_I8},
+	{"Null", PT_UNSPECIFIED},
+	{"Object", PT_OBJECT},
+	//{"ObjectArray", ???},
+	{"Short", PT_SHORT},
+	{"ShortArray", PT_MV_SHORT},
+	{"String", PT_UNICODE},
+	{"StringArray", PT_MV_UNICODE},
+	{"SystemTime", PT_SYSTIME},
+	{"SystemTimeArray", PT_MV_SYSTIME},
+}};
+
+/**
+ * @brief     Generate URI from tag ID
+ *
+ * @param     tag     Property tag ID
+ */
+tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
+    PropertyTag(std::in_place_t(), 6, '0'),
+    PropertyType(typeName(PROP_TYPE(tag)))
 {
-	XMLDUMP(RecipientAddress);
-	XMLDUMP(PendingMailTips);
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string& proptag = *PropertyTag;
+	proptag[0] = '0';
+	proptag[1] = 'x';
+	proptag[2] = digits[(tag >> 28) & 0xF];
+	proptag[3] = digits[(tag >> 24) & 0xF];
+	proptag[4] = digits[(tag >> 20) & 0xF];
+	proptag[5] = digits[(tag >> 16) & 0xF];
+}
+
+/**
+ * @brief     Collect property tags and names for field URI
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PROPERTY_NAME>& names,
+                             vector_inserter<uint16_t>& types) const
+{
+	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
+	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
+	if(type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
+		throw InputError(E3059(PropertyType));
+	if(PropertyTag)
+	{
+		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
+		tags = PROP_TAG(type->second, tagId);
+	}
+	else if(PropertySetId)
+	{
+		PROPERTY_NAME name;
+		name.guid = *PropertySetId;
+		if(PropertyName)
+		{
+			name.kind = MNID_STRING;
+			name.pname = const_cast<char*>(PropertyName->c_str());
+		}
+		else if(PropertyId)
+		{
+			name.kind = MNID_ID;
+			name.lid = *PropertyId;
+		}
+		else
+			throw InputError(E3060);
+		names = name;
+		types = type->second;
+	}
+	else
+		throw InputError(E3061);
+}
+
+/**
+ * @brief     Get EWS type name from tag type
+ *
+ * @param     type    Tag type to convert
+ *
+ * @return    EWS type name
+ */
+const char* tExtendedFieldURI::typeName(uint16_t type)
+{
+	switch(type)
+	{
+	case PT_MV_APPTIME: return "ApplicationTimeArray";
+	case PT_APPTIME: return "ApplicationTime";
+	case PT_BINARY: return "Binary";
+	case PT_MV_BINARY: return "BinaryArray";
+	case PT_BOOLEAN: return "Boolean";
+	case PT_CLSID: return "CLSID";
+	case PT_MV_CLSID: return "CLSIDArray";
+	case PT_CURRENCY: return "Currency";
+	case PT_MV_CURRENCY: return "CurrencyArray";
+	case PT_DOUBLE: return "Double";
+	case PT_MV_DOUBLE: return "DoubleArray";
+	case PT_ERROR: return "Error";
+	case PT_FLOAT: return "Float";
+	case PT_MV_FLOAT: return "FloatArray";
+	case PT_LONG: return "Integer";
+	case PT_MV_LONG: return "IntegerArray";
+	case PT_I8: return "Long";
+	case PT_MV_I8: return "LongArray";
+	case PT_UNSPECIFIED: return "Null";
+	case PT_OBJECT: return "Object";
+	case PT_SHORT: return "Short";
+	case PT_MV_SHORT: return "ShortArray";
+	case PT_UNICODE: return "String";
+	case PT_MV_UNICODE: return "StringArray";
+	case PT_SYSTIME: return "SystemTime";
+	case PT_MV_SYSTIME: return "SystemTimeArray";
+	default: return "Unknown";
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const
+tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp) : propval(tp)
+{}
+
+void tExtendedProperty::serialize(const void* data, size_t idx, uint16_t type, XMLElement* xml) const
 {
-	XMLDUMP(MailTipsEnabled);
-	XMLDUMP(MaxRecipientsPerGetMailTipsRequest);
-	XMLDUMP(MaxMessageSize);
-	XMLDUMP(LargeAudienceThreshold);
-	XMLDUMP(ShowExternalRecipientCount);
-	XMLDUMP(InternalDomains);
-	XMLDUMP(PolicyTipsEnabled);
-	XMLDUMP(LargeAudienceCap);
+	switch(type)
+	{
+	case PT_BOOLEAN:
+		return xml->SetText(bool(*(reinterpret_cast<const char*>(data)+idx)));
+	case PT_SHORT:
+		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)+idx));
+	case PT_LONG:
+	case PT_ERROR:
+		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)+idx));
+	case PT_I8:
+	case PT_CURRENCY:
+	case PT_SYSTIME:
+		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)+idx));
+	case PT_FLOAT:
+		return xml->SetText(*(reinterpret_cast<const float*>(data)+idx));
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		return xml->SetText(*(reinterpret_cast<const double*>(data)+idx));
+	case PT_STRING8:
+	case PT_UNICODE:
+		return xml->SetText((reinterpret_cast<const char*>(data)));
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tReplyBody::tReplyBody(const XMLElement* xml):
-    XMLINIT(Message), XMLINITA(lang)
-{}
+decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
+	{"folder:FolderId", PidTagFolderId},
+	{"folder:ParentFolderId", PR_PARENT_ENTRYID},
+	{"folder:DisplayName", PR_DISPLAY_NAME},
+	{"folder:UnreadCount", PR_CONTENT_UNREAD},
+	{"folder:TotalCount", PR_CONTENT_COUNT},
+	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
+	{"folder:FolderClass", PR_CONTAINER_CLASS},
+	{"item:ConversationId", PR_CONVERSATION_ID},
+	{"item:DisplayTo", PR_DISPLAY_TO},
+    {"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
+    {"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
+    {"item:HasAttachments", PR_HASATTACH},
+	{"item:Importance", PR_IMPORTANCE},
+    {"item:InReplyTo", PR_IN_REPLY_TO_ID},
+	{"item:IsAssociated", PR_ASSOCIATED},
+	{"item:ItemClass", PR_MESSAGE_CLASS},
+	{"item:Size", PR_MESSAGE_SIZE_EXTENDED},
+	{"item:Subject", PR_SUBJECT},
+	{"message:ConversationIndex", PR_CONVERSATION_INDEX},
+	{"message:ConversationTopic", PR_CONVERSATION_TOPIC},
+	{"message:From", PR_SENT_REPRESENTING_ADDRTYPE},
+	{"message:From", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
+	{"message:From", PR_SENT_REPRESENTING_NAME},
+	{"message:InternetMessageId", PR_INTERNET_MESSAGE_ID},
+	{"message:IsRead", PR_READ},
+	{"message:References", PR_INTERNET_REFERENCES},
+	{"message:Sender", PR_SENDER_ADDRTYPE},
+	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
+	{"message:Sender", PR_SENDER_NAME},
+};
 
-void tReplyBody::serialize(XMLElement* xml) const
+decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
+	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_STRING8}}
+};
+
+/**
+ * @brief     Collect property tags and names for field URI
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY_NAME>& nameins,
+                     vector_inserter<uint16_t>& typeins) const
 {
-	XMLDUMP(Message);
-	XMLDUMPA(lang);
+	auto tags = tagMap.equal_range(FieldURI);
+	for(auto it = tags.first; it != tags.second; ++it)
+		tagins = it->second;
+	auto names = nameMap.equal_range(FieldURI);
+	for(auto it = names.first; it != names.second; ++it)
+	{
+		nameins = it->second.first;
+		typeins = it->second.second;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Bias),
-    XMLINIT(Time),
-    XMLINIT(DayOrder),
-    XMLINIT(Month),
-    XMLINIT(DayOfWeek),
-    XMLINIT(Year)
-{}
+/**
+ * @brief     Collect property tags and names for folder shape
 
-tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
-    XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
-{}
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
+                                vector_inserter<uint16_t>& typeIns) const
+{
+	size_t baseShape = BaseShape.index();
+	for(uint32_t tag : tagsIdOnly)
+		tagIns = tag;
+	if(baseShape >= 1)
+		for(uint32_t tag : tagsDefault)
+			tagIns = tag;
+	if(AdditionalProperties)
+		for(const auto& additional : *AdditionalProperties)
+			additional.tags(tagIns, nameIns, typeIns);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
+    tBaseFolderType(folderProps)
+{
+	if(folderProps.has(PR_CONTENT_UNREAD))
+		UnreadCount = *folderProps.get<uint32_t>(PR_CONTENT_UNREAD);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tGuid::tGuid(const XMLAttribute* xml)
+{from_str(xml->Value());}
+
+std::string tGuid::serialize() const
+{
+	std::string repr(36, '\0');
+	to_str(repr.data(), 37);
+	return repr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define pval(type) static_cast<const type*>(tp->pvalue)
+
+tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
+{
+	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+		switch(tp->proptag)
+		{
+		case PR_CONVERSATION_INDEX:
+		case PR_CONVERSATION_TOPIC:
+		case PR_READ:
+		case PR_INTERNET_MESSAGE_ID:
+		case PR_INTERNET_REFERENCES:
+		case PR_SENDER_ADDRTYPE:
+		case PR_SENDER_EMAIL_ADDRESS:
+		case PR_SENDER_NAME:
+		case PR_SENT_REPRESENTING_ADDRTYPE:
+		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
+		case PR_SENT_REPRESENTING_NAME:
+			continue;
+		case PR_ASSOCIATED:
+			IsAssociated.emplace(*pval(uint8_t)); break;
+		case PR_CHANGE_KEY:
+			ItemId? ItemId->ChangeKey = *tp : ItemId.emplace().ChangeKey.emplace(*tp); break;
+		case PR_CLIENT_SUBMIT_TIME:
+			DateTimeSent = sTimePoint::fromNT(*pval(uint64_t)); break;
+		case PR_CONVERSATION_ID:
+			ConversationId.emplace(*tp); break;
+		case PR_DISPLAY_CC:
+			DisplayCc.emplace(pval(char)); break;
+		case PR_DISPLAY_BCC:
+			DisplayBcc.emplace(pval(char)); break;
+		case PR_DISPLAY_TO:
+			DisplayTo.emplace(pval(char)); break;
+		case PR_ENTRYID:
+			ItemId? ItemId->Id = *tp : ItemId.emplace(*tp); break;
+		case PR_HASATTACH:
+			HasAttachments.emplace(*pval(uint8_t)); break;
+		case PR_FLAG_STATUS:
+			Flag.emplace().FlagStatus = *pval(uint32_t) == followupFlagged? Enum::Flagged :
+			                            *pval(uint32_t) == followupComplete? Enum::Complete : Enum::NotFlagged;
+			break;
+		case PR_IMPORTANCE:
+			Importance = *pval(uint32_t) == IMPORTANCE_LOW? Enum::Low :
+							 *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
+			break;
+		case PR_IN_REPLY_TO_ID:
+			InReplyTo.emplace(pval(char)); break;
+		case PR_LAST_MODIFIER_NAME:
+			LastModifiedName.emplace(pval(char)); break;
+		case PR_LAST_MODIFICATION_TIME:
+			LastModifiedTime.emplace(nttime_to_time_point(*pval(uint64_t))); break;
+		case PR_MESSAGE_CLASS:
+			ItemClass.emplace(pval(char)); break;
+		case PR_MESSAGE_DELIVERY_TIME:
+			DateTimeReceived = sTimePoint::fromNT(*pval(uint64_t)); break;
+		case PR_MESSAGE_SIZE_EXTENDED:
+			Size.emplace(*pval(uint64_t)); break;
+		case PR_PARENT_ENTRYID:
+			ParentFolderId.emplace(*tp); break;
+		case PR_SUBJECT:
+			Subject.emplace(pval(char)); break;
+		default:
+			ExtendedProperty.emplace_back(*tp);
+		}
+}
+
+#undef pval
+
+sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& namedProps)
+{
+	const char* itemClass = itemProps.get<const char>(PR_MESSAGE_CLASS);
+	if(!itemClass)
+		return tItem(itemProps, namedProps);
+	if(!strcasecmp(itemClass, "IPM.Note"))
+		return tMessage(itemProps, namedProps);
+	return tItem(itemProps, namedProps);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief     Collect property tags and names for item shape
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
+                              vector_inserter<uint16_t>& typeIns) const
+{
+	for(uint32_t tag : tagsIdOnly)
+		tagIns = tag;
+	if(AdditionalProperties)
+		for(const auto& additional : *AdditionalProperties)
+			additional.tags(tagIns, nameIns, typeIns);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define pval(type) static_cast<const type*>(tp->pvalue)
+
+tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+{
+	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+		switch(tp->proptag)
+		{
+		case PR_CONVERSATION_INDEX:
+			ConversationIndex = *tp; break;
+		case PR_CONVERSATION_TOPIC:
+		   ConversationTopic = pval(char); break;
+		case PR_READ:
+			IsRead = *pval(bool); break;
+		case PR_INTERNET_MESSAGE_ID:
+			InternetMessageId = pval(char); break;
+		case PR_INTERNET_REFERENCES:
+			References = pval(char); break;
+		case PR_SENDER_ADDRTYPE:
+			Sender? Sender->RoutingType = pval(char) : Sender.emplace().RoutingType = pval(char); break;
+		case PR_SENDER_EMAIL_ADDRESS:
+			Sender? Sender->EmailAddress = pval(char) : Sender.emplace().EmailAddress = pval(char); break;
+		case PR_SENDER_NAME:
+			Sender? Sender->Name = pval(char) : Sender.emplace().Name = pval(char); break;
+		case PR_SENT_REPRESENTING_ADDRTYPE:
+			From? From->RoutingType = pval(char) : From.emplace().RoutingType = pval(char); break;
+		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
+			From? From->EmailAddress = pval(char) : From.emplace().EmailAddress = pval(char); break;
+		case PR_SENT_REPRESENTING_NAME:
+			From? From->Name = pval(char) : From.emplace().Name = pval(char); break;
+		default:
+			break;
+		}
+}
+
+#undef pval
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief     Collect property tags and names for path specification
+
+ * @param     tags    Inserter to use for property tags
+ * @param     names   Inserter to use for property names
+ * @param     types   Inserter to use for the type of each named property
+ */
+void tPath::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
+                     vector_inserter<uint16_t>& typeIns) const
+{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns);}, *static_cast<const Base*>(this));};
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief      Calculate time zone offset for time point
@@ -279,119 +831,19 @@ gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void tSmtpDomain::serialize(XMLElement* xml) const
-{
-	XMLDUMP(Name);
-	XMLDUMP(IncludeSubdomains);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
-    XMLINIT(GoodThreshold),
-    XMLINIT(MaximumResultsByDay),
-    XMLINIT(MaximumNonWorkHourResultsByDay),
-    XMLINIT(MeetingDurationInMinutes),
-    XMLINIT(MinimumSuggestionQuality),
-    XMLINIT(DetailedSuggestionsWindow),
-    XMLINIT(CurrentMeetingTime),
-    XMLINIT(GlobalObjectId)
+tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder&& folder) : folder(folder)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
-    XMLINIT(OofState),
-    XMLINIT(ExternalAudience),
-    XMLINIT(Duration),
-    XMLINIT(InternalReply),
-    XMLINIT(ExternalReply)
+tTargetFolderIdType::tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&& id) :
+    folderId(std::move(id))
 {}
 
-void tUserOofSettings::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_TYPS);
-	XMLDUMP(OofState);
-	XMLDUMP(ExternalAudience);
-	XMLDUMP(Duration);
-	XMLDUMP(InternalReply);
-	XMLDUMP(ExternalReply);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Message implementation
+///////////////////////////////////////////////////////////////////////////////
 
 mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::move(fbv))
 {}
-
-void mFreeBusyResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_MSGS);
-	XMLDUMP(ResponseMessage);
-	XMLDUMP(FreeBusyView);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
-    XMLINIT(SendingAs),
-    XMLINIT(Recipients),
-    XMLINIT(MailTipsRequested)
-{}
-
-void mMailTipsResponseMessageType::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(MailTips);
-}
-
-void mGetMailTipsResponse::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(ResponseMessages);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetServiceConfigurationRequest::mGetServiceConfigurationRequest(const XMLElement* xml) :
-    XMLINIT(ActingAs), XMLINIT(RequestedConfiguration)
-{}
-
-void mGetServiceConfigurationResponse::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(ResponseMessages);
-}
-
-void mGetServiceConfigurationResponseMessageType::serialize(XMLElement* xml) const
-{
-	mResponseMessageType::serialize(xml);
-	XMLDUMP(MailTipsConfiguration);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetUserAvailabilityRequest::mGetUserAvailabilityRequest(const XMLElement* xml) :
-    XMLINIT(TimeZone), XMLINIT(MailboxDataArray), XMLINIT(FreeBusyViewOptions), XMLINIT(SuggestionsViewOptions)
-{}
-
-void mGetUserAvailabilityResponse::serialize(XMLElement* xml) const
-{XMLDUMP(FreeBusyResponseArray);}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mGetUserOofSettingsRequest::mGetUserOofSettingsRequest(const XMLElement* xml) :
-    XMLINIT(Mailbox)
-{}
-
-void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_MSGS);
-	XMLDUMP(ResponseMessage);
-	toXMLNode(xml, "OofSettings", UserOofSettings);
-	XMLDUMP(AllowExternalOof);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -410,24 +862,4 @@ mResponseMessageType& mResponseMessageType::success()
 	ResponseClass = "Success";
 	ResponseCode = "NoError";
 	return *this;
-}
-
-void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMPA(ResponseClass);
-	XMLDUMP(MessageText);
-	XMLDUMP(ResponseCode);
-	XMLDUMP(DescriptiveLinkKey);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
-    XMLINIT(Mailbox), XMLINIT(UserOofSettings)
-{}
-
-void mSetUserOofSettingsResponse::serialize(XMLElement* xml) const
-{
-	xml->SetAttribute("xmlns", NS_MSGS);
-	XMLDUMP(ResponseMessage);
 }
