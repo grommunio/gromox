@@ -4425,18 +4425,11 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		return TRUE;
 	case RES_SUBRESTRICTION: {
 		auto rsub = pres->sub;
-		switch (rsub->subobject) {
-		case PR_MESSAGE_RECIPIENTS:
+		if (rsub->subobject == PR_MESSAGE_RECIPIENTS ||
+		    rsub->subobject == PR_MESSAGE_ATTACHMENTS)
 			return cu_eval_subobj_restriction(psqlite,
-			       cpid, message_id, PR_MESSAGE_RECIPIENTS,
+			       cpid, message_id, rsub->subobject,
 			       &rsub->res);
-		case PR_MESSAGE_ATTACHMENTS:
-			return cu_eval_subobj_restriction(psqlite,
-			       cpid, message_id, PR_MESSAGE_ATTACHMENTS,
-			       &rsub->res);
-		default:
-			return FALSE;
-		}
 		return FALSE;
 	}
 	case RES_COMMENT:
