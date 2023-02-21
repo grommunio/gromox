@@ -4168,13 +4168,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
-		case BMR_NEZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
@@ -4377,13 +4371,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
-		case BMR_NEZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
@@ -4530,13 +4518,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		    message_id, cpid, psqlite, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
-		case BMR_NEZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;

@@ -1853,17 +1853,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
-		}
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_EXIST: {
 		auto node_type = ab_tree_get_node_type(pnode);

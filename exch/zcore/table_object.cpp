@@ -958,21 +958,11 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		auto pvalue = ppropvals->get<uint32_t>(rbm->proptag);
+		auto pvalue = ppropvals->get<const uint32_t>(rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if (!(*pvalue & rbm->mask))
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*pvalue & rbm->mask)
-				return TRUE;
-			break;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;

@@ -140,21 +140,11 @@ static BOOL container_object_match_contact_message(
 		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		auto pvalue = ppropvals->get<uint32_t>(rbm->proptag);
+		auto pvalue = ppropvals->get<const uint32_t>(rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if (!(*pvalue & rbm->mask))
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*pvalue & rbm->mask)
-				return TRUE;
-			break;
-		}
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_EXIST:
 		return ppropvals->has(pfilter->exist->proptag) ? TRUE : false;

@@ -1217,6 +1217,13 @@ struct RESTRICTION_BITMASK {
 	enum bm_relop bitmask_relop;
 	uint32_t proptag;
 	uint32_t mask;
+	inline bool eval(const void *v) const
+	{
+		/* EXC only evaluates PT_LONG, so do we.
+		 * Callers must ensure v is backed by a uint32_t. */
+		return !!(*static_cast<const uint32_t *>(v) & mask) ==
+		       static_cast<uint8_t>(bitmask_relop);
+	}
 
 	std::string repr() const;
 };

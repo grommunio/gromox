@@ -1488,17 +1488,7 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
@@ -2376,17 +2366,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 		if (!get_property(pparam, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
