@@ -882,46 +882,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-			    static_cast<char *>(pvalue)) == 0)
-				return TRUE;
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
-			}
-			if (strstr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-				return TRUE;
-			return FALSE;
-		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue),
-				    len) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			if (strncmp(static_cast<char *>(pvalue),
-			    static_cast<char *>(rcon->propval.pvalue),
-			    len) == 0)
-				return TRUE;
-			return FALSE;
-		}
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;

@@ -1189,6 +1189,7 @@ struct RESTRICTION_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
+	bool eval(const void *) const;
 
 	std::string repr() const;
 };

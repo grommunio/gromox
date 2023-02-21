@@ -86,38 +86,7 @@ static BOOL container_object_match_contact_message(
 		auto str = ppropvals->get<const char>(rcon->proptag);
 		if (str == nullptr)
 			return FALSE;	
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue), str) == 0)
-					return TRUE;
-			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue), str) == 0)
-					return TRUE;
-			}
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(str, static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-			} else {
-				if (strstr(str, static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			return FALSE;
-		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(str, static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-			} else {
-				if (strncmp(str, static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-			}
-			return FALSE;
-		}
-		}
-		return FALSE;
+		return rcon->eval(str);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;

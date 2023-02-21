@@ -1748,7 +1748,6 @@ bool ab_tree_resolvename(AB_BASE *pbase, cpid_t codepage, char *pstr,
 static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
     const RESTRICTION *pfilter)
 {
-	int len;
 	char *ptoken;
 	void *pvalue;
 	
@@ -1777,48 +1776,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
-			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
-			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
-			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			return FALSE;
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;

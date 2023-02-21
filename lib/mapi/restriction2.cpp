@@ -96,6 +96,26 @@ std::string RESTRICTION_NOT::repr() const
 	return "RES_NOT{" + res.repr() + "}";
 }
 
+bool RESTRICTION_CONTENT::eval(const void *dbval) const
+{
+	auto lhs = static_cast<const char *>(dbval);
+	auto rhs = static_cast<const char *>(propval.pvalue);
+	bool icase = fuzzy_level & (FL_IGNORECASE | FL_LOOSE);
+	switch (fuzzy_level & 0xFFFF) {
+	case FL_FULLSTRING:
+		return icase ? strcasecmp(lhs, rhs) == 0 : strcmp(lhs, rhs) == 0;
+	case FL_SUBSTRING:
+		return icase ? strcasestr(lhs, rhs) != nullptr :
+		       strstr(lhs, rhs) != nullptr;
+	case FL_PREFIX: {
+		auto len = strlen(rhs);
+		return icase ? strncasecmp(lhs, rhs, len) == 0 :
+		       strncmp(lhs, rhs, len) == 0;
+	}
+	}
+	return false;
+}
+
 std::string RESTRICTION_CONTENT::repr() const
 {
 	std::stringstream ss;

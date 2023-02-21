@@ -4087,7 +4087,6 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
     mapi_object_type table_type, uint64_t id, const RESTRICTION *pres)
 {
-	int len;
 	void *pvalue;
 	void *pvalue1;
 	
@@ -4102,34 +4101,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			else
-				return strcmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasestr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			else
-				return strstr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strncasecmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			else
-				return strncmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			return FALSE;
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
@@ -4301,35 +4273,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			else
-				return strcmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasestr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			else
-				return strstr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			return FALSE;
-		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strncasecmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			else
-				return strncmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			return FALSE;
-		}
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
@@ -4444,23 +4388,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		auto dbval = static_cast<const char *>(pvalue);
-		auto rsval = static_cast<const char *>(rcon->propval.pvalue);
-		auto icase = rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE);
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			return icase ? strcasecmp(dbval, rsval) == 0 :
-			       strcmp(dbval, rsval) == 0;
-		case FL_SUBSTRING:
-			return icase ? strcasestr(dbval, rsval) != nullptr :
-			       strstr(dbval, rsval) != nullptr;
-		case FL_PREFIX: {
-			auto len = strlen(rsval);
-			return icase ? strncasecmp(dbval, rsval, len) == 0 :
-			       strncmp(dbval, rsval, len) == 0;
-		}
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
