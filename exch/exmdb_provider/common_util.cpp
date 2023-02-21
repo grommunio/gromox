@@ -4176,7 +4176,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		    rsize->proptag, &pvalue))
 			return FALSE;
 		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST: {
@@ -4379,7 +4379,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		    rsize->proptag, &pvalue))
 			return FALSE;
 		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
@@ -4526,7 +4526,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		    message_id, cpid, psqlite, rsize->proptag, &pvalue))
 			return FALSE;
 		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
