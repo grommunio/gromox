@@ -1779,7 +1779,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		auto rprop = pfilter->prop;
 		if (rprop->proptag != PR_ANR) {
 			if (!ab_tree_fetch_node_property(pnode, codepage,
-			    rprop->proptag, &pvalue) || pvalue == nullptr)
+			    rprop->proptag, &pvalue))
 				return false;
 			return rprop->eval(pvalue);
 		}

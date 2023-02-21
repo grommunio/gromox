@@ -1371,9 +1371,9 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
 		if (!common_util_get_rule_property(rule_id, psqlite,
-		    rprop->proptag, &pvalue) || pvalue == nullptr)
+		    rprop->proptag, &pvalue))
 			return FALSE;
-		if (rprop->proptag != PR_ANR)
+		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
 		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;
@@ -2137,10 +2137,9 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
-		if (!get_property(pparam, rprop->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!get_property(pparam, rprop->proptag, &pvalue))
 			return FALSE;
-		if (rprop->proptag != PR_ANR)
+		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
 		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;

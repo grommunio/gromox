@@ -4362,8 +4362,6 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		case PR_PARENT_SVREID:
 		case PR_PARENT_ENTRYID:
 			pvalue = cu_get_msg_parent_svreid(psqlite, message_id);
-			if (pvalue == nullptr)
-				return FALSE;
 			break;
 		case PR_ANR:
 			if (!cu_get_property(MAPI_MESSAGE,

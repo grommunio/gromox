@@ -885,10 +885,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
 		auto pvalue = ppropvals->getval(rprop->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		if (rprop->proptag != PR_ANR)
+		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
 		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;
