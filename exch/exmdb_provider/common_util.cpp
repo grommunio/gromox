@@ -4140,14 +4140,13 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
 			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			return strcasestr(static_cast<char *>(pvalue),
-			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
+			return FALSE;
+		return strcasestr(static_cast<char *>(pvalue),
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
@@ -4350,14 +4349,13 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
 			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			return strcasestr(static_cast<char *>(pvalue),
-			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
+			return FALSE;
+		return strcasestr(static_cast<char *>(pvalue),
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;

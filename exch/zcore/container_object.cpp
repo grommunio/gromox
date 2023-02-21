@@ -121,27 +121,20 @@ static BOOL container_object_match_contact_message(
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
-		if (rprop->proptag == PR_ANR) {
-			auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
-			if (NULL != pvalue) {
-				if (strcasestr(pvalue,
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
-			if (NULL != pvalue) {
-				if (strcasestr(pvalue,
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			return FALSE;
+		if (rprop->proptag != PR_ANR) {
+			auto pvalue = ppropvals->getval(rprop->proptag);
+			if (pvalue == nullptr)
+				return false;
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 		}
-		auto pvalue = ppropvals->getval(rprop->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
+		if (pvalue != nullptr && strcasestr(pvalue,
+		    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+			return TRUE;
+		pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
+		return pvalue != nullptr && strcasestr(pvalue,
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr ? TRUE : false;
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;

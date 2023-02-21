@@ -1460,16 +1460,13 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			if (strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		return strcasestr(static_cast<char *>(pvalue),
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
@@ -2351,16 +2348,13 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 		if (!get_property(pparam, rprop->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			if (strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		return strcasestr(static_cast<char *>(pvalue),
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;

@@ -1822,29 +1822,29 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
-		if (rprop->proptag == PR_ANR) {
-			if (ab_tree_fetch_node_property(pnode, codepage,
-			    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&
-			    strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
-			/* =SMTP:user@company.com */
-			ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
-			if (ptoken != nullptr && pvalue != nullptr &&
-			    strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
-				return TRUE;
-			if (ab_tree_fetch_node_property(pnode, codepage,
-			    PR_DISPLAY_NAME, &pvalue) && pvalue != nullptr &&
-			    strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
-			return FALSE;
+		if (rprop->proptag != PR_ANR) {
+			if (!ab_tree_fetch_node_property(pnode, codepage,
+			    rprop->proptag, &pvalue) || pvalue == nullptr)
+				return false;
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 		}
-		if (!ab_tree_fetch_node_property(pnode, codepage,
-		    rprop->proptag, &pvalue) || pvalue == nullptr)
-			return FALSE;
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (ab_tree_fetch_node_property(pnode, codepage,
+		    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&
+		    strcasestr(static_cast<char *>(pvalue),
+		    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+			return TRUE;
+		/* =SMTP:user@company.com */
+		ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
+		if (ptoken != nullptr && pvalue != nullptr &&
+		    strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
+			return TRUE;
+		if (ab_tree_fetch_node_property(pnode, codepage,
+		    PR_DISPLAY_NAME, &pvalue) && pvalue != nullptr &&
+		    strcasestr(static_cast<char *>(pvalue),
+		    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+			return TRUE;
+		return FALSE;
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
