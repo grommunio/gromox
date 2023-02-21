@@ -1383,13 +1383,18 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 	uint32_t val_size;
 	
 	switch (pres->rt) {
-	case RES_OR:
 	case RES_AND:
 		for (size_t i = 0; i < pres->andor->count; ++i)
 			if (!table_evaluate_rule_restriction(psqlite,
 			    rule_id, &pres->andor->pres[i]))
 				return FALSE;
 		return TRUE;
+	case RES_OR:
+		for (size_t i = 0; i < pres->andor->count; ++i)
+			if (table_evaluate_rule_restriction(psqlite,
+			    rule_id, &pres->andor->pres[i]))
+				return TRUE;
+		return false;
 	case RES_NOT:
 		if (table_evaluate_rule_restriction(psqlite,
 		    rule_id, &pres->xnot->res))
