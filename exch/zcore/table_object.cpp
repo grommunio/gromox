@@ -889,8 +889,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 			return FALSE;
 		}
 		if (rprop->proptag != PR_ANR)
-			return propval_compare_relop(rprop->relop,
-			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+			return rprop->eval(pvalue);
 		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;
 		return strcasestr(static_cast<char *>(rprop->propval.pvalue),

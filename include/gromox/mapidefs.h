@@ -1203,6 +1203,7 @@ struct RESTRICTION_PROPERTY {
 	 * ignored, but generally the same as RESTRICTION_PROPERTY::proptag.
 	 */
 	TAGGED_PROPVAL propval;
+	bool eval(const void *) const;
 
 	std::string repr() const;
 };

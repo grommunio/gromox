@@ -1242,6 +1242,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		    pfilter->res.res_property.proptag, &prop_val,
 		    temp_buff, GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
+		// XXX: convert to RESTRICTION_PROPERTY::eval
 		int cmp;
 		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
 		case PT_SHORT:

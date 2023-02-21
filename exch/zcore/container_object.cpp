@@ -92,8 +92,7 @@ static BOOL container_object_match_contact_message(
 			auto pvalue = ppropvals->getval(rprop->proptag);
 			if (pvalue == nullptr)
 				return false;
-			return propval_compare_relop(rprop->relop,
-			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+			return rprop->eval(pvalue);
 		}
 		auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
 		if (pvalue != nullptr && strcasestr(pvalue,

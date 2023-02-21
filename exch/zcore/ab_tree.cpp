@@ -1781,8 +1781,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 			if (!ab_tree_fetch_node_property(pnode, codepage,
 			    rprop->proptag, &pvalue) || pvalue == nullptr)
 				return false;
-			return propval_compare_relop(rprop->relop,
-			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+			return rprop->eval(pvalue);
 		}
 		if (ab_tree_fetch_node_property(pnode, codepage,
 		    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&

@@ -164,6 +164,12 @@ std::string RESTRICTION_CONTENT::repr() const
 	return std::move(ss).str();
 }
 
+bool RESTRICTION_PROPERTY::eval(const void *dbval) const
+{
+	return propval_compare_relop_nullok(relop, PROP_TYPE(proptag),
+	       dbval, propval.pvalue);
+}
+
 std::string RESTRICTION_PROPERTY::repr() const
 {
 	std::stringstream ss;
