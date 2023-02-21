@@ -2411,7 +2411,7 @@ static pack_result ext_buffer_push_restriction_content(EXT_PUSH *pext,
 static pack_result ext_buffer_push_restriction_property(EXT_PUSH *pext,
     const RESTRICTION_PROPERTY *r)
 {
-	TRY(pext->p_uint8(r->relop));
+	TRY(pext->p_uint8(static_cast<uint8_t>(r->relop)));
 	TRY(pext->p_uint32(r->proptag));
 	return pext->p_tagged_pv(r->propval);
 }
@@ -2419,7 +2419,7 @@ static pack_result ext_buffer_push_restriction_property(EXT_PUSH *pext,
 static pack_result ext_buffer_push_restriction_propcompare(EXT_PUSH *pext,
     const RESTRICTION_PROPCOMPARE *r)
 {
-	TRY(pext->p_uint8(r->relop));
+	TRY(pext->p_uint8(static_cast<uint8_t>(r->relop)));
 	TRY(pext->p_uint32(r->proptag1));
 	return pext->p_uint32(r->proptag2);
 }
@@ -2435,7 +2435,7 @@ static pack_result ext_buffer_push_restriction_bitmask(EXT_PUSH *pext,
 static pack_result ext_buffer_push_restriction_size(EXT_PUSH *pext,
     const RESTRICTION_SIZE *r)
 {
-	TRY(pext->p_uint8(r->relop));
+	TRY(pext->p_uint8(static_cast<uint8_t>(r->relop)));
 	TRY(pext->p_uint32(r->proptag));
 	return pext->p_uint32(r->size);
 }

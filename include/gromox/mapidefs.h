@@ -535,16 +535,17 @@ enum { /* for PR_RECIPIENT_FLAGS */
 	recipOriginal            = 0x100U,
 };
 
-enum relop {
-	RELOP_LT = 0x00,
-	RELOP_LE,
-	RELOP_GT,
-	RELOP_GE,
-	RELOP_EQ,
-	RELOP_NE,
-	RELOP_RE,
-	RELOP_MEMBER_OF_DL = 0x64,
+enum class relop : uint8_t {
+	lt = 0, le, gt, ge, eq, ne, re, dl = 0x64,
 };
+#define RELOP_LT relop::lt
+#define RELOP_LE relop::le
+#define RELOP_GT relop::gt
+#define RELOP_GE relop::ge
+#define RELOP_EQ relop::eq
+#define RELOP_NE relop::ne
+#define RELOP_RE relop::re
+#define RELOP_MEMBER_OF_DL relop::dl
 
 enum class mapi_rtype : uint8_t {
 	r_and = 0x0U,

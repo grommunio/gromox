@@ -1304,8 +1304,10 @@ static pack_result nsp_ndr_pull_restriction_property(NDR_PULL *pndr,
 	uint32_t ptr;
 	
 	if (flag & FLAG_HEADER) {
+		uint32_t v;
 		TRY(pndr->align(5));
-		TRY(pndr->g_uint32(&r->relop));
+		TRY(pndr->g_uint32(&v));
+		r->relop = static_cast<relop>(v);
 		TRY(pndr->g_uint32(&r->proptag));
 		TRY(pndr->g_genptr(&ptr));
 		if (0 != ptr) {
@@ -1328,7 +1330,7 @@ static pack_result nsp_ndr_push_restriction_property(NDR_PUSH *pndr,
 {
 	if (flag & FLAG_HEADER) {
 		TRY(pndr->align(5));
-		TRY(pndr->p_uint32(r->relop));
+		TRY(pndr->p_uint32(static_cast<uint32_t>(r->relop)));
 		TRY(pndr->p_uint32(r->proptag));
 		TRY(pndr->p_unique_ptr(r->pprop));
 		TRY(pndr->trailer_align(5));
@@ -1341,8 +1343,10 @@ static pack_result nsp_ndr_push_restriction_property(NDR_PUSH *pndr,
 static pack_result nsp_ndr_pull_restriction_propcompare(NDR_PULL *pndr,
     NSPRES_PROPCOMPARE *r)
 {
+	uint32_t v;
 	TRY(pndr->align(4));
-	TRY(pndr->g_uint32(&r->relop));
+	TRY(pndr->g_uint32(&v));
+	r->relop = static_cast<relop>(v);
 	TRY(pndr->g_uint32(&r->proptag1));
 	TRY(pndr->g_uint32(&r->proptag2));
 	TRY(pndr->trailer_align(4));
@@ -1353,7 +1357,7 @@ static pack_result nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
     const NSPRES_PROPCOMPARE *r)
 {
 	TRY(pndr->align(4));
-	TRY(pndr->p_uint32(r->relop));
+	TRY(pndr->p_uint32(static_cast<uint32_t>(r->relop)));
 	TRY(pndr->p_uint32(r->proptag1));
 	TRY(pndr->p_uint32(r->proptag2));
 	TRY(pndr->trailer_align(4));
@@ -1386,8 +1390,10 @@ static pack_result nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
 
 static pack_result nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
 {
+	uint32_t v;
 	TRY(pndr->align(4));
-	TRY(pndr->g_uint32(&r->relop));
+	TRY(pndr->g_uint32(&v));
+	r->relop = static_cast<relop>(v);
 	TRY(pndr->g_uint32(&r->proptag));
 	TRY(pndr->g_uint32(&r->cb));
 	TRY(pndr->trailer_align(4));
@@ -1397,7 +1403,7 @@ static pack_result nsp_ndr_pull_restriction_size(NDR_PULL *pndr, NSPRES_SIZE *r)
 static pack_result nsp_ndr_push_restriction_size(NDR_PUSH *pndr, const NSPRES_SIZE *r)
 {
 	TRY(pndr->align(4));
-	TRY(pndr->p_uint32(r->relop));
+	TRY(pndr->p_uint32(static_cast<uint32_t>(r->relop)));
 	TRY(pndr->p_uint32(r->proptag));
 	TRY(pndr->p_uint32(r->cb));
 	TRY(pndr->trailer_align(4));

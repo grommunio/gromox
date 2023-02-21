@@ -1121,7 +1121,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
-		add_assoc_long(&pzarray, key, rprop->relop);
+		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rprop->relop));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag));
 		break;
@@ -1130,7 +1130,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto rprop = pres->pcmp;
 		zarray_init(&pzarray);
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
-		add_assoc_long(&pzarray, key, rprop->relop);
+		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rprop->relop));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG1);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag1));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG2);
@@ -1152,7 +1152,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto rsize = pres->size;
 		zarray_init(&pzarray);
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
-		add_assoc_long(&pzarray, key, rsize->relop);
+		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rsize->relop));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rsize->proptag));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_SIZE);

@@ -111,13 +111,13 @@ struct NSPRES_CONTENT {
 };
 
 struct NSPRES_PROPERTY {
-	uint32_t relop;
+	enum relop relop;
 	uint32_t proptag;
 	PROPERTY_VALUE *pprop;
 };
 
 struct NSPRES_PROPCOMPARE {
-	uint32_t relop;
+	enum relop relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
 };
@@ -129,7 +129,7 @@ struct NSPRES_BITMASK {
 };
 
 struct NSPRES_SIZE {
-	uint32_t relop;
+	enum relop relop;
 	uint32_t proptag;
 	uint32_t cb;
 };
