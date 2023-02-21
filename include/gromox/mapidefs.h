@@ -1213,6 +1213,7 @@ struct RESTRICTION_PROPCOMPARE {
 	enum relop relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
+	bool comparable() const;
 
 	std::string repr() const;
 };

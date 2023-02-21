@@ -896,7 +896,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
-		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
+		if (!rprop->comparable())
 			return FALSE;
 		auto pvalue = ppropvals->getval(rprop->proptag1);
 		if (NULL == pvalue) {

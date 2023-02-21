@@ -197,6 +197,17 @@ std::string RESTRICTION_PROPERTY::repr() const
 	return std::move(ss).str();
 }
 
+bool RESTRICTION_PROPCOMPARE::comparable() const
+{
+	auto l = PROP_TYPE(proptag1);
+	auto r = PROP_TYPE(proptag2);
+	if (l == PT_UNICODE || l == PT_STRING8)
+		return r == PT_UNICODE || r == PT_STRING8;
+	if (l == PT_MV_UNICODE || l == PT_MV_STRING8)
+		return r == PT_MV_UNICODE || r == PT_MV_STRING8;
+	return l == r;
+}
+
 std::string RESTRICTION_PROPCOMPARE::repr() const
 {
 	std::stringstream ss;
