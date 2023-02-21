@@ -4490,18 +4490,21 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			if (pvalue == nullptr)
 				return FALSE;
 			break;
-		default:
+		case PR_ANR:
 			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				break;
-			if (rprop->proptag != PR_ANR)
-				break;
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			return strcasestr(static_cast<char *>(pvalue),
 			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
+		default:
+			if (!cu_get_property(MAPI_MESSAGE,
+			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
+				return FALSE;
+			break;
 		}
 		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
