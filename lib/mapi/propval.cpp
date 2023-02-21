@@ -552,47 +552,37 @@ int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
 	int cmp = -2;
 	switch (proptype) {
 	case PT_SHORT:
-		cmp = three_way_compare(*static_cast<const uint16_t *>(pvalue1),
-		      *static_cast<const uint16_t *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const uint16_t *>(pvalue1),
+		       *static_cast<const uint16_t *>(pvalue2));
 	case PT_LONG:
 	case PT_ERROR:
-		cmp = three_way_compare(*static_cast<const uint32_t *>(pvalue1),
-		      *static_cast<const uint32_t *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const uint32_t *>(pvalue1),
+		       *static_cast<const uint32_t *>(pvalue2));
 	case PT_BOOLEAN:
-		cmp = three_way_compare(!!*static_cast<const uint8_t *>(pvalue1),
-		      !!*static_cast<const uint8_t *>(pvalue2));
-		break;
+		return three_way_compare(!!*static_cast<const uint8_t *>(pvalue1),
+		       !!*static_cast<const uint8_t *>(pvalue2));
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		cmp = three_way_compare(*static_cast<const uint64_t *>(pvalue1),
-		      *static_cast<const uint64_t *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const uint64_t *>(pvalue1),
+		       *static_cast<const uint64_t *>(pvalue2));
 	case PT_FLOAT:
-		cmp = three_way_compare(*static_cast<const float *>(pvalue1),
-		      *static_cast<const float *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const float *>(pvalue1),
+		       *static_cast<const float *>(pvalue2));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		cmp = three_way_compare(*static_cast<const double *>(pvalue1),
-		      *static_cast<const double *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const double *>(pvalue1),
+		       *static_cast<const double *>(pvalue2));
 	case PT_STRING8:
 	case PT_UNICODE:
-		cmp = strcasecmp(static_cast<const char *>(pvalue1),
-		      static_cast<const char *>(pvalue2));
-		break;
+		return strcasecmp(static_cast<const char *>(pvalue1),
+		       static_cast<const char *>(pvalue2));
 	case PT_CLSID:
-		cmp = static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
-		break;
+		return static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
 	case PT_BINARY:
-		cmp = static_cast<const BINARY *>(pvalue1)->compare(*static_cast<const BINARY *>(pvalue2));
-		break;
+		return static_cast<const BINARY *>(pvalue1)->compare(*static_cast<const BINARY *>(pvalue2));
 	case PT_SVREID:
-		cmp = static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
-		break;
+		return static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
 	case PT_MV_SHORT: {
 		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
 		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
