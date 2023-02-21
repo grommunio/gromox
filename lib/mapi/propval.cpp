@@ -530,7 +530,7 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 	return a->compare(*b);
 }
 
-int propval_compare(uint16_t proptype, const void *pvalue1, const void *pvalue2)
+int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
 {
 #define MVCOMPARE(field) do { \
 		cmp = three_way_compare(a->count, b->count); \
@@ -686,7 +686,7 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 	default: /* RE, DL - not implemented */
 		return false;
 	}
-	return three_way_eval(relop, propval_compare(proptype, pvalue1, pvalue2));
+	return three_way_eval(relop, propval_compare(pvalue1, pvalue2, proptype));
 }
 
 namespace gromox {
