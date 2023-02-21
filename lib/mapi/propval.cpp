@@ -530,6 +530,12 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 	return a->compare(*b);
 }
 
+/**
+ * This supports only comparisons between same-typed values.
+ *
+ * However, for RELOP_EQ and RELOP_NE, comparisons between PT_MV_x
+ * and PT_x should be added [GXL-361].
+ */
 int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
 {
 #define MVCOMPARE(field) do { \

@@ -164,6 +164,24 @@ std::string RESTRICTION_CONTENT::repr() const
 	return std::move(ss).str();
 }
 
+bool RESTRICTION_PROPERTY::comparable() const
+{
+	/*
+	 * The LHS of a RES_PROPERTY specifies a property, while the RHS is an
+	 * immediate. To evaluate a multivalue LHS against a scalar RHS, use a
+	 * RES_CONTENT instead (with limitations). To evaluate a scalar LHS
+	 * against a multivalue RHS, use RES_OR instead. EXC2019 refuses
+	 * comparisons with any multivalue RHS.
+	 */
+	auto l = PROP_TYPE(proptag);
+	auto r = PROP_TYPE(propval.proptag);
+	if (l == PT_UNICODE || l == PT_STRING8)
+		return r == PT_UNICODE || r == PT_STRING8;
+	if (l == PT_MV_UNICODE || l == PT_MV_STRING8)
+		return r == PT_MV_UNICODE || r == PT_MV_STRING8;
+	return l == r;
+}
+
 bool RESTRICTION_PROPERTY::eval(const void *dbval) const
 {
 	return propval_compare_relop_nullok(relop, PROP_TYPE(proptag),

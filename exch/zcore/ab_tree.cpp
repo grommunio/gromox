@@ -1777,6 +1777,8 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
+		if (!rprop->comparable())
+			return false;
 		if (rprop->proptag != PR_ANR) {
 			if (!ab_tree_fetch_node_property(pnode, codepage,
 			    rprop->proptag, &pvalue))

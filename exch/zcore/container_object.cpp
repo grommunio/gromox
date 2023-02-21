@@ -88,6 +88,8 @@ static BOOL container_object_match_contact_message(
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
+		if (!rprop->comparable())
+			return false;
 		if (rprop->proptag != PR_ANR)
 			return rprop->eval(ppropvals->getval(rprop->proptag));
 		auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);

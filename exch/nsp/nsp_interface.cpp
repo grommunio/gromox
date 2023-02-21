@@ -1197,6 +1197,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 	case RES_PROPERTY:
 		if (pfilter->res.res_property.pprop == nullptr)
 			return TRUE;
+		// XXX RESTRICTION_PROPERTY::comparable check
 		if (pfilter->res.res_property.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT, &prop_val, temp_buff,

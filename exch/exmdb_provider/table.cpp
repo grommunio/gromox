@@ -1370,6 +1370,8 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
+		if (!rprop->comparable())
+			return false;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rprop->proptag, &pvalue))
 			return FALSE;
@@ -2137,6 +2139,8 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
+		if (!rprop->comparable())
+			return false;
 		if (!get_property(pparam, rprop->proptag, &pvalue))
 			return FALSE;
 		if (pvalue == nullptr || rprop->proptag != PR_ANR)

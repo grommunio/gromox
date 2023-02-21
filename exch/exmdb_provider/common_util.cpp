@@ -4101,6 +4101,8 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
+		if (!rprop->comparable())
+			return false;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag, &pvalue))
 			return FALSE;
@@ -4267,6 +4269,8 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
+		if (!rprop->comparable())
+			return false;
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rprop->proptag, &pvalue))
 			return FALSE;
@@ -4358,6 +4362,8 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
+		if (!rprop->comparable())
+			return false;
 		switch (rprop->proptag) {
 		case PR_PARENT_SVREID:
 		case PR_PARENT_ENTRYID:

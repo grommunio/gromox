@@ -884,6 +884,8 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
+		if (!rprop->comparable())
+			return false;
 		auto pvalue = ppropvals->getval(rprop->proptag);
 		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
