@@ -1401,9 +1401,7 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
@@ -2232,9 +2230,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		if (!get_property(pparam, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)

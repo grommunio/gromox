@@ -874,9 +874,7 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		auto pvalue = ppropvals->getval(rcon->proptag);
 		if (NULL == pvalue) {

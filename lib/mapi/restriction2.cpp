@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/propval.hpp>
@@ -96,8 +97,30 @@ std::string RESTRICTION_NOT::repr() const
 	return "RES_NOT{" + res.repr() + "}";
 }
 
+bool RESTRICTION_CONTENT::comparable() const
+{
+	auto l = PROP_TYPE(proptag);
+	auto r = PROP_TYPE(propval.proptag);
+	if (l == PT_UNICODE || l == PT_STRING8)
+		return r == PT_UNICODE || r == PT_STRING8;
+	return l == r && l == PT_BINARY;
+}
+
 bool RESTRICTION_CONTENT::eval(const void *dbval) const
 {
+	if (PROP_TYPE(proptag) == PT_BINARY) {
+		auto &lhs = *static_cast<const BINARY *>(dbval);
+		auto &rhs = *static_cast<const BINARY *>(propval.pvalue);
+		switch (fuzzy_level & 0xFFFF) {
+		case FL_FULLSTRING:
+			return lhs.cb == rhs.cb && memcmp(lhs.pv, rhs.pv, rhs.cb) == 0;
+		case FL_SUBSTRING:
+			return HX_memmem(lhs.pv, lhs.cb, rhs.pv, rhs.cb) != nullptr;
+		case FL_PREFIX:
+			return lhs.cb >= rhs.cb && memcmp(lhs.pv, rhs.pv, rhs.cb) == 0;
+		}
+		return false;
+	}
 	auto lhs = static_cast<const char *>(dbval);
 	auto rhs = static_cast<const char *>(propval.pvalue);
 	bool icase = fuzzy_level & (FL_IGNORECASE | FL_LOOSE);

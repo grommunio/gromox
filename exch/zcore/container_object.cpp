@@ -79,9 +79,7 @@ static BOOL container_object_match_contact_message(
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		auto str = ppropvals->get<const char>(rcon->proptag);
 		if (str == nullptr)
