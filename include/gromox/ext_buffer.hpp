@@ -89,7 +89,7 @@ struct LONG_TERM_ID_RANGE;
 struct MESSAGE_CONTENT;
 struct MESSAGE_ENTRYID;
 struct MODIFYRECIPIENT_ROW;
-struct NAMEDPROPERTY_INFOMATION;
+struct NAMEDPROPERTY_INFO;
 struct OPENRECIPIENT_ROW;
 struct PERMISSION_DATA;
 struct PERSISTDATA_ARRAY;
@@ -148,7 +148,7 @@ struct EXT_PULL {
 	pack_result g_store_eid(STORE_ENTRYID *);
 	pack_result g_rule_actions(RULE_ACTIONS *);
 	pack_result g_ext_rule_actions(EXT_RULE_ACTIONS *);
-	pack_result g_namedprop_info(NAMEDPROPERTY_INFOMATION *);
+	pack_result g_namedprop_info(NAMEDPROPERTY_INFO *);
 	pack_result g_longterm(LONG_TERM_ID *);
 	pack_result g_longterm_range(LONG_TERM_ID_RANGE *);
 	pack_result g_typed_pv(TYPED_PROPVAL *);

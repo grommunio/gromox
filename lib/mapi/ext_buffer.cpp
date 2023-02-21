@@ -1318,7 +1318,7 @@ pack_result EXT_PULL::g_ext_rule_actions(EXT_RULE_ACTIONS *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFOMATION *r)
+pack_result EXT_PULL::g_namedprop_info(NAMEDPROPERTY_INFO *r)
 {
 	uint32_t size;
 	

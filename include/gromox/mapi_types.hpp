@@ -142,7 +142,7 @@ enum {
 #define RULE_ERROR_TOO_MANY_RCPTS					0x0000000D
 #define RULE_ERROR_FOLDER_QUOTA						0x0000000E			
 
-struct NAMEDPROPERTY_INFOMATION {
+struct NAMEDPROPERTY_INFO {
 	uint16_t count;
 	uint16_t *ppropid;
 	PROPERTY_NAME *ppropname;

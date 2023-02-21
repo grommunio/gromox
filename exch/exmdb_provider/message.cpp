@@ -2151,8 +2151,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 }
 
 static BOOL message_get_real_propid(sqlite3 *psqlite,
-	NAMEDPROPERTY_INFOMATION *ppropname_info,
-	uint32_t *pproptag, BOOL *pb_replaced)
+    NAMEDPROPERTY_INFO *ppropname_info, uint32_t *pproptag, BOOL *pb_replaced)
 {
 	int i;
 	PROPID_ARRAY propids;
@@ -2183,7 +2182,7 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 }
 
 static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
-	NAMEDPROPERTY_INFOMATION *ppropname_info, RESTRICTION *pres)
+    NAMEDPROPERTY_INFO *ppropname_info, RESTRICTION *pres)
 {
 	BOOL b_replaced;
 	
@@ -2273,7 +2272,7 @@ static BOOL message_replace_restriction_propid(sqlite3 *psqlite,
 }
 
 static BOOL message_replace_actions_propid(sqlite3 *psqlite,
-	NAMEDPROPERTY_INFOMATION *ppropname_info, EXT_RULE_ACTIONS *pactions)
+    NAMEDPROPERTY_INFO *ppropname_info, EXT_RULE_ACTIONS *pactions)
 {
 	BOOL b_replaced;
 	
@@ -3564,7 +3563,7 @@ static ec_error_t opx_process(const rulexec_in &rp,
 	EXT_PULL ext_pull;
 	ext_pull.init(bv->pb, bv->cb, common_util_alloc,
 		EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-	NAMEDPROPERTY_INFOMATION propname_info;
+	NAMEDPROPERTY_INFO propname_info;
 	RESTRICTION restriction;
 	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
 	    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
