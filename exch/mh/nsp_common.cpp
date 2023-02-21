@@ -455,7 +455,6 @@ BOOL cu_restriction_to_nspres(const RESTRICTION &r, NSPRES &nr)
 	nr.res_type = r.rt;
 	switch (r.rt) {
 	case RES_AND:
-		return cu_to_nspres_and_or(*static_cast<RESTRICTION_AND_OR *>(r.pres), nr.res.res_andor);
 	case RES_OR:
 		return cu_to_nspres_and_or(*static_cast<RESTRICTION_AND_OR *>(r.pres), nr.res.res_andor);
 	case RES_NOT:
