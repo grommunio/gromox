@@ -1141,7 +1141,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto rbm = pres->bm;
 		zarray_init(&pzarray);
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_TYPE);
-		add_assoc_long(&pzarray, key, rbm->bitmask_relop);
+		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rbm->bitmask_relop));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
 		add_assoc_long(&pzarray, key, proptag_to_phptag(rbm->proptag));
 		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_MASK);

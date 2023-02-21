@@ -123,7 +123,7 @@ struct NSPRES_PROPCOMPARE {
 };
 
 struct NSPRES_BITMASK {
-	uint32_t rel_mbr;
+	enum bm_relop rel_mbr;
 	uint32_t proptag;
 	uint32_t mask;
 };

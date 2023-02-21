@@ -2427,7 +2427,7 @@ static pack_result ext_buffer_push_restriction_propcompare(EXT_PUSH *pext,
 static pack_result ext_buffer_push_restriction_bitmask(EXT_PUSH *pext,
     const RESTRICTION_BITMASK *r)
 {
-	TRY(pext->p_uint8(r->bitmask_relop));
+	TRY(pext->p_uint8(static_cast<uint8_t>(r->bitmask_relop)));
 	TRY(pext->p_uint32(r->proptag));
 	return pext->p_uint32(r->mask);
 }

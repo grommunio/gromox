@@ -1362,8 +1362,10 @@ static pack_result nsp_ndr_push_restriction_propcompare(NDR_PUSH *pndr,
 
 static pack_result nsp_ndr_pull_restriction_bitmask(NDR_PULL *pndr, NSPRES_BITMASK *r)
 {
+	uint32_t v;
 	TRY(pndr->align(4));
-	TRY(pndr->g_uint32(&r->rel_mbr));
+	TRY(pndr->g_uint32(&v));
+	r->rel_mbr = static_cast<bm_relop>(v);
 	TRY(pndr->g_uint32(&r->proptag));
 	TRY(pndr->g_uint32(&r->mask));
 	TRY(pndr->trailer_align(4));
@@ -1375,7 +1377,7 @@ static pack_result nsp_ndr_push_restriction_bitmask(NDR_PUSH *pndr,
     const NSPRES_BITMASK *r)
 {
 	TRY(pndr->align(4));
-	TRY(pndr->p_uint32(r->rel_mbr));
+	TRY(pndr->p_uint32(static_cast<uint32_t>(r->rel_mbr)));
 	TRY(pndr->p_uint32(r->proptag));
 	TRY(pndr->p_uint32(r->mask));
 	TRY(pndr->trailer_align(4));

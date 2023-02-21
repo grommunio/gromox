@@ -154,10 +154,11 @@ enum { /* bits for PidLidChangeHighlight */
 	// 0x80000000 (bit 31) is reversed since OXOCAL v5.0.
 };
 
-enum bm_relop {
-	BMR_EQZ = 0,
-	BMR_NEZ,
+enum class bm_relop : uint8_t {
+	eqz = 0, nez,
 };
+#define BMR_EQZ bm_relop::eqz
+#define BMR_NEZ bm_relop::nez
 
 enum calendar_scale {
 	/* 0x1..0xC,0x17 from winnls.h, the others from MS-OXOCAL v20 §2.2.1.44.1 pg 37 */
