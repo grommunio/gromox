@@ -98,6 +98,7 @@ enum class zcore_callid : uint8_t {
 	rfc822tomessage = 0x56,
 	// icaltomessage2 = 0x57,
 	imtomessage2 = 0x58,
+	essdn_to_username = 0x59,
 	/* update exch/zcore/names.cpp! */
 };
 
@@ -625,6 +626,10 @@ struct zcreq_restoresession : public zcreq {
 	BINARY *pdata_bin;
 };
 
+struct zcreq_essdn_to_username : public zcreq {
+	char *essdn;
+};
+
 struct zcresp {
 	zcore_callid call_id;
 	ec_error_t result;
@@ -853,6 +858,10 @@ struct zcresp_getuseravailability : public zcresp {
 
 struct zcresp_imtomessage2 : public zcresp {
 	LONG_ARRAY msg_handles;
+};
+
+struct zcresp_essdn_to_username : public zcresp {
+	char *username;
 };
 
 using zcresp_checksession = zcresp;

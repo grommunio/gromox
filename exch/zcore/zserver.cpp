@@ -5203,3 +5203,12 @@ ec_error_t zs_linkmessage(GUID hsession,
 	return exmdb_client::link_message(maildir, cpid, folder_id, message_id,
 	       &b_result) && b_result ? ecSuccess : ecError;
 }
+
+ec_error_t zs_essdn_to_username(const char *essdn, char **username)
+{
+	char u[UADDR_SIZE];
+	if (!common_util_essdn_to_username(essdn, u, std::size(u)))
+		return ecNotFound;
+	*username = common_util_dup(u);
+	return ecSuccess;
+}

@@ -1531,6 +1531,12 @@ static BOOL zrpc_push(EXT_PUSH &x, const zcresp_imtomessage2 &d)
 	return TRUE;
 }
 
+static BOOL zrpc_push(EXT_PUSH &x, const zcresp_essdn_to_username&d)
+{
+	QRF(x.p_str(d.username));
+	return TRUE;
+}
+
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_setpasswd &d)
 {
 	QRF(x.g_str(&d.username));
@@ -1553,6 +1559,12 @@ static BOOL zrpc_pull(EXT_PULL &x, zcreq_imtomessage2 &d)
 	QRF(x.g_uint32(&d.folder));
 	QRF(x.g_uint32(&d.data_type));
 	QRF(x.g_str(&d.im_data));
+	return TRUE;
+}
+
+static BOOL zrpc_pull(EXT_PULL &x, zcreq_essdn_to_username &d)
+{
+	QRF(x.g_str(&d.essdn));
 	return TRUE;
 }
 
@@ -1658,6 +1670,7 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
 	E(setpasswd)
 	E(linkmessage)
 	E(imtomessage2)
+	E(essdn_to_username)
 #undef E
 	default:
 		return FALSE;
@@ -1774,6 +1787,7 @@ BOOL rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	E(messagetovcf)
 	E(getuseravailability)
 	E(imtomessage2)
+	E(essdn_to_username)
 #undef E
 	default:
 		return FALSE;
