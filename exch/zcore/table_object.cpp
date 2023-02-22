@@ -884,8 +884,6 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		auto pvalue = ppropvals->getval(rprop->proptag);
 		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
-		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-			return FALSE;
 		return strcasestr(static_cast<char *>(rprop->propval.pvalue),
 		       static_cast<char *>(pvalue)) != nullptr;
 	}

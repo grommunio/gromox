@@ -4108,8 +4108,6 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 			return FALSE;
 		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
-		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-			return FALSE;
 		return strcasestr(static_cast<char *>(pvalue),
 		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
@@ -4276,8 +4274,6 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 			return FALSE;
 		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
-		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-			return FALSE;
 		return strcasestr(static_cast<char *>(pvalue),
 		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
@@ -4368,16 +4364,15 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		case PR_PARENT_ENTRYID:
 			pvalue = cu_get_msg_parent_svreid(psqlite, message_id);
 			break;
-		case PR_ANR:
+		case PR_ANR: {
 			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				break;
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
 			return strcasestr(static_cast<char *>(pvalue),
 			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
+		}
 		default:
 			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
