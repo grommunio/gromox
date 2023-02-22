@@ -1771,7 +1771,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		if (rcon->comparable())
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
-		    rcon->proptag, &pvalue) || pvalue == nullptr)
+		    rcon->proptag, &pvalue))
 			return FALSE;	
 		return rcon->eval(pvalue);
 	}

@@ -4095,7 +4095,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rcon->proptag, &pvalue) || pvalue == nullptr)
+		    rcon->proptag, &pvalue))
 			return FALSE;
 		return rcon->eval(pvalue);
 	}
@@ -4263,7 +4263,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
-		    rcon->proptag, &pvalue) || pvalue == nullptr)
+		    rcon->proptag, &pvalue))
 			return FALSE;
 		return rcon->eval(pvalue);
 	}
@@ -4355,8 +4355,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		    message_id, cpid, psqlite, rcon->proptag, &pvalue))
 			return FALSE;
 		return rcon->eval(pvalue);
 	}

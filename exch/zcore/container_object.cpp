@@ -79,12 +79,8 @@ static BOOL container_object_match_contact_message(
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
-		if (!rcon->comparable())
-			return FALSE;
-		auto str = ppropvals->get<const char>(rcon->proptag);
-		if (str == nullptr)
-			return FALSE;	
-		return rcon->eval(str);
+		return rcon->comparable() &&
+		       rcon->eval(ppropvals->getval(rcon->proptag));
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;

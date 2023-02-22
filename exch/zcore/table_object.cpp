@@ -874,13 +874,8 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (!rcon->comparable())
-			return FALSE;
-		auto pvalue = ppropvals->getval(rcon->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		return rcon->eval(pvalue);
+		return rcon->comparable() &&
+		       rcon->eval(ppropvals->getval(rcon->proptag));
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;

@@ -1364,7 +1364,7 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 		if (!rcon->comparable())
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
-		    rcon->proptag, &pvalue) || pvalue == nullptr)
+		    rcon->proptag, &pvalue))
 			return FALSE;
 		return rcon->eval(pvalue);
 	}
@@ -2132,8 +2132,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 		auto rcon = pres->cont;
 		if (!rcon->comparable())
 			return FALSE;
-		if (!get_property(pparam, rcon->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!get_property(pparam, rcon->proptag, &pvalue))
 			return FALSE;
 		return rcon->eval(pvalue);
 	}

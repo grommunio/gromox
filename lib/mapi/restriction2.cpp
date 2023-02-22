@@ -108,6 +108,8 @@ bool RESTRICTION_CONTENT::comparable() const
 
 bool RESTRICTION_CONTENT::eval(const void *dbval) const
 {
+	if (dbval == nullptr)
+		return false;
 	if (PROP_TYPE(proptag) == PT_BINARY) {
 		auto &lhs = *static_cast<const BINARY *>(dbval);
 		auto &rhs = *static_cast<const BINARY *>(propval.pvalue);
