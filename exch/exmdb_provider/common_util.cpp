@@ -4090,7 +4090,6 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 	int len;
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_CONTENT: {
@@ -4175,9 +4174,7 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST: {
 		auto rex = pres->exist;
@@ -4278,7 +4275,6 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 {
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
@@ -4378,9 +4374,7 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST:
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
@@ -4404,7 +4398,6 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 {
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
@@ -4525,9 +4518,7 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, cpid, psqlite, rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST:
 		if (!cu_get_property(MAPI_MESSAGE,

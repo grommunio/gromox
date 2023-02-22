@@ -1232,6 +1232,7 @@ struct RESTRICTION_SIZE {
 	enum relop relop;
 	uint32_t proptag;
 	uint32_t size;
+	bool eval(const void *) const;
 
 	std::string repr() const;
 };

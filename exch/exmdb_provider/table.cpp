@@ -1380,7 +1380,6 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 {
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_AND:
@@ -1493,11 +1492,9 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!common_util_get_rule_property(rule_id, psqlite,
-		    rsize->proptag, &pvalue) || pvalue == nullptr)
+		    rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST:
 		if (!common_util_get_rule_property(rule_id, psqlite,
@@ -2258,7 +2255,6 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 {
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_AND:
@@ -2370,12 +2366,9 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
-		if (!get_property(pparam, rsize->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!get_property(pparam, rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST:
 		if (!get_property(pparam, pres->exist->proptag, &pvalue) ||

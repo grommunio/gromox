@@ -855,8 +855,6 @@ static void table_object_reset(table_object *ptable)
 static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
     const RESTRICTION *pres)
 {
-	uint32_t val_size;
-	
 	switch (pres->rt) {
 	case RES_OR:
 		for (size_t i = 0; i < pres->andor->count; ++i)
@@ -964,16 +962,8 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		}
 		return rbm->eval(pvalue);
 	}
-	case RES_SIZE: {
-		auto rsize = pres->size;
-		auto pvalue = ppropvals->getval(rsize->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
-	}
+	case RES_SIZE:
+		return pres->size->eval(ppropvals->getval(pres->size->proptag));
 	case RES_EXIST:
 		return ppropvals->has(pres->exist->proptag);
 	case RES_COMMENT:

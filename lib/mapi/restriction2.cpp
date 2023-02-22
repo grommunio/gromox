@@ -4,6 +4,7 @@
 #include <utility>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -148,6 +149,12 @@ std::string RESTRICTION_BITMASK::repr() const
 	default: ss << "h..op?}"; break;
 	}
 	return std::move(ss).str();
+}
+
+bool RESTRICTION_SIZE::eval(const void *v) const
+{
+	uint32_t vs = v != nullptr ? propval_size(proptag, v) : 0;
+	return propval_compare_relop(relop, PT_LONG, &vs, &size);
 }
 
 std::string RESTRICTION_SIZE::repr() const
