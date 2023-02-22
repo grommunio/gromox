@@ -102,13 +102,8 @@ static BOOL container_object_match_contact_message(
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
-			return FALSE;
-		auto pvalue = ppropvals->get<const uint32_t>(rbm->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		return rbm->eval(pvalue);
+		return rbm->comparable() &&
+		       rbm->eval(ppropvals->getval(rbm->proptag));
 	}
 	case RES_EXIST:
 		return ppropvals->has(pfilter->exist->proptag) ? TRUE : false;

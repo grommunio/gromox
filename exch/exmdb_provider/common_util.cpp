@@ -4128,10 +4128,10 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
+		if (!rbm->comparable())
 			return FALSE;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
-		    rbm->proptag, &pvalue) || pvalue == nullptr)
+		    rbm->proptag, &pvalue))
 			return FALSE;
 		return rbm->eval(pvalue);
 	}
@@ -4296,10 +4296,10 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
+		if (!rbm->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
-		    rbm->proptag, &pvalue) || pvalue == nullptr)
+		    rbm->proptag, &pvalue))
 			return FALSE;
 		return rbm->eval(pvalue);
 	}
@@ -4402,11 +4402,10 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
+		if (!rbm->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_MESSAGE,
-		    message_id, cpid, psqlite, rbm->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		    message_id, cpid, psqlite, rbm->proptag, &pvalue))
 			return FALSE;
 		return rbm->eval(pvalue);
 	}

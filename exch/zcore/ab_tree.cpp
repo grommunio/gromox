@@ -1804,7 +1804,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
+		if (!rbm->comparable())
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)

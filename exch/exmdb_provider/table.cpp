@@ -1397,10 +1397,10 @@ static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
+		if (!rbm->comparable())
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
-		    rbm->proptag, &pvalue) || pvalue == nullptr)
+		    rbm->proptag, &pvalue))
 			return FALSE;
 		return rbm->eval(pvalue);
 	}
@@ -2165,10 +2165,9 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
+		if (!rbm->comparable())
 			return FALSE;
-		if (!get_property(pparam, rbm->proptag, &pvalue) ||
-		    pvalue == nullptr)
+		if (!get_property(pparam, rbm->proptag, &pvalue))
 			return FALSE;
 		return rbm->eval(pvalue);
 	}

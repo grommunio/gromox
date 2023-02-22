@@ -911,13 +911,8 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
-		if (PROP_TYPE(rbm->proptag) != PT_LONG)
-			return FALSE;
-		auto pvalue = ppropvals->get<const uint32_t>(rbm->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		return rbm->eval(pvalue);
+		return rbm->comparable() &&
+		       rbm->eval(ppropvals->getval(rbm->proptag));
 	}
 	case RES_SIZE:
 		return pres->size->eval(ppropvals->getval(pres->size->proptag));

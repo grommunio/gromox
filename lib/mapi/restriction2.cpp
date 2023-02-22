@@ -216,6 +216,16 @@ std::string RESTRICTION_PROPCOMPARE::repr() const
 	return std::move(ss).str();
 }
 
+bool RESTRICTION_BITMASK::eval(const void *v) const
+{
+	/*
+	 * (EXC2019) Run similar to propval_compare_relop_nullok;
+	 * absent values are treated like 0.
+	 */
+	auto w = v != nullptr ? *static_cast<const uint32_t *>(v) : 0;
+	return !!(w & mask) == static_cast<uint8_t>(bitmask_relop);
+}
+
 std::string RESTRICTION_BITMASK::repr() const
 {
 	std::stringstream ss;
