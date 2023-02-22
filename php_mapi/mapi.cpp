@@ -5071,6 +5071,22 @@ static ZEND_FUNCTION(nsp_setuserpasswd)
 	RETVAL_TRUE;
 }
 
+static ZEND_FUNCTION(nsp_essdn_to_username)
+{
+	char *essdn = nullptr, *username = nullptr;
+	size_t essdn_size = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &essdn, &essdn_size) == FAILURE) {
+		MAPI_G(hr) = ecInvalidParam;
+		THROW_EXCEPTION;
+	}
+	auto ret = zclient_essdn_to_username(essdn, &username);
+	if (ret != ecSuccess) {
+		MAPI_G(hr) = ret;
+		THROW_EXCEPTION;
+	}
+	RETVAL_STRING(username);
+}
+
 static ZEND_FUNCTION(mapi_linkmessage)
 {
 	size_t srcheid_size = 0, msgeid_size = 0;
@@ -5281,6 +5297,7 @@ static zend_function_entry mapi_functions[] = {
 	F7(kc_session_restore, second_arg_force_ref)
 	F(nsp_getuserinfo)
 	F(nsp_setuserpasswd)
+	F(nsp_essdn_to_username)
 	F(mapi_linkmessage)
 	F(mapi_ianatz_to_tzdef)
 	F(mapi_strerror)

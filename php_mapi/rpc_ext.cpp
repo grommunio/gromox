@@ -1028,6 +1028,12 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_imtomessage2 &d)
 	return true;
 }
 
+static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_essdn_to_username &d)
+{
+	TRY(x.p_str(d.essdn));
+	return true;
+}
+
 static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_messagetovcf &d)
 {
 	TRY(x.p_guid(d.hsession));
@@ -1074,6 +1080,12 @@ static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getuseravailability &d)
 static zend_bool zrpc_pull(PULL_CTX &x, zcresp_imtomessage2 &d)
 {
 	TRY(x.g_uint32_a(&d.msg_handles));
+	return true;
+}
+
+static zend_bool zrpc_pull(PULL_CTX &x, zcresp_essdn_to_username &d)
+{
+	TRY(x.g_str(&d.username));
 	return true;
 }
 
@@ -1189,6 +1201,7 @@ zend_bool rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	E(setpasswd)
 	E(linkmessage)
 	E(imtomessage2)
+	E(essdn_to_username)
 #undef E
 	default:
 		return 0;
@@ -1301,6 +1314,7 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	E(messagetovcf)
 	E(getuseravailability)
 	E(imtomessage2)
+	E(essdn_to_username)
 #undef E
 	default:
 		return 0;
