@@ -257,9 +257,79 @@ static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
 	return ecSuccess;
 }
 
+static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props,
+    const RESTRICTION &res)
+{
+	switch (res.rt) {
+	case RES_OR:
+		for (size_t i = 0; i < res.andor->count; ++i)
+			if (rx_eval_props(ct, props, res.andor->pres[i]))
+				return true;
+		return false;
+	case RES_AND:
+		for (size_t i = 0; i < res.andor->count; ++i)
+			if (!rx_eval_props(ct, props, res.andor->pres[i]))
+				return false;
+		return true;
+	case RES_NOT:
+		return !rx_eval_props(ct, props, res.xnot->res);
+	case RES_CONTENT: {
+		auto &rcon = *res.cont;
+		return rcon.comparable() && rcon.eval(props.getval(rcon.proptag));
+	}
+	case RES_PROPERTY: {
+		auto &rprop = *res.prop;
+		// XXX: special-case PR_ANR?
+		return rprop.comparable() && rprop.eval(props.getval(rprop.proptag));
+	}
+	case RES_PROPCOMPARE: {
+		auto &rprop = *res.pcmp;
+		if (!rprop.comparable())
+			return false;
+		auto lhs = props.getval(rprop.proptag1);
+		auto rhs = props.getval(rprop.proptag2);
+		return propval_compare_relop_nullok(rprop.relop,
+		       PROP_TYPE(rprop.proptag1), lhs, rhs);
+	}
+	case RES_BITMASK: {
+		auto &rbm = *res.bm;
+		return rbm.comparable() &&
+		       rbm.eval(props.getval(rbm.proptag));
+	}
+	case RES_SIZE: {
+		auto &rsize = *res.size;
+		return rsize.eval(props.getval(rsize.proptag));
+	}
+	case RES_EXIST:
+		return props.has(res.exist->proptag);
+	case RES_SUBRESTRICTION:
+		return false;
+	case RES_COMMENT:
+	case RES_ANNOTATION:
+		if (res.comment->pres == nullptr)
+			return TRUE;
+		return rx_eval_props(ct, props, *res.comment->pres);
+	case RES_COUNT: {
+		auto &rcnt = *res.count;
+		if (rcnt.count == 0)
+			return false;
+		if (!rx_eval_props(ct, props, rcnt.sub_res))
+			return false;
+		--rcnt.count;
+		return true;
+	}
+	case RES_NULL:
+		return true;
+	}
+	return false;
+}
+
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
+		return ecSuccess;
+	if (rule.cond != nullptr &&
+	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
@@ -269,6 +339,9 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
+		return ecSuccess;
+	if (rule.cond != nullptr &&
+	    !rx_eval_props(par.ctnt, par.ctnt->proplist, *rule.cond))
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
