@@ -257,6 +257,73 @@ static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
 	return ecSuccess;
 }
 
+static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props, const RESTRICTION &res);
+
+static bool rx_eval_msgsub(const MESSAGE_CHILDREN &ch, uint32_t tag,
+    const RESTRICTION &res)
+{
+	uint32_t count = 0;
+	if (tag == PR_MESSAGE_RECIPIENTS && ch.prcpts != nullptr) {
+		for (size_t i = 0; i < ch.prcpts->count; ++i) {
+			auto rcpt = ch.prcpts->pparray[i];
+			if (res.rt == RES_COUNT) {
+				if (rx_eval_props(nullptr, *rcpt,
+				    static_cast<RESTRICTION_COUNT *>(res.pres)->sub_res))
+					++count;
+			} else {
+				if (rx_eval_props(nullptr, *rcpt, res))
+					return true;
+			}
+		}
+	} else if (tag == PR_MESSAGE_ATTACHMENTS && ch.pattachments != nullptr) {
+		for (size_t i = 0; i < ch.pattachments->count; ++i) {
+			auto atx = ch.pattachments->pplist[i];
+			if (res.rt == RES_COUNT) {
+				if (rx_eval_props(nullptr, atx[i].proplist,
+				    static_cast<RESTRICTION_COUNT *>(res.pres)->sub_res))
+					++count;
+			} else {
+				if (rx_eval_props(nullptr, atx[i].proplist, res))
+					return true;
+			}
+		}
+	}
+	return res.rt == RES_COUNT && res.count->count == count;
+}
+
+static bool rx_eval_sub(const MESSAGE_CONTENT *ct, uint32_t tag, const RESTRICTION &res)
+{
+	switch (res.rt) {
+	case RES_OR:
+		for (size_t i = 0; i < res.andor->count; ++i)
+			if (rx_eval_sub(ct, tag, res.andor->pres[i]))
+				return true;
+		return false;
+	case RES_AND:
+		for (size_t i = 0; i < res.andor->count; ++i)
+			if (!rx_eval_sub(ct, tag, res.andor->pres[i]))
+				return false;
+		return true;
+	case RES_NOT:
+		return !rx_eval_sub(ct, tag, res.xnot->res);
+	case RES_CONTENT:
+	case RES_PROPERTY:
+	case RES_PROPCOMPARE:
+	case RES_BITMASK:
+	case RES_SIZE:
+	case RES_EXIST:
+	case RES_COMMENT:
+	case RES_ANNOTATION:
+	case RES_COUNT: {
+		MESSAGE_CHILDREN none{};
+		auto &ch = ct != nullptr ? ct->children : none;
+		return rx_eval_msgsub(ch, tag, res);
+	}
+	default:
+		return false;
+	}
+}
+
 static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props,
     const RESTRICTION &res)
 {
@@ -302,8 +369,13 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	}
 	case RES_EXIST:
 		return props.has(res.exist->proptag);
-	case RES_SUBRESTRICTION:
+	case RES_SUBRESTRICTION: {
+		auto &rsub = *res.sub;
+		if (rsub.subobject == PR_MESSAGE_RECIPIENTS ||
+		    rsub.subobject == PR_MESSAGE_ATTACHMENTS)
+			return rx_eval_sub(ct, rsub.subobject, rsub.res);
 		return false;
+	}
 	case RES_COMMENT:
 	case RES_ANNOTATION:
 		if (res.comment->pres == nullptr)
