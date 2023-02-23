@@ -53,6 +53,9 @@ struct rule_node {
 	uint32_t state = 0;
 	uint64_t id = 0;
 	std::string provider;
+	bool extended = false;
+
+	bool operator<(const rule_node &o) const { return sequence < o.sequence; }
 };
 using RULE_NODE = rule_node;
 
@@ -2065,7 +2068,7 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT state, rule_id, "
 	         "sequence, provider FROM rules WHERE folder_id=%lld "
-	         "AND provider IS NOT NULL ORDER BY sequence", LLU{rp.folder_id});
+	         "AND provider IS NOT NULL", LLU{rp.folder_id});
 	auto pstmt = gx_sql_prep(rp.sqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -2094,6 +2097,7 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
     std::vector<rule_node> &plist) try
 {
+	size_t num_rules = 0;
 	auto qstr = fmt::format(
 		"SELECT m.message_id, p2.propval AS state, p3.propval AS seq, "
 		"p4.propval AS prov FROM messages AS m "
@@ -2107,8 +2111,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 		"LEFT JOIN message_properties AS p3 "
 		"ON m.message_id=p3.message_id AND p3.proptag={} "
 		"LEFT JOIN message_properties AS p4 "
-		"ON m.message_id=p4.message_id AND p4.proptag={} "
-		"ORDER BY seq",
+		"ON m.message_id=p4.message_id AND p4.proptag={}",
 		rp.folder_id, PR_MESSAGE_CLASS, PR_RULE_MSG_STATE,
 		PR_RULE_MSG_SEQUENCE, PR_RULE_MSG_PROVIDER);
 	auto pstmt = gx_sql_prep(rp.sqlite, qstr.c_str());
@@ -2128,8 +2131,8 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 			continue;
 		}
 		int32_t seq = pstmt.col_int64(2);
-		plist.push_back(RULE_NODE{seq, state, message_id, pstmt.col_text(3)});
-		if (plist.size() >= g_max_extrule_num)
+		plist.push_back(RULE_NODE{seq, state, message_id, pstmt.col_text(3), true});
+		if (++num_rules >= g_max_extrule_num)
 			break;
 	}
 	return TRUE;
@@ -3569,27 +3572,23 @@ static ec_error_t opx_process(const rulexec_in &rp,
 /* extended rules do not produce DAM or DEM */
 static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen)
 {
-	std::vector<rule_node> rule_list, ext_rule_list;
+	std::vector<rule_node> rule_list;
 	std::list<DAM_NODE> dam_list;
 	
 	if (!message_load_folder_rules(rp, rule_list) ||
-	    !message_load_folder_ext_rules(rp, ext_rule_list))
+	    !message_load_folder_ext_rules(rp, rule_list))
 		return ecError;
 	BOOL b_del = false, b_exit = false;
 	for (const auto &rnode : rule_list) {
-		auto ec = op_process(rp, seen,
-		          rnode, b_del, b_exit, dam_list);
+		auto ec = rnode.extended ?
+		          opx_process(rp, seen, rnode, b_del, b_exit) :
+		          op_process(rp, seen, rnode, b_del, b_exit, dam_list);
 		if (ec != ecSuccess)
 			return ec;
 	}
+	std::sort(rule_list.begin(), rule_list.end());
 	if (dam_list.size() > 0 && !message_make_dams(rp, std::move(dam_list), seen))
 		return ecError;
-	for (const auto &rnode : ext_rule_list) {
-		auto ec = opx_process(rp, seen,
-		          rnode, b_del, b_exit);
-		if (ec != ecSuccess)
-			return ec;
-	}
 	if (!b_del) try {
 		seen.msg.emplace_back(message_node{rp.folder_id, rp.message_id});
 		return ecSuccess;
