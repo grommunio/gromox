@@ -70,7 +70,9 @@ static errno_t wintz_load_namemap(const char *dirs)
 		if (p != nullptr)
 			ovs.erase(p - ovs.c_str(), 14);
 		std::replace(ovs.begin(), ovs.end(), ' ', '_');
-		iana_to_wzone.emplace(std::move(ivs), std::move(ovs));
+		for (auto &&i : gx_split(ivs, ' '))
+			if (!i.empty())
+				iana_to_wzone.emplace(std::move(i), ovs);
 	}
 	return 0;
 }
