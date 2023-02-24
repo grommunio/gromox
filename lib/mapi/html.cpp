@@ -53,50 +53,45 @@ struct RTF_WRITER {
 	iconv_t cd;
 };
 
-enum GumboTag : uint8_t {
-	GUMBO_TAG_CENTER, GUMBO_TAG_DIV, GUMBO_TAG_EM, GUMBO_TAG_FONT,
-	GUMBO_TAG_H1, GUMBO_TAG_H2, GUMBO_TAG_H3, GUMBO_TAG_H4, GUMBO_TAG_H5,
-	GUMBO_TAG_H6, GUMBO_TAG_HR, GUMBO_TAG_I, GUMBO_TAG_LI, GUMBO_TAG_MARK,
-	GUMBO_TAG_NONE, GUMBO_TAG_A, GUMBO_TAG_B, GUMBO_TAG_BR, GUMBO_TAG_OL,
-	GUMBO_TAG_P, GUMBO_TAG_S, GUMBO_TAG_SCRIPT, GUMBO_TAG_SPAN,
-	GUMBO_TAG_STYLE, GUMBO_TAG_SUB, GUMBO_TAG_SUP, GUMBO_TAG_TABLE,
-	GUMBO_TAG_TD, GUMBO_TAG_TH, GUMBO_TAG_TR, GUMBO_TAG_UL,
+enum class htag : uint8_t {
+	center, div, em, font, h1, h2, h3, h4, h5, h6, hr, i, li, mark, none, a,
+	b, br, ol, p, s, script, span, style, sub, sup, table, td, th, tr, ul,
 };
 
 static constexpr struct tagentry {
 	const char name[7];
-	GumboTag tag;
+	enum htag tag;
 } htmltags[] = {
-	{"a", GUMBO_TAG_A},
-	{"b", GUMBO_TAG_B},
-	{"br", GUMBO_TAG_BR},
-	{"center", GUMBO_TAG_CENTER},
-	{"div", GUMBO_TAG_DIV},
-	{"em", GUMBO_TAG_EM},
-	{"font", GUMBO_TAG_FONT},
-	{"h1", GUMBO_TAG_H1},
-	{"h2", GUMBO_TAG_H2},
-	{"h3", GUMBO_TAG_H3},
-	{"h4", GUMBO_TAG_H4},
-	{"h5", GUMBO_TAG_H5},
-	{"h6", GUMBO_TAG_H6},
-	{"hr", GUMBO_TAG_HR},
-	{"i", GUMBO_TAG_I},
-	{"li", GUMBO_TAG_LI},
-	{"mark", GUMBO_TAG_MARK},
-	{"ol", GUMBO_TAG_OL},
-	{"p", GUMBO_TAG_P},
-	{"s", GUMBO_TAG_S},
-	{"script", GUMBO_TAG_SCRIPT},
-	{"span", GUMBO_TAG_SPAN},
-	{"style", GUMBO_TAG_STYLE},
-	{"sub", GUMBO_TAG_SUB},
-	{"sup", GUMBO_TAG_SUP},
-	{"table", GUMBO_TAG_TABLE},
-	{"td", GUMBO_TAG_TD},
-	{"th", GUMBO_TAG_TH},
-	{"tr", GUMBO_TAG_TR},
-	{"ul", GUMBO_TAG_UL},
+	{"a", htag::a},
+	{"b", htag::b},
+	{"br", htag::br},
+	{"center", htag::center},
+	{"div", htag::div},
+	{"em", htag::em},
+	{"font", htag::font},
+	{"h1", htag::h1},
+	{"h2", htag::h2},
+	{"h3", htag::h3},
+	{"h4", htag::h4},
+	{"h5", htag::h5},
+	{"h6", htag::h6},
+	{"hr", htag::hr},
+	{"i", htag::i},
+	{"li", htag::li},
+	{"mark", htag::mark},
+	{"ol", htag::ol},
+	{"p", htag::p},
+	{"s", htag::s},
+	{"script", htag::script},
+	{"span", htag::span},
+	{"style", htag::style},
+	{"sub", htag::sub},
+	{"sup", htag::sup},
+	{"table", htag::table},
+	{"td", htag::td},
+	{"th", htag::th},
+	{"tr", htag::tr},
+	{"ul", htag::ul},
 };
 
 }
@@ -1104,16 +1099,16 @@ static BOOL html_write_children(RTF_WRITER *pwriter, const xmlNode *pnode)
 	return TRUE;
 }
 
-static GumboTag lookup_tag(const xmlNode *nd)
+static htag lookup_tag(const xmlNode *nd)
 {
 	auto k = signed_cast<const char *>(nd->name);
 	auto it = std::lower_bound(std::begin(htmltags), std::end(htmltags), k,
 	          [](const struct tagentry &x, const char *s) { return strcasecmp(x.name, s) < 0; });
 	return it != std::end(htmltags) && strcasecmp(it->name, k) == 0 ?
-	       it->tag : GUMBO_TAG_NONE;
+	       it->tag : htag::none;
 }
 
-static BOOL html_check_parent_type(const xmlNode *pnode, GumboTag tag)
+static BOOL html_check_parent_type(const xmlNode *pnode, htag tag)
 {
 	while (NULL != pnode->parent) {
 		pnode = pnode->parent;
@@ -1130,90 +1125,90 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 	
 	if (pnode->type == XML_ELEMENT_NODE) {
 		switch (lookup_tag(pnode)) {
-		case GUMBO_TAG_A: {
+		case htag::a: {
 			auto pvalue = znul(xml_getprop(pnode, "href"));
 			if (!html_write_a_begin(pwriter, pvalue) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_a_end(pwriter);
 		}
-		case GUMBO_TAG_B:
+		case htag::b:
 			if (!html_write_b_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_b_end(pwriter);
-		case GUMBO_TAG_I:
+		case htag::i:
 			if (!html_write_i_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_i_end(pwriter);
-		case GUMBO_TAG_DIV:
+		case htag::div:
 			if (!html_write_div_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_div_end(pwriter);
-		case GUMBO_TAG_H1:
-		case GUMBO_TAG_H2:
-		case GUMBO_TAG_H3:
-		case GUMBO_TAG_H4:
-		case GUMBO_TAG_H5:
-		case GUMBO_TAG_H6:
+		case htag::h1:
+		case htag::h2:
+		case htag::h3:
+		case htag::h4:
+		case htag::h5:
+		case htag::h6:
 			if (!html_write_h_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_h_end(pwriter);
-		case GUMBO_TAG_P:
+		case htag::p:
 			if (!html_write_p_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_p_end(pwriter);
-		case GUMBO_TAG_S:
+		case htag::s:
 			if (!html_write_s_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_s_end(pwriter);
-		case GUMBO_TAG_BR:
+		case htag::br:
 			return html_write_br(pwriter);
-		case GUMBO_TAG_HR:
+		case htag::hr:
 			return html_write_hr(pwriter);
-		case GUMBO_TAG_EM:
+		case htag::em:
 			if (!html_write_em_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_em_end(pwriter);
-		case GUMBO_TAG_OL:
+		case htag::ol:
 			if (!html_write_ol_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_ol_end(pwriter);
-		case GUMBO_TAG_UL:
+		case htag::ul:
 			if (!html_write_ul_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_ul_end(pwriter);
-		case GUMBO_TAG_LI:
+		case htag::li:
 			if (!html_write_li_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_li_end(pwriter);
-		case GUMBO_TAG_CENTER:
+		case htag::center:
 			if (!html_write_center_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_center_end(pwriter);
-		case GUMBO_TAG_TABLE:
-			if (html_check_parent_type(pnode, GUMBO_TAG_TABLE))
+		case htag::table:
+			if (html_check_parent_type(pnode, htag::table))
 				return TRUE;
 			if (!html_write_table_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_table_end(pwriter);
-		case GUMBO_TAG_SPAN:
+		case htag::span:
 			if (!html_write_span_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_span_end(pwriter);
-		case GUMBO_TAG_FONT: {
+		case htag::font: {
 			if (!html_write_font_begin(pwriter))
 				return FALSE;
 			auto pattribute = xml_getprop(pnode, "face");
@@ -1236,22 +1231,22 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 				return FALSE;
 			return html_write_font_end(pwriter);
 		}
-		case GUMBO_TAG_MARK:
+		case htag::mark:
 			if (!html_write_mark_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_mark_end(pwriter);
-		case GUMBO_TAG_TD:
+		case htag::td:
 			if (!html_write_td_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_td_end(pwriter);
-		case GUMBO_TAG_TH:
+		case htag::th:
 			if (!html_write_th_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_th_end(pwriter);
-		case GUMBO_TAG_TR:
+		case htag::tr:
 			cell_num = 0;
 			for (auto ptr = pnode->children; ptr != nullptr; ptr = ptr->next)
 				if (ptr->type == XML_ELEMENT_NODE)
@@ -1260,12 +1255,12 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_tr_end(pwriter);
-		case GUMBO_TAG_SUB:
+		case htag::sub:
 			if (!html_write_sub_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_sub_end(pwriter);
-		case GUMBO_TAG_SUP:
+		case htag::sup:
 			if (!html_write_sup_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
@@ -1274,8 +1269,8 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 			return html_write_children(pwriter, pnode);
 		}
 	} else if (pnode->type == XML_TEXT_NODE) {
-		if (!html_check_parent_type(pnode, GUMBO_TAG_STYLE) &&
-		    !html_check_parent_type(pnode, GUMBO_TAG_SCRIPT))
+		if (!html_check_parent_type(pnode, htag::style) &&
+		    !html_check_parent_type(pnode, htag::script))
 			return html_write_string(pwriter, signed_cast<const char *>(pnode->content));
 	}
 	return TRUE;
@@ -1288,7 +1283,7 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 	
 	if (pnode->type != XML_ELEMENT_NODE)
 		return;
-	if (lookup_tag(pnode) == GUMBO_TAG_FONT) {
+	if (lookup_tag(pnode) == htag::font) {
 		auto pattribute = xml_getprop(pnode, "face");
 		if (NULL != pattribute) {
 			html_set_fonttable(pwriter, pattribute);
