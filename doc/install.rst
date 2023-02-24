@@ -12,19 +12,19 @@ dependencies are needed:
 * autotools
 * C++17/C++20 compiler
 * cURL library
-* gumbo-parser
 * fmt >= 8
 * jsoncpp
 * libHX >= 4.3
 * libiconv (OpenBSD only)
 * libvmime >= 0.9.2.175
+* libxml2 (we use this for HTML parsing)
 * libzstd
 * MariaDB Connector/C or compatible
 * OpenLDAP or similar headers
 * OpenSSL or compatible
 * perl5
 * SQLite3
-* tinyxml2 >= 8
+* tinyxml2 >= 8 (we use this for all things XML)
 * zlib
 
 Optional deps:
