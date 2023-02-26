@@ -1,17 +1,23 @@
-Development 2.3.83
-==================
+Gromox 2.4 (2023-02-26)
+=======================
 
 Enhancements:
 
 * php_mapi: add mapi_strerror function
 * mbop: emptyfld/delmsg support folder names now
 * dscli: added an --eas option
-* oxdisco: handle requests for autodiscover.json
+* oxdisco: support autodiscover.json requests
+* exmdb_provider: report overquota events with MAPI_E_STORE_FULL
+  rather than MAPI_E_DISK_FULL
+* php_mapi: add function "nsp_essdn_to_username"
 
 Fixes:
 
 * php_mapi: fix stack corruption in zif_mapi_createfolder
 * exmdb_provider: resolved possible use-after-free in OP_DELEGATE rule handling
+* emsmdb: fix stream_object::commit evaluating wrong member for open flags
+* Parse Windows timezone list better and support multiple IANA timezone names
+  per territory
 
 Behavioral changes:
 
