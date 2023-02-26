@@ -1312,18 +1312,12 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pfolder_count)
 {
 	BOOL b_check = true, b_owner, b_result, b_partial;
-	uint64_t fid_val;
-	uint64_t src_fid1;
-	int is_associated;
-	uint64_t message_id;
-	uint64_t parent_fid;
-	uint64_t message_id1;
 	uint32_t folder_type;
 	char sql_string[256];
 	uint32_t message_size, permission = rightsNone;
 	
 	*pb_partial = FALSE;
-	fid_val = src_fid;
+	auto fid_val = src_fid;
 	auto b_private = exmdb_server::is_private();
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
@@ -1347,7 +1341,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 			if (pstmt == nullptr)
 				return FALSE;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				is_associated = sqlite3_column_int64(pstmt, 2);
+				bool is_associated = pstmt.col_uint64(2);
 				if (0 == is_associated) {
 					if (!b_normal)
 						continue;
@@ -1355,8 +1349,8 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					if (!b_fai)
 						continue;
 				}
-				message_id = sqlite3_column_int64(pstmt, 0);
-				parent_fid = sqlite3_column_int64(pstmt, 1);
+				auto message_id = pstmt.col_uint64(0);
+				auto parent_fid = pstmt.col_uint64(1);
 				if (b_guest) {
 					if (!cu_get_folder_permission(pdb->psqlite,
 					    parent_fid, username, &permission))
@@ -1373,7 +1367,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 						}
 					}
 				}
-				message_id1 = 0;
+				uint64_t message_id1 = 0;
 				if (!common_util_copy_message(pdb->psqlite,
 				    account_id, message_id, dst_fid, &message_id1,
 				    &b_result, &message_size))
@@ -1425,8 +1419,8 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		if (pstmt == nullptr)
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			message_id = sqlite3_column_int64(pstmt, 0);
-			is_associated = sqlite3_column_int64(pstmt, 1);
+			auto message_id = pstmt.col_uint64(0);
+			bool is_associated = pstmt.col_uint64(1);
 			if (b_check) {
 				if (!common_util_check_message_owner(pdb->psqlite,
 				    message_id, username, &b_owner))
@@ -1436,7 +1430,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					continue;
 				}
 			}
-			message_id1 = 0;
+			uint64_t message_id1 = 0;
 			if (!common_util_copy_message(pdb->psqlite, account_id,
 			    message_id, dst_fid, &message_id1, &b_result, &message_size))
 				return FALSE;
@@ -1458,7 +1452,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		return TRUE;
 	}
 	if (b_normal || b_fai) {
-		is_associated = !b_normal;
+		bool is_associated = !b_normal;
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 		         " is_deleted FROM messages WHERE "
 		         "parent_fid=%llu AND is_associated=%d",
@@ -1470,7 +1464,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (!b_private && sqlite3_column_int64(pstmt, 1) != 0)
 				continue;
-			message_id = sqlite3_column_int64(pstmt, 0);
+			auto message_id = pstmt.col_uint64(0);
 			if (b_check) {
 				if (!common_util_check_message_owner(pdb->psqlite,
 				    message_id, username, &b_owner))
@@ -1480,7 +1474,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					continue;
 				}
 			}
-			message_id1 = 0;
+			uint64_t message_id1 = 0;
 			if (!common_util_copy_message(pdb->psqlite,
 			    account_id, message_id, dst_fid, &message_id1,
 			    &b_result, &message_size))
@@ -1519,7 +1513,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	if (pstmt == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		src_fid1 = sqlite3_column_int64(pstmt, 0);
+		auto src_fid1 = pstmt.col_uint64(0);
 		fid_val = src_fid1;
 		if (b_check) {
 			if (!cu_get_folder_permission(pdb->psqlite,
