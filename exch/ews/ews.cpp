@@ -160,7 +160,7 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
-		mlog(LV_DEBUG, "[ews] Done, code %d, %lu bytes, %.3fms", code, response.size(), duration);
+		mlog(LV_DEBUG, "[ews] Done, code %d, %zu bytes, %.3fms", code, response.size(), duration);
 	}
 	if(response.length() > std::numeric_limits<int>::max())
 	{
