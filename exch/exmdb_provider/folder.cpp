@@ -1394,10 +1394,6 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		if (!b_guest) {
 			b_check = FALSE;
 		} else {
-			if (!(permission & frightsCreate)) {
-				*pb_partial = FALSE;
-				return TRUE;
-			}
 			if (!cu_get_folder_permission(pdb->psqlite,
 			    fid_val, username, &permission))
 				return FALSE;
