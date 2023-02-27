@@ -23,7 +23,6 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #ifndef AI_V4MAPPED
 #	define AI_V4MAPPED 0
@@ -116,14 +115,14 @@ void exmdb_client_stop()
 static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
     const char *prog_id)
 {
-	int sockd = gx_inet_connect(srv.host.c_str(), srv.port, 0);
+	int sockd = HX_inet_connect(srv.host.c_str(), srv.port, 0);
 	if (sockd < 0) {
 		static std::atomic<time_t> mdcl_lastwarn_time;
 		auto prev = mdcl_lastwarn_time.load();
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && mdcl_lastwarn_time.compare_exchange_strong(prev, now))
-			mlog(LV_ERR, "exmdb_client: gx_inet_connect to [%s]:%hu: %s",
+			mlog(LV_ERR, "exmdb_client: HX_inet_connect to [%s]:%hu: %s",
 			        srv.host.c_str(), srv.port, strerror(-sockd));
 	        return -2;
 	}

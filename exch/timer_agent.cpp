@@ -15,6 +15,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>  
@@ -22,7 +23,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #define MAX_CMD_LENGTH			64*1024
@@ -311,14 +311,14 @@ static int read_line(int sockd, char *buff, int length)
 static int connect_timer()
 {
     char temp_buff[1024];
-	int sockd = gx_inet_connect(g_timer_ip, g_timer_port, 0);
+	int sockd = HX_inet_connect(g_timer_ip, g_timer_port, 0);
 	if (sockd < 0) {
 		static std::atomic<time_t> g_lastwarn_time;
 		auto prev = g_lastwarn_time.load();
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			mlog(LV_ERR, "gx_inet_connect timer_agent@[%s]:%hu: %s",
+			mlog(LV_ERR, "HX_inet_connect timer_agent@[%s]:%hu: %s",
 			        g_timer_ip, g_timer_port, strerror(-sockd));
 	        return -1;
 	}

@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>  
@@ -19,7 +20,6 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #define MAX_CMD_LENGTH			64*1024
@@ -184,9 +184,9 @@ static int read_line(int sockd, char *buff, int length)
 static int connect_event()
 {
     char temp_buff[1024];
-	int sockd = gx_inet_connect(g_event_ip, g_event_port, 0);
+	int sockd = HX_inet_connect(g_event_ip, g_event_port, 0);
 	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect event_stub@[%s]:%hu: %s\n",
+		fprintf(stderr, "HX_inet_connect event_stub@[%s]:%hu: %s\n",
 		        g_event_ip, g_event_port, strerror(-sockd));
 		return -1;
 	}

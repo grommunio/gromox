@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -110,7 +111,7 @@ int exmdb_listener_run(const char *config_path)
 	if (0 == g_listen_port) {
 		return 0;
 	}
-	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
+	g_listen_sockd = HX_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd < 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create listen socket: %s", strerror(-g_listen_sockd));
 		return -1;

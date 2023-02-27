@@ -23,6 +23,7 @@
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/poll.h>
@@ -261,7 +262,7 @@ int main(int argc, const char **argv) try
 	g_threads_num = pconfig->get_ll("event_threads_num");
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 
-	auto sockd = gx_inet_listen(listen_ip, listen_port);
+	auto sockd = HX_inet_listen(listen_ip, listen_port);
 	if (sockd < 0) {
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return EXIT_FAILURE;

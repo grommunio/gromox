@@ -33,7 +33,6 @@
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 

@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <vector>
 #include <libHX/io.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -50,7 +51,7 @@ void listener_init(const char *ip, uint16_t port)
 
 int listener_run(const char *configdir)
 {
-	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
+	g_listen_sockd = HX_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd < 0) {
 		mlog(LV_ERR, "listener: failed to create listen socket: %s", strerror(-g_listen_sockd));
 		return -1;

@@ -31,7 +31,6 @@
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
