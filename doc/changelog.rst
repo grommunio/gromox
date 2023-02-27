@@ -1,15 +1,29 @@
+Development 2.4.43
+==================
+
+Fixes:
+
+* exmdb_provider: repair a null deref during HTML-to-text conversion
+
+Behavioral changes:
+
+* The build no longer depends on the gumbo-parser library
+  (a HTML parser); instead, it now uses libxml2 to do the same.
+
+
 Gromox 2.4 (2023-02-26)
 =======================
 
 Enhancements:
 
-* php_mapi: add mapi_strerror function
+* php_mapi: add new functions "nsp_essdn_to_username" and "mapi_strerror"
+  (requires new version of mapi-header-php which does not provide a
+  now-colliding variant)
 * mbop: emptyfld/delmsg support folder names now
 * dscli: added an --eas option
 * oxdisco: support autodiscover.json requests
 * exmdb_provider: report overquota events with MAPI_E_STORE_FULL
   rather than MAPI_E_DISK_FULL
-* php_mapi: add function "nsp_essdn_to_username"
 
 Fixes:
 
@@ -22,8 +36,6 @@ Fixes:
 Behavioral changes:
 
 * exmdb_provider: enable CID file compression by default
-* php_mapi: add mapi_strerror function
-  (requires new version of mapi-header-php)
 * exch: remove old PHP-OXDISCO and PHP-OAB implementation
 
 
