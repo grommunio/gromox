@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -21,7 +22,6 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/list_file.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "exmdb_listener.h"
 #include "exmdb_parser.h"
@@ -110,7 +110,7 @@ int exmdb_listener_run(const char *config_path)
 	if (0 == g_listen_port) {
 		return 0;
 	}
-	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
+	g_listen_sockd = HX_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd < 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create listen socket: %s", strerror(-g_listen_sockd));
 		return -1;

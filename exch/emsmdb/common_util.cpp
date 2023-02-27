@@ -35,7 +35,6 @@
 #include <gromox/proc_common.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/socket.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"

@@ -64,6 +64,7 @@ extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
 extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
 extern GX_EXPORT void startup_banner(const char *);
+extern GX_EXPORT void gx_reexec_record(int);
 extern GX_EXPORT void gx_reexec_finish();
 extern GX_EXPORT errno_t gx_reexec(const char *const *);
 extern GX_EXPORT unsigned long gx_gettid();

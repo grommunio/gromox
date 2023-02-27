@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <utility>
 #include <libHX/ctype_helper.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -21,7 +22,6 @@
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include <gromox/mem_file.hpp>
-#include <gromox/socket.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
@@ -340,7 +340,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 {
 	ctx->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	rd_connection conn;
-	conn.fd = gx_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
+	conn.fd = HX_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
 		rd_log(ctx, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
 			g_mx_host.c_str(), g_mx_port, strerror(-conn.fd));

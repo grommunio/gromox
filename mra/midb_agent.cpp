@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -32,7 +33,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -2521,14 +2521,14 @@ static int connect_midb(const char *ip_addr, uint16_t port)
     char temp_buff[1024];
 	struct pollfd pfd_read;
 
-	int sockd = gx_inet_connect(ip_addr, port, 0);
+	auto sockd = HX_inet_connect(ip_addr, port, 0);
 	if (sockd < 0) {
 		static std::atomic<time_t> g_lastwarn_time;
 		auto prev = g_lastwarn_time.load();
 		auto next = prev + 60;
 		auto now = time(nullptr);
 		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			fprintf(stderr, "gx_inet_connect midb_agent@[%s]:%hu: %s\n",
+			fprintf(stderr, "HX_inet_connect midb_agent@[%s]:%hu: %s\n",
 			        ip_addr, port, strerror(-sockd));
 		return -1;
 	}

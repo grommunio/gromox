@@ -11,6 +11,7 @@
 #include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -18,7 +19,6 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
@@ -167,7 +167,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
     }
 	auto cleanup_6 = make_scope_exit(system_services_stop);
-	auto dummy_sk = gx_local_listen(PKGRUNDIR "/da-runcheck");
+	auto dummy_sk = HX_local_listen(PKGRUNDIR "/da-runcheck");
 	if (dummy_sk < 0) {
 		mlog(LV_ERR, "gromox-delivery is already running");
 		return EXIT_FAILURE;

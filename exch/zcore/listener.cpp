@@ -6,6 +6,7 @@
 #include <cstring>
 #include <pthread.h>
 #include <unistd.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -14,7 +15,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "listener.hpp"
 #include "rpc_parser.hpp"
@@ -50,7 +50,7 @@ void listener_init()
 
 int listener_run(const char *CS_PATH)
 {
-	g_listen_sockd = gx_local_listen(CS_PATH);
+	g_listen_sockd = HX_local_listen(CS_PATH);
 	if (g_listen_sockd < 0) {
 		mlog(LV_ERR, "listen %s: %s", CS_PATH, strerror(-g_listen_sockd));
 		return -1;

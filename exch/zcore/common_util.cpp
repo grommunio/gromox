@@ -35,7 +35,6 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>

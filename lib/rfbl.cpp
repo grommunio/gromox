@@ -30,6 +30,7 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
+#include <sys/socket.h>
 #include <sys/stat.h>
 #if defined(HAVE_SYS_XATTR_H)
 #	include <sys/xattr.h>
@@ -52,7 +53,6 @@
 #include <gromox/mapierr.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -77,6 +77,7 @@ static unsigned int g_max_loglevel = LV_NOTICE;
 static std::shared_mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
 static bool g_log_direct = true, g_log_tty, g_log_syslog;
+static int gx_reexec_top_fd = -1;
 
 static const char *mapi_errname(unsigned int e)
 {
@@ -695,6 +696,23 @@ void startup_banner(const char *prog)
 	mlog(LV_NOTICE, "%s %s (pid %ld uid %ld)", prog, PACKAGE_VERSION,
 	        static_cast<long>(getpid()), static_cast<long>(getuid()));
 	fprintf(stderr, "\n");
+}
+
+void gx_reexec_record(int new_fd)
+{
+	for (int fd = gx_reexec_top_fd; fd <= new_fd; ++fd) {
+		unsigned int flags = 0;
+		socklen_t fz = sizeof(flags);
+		if (fd < 0 || getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN,
+		    &flags, &fz) != 0 || !flags ||
+		    fcntl(fd, F_GETFL, &flags) != 0)
+			continue;
+		flags &= ~FD_CLOEXEC;
+		if (fcntl(fd, F_SETFL, flags) != 0)
+			/* ignore */;
+	}
+	if (new_fd > gx_reexec_top_fd)
+		gx_reexec_top_fd = new_fd;
 }
 
 /**
