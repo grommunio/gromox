@@ -1311,18 +1311,20 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_partial,
 	uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pfolder_count)
 {
-	BOOL b_check = true, b_owner, b_result, b_partial;
-	uint32_t folder_type;
-	char sql_string[256];
-	uint32_t message_size, permission = rightsNone;
-	
+	uint32_t folder_type = 0;
 	*pb_partial = FALSE;
 	auto fid_val = src_fid;
 	auto b_private = exmdb_server::is_private();
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
 	if (folder_type == FOLDER_SEARCH) {
+		return [](db_item_ptr &pdb, int account_id, cpid_t cpid,
+		          bool b_guest, const char *username, uint64_t fid_val,
+		          bool b_normal, bool b_fai, uint64_t dst_fid,
+		          BOOL *pb_partial, uint64_t *pnormal_size,
+		          uint64_t *pfai_size) -> BOOL {
 		if (b_guest) {
+			uint32_t permission = rightsNone;
 			if (!cu_get_folder_permission(pdb->psqlite,
 			    dst_fid, username, &permission))
 				return FALSE;
@@ -1332,6 +1334,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 			}
 		}
 		if (b_normal || b_fai) {
+			char sql_string[202];
 			snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id,"
 						" messages.parent_fid, messages.is_associated "
 						"FROM messages JOIN search_result ON "
@@ -1352,12 +1355,14 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				auto message_id = pstmt.col_uint64(0);
 				auto parent_fid = pstmt.col_uint64(1);
 				if (b_guest) {
+					uint32_t permission = rightsNone;
 					if (!cu_get_folder_permission(pdb->psqlite,
 					    parent_fid, username, &permission))
 						return FALSE;
 					if (permission & (frightsOwner | frightsReadAny)) {
 						/* do nothing */
 					} else {
+						BOOL b_owner = false;
 						if (!common_util_check_message_owner(pdb->psqlite,
 						    message_id, username, &b_owner))
 							return FALSE;
@@ -1368,6 +1373,8 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					}
 				}
 				uint64_t message_id1 = 0;
+				uint32_t message_size = 0;
+				BOOL b_result = false;
 				if (!common_util_copy_message(pdb->psqlite,
 				    account_id, message_id, dst_fid, &message_id1,
 				    &b_result, &message_size))
@@ -1389,7 +1396,13 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 			}
 		}
 		return TRUE;
+		}(pdb, account_id, cpid, b_guest, username, fid_val, b_normal, b_fai, dst_fid, pb_partial, pnormal_size, pfai_size);
 	}
+
+	BOOL b_check = true, b_result, b_partial;
+	char sql_string[102];
+	uint32_t message_size, permission = rightsNone;
+	
 	if (b_normal || b_fai) {
 		if (!b_guest) {
 			b_check = FALSE;
@@ -1418,6 +1431,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 			auto message_id = pstmt.col_uint64(0);
 			bool is_associated = pstmt.col_uint64(1);
 			if (b_check) {
+				BOOL b_owner = false;
 				if (!common_util_check_message_owner(pdb->psqlite,
 				    message_id, username, &b_owner))
 					return FALSE;
@@ -1462,6 +1476,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				continue;
 			auto message_id = pstmt.col_uint64(0);
 			if (b_check) {
+				BOOL b_owner = false;
 				if (!common_util_check_message_owner(pdb->psqlite,
 				    message_id, username, &b_owner))
 					return FALSE;
