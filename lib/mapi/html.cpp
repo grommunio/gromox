@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cerrno>
@@ -7,14 +8,16 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <gumbo.h>
 #include <iconv.h>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+#include <libHX/defs.h>
 #include <libHX/string.h>
+#include <libHX/libxml_helper.h>
+#include <libxml/HTMLparser.h>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/endian.hpp>
@@ -36,6 +39,7 @@
 using namespace gromox;
 
 namespace {
+
 using rgb_t = unsigned int;
 
 struct RTF_WRITER {
@@ -48,11 +52,51 @@ struct RTF_WRITER {
 	std::vector<std::string> fonts_ordered; /* index -> font */
 	iconv_t cd;
 };
+
+enum class htag : uint8_t {
+	center, div, em, font, h1, h2, h3, h4, h5, h6, hr, i, li, mark, none, a,
+	b, br, ol, p, s, script, span, style, sub, sup, table, td, th, tr, ul,
+};
+
+static constexpr struct tagentry {
+	const char name[7];
+	enum htag tag;
+} htmltags[] = {
+	{"a", htag::a},
+	{"b", htag::b},
+	{"br", htag::br},
+	{"center", htag::center},
+	{"div", htag::div},
+	{"em", htag::em},
+	{"font", htag::font},
+	{"h1", htag::h1},
+	{"h2", htag::h2},
+	{"h3", htag::h3},
+	{"h4", htag::h4},
+	{"h5", htag::h5},
+	{"h6", htag::h6},
+	{"hr", htag::hr},
+	{"i", htag::i},
+	{"li", htag::li},
+	{"mark", htag::mark},
+	{"ol", htag::ol},
+	{"p", htag::p},
+	{"s", htag::s},
+	{"script", htag::script},
+	{"span", htag::span},
+	{"style", htag::style},
+	{"sub", htag::sub},
+	{"sup", htag::sup},
+	{"table", htag::table},
+	{"td", htag::td},
+	{"th", htag::th},
+	{"tr", htag::tr},
+	{"ul", htag::ul},
+};
+
 }
 
-static std::map<std::string, rgb_t> g_color_hash;
-
-static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
+static BOOL html_enum_write(RTF_WRITER *, const xmlNode *);
 
 static inline iconv_t html_iconv_open()
 {
@@ -68,33 +112,17 @@ RTF_WRITER::~RTF_WRITER()
 		iconv_close(cd);
 }
 
-BOOL html_init_library()
-{
-	static constexpr std::pair<const char *, rgb_t> color_map[] =
-		{{"black",				0x000000},
-		{"silver",				0xc0c0c0},
-		{"gray",				0x808080},
-		{"white",				0xffffff},
-		{"maroon",				0x800000},
-		{"red",					0xff0000},
-		{"purple",				0x800080},
-		{"fuchsia",				0xff00ff},
-		{"green",				0x008000},
-		{"lime",				0x00ff00},
-		{"olive",				0x808000},
-		{"yellow",				0xffff00},
-		{"navy",				0x000080},
-		{"blue",				0x0000ff},
-		{"teal",				0x008080},
-		{"aqua",				0x00ffff},
-		{"orange",				0xffa500},
+	static constexpr std::pair<const char *, rgb_t> color_map[] = {
 		{"aliceblue",			0xf0f8ff},
 		{"antiquewhite",		0xfaebd7},
+		{"aqua",				0x00ffff},
 		{"aquamarine",			0x7fffd4},
 		{"azure",				0xf0ffff},
 		{"beige",				0xf5f5dc},
 		{"bisque",				0xffe4c4},
+		{"black",				0x000000},
 		{"blanchedalmond",		0xffebcd},
+		{"blue",				0x0000ff},
 		{"blueviolet",			0x8a2be2},
 		{"brown",				0xa52a2a},
 		{"burlywood",			0xdeb887},
@@ -133,10 +161,13 @@ BOOL html_init_library()
 		{"firebrick",			0xb22222},
 		{"floralwhite",			0xfffaf0},
 		{"forestgreen",			0x228b22},
+		{"fuchsia",				0xff00ff},
 		{"gainsboro",			0xdcdcdc},
 		{"ghostwhite",			0xf8f8ff},
 		{"gold",				0xffd700},
 		{"goldenrod",			0xdaa520},
+		{"gray",				0x808080},
+		{"green",				0x008000},
 		{"greenyellow",			0xadff2f},
 		{"grey",				0x808080},
 		{"honeydew",			0xf0fff0},
@@ -164,9 +195,11 @@ BOOL html_init_library()
 		{"lightslategrey",		0x778899},
 		{"lightsteelblue",		0xb0c4de},
 		{"lightyellow",			0xffffe0},
+		{"lime",				0x00ff00},
 		{"limegreen",			0x32cd32},
 		{"linen",				0xfaf0e6},
 		{"magenta",				0xff00ff},
+		{"maroon",				0x800000},
 		{"mediumaquamarine",	0x66cdaa},
 		{"mediumblue",			0x0000cd},
 		{"mediumorchid",		0xba55d3},
@@ -181,8 +214,11 @@ BOOL html_init_library()
 		{"mistyrose",			0xffe4e1},
 		{"moccasin",			0xffe4b5},
 		{"navajowhite",			0xffdead},
+		{"navy",				0x000080},
 		{"oldlace",				0xfdf5e6},
+		{"olive",				0x808000},
 		{"olivedrab",			0x6b8e23},
+		{"orange",				0xffa500},
 		{"orangered",			0xff4500},
 		{"orchid",				0xda70d6},
 		{"palegoldenrod",		0xeee8aa},
@@ -195,6 +231,9 @@ BOOL html_init_library()
 		{"pink",				0xffc0cb},
 		{"plum",				0xdda0dd},
 		{"powderblue",			0xb0e0e6},
+		{"purple",				0x800080},
+		{"rebeccapurple",		0x663399},
+		{"red",					0xff0000},
 		{"rosybrown",			0xbc8f8f},
 		{"royalblue",			0x4169e1},
 		{"saddlebrown",			0x8b4513},
@@ -203,6 +242,7 @@ BOOL html_init_library()
 		{"seagreen",			0x2e8b57},
 		{"seashell",			0xfff5ee},
 		{"sienna",				0xa0522d},
+		{"silver",				0xc0c0c0},
 		{"skyblue",				0x87ceeb},
 		{"slateblue",			0x6a5acd},
 		{"slategray",			0x708090},
@@ -211,25 +251,21 @@ BOOL html_init_library()
 		{"springgreen",			0x00ff7f},
 		{"steelblue",			0x4682b4},
 		{"tan",					0xd2b48c},
+		{"teal",				0x008080},
 		{"thistle",				0xd8bfd8},
 		{"tomato",				0xff6347},
 		{"turquoise",			0x40e0d0},
 		{"violet",				0xee82ee},
 		{"wheat",				0xf5deb3},
+		{"white",				0xffffff},
 		{"whitesmoke",			0xf5f5f5},
+		{"yellow",				0xffff00},
 		{"yellowgreen",			0x9acd32},
-		{"rebeccapurple",		0x663399}};
+	};
 
+BOOL html_init_library()
+{
 	textmaps_init();
-	if (g_color_hash.size() > 0)
-		return TRUE;
-	try {
-		for (const auto &e : color_map)
-			g_color_hash.emplace(e.first, e.second);
-	} catch (const std::bad_alloc &) {
-		g_color_hash.clear();
-		return FALSE;
-	}
 	/* Test for availability of converters */
 	auto cd = html_iconv_open();
 	if (cd == (iconv_t)-1) {
@@ -547,8 +583,13 @@ static int html_convert_color(const char *value)
 	}
 	gx_strlcpy(color_string, value, GX_ARRAY_SIZE(color_string));
 	HX_strlower(color_string);
-	auto it = g_color_hash.find(color_string);
-	return it != g_color_hash.cend() ? it->second : -1;
+	auto it = std::lower_bound(std::begin(color_map), std::end(color_map), color_string,
+	          [](const std::pair<const char *, rgb_t> &pair, const char *k) {
+	          	return strcmp(pair.first, k) < 0;
+	          });
+	if (it == std::end(color_map) || strcmp(it->first, color_string) != 0)
+		return -1;
+	return it->second;
 }
 
 static BOOL html_match_style(const char *style_string,
@@ -585,25 +626,24 @@ static BOOL html_match_style(const char *style_string,
 	return TRUE;
 }
 
-static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
+static BOOL html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 {
 	int color;
 	int value_len;
 	char value[128];
 	BOOL unit_point;
-	GumboAttribute *pattribute;
 	
-	pattribute = gumbo_get_attribute(&pelement->attributes, "style");
+	auto pattribute = xml_getprop(pelement, "style");
 	if (NULL == pattribute) {
 		return TRUE;
 	}
-	if (html_match_style(pattribute->value,
+	if (html_match_style(pattribute,
 		"font-family", value, sizeof(value))) {
 		html_trim_style_value(value);
 		if (!html_write_style_font_family(pwriter, value))
 			return FALSE;
 	}
-	if (html_match_style(pattribute->value,
+	if (html_match_style(pattribute,
 		"font-size", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "pt")) {
@@ -615,7 +655,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 		    strtol(value, nullptr, 0), unit_point))
 			return FALSE;	
 	}
-	if (html_match_style(pattribute->value,
+	if (html_match_style(pattribute,
 		"line-height", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
@@ -624,7 +664,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 				return FALSE;	
 		}
 	}
-	if (html_match_style(pattribute->value,
+	if (html_match_style(pattribute,
 		"margin-top", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
@@ -633,7 +673,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 				return FALSE;	
 		}
 	}
-	if (html_match_style(pattribute->value,
+	if (html_match_style(pattribute,
 		"text-indent", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (strcasecmp(value + value_len - 2, "px") == 0 &&
@@ -641,7 +681,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 		    strtol(value, nullptr, 0)))
 			return FALSE;
 	}
-	if (html_match_style(pattribute->value,
+	if (html_match_style(pattribute,
 		"color", value, sizeof(value))) {
 		color = html_convert_color(value);
 		if (color != -1 && !html_write_style_color(pwriter, color))
@@ -1049,183 +1089,178 @@ static BOOL html_write_hr(RTF_WRITER *pwriter)
 	return TRUE;
 }
 
-static BOOL html_write_children(RTF_WRITER *pwriter, GumboNode *pnode)
+static BOOL html_write_children(RTF_WRITER *pwriter, const xmlNode *pnode)
 {
-	unsigned int i;
-	
-	if (!html_write_style(pwriter, &pnode->v.element))
+	if (!html_write_style(pwriter, pnode))
 		return FALSE;
-	for (i = 0; i < pnode->v.element.children.length; ++i)
-		if (!html_enum_write(pwriter,
-		    static_cast<GumboNode *>(pnode->v.element.children.data[i])))
+	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next)
+		if (!html_enum_write(pwriter, pnode))
 			return FALSE;
 	return TRUE;
 }
 
-static BOOL html_check_parent_type(GumboNode *pnode, GumboTag tag)
+static htag lookup_tag(const xmlNode *nd)
+{
+	auto k = signed_cast<const char *>(nd->name);
+	auto it = std::lower_bound(std::begin(htmltags), std::end(htmltags), k,
+	          [](const struct tagentry &x, const char *s) { return strcasecmp(x.name, s) < 0; });
+	return it != std::end(htmltags) && strcasecmp(it->name, k) == 0 ?
+	       it->tag : htag::none;
+}
+
+static BOOL html_check_parent_type(const xmlNode *pnode, htag tag)
 {
 	while (NULL != pnode->parent) {
 		pnode = pnode->parent;
-		if (GUMBO_NODE_ELEMENT == pnode->type
-			&& pnode->v.element.tag == tag) {
+		if (pnode->type == XML_ELEMENT_NODE && lookup_tag(pnode) == tag)
 			return TRUE;	
-		}
 	}
 	return FALSE;
 }
 
-static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
+static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 {
 	int color;
 	int cell_num;
-	unsigned int i;
-	const char *pvalue;
-	GumboAttribute *pattribute;
 	
-	if (GUMBO_NODE_ELEMENT == pnode->type) {
-		switch (pnode->v.element.tag) {
-		case GUMBO_TAG_A:
-			pattribute = gumbo_get_attribute(
-				&pnode->v.element.attributes, "href");
-			pvalue = pattribute != nullptr ? pattribute->value : "";
+	if (pnode->type == XML_ELEMENT_NODE) {
+		switch (lookup_tag(pnode)) {
+		case htag::a: {
+			auto pvalue = znul(xml_getprop(pnode, "href"));
 			if (!html_write_a_begin(pwriter, pvalue) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_a_end(pwriter);
-		case GUMBO_TAG_B:
+		}
+		case htag::b:
 			if (!html_write_b_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_b_end(pwriter);
-		case GUMBO_TAG_I:
+		case htag::i:
 			if (!html_write_i_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_i_end(pwriter);
-		case GUMBO_TAG_DIV:
+		case htag::div:
 			if (!html_write_div_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_div_end(pwriter);
-		case GUMBO_TAG_H1:
-		case GUMBO_TAG_H2:
-		case GUMBO_TAG_H3:
-		case GUMBO_TAG_H4:
-		case GUMBO_TAG_H5:
-		case GUMBO_TAG_H6:
+		case htag::h1:
+		case htag::h2:
+		case htag::h3:
+		case htag::h4:
+		case htag::h5:
+		case htag::h6:
 			if (!html_write_h_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_h_end(pwriter);
-		case GUMBO_TAG_P:
+		case htag::p:
 			if (!html_write_p_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_p_end(pwriter);
-		case GUMBO_TAG_S:
+		case htag::s:
 			if (!html_write_s_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_s_end(pwriter);
-		case GUMBO_TAG_BR:
+		case htag::br:
 			return html_write_br(pwriter);
-		case GUMBO_TAG_HR:
+		case htag::hr:
 			return html_write_hr(pwriter);
-		case GUMBO_TAG_EM:
+		case htag::em:
 			if (!html_write_em_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_em_end(pwriter);
-		case GUMBO_TAG_OL:
+		case htag::ol:
 			if (!html_write_ol_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_ol_end(pwriter);
-		case GUMBO_TAG_UL:
+		case htag::ul:
 			if (!html_write_ul_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_ul_end(pwriter);
-		case GUMBO_TAG_LI:
+		case htag::li:
 			if (!html_write_li_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_li_end(pwriter);
-		case GUMBO_TAG_CENTER:
+		case htag::center:
 			if (!html_write_center_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_center_end(pwriter);
-		case GUMBO_TAG_TABLE:
-			if (html_check_parent_type(pnode, GUMBO_TAG_TABLE))
+		case htag::table:
+			if (html_check_parent_type(pnode, htag::table))
 				return TRUE;
 			if (!html_write_table_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_table_end(pwriter);
-		case GUMBO_TAG_SPAN:
+		case htag::span:
 			if (!html_write_span_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_span_end(pwriter);
-		case GUMBO_TAG_FONT:
+		case htag::font: {
 			if (!html_write_font_begin(pwriter))
 				return FALSE;
-			pattribute = gumbo_get_attribute(
-				&pnode->v.element.attributes, "face");
+			auto pattribute = xml_getprop(pnode, "face");
 			if (pattribute != nullptr &&
-			    !html_write_style_font_family(pwriter, pattribute->value))
+			    !html_write_style_font_family(pwriter, pattribute))
 				return FALSE;
-			pattribute = gumbo_get_attribute(
-				&pnode->v.element.attributes, "color");
+			pattribute = xml_getprop(pnode, "color");
 			if (NULL != pattribute) {
-				color = html_convert_color(pattribute->value);
+				color = html_convert_color(pattribute);
 				if (color != -1 &&
 				    !html_write_style_color(pwriter, color))
 					return FALSE;
 			}
-			pattribute = gumbo_get_attribute(
-				&pnode->v.element.attributes, "size");
+			pattribute = xml_getprop(pnode, "size");
 			if (pattribute != nullptr &&
 			    !html_write_style_font_size(pwriter,
-			    strtol(pattribute->value, nullptr, 0) * 3 + 8, false))
+			    strtol(pattribute, nullptr, 0) * 3 + 8, false))
 				return FALSE;
 			if (!html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_font_end(pwriter);
-		case GUMBO_TAG_MARK:
+		}
+		case htag::mark:
 			if (!html_write_mark_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_mark_end(pwriter);
-		case GUMBO_TAG_TD:
+		case htag::td:
 			if (!html_write_td_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_td_end(pwriter);
-		case GUMBO_TAG_TH:
+		case htag::th:
 			if (!html_write_th_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_th_end(pwriter);
-		case GUMBO_TAG_TR:
+		case htag::tr:
 			cell_num = 0;
-			for (i=0; i<pnode->v.element.children.length; i++) {
-				if (GUMBO_NODE_ELEMENT == ((GumboNode*)
-					pnode->v.element.children.data[i])->type) {
+			for (auto ptr = pnode->children; ptr != nullptr; ptr = ptr->next)
+				if (ptr->type == XML_ELEMENT_NODE)
 					cell_num ++;
-				}
-			}
 			if (!html_write_tr_begin(pwriter, cell_num) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_tr_end(pwriter);
-		case GUMBO_TAG_SUB:
+		case htag::sub:
 			if (!html_write_sub_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
 			return html_write_sub_end(pwriter);
-		case GUMBO_TAG_SUP:
+		case htag::sup:
 			if (!html_write_sup_begin(pwriter) ||
 			    !html_write_children(pwriter, pnode))
 				return FALSE;
@@ -1233,48 +1268,42 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 		default:
 			return html_write_children(pwriter, pnode);
 		}
-	} else if (GUMBO_NODE_TEXT == pnode->type) {
-		if (!html_check_parent_type(pnode, GUMBO_TAG_STYLE) &&
-		    !html_check_parent_type(pnode, GUMBO_TAG_SCRIPT))
-			return html_write_string(pwriter, pnode->v.text.text);
+	} else if (pnode->type == XML_TEXT_NODE) {
+		if (!html_check_parent_type(pnode, htag::style) &&
+		    !html_check_parent_type(pnode, htag::script))
+			return html_write_string(pwriter, signed_cast<const char *>(pnode->content));
 	}
 	return TRUE;
 }
 
-static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
+static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 {
 	int color;
-	unsigned int i;
 	char value[128];
-	GumboAttribute *pattribute;
 	
-	if (GUMBO_NODE_ELEMENT != pnode->type) {
+	if (pnode->type != XML_ELEMENT_NODE)
 		return;
-	}
-	if (pnode->v.element.tag == GUMBO_TAG_FONT) {
-		pattribute = gumbo_get_attribute(
-			&pnode->v.element.attributes, "face");
+	if (lookup_tag(pnode) == htag::font) {
+		auto pattribute = xml_getprop(pnode, "face");
 		if (NULL != pattribute) {
-			html_set_fonttable(pwriter, pattribute->value);
+			html_set_fonttable(pwriter, pattribute);
 		}
-		pattribute = gumbo_get_attribute(
-			&pnode->v.element.attributes, "color");
+		pattribute = xml_getprop(pnode, "color");
 		if (NULL != pattribute) {
-			color = html_convert_color(znul(pattribute->value));
+			color = html_convert_color(pattribute);
 			if (-1 != color) {
 				html_set_colortable(pwriter, color);
 			}
 		}
 	}
-	pattribute = gumbo_get_attribute(
-		&pnode->v.element.attributes, "style");
+	auto pattribute = xml_getprop(pnode, "style");
 	if (NULL != pattribute) {
-		if (html_match_style(pattribute->value,
+		if (html_match_style(pattribute,
 			"font-family", value, sizeof(value))) {
 			html_trim_style_value(value);
 			html_set_fonttable(pwriter, value);
 		}
-		if (html_match_style(pattribute->value,
+		if (html_match_style(pattribute,
 			"color", value, sizeof(value))) {
 			color = html_convert_color(value);
 			if (-1 != color) {
@@ -1282,10 +1311,8 @@ static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
 			}
 		}
 	}
-	for (i=0; i<pnode->v.element.children.length; i++) {
-		html_enum_tables(pwriter,
-			static_cast<GumboNode *>(pnode->v.element.children.data[i]));
-	}
+	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next)
+		html_enum_tables(pwriter, pnode);
 }
 
 static void html_string_to_utf8(cpid_t cpid,
@@ -1318,7 +1345,6 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
     char **pbuff_out, size_t *plength)
 {
 	RTF_WRITER writer;
-	GumboOutput *pgumbo_html;
 
 	std::unique_ptr<char[]> buff_inz(new(std::nothrow) char[length+1]);
 	if (buff_inz == nullptr)
@@ -1336,17 +1362,18 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 		free(pbuffer);
 		return FALSE;
 	}
-	pgumbo_html = gumbo_parse(pbuffer);
-	if (NULL == pgumbo_html) {
+	auto hdoc = htmlReadMemory(pbuffer, strlen(pbuffer), nullptr, "utf-8",
+	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
+	if (hdoc == nullptr) {
 		free(pbuffer);
 		return FALSE;
 	}
-	if (NULL != pgumbo_html->root) {
-		html_enum_tables(&writer, pgumbo_html->root);
+	auto root = xmlDocGetRootElement(hdoc);
+	if (root != nullptr) {
+		html_enum_tables(&writer, root);
 		if (!html_write_header(&writer) ||
-		    !html_enum_write(&writer, pgumbo_html->root) ||
+		    !html_enum_write(&writer, root) ||
 		    !html_write_tail(&writer)) {
-			gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);
 			free(pbuffer);
 			return FALSE;
 		}
@@ -1355,7 +1382,7 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 	*pbuff_out = me_alloc<char>(*plength);
 	if (*pbuff_out != nullptr)
 		memcpy(*pbuff_out, writer.ext_push.m_udata, *plength);
-	gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);
+	xmlFreeDoc(hdoc);
 	free(pbuffer);
 	return *pbuff_out != nullptr ? TRUE : FALSE;
 }
