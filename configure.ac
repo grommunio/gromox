@@ -88,7 +88,7 @@ dl_LIBS=""
 libldap_LIBS=""
 resolv_LIBS=""
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([HX], [libHX >= 4.11])
+PKG_CHECK_MODULES([HX], [libHX >= 4.12])
 PKG_CHECK_MODULES([crypto], [libcrypto])
 PKG_CHECK_MODULES([curl], [libcurl])
 PKG_CHECK_MODULES([fmt], [fmt >= 8])
