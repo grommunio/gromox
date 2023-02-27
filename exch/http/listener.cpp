@@ -26,7 +26,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "http_parser.h"
 #include "listener.h"

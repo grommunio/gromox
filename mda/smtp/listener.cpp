@@ -18,7 +18,6 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include <libHX/io.h>
 #include <libHX/socket.h>

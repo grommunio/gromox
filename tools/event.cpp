@@ -36,7 +36,6 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 
 #define SELECT_INTERVAL			24*60*60

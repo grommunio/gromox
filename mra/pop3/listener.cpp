@@ -27,7 +27,6 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "pop3.hpp"
 

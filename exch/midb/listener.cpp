@@ -21,7 +21,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"

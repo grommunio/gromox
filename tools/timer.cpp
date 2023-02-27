@@ -31,7 +31,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 
 #define COMMAND_LENGTH		512

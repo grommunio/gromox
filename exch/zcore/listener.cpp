@@ -15,7 +15,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/socket.h>
 #include <gromox/util.hpp>
 #include "listener.hpp"
 #include "rpc_parser.hpp"
