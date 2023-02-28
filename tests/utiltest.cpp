@@ -15,7 +15,7 @@
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #undef assert
-#define assert(x) do { if (!(x)) return EXIT_FAILURE; } while (false)
+#define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
 using namespace gromox;
 #define s_rgbSPlus "040000008200E00074C5B7101A82E008"
 
@@ -233,9 +233,16 @@ static int t_cmp_guid()
 	char buf[sizeof(FLATUID)];
 	EXT_PUSH ep;
 	ep.init(buf, sizeof(buf), 0);
+	if (ep.p_guid(PSETID_ADDRESS) != EXT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	assert((memcmp(&PSETID_ADDRESS, buf, sizeof(buf)) != 0) == GX_BIG_ENDIAN);
+	static_assert(std::is_same_v<decltype(PSETID_ADDRESS), const GUID>);
+
+	ep.init(buf, sizeof(buf), 0);
 	if (ep.p_guid(muidEMSAB) != EXT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	assert((memcmp(&muidEMSAB, buf, sizeof(buf)) != 0) == GX_BIG_ENDIAN);
+	assert(memcmp(&muidEMSAB, buf, sizeof(buf)) == 0);
+	static_assert(std::is_same_v<decltype(muidEMSAB), const FLATUID>);
 	return EXIT_SUCCESS;
 }
 
