@@ -36,7 +36,6 @@
 #include <gromox/util.hpp>
 #include "db_engine.h"
 #include "notification_agent.h"
-#define DB_LOCK_TIMEOUT					60
 #define MAX_DYNAMIC_NODES				100
 
 using LLD = long long;
@@ -106,6 +105,7 @@ static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel;
+static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
 static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
@@ -219,7 +219,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			mlog(LV_WARN, "W-1620: contention on %s (%u uses)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
-		if (!pdb->giant_lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+		if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
 			hhold.lock();
 			--pdb->reference;
 			hhold.unlock();
@@ -243,7 +243,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	time(&pdb->last_time);
 	pdb->reference ++;
 	hhold.unlock();
-	if (!pdb->giant_lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+	if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
 		hhold.lock();
 		pdb->reference --;
 		hhold.unlock();
