@@ -1597,7 +1597,11 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 	(*puidnext) ++;
 	auto b_unsent = !!(message_flags & MSGFLAG_UNSENT);
 	auto b_read   = !!(message_flags & MSGFLAG_READ);
-	mail_engine_extract_digest_fields(djson.c_str(), subject,
+	Json::Value digest;
+	if (!json_from_str(djson.c_str(), digest))
+		return;
+	djson.clear();
+	mail_engine_extract_digest_fields(digest, subject,
 		std::size(subject), from, std::size(from), rcpt,
 		std::size(rcpt), &size);
 	sqlite3_reset(pstmt);
