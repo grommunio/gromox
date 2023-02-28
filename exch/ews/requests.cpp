@@ -11,6 +11,8 @@
 
 #include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/eid_array.hpp>
+#include <gromox/rop_util.hpp>
 
 #include "exceptions.hpp"
 #include "requests.hpp"
@@ -461,6 +463,13 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	data.serialize(response);
 }
 
+/**
+ * @brief      Process SyncFolderItems
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
 void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
 	ctx.experimental();
@@ -483,9 +492,8 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint32_t fai_count, normal_count;
 	uint64_t fai_total, normal_total, last_cn, last_readcn;
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
-
-	bool getFai = request.SyncScope && *request.SyncScope == "NormalAndAssociatedItems";
-	idset* pseen_fai = getFai? &syncState.seen_fai : nullptr;
+	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
+	idset* pseen_fai = getFai? &syncState.seen : nullptr;
 	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, username,
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
@@ -493,38 +501,76 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	    &deleted_mids, &nolonger_mids, &read_mids, &unread_mids,
 	    &last_readcn))
 		throw DispatchError(E3031);
-	syncState.update(given_mids, deleted_mids, last_cn);
 
+	syncState.given.convert();
+	syncState.seen.convert();
+	syncState.read.convert();
 	sProptags itemTags = ctx.collectTags(request.ItemShape);
+	itemTags.tags.emplace_back(PidTagChangeNumber);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
 		throw DispatchError(E3032);
 	PROPTAG_ARRAY requestedTags{uint16_t(itemTags.tags.size()), itemTags.tags.data()};
 
+	uint32_t maxItems = request.MaxChangesReturned;
+	bool clipped = false;
+
 	mSyncFolderItemsResponse data;
 	mSyncFolderItemsResponseMessage& msg = data.ResponseMessages.emplace_back();
-	msg.Changes.reserve(updated_mids.count+chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count);
+	msg.Changes.reserve(min(chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count, maxItems));
+	maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
 	for(uint64_t* mid = deleted_mids.pids; mid < deleted_mids.pids+deleted_mids.count; ++mid)
-		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
-	for(uint64_t* mid = nolonger_mids.pids; mid < nolonger_mids.pids+nolonger_mids.count; ++mid)
-		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
-	for(uint64_t* mid = updated_mids.pids; mid < updated_mids.pids+updated_mids.count; ++mid)
 	{
-		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
-		msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
+		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
+		syncState.given.remove(*mid);
 	}
+	clipped = clipped || nolonger_mids.count > maxItems;
+	maxItems -= nolonger_mids.count = min(nolonger_mids.count, maxItems);
+	for(uint64_t* mid = nolonger_mids.pids; mid < nolonger_mids.pids+nolonger_mids.count; ++mid)
+	{
+		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
+		syncState.given.remove(*mid);
+	}
+	clipped = clipped || chg_mids.count > maxItems;
+	maxItems -= chg_mids.count = min(chg_mids.count, maxItems);
 	for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
 	{
 		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
-		msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
+		uint64_t* changeNum = itemProps.get<uint64_t>(PidTagChangeNumber);
+		if(!changeNum)
+			continue;
+		if(eid_array_check(&updated_mids, *mid))
+			msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, tItem::create(itemProps)}});
+		else
+			msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
+		syncState.given.append(*mid);
+		syncState.seen.append(*changeNum);
 	}
-	for(uint64_t* mid = read_mids.pids; mid < read_mids.pids+read_mids.count; ++mid)
+	uint32_t readSynced = syncState.readOffset;
+	uint32_t skip = min(syncState.readOffset, read_mids.count);
+	read_mids.count = min(read_mids.count-skip, maxItems)+skip;
+	maxItems -= read_mids.count-skip;
+	clipped = clipped || read_mids.count-skip > maxItems;
+	for(uint64_t* mid = read_mids.pids+skip; mid < read_mids.pids+read_mids.count; ++mid)
 		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), true});
-	for(uint64_t* mid = unread_mids.pids; mid < read_mids.pids+read_mids.count; ++mid)
+	readSynced += read_mids.count-skip;
+	skip = min(unread_mids.count, syncState.readOffset-read_mids.count+skip);
+	unread_mids.count = min(unread_mids.count-skip, maxItems)+skip;
+	clipped = clipped || unread_mids.count-skip > maxItems;
+	for(uint64_t* mid = unread_mids.pids+skip; mid < unread_mids.pids+unread_mids.count; ++mid)
 		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), false});
+	if(!clipped)
+	{
+		syncState.seen.clear();
+		syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn));
+		syncState.read.clear();
+		syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn));
+		syncState.readOffset = 0;
+	}
+	else
+		syncState.readOffset = readSynced+unread_mids.count-skip;
 	msg.SyncState = syncState.serialize();
-	msg.IncludesLastItemInRange = true;
+	msg.IncludesLastItemInRange = !clipped;
 	msg.success();
-
 	data.serialize(response);
 }
 

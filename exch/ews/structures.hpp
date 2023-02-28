@@ -166,13 +166,16 @@ struct sSyncState
 
 	void init(const std::string&);
 	void update(const EID_ARRAY&, const EID_ARRAY&, uint64_t);
-	void update(const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, uint64_t);
 	std::string serialize();
 
 	idset given; ///< Set of known IDs
 	idset seen;  ///< Set of known change numbers
 	idset read;  ///< Set of read change numbers
-	idset seen_fai; //Set of seen fai change numbers
+	idset seen_fai; ///< Set of seen fai change numbers
+	uint32_t readOffset = 0; ///< Number of read states already delivered
+
+private:
+	static constexpr uint32_t MetaTagReadOffset = PROP_TAG(PT_LONG, 0x0e69); //PR_READ, but with long type
 };
 
 /**

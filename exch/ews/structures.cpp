@@ -227,6 +227,8 @@ void sSyncState::init(const std::string& data64)
 			if(!seen_fai.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen_fai.convert())
 				throw InputError(E3056);
 			break;
+		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
+			readOffset = *static_cast<uint32_t*>(propval->pvalue);
 		}
 	}
 }
@@ -628,6 +630,7 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
 	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
 		switch(tp->proptag)
 		{
+		case PidTagChangeNumber:
 		case PR_CONVERSATION_INDEX:
 		case PR_CONVERSATION_TOPIC:
 		case PR_READ:

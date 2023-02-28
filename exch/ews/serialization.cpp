@@ -185,16 +185,21 @@ std::string sSyncState::serialize()
 	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
 		throw DispatchError(E3037);
 	ser.reset();
-	if(!seen_fai.empty() && !read.empty())
+	if(!seen_fai.empty())
 	{
 		ser.reset(seen_fai.serialize());
 		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()))
 			throw DispatchError(E3038);
+	}
+	if(!read.empty())
+	{
 		ser.reset(read.serialize());
 		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()))
 			throw DispatchError(E3039);
 	}
 	ser.reset();
+	if(readOffset)
+		pproplist->set(MetaTagReadOffset, &readOffset);
 
 	EXT_PUSH stateBuffer;
 	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
