@@ -2046,10 +2046,8 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 			snprintf(temp_id, 64, "%s.%d", id_string, count);
 		}
 		auto mime = static_cast<const MIME *>(pnode->pdata);
-		Json::Value digest;
-		if (mime->get_mimes_digest(temp_id, poffset, digest) < 0)
+		if (mime->get_mimes_digest(temp_id, poffset, dsarray) < 0)
 			return -1;
-		dsarray.append(std::move(digest));
 		pnode = pnode->get_sibling();
 		count++;
 	}
