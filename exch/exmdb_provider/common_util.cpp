@@ -1545,6 +1545,10 @@ static void *cu_get_object_text_v0(const char *dir, uint64_t cid,
 	struct stat node_stat;
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
+	if (!S_ISREG(node_stat.st_mode)) {
+		errno = ENOENT;
+		return nullptr;
+	}
 #if defined(HAVE_POSIX_FADVISE)
 	if (posix_fadvise(fd.get(), 0, node_stat.st_size, POSIX_FADV_SEQUENTIAL) != 0)
 		/* ignore */;

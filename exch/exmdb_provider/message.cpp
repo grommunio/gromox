@@ -2688,7 +2688,11 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		         exmdb_server::get_dir(), mid_string);
 		wrapfd fd = open(tmp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-			return ecError;
+			return ecNotFound;
+		if (!S_ISREG(node_stat.st_mode)) {
+			errno = ENOENT;
+			return ecNotFound;
+		}
 		pbuff.reset(me_alloc<char>(node_stat.st_size));
 		if (pbuff == nullptr)
 			return ecServerOOM;
