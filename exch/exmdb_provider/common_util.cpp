@@ -1913,30 +1913,47 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 	}
 }
 
-static GP_RESULT gp_rcptprop_synth(sqlite3 *db, uint32_t proptag, xstmt &stm)
+static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 {
 	switch (proptag) {
-	case PR_RECIPIENT_TYPE:
-		stm = gx_sql_prep(db, "SELECT 1"); // MAPI_TO
-		break;
+	case PR_RECIPIENT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
+		if (v == nullptr)
+			return GP_ERR;
+		*v = MAPI_TO;
+		return GP_ADV;
+	}
 	case PR_DISPLAY_NAME:
-	case PR_EMAIL_ADDRESS:
-		stm = gx_sql_prep(db, "SELECT 15, ''"); // PT_UNICODE
-		break;
-	case PR_ADDRTYPE:
-		stm = gx_sql_prep(db, "SELECT 15, 'NONE'");
-		break;
+	case PR_EMAIL_ADDRESS: {
+		auto v = cu_alloc<char>(1);
+		pv.pvalue = v;
+		if (v == nullptr)
+			return GP_ERR;
+		*v = '\0';
+		pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_UNICODE);
+		return GP_ADV;
+	}
+	case PR_ADDRTYPE: {
+		auto v = cu_alloc<char>(5);
+		pv.pvalue = v;
+		if (v == nullptr)
+			return GP_ERR;
+		strcpy(v, "NONE");
+		pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_UNICODE);
+		return GP_ADV;
+	}
 	default:
 		return GP_UNHANDLED;
 	}
-	return GP_ADV;
 }
 
-static GP_RESULT gp_fallbackprop(sqlite3 *db, mapi_object_type table_type,
-    uint32_t proptag, xstmt &stm)
+static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint32_t proptag,
+    TAGGED_PROPVAL &pv)
 {
+	pv.proptag = proptag;
 	return table_type == MAPI_MAILUSER ?
-	       gp_rcptprop_synth(db, proptag, stm) : GP_UNHANDLED;
+	       gp_rcptprop_synth(proptag, pv) : GP_UNHANDLED;
 }
 
 BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
@@ -1983,12 +2000,14 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				return false;
 		}
 		if (sqlite3_step(pstmt) != SQLITE_ROW) {
-			ret = gp_fallbackprop(psqlite, table_type, pproptags->pproptag[i], own_stmt);
-			if (ret == GP_UNHANDLED)
+			ret = gp_fallbackprop(table_type, pproptags->pproptag[i], pv);
+			if (ret == GP_ERR)
+				return false;
+			if (ret == GP_ADV) {
+				++ppropvals->count;
 				continue;
-			pstmt = own_stmt;
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-				continue;
+			}
+			continue; /* SKIP or UNHANDLED */
 		}
 		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid);
 		if (pvalue == nullptr)
@@ -2211,6 +2230,12 @@ static bool gp_prepare_default(sqlite3 *psqlite, mapi_object_type table_type,
 	return true;
 }
 
+/**
+ * @pstmt:	a statement for which sqlite3_step was already invoked
+ *
+ * Read the current row from @pstmt (i.e. just one row; no read cursor
+ * advancing here).
+ */
 static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
     uint16_t proptype, cpid_t cpid)
 {
