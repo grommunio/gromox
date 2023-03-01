@@ -316,7 +316,8 @@ struct tFolderId : public tBaseItemId
  */
 struct tGuid : public GUID
 {
-	tGuid(const tinyxml2::XMLAttribute*);
+	explicit tGuid(const tinyxml2::XMLAttribute*);
+	tGuid(const GUID&);
 
 	std::string serialize() const;
 };
@@ -332,6 +333,7 @@ struct tExtendedFieldURI
 
 	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
 	explicit tExtendedFieldURI(uint32_t);
+	tExtendedFieldURI(uint16_t, const PROPERTY_NAME&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -354,9 +356,10 @@ struct tExtendedFieldURI
  */
 struct tExtendedProperty
 {
-	explicit tExtendedProperty(const TAGGED_PROPVAL&);
+	explicit tExtendedProperty(const TAGGED_PROPVAL&, const PROPERTY_NAME& = PROPERTY_NAME{KIND_NONE, {}, 0, nullptr});
 
 	TAGGED_PROPVAL propval;
+	PROPERTY_NAME propname;
 
 	void serialize(tinyxml2::XMLElement*) const;
 private:
@@ -591,6 +594,8 @@ struct tItem : public NS_EWS_Types
 	//<xs:element name="InferenceClassification" type="t:InferenceClassificationType" minOccurs="0" />
 
 	void serialize(tinyxml2::XMLElement*) const;
+
+	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
 
 	static sItem create(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
 };

@@ -405,6 +405,22 @@ tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
 }
 
 /**
+ * @brief     Generate URI from named property
+ *
+ * @param     type       Property type
+ * @param     propname   Property name information
+ */
+tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propname) :
+    PropertyType(typeName(type)),
+    PropertySetId(propname.guid)
+{
+	if(propname.kind == MNID_ID)
+		PropertyId = propname.lid;
+	else if(propname.kind == MNID_STRING)
+		PropertyName = propname.pname;
+}
+
+/**
  * @brief     Collect property tags and names for field URI
 
  * @param     tags    Inserter to use for property tags
@@ -489,7 +505,7 @@ const char* tExtendedFieldURI::typeName(uint16_t type)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp) : propval(tp)
+tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) : propval(tp), propname(pn)
 {}
 
 void tExtendedProperty::serialize(const void* data, size_t idx, uint16_t type, XMLElement* xml) const
@@ -614,6 +630,9 @@ tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
 tGuid::tGuid(const XMLAttribute* xml)
 {from_str(xml->Value());}
 
+tGuid::tGuid(const GUID& guid) : GUID(guid)
+{}
+
 std::string tGuid::serialize() const
 {
 	std::string repr(36, '\0');
@@ -625,9 +644,12 @@ std::string tGuid::serialize() const
 
 #define pval(type) static_cast<const type*>(tp->pvalue)
 
-tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
+tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps)
 {
 	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+	{
+		if(mapNamedProperty(*tp, namedProps))
+			continue;
 		switch(tp->proptag)
 		{
 		case PidTagChangeNumber:
@@ -688,6 +710,7 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
 		default:
 			ExtendedProperty.emplace_back(*tp);
 		}
+	}
 }
 
 #undef pval
@@ -700,6 +723,18 @@ sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& na
 	if(!strcasecmp(itemClass, "IPM.Note"))
 		return tMessage(itemProps, namedProps);
 	return tItem(itemProps, namedProps);
+}
+
+bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& namedProps)
+{
+	sNamedPropertyMap::const_iterator entry;
+	if(PROP_ID(tp.proptag) < 0x8000 || (entry = namedProps.find(tp.proptag)) == namedProps.end())
+		return false;
+	const PROPERTY_NAME& pn = entry->second;
+	//Here we can catch known property names and map them to the appropriate attributes
+	//Otherwise just put it into an extended attribute
+	ExtendedProperty.emplace_back(tp, pn);
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

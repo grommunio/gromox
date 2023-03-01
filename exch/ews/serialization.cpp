@@ -340,11 +340,13 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	if(!data)
 		return;
 	bool ismv = propval.proptag & MV_FLAG;
-	toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
+	if(propname.kind == KIND_NONE)
+		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
+	else
+		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(PROP_TYPE(propval.proptag), propname));
 	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
 	if(!ismv)
 		return serialize(data, 0, PROP_TYPE(propval.proptag), value);
-	//throw NotImplementedError("MV tags are currently not supported");
 }
 
 tFieldURI::tFieldURI(const XMLElement* xml) :
