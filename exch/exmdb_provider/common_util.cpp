@@ -603,6 +603,8 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		tags.push_back(tag);
 	}
 	pstmt.finalize();
+	std::sort(tags.begin(), tags.end());
+	tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1161: ENOMEM");
