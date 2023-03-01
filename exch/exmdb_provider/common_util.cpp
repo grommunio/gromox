@@ -1910,6 +1910,19 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 	}
 }
 
+static GP_RESULT gp_msgprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
+{
+	if (proptag == PR_MESSAGE_CLASS) {
+		auto v = cu_alloc<char>(16);
+		pv.pvalue = v;
+		if (v == nullptr)
+			return GP_ERR;
+		strcpy(v, "IPM.Note.AUTO");
+		return GP_ADV;
+	}
+	return GP_UNHANDLED;
+}
+
 static GP_RESULT gp_rcptprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 {
 	switch (proptag) {
@@ -1949,8 +1962,11 @@ static GP_RESULT gp_fallbackprop(mapi_object_type table_type, uint32_t proptag,
     TAGGED_PROPVAL &pv)
 {
 	pv.proptag = proptag;
-	return table_type == MAPI_MAILUSER ?
-	       gp_rcptprop_synth(proptag, pv) : GP_UNHANDLED;
+	if (table_type == MAPI_MESSAGE)
+		return gp_msgprop_synth(proptag, pv);
+	if (table_type == MAPI_MAILUSER)
+		return gp_rcptprop_synth(proptag, pv);
+	return GP_UNHANDLED;
 }
 
 BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
