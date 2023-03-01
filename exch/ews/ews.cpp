@@ -73,6 +73,7 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
 	{"GetFolder", process<Structures::mGetFolderRequest>},
+	{"GetItem", process<Structures::mGetItemRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},

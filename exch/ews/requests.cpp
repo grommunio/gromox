@@ -597,4 +597,30 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	data.serialize(response);
 }
 
+void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetItemResponse");
+
+	sProptags itemTags = ctx.collectTags(request.ItemShape);
+	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
+		throw DispatchError(E3032);
+	mGetItemResponse data;
+	mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
+	msg.Items.reserve(request.ItemIds.size());
+	PROPTAG_ARRAY requestedTags{uint16_t(itemTags.tags.size()), itemTags.tags.data()};
+
+	auto dir = ctx.getDir();
+	for(auto& itemId : request.ItemIds) {
+		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
+		auto mid = rop_util_make_eid_ex(1, eid.messageId());
+		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, mid.m_value, requestedTags);
+		msg.Items.emplace_back(tItem::create(itemProps));
+	}
+
+	msg.success();
+
+	data.serialize(response);
+}
 }

@@ -672,3 +672,17 @@ void mSyncFolderItemsResponseMessage::serialize(XMLElement* xml) const
 
 void mSyncFolderItemsResponse::serialize(XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
+
+mGetItemRequest::mGetItemRequest(const XMLElement* xml) :
+	XMLINIT(ItemShape),
+	XMLINIT(ItemIds)
+{}
+
+void mGetItemResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mGetItemResponseMessage::serialize(XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Items);
+}

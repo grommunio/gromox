@@ -100,6 +100,54 @@ uint64_t sFolderEntryId::folderId() const
 bool sFolderEntryId::isPrivate() const
 {return folder_type == EITLT_PRIVATE_FOLDER;}
 
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+sMessageEntryId::sMessageEntryId(const void* data, uint64_t size)
+{init(data, size);}
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+void sMessageEntryId::init(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size >	std::numeric_limits<uint32_t>::max())
+		throw DeserializationError(E3050);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_msg_eid(this));
+}
+
+/**
+ * @brief     Retrieve account ID from entry ID
+ *
+ * @return    User or domain ID (depending on isPrivate())
+ */
+uint32_t sMessageEntryId::accountId() const
+{return folder_database_guid.time_low;}
+
+/**
+ * @brief     Retrieve message ID from entryID
+ *
+ * @return    message ID
+ */
+uint64_t sMessageEntryId::messageId() const
+{return rop_util_gc_to_value(message_global_counter);}
+
+/**
+ * @brief     Retrieve message type
+ *
+ * @return    true if message is private, false otherwise
+ */
+bool sMessageEntryId::isPrivate() const
+{return message_type == EITLT_PRIVATE_MESSAGE;}
+
 #undef TRY
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -110,6 +110,25 @@ private:
 };
 
 /**
+ * @brief     Message entry ID extension
+ *
+ * Provides EWS conversions and access utilities.
+ */
+struct sMessageEntryId : public MESSAGE_ENTRYID
+{
+	// sMessageEntryId(const tinyxml2::XMLAttribute*);
+	sMessageEntryId(const void*, uint64_t);
+
+	// std::string serialize() const;
+
+	uint32_t accountId() const;
+	uint64_t messageId() const;
+	bool isPrivate() const;
+private:
+	void init(const void*, uint64_t);
+};
+
+/**
  * @brief      Folder specification
  *
  * Resolves folder ID and type either from the distinguished name or
@@ -143,6 +162,22 @@ private:
  */
 using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
 
+	// TODO: missing item types
+	/*
+	<Items>
+		<Item/>
+		<Message/>
+		<CalendarItem/>
+		<Contact/>
+		<DistributionList/>
+		<MeetingMessage/>
+		<MeetingRequest/>
+		<MeetingResponse/>
+		<MeetingCancellation/>
+		<Task/>
+		<PostItem/>
+	</Items>
+	*/
 using sItem = std::variant<tItem, tMessage>;
 
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
@@ -1353,6 +1388,37 @@ struct mSyncFolderItemsResponseMessage : mResponseMessageType
 struct mSyncFolderItemsResponse
 {
 	std::vector<mSyncFolderItemsResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:946
+ */
+struct mGetItemRequest
+{
+	explicit mGetItemRequest(const tinyxml2::XMLElement*);
+
+	tItemResponseShape ItemShape;
+	std::vector<tItemId> ItemIds;
+
+};
+
+struct mGetItemResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "GetItemResponseMessage";
+
+	std::vector<sItem> Items;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1519
+ */
+struct mGetItemResponse
+{
+	std::vector<mGetItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

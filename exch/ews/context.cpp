@@ -211,6 +211,15 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	return targetDir;
 }
 
+std::string EWSContext::getDir() const
+{
+	const char* target = auth_info.username;
+	char targetDir[256];
+	if(!plugin.mysql.get_maildir(target, targetDir, arsizeof(targetDir)))
+		throw DispatchError(E3007);
+	return targetDir;
+}
+
 /**
  * @brief     Get entry ID property of folder
  *
