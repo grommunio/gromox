@@ -82,8 +82,8 @@ template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> dec
 #define gx_strlcpy(dst, src, dsize) HX_strlcpy((dst), (src), (dsize))
 #endif
 
-#define ENVELOPE_FROM_NULL "none@none"
-#define ENVELOPE_RCPT_NULL "none@none"
+#define ENVELOPE_FROM_NULL "no.envelope.from@invalid"
+#define ENVELOPE_RCPT_NULL "no.envelope.rcpt@invalid"
 
 static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000 && i <= 0xFFFE; }
 
