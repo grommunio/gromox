@@ -1305,6 +1305,86 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	return TRUE;
 }
 
+static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
+    bool b_guest, const char *username, uint64_t fid_val, bool b_normal,
+    bool b_fai, uint64_t dst_fid, BOOL *pb_partial, uint64_t *pnormal_size,
+    uint64_t *pfai_size)
+{
+	if (b_guest) {
+		uint32_t permission = rightsNone;
+		if (!cu_get_folder_permission(pdb->psqlite,
+		    dst_fid, username, &permission))
+			return FALSE;
+		if (!(permission & frightsCreate)) {
+			*pb_partial = TRUE;
+			return TRUE;
+		}
+	}
+	if (!b_normal && !b_fai)
+		return TRUE;
+	char sql_string[202];
+	snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id,"
+	         " messages.parent_fid, messages.is_associated "
+	         "FROM messages JOIN search_result ON "
+	         "messages.message_id=search_result.message_id"
+	         " AND search_result.folder_id=%llu", LLU{fid_val});
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	if (pstmt == nullptr)
+		return FALSE;
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		bool is_associated = pstmt.col_uint64(2);
+		if (0 == is_associated) {
+			if (!b_normal)
+				continue;
+		} else {
+			if (!b_fai)
+				continue;
+		}
+		auto message_id = pstmt.col_uint64(0);
+		auto parent_fid = pstmt.col_uint64(1);
+		if (b_guest) {
+			uint32_t permission = rightsNone;
+			if (!cu_get_folder_permission(pdb->psqlite,
+			    parent_fid, username, &permission))
+				return FALSE;
+			if (permission & (frightsOwner | frightsReadAny)) {
+				/* do nothing */
+			} else {
+				BOOL b_owner = false;
+				if (!common_util_check_message_owner(pdb->psqlite,
+				    message_id, username, &b_owner))
+					return FALSE;
+				if (!b_owner) {
+					*pb_partial = TRUE;
+					continue;
+				}
+			}
+		}
+		uint64_t message_id1 = 0;
+		uint32_t message_size = 0;
+		BOOL b_result = false;
+		if (!common_util_copy_message(pdb->psqlite,
+		    account_id, message_id, dst_fid, &message_id1,
+		    &b_result, &message_size))
+			return FALSE;
+		if (!b_result) {
+			*pb_partial = TRUE;
+			continue;
+		}
+		if (0 == is_associated) {
+			if (pnormal_size != nullptr)
+				*pnormal_size += message_size;
+		} else {
+			if (pfai_size != nullptr)
+				*pfai_size += message_size;
+		}
+		db_engine_proc_dynamic_event(pdb, cpid,
+			DYNAMIC_EVENT_NEW_MESSAGE,
+			dst_fid, message_id1, 0);
+	}
+	return TRUE;
+}
+
 static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
     cpid_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, BOOL b_normal,
@@ -1318,85 +1398,9 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
 	if (folder_type == FOLDER_SEARCH) {
-		return [](db_item_ptr &pdb, int account_id, cpid_t cpid,
-		          bool b_guest, const char *username, uint64_t fid_val,
-		          bool b_normal, bool b_fai, uint64_t dst_fid,
-		          BOOL *pb_partial, uint64_t *pnormal_size,
-		          uint64_t *pfai_size) -> BOOL {
-		if (b_guest) {
-			uint32_t permission = rightsNone;
-			if (!cu_get_folder_permission(pdb->psqlite,
-			    dst_fid, username, &permission))
-				return FALSE;
-			if (!(permission & frightsCreate)) {
-				*pb_partial = TRUE;
-				return TRUE;
-			}
-		}
-		if (b_normal || b_fai) {
-			char sql_string[202];
-			snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id,"
-						" messages.parent_fid, messages.is_associated "
-						"FROM messages JOIN search_result ON "
-						"messages.message_id=search_result.message_id"
-						" AND search_result.folder_id=%llu", LLU{fid_val});
-			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt == nullptr)
-				return FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				bool is_associated = pstmt.col_uint64(2);
-				if (0 == is_associated) {
-					if (!b_normal)
-						continue;
-				} else {
-					if (!b_fai)
-						continue;
-				}
-				auto message_id = pstmt.col_uint64(0);
-				auto parent_fid = pstmt.col_uint64(1);
-				if (b_guest) {
-					uint32_t permission = rightsNone;
-					if (!cu_get_folder_permission(pdb->psqlite,
-					    parent_fid, username, &permission))
-						return FALSE;
-					if (permission & (frightsOwner | frightsReadAny)) {
-						/* do nothing */
-					} else {
-						BOOL b_owner = false;
-						if (!common_util_check_message_owner(pdb->psqlite,
-						    message_id, username, &b_owner))
-							return FALSE;
-						if (!b_owner) {
-							*pb_partial = TRUE;
-							continue;
-						}
-					}
-				}
-				uint64_t message_id1 = 0;
-				uint32_t message_size = 0;
-				BOOL b_result = false;
-				if (!common_util_copy_message(pdb->psqlite,
-				    account_id, message_id, dst_fid, &message_id1,
-				    &b_result, &message_size))
-					return FALSE;
-				if (!b_result) {
-					*pb_partial = TRUE;
-					continue;
-				}
-				if (0 == is_associated) {
-					if (pnormal_size != nullptr)
-						*pnormal_size += message_size;
-				} else {
-					if (pfai_size != nullptr)
-						*pfai_size += message_size;
-				}
-				db_engine_proc_dynamic_event(pdb, cpid,
-					DYNAMIC_EVENT_NEW_MESSAGE,
-					dst_fid, message_id1, 0);
-			}
-		}
-		return TRUE;
-		}(pdb, account_id, cpid, b_guest, username, fid_val, b_normal, b_fai, dst_fid, pb_partial, pnormal_size, pfai_size);
+		return folder_copy_sf_int(pdb, account_id, cpid, b_guest,
+		       username, fid_val, b_normal, b_fai, dst_fid,
+		       pb_partial, pnormal_size, pfai_size);
 	}
 
 	BOOL b_check = true, b_result, b_partial;
