@@ -603,11 +603,6 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		tags.push_back(tag);
 	}
 	pstmt.finalize();
-	if (table_type == MAPI_MAILUSER)
-		/* Maybe-computed props */
-		for (auto t : rcpt_tags)
-			if (std::find(tags.cbegin(), tags.cend(), t) == tags.cend())
-				tags.push_back(t);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1161: ENOMEM");
