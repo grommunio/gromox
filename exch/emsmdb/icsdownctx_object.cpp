@@ -100,14 +100,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	const char *username;
 	uint64_t total_normal;
 	uint32_t count_normal;
-	EID_ARRAY chg_messages;
-	EID_ARRAY read_messags;
-	EID_ARRAY given_messages;
-	EID_ARRAY unread_messags;
-	EID_ARRAY updated_messages;
-	EID_ARRAY deleted_messages;
-	EID_ARRAY nolonger_messages;
-	
+	EID_ARRAY chg_messages, read_messages, given_messages, unread_messages;
+	EID_ARRAY updated_messages, deleted_messages, nolonger_messages;
 	
 	if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 		return FALSE;
@@ -134,7 +128,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	    &count_fai, &total_fai, &count_normal, &total_normal,
 	    &updated_messages, &chg_messages, &pctx->last_changenum,
 	    &given_messages, &deleted_messages, &nolonger_messages,
-	    &read_messags, &unread_messags, &pctx->last_readcn))
+	    &read_messages, &unread_messages, &pctx->last_readcn))
 		return FALSE;
 	
 	pctx->pstate->pgiven->clear();
@@ -165,14 +159,12 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_READ_STATE) {
-		pctx->pread_messags = eid_array_dup(&read_messags);
-		if (NULL == pctx->pread_messags) {
+		pctx->pread_messages = eid_array_dup(&read_messages);
+		if (pctx->pread_messages == nullptr)
 			return FALSE;
-		}
-		pctx->punread_messags = eid_array_dup(&unread_messags);
-		if (NULL == pctx->punread_messags) {
+		pctx->punread_messages = eid_array_dup(&unread_messages);
+		if (pctx->punread_messages == nullptr)
 			return FALSE;
-		}
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
 	    !pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
@@ -838,8 +830,8 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			    !eid_array_append(pctx->pdeleted_messages, message_id))
 				return FALSE;
 			if (pctx->sync_flags & SYNC_READ_STATE) {
-				eid_array_remove(pctx->pread_messags, message_id);
-				eid_array_remove(pctx->punread_messags, message_id);
+				eid_array_remove(pctx->pread_messages, message_id);
+				eid_array_remove(pctx->punread_messages, message_id);
 			}
 		}
 		return TRUE;
@@ -1066,10 +1058,10 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	
 	proplist.count = 0;
 	proplist.ppropval = tmp_propvals;
-	if (pctx->pread_messags->count > 0) {
+	if (pctx->pread_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pread_messags->count; ++i)
-			if (!xset.append(pctx->pread_messags->pids[i]))
+		for (size_t i = 0; i < pctx->pread_messages->count; ++i)
+			if (!xset.append(pctx->pread_messages->pids[i]))
 				return FALSE;
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
@@ -1077,10 +1069,10 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		proplist.ppropval[proplist.count].proptag = MetaTagIdsetRead;
 		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
-	if (pctx->punread_messags->count > 0) {
+	if (pctx->punread_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->punread_messags->count; ++i)
-			if (!xset.append(pctx->punread_messags->pids[i]))
+		for (size_t i = 0; i < pctx->punread_messages->count; ++i)
+			if (!xset.append(pctx->punread_messages->pids[i]))
 				return FALSE;
 		pbin2 = xset.serialize();
 		if (pbin2 == nullptr)
@@ -1236,10 +1228,10 @@ icsdownctx_object::~icsdownctx_object()
 		eid_array_free(pctx->pdeleted_messages);
 	if (pctx->pnolonger_messages != nullptr)
 		eid_array_free(pctx->pnolonger_messages);
-	if (pctx->pread_messags != nullptr)
-		eid_array_free(pctx->pread_messags);
-	if (pctx->punread_messags != nullptr)
-		eid_array_free(pctx->punread_messags);
+	if (pctx->pread_messages != nullptr)
+		eid_array_free(pctx->pread_messages);
+	if (pctx->punread_messages != nullptr)
+		eid_array_free(pctx->punread_messages);
 	if (pctx->state_property != 0)
 		mem_file_free(&pctx->f_state_stream);
 	proptag_array_free(pctx->pproptags);

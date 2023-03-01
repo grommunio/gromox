@@ -105,8 +105,8 @@ struct icsdownctx_object final {
 	uint64_t last_changenum = 0, last_readcn = 0;
 	EID_ARRAY *pgiven_eids = nullptr, *pchg_eids = nullptr;
 	EID_ARRAY *pupdated_eids = nullptr, *pdeleted_eids = nullptr;
-	EID_ARRAY *pnolonger_messages = nullptr, *pread_messags = nullptr;
-	EID_ARRAY *punread_messags = nullptr;
+	EID_ARRAY *pnolonger_messages = nullptr, *pread_messages = nullptr;
+	EID_ARRAY *punread_messages = nullptr;
 	uint32_t eid_pos = 0;
 };
 

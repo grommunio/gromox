@@ -46,8 +46,8 @@ struct icsdownctx_object final {
 	uint64_t last_readcn = 0, last_changenum = 0;
 	PROGRESS_INFORMATION *pprogtotal = nullptr;
 	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;
-	EID_ARRAY *pnolonger_messages = nullptr, *pread_messags = nullptr;
-	EID_ARRAY *punread_messags = nullptr;
+	EID_ARRAY *pnolonger_messages = nullptr, *pread_messages = nullptr;
+	EID_ARRAY *punread_messages = nullptr;
 	uint8_t send_options = 0;
 	uint16_t sync_flags = 0;
 	uint32_t extra_flags = 0;
