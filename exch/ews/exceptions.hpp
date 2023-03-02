@@ -126,6 +126,7 @@ E(3058, "failed to generate sync state cnset");
 inline std::string E3059(const std::string_view& type) {return fmt::format("E-3059: unknown tag type '{}'", type);}
 E(3060, "invalid ExtendedFieldURI: missing name or ID");
 E(3061, "invalid ExtendedFieldURI: missing tag or set ID");
+E(3062, "failed to convert given id set");
 
 #undef E
 }

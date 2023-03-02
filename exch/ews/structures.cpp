@@ -242,7 +242,8 @@ void sSyncState::init(const std::string& data64)
 void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
 {
 	seen.clear();
-	given.convert();
+	if(!given.convert())
+		throw DispatchError(E3062);
 	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
 		given.remove(*pid);
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
