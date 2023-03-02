@@ -104,7 +104,7 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 		return ecNotSupported;
 	if (!ptable->set_columns(pproptags))
 		return ecServerOOM;
-	*ptable_status = TABLE_STATUS_COMPLETE;
+	*ptable_status = TBLSTAT_COMPLETE;
 	return ecSuccess;
 }
 
@@ -177,7 +177,7 @@ ec_error_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteri
 		return ecNotSupported;
 	if (!ptable->set_sorts(psort_criteria))
 		return ecServerOOM;
-	*ptable_status = TABLE_STATUS_COMPLETE;
+	*ptable_status = TBLSTAT_COMPLETE;
 	ptable->unload();
 	/* MS-OXCTABL 3.2.5.3 */
 	ptable->clear_bookmarks();
@@ -207,7 +207,7 @@ ec_error_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
 		return ecError;
 	if (!ptable->set_restriction(pres))
 		return ecServerOOM;
-	*ptable_status = TABLE_STATUS_COMPLETE;
+	*ptable_status = TBLSTAT_COMPLETE;
 	ptable->unload();
 	/* MS-OXCTABL 3.2.5.4 */
 	ptable->clear_bookmarks();
@@ -293,7 +293,7 @@ ec_error_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
 		return ecNotSupported;
-	*ptable_status = TABLE_STATUS_COMPLETE;
+	*ptable_status = TBLSTAT_COMPLETE;
 	return ecSuccess;
 }
 
