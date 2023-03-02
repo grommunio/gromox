@@ -298,6 +298,11 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 void EWSPlugin::loadConfig()
 {
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
+	if(!cfg)
+	{
+		mlog(LV_INFO, "[ews]: Failed to load config file");
+		return;
+	}
 	x500_org_name = cfg->get_value("x500_org_name");
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 
