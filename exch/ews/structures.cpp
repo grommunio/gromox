@@ -445,7 +445,7 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 	}
 	else if(PropertySetId)
 	{
-		PROPERTY_NAME name;
+		PROPERTY_NAME name{};
 		name.guid = *PropertySetId;
 		if(PropertyName)
 		{
