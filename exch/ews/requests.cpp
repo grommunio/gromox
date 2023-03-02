@@ -504,9 +504,8 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	    &last_readcn))
 		throw DispatchError(E3031);
 
-	syncState.given.convert();
-	syncState.seen.convert();
-	syncState.read.convert();
+	if(!syncState.given.convert() || !syncState.seen.convert() || !syncState.read.convert())
+		throw DispatchError(E3064);
 	sProptags itemTags = ctx.collectTags(request.ItemShape);
 	itemTags.tags.emplace_back(PidTagChangeNumber);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
@@ -544,8 +543,8 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 			msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, tItem::create(itemProps)}});
 		else
 			msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
-		syncState.given.append(*mid);
-		syncState.seen.append(*changeNum);
+		if(!syncState.given.append(*mid) || !syncState.seen.append(*changeNum))
+			throw DispatchError(E3065);
 	}
 	uint32_t readSynced = syncState.readOffset;
 	uint32_t skip = min(syncState.readOffset, read_mids.count);
@@ -563,9 +562,10 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	if(!clipped)
 	{
 		syncState.seen.clear();
-		syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn));
 		syncState.read.clear();
-		syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn));
+		if(!syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn)) ||
+		   !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
+			throw DispatchError(E3066);
 		syncState.readOffset = 0;
 	}
 	else

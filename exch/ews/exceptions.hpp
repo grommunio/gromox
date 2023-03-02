@@ -128,6 +128,9 @@ E(3060, "invalid ExtendedFieldURI: missing name or ID");
 E(3061, "invalid ExtendedFieldURI: missing tag or set ID");
 E(3062, "failed to convert given id set");
 E(3063, "invalid GUID format");
+E(3064, "failed to convert sync state");
+E(3065, "failed to add changed mid");
+E(3066, "failed to set synced change numbers");
 
 #undef E
 }
