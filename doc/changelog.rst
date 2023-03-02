@@ -1,12 +1,21 @@
-Development 2.4.43
+Development 2.4.91
 ==================
 
 Fixes:
 
-* exmdb_provider: repair a null deref during HTML-to-text conversion
+* Repair a null deref during HTML-to-text conversion
+* Inbox rules had RES_OR conditions wrongly evaluated
+* EWS: Detailed FreeBusy requests did not return detailed info
+
+Enhancements:
+
+* authmgr: Alternate username support
 
 Behavioral changes:
 
+* Treat standard and extended inbox rules equal per PR_RULE_SEQUENCE, instead
+  of "(by sequence number) all standard rules first, then all (by sequence
+  number) extended rules".
 * The build no longer depends on the gumbo-parser library
   (a HTML parser); instead, it now uses libxml2 to do the same.
 
