@@ -892,6 +892,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			cu_set_propval(&pembedded->proplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit);
+			fxs_propsort(*pembedded);
 			if (!pctx->pstream->write_messagechangefull(&chgheader, pembedded))
 				return FALSE;
 		}
@@ -982,6 +983,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
 	       deconst(&fake_true) : deconst(&fake_false);
 	cu_set_propval(&pmsgctnt->proplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit);
+	fxs_propsort(*pmsgctnt);
 	return pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt);
 }
 

@@ -157,11 +157,94 @@ BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
 
 static bool is_message(const flow_node &n) { return n.first == FUNC_ID_MESSAGE; }
 
+static bool fxs_tagcmp_fld(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
+{
+	switch (b.proptag) {
+	default:
+		if (a.proptag < b.proptag) return true;
+		if (a.proptag == MetaTagEcWarning) return true;
+		[[fallthrough]];
+	case MetaTagEcWarning:
+		if (a.proptag == PR_COMMENT) return true;
+		[[fallthrough]];
+	case PR_COMMENT:
+		if (a.proptag == PR_DISPLAY_NAME) return true;
+		[[fallthrough]];
+	case PR_DISPLAY_NAME:
+		if (a.proptag == PidTagFolderId) return true;
+		[[fallthrough]];
+	case PidTagFolderId:
+		return false;
+	}
+}
+
+static bool fxs_tagcmp_msg(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
+{
+	switch (b.proptag) {
+	default:
+		if (a.proptag < b.proptag) return true;
+		if (a.proptag == PidTagMid) return true;
+		[[fallthrough]];
+	case PidTagMid:
+		return false;
+	}
+}
+
+static bool fxs_tagcmp_rcpt(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
+{
+	switch (b.proptag) {
+	default:
+		if (a.proptag < b.proptag) return true;
+		if (a.proptag == PR_ROWID) return true;
+		[[fallthrough]];
+	case PR_ROWID:
+		return false;
+	}
+}
+
+static void fxs_propsort(FOLDER_CONTENT &fc)
+{
+	auto &p = fc.proplist.ppropval;
+	if (p != nullptr) {
+		fprintf(stderr,"\e[1;31mtagcmp_fld before:{");
+		for(auto i=0U;i<fc.proplist.count;++i)
+			fprintf(stderr,"%xh,",p[i].proptag);
+		fprintf(stderr,"}\n\e[0m");
+		std::sort(&p[0], &p[fc.proplist.count], fxs_tagcmp_fld);
+		fprintf(stderr,"\e[1;35mtagcmp_fld after.:{");
+		for(auto i=0U;i<fc.proplist.count;++i)
+			fprintf(stderr,"%xh,",p[i].proptag);
+		fprintf(stderr,"}\n\e[0m");
+	}
+}
+
+void fxs_propsort(MESSAGE_CONTENT &mc)
+{
+	auto &mp = mc.proplist.ppropval;
+	std::sort(&mp[0], &mp[mc.proplist.count], fxs_tagcmp_msg);
+
+	if (mc.children.prcpts != nullptr) {
+		for (auto i = 0U; i < mc.children.prcpts->count; ++i) {
+			auto &rc = *mc.children.prcpts->pparray[i];
+			auto &rp = rc.ppropval;
+			std::sort(&rp[0], &rp[rc.count], fxs_tagcmp_rcpt);
+		}
+	}
+	if (mc.children.pattachments != nullptr) {
+		for (auto i = 0U; i < mc.children.pattachments->count; ++i) {
+			auto e = mc.children.pattachments->pplist[i]->pembedded;
+			if (e != nullptr)
+				fxs_propsort(*e);
+		}
+	}
+}
+
 BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
     std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
 	auto pctx = this;
 	
+	fxs_propsort(*fc);
 	if (!flow_list.record_node(FUNC_ID_PROPLIST, &fc->proplist) ||
 	    !flow_list.record_foldermessages(&fc->fldmsgs))
 		return FALSE;	
@@ -169,9 +252,11 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 		if (!flow_list.record_tag(MetaTagFXDelProp) ||
 		    !flow_list.record_tag(PR_CONTAINER_HIERARCHY))
 			return FALSE;
-		for (const auto &f : fc->psubflds)
+		for (auto &f : fc->psubflds) {
+			fxs_propsort(f);
 			if (!flow_list.record_subfolder(&f))
-				return FALSE;	
+				return FALSE;
+		}
 	}
 	pctx->pfldctnt = std::move(fc);
 	pctx->progress_steps = 0;
@@ -212,7 +297,6 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 	BOOL b_last;
 	uint16_t len;
 	uint16_t len1;
-	MESSAGE_CONTENT *pmsgctnt;
 	
 	if (pctx->flow_list.size() == 0) {
 		if (!pctx->pstream->read_buffer(pbuff, plen, pb_last))
@@ -243,10 +327,12 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 				return FALSE;
 			break;
 		case FUNC_ID_PROPLIST:
+			/* Property sorting done by make_foldercontent. */
 			if (!pctx->pstream->write_proplist(static_cast<const TPROPVAL_ARRAY *>(param)))
 				return FALSE;
 			break;
 		case FUNC_ID_MESSAGE: {
+			MESSAGE_CONTENT *pmsgctnt = nullptr;
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			auto dir = pctx->pstream->plogon->get_dir();
 			if (pctx->pstream->plogon->is_private()) {
@@ -280,6 +366,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 				common_util_retag_propvals(&pmsgctnt->proplist,
 					PR_ENTRYID, PR_ORIGINAL_ENTRYID);
 			}
+			fxs_propsort(*pmsgctnt);
 			if (!pctx->pstream->write_message(pmsgctnt)) {
 				return FALSE;
 			}

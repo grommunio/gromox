@@ -5,6 +5,8 @@ Fixes:
 
 * Repair a null deref during HTML-to-text conversion
 * Inbox rules had RES_OR conditions wrongly evaluated
+* Synchronization of embedded messages now works,
+  addresses OL sync reports with error [80040301-501-80040301-560]
 * EWS: Detailed FreeBusy requests did not return detailed info
 
 Enhancements:
