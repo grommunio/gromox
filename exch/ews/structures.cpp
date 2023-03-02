@@ -318,8 +318,11 @@ sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 {
 	enum Type : uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
 	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
+	const uint32_t* frType = folderProps.get<uint32_t>(PR_FOLDER_TYPE);
 	Type folderType = NORMAL;
-	if(frClass)
+	if(frType && *frType == FOLDER_SEARCH)
+		folderType = SEARCH;
+	else if(frClass)
 	{
 		if(!strncmp(frClass, "IPF.Appointment", 15))
 			folderType = CALENDAR;
