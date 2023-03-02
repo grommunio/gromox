@@ -378,6 +378,13 @@ tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
     XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
 {}
 
+tGuid::tGuid(const XMLAttribute* xml)
+{
+	if(!from_str(xml->Value()))
+		throw DeserializationError(E3063);
+}
+
+
 void tItem::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(ItemId);

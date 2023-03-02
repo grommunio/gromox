@@ -631,9 +631,6 @@ tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tGuid::tGuid(const XMLAttribute* xml)
-{from_str(xml->Value());}
-
 tGuid::tGuid(const GUID& guid) : GUID(guid)
 {}
 
