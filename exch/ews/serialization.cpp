@@ -476,6 +476,9 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
     XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
 
+void tSingleRecipient::serialize(XMLElement* xml) const
+{XMLDUMPT(Mailbox);}
+
 void tSmtpDomain::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(Name);

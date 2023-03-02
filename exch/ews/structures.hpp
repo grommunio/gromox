@@ -721,7 +721,15 @@ struct tSyncFolderHierarchyDelete : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
-using tSingleRecipient = tEmailAddressType;
+/**
+ * Types.xsd:396
+ */
+struct tSingleRecipient
+{
+	tEmailAddressType Mailbox;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 /**
  * Types.xsd:4031

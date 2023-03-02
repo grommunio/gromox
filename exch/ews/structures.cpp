@@ -776,17 +776,17 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
 		case PR_INTERNET_REFERENCES:
 			References = pval(char); break;
 		case PR_SENDER_ADDRTYPE:
-			Sender? Sender->RoutingType = pval(char) : Sender.emplace().RoutingType = pval(char); break;
+			Sender? Sender->Mailbox.RoutingType = pval(char) : Sender.emplace().Mailbox.RoutingType = pval(char); break;
 		case PR_SENDER_EMAIL_ADDRESS:
-			Sender? Sender->EmailAddress = pval(char) : Sender.emplace().EmailAddress = pval(char); break;
+			Sender? Sender->Mailbox.EmailAddress = pval(char) : Sender.emplace().Mailbox.EmailAddress = pval(char); break;
 		case PR_SENDER_NAME:
-			Sender? Sender->Name = pval(char) : Sender.emplace().Name = pval(char); break;
+			Sender? Sender->Mailbox.Name = pval(char) : Sender.emplace().Mailbox.Name = pval(char); break;
 		case PR_SENT_REPRESENTING_ADDRTYPE:
-			From? From->RoutingType = pval(char) : From.emplace().RoutingType = pval(char); break;
+			From? From->Mailbox.RoutingType = pval(char) : From.emplace().Mailbox.RoutingType = pval(char); break;
 		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
-			From? From->EmailAddress = pval(char) : From.emplace().EmailAddress = pval(char); break;
+			From? From->Mailbox.EmailAddress = pval(char) : From.emplace().Mailbox.EmailAddress = pval(char); break;
 		case PR_SENT_REPRESENTING_NAME:
-			From? From->Name = pval(char) : From.emplace().Name = pval(char); break;
+			From? From->Mailbox.Name = pval(char) : From.emplace().Mailbox.Name = pval(char); break;
 		default:
 			break;
 		}
