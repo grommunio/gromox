@@ -300,7 +300,7 @@ static constexpr const char* getNSPrefix()
 	if constexpr(std::is_base_of_v<Structures::NSInfo, T>)
 		return T::NS_ABBREV;
 	else
-		return "";
+		return nullptr;
 }
 
 /**
@@ -642,13 +642,15 @@ static void toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& v
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		if(!value)
 			return;
-	const char* ns = nullptr;
+	tinyxml2::XMLElement* xml;
 	if constexpr(BaseType<T>::container == VARIANT)
 	{
 		name = getName(value, name);
-		ns = getNSPrefix(value);
+		const char* ns = getNSPrefix(value);
+		xml = parent->InsertNewChildElement(ns? fmt::format("{}{}", ns, name).c_str() : name);
 	}
-	tinyxml2::XMLElement* xml = parent->InsertNewChildElement(ns? fmt::format("{}{}", ns, name).c_str() : name);
+	else
+		xml = parent->InsertNewChildElement(name);
 	toXMLNodeDispatch(xml, value);
 }
 
