@@ -166,13 +166,16 @@ struct sSyncState
 
 	void init(const std::string&);
 	void update(const EID_ARRAY&, const EID_ARRAY&, uint64_t);
-	void update(const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, const EID_ARRAY&, uint64_t);
 	std::string serialize();
 
 	idset given; ///< Set of known IDs
 	idset seen;  ///< Set of known change numbers
 	idset read;  ///< Set of read change numbers
-	idset seen_fai; //Set of seen fai change numbers
+	idset seen_fai; ///< Set of seen fai change numbers
+	uint32_t readOffset = 0; ///< Number of read states already delivered
+
+private:
+	static constexpr uint32_t MetaTagReadOffset = PROP_TAG(PT_LONG, 0x0e69); //PR_READ, but with long type
 };
 
 /**
@@ -255,7 +258,7 @@ struct tCalendarEvent : public NS_EWS_Types
 	sTimePoint StartTime;
 	sTimePoint EndTime;
 	Enum::LegacyFreeBusyType BusyType;
-	std::optional<tCalendarEventDetails> CalenderEventDetails;
+	std::optional<tCalendarEventDetails> CalendarEventDetails;
 };
 
 /**
@@ -313,7 +316,8 @@ struct tFolderId : public tBaseItemId
  */
 struct tGuid : public GUID
 {
-	tGuid(const tinyxml2::XMLAttribute*);
+	explicit tGuid(const tinyxml2::XMLAttribute*);
+	tGuid(const GUID&);
 
 	std::string serialize() const;
 };
@@ -329,6 +333,7 @@ struct tExtendedFieldURI
 
 	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
 	explicit tExtendedFieldURI(uint32_t);
+	tExtendedFieldURI(uint16_t, const PROPERTY_NAME&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -351,9 +356,10 @@ struct tExtendedFieldURI
  */
 struct tExtendedProperty
 {
-	explicit tExtendedProperty(const TAGGED_PROPVAL&);
+	explicit tExtendedProperty(const TAGGED_PROPVAL&, const PROPERTY_NAME& = PROPERTY_NAME{KIND_NONE, {}, 0, nullptr});
 
 	TAGGED_PROPVAL propval;
+	PROPERTY_NAME propname;
 
 	void serialize(tinyxml2::XMLElement*) const;
 private:
@@ -589,6 +595,8 @@ struct tItem : public NS_EWS_Types
 
 	void serialize(tinyxml2::XMLElement*) const;
 
+	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
+
 	static sItem create(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
 };
 
@@ -713,7 +721,15 @@ struct tSyncFolderHierarchyDelete : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
-using tSingleRecipient = tEmailAddressType;
+/**
+ * Types.xsd:396
+ */
+struct tSingleRecipient
+{
+	tEmailAddressType Mailbox;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 /**
  * Types.xsd:4031
@@ -825,8 +841,8 @@ struct tFolderResponseShape
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr std::array<uint32_t, 3> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY, PR_CONTAINER_CLASS};
-	static constexpr std::array<uint32_t, 4> tagsDefault = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
+	static constexpr uint32_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY, PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr uint32_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 };
 
 /**

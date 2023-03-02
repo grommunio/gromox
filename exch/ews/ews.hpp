@@ -64,6 +64,7 @@ public:
 	#include <gromox/exmdb_idef.hpp>
 	#undef EXMIDL
 	#undef IDLOUT
+		bool get_message_property(const char*, const char*, cpid_t, uint64_t, uint32_t, void **ppval) const;
 	} exmdb;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured

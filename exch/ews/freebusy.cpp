@@ -358,7 +358,7 @@ tCalendarEvent::tCalendarEvent(time_t start_time, time_t end_time,
 	}
 	if (!detailed)
 		return;
-	auto &details = CalenderEventDetails.emplace();
+	auto &details = CalendarEventDetails.emplace();
 	details.ID = uid;
 	if (subject != nullptr)
 		details.Subject = subject;

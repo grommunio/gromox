@@ -33,6 +33,19 @@ using Exceptions::DispatchError;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool EWSPlugin::_exmdb::get_message_property(const char *dir, const char *username, cpid_t cpid, uint64_t message_id,
+                                             uint32_t proptag, void **ppval) const
+{
+	PROPTAG_ARRAY tmp_proptags{1, &proptag};
+	TPROPVAL_ARRAY propvals;
+
+	if (!get_message_properties(dir, username, cpid, message_id, &tmp_proptags, &propvals))
+		return false;
+	*ppval = propvals.count == 1 && propvals.ppropval->proptag == proptag? propvals.ppropval->pvalue : nullptr;
+	return true;
+}
+
+
 void* EWSContext::alloc(size_t count)
 {return ndr_stack_alloc(NDR_STACK_IN, count);}
 
@@ -200,7 +213,7 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	}
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
-		bool logThis = request_logging && response_logging && logEnabled(xml->Name());
+		bool logThis = logEnabled(xml->Name());
 		enableLog = enableLog || logThis;
 		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
 		responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
@@ -285,6 +298,11 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 void EWSPlugin::loadConfig()
 {
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
+	if(!cfg)
+	{
+		mlog(LV_INFO, "[ews]: Failed to load config file");
+		return;
+	}
 	x500_org_name = cfg->get_value("x500_org_name");
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 

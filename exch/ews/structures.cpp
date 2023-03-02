@@ -227,6 +227,8 @@ void sSyncState::init(const std::string& data64)
 			if(!seen_fai.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen_fai.convert())
 				throw InputError(E3056);
 			break;
+		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
+			readOffset = *static_cast<uint32_t*>(propval->pvalue);
 		}
 	}
 }
@@ -240,7 +242,8 @@ void sSyncState::init(const std::string& data64)
 void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
 {
 	seen.clear();
-	given.convert();
+	if(!given.convert())
+		throw DispatchError(E3062);
 	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
 		given.remove(*pid);
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
@@ -316,8 +319,11 @@ sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 {
 	enum Type : uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
 	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
+	const uint32_t* frType = folderProps.get<uint32_t>(PR_FOLDER_TYPE);
 	Type folderType = NORMAL;
-	if(frClass)
+	if(frType && *frType == FOLDER_SEARCH)
+		folderType = SEARCH;
+	else if(frClass)
 	{
 		if(!strncmp(frClass, "IPF.Appointment", 15))
 			folderType = CALENDAR;
@@ -403,6 +409,22 @@ tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
 }
 
 /**
+ * @brief     Generate URI from named property
+ *
+ * @param     type       Property type
+ * @param     propname   Property name information
+ */
+tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propname) :
+    PropertyType(typeName(type)),
+    PropertySetId(propname.guid)
+{
+	if(propname.kind == MNID_ID)
+		PropertyId = propname.lid;
+	else if(propname.kind == MNID_STRING)
+		PropertyName = propname.pname;
+}
+
+/**
  * @brief     Collect property tags and names for field URI
 
  * @param     tags    Inserter to use for property tags
@@ -423,7 +445,7 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 	}
 	else if(PropertySetId)
 	{
-		PROPERTY_NAME name;
+		PROPERTY_NAME name{};
 		name.guid = *PropertySetId;
 		if(PropertyName)
 		{
@@ -487,7 +509,7 @@ const char* tExtendedFieldURI::typeName(uint16_t type)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp) : propval(tp)
+tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) : propval(tp), propname(pn)
 {}
 
 void tExtendedProperty::serialize(const void* data, size_t idx, uint16_t type, XMLElement* xml) const
@@ -609,8 +631,8 @@ tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tGuid::tGuid(const XMLAttribute* xml)
-{from_str(xml->Value());}
+tGuid::tGuid(const GUID& guid) : GUID(guid)
+{}
 
 std::string tGuid::serialize() const
 {
@@ -623,11 +645,15 @@ std::string tGuid::serialize() const
 
 #define pval(type) static_cast<const type*>(tp->pvalue)
 
-tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
+tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps)
 {
 	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+	{
+		if(mapNamedProperty(*tp, namedProps))
+			continue;
 		switch(tp->proptag)
 		{
+		case PidTagChangeNumber:
 		case PR_CONVERSATION_INDEX:
 		case PR_CONVERSATION_TOPIC:
 		case PR_READ:
@@ -685,6 +711,7 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap&)
 		default:
 			ExtendedProperty.emplace_back(*tp);
 		}
+	}
 }
 
 #undef pval
@@ -697,6 +724,18 @@ sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& na
 	if(!strcasecmp(itemClass, "IPM.Note"))
 		return tMessage(itemProps, namedProps);
 	return tItem(itemProps, namedProps);
+}
+
+bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& namedProps)
+{
+	sNamedPropertyMap::const_iterator entry;
+	if(PROP_ID(tp.proptag) < 0x8000 || (entry = namedProps.find(tp.proptag)) == namedProps.end())
+		return false;
+	const PROPERTY_NAME& pn = entry->second;
+	//Here we can catch known property names and map them to the appropriate attributes
+	//Otherwise just put it into an extended attribute
+	ExtendedProperty.emplace_back(tp, pn);
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -738,17 +777,17 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
 		case PR_INTERNET_REFERENCES:
 			References = pval(char); break;
 		case PR_SENDER_ADDRTYPE:
-			Sender? Sender->RoutingType = pval(char) : Sender.emplace().RoutingType = pval(char); break;
+			Sender? Sender->Mailbox.RoutingType = pval(char) : Sender.emplace().Mailbox.RoutingType = pval(char); break;
 		case PR_SENDER_EMAIL_ADDRESS:
-			Sender? Sender->EmailAddress = pval(char) : Sender.emplace().EmailAddress = pval(char); break;
+			Sender? Sender->Mailbox.EmailAddress = pval(char) : Sender.emplace().Mailbox.EmailAddress = pval(char); break;
 		case PR_SENDER_NAME:
-			Sender? Sender->Name = pval(char) : Sender.emplace().Name = pval(char); break;
+			Sender? Sender->Mailbox.Name = pval(char) : Sender.emplace().Mailbox.Name = pval(char); break;
 		case PR_SENT_REPRESENTING_ADDRTYPE:
-			From? From->RoutingType = pval(char) : From.emplace().RoutingType = pval(char); break;
+			From? From->Mailbox.RoutingType = pval(char) : From.emplace().Mailbox.RoutingType = pval(char); break;
 		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
-			From? From->EmailAddress = pval(char) : From.emplace().EmailAddress = pval(char); break;
+			From? From->Mailbox.EmailAddress = pval(char) : From.emplace().Mailbox.EmailAddress = pval(char); break;
 		case PR_SENT_REPRESENTING_NAME:
-			From? From->Name = pval(char) : From.emplace().Name = pval(char); break;
+			From? From->Mailbox.Name = pval(char) : From.emplace().Mailbox.Name = pval(char); break;
 		default:
 			break;
 		}

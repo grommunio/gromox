@@ -185,16 +185,21 @@ std::string sSyncState::serialize()
 	if (!ser || pproplist->set(MetaTagCnsetSeen, ser.get()))
 		throw DispatchError(E3037);
 	ser.reset();
-	if(!seen_fai.empty() && !read.empty())
+	if(!seen_fai.empty())
 	{
 		ser.reset(seen_fai.serialize());
 		if (!ser || pproplist->set(MetaTagCnsetSeenFAI, ser.get()))
 			throw DispatchError(E3038);
+	}
+	if(!read.empty())
+	{
 		ser.reset(read.serialize());
 		if (!ser || pproplist->set(MetaTagCnsetRead, ser.get()))
 			throw DispatchError(E3039);
 	}
 	ser.reset();
+	if(readOffset)
+		pproplist->set(MetaTagReadOffset, &readOffset);
 
 	EXT_PUSH stateBuffer;
 	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
@@ -274,7 +279,7 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(StartTime);
 	XMLDUMPT(EndTime);
 	XMLDUMPT(BusyType);
-	XMLDUMPT(CalenderEventDetails);
+	XMLDUMPT(CalendarEventDetails);
 }
 
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
@@ -335,11 +340,13 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	if(!data)
 		return;
 	bool ismv = propval.proptag & MV_FLAG;
-	toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
+	if(propname.kind == KIND_NONE)
+		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
+	else
+		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(PROP_TYPE(propval.proptag), propname));
 	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
 	if(!ismv)
 		return serialize(data, 0, PROP_TYPE(propval.proptag), value);
-	//throw NotImplementedError("MV tags are currently not supported");
 }
 
 tFieldURI::tFieldURI(const XMLElement* xml) :
@@ -370,6 +377,13 @@ void tFreeBusyView::serialize(XMLElement* xml) const
 tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
     XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
 {}
+
+tGuid::tGuid(const XMLAttribute* xml)
+{
+	if(!from_str(xml->Value()))
+		throw DeserializationError(E3063);
+}
+
 
 void tItem::serialize(XMLElement* xml) const
 {
@@ -468,6 +482,9 @@ tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement*
 tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
     XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
+
+void tSingleRecipient::serialize(XMLElement* xml) const
+{XMLDUMPT(Mailbox);}
 
 void tSmtpDomain::serialize(XMLElement* xml) const
 {
