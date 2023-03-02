@@ -279,7 +279,7 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(StartTime);
 	XMLDUMPT(EndTime);
 	XMLDUMPT(BusyType);
-	XMLDUMPT(CalenderEventDetails);
+	XMLDUMPT(CalendarEventDetails);
 }
 
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :

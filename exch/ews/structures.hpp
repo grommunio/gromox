@@ -258,7 +258,7 @@ struct tCalendarEvent : public NS_EWS_Types
 	sTimePoint StartTime;
 	sTimePoint EndTime;
 	Enum::LegacyFreeBusyType BusyType;
-	std::optional<tCalendarEventDetails> CalenderEventDetails;
+	std::optional<tCalendarEventDetails> CalendarEventDetails;
 };
 
 /**
