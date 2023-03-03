@@ -6,7 +6,9 @@ Fixes:
 * Repair a null deref during HTML-to-text conversion
 * Inbox rules had RES_OR conditions wrongly evaluated
 * Synchronization of embedded messages now works,
-  addresses OL sync reports with error [80040301-501-80040301-560]
+  resolving OL sync reports with error 80040301.
+* exmdb_provider: PR_NULL is now excluded from get_all_proptags's results,
+  resolving _one_ instance of OL sync error 80070057.
 * EWS: Detailed FreeBusy requests did not return detailed info
 
 Enhancements:
