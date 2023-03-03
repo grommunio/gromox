@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <cwctype>
 #include <fcntl.h>
 #include <iconv.h>
 #include <memory>
@@ -1310,6 +1311,11 @@ static void* common_util_get_message_parent_display(
 	return pvalue;
 }
 
+/**
+ * The idea here is that, when PR_SUBJECT is read, it is always synthesized
+ * from its constituent parts (PR_SUBJECT_PREFIX, PR_NORMALIZED_SUBJECT).
+ * Conversely, writes to PR_SUBJECT are intercepted and split up.
+ */
 static BOOL common_util_get_message_subject(sqlite3 *psqlite, cpid_t cpid,
     uint64_t message_id, uint32_t proptag, void **ppvalue)
 {
@@ -2572,27 +2578,113 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
-static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
-	sqlite3_stmt *pstmt, const TAGGED_PROPVAL *ppropval)
+/**
+ * Determine the length of the message prefix, up to three alphanumeric Unicode
+ * characters - though we do not recognize combining characters and thus no
+ * NFD/NKFD. Returns the number of bytes.
+ */
+static int subj_pfxlen(const char *s) try
 {
-	char *pstring;
-	
-	if (ppropval->proptag == PR_SUBJECT) {
-		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
-		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
+	/* Note we do not recognize NFD/NKFD. Oh well. */
+	auto ustr  = iconvtext(s, strlen(s), "UTF-8", "wchar_t");
+	auto units = ustr.size() / sizeof(wchar_t);
+	wchar_t uc[6]{};
+	if (units > std::size(uc))
+		units = std::size(uc);
+	memcpy(uc, ustr.data(), units * sizeof(wchar_t));
+	if (uc[0] == L'\0' || !iswalnum(uc[0]))
+		return 0;
+	if (uc[1] == L':' && iswspace(uc[2]))
+		return strchr(s, ':') - s + 2;
+	if (!iswalnum(uc[1]))
+		return 0;
+	if (uc[2] == L':' && iswspace(uc[3]))
+		return strchr(s, ':') - s + 2;
+	if (!iswalnum(uc[2]))
+		return 0;
+	if (uc[3] == L':' && iswspace(uc[4]))
+		return strchr(s, ':') - s + 2;
+	return 0;
+} catch (const std::bad_alloc &) {
+	return -1;
+}
+
+bool cu_rebuild_subjects(const char *&subj, const char *&pfx, const char *&norm)
+{
+	if (pfx == nullptr && norm != nullptr) {
+		/* Build PR_SUBJECT_PREFIX from PR_SUBJECT-PR_NORMALIZED_SUBJECT. */
+		auto sz = strlen(subj);
+		auto nz = strlen(norm);
+		if (sz < nz || strcmp(&subj[sz-nz], norm) != 0)
+			return true;
+		auto pfxlen = sz - nz;
+		auto newpfx = cu_alloc<char>(pfxlen + 1);
+		if (newpfx == nullptr)
+			return false;
+		strncpy(newpfx, subj, pfxlen);
+		newpfx[pfxlen] = '\0';
+		pfx = newpfx;
+		return true;
+	} else if (pfx != nullptr && norm == nullptr &&
+	    strncmp(subj, pfx, strlen(pfx)) == 0) {
+		/* Build PR_NORMALIZED_SUBJECT from PR_SUBJECT-PR_SUBJECT_PREFIX. */
+		auto p = subj + strlen(pfx);
+		while (isspace(static_cast<unsigned char>(*p)))
+			++p;
+		norm = p;
+		return true;
+	}
+	auto pfxlen = subj_pfxlen(subj);
+	auto newpfx = cu_alloc<char>(pfxlen + 1);
+	if (newpfx == nullptr)
+		return false;
+	memcpy(newpfx, subj, pfxlen);
+	newpfx[pfxlen] = '\0';
+	pfx  = newpfx;
+	norm = &subj[pfxlen];
+	return true;
+}
+
+/* A duplicate implementation is in xns_set_msg_subj. */
+static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
+    xstmt &pstmt, const TPROPVAL_ARRAY &props, size_t subj_id)
+{
+	auto &stag   = props.ppropval[subj_id].proptag;
+	/* No support for mixed STRING8/UNICODE */
+	auto pfxtag  = CHANGE_PROP_TYPE(PR_SUBJECT_PREFIX, PROP_TYPE(stag));
+	auto normtag = CHANGE_PROP_TYPE(PR_NORMALIZED_SUBJECT, PROP_TYPE(stag));
+	auto pfx  = props.get<const char>(pfxtag);
+	auto norm = props.get<const char>(normtag);
+	if (pfx != nullptr && norm != nullptr)
+		/* Decomposition not needed; parts are complete. */
+		return TRUE;
+
+	auto subj = static_cast<const char *>(props.ppropval[subj_id].pvalue);
+	if (!cu_rebuild_subjects(subj, pfx, norm))
+		return false;
+	auto lm = [&](uint32_t tag, const char *value) {
+	if (PROP_TYPE(tag) == PT_UNICODE) {
+		pstmt.bind_int64(1, tag);
+		pstmt.bind_text(2, value);
 	} else if (cpid != CP_ACP) {
-		pstring = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
-		if (pstring == nullptr)
+		auto s = common_util_convert_copy(TRUE, cpid, value);
+		if (s == nullptr)
 			return FALSE;
-		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
-		sqlite3_bind_text(pstmt, 2, pstring, -1, SQLITE_STATIC);
+		pstmt.bind_int64(1, tag);
+		pstmt.bind_text(2, value);
 	} else {
-		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT_A);
-		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
+		pstmt.bind_int64(1, tag);
+		pstmt.bind_text(2, value);
 	}
 	if (sqlite3_step(pstmt) != SQLITE_DONE)
 		return FALSE;
 	sqlite3_reset(pstmt);
+	return TRUE;
+	};
+	if (pfx != nullptr && !lm(pfxtag, pfx))
+		return false;
+	if (norm != nullptr && !lm(normtag, norm))
+		return false;
 	return TRUE;
 }
 
@@ -2980,11 +3072,8 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				break;
 			case PR_SUBJECT:
 			case PR_SUBJECT_A:
-				if (!cu_remove_property(MAPI_MESSAGE,
-				    id, psqlite, PR_SUBJECT_PREFIX))
-					return FALSE;	
 				if (!common_util_set_message_subject(cpid,
-				    id, pstmt, &ppropvals->ppropval[i]))
+				    id, pstmt, *ppropvals, i))
 					return FALSE;	
 				continue;
 			case ID_TAG_BODY:

@@ -2190,6 +2190,48 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	return TRUE;
 }
 
+/* A duplicate implementation is in common_util_set_message_subject. */
+static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
+    const TPROPVAL_ARRAY &nuprop, size_t subj_id, cpid_t cpid)
+{
+	auto &stag   = nuprop.ppropval[subj_id].proptag;
+	/* No support for mixed STRING8/UNICODE */
+	auto pfxtag  = CHANGE_PROP_TYPE(PR_SUBJECT_PREFIX, PROP_TYPE(stag));
+	auto normtag = CHANGE_PROP_TYPE(PR_NORMALIZED_SUBJECT, PROP_TYPE(stag));
+	auto pfx  = nuprop.get<const char>(pfxtag);
+	auto norm = nuprop.get<const char>(normtag);
+	msgprop.erase(stag);
+	if (pfx != nullptr && norm != nullptr)
+		/* Decomposition not needed; parts are complete. */
+		return TRUE;
+
+	auto subj = static_cast<const char *>(nuprop.ppropval[subj_id].pvalue);
+	if (!cu_rebuild_subjects(subj, pfx, norm))
+		return false;
+
+	if (pfx == nullptr) {
+		msgprop.erase(pfxtag);
+	} else if (PROP_TYPE(pfxtag) == PT_UNICODE) {
+		msgprop.set(pfxtag, pfx);
+	} else {
+		pfx = common_util_convert_copy(TRUE, cpid, pfx);
+		if (pfx == nullptr)
+			return false;
+		msgprop.set(pfxtag, pfx);
+	}
+	if (norm == nullptr) {
+		msgprop.erase(normtag);
+	} else if (PROP_TYPE(normtag) == PT_UNICODE) {
+		msgprop.set(normtag, norm);
+	} else {
+		norm = common_util_convert_copy(TRUE, cpid, norm);
+		if (norm == nullptr)
+			return false;
+		msgprop.set(normtag, norm);
+	}
+	return TRUE;
+}
+
 static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
     const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
@@ -2273,20 +2315,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		}
 		case PR_SUBJECT:
 		case PR_SUBJECT_A: {
-			pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX);
-			pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX_A);
-			pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT);
-			pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT_A);
-			void *pvalue;
-			if (pproperties->ppropval[i].proptag == PR_SUBJECT) {
-				pvalue = pproperties->ppropval[i].pvalue;
-			} else {
-				pvalue = common_util_convert_copy(TRUE,
-					pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
-				if (pvalue == nullptr)
-					return FALSE;
-			}
-			if (pmsgctnt->proplist.set(PR_NORMALIZED_SUBJECT, pvalue) != 0)
+			if (!xns_set_msg_subj(pmsgctnt->proplist, *pproperties,
+			    i, pinstance->cpid))
 				return FALSE;
 			continue;
 		}

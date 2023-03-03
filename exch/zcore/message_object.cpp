@@ -928,24 +928,6 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 BOOL message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
-	
-	/* seems some php-mapi users do not understand well
-		the relationship between PR_SUBJECT and
-		PR_NORMALIZED_SUBJECT, we try to resolve
-		the conflict when there exist both of them */
-	auto psubject = ppropvals->get<char>(PR_SUBJECT);
-	if (psubject == nullptr)
-		psubject = ppropvals->get<char>(PR_SUBJECT_A);
-	if (NULL != psubject) {
-		auto pnormalized_subject = ppropvals->get<char>(PR_NORMALIZED_SUBJECT);
-		if (pnormalized_subject == nullptr)
-			pnormalized_subject = ppropvals->get<char>(PR_NORMALIZED_SUBJECT_A);
-		if (pnormalized_subject != nullptr &&
-		    pnormalized_subject[0] == '\0' && *psubject != '\0') {
-			common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT);
-			common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT_A);
-		}
-	}
 	return message_object_set_properties_internal(
 						pmessage, TRUE, ppropvals);
 }

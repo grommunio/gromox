@@ -47,6 +47,7 @@ extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector
 extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();
 extern const GUID *(*common_util_get_handle)();
 
+extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
 extern void cu_set_propval(TPROPVAL_ARRAY *, uint32_t tag, const void *data);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);

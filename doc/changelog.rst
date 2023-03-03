@@ -7,6 +7,7 @@ Fixes:
 * Inbox rules had RES_OR conditions wrongly evaluated
 * Synchronization of embedded messages now works,
   resolving OL sync reports with error 80040301.
+* Saving a draft in grommunio-web would erroneously strip the Re: subject prefix
 * exmdb_provider: PR_NULL is now excluded from get_all_proptags's results,
   resolving _one_ instance of OL sync error 80070057.
 * EWS: Detailed FreeBusy requests did not return detailed info
