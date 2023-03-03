@@ -924,7 +924,7 @@ int iconv_validate()
 {
 	for (const auto s : {"UTF-7", "UTF-16LE", "UNICODE", "windows-1252",
 	     "iso-8859-1", "iso-2022-jp"}) {
-		auto k = iconv_open("UTF-8", "UTF-16LE");
+		auto k = iconv_open("UTF-8", s);
 		if (k == (iconv_t)-1) {
 			mlog(LV_ERR, "I can't work like this! iconv lacks support for the essential character set %s. "
 			        "Perhaps you need to install some libc locale package.", s);
