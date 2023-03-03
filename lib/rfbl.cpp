@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <clocale>
 #include <csignal>
 #include <cstdarg>
 #include <cstdint>
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <cwctype>
 #include <fcntl.h>
 #include <iconv.h>
 #include <istream>
@@ -920,8 +922,17 @@ size_t utf8_to_utf16_len(const char *s)
 	return 2 * strlen(s) + 2;
 }
 
+static void init_locale()
+{
+	setlocale(LC_ALL, "C.UTF-8");
+	if (iswalnum(0x79C1))
+		return;
+	setlocale(LC_ALL, "en_US.UTF-8");
+}
+
 int iconv_validate()
 {
+	init_locale();
 	for (const auto s : {"UTF-7", "UTF-16LE", "UNICODE", "windows-1252",
 	     "iso-8859-1", "iso-2022-jp"}) {
 		auto k = iconv_open("UTF-8", s);
