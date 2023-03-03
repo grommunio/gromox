@@ -139,6 +139,11 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 		if(!folderSpec.target)
 			folderSpec.target = ctx.auth_info.username;
 		folderSpec.normalize();
+		if(!(ctx.permissions(ctx.auth_info.username, folderSpec) & frightsVisible))
+		{
+			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot access target folder");
+			continue;
+		}
 
 		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
 		TPROPVAL_ARRAY folderProps = ctx.getFolderProps(folderSpec, tags);
@@ -425,6 +430,14 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		folder.target = ctx.auth_info.username;
 	std::string dir = ctx.getDir(folder.normalize());
 
+	mSyncFolderHierarchyResponse data;
+	if(!(ctx.permissions(ctx.auth_info.username, folder) & frightsVisible))
+	{
+		data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot access target folder");
+		data.serialize(response);
+		return;
+	}
+
 	FOLDER_CHANGES changes;
 	uint64_t lastCn;
 	EID_ARRAY given_fids, deleted_fids;
@@ -432,16 +445,18 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
 		throw DispatchError(E3030);
 	sProptags requestedTags = ctx.collectTags(request.FolderShape);
-	std::sort(requestedTags.tags.begin(), requestedTags.tags.end());
 
-	mSyncFolderHierarchyResponse data;
     mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
 	msgChanges.reserve(changes.count+deleted_fids.count);
+	sFolderSpec subfolder = folder;
 	for(TPROPVAL_ARRAY* folderProps = changes.pfldchgs; folderProps < changes.pfldchgs+changes.count; ++folderProps)
 	{
 		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
 		if(!folderId)
+			continue;
+		subfolder.folderId = *folderId;
+		if(!(ctx.permissions(ctx.auth_info.username, subfolder, dir.c_str()) & frightsVisible))
 			continue;
 		PROPTAG_ARRAY tags {uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
 		TPROPVAL_ARRAY props = ctx.getFolderProps(sFolderSpec(*folder.target, *folderId), tags);
@@ -488,8 +503,14 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	if(!folder.target)
 		folder.target = ctx.auth_info.username;
 	std::string dir = ctx.getDir(folder.normalize());
-	const char* username = folder.target == ctx.auth_info.username? nullptr : ctx.auth_info.username;
 
+	mSyncFolderItemsResponse data;
+	if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
+	{
+		data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot access target folder");
+		data.serialize(response);
+		return;
+	}
 	auto& exmdb = ctx.plugin.exmdb;
 
 	uint32_t fai_count, normal_count;
@@ -497,7 +518,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
 	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
 	idset* pseen_fai = getFai? &syncState.seen : nullptr;
-	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, username,
+	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, nullptr,
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
 	    &normal_total, &updated_mids, &chg_mids, &last_cn, &given_mids,
@@ -516,7 +537,6 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint32_t maxItems = request.MaxChangesReturned;
 	bool clipped = false;
 
-	mSyncFolderItemsResponse data;
 	mSyncFolderItemsResponseMessage& msg = data.ResponseMessages.emplace_back();
 	msg.Changes.reserve(min(chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count, maxItems));
 	maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
@@ -564,8 +584,8 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	{
 		syncState.seen.clear();
 		syncState.read.clear();
-		if(!syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn)) ||
-		   !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn)))
+		if((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
+		   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
 			throw DispatchError(E3066);
 		syncState.readOffset = 0;
 	}

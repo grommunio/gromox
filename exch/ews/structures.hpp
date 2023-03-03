@@ -1297,13 +1297,13 @@ struct mSyncFolderHierarchyRequest
  */
 struct mSyncFolderHierarchyResponseMessage : mResponseMessageType
 {
+	using mResponseMessageType::mResponseMessageType;
+
 	static constexpr char NAME[] = "SyncFolderHierarchyResponseMessage";
 
 	std::optional<std::string> SyncState;
 	std::optional<bool> IncludesLastFolderInRange;
 	std::optional<std::vector<tSyncFolderHierarchyChange>> Changes;
-
-	using mResponseMessageType::success;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -1336,6 +1336,8 @@ struct mSyncFolderItemsRequest
 
 struct mSyncFolderItemsResponseMessage : mResponseMessageType
 {
+	using mResponseMessageType::mResponseMessageType;
+
 	static constexpr char NAME[] = "SyncFolderItemsResponseMessage";
 
 	std::optional<std::string> SyncState;
