@@ -2580,7 +2580,7 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 	if (ppropval->proptag == PR_SUBJECT) {
 		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
 		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
-	} else if (cpid == CP_ACP) {
+	} else if (cpid != CP_ACP) {
 		pstring = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
 		if (pstring == nullptr)
 			return FALSE;
