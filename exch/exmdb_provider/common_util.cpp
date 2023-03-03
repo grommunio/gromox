@@ -1915,11 +1915,11 @@ static GP_RESULT gp_spectableprop(mapi_object_type table_type, uint32_t tag,
 static GP_RESULT gp_msgprop_synth(uint32_t proptag, TAGGED_PROPVAL &pv)
 {
 	if (proptag == PR_MESSAGE_CLASS) {
-		auto v = cu_alloc<char>(16);
+		auto v = cu_alloc<char>(9);
 		pv.pvalue = v;
 		if (v == nullptr)
 			return GP_ERR;
-		strcpy(v, "IPM.Note.AUTO");
+		strcpy(v, "IPM.Note");
 		return GP_ADV;
 	}
 	return GP_UNHANDLED;
