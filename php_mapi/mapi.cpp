@@ -47,9 +47,6 @@ ZEND_END_MODULE_GLOBALS(mapi)
 #endif
 #define PHP_MAPI_EXTNAME "mapi"
 
-extern zend_module_entry mapi_module_entry;
-#define phpext_mapi_ptr &mapi_module_entry
-
 #define ZEND_FETCH_RESOURCE(rsrc, rsrc_type, passed_id, default_id, resource_type_name, resource_type) \
 	do { \
 		rsrc = static_cast<rsrc_type>(zend_fetch_resource(Z_RES_P(*passed_id), resource_type_name, resource_type)); \
@@ -5307,7 +5304,7 @@ static zend_function_entry mapi_functions[] = {
 #undef F7
 };
 
-zend_module_entry mapi_module_entry = {
+static zend_module_entry mapi_module_entry = {
 	STANDARD_MODULE_HEADER,
 	PHP_MAPI_EXTNAME,
 	mapi_functions,
