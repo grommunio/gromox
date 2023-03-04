@@ -85,6 +85,17 @@ int tls_set_min_proto(SSL_CTX *ctx, const char *p)
 	return 0;
 }
 
+void tls_set_renego(SSL_CTX *ctx)
+{
+#if defined(SSL_OP_NO_CLIENT_RENEGOTIATION)
+	/* LibreSSL case */
+	SSL_CTX_set_options(ctx, SSL_OP_NO_CLIENT_RENEGOTIATION);
+#elif defined(SSL_OP_NO_RENEGOTIATION) && !defined(SSL_OP_ALLOW_CLIENT_RENEGOTIATION)
+	/* OpenSSL 1.x */
+	SSL_CTX_set_options(ctx, SSL_OP_NO_RENEGOTIATION);
+#endif
+}
+
 std::string sss_obf_reverse(const std::string_view &x)
 {
 	std::string out;

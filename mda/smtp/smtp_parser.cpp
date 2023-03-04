@@ -140,6 +140,7 @@ int smtp_parser_run()
 			mlog(LV_ERR, "smtp_parser: tls_min_proto value \"%s\" rejected", mp);
 			return -4;
 		}
+		tls_set_renego(g_ssl_ctx);
 		try {
 			g_ssl_mutex_buf = std::make_unique<std::mutex[]>(CRYPTO_num_locks());
 		} catch (const std::bad_alloc &) {
