@@ -498,6 +498,12 @@ static PHP_MSHUTDOWN_FUNCTION(mapi)
 
 static PHP_RINIT_FUNCTION(mapi)
 {
+	zstrplus str_opcache(zend_string_init(ZEND_STRL("zend opcache"), 0));
+	if (zend_hash_exists(&module_registry, str_opcache.get())) {
+		php_error_docref(nullptr, E_ERROR, "mapi: opcache is incompatible due to breakage of is_resource($x)");
+		return FAILURE;
+	}
+
 	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
 
