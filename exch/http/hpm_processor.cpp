@@ -56,7 +56,7 @@ struct HPM_CONTEXT {
 static int g_context_num;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
-static HPM_PLUGIN *g_cur_plugin;
+static thread_local HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
 static std::vector<std::string> g_plugin_names;

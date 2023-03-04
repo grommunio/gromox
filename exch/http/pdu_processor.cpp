@@ -115,7 +115,7 @@ static size_t g_max_request_mem;
 static uint32_t g_last_async_id;
 static thread_local DCERPC_CALL *g_call_key;
 static thread_local NDR_STACK_ROOT *g_stack_key;
-static PROC_PLUGIN *g_cur_plugin;
+static thread_local PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;

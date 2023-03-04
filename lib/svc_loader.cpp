@@ -68,7 +68,7 @@ static const char *service_get_host_ID();
 static char g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
-static SVC_PLUG_ENTITY *g_cur_plug;
+static thread_local SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
 static std::vector<std::string> g_plugin_names;
 static const char *g_program_identifier;
