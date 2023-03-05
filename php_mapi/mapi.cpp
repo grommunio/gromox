@@ -309,14 +309,11 @@ static BINARY* stream_object_get_content(STREAM_OBJECT *pstream)
 
 static void notif_sink_free(NOTIF_SINK *psink)
 {
-	int i;
-	
 	if (NULL != psink->padvise) {
 		if (psink->hsession != GUID_NONE) {
-			for (i=0; i<psink->count; i++) {
+			for (unsigned int i = 0; i < psink->count; ++i)
 				zclient_unadvise(psink->hsession,
 					psink->padvise[i].hstore, psink->padvise[i].sub_id);
-			}
 		}
 		efree(psink->padvise);
 	}
@@ -2446,7 +2443,6 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 
 static ZEND_FUNCTION(mapi_getidsfromnames)
 {
-	int i;
 	zval *pzstore, *pznames, *pzguids;
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
@@ -2473,9 +2469,8 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 		pthrow(result);
 	}
 	zarray_init(return_value);
-	for (i=0; i<propids.count; i++) {
+	for (unsigned int i = 0; i < propids.count; ++i)
 		add_next_index_long(return_value, PROP_TAG(PT_UNSPECIFIED, propids.ppropid[i]));
-	}
 	MAPI_G(hr) = ecSuccess;
 }
 
@@ -3025,7 +3020,6 @@ static ZEND_FUNCTION(mapi_getprops)
 
 static ZEND_FUNCTION(mapi_getnamesfromids)
 {
-	int i;
 	zval *pzarray, *pzresource;
 	char num_buff[20];
 	PROPID_ARRAY propids;
@@ -3051,9 +3045,8 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 	if (NULL == propids.ppropid) {
 		pthrow(ecMAPIOOM);
 	}
-	for (i=0; i<proptags.count; i++) {
+	for (unsigned int i = 0; i < proptags.count; ++i)
 		propids.ppropid[i] = PROP_ID(proptags.pproptag[i]);
-	}
 	auto result = zclient_getpropnames(
 		pstore->hsession, pstore->hobject,
 		&propids, &propnames);
@@ -3061,7 +3054,7 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 		pthrow(result);
 	}
 	zarray_init(return_value);
-	for (i=0; i<propnames.count; i++) {
+	for (unsigned int i = 0; i < propnames.count; ++i) {
 		if (KIND_NONE == propnames.ppropname[i].kind) {
 			continue;
 		}
@@ -3302,7 +3295,6 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 
 static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
-	int i;
 	zend_long acl_type;
 	zval *pzresource;
 	PERMISSION_SET perm_set;
@@ -3341,7 +3333,7 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		pthrow(result);
 	}
 	zarray_init(return_value);
-	for (i=0; i<perm_set.count; i++) {
+	for (unsigned int i = 0; i < perm_set.count; ++i) {
 		zval pzdata_value;
 		zarray_init(&pzdata_value);
 		add_assoc_stringl(&pzdata_value, "userid",
@@ -3360,7 +3352,6 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 
 static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 {
-	int i, j;
 	zval *pzperms, *pzresource;
 	HashTable *pdata, *ptarget_hash;
 	MAPI_RESOURCE *pfolder;
@@ -3399,7 +3390,7 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		pthrow(ecMAPIOOM);
 	}
 
-	for (i=0,j=0; i<perm_set.count; i++) {
+	for (unsigned int i = 0, j = 0; i < perm_set.count; ++i) {
 		auto ppzentry = zend_hash_get_current_data(ptarget_hash);
 		ZVAL_DEREF(ppzentry);
 		pdata = HASH_OF(ppzentry);
