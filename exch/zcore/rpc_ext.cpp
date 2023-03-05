@@ -1333,10 +1333,8 @@ static BOOL zrpc_push(EXT_PUSH &x, const zcresp_stateimport &d)
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_importmessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hctx) != EXT_ERR_SUCCESS)
-		return FALSE;
-	if (x.g_uint32(&d.flags) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(x.g_uint32(&d.hctx));
+	QRF(x.g_uint32(&d.flags));
 	d.pproplist = x.anew<TPROPVAL_ARRAY>();
 	if (d.pproplist == nullptr)
 		return FALSE;
@@ -1353,8 +1351,7 @@ static BOOL zrpc_push(EXT_PUSH &x, const zcresp_importmessage &d)
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_importfolder &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hctx) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(x.g_uint32(&d.hctx));
 	d.pproplist = x.anew<TPROPVAL_ARRAY>();
 	if (d.pproplist == nullptr)
 		return FALSE;
@@ -1365,10 +1362,8 @@ static BOOL zrpc_pull(EXT_PULL &x, zcreq_importfolder &d)
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_importdeletion &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hctx) != EXT_ERR_SUCCESS)
-		return FALSE;
-	if (x.g_uint32(&d.flags) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(x.g_uint32(&d.hctx));
+	QRF(x.g_uint32(&d.flags));
 	d.pbins = x.anew<BINARY_ARRAY>();
 	if (d.pbins == nullptr)
 		return FALSE;
@@ -1445,9 +1440,8 @@ static BOOL zrpc_push(EXT_PUSH &x, const zcresp_messagetorfc822 &d)
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_rfc822tomessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS ||
-	    x.g_uint32(&d.mxf_flags) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(x.g_uint32(&d.hmessage));
+	QRF(x.g_uint32(&d.mxf_flags));
 	d.peml_bin = x.anew<BINARY>();
 	if (d.peml_bin == nullptr)
 		return FALSE;
@@ -1471,8 +1465,7 @@ static BOOL zrpc_push(EXT_PUSH &x, const zcresp_messagetoical &d)
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_icaltomessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(x.g_uint32(&d.hmessage));
 	d.pical_bin = x.anew<BINARY>();
 	if (d.pical_bin == nullptr)
 		return FALSE;
@@ -1496,8 +1489,7 @@ static BOOL zrpc_push(EXT_PUSH &x, const zcresp_messagetovcf &d)
 static BOOL zrpc_pull(EXT_PULL &x, zcreq_vcftomessage &d)
 {
 	QRF(x.g_guid(&d.hsession));
-	if (x.g_uint32(&d.hmessage) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(x.g_uint32(&d.hmessage));
 	d.pvcf_bin = x.anew<BINARY>();
 	if (d.pvcf_bin == nullptr)
 		return FALSE;
@@ -1688,16 +1680,14 @@ BOOL rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 		return FALSE;
 	QRF(ext_push.p_uint8(static_cast<uint8_t>(zcore_response::success)));
 	if (presponse->result != ecSuccess) {
-		if (ext_push.p_uint32(4) != EXT_ERR_SUCCESS ||
-		    ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
-			return FALSE;
+		QRF(ext_push.p_uint32(4));
+		QRF(ext_push.p_uint32(presponse->result));
 		pbin_out->cb = ext_push.m_offset;
 		pbin_out->pb = ext_push.release();
 		return TRUE;
 	}
-	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(presponse->result) != EXT_ERR_SUCCESS)
-		return FALSE;
+	QRF(ext_push.advance(sizeof(uint32_t)));
+	QRF(ext_push.p_uint32(presponse->result));
 	switch (presponse->call_id) {
 	case zcore_callid::checksession:
 	case zcore_callid::unloadobject:
@@ -1796,8 +1786,7 @@ BOOL rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 		return FALSE;
 	pbin_out->cb = ext_push.m_offset;
 	ext_push.m_offset = 1;
-	if (ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1) != EXT_ERR_SUCCESS)
-		return false;
+	QRF(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t) - 1));
 	pbin_out->pb = ext_push.release();
 	return TRUE;
 }
