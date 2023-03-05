@@ -164,15 +164,6 @@ static int le_mapi_exportchanges;
 static int le_mapi_importcontentschanges;
 static int le_mapi_importhierarchychanges;
 
-static STREAM_OBJECT* stream_object_create()
-{
-	auto pstream = st_calloc<STREAM_OBJECT>();
-	if (NULL == pstream) {
-		return NULL;
-	}
-	return pstream;
-}
-
 static zend_bool stream_object_set_length(
 	STREAM_OBJECT *pstream, uint32_t length)
 {
@@ -316,15 +307,6 @@ static BINARY* stream_object_get_content(STREAM_OBJECT *pstream)
 	return &pstream->content_bin;
 }
 
-static NOTIF_SINK* notif_sink_create()
-{
-	auto psink = st_calloc<NOTIF_SINK>();
-	if (NULL == psink) {
-		return NULL;
-	}
-	return psink;
-}
-
 static void notif_sink_free(NOTIF_SINK *psink)
 {
 	int i;
@@ -356,13 +338,8 @@ static uint32_t notif_sink_timedwait(NOTIF_SINK *psink,
 static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 	GUID hsession, uint32_t hstore, uint32_t sub_id)
 {
-	ADVISE_INFO *padvise;
-	
-	if (NULL == psink->padvise) {
-		padvise = st_malloc<ADVISE_INFO>();
-	} else {
-		padvise = sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
-	}
+	auto padvise = psink->padvise == nullptr ?st_malloc<ADVISE_INFO>() :
+	               sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
 	if (NULL == padvise) {
 		return 0;
 	}
@@ -596,18 +573,15 @@ static ZEND_FUNCTION(mapi_is_error)
 static ZEND_FUNCTION(mapi_make_scode)
 {
 	zend_long sev, code;
-	uint32_t scode;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &sev, &code) == FAILURE) {
 		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
 		return;
 	}
-	if (0 == sev) {
-		scode = 0x40000 | ((uint32_t)code);
-	} else {
-		scode = 0x80000000 | 0x40000 | ((uint32_t)code);
-	}
+	uint32_t scode = 0x40000 | static_cast<uint32_t>(code);
+	if (sev)
+		scode |= 0x80000000;
 	MAPI_G(hr) = ecSuccess;
 	RETURN_LONG(scode);
 }
@@ -1510,11 +1484,8 @@ static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	if (pstore->type != zs_objtype::store) {
 		pthrow(ecInvalidObject);
 	}
-	if (NULL == sourcekey_message.pb || 0 == sourcekey_message.cb) {
-		pmessage_key = NULL;
-	} else {
-		pmessage_key = &sourcekey_message;
-	}
+	pmessage_key = sourcekey_message.pb == 0 || sourcekey_message.cb == 0 ?
+	               nullptr : &sourcekey_message;
 	auto result = zclient_entryidfromsourcekey(pstore->hsession,
 		pstore->hobject, sourcekey_folder, pmessage_key, &entryid);
 	if (result != ecSuccess) {
@@ -1548,11 +1519,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 	}
 	ZEND_FETCH_RESOURCE(psink, NOTIF_SINK*, &pzressink,
 		-1, name_mapi_advisesink, le_mapi_advisesink);
-	if (NULL == entryid.pb || 0 == entryid.cb) {
-		pentryid = NULL;
-	} else {
-		pentryid = &entryid;
-	}
+	pentryid = entryid.pb == nullptr || entryid.cb == 0 ? nullptr : &entryid;
 	auto result = zclient_storeadvise(
 		pstore->hsession, pstore->hobject,
 		pentryid, event_mask, &sub_id);
@@ -1596,9 +1563,7 @@ static ZEND_FUNCTION(mapi_msgstore_unadvise)
 
 static ZEND_FUNCTION(mapi_sink_create)
 {
-	NOTIF_SINK *psink;
-    
-	psink = notif_sink_create();
+	auto psink = st_calloc<NOTIF_SINK>();
 	if (NULL == psink) {
 		MAPI_G(hr) = ecMAPIOOM;
 		RETVAL_FALSE;
@@ -2309,9 +2274,7 @@ static ZEND_FUNCTION(mapi_stream_stat)
 
 static ZEND_FUNCTION(mapi_stream_create)
 {
-	STREAM_OBJECT *pstream;
-	
-	pstream = stream_object_create();
+	auto pstream = st_calloc<STREAM_OBJECT>();
 	if (NULL == pstream) {
 		pthrow(ecError);
 	}
@@ -2326,7 +2289,6 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 	void *pvalue;
 	char *guidstr;
 	zval *pzresource;
-	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *probject;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -2379,7 +2341,7 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 		pthrow(ecInvalidParam);
 	}
 	}
-	pstream = stream_object_create();
+	auto pstream = st_calloc<STREAM_OBJECT>();
 	if (NULL == pstream) {
 		pthrow(ecMAPIOOM);
 	}
@@ -2786,7 +2748,6 @@ static ZEND_FUNCTION(mapi_openproperty)
 	zval *pzresource;
 	PULL_CTX pull_ctx;
 	zend_long flags = 0, interfaceflags = 0, proptag;
-	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *probject, *presource;
 	ICS_IMPORT_CTX *pimporter;
 	ICS_EXPORT_CTX *pexporter;
@@ -2861,7 +2822,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 			else
 				RETVAL_STRINGL(static_cast<const char *>(pvalue), strlen(static_cast<const char *>(pvalue)));
 		} else {
-			pstream = stream_object_create();
+			auto pstream = st_calloc<STREAM_OBJECT>();
 			if (NULL == pstream) {
 				pthrow(ecMAPIOOM);
 			}
@@ -2923,11 +2884,8 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pexporter->hsession = probject->hsession;
 		pexporter->hobject = hobject;
 		ZVAL_NULL(&pexporter->pztarget_obj);
-		if (PR_CONTENTS_SYNCHRONIZER == proptag) {
-			pexporter->ics_type = ICS_TYPE_CONTENTS;
-		} else {
-			pexporter->ics_type = ICS_TYPE_HIERARCHY;
-		}
+		pexporter->ics_type = proptag == PR_CONTENTS_SYNCHRONIZER ?
+		                      ICS_TYPE_CONTENTS : ICS_TYPE_HIERARCHY;
 		pexporter->progress = 0;
 		pexporter->sync_steps = 0;
 		pexporter->total_steps = 0;
@@ -3490,11 +3448,8 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 			continue;
 		perm_set.prows[j].member_rights = zval_get_long(value);
 		value = zend_hash_find(pdata, str_state.get());
-		if (value != nullptr) {
-			perm_set.prows[j].flags = zval_get_long(value);
-		} else {
-			perm_set.prows[j].flags = RIGHT_NEW|RIGHT_AUTOUPDATE_DENIED;
-		}
+		perm_set.prows[j].flags = value != nullptr ? zval_get_long(value) :
+		                          RIGHT_NEW | RIGHT_AUTOUPDATE_DENIED;
 		j ++;
 		zend_hash_move_forward(ptarget_hash);
 	}
@@ -3624,7 +3579,6 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 static zend_bool import_message_change(zval *pztarget_obj,
 	const TPROPVAL_ARRAY *pproplist, uint32_t flags)
 {
-	uint32_t hresult;
 	zval pzvalreturn, pzvalargs[3], pzvalfuncname;
 
 	ZVAL_NULL(&pzvalargs[0]);
@@ -3636,12 +3590,9 @@ static zend_bool import_message_change(zval *pztarget_obj,
 	}
 	ZVAL_NULL(&pzvalreturn);
 	ZVAL_STRING(&pzvalfuncname, "ImportMessageChange");
-	if (call_user_function(NULL, pztarget_obj, &pzvalfuncname,
-	    &pzvalreturn, 3, pzvalargs) == FAILURE) {
-		hresult = ecError;
-	} else {
-		hresult = zval_get_long(&pzvalreturn);
-	}
+	uint32_t hresult = call_user_function(NULL, pztarget_obj, &pzvalfuncname,
+	                   &pzvalreturn, 3, pzvalargs) == FAILURE ?
+	                   ecError : zval_get_long(&pzvalreturn);
 	zval_ptr_dtor(&pzvalfuncname);
 	zval_ptr_dtor(&pzvalreturn);
 	zval_ptr_dtor(&pzvalargs[0]);
@@ -3834,11 +3785,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			if (result != ecSuccess) {
 				pthrow(result);
 			}
-			if (b_new) {
-				flags = SYNC_NEW_MESSAGE;
-			} else {
-				flags = 0;
-			}
+			flags = b_new ? SYNC_NEW_MESSAGE : 0;
 			if (!import_message_change(&pctx->pztarget_obj,
 				&propvals, flags)) {
 				pthrow(ecError);
@@ -4024,11 +3971,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 	if (!php_to_binary_array(pzresmessages, &message_bins)) {
 		pthrow(ecError);
 	}
-	if (SYNC_SOFT_DELETE & flags) {
-		flags = 0;
-	} else {
-		flags = SYNC_DELETES_FLAG_HARDDELETE;
-	}
+	flags = (flags & SYNC_SOFT_DELETE) ? 0 : SYNC_DELETES_FLAG_HARDDELETE;
 	auto result = zclient_importdeletion(
 			pctx->hsession, pctx->hobject,
 			flags, &message_bins);
@@ -4230,7 +4173,6 @@ static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 {
 	BINARY eml_bin;
 	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
-	STREAM_OBJECT *pstream;
 	MAPI_RESOURCE *pmessage;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -4249,7 +4191,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	if (result != ecSuccess) {
 		pthrow(result);
 	}
-	pstream = stream_object_create();
+	auto pstream = st_calloc<STREAM_OBJECT>();
 	if (NULL == pstream) {
 		pthrow(ecMAPIOOM);
 	}
