@@ -250,7 +250,7 @@ static void *zcorezs_scanwork(void *param)
 			holder.splice(holder.end(), expired_list, expired_list.begin());
 			auto psink_node = &holder.front();
 			/* implied ~sink_node at end of scope */
-			if (!rpc_ext_push_response(&response, &tmp_bin))
+			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok)
 				continue;
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
@@ -580,7 +580,7 @@ static void zs_notification_proc(const char *dir,
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
-			if (!rpc_ext_push_response(&response, &tmp_bin)) {
+			if (rpc_ext_push_response(&response, &tmp_bin) != pack_result::ok) {
 				auto tmp_byte = zcore_response::push_error;
 				if (poll(&fdpoll, 1, tv_msec) == 1)
 					write(psink_node->clifd, &tmp_byte, 1);

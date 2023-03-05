@@ -166,7 +166,7 @@ static void *zcrp_thrwork(void *param)
 	tmp_bin.pv = pbuff;
 	tmp_bin.cb = buff_len;
 	zcreq *request = nullptr;
-	if (!rpc_ext_pull_request(&tmp_bin, request)) {
+	if (rpc_ext_pull_request(&tmp_bin, request) != pack_result::ok) {
 		free(pbuff);
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;
@@ -197,7 +197,7 @@ static void *zcrp_thrwork(void *param)
 		/* clifd will be maintained by zarafa_server */
 		goto NEXT_CLIFD;
 	}
-	if (!rpc_ext_push_response(response, &tmp_bin)) {
+	if (rpc_ext_push_response(response, &tmp_bin) != pack_result::ok) {
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
