@@ -1,5 +1,5 @@
-Development 2.4.91
-==================
+Gromox 2.5 (2023-03-06)
+=======================
 
 Fixes:
 
@@ -15,6 +15,7 @@ Fixes:
 Enhancements:
 
 * authmgr: Alternate username support
+* mt2exm: add --skip-notif, --skip-rules options
 
 Behavioral changes:
 
@@ -23,6 +24,9 @@ Behavioral changes:
   number) extended rules".
 * The build no longer depends on the gumbo-parser library
   (a HTML parser); instead, it now uses libxml2 to do the same.
+* daemons: disable client-side TLS renegotiation in OpenSSL 1.x and LibreSSL
+  (OpenSSL 3.x defaults to this behavior already)
+* php_mapi: block opcache from being present in the same process
 
 
 Gromox 2.4 (2023-02-26)
