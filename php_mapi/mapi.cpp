@@ -172,23 +172,20 @@ static zend_bool stream_object_set_length(
 	/* always leave trail null for string */
 	if (NULL == pstream->content_bin.pb) {
 		pstream->content_bin.pb = sta_malloc<uint8_t>(length + 1);
-		if (NULL == pstream->content_bin.pb) {
+		if (pstream->content_bin.pb == nullptr)
 			return 0;
-		}
 		memset(pstream->content_bin.pb, 0, length + 1);
 	} else if (length > pstream->content_bin.cb) {
 		pdata = sta_realloc<uint8_t>(pstream->content_bin.pb, length + 1);
-		if (NULL == pdata) {
+		if (pdata == nullptr)
 			return 0;
-		}
 		pstream->content_bin.pb = pdata;
 		memset(pstream->content_bin.pb
 			+ pstream->content_bin.cb, 0,
 			length + 1 - pstream->content_bin.cb);
 	} else {
-		if (pstream->seek_offset > length) {
+		if (pstream->seek_offset > length)
 			pstream->seek_offset = length;
-		}
 		pstream->content_bin.pb[length] = '\0';
 	}
 	pstream->content_bin.cb = length;
@@ -206,11 +203,10 @@ static void* stream_object_read(STREAM_OBJECT *pstream,
 		*pactual_bytes = 0;
 		return NULL;
 	}
-	if (pstream->seek_offset + buf_len > pstream->content_bin.cb) {
+	if (pstream->seek_offset + buf_len > pstream->content_bin.cb)
 		length = pstream->content_bin.cb - pstream->seek_offset;
-	} else {
+	else
 		length = buf_len;
-	}
 	paddress = pstream->content_bin.pb + pstream->seek_offset;
 	pstream->seek_offset += length;
 	*pactual_bytes = length;
@@ -222,9 +218,8 @@ static uint32_t stream_object_write(STREAM_OBJECT *pstream,
 {	
 	if (NULL == pstream->content_bin.pb) {
 		pstream->content_bin.pb = sta_malloc<uint8_t>(buf_len);
-		if (NULL == pstream->content_bin.pb) {
+		if (pstream->content_bin.pb == nullptr)
 			return 0;
-		}
 		pstream->seek_offset = 0;
 	}
 	if (pstream->seek_offset + buf_len > pstream->content_bin.cb &&
@@ -268,17 +263,15 @@ static zend_bool stream_object_seek(STREAM_OBJECT *pstream,
 
 static void stream_object_reset(STREAM_OBJECT *pstream)
 {
-	if (NULL != pstream->content_bin.pb) {
+	if (pstream->content_bin.pb != nullptr)
 		efree(pstream->content_bin.pb);
-	}
 	memset(pstream, 0, sizeof(STREAM_OBJECT));
 }
 
 static void stream_object_free(STREAM_OBJECT *pstream)
 {
-	if (NULL != pstream->content_bin.pb) {
+	if (pstream->content_bin.pb != nullptr)
 		efree(pstream->content_bin.pb);
-	}
 	efree(pstream);
 }
 
@@ -310,11 +303,10 @@ static BINARY* stream_object_get_content(STREAM_OBJECT *pstream)
 static void notif_sink_free(NOTIF_SINK *psink)
 {
 	if (NULL != psink->padvise) {
-		if (psink->hsession != GUID_NONE) {
+		if (psink->hsession != GUID_NONE)
 			for (unsigned int i = 0; i < psink->count; ++i)
 				zclient_unadvise(psink->hsession,
 					psink->padvise[i].hstore, psink->padvise[i].sub_id);
-		}
 		efree(psink->padvise);
 	}
 	efree(psink);
@@ -337,9 +329,8 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 {
 	auto padvise = psink->padvise == nullptr ?st_malloc<ADVISE_INFO>() :
 	               sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
-	if (NULL == padvise) {
+	if (padvise == nullptr)
 		return 0;
-	}
 	if (psink->hsession == GUID_NONE)
 		psink->hsession = hsession;
 	else if (psink->hsession != hsession)
@@ -352,56 +343,48 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 
 static void mapi_resource_dtor(zend_resource *rsrc)
 {
-	if (NULL == rsrc->ptr) {
+	if (rsrc->ptr == nullptr)
 		return;
-	}
 	auto presource = static_cast<MAPI_RESOURCE *>(rsrc->ptr);
-	if (0 != presource->hobject) {
+	if (presource->hobject != 0)
 		zclient_unloadobject(
 			presource->hsession, presource->hobject);
-	}
 	efree(presource);
 }
 
 static void notif_sink_dtor(zend_resource *rsrc)
 {
-	if (NULL != rsrc->ptr) {
+	if (rsrc->ptr != nullptr)
 		notif_sink_free(static_cast<NOTIF_SINK *>(rsrc->ptr));
-	}
 }
 
 static void stream_object_dtor(zend_resource *rsrc)
 {
-	if (NULL != rsrc->ptr) {
+	if (rsrc->ptr != nullptr)
 		stream_object_free(static_cast<STREAM_OBJECT *>(rsrc->ptr));
-	}
 }
 
 static void ics_import_ctx_dtor(zend_resource *rsrc)
 {	
-	if (NULL == rsrc->ptr) {
+	if (rsrc->ptr == nullptr)
 		return;
-	}
 	auto pctx = static_cast<ICS_IMPORT_CTX *>(rsrc->ptr);
 	zval_ptr_dtor(&pctx->pztarget_obj);
-	if (0 != pctx->hobject) {
+	if (pctx->hobject != 0)
 		zclient_unloadobject(
 			pctx->hsession, pctx->hobject);
-	}
 	efree(pctx);
 }
 
 static void ics_export_ctx_dtor(zend_resource *rsrc)
 {
-	if (NULL == rsrc->ptr) {
+	if (rsrc->ptr == nullptr)
 		return;
-	}
 	auto pctx = static_cast<ICS_EXPORT_CTX *>(rsrc->ptr);
 	zval_ptr_dtor(&pctx->pztarget_obj);
-	if (0 != pctx->hobject) {
+	if (pctx->hobject != 0)
 		zclient_unloadobject(
 			pctx->hsession, pctx->hobject);
-	}
 	efree(pctx);
 }
 
@@ -611,9 +594,8 @@ static ZEND_FUNCTION(mapi_createoneoff)
 		&paddress, &address_len, &flags) == FAILURE ||
 		NULL == ptype || '\0' == ptype[0] || NULL == paddress)
 		pthrow(ecInvalidParam);
-	if (NULL == pdisplayname) {
+	if (pdisplayname == nullptr)
 		pdisplayname = empty;
-	}
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = flags;
@@ -695,9 +677,8 @@ static ZEND_FUNCTION(mapi_logon_ex)
 		zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 		zstrplus str_reqm(zend_string_init(ZEND_STRL("REQUEST_METHOD"), 0));
 
-		if (PG(auto_globals_jit)) {
+		if (PG(auto_globals_jit))
 			zend_is_auto_global(str_server.get());
-		}
 
 		auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
 		if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
@@ -962,9 +943,9 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 	if (psession->type != zs_objtype::session)
 		pthrow(ecInvalidObject);
 	if (NULL != puid) {
-		if (0 == uidlen) {
+		if (uidlen == 0)
 			puid = NULL;
-		} else if (uidlen != sizeof(FLATUID))
+		else if (uidlen != sizeof(FLATUID))
 			pthrow(ecInvalidParam);
 	}
 	auto result = zclient_openprofilesec(
@@ -1194,9 +1175,8 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 		&flags, &folder_type) == FAILURE || NULL == pzresource ||
 		NULL == pfname || '\0' == pfname[0])
 		pthrow(ecInvalidParam);
-	if (NULL == pcomment || 0 == comment_len) {
+	if (pcomment == nullptr || comment_len == 0)
 		pcomment = empty;
-	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (pfolder->type != zs_objtype::folder)
@@ -1288,9 +1268,8 @@ static ZEND_FUNCTION(mapi_folder_copyfolder)
 		&pzvaldstfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (pdstfolder->type != zs_objtype::folder)
 		pthrow(ecInvalidObject);
-	if (0 == name_len) {
+	if (name_len == 0)
 		pname = NULL;
-	}
 	auto result = zclient_copyfolder(psrcfolder->hsession,
 		psrcfolder->hobject, entryid, pdstfolder->hobject,
 		pname, flags);
@@ -1321,10 +1300,9 @@ static ZEND_FUNCTION(mapi_msgstore_createentryid)
 static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 {
 	MAPI_G(hr) = ecNotFound;
-	if (MAPI_G(exceptions_enabled)) {
+	if (MAPI_G(exceptions_enabled))
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
-	}
 	RETVAL_FALSE;
 }
 
@@ -1459,10 +1437,9 @@ static ZEND_FUNCTION(mapi_sink_create)
 	if (NULL == psink) {
 		MAPI_G(hr) = ecMAPIOOM;
 		RETVAL_FALSE;
-		if (MAPI_G(exceptions_enabled)) {
+		if (MAPI_G(exceptions_enabled))
 			zend_throw_exception(MAPI_G(exception_ce),
 				"MAPI error ", MAPI_G(hr));
-		}
 	} else {
 		MAPI_G(hr) = ecSuccess;
 		RETVAL_RG(psink, le_mapi_advisesink);
@@ -1490,9 +1467,8 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 		notifications.ppnotification = NULL;
 	} else {
 		tmp_time /= 1000;
-		if (tmp_time < 1) {
+		if (tmp_time < 1)
 			tmp_time = 1;
-		}
 		auto result = notif_sink_timedwait(psink,
 				tmp_time, &notifications);
 		if (result != ecSuccess) {
@@ -2780,9 +2756,8 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 		pthrow(result);
 	zarray_init(return_value);
 	for (unsigned int i = 0; i < propnames.count; ++i) {
-		if (KIND_NONE == propnames.ppropname[i].kind) {
+		if (propnames.ppropname[i].kind == KIND_NONE)
 			continue;
-		}
 		snprintf(num_buff, 20, "%i", proptag_to_phptag(proptags.pproptag[i]));
 		zval prop, *pzprop = &prop;
 		zarray_init(pzprop);
@@ -2923,9 +2898,9 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		&search_state);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (NULL == prestriction) {
+	if (prestriction == nullptr)
 		ZVAL_NULL(&pzrestriction);
-	} else if (!restriction_to_php(
+	else if (!restriction_to_php(
 		prestriction, &pzrestriction)
 		|| !binary_array_to_php(&entryid_array,
 		&pzfolderlist))
@@ -3101,9 +3076,8 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		value = zend_hash_find(pdata, str_type.get());
 		if (value == nullptr)
 			continue;
-		if (zval_get_long(value) != ACCESS_TYPE_GRANT) {
+		if (zval_get_long(value) != ACCESS_TYPE_GRANT)
 			continue;
-		}
 		value = zend_hash_find(pdata, str_rights.get());
 		if (value == nullptr)
 			continue;
@@ -3236,9 +3210,8 @@ static zend_bool import_message_change(zval *pztarget_obj,
 	ZVAL_LONG(&pzvalargs[1], flags);
 	ZVAL_NULL(&pzvalargs[2]);
 	if (!tpropval_array_to_php(pproplist,
-		&pzvalargs[0])) {
+	    &pzvalargs[0]))
 		return 0;
-	}
 	ZVAL_NULL(&pzvalreturn);
 	ZVAL_STRING(&pzvalfuncname, "ImportMessageChange");
 	uint32_t hresult = call_user_function(NULL, pztarget_obj, &pzvalfuncname,
@@ -3292,9 +3265,8 @@ static zend_bool import_readstate_change(
     
 	ZVAL_NULL(&pzvalfuncname);
 	ZVAL_NULL(&pzvalreturn);
-	if (!state_array_to_php(pstates, &pzvalargs)) {
+	if (!state_array_to_php(pstates, &pzvalargs))
 		return 0;
-	}
 	ZVAL_STRING(&pzvalfuncname, "ImportPerUserReadStateChange");
 	if (call_user_function(nullptr, pztarget_obj, &pzvalfuncname,
 	    &pzvalreturn, 1, &pzvalargs) == FAILURE) {
@@ -3488,7 +3460,7 @@ static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 		pthrow(ecInvalidParam);
     ZEND_FETCH_RESOURCE(pctx, ICS_EXPORT_CTX*, &pzresource,
 		-1, name_mapi_exportchanges, le_mapi_exportchanges);
-	if (0 == pctx->total_steps && 0 != pctx->b_changed) {
+	if (pctx->total_steps == 0 && pctx->b_changed != 0) {
 		RETVAL_LONG(1);
 	} else {
 		RETVAL_LONG(pctx->total_steps);
@@ -3632,10 +3604,9 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 {
 	MAPI_G(hr) = NotImplemented;
-	if (MAPI_G(exceptions_enabled)) {
+	if (MAPI_G(exceptions_enabled))
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr));
-	}
 	RETVAL_FALSE;
 }
 
