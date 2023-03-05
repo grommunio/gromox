@@ -3,9 +3,9 @@
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
-#define TRY(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_logon &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon &d)
 {
 	TRY(x.p_str(d.username));
 	if (d.password == nullptr) {
@@ -15,175 +15,175 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_logon &d)
 		TRY(x.p_str(d.password));
 	}
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_logon &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_logon &d)
 {
 	TRY(x.g_guid(&d.hsession));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_checksession &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_checksession &d)
 {
 	TRY(x.p_guid(d.hsession));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_uinfo &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_uinfo &d)
 {
 	TRY(x.p_str(d.username));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_uinfo &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_uinfo &d)
 {
 	TRY(x.g_bin(&d.entryid));
 	TRY(x.g_str(&d.pdisplay_name));
 	TRY(x.g_str(&d.px500dn));
 	TRY(x.g_uint32(&d.privilege_bits));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_unloadobject &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_unloadobject &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openentry &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openentry &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.entryid));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openentry &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openentry &d)
 {
 	uint8_t v;
 	TRY(x.g_uint8(&v));
 	d.mapi_type = static_cast<zs_objtype>(v);
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openstoreentry &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openstoreentry &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
 	TRY(x.p_bin(d.entryid));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openstoreentry &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openstoreentry &d)
 {
 	uint8_t v;
 	TRY(x.g_uint8(&v));
 	d.mapi_type = static_cast<zs_objtype>(v);
 	TRY(x.g_uint32(&d.hxobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openabentry &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openabentry &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.entryid));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openabentry &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openabentry &d)
 {
 	uint8_t v;
 	TRY(x.g_uint8(&v));
 	d.mapi_type = static_cast<zs_objtype>(v);
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_resolvename &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_resolvename &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_tarray_set(*d.pcond_set));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_resolvename &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_resolvename &d)
 {
 	TRY(x.g_tarray_set(&d.result_set));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getpermissions &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpermissions &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	return true; 
+	return pack_result::ok; 
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getpermissions &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpermissions &d)
 {
 	TRY(x.g_perm_set(&d.perm_set));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_modifypermissions &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_modifypermissions &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_perm_set(d.pset));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_modifyrules &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_modifyrules &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_uint32(d.flags));
 	TRY(x.p_rule_list(d.plist));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getabgal &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getabgal &d)
 {
 	TRY(x.p_guid(d.hsession));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getabgal &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getabgal &d)
 {
 	TRY(x.g_bin(&d.entryid));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_loadstoretable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_loadstoretable &d)
 {	
 	TRY(x.p_guid(d.hsession));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_loadstoretable &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_loadstoretable &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openstore &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openstore &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.entryid));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openstore &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openstore &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openprofilesec &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openprofilesec &d)
 {
 	TRY(x.p_guid(d.hsession));
 	if (d.puid == nullptr) {
@@ -192,112 +192,112 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openprofilesec &d)
 		TRY(x.p_uint8(1));
 		TRY(x.p_bytes(d.puid, sizeof(FLATUID)));
 	}
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openprofilesec &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openprofilesec &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_loadhierarchytable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_loadhierarchytable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_loadhierarchytable &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_loadhierarchytable &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_loadcontenttable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_loadcontenttable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_loadcontenttable &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_loadcontenttable &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_loadrecipienttable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_loadrecipienttable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_loadrecipienttable &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_loadrecipienttable &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_loadruletable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_loadruletable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_loadruletable &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_loadruletable &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_createmessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_createmessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_createmessage &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_createmessage &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_deletemessages &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletemessages &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_bin_a(*d.pentryids));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_copymessages &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copymessages &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrcfolder));
 	TRY(x.p_uint32(d.hdstfolder));
 	TRY(x.p_bin_a(*d.pentryids));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setreadflags &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setreadflags &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_bin_a(*d.pentryids));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_createfolder &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_createfolder &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hparent_folder));
@@ -305,33 +305,33 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_createfolder &d)
 	TRY(x.p_str(d.folder_name));
 	TRY(x.p_str(d.folder_comment));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_createfolder &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_createfolder &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_deletefolder &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletefolder &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hparent_folder));
 	TRY(x.p_bin(d.entryid));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_emptyfolder &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_emptyfolder &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_copyfolder &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyfolder &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrc_folder));
@@ -344,43 +344,43 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_copyfolder &d)
 		TRY(x.p_str(d.new_name));
 	}
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getstoreentryid &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getstoreentryid &d)
 {
 	TRY(x.p_str(d.mailbox_dn));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getstoreentryid &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getstoreentryid &d)
 {
 	TRY(x.g_bin(&d.entryid));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_entryidfromsourcekey &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_entryidfromsourcekey &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
 	TRY(x.p_bin(d.folder_key));
 	if (d.pmessage_key == nullptr) {
 		TRY(x.p_uint8(0));
-	return true;
+	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_bin(*d.pmessage_key));
-	return true;
+	return pack_result::ok;
 	}
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_entryidfromsourcekey &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_entryidfromsourcekey &d)
 {
 	TRY(x.g_bin(&d.entryid));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_storeadvise &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_storeadvise &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
@@ -391,24 +391,24 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_storeadvise &d)
 		TRY(x.p_bin(*d.pentryid));
 	}
 	TRY(x.p_uint32(d.event_mask));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_storeadvise &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_storeadvise &d)
 {
 	TRY(x.g_uint32(&d.sub_id));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_unadvise &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_unadvise &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
 	TRY(x.p_uint32(d.sub_id));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_notifdequeue &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_notifdequeue &d)
 {
 	int i;
 	
@@ -419,16 +419,16 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_notifdequeue &d)
 		TRY(x.p_uint32(d.psink->padvise[i].sub_id));
 	}
 	TRY(x.p_uint32(d.timeval));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_notifdequeue &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_notifdequeue &d)
 {
 	TRY(x.g_znotif_a(&d.notifications));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
@@ -442,320 +442,320 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_queryrows &d)
 	}
 	if (d.pproptags == nullptr) {
 		TRY(x.p_uint8(0));
-	return true;
+	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_proptag_a(*d.pproptags));
-	return true;
+	return pack_result::ok;
 	}
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_queryrows &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_queryrows &d)
 {
 	TRY(x.g_tarray_set(&d.rowset));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setcolumns &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setcolumns &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
 	TRY(x.p_proptag_a(*d.pproptags));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_seekrow &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_seekrow &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
 	TRY(x.p_uint32(d.bookmark));
 	TRY(x.p_int32(d.seek_rows));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_sorttable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_sorttable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
 	TRY(x.p_sortorder_set(*d.psortset));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getrowcount &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getrowcount &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getrowcount &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getrowcount &d)
 {
 	TRY(x.g_uint32(&d.count));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_restricttable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_restricttable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
 	TRY(x.p_restriction(*d.prestriction));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_findrow &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_findrow &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
 	TRY(x.p_uint32(d.bookmark));
 	TRY(x.p_restriction(*d.prestriction));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_findrow &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_findrow &d)
 {
 	TRY(x.g_uint32(&d.row_idx));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_createbookmark &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_createbookmark &d)
 {
 	
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_createbookmark &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_createbookmark &d)
 {
 	TRY(x.g_uint32(&d.bookmark));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_freebookmark &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_freebookmark &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.htable));
 	TRY(x.p_uint32(d.bookmark));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getreceivefolder &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getreceivefolder &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
 	if (d.pstrclass == nullptr) {
 		TRY(x.p_uint8(0));
-	return true;
+	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_str(d.pstrclass));
-	return true;
+	return pack_result::ok;
 	}
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getreceivefolder &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getreceivefolder &d)
 {
 	TRY(x.g_bin(&d.entryid));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_modifyrecipients &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_modifyrecipients &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_uint32(d.flags));
 	TRY(x.p_tarray_set(*d.prcpt_list));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_submitmessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_submitmessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_loadattachmenttable &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_loadattachmenttable &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_loadattachmenttable &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_loadattachmenttable &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openattachment &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openattachment &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_uint32(d.attach_id));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openattachment &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openattachment &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_createattachment &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_createattachment &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_createattachment &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_createattachment &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_deleteattachment &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deleteattachment &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_uint32(d.attach_id));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setpropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setpropvals &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
 	TRY(x.p_tpropval_a(*d.ppropvals));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getpropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropvals &d)
 {	
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
 	if (d.pproptags == nullptr) {
 		TRY(x.p_uint8(0));
-	return true;
+	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_proptag_a(*d.pproptags));
-		return true;
+		return pack_result::ok;
 	}
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getpropvals &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropvals &d)
 {
 	TRY(x.g_tpropval_a(&d.propvals));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_deletepropvals &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
 	TRY(x.p_proptag_a(*d.pproptags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setmessagereadflag &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setmessagereadflag &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_openembedded &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_openembedded &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hattachment));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_openembedded &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_openembedded &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getnamedpropids &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getnamedpropids &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
 	TRY(x.p_propname_a(*d.ppropnames));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getnamedpropids &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getnamedpropids &d)
 {
 	TRY(x.g_propid_a(&d.propids));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getpropnames &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getpropnames &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hstore));
 	TRY(x.p_propid_a(*d.ppropids));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getpropnames &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getpropnames &d)
 {
 	TRY(x.g_propname_a(&d.propnames));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_copyto &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_copyto &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hsrcobject));
 	TRY(x.p_proptag_a(*d.pexclude_proptags));
 	TRY(x.p_uint32(d.hdstobject));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_savechanges &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_savechanges &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_hierarchysync &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_hierarchysync &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_hierarchysync &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_hierarchysync &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_contentsync &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_contentsync &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_contentsync &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_contentsync &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_configsync &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_configsync &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
@@ -763,186 +763,186 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_configsync &d)
 	TRY(x.p_bin(*d.pstate));
 	if (d.prestriction == nullptr) {
 		TRY(x.p_uint8(0));
-	return true;
+	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_restriction(*d.prestriction));
-	return true;
+	return pack_result::ok;
 	}
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_configsync &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_configsync &d)
 {
 	TRY(x.g_uint8(&d.b_changed));
 	TRY(x.g_uint32(&d.count));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_statesync &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_statesync &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_statesync &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_statesync &d)
 {
 	TRY(x.g_bin(&d.state));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_syncmessagechange &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_syncmessagechange &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_syncmessagechange &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_syncmessagechange &d)
 {
 	uint8_t v = 0;
 	TRY(x.g_uint8(&v));
 	d.b_new = v;
 	TRY(x.g_tpropval_a(&d.proplist));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_syncfolderchange &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_syncfolderchange &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_syncfolderchange &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_syncfolderchange &d)
 {
 	TRY(x.g_tpropval_a(&d.proplist));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_syncreadstatechanges &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_syncreadstatechanges &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_syncreadstatechanges &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_syncreadstatechanges &d)
 {
 	TRY(x.g_state_a(&d.states));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_syncdeletions &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_syncdeletions &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
 	TRY(x.p_uint32(d.flags));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_syncdeletions &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_syncdeletions &d)
 {
 	TRY(x.g_bin_a(&d.bins));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_hierarchyimport &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_hierarchyimport &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_hierarchyimport &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_hierarchyimport &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_contentimport &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_contentimport &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_contentimport &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_contentimport &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_configimport &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_configimport &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
 	TRY(x.p_uint8(d.sync_type));
 	TRY(x.p_bin(*d.pstate));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_stateimport &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_stateimport &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_stateimport &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_stateimport &d)
 {
 	TRY(x.g_bin(&d.state));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_importmessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_importmessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
 	TRY(x.p_uint32(d.flags));
 	TRY(x.p_tpropval_a(*d.pproplist));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_importmessage &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_importmessage &d)
 {
 	TRY(x.g_uint32(&d.hobject));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_importfolder &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_importfolder &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
 	TRY(x.p_tpropval_a(*d.pproplist));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_importdeletion &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_importdeletion &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
 	TRY(x.p_uint32(d.flags));
 	TRY(x.p_bin_a(*d.pbins));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_importreadstates &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_importreadstates &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hctx));
 	TRY(x.p_state_a(d.pstates));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getsearchcriteria &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getsearchcriteria &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getsearchcriteria &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getsearchcriteria &d)
 {
 	uint8_t tmp_byte;
 	
@@ -953,14 +953,14 @@ static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getsearchcriteria &d)
 	} else {
 		d.prestriction = st_malloc<RESTRICTION>();
 		if (d.prestriction == nullptr)
-			return 0;
+			return pack_result::alloc;
 		TRY(x.g_restriction(d.prestriction));
 	}
 	TRY(x.g_uint32(&d.search_stat));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setsearchcriteria &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setsearchcriteria &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hfolder));
@@ -968,150 +968,150 @@ static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setsearchcriteria &d)
 	TRY(x.p_bin_a(*d.pfolder_array));
 	if (d.prestriction == nullptr) {
 		TRY(x.p_uint8(0));
-	return true;
+	return pack_result::ok;
 	} else {
 		TRY(x.p_uint8(1));
 		TRY(x.p_restriction(*d.prestriction));
-	return true;
+	return pack_result::ok;
 	}
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_messagetorfc822 &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_messagetorfc822 &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_messagetorfc822 &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_messagetorfc822 &d)
 {
 	TRY(x.g_bin(&d.eml_bin));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_rfc822tomessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_rfc822tomessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_uint32(d.mxf_flags));
 	TRY(x.p_bin(*d.peml_bin));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_messagetoical &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_messagetoical &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_messagetoical &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_messagetoical &d)
 {
 	TRY(x.g_bin(&d.ical_bin));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_icaltomessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_icaltomessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_bin(*d.pical_bin));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_imtomessage2 &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_imtomessage2 &d)
 {
 	TRY(x.p_guid(d.session));
 	TRY(x.p_uint32(d.folder));
 	TRY(x.p_uint32(d.data_type));
 	TRY(x.p_str(d.im_data));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_essdn_to_username &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_essdn_to_username &d)
 {
 	TRY(x.p_str(d.essdn));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_messagetovcf &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_messagetovcf &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_messagetovcf &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_messagetovcf &d)
 {
 	TRY(x.g_bin(&d.vcf_bin));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_vcftomessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_vcftomessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_uint32(d.hmessage));
 	TRY(x.p_bin(*d.pvcf_bin));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_getuseravailability &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getuseravailability &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.entryid));
 	TRY(x.p_uint64(d.starttime));
 	TRY(x.p_uint64(d.endtime));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_getuseravailability &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getuseravailability &d)
 {
 	uint8_t tmp_byte;
 	
 	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		d.result_string = nullptr;
-		return 1;
+		return pack_result::ok;
 	}
 	TRY(x.g_str(&d.result_string));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_imtomessage2 &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_imtomessage2 &d)
 {
 	TRY(x.g_uint32_a(&d.msg_handles));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_pull(PULL_CTX &x, zcresp_essdn_to_username &d)
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_essdn_to_username &d)
 {
 	TRY(x.g_str(&d.username));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_setpasswd &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_setpasswd &d)
 {
 	TRY(x.p_str(d.username));
 	TRY(x.p_str(d.passwd));
 	TRY(x.p_str(d.new_passwd));
-	return true;
+	return pack_result::ok;
 }
 
-static zend_bool zrpc_push(PUSH_CTX &x, const zcreq_linkmessage &d)
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_linkmessage &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.search_entryid));
 	TRY(x.p_bin(d.message_entryid));
-	return true;
+	return pack_result::ok;
 }
 
-zend_bool rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
+pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 {
 	PUSH_CTX push_ctx;
-	zend_bool b_result;
+	auto b_result = pack_result::failure;
 
 	if (!push_ctx.init())
-		return false;
+		return pack_result::alloc;
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
 	switch (prequest->call_id) {
@@ -1204,19 +1204,18 @@ zend_bool rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	E(essdn_to_username)
 #undef E
 	default:
-		return 0;
+		return pack_result::bad_switch;
 	}
-	if (!b_result) {
-		return 0;
-	}
+	if (b_result != pack_result::ok)
+		return b_result;
 	pbin_out->cb = push_ctx.m_offset;
 	push_ctx.m_offset = 0;
 	push_ctx.p_uint32(pbin_out->cb - sizeof(uint32_t));
 	pbin_out->pv = push_ctx.release();
-	return 1;
+	return pack_result::ok;
 }
 
-zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
+pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 {
 	PULL_CTX pull_ctx;
 	
@@ -1225,7 +1224,7 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	TRY(pull_ctx.g_uint32(&v));
 	presponse->result = static_cast<ec_error_t>(v);
 	if (presponse->result != ecSuccess)
-		return 1;
+		return pack_result::ok;
 	switch (presponse->call_id) {
 	case zcore_callid::checksession:
 	case zcore_callid::unloadobject:
@@ -1261,7 +1260,7 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	case zcore_callid::vcftomessage:
 	case zcore_callid::setpasswd:
 	case zcore_callid::linkmessage:
-		return 1;
+		return pack_result::ok;
 #define E(t) case zcore_callid::t: return zrpc_pull(pull_ctx, *static_cast<zcresp_ ## t *>(presponse));
 	E(logon)
 	E(uinfo)
@@ -1317,6 +1316,6 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	E(essdn_to_username)
 #undef E
 	default:
-		return 0;
+		return pack_result::bad_switch;
 	}
 }

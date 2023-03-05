@@ -108,9 +108,8 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 {
 	BINARY tmp_bin;
 	
-	if (!rpc_ext_push_request(prequest, &tmp_bin)) {
+	if (rpc_ext_push_request(prequest, &tmp_bin) != pack_result::ok)
 		return 0;
-	}
 	auto sockd = zclient_connect();
 	if (sockd < 0) {
 		efree(tmp_bin.pb);
@@ -137,7 +136,7 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	presponse->call_id = prequest->call_id;
 	tmp_bin.cb -= 5;
 	tmp_bin.pb += 5;
-	if (!rpc_ext_pull_response(&tmp_bin, presponse)) {
+	if (rpc_ext_pull_response(&tmp_bin, presponse) != pack_result::ok) {
 		efree(tmp_bin.pb - 5);
 		return 0;
 	}
