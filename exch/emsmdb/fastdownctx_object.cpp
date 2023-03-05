@@ -205,17 +205,8 @@ static bool fxs_tagcmp_rcpt(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
 static void fxs_propsort(FOLDER_CONTENT &fc)
 {
 	auto &p = fc.proplist.ppropval;
-	if (p != nullptr) {
-		fprintf(stderr,"\e[1;31mtagcmp_fld before:{");
-		for(auto i=0U;i<fc.proplist.count;++i)
-			fprintf(stderr,"%xh,",p[i].proptag);
-		fprintf(stderr,"}\n\e[0m");
+	if (p != nullptr)
 		std::sort(&p[0], &p[fc.proplist.count], fxs_tagcmp_fld);
-		fprintf(stderr,"\e[1;35mtagcmp_fld after.:{");
-		for(auto i=0U;i<fc.proplist.count;++i)
-			fprintf(stderr,"%xh,",p[i].proptag);
-		fprintf(stderr,"}\n\e[0m");
-	}
 }
 
 void fxs_propsort(MESSAGE_CONTENT &mc)
