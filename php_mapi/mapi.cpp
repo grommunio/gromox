@@ -236,12 +236,9 @@ static uint32_t stream_object_write(STREAM_OBJECT *pstream,
 		}
 		pstream->seek_offset = 0;
 	}
-	if (pstream->seek_offset + buf_len > pstream->content_bin.cb) {
-		if (!stream_object_set_length(pstream,
-			pstream->seek_offset + buf_len)) {
-			return 0;	
-		}
-	}
+	if (pstream->seek_offset + buf_len > pstream->content_bin.cb &&
+	    !stream_object_set_length(pstream, pstream->seek_offset + buf_len))
+		return 0;
 	memcpy(pstream->content_bin.pb +
 		pstream->seek_offset, pbuff, buf_len);
 	pstream->seek_offset += buf_len;
