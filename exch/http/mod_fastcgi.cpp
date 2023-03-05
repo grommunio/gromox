@@ -34,7 +34,6 @@
 #include "resource.h"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
-#define SERVER_SOFTWARE							"medusa/1.0"
 
 #define POLL_MILLISECONDS_FOR_CHECK				50
 
@@ -558,7 +557,6 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	ndr_push.init(pbuff, *plength, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	QRF(mod_fastcgi_push_params_begin(&ndr_push));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "GATEWAY_INTERFACE", "CGI/1.1"));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_SOFTWARE", SERVER_SOFTWARE));
 	if (phttp->b_authed) {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_USER", phttp->username));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
