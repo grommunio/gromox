@@ -6,6 +6,15 @@ Fixes:
 * exmdb_provider: filter duplicate propids when they occur in the mailbox,
   resolving a failure to export (broken) recipients to MSG,
   and resolving _one_ instance of OL sync error 80070057.
+* oxvcard: PidLidBusinessCardDisplayDefinition named property was not
+  assigned the right namespace (PSETID_ADDRESS)
+* exmdb_local: perform online lookup of named properties,
+  resolving vcarduid being erroneously assigned propid 0
+* exmdb_provider: do not write propid 0 properties to database
+
+Behavioral changes:
+
+* delivery: rename delivery_log_file -> lda_log_file (+ log_level)
 
 
 Gromox 2.5 (2023-03-06)
