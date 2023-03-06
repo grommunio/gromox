@@ -2940,6 +2940,14 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 	if (pstmt == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < ppropvals->count; ++i) {
+		if (PROP_ID(ppropvals->ppropval[i].proptag) == PROP_ID(PR_NULL)) {
+			auto &e = pproblems->pproblem[pproblems->count++];
+			e.index = i;
+			e.proptag = ppropvals->ppropval[i].proptag;
+			e.err = ecInvalidParam;
+			mlog(LV_DEBUG, "D-1220: cu_set_properties called with PR_NULL");
+			continue;
+		}
 		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PT_OBJECT &&
 		    (table_type != MAPI_ATTACH ||
 		    ppropvals->ppropval[i].proptag != PR_ATTACH_DATA_OBJ)) {
