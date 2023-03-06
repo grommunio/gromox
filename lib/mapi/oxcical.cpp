@@ -2770,7 +2770,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 	if (is_meeting_response(str)) {
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (str == nullptr)
-			return FALSE;
+			return TRUE;
 		auto piline = &pevent_component.append_line("ATTENDEE");
 		piline->append_param("PARTSTAT", partstat);
 		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", str);
