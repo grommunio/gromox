@@ -4,5 +4,3 @@
 
 extern int mod_rewrite_run(const char *sdlist);
 extern BOOL mod_rewrite_process(const char *, size_t, MEM_FILE *);
-
-extern bool g_http_php;

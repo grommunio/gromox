@@ -14,6 +14,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
+#include "http_parser.h"
 #include "mod_rewrite.h"
 #define MAX_LINE					16*1024
 
@@ -31,7 +32,6 @@ struct REWRITE_NODE {
 };
 }
 
-bool g_http_php;
 static std::vector<REWRITE_NODE> g_rewrite_list;
 
 REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) noexcept :

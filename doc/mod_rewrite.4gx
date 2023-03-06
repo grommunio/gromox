@@ -28,8 +28,9 @@ If the file has no lines, no paths will be rewritten.
 If the file is absent however, a set of default entries will be used.
 .SH Default rules
 .nf
-/EWS/Exchange.asmx => \\0/EWS/exchange.php
 \\(/Microsoft-Server-ActiveSync\\) => \\1/grommunio-sync/index.php
+# The following only when http_old_php_handler=1:
+/EWS/Exchange.asmx => \\0/EWS/exchange.php
 .fi
 .SH Files
 .IP \(bu 4

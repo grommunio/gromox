@@ -102,6 +102,7 @@ static int g_max_auth_times;
 static int g_block_auth_fail;
 static time_duration g_timeout;
 unsigned int g_http_debug;
+bool g_http_php;
 static thread_local HTTP_CONTEXT *g_context_key;
 static alloc_limiter<file_block> g_file_allocator{"g_file_allocator.d"};
 static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator{"g_inchannel_allocator.d"};

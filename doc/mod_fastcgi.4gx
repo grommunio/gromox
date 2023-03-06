@@ -44,10 +44,11 @@ If the file has no lines, no documents will be served this way.
 If the file is absent however, a set of default entries will be used.
 .SS Default entries
 .nf
-* /EWS /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
-* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
 * /sync /usr/share/grommunio-sync php index.php | /run/gromox/php-fpm.sock
 * /web /usr/share/grommunio-web php index.php | /run/gromox/php-fpm.sock
+# The following only when http_old_php_handler=1:
+* /EWS /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
+* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
 .fi
 .SH Files
 .IP \(bu 4

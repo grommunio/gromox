@@ -145,21 +145,23 @@ static int mod_fastcgi_defaults()
 	mlog(LV_NOTICE, "mod_fastcgi: defaulting to built-in list of handled paths");
 	FASTCGI_NODE node;
 	node.domain = "*";
-	node.path = "/EWS";
-	node.dir = PKGDATADIR "/http/php/ews";
 	node.suffix = "php";
 	node.index = "index.php";
-	node.header_list = {"X-MAPIHttpCapability", "X-AnchorMailbox", "X-ClientCanHandle"};
 	node.sock_path = PKGRUNDIR "/php-fpm.sock";
-	g_fastcgi_list.push_back(node);
-	node.path = "/ews";
-	g_fastcgi_list.push_back(node);
 	node.path = "/sync";
 	node.dir = DATADIR "/grommunio-sync";
-	node.header_list.clear();
 	g_fastcgi_list.push_back(node);
 	node.path = "/web";
 	node.dir = DATADIR "/grommunio-web";
+	g_fastcgi_list.push_back(node);
+	if (!g_http_php)
+		return 0;
+	/* Only if http_old_php_handler: */
+	node.path = "/EWS";
+	node.dir = PKGDATADIR "/http/php/ews";
+	node.header_list = {"X-MAPIHttpCapability", "X-AnchorMailbox", "X-ClientCanHandle"};
+	g_fastcgi_list.push_back(node);
+	node.path = "/ews";
 	g_fastcgi_list.push_back(node);
 	return 0;
 }

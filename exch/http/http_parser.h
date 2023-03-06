@@ -131,3 +131,4 @@ extern void http_report();
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
 extern unsigned int g_http_debug, g_msrpc_debug;
+extern bool g_http_php;
