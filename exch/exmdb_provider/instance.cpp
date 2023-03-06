@@ -221,10 +221,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	auto pstmt1 = gx_sql_prep(psqlite, "SELECT proptag FROM"
-	              " recipients_properties WHERE recipient_id=?");
-	if (pstmt1 == nullptr)
-		return FALSE;
 	row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		auto pproplist = prcpts->emplace();
@@ -232,28 +228,18 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			return FALSE;	
 		row_id ++;
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
-		sqlite3_bind_int64(pstmt1, 1, rcpt_id);
-		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			uint32_t tag = sqlite3_column_int64(pstmt1, 0);
+		std::vector<uint32_t> rcpt_tags;
+		if (!cu_get_proptags(MAPI_MAILUSER, rcpt_id, psqlite, rcpt_tags))
+			return false;
+		for (auto tag : rcpt_tags) {
 			void *newval = nullptr;
 			if (!cu_get_property(MAPI_MAILUSER, rcpt_id, CP_ACP,
 			    psqlite, tag, &newval) || newval == nullptr ||
 			    pproplist->set(tag, newval) != 0)
 				return FALSE;
 		}
-		sqlite3_reset(pstmt1);
-		if (!pproplist->has(PR_RECIPIENT_TYPE))
-			pproplist->set(PR_RECIPIENT_TYPE, &dummy_rcpttype);
-		if (!pproplist->has(PR_DISPLAY_NAME) &&
-		    !pproplist->has(PR_DISPLAY_NAME_A))
-			pproplist->set(PR_DISPLAY_NAME, dummy_string);
-		if (!pproplist->has(PR_ADDRTYPE))
-			pproplist->set(PR_ADDRTYPE, &dummy_addrtype);
-		if (!pproplist->has(PR_EMAIL_ADDRESS))
-			pproplist->set(PR_EMAIL_ADDRESS, dummy_string);
 	}
 	pstmt.finalize();
-	pstmt1.finalize();
 	pattachments = attachment_list_init();
 	if (pattachments == nullptr)
 		return FALSE;
@@ -263,7 +249,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
+	auto pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
 	         " FROM messages WHERE parent_attid=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
