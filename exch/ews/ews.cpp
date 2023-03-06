@@ -95,7 +95,7 @@ BOOL EWSPlugin::preproc(int ctx_id)
 {
 	auto req = get_request(ctx_id);
 	if (strcasecmp(req->method, "POST") != 0)
-		return false;
+		return TRUE;
 	char uri[1024];
 	size_t len = req->f_request_uri.read(uri, std::size(uri) - 1);
 	if (len == MEM_END_OF_FILE)
@@ -162,6 +162,16 @@ static BOOL unauthed(int ctx_id)
 BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 {
 	auto start = std::chrono::high_resolution_clock::now();
+	auto req = get_request(ctx_id);
+	if (strcasecmp(req->method, "POST") != 0) {
+		static constexpr char content[] =
+			"HTTP/1.1 405 Method Not Allowed\r\n"
+			"Content-Length: 0\r\n"
+			"Connection: Keep-Alive\r\n"
+			"WWW-Authenticate: Basic realm=\"ews realm\"\r\n"
+			"\r\n";
+		return write_response(ctx_id, content, strlen(content));
+	}
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
 		return unauthed(ctx_id);
