@@ -60,7 +60,7 @@ void dir_tree::load_from_memfile(MEM_FILE *pfile)
 			if (NULL == pnode) {
 				auto pdir = ptree->ppool->get();
 				pdir->node.pdata = pdir;
-				gx_strlcpy(pdir->name, ptr1, gromox::arsizeof(pdir->name));
+				gx_strlcpy(pdir->name, ptr1, std::size(pdir->name));
 				pdir->b_loaded = FALSE;
 				pdir->ppool = ptree->ppool;
 				pnode = &pdir->node;

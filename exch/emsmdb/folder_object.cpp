@@ -155,7 +155,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	static constexpr uint8_t bin_buff[22]{};
 	static constexpr uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
-	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
+	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
 	auto dir = pfolder->plogon->get_dir();
 	
 	switch (proptag) {

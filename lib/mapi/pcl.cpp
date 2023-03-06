@@ -99,7 +99,7 @@ BINARY *PCL::serialize() const
 	tmp_bin.pb = buff;
 	for (const auto &xid : *this) {
 		if (xid.size < 17 || xid.size > 24 ||
-		    gromox::arsizeof(buff) < tmp_bin.cb + xid.size)
+		    std::size(buff) < tmp_bin.cb + xid.size)
 			return NULL;
 		pcl_push_sized_xid(tmp_bin, xid);
 	}

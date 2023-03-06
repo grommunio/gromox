@@ -130,7 +130,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		}
 		long_term_id.global_counter = rop_util_get_gc_array(folder_id);
 		common_util_domain_to_essdn(plogon->get_account(),
-			tmp_essdn, gromox::arsizeof(tmp_essdn));
+			tmp_essdn, std::size(tmp_essdn));
 		pbin = common_util_to_folder_replica(
 				&long_term_id, tmp_essdn);
 		if (NULL == pbin) {
