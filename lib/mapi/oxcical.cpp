@@ -704,12 +704,13 @@ static BOOL oxcical_parse_recipients(const ical_component &main_ev,
 	TPROPVAL_ARRAY *pproplist;
 	const char *pdisplay_name;
 	
-	auto pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
+	auto pmessage_class = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (pmessage_class == nullptr)
 		pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
+	if (pmessage_class == nullptr)
+		pmessage_class = "IPM.Note";
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (pmessage_class == nullptr ||
-	    strcasecmp(pmessage_class, "IPM.Appointment") == 0)
+	if (strcasecmp(pmessage_class, "IPM.Appointment") == 0)
 		return TRUE;
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
@@ -1239,11 +1240,11 @@ static BOOL oxcical_parse_organizer(const ical_component &main_event,
 	const char *paddress;
 	const char *pdisplay_name;
 	
-	auto pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
+	auto pvalue = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (pvalue == nullptr)
 		pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (pvalue == nullptr)
-		return FALSE;
+		pvalue = "IPM.Note";
 	/* ignore ORGANIZER when METHOD is "REPLY" OR "COUNTER" */
 	if (strncasecmp(pvalue, "IPM.Schedule.Meeting.Resp.", 26) == 0)
 		return TRUE;
@@ -2762,7 +2763,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 	if (str == nullptr)
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
-		return FALSE;
+		str = "IPM.Note";
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
 	if (strcasecmp(str, "IPM.Appointment") == 0)
 		return TRUE;
@@ -3405,7 +3406,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (str == nullptr)
 		str = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	if (str == nullptr)
-		return "E-2200: no PR_MESSAGE_CLASS set";
+		str = "IPM.Note";
 	auto icaltype = "VEVENT";
 	const char *partstat = nullptr;
 	bool b_proposal = false, b_exceptional = true, b_recurrence = false;
@@ -3840,7 +3841,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS);
 			if (str == nullptr)
 				str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS_A);
-			if (str == nullptr || strcasecmp(str,
+			if (str == nullptr)
+				str = "IPM.Note";
+			if (strcasecmp(str,
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"))
 				continue;
 			if (!pembedded->proplist.has(proptag_xrt))
