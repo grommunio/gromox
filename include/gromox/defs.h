@@ -11,7 +11,7 @@
 #include <gromox/mapierr.hpp>
 #define SOCKET_TIMEOUT 60
 namespace gromox {
-template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { return N; }
+#define arsizeof std::size
 #define GX_ARRAY_SIZE arsizeof
 }
 #define GX_EXPORT __attribute__((visibility("default")))

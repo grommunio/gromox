@@ -7,9 +7,9 @@
 #include <gromox/mapidefs.h>
 
 enum class pack_result {
-	success, failure, format, bufsize, alloc, bad_switch, charconv,
-	compress, header_flags, header_size, range, invalid_obj, ndr64,
-	padding, array_size, ipv6addr, ctrl_skip,
+	success, ok = success, failure, format, bufsize, alloc, bad_switch,
+	charconv, compress, header_flags, header_size, range, invalid_obj,
+	ndr64, padding, array_size, ipv6addr, ctrl_skip,
 };
 #define EXT_ERR_SUCCESS pack_result::success
 #define EXT_ERR_FAILURE pack_result::failure

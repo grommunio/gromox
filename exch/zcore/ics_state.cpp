@@ -68,7 +68,7 @@ BINARY *ics_state::serialize()
 	};
 	EXT_PUSH ext_push;
 	static constexpr uint8_t bin_buff[8]{};
-	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
+	static constexpr BINARY fake_bin = {std::size(bin_buff), {deconst(bin_buff)}};
 	auto pstate = this;
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {

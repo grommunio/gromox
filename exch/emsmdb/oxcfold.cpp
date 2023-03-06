@@ -174,7 +174,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 			return ecInvalidParam;
 		}
 		strcpy(folder_name, pfolder_name);
-		gx_strlcpy(folder_comment, pfolder_comment, gromox::arsizeof(folder_comment));
+		gx_strlcpy(folder_comment, pfolder_comment, std::size(folder_comment));
 	}
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != logon_mode::owner) {

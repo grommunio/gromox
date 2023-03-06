@@ -49,8 +49,8 @@ struct PUSH_CTX : public EXT_PUSH {
 	pack_result p_state_a(const STATE_ARRAY *);
 };
 
-extern zend_bool rpc_ext_push_request(const zcreq *, BINARY *);
-extern zend_bool rpc_ext_pull_response(const BINARY *, zcresp *);
+extern pack_result rpc_ext_push_request(const zcreq *, BINARY *);
+extern pack_result rpc_ext_pull_response(const BINARY *, zcresp *);
 
 template<typename T> T *st_malloc() { return static_cast<T *>(emalloc(sizeof(T))); }
 template<typename T> T *sta_malloc(size_t elem) { return static_cast<T *>(emalloc(sizeof(T) * elem)); }
