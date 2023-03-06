@@ -1255,16 +1255,13 @@ static ZEND_FUNCTION(mapi_folder_setreadflags)
 
 static ZEND_FUNCTION(mapi_folder_createfolder)
 {
-	char *pfname;
 	size_t name_len = 0, comment_len = 0;
-	char *pcomment;
+	char *pcomment = nullptr, *pfname;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder, *presource;
 	char empty[1]{};
 	
-	pcomment = NULL;
-	comment_len = 0;
 	zend_long flags = 0, folder_type = FOLDER_GENERIC;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|sll",
 		&pzresource, &pfname, &name_len, &pcomment, &comment_len,
@@ -1424,15 +1421,13 @@ static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 static ZEND_FUNCTION(mapi_msgstore_openentry)
 {
 	zend_long flags = 0;
-	BINARY entryid;
+	BINARY entryid{};
 	size_t eid_size = 0;
 	uint32_t hobject;
 	zval *pzresource;
 	zs_objtype mapi_type;
 	MAPI_RESOURCE *pstore, *presource;
 	
-	entryid.cb = 0;
-	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 	    "r|sl", &pzresource, &entryid.pb, &eid_size,
 		&flags) == FAILURE || NULL == pzresource) {
@@ -1622,15 +1617,13 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 
 static ZEND_FUNCTION(mapi_table_queryallrows)
 {
-	zval pzrowset, *pzresource, *pzproptags, *pzrestriction;
+	zval pzrowset, *pzresource, *pzproptags = nullptr, *pzrestriction = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags, *pproptags;
-	RESTRICTION restriction, *prestriction;
+	PROPTAG_ARRAY proptags, *pproptags = nullptr;
+	RESTRICTION restriction, *prestriction = nullptr;
 	
 	ZVAL_NULL(&pzrowset);
-	pzproptags = NULL;
-	pzrestriction = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "r|aa",
 		&pzresource, &pzproptags, &pzrestriction) == FAILURE ||
 		NULL == pzresource) {
@@ -1646,16 +1639,12 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 			pthrow(ecError);
 		}
 		prestriction = &restriction;
-	} else {
-		prestriction = NULL;
 	}
 	if (NULL != pzproptags) {
 		if (!php_to_proptag_array(pzproptags, &proptags)) {
 			pthrow(ecError);
 		}
 		pproptags = &proptags;
-	} else {
-		pproptags = NULL;
 	}
 	auto result = zclient_queryrows(ptable->hsession, ptable->hobject, 0,
 	         INT32_MAX, prestriction, pproptags, &rowset);
@@ -1674,7 +1663,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	zval pzrowset, *pzresource, *pzproptags;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
-	PROPTAG_ARRAY proptags, *pproptags;
+	PROPTAG_ARRAY proptags, *pproptags = nullptr;
 	
 	ZVAL_NULL(&pzrowset);
 	zend_long start = UINT32_MAX, row_count = UINT32_MAX;
@@ -1693,8 +1682,6 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 			pthrow(ecError);
 		}
 		pproptags = &proptags;
-	} else {
-		pproptags = NULL;
 	}
 	auto result = zclient_queryrows(ptable->hsession,
 			ptable->hobject, start, row_count, NULL,
@@ -2556,7 +2543,7 @@ static ZEND_FUNCTION(mapi_copyto)
 	zend_long flags = 0;
 	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
 	MAPI_RESOURCE *psrcobject, *pdstobject;
-	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags;
+	PROPTAG_ARRAY exclude_proptags, *pexclude_proptags = nullptr;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
@@ -2606,9 +2593,7 @@ static ZEND_FUNCTION(mapi_copyto)
 		pthrow(ecInvalidParam);
 	}
 	}
-	if (NULL == pzexcludeprops) {
-		pexclude_proptags = NULL;
-	} else {
+	if (pzexcludeprops != nullptr) {
 		if (!php_to_proptag_array(pzexcludeprops,
 			&exclude_proptags)) {
 			pthrow(ecError);
@@ -2800,14 +2785,9 @@ static ZEND_FUNCTION(mapi_openproperty)
 		pthrow(ecNotSupported);
 	}
 	if (iid_guid == IID_IStream) {
-		switch (PROP_TYPE(proptag)) {
-		case PT_BINARY:
-		case PT_STRING8:
-		case PT_UNICODE:
-			break;
-		default:
+		auto pt = PROP_TYPE(proptag);
+		if (pt != PT_BINARY && pt != PT_UNICODE && pt != PT_STRING8)
 			pthrow(ecNotSupported);
-		}
 		auto result = zclient_getpropval(probject->hsession,
 			probject->hobject, phptag_to_proptag(proptag), &pvalue); /* memleak(pvalue) */
 		if (result != ecSuccess) {
@@ -2942,13 +2922,12 @@ static ZEND_FUNCTION(mapi_openproperty)
 
 static ZEND_FUNCTION(mapi_getprops)
 {
-	zval pzpropvals, *pzresource, *pztagarray;
-	PROPTAG_ARRAY proptags, *pproptags;
+	zval pzpropvals, *pzresource, *pztagarray = nullptr;
+	PROPTAG_ARRAY proptags, *pproptags = nullptr;
 	TPROPVAL_ARRAY propvals;
 	MAPI_RESOURCE *probject;
 	
 	ZVAL_NULL(&pzpropvals);
-	pztagarray = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"r|a", &pzresource, &pztagarray) == FAILURE ||
 		NULL == pzresource) {
@@ -3030,8 +3009,6 @@ static ZEND_FUNCTION(mapi_getprops)
 			pthrow(ecError);
 		}
 		pproptags = &proptags;
-	} else {
-		pproptags = NULL;
 	}
 	auto result = zclient_getpropvals(probject->hsession,
 				probject->hobject, pproptags, &propvals);
@@ -3255,10 +3232,10 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 {
 	zend_long flags = 0;
-	zval *pzresource, *pzfolderlist, *pzrestriction;
+	zval *pzresource, *pzfolderlist, *pzrestriction = nullptr;
 	MAPI_RESOURCE *pfolder;
 	RESTRICTION restriction, *prestriction;
-	BINARY_ARRAY entryid_array, *pentryid_array;
+	BINARY_ARRAY entryid_array, *pentryid_array = nullptr;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raal",
 		&pzresource, &pzrestriction, &pzfolderlist, &flags) ==
@@ -3270,18 +3247,14 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	if (pfolder->type != zs_objtype::folder) {
 		pthrow(ecInvalidObject);
 	}
-	if (NULL == pzrestriction) {
-		prestriction = NULL;
-	} else {
+	if (pzrestriction != nullptr) {
 		if (!php_to_restriction(pzrestriction,
 			&restriction)) {
 			pthrow(ecError);
 		}
 		prestriction = &restriction;
 	}
-	if (NULL == pzfolderlist) {
-		pentryid_array = NULL;
-	} else {
+	if (pzfolderlist != nullptr) {
 		if (!php_to_binary_array(pzfolderlist,
 			&entryid_array)) {
 			pthrow(ecError);
@@ -3519,8 +3492,8 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 	zval *pzresimportchanges, *pzresexportchanges;
 	ICS_EXPORT_CTX *pctx;
 	STREAM_OBJECT *pstream;
-	RESTRICTION restriction, *prestriction;
-	ICS_IMPORT_CTX *pimporter;
+	RESTRICTION restriction, *prestriction = nullptr;
+	ICS_IMPORT_CTX *pimporter = nullptr;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(),
 		"rrlzzzzl", &pzresexportchanges, &pzresstream, &flags,
@@ -3530,7 +3503,6 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 		NULL == pzresimportchanges) {
 		pthrow(ecInvalidParam);
 	}
-	pimporter = NULL;
 	ZEND_FETCH_RESOURCE(pctx, ICS_EXPORT_CTX*, &pzresexportchanges,
 		-1, name_mapi_exportchanges, le_mapi_exportchanges);
 	if (Z_TYPE_P(pzresimportchanges) == IS_RESOURCE) {
@@ -3558,8 +3530,6 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 			pthrow(ecError);
 		}
 		prestriction = &restriction;
-	} else {
-		prestriction = NULL;
 	}
 	zval_ptr_dtor(&pctx->pztarget_obj);
 	pctx->sync_steps = buffersize;
