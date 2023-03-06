@@ -622,22 +622,15 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	auto pstmt1 = gx_sql_prep(psqlite, "SELECT proptag FROM"
-	              " recipients_properties WHERE recipient_id=?");
-	if (pstmt1 == nullptr)
-		return FALSE;
 	row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
-		sqlite3_bind_int64(pstmt1, 1, rcpt_id);
 		std::vector<uint32_t> tags;
-		while (pstmt1.step() == SQLITE_ROW && tags.size() < 0xfff0)
-			/* You can only have 64K props anyway */
-			tags.push_back(pstmt1.col_uint64(0));
+		if (!cu_get_proptags(MAPI_MAILUSER, rcpt_id, psqlite, tags))
+			return false;
 		/* Nudge cu_get_properties allocation to make extra room. */
 		for (size_t i = 0; i < 5; ++i)
 			tags.push_back(PR_NULL);
-		sqlite3_reset(pstmt1);
 		PROPTAG_ARRAY proptags = {static_cast<uint16_t>(tags.size()), tags.data()};
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (pset->pparray[pset->count] == nullptr ||
