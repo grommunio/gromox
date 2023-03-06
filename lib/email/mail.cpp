@@ -301,7 +301,8 @@ ssize_t MAIL::get_length() const
 	auto pnode = pmail->tree.get_root();
 	if (pnode == nullptr)
 		return -1;
-	return static_cast<const MIME *>(pnode->pdata)->get_length();
+	auto mime = static_cast<const MIME *>(pnode->pdata);
+	return mime != nullptr ? mime->get_length() : -1;
 }
 
 MAIL::~MAIL()
