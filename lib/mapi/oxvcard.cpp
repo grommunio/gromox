@@ -107,7 +107,7 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	bf[z].guid = PS_PUBLIC_STRINGS;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidCategories;
-	bf[z].guid = PS_PUBLIC_STRINGS;
+	bf[z].guid = PSETID_ADDRESS;
 	bf[z].kind = MNID_ID;
 	bf[z++].lid = PidLidBusinessCardDisplayDefinition;
 
