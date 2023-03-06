@@ -588,8 +588,6 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 		auto tag = pstmt.col_uint64(0);
 		if (PROP_ID(tag) == PROP_ID(PR_NULL))
 			continue;
-		if (table_type == MAPI_MESSAGE && tag == PR_MESSAGE_FLAGS)
-			continue;
 		if (table_type == MAPI_MESSAGE && !b_subject) {
 			if (tag == PR_NORMALIZED_SUBJECT ||
 			    tag == PR_SUBJECT_PREFIX) {
