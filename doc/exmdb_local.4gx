@@ -46,8 +46,6 @@ Default: <space>
 Default: (unspecified)
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/propnames.txt
-.IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
 exmdb_provider(4gx) for details.
 .IP \(bu 4

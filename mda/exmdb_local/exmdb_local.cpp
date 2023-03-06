@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
-#include <unordered_map>
 #include <vector>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -33,7 +32,7 @@ using namespace gromox;
 
 static char g_org_name[256];
 static thread_local ALLOC_CONTEXT *g_alloc_key;
-static std::unordered_map<std::string, uint16_t> g_str_hash;
+static thread_local const char *g_storedir;
 static char g_default_charset[32];
 static std::atomic<int> g_sequence_id;
 
@@ -87,22 +86,6 @@ int exmdb_local_run() try
 		exmdb_local_get_user_ids, exmdb_local_get_username)) {
 		mlog(LV_ERR, "exmdb_local: failed to init oxcmail library");
 		return -2;
-	}
-	std::vector<std::string> nplist;
-	auto err = list_file_read_fixedstrings("propnames.txt", get_data_path(), nplist);
-	if (err == ENOENT) {
-	} else if (err != 0) {
-		mlog(LV_ERR, "exmdb_local: list_file_initd propnames.txt: %s", strerror(err));
-		return -3;
-	}
-	uint16_t last_propid = 0x8001;
-	for (auto &&elem : nplist) {
-		HX_strlower(elem.data());
-		if (last_propid >= 0xFFFF) {
-			mlog(LV_ERR, "exmdb_local: too many predefined namedprops\n");
-			return -3;
-		}
-		g_str_hash.emplace(std::move(elem), last_propid++);
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -286,26 +269,8 @@ static void* exmdb_local_alloc(size_t size)
 static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
     PROPID_ARRAY *ppropids)
 {
-	int i;
-	
-	ppropids->count = ppropnames->count;
-	ppropids->ppropid = static_cast<uint16_t *>(exmdb_local_alloc(sizeof(uint16_t) * ppropnames->count));
-	for (i=0; i<ppropnames->count; i++) {
-		char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
-		ppropnames->ppropname[i].guid.to_str(tmp_guid, arsizeof(tmp_guid));
-		if (ppropnames->ppropname[i].kind == MNID_ID)
-			snprintf(tmp_string, arsizeof(tmp_string), "GUID=%s,LID=%u",
-			         tmp_guid, ppropnames->ppropname[i].lid);
-		else
-			snprintf(tmp_string, arsizeof(tmp_string), "GUID=%s,NAME=%s",
-				tmp_guid, ppropnames->ppropname[i].pname);
-
-		HX_strlower(tmp_string);
-		auto ppropid = g_str_hash.find(tmp_string);
-		ppropids->ppropid[i] = ppropid != g_str_hash.end() ?
-		                       ppropid->second : 0;
-	}
-	return TRUE;
+	return exmdb_client_remote::get_named_propids(g_storedir, false,
+	       ppropnames, ppropids);
 }
 
 static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
@@ -420,8 +385,10 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	auto djson = json_to_str(digest);
 	alloc_context alloc_ctx;
 	g_alloc_key = &alloc_ctx;
+	g_storedir = home_dir;
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
+	g_storedir = nullptr;
 	if (NULL != pcontext1) {
 		put_context(pcontext1);
 	}
