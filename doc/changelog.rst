@@ -1,3 +1,13 @@
+Development 2.5.10
+==================
+
+Fixes:
+
+* exmdb_provider: filter duplicate propids when they occur in the mailbox,
+  resolving a failure to export (broken) recipients to MSG,
+  and resolving _one_ instance of OL sync error 80070057.
+
+
 Gromox 2.5 (2023-03-06)
 =======================
 

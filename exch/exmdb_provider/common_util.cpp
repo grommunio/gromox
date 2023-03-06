@@ -527,6 +527,26 @@ cu_get_optimize_stmt(mapi_object_type table_type, bool b_normal)
 	return b_normal ? op->rcpt_norm : op->rcpt_str;
 }
 
+/**
+ * A property can only have one type, so do some filtering in case the database
+ * has gunk. (We implicitly depend on PT_UNICODE > PT_STRING8 being the case to
+ * prefer Unicode over 8-bit strings.)
+ *
+ * Prerequisites:
+ * Elements in first..last with the same PROP_ID(x) are adjacent.
+ */
+template<typename F> static F coalesce_propid(F first, F last)
+{
+	for (auto it = first; it != last; ) {
+		auto nx = std::next(it);
+		auto rm = nx != last && PROP_ID(*it) == PROP_ID(*nx);
+		if (!rm)
+			*first++ = *it;
+		it = nx;
+	}
+	return first;
+}
+
 BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
     std::vector<uint32_t> &tags) try
 {
@@ -605,7 +625,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	}
 	pstmt.finalize();
 	std::sort(tags.begin(), tags.end());
-	tags.erase(std::unique(tags.begin(), tags.end()), tags.end());
+	tags.erase(coalesce_propid(tags.begin(), tags.end()), tags.end());
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1161: ENOMEM");
