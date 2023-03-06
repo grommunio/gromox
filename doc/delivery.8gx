@@ -37,17 +37,6 @@ Default: \fI/usr/share/gromox/delivery\fP
 \fBdefault_domain\fP
 Default: (system domainname)
 .TP
-\fBdelivery_log_file\fP
-Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
-depending on parent PID) or "\fIsyslog\fP" are recognized.
-.br
-Default: \fI-\fP (auto)
-.TP
-\fBdelivery_log_level\fP
-Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
-.br
-Default: \fI4\fP (notice)
-.TP
 \fBdequeue_max_mem\fP
 Default: \fI1024M\fP
 .TP
@@ -63,6 +52,17 @@ messages. It is used as the value for the EHLO command if and when connecting
 to an SMTP service (e.g. inbox rules that do forwarding).
 .br
 Default: (system hostname)
+.TP
+\fBlda_log_file\fP
+Target for log messages here. Special values: "\fI-\fP" (stderr/syslog
+depending on parent PID) or "\fIsyslog\fP" are recognized.
+.br
+Default: \fI-\fP (auto)
+.TP
+\fBlda_log_level\fP
+Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug.
+.br
+Default: \fI4\fP (notice)
 .TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.
