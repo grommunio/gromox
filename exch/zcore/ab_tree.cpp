@@ -1748,7 +1748,6 @@ bool ab_tree_resolvename(AB_BASE *pbase, cpid_t codepage, char *pstr,
 static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
     const RESTRICTION *pfilter)
 {
-	int len;
 	char *ptoken;
 	void *pvalue;
 	
@@ -1769,82 +1768,38 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
-		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (rcon->comparable())
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
-			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
-			} else {
-				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
-			} else {
-				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			return FALSE;
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
-		if (rprop->proptag == PR_ANR) {
-			if (ab_tree_fetch_node_property(pnode, codepage,
-			    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&
-			    strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
-			/* =SMTP:user@company.com */
-			ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
-			if (ptoken != nullptr && pvalue != nullptr &&
-			    strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
-				return TRUE;
-			if (ab_tree_fetch_node_property(pnode, codepage,
-			    PR_DISPLAY_NAME, &pvalue) && pvalue != nullptr &&
-			    strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-				return TRUE;
-			return FALSE;
+		if (rprop->proptag != PR_ANR) {
+			if (!ab_tree_fetch_node_property(pnode, codepage,
+			    rprop->proptag, &pvalue) || pvalue == nullptr)
+				return false;
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 		}
-		if (!ab_tree_fetch_node_property(pnode, codepage,
-		    rprop->proptag, &pvalue) || pvalue == nullptr)
-			return FALSE;
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (ab_tree_fetch_node_property(pnode, codepage,
+		    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&
+		    strcasestr(static_cast<char *>(pvalue),
+		    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+			return TRUE;
+		/* =SMTP:user@company.com */
+		ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
+		if (ptoken != nullptr && pvalue != nullptr &&
+		    strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
+			return TRUE;
+		if (ab_tree_fetch_node_property(pnode, codepage,
+		    PR_DISPLAY_NAME, &pvalue) && pvalue != nullptr &&
+		    strcasestr(static_cast<char *>(pvalue),
+		    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+			return TRUE;
+		return FALSE;
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
@@ -1853,17 +1808,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
-				return TRUE;
-			break;
-		}
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_EXIST: {
 		auto node_type = ab_tree_get_node_type(pnode);

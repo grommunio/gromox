@@ -1083,7 +1083,7 @@ static int db_engine_compare_propval(
 	if (NULL != pvalue1 && NULL == pvalue2) {
 		return 1;
 	}
-	return propval_compare(proptype, pvalue1, pvalue2);
+	return propval_compare(pvalue1, pvalue2, proptype);
 }
 
 static BOOL db_engine_insert_categories(sqlite3 *psqlite,

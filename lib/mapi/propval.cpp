@@ -399,13 +399,13 @@ void propval_free(uint16_t type, void *pvalue)
 	free(pvalue);
 }
 
-uint32_t propval_size(uint16_t type, void *pvalue)
+uint32_t propval_size(uint16_t type, const void *pvalue)
 {
 	uint32_t length;
 	
 	switch (type) {
 	case PT_UNSPECIFIED: {
-		auto &tp = *static_cast<TYPED_PROPVAL *>(pvalue);
+		auto &tp = *static_cast<const TYPED_PROPVAL *>(pvalue);
 		return propval_size(tp.type, tp.pvalue);
 	}
 	case PT_SHORT:
@@ -422,50 +422,50 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(uint8_t);
 	case PT_OBJECT:
 	case PT_BINARY:
-		return static_cast<BINARY *>(pvalue)->cb;
+		return static_cast<const BINARY *>(pvalue)->cb;
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
 		return sizeof(uint64_t);
 	case PT_STRING8:
 	case PT_UNICODE:
-		return strlen(static_cast<char *>(pvalue));
+		return strlen(static_cast<const char *>(pvalue));
 	case PT_CLSID:
 		return 16;
 	case PT_SVREID: {
-		auto &e = *static_cast<SVREID *>(pvalue);
+		auto &e = *static_cast<const SVREID *>(pvalue);
 		return e.pbin != nullptr ? e.pbin->cb + 1 : 21;
 	}
 	case PT_SRESTRICTION:
-		return restriction_size(static_cast<RESTRICTION *>(pvalue));
+		return restriction_size(static_cast<const RESTRICTION *>(pvalue));
 	case PT_ACTIONS:
-		return rule_actions_size(static_cast<RULE_ACTIONS *>(pvalue));
+		return rule_actions_size(static_cast<const RULE_ACTIONS *>(pvalue));
 	case PT_MV_SHORT:
-		return sizeof(uint16_t) * static_cast<SHORT_ARRAY *>(pvalue)->count;
+		return sizeof(uint16_t) * static_cast<const SHORT_ARRAY *>(pvalue)->count;
 	case PT_MV_LONG:
-		return sizeof(uint32_t) * static_cast<LONG_ARRAY *>(pvalue)->count;
+		return sizeof(uint32_t) * static_cast<const LONG_ARRAY *>(pvalue)->count;
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		return sizeof(uint64_t) * static_cast<LONGLONG_ARRAY *>(pvalue)->count;
+		return sizeof(uint64_t) * static_cast<const LONGLONG_ARRAY *>(pvalue)->count;
 	case PT_MV_FLOAT:
-		return sizeof(float) * static_cast<FLOAT_ARRAY *>(pvalue)->count;
+		return sizeof(float) * static_cast<const FLOAT_ARRAY *>(pvalue)->count;
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME:
-		return sizeof(double) * static_cast<DOUBLE_ARRAY *>(pvalue)->count;
+		return sizeof(double) * static_cast<const DOUBLE_ARRAY *>(pvalue)->count;
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		length = 0;
-		auto sa = static_cast<STRING_ARRAY *>(pvalue);
+		auto sa = static_cast<const STRING_ARRAY *>(pvalue);
 		for (size_t i = 0; i < sa->count; ++i)
 			length += strlen(sa->ppstr[i]);
 		return length;
 	}
 	case PT_MV_CLSID:
-		return 16 * static_cast<GUID_ARRAY *>(pvalue)->count;
+		return 16 * static_cast<const GUID_ARRAY *>(pvalue)->count;
 	case PT_MV_BINARY: {
 		length = 0;
-		auto ba = static_cast<BINARY_ARRAY *>(pvalue);
+		auto ba = static_cast<const BINARY_ARRAY *>(pvalue);
 		for (size_t i = 0; i < ba->count; ++i)
 			length += ba->pbin[i].cb;
 		return length;
@@ -530,7 +530,7 @@ int SVREID_compare(const SVREID *a, const SVREID *b)
 	return a->compare(*b);
 }
 
-int propval_compare(uint16_t proptype, const void *pvalue1, const void *pvalue2)
+int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
 {
 #define MVCOMPARE(field) do { \
 		cmp = three_way_compare(a->count, b->count); \
@@ -552,47 +552,37 @@ int propval_compare(uint16_t proptype, const void *pvalue1, const void *pvalue2)
 	int cmp = -2;
 	switch (proptype) {
 	case PT_SHORT:
-		cmp = three_way_compare(*static_cast<const uint16_t *>(pvalue1),
-		      *static_cast<const uint16_t *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const uint16_t *>(pvalue1),
+		       *static_cast<const uint16_t *>(pvalue2));
 	case PT_LONG:
 	case PT_ERROR:
-		cmp = three_way_compare(*static_cast<const uint32_t *>(pvalue1),
-		      *static_cast<const uint32_t *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const uint32_t *>(pvalue1),
+		       *static_cast<const uint32_t *>(pvalue2));
 	case PT_BOOLEAN:
-		cmp = three_way_compare(!!*static_cast<const uint8_t *>(pvalue1),
-		      !!*static_cast<const uint8_t *>(pvalue2));
-		break;
+		return three_way_compare(!!*static_cast<const uint8_t *>(pvalue1),
+		       !!*static_cast<const uint8_t *>(pvalue2));
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		cmp = three_way_compare(*static_cast<const uint64_t *>(pvalue1),
-		      *static_cast<const uint64_t *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const uint64_t *>(pvalue1),
+		       *static_cast<const uint64_t *>(pvalue2));
 	case PT_FLOAT:
-		cmp = three_way_compare(*static_cast<const float *>(pvalue1),
-		      *static_cast<const float *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const float *>(pvalue1),
+		       *static_cast<const float *>(pvalue2));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		cmp = three_way_compare(*static_cast<const double *>(pvalue1),
-		      *static_cast<const double *>(pvalue2));
-		break;
+		return three_way_compare(*static_cast<const double *>(pvalue1),
+		       *static_cast<const double *>(pvalue2));
 	case PT_STRING8:
 	case PT_UNICODE:
-		cmp = strcasecmp(static_cast<const char *>(pvalue1),
-		      static_cast<const char *>(pvalue2));
-		break;
+		return strcasecmp(static_cast<const char *>(pvalue1),
+		       static_cast<const char *>(pvalue2));
 	case PT_CLSID:
-		cmp = static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
-		break;
+		return static_cast<const GUID *>(pvalue1)->compare(*static_cast<const GUID *>(pvalue2));
 	case PT_BINARY:
-		cmp = static_cast<const BINARY *>(pvalue1)->compare(*static_cast<const BINARY *>(pvalue2));
-		break;
+		return static_cast<const BINARY *>(pvalue1)->compare(*static_cast<const BINARY *>(pvalue2));
 	case PT_SVREID:
-		cmp = static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
-		break;
+		return static_cast<const SVREID *>(pvalue1)->compare(*static_cast<const SVREID *>(pvalue2));
 	case PT_MV_SHORT: {
 		auto a = static_cast<const SHORT_ARRAY *>(pvalue1);
 		auto b = static_cast<const SHORT_ARRAY *>(pvalue2);
@@ -686,7 +676,7 @@ bool propval_compare_relop(enum relop relop, uint16_t proptype,
 	default: /* RE, DL - not implemented */
 		return false;
 	}
-	return three_way_eval(relop, propval_compare(proptype, pvalue1, pvalue2));
+	return three_way_eval(relop, propval_compare(pvalue1, pvalue2, proptype));
 }
 
 namespace gromox {

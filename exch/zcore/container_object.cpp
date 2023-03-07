@@ -79,89 +79,39 @@ static BOOL container_object_match_contact_message(
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		auto str = ppropvals->get<const char>(rcon->proptag);
 		if (str == nullptr)
 			return FALSE;	
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue), str) == 0)
-					return TRUE;
-			} else {
-				if (strcmp(static_cast<char *>(rcon->propval.pvalue), str) == 0)
-					return TRUE;
-			}
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(str, static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-			} else {
-				if (strstr(str, static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			return FALSE;
-		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(str, static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-			} else {
-				if (strncmp(str, static_cast<char *>(rcon->propval.pvalue), len) == 0)
-					return TRUE;
-			}
-			return FALSE;
-		}
-		}
-		return FALSE;
+		return rcon->eval(str);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
-		if (rprop->proptag == PR_ANR) {
-			auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
-			if (NULL != pvalue) {
-				if (strcasestr(pvalue,
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
-			if (NULL != pvalue) {
-				if (strcasestr(pvalue,
-				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
-					return TRUE;
-			}
-			return FALSE;
+		if (rprop->proptag != PR_ANR) {
+			auto pvalue = ppropvals->getval(rprop->proptag);
+			if (pvalue == nullptr)
+				return false;
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 		}
-		auto pvalue = ppropvals->getval(rprop->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
+		if (pvalue != nullptr && strcasestr(pvalue,
+		    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
+			return TRUE;
+		pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
+		return pvalue != nullptr && strcasestr(pvalue,
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr ? TRUE : false;
 	}
 	case RES_BITMASK: {
 		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		auto pvalue = ppropvals->get<uint32_t>(rbm->proptag);
+		auto pvalue = ppropvals->get<const uint32_t>(rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if (!(*pvalue & rbm->mask))
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*pvalue & rbm->mask)
-				return TRUE;
-			break;
-		}
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_EXIST:
 		return ppropvals->has(pfilter->exist->proptag) ? TRUE : false;

@@ -1480,8 +1480,6 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 		TRY(pndr->union_align(5));
 		switch (*ptype) {
 		case RES_AND:
-			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
-			break;
 		case RES_OR:
 			TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
 			break;
@@ -1520,8 +1518,6 @@ static pack_result nsp_ndr_pull_restriction_union(NDR_PULL *pndr,
 		return EXT_ERR_SUCCESS;
 	switch (*ptype) {
 	case RES_AND:
-		TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
-		break;
 	case RES_OR:
 		TRY(nsp_ndr_pull_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
 		break;
@@ -1559,8 +1555,6 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 		TRY(pndr->union_align(5));
 		switch (type) {
 		case RES_AND:
-			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
-			break;
 		case RES_OR:
 			TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_HEADER, &r->res_andor));
 			break;
@@ -1599,8 +1593,6 @@ static pack_result nsp_ndr_push_restriction_union(NDR_PUSH *pndr,
 		return EXT_ERR_SUCCESS;
 	switch (type) {
 	case RES_AND:
-		TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
-		break;
 	case RES_OR:
 		TRY(nsp_ndr_push_restriction_and_or(pndr, FLAG_CONTENT, &r->res_andor));
 		break;

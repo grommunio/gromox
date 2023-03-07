@@ -4087,50 +4087,18 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
     mapi_object_type table_type, uint64_t id, const RESTRICTION *pres)
 {
-	int len;
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
-		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			else
-				return strcmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasestr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			else
-				return strstr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			return FALSE;
-		case FL_PREFIX:
-			len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strncasecmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			else
-				return strncmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			return FALSE;
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
@@ -4140,14 +4108,13 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
 			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			return strcasestr(static_cast<char *>(pvalue),
-			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
+			return FALSE;
+		return strcasestr(static_cast<char *>(pvalue),
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
@@ -4169,22 +4136,14 @@ static bool cu_eval_subitem_restriction(sqlite3 *psqlite, cpid_t cpid,
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
-		case BMR_NEZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST: {
 		auto rex = pres->exist;
@@ -4285,7 +4244,6 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 {
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
@@ -4305,42 +4263,12 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		       folder_id, &pres->xnot->res);
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			else
-				return strcmp(static_cast<char *>(rcon->propval.pvalue),
-				       static_cast<char *>(pvalue)) == 0;
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strcasestr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			else
-				return strstr(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue)) != nullptr;
-			return FALSE;
-		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE))
-				return strncasecmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			else
-				return strncmp(static_cast<char *>(pvalue),
-				       static_cast<char *>(rcon->propval.pvalue), len) == 0;
-			return FALSE;
-		}
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
@@ -4350,14 +4278,13 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (pvalue == nullptr)
 			return propval_compare_relop_nullok(rprop->relop,
 			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			return strcasestr(static_cast<char *>(pvalue),
-			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
+			return FALSE;
+		return strcasestr(static_cast<char *>(pvalue),
+		       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
@@ -4379,22 +4306,14 @@ bool cu_eval_folder_restriction(sqlite3 *psqlite,
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
-		case BMR_NEZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
 		    rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST:
 		if (!cu_get_property(MAPI_FOLDER, folder_id, CP_ACP, psqlite,
@@ -4418,7 +4337,6 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 {
 	void *pvalue;
 	void *pvalue1;
-	uint32_t val_size;
 	
 	switch (pres->rt) {
 	case RES_OR:
@@ -4439,49 +4357,13 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
 		void *pvalue = nullptr;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) == PT_BINARY) {
-			if (!cu_get_property(MAPI_MESSAGE,
-			    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
-			    pvalue == nullptr)
-				return FALSE;
-			auto &dbval = *static_cast<const BINARY *>(pvalue);
-			auto &rsval = *static_cast<const BINARY *>(rcon->propval.pvalue);
-			switch (rcon->fuzzy_level & 0xFFFF) {
-			case FL_FULLSTRING:
-				return dbval.cb == rsval.cb && memcmp(dbval.pv, rsval.pv, rsval.cb) == 0;
-			case FL_SUBSTRING:
-				return HX_memmem(dbval.pv, dbval.cb, rsval.pv, rsval.cb) != nullptr;
-			case FL_PREFIX:
-				return dbval.cb >= rsval.cb && memcmp(dbval.pv, rsval.pv, rsval.cb) == 0;
-			}
-			return false;
-		}
-		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
-		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
+		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		auto dbval = static_cast<const char *>(pvalue);
-		auto rsval = static_cast<const char *>(rcon->propval.pvalue);
-		auto icase = rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE);
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			return icase ? strcasecmp(dbval, rsval) == 0 :
-			       strcmp(dbval, rsval) == 0;
-		case FL_SUBSTRING:
-			return icase ? strcasestr(dbval, rsval) != nullptr :
-			       strstr(dbval, rsval) != nullptr;
-		case FL_PREFIX: {
-			auto len = strlen(rsval);
-			return icase ? strncasecmp(dbval, rsval, len) == 0 :
-			       strncmp(dbval, rsval, len) == 0;
-		}
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
@@ -4492,18 +4374,21 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			if (pvalue == nullptr)
 				return FALSE;
 			break;
-		default:
+		case PR_ANR:
 			if (!cu_get_property(MAPI_MESSAGE,
 			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				break;
-			if (rprop->proptag != PR_ANR)
-				break;
 			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			return strcasestr(static_cast<char *>(pvalue),
 			       static_cast<char *>(rprop->propval.pvalue)) != nullptr;
+		default:
+			if (!cu_get_property(MAPI_MESSAGE,
+			    message_id, cpid, psqlite, rprop->proptag, &pvalue))
+				return FALSE;
+			break;
 		}
 		return propval_compare_relop_nullok(rprop->relop,
 		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
@@ -4529,22 +4414,14 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		    message_id, cpid, psqlite, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0;
-		case BMR_NEZ:
-			return (*static_cast<uint32_t *>(pvalue) & rbm->mask) != 0;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		if (!cu_get_property(MAPI_MESSAGE,
 		    message_id, cpid, psqlite, rsize->proptag, &pvalue))
 			return FALSE;
-		val_size = pvalue != nullptr ? propval_size(rsize->proptag, pvalue) : 0;
-		return propval_compare_relop_nullok(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
+		return rsize->eval(pvalue);
 	}
 	case RES_EXIST:
 		if (!cu_get_property(MAPI_MESSAGE,

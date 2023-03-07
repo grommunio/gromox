@@ -855,8 +855,6 @@ static void table_object_reset(table_object *ptable)
 static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
     const RESTRICTION *pres)
 {
-	uint32_t val_size;
-	
 	switch (pres->rt) {
 	case RES_OR:
 		for (size_t i = 0; i < pres->andor->count; ++i)
@@ -876,54 +874,13 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
-			return FALSE;
-		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
+		if (!rcon->comparable())
 			return FALSE;
 		auto pvalue = ppropvals->getval(rcon->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (rcon->fuzzy_level & 0xFFFF) {
-		case FL_FULLSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
-				    static_cast<char *>(pvalue)) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			if (strcmp(static_cast<char *>(rcon->propval.pvalue),
-			    static_cast<char *>(pvalue)) == 0)
-				return TRUE;
-			return FALSE;
-		case FL_SUBSTRING:
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-					return TRUE;
-				return FALSE;
-			}
-			if (strstr(static_cast<char *>(pvalue),
-			    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
-				return TRUE;
-			return FALSE;
-		case FL_PREFIX: {
-			auto len = strlen(static_cast<char *>(rcon->propval.pvalue));
-			if (rcon->fuzzy_level & (FL_IGNORECASE | FL_LOOSE)) {
-				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(rcon->propval.pvalue),
-				    len) == 0)
-					return TRUE;
-				return FALSE;
-			}
-			if (strncmp(static_cast<char *>(pvalue),
-			    static_cast<char *>(rcon->propval.pvalue),
-			    len) == 0)
-				return TRUE;
-			return FALSE;
-		}
-		}
-		return FALSE;
+		return rcon->eval(pvalue);
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
@@ -931,16 +888,13 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (rprop->proptag == PR_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
-				return FALSE;
-			if (strcasestr(static_cast<char *>(rprop->propval.pvalue),
-			    static_cast<char *>(pvalue)) != nullptr)
-				return TRUE;
+		if (rprop->proptag != PR_ANR)
+			return propval_compare_relop(rprop->relop,
+			       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 			return FALSE;
-		}
-		return propval_compare_relop(rprop->relop,
-		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
+		return strcasestr(static_cast<char *>(rprop->propval.pvalue),
+		       static_cast<char *>(pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
@@ -961,32 +915,14 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		auto pvalue = ppropvals->get<uint32_t>(rbm->proptag);
+		auto pvalue = ppropvals->get<const uint32_t>(rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (rbm->bitmask_relop) {
-		case BMR_EQZ:
-			if (!(*pvalue & rbm->mask))
-				return TRUE;
-			break;
-		case BMR_NEZ:
-			if (*pvalue & rbm->mask)
-				return TRUE;
-			break;
-		}	
-		return FALSE;
+		return rbm->eval(pvalue);
 	}
-	case RES_SIZE: {
-		auto rsize = pres->size;
-		auto pvalue = ppropvals->getval(rsize->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PT_LONG,
-		       &val_size, &rsize->size);
-	}
+	case RES_SIZE:
+		return pres->size->eval(ppropvals->getval(pres->size->proptag));
 	case RES_EXIST:
 		return ppropvals->has(pres->exist->proptag);
 	case RES_COMMENT:
