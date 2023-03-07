@@ -5260,10 +5260,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			goto EXPORT_FAILURE;
 		}
 		auto pbin = pmsg->children.pattachments->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
-		if (NULL == pbin) {
-			goto EXPORT_FAILURE;
-		}
-		if (!pmime->write_content(pbin->pc, pbin->cb, mime_encoding::base64))
+		if (pbin != nullptr && !pmime->write_content(pbin->pc,
+		    pbin->cb, mime_encoding::base64))
 			goto EXPORT_FAILURE;
 		return TRUE;
 	} else if (mime_skeleton.mail_type == oxcmail_type::xsigned) {
