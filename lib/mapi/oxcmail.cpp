@@ -5061,8 +5061,18 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
     /* effective-moved-from */ BINARY *hdrs, MIME_FIELD &f)
 {
-	if (hdrs == nullptr || hdrs->cb == 0)
-		return false;
+	if (hdrs == nullptr || hdrs->cb == 0) {
+		auto cbg = strdup("\r\n");
+		if (cbg == nullptr)
+			return false;
+		free(origmime.content_begin);
+		origmime.content_begin = cbg;
+		origmime.content_length = strlen(cbg);
+		origmime.mime_type = mime_type::single;
+		gx_strlcpy(origmime.content_type, "text/plain", std::size(origmime.content_type));
+		origmime.head_touched = origmime.content_touched = TRUE;
+		return true;
+	}
 	auto sec = origmail.pmime_pool->get_mime();
 	if (sec == nullptr)
 		return false;
