@@ -462,6 +462,27 @@ tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
 }
 
 /**
+ * @brief     Initialize from properties
+ *
+ * Maps
+ * `PR_DISPLAY_NAME` -> Name
+ * `PR_EMAIL_ADDRESS` -> EmailAddress
+ * `PR_ADDRTYPE` ->RoutingType
+ *
+ * @param     tps     Properties to use
+ */
+tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
+{
+	const char* data;
+	if((data = tps.get<const char>(PR_DISPLAY_NAME)))
+		Name = data;
+	if((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
+		EmailAddress = data;
+	if((data = tps.get<const char>(PR_ADDRTYPE)))
+		RoutingType = data;
+}
+
+/**
  * @brief     Generate URI from named property
  *
  * @param     type       Property type
@@ -485,7 +506,7 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
  * @param     types   Inserter to use for the type of each named property
  */
 void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PROPERTY_NAME>& names,
-                             vector_inserter<uint16_t>& types) const
+                             vector_inserter<uint16_t>& types, uint64_t&) const
 {
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
@@ -629,15 +650,22 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_STRING8}}
 };
 
+decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"message:BccRecipients", sShape::BccRecipients},
+	{"message:CcRecipients", sShape::CcRecipients},
+	{"message:ToRecipients", sShape::ToRecipients},
+}};
+
 /**
  * @brief     Collect property tags and names for field URI
 
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY_NAME>& nameins,
-                     vector_inserter<uint16_t>& typeins) const
+                     vector_inserter<uint16_t>& typeins, uint64_t& special) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
 	for(auto it = tags.first; it != tags.second; ++it)
@@ -648,6 +676,10 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
 		nameins = it->second.first;
 		typeins = it->second.second;
 	}
+	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
+	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
+	if(specials != specialMap.end() && specials->first == FieldURI)
+		special |= specials->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -658,9 +690,10 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                                vector_inserter<uint16_t>& typeIns) const
+                                vector_inserter<uint16_t>& typeIns, uint64_t& special) const
 {
 	size_t baseShape = BaseShape.index();
 	for(uint32_t tag : tagsIdOnly)
@@ -670,7 +703,7 @@ void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_insert
 			tagIns = tag;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			additional.tags(tagIns, nameIns, typeIns);
+			additional.tags(tagIns, nameIns, typeIns, special);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -799,15 +832,16 @@ bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& 
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                              vector_inserter<uint16_t>& typeIns) const
+                              vector_inserter<uint16_t>& typeIns, uint64_t& special) const
 {
 	for(uint32_t tag : tagsIdOnly)
 		tagIns = tag;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			additional.tags(tagIns, nameIns, typeIns);
+			additional.tags(tagIns, nameIns, typeIns, special);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -856,10 +890,11 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tPath::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                     vector_inserter<uint16_t>& typeIns) const
-{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns);}, *static_cast<const Base*>(this));};
+                     vector_inserter<uint16_t>& typeIns, uint64_t& special) const
+{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns, special);}, *static_cast<const Base*>(this));};
 
 ///////////////////////////////////////////////////////////////////////////////
 

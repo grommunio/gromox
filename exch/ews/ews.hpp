@@ -5,6 +5,7 @@
 #pragma once
 #include <optional>
 #include <unordered_map>
+#include <variant>
 
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -18,15 +19,19 @@ namespace gromox::EWS {
 
 namespace Structures
 {
-struct sProptags;
+struct sShape;
 struct sFolderSpec;
 struct tDistinguishedFolderId;
 struct tFolderId;
 struct tFolderResponseShape;
+struct tItem;
 struct tItemResponseShape;
 struct tMailbox;
+struct tMessage;
 struct tPath;
 struct tSerializableTimeZone;
+
+using sItem = std::variant<tItem, tMessage>;
 }
 
 
@@ -96,8 +101,8 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
-	Structures::sProptags collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;
-	Structures::sProptags collectTags(const Structures::tFolderResponseShape&, const std::optional<std::string>& = std::nullopt) const;
+	Structures::sShape collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;
+	Structures::sShape collectTags(const Structures::tFolderResponseShape&, const std::optional<std::string>& = std::nullopt) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
@@ -107,6 +112,7 @@ public:
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	Structures::sItem loadItem(const std::string&, uint64_t, const Structures::sShape&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
@@ -126,7 +132,10 @@ public:
 
 private:
 	void getNamedTags(const std::string&, const std::vector<PROPERTY_NAME>&, const
-	                  std::vector<uint16_t>&, Structures::sProptags&) const;
+	                  std::vector<uint16_t>&, Structures::sShape&) const;
+
+	void loadSpecial(const std::string&, uint64_t, Structures::tItem&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, Structures::tMessage&, uint64_t) const;
 };
 
 }

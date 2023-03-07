@@ -443,9 +443,9 @@ void tMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
 	XMLDUMPT(Sender);
-	//XMLDUMP(ToRecipients);
-	//XMLDUMP(CcRecipients);
-	//XMLDUMP(BccRecipients);
+	XMLDUMPT(ToRecipients);
+	XMLDUMPT(CcRecipients);
+	XMLDUMPT(BccRecipients);
 	XMLDUMPT(IsReadReceiptRequested);
 	XMLDUMPT(IsDeliveryReceiptRequested);
 	XMLDUMPT(From);

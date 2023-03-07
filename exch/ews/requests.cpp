@@ -120,7 +120,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 
 	response->SetName("m:GetFolderResponse");
 
-	sProptags requestedTags = ctx.collectTags(request.FolderShape);
+	sShape requestedTags = ctx.collectTags(request.FolderShape);
 	if(requestedTags.tags.size() > std::numeric_limits<decltype(PROPTAG_ARRAY::count)>::max())
 		throw InputError(E3029);
 	const PROPTAG_ARRAY tags{uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
@@ -444,7 +444,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, nullptr,
 	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
 		throw DispatchError(E3030);
-	sProptags requestedTags = ctx.collectTags(request.FolderShape);
+	sShape requestedTags = ctx.collectTags(request.FolderShape);
 
     mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
@@ -528,7 +528,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 
 	if(!syncState.given.convert() || !syncState.seen.convert() || !syncState.read.convert())
 		throw DispatchError(E3064);
-	sProptags itemTags = ctx.collectTags(request.ItemShape);
+	sShape itemTags = ctx.collectTags(request.ItemShape);
 	itemTags.tags.emplace_back(PidTagChangeNumber);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
 		throw DispatchError(E3032);
@@ -603,20 +603,17 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 
 	response->SetName("m:GetItemResponse");
 
-	sProptags itemTags = ctx.collectTags(request.ItemShape);
+	sShape itemTags = ctx.collectTags(request.ItemShape);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
 		throw DispatchError(E3032);
 	mGetItemResponse data;
 	mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 	msg.Items.reserve(request.ItemIds.size());
-	PROPTAG_ARRAY requestedTags{uint16_t(itemTags.tags.size()), itemTags.tags.data()};
-
 	auto dir = ctx.getDir();
 	for(auto& itemId : request.ItemIds) {
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		auto mid = rop_util_make_eid_ex(1, eid.messageId());
-		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, mid.m_value, requestedTags);
-		msg.Items.emplace_back(tItem::create(itemProps));
+		msg.Items.emplace_back(ctx.loadItem(dir, mid, itemTags));
 	}
 
 	msg.success();

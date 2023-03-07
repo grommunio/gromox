@@ -33,6 +33,22 @@ inline std::string &tolower(std::string &str)
 	return str;
 }
 
+/**
+ * @brief     Access contained value, create if empty
+ *
+ * @param     container   (Possibly empty) container
+ * @param     args        Arguments used for creation if container is empty
+ *
+ * @return    Reference to contained value
+ */
+template<typename T, typename... Args>
+T& defaulted(std::optional<T>& container, Args&&... args)
+{
+	if(!container)
+		container.emplace(std::forward<Args...>(args)...);
+	return *container;
+}
+
 } // Anonymous namespace
 
 /**
@@ -51,7 +67,7 @@ inline std::string &tolower(std::string &str)
  * @param      Result to store resolved tags in
  */
 void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY_NAME>& names,
-                              const std::vector<uint16_t>& types, sProptags& result) const
+                              const std::vector<uint16_t>& types, sShape& result) const
 {
 	PROPID_ARRAY namedIds;
 	PROPNAME_ARRAY propNames{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};
@@ -76,15 +92,15 @@ void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY
  *
  * @return     Tag list and named property map
  */
-sProptags EWSContext::collectTags(const tItemResponseShape& shape, const std::optional<std::string>& dir) const
+sShape EWSContext::collectTags(const tItemResponseShape& shape, const std::optional<std::string>& dir) const
 {
-	sProptags result;
+	sShape result;
 	std::vector<PROPERTY_NAME> names;
 	std::vector<uint16_t> types;
 	auto tagIns = std::back_inserter(result.tags);
 	auto nameIns = std::back_inserter(names);
 	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns);
+	shape.tags(tagIns, nameIns, typeIns, result.special);
 	if(dir && !dir->empty() && !names.empty())
 		getNamedTags(*dir, names, types, result);
 	return result;
@@ -98,15 +114,15 @@ sProptags EWSContext::collectTags(const tItemResponseShape& shape, const std::op
  *
  * @return     Tag list and named property map
  */
-sProptags EWSContext::collectTags(const tFolderResponseShape& shape, const std::optional<std::string>& dir) const
+sShape EWSContext::collectTags(const tFolderResponseShape& shape, const std::optional<std::string>& dir) const
 {
-	sProptags result;
+	sShape result;
 	std::vector<PROPERTY_NAME> names;
 	std::vector<uint16_t> types;
 	auto tagIns = std::back_inserter(result.tags);
 	auto nameIns = std::back_inserter(names);
 	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns);
+	shape.tags(tagIns, nameIns, typeIns, result.special);
 	if(dir && !dir->empty() && !names.empty())
 		getNamedTags(*dir, names, types, result);
 	return result;
@@ -292,6 +308,73 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 	    CP_ACP, mid, &props, &result))
 		throw DispatchError(E3025);
 	return result;
+}
+
+/**
+ * @brief     Stub overload for generic items
+ */
+void EWSContext::loadSpecial(const std::string&, uint64_t, tItem&, uint64_t) const
+{}
+
+/**
+ * @brief     Load message attributes not contained in tags
+ *
+ * @param     dir     Store to load from
+ * @param     mid     Message to load
+ * @param     message Message object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tMessage& message, uint64_t special) const
+{
+	if(special & sShape::Recipients)
+	{
+		TARRAY_SET rcpts;
+		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		{
+			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%lu)", dir.c_str(), mid);
+			return;
+		}
+		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
+		{
+			uint32_t* recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+			if(!recipientType)
+				continue;
+			switch(*recipientType)
+			{
+			case 1: //Primary recipient
+				if(special & sShape::ToRecipients)
+					defaulted(message.ToRecipients).emplace_back(**tps);
+				break;
+			case 2: //Cc recipient
+				if(special & sShape::CcRecipients)
+					defaulted(message.CcRecipients).emplace_back(**tps);
+				break;
+			case 3: //Bcc recipient
+				if(special & sShape::BccRecipients)
+					defaulted(message.BccRecipients).emplace_back(**tps);
+				break;
+			}
+		}
+	}
+}
+
+/**
+ * @brief     Load (message) item from store
+ *
+ * @param     dir     Store to load item from
+ * @param     mid     ID of the message to laod
+ * @param     shape   Item shape
+ *
+ * @return    Loaded item
+ */
+sItem EWSContext::loadItem(const std::string&dir, uint64_t mid, const sShape& shape) const
+{
+	PROPTAG_ARRAY requestedTags{uint16_t(shape.tags.size()), const_cast<uint32_t*>(shape.tags.data())};
+	TPROPVAL_ARRAY itemProps = getItemProps(dir, mid, requestedTags);
+	sItem item = tItem::create(itemProps, shape.namedTags);
+	if(shape.special)
+		std::visit([&](auto&& item){loadSpecial(dir, mid, item, shape.special);}, item);
+	return item;
 }
 
 /**

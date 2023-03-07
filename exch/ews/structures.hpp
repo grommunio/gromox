@@ -165,8 +165,6 @@ using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderTy
 	// TODO: missing item types
 	/*
 	<Items>
-		<Item/>
-		<Message/>
 		<CalendarItem/>
 		<Contact/>
 		<DistributionList/>
@@ -185,10 +183,17 @@ using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 /**
  * @brief      Utility struct to manage property tags and property name information
  */
-struct sProptags
+struct sShape
 {
 	std::vector<uint32_t> tags; ///< Properties return from the store
 	sNamedPropertyMap namedTags; ///< Tag -> named property mapping
+	uint64_t special = 0; ///< Fields that are not accessible by properties
+
+	static constexpr uint64_t ToRecipients =  1 << 0;
+	static constexpr uint64_t CcRecipients =  1 << 1;
+	static constexpr uint64_t BccRecipients = 1 << 2;
+
+	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 };
 
 
@@ -319,12 +324,13 @@ struct tDuration
  *
  * Types.xsd:273
  */
-struct tEmailAddressType
+struct tEmailAddressType : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Mailbox";
 
 	tEmailAddressType() = default;
 	explicit tEmailAddressType(const tinyxml2::XMLElement*);
+	explicit tEmailAddressType(const TPROPVAL_ARRAY&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -379,7 +385,7 @@ struct tExtendedFieldURI
 	std::optional<tGuid> PropertySetId; // Attribute.
 	std::optional<std::string> PropertyName; //Attribute
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
 
 	static const char* typeName(uint16_t);
 
@@ -436,16 +442,20 @@ protected:
  */
 struct tFieldURI
 {
+	using SMEntry = std::pair<const char*, uint64_t>;
+
 	static constexpr char NAME[] = "FieldURI";
 
 	tFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
 
 	std::string FieldURI; //Attribute
 
-	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Types.xsd:402
-	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Types.xsd:402
+	//Types.xsd:402
+	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
+	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
+	static std::array<SMEntry, 3> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -472,7 +482,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI>
 
 	tPath(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
 };
 
 /**
@@ -643,7 +653,7 @@ struct tItemResponseShape
 {
 	tItemResponseShape(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
 
 	//Enum::DefaultShapeNamesType BaseShape;
 	//std::optional<bool> IncludeMimeContent;
@@ -776,9 +786,9 @@ struct tMessage : public tItem
 	tMessage(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
 
 	std::optional<tSingleRecipient> Sender; ///< PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME
-	//std::optional<std::vector<tSingleRecipient>> ToRecipients;
-	//std::optional<std::vector<tSingleRecipient>> CcRecipients;
-	//std::optional<std::vector<tSingleRecipient>> BccRecipients;
+	std::optional<std::vector<tEmailAddressType>> ToRecipients;
+	std::optional<std::vector<tEmailAddressType>> CcRecipients;
+	std::optional<std::vector<tEmailAddressType>> BccRecipients;
 	std::optional<bool> IsReadReceiptRequested;
 	std::optional<bool> IsDeliveryReceiptRequested;
 	std::optional<sBase64Binary> ConversationIndex; ///< PR_CONVERSATION_INDEX
@@ -871,7 +881,7 @@ struct tFolderResponseShape
 {
 	tFolderResponseShape(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&) const;
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
 
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
