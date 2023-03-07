@@ -250,7 +250,8 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		return false;
 	}
 #endif
-	if (pmime->mime_type != mime_type::single)
+	if (pmime->mime_type != mime_type::single &&
+	    pmime->mime_type != mime_type::single_obj)
 		return false;
 	if (encoding_type == mime_encoding::automatic)
 		encoding_type = qp_encoded_size_estimate(pcontent, length) < (length / 3 + 1) * 4 ?
@@ -376,9 +377,10 @@ bool MIME::write_mail(MAIL *pmail)
 		return false;
     }
 #endif
-	if (pmime->mime_type != mime_type::single)
+	if (pmime->mime_type != mime_type::single &&
+	    pmime->mime_type != mime_type::single_obj)
 		return false;
-	/* content_begin is not NULL and content_length is 0 means mail object */
+	mime_type = mime_type::single_obj;
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	content_buf.reset();
@@ -407,7 +409,8 @@ bool MIME::set_content_type(const char *newtype)
 	b_multiple = FALSE;
 	if (strncasecmp(newtype, "multipart/", 10) == 0)
 		b_multiple = TRUE;
-	if (pmime->mime_type == mime_type::single) {
+	if (pmime->mime_type == mime_type::single ||
+	    pmime->mime_type == mime_type::single_obj) {
 		if (b_multiple)
 			return false;
 	} else if (pmime->mime_type == mime_type::none) {
@@ -1006,12 +1009,18 @@ bool MIME::serialize(STREAM *pstream) const
 		/* \r\n for separate head and content */
 		pstream->write("\r\n\r\n", 4);
 	}
-	if (pmime->mime_type == mime_type::single) {
+	if (pmime->mime_type == mime_type::single ||
+	    pmime->mime_type == mime_type::single_obj) {
 		if (pmime->content_begin == nullptr)
 			/* if there's nothing, just append an empty line */
 			pstream->write("\r\n", 2);
 		else if (pmime->content_length != 0)
 			pstream->write(pmime->content_begin, pmime->content_length);
+		return true;
+	} else if (pmime->mime_type == mime_type::single_obj) {
+		if (pmime->content_begin == nullptr)
+			/* well that's not supposed to happen */
+			pstream->write("\r\n", 2);
 		else if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream))
 			return false;
 		return true;
@@ -1260,7 +1269,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	}
 	
 	/* content is an email object */
-	if (0 == pmime->content_length) {
+	if (pmime->mime_type == mime_type::single_obj) {
 		auto mail_len = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 		if (mail_len <= 0) {
 			mlog(LV_DEBUG, "Failed to get mail length in %s", __PRETTY_FUNCTION__);
@@ -1472,19 +1481,24 @@ bool MIME::emit(write_func write, void *fd) const
 	}
 	if (pmime->mime_type == mime_type::single) {
 		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				auto wrlen = write(fd, pmime->content_begin, pmime->content_length);
-				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
-					return false;
-			} else {
-				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->emit(write, fd))
-					return false;
-			}
+			auto wrlen = write(fd, pmime->content_begin, pmime->content_length);
+			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
+				return false;
 		} else {
 			/* if there's nothing, just append an empty line */
 			if (2 != write(fd, "\r\n", 2)) {
 				return false;
 			}
+		}
+		return true;
+	} else if (pmime->mime_type == mime_type::single_obj) {
+		if (pmime->content_begin != nullptr) {
+			if (!reinterpret_cast<MAIL *>(pmime->content_begin)->emit(write, fd))
+				return false;
+		} else {
+			/* if there's nothing, just append an empty line */
+			if (write(fd, "\r\n", 2) != 2)
+				return false;
 		}
 		return true;
 	}
@@ -1612,6 +1626,9 @@ bool MIME::check_dot() const
 			return true;
 		} 
 		return true;
+	} else if (pmime->mime_type == mime_type::single_obj) {
+		return pmime->content_begin == nullptr ? true :
+		       reinterpret_cast<MAIL *>(pmime->content_begin)->check_dot();
 	}
 	if (NULL != pmime->first_boundary) {
 		tmp_len = pmime->first_boundary - pmime->content_begin;
@@ -1693,14 +1710,18 @@ ssize_t MIME::get_length() const
 	}
 	if (pmime->mime_type == mime_type::single) {
 		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				mime_len += pmime->content_length;
-			} else {
-				auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
-				if (mgl < 0)
-					return -1;
-				mime_len += mgl;
-			}
+			mime_len += pmime->content_length;
+		} else {
+			/* if there's nothing, just append an empty line */
+			mime_len += 2;
+		}
+		return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
+	} else if (pmime->mime_type == mime_type::single_obj) {
+		if (NULL != pmime->content_begin) {
+			auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+			if (mgl < 0)
+				return -1;
+			mime_len += mgl;
 		} else {
 			/* if there's nothing, just append an empty line */
 			mime_len += 2;
@@ -1884,7 +1905,8 @@ int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 		/* \r\n for separate head and content */
 		*poffset += 4;
 	}
-	return pmime->mime_type == mime_type::single ?
+	return pmime->mime_type == mime_type::single ||
+	       pmime->mime_type == mime_type::single_obj ?
 	       mime_get_digest_single(this, id_string, poffset, head_offset, dsarray) :
 	       mime_get_digest_multi(this, id_string, poffset, dsarray);
 } catch (const std::bad_alloc &) {
@@ -1933,10 +1955,10 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	}
 
 	if (NULL != pmime->content_begin) {
-		if (0 != pmime->content_length) {
+		if (pmime->mime_type == mime_type::single) {
 			*poffset += pmime->content_length;
 			content_len = pmime->content_length;
-		} else {
+		} else if (pmime->mime_type == mime_type::single_obj) {
 			auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 			if (mgl < 0)
 				return -1;
@@ -2109,7 +2131,7 @@ int MIME::get_structure_digest(const char *id_string, size_t *poffset,
 		/* \r\n for separate head and content */
 		*poffset += 4;
 	}
-	if (pmime->mime_type != mime_type::single)
+	if (pmime->mime_type == mime_type::multiple)
 		return mime_get_struct_multi(this, id_string, poffset,
 		       head_offset, dsarray);
 	if (pmime->content_begin == nullptr) {
@@ -2117,7 +2139,7 @@ int MIME::get_structure_digest(const char *id_string, size_t *poffset,
 		*poffset += 2;
 		return 0;
 	}
-	if (pmime->content_length != 0) {
+	if (pmime->mime_type == mime_type::single) {
 		*poffset += pmime->content_length;
 		return 0;
 	}

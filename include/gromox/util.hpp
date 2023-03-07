@@ -28,7 +28,7 @@ enum {
 };
 
 enum class mime_type {
-	none, single, multiple,
+	none, single, single_obj, multiple,
 };
 
 struct file_block {

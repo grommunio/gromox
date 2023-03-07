@@ -376,7 +376,10 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	const char *charset;
 	const char *filename;
 	
-	if (penum->b_result || pmime->get_mtype() != mime_type::single)
+	if (penum->b_result)
+		return;
+	if (pmime->get_mtype() != mime_type::single &&
+	    pmime->get_mtype() != mime_type::single_obj)
 		return;
 
 	if (strncmp(pmime->get_ctype(), "text/", 5) != 0) {

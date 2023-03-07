@@ -509,7 +509,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		psubtype ++;
 	}
 	
-	if (pmime->get_mtype() == mime_type::single) {
+	if (pmime->get_mtype() == mime_type::single ||
+	    pmime->get_mtype() == mime_type::single_obj) {
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\" \"%s\"", ctype.c_str(), psubtype);
 		if (*pmime->get_charset() != '\0' || *pmime->get_filename() != '\0') {
