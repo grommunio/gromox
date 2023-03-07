@@ -218,13 +218,8 @@ void MIME::clear()
 {
 	auto pmime = this;
 	if (pmime->mime_type == mime_type::single && pmime->content_touched &&
-	    pmime->content_begin != nullptr) {
-		if (0 != pmime->content_length) {
-			free(pmime->content_begin);
-		}
-		pmime->content_begin = NULL;
-		pmime->content_length = 0;
-	}
+	    pmime->content_begin != nullptr && pmime->content_length != 0)
+		free(pmime->content_begin);
 	pmime->mime_type = mime_type::none;
 	pmime->content_type[0]	 = '\0';
 	pmime->boundary_string[0]= '\0';
@@ -392,13 +387,9 @@ bool MIME::write_mail(MAIL *pmail)
 #endif
 	if (pmime->mime_type != mime_type::single)
 		return false;
-	if (pmime->content_touched && pmime->content_begin != nullptr) {
-		if (0 != pmime->content_length) {
-			free(pmime->content_begin);
-		}
-        pmime->content_begin = NULL;
-		pmime->content_length = 0;
-    }
+	if (pmime->content_touched && pmime->content_begin != nullptr &&
+	    pmime->content_length != 0)
+		free(pmime->content_begin);
 	/* content_begin is not NULL and content_length is 0 means mail object */
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
