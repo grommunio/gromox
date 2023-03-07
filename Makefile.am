@@ -324,7 +324,7 @@ man_MANS = \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
-	doc/gromox-mt2exm.8 doc/http.8gx \
+	doc/gromox-mt2exm.8 doc/gromox-snapshot.8 doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \

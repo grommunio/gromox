@@ -1,0 +1,68 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.TH gromox\-snapshot 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-snapshot \(em Helper to create btrfs snapshots of mailboxes
+.SH Synopsis
+\fB/usr/libexec/gromox/gromox\-snapshot\fP
+.SH Description
+gromox\-snapshot calls btrfs(8) to create snapshots of the current state of
+mailboxes as needed. gromox\-snapshot is meant to be periodically invoked by a
+systemd timer (or, failing that, a classic cron job). The default interval of
+gromox\-snapshot.timer is hourly.
+.PP
+The program generates snapshots "for this day" / "for this week" / etc., rather
+than snapshots which are at least one day / one week / etc. apart. When the
+snapshotter is run periodically, this evens out and is not a concern at all.
+.SH Options
+The program has no command-line options.
+.SH Configuration file
+/etc/gromox/snapshot.cfg will be read on startup. It is a trivial key=value
+file, with one variable per line.
+.TP
+\fBretention_days\fP=\fIn\fP
+Make daily snapshots and keep them for \fIn\fP days. Use \fI0\fP to
+deactivate daily snapshots.
+.br
+Default: \fI7\fP
+.TP
+\fBretention_hours\fP=\fIn\fP
+Make monthly snapshots and keep them for \fIn\fP months. Use \fI0\fP to
+deactivate monthly snapshots.
+.br
+Default: \fI0\fP
+.TP
+\fBretention_months\fP=\fIn\fP
+Make monthly snapshots and keep them for \fIn\fP months (more precisely,
+\fIn\fP*31 days). Use \fI0\fP to deactivate monthly snapshots.
+.br
+Default: \fI0\fP
+.TP
+\fBretention_weeks\fP=\fIn\fP
+Make weekly snapshots and keep them for \fIn\fP weeks. Use \fI0\fP to
+deactivate weekly snapshots.
+.br
+Default: \fI4\fP
+.TP
+\fBsubvolume_root\fP
+Specifies the root directory of the nearest btrfs subvolume. (As of Linux
+6.2.1, it is not possible to snapshot arbitrary directories; it has to be the
+root of a subvolume. Confer with `btrfs sub list` to see subvolumes.)
+.br
+Default: \fI/var/lib/gromox\fP
+.TP
+\fBsnapshot_archive\fP
+The directory where snapshots (these are subdirectories) will be placed. This
+directory needs to be on the same btrfs device as the snapshot source
+(subvolume_root, see above).
+.br
+Default: \fI/var/lib/gromox-snapshots\fP
+.PP
+Each time "category" (days, weeks, etc.) is independently evaluated and
+snapshots are always made from the subvolume_root, never from another snapshot.
+A weekly snapshot generated on the first day of the week is not strictly equal
+to the daily snapshot generated for the same day, as there is technically a
+very small time window between individual btrfs commands.
+.PP
+.SH See also
+\fBgromox\fP(7)

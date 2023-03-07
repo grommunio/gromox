@@ -5,12 +5,18 @@
 retention_months=0
 retention_weeks=4
 retention_days=7
-retention_hours=24
+retention_hours=0
+subvolume_root="/var/lib/gromox"
+snapshot_archive="/var/lib/gromox-snapshots"
 if [ -e /etc/gromox/snapshot.cfg ]; then
 	. /etc/gromox/snapshot.cfg
 fi
-DB="/var/lib/gromox"
-S="/var/lib/gromox-snapshots"
+DB="$subvolume_root"
+S="$snapshot_archive"
+if [ ! -d "$DB" ] || [ ! -d "$S" ]; then
+	echo "Either $DB or $S are not directories"
+	exit 1
+fi
 month="$(date "+%Y%m")"
 week="$(date "+%YW%W")"
 day="$(date "+%F")"
