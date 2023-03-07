@@ -74,8 +74,7 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 		return false;
 	}
 
-	if (pmime->mime_type != mime_type::single &&
-	    pmime->mime_type != mime_type::multiple) {
+	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
@@ -141,8 +140,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			pmail->pmime_pool->put_mime(pmime);
 			return false;
 		}
-		if (pmime->mime_type != mime_type::single &&
-		    pmime->mime_type != mime_type::multiple) {
+		if (pmime->mime_type == mime_type::none) {
 			mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 			pmail->pmime_pool->put_mime(pmime);
 			return false;
@@ -189,8 +187,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
-	if (pmime->mime_type != mime_type::single &&
-	    pmime->mime_type != mime_type::multiple) {
+	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
