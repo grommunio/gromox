@@ -1610,18 +1610,18 @@ bool MIME::check_dot() const
 		
 	}
 	if (pmime->mime_type == mime_type::single) {
-		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				if (pmime->content_length >= 2 &&
-					(('.' == pmime->content_begin[0] &&
-					'.' == pmime->content_begin[1]) ||
-					NULL != memmem(pmime->content_begin,
-					pmime->content_length, "\r\n..", 4))) {
-					return true;
-				}
-			} else if (reinterpret_cast<MAIL *>(pmime->content_begin)->check_dot()) {
+		if (pmime->content_begin == nullptr)
+			return true;
+		if (0 != pmime->content_length) {
+			if (pmime->content_length >= 2 &&
+				(('.' == pmime->content_begin[0] &&
+				'.' == pmime->content_begin[1]) ||
+				NULL != memmem(pmime->content_begin,
+				pmime->content_length, "\r\n..", 4))) {
 				return true;
 			}
+		} else if (reinterpret_cast<MAIL *>(pmime->content_begin)->check_dot()) {
+			return true;
 		} 
 		return true;
 	}
@@ -2198,14 +2198,14 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	*poffset += pmime->boundary_len + 4;
 	if (NULL == pmime->last_boundary) {
 		*poffset += 4;
-	} else {
-		tmp_len = pmime->content_length - (pmime->last_boundary -
-		          pmime->content_begin);
-		if (tmp_len > 0) {
-			*poffset += tmp_len;
-		} else if (0 == tmp_len) {
-			*poffset += 2;
-		}
+		return 0;
+	}
+	tmp_len = pmime->content_length - (pmime->last_boundary -
+	          pmime->content_begin);
+	if (tmp_len > 0) {
+		*poffset += tmp_len;
+	} else if (0 == tmp_len) {
+		*poffset += 2;
 	}
 	return 0;
 }
@@ -2270,14 +2270,14 @@ static bool mime_parse_multiple(MIME *pmime)
 			}
 		}
 	}
-	if (!b_match) {
-		pmime->last_boundary = pmime->content_begin + pmime->content_length;
-		if (pmime->last_boundary < pmime->first_boundary +
-			pmime->boundary_len + 4) {
-			return false;
-		}
-	} else {
+	if (b_match) {
 		pmime->last_boundary = ptr + 1;
+		return true;
+	}
+	pmime->last_boundary = pmime->content_begin + pmime->content_length;
+	if (pmime->last_boundary < pmime->first_boundary +
+		pmime->boundary_len + 4) {
+		return false;
 	}
 	return true;
 }

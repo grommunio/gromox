@@ -199,14 +199,11 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmail->tree.insert_sibling(&pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
-	if (pmime->mime_type == mime_type::multiple) {
-		auto fss = &pmime->first_boundary[pmime->boundary_len+2];
-		auto nl_len = newline_size(fss, pmime->last_boundary - fss);
-		if (!mail_retrieve_to_mime(pmail, pmime,
-		    &fss[nl_len], pmime->last_boundary))
-			return false;
-	}
-	return true;
+	if (pmime->mime_type != mime_type::multiple)
+		return true;
+	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
+	auto nl_len = newline_size(fss, pmime->last_boundary - fss);
+	return mail_retrieve_to_mime(pmail, pmime, &fss[nl_len], pmime->last_boundary);
 }
 
 /*
