@@ -5070,7 +5070,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		origmime.content_length = 2;
 		origmime.mime_type = mime_type::single;
 		gx_strlcpy(origmime.content_type, "text/plain", std::size(origmime.content_type));
-		origmime.head_touched = origmime.content_touched = TRUE;
+		origmime.head_touched = TRUE;
 		return true;
 	}
 	auto sec = origmail.pmime_pool->get_mime();
@@ -5102,7 +5102,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	origmime.content_length = sec->content_length;
 	origmime.mime_type = mime_type::single;
 	gx_strlcpy(origmime.content_type, "multipart/signed", arsizeof(origmime.content_type));
-	origmime.head_touched = origmime.content_touched = TRUE;
+	origmime.head_touched = TRUE;
 	return true;
 }
 

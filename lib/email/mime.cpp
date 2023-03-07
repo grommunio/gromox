@@ -216,7 +216,6 @@ void MIME::clear()
 	pmime->boundary_string[0]= '\0';
 	pmime->boundary_len		 = 0;
 	pmime->head_touched		 = FALSE;
-	pmime->content_touched	 = FALSE;
 	pmime->head_begin		 = NULL;
 	pmime->head_length		 = 0;
 	pmime->content_begin	 = NULL;
@@ -265,7 +264,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	pmime->content_begin = NULL;
 	pmime->content_length = 0;
 	content_buf.reset();
-	pmime->content_touched = TRUE;
 	pmime->remove_field("Content-Transfer-Encoding");
 	if (0 == length) {
 		pmime->set_field("Content-Transfer-Encoding",
@@ -384,7 +382,6 @@ bool MIME::write_mail(MAIL *pmail)
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	content_buf.reset();
-	pmime->content_touched = TRUE;
 	pmime->set_field("Content-Transfer-Encoding", "8bit");
 	return true;
 }
