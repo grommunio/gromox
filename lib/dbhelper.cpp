@@ -66,4 +66,18 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	return ret;
 }
 
+int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
+{
+	auto ret = sqlite3_step(stm);
+	if (ret == SQLITE_OK || ret == SQLITE_ROW || ret == SQLITE_DONE)
+		return ret;
+	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
+		return ret;
+	auto exp = sqlite3_expanded_sql(stm);
+	mlog(LV_ERR, "sqlite3_step \"%s\": %s", exp != nullptr ?
+		exp : sqlite3_sql(stm), sqlite3_errstr(ret));
+	sqlite3_free(exp);
+	return ret;
+}
+
 }
