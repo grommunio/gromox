@@ -52,13 +52,7 @@ MIME::~MIME()
 {
 	auto pmime = this;
 
-	if (pmime->mime_type == mime_type::single) {
-		if (pmime->content_touched && NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				free(pmime->content_begin);
-			}
-		}
-	} else if (pmime->mime_type == mime_type::multiple) {
+	if (pmime->mime_type == mime_type::multiple) {
 		auto pnode = pmime->node.get_child();
         while (NULL != pnode) {
 			delete static_cast<MIME *>(pnode->pdata);
@@ -217,9 +211,6 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length)
 void MIME::clear()
 {
 	auto pmime = this;
-	if (pmime->mime_type == mime_type::single && pmime->content_touched &&
-	    pmime->content_begin != nullptr && pmime->content_length != 0)
-		free(pmime->content_begin);
 	pmime->mime_type = mime_type::none;
 	pmime->content_type[0]	 = '\0';
 	pmime->boundary_string[0]= '\0';
@@ -230,6 +221,7 @@ void MIME::clear()
 	pmime->head_length		 = 0;
 	pmime->content_begin	 = NULL;
 	pmime->content_length	 = 0;
+	content_buf.reset();
 	pmime->first_boundary    = NULL;
     pmime->last_boundary     = NULL;
 	pmime->f_type_params.clear();
@@ -270,11 +262,9 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		mlog(LV_DEBUG, "mime: encoding type should be one of {none,base64,qp}");
 		return false;
 	}
-	if (pmime->content_touched && pmime->content_begin != nullptr &&
-	    pmime->content_length != 0)
-		free(pmime->content_begin);
 	pmime->content_begin = NULL;
 	pmime->content_length = 0;
+	content_buf.reset();
 	pmime->content_touched = TRUE;
 	pmime->remove_field("Content-Transfer-Encoding");
 	if (0 == length) {
@@ -288,7 +278,8 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		/* should add '\r\n' at the end of buffer if it misses */
 		bool added_crlf = pcontent[length-1] != '\n';
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
-		pmime->content_begin = me_alloc<char>(buff_length);
+		content_buf.reset(me_alloc<char>(buff_length));
+		content_begin = content_buf.get();
 		if (NULL == pmime->content_begin) {
 			return false;
 		}
@@ -315,7 +306,8 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	case mime_encoding::qp: {
 		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
 		auto pbuff = std::make_unique<char[]>(buff_length);
-		pmime->content_begin = me_alloc<char>(buff_length);
+		content_buf.reset(me_alloc<char>(buff_length));
+		content_begin = content_buf.get();
 		if (NULL == pmime->content_begin) {
 			return false;
 		}
@@ -349,7 +341,8 @@ bool MIME::write_content(const char *pcontent, size_t length,
 	}
 	case mime_encoding::base64: {
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
-		pmime->content_begin = me_alloc<char>(buff_length);
+		content_buf.reset(me_alloc<char>(buff_length));
+		content_begin = content_buf.get();
 		if (NULL == pmime->content_begin) {
 			return false;
 		}
@@ -387,12 +380,10 @@ bool MIME::write_mail(MAIL *pmail)
 #endif
 	if (pmime->mime_type != mime_type::single)
 		return false;
-	if (pmime->content_touched && pmime->content_begin != nullptr &&
-	    pmime->content_length != 0)
-		free(pmime->content_begin);
 	/* content_begin is not NULL and content_length is 0 means mail object */
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
+	content_buf.reset();
 	pmime->content_touched = TRUE;
 	pmime->set_field("Content-Transfer-Encoding", "8bit");
 	return true;

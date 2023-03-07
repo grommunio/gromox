@@ -5065,9 +5065,9 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		auto cbg = strdup("\r\n");
 		if (cbg == nullptr)
 			return false;
-		free(origmime.content_begin);
-		origmime.content_begin = cbg;
-		origmime.content_length = strlen(cbg);
+		origmime.content_buf.reset(cbg);
+		origmime.content_begin = origmime.content_buf.get();
+		origmime.content_length = 2;
 		origmime.mime_type = mime_type::single;
 		gx_strlcpy(origmime.content_type, "text/plain", std::size(origmime.content_type));
 		origmime.head_touched = origmime.content_touched = TRUE;
@@ -5097,8 +5097,8 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	auto content = static_cast<char *>(HX_memdup(sec->content_begin, sec->content_length));
 	if (content == nullptr)
 		return false;
-	free(origmime.content_begin);
-	origmime.content_begin = content;
+	origmime.content_buf.reset(content);
+	origmime.content_begin = origmime.content_buf.get();
 	origmime.content_length = sec->content_length;
 	origmime.mime_type = mime_type::single;
 	gx_strlcpy(origmime.content_type, "multipart/signed", arsizeof(origmime.content_type));

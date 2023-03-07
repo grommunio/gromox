@@ -59,6 +59,7 @@ struct GX_EXPORT MIME {
 	MEM_FILE f_type_params{}, f_other_fields{};
 	BOOL head_touched = false, content_touched = false;
 	char *head_begin = nullptr;
+	std::unique_ptr<char[], gromox::stdlib_delete> content_buf;
 	char *content_begin = nullptr;
 	size_t head_length = 0, content_length = 0;
 	char *first_boundary = nullptr, *last_boundary = nullptr;
