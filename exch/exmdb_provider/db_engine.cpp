@@ -1894,30 +1894,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 				sqlite3_reset(pstmt);
 			}
-			if (static_cast<ROWINFO_NODE *>(pnode1->pdata)->b_added) {
-				if (CONTENT_ROW_HEADER ==
-				    stm_sel_tx.col_int64(4)) {
-					padded_row1->row_message_id = stm_sel_tx.col_int64(3);
-					padded_row1->after_row_id = inst_id;
-					padded_row1->after_folder_id = inst_folder_id;
-					padded_row1->after_instance = inst_num;
-					datagram1.db_notify.type = ptable->b_search ?
-								   DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
-								   DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
-					notification_agent_backward_notify(
-						ptable->remote_id, &datagram1);
-				} else {
-					padded_row->row_instance = stm_sel_tx.col_int64(10);
-					padded_row->after_row_id = inst_id;
-					padded_row->after_folder_id = inst_folder_id;
-					padded_row->after_instance = inst_num;
-					datagram.db_notify.type = ptable->b_search ?
-								  DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
-								  DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
-					notification_agent_backward_notify(
-						ptable->remote_id, &datagram);
-				}
-			} else {
+			if (!static_cast<ROWINFO_NODE *>(pnode1->pdata)->b_added) {
 				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
 				padded_row1->after_row_id = inst_id;
 				padded_row1->after_folder_id = inst_folder_id;
@@ -1927,6 +1904,26 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 							   DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
+			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
+				padded_row1->row_message_id = stm_sel_tx.col_int64(3);
+				padded_row1->after_row_id = inst_id;
+				padded_row1->after_folder_id = inst_folder_id;
+				padded_row1->after_instance = inst_num;
+				datagram1.db_notify.type = ptable->b_search ?
+				                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
+				                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
+				notification_agent_backward_notify(
+					ptable->remote_id, &datagram1);
+			} else {
+				padded_row->row_instance = stm_sel_tx.col_int64(10);
+				padded_row->after_row_id = inst_id;
+				padded_row->after_folder_id = inst_folder_id;
+				padded_row->after_instance = inst_num;
+				datagram.db_notify.type = ptable->b_search ?
+				                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
+				                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
+				notification_agent_backward_notify(
+					ptable->remote_id, &datagram);
 			}
 			stm_sel_tx.reset();
 		}
