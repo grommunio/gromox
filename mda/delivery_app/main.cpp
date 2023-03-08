@@ -58,7 +58,8 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"running_identity", RUNNING_IDENTITY},
 	{"state_path", PKGSTATEDIR},
-	{"work_threads_min", "16", CFG_SIZE, "1"},
+	{"work_threads_min", "1", CFG_SIZE, "1"},
+	{"work_threads_max", "5", CFG_SIZE, "1"},
 	CFG_TABLE_END,
 };
 
@@ -116,16 +117,11 @@ int main(int argc, const char **argv) try
 	mlog(LV_NOTICE, "system: default domain is \"%s\"", str_val);
 
 	unsigned int threads_min = g_config_file->get_ll("work_threads_min");
-	unsigned int threads_max = 2 * threads_min;
-	mlog(LV_INFO, "system: minimum working threads number is %d", threads_min);
-
-	if (resource_get_uint("WORK_THREADS_MAX", &threads_max)) {
-		if (threads_max <= threads_min) {
-			threads_max = threads_min + 1;
-			resource_set_integer("WORK_THREADS_MAX", threads_max);
-		}
-    }
-	mlog(LV_INFO, "system: maximum working threads number is %d", threads_max);
+	unsigned int threads_max = g_config_file->get_ll("work_threads_max");
+	if (threads_min > threads_max)
+		threads_min = threads_max;
+	mlog(LV_INFO, "system: worker threads: between %u and %u",
+		threads_min, threads_max);
 
 	unsigned int free_contexts = threads_max;
 	if (resource_get_uint("FREE_CONTEXT_NUM", &free_contexts)) {

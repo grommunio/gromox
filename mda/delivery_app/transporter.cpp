@@ -507,8 +507,12 @@ static void *dxp_thrwork(void *arg)
 			    pmessage->mail_length)) {
 				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
-				message_dequeue_save(pmessage);
-				message_dequeue_put(pmessage);
+				auto ret = message_dequeue_save(pmessage);
+				if (ret != 0)
+					mlog(LV_ERR, "E-1226: QID %d: Failed to convert from /mes to /save: %s",
+						pmessage->flush_ID, strerror(ret));
+				else
+					message_dequeue_put(pmessage);
 				continue;
 			}	
 			pcontext->pcontrol->queue_ID = pmessage->flush_ID;
@@ -530,8 +534,14 @@ static void *dxp_thrwork(void *arg)
 		if (!pass_result) {
 			transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
-			if (!b_self)
-				message_dequeue_save(pmessage);
+			if (!b_self) {
+				auto ret = message_dequeue_save(pmessage);
+				if (ret != 0) {
+					mlog(LV_ERR, "E-1227: QID %d: Failed to convert from /mes to /save: %s",
+						pmessage->flush_ID, strerror(ret));
+					continue;
+				}
+			}
 		}
 		if (!b_self) {
 			pcontext->pcontrol->f_rcpt_to.clear();
