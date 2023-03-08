@@ -88,7 +88,7 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 		     ival <= range_node.high_value; ++ival) {
 			sqlite3_reset(stmt);
 			sqlite3_bind_int64(stmt, 1, ival);
-			if (sqlite3_step(stmt) != SQLITE_DONE)
+			if (stmt.step() != SQLITE_DONE)
 				return FALSE;
 		}
 	}
@@ -124,11 +124,11 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, mid_val);
-	if (sqlite3_step(pparam->stm_exist) == SQLITE_ROW)
+	if (pparam->stm_exist.step() == SQLITE_ROW)
 		return;
 	sqlite3_reset(pparam->stm_msg);
 	sqlite3_bind_int64(pparam->stm_msg, 1, mid_val);
-	if (SQLITE_ROW == sqlite3_step(pparam->stm_msg)) {
+	if (pparam->stm_msg.step() == SQLITE_ROW) {
 		if (!eid_array_append(pparam->pnolonger_mids, message_id))
 			pparam->b_result = FALSE;
 	} else {
@@ -245,7 +245,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	*plast_cn = 0;
 	*plast_readcn = 0;
-	while (sqlite3_step(stm_select_msg) == SQLITE_ROW) {
+	while (stm_select_msg.step() == SQLITE_ROW) {
 		uint64_t mid_val = sqlite3_column_int64(stm_select_msg, 0);
 		uint64_t change_num = sqlite3_column_int64(stm_select_msg, 1);
 		BOOL b_fai = sqlite3_column_int64(stm_select_msg, 2) == 0 ? false : TRUE;
@@ -265,7 +265,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			continue;	
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, mid_val);
-		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
+		if (stm_insert_exist.step() != SQLITE_DONE)
 			return false;
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
@@ -278,7 +278,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			sqlite3_bind_int64(stm_select_rcn, 1, mid_val);
 			sqlite3_bind_text(stm_select_rcn, 2,
 				username, -1, SQLITE_STATIC);
-			read_cn = sqlite3_step(stm_select_rcn) != SQLITE_ROW ? 0 :
+			read_cn = stm_select_rcn.step() != SQLITE_ROW ? 0 :
 			          sqlite3_column_int64(stm_select_rcn, 0);
 		}
 		if (read_cn > *plast_readcn)
@@ -302,12 +302,12 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 				sqlite3_bind_int64(stm_select_rst, 1, mid_val);
 				sqlite3_bind_text(stm_select_rst, 2,
 					username, -1 , SQLITE_STATIC);
-				read_state = sqlite3_step(stm_select_rst) == SQLITE_ROW;
+				read_state = stm_select_rst.step() == SQLITE_ROW;
 			}
 			sqlite3_reset(stm_insert_reads);
 			sqlite3_bind_int64(stm_insert_reads, 1, mid_val);
 			sqlite3_bind_int64(stm_insert_reads, 2, read_state);
-			if (sqlite3_step(stm_insert_reads) != SQLITE_DONE)
+			if (stm_insert_reads.step() != SQLITE_DONE)
 				return false;
 			continue;
 		}
@@ -316,12 +316,12 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			sqlite3_reset(stm_select_mp);
 			sqlite3_bind_int64(stm_select_mp, 1, PR_MESSAGE_DELIVERY_TIME);
 			sqlite3_bind_int64(stm_select_mp, 2, mid_val);
-			dtime = sqlite3_step(stm_select_mp) == SQLITE_ROW ?
+			dtime = stm_select_mp.step() == SQLITE_ROW ?
 			        sqlite3_column_int64(stm_select_mp, 0) : 0;
 			sqlite3_reset(stm_select_mp);
 			sqlite3_bind_int64(stm_select_mp, 1, PR_LAST_MODIFICATION_TIME);
 			sqlite3_bind_int64(stm_select_mp, 2, mid_val);
-			mtime = sqlite3_step(stm_select_mp) == SQLITE_ROW ?
+			mtime = stm_select_mp.step() == SQLITE_ROW ?
 			        sqlite3_column_int64(stm_select_mp, 0) : 0;
 		}
 		if (b_fai) {
@@ -337,7 +337,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			sqlite3_bind_int64(stm_insert_chg, 2, dtime);
 			sqlite3_bind_int64(stm_insert_chg, 3, mtime);
 		}
-		if (sqlite3_step(stm_insert_chg) != SQLITE_DONE)
+		if (stm_insert_chg.step() != SQLITE_DONE)
 			return false;
 	}
 	stm_select_msg.finalize();
@@ -360,7 +360,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	ssize_t count;
 	{
 	auto stm_select_chg = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
-	if (stm_select_chg == nullptr || sqlite3_step(stm_select_chg) != SQLITE_ROW)
+	if (stm_select_chg == nullptr || stm_select_chg.step() != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(stm_select_chg, 0);
 	stm_select_chg.finalize();
@@ -385,7 +385,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (stm_select_chg == nullptr)
 		return FALSE;
 	for (ssize_t i = 0; i < count; ++i) {
-		if (sqlite3_step(stm_select_chg) != SQLITE_ROW)
+		if (stm_select_chg.step() != SQLITE_ROW)
 			return FALSE;
 		uint64_t mid_val = sqlite3_column_int64(stm_select_chg, 0);
 		pchg_mids->pids[pchg_mids->count++] = rop_util_make_eid_ex(1, mid_val);
@@ -462,7 +462,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	{
 	auto stm_select_exist = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (stm_select_exist == nullptr ||
-	    sqlite3_step(stm_select_exist) != SQLITE_ROW)
+	    stm_select_exist.step() != SQLITE_ROW)
 		return FALSE;
 	int64_t count = sqlite3_column_int64(stm_select_exist, 0);
 	stm_select_exist.finalize();
@@ -477,7 +477,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		                     " FROM existence ORDER BY message_id DESC");
 		if (stm_select_ex == nullptr)
 			return FALSE;
-		while (sqlite3_step(stm_select_ex) == SQLITE_ROW) {
+		while (stm_select_ex.step() == SQLITE_ROW) {
 			uint64_t mid_val = sqlite3_column_int64(stm_select_ex, 0);
 			pgiven_mids->pids[pgiven_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		}
@@ -488,7 +488,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (NULL != pread) {
 		auto stm_select_rd = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
 		if (stm_select_rd == nullptr ||
-		    sqlite3_step(stm_select_rd) != SQLITE_ROW)
+		    stm_select_rd.step() != SQLITE_ROW)
 			return FALSE;
 		uint64_t count = sqlite3_column_int64(stm_select_rd, 0);
 		stm_select_rd.finalize();
@@ -508,7 +508,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 					"SELECT message_id, read_state FROM reads");
 			if (stm_select_rd == nullptr)
 				return FALSE;
-			while (sqlite3_step(stm_select_rd) == SQLITE_ROW) {
+			while (stm_select_rd.step() == SQLITE_ROW) {
 				uint64_t mid_val = sqlite3_column_int64(stm_select_rd, 0);
 				if (punread_mids->count == count ||
 				    pread_mids->count == count)
@@ -547,7 +547,7 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 		fid_val |= ((uint64_t)replid) << 48;
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, fid_val);
-	if (sqlite3_step(pparam->stm_exist) == SQLITE_ROW)
+	if (pparam->stm_exist.step() == SQLITE_ROW)
 		return;
 	if (!eid_array_append(pparam->pdeleted_eids, folder_id))
 		pparam->b_result = FALSE;
@@ -572,7 +572,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 	
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, folder_id);
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (gx_sql_step(pstmt) == SQLITE_ROW) {
 		fid_val = sqlite3_column_int64(pstmt, 0);
 		change_num = sqlite3_column_int64(pstmt, 1);
 		if (NULL != username) {
@@ -585,7 +585,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 		recurse_list.push_back(fid_val);
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, fid_val);
-		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
+		if (gx_sql_step(stm_insert_exist) != SQLITE_DONE)
 			return FALSE;
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
@@ -594,7 +594,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 			continue;
 		sqlite3_reset(stm_insert_chg);
 		sqlite3_bind_int64(stm_insert_chg, 1, fid_val);
-		if (sqlite3_step(stm_insert_chg) != SQLITE_DONE)
+		if (gx_sql_step(stm_insert_chg) != SQLITE_DONE)
 			return FALSE;
 	}
 	for (auto fid_val : recurse_list)
@@ -660,7 +660,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	/* Query section 2 */
 	{
 	auto stm_select_chg = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
-	if (stm_select_chg == nullptr || sqlite3_step(stm_select_chg) != SQLITE_ROW)
+	if (stm_select_chg == nullptr || stm_select_chg.step() != SQLITE_ROW)
 		return FALSE;
 	pfldchgs->count = sqlite3_column_int64(stm_select_chg, 0);
 	stm_select_chg.finalize();
@@ -683,7 +683,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (stm_select_chg == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < pfldchgs->count; ++i) {
-		if (sqlite3_step(stm_select_chg) != SQLITE_ROW)
+		if (stm_select_chg.step() != SQLITE_ROW)
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
 		PROPTAG_ARRAY proptags;
@@ -714,7 +714,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	{
 	auto stm_select_exist = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (stm_select_exist == nullptr ||
-	    sqlite3_step(stm_select_exist) != SQLITE_ROW)
+	    stm_select_exist.step() != SQLITE_ROW)
 		return FALSE;
 	ssize_t count = sqlite3_column_int64(stm_select_exist, 0);
 	stm_select_exist.finalize();
@@ -729,7 +729,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		                     " FROM existence ORDER BY folder_id DESC");
 		if (stm_select_ex == nullptr)
 			return FALSE;
-		while (sqlite3_step(stm_select_ex) == SQLITE_ROW) {
+		while (stm_select_ex.step() == SQLITE_ROW) {
 			uint64_t fv = sqlite3_column_int64(stm_select_ex, 0);
 			pgiven_fids->pids[pgiven_fids->count++] =
 				(fv & NFID_UPPER_PART) == 0 ?

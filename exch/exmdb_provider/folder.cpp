@@ -49,7 +49,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	do {
 		*pdot = '\0';
 		sqlite3_bind_text(pstmt, 1, tmp_class, -1, SQLITE_STATIC);
-		if (SQLITE_ROW == sqlite3_step(pstmt)) {
+		if (pstmt.step() == SQLITE_ROW) {
 			*pid = rop_util_make_eid_ex(1,
 				sqlite3_column_int64(pstmt, 0));
 			*str_explicit = cu_alloc<char>(strlen(tmp_class) + 1);
@@ -69,7 +69,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pid = sqlite3_step(pstmt) == SQLITE_ROW ?
+	*pid = pstmt.step() == SQLITE_ROW ?
 	       rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0)) :
 	       rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
 	**str_explicit = '\0';
@@ -103,7 +103,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -111,7 +111,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"count(*) FROM receive_table");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ||
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_RECIEVE_FOLDERS)
 		return FALSE;
 	pstmt.finalize();
@@ -140,7 +140,7 @@ BOOL exmdb_server::get_folder_class_table(
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"count(*) FROM receive_table");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	auto total_count = std::min(static_cast<uint64_t>(UINT32_MAX), pstmt.col_uint64(0));
 	pstmt.finalize();
@@ -158,7 +158,7 @@ BOOL exmdb_server::get_folder_class_table(
 	if (pstmt == nullptr)
 		return FALSE;
 	ptable->count = 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (ppropvals == nullptr)
 			return FALSE;
@@ -273,7 +273,7 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PR_MESSAGE_FLAGS);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+		if (pstmt1.step() == SQLITE_ROW) {
 			uint32_t message_flags = pstmt1.col_uint64(0);
 			message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH |
 			                 MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
@@ -292,7 +292,7 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+		if (pstmt1.step() == SQLITE_ROW) {
 			pv->proptag = PR_LAST_MODIFICATION_TIME;
 			uv = cu_alloc<uint64_t>();
 			pv->pvalue = uv;
@@ -305,7 +305,7 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+		if (pstmt1.step() == SQLITE_ROW) {
 			pv->proptag = PR_MESSAGE_DELIVERY_TIME;
 			uv = cu_alloc<uint64_t>();
 			pv->pvalue = uv;
@@ -332,7 +332,7 @@ BOOL exmdb_server::check_folder_deleted(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pb_del = sqlite3_step(pstmt) != SQLITE_ROW || sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
+	*pb_del = pstmt.step() != SQLITE_ROW || sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
 	return TRUE;
 }
 
@@ -427,7 +427,7 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (sqlite3_step(pstmt) == SQLITE_ROW)
+		if (pstmt.step() == SQLITE_ROW)
 			return TRUE;
 		if (!common_util_check_allocated_eid(pdb->psqlite, tmp_val, &b_result))
 			return FALSE;
@@ -452,7 +452,7 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"max(range_end) FROM allocated_eids");
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		max_eid = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
@@ -660,7 +660,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW) {
 			bool is_associated = sqlite3_column_int64(pstmt, 3);
 			if ((is_associated && !b_fai) ||
 			    (!is_associated && !b_normal))
@@ -736,7 +736,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW) {
 			bool is_deleted = pstmt.col_int64(3);
 			if (!b_hard && is_deleted)
 				continue;
@@ -803,7 +803,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW) {
 			bool is_deleted = pstmt.col_int64(2);
 			if (!b_hard && is_deleted)
 				continue;
@@ -871,7 +871,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		fid_val = sqlite3_column_int64(pstmt, 0);
 		if ((b_private && fid_val < PRIVATE_FID_CUSTOM) ||
 		    (!b_private && fid_val < PUBLIC_FID_CUSTOM)) {
@@ -960,7 +960,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
 		          "folders WHERE parent_id=%llu", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
 			*pb_result = FALSE;
@@ -971,7 +971,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		         " messages WHERE parent_fid=%llu AND"
 		         " is_deleted=0", LLU{fid_val});
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
 			*pb_result = FALSE;
@@ -983,11 +983,10 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW)
 			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
 				sqlite3_column_int64(pstmt, 0), 0);
-		}
 		pstmt.finalize();
 		db_engine_delete_dynamic(pdb, fid_val);
 	}
@@ -1130,7 +1129,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	last_eid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
@@ -1331,7 +1330,7 @@ static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		bool is_associated = pstmt.col_uint64(2);
 		if (0 == is_associated) {
 			if (!b_normal)
@@ -1431,7 +1430,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW) {
 			auto message_id = pstmt.col_uint64(0);
 			bool is_associated = pstmt.col_uint64(1);
 			if (b_check) {
@@ -1475,7 +1474,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW) {
 			if (!b_private && sqlite3_column_int64(pstmt, 1) != 0)
 				continue;
 			auto message_id = pstmt.col_uint64(0);
@@ -1527,7 +1526,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		auto src_fid1 = pstmt.col_uint64(0);
 		fid_val = src_fid1;
 		if (b_check) {
@@ -1791,7 +1790,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt) ||
+	if (pstmt.step() != SQLITE_ROW ||
 		0 == sqlite3_column_int64(pstmt, 0) ||
 		NULL == sqlite3_column_blob(pstmt, 2) ||
 		0 == sqlite3_column_bytes(pstmt, 2)) {
@@ -1898,7 +1897,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT search_flags FROM"
 	          " folders WHERE folder_id=%llu", LLU{fid_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	uint32_t original_flags = pstmt.col_uint64(0);
 	pstmt.finalize();
@@ -2094,7 +2093,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		if (pstmt1 == nullptr)
 			return false;
 		sqlite3_bind_text(pstmt1, 1, member_id == DEFAULT ? "default" : "", -1, SQLITE_STATIC);
-		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+		if (pstmt1.step() != SQLITE_ROW) {
 			pstmt1.finalize();
 			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
 				"FROM configurations WHERE config_id=%d",
@@ -2128,7 +2127,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return false;
-	if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+	if (pstmt1.step() != SQLITE_ROW ||
 	    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 		return true;
 	pstmt1.finalize();
@@ -2179,7 +2178,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+		if (pstmt1.step() != SQLITE_ROW ||
 		    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 			return true;
 		pstmt1.finalize();
@@ -2254,7 +2253,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) "
 	          "FROM rules WHERE folder_id=%llu", LLU{fid_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	size_t rule_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
@@ -2279,7 +2278,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
 					continue;
-				seq_id = sqlite3_step(pstmt1) != SQLITE_ROW ? 0 :
+				seq_id = pstmt1.step() != SQLITE_ROW ? 0 :
 				         sqlite3_column_int64(pstmt1, 0);
 				pstmt1.finalize();
 				seq_id ++;
@@ -2350,7 +2349,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				return false;
-			if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+			if (pstmt1.step() != SQLITE_ROW ||
 			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 				continue;
 			pstmt1.finalize();
@@ -2453,7 +2452,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				return false;
-			if (sqlite3_step(pstmt1) != SQLITE_ROW ||
+			if (pstmt1.step() != SQLITE_ROW ||
 			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 				continue;
 			pstmt1.finalize();

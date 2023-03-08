@@ -245,7 +245,7 @@ int main(int argc, const char **argv) try
 		sqlite3_bind_text(pstmt, 1, e.first, -1, SQLITE_STATIC);
 		sqlite3_bind_int64(pstmt, 2, e.second);
 		sqlite3_bind_int64(pstmt, 3, nt_time);
-		if (sqlite3_step(pstmt) != SQLITE_DONE) {
+		if (pstmt.step() != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
 			return EXIT_FAILURE;
 		}
@@ -322,7 +322,7 @@ int main(int argc, const char **argv) try
 	GUID::random_new().to_str(tmp_bguid, arsizeof(tmp_bguid));
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
 	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
+	if (pstmt.step() != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return EXIT_FAILURE;
 	}
@@ -340,7 +340,7 @@ int main(int argc, const char **argv) try
 	for (const auto &e : confprops) {
 		sqlite3_bind_int64(pstmt, 1, e.first);
 		sqlite3_bind_int64(pstmt, 2, e.second);
-		if (sqlite3_step(pstmt) != SQLITE_DONE) {
+		if (pstmt.step() != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
 			return EXIT_FAILURE;
 		}

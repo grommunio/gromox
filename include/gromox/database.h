@@ -17,6 +17,8 @@ class GX_EXPORT xtransaction {
 	sqlite3 *m_db = nullptr;
 };
 
+extern GX_EXPORT int gx_sql_step(sqlite3_stmt *, unsigned int flags = 0);
+
 struct GX_EXPORT xstmt {
 	xstmt() = default;
 	xstmt(xstmt &&o) noexcept : m_ptr(o.m_ptr) { o.m_ptr = nullptr; }
@@ -34,7 +36,7 @@ struct GX_EXPORT xstmt {
 		auto x = sqlite3_column_int64(m_ptr, col);
 		return x >= 0 ? x : 0;
 	}
-	inline int step() { return sqlite3_step(m_ptr); }
+	inline int step() { return gx_sql_step(m_ptr); }
 	inline int reset() { return sqlite3_reset(m_ptr); }
 	inline void finalize() { *this = nullptr; }
 	void operator=(std::nullptr_t) {

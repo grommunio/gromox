@@ -111,14 +111,14 @@ static bool add_folderprop_iv(sqlite3_stmt *stmt,
 	for (const auto &v : tagvals) {
 		sqlite3_bind_int64(stmt, 1, v.first);
 		sqlite3_bind_int64(stmt, 2, v.second);
-		if (sqlite3_step(stmt) != SQLITE_DONE)
+		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);
 	}
 	if (add_next) {
 		sqlite3_bind_int64(stmt, 1, PR_INTERNET_ARTICLE_NUMBER_NEXT);
 		sqlite3_bind_int64(stmt, 2, 1);
-		if (sqlite3_step(stmt) != SQLITE_DONE)
+		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);
 	}
@@ -133,14 +133,14 @@ static bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
 	for (const auto &v : tagvals) {
 		sqlite3_bind_int64(stmt, 1, v.first);
 		sqlite3_bind_text(stmt, 2, v.second, -1, SQLITE_STATIC);
-		if (sqlite3_step(stmt) != SQLITE_DONE)
+		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);
 	}
 	if (contcls != nullptr) {
 		sqlite3_bind_int64(stmt, 1, PR_CONTAINER_CLASS);
 		sqlite3_bind_text(stmt, 2, contcls, -1, SQLITE_STATIC);
-		if (sqlite3_step(stmt) != SQLITE_DONE)
+		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);
 	}
@@ -157,7 +157,7 @@ static bool add_folderprop_tv(sqlite3_stmt *stmt)
 	for (const auto proptag : tags) {
 		sqlite3_bind_int64(stmt, 1, proptag);
 		sqlite3_bind_int64(stmt, 2, nt_time);
-		if (sqlite3_step(stmt) != SQLITE_DONE)
+		if (gx_sql_step(stmt) != SQLITE_DONE)
 			return false;
 		sqlite3_reset(stmt);
 	}
@@ -176,7 +176,7 @@ static bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng,
 		return false;
 	sqlite3_bind_int64(stmt, 1, PR_CHANGE_KEY);
 	sqlite3_bind_blob(stmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	if (sqlite3_step(stmt) != SQLITE_DONE)
+	if (gx_sql_step(stmt) != SQLITE_DONE)
 		return false;
 	sqlite3_reset(stmt);
 	PCL ppcl;
@@ -189,7 +189,7 @@ static bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng,
 	ppcl.clear();
 	sqlite3_bind_int64(stmt, 1, PR_PREDECESSOR_CHANGE_LIST);
 	sqlite3_bind_blob(stmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
-	if (sqlite3_step(stmt) != SQLITE_DONE) {
+	if (gx_sql_step(stmt) != SQLITE_DONE) {
 		rop_util_free_binary(pbin);
 		return false;
 	}

@@ -306,7 +306,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
 		sqlite3_bind_int64(pstmt, 1, tmp_val);
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW) {
 			*pb_partial = TRUE;
 			continue;
 		}
@@ -605,7 +605,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	rcpt_num = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
@@ -623,7 +623,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 	if (pstmt == nullptr)
 		return FALSE;
 	row_id = 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
 		std::vector<uint32_t> tags;
 		if (!cu_get_proptags(MAPI_MAILUSER, rcpt_id, psqlite, tags))
@@ -701,7 +701,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW) {
 		*ppbrief = NULL;
 		return TRUE;
 	}
@@ -735,7 +735,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
 	          "attachments WHERE message_id=%llu", LLU{mid_val});
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
@@ -750,7 +750,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 		return FALSE;
 	proptags.count = 1;
 	proptag_buff[0] = PR_ATTACH_LONG_FILENAME;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
@@ -792,7 +792,7 @@ BOOL exmdb_server::check_message(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW) {
 		*pb_exist = FALSE;
 		return TRUE;
 	}
@@ -816,7 +816,7 @@ BOOL exmdb_server::check_message_deleted(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pb_del = sqlite3_step(pstmt) != SQLITE_ROW ||
+	*pb_del = pstmt.step() != SQLITE_ROW ||
 	          (!exmdb_server::is_private() &&
 	          sqlite3_column_int64(pstmt, 0) != 0) ? TRUE : false;
 	return TRUE;
@@ -1006,7 +1006,7 @@ BOOL exmdb_server::get_message_group_id(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt) ||
+	if (pstmt.step() != SQLITE_ROW ||
 		SQLITE_NULL == sqlite3_column_type(pstmt, 0)) {
 		*ppgroup_id = NULL;
 		return TRUE;
@@ -1056,7 +1056,7 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_null(pstmt, 1);
-		return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
+		return pstmt.step() == SQLITE_DONE ? TRUE : false;
 	}
 	auto pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO"
 	             " message_changes VALUES (?, ?, ?, ?)");
@@ -1072,7 +1072,7 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 	    ext_push.p_proptag_a(*pungroup_proptags) != EXT_ERR_SUCCESS)
 		return false;
 	sqlite3_bind_blob(pstmt, 4, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
+	return pstmt.step() == SQLITE_DONE ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1162: ENOMEM");
 	return false;
@@ -1107,7 +1107,7 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		if (gx_sql_col_uint64(pstmt, 0) <= cn_val)
 			continue;
 		if (sqlite3_column_bytes(pstmt, 1) > 0) {
@@ -1350,7 +1350,7 @@ BOOL exmdb_server::get_message_timer(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (sqlite3_step(pstmt) != SQLITE_ROW ||
+	if (pstmt.step() != SQLITE_ROW ||
 	    sqlite3_column_type(pstmt, 0) == SQLITE_NULL) {
 		*pptimer_id = NULL;
 		return TRUE;
@@ -1377,7 +1377,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW) {
 		*ppmsgctnt = NULL;
 		return TRUE;
 	}
@@ -1411,7 +1411,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
 	          "attachments WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
@@ -1429,7 +1429,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 	if (pstmt1 == nullptr)
 		return FALSE;
 	attach_num = 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
 		std::vector<uint32_t> atags;
 		if (!cu_get_proptags(MAPI_ATTACH, attachment_id,
@@ -1457,7 +1457,7 @@ static BOOL message_read_message(sqlite3 *psqlite, cpid_t cpid,
 		*static_cast<uint32_t *>(ppropval->pvalue) = attach_num;
 		attach_num ++;
 		sqlite3_bind_int64(pstmt1, 1, attachment_id);
-		if (sqlite3_step(pstmt1) != SQLITE_ROW)
+		if (pstmt1.step() != SQLITE_ROW)
 			pattachment->pembedded = NULL;
 		else if (!message_read_message(psqlite, cpid,
 		    sqlite3_column_int64(pstmt1, 0), &pattachment->pembedded) ||
@@ -1820,7 +1820,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW) {
 			*pmessage_id = 0;
 			return TRUE;
 		}
@@ -1843,7 +1843,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr)
 				return FALSE;
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			if (pstmt.step() != SQLITE_ROW) {
 				if (!common_util_check_allocated_eid(psqlite,
 				    *pmessage_id, &b_result))
 					return FALSE;
@@ -1896,7 +1896,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
 		          "attachments WHERE attachment_id=%llu", LLU{parent_id});
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		if (1 != sqlite3_column_int64(pstmt, 0)) {
 			*pmessage_id = 0;
@@ -1909,7 +1909,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (SQLITE_ROW == sqlite3_step(pstmt)) {
+		if (pstmt.step() == SQLITE_ROW) {
 			*pmessage_id = sqlite3_column_int64(pstmt, 0);
 			original_size = sqlite3_column_int64(pstmt, 1);
 			b_exist = TRUE;
@@ -2015,7 +2015,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		while (true) {
 			sqlite3_bind_int64(pstmt1, 1, parent_id);
-			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+			if (pstmt1.step() != SQLITE_ROW) {
 				*pmessage_id = 0;
 				return FALSE;
 			}
@@ -2025,7 +2025,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				return FALSE;
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt2, 1, message_id);
-			if (SQLITE_ROW != sqlite3_step(pstmt2)) {
+			if (pstmt2.step() != SQLITE_ROW) {
 				*pmessage_id = 0;
 				return FALSE;
 			}
@@ -2065,7 +2065,7 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 	auto pstmt = gx_sql_prep(rp.sqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		uint32_t state = sqlite3_column_int64(pstmt, 0);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))
 			continue;
@@ -2110,7 +2110,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 	auto pstmt = gx_sql_prep(rp.sqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		uint32_t state = pstmt.col_uint64(1);
 		if (state & (ST_PARSE_ERROR | ST_ERROR))

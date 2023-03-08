@@ -41,7 +41,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"count(*) FROM named_properties");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	total_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
@@ -119,7 +119,7 @@ BOOL exmdb_server::get_mapping_replid(const char *dir,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
@@ -201,7 +201,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		auto perm = pstmt.col_uint64(0);
 		auto fid  = pstmt.col_uint64(1);
 		*ppermission |= perm;
@@ -231,7 +231,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		auto ben = pstmt.col_text(0);
 		if (!common_util_check_mlist_include(ben, username))
 			continue;
@@ -289,7 +289,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
 	/*
@@ -393,14 +393,14 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_reset(pstmt_search);
 	sqlite3_bind_int64(pstmt_search, 1, folder_id);
 	sqlite3_bind_text(pstmt_search, 2, paddress, -1, SQLITE_STATIC);
-	if (SQLITE_ROW == sqlite3_step(pstmt_search)) {
+	if (gx_sql_step(pstmt_search) == SQLITE_ROW) {
 		*pb_found = TRUE;
 		return TRUE;
 	}
 	double_list_init(&folder_list);
 	sqlite3_reset(pstmt_subfolder);
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
-	while (SQLITE_ROW == sqlite3_step(pstmt_subfolder)) {
+	while (gx_sql_step(pstmt_subfolder) == SQLITE_ROW) {
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (pnode == nullptr)
 			return FALSE;
