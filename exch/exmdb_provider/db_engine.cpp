@@ -125,7 +125,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		if (double_list_get_nodes_num(
 			&pdb->dynamic_list) >= MAX_DYNAMIC_NODES) {
 			break;
@@ -417,9 +417,8 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW)
 		return TRUE;
-	}
 	if (0 == sqlite3_column_int64(pstmt, 0)) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 		          " messages WHERE parent_fid=%llu",
@@ -439,12 +438,11 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { eid_array_free(pmessage_ids); });
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW)
 		if (!eid_array_append(pmessage_ids,
 		    sqlite3_column_int64(pstmt, 0))) {
 			return FALSE;
 		}
-	}
 	pstmt.finalize();
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
@@ -497,12 +495,11 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW)
 		if (!eid_array_append(pfolder_ids,
 		    sqlite3_column_int64(pstmt, 0))) {
 			return FALSE;
 		}
-	}
 	return TRUE;
 }
 
@@ -897,7 +894,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		message_id = sqlite3_column_int64(pstmt, 0);
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, message_id, &b_exist)) {
@@ -1100,9 +1097,8 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 	if (0 != before_row_id) {
 		sqlite3_bind_null(pstmt_update, 1);
 		sqlite3_bind_int64(pstmt_update, 2, before_row_id);
-		if (SQLITE_DONE != sqlite3_step(pstmt_update)) {
+		if (gx_sql_step(pstmt_update) != SQLITE_DONE)
 			return FALSE;
-		}
 		sqlite3_reset(pstmt_update);
 	}
 	for (i=depth; i<psorts->ccategories; i++) {
@@ -1130,9 +1126,8 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		} else {
 			sqlite3_bind_int64(pstmt_insert, 11, -parent_id);
 		}
-		if (SQLITE_DONE != sqlite3_step(pstmt_insert)) {
+		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 			return FALSE;
-		}
 		sqlite3_reset(pstmt_insert);
 		auto prnode = cu_alloc<ROWINFO_NODE>();
 		if (NULL == prnode) {
@@ -1151,9 +1146,8 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 	if (0 != before_row_id) {
 		sqlite3_bind_int64(pstmt_update, 1, prev_id);
 		sqlite3_bind_int64(pstmt_update, 2, before_row_id);
-		if (SQLITE_DONE != sqlite3_step(pstmt_update)) {
+		if (gx_sql_step(pstmt_update) != SQLITE_DONE)
 			return FALSE;
-		}
 		sqlite3_reset(pstmt_update);
 	}
 	*plast_row_id = row_id;
@@ -1173,9 +1167,8 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 	if (0 != before_row_id) {
 		sqlite3_bind_null(pstmt_update, 1);
 		sqlite3_bind_int64(pstmt_update, 2, before_row_id);
-		if (SQLITE_DONE != sqlite3_step(pstmt_update)) {
+		if (gx_sql_step(pstmt_update) != SQLITE_DONE)
 			return FALSE;
-		}
 		sqlite3_reset(pstmt_update);
 	}
 	sqlite3_bind_int64(pstmt_insert, 1, message_id);
@@ -1192,16 +1185,14 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 		return FALSE;
 	sqlite3_bind_int64(pstmt_insert, 10, !!b_read);
 	sqlite3_bind_int64(pstmt_insert, 11, after_row_id == 0 ? -parent_id : after_row_id);
-	if (SQLITE_DONE != sqlite3_step(pstmt_insert)) {
+	if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 		return FALSE;
-	}
 	row_id = sqlite3_last_insert_rowid(psqlite);
 	if (0 != before_row_id) {
 		sqlite3_bind_int64(pstmt_update, 1, row_id);
 		sqlite3_bind_int64(pstmt_update, 2, before_row_id);
-		if (SQLITE_DONE != sqlite3_step(pstmt_update)) {
+		if (gx_sql_step(pstmt_update) != SQLITE_DONE)
 			return FALSE;
-		}
 		sqlite3_reset(pstmt_update);
 	}
 	sqlite3_reset(pstmt_insert);
@@ -1371,7 +1362,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				"count(*) FROM t%u", ptable->table_id);
 			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			uint32_t idx = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
@@ -1387,7 +1378,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id "
 						"FROM t%u WHERE idx=%u", ptable->table_id, idx);
 				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-				if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+				if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 					continue;
 				row_id = sqlite3_column_int64(pstmt, 0);
 				inst_id = sqlite3_column_int64(pstmt, 1);
@@ -1435,7 +1426,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			uint32_t idx = 0;
 			uint64_t row_id = 0, row_id1 = 0, inst_id = 0, inst_id1 = 0;
 			BOOL b_break = FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			while (pstmt.step() == SQLITE_ROW) {
 				row_id = row_id1;
 				inst_id = inst_id1;
 				row_id1 = sqlite3_column_int64(pstmt, 0);
@@ -1616,7 +1607,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					type &= ~MVI_FLAG;
 				sqlite3_reset(pstmt);
 				sqlite3_bind_int64(pstmt, 1, -row_id1);
-				while (SQLITE_ROW == sqlite3_step(pstmt)) {
+				while (pstmt.step() == SQLITE_ROW) {
 					row_id = row_id1;
 					row_id1 = sqlite3_column_int64(pstmt, 0);
 					auto pvalue = common_util_column_sqlite_statement(pstmt, 2, type);
@@ -1654,7 +1645,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			b_break = ptable->psorts->count > ptable->psorts->ccategories ? false : TRUE;
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, -parent_id);
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			while (pstmt.step() == SQLITE_ROW) {
 				row_id = row_id1;
 				row_id1 = sqlite3_column_int64(pstmt, 0);
 				uint64_t inst_id = sqlite3_column_int64(pstmt, 1);
@@ -1759,7 +1750,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			b_break = FALSE;
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, prev_id);
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			while (pstmt.step() == SQLITE_ROW) {
 				if (gx_sql_col_uint64(pstmt, 0) != row_id
 				    && 0 != row_id1 && row_id != row_id1) {
 					prev_id = row_id1;
@@ -1801,16 +1792,14 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (0 != row_id1) {
 				sqlite3_bind_null(pstmt2, 1);
 				sqlite3_bind_int64(pstmt2, 2, row_id1);
-				if (SQLITE_DONE != sqlite3_step(pstmt2)) {
+				if (pstmt2.step() != SQLITE_DONE)
 					return;
-				}
 				sqlite3_reset(pstmt2);
 			}
 			sqlite3_bind_int64(pstmt2, 1, prev_id);
 			sqlite3_bind_int64(pstmt2, 2, row_id);
-			if (SQLITE_DONE != sqlite3_step(pstmt2)) {
+			if (pstmt2.step() != SQLITE_DONE)
 				return;
-			}
 			sqlite3_reset(pstmt2);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%lld"
 			         " WHERE prev_id=%llu", ptable->table_id,
@@ -1820,9 +1809,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (0 != row_id1) {
 				sqlite3_bind_int64(pstmt2, 1, row_id);
 				sqlite3_bind_int64(pstmt2, 2, row_id1);
-				if (SQLITE_DONE != sqlite3_step(pstmt2)) {
+				if (pstmt2.step() != SQLITE_DONE)
 					return;
-				}
 				sqlite3_reset(pstmt2);
 			}
 		}
@@ -1847,7 +1835,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		}
 		uint32_t idx = 0;
 		sqlite3_bind_int64(pstmt, 1, 0);
-		if (sqlite3_step(pstmt) == SQLITE_ROW &&
+		if (pstmt.step() == SQLITE_ROW &&
 		    !common_util_indexing_sub_contents(ptable->psorts->ccategories,
 		    pstmt, pstmt1, &idx))
 			return;
@@ -1888,7 +1876,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			uint32_t inst_num = 0;
 			if (idx != 1) {
 				sqlite3_bind_int64(pstmt, 1, idx - 1);
-				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+				if (pstmt.step() != SQLITE_ROW) {
 					sqlite3_reset(pstmt);
 					stm_sel_tx.reset();
 					continue;
@@ -2177,7 +2165,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			folder_id1 = parent_id;
 			while (true) {
 				sqlite3_bind_int64(pstmt, 1, folder_id1);
-				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+				if (pstmt.step() != SQLITE_ROW) {
 					depth = 0;
 					break;
 				}
@@ -2200,15 +2188,14 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			folder_id1 = parent_id;
 			while (true) {
 				sqlite3_bind_int64(pstmt1, 1, folder_id1);
-				if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+				if (pstmt1.step() == SQLITE_ROW) {
 					idx = sqlite3_column_int64(pstmt1, 0);
 					break;
 				}
 				sqlite3_reset(pstmt1);
 				sqlite3_bind_int64(pstmt, 1, folder_id1);
-				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+				if (pstmt.step() != SQLITE_ROW)
 					break;
-				}
 				folder_id1 = sqlite3_column_int64(pstmt, 0);
 				sqlite3_reset(pstmt);
 				if (folder_id1 == ptable->folder_id) {
@@ -2263,7 +2250,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
 					"t%u WHERE idx=%u", ptable->table_id, idx - 1);
 				auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-				if (pstmt1 == nullptr || sqlite3_step(pstmt1) != SQLITE_ROW)
+				if (pstmt1 == nullptr || pstmt1.step() != SQLITE_ROW)
 					continue;
 				padded_row->after_folder_id = sqlite3_column_int64(pstmt1, 0);
 			}
@@ -2349,7 +2336,7 @@ static void *db_engine_get_extremum_value(db_item_ptr &pdb, cpid_t cpid,
 		return NULL;
 	pvalue = NULL;
 	b_first = FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		message_id = sqlite3_column_int64(pstmt, 0);
 		if (!cu_get_property(MAPI_MESSAGE, message_id,
 			cpid, pdb->psqlite, extremum_tag, &pvalue1)) {
@@ -2422,7 +2409,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 							ptable->table_id, LLU{message_id});
 		}
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			continue;
 		pstmt.finalize();
 		if (pdb->tables.b_batch) {
@@ -2455,7 +2442,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
 					"inst_num=0", ptable->table_id, LLU{message_id});
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			uint64_t row_id = sqlite3_column_int64(pstmt, 0);
 			idx = sqlite3_column_int64(pstmt, 1);
@@ -2512,7 +2499,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
 			continue;
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		while (pstmt.step() == SQLITE_ROW) {
 			auto pdelnode = cu_alloc<ROWDEL_NODE>();
 			if (NULL == pdelnode) {
 				return;
@@ -2575,9 +2562,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			/* delete the row first */
 			sqlite3_bind_int64(pstmt1, 1, pdelnode->row_id);
-			if (SQLITE_DONE != sqlite3_step(pstmt1)) {
+			if (pstmt1.step() != SQLITE_DONE)
 				break;
-			}
 			sqlite3_reset(pstmt1);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%lld"
 				" WHERE prev_id=%llu", ptable->table_id,
@@ -2593,9 +2579,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				continue;
 			}
 			sqlite3_bind_int64(pstmt, 1, pdelnode->parent_id);
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			if (pstmt.step() != SQLITE_ROW)
 				break;
-			}
 			if (1 == sqlite3_column_int64(pstmt, 8)) {
 				pdelnode = cu_alloc<ROWDEL_NODE>();
 				if (NULL == pdelnode) {
@@ -2659,9 +2644,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			else if (!common_util_bind_sqlite_statement(pstmt2, 1, type, pvalue1))
 				break;
 			sqlite3_bind_int64(pstmt2, 2, row_id);
-			if (SQLITE_DONE != sqlite3_step(pstmt2)) {
+			if (pstmt2.step() != SQLITE_DONE)
 				break;
-			}
 			sqlite3_reset(pstmt2);
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories - 1].table_sort;
@@ -2696,9 +2680,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				row_id1 = 0;
 			}
 			sqlite3_bind_int64(pstmt, 1, row_id);
-			if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			if (pstmt.step() != SQLITE_ROW)
 				break;
-			}
 			prev_id1 = sqlite3_column_int64(pstmt, 2);
 			sqlite3_reset(pstmt);
 			if (prev_id == prev_id1) {
@@ -2759,7 +2742,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			idx = 0;
 			sqlite3_bind_int64(pstmt, 1, 0);
-			if (sqlite3_step(pstmt) == SQLITE_ROW &&
+			if (pstmt.step() == SQLITE_ROW &&
 			    !common_util_indexing_sub_contents(ptable->psorts->ccategories,
 			    pstmt, pstmt1, &idx))
 				continue;
@@ -2821,7 +2804,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
 			auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
 			sqlite3_bind_int64(pstmt1, 1, row_id);
-			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+			if (pstmt1.step() != SQLITE_ROW) {
 				sqlite3_reset(pstmt1);
 				continue;
 			}
@@ -2835,7 +2818,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				inst_num = 0;
 			} else {
 				sqlite3_bind_int64(pstmt, 1, idx - 1);
-				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+				if (pstmt.step() != SQLITE_ROW) {
 					sqlite3_reset(pstmt);
 					sqlite3_reset(pstmt1);
 					continue;
@@ -2975,7 +2958,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
 			"WHERE folder_id=%llu", ptable->table_id, LLU{folder_id});
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			continue;	
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
@@ -3102,7 +3085,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 							ptable->table_id, LLU{message_id});
 		}
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ||
+		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 		    sqlite3_column_int64(pstmt, 0) == 0)
 			continue;
 		pstmt.finalize();
@@ -3131,7 +3114,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					"t%u WHERE inst_id=%llu AND inst_num=0",
 					ptable->table_id, LLU{message_id});
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			idx = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
@@ -3142,7 +3125,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id FROM "
 					"t%u WHERE idx=%u", ptable->table_id, idx - 1);
 				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-				if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+				if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 					continue;
 				pmodified_row->after_row_id =
 					sqlite3_column_int64(pstmt, 0);
@@ -3174,7 +3157,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					"t%u WHERE inst_id=%llu AND inst_num=0",
 					ptable->table_id, LLU{message_id});
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			idx = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
@@ -3187,14 +3170,13 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				inst_id = 0;
 			} else {
 				sqlite3_bind_int64(pstmt, 1, idx - 1);
-				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+				if (pstmt.step() != SQLITE_ROW)
 					continue;
-				}
 				inst_id = sqlite3_column_int64(pstmt, 0);
 				sqlite3_reset(pstmt);
 			}
 			sqlite3_bind_int64(pstmt, 1, idx + 1);
-			inst_id1 = sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
+			inst_id1 = pstmt.step() != SQLITE_ROW ? 0 :
 			           sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
 			b_error = FALSE;
@@ -3283,7 +3265,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 				if (pstmt == nullptr)
 					continue;
-				while (SQLITE_ROW == sqlite3_step(pstmt)) {
+				while (pstmt.step() == SQLITE_ROW) {
 					pvalue = common_util_column_sqlite_statement(
 												pstmt, 0, type);
 					inst_num = sqlite3_column_int64(pstmt, 1);
@@ -3340,7 +3322,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			for (i=0; i<multi_num; i++) {
 				inst_num = ptable->instance_tag == 0 || pmultival == nullptr ? 0 : i + 1;
 				sqlite3_bind_int64(pstmt1, 1, inst_num);
-				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+				if (pstmt1.step() != SQLITE_ROW) {
 					b_error = TRUE;
 					break;
 				}
@@ -3350,7 +3332,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				sqlite3_reset(pstmt1);
 				row_id1 = row_id;
 				sqlite3_bind_int64(pstmt, 1, row_id);
-				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+				if (pstmt.step() != SQLITE_ROW) {
 					b_error = TRUE;
 					break;
 				}
@@ -3359,7 +3341,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				sqlite3_reset(pstmt);
 				for (ssize_t j = ptable->psorts->ccategories - 1; j >= 0; --j) {
 					sqlite3_bind_int64(pstmt, 1, row_id);
-					if (SQLITE_ROW != sqlite3_step(pstmt)) {
+					if (pstmt.step() != SQLITE_ROW) {
 						b_error = TRUE;
 						break;
 					}
@@ -3385,7 +3367,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					snprintf(sql_string, arsizeof(sql_string), "SELECT extremum FROM t%u"
 					          " WHERE row_id=%llu", ptable->table_id, LLU{parent_id});
 					auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-					if (pstmt2 == nullptr || sqlite3_step(pstmt2) != SQLITE_ROW) {
+					if (pstmt2 == nullptr || pstmt2.step() != SQLITE_ROW) {
 						b_error = TRUE;
 						break;
 					}
@@ -3418,7 +3400,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 						snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id FROM"
 						          " t%u WHERE row_id=%lld", ptable->table_id, LLD{prev_id});
 						auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-						if (pstmt2 == nullptr  || sqlite3_step(pstmt2) != SQLITE_ROW) {
+						if (pstmt2 == nullptr  || pstmt2.step() != SQLITE_ROW) {
 							b_error = TRUE;
 							break;
 						}
@@ -3431,7 +3413,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 						b_error = TRUE;
 						break;
 					}
-					inst_id1 = sqlite3_step(pstmt2) != SQLITE_ROW ? 0 :
+					inst_id1 = pstmt2.step() != SQLITE_ROW ? 0 :
 					           sqlite3_column_int64(pstmt2, 0);
 				}
 				for (; i<ptable->psorts->count; i++) {
@@ -3508,7 +3490,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				row_id = row_id1;
 				while (0 != unread_delta) {
 					sqlite3_bind_int64(pstmt, 1, row_id);
-					if (SQLITE_ROW != sqlite3_step(pstmt)) {
+					if (pstmt.step() != SQLITE_ROW) {
 						b_error = TRUE;
 						break;
 					}
@@ -3566,7 +3548,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
 				auto row_id = static_cast<ROWINFO_NODE *>(pnode1->pdata)->row_id;
 				sqlite3_bind_int64(pstmt1, 1, row_id);
-				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
+				if (pstmt1.step() != SQLITE_ROW) {
 					sqlite3_reset(pstmt1);
 					continue;
 				}
@@ -3581,7 +3563,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					inst_num = 0;
 				} else {
 					sqlite3_bind_int64(pstmt, 1, idx - 1);
-					if (SQLITE_ROW != sqlite3_step(pstmt)) {
+					if (pstmt.step() != SQLITE_ROW) {
 						sqlite3_reset(pstmt);
 						sqlite3_reset(pstmt1);
 						continue;
@@ -3748,7 +3730,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
 			continue;
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		if (pstmt.step() != SQLITE_ROW) {
 			pstmt.finalize();
 			if (NULL != ptable->prestriction &&
 			    cu_eval_folder_restriction(
@@ -3785,7 +3767,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 						"folder_id FROM t%u WHERE idx=%u",
 						ptable->table_id, idx - 1);
 					pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-					if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+					if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 						continue;
 					padded_row->after_folder_id =
 						sqlite3_column_int64(pstmt, 0);
@@ -3869,7 +3851,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM "
 				"t%u WHERE idx=%u", ptable->table_id, idx - 1);
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			pmodified_row->after_folder_id =
 				sqlite3_column_int64(pstmt, 0);
