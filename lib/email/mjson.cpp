@@ -435,9 +435,11 @@ static bool mjson_parse_array(MJSON *m, const Json::Value &jv, unsigned int type
 		return false;
 	for (const auto &e : jv) {
 		if (e.type() == Json::arrayValue && e.size() == 1 &&
-		    e[0].type() == Json::objectValue &&
-		    !mjson_record_node(m, e[0], type))
-			return false;
+		    e[0].type() == Json::objectValue) {
+			if (!mjson_record_node(m, e[0], type))
+				return false;
+			continue;
+		}
 		if (e.type() != Json::objectValue)
 			return false;
 		if (!mjson_record_node(m, e, type))
