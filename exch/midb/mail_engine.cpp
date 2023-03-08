@@ -1356,9 +1356,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
     sqlite3 *psqlite, uint64_t folder_id, const CONDITION_TREE *ptree,
     BOOL b_uid) try
 {
-	int i;
 	uint32_t uid;
-	int total_mail;
 	uint32_t uidnext;
 	char sql_string[1024];
 
@@ -1367,7 +1365,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return {};
-	total_mail = sqlite3_column_int64(pstmt, 0);
+	auto total_mail = pstmt.col_uint64(0);
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU{folder_id});
@@ -1388,16 +1386,14 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return {};
-	i = 0;
 	std::optional<std::vector<int>> presult;
 	presult.emplace();
-	while (pstmt.step() == SQLITE_ROW) {
+	for (size_t i = 1; pstmt.step() == SQLITE_ROW; ++i) {
 		auto mid_string = pstmt.col_text(0);
 		uid = sqlite3_column_int64(pstmt, 1);
 		if (mail_engine_ct_match_mail(psqlite, charset, pstmt_message,
-		    mid_string, i + 1, total_mail, uidnext, ptree))
-			presult->push_back(b_uid ? uid : i + 1);
-		i ++;
+		    mid_string, i, total_mail, uidnext, ptree))
+			presult->push_back(b_uid ? uid : i);
 	}
 	return presult;
 } catch (const std::bad_alloc &) {
