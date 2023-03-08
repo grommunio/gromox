@@ -36,7 +36,7 @@ int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 
-int bounce_producer_run(const char *separator, const char *data_path,
+int mlex_bounce_init(const char *separator, const char *data_path,
     const char *bounce_grp)
 {
 #define E(f, s) do { \

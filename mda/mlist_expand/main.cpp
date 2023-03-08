@@ -34,7 +34,7 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 			mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
 			return FALSE;
 		}
-		if (bounce_gen_init(";", get_data_path(), "mlist_bounce") != 0) {
+		if (mlex_bounce_init(";", get_data_path(), "mlist_bounce") != 0) {
 			mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 			return FALSE;
 		}
