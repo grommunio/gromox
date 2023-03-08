@@ -416,9 +416,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			pnode=double_list_get_after(pcondition_list, pnode),i++) {
 			if (static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue == nullptr)
 				continue;
-			type = psorts->psort[i].type;
-			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG)
-				type &= ~MVI_FLAG;
+			type = psorts->psort[i].type & ~MVI_FLAG;
 			if (!common_util_bind_sqlite_statement(pstmt,
 			    bind_index, type,
 			    static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue))
@@ -507,9 +505,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		pnode=double_list_get_after(pcondition_list, pnode),i++) {
 		if (static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue == nullptr)
 			continue;
-		type = psorts->psort[i].type;
-		if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG)
-			type &= ~MVI_FLAG;
+		type = psorts->psort[i].type & ~MVI_FLAG;
 		if (!common_util_bind_sqlite_statement(pstmt, bind_index, type,
 		    static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue))
 			return FALSE;
@@ -529,9 +525,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt_insert, 6,
 			sqlite3_column_int64(pstmt, 1));
 		sqlite3_bind_int64(pstmt_insert, 7, 0);
-		type = psorts->psort[depth].type;
-		if ((type & MVI_FLAG) == MVI_FLAG)
-			type &= ~MVI_FLAG;
+		type = psorts->psort[depth].type & ~MVI_FLAG;
 		if (!b_extremum || (pvalue = common_util_column_sqlite_statement(pstmt,
 		    2, psorts->psort[depth + 1].type)) == nullptr)
 			sqlite3_bind_null(pstmt_insert, 9);
@@ -1663,11 +1657,9 @@ static BOOL table_column_content_tmptbl(
 		return TRUE;
 	}
 	case PR_DEPTH:
-		if (NULL == psorts || 0 == psorts->ccategories) {
-			*ppvalue = NULL;
-			return TRUE;
-		}
-		*ppvalue = common_util_column_sqlite_statement(pstmt, 7, PT_LONG);
+		*ppvalue = psorts != nullptr && psorts->ccategories != 0 ?
+		           common_util_column_sqlite_statement(pstmt, 7, PT_LONG) :
+		           nullptr;
 		return TRUE;
 	case PR_CONTENT_COUNT: {
 		if (row_type != CONTENT_ROW_MESSAGE) {
@@ -1732,12 +1724,8 @@ static BOOL table_column_content_tmptbl(
 	sqlite3_bind_int64(pstmt2, 1, row_id);
 	if (gx_sql_step(pstmt2) != SQLITE_ROW)
 		return FALSE;
-	if ((proptag & MVI_FLAG) == MVI_FLAG)
-		*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
-		           PROP_TYPE(proptag) & ~MVI_FLAG);
-	else
-		*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
-		           PROP_TYPE(proptag));
+	*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
+	           PROP_TYPE(proptag) & ~MVI_FLAG);
 	sqlite3_reset(pstmt2);
 	return TRUE;
 }
@@ -3530,9 +3518,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		i = depth;
 		while (true) {
 			stm_sel_vtx.bind_int64(1, row_id);
-			type = ptnode->psorts->psort[i].type;
-			if ((type & MVI_FLAG) == MVI_FLAG)
-				type &= ~MVI_FLAG;
+			type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
 			if (stm_sel_vtx.step() != SQLITE_ROW)
 				return FALSE;
 			pvalue = common_util_column_sqlite_statement(stm_sel_vtx, 0, type);
@@ -3722,9 +3708,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		depth = sqlite3_column_int64(pstmt, 0);
 		row_id = 0;
 		for (i=0; i<=depth; i++) {
-			type = ptnode->psorts->psort[i].type;
-			if ((type & MVI_FLAG) == MVI_FLAG)
-				type &= ~MVI_FLAG;
+			type = ptnode->psorts->psort[i].type & ~MVI_FLAG;
 			pvalue = common_util_column_sqlite_statement(pstmt, i + 1, type);
 			if (NULL == pvalue) {
 				sqlite3_bind_int64(pstmt1, 1, row_id);

@@ -1121,11 +1121,8 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		    9, type, ppropvals[i].pvalue))
 			return FALSE;
 		sqlite3_bind_null(pstmt_insert, 10);
-		if (i == depth && 0 != after_row_id) {
-			sqlite3_bind_int64(pstmt_insert, 11, after_row_id);
-		} else {
-			sqlite3_bind_int64(pstmt_insert, 11, -parent_id);
-		}
+		sqlite3_bind_int64(pstmt_insert, 11, i == depth && after_row_id != 0 ?
+			after_row_id : -parent_id);
 		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 			return FALSE;
 		sqlite3_reset(pstmt_insert);
@@ -4080,10 +4077,8 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 	pdb->tables.b_batch = FALSE;
 	pdb.reset();
 	auto dir = exmdb_server::get_dir();
-	while (0 != table_num) {
-		table_num --;
+	while (table_num-- > 0)
 		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
-	}
 }
 
 void db_engine_cancel_batch_mode(db_item_ptr &pdb)
