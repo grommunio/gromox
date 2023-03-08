@@ -75,10 +75,15 @@ Directory for runtime variadic data.
 Default: \fI/var/lib/gromox\fP
 .TP
 \fBwork_threads_max\fP
-Default: \fI32\fP
+The number of threads that gromox\-delivery may spawn to process incoming
+messages. This number must be less-or-equal to the exmdb_local(4)
+exmdb_connection_num directive to avoid rejection of messages in a message
+storm.
+.br
+Default: \fI5\fP
 .TP
 \fBwork_threads_min\fP
-Default: \fI16\fP
+Default: \fI1\fP
 .SH Files
 .IP \(bu 4
 /usr/lib/gromox/libgxm_*.so: hook plugins
