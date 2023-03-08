@@ -58,8 +58,8 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"lda_log_level", "4" /* LV_NOTICE */},
 	{"running_identity", RUNNING_IDENTITY},
 	{"state_path", PKGSTATEDIR},
-	{"work_threads_min", "1", CFG_SIZE, "1"},
 	{"work_threads_max", "5", CFG_SIZE, "1"},
+	{"work_threads_min", "1", CFG_SIZE, "1"},
 	CFG_TABLE_END,
 };
 
