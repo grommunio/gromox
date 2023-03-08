@@ -192,6 +192,7 @@ struct sShape
 	static constexpr uint64_t ToRecipients =  1 << 0;
 	static constexpr uint64_t CcRecipients =  1 << 1;
 	static constexpr uint64_t BccRecipients = 1 << 2;
+	static constexpr uint64_t Body = 1 << 3;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 };
@@ -263,6 +264,21 @@ public:
 	tBaseItemId() = default;
 	tBaseItemId(const tinyxml2::XMLElement*);
 	tBaseItemId(const sBase64Binary&, const std::optional<sBase64Binary>& = std::nullopt);
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:1725
+ */
+struct tBody : public std::string
+{
+	template<typename T>
+	inline tBody(T&& content, const char* type) : std::string(std::forward<T>(content)), BodyType(type)
+	{}
+
+	Enum::BodyTypeType BodyType; //Attribute
+	std::optional<bool> IsTruncated; //Attribute
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -455,7 +471,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 3> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 4> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -572,7 +588,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> ItemClass; ///< PR_MESSAGE_CLASS
 	std::optional<std::string> Subject; ///< PR_SUBJECT
 	//<xs:element name="Sensitivity" type="t:SensitivityChoicesType" minOccurs="0" />
-	//<xs:element name="Body" type="t:BodyType" minOccurs="0" />
+	std::optional<tBody> Body;
 	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
 	std::optional<sTimePoint> DateTimeReceived; ///< PR_MESSAGE_DELIVERY_TIME
 	std::optional<uint64_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
@@ -657,7 +673,7 @@ struct tItemResponseShape
 
 	//Enum::DefaultShapeNamesType BaseShape;
 	//std::optional<bool> IncludeMimeContent;
-	//std::optional<Enum::BodyTypeResponseType> BodyType;
+	std::optional<Enum::BodyTypeResponseType> BodyType;
 	//std::optional<Enum::BodyTypeResponseType> UniqueBodyType;
 	//std::optional<Enum::BodyTypeResponseType> NormalizedBodyType;
 	//std::optional<bool> FilterHtmlContent;

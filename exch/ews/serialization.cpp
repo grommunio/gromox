@@ -262,6 +262,13 @@ void tBaseItemId::serialize(XMLElement* xml) const
 	XMLDUMPA(ChangeKey);
 }
 
+void tBody::serialize(tinyxml2::XMLElement* xml) const
+{
+	xml->SetText(c_str());
+	XMLDUMPA(BodyType);
+	XMLDUMPA(IsTruncated);
+}
+
 void tCalendarEventDetails::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(ID);
@@ -391,6 +398,7 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(ParentFolderId);
 	XMLDUMPT(ItemClass);
 	XMLDUMPT(Subject);
+	XMLDUMPT(Body);
 	XMLDUMPT(DateTimeReceived);
 	XMLDUMPT(Size);
 	XMLDUMPT(InReplyTo);
@@ -409,7 +417,7 @@ void tItem::serialize(XMLElement* xml) const
 }
 
 tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
-    //XMLINIT(BaseShape),
+    XMLINIT(BodyType),
     XMLINIT(AdditionalProperties)
 {}
 

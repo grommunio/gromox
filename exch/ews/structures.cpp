@@ -651,6 +651,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"item:Body", sShape::Body}, //Technically not what it's intended for, but gets the job done quite well
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
 	{"message:ToRecipients", sShape::ToRecipients},
@@ -754,6 +755,10 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			continue;
 		case PR_ASSOCIATED:
 			IsAssociated.emplace(*pval(uint8_t)); break;
+		case PR_BODY:
+			if(!Body)
+				Body.emplace(pval(char), Enum::Text); //Do not overwrite (Best -> HTML takes precedence)
+			break;
 		case PR_CHANGE_KEY:
 			ItemId? ItemId->ChangeKey = *tp : ItemId.emplace().ChangeKey.emplace(*tp); break;
 		case PR_CLIENT_SUBMIT_TIME:
@@ -774,6 +779,10 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			Flag.emplace().FlagStatus = *pval(uint32_t) == followupFlagged? Enum::Flagged :
 			                            *pval(uint32_t) == followupComplete? Enum::Complete : Enum::NotFlagged;
 			break;
+		case PR_HTML: {
+			const BINARY* content = pval(BINARY);
+			Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML); break;
+			}
 		case PR_IMPORTANCE:
 			Importance = *pval(uint32_t) == IMPORTANCE_LOW? Enum::Low :
 							 *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
@@ -812,6 +821,19 @@ sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& na
 	return tItem(itemProps, namedProps);
 }
 
+/**
+ * @brief     Try to map named property
+ *
+ * Tries to find the corresponding named property in the map and stores it in
+ * the proper field or an extended property.
+ * Returns immediately if the given property tag is not in the named property
+ * range.
+ *
+ * @param     tp          Property to map
+ * @param     namedProps  Map of requested named properties
+ *
+ * @return    true if property was mapped, false otherwise
+ */
 bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& namedProps)
 {
 	sNamedPropertyMap::const_iterator entry;
@@ -842,6 +864,15 @@ void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
 			additional.tags(tagIns, nameIns, typeIns, special);
+	if(special & sShape::Body) //Dirty hack but most performant way to do it
+	{
+		std::string_view type = BodyType? *BodyType : Enum::Best;
+		if(type == Enum::Best || type == Enum::Text)
+			tagIns = PR_BODY;
+		if(type == Enum::Best || type == Enum::HTML)
+			tagIns = PR_HTML;
+		special &= ~sShape::Body; //Leave no evidence of what happened here
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
