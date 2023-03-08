@@ -443,7 +443,7 @@ static BOOL html_write_style_color(RTF_WRITER *pwriter, int color)
 	
 	index = html_get_colortable(pwriter, color);
 	if (index >= 0) {
-		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cf%d", index);
+		length = snprintf(tmp_buff, std::size(tmp_buff), "\\cf%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
 	return TRUE;

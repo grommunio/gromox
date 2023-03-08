@@ -1817,7 +1817,7 @@ static int rtf_cmd_cf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
 	if (!have_param || num < 0 || num >= preader->total_colors) {
-		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
+		mlog(LV_DEBUG, "rtf: font color change to %xh is invalid", num);
 	} else {
 		if (!rtf_attrstack_push_express(preader, ATTR_FOREGROUND,
 		    preader->color_table[num]))
