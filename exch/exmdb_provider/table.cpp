@@ -207,12 +207,10 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (NULL == pdb->tables.psqlite) {
-		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
-			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			return FALSE;
-		}
-	}
+	if (pdb->tables.psqlite == nullptr &&
+	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
+		return FALSE;
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
@@ -1312,12 +1310,10 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (NULL == pdb->tables.psqlite) {
-		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
-			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			return FALSE;
-		}
-	}
+	if (pdb->tables.psqlite == nullptr &&
+	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
+		return FALSE;
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
@@ -1500,12 +1496,10 @@ BOOL exmdb_server::load_rule_table(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (NULL == pdb->tables.psqlite) {
-		if (SQLITE_OK != sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
-			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
-			return FALSE;
-		}
-	}
+	if (pdb->tables.psqlite == nullptr &&
+	    sqlite3_open_v2(":memory:", &pdb->tables.psqlite,
+	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
+		return FALSE;
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
 	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
