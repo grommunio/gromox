@@ -1,4 +1,4 @@
-Development 2.5.10
+Development 2.5.72
 ==================
 
 Fixes:
@@ -8,13 +8,24 @@ Fixes:
   and resolving _one_ instance of OL sync error 80070057.
 * oxvcard: PidLidBusinessCardDisplayDefinition named property was not
   assigned the right namespace (PSETID_ADDRESS)
+* oxcmail: do not abort export routine if SMIME message is lacking an SMIME
+  body (just treat it as empty instead)
+* oxcical: do not abort export routine if IPM.*.Resp.* has no attendee
 * exmdb_local: perform online lookup of named properties,
   resolving vcarduid being erroneously assigned propid 0
 * exmdb_provider: do not write propid 0 properties to database
+* midb, imap: FETCHing some mails did not function due to a misparse of the
+  compat format of the "mimes" structure in mjson_parse_array
+* mapi_lib: rectify emission of \cf code in htmltortf
+* delivery: reduce number of default worker threads to number of client
+  connections to temporarily address "too many connections"
+* mlist_expand: resolve null dereference during mlist_expand
 
 Behavioral changes:
 
 * delivery: rename delivery_log_file -> lda_log_file (+ log_level)
+* Errors from sqlite3_step() will now be logged.
+* exch: consistently accept PT_STRING8 & PT_BINARY for RES_CONTENT evaluations
 
 
 Gromox 2.5 (2023-03-06)
