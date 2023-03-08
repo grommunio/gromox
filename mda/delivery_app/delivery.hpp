@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <gromox/defs.h>
 
 enum {
 	MESSAGE_MESS = 2,
@@ -33,7 +34,7 @@ extern void message_dequeue_stop();
 extern MESSAGE *message_dequeue_get();
 extern void message_dequeue_put(MESSAGE *);
 extern int message_dequeue_get_param(int param);
-extern void message_dequeue_save(MESSAGE *);
+extern gromox::errno_t message_dequeue_save(MESSAGE *);
 
 extern void resource_init();
 extern void resource_free();

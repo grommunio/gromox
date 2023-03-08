@@ -21,6 +21,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
@@ -453,38 +454,46 @@ int message_dequeue_get_param(int param)
  *	@param
  *		pmessage [in]			message object
  */
-void message_dequeue_save(MESSAGE *pmessage)
+errno_t message_dequeue_save(MESSAGE *pmessage)
 {
 	std::string new_file, old_file;
 	char *ptr;
-	int len;
 	
 	try {
 		new_file = g_path_save + "/" + std::to_string(pmessage->flush_ID);
 		old_file = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "MDQ-536: ENOMEM");
-		return;
+		return ENOMEM;
 	}
 	if (MESSAGE_MESS == pmessage->message_option) {
-		link(old_file.c_str(), new_file.c_str());
-		return;
+		if (link(old_file.c_str(), new_file.c_str()) != 0)
+			return errno;
+		return 0;
 	}
 	int fd = open(new_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
 	if (fd < 0) {
+		int se = errno;
 		mlog(LV_ERR, "mdq: opening %s for write: %s",
-		       new_file.c_str(), strerror(errno));
-		return;
+		       new_file.c_str(), strerror(se));
+		return errno = se;
 	}
-	write(fd, pmessage->begin_address, pmessage->mail_length + 4 * sizeof(uint32_t));
-	len = strlen(pmessage->envelope_from);
-	write(fd, pmessage->envelope_from, len + 1);
+	auto z = pmessage->mail_length + 4 * sizeof(uint32_t);
+	auto ret = HXio_fullwrite(fd, pmessage->begin_address, z);
+	if (ret < 0 || static_cast<size_t>(ret) != z)
+		return -9999;
+	auto len = strlen(pmessage->envelope_from);
+	ret = HXio_fullwrite(fd, pmessage->envelope_from, len + 1);
+	if (ret < 0 || static_cast<size_t>(ret) != len + 1)
+		return -9999;
 	ptr = pmessage->envelope_rcpt;
 	while ((len = strlen(ptr)) != 0) {
 		len++;
-		write(fd, ptr, len);
+		auto ret = HXio_fullwrite(fd, ptr, len);
+		if (ret < 0 || static_cast<size_t>(ret) != len)
+			return -9999;
 		ptr += len;
 	}
 	close(fd);
+	return 0;
 }
-
