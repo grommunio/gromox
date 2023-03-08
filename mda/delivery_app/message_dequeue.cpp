@@ -468,23 +468,23 @@ void message_dequeue_save(MESSAGE *pmessage)
 	}
 	if (MESSAGE_MESS == pmessage->message_option) {
 		link(old_file.c_str(), new_file.c_str());
-	} else {
-		int fd = open(new_file.c_str(), O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-		if (fd < 0) {
-			mlog(LV_ERR, "mdq: opening %s for write: %s",
-			       new_file.c_str(), strerror(errno));
-			return;
-		}
-		write(fd, pmessage->begin_address, pmessage->mail_length + 4 * sizeof(uint32_t));
-		len = strlen(pmessage->envelope_from);
-		write(fd, pmessage->envelope_from, len + 1);
-		ptr = pmessage->envelope_rcpt;
-		while ((len = strlen(ptr)) != 0) {
-			len ++;
-			write(fd, ptr, len);
-			ptr += len;
-		}
-		close(fd);
+		return;
 	}
+	int fd = open(new_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
+	if (fd < 0) {
+		mlog(LV_ERR, "mdq: opening %s for write: %s",
+		       new_file.c_str(), strerror(errno));
+		return;
+	}
+	write(fd, pmessage->begin_address, pmessage->mail_length + 4 * sizeof(uint32_t));
+	len = strlen(pmessage->envelope_from);
+	write(fd, pmessage->envelope_from, len + 1);
+	ptr = pmessage->envelope_rcpt;
+	while ((len = strlen(ptr)) != 0) {
+		len++;
+		write(fd, ptr, len);
+		ptr += len;
+	}
+	close(fd);
 }
 
