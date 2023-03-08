@@ -1632,23 +1632,23 @@ static BOOL table_column_content_tmptbl(
 	uint32_t tmp_proptag;
 	
 	switch (proptag) {
-	case PidTagFolderId:
-		if (CONTENT_ROW_HEADER == row_type) {
-			auto v = cu_alloc<uint64_t>();
-			*ppvalue = v;
-			if (NULL != *ppvalue) {
-				*v = rop_util_make_eid_ex(1, folder_id);
-			}
-			return TRUE;
+	case PidTagFolderId: {
+		if (row_type != CONTENT_ROW_HEADER)
+			break;
+		auto v = cu_alloc<uint64_t>();
+		*ppvalue = v;
+		if (NULL != *ppvalue) {
+			*v = rop_util_make_eid_ex(1, folder_id);
 		}
-		break;
+		return TRUE;
+	}
 	case PidTagInstID:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 3, PT_I8);
-		if (*ppvalue != NULL) {
-			*static_cast<uint64_t *>(*ppvalue) = row_type == CONTENT_ROW_MESSAGE ?
-				rop_util_make_eid_ex(1, *static_cast<uint64_t *>(*ppvalue)) :
-				rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & NFID_LOWER_PART);
-		}
+		if (*ppvalue == nullptr)
+			return TRUE;
+		*static_cast<uint64_t *>(*ppvalue) = row_type == CONTENT_ROW_MESSAGE ?
+			rop_util_make_eid_ex(1, *static_cast<uint64_t *>(*ppvalue)) :
+			rop_util_make_eid_ex(2, *static_cast<uint64_t *>(*ppvalue) & NFID_LOWER_PART);
 		return TRUE;
 	case PidTagInstanceNum:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
@@ -1675,36 +1675,37 @@ static BOOL table_column_content_tmptbl(
 		}
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 7, PT_LONG);
 		return TRUE;
-	case PR_CONTENT_COUNT:
-		if (CONTENT_ROW_MESSAGE == row_type) {
-			auto v = cu_alloc<uint32_t>();
-			*ppvalue = v;
-			if (NULL != *ppvalue) {
-				*v = 0;
-			}
-		} else {
+	case PR_CONTENT_COUNT: {
+		if (row_type != CONTENT_ROW_MESSAGE) {
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 8, PT_LONG);
+			return TRUE;
 		}
-		return TRUE;
-	case PR_CONTENT_UNREAD:
-		if (CONTENT_ROW_MESSAGE == row_type) {
-			auto v = cu_alloc<uint32_t>();
-			*ppvalue = v;
-			if (NULL != *ppvalue) {
-				*v = 0;
-			}
-		} else {
-			*ppvalue = common_util_column_sqlite_statement(pstmt, 9, PT_LONG);
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (NULL != *ppvalue) {
+			*v = 0;
 		}
 		return TRUE;
 	}
-	if (CONTENT_ROW_MESSAGE == row_type) {
-		if (0 != instance_tag && instance_tag == proptag) {
-			*ppvalue = common_util_column_sqlite_statement(pstmt,
-			           11, PROP_TYPE(instance_tag) & ~MVI_FLAG);
+	case PR_CONTENT_UNREAD: {
+		if (row_type != CONTENT_ROW_MESSAGE) {
+			*ppvalue = common_util_column_sqlite_statement(pstmt, 9, PT_LONG);
 			return TRUE;
 		}
-		return FALSE;
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (NULL != *ppvalue) {
+			*v = 0;
+		}
+		return TRUE;
+	}
+	}
+	if (CONTENT_ROW_MESSAGE == row_type) {
+		if (instance_tag == 0 || instance_tag != proptag)
+			return false;
+		*ppvalue = common_util_column_sqlite_statement(pstmt,
+		           11, PROP_TYPE(instance_tag) & ~MVI_FLAG);
+		return TRUE;
 	}
 	if (NULL == psorts || 0 == psorts->ccategories) {
 		return FALSE;
