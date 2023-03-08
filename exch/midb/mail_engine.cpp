@@ -162,7 +162,7 @@ static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
 static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *);
-static BOOL ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
+static bool ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
 
 template<typename T> static inline bool
 array_find_str(const T &kwlist, const char *s)
@@ -426,19 +426,18 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	mlog(LV_ERR, "E-1970: ENOMEM");
 }
 
-static BOOL mail_engine_ct_search_head(const char *charset,
+static bool mail_engine_ct_search_head(const char *charset,
 	const char *file_path, const char *tag, const char *value)
 {
 	FILE * fp;
-	BOOL stat_head;
+	bool stat_head = false;
 	size_t head_offset = 0, offset = 0, len;
 	MIME_FIELD mime_field;
 	char head_buff[64*1024];
 	
-	stat_head = FALSE;
 	fp = fopen(file_path, "r");
 	if (fp == nullptr)
-		return FALSE;
+		return false;
 	while (NULL != fgets(head_buff + head_offset,
 		64*1024 - head_offset, fp)) {
 		len = strlen(head_buff + head_offset);
@@ -447,13 +446,13 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 		if (head_offset >= 64*1024 - 1)
 			break;
 		if (2 == len && 0 == strcmp("\r\n", head_buff + head_offset - 2)) {
-			stat_head = TRUE;
+			stat_head = true;
 			break;
 		}
 	}
 	fclose(fp);
 	if (!stat_head)
-		return FALSE;
+		return false;
 
 	while ((len = parse_mime_field(head_buff + offset,
 	       head_offset - offset, &mime_field)) != 0) {
@@ -463,9 +462,9 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 		auto rs = mail_engine_ct_decode_mime(charset, mime_field.value.c_str());
 		if (rs != nullptr &&
 		    search_string(rs.get(), value, strlen(rs.get())))
-			return TRUE;
+			return true;
 	}
-	return FALSE;
+	return false;
 }
 
 enum ctm_field {
@@ -474,7 +473,7 @@ enum ctm_field {
 	CTM_FOLDERID, CTM_SIZE,
 };
 
-static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
+static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
     sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
     uint32_t uidnext, const CONDITION_TREE *ptree) try
 {
@@ -942,7 +941,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 		POP_MATCH(ptree, pnode, conjunction, b_result)
 		goto RECURSION_POINT;
 	} else {
-		return b_result ? TRUE : false;
+		return b_result;
 	}
 }
 /* end of recursion procedure */
@@ -1332,7 +1331,7 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 	return nullptr;
 }
 
-static BOOL ct_hint_seq(const std::vector<seq_node> &list,
+static bool ct_hint_seq(const std::vector<seq_node> &list,
     unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {
@@ -1340,17 +1339,17 @@ static BOOL ct_hint_seq(const std::vector<seq_node> &list,
 		if (pseq->max == seq_node::unset) {
 			if (pseq->min == seq_node::unset) {
 				if (num == max_uid)
-					return TRUE;
+					return true;
 			} else {
 				if (num >= pseq->min)
-					return TRUE;
+					return true;
 			}
 		} else {
 			if (pseq->max >= num && pseq->min <= num)
-				return TRUE;
+				return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
