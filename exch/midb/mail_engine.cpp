@@ -1132,74 +1132,61 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 		if (0 == strcasecmp(argv[i], "NOT")) {
 			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
-			if (i >= argc) {
+			if (i >= argc)
 				return {};
-			}
 		} else {
 			ptree_node->conjunction = midb_conj::c_and;
 		}
 		if (array_find_istr(kwlist1, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
-			if (ptree_node->ct_keyword == nullptr) {
+			if (ptree_node->ct_keyword == nullptr)
 				return {};
-			}
 		} else if (array_find_istr(kwlist2, argv[i])) {
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			if (NULL == strptime(argv[i], "%d-%b-%Y", &tmp_tm)) {
+			if (strptime(argv[i], "%d-%b-%Y", &tmp_tm) == nullptr)
 				return {};
-			}
 			ptree_node->ct_time = mktime(&tmp_tm);
 		} else if ('(' == argv[i][0]) {
 			len = strlen(argv[i]);
 			argv[i][len - 1] = '\0';
 			tmp_argc = parse_imap_args(argv[i] + 1,
 				len - 2, tmp_argv, sizeof(tmp_argv));
-			if (-1 == tmp_argc) {
+			if (tmp_argc == -1)
 				return {};
-			}
 			auto plist1 = mail_engine_ct_build_internal(
 						charset, tmp_argc, tmp_argv);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			ptree_node->pbranch = plist1.release();
 		} else if (0 == strcasecmp(argv[i], "OR")) {
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			tmp_argc = mail_engine_ct_compile_criteria(
 								argc, argv, i, tmp_argv);
-			if (-1 == tmp_argc) {
+			if (tmp_argc == -1)
 				return {};
-			}
 			i += tmp_argc;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			tmp_argc1 = mail_engine_ct_compile_criteria(
 					argc, argv, i, tmp_argv + tmp_argc);
-			if (-1 == tmp_argc1) {
+			if (tmp_argc1 == -1)
 				return {};
-			}
 			auto plist1 = mail_engine_ct_build_internal(charset,
 							tmp_argc + tmp_argc1, tmp_argv);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			if (plist1->size() != 2)
 				return {};
 			auto &ln = plist1->back();
@@ -1211,40 +1198,34 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
 			ptree_node->condition = midb_cond::header;
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_headers[0] = strdup(argv[i]);
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_headers[1] = strdup(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "LARGER") ||
 			0 == strcasecmp(argv[i], "SMALLER")) {
 			ptree_node->condition = strcasecmp(argv[i], "LARGER") == 0 ?
 			                        midb_cond::larger : midb_cond::smaller;
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
 		} else if (0 == strcasecmp(argv[i], "UID")) {
 			ptree_node->condition = midb_cond::uid;
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			auto plist1 = ct_parse_seq(argv[i]);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			ptree_node->ct_seq = plist1.release();
 		} else {
 			auto plist1 = ct_parse_seq(argv[i]);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = plist1.release();
 		}
@@ -1279,10 +1260,9 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 	last_break = string;
 	last_colon = NULL;
 	for (size_t i = 0; i <= len; ++i) {
-		if (!HX_isdigit(string[i]) && string[i] != '*'
-			&& ',' != string[i] && ':' != string[i]) {
+		if (!HX_isdigit(string[i]) && string[i] != '*' &&
+		    string[i] != ',' && string[i] != ':')
 			return NULL;
-		}
 		if (':' == string[i]) {
 			if (NULL != last_colon) {
 				return NULL;
@@ -2670,9 +2650,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
-		!exmdb_client::allocate_cn(argv[1], &change_num)) {
+	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO mapping"
 		" (message_id, mid_string, flag_string) VALUES"
 		" (%llu, ?, ?)", LLU{rop_util_get_gc_value(message_id)});
@@ -2859,9 +2838,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
-		!exmdb_client::allocate_cn(argv[1], &change_num)) {
+	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
-	}
+
 	std::string mid_string;
 	try {
 		mid_string = std::to_string(time(nullptr)) + "." +
