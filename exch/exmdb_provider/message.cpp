@@ -1555,9 +1555,8 @@ static BOOL message_rectify_message(const char *account,
 	}
 	if (!pmsgctnt->proplist.has(PR_SEARCH_KEY)) {
 		auto pbin = cu_alloc<BINARY>();
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		pbin->cb = 16;
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)

@@ -48,9 +48,8 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 		if (!cu_get_property(MAPI_ATTACH, attachment_id, CP_ACP,
 		    psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
 			return 0;
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			continue;
-		}
 		if (!r.empty())
 			r += bounce_gen_sep();
 		r += static_cast<const char *>(pvalue);
@@ -80,18 +79,16 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	}
 	if('\0' != time_zone[0]) {
 		auto sp = tz::tzalloc(time_zone);
-		if (NULL == sp) {
+		if (sp == nullptr)
 			return FALSE;
-		}
 		tz::localtime_rz(sp, &cur_time, &time_buff);
 		tz::tzfree(sp);
 	} else {
 		localtime_r(&cur_time, &time_buff);
 	}
 	len = strftime(date_buff, 128, "%x %X", &time_buff);
-	if ('\0' != time_zone[0]) {
+	if (*time_zone != '\0')
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
-	}
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;
@@ -140,15 +137,12 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 		return false;
 	gx_strlcpy(pcontent, replaced, content_size);
 	HXmc_free(replaced);
-	if (NULL != mime_from) {
+	if (mime_from != nullptr)
 		strcpy(mime_from, tp.from.c_str());
-	}
-	if (NULL != subject) {
+	if (subject != nullptr)
 		strcpy(subject, tp.subject.c_str());
-	}
-	if (NULL != content_type) {
+	if (content_type != nullptr)
 		strcpy(content_type, tp.content_type.c_str());
-	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1219: ENOMEM");
@@ -173,9 +167,8 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	    subject, content_type, content_buff, std::size(content_buff)))
 		return FALSE;
 	auto phead = pmail->add_head();
-	if (NULL == phead) {
+	if (phead == nullptr)
 		return FALSE;
-	}
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
 	pmime->set_content_param("report-type", "delivery-status");
@@ -192,9 +185,8 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", subject);
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
-	if (NULL == pmime) {
+	if (pmime == nullptr)
 		return FALSE;
-	}
 	pmime->set_content_type(content_type);
 	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
@@ -209,9 +201,8 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
 	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn.new_rcpt_fields();
-	if (NULL == pdsn_fields) {
+	if (pdsn_fields == nullptr)
 		return FALSE;
-	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt);
 	dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff);
 	dsn.append_field(pdsn_fields, "Action", "failed");

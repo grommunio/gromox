@@ -902,9 +902,8 @@ static BOOL instance_read_message(
 		return TRUE;
 	}
 	pmsgctnt->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
-	if (NULL == pmsgctnt->children.pattachments) {
+	if (pmsgctnt->children.pattachments == nullptr)
 		return FALSE;
-	}
 	pmsgctnt->children.pattachments->count =
 		pmsgctnt1->children.pattachments->count;
 	if (0 != pmsgctnt1->children.pattachments->count) {
@@ -1517,12 +1516,10 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 {
 	pproptags->count = pmsgctnt->proplist.count + 6;
-	if (NULL != pmsgctnt->children.prcpts) {
+	if (pmsgctnt->children.prcpts != nullptr)
 		pproptags->count++;
-	}
-	if (NULL != pmsgctnt->children.pattachments) {
+	if (pmsgctnt->children.pattachments != nullptr)
 		pproptags->count++;
-	}
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == pproptags->pproptag) {
 		pproptags->count = 0;
@@ -1567,9 +1564,8 @@ static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *pproptags)
 {
 	pproptags->count = pattachment->proplist.count + 1;
-	if (NULL != pattachment->pembedded) {
+	if (pattachment->pembedded != nullptr)
 		pproptags->count++;
-	}
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (NULL == pproptags->pproptag) {
 		pproptags->count = 0;
