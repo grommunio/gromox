@@ -2058,13 +2058,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			sqlite3_bind_int64(pstmt2, 3, commit_max);
 			sqlite3_bind_text(pstmt2, 4, encoded_name, -1, SQLITE_STATIC);
 			auto rx = pstmt2.step();
-			if (rx != SQLITE_DONE) {
-				mlog(LV_ERR, "E-1224: pstmt2 fid=%llu parent=%llu commit_max=%llu enc=%s error=%s",
-					(unsigned long long)folder_id,
-					(long long)parent_fid,
-					(long long)commit_max,
-					encoded_name,
-					sqlite3_errstr(rx));
+			if (rx == SQLITE_CONSTRAINT) {
+				mlog(LV_ERR, "E-1224: XXX: Not implemented: midb is unable to cope with folder deletions that occurred while midb was not connected to exmdb");
+				return false;
+			} else if (rx != SQLITE_DONE) {
+				/* step() will already log */
 				return false;
 			}
 			b_new = TRUE;
