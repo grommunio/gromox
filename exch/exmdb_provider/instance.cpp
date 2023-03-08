@@ -108,7 +108,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+	if (pstmt.step() != SQLITE_ROW) {
 		*ppmsgctnt = NULL;
 		return TRUE;
 	}
@@ -222,7 +222,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	row_id = 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		auto pproplist = prcpts->emplace();
 		if (pproplist == nullptr || pproplist->set(PR_ROWID, &row_id) != 0)
 			return FALSE;	
@@ -253,7 +253,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	         " FROM messages WHERE parent_attid=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		pattachment = attachment_content_init();
 		if (pattachment == nullptr)
 			return FALSE;
@@ -299,7 +299,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 		}
 		sqlite3_bind_int64(pstmt1, 1, attachment_id);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+		if (pstmt1.step() == SQLITE_ROW) {
 			message_id1 = sqlite3_column_int64(pstmt1, 0);
 			last_id = 0;
 			if (!instance_load_message(psqlite, message_id1,

@@ -43,7 +43,7 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
-	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+	while (pstmt.step() == SQLITE_ROW) {
 		auto attachment_id = pstmt.col_uint64(0);
 		if (!cu_get_property(MAPI_ATTACH, attachment_id, CP_ACP,
 		    psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
