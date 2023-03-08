@@ -79,6 +79,10 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
+		if (bounce_producer_check_domain == nullptr) {
+			mlog(LV_ERR, "bounce_producer: wtf, check_domain is null");
+			return false;
+		}
 		auto lcldom = bounce_producer_check_domain(pdomain);
 		if (lcldom < 0) {
 			mlog(LV_ERR, "bounce_producer: check_domain: %s",
