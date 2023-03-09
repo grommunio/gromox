@@ -94,8 +94,6 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 BOOL EWSPlugin::preproc(int ctx_id)
 {
 	auto req = get_request(ctx_id);
-	if (strcasecmp(req->method, "POST") != 0)
-		return TRUE;
 	char uri[1024];
 	size_t len = req->f_request_uri.read(uri, std::size(uri) - 1);
 	if (len == MEM_END_OF_FILE)
