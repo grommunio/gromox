@@ -352,8 +352,7 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	else
 		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(PROP_TYPE(propval.proptag), propname));
 	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
-	if(!ismv)
-		return serialize(data, 0, PROP_TYPE(propval.proptag), value);
+	serialize(data, PROP_TYPE(propval.proptag), value);
 }
 
 tFieldURI::tFieldURI(const XMLElement* xml) :
@@ -391,16 +390,18 @@ tGuid::tGuid(const XMLAttribute* xml)
 		throw DeserializationError(E3063);
 }
 
-
 void tItem::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(ItemId);
 	XMLDUMPT(ParentFolderId);
 	XMLDUMPT(ItemClass);
 	XMLDUMPT(Subject);
+	XMLDUMPT(Sensitivity);
 	XMLDUMPT(Body);
 	XMLDUMPT(DateTimeReceived);
 	XMLDUMPT(Size);
+	XMLDUMPT(Categories);
+	XMLDUMPT(Importance);
 	XMLDUMPT(InReplyTo);
 	XMLDUMPT(DateTimeSent);
 	XMLDUMPT(DisplayCc);
@@ -457,8 +458,10 @@ void tMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(IsReadReceiptRequested);
 	XMLDUMPT(IsDeliveryReceiptRequested);
 	XMLDUMPT(From);
+	XMLDUMPT(InternetMessageId);
 	XMLDUMPT(IsRead);
 	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(References);
 	XMLDUMPT(ReplyTo);
 	XMLDUMPT(ReceivedBy);
 	XMLDUMPT(ReceivedRepresenting);

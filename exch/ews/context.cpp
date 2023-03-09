@@ -72,7 +72,7 @@ void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY
 	PROPID_ARRAY namedIds;
 	PROPNAME_ARRAY propNames{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};
 	plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds);
-	if(namedIds.count == types.size())
+	if(namedIds.count != types.size())
 		return;
 	result.namedTags.reserve(namedIds.count);
 	for(size_t i = 0; i < namedIds.count; ++i)
@@ -80,7 +80,7 @@ void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY
 		if(namedIds.ppropid[i] == 0) // Failed to retrieve named property
 			continue;
 		if(result.namedTags.try_emplace(PROP_TAG(types[i], namedIds.ppropid[i]), names[i]).second)
-			result.tags.emplace_back(namedIds.ppropid[i]);
+			result.tags.emplace_back(PROP_TAG(types[i], namedIds.ppropid[i]));
 	}
 }
 

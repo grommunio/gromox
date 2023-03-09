@@ -586,29 +586,74 @@ const char* tExtendedFieldURI::typeName(uint16_t type)
 tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) : propval(tp), propname(pn)
 {}
 
-void tExtendedProperty::serialize(const void* data, size_t idx, uint16_t type, XMLElement* xml) const
+/**
+ * @brief      Unpack multi-value property
+ *
+ * @param      data  Property data
+ * @param      type  Property type
+ * @param      xml   XML node to store values in
+ * @param      value Pointer to member containing values
+ *
+ * @tparam     C     Structure used to hold values
+ * @tparam     T     Type of the values to store
+ */
+template<typename C, typename T>
+inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLElement* xml, T* C::*value) const
+{
+	const C* content = static_cast<const C*>(data);
+	for(T* val = content->*value; val < content->*value+content->count; ++val)
+		if constexpr(std::is_same_v<T, char*>)
+			serialize(*val, type&~0x1000, xml->InsertNewChildElement("t:Value"));
+		else
+			serialize(val, type&~0x1000, xml->InsertNewChildElement("t:Value"));
+}
+
+/**
+ * @brief      Write property value to XML
+ *
+ * @param      data  Property data
+ * @param      type  Property type
+ * @param      xml   XML node to store value(s) in
+ */
+void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* xml) const
 {
 	switch(type)
 	{
 	case PT_BOOLEAN:
-		return xml->SetText(bool(*(reinterpret_cast<const char*>(data)+idx)));
+		return xml->SetText(bool(*(reinterpret_cast<const char*>(data))));
 	case PT_SHORT:
-		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)));
 	case PT_LONG:
 	case PT_ERROR:
-		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)));
 	case PT_I8:
 	case PT_CURRENCY:
 	case PT_SYSTIME:
-		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)));
 	case PT_FLOAT:
-		return xml->SetText(*(reinterpret_cast<const float*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const float*>(data)));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		return xml->SetText(*(reinterpret_cast<const double*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const double*>(data)));
 	case PT_STRING8:
 	case PT_UNICODE:
 		return xml->SetText((reinterpret_cast<const char*>(data)));
+	case PT_MV_SHORT:
+		return serializeMV(data, type, xml, &SHORT_ARRAY::ps);
+	case PT_MV_LONG:
+		return serializeMV(data, type, xml, &LONG_ARRAY::pl);
+	case PT_MV_I8:
+	case PT_MV_CURRENCY:
+	case PT_MV_SYSTIME:
+		return serializeMV(data, type, xml, &LONGLONG_ARRAY::pll);
+	case PT_MV_FLOAT:
+		return serializeMV(data, type, xml, &FLOAT_ARRAY::mval);
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		return serializeMV(data, type, xml, &DOUBLE_ARRAY::mval);
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+		return serializeMV(data, type, xml, &STRING_ARRAY::ppstr);
 	}
 }
 
@@ -624,14 +669,15 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
 	{"item:ConversationId", PR_CONVERSATION_ID},
 	{"item:DisplayTo", PR_DISPLAY_TO},
-    {"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
-    {"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
-    {"item:HasAttachments", PR_HASATTACH},
+	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
+	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
+	{"item:HasAttachments", PR_HASATTACH},
 	{"item:Importance", PR_IMPORTANCE},
-    {"item:InReplyTo", PR_IN_REPLY_TO_ID},
+	{"item:InReplyTo", PR_IN_REPLY_TO_ID},
 	{"item:IsAssociated", PR_ASSOCIATED},
 	{"item:ItemClass", PR_MESSAGE_CLASS},
-	{"item:Size", PR_MESSAGE_SIZE_EXTENDED},
+	{"item:Sensitivity", PR_SENSITIVITY},
+	{"item:Size", PR_MESSAGE_SIZE},
 	{"item:Subject", PR_SUBJECT},
 	{"message:ConversationIndex", PR_CONVERSATION_INDEX},
 	{"message:ConversationTopic", PR_CONVERSATION_TOPIC},
@@ -647,7 +693,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
-	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_STRING8}}
+	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_UNICODE}}
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -785,7 +831,7 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			}
 		case PR_IMPORTANCE:
 			Importance = *pval(uint32_t) == IMPORTANCE_LOW? Enum::Low :
-							 *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
+			             *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
 			break;
 		case PR_IN_REPLY_TO_ID:
 			InReplyTo.emplace(pval(char)); break;
@@ -797,10 +843,17 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			ItemClass.emplace(pval(char)); break;
 		case PR_MESSAGE_DELIVERY_TIME:
 			DateTimeReceived = sTimePoint::fromNT(*pval(uint64_t)); break;
-		case PR_MESSAGE_SIZE_EXTENDED:
-			Size.emplace(*pval(uint64_t)); break;
+		case PR_MESSAGE_SIZE:
+			Size.emplace(*pval(uint32_t)); break;
 		case PR_PARENT_ENTRYID:
 			ParentFolderId.emplace(*tp); break;
+		case PR_SENSITIVITY:
+			try {
+				Sensitivity.emplace(size_t(*pval(uint32_t)));
+			} catch (EnumError& e) {
+				mlog(LV_WARN, "[ews] could not set sensitivity: %s", e.what());
+			}
+			break;
 		case PR_SUBJECT:
 			Subject.emplace(pval(char)); break;
 		default:
@@ -840,7 +893,19 @@ bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& 
 	if(PROP_ID(tp.proptag) < 0x8000 || (entry = namedProps.find(tp.proptag)) == namedProps.end())
 		return false;
 	const PROPERTY_NAME& pn = entry->second;
-	//Here we can catch known property names and map them to the appropriate attributes
+	if(pn.kind == MNID_STRING)
+	{
+		if(pn.guid == PS_PUBLIC_STRINGS)
+		{
+			if(!strcmp(pn.pname, "Keywords"))
+			{
+				const STRING_ARRAY* content = static_cast<const STRING_ARRAY*>(tp.pvalue);
+				if(content->count)
+					Categories.emplace(content->ppstr, content->ppstr+content->count);
+				return true;
+			}
+		}
+	}
 	//Otherwise just put it into an extended attribute
 	ExtendedProperty.emplace_back(tp, pn);
 	return true;

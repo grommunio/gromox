@@ -135,6 +135,13 @@ struct ExplicitConvert<std::string>
 };
 
 /**
+ * @brief      Conversion specialization for sString (same as std::string)
+ */
+template<>
+struct ExplicitConvert<Structures::sString> : public ExplicitConvert<std::string>
+{};
+
+/**
  * @brief      Conversion specialization for timestamps
  */
 template<>

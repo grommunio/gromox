@@ -197,6 +197,14 @@ struct sShape
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 };
 
+/**
+ * String class to be used in arrays (i.e. Types.xsd:3852)
+ */
+struct sString : public std::string, public NS_EWS_Types
+{
+	static constexpr char NAME[] = "String";
+	using std::string::string;
+};
 
 /**
  * @brief     Sync state helper class
@@ -420,7 +428,10 @@ struct tExtendedProperty
 
 	void serialize(tinyxml2::XMLElement*) const;
 private:
-	void serialize(const void*, size_t, uint16_t, tinyxml2::XMLElement*) const;
+	void serialize(const void*, uint16_t, tinyxml2::XMLElement*) const;
+
+	template<typename C, typename T>
+	void serializeMV(const void*, uint16_t, tinyxml2::XMLElement*, T* C::*) const;
 };
 
 /**
@@ -588,11 +599,12 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> ItemClass; ///< PR_MESSAGE_CLASS
 	std::optional<std::string> Subject; ///< PR_SUBJECT
 	//<xs:element name="Sensitivity" type="t:SensitivityChoicesType" minOccurs="0" />
-	std::optional<tBody> Body;
+	std::optional<Enum::SensitivityChoicesType> Sensitivity; ///< PR_SENSITIVITY
+	std::optional<tBody> Body; ///< PR_BODY or PR_HTML
 	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
 	std::optional<sTimePoint> DateTimeReceived; ///< PR_MESSAGE_DELIVERY_TIME
 	std::optional<uint64_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
-	//<xs:element name="Categories" type="t:ArrayOfStringsType" minOccurs="0" />
+	std::optional<std::vector<sString>> Categories; ///< Named property "PS_PUBLIC_STRINGS:Keywords:PT_MV_UNICODE"
 	std::optional<Enum::ImportanceChoicesType> Importance; ///< PR_IMPORTANCE
 	std::optional<std::string> InReplyTo; ///< PR_IN_REPLY_TO_ID
 	//std::optional<bool> IsSubmitted;
@@ -815,7 +827,6 @@ struct tMessage : public tItem
 	std::optional<bool> IsRead;
 	std::optional<bool> IsResponseRequested;
 	std::optional<std::string> References; ///< PR_INTERNET_REFERENCES
-	//<xs:element name="References" type="xs:string" minOccurs="0" />
 	std::optional<std::vector<tSingleRecipient>> ReplyTo;
 	std::optional<tSingleRecipient> ReceivedBy;
 	std::optional<tSingleRecipient> ReceivedRepresenting;

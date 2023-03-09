@@ -27,6 +27,19 @@ struct StrEnum : public std::string
 	StrEnum(Args&&... args) : std::string(std::forward<Args...>(args...))
 	{check(*this);}
 
+	StrEnum(size_t index, size_t def=Choices.size())
+	{
+		if(index >= Choices.size() && def >= Choices.size())
+		{
+			std::string msg = "Invalid index ";
+			msg += std::to_string(index);
+			msg += " for enum ";
+			printChoices(msg);
+			throw gromox::EWS::Exceptions::EnumError(msg);
+		}
+		assign(Choices[index >= Choices.size()? def : index]);
+	}
+
 	template<typename Arg>
 	StrEnum& operator=(Arg&& arg)
 	{
@@ -42,14 +55,8 @@ struct StrEnum : public std::string
 				return;
 		std::string msg = "\"";
 		msg += v;
-		msg += "\" is not one of [\"";
-		msg += Choices[0];
-		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
-		{
-			msg += "\", \"";
-			msg += *it;
-		}
-		msg += "\"]";
+		msg += "\" is not one of ";
+		printChoices(msg);
 		throw gromox::EWS::Exceptions::EnumError(msg);
 	}
 
@@ -63,6 +70,19 @@ struct StrEnum : public std::string
 			++i;
 		}
 		return -1;
+	}
+
+private:
+	static void printChoices(std::string& dest)
+	{
+		dest += '[';
+		dest += Choices[0];
+		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
+		{
+			dest += "\", \"";
+			dest += *it;
+		}
+		dest += "\"]";
 	}
 };
 
@@ -88,6 +108,7 @@ struct Enum
 	STR(CLSID);
 	STR(CLSIDArray);
 	STR(Complete);
+	STR(Confidential);
 	STR(Contact);
 	STR(Currency);
 	STR(CurrencyArray);
@@ -147,10 +168,12 @@ struct Enum
 	STR(Optional);
 	STR(Organizer);
 	STR(OutOfOfficeMessage);
+	STR(Personal);
 	STR(PcxPeopleSearch);
 	STR(PolicyNudges);
 	STR(Poor);
 	STR(PreferAccessibleContent);
+	STR(Private);
 	STR(PrivateDL);
 	STR(ProtectionRules);
 	STR(PublicDL);
@@ -271,6 +294,7 @@ struct Enum
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
 	using MeetingAttendeeType = StrEnum<Organizer, Required, Optional, Room, Resource>; ///< Types.xsd:6278
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
+	using SensitivityChoicesType = StrEnum<Normal, Personal, Private, Confidential>; ///< Types.xsd:1698
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
 	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
