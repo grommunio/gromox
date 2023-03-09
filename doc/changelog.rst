@@ -1,5 +1,5 @@
-Development 2.5.72
-==================
+Gromox 2.6 (2023-03-10)
+=======================
 
 Fixes:
 
@@ -19,6 +19,7 @@ Fixes:
 * mapi_lib: rectify emission of \cf code in htmltortf
 * delivery: reduce number of default worker threads to number of client
   connections to temporarily address "too many connections"
+* delivery: retain queue messages on processing errors
 * mlist_expand: resolve null dereference during mlist_expand
 
 Behavioral changes:
