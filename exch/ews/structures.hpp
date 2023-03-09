@@ -405,7 +405,7 @@ struct tExtendedFieldURI
 	std::optional<std::string> PropertyTag; //Attribute
 	Enum::MapiPropertyTypeType PropertyType; //Attribute
 	std::optional<int32_t> PropertyId; // Attribute
-	//<xs:attribute name="DistinguishedPropertySetId" type="t:DistinguishedPropertySetType" use="optional"/>
+	std::optional<Enum::DistinguishedPropertySetType> DistinguishedPropertySetId; //Attribute
 	std::optional<tGuid> PropertySetId; // Attribute.
 	std::optional<std::string> PropertyName; //Attribute
 
@@ -413,6 +413,7 @@ struct tExtendedFieldURI
 
 	static const char* typeName(uint16_t);
 
+	static std::array<const GUID*, 10> propsetIds; ///< Same order as Enum::DistinguishedPropertySetType, Types.xsd:1040
 	static std::array<TMEntry, 26> typeMap; ///< Types.xsd:1060
 };
 

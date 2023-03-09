@@ -96,18 +96,22 @@ struct Enum
 
 	//String constants used in enums
 #define STR(NAME) static constexpr char NAME[] = #NAME
+	STR(Address);
 	STR(All);
 	STR(AllProperties);
 	STR(ApplicationTime);
 	STR(ApplicationTimeArray);
+	STR(Appointment);
 	STR(Best);
 	STR(Binary);
 	STR(BinaryArray);
 	STR(Boolean);
 	STR(Busy);
+	STR(CalendarAssistant);
 	STR(CLSID);
 	STR(CLSIDArray);
 	STR(Complete);
+	STR(Common);
 	STR(Confidential);
 	STR(Contact);
 	STR(Currency);
@@ -141,6 +145,7 @@ struct Enum
 	STR(ImplicitContact);
 	STR(Integer);
 	STR(IntegerArray);
+	STR(InternetHeaders);
 	STR(InvalidRecipient);
 	STR(Known);
 	STR(Long);
@@ -150,6 +155,7 @@ struct Enum
 	STR(Mailbox);
 	STR(MailboxFullStatus);
 	STR(MaxMessageSize);
+	STR(Meeting);
 	STR(MergedOnly);
 	STR(ModerationStatus);
 	STR(Monday);
@@ -178,6 +184,7 @@ struct Enum
 	STR(ProtectionRules);
 	STR(PublicDL);
 	STR(PublicFolder);
+	STR(PublicStrings);
 	STR(RecipientSuggestions);
 	STR(Required);
 	STR(Resource);
@@ -186,6 +193,7 @@ struct Enum
 	STR(Scheduled);
 	STR(Scope);
 	STR(SharePointURLs);
+	STR(Sharing); //=Caring
 	STR(Short);
 	STR(ShortArray);
 	STR(String);
@@ -193,11 +201,13 @@ struct Enum
 	STR(Sunday);
 	STR(SystemTime);
 	STR(SystemTimeArray);
+	STR(Task);
 	STR(Tentative);
 	STR(Text);
 	STR(Thursday);
 	STR(TotalMemberCount);
 	STR(Tuesday);
+	STR(UnifiedMessaging);
 	STR(UnifiedMessagingConfiguration);
 	STR(Unknown);
 	STR(User);
@@ -284,6 +294,7 @@ struct Enum
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
 	using DefaultShapeNamesType = StrEnum<IdOnly, Default, AllProperties, PcxPeopleSearch>; ///< Types.xsd:1255
 	using DistinguishedFolderIdNameType = StrEnum<calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot, publicfoldersroot, root, junkemail, searchfolders, voicemail, recoverableitemsroot, recoverableitemsdeletions, recoverableitemsversions, recoverableitemspurges, recoverableitemsdiscoveryholds, archiveroot, archivemsgfolderroot, archivedeleteditems, archiveinbox, archiverecoverableitemsroot, archiverecoverableitemsdeletions, archiverecoverableitemsversions, archiverecoverableitemspurges, archiverecoverableitemsdiscoveryholds, syncissues, conflicts, localfailures, serverfailures, recipientcache, quickcontacts, conversationhistory, adminauditlogs, todosearch, mycontacts, directory, imcontactlist, peopleconnect, favorites, mecontact, personmetadata, teamspaceactivity, teamspacemessaging, teamspaceworkitems, scheduled, orionnotes, tagitems, alltaggeditems, allcategorizeditems, externalcontacts, teamchat, teamchathistory, yammerdata, yammerroot, yammerinbound, yammeroutbound, yammerfeeds, kaizaladata, messageingestion, onedriveroot, onedriverecylebin, onedrivesystem, onedrivevolume, important, starred, archiv>; //Types.xsd:1768
+	using DistinguishedPropertySetType = StrEnum<Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task, Sharing>; ///< Types.xsd:1040
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
 	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333

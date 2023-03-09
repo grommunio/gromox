@@ -328,6 +328,7 @@ tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
     XMLINITA(PropertyTag),
     XMLINITA(PropertyType),
     XMLINITA(PropertyId),
+    XMLINITA(DistinguishedPropertySetId),
     XMLINITA(PropertySetId),
     XMLINITA(PropertyName)
 {}

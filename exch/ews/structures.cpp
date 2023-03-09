@@ -442,6 +442,19 @@ decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 	{"SystemTimeArray", PT_MV_SYSTIME},
 }};
 
+decltype(tExtendedFieldURI::propsetIds) tExtendedFieldURI::propsetIds = {
+	&PSETID_MEETING,
+	&PSETID_APPOINTMENT,
+	&PSETID_COMMON,
+	&PS_PUBLIC_STRINGS,
+	&PSETID_ADDRESS,
+	&PS_INTERNET_HEADERS,
+	&PSETID_CALENDARASSISTANT,
+	&PSETID_UNIFIEDMESSAGING,
+	&PSETID_TASK,
+	&PSETID_SHARING
+};
+
 /**
  * @brief     Generate URI from tag ID
  *
@@ -517,10 +530,10 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
 		tags = PROP_TAG(type->second, tagId);
 	}
-	else if(PropertySetId)
+	else if(PropertySetId || DistinguishedPropertySetId)
 	{
 		PROPERTY_NAME name{};
-		name.guid = *PropertySetId;
+		name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
 		if(PropertyName)
 		{
 			name.kind = MNID_STRING;
