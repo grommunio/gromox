@@ -93,7 +93,7 @@ int exmdb_local_run() try
 	return -3;
 }
 
-BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
+hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 {
 	int cache_ID;
 	char *pdomain;
@@ -105,9 +105,10 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 	
 	remote_found = FALSE;
 	if (BOUND_NOTLOCAL == pcontext->pcontrol->bound_type) {
-		return FALSE;
+		return hook_result::xcontinue;
 	}
 	mem_file_init(&remote_file, pcontext->pcontrol->f_rcpt_to.allocator);
+	bool had_error = false;
 	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff,
 	       arsizeof(rcpt_buff)) != MEM_END_OF_FILE) {
 		pdomain = strchr(rcpt_buff, '@');
@@ -207,6 +208,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_ERROR:
+			had_error = true;
 			net_failure_statistic(0, 0, 1, 0);
 			if (!pcontext->pcontrol->need_bounce ||
 			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
@@ -234,6 +236,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_FAILURE:
+			had_error = true;
 			net_failure_statistic(0, 1, 0, 0);
 			time(&current_time);
 			cache_ID = cache_queue_put(pcontext, rcpt_buff, current_time);
@@ -248,13 +251,17 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			break;
 		}
 	}
+	if (had_error) {
+		mem_file_free(&remote_file);
+		return hook_result::proc_error;
+	}
 	if (remote_found) {
 		remote_file.copy_to(pcontext->pcontrol->f_rcpt_to);
 		mem_file_free(&remote_file);
-		return FALSE;
+		return hook_result::xcontinue;
 	}
 	mem_file_free(&remote_file);
-	return TRUE;
+	return hook_result::stop;
 }
 
 static void* exmdb_local_alloc(size_t size)

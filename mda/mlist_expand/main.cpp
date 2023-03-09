@@ -21,7 +21,7 @@ using namespace gromox;
 
 static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 
-static BOOL expand_process(MESSAGE_CONTEXT *pcontext);
+static hook_result expand_process(MESSAGE_CONTEXT *pcontext);
 
 static BOOL hook_mlist_expand(int reason, void **ppdata)
 {
@@ -54,7 +54,7 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 }
 HOOK_ENTRY(hook_mlist_expand);
 
-static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
+static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 {
 	int result, i;
 	BOOL b_touched;
@@ -68,7 +68,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	auto phead = pcontext->pmail->get_head();
 	if (NULL == phead) {
 		mem_file_free(&temp_file2);
-		return FALSE;
+		return hook_result::proc_error;
 	}
 
 	auto num = phead->get_field_num("Delivered-To");
@@ -207,7 +207,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 
 	if (!b_touched) {
 		mem_file_free(&temp_file2);
-		return FALSE;
+		return hook_result::xcontinue;
 	}
 	
 	temp_file2.copy_to(pcontext->pcontrol->f_rcpt_to);
@@ -249,5 +249,6 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	throw_context(pcontext_expand);
 
  EXIT_EXPAND:
-	return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ? TRUE : false;
+	return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
+	       hook_result::stop : hook_result::xcontinue;
 }

@@ -132,8 +132,7 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
 static bool transporter_register_remote(HOOK_FUNCTION);
-static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
-	THREAD_DATA *pthr_data); 
+static hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *, THREAD_DATA *);
 static void transporter_clean_up_unloading();
 static const char *transporter_get_host_ID();
 static const char *transporter_get_default_domain();
@@ -383,12 +382,10 @@ void transporter_wakeup_one_thread()
  *		pcontext [in]			message context pointer
  *		pthr_data [in]			TLS data pointer
  */
-static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
+static gromox::hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data)
 {
 	DOUBLE_LIST_NODE *pnode, *phead, *ptail;
-	BOOL hook_result;
-	
 	/*
 	 *	first get the head and tail of list, this will be thread safe because 
 	 *	the list is growing list, all new nodes will be appended at tail
@@ -398,7 +395,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	ptail = double_list_get_tail(&g_hook_list);
 	ml_hold.unlock();
 	
-	hook_result = FALSE;
+	hook_result hook_result = hook_result::xcontinue;
 	for (pnode=phead; NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		auto phook = static_cast<HOOK_ENTRY *>(pnode->pdata);
@@ -416,36 +413,36 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			ct_hold.lock();
 			phook->count --;
 			ct_hold.unlock();
-			if (hook_result)
-				break;
+			if (hook_result != hook_result::xcontinue)
+				return hook_result;
 		}
  NEXT_LOOP:
 		if (pnode == ptail) {
 			break;
 		}
 	}
-	if (hook_result)
-		return TRUE;
 	if (pthr_data->last_thrower != g_local_hook) {
 		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		pthr_data->last_hook = g_local_hook;
-		if (g_local_hook(pcontext))
-			return TRUE;
+		hook_result = g_local_hook(pcontext);
+		if (hook_result != hook_result::xcontinue)
+			return hook_result;
 	}
 	if (pthr_data->last_thrower != g_remote_hook) {
 		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		pthr_data->last_hook = g_remote_hook;
-		if (g_remote_hook(pcontext))
-			return TRUE;
+		hook_result = g_remote_hook(pcontext);
+		if (hook_result != hook_result::xcontinue)
+			return hook_result;
 	}
-	return FALSE;
+	return hook_result;
 }
 
 static void *dxp_thrwork(void *arg)
 {
 	char *ptr;
 	int len, cannot_served_times;
-	BOOL b_self, pass_result;
+	BOOL b_self;
 	MESSAGE *pmessage;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTEXT *pcontext;
@@ -530,8 +527,8 @@ static void *dxp_thrwork(void *arg)
 		}
 		pthr_data->last_hook = NULL;
 		pthr_data->last_thrower = NULL;
-		pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
-		if (!pass_result) {
+		auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
+		if (pass_result == hook_result::xcontinue) {
 			transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
 			if (!b_self) {
@@ -546,6 +543,8 @@ static void *dxp_thrwork(void *arg)
 		if (!b_self) {
 			pcontext->pcontrol->f_rcpt_to.clear();
 			pcontext->pmail->clear();
+			if (pass_result == hook_result::proc_error)
+				message_dequeue_save(pmessage);
 			message_dequeue_put(pmessage);
 		} else {
 			transporter_put_context(pcontext);
@@ -943,7 +942,7 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
  */
 static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 {
-	BOOL ret_val, pass_result;
+	BOOL ret_val;
 	DOUBLE_LIST_NODE *pnode;
 	CIRCLE_NODE *pcircle;
 	HOOK_FUNCTION last_thrower, last_hook;
@@ -988,8 +987,8 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	pthr_data->last_thrower = pthr_data->last_hook;
 	double_list_append_as_tail(&pthr_data->anti_loop.thrown_list,
 		&pcircle->node);
-	pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
-	if (!pass_result) {
+	auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
+	if (pass_result == hook_result::xcontinue) {
 		ret_val = FALSE;
 		transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by any "
 			"hook registered in MPC");
@@ -1066,6 +1065,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
 static BOOL transporter_register_local(HOOK_FUNCTION func)
 {
 	if (g_local_path[0] != '\0') {
+		mlog(LV_ERR, "A local hook is already registered (%s), cannot load another", g_local_path);
 		return FALSE;
 	}
 	/* do not need read acquire write lock */
@@ -1076,8 +1076,10 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
 
 static bool transporter_register_remote(HOOK_FUNCTION func)
 {
-	if (*g_remote_path != '\0')
+	if (*g_remote_path != '\0') {
+		mlog(LV_ERR, "A remote hook is already registered (%s), cannot load another", g_remote_path);
 		return false;
+	}
 	g_remote_hook = func;
 	gx_strlcpy(g_remote_path, g_cur_lib->file_name, arsizeof(g_remote_path));
 	return true;

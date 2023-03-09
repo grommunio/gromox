@@ -359,7 +359,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 	return ret;
 }
 
-static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
+static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 {
 	CONTROL_INFO l_ctrl = *ctx->pcontrol;
 	MESSAGE_CONTEXT l_ctx;
@@ -372,10 +372,10 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	try {
 		ret = rd_send_mail(ctx, errstr);
 		if (ret == 0)
-			return TRUE;
+			return hook_result::stop;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1552: ENOMEM");
-		return false;
+		return hook_result::proc_error;
 	}
 
 	char rcpt[UADDR_SIZE];
@@ -385,7 +385,7 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (l_ctrl.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
 		mlog(LV_ERR, "remote_delivery:\t%s", rcpt);
-	return TRUE;
+	return hook_result::stop;
 }
 
 static BOOL remote_delivery_entry(int request, void **apidata) try

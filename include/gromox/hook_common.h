@@ -16,6 +16,22 @@ enum {
 	BOUND_SELF, /* message created by hook larger than BOUND_SELF */
 };
 
+namespace gromox {
+
+/**
+ * %xcontinue:	indicates that a hook may have done something; in any case,
+ * 		subsequent hooks should be run
+ * %stop:	this hook has done something and the message is processed in
+ * 		the sense that no further hooks should run
+ * %proc_error:	error during processing; stop hooks altogether and retain the
+ *              message for later
+ */
+enum class hook_result {
+	xcontinue = 0, stop, proc_error,
+};
+
+}
+
 struct CONTROL_INFO {
 	int queue_ID = 0, bound_type = 0;
 	BOOL is_spam = false, need_bounce = false;
@@ -28,7 +44,7 @@ struct MESSAGE_CONTEXT {
 	MAIL *pmail = nullptr;
 };
 
-using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
+using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);
 
 #define DECLARE_HOOK_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

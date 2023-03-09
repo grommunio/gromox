@@ -101,11 +101,11 @@ static void xa_refresh_thread()
 	}
 }
 
-static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
+static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 {
 	auto ctrl = ctx->pcontrol;
 	if (ctrl->bound_type >= BOUND_SELF)
-		return false;
+		return hook_result::xcontinue;
 
 	MEM_FILE temp_file, rcpt_file;
 	mem_file_init(&temp_file, ctrl->f_rcpt_to.allocator);
@@ -140,10 +140,10 @@ static BOOL xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	}
 	if (replaced)
 		temp_file.copy_to(ctrl->f_rcpt_to);
-	return false;
+	return hook_result::xcontinue;
 } catch (const std::bad_alloc &) {
 	mlog(LV_INFO, "E-1611: ENOMEM");
-	return false;
+	return hook_result::proc_error;
 }
 
 static constexpr const cfg_directive mysql_directives[] = {
