@@ -43,11 +43,7 @@ inline std::string &tolower(std::string &str)
  */
 template<typename T, typename... Args>
 T& defaulted(std::optional<T>& container, Args&&... args)
-{
-	if(!container)
-		container.emplace(std::forward<Args...>(args)...);
-	return *container;
-}
+{return container? *container : container.emplace(std::forward<Args...>(args)...);}
 
 } // Anonymous namespace
 

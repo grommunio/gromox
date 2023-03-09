@@ -404,7 +404,13 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(Categories);
 	XMLDUMPT(Importance);
 	XMLDUMPT(InReplyTo);
+	XMLDUMPT(IsSubmitted);
+	XMLDUMPT(IsDraft);
+	XMLDUMPT(IsFromMe);
+	XMLDUMPT(IsResend);
+	XMLDUMPT(IsUnmodified);
 	XMLDUMPT(DateTimeSent);
+	XMLDUMPT(DateTimeCreated);
 	XMLDUMPT(DisplayCc);
 	XMLDUMPT(DisplayTo);
 	XMLDUMPT(DisplayBcc);

@@ -31,6 +31,18 @@ namespace
 inline gromox::time_point nttime_to_time_point(uint64_t nttime)
 {return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
 
+/**
+ * @brief     Access contained value, create if empty
+ *
+ * @param     container   (Possibly empty) container
+ * @param     args        Arguments used for creation if container is empty
+ *
+ * @return    Reference to contained value
+ */
+template<typename T, typename... Args>
+T& defaulted(std::optional<T>& container, Args&&... args)
+{return container? *container : container.emplace(std::forward<Args...>(args)...);}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -682,6 +694,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
 	{"item:ConversationId", PR_CONVERSATION_ID},
 	{"item:DisplayTo", PR_DISPLAY_TO},
+	{"item:DateTimeCreated", PR_CREATION_TIME},
 	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
 	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
 	{"item:HasAttachments", PR_HASATTACH},
@@ -689,6 +702,8 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:InReplyTo", PR_IN_REPLY_TO_ID},
 	{"item:IsAssociated", PR_ASSOCIATED},
 	{"item:ItemClass", PR_MESSAGE_CLASS},
+	{"item:LastModifiedName", PR_LAST_MODIFIER_NAME},
+	{"item:LastModifiedTime", PR_LAST_MODIFICATION_TIME},
 	{"item:Sensitivity", PR_SENSITIVITY},
 	{"item:Size", PR_MESSAGE_SIZE},
 	{"item:Subject", PR_SUBJECT},
@@ -698,7 +713,15 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:From", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
 	{"message:From", PR_SENT_REPRESENTING_NAME},
 	{"message:InternetMessageId", PR_INTERNET_MESSAGE_ID},
+	{"message:IsDeliveryReceiptRequested", PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED},
 	{"message:IsRead", PR_READ},
+	{"message:IsReadReceiptRequested", PR_READ_RECEIPT_REQUESTED},
+	{"message:ReceivedBy", PR_RECEIVED_BY_ADDRTYPE},
+	{"message:ReceivedBy", PR_RECEIVED_BY_EMAIL_ADDRESS},
+	{"message:ReceivedBy", PR_RECEIVED_BY_NAME},
+	{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_ADDRTYPE},
+	{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_EMAIL_ADDRESS},
+	{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_NAME},
 	{"message:References", PR_INTERNET_REFERENCES},
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
@@ -710,7 +733,12 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
-	{"item:Body", sShape::Body}, //Technically not what it's intended for, but gets the job done quite well
+	{"item:Body", sShape::Body},
+	{"item:IsDraft", sShape::MessageFlags},
+	{"item:IsFromMe", sShape::MessageFlags},
+	{"item:IsResend", sShape::MessageFlags},
+	{"item:IsSubmitted", sShape::MessageFlags},
+	{"item:IsUnmodified", sShape::MessageFlags},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
 	{"message:ToRecipients", sShape::ToRecipients},
@@ -805,6 +833,14 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 		case PR_READ:
 		case PR_INTERNET_MESSAGE_ID:
 		case PR_INTERNET_REFERENCES:
+		case PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED:
+		case PR_READ_RECEIPT_REQUESTED:
+		case PR_RECEIVED_BY_ADDRTYPE:
+		case PR_RECEIVED_BY_EMAIL_ADDRESS:
+		case PR_RECEIVED_BY_NAME:
+		case PR_RCVD_REPRESENTING_ADDRTYPE:
+		case PR_RCVD_REPRESENTING_EMAIL_ADDRESS:
+		case PR_RCVD_REPRESENTING_NAME:
 		case PR_SENDER_ADDRTYPE:
 		case PR_SENDER_EMAIL_ADDRESS:
 		case PR_SENDER_NAME:
@@ -824,6 +860,8 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			DateTimeSent = sTimePoint::fromNT(*pval(uint64_t)); break;
 		case PR_CONVERSATION_ID:
 			ConversationId.emplace(*tp); break;
+		case PR_CREATION_TIME:
+			DateTimeCreated.emplace(nttime_to_time_point(*pval(uint64_t))); break;
 		case PR_DISPLAY_CC:
 			DisplayCc.emplace(pval(char)); break;
 		case PR_DISPLAY_BCC:
@@ -856,6 +894,13 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			ItemClass.emplace(pval(char)); break;
 		case PR_MESSAGE_DELIVERY_TIME:
 			DateTimeReceived = sTimePoint::fromNT(*pval(uint64_t)); break;
+		case PR_MESSAGE_FLAGS:
+			IsSubmitted = *pval(uint32_t) & MSGFLAG_SUBMITTED;
+			IsDraft = *pval(uint32_t) & MSGFLAG_UNSENT;
+			IsFromMe = *pval(uint32_t) & MSGFLAG_FROMME;
+			IsResend = *pval(uint32_t) & MSGFLAG_RESEND;
+			IsUnmodified = *pval(uint32_t) & MSGFLAG_UNMODIFIED;
+			break;
 		case PR_MESSAGE_SIZE:
 			Size.emplace(*pval(uint32_t)); break;
 		case PR_PARENT_ENTRYID:
@@ -942,14 +987,19 @@ void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
 			additional.tags(tagIns, nameIns, typeIns, special);
-	if(special & sShape::Body) //Dirty hack but most performant way to do it
+	if(special & sShape::Body)
 	{
 		std::string_view type = BodyType? *BodyType : Enum::Best;
 		if(type == Enum::Best || type == Enum::Text)
 			tagIns = PR_BODY;
 		if(type == Enum::Best || type == Enum::HTML)
 			tagIns = PR_HTML;
-		special &= ~sShape::Body; //Leave no evidence of what happened here
+		special &= ~sShape::Body;
+	}
+	if(special & sShape::MessageFlags)
+	{
+		tagIns = PR_MESSAGE_FLAGS;
+		special &= ~sShape::MessageFlags;
 	}
 }
 
@@ -972,18 +1022,34 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
 			InternetMessageId = pval(char); break;
 		case PR_INTERNET_REFERENCES:
 			References = pval(char); break;
+		case PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED:
+			IsDeliveryReceiptRequested = *pval(bool); break;
+		case PR_READ_RECEIPT_REQUESTED:
+			IsReadReceiptRequested = *pval(bool); break;
+		case PR_RECEIVED_BY_ADDRTYPE:
+			defaulted(ReceivedBy).Mailbox.RoutingType = pval(char); break;
+		case PR_RECEIVED_BY_EMAIL_ADDRESS:
+			defaulted(ReceivedBy).Mailbox.EmailAddress = pval(char); break;
+		case PR_RECEIVED_BY_NAME:
+			defaulted(ReceivedBy).Mailbox.Name = pval(char); break;
+		case PR_RCVD_REPRESENTING_ADDRTYPE:
+			defaulted(ReceivedRepresenting).Mailbox.RoutingType = pval(char); break;
+		case PR_RCVD_REPRESENTING_EMAIL_ADDRESS:
+			defaulted(ReceivedRepresenting).Mailbox.EmailAddress = pval(char); break;
+		case PR_RCVD_REPRESENTING_NAME:
+			defaulted(ReceivedRepresenting).Mailbox.Name = pval(char); break;
 		case PR_SENDER_ADDRTYPE:
-			Sender? Sender->Mailbox.RoutingType = pval(char) : Sender.emplace().Mailbox.RoutingType = pval(char); break;
+			defaulted(Sender).Mailbox.RoutingType = pval(char); break;
 		case PR_SENDER_EMAIL_ADDRESS:
-			Sender? Sender->Mailbox.EmailAddress = pval(char) : Sender.emplace().Mailbox.EmailAddress = pval(char); break;
+			defaulted(Sender).Mailbox.EmailAddress = pval(char); break;
 		case PR_SENDER_NAME:
-			Sender? Sender->Mailbox.Name = pval(char) : Sender.emplace().Mailbox.Name = pval(char); break;
+			defaulted(Sender).Mailbox.Name = pval(char); break;
 		case PR_SENT_REPRESENTING_ADDRTYPE:
-			From? From->Mailbox.RoutingType = pval(char) : From.emplace().Mailbox.RoutingType = pval(char); break;
+			defaulted(From).Mailbox.RoutingType = pval(char); break;
 		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
-			From? From->Mailbox.EmailAddress = pval(char) : From.emplace().Mailbox.EmailAddress = pval(char); break;
+			defaulted(From).Mailbox.EmailAddress = pval(char); break;
 		case PR_SENT_REPRESENTING_NAME:
-			From? From->Mailbox.Name = pval(char) : From.emplace().Mailbox.Name = pval(char); break;
+			defaulted(From).Mailbox.Name = pval(char); break;
 		default:
 			break;
 		}

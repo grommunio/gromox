@@ -193,6 +193,7 @@ struct sShape
 	static constexpr uint64_t CcRecipients =  1 << 1;
 	static constexpr uint64_t BccRecipients = 1 << 2;
 	static constexpr uint64_t Body = 1 << 3;
+	static constexpr uint64_t MessageFlags = 1 << 4;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 };
@@ -483,7 +484,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 4> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 9> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -599,7 +600,6 @@ struct tItem : public NS_EWS_Types
 	std::optional<tFolderId> ParentFolderId; ///< PR_PARENT_ENTRYID
 	std::optional<std::string> ItemClass; ///< PR_MESSAGE_CLASS
 	std::optional<std::string> Subject; ///< PR_SUBJECT
-	//<xs:element name="Sensitivity" type="t:SensitivityChoicesType" minOccurs="0" />
 	std::optional<Enum::SensitivityChoicesType> Sensitivity; ///< PR_SENSITIVITY
 	std::optional<tBody> Body; ///< PR_BODY or PR_HTML
 	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
@@ -608,14 +608,14 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::vector<sString>> Categories; ///< Named property "PS_PUBLIC_STRINGS:Keywords:PT_MV_UNICODE"
 	std::optional<Enum::ImportanceChoicesType> Importance; ///< PR_IMPORTANCE
 	std::optional<std::string> InReplyTo; ///< PR_IN_REPLY_TO_ID
-	//std::optional<bool> IsSubmitted;
-	//std::optional<bool> IsDraft;
-	//std::optional<bool> IsFromMe;
-	//std::optional<bool> IsResend;
-	//std::optional<bool> IsUnmodified;
+	std::optional<bool> IsSubmitted;
+	std::optional<bool> IsDraft;
+	std::optional<bool> IsFromMe;
+	std::optional<bool> IsResend;
+	std::optional<bool> IsUnmodified;
 	//<xs:element name="InternetMessageHeaders" type="t:NonEmptyArrayOfInternetHeadersType" minOccurs="0" />
 	std::optional<sTimePoint> DateTimeSent;
-	//std::optional<gromox::time_point> DateTimeCreated;
+	std::optional<gromox::time_point> DateTimeCreated;
 	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
 	//std::optional<gromox::time_point> ReminderDueBy;
 	//std::optional<bool> ReminderIsSet;
