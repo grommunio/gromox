@@ -1135,6 +1135,8 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 			return;
 		}
 		break;
+	default:
+		break;
 	}
 	if (double_list_get_nodes_num(&phandle->notify_list)
 		>= MAX_NOTIFY_RESPONSE_NUM) {

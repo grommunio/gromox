@@ -4798,6 +4798,8 @@ static void mail_engine_notification_proc(const char *dir,
 		mail_engine_add_notification_message(pidb.get(), folder_id, message_id);
 		break;
 	}
+	default:
+		break;
 	}
 }
 
