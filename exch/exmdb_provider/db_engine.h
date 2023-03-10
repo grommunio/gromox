@@ -17,11 +17,8 @@ enum {
 	EXMDB_UPGRADE_AUTO,
 };
 
-enum {
-	DYNAMIC_EVENT_NEW_MESSAGE,
-	DYNAMIC_EVENT_MODIFY_MESSAGE,
-	DYNAMIC_EVENT_DELETE_MESSAGE,
-	DYNAMIC_EVENT_MOVE_FOLDER
+enum class dynamic_event {
+	new_msg, modify_msg, del_msg, move_folder,
 };
 
 struct DYNAMIC_NODE {
@@ -129,7 +126,7 @@ extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint6
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
 extern void db_engine_update_dynamic(db_item_ptr &, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 extern void db_engine_delete_dynamic(db_item_ptr &, uint64_t folder_id);
-extern void db_engine_proc_dynamic_event(db_item_ptr &, cpid_t, int event_type, uint64_t id1, uint64_t id2, uint64_t id3);
+extern void db_engine_proc_dynamic_event(db_item_ptr &, cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3);
 extern void db_engine_notify_new_mail(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
 extern void db_engine_notify_message_creation(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
 extern void db_engine_notify_link_creation(db_item_ptr &, uint64_t parent_id, uint64_t msg_id);

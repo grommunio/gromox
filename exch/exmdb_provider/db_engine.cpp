@@ -462,9 +462,8 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			break;
 		else if (ret != SQLITE_OK)
 			continue;
-		db_engine_proc_dynamic_event(pdb, cpid,
-			DYNAMIC_EVENT_NEW_MESSAGE, search_fid,
-			pmessage_ids->pids[i], 0);
+		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::new_msg,
+			search_fid, pmessage_ids->pids[i], 0);
 	}
 	return TRUE;
 }
@@ -876,7 +875,7 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
 			db_engine_notify_link_deletion(pdb,
 				pdynamic->folder_id, message_id);
 			db_engine_proc_dynamic_event(pdb, cpid,
-				DYNAMIC_EVENT_DELETE_MESSAGE,
+				dynamic_event::del_msg,
 				pdynamic->folder_id, message_id, 0);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
@@ -895,13 +894,13 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
 			db_engine_notify_link_creation(pdb,
 				pdynamic->folder_id, message_id);
 			db_engine_proc_dynamic_event(pdb,
-				cpid, DYNAMIC_EVENT_NEW_MESSAGE,
+				cpid, dynamic_event::new_msg,
 				pdynamic->folder_id, message_id, 0);
 		}
 	}
 }
 
-static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
+static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_type,
     uint64_t id1, uint64_t id2, const DYNAMIC_NODE *pdynamic, size_t i)
 {
 	BOOL b_exist;
@@ -921,7 +920,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 			return;
 	}
 	switch (event_type) {
-	case DYNAMIC_EVENT_NEW_MESSAGE:
+	case dynamic_event::new_msg:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
@@ -939,13 +938,13 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 			db_engine_notify_link_creation(pdb,
 				pdynamic->folder_id, id2);
 			db_engine_proc_dynamic_event(pdb,
-				cpid, DYNAMIC_EVENT_NEW_MESSAGE,
+				cpid, dynamic_event::new_msg,
 				pdynamic->folder_id, id2, 0);
 		} else {
 			mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
 		}
 		break;
-	case DYNAMIC_EVENT_DELETE_MESSAGE:
+	case dynamic_event::del_msg:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
@@ -955,8 +954,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 			return;
 		db_engine_notify_link_deletion(pdb,
 			pdynamic->folder_id, id2);
-		db_engine_proc_dynamic_event(pdb, cpid,
-			DYNAMIC_EVENT_DELETE_MESSAGE,
+		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::del_msg,
 			pdynamic->folder_id, id2, 0);
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result "
 			"WHERE folder_id=%llu AND message_id=%llu",
@@ -964,7 +962,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		break;
-	case DYNAMIC_EVENT_MODIFY_MESSAGE:
+	case dynamic_event::modify_msg:
 		if (!common_util_check_search_result(pdb->psqlite,
 		    pdynamic->folder_id, id2, &b_exist)) {
 			mlog(LV_DEBUG, "db_engine: failed to check item in search_result");
@@ -988,7 +986,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 				db_engine_notify_link_creation(pdb,
 					pdynamic->folder_id, id2);
 				db_engine_proc_dynamic_event(pdb,
-					cpid, DYNAMIC_EVENT_NEW_MESSAGE,
+					cpid, dynamic_event::new_msg,
 					pdynamic->folder_id, id2, 0);
 			} else {
 				mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
@@ -999,7 +997,7 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 			db_engine_notify_link_deletion(pdb,
 				pdynamic->folder_id, id2);
 			db_engine_proc_dynamic_event(pdb, cpid,
-				DYNAMIC_EVENT_DELETE_MESSAGE,
+				dynamic_event::del_msg,
 				pdynamic->folder_id, id2, 0);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
@@ -1008,16 +1006,18 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, int event_type,
 				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		}
 		break;
+	default:
+		break;
 	}
 }
 
 void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
-	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
+    dynamic_event event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	uint32_t folder_type;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (event_type == DYNAMIC_EVENT_MOVE_FOLDER &&
+	if (event_type == dynamic_event::move_folder &&
 	    !common_util_get_folder_type(pdb->psqlite, id3, &folder_type)) {
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
@@ -1026,7 +1026,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
 		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
 		auto pdynamic = static_cast<const DYNAMIC_NODE *>(pnode->pdata);
 		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
-			if (DYNAMIC_EVENT_MOVE_FOLDER == event_type) {
+			if (dynamic_event::move_folder == event_type) {
 				dbeng_dynevt_1(pdb, cpid, id1, id2, id3, folder_type, pdynamic, i);
 				continue;
 			}
