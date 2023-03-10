@@ -572,8 +572,7 @@ void mFreeBusyResponse::serialize(XMLElement* xml) const
 
 mGetMailTipsRequest::mGetMailTipsRequest(const XMLElement* xml) :
     XMLINIT(SendingAs),
-    XMLINIT(Recipients),
-    XMLINIT(MailTipsRequested)
+    XMLINIT(Recipients)
 {}
 
 void mMailTipsResponseMessageType::serialize(XMLElement* xml) const

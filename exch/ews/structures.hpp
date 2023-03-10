@@ -924,7 +924,7 @@ struct tMailTips
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tEmailAddressType RecipientAddress;
-	Enum::MailTipTypes PendingMailTips;
+	std::vector<Enum::MailTipTypes> PendingMailTips;
 
 	//<xs:element minOccurs="0" maxOccurs="1" name="OutOfOffice" type="t:OutOfOfficeMailTip" />
 	//<xs:element minOccurs="0" maxOccurs="1" name="MailboxFull" type="xs:boolean" />
@@ -1113,7 +1113,7 @@ struct mGetMailTipsRequest
 
 	tEmailAddressType SendingAs;
 	std::vector<tEmailAddressType> Recipients;
-	Enum::MailTipTypes MailTipsRequested;
+	//Enum::MailTipTypes MailTipsRequested;
 };
 
 /**

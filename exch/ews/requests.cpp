@@ -175,6 +175,7 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
 		mMailTipsResponseMessageType& mailTipsResponseMessage = data.ResponseMessages.emplace_back();
 		tMailTips& mailTips = mailTipsResponseMessage.MailTips.emplace();
 		mailTips.RecipientAddress = std::move(recipient);
+		mailTips.RecipientAddress.Name.emplace("");
 		mailTipsResponseMessage.success();
 	}
 
