@@ -162,7 +162,7 @@ static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
 static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *);
-static BOOL ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
+static bool ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
 
 template<typename T> static inline bool
 array_find_str(const T &kwlist, const char *s)
@@ -426,19 +426,18 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 	mlog(LV_ERR, "E-1970: ENOMEM");
 }
 
-static BOOL mail_engine_ct_search_head(const char *charset,
+static bool mail_engine_ct_search_head(const char *charset,
 	const char *file_path, const char *tag, const char *value)
 {
 	FILE * fp;
-	BOOL stat_head;
+	bool stat_head = false;
 	size_t head_offset = 0, offset = 0, len;
 	MIME_FIELD mime_field;
 	char head_buff[64*1024];
 	
-	stat_head = FALSE;
 	fp = fopen(file_path, "r");
 	if (fp == nullptr)
-		return FALSE;
+		return false;
 	while (NULL != fgets(head_buff + head_offset,
 		64*1024 - head_offset, fp)) {
 		len = strlen(head_buff + head_offset);
@@ -447,13 +446,13 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 		if (head_offset >= 64*1024 - 1)
 			break;
 		if (2 == len && 0 == strcmp("\r\n", head_buff + head_offset - 2)) {
-			stat_head = TRUE;
+			stat_head = true;
 			break;
 		}
 	}
 	fclose(fp);
 	if (!stat_head)
-		return FALSE;
+		return false;
 
 	while ((len = parse_mime_field(head_buff + offset,
 	       head_offset - offset, &mime_field)) != 0) {
@@ -463,9 +462,9 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 		auto rs = mail_engine_ct_decode_mime(charset, mime_field.value.c_str());
 		if (rs != nullptr &&
 		    search_string(rs.get(), value, strlen(rs.get())))
-			return TRUE;
+			return true;
 	}
-	return FALSE;
+	return false;
 }
 
 enum ctm_field {
@@ -474,18 +473,15 @@ enum ctm_field {
 	CTM_FOLDERID, CTM_SIZE,
 };
 
-static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
+static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
     sqlite3_stmt *pstmt_message, const char *mid_string, int id, int total_mail,
     uint32_t uidnext, const CONDITION_TREE *ptree) try
 {
 	int sp = 0;
-	BOOL b_loaded;
-	BOOL b_result;
-	BOOL b_result1;
+	bool b_loaded, b_result, b_result1, results[1024];
 	midb_conj conjunction;
 	time_t tmp_time;
 	size_t temp_len;
-	int results[1024];
 	char temp_buff[1024];
 	char temp_buff1[1024];
 	midb_conj conjunctions[1024];
@@ -503,8 +499,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 /* begin of recursion procedure */
 	while (true) {
  PROC_BEGIN:
-	b_result = TRUE;
-	b_loaded = FALSE;
+	b_result = true;
+	b_loaded = false;
 	for (pnode = ptree->begin(); pnode != ptree->end(); ++pnode) {
 		{
 		auto ptree_node = &*pnode;
@@ -512,7 +508,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 		if ((b_result && conjunction == midb_conj::c_or) ||
 		    (!b_result && conjunction == midb_conj::c_and))
 			continue;
-		b_result1 = FALSE;
+		b_result1 = false;
 		if (NULL != ptree_node->pbranch) {
 			PUSH_MATCH(ptree, pnode, conjunction, b_result)
 			ptree = ptree_node->pbranch;
@@ -522,7 +518,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 			case midb_cond::all:
 			case midb_cond::keyword:
 			case midb_cond::unkeyword:
-				b_result1 = TRUE;
+				b_result1 = true;
 				break;
 			case midb_cond::answered:
 				sqlite3_reset(pstmt_message);
@@ -531,7 +527,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) != 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::bcc:
 				/* we do not support BCC field in mail digest,
@@ -546,14 +542,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				tmp_time = rop_util_nttime_to_unix(
 					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
 				if (tmp_time < ptree_node->ct_time)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::body: {
 				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					b_loaded = TRUE;
+					b_loaded = true;
 				}
 				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
@@ -566,7 +562,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				keyword_enum.keyword = ptree_node->ct_keyword;
 				temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
 				if (keyword_enum.b_result)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			}
 			case midb_cond::cc: {
@@ -574,7 +570,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					b_loaded = TRUE;
+					b_loaded = true;
 				}
 				if (!get_digest(digest, "cc", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
@@ -585,7 +581,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (rs != nullptr &&
 				    search_string(rs.get(), ptree_node->ct_keyword,
 				    strlen(rs.get())) != nullptr)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			}
 			case midb_cond::deleted:
@@ -595,7 +591,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_DELETED) != 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::draft:
 				sqlite3_reset(pstmt_message);
@@ -604,7 +600,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_UNSENT) != 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::flagged:
 				sqlite3_reset(pstmt_message);
@@ -613,14 +609,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_FLAGGED) != 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::from: {
 				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					b_loaded = TRUE;
+					b_loaded = true;
 				}
 				if (!get_digest(digest, "from", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
@@ -631,7 +627,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (rs != nullptr &&
 				    search_string(rs.get(), ptree_node->ct_keyword,
 				    strlen(rs.get())) != nullptr)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			}
 			case midb_cond::header:
@@ -652,7 +648,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					break;
 				if (gx_sql_col_uint64(pstmt_message, 13) >
 				    ptree_node->ct_size)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::is_new:
 				sqlite3_reset(pstmt_message);
@@ -662,7 +658,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) != 0 &&
 				    sqlite3_column_int64(pstmt_message, CTM_READ) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::old:
 				sqlite3_reset(pstmt_message);
@@ -671,7 +667,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::on:
 				sqlite3_reset(pstmt_message);
@@ -683,7 +679,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
 				if (tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::recent:
 				sqlite3_reset(pstmt_message);
@@ -692,7 +688,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_RECENT) != 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::seen:
 				sqlite3_reset(pstmt_message);
@@ -701,7 +697,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_READ) != 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::sent_before:
 				sqlite3_reset(pstmt_message);
@@ -712,7 +708,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				tmp_time = rop_util_nttime_to_unix(
 					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
 				if (tmp_time < ptree_node->ct_time)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::sent_on:
 				sqlite3_reset(pstmt_message);
@@ -724,7 +720,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
 				if (tmp_time >= ptree_node->ct_time &&
 				    tmp_time < ptree_node->ct_time + 86400)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::sent_since:
 				sqlite3_reset(pstmt_message);
@@ -735,7 +731,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				tmp_time = rop_util_nttime_to_unix(
 					sqlite3_column_int64(pstmt_message, CTM_MODTIME));
 				if (tmp_time >= ptree_node->ct_time)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::since:
 				sqlite3_reset(pstmt_message);
@@ -746,7 +742,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				tmp_time = rop_util_nttime_to_unix(
 					sqlite3_column_int64(pstmt_message, CTM_RCVDTIME));
 				if (tmp_time >= ptree_node->ct_time)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::smaller:
 				sqlite3_reset(pstmt_message);
@@ -755,14 +751,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (gx_sql_col_uint64(pstmt_message, 13) < ptree_node->ct_size)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::subject: {
 				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					b_loaded = TRUE;
+					b_loaded = true;
 				}
 				if (!get_digest(digest, "subject", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
@@ -773,7 +769,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (rs != nullptr &&
 				    search_string(rs.get(), ptree_node->ct_keyword,
 				    strlen(rs.get())) != nullptr)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			}
 			case midb_cond::text: {
@@ -781,7 +777,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					b_loaded = TRUE;
+					b_loaded = true;
 				}
 				if (get_digest(digest, "cc", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff),
@@ -791,7 +787,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (rs != nullptr &&
 					    search_string(rs.get(), ptree_node->ct_keyword,
 					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
+						b_result1 = true;
 				}
 				if (b_result1)
 					break;
@@ -803,7 +799,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (rs != nullptr &&
 					    search_string(rs.get(), ptree_node->ct_keyword,
 					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
+						b_result1 = true;
 				}
 				if (b_result1)
 					break;
@@ -815,7 +811,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (rs != nullptr &&
 					    search_string(rs.get(), ptree_node->ct_keyword,
 					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
+						b_result1 = true;
 				}
 				if (b_result1)
 					break;
@@ -827,7 +823,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (rs != nullptr &&
 					    search_string(rs.get(), ptree_node->ct_keyword,
 					    strlen(rs.get())) != nullptr)
-						b_result1 = TRUE;
+						b_result1 = true;
 				}
 				if (b_result1)
 					break;
@@ -842,7 +838,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				keyword_enum.keyword = ptree_node->ct_keyword;
 				temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
 				if (keyword_enum.b_result)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			}
 			case midb_cond::to: {
@@ -850,7 +846,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					if (mail_engine_get_digest(psqlite, mid_string,
 					    digest) == 0)
 						break;
-					b_loaded = TRUE;
+					b_loaded = true;
 				}
 				if (!get_digest(digest, "to", temp_buff, arsizeof(temp_buff)) ||
 				    decode64(temp_buff, strlen(temp_buff),
@@ -861,7 +857,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (rs != nullptr &&
 				    search_string(rs.get(), ptree_node->ct_keyword,
 				    strlen(rs.get())) != nullptr)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			}
 			case midb_cond::unanswered:
@@ -871,7 +867,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_REPLIED) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::uid:
 				sqlite3_reset(pstmt_message);
@@ -890,7 +886,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_DELETED) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::undraft:
 				sqlite3_reset(pstmt_message);
@@ -899,7 +895,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_UNSENT) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::unflagged:
 				sqlite3_reset(pstmt_message);
@@ -908,7 +904,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_FLAGGED) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			case midb_cond::unseen:
 				sqlite3_reset(pstmt_message);
@@ -917,7 +913,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
 				if (sqlite3_column_int64(pstmt_message, CTM_READ) == 0)
-					b_result1 = TRUE;
+					b_result1 = true;
 				break;
 			default:
 				mlog(LV_DEBUG, "mail_engine: condition stat %u unknown!",
@@ -930,13 +926,13 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
  RECURSION_POINT:
 		switch (conjunction) {
 		case midb_conj::c_and:
-			b_result = (b_result&&b_result1)?TRUE:FALSE;
+			b_result &= b_result1;
 			break;
 		case midb_conj::c_or:
-			b_result = (b_result||b_result1)?TRUE:FALSE;
+			b_result |= b_result1;
 			break;
 		case midb_conj::c_not:
-			b_result = (b_result&&(!b_result1))?TRUE:FALSE;
+			b_result &= !b_result1;
 			break;
 		}
 	}
@@ -1136,74 +1132,61 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 		if (0 == strcasecmp(argv[i], "NOT")) {
 			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
-			if (i >= argc) {
+			if (i >= argc)
 				return {};
-			}
 		} else {
 			ptree_node->conjunction = midb_conj::c_and;
 		}
 		if (array_find_istr(kwlist1, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
-			if (ptree_node->ct_keyword == nullptr) {
+			if (ptree_node->ct_keyword == nullptr)
 				return {};
-			}
 		} else if (array_find_istr(kwlist2, argv[i])) {
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
-			if (NULL == strptime(argv[i], "%d-%b-%Y", &tmp_tm)) {
+			if (strptime(argv[i], "%d-%b-%Y", &tmp_tm) == nullptr)
 				return {};
-			}
 			ptree_node->ct_time = mktime(&tmp_tm);
 		} else if ('(' == argv[i][0]) {
 			len = strlen(argv[i]);
 			argv[i][len - 1] = '\0';
 			tmp_argc = parse_imap_args(argv[i] + 1,
 				len - 2, tmp_argv, sizeof(tmp_argv));
-			if (-1 == tmp_argc) {
+			if (tmp_argc == -1)
 				return {};
-			}
 			auto plist1 = mail_engine_ct_build_internal(
 						charset, tmp_argc, tmp_argv);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			ptree_node->pbranch = plist1.release();
 		} else if (0 == strcasecmp(argv[i], "OR")) {
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			tmp_argc = mail_engine_ct_compile_criteria(
 								argc, argv, i, tmp_argv);
-			if (-1 == tmp_argc) {
+			if (tmp_argc == -1)
 				return {};
-			}
 			i += tmp_argc;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			tmp_argc1 = mail_engine_ct_compile_criteria(
 					argc, argv, i, tmp_argv + tmp_argc);
-			if (-1 == tmp_argc1) {
+			if (tmp_argc1 == -1)
 				return {};
-			}
 			auto plist1 = mail_engine_ct_build_internal(charset,
 							tmp_argc + tmp_argc1, tmp_argv);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			if (plist1->size() != 2)
 				return {};
 			auto &ln = plist1->back();
@@ -1215,40 +1198,34 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
 			ptree_node->condition = midb_cond::header;
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_headers[0] = strdup(argv[i]);
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_headers[1] = strdup(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "LARGER") ||
 			0 == strcasecmp(argv[i], "SMALLER")) {
 			ptree_node->condition = strcasecmp(argv[i], "LARGER") == 0 ?
 			                        midb_cond::larger : midb_cond::smaller;
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
 		} else if (0 == strcasecmp(argv[i], "UID")) {
 			ptree_node->condition = midb_cond::uid;
 			i ++;
-			if (i + 1 > argc) {
+			if (i + 1 > argc)
 				return {};
-			}
 			auto plist1 = ct_parse_seq(argv[i]);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			ptree_node->ct_seq = plist1.release();
 		} else {
 			auto plist1 = ct_parse_seq(argv[i]);
-			if (NULL == plist1) {
+			if (plist1 == nullptr)
 				return {};
-			}
 			ptree_node->condition = midb_cond::id;
 			ptree_node->ct_seq = plist1.release();
 		}
@@ -1283,10 +1260,9 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 	last_break = string;
 	last_colon = NULL;
 	for (size_t i = 0; i <= len; ++i) {
-		if (!HX_isdigit(string[i]) && string[i] != '*'
-			&& ',' != string[i] && ':' != string[i]) {
+		if (!HX_isdigit(string[i]) && string[i] != '*' &&
+		    string[i] != ',' && string[i] != ':')
 			return NULL;
-		}
 		if (':' == string[i]) {
 			if (NULL != last_colon) {
 				return NULL;
@@ -1335,7 +1311,7 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 	return nullptr;
 }
 
-static BOOL ct_hint_seq(const std::vector<seq_node> &list,
+static bool ct_hint_seq(const std::vector<seq_node> &list,
     unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {
@@ -1343,26 +1319,24 @@ static BOOL ct_hint_seq(const std::vector<seq_node> &list,
 		if (pseq->max == seq_node::unset) {
 			if (pseq->min == seq_node::unset) {
 				if (num == max_uid)
-					return TRUE;
+					return true;
 			} else {
 				if (num >= pseq->min)
-					return TRUE;
+					return true;
 			}
 		} else {
 			if (pseq->max >= num && pseq->min <= num)
-				return TRUE;
+				return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
     sqlite3 *psqlite, uint64_t folder_id, const CONDITION_TREE *ptree,
     BOOL b_uid) try
 {
-	int i;
 	uint32_t uid;
-	int total_mail;
 	uint32_t uidnext;
 	char sql_string[1024];
 
@@ -1371,7 +1345,7 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return {};
-	total_mail = sqlite3_column_int64(pstmt, 0);
+	auto total_mail = pstmt.col_uint64(0);
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU{folder_id});
@@ -1392,16 +1366,14 @@ static std::optional<std::vector<int>> mail_engine_ct_match(const char *charset,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return {};
-	i = 0;
 	std::optional<std::vector<int>> presult;
 	presult.emplace();
-	while (pstmt.step() == SQLITE_ROW) {
+	for (size_t i = 1; pstmt.step() == SQLITE_ROW; ++i) {
 		auto mid_string = pstmt.col_text(0);
 		uid = sqlite3_column_int64(pstmt, 1);
 		if (mail_engine_ct_match_mail(psqlite, charset, pstmt_message,
-		    mid_string, i + 1, total_mail, uidnext, ptree))
-			presult->push_back(b_uid ? uid : i + 1);
-		i ++;
+		    mid_string, i, total_mail, uidnext, ptree))
+			presult->push_back(b_uid ? uid : i);
 	}
 	return presult;
 } catch (const std::bad_alloc &) {
@@ -2676,9 +2648,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
-		!exmdb_client::allocate_cn(argv[1], &change_num)) {
+	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO mapping"
 		" (message_id, mid_string, flag_string) VALUES"
 		" (%llu, ?, ?)", LLU{rop_util_get_gc_value(message_id)});
@@ -2865,9 +2836,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
-		!exmdb_client::allocate_cn(argv[1], &change_num)) {
+	    !exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
-	}
+
 	std::string mid_string;
 	try {
 		mid_string = std::to_string(time(nullptr)) + "." +
