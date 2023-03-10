@@ -1097,14 +1097,14 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	}
 	switch (pdb_notify->type) {
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED:
+	case db_notify_type::content_table_row_deleted:
 		if (emsmdb_interface_merge_content_row_deleted(
 			obj_handle, logon_id, &phandle->notify_list)) {
 			emsmdb_interface_put_handle_notify_list(phandle);
 			return;
 		}
 		break;
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED:
+	case db_notify_type::hierarchy_table_row_modified:
 		if (emsmdb_interface_merge_hierarchy_row_modified(
 		    static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {
@@ -1119,7 +1119,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 			return;
 		}
 		break;
-	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
+	case db_notify_type::message_modified:
 		if (emsmdb_interface_merge_message_modified(
 		    static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {
@@ -1127,7 +1127,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 			return;
 		}
 		break;
-	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
+	case db_notify_type::folder_modified:
 		if (emsmdb_interface_merge_folder_modified(
 		    static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {

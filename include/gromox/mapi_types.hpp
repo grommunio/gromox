@@ -801,35 +801,20 @@ class idset {
 };
 using IDSET = idset;
 
-#define DB_NOTIFY_TYPE_NEW_MAIL									0x01
-#define DB_NOTIFY_TYPE_FOLDER_CREATED							0x02
-#define DB_NOTIFY_TYPE_MESSAGE_CREATED							0x03
-#define DB_NOTIFY_TYPE_LINK_CREATED								0x04
-#define DB_NOTIFY_TYPE_FOLDER_DELETED							0x05
-#define DB_NOTIFY_TYPE_MESSAGE_DELETED							0x06
-#define DB_NOTIFY_TYPE_LINK_DELETED								0x07
-#define DB_NOTIFY_TYPE_FOLDER_MODIFIED							0x08
-#define DB_NOTIFY_TYPE_MESSAGE_MODIFIED							0x09
-#define DB_NOTIFY_TYPE_FOLDER_MOVED								0x0a
-#define DB_NOTIFY_TYPE_MESSAGE_MOVED							0x0b
-#define DB_NOTIFY_TYPE_FOLDER_COPIED							0x0c
-#define DB_NOTIFY_TYPE_MESSAGE_COPIED							0x0d
-#define DB_NOTIFY_TYPE_SEARCH_COMPLETED							0x0e
-#define DB_NOTIFY_TYPE_HIERARCHY_TABLE_CHANGED					0x0f
-#define DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED					0x10
-#define DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED						0x11
-#define DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED				0x12
-#define DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED					0x13
-#define DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED					0x14
-#define DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED				0x15
-#define DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED				0x16
-#define DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED					0x17
-#define DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED				0x18
-#define DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED				0x19
-#define DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED				0x20
+enum class db_notify_type : uint8_t {
+	new_mail = 1, folder_created, message_created, link_created,
+	folder_deleted, message_deleted, link_deleted, folder_modified,
+	message_modified, folder_moved, message_moved, folder_copied,
+	message_copied, search_completed, hierarchy_table_changed,
+	content_table_changed, search_table_changed, hierarchy_table_row_added,
+	content_table_row_added, search_table_row_added,
+	hierarchy_table_row_deleted, content_table_row_deleted,
+	search_table_row_deleted, hierarchy_table_row_modified,
+	content_table_row_modified, search_table_row_modified,
+};
 
 struct DB_NOTIFY {
-	uint8_t type;
+	enum db_notify_type type;
 	void *pdata;
 };
 

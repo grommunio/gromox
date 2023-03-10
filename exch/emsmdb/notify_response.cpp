@@ -563,125 +563,125 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	uint8_t notification_flags;
 	
 	switch (pdb_notify->type) {
-	case DB_NOTIFY_TYPE_NEW_MAIL: {
+	case db_notify_type::new_mail: {
 		auto x = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
 		return notify_response_specify_new_mail(pnotify, x->folder_id,
 		       x->message_id, x->message_flags, b_cache,
 		       x->pmessage_class);
 	}
-	case DB_NOTIFY_TYPE_FOLDER_CREATED: {
+	case db_notify_type::folder_created: {
 		auto x = static_cast<const DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_created(pnotify,
 		       x->folder_id, x->parent_id, &x->proptags);
 	}
-	case DB_NOTIFY_TYPE_MESSAGE_CREATED: {
+	case db_notify_type::message_created: {
 		auto x = static_cast<const DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
 		return notify_response_specify_message_created(pnotify,
 		       x->folder_id, x->message_id, &x->proptags);
 	}
-	case DB_NOTIFY_TYPE_LINK_CREATED: {
+	case db_notify_type::link_created: {
 		auto x = static_cast<const DB_NOTIFY_LINK_CREATED *>(pdb_notify->pdata);
 		return notify_response_specify_link_created(pnotify,
 		       x->folder_id, x->message_id, x->parent_id, &x->proptags);
 	}
-	case DB_NOTIFY_TYPE_FOLDER_DELETED: {
+	case db_notify_type::folder_deleted: {
 		auto x = static_cast<const DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_deleted(pnotify,
 		       x->folder_id, x->parent_id);
 	}
-	case DB_NOTIFY_TYPE_MESSAGE_DELETED: {
+	case db_notify_type::message_deleted: {
 		auto x = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_message_deleted(pnotify,
 		       x->folder_id, x->message_id);
 	}
-	case DB_NOTIFY_TYPE_LINK_DELETED: {
+	case db_notify_type::link_deleted: {
 		auto x = static_cast<const DB_NOTIFY_LINK_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_link_deleted(pnotify,
 		       x->folder_id, x->message_id, x->parent_id);
 	}
-	case DB_NOTIFY_TYPE_FOLDER_MODIFIED: {
+	case db_notify_type::folder_modified: {
 		auto x = static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_modified(pnotify,
 		       x->folder_id, x->ptotal, x->punread, &x->proptags);
 	}
-	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED: {
+	case db_notify_type::message_modified: {
 		auto x = static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_message_modified(pnotify,
 		       x->folder_id, x->message_id, &x->proptags);
 	}
-	case DB_NOTIFY_TYPE_FOLDER_MOVED:
-	case DB_NOTIFY_TYPE_FOLDER_COPIED: {
+	case db_notify_type::folder_moved:
+	case db_notify_type::folder_copied: {
 		auto x = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
-		notification_flags = pdb_notify->type == DB_NOTIFY_TYPE_FOLDER_MOVED ?
+		notification_flags = pdb_notify->type == db_notify_type::folder_moved ?
 		                     NOTIFICATION_FLAG_OBJECTMOVED : NOTIFICATION_FLAG_OBJECTCOPIED;
 		return notify_response_specify_folder_mvcp(pnotify,
 		       notification_flags, x->folder_id, x->parent_id,
 		       x->old_folder_id, x->old_parent_id);
 	}
-	case DB_NOTIFY_TYPE_MESSAGE_MOVED:
-	case DB_NOTIFY_TYPE_MESSAGE_COPIED: {
+	case db_notify_type::message_moved:
+	case db_notify_type::message_copied: {
 		auto x = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
-		notification_flags = pdb_notify->type == DB_NOTIFY_TYPE_MESSAGE_MOVED ?
+		notification_flags = pdb_notify->type == db_notify_type::message_moved ?
 		                     NOTIFICATION_FLAG_OBJECTMOVED : NOTIFICATION_FLAG_OBJECTCOPIED;
 		return notify_response_specify_message_mvcp(pnotify,
 		       notification_flags, x->folder_id, x->message_id,
 		       x->old_folder_id, x->old_message_id);
 	}
-	case DB_NOTIFY_TYPE_SEARCH_COMPLETED: {
+	case db_notify_type::search_completed: {
 		auto x = static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		return notify_response_specify_folder_search_completed(pnotify,
 		       x->folder_id);
 	}
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_CHANGED:
+	case db_notify_type::hierarchy_table_changed:
 		return notify_response_specify_hierarchy_table_changed(pnotify);
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED:
+	case db_notify_type::content_table_changed:
 		return notify_response_specify_content_table_changed(pnotify);
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED:
+	case db_notify_type::search_table_changed:
 		return notify_response_specify_search_table_changed(pnotify);
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED: {
+	case db_notify_type::hierarchy_table_row_added: {
 		auto x = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(pdb_notify->pdata);
 		return notify_response_specify_hierarchy_table_row_added(pnotify,
 		       x->row_folder_id, x->after_folder_id);
 	}
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED: {
+	case db_notify_type::content_table_row_added: {
 		auto x = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(pdb_notify->pdata);
 		return notify_response_specify_content_table_row_added(pnotify,
 		       x->row_folder_id, x->row_message_id, x->row_instance,
 		       x->after_folder_id, x->after_row_id, x->after_instance);
 	}
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED: {
+	case db_notify_type::search_table_row_added: {
 		auto x = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(pdb_notify->pdata);
 		return notify_response_specify_search_table_row_added(pnotify,
 		       x->row_folder_id, x->row_message_id, x->row_instance,
 		       x->after_folder_id, x->after_row_id, x->after_instance);
 	}
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED: {
+	case db_notify_type::hierarchy_table_row_deleted: {
 		auto x = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_hierarchy_table_row_deleted(pnotify,
 		       x->row_folder_id);
 	}
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED: {
+	case db_notify_type::content_table_row_deleted: {
 		auto x = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_content_table_row_deleted(pnotify,
 		       x->row_folder_id, x->row_message_id, x->row_instance);
 	}
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED: {
+	case db_notify_type::search_table_row_deleted: {
 		auto x = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(pdb_notify->pdata);
 		return notify_response_specify_search_table_row_deleted(pnotify,
 		       x->row_folder_id, x->row_message_id, x->row_instance);
 	}
-	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED: {
+	case db_notify_type::hierarchy_table_row_modified: {
 		auto x = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_hierarchy_table_row_modified(pnotify,
 		       x->row_folder_id, x->after_folder_id);
 	}
-	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED: {
+	case db_notify_type::content_table_row_modified: {
 		auto x = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_content_table_row_modified(pnotify,
 		       x->row_folder_id, x->row_message_id, x->row_instance,
 		       x->after_folder_id, x->after_row_id, x->after_instance);
 	}
-	case DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED: {
+	case db_notify_type::search_table_row_modified: {
 		auto x = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(pdb_notify->pdata);
 		return notify_response_specify_search_table_row_modified(pnotify,
 		       x->row_folder_id, x->row_message_id, x->row_instance,

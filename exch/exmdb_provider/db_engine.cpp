@@ -569,8 +569,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 		return;
 	datagram.dir = deconst(dir);
 	datagram.b_table = FALSE;
-	datagram.db_notify.type =
-		DB_NOTIFY_TYPE_SEARCH_COMPLETED;
+	datagram.db_notify.type = db_notify_type::search_completed;
 	auto psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
 	if (psearch_completed == nullptr)
 		return;
@@ -1358,8 +1357,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				continue;
 			datagram.id_array.pl = &ptable->table_id;
 			datagram.db_notify.type = ptable->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
+			                          db_notify_type::search_table_row_added :
+			                          db_notify_type::content_table_row_added;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -1461,8 +1460,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row->after_instance = 0;
 			datagram.id_array.pl = &ptable->table_id;
 			datagram.db_notify.type = ptable->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
+			                          db_notify_type::search_table_row_added :
+			                          db_notify_type::content_table_row_added;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -1785,8 +1784,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		datagram1.id_array.pl = &ptable->table_id;
 		if (b_resorted) {
 			datagram1.db_notify.type = ptable->b_search ?
-						   DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
-						   DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
+						   db_notify_type::search_table_changed :
+						   db_notify_type::content_table_changed;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			continue;
@@ -1835,8 +1834,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
 				datagram1.db_notify.type = ptable->b_search ?
-							   DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
-							   DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
+							   db_notify_type::search_table_row_modified :
+							   db_notify_type::content_table_row_modified;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
@@ -1845,8 +1844,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
 				datagram1.db_notify.type = ptable->b_search ?
-				                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
-				                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
+				                           db_notify_type::search_table_row_added :
+				                           db_notify_type::content_table_row_added;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 			} else {
@@ -1855,8 +1854,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row->after_folder_id = inst_folder_id;
 				padded_row->after_instance = inst_num;
 				datagram.db_notify.type = ptable->b_search ?
-				                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
-				                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
+				                          db_notify_type::search_table_row_added :
+				                          db_notify_type::content_table_row_added;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram);
 			}
@@ -1877,8 +1876,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		return;
 	datagram.dir = deconst(dir);
 	datagram.b_table = FALSE;
-	datagram.db_notify.type =
-		DB_NOTIFY_TYPE_NEW_MAIL;
+	datagram.db_notify.type = db_notify_type::new_mail;
 	auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 	if (pnew_mail == nullptr)
 		return;
@@ -1911,8 +1909,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_NEW_MAIL;
+		datagram.db_notify.type = db_notify_type::new_mail;
 		auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 		if (pnew_mail == nullptr)
 			return;
@@ -1957,8 +1954,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_MESSAGE_CREATED;
+		datagram.db_notify.type = db_notify_type::message_created;
 		auto pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
 		if (pcreated_mail == nullptr)
 			return;
@@ -2000,8 +1996,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_LINK_CREATED;
+		datagram.db_notify.type = db_notify_type::link_created;
 		auto plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
 		if (plinked_mail == nullptr)
 			return;
@@ -2065,8 +2060,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
-			datagram.db_notify.type =
-				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED;
+			datagram.db_notify.type = db_notify_type::hierarchy_table_row_added;
 			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 			if (padded_row == nullptr)
 				return;
@@ -2189,8 +2183,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_FOLDER_CREATED;
+		datagram.db_notify.type = db_notify_type::folder_created;
 		auto pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
 		if (pcreated_folder == nullptr)
 			return;
@@ -2383,8 +2376,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pdeleted_row->row_message_id = message_id;
 			pdeleted_row->row_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
+			                          db_notify_type::search_table_row_deleted :
+			                          db_notify_type::content_table_row_deleted;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -2641,8 +2634,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		if (b_resorted) {
 			datagram1.id_array.pl = deconst(&ptable->table_id);
 			datagram1.db_notify.type = ptable->b_search ?
-			                           DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
-			                           DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
+			                           db_notify_type::search_table_changed :
+			                           db_notify_type::content_table_changed;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			continue;
@@ -2666,8 +2659,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pdeleted_row->row_message_id = pdelnode->inst_id;
 			pdeleted_row->row_instance = pdelnode->inst_num;
 			datagram.db_notify.type = ptable->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
+			                          db_notify_type::search_table_row_deleted :
+			                          db_notify_type::content_table_row_deleted;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		}
@@ -2715,8 +2708,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pmodified_row->after_row_id = inst_id;
 			pmodified_row->after_instance = inst_num;
 			datagram1.db_notify.type = ptable->b_search ?
-			                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
-			                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
+			                           db_notify_type::search_table_row_modified :
+			                           db_notify_type::content_table_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			sqlite3_reset(pstmt1);
@@ -2736,8 +2729,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_MESSAGE_DELETED;
+		datagram.db_notify.type = db_notify_type::message_deleted;
 		auto pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
 		if (pdeleted_mail == nullptr)
 			return;
@@ -2778,8 +2770,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_LINK_DELETED;
+		datagram.db_notify.type = db_notify_type::link_deleted;
 		auto punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
 		if (punlinked_mail == nullptr)
 			return;
@@ -2862,8 +2853,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
-			datagram.db_notify.type =
-				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED;
+			datagram.db_notify.type = db_notify_type::hierarchy_table_row_deleted;
 			pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 			if (pdeleted_row == nullptr)
 				return;
@@ -2888,8 +2878,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_FOLDER_DELETED;
+		datagram.db_notify.type = db_notify_type::folder_deleted;
 		auto pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
 		if (pdeleted_folder == nullptr)
 			return;
@@ -3004,8 +2993,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			}
 			pmodified_row->after_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
+			                          db_notify_type::search_table_row_modified :
+			                          db_notify_type::content_table_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
@@ -3098,8 +3087,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				continue;
 			pmodified_row->after_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
+			                          db_notify_type::search_table_row_modified :
+			                          db_notify_type::content_table_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else {
@@ -3453,8 +3442,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				}
 				pmodified_row->after_instance = inst_num;
 				datagram.db_notify.type = ptable->b_search ?
-				                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
-				                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
+				                          db_notify_type::search_table_row_modified :
+				                          db_notify_type::content_table_row_modified;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram);
 				sqlite3_reset(pstmt1);
@@ -3495,8 +3484,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			    (ptnode->table_flags & TABLE_FLAG_NONOTIFICATIONS))
 				break;
 			datagram.db_notify.type = ptnode->b_search ?
-			                          DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
-			                          DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
+			                          db_notify_type::search_table_changed :
+			                          db_notify_type::content_table_changed;
 			datagram.id_array.pl = deconst(&ptable->table_id);
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
@@ -3517,8 +3506,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_MESSAGE_MODIFIED;
+		datagram.db_notify.type = db_notify_type::message_modified;
 		auto pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
 		if (pmodified_mail == nullptr)
 			return;
@@ -3591,8 +3579,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 					datagram2.dir = deconst(exmdb_server::get_dir());
 					datagram2.b_table = TRUE;
 					datagram2.id_array.count = 1;
-					datagram2.db_notify.type =
-						DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_ADDED;
+					datagram2.db_notify.type = db_notify_type::hierarchy_table_row_added;
 					padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 					if (padded_row == nullptr)
 						return;
@@ -3659,8 +3646,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				datagram1.dir = deconst(exmdb_server::get_dir());
 				datagram1.b_table = TRUE;
 				datagram1.id_array.count = 1;
-				datagram1.db_notify.type =
-					DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_DELETED;
+				datagram1.db_notify.type = db_notify_type::hierarchy_table_row_deleted;
 				pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 				if (pdeleted_row == nullptr)
 					return;
@@ -3683,8 +3669,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			datagram.dir = deconst(exmdb_server::get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
-			datagram.db_notify.type =
-				DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED;
+			datagram.db_notify.type = db_notify_type::hierarchy_table_row_modified;
 			pmodified_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
 			if (pmodified_row == nullptr)
 				return;
@@ -3721,8 +3706,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_FOLDER_MODIFIED;
+		datagram.db_notify.type = db_notify_type::folder_modified;
 		auto pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
 		if (pmodified_folder == nullptr)
 			return;
@@ -3775,8 +3759,8 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type = b_copy ? DB_NOTIFY_TYPE_MESSAGE_COPIED :
-		                          DB_NOTIFY_TYPE_MESSAGE_MOVED;
+		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
+		                          db_notify_type::message_moved;
 		auto pmvcp_mail = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
 		if (pmvcp_mail == nullptr)
 			return;
@@ -3838,8 +3822,8 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	if (tmp_list.size() > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
-		datagram.db_notify.type = b_copy ? DB_NOTIFY_TYPE_FOLDER_COPIED :
-		                          DB_NOTIFY_TYPE_FOLDER_MOVED;
+		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
+		                          db_notify_type::folder_moved;
 		auto pmvcp_folder = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
 		if (pmvcp_folder == nullptr)
 			return;
@@ -3886,8 +3870,8 @@ void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 	auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
 	datagram.dir = deconst(exmdb_server::get_dir());
 	datagram.db_notify.type = !ptable->b_search ?
-		DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED :
-		DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
+		db_notify_type::content_table_changed :
+		db_notify_type::search_table_changed;
 	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
 	datagram.id_array.count = 1;
