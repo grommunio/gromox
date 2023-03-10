@@ -653,7 +653,7 @@ static void *mdpeng_thrwork(void *param)
 		     pnode = double_list_get_after(
 		     &pdb->tables.table_list, pnode)) {
 			auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-			if (TABLE_TYPE_CONTENT == ptable->type &&
+			if (ptable->type == table_type::content &&
 			    psearch->folder_id == ptable->folder_id)
 				table_ids.push_back(ptable->table_id);
 		}
@@ -1277,7 +1277,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	for (auto pnode = double_list_get_head(&pdb->tables.table_list); pnode != nullptr;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
-		if (TABLE_TYPE_CONTENT != ptable->type ||
+		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
 		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
@@ -2045,7 +2045,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (ptable->type != TABLE_TYPE_HIERARCHY)
+		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (folder_id == ptable->folder_id ||
@@ -2303,7 +2303,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
-		if (TABLE_TYPE_CONTENT != ptable->type ||
+		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
 		if (pdb->tables.b_batch && ptable->b_hint)
@@ -2820,7 +2820,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 		NULL!=pnode; pnode=double_list_get_after(
 		&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (ptable->type != TABLE_TYPE_HIERARCHY)
+		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (!common_util_check_descendant(pdb->psqlite,
@@ -2943,7 +2943,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (TABLE_TYPE_CONTENT != ptable->type ||
+		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
 		if (ptable->instance_tag == 0)
@@ -3565,7 +3565,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 		NULL!=pnode; pnode=double_list_get_after(
 		&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (ptable->type != TABLE_TYPE_HIERARCHY)
+		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (folder_id == ptable->folder_id ||

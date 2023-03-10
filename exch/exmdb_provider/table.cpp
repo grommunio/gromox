@@ -233,7 +233,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir,
 			return FALSE;
 		}
 	}
-	ptnode->type = TABLE_TYPE_HIERARCHY;
+	ptnode->type = table_type::hierarchy;
 	ptnode->folder_id = fid_val;
 	ptnode->table_flags = table_flags;
 	if (table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
@@ -663,7 +663,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (ptnode->remote_id == nullptr)
 			return false;
 	}
-	ptnode->type = TABLE_TYPE_CONTENT;
+	ptnode->type = table_type::content;
 	ptnode->folder_id = fid_val;
 	ptnode->table_flags = table_flags;
 	ptnode->b_search = b_search ? TRUE : false;
@@ -1191,7 +1191,7 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto t = static_cast<const TABLE_NODE *>(pnode->pdata);
-		if (t->type == TABLE_TYPE_CONTENT && t->table_id == table_id) {
+		if (t->type == table_type::content && t->table_id == table_id) {
 			double_list_remove(&pdb->tables.table_list, pnode);
 			break;
 		}
@@ -1309,7 +1309,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 			return FALSE;
 		}
 	}
-	ptnode->type = TABLE_TYPE_PERMISSION;
+	ptnode->type = table_type::permission;
 	ptnode->folder_id = fid_val;
 	ptnode->table_flags = table_flags;
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u "
@@ -1492,7 +1492,7 @@ BOOL exmdb_server::load_rule_table(const char *dir,
 			return FALSE;
 		}
 	}
-	ptnode->type = TABLE_TYPE_RULE;
+	ptnode->type = table_type::rule;
 	ptnode->folder_id = fid_val;
 	if (NULL != prestriction) {
 		ptnode->prestriction = restriction_dup(prestriction);
@@ -1766,7 +1766,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	switch (ptnode->type) {
-	case TABLE_TYPE_HIERARCHY: {
+	case table_type::hierarchy: {
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, depth FROM"
@@ -1833,7 +1833,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		sql_transact.commit();
 		break;
 	}
-	case TABLE_TYPE_CONTENT: {
+	case table_type::content: {
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
@@ -1924,7 +1924,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		sql_transact.commit();
 		break;
 	}
-	case TABLE_TYPE_PERMISSION: {
+	case table_type::permission: {
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT member_id FROM t%u "
@@ -1982,7 +1982,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		}
 		break;
 	}
-	case TABLE_TYPE_RULE: {
+	case table_type::rule: {
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id FROM t%u "
@@ -2449,11 +2449,11 @@ BOOL exmdb_server::match_table(const char *dir, const char *username,
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
 	BOOL ret = TRUE;
-	if (ptnode->type == TABLE_TYPE_HIERARCHY)
+	if (ptnode->type == table_type::hierarchy)
 		ret = match_tbl_hier(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
-	else if (ptnode->type == TABLE_TYPE_CONTENT)
+	else if (ptnode->type == table_type::content)
 		ret = match_tbl_ctnt(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb, ptnode);
-	else if (ptnode->type == TABLE_TYPE_RULE)
+	else if (ptnode->type == table_type::rule)
 		ret = match_tbl_rule(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
 	else
 		*pposition = -1;
@@ -2476,7 +2476,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 		return TRUE;
 	}
 	switch (ptnode->type) {
-	case TABLE_TYPE_HIERARCHY:
+	case table_type::hierarchy:
 		if (1 == rop_util_get_replid(inst_id)) {
 			inst_id = rop_util_get_gc_value(inst_id);
 		} else {
@@ -2487,7 +2487,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
 		          "WHERE folder_id=%llu", ptnode->table_id, LLU{inst_id});
 		break;
-	case TABLE_TYPE_CONTENT:
+	case table_type::content:
 		inst_id = rop_util_get_replid(inst_id) == 1 ?
 		          rop_util_get_gc_value(inst_id) :
 		          rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
@@ -2495,11 +2495,11 @@ BOOL exmdb_server::locate_table(const char *dir,
 				"FROM t%u WHERE inst_id=%llu AND inst_num=%u",
 				ptnode->table_id, LLU{inst_id}, inst_num);
 		break;
-	case TABLE_TYPE_PERMISSION:
+	case table_type::permission:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
 			"WHERE member_id=%llu", ptnode->table_id, LLU{inst_id});
 		break;
-	case TABLE_TYPE_RULE:
+	case table_type::rule:
 		inst_id = rop_util_get_gc_value(inst_id);
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx FROM t%u "
 		          "WHERE rule_id=%llu", ptnode->table_id, LLU{inst_id});
@@ -2513,7 +2513,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 	*prow_type = 0;
 	if (pstmt.step() == SQLITE_ROW) {
 		idx = sqlite3_column_int64(pstmt, 0);
-		if (ptnode->type == TABLE_TYPE_CONTENT)
+		if (ptnode->type == table_type::content)
 			*prow_type = sqlite3_column_int64(pstmt, 1);
 	} else {
 		idx = 0;
@@ -2680,9 +2680,9 @@ BOOL exmdb_server::read_table_row(const char *dir, const char *username,
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
 	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
-	if (ptnode->type == TABLE_TYPE_HIERARCHY)
+	if (ptnode->type == table_type::hierarchy)
 		return read_tblrow_hier(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb);
-	else if (ptnode->type == TABLE_TYPE_CONTENT)
+	else if (ptnode->type == table_type::content)
 		return read_tblrow_ctnt(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb, ptnode);
 	else
 		ppropvals->count = 0;
@@ -2704,20 +2704,20 @@ BOOL exmdb_server::mark_table(const char *dir,
 	if (ptnode == nullptr)
 		return TRUE;
 	switch (ptnode->type) {
-	case TABLE_TYPE_HIERARCHY:
+	case table_type::hierarchy:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM t%u"
 				" WHERE idx=%u", ptnode->table_id, position + 1);
 		break;
-	case TABLE_TYPE_CONTENT:
+	case table_type::content:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id,"
 			" inst_num, row_type FROM t%u WHERE idx=%u",
 			ptnode->table_id, position + 1);
 		break;
-	case TABLE_TYPE_PERMISSION:
+	case table_type::permission:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT member_id FROM t%u "
 			"WHERE idx=%u", ptnode->table_id, position + 1);
 		break;
-	case TABLE_TYPE_RULE:
+	case table_type::rule:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id FROM t%u "
 			"WHERE idx=%u", ptnode->table_id, position + 1);
 		break;
@@ -2730,16 +2730,18 @@ BOOL exmdb_server::mark_table(const char *dir,
 	if (pstmt.step() == SQLITE_ROW) {
 		*pinst_id = sqlite3_column_int64(pstmt, 0);
 		switch (ptnode->type) {
-		case TABLE_TYPE_HIERARCHY:
+		case table_type::hierarchy:
 			*pinst_id = rop_util_nfid_to_eid(*pinst_id);
 			break;
-		case TABLE_TYPE_CONTENT:
+		case table_type::content:
 			*pinst_id = rop_util_nfid_to_eid2(*pinst_id);
 			*pinst_num = sqlite3_column_int64(pstmt, 1);
 			*prow_type = sqlite3_column_int64(pstmt, 2);
 			break;
-		case TABLE_TYPE_RULE:
+		case table_type::rule:
 			*pinst_id = rop_util_make_eid_ex(1, *pinst_id);
+			break;
+		default:
 			break;
 		}
 	}
@@ -2760,7 +2762,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		return TRUE;
 	}
 	switch (ptnode->type) {
-	case TABLE_TYPE_HIERARCHY: {
+	case table_type::hierarchy: {
 		std::vector<uint32_t> tags;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
@@ -2790,7 +2792,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		memcpy(pproptags->pproptag, tags.data(), sizeof(uint32_t) * tags.size());
 		return TRUE;
 	}
-	case TABLE_TYPE_CONTENT:	 {
+	case table_type::content: {
 		std::vector<uint32_t> tags;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
@@ -2828,7 +2830,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		memcpy(pproptags->pproptag, tags.data(), sizeof(uint32_t) * tags.size());
 		return TRUE;
 	}
-	case TABLE_TYPE_PERMISSION:
+	case table_type::permission:
 		pproptags->count = 4;
 		pproptags->pproptag = cu_alloc<uint32_t>(4);
 		if (pproptags->pproptag == nullptr)
@@ -2838,7 +2840,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		pproptags->pproptag[2] = PR_MEMBER_NAME;
 		pproptags->pproptag[3] = PR_MEMBER_RIGHTS;
 		return TRUE;
-	case TABLE_TYPE_RULE:
+	case table_type::rule:
 		pproptags->count = 10;
 		pproptags->pproptag = cu_alloc<uint32_t>(10);
 		if (pproptags->pproptag == nullptr)
@@ -2953,7 +2955,7 @@ BOOL exmdb_server::expand_table(const char *dir,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	if (TABLE_TYPE_CONTENT != ptnode->type ||
+	if (ptnode->type != table_type::content ||
 		2 != rop_util_get_replid(inst_id)) {
 		*pb_found = FALSE;
 		return TRUE;
@@ -3060,7 +3062,7 @@ BOOL exmdb_server::collapse_table(const char *dir,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	if (TABLE_TYPE_CONTENT != ptnode->type ||
+	if (ptnode->type != table_type::content ||
 		2 != rop_util_get_replid(inst_id)) {
 		*pb_found = FALSE;
 		return TRUE;
@@ -3151,7 +3153,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 	*pstate_id = 0;
 	if (ptnode == nullptr)
 		return TRUE;
-	if (ptnode->type != TABLE_TYPE_CONTENT)
+	if (ptnode->type != table_type::content)
 		return TRUE;
 	snprintf(tmp_path, std::size(tmp_path), "%s/tmp/state.sqlite3",
 	         exmdb_server::get_dir());
@@ -3432,7 +3434,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	auto ptnode = find_table(pdb, table_id);
 	if (ptnode == nullptr)
 		return TRUE;
-	if (ptnode->type != TABLE_TYPE_CONTENT)
+	if (ptnode->type != table_type::content)
 		return TRUE;
 	snprintf(tmp_path, std::size(tmp_path), "%s/tmp/state.sqlite3",
 	         exmdb_server::get_dir());

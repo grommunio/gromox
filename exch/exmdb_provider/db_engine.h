@@ -32,11 +32,8 @@ struct DYNAMIC_NODE {
 	LONGLONG_ARRAY folder_ids;
 };
 
-enum {
-	TABLE_TYPE_HIERARCHY,
-	TABLE_TYPE_CONTENT,
-	TABLE_TYPE_PERMISSION,
-	TABLE_TYPE_RULE
+enum class table_type {
+	hierarchy, content, permission, rule,
 };
 
 enum class instance_type {
@@ -46,7 +43,7 @@ enum class instance_type {
 struct TABLE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t table_id;
-	int type;
+	enum table_type type;
 	char *remote_id;
 	uint64_t folder_id;
 	GUID handle_guid;
