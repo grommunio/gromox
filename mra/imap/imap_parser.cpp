@@ -2,6 +2,7 @@
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <climits>
@@ -1354,84 +1355,58 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 	size_t string_length;
 	const char *imap_reply_str;
 	char reply_buff[1024];
-	
-    if (0 == strcasecmp(argv[1], "CAPABILITY")) {
-        return imap_cmd_parser_capability(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "ID")) {
-        return imap_cmd_parser_id(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "NOOP")) {
-        return imap_cmd_parser_noop(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "LOGOUT")) {
-        return imap_cmd_parser_logout(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "STARTTLS")) {
-        return imap_cmd_parser_starttls(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "AUTHENTICATE")) {
-        return imap_cmd_parser_authenticate(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "LOGIN")) {
-        return imap_cmd_parser_login(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "SELECT")) {
-        return imap_cmd_parser_select(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "IDLE")) {
-        return imap_cmd_parser_idle(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "EXAMINE")) {
-        return imap_cmd_parser_examine(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "CREATE")) {
-        return imap_cmd_parser_create(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "DELETE")) {
-        return imap_cmd_parser_delete(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "RENAME")) {
-        return imap_cmd_parser_rename(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "SUBSCRIBE")) {
-        return imap_cmd_parser_subscribe(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "UNSUBSCRIBE")) {
-        return imap_cmd_parser_unsubscribe(argc, argv, pcontext);
-    } else if (0 == strcasecmp(argv[1], "LIST")) {
-        return imap_cmd_parser_list(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "XLIST")) {
-        return imap_cmd_parser_xlist(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "LSUB")) {
-        return imap_cmd_parser_lsub(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "STATUS")) {
-        return imap_cmd_parser_status(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "APPEND")) {
-        return imap_cmd_parser_append(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "CHECK")) {
-        return imap_cmd_parser_check(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "CLOSE")) {
-        return imap_cmd_parser_close(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "EXPUNGE")) {
-        return imap_cmd_parser_expunge(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "UNSELECT")) {
-        return imap_cmd_parser_unselect(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "SEARCH")) {
-        return imap_cmd_parser_search(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "FETCH")) {
-        return imap_cmd_parser_fetch(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "STORE")) {
-        return imap_cmd_parser_store(argc, argv, pcontext);
-	} else if (0 == strcasecmp(argv[1], "COPY")) {
-        return imap_cmd_parser_copy(argc, argv, pcontext);
-	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
-		0 == strcasecmp(argv[2], "SEARCH")) {
-        return imap_cmd_parser_uid_search(argc, argv, pcontext);
-	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
-		0 == strcasecmp(argv[2], "FETCH")) {
-        return imap_cmd_parser_uid_fetch(argc, argv, pcontext);
-	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
-		0 == strcasecmp(argv[2], "STORE")) {
-        return imap_cmd_parser_uid_store(argc, argv, pcontext);
-	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
-		0 == strcasecmp(argv[2], "COPY")) {
-        return imap_cmd_parser_uid_copy(argc, argv, pcontext);
-	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
-		0 == strcasecmp(argv[2], "EXPUNGE")) {
-        return imap_cmd_parser_uid_expunge(argc, argv, pcontext);
-    } else {
-		imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-		string_length = gx_snprintf(reply_buff, arsizeof(reply_buff), "%s %s", argv[0], imap_reply_str);
-		pcontext->connection.write(reply_buff, string_length);
-		return DISPATCH_CONTINUE;
-    }
+	static constexpr std::pair<const char *, int (*)(int, char **, IMAP_CONTEXT *)> proc[] = {
+		{"APPEND", imap_cmd_parser_append},
+		{"AUTHENTICATE", imap_cmd_parser_authenticate},
+		{"CAPABILITY", imap_cmd_parser_capability},
+		{"CHECK", imap_cmd_parser_check},
+		{"CLOSE", imap_cmd_parser_close},
+		{"COPY", imap_cmd_parser_copy},
+		{"CREATE", imap_cmd_parser_create},
+		{"DELETE", imap_cmd_parser_delete},
+		{"EXAMINE", imap_cmd_parser_examine},
+		{"EXPUNGE", imap_cmd_parser_expunge},
+		{"FETCH", imap_cmd_parser_fetch},
+		{"ID", imap_cmd_parser_id},
+		{"IDLE", imap_cmd_parser_idle},
+		{"LIST", imap_cmd_parser_list},
+		{"LOGIN", imap_cmd_parser_login},
+		{"LOGOUT", imap_cmd_parser_logout},
+		{"LSUB", imap_cmd_parser_lsub},
+		{"NOOP", imap_cmd_parser_noop},
+		{"RENAME", imap_cmd_parser_rename},
+		{"SEARCH", imap_cmd_parser_search},
+		{"SELECT", imap_cmd_parser_select},
+		{"STARTTLS", imap_cmd_parser_starttls},
+		{"STATUS", imap_cmd_parser_status},
+		{"STORE", imap_cmd_parser_store},
+		{"SUBSCRIBE", imap_cmd_parser_subscribe},
+		{"UNSELECT", imap_cmd_parser_unselect},
+		{"UNSUBSCRIBE", imap_cmd_parser_unsubscribe},
+		{"XLIST", imap_cmd_parser_xlist},
+	}, proc_uid[] = {
+		{"COPY", imap_cmd_parser_uid_copy},
+		{"EXPUNGE", imap_cmd_parser_uid_expunge},
+		{"FETCH", imap_cmd_parser_uid_fetch},
+		{"SEARCH", imap_cmd_parser_uid_search},
+		{"STORE", imap_cmd_parser_uid_store},
+	};
+
+	auto scmp = [](decltype(*proc) &p, const char *cmd) { return strcasecmp(p.first, cmd) < 0; };
+	if (strcasecmp(argv[1], "UID") == 0) {
+		auto it = std::lower_bound(std::begin(proc_uid), std::end(proc_uid), argv[2], scmp);
+		if (it != std::end(proc_uid) && strcasecmp(argv[2], it->first) == 0)
+			return it->second(argc, argv, pcontext);
+	} else {
+		auto it = std::lower_bound(std::begin(proc), std::end(proc), argv[1], scmp);
+		if (it != std::end(proc) && strcasecmp(argv[1], it->first) == 0)
+			return it->second(argc, argv, pcontext);
+	}
+
+	imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
+	string_length = gx_snprintf(reply_buff, arsizeof(reply_buff), "%s %s", argv[0], imap_reply_str);
+	pcontext->connection.write(reply_buff, string_length);
+	return DISPATCH_CONTINUE;
 }
 
 static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) try
