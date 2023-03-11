@@ -3736,27 +3736,23 @@ static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
 		return TRUE;
 	}
 	s = pproplist->get<char>(tags.pr_addrtype);
-	if (s == nullptr) {
- FIND_ENTRYID:
-		auto pvalue = pproplist->get<const BINARY>(tags.pr_entryid);
-		if (NULL == pvalue) {
-			return FALSE;
+	if (s != nullptr) {
+		if (strcasecmp(s, "SMTP") == 0) {
+			s = pproplist->get<char>(tags.pr_emaddr);
+			if (s != nullptr) {
+				gx_strlcpy(username, s, ulen);
+				return TRUE;
+			}
+		} else if (strcasecmp(s, "EX") == 0) {
+			s = pproplist->get<char>(tags.pr_emaddr);
+			if (s != nullptr && oxcmail_essdn_to_username(s, username, ulen))
+				return TRUE;
 		}
-		return oxcmail_entryid_to_username(pvalue, alloc, username, ulen);
 	}
-	if (strcasecmp(s, "SMTP") == 0) {
-		s = pproplist->get<char>(tags.pr_emaddr);
-	} else if (strcasecmp(s, "EX") == 0) {
-		s = pproplist->get<char>(tags.pr_emaddr);
-		if (s != nullptr && oxcmail_essdn_to_username(s, username, ulen))
-			return TRUE;	
-	} else {
-		s = nullptr;
-	}
-	if (s == nullptr)
-		goto FIND_ENTRYID;
-	gx_strlcpy(username, s, ulen);
-	return TRUE;
+	auto pvalue = pproplist->get<const BINARY>(tags.pr_entryid);
+	if (pvalue == nullptr)
+		return false;
+	return oxcmail_entryid_to_username(pvalue, alloc, username, ulen);
 }
 
 static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
