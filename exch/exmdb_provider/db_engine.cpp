@@ -58,7 +58,7 @@ struct POPULATING_NODE {
 };
 
 struct ID_ARRAYS {
-	int count;
+	unsigned int count;
 	const char **remote_ids;
 	LONG_ARRAY *parray;
 };
@@ -552,10 +552,17 @@ static ID_ARRAYS *db_engine_classify_id_array(db_item_ptr &pdb,
 	return nullptr;
 }
 
+static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
+{
+	for (unsigned int i = 0; i < a.count; ++i) {
+		dg.id_array = a.parray[i];
+		notification_agent_backward_notify(a.remote_ids[i], &dg);
+	}
+}
+
 static void db_engine_notify_search_completion(db_item_ptr &pdb,
     uint64_t folder_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -570,11 +577,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 		return;
 	datagram.db_notify.pdata = psearch_completed;
 	psearch_completed->folder_id = folder_id;
-	for (i = 0; i < parrays->count; i++) {
-		datagram.id_array = parrays->parray[i];
-		notification_agent_backward_notify(
-			parrays->remote_ids[i], &datagram);
-	}
+	dg_notify(std::move(datagram), std::move(*parrays));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2118: ENOMEM");
 }
@@ -1860,7 +1863,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
     uint64_t message_id, uint32_t message_flags, const char *pstr_class) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -1878,11 +1880,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	pnew_mail->message_id = message_id;
 	pnew_mail->message_flags = message_flags;
 	pnew_mail->pmessage_class = pstr_class;
-	for (i = 0; i < parrays->count; i++) {
-		datagram.id_array = parrays->parray[i];
-		notification_agent_backward_notify(
-			parrays->remote_ids[i], &datagram);
-	}
+	dg_notify(std::move(datagram), std::move(*parrays));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2119: ENOMEM");
 }
@@ -1890,7 +1888,6 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
     uint64_t message_id) try
 {
-	int i;
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
@@ -1916,11 +1913,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		    pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_add_row(
 		pdb, folder_id, message_id);
@@ -1934,7 +1927,6 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
     uint64_t message_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -1952,11 +1944,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 		pcreated_mail->folder_id = folder_id;
 		pcreated_mail->message_id = message_id;
 		pcreated_mail->proptags.count = 0;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_add_row(
 		pdb, folder_id, message_id);
@@ -1970,7 +1958,6 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
     uint64_t message_id) try
 {
-	int i;
 	uint64_t folder_id;
 	DB_NOTIFY_DATAGRAM datagram;
 	
@@ -1994,11 +1981,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		plinked_mail->message_id = message_id;
 		plinked_mail->parent_id = parent_id;
 		plinked_mail->proptags.count = 0;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_add_row(
 		pdb, parent_id, message_id);
@@ -2160,7 +2143,6 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
     uint64_t folder_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -2178,11 +2160,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pcreated_folder->folder_id = folder_id;
 		pcreated_folder->parent_id = parent_id;
 		pcreated_folder->proptags.count = 0;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_hierarchy_table_add_row(
 		pdb, parent_id, folder_id);
@@ -2704,7 +2682,6 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
     uint64_t message_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -2721,11 +2698,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 		datagram.db_notify.pdata = pdeleted_mail;
 		pdeleted_mail->folder_id = folder_id;
 		pdeleted_mail->message_id = message_id;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_delete_row(
 		pdb, folder_id, message_id);
@@ -2739,7 +2712,6 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
     uint64_t message_id) try
 {
-	int i;
 	uint64_t folder_id;
 	DB_NOTIFY_DATAGRAM datagram;
 	
@@ -2763,11 +2735,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		punlinked_mail->folder_id = folder_id;
 		punlinked_mail->message_id = message_id;
 		punlinked_mail->parent_id = parent_id;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_delete_row(
 		pdb, parent_id, message_id);
@@ -2851,7 +2819,6 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
     uint64_t folder_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -2868,11 +2835,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		datagram.db_notify.pdata = pdeleted_folder;
 		pdeleted_folder->parent_id = parent_id;
 		pdeleted_folder->folder_id = folder_id;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_hierarchy_table_delete_row(
 		pdb, parent_id, folder_id);
@@ -3477,7 +3440,6 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
     uint64_t message_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -3495,11 +3457,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 		pmodified_mail->folder_id = folder_id;
 		pmodified_mail->message_id = message_id;
 		pmodified_mail->proptags.count = 0;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_modify_row(
 		pdb, folder_id, message_id);
@@ -3675,7 +3633,6 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
     uint64_t folder_id) try
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -3694,11 +3651,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 		pmodified_folder->ptotal = NULL;
 		pmodified_folder->punread = NULL;
 		pmodified_folder->proptags.count = 0;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_hierarchy_table_modify_row(
 		pdb, parent_id, folder_id);
@@ -3710,7 +3663,6 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	BOOL b_copy, uint64_t folder_id, uint64_t message_id,
 	uint64_t old_fid, uint64_t old_mid)
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
@@ -3748,11 +3700,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		pmvcp_mail->message_id = message_id;
 		pmvcp_mail->old_folder_id = old_fid;
 		pmvcp_mail->old_message_id = old_mid;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
 		db_engine_notify_content_table_delete_row(
@@ -3772,7 +3720,6 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	BOOL b_copy, uint64_t parent_id, uint64_t folder_id, 
 	uint64_t old_pid, uint64_t old_fid)
 {
-	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
@@ -3811,11 +3758,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		pmvcp_folder->parent_id = parent_id;
 		pmvcp_folder->old_folder_id = old_fid;
 		pmvcp_folder->old_parent_id = old_pid;
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
 		db_engine_notify_hierarchy_table_delete_row(
