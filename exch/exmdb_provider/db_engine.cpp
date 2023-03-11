@@ -9,6 +9,7 @@
 #include <ctime>
 #include <list>
 #include <mutex>
+#include <optional>
 #include <pthread.h>
 #include <string>
 #include <thread>
@@ -496,7 +497,8 @@ POPULATING_NODE::~POPULATING_NODE()
 	free(folder_ids.pll);
 }
 
-static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
+static std::optional<ID_ARRAYS>
+db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 {
 	struct xless {
 		bool operator()(const char *a, const char *b) const {
@@ -508,23 +510,21 @@ static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 
 	for (const auto &e : plist)
 		counting_map[e.remote_id].emplace_back(e.id);
-	auto parrays = cu_alloc<ID_ARRAYS>();
-	if (parrays == nullptr)
-		return NULL;
+	std::optional<ID_ARRAYS> parrays{std::in_place_t{}};
 	parrays->count = counting_map.size();
 	parrays->remote_ids = cu_alloc<const char *>(parrays->count);
 	if (parrays->remote_ids == nullptr)
-		return NULL;
+		return {};
 	parrays->parray = cu_alloc<LONG_ARRAY>(parrays->count);
 	if (parrays->parray == nullptr)
-		return NULL;
+		return {};
 	size_t i = 0;
 	for (auto &&[remote_id, idlist] : counting_map) {
 		parrays->remote_ids[i] = remote_id;
 		parrays->parray[i].count = idlist.size();
 		parrays->parray[i].pl = cu_alloc<uint32_t>(idlist.size());
 		if (parrays->parray[i].pl == nullptr)
-			return NULL;
+			return {};
 		if (idlist.data() != nullptr)
 			memcpy(parrays->parray[i].pl, idlist.data(), idlist.size() * sizeof(uint32_t));
 		i ++;
@@ -532,10 +532,10 @@ static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return parrays;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1509: ENOMEM");
-	return nullptr;
+	return {};
 }
 
-static ID_ARRAYS *db_engine_classify_id_array(db_item_ptr &pdb,
+static std::optional<ID_ARRAYS> db_engine_classify_id_array(db_item_ptr &pdb,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;
@@ -549,7 +549,7 @@ static ID_ARRAYS *db_engine_classify_id_array(db_item_ptr &pdb,
 	return db_engine_classify_id_array(std::move(tmp_list));
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1228: ENOMEM");
-	return nullptr;
+	return {};
 }
 
 static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
@@ -567,7 +567,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_SEARCHCOMPLETE, folder_id, 0);
-	if (parrays == nullptr || parrays->count == 0)
+	if (!parrays.has_value() || parrays->count == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.b_table = FALSE;
@@ -1867,7 +1867,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
-	if (parrays == nullptr || parrays->count == 0)
+	if (!parrays.has_value() || parrays->count == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.b_table = FALSE;
@@ -1893,7 +1893,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -1931,7 +1931,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTCREATED, folder_id, 0);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -1967,7 +1967,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTCREATED, folder_id, 0);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -2147,7 +2147,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTCREATED, parent_id, 0);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -2686,7 +2686,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -2722,7 +2722,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -2823,7 +2823,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTDELETED, parent_id, 0);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -3444,7 +3444,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTMODIFIED, folder_id, message_id);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -3637,7 +3637,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
 	               NOTIFICATION_TYPE_OBJECTMODIFIED, folder_id, 0);
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -3685,7 +3685,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		}
 	}
 	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
@@ -3743,7 +3743,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		}
 	}
 	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-	if (parrays == nullptr)
+	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
