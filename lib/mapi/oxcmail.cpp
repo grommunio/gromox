@@ -3755,6 +3755,56 @@ static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
 	return oxcmail_entryid_to_username(pvalue, alloc, username, ulen);
 }
 
+/**
+ * Only useful for DSN generation.
+ */
+static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
+    EXT_BUFFER_ALLOC alloc, const addr_tags &tags,
+    char *username, size_t ulen)
+{
+	auto em = props.get<const char>(tags.pr_smtpaddr);
+	if (em != nullptr) {
+		snprintf(username, ulen, "rfc822;%s", em);
+		return true;
+	}
+	auto at = props.get<char>(tags.pr_addrtype);
+	if (at != nullptr) {
+		em = props.get<char>(tags.pr_emaddr);
+		if (strcasecmp(at, "SMTP") == 0) {
+			if (em != nullptr) {
+				snprintf(username, ulen, "rfc822;%s", znul(em));
+				return true;
+			}
+		} else if (strcasecmp(at, "EX") == 0) {
+			if (em != nullptr) {
+				auto ok = oxcmail_essdn_to_username(em, &username[7],
+				          ulen > 8 ? ulen - 7 : 0);
+				if (ok) {
+					memcpy(username, "rfc822;", 7);
+					return true;
+				}
+			}
+		} else {
+			snprintf(username, ulen, "%s;%s", at, znul(em));
+			return true;
+		}
+	}
+	auto v = props.get<const BINARY>(tags.pr_entryid);
+	if (v != nullptr) {
+		auto ok = oxcmail_entryid_to_username(v, alloc, &username[7],
+			  ulen > 8 ? ulen - 7 : 0);
+		if (ok) {
+			memcpy(username, "rfc822;", 7);
+			return true;
+		}
+	}
+	if (at != nullptr) {
+		snprintf(username, ulen, "%s;%s", at, znul(em));
+		return true;
+	}
+	return false;
+}
+
 static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
     uint32_t rcpt_type, EXT_BUFFER_ALLOC alloc, char *field, size_t fdsize)
 {
@@ -4647,11 +4697,9 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		if (NULL == pdsn_fields) {
 			return FALSE;
 		}
-		strcpy(tmp_buff, "rfc822;");
-		if (!oxcmail_get_smtp_address(prcpts->pparray[i], alloc,
-		    tags_self, tmp_buff + 7, arsizeof(tmp_buff) - 7)) {
-			return FALSE;
-		}
+		if (!oxcmail_get_rcpt_address(*prcpts->pparray[i], alloc,
+		    tags_self, tmp_buff, std::size(tmp_buff)))
+			*tmp_buff = '\0';
 		if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
 			return FALSE;
 		if (*action != '\0' &&
