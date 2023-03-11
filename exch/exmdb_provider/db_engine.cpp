@@ -535,8 +535,8 @@ static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return nullptr;
 }
 
-static std::vector<ID_NODE> collect_nsub(db_item_ptr &pdb, unsigned int bits,
-    uint64_t folder_id, uint64_t message_id)
+static ID_ARRAYS *db_engine_classify_id_array(db_item_ptr &pdb,
+    unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;
 	for (const auto &sub : pdb->nsub_list) {
@@ -546,7 +546,10 @@ static std::vector<ID_NODE> collect_nsub(db_item_ptr &pdb, unsigned int bits,
 		    sub.message_id == message_id))
 			tmp_list.push_back(ID_NODE{sub.remote_id, sub.sub_id});
 	}
-	return tmp_list;
+	return db_engine_classify_id_array(std::move(tmp_list));
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1228: ENOMEM");
+	return nullptr;
 }
 
 static void db_engine_notify_search_completion(db_item_ptr &pdb,
@@ -555,10 +558,9 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_SEARCHCOMPLETE,
-	                folder_id, 0);
-	if (tmp_list.size() == 0)
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_SEARCHCOMPLETE, folder_id, 0);
+	if (parrays == nullptr || parrays->count == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.b_table = FALSE;
@@ -568,9 +570,6 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 		return;
 	datagram.db_notify.pdata = psearch_completed;
 	psearch_completed->folder_id = folder_id;
-	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-	if (parrays == nullptr)
-		return;
 	for (i = 0; i < parrays->count; i++) {
 		datagram.id_array = parrays->parray[i];
 		notification_agent_backward_notify(
@@ -1864,9 +1863,9 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
-	if (tmp_list.size() == 0)
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
+	if (parrays == nullptr || parrays->count == 0)
 		return;
 	datagram.dir = deconst(dir);
 	datagram.b_table = FALSE;
@@ -1879,9 +1878,6 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	pnew_mail->message_id = message_id;
 	pnew_mail->message_flags = message_flags;
 	pnew_mail->pmessage_class = pstr_class;
-	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-	if (parrays == nullptr)
-		return;
 	for (i = 0; i < parrays->count; i++) {
 		datagram.id_array = parrays->parray[i];
 		notification_agent_backward_notify(
@@ -1898,9 +1894,11 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_NEWMAIL, folder_id, 0);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::new_mail;
@@ -1918,9 +1916,6 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		    pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -1942,10 +1937,11 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
-	                folder_id, 0);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTCREATED, folder_id, 0);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::message_created;
@@ -1956,9 +1952,6 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 		pcreated_mail->folder_id = folder_id;
 		pcreated_mail->message_id = message_id;
 		pcreated_mail->proptags.count = 0;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -1985,9 +1978,11 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
-	                folder_id, 0);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTCREATED, folder_id, 0);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::link_created;
@@ -1999,9 +1994,6 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		plinked_mail->message_id = message_id;
 		plinked_mail->parent_id = parent_id;
 		plinked_mail->proptags.count = 0;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -2171,10 +2163,11 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTCREATED,
-	                parent_id, 0);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTCREATED, parent_id, 0);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::folder_created;
@@ -2185,9 +2178,6 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pcreated_folder->folder_id = folder_id;
 		pcreated_folder->parent_id = parent_id;
 		pcreated_folder->proptags.count = 0;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -2717,10 +2707,11 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED,
-	                folder_id, message_id);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::message_deleted;
@@ -2730,9 +2721,6 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 		datagram.db_notify.pdata = pdeleted_mail;
 		pdeleted_mail->folder_id = folder_id;
 		pdeleted_mail->message_id = message_id;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -2760,8 +2748,11 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTDELETED, folder_id, message_id);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::link_deleted;
@@ -2772,9 +2763,6 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		punlinked_mail->folder_id = folder_id;
 		punlinked_mail->message_id = message_id;
 		punlinked_mail->parent_id = parent_id;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -2866,10 +2854,11 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTDELETED,
-	                parent_id, 0);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTDELETED, parent_id, 0);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::folder_deleted;
@@ -2879,9 +2868,6 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		datagram.db_notify.pdata = pdeleted_folder;
 		pdeleted_folder->parent_id = parent_id;
 		pdeleted_folder->folder_id = folder_id;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -3494,10 +3480,11 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTMODIFIED,
-	                folder_id, message_id);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTMODIFIED, folder_id, message_id);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::message_modified;
@@ -3508,9 +3495,6 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 		pmodified_mail->folder_id = folder_id;
 		pmodified_mail->message_id = message_id;
 		pmodified_mail->proptags.count = 0;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -3694,10 +3678,11 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 	int i;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-
-	auto tmp_list = collect_nsub(pdb, NOTIFICATION_TYPE_OBJECTMODIFIED,
-	                folder_id, 0);
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(pdb,
+	               NOTIFICATION_TYPE_OBJECTMODIFIED, folder_id, 0);
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = db_notify_type::folder_modified;
@@ -3709,9 +3694,6 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 		pmodified_folder->ptotal = NULL;
 		pmodified_folder->punread = NULL;
 		pmodified_folder->proptags.count = 0;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -3750,7 +3732,10 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 			return;
 		}
 	}
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = b_copy ? db_notify_type::message_copied :
@@ -3763,9 +3748,6 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		pmvcp_mail->message_id = message_id;
 		pmvcp_mail->old_folder_id = old_fid;
 		pmvcp_mail->old_message_id = old_mid;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
@@ -3813,7 +3795,10 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 			return;
 		}
 	}
-	if (tmp_list.size() > 0) {
+	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
+	if (parrays == nullptr)
+		return;
+	if (parrays->count > 0) {
 		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type = b_copy ? db_notify_type::folder_copied :
@@ -3826,9 +3811,6 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		pmvcp_folder->parent_id = parent_id;
 		pmvcp_folder->old_folder_id = old_fid;
 		pmvcp_folder->old_parent_id = old_pid;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (parrays == nullptr)
-			return;
 		for (i=0; i<parrays->count; i++) {
 			datagram.id_array = parrays->parray[i];
 			notification_agent_backward_notify(
