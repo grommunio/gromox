@@ -2704,44 +2704,6 @@ static ical_component *oxcical_export_timezone(ical &pical,
 	return nullptr;
 }
 
-static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
-	ENTRYID_TO_USERNAME entryid_to_username,
-	ESSDN_TO_USERNAME essdn_to_username,
-    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
-{
-	auto smtpaddr = prcpt->get<const char>(PR_SMTP_ADDRESS);
-	if (smtpaddr != nullptr) {
-		gx_strlcpy(username, smtpaddr, ulen);
-		return TRUE;
-	}
-	auto addrtype = prcpt->get<const char>(PR_ADDRTYPE);
-	if (addrtype == nullptr) {
-		auto entryid = prcpt->get<const BINARY>(PR_ENTRYID);
-		if (entryid == nullptr)
-			return FALSE;
-		return entryid_to_username(entryid, alloc, username, ulen);
-	}
-	const char *emaddr = nullptr;
-	if (strcasecmp(addrtype, "SMTP") == 0) {
-		emaddr = prcpt->get<char>(PR_EMAIL_ADDRESS);
-	} else if (strcasecmp(addrtype, "EX") == 0) {
-		emaddr = prcpt->get<char>(PR_EMAIL_ADDRESS);
-		if (emaddr != nullptr) {
-			if (essdn_to_username(emaddr, username, ulen))
-				return TRUE;
-			emaddr = nullptr;
-		}
-	}
-	if (emaddr == nullptr) {
-		auto entryid = prcpt->get<const BINARY>(PR_ENTRYID);
-		if (entryid == nullptr)
-			return FALSE;
-		return entryid_to_username(entryid, alloc, username, ulen);
-	}
-	gx_strlcpy(username, emaddr, ulen);
-	return TRUE;
-}
-
 static bool is_meeting_response(const char *s)
 {
 	return strcasecmp(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
@@ -2805,9 +2767,9 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		if (name != nullptr) {
 			piline->append_param("CN", name);
 		}
-		if (!oxcical_get_smtp_address(pmsg->children.prcpts->pparray[i],
-		    entryid_to_username, essdn_to_username, alloc, username,
-		    GX_ARRAY_SIZE(username)))
+		if (!oxcmail_get_smtp_address(*pmsg->children.prcpts->pparray[i],
+		    nullptr /* tags_self */, entryid_to_username,
+		    essdn_to_username, alloc, username, std::size(username)))
 			return FALSE;
 		snprintf(tmp_value, GX_ARRAY_SIZE(tmp_value), "MAILTO:%s", username);
 		piline->append_value(nullptr, tmp_value);

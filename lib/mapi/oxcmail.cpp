@@ -105,10 +105,6 @@ struct DSN_FILEDS_INFO {
 	const char *x_display_name;
 };
 
-struct addr_tags {
-	uint32_t pr_name, pr_addrtype, pr_emaddr, pr_smtpaddr, pr_entryid;
-};
-
 static constexpr addr_tags tags_self = {
 	PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_SMTP_ADDRESS,
 	PR_ENTRYID,
@@ -3726,10 +3722,12 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 	return offset + 2;
 }
 
-static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
-    EXT_BUFFER_ALLOC alloc, const addr_tags &tags,
-    char *username, size_t ulen)
+BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
+    const addr_tags *ptags, ENTRYID_TO_USERNAME ey2u, ESSDN_TO_USERNAME es2u,
+    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
+	auto pproplist = &props;
+	const auto &tags = ptags != nullptr ? *ptags : tags_self;
 	auto s = pproplist->get<const char>(tags.pr_smtpaddr);
 	if (s != nullptr) {
 		gx_strlcpy(username, s, ulen);
@@ -3745,14 +3743,14 @@ static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
 			}
 		} else if (strcasecmp(s, "EX") == 0) {
 			s = pproplist->get<char>(tags.pr_emaddr);
-			if (s != nullptr && oxcmail_essdn_to_username(s, username, ulen))
+			if (s != nullptr && es2u(s, username, ulen))
 				return TRUE;
 		}
 	}
 	auto pvalue = pproplist->get<const BINARY>(tags.pr_entryid);
 	if (pvalue == nullptr)
 		return false;
-	return oxcmail_entryid_to_username(pvalue, alloc, username, ulen);
+	return ey2u(pvalue, alloc, username, ulen);
 }
 
 /**
@@ -3840,11 +3838,11 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 			if (offset >= fdsize)
 				return FALSE;
 		}
-		if (oxcmail_get_smtp_address(prcpt, alloc, tags_self,
-		    username, GX_ARRAY_SIZE(username))) {
+		if (oxcmail_get_smtp_address(*prcpt, &tags_self,
+		    oxcmail_entryid_to_username, oxcmail_essdn_to_username,
+		    alloc, username, std::size(username)))
 			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
 			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
-		}
 	}
 	if (0 == offset || offset >= fdsize)
 		return FALSE;
@@ -3931,10 +3929,11 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		field[offset] = '\0';
 	}
  EXPORT_ADDRESS:
-	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, tags,
-	    address, arsizeof(address))) {
+	if (oxcmail_get_smtp_address(pmsg->proplist, &tags,
+	    oxcmail_entryid_to_username, oxcmail_essdn_to_username,
+	    alloc, address, std::size(address)))
 		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address);
-	} else if (offset > 0) {
+	else if (offset > 0)
 		/*
 		 * RFC 5322 §3.4's ABNF mandates an address at all times.
 		 * If we only emitted "Display Name", parsers can
@@ -3942,7 +3941,6 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		 * <> to nudge them.
 		 */
 		offset += gx_snprintf(field + offset, fdsize - offset, "<>");
-	}
 	if (0 == offset) {
 		return FALSE;
 	}
