@@ -2767,12 +2767,12 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		if (name != nullptr) {
 			piline->append_param("CN", name);
 		}
-		if (!oxcmail_get_smtp_address(*pmsg->children.prcpts->pparray[i],
+		if (oxcmail_get_smtp_address(*pmsg->children.prcpts->pparray[i],
 		    nullptr /* tags_self */, entryid_to_username,
-		    essdn_to_username, alloc, username, std::size(username)))
-			return FALSE;
-		snprintf(tmp_value, GX_ARRAY_SIZE(tmp_value), "MAILTO:%s", username);
-		piline->append_value(nullptr, tmp_value);
+		    essdn_to_username, alloc, username, std::size(username))) {
+			snprintf(tmp_value, std::size(tmp_value), "MAILTO:%s", username);
+			piline->append_value(nullptr, tmp_value);
+		}
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
