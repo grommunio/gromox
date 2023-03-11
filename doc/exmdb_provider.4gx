@@ -164,7 +164,7 @@ Default: \fI5\fP
 If there are more than this many threads waiting to use a mailbox, refuse the
 particular exmdb RPC that is executing. Use 0 to disable.
 .br
-Default: \fI5\fP
+Default: \fI0\fP
 .TP
 \fBnotify_stub_threads_num\fP
 For every remote exmdb server in exmdb_list.txt, establish and keep this many
