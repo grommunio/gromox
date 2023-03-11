@@ -496,21 +496,13 @@ POPULATING_NODE::~POPULATING_NODE()
 
 static ID_ARRAYS *db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 {
-	struct xhash {
-		size_t operator()(const char *s) const {
-			return s != nullptr ? std::hash<std::string_view>()(s) : 0;
-		}
-	};
-	struct xeq {
+	struct xless {
 		bool operator()(const char *a, const char *b) const {
-			if (a == b)
-				return true;
-			if (a == nullptr || b == nullptr)
-				return false;
-			return strcasecmp(a, b) == 0;
+			return b == nullptr ? false : a == nullptr ? true :
+			       strcasecmp(a, b) < 0;
 		}
 	};
-	std::unordered_map<const char *, std::vector<uint32_t>> counting_map; //, xhash, xeq> counting_map;
+	std::map<const char *, std::vector<uint32_t>, xless> counting_map;
 
 	for (const auto &e : plist)
 		counting_map[e.remote_id].emplace_back(e.id);
