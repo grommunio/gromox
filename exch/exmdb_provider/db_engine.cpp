@@ -207,12 +207,14 @@ db_item_ptr db_engine_get_db(const char *path)
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
 		auto refs = pdb->reference.load();
-		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
+		if (refs > 0 && g_mbox_contention_reject > 0 &&
+		    static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
 			hhold.unlock();
 			mlog(LV_ERR, "E-1593: contention on %s (%u uses), rejecting db request", path, refs);
 			return NULL;
 		}
-		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
+		if (refs > 0 && g_mbox_contention_warning > 0 &&
+		    static_cast<unsigned int>(refs) > g_mbox_contention_warning)
 			mlog(LV_WARN, "W-1620: contention on %s (%u uses)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
