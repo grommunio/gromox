@@ -9,7 +9,14 @@ retention_hours=0
 subvolume_root="/var/lib/gromox"
 snapshot_archive="/var/lib/gromox-snapshots"
 if [ -e /etc/gromox/snapshot.cfg ]; then
-	. /etc/gromox/snapshot.cfg
+	str=$(awk -F= '{if($1=="subvolume_root"){print$2}}' /etc/gromox/snapshot.cfg)
+	if [ -n "$str" ]; then
+		subvolume_root="$str"
+	fi
+	str=$(awk -F= '{if($1=="snapshot_archive"){print$2}}' /etc/gromox/snapshot.cfg)
+	if [ -n "$str" ]; then
+		snapshot_archive="$str"
+	fi
 fi
 DB="$subvolume_root"
 S="$snapshot_archive"
