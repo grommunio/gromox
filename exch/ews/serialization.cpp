@@ -401,6 +401,11 @@ tGuid::tGuid(const XMLAttribute* xml)
 		throw DeserializationError(E3063);
 }
 
+tIndexedFieldURI::tIndexedFieldURI(const XMLElement* xml) :
+    XMLINITA(FieldURI),
+    XMLINITA(FieldIndex)
+{}
+
 void tItem::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(ItemId);

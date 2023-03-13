@@ -828,6 +828,14 @@ std::string tGuid::serialize() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * TODO: Implement tag mapping
+ */
+void tIndexedFieldURI::tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 #define pval(type) static_cast<const type*>(tp->pvalue)
 
 tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps)

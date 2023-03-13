@@ -502,13 +502,27 @@ struct tFlagType
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+/**
+ * Types.xsd:1108
+ */
+struct tIndexedFieldURI
+{
+	static constexpr char NAME[] = "IndexedFieldURI";
+
+	tIndexedFieldURI(const tinyxml2::XMLElement*);
+
+	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+
+	std::string FieldURI; //Attribute
+	std::string FieldIndex; //Attribute
+};
 
 /**
  * Types.xsd:1165
  */
-struct tPath : public std::variant<tExtendedFieldURI, tFieldURI>
+struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>
 {
-	using Base = std::variant<tExtendedFieldURI, tFieldURI>;
+	using Base = std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>;
 
 	tPath(const tinyxml2::XMLElement*);
 
