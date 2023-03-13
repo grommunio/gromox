@@ -303,5 +303,6 @@ int main(int argc, const char **argv)
 			ret = EXIT_FAILURE;
 		}
 	}
+	gi_shutdown();
 	return ret;
 }
