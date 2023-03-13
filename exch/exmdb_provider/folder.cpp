@@ -1578,6 +1578,8 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+	if (account_id == 0)
+		account_id = get_account_id();
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
 	if (!common_util_check_descendant(pdb->psqlite, dst_fid,
@@ -1652,6 +1654,8 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+	if (account_id == 0)
+		account_id = get_account_id();
 	if (b_copy &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {

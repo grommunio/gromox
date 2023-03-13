@@ -123,6 +123,8 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+	if (account_id == 0)
+		account_id = get_account_id();
 	if (!b_move &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite))
@@ -260,6 +262,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+	if (account_id == 0)
+		account_id = get_account_id();
 	*pb_partial = FALSE;
 	src_val = rop_util_get_gc_value(src_fid);
 	dst_val = rop_util_get_gc_value(dst_fid);
@@ -453,6 +457,8 @@ BOOL exmdb_server::delete_messages(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+	if (account_id == 0)
+		account_id = get_account_id();
 	*pb_partial = FALSE;
 	src_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
