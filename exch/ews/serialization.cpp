@@ -289,6 +289,16 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(CalendarEventDetails);
 }
 
+void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
+{
+	tItem::serialize(xml);
+}
+
+void tContact::serialize(tinyxml2::XMLElement* xml) const
+{
+	tItem::serialize(xml);
+}
+
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
     XMLINIT(Mailbox),
     XMLINITA(ChangeKey),

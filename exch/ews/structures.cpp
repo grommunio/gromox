@@ -419,6 +419,16 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tCalendarItem::tCalendarItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tContact::tContact(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
     Id(name)
 {}
@@ -930,6 +940,10 @@ sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& na
 		return tItem(itemProps, namedProps);
 	if(!strcasecmp(itemClass, "IPM.Note"))
 		return tMessage(itemProps, namedProps);
+	else if(!strcasecmp(itemClass, "IPM.Appointment"))
+		return tCalendarItem(itemProps, namedProps);
+	else if(!strcasecmp(itemClass, "IPM.Contact"))
+		return tContact(itemProps, namedProps);
 	return tItem(itemProps, namedProps);
 }
 

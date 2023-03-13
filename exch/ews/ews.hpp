@@ -21,6 +21,8 @@ namespace Structures
 {
 struct sShape;
 struct sFolderSpec;
+struct tCalendarItem;
+struct tContact;
 struct tDistinguishedFolderId;
 struct tFolderId;
 struct tFolderResponseShape;
@@ -31,7 +33,7 @@ struct tMessage;
 struct tPath;
 struct tSerializableTimeZone;
 
-using sItem = std::variant<tItem, tMessage>;
+using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 }
 
 

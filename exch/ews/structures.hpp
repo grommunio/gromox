@@ -29,6 +29,8 @@ namespace gromox::EWS::Structures
 {
 
 struct tCalendarFolderType;
+struct tCalendarItem;
+struct tContact;
 struct tContactsFolderType;
 struct tDistinguishedFolderId;
 struct tFolderId;
@@ -165,8 +167,6 @@ using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderTy
 	// TODO: missing item types
 	/*
 	<Items>
-		<CalendarItem/>
-		<Contact/>
 		<DistributionList/>
 		<MeetingMessage/>
 		<MeetingRequest/>
@@ -176,7 +176,7 @@ using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderTy
 		<PostItem/>
 	</Items>
 	*/
-using sItem = std::variant<tItem, tMessage>;
+using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 
@@ -675,6 +675,29 @@ struct tItem : public NS_EWS_Types
 	static sItem create(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
 };
 
+/**
+ * Types.xsd:4933
+ */
+struct tCalendarItem : public tItem
+{
+	static constexpr char NAME[] = "CalendarItem";
+
+	tCalendarItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:5541
+ */
+struct tContact : public tItem
+{
+	static constexpr char NAME[] = "Contact";
+
+	tContact(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 /**
  * Types.xsd:1287
