@@ -154,11 +154,15 @@ int main(int argc, const char **argv)
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	auto ret = repair_mbox();
-	if (ret == -ENOMEM)
+	if (ret == -ENOMEM) {
 		fprintf(stderr, "Insufficient system memory.\n");
-	if (ret != 0) {
+		ret = EXIT_FAILURE;
+	} else if (ret != 0) {
 		fprintf(stderr, "The operation did not complete.\n");
-		return EXIT_FAILURE;
+		ret = EXIT_FAILURE;
+	} else if (ret == 0) {
+		ret = EXIT_SUCCESS;
 	}
-	return EXIT_SUCCESS;
+	gi_shutdown();
+	return ret;
 }
