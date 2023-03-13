@@ -94,10 +94,12 @@ static eid_t lookup_eid_by_name(const char *dir, const char *name)
 
 namespace delmsg {
 
+static char *g_folderstr;
 static uint64_t g_folderid;
 static unsigned int g_soft;
+
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'f', HXTYPE_UINT64, &g_folderid, nullptr, nullptr, 0, "Folder ID"},
+	{nullptr, 'f', HXTYPE_STRING, &g_folderstr, nullptr, nullptr, 0, "Folder ID"},
 	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -129,6 +131,12 @@ static int main(int argc, const char **argv)
 {
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (g_folderstr != nullptr) {
+		char *end = nullptr;
+		g_folderid = strtoul(g_folderstr, &end, 0);
+		if (end == g_folderstr || *end != '\0')
+			g_folderid = lookup_eid_by_name(g_storedir, g_folderstr);
+	}
 	if (g_folderid == 0)
 		return help();
 	std::vector<uint64_t> eids;
