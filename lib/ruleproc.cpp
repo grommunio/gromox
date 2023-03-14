@@ -396,6 +396,50 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
+static BINARY *xid_to_bin(const XID &xid)
+{
+	EXT_PUSH ext_push;
+	auto bin = static_cast<BINARY *>(exmdb_rpc_alloc(sizeof(BINARY)));
+	if (bin == nullptr)
+		return nullptr;
+	bin->pv = exmdb_rpc_alloc(24);
+	if (bin->pv == nullptr)
+		return nullptr;
+	if (!ext_push.init(bin->pv, 24, 0) ||
+	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+		return nullptr;
+	bin->cb = ext_push.m_offset;
+	return bin;
+}
+
+static ec_error_t op_tag(rxparam &par, const rule_node &rule,
+    const TAGGED_PROPVAL *setval)
+{
+	if (setval == nullptr)
+		return ecSuccess;
+	uint64_t change_num = 0, modtime = 0;
+	if (!exmdb_client::allocate_cn(par.cur.dir.c_str(), &change_num))
+		return ecRpcFailed;
+	auto change_key = xid_to_bin({GUID{}, change_num});
+	if (change_key == nullptr)
+		return ecServerOOM;
+	const TAGGED_PROPVAL valdata[] = {
+		{PidTagChangeNumber, &change_num},
+		{PR_CHANGE_KEY, change_key},
+		{PR_LOCAL_COMMIT_TIME, &modtime},
+		{PR_LAST_MODIFICATION_TIME, &modtime},
+		{setval->proptag, setval->pvalue},
+	};
+	const TPROPVAL_ARRAY valhdr = {std::size(valdata), deconst(valdata)};
+	if (valdata[1].pvalue == nullptr)
+		return ecServerOOM;
+	PROBLEM_ARRAY problems{};
+	if (!exmdb_client::set_message_properties(par.cur.dir.c_str(),
+	    nullptr, CP_ACP, par.cur.mid, &valhdr, &problems))
+		return ecRpcFailed;
+	return ecSuccess;
+}
+
 static ec_error_t op_read(rxparam &par, const rule_node &rule)
 {
 	uint64_t cn = 0;
@@ -412,6 +456,8 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
 	switch (act.type) {
 	case OP_MARK_AS_READ:
 		return op_read(par, rule);
+	case OP_TAG:
+		return op_tag(par, rule, static_cast<TAGGED_PROPVAL *>(act.pdata));
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
@@ -445,6 +491,8 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
 	switch (act.type) {
 	case OP_MARK_AS_READ:
 		return op_read(par, rule);
+	case OP_TAG:
+		return op_tag(par, rule, static_cast<TAGGED_PROPVAL *>(act.pdata));
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
