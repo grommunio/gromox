@@ -429,7 +429,8 @@ int main(int argc, const char **argv) try
 		terse_help();
 		return EXIT_FAILURE;
 	}
-
+	if (g_do_delivery && g_anchor_folder != 0)
+		fprintf(stderr, "mt2exm: -B option has no effect when -D is used\n");
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	gi_setup_early(g_username);
