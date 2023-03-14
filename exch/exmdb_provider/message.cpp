@@ -960,6 +960,8 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
 	    mid_val, &fid_val))
 		return FALSE;
+	if (fid_val == 0)
+		return TRUE; /* XXX: yield ecObjectDeleted or so */
 	nt_time = rop_util_current_nttime();
 	cu_set_property(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
 		PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
