@@ -396,10 +396,22 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
+static ec_error_t op_read(rxparam &par, const rule_node &rule)
+{
+	uint64_t cn = 0;
+	/* XXX: this RPC cannot cope with nullptr username on public stores */
+	if (!exmdb_client::set_message_read_state(par.cur.dir.c_str(),
+	    nullptr, par.cur.mid, true, &cn))
+		return ecRpcFailed;
+	return ecSuccess;
+}
+
 static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
 	switch (act.type) {
+	case OP_MARK_AS_READ:
+		return op_read(par, rule);
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
@@ -431,6 +443,8 @@ static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
     const EXT_ACTION_BLOCK &act, size_t act_idx)
 {
 	switch (act.type) {
+	case OP_MARK_AS_READ:
+		return op_read(par, rule);
 	case OP_DELETE:
 		par.del = true;
 		return ecSuccess;
