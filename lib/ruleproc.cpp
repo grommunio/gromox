@@ -396,6 +396,31 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
+static ec_error_t op_copy(rxparam &par, const rule_node &rule,
+    const MOVECOPY_ACTION &mc, uint8_t act_type)
+{
+	auto svreid = static_cast<const SVREID *>(mc.pfolder_eid);
+	if (svreid == nullptr)
+		return ecSuccess;
+	if (!mc.same_store)
+		return ecTooComplex;
+	auto dst_fid = svreid->folder_id;
+	if (par.loop_check.find({par.cur.dir, dst_fid}) != par.loop_check.end())
+		return ecSuccess;
+	uint64_t dst_mid = 0;
+	BOOL result = false;
+	if (!exmdb_client::allocate_message_id(par.cur.dir.c_str(), dst_fid, &dst_mid))
+		return ecRpcFailed;
+	if (!exmdb_client::movecopy_message(par.cur.dir.c_str(), 0, CP_ACP,
+	    par.cur.mid, dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
+		return ecRpcFailed;
+	if (act_type == OP_MOVE) {
+		par.cur.fid = eid_t(dst_fid);
+		par.cur.mid = eid_t(dst_mid);
+	}
+	return ecSuccess;
+}
+
 static BINARY *xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;
@@ -454,6 +479,11 @@ static ec_error_t op_switch(rxparam &par, const rule_node &rule,
     const ACTION_BLOCK &act, size_t act_idx)
 {
 	switch (act.type) {
+	case OP_MOVE:
+	case OP_COPY: {
+		auto mc = static_cast<MOVECOPY_ACTION *>(act.pdata);
+		return mc != nullptr ? op_copy(par, rule, *mc, act.type) : ecSuccess;
+	}
 	case OP_MARK_AS_READ:
 		return op_read(par, rule);
 	case OP_TAG:
