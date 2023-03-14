@@ -71,7 +71,7 @@ struct rxparam {
 	message_node cur;
 	std::set<folder_node> loop_check;
 	MESSAGE_CONTENT *ctnt = nullptr;
-	bool exit = false;
+	bool del = false, exit = false;
 };
 
 }
@@ -396,6 +396,18 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
+static ec_error_t op_switch(rxparam &par, const rule_node &rule,
+    const ACTION_BLOCK &act, size_t act_idx)
+{
+	switch (act.type) {
+	case OP_DELETE:
+		par.del = true;
+		return ecSuccess;
+	default:
+		return ecSuccess;
+	}
+}
+
 static ec_error_t op_process(rxparam &par, const rule_node &rule)
 {
 	if (par.exit && !(rule.state & ST_ONLY_WHEN_OOF))
@@ -405,7 +417,26 @@ static ec_error_t op_process(rxparam &par, const rule_node &rule)
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
+	if (rule.act == nullptr)
+		return ecSuccess;
+	for (size_t i = 0; i < rule.act->count; ++i) {
+		auto ret = op_switch(par, rule, rule.act->pblock[i], i);
+		if (ret != ecSuccess)
+			return ret;
+	}
 	return ecSuccess;
+}
+
+static ec_error_t opx_switch(rxparam &par, const rule_node &rule,
+    const EXT_ACTION_BLOCK &act, size_t act_idx)
+{
+	switch (act.type) {
+	case OP_DELETE:
+		par.del = true;
+		return ecSuccess;
+	default:
+		return ecSuccess;
+	}
 }
 
 static ec_error_t opx_process(rxparam &par, const rule_node &rule)
@@ -417,6 +448,11 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 		return ecSuccess;
 	if (rule.state & ST_EXIT_LEVEL)
 		par.exit = true;
+	for (size_t i = 0; i < rule.xact.count; ++i) {
+		auto ret = opx_switch(par, rule, rule.xact.pblock[i], i);
+		if (ret != ecSuccess)
+			return ret;
+	}
 	return ecSuccess;
 }
 
@@ -444,6 +480,16 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 		err = rule.extended ? opx_process(par, rule) : op_process(par, rule);
 		if (err != ecSuccess)
 			return err;
+		if (par.del)
+			break;
+	}
+	if (par.del) {
+		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&par.cur.mid)};
+		BOOL partial;
+		if (!exmdb_client::delete_messages(par.cur.dir.c_str(), 0,
+		    CP_ACP, nullptr, par.cur.fid, &ids, true/*hard*/, &partial))
+			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
+		return ecSuccess;
 	}
 	if (!exmdb_client::notify_new_mail(par.cur.dir.c_str(),
 	    par.cur.fid, par.cur.mid))
