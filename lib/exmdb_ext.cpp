@@ -2164,6 +2164,18 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_transport_new_mail &d)
 	return x.p_str(d.pstr_class);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_notify_new_mail &d)
+{
+	TRY(x.g_uint64(&d.folder_id));
+	return x.g_uint64(&d.message_id);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_notify_new_mail &d)
+{
+	TRY(x.p_uint64(d.folder_id));
+	return x.p_uint64(d.message_id);
+}
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_contact_address &d)
 {
 	return x.g_str(&d.paddress);
@@ -2303,7 +2315,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_
 	E(unsubscribe_notification) \
 	E(transport_new_mail) \
 	E(check_contact_address) \
-	E(get_public_folder_unread_count)
+	E(get_public_folder_unread_count) \
+	E(notify_new_mail)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3593,7 +3606,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread
 	E(unsubscribe_notification) \
 	E(transport_new_mail) \
 	E(vacuum) \
-	E(unload_store)
+	E(unload_store) \
+	E(notify_new_mail)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \

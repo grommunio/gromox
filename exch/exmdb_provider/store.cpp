@@ -384,6 +384,17 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	return TRUE;
 }
 
+BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
+	uint64_t message_id)
+{
+	auto pdb = db_engine_get_db(dir);
+	if (pdb == nullptr || pdb->psqlite == nullptr)
+		return false;
+	db_engine_notify_new_mail(pdb, rop_util_get_gc_value(folder_id),
+		rop_util_get_gc_value(message_id));
+	return TRUE;
+}
+
 static BOOL table_check_address_in_contact_folder(
 	sqlite3_stmt *pstmt_subfolder, sqlite3_stmt *pstmt_search,
 	uint64_t folder_id, const char *paddress, BOOL *pb_found)

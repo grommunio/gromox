@@ -151,6 +151,7 @@ enum class exmdb_callid : uint8_t {
 	flush_instance /* v2 */ = 0x7f,
 	unload_store = 0x80,
 	deliver_message = 0x81,
+	notify_new_mail = 0x82,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -828,6 +829,10 @@ struct exreq_get_public_folder_unread_count : public exreq {
 	uint64_t folder_id;
 };
 
+struct exreq_notify_new_mail : public exreq {
+	uint64_t folder_id, message_id;
+};
+
 struct exresp {
 	exmdb_callid call_id;
 };
@@ -1297,6 +1302,7 @@ using exresp_transport_new_mail = exresp;
 using exresp_vacuum = exresp;
 using exresp_unload_store = exresp;
 using exresp_ping_store = exresp;
+using exresp_notify_new_mail = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir;

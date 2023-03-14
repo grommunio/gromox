@@ -123,3 +123,4 @@ EXMIDL(check_contact_address, (const char *dir, const char *paddress, IDLOUT BOO
 EXMIDL(get_public_folder_unread_count, (const char *dir, const char *username, uint64_t folder_id, IDLOUT uint32_t *count))
 EXMIDL(vacuum, (const char *dir))
 EXMIDL(unload_store, (const char *dir))
+EXMIDL(notify_new_mail, (const char *dir, uint64_t folder_id, uint64_t message_id))
