@@ -1,3 +1,21 @@
+Development 2.6.32
+==================
+
+Fixes:
+
+* mbop: support folder strings for delmsg -f as was documented
+* oxcmail: do not fail exporting DSNs with unresolvable addresses
+* oxcical: do not fail exporting calendar objects with unresolvable addresses
+* exmdb_provider: support mbox_contention_*=0 as was documented
+* gromox-snapshot: safer parsing of snapshot.cfg
+
+Changes:
+
+* exmdb_provider: default to mbox_contention_reject=0
+* exch: support absent values with RES_PROPERTY, RES_BITMASK and
+  RES_CONTENT comparisons
+
+
 Gromox 2.6 (2023-03-10)
 =======================
 
