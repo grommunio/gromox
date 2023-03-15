@@ -3571,6 +3571,7 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	if (!message_load_folder_rules(rp, rule_list) ||
 	    !message_load_folder_ext_rules(rp, rule_list))
 		return ecError;
+	std::sort(rule_list.begin(), rule_list.end());
 	BOOL b_del = false, b_exit = false;
 	for (const auto &rnode : rule_list) {
 		auto ec = rnode.extended ?
@@ -3579,7 +3580,6 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 		if (ec != ecSuccess)
 			return ec;
 	}
-	std::sort(rule_list.begin(), rule_list.end());
 	if (dam_list.size() > 0 && !message_make_dams(rp, std::move(dam_list), seen))
 		return ecError;
 	if (!b_del) try {
