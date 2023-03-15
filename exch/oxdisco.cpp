@@ -215,6 +215,24 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 	return false;
 }
 
+static std::string extract_qparam(const char *qstr, const char *srkey)
+{
+	std::string ret;
+	for (auto &&kvpair : gx_split(qstr, '&')) {
+		auto k = kvpair.data();
+		auto v = strchr(k, '=');
+		if (v == nullptr) {
+			ret.clear();
+			continue;
+		}
+		*v = '\0';
+		if (strcasecmp(k, srkey) != 0)
+			continue;
+		ret = v + 1;
+	}
+	return ret;
+}
+
 /**
  * @brief      Proccess request
  *
@@ -829,16 +847,7 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 	bool error = true;
 	const char *find_q = strchr(get_request_uri, '?');
 	if (find_q != nullptr) {
-		std::string protocol_name;
-		for (auto &&kvpair : gx_split(find_q + 1, '&')) {
-			auto k = kvpair.data();
-			auto v = strchr(k, '=');
-			if (v != nullptr) {
-				*v = '\0';
-				if (strcasecmp(k, "Protocol") == 0)
-					protocol_name = v + 1;
-			}
-		}
+		auto protocol_name = extract_qparam(find_q + 1, "Protocol");
 		if (!protocol_name.empty()) {
 			auto iterator = std::lower_bound(std::begin(protocol_list),
 			                std::end(protocol_list), protocol_name.c_str(),
