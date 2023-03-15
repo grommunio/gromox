@@ -180,6 +180,11 @@ OxdiscoPlugin::OxdiscoPlugin()
 		request_logging, response_logging, pretty_response);
 }
 
+static bool brkp(char c)
+{
+	return c == '\0' || c == '/' || c == '?';
+}
+
 /**
  * @brief      Preprocess request
  *
@@ -201,11 +206,13 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 	if (len == MEM_END_OF_FILE)
 		return false;
 	uri[len] = '\0';
-	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") != 0 &&
-	    strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 40) != 0 &&
-	    strncasecmp(uri, "/autodiscover/autodiscover.json", 30) != 0)
-		return false;
-	return TRUE;
+	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") == 0 && brkp(uri[30]))
+		return TRUE;
+	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44]))
+		return TRUE;
+	if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31]))
+		return TRUE;
+	return false;
 }
 
 /**
@@ -231,8 +238,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	if (l == MEM_END_OF_FILE)
 		return false;
 	uri[l] = '\0';
-	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 &&
-	    (uri[44] == '\0' || uri[44] == '?')) {
+	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
 		if (!auth_info.b_authed)
 			return unauthed(ctx_id);
 		if (strncmp(&uri[44], "?emailaddress=", 14) != 0)
@@ -240,7 +246,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 		auto username = &uri[44+14];
 		/* still need hex decoding */
 		return resp_autocfg(ctx_id, username);
-	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 30) == 0) {
+	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
 		return resp_json(ctx_id, uri);
 	}
 
