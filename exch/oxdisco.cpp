@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
@@ -228,7 +229,22 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 		*v = '\0';
 		if (strcasecmp(k, srkey) != 0)
 			continue;
-		ret = v + 1;
+		ret = ++v;
+		auto bg = ret.begin();
+		for (; *v != '\0'; ++v) {
+			if (*v == '+') {
+				*bg++ = ' ';
+			} else if (v[0] == '%' && v[1] != '\0' && v[2] != '\0') {
+				uint8_t a = toupper(v[1]), b = toupper(v[2]);
+				uint8_t c = a >= '0' && a <= '9' ? a - '0' : a - 'A' + 10;
+				c <<= 4;
+				c |=        b >= '0' && b <= '9' ? b - '0' : b - 'A' + 10;
+				*bg++ = c;
+				v += 2;
+			} else {
+				*bg++ = *v;
+			}
+		}
 	}
 	return ret;
 }
@@ -259,11 +275,10 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
 		if (!auth_info.b_authed)
 			return unauthed(ctx_id);
-		if (strncmp(&uri[44], "?emailaddress=", 14) != 0)
+		if (uri[44] == '/' || uri[44] == '\0')
 			return resp_autocfg(ctx_id, auth_info.username);
-		auto username = &uri[44+14];
-		/* still need hex decoding */
-		return resp_autocfg(ctx_id, username);
+		auto username = extract_qparam(&uri[45], "emailaddress");
+		return resp_autocfg(ctx_id, username.c_str());
 	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
 		return resp_json(ctx_id, uri);
 	}
