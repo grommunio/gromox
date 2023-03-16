@@ -642,7 +642,7 @@ ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_te
 				return NULL;
 		}
 	}
-	if (dst_ob->pold_parentid != nullptr) {
+	if (src_ob->pold_parentid != nullptr) {
 		if (!b_temp) {
 			dst_ob->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY, src_ob->pold_parentid));
 			if (dst_ob->pold_parentid == nullptr) {
