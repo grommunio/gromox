@@ -655,23 +655,23 @@ ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_te
 				return NULL;
 		}
 	}
-	if (dst_ob->pproptags != nullptr) {
+	if (src_ob->pproptags != nullptr) {
 		if (!b_temp) {
-			src_ob->pproptags = proptag_array_dup(dst_ob->pproptags);
-			if (src_ob->pproptags == nullptr) {
+			dst_ob->pproptags = proptag_array_dup(src_ob->pproptags);
+			if (dst_ob->pproptags == nullptr) {
 				common_util_free_znotification(dst);
 				return NULL;
 			}
 		} else {
-			src_ob->pproptags = cu_alloc<PROPTAG_ARRAY>();
-			if (src_ob->pproptags == nullptr)
+			dst_ob->pproptags = cu_alloc<PROPTAG_ARRAY>();
+			if (dst_ob->pproptags == nullptr)
 				return NULL;
-			src_ob->pproptags->count = dst_ob->pproptags->count;
-			src_ob->pproptags->pproptag = cu_alloc<uint32_t>(dst_ob->pproptags->count);
-			if (src_ob->pproptags->pproptag == nullptr)
+			dst_ob->pproptags->count = src_ob->pproptags->count;
+			dst_ob->pproptags->pproptag = cu_alloc<uint32_t>(src_ob->pproptags->count);
+			if (dst_ob->pproptags->pproptag == nullptr)
 				return NULL;
-			memcpy(src_ob->pproptags->pproptag, dst_ob->pproptags->pproptag,
-			       sizeof(uint32_t) * dst_ob->pproptags->count);
+			memcpy(dst_ob->pproptags->pproptag, src_ob->pproptags->pproptag,
+			       sizeof(uint32_t) * src_ob->pproptags->count);
 		}
 	}
 	return dst;
