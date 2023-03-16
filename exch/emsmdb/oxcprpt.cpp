@@ -936,9 +936,6 @@ ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_siz
 	uint32_t max_length;
 	uint32_t permission;
 	
-	/* MS-OXCPERM 3.1.4.1 */
-	if (proptag == PR_NT_SECURITY_DESCRIPTOR_AS_XML)
-		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -948,6 +945,9 @@ ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_siz
 	BOOL b_write = flags == MAPI_CREATE || flags == MAPI_MODIFY ? TRUE : false;
 	switch (object_type) {
 	case ems_objtype::folder:
+		/* MS-OXCPERM 3.1.4.1 */
+		if (proptag == PR_NT_SECURITY_DESCRIPTOR_AS_XML)
+			return ecNotSupported;
 		if (!plogon->is_private() && flags != MAPI_READONLY)
 			return ecNotSupported;
 		if (PROP_TYPE(proptag) != PT_BINARY)
