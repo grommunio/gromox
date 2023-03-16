@@ -122,8 +122,7 @@ template<typename T> T *cu_alloc(size_t elem)
 void common_util_set_clifd(int clifd);
 extern int common_util_get_clifd();
 char* common_util_dup(const char *pstr);
-ZNOTIFICATION* common_util_dup_znotification(
-	ZNOTIFICATION *pnotification, BOOL b_temp);
+extern ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *, BOOL temp);
 void common_util_free_znotification(ZNOTIFICATION *pnotification);
 extern BOOL common_util_addressbook_entryid_to_username(BINARY eid, char *username, size_t);
 extern BOOL common_util_parse_addressbook_entryid(BINARY, uint32_t *type, char *essdn, size_t);

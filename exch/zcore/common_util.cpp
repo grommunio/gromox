@@ -516,8 +516,7 @@ static BINARY* common_util_dup_binary(const BINARY *pbin)
 	return pbin1;
 }
 
-ZNOTIFICATION* common_util_dup_znotification(
-	ZNOTIFICATION *pnotification, BOOL b_temp)
+ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *pnotification, BOOL b_temp)
 {
 	OBJECT_ZNOTIFICATION *pobj_notify;
 	NEWMAIL_ZNOTIFICATION *pnew_notify;
