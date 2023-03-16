@@ -4920,7 +4920,7 @@ ec_error_t zs_messagetorfc822(GUID hsession, uint32_t hmessage, BINARY *peml_bin
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
 	return common_util_message_to_rfc822(pmessage->get_store(),
-	       pmessage->get_id(), peml_bin) ? ecSuccess : ecError;
+	       pmessage->instance_id, peml_bin) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,

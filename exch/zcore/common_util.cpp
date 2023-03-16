@@ -1899,29 +1899,17 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	return ecSuccess;
 }
 
-BOOL common_util_message_to_rfc822(store_object *pstore,
-	uint64_t message_id, BINARY *peml_bin)
+BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id, BINARY *peml_bin)
 {
 	int size;
 	void *ptr;
-	void *pvalue;
 	TAGGED_PROPVAL *ppropval;
-	MESSAGE_CONTENT *pmsgctnt;
+	MESSAGE_CONTENT msgctnt{}, *pmsgctnt = &msgctnt;
 	
-	if (exmdb_client_get_message_property(pstore->get_dir(), nullptr, CP_ACP,
-	    message_id, PidTagMidString, &pvalue) && pvalue != nullptr) try {
-		auto eml_path = pstore->get_dir() + "/eml/"s +
-		                static_cast<const char *>(pvalue);
-		if (common_util_load_file(eml_path.c_str(), peml_bin))
-			return TRUE;
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1495: ENOMEM");
-		return false;
-	}
 	auto pinfo = zs_get_info();
 	cpid_t cpid = pinfo == nullptr ? CP_UTF8 : pinfo->cpid;
-	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
-	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
+	if (!exmdb_client::read_message_instance(pstore->get_dir(),
+	    inst_id, &msgctnt))
 		return FALSE;
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
