@@ -96,14 +96,13 @@ struct FOLDER_CHANGES {
 extern ATTACHMENT_CONTENT *attachment_content_init();
 extern void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *, MESSAGE_CONTENT *embed);
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
-ATTACHMENT_CONTENT* attachment_content_dup(
-	ATTACHMENT_CONTENT *pattachment);
+extern ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *);
 extern ATTACHMENT_LIST *attachment_list_init();
 void attachment_list_free(ATTACHMENT_LIST *plist);
 void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index);
 BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment);
-ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist);
+extern ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *plist);
 extern GX_EXPORT std::unique_ptr<FOLDER_CONTENT> folder_content_init();
 extern MESSAGE_CONTENT *message_content_init();
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);

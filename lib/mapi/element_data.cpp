@@ -45,8 +45,7 @@ void attachment_content_free(ATTACHMENT_CONTENT *pattachment)
 	free(pattachment);
 }
 
-ATTACHMENT_CONTENT* attachment_content_dup(
-	ATTACHMENT_CONTENT *pattachment)
+ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *pattachment)
 {
 	int i;
 	ATTACHMENT_CONTENT *pattachment1;
@@ -134,7 +133,7 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	return TRUE;
 }
 
-ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist)
+ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *plist)
 {
 	int i;
 	ATTACHMENT_LIST *plist1;

@@ -10,7 +10,7 @@
 
 using namespace gromox;
 
-static void *restriction_dup_by_type(mapi_rtype, void *rst);
+static void *restriction_dup_by_type(mapi_rtype, const void *rst);
 static void restriction_free_by_type(mapi_rtype, void *rst);
 
 static RESTRICTION_AND_OR* restriction_dup_and_or(
@@ -317,33 +317,33 @@ static void restriction_free_count(
 	free(prestriction);
 }
 
-static void *restriction_dup_by_type(mapi_rtype rt, void *prestriction)
+static void *restriction_dup_by_type(mapi_rtype rt, const void *prestriction)
 {
 	switch (rt) {
 	case RES_AND:
 	case RES_OR:
-		return restriction_dup_and_or(static_cast<RESTRICTION_AND_OR *>(prestriction));
+		return restriction_dup_and_or(static_cast<const RESTRICTION_AND_OR *>(prestriction));
 	case RES_NOT:
-		return restriction_dup_not(static_cast<RESTRICTION_NOT *>(prestriction));
+		return restriction_dup_not(static_cast<const RESTRICTION_NOT *>(prestriction));
 	case RES_CONTENT:
-		return restriction_dup_content(static_cast<RESTRICTION_CONTENT *>(prestriction));
+		return restriction_dup_content(static_cast<const RESTRICTION_CONTENT *>(prestriction));
 	case RES_PROPERTY:
-		return restriction_dup_property(static_cast<RESTRICTION_PROPERTY *>(prestriction));
+		return restriction_dup_property(static_cast<const RESTRICTION_PROPERTY *>(prestriction));
 	case RES_PROPCOMPARE:
-		return restriction_dup_propcompare(static_cast<RESTRICTION_PROPCOMPARE *>(prestriction));
+		return restriction_dup_propcompare(static_cast<const RESTRICTION_PROPCOMPARE *>(prestriction));
 	case RES_BITMASK:
-		return restriction_dup_bitmask(static_cast<RESTRICTION_BITMASK *>(prestriction));
+		return restriction_dup_bitmask(static_cast<const RESTRICTION_BITMASK *>(prestriction));
 	case RES_SIZE:
-		return restriction_dup_size(static_cast<RESTRICTION_SIZE *>(prestriction));
+		return restriction_dup_size(static_cast<const RESTRICTION_SIZE *>(prestriction));
 	case RES_EXIST:
-		return restriction_dup_exist(static_cast<RESTRICTION_EXIST *>(prestriction));
+		return restriction_dup_exist(static_cast<const RESTRICTION_EXIST *>(prestriction));
 	case RES_SUBRESTRICTION:
-		return restriction_dup_subobj(static_cast<RESTRICTION_SUBOBJ *>(prestriction));
+		return restriction_dup_subobj(static_cast<const RESTRICTION_SUBOBJ *>(prestriction));
 	case RES_COMMENT:
 	case RES_ANNOTATION:
-		return restriction_dup_comment(static_cast<RESTRICTION_COMMENT *>(prestriction));
+		return restriction_dup_comment(static_cast<const RESTRICTION_COMMENT *>(prestriction));
 	case RES_COUNT:
-		return restriction_dup_count(static_cast<RESTRICTION_COUNT *>(prestriction));
+		return restriction_dup_count(static_cast<const RESTRICTION_COUNT *>(prestriction));
 	default:
 		return NULL;
 	}
