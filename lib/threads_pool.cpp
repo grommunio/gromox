@@ -256,34 +256,38 @@ static void *tpol_scanwork(void *pparam)
 	not_empty_times = 0;
 	while (!g_notify_stop) {
 		sleep(1);
-		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) > 1) {
-			not_empty_times ++;
-			if (not_empty_times < MAX_NOT_EMPTY_TIMES) {
-				continue;
-			}
-			std::lock_guard tpd_hold(g_threads_pool_data_lock);
-			if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
-				continue;
-			}
-			auto pdata = g_threads_data_buff.get();
-			if (NULL != pdata) {
-				pdata->node.pdata = pdata;
-				pdata->id = (pthread_t)-1;
-				pdata->notify_stop = FALSE;
-				auto ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
-				if (ret != 0) {
-					mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
-					g_threads_data_buff.put(pdata);
-				} else {
-					pthread_setname_np(pdata->id, "ep_pool/+");
-					double_list_append_as_tail(
-						&g_threads_data_list, &pdata->node);
-					g_threads_pool_cur_thr_num ++;
-				}
-			} else {
-				mlog(LV_DEBUG, "threads_pool: fatal error, threads pool memory conflicts");
-			}
+		if (contexts_pool_get_param(CUR_SCHEDULING_CONTEXTS) <= 1) {
+			not_empty_times = 0;
+			continue;
 		}
+		not_empty_times++;
+		if (not_empty_times < MAX_NOT_EMPTY_TIMES) {
+			continue;
+		}
+		std::lock_guard tpd_hold(g_threads_pool_data_lock);
+		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
+			continue;
+		}
+		auto pdata = g_threads_data_buff.get();
+		if (pdata == nullptr) {
+			mlog(LV_DEBUG, "threads_pool: fatal error, threads pool memory conflicts");
+			not_empty_times = 0;
+			continue;
+		}
+		pdata->node.pdata = pdata;
+		pdata->id = (pthread_t)-1;
+		pdata->notify_stop = FALSE;
+		auto ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
+		if (ret != 0) {
+			mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
+			g_threads_data_buff.put(pdata);
+			not_empty_times = 0;
+			continue;
+		}
+		pthread_setname_np(pdata->id, "ep_pool/+");
+		double_list_append_as_tail(
+			&g_threads_data_list, &pdata->node);
+		g_threads_pool_cur_thr_num++;
 		not_empty_times = 0;
 	}
 	return nullptr;
