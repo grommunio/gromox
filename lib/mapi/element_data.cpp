@@ -45,30 +45,25 @@ void attachment_content_free(ATTACHMENT_CONTENT *pattachment)
 	free(pattachment);
 }
 
-ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *pattachment)
+ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *src)
 {
-	int i;
-	ATTACHMENT_CONTENT *pattachment1;
-	
-	pattachment1 = attachment_content_init();
-	if (NULL == pattachment1) {
+	auto dst = attachment_content_init();
+	if (dst == nullptr)
 		return NULL;
-	}
-	for (i=0; i<pattachment->proplist.count; i++) {
-		if (pattachment1->proplist.set(pattachment->proplist.ppropval[i]) != 0) {
-			attachment_content_free(pattachment1);
+	for (unsigned int i = 0; i < src->proplist.count; ++i) {
+		if (dst->proplist.set(src->proplist.ppropval[i]) != 0) {
+			attachment_content_free(dst);
 			return NULL;
 		}
 	}
-	if (NULL != pattachment->pembedded) {
-		pattachment1->pembedded =
-			message_content_dup(pattachment->pembedded);
-		if (NULL == pattachment1->pembedded) {
-			attachment_content_free(pattachment1);
+	if (src->pembedded != nullptr) {
+		dst->pembedded = message_content_dup(src->pembedded);
+		if (dst->pembedded == nullptr) {
+			attachment_content_free(dst);
 			return NULL;
 		}
 	}
-	return pattachment1;
+	return dst;
 }
 
 ATTACHMENT_LIST* attachment_list_init()
@@ -133,29 +128,24 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	return TRUE;
 }
 
-ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *plist)
+ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *src)
 {
-	int i;
-	ATTACHMENT_LIST *plist1;
-	ATTACHMENT_CONTENT *pattachment;
-	
-	plist1 = attachment_list_init();
-	if (NULL == plist1) {
+	auto dst = attachment_list_init();
+	if (dst == nullptr)
 		return NULL;
-	}
-	for (i=0; i<plist->count; i++) {
-		pattachment = attachment_content_dup(plist->pplist[i]);
+	for (unsigned int i = 0; i < src->count; ++i) {
+		auto pattachment = attachment_content_dup(src->pplist[i]);
 		if (NULL == pattachment) {
-			attachment_list_free(plist1);
+			attachment_list_free(dst);
 			return NULL;
 		}
-		if (!attachment_list_append_internal(plist1, pattachment)) {
+		if (!attachment_list_append_internal(dst, pattachment)) {
 			attachment_content_free(pattachment);
-			attachment_list_free(plist1);
+			attachment_list_free(dst);
 			return NULL;
 		}
 	}
-	return plist1;
+	return dst;
 }
 
 FOLDER_CONTENT::FOLDER_CONTENT()
@@ -280,37 +270,32 @@ void message_content_free(MESSAGE_CONTENT *pmsgctnt)
 	free(pmsgctnt);
 }
 
-MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
+MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *src)
 {
-	int i;
-	MESSAGE_CONTENT *pmsgctnt1;
-	
-	pmsgctnt1 = message_content_init();
-	if (NULL == pmsgctnt1) {
+	auto dst = message_content_init();
+	if (dst == nullptr)
 		return NULL;
-	}
-	for (i=0; i<pmsgctnt->proplist.count; i++) {
-		if (pmsgctnt1->proplist.set(pmsgctnt->proplist.ppropval[i]) != 0) {
-			message_content_free(pmsgctnt1);
+	for (unsigned int i = 0; i < src->proplist.count; ++i) {
+		if (dst->proplist.set(src->proplist.ppropval[i]) != 0) {
+			message_content_free(dst);
 			return NULL;
 		}
 	}
-	if (NULL != pmsgctnt->children.prcpts) {
-		pmsgctnt1->children.prcpts = pmsgctnt->children.prcpts->dup();
-		if (NULL == pmsgctnt1->children.prcpts) {
-			message_content_free(pmsgctnt1);
+	if (src->children.prcpts != nullptr) {
+		dst->children.prcpts = src->children.prcpts->dup();
+		if (dst->children.prcpts == nullptr) {
+			message_content_free(dst);
 			return NULL;
 		}
 	}
-	if (NULL != pmsgctnt->children.pattachments) {
-		pmsgctnt1->children.pattachments =
-			attachment_list_dup(pmsgctnt->children.pattachments);
-		if (NULL == pmsgctnt1->children.pattachments) {
-			message_content_free(pmsgctnt1);
+	if (src->children.pattachments != nullptr) {
+		dst->children.pattachments = attachment_list_dup(src->children.pattachments);
+		if (dst->children.pattachments == nullptr) {
+			message_content_free(dst);
 			return NULL;
 		}
 	}
-	return pmsgctnt1;
+	return dst;
 }
 
 property_groupinfo::property_groupinfo(uint32_t gid) :
