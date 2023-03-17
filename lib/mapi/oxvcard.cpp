@@ -902,11 +902,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	}
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
-	if (NULL != pvalue) {
-		for (size_t i = 0; i < saval->count; ++i) {
+	if (saval != nullptr)
+		for (size_t i = 0; i < saval->count; ++i)
 			vcard.append_line("X-MS-CHILD", saval->ppstr[i]);
-		}
-	}
 	
 	for (size_t i = 0; i < std::size(g_ufld_proptags); ++i) {
 		propid = PROP_ID(g_ufld_proptags[i]);
