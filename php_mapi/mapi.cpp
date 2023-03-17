@@ -455,7 +455,7 @@ static PHP_RINIT_FUNCTION(mapi)
 {
 	zstrplus str_opcache(zend_string_init(ZEND_STRL("zend opcache"), 0));
 	if (zend_hash_exists(&module_registry, str_opcache.get())) {
-		php_error_docref(nullptr, E_ERROR, "mapi: opcache is incompatible due to breakage of is_resource($x)");
+		php_error_docref(nullptr, E_ERROR, "mapi: MAPI cannot execute while opcache is present. You must deactivate opcache in PHP (`phpdismod` command on some systems), or remove opcache entirely with the package manager. <https://docs.grommunio.com/kb/php.html>");
 		return FAILURE;
 	}
 
