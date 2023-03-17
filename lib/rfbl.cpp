@@ -151,6 +151,18 @@ static const char *mapi_errname(unsigned int e)
 	E(ecAccessDenied)
 	E(ecMAPIOOM)
 	E(ecInvalidParam)
+	E(MAPI_E_ACCOUNT_DISABLED)
+	E(MAPI_E_END_OF_SESSION)
+	E(MAPI_E_FAILONEPROVIDER)
+	E(MAPI_E_INVALID_WORKSTATION_ACCOUNT)
+	E(MAPI_E_PASSWORD_CHANGE_REQUIRED)
+	E(MAPI_E_PASSWORD_EXPIRED)
+	E(MAPI_E_UNCONFIGURED)
+	E(MAPI_E_UNKNOWN_ENTRYID)
+	E(ecCorruptData)
+	E(ecInvalidEntryId)
+	E(ecTableEmpty)
+	E(ecTimeSkew)
 	default: {
 		thread_local char xbuf[32];
 		snprintf(xbuf, std::size(xbuf), "%xh", e);
@@ -243,6 +255,12 @@ const char *mapi_strerror(unsigned int e)
 	E(ecTableEmpty, "A table essential to the operation is empty")
 	E(MAPI_E_NO_RECIPIENTS, "A message cannot be sent because it has no recipients")
 	E(MAPI_E_STORE_FULL, "Store is full")
+	E(MAPI_W_CANCEL_MESSAGE, "Message was cancelled (e.g. incomplete Envelope-From/Ev-To)")
+	E(MAPI_W_NO_SERVICE, "The desired service is unavailable")
+	E(SYNC_E_OBJECT_DELETED, "The object no longer exists on the server")
+	E(ecComputed, "The property is a computed property and read-only")
+	E(ecNPQuotaExceeded, "The maximum number of named properties was reached in the store")
+	E(ecSendAsDenied, "Not enough permissions to utilize Send-As impersonation")
 	default: {
 		thread_local char xbuf[40];
 		snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);
