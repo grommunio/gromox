@@ -196,14 +196,18 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
-	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission, folder_id "
-	             "FROM permissions WHERE username=?");
+	auto pstmt = gx_sql_prep(pdb->psqlite,
+	             "SELECT p1.folder_id, p2.permission, p3.permission "
+	             "FROM permissions AS p1 LEFT JOIN permissions AS p2 "
+	             "ON p1.folder_id=p2.folder_id AND p2.username=? "
+	             "LEFT JOIN permissions AS p3 "
+	             "ON p1.folder_id=p3.folder_id AND p3.username='default'");
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 	while (pstmt.step() == SQLITE_ROW) {
-		auto perm = pstmt.col_uint64(0);
-		auto fid  = pstmt.col_uint64(1);
+		auto fid  = pstmt.col_uint64(0);
+		auto perm = pstmt.col_uint64(sqlite3_column_type(pstmt, 1) != SQLITE_NULL ? 1 : 2);
 		*ppermission |= perm;
 	/*
 	 * Outlook and g-web only expose IPM_SUBTREE and below, so permissions
