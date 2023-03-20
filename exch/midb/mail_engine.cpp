@@ -2141,6 +2141,10 @@ static int mail_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 		return 0;
 	auto recent = dbop_sqlite_recentversion(sqlite_kind::midb);
 	auto current = dbop_sqlite_schemaversion(db, sqlite_kind::midb);
+	if (current < 0) {
+		mlog(LV_ERR, "dbop_sqlite: %s: impossible to determine schemaversion", filedesc);
+		return -1;
+	}
 	if (current >= recent)
 		return 0;
 	mlog(LV_NOTICE, "dbop_sqlite: %s: current schema EM-%d; upgrading to EM-%d.",

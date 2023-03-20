@@ -390,6 +390,10 @@ int mbop_upgrade(const char *file, sqlite_kind kind)
 	}
 	auto recent = dbop_sqlite_recentversion(kind);
 	auto current = dbop_sqlite_schemaversion(db, kind);
+	if (current < 0) {
+		fprintf(stderr, "Impossible to determine schema version\n");
+		return EXIT_FAILURE;
+	}
 	auto c = kind_to_char(kind);
 	fprintf(stderr, "[dbop_sqlite]: Current schema E%c-%d. Update available: E%c-%d.\n",
 		c, current, c, recent);

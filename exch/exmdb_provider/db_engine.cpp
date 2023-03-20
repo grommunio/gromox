@@ -179,6 +179,10 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	auto kind = is_pvt ? sqlite_kind::pvt : sqlite_kind::pub;
 	auto recent = dbop_sqlite_recentversion(kind);
 	auto current = dbop_sqlite_schemaversion(db, kind);
+	if (current < 0) {
+		mlog(LV_ERR, "dbop_sqlite upgrade %s: impossible to determine schemaversion", filedesc);
+		return -1;
+	}
 	if (current >= recent)
 		return 0;
 	auto c = is_pvt ? 'V' : 'B';
