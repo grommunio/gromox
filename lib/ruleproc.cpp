@@ -128,11 +128,11 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 	RESTRICTION_BITMASK rst_1 = {BMR_NEZ, PR_RULE_STATE, ST_ENABLED};
 	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_STATE, oof ? ST_ONLY_WHEN_OOF : 0U};
 	RESTRICTION rst_3[]       = {{RES_BITMASK, {&rst_1}}, {RES_BITMASK, {&rst_2}}};
-	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), {rst_3}};
+	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), rst_3};
 
 	RESTRICTION_EXIST rst_5   = {PR_RULE_STATE};
 	RESTRICTION rst_6[]       = {{RES_EXIST, {&rst_5}}, {RES_OR, {&rst_4}}};
-	RESTRICTION_AND_OR rst_7  = {std::size(rst_6), {rst_6}};
+	RESTRICTION_AND_OR rst_7  = {std::size(rst_6), rst_6};
 	RESTRICTION rst_8         = {RES_AND, {&rst_7}};
 
 	/* XXX: Where is my sort order parameter */
@@ -180,13 +180,13 @@ static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
 	RESTRICTION_BITMASK rst_1 = {BMR_NEZ, PR_RULE_MSG_STATE, ST_ENABLED};
 	RESTRICTION_BITMASK rst_2 = {BMR_NEZ, PR_RULE_MSG_STATE, oof ? ST_ONLY_WHEN_OOF : 0U};
 	RESTRICTION rst_3[2]      = {{RES_BITMASK, {&rst_1}}, {RES_BITMASK, {&rst_2}}};
-	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), {rst_3}};
+	RESTRICTION_AND_OR rst_4  = {std::size(rst_3), rst_3};
 
 	RESTRICTION_EXIST rst_5   = {PR_RULE_MSG_STATE};
 	RESTRICTION_EXIST rst_6   = {PR_MESSAGE_CLASS};
 	RESTRICTION_CONTENT rst_7 = {FL_FULLSTRING | FL_IGNORECASE, PR_MESSAGE_CLASS, {PR_MESSAGE_CLASS, deconst("IPM.ExtendedRule.Message")}};
 	RESTRICTION rst_8[]       = {{RES_EXIST, {&rst_5}}, {RES_OR, {&rst_4}}, {RES_EXIST, {&rst_6}}, {RES_CONTENT, {&rst_7}}};
-	RESTRICTION_AND_OR rst_9  = {std::size(rst_8), {rst_8}};
+	RESTRICTION_AND_OR rst_9  = {std::size(rst_8), rst_8};
 	RESTRICTION rst_10        = {RES_AND, {&rst_9}};
 
 	static constexpr SORT_ORDER sort_spec[] = {{PT_LONG, PROP_ID(PR_RULE_MSG_SEQUENCE), TABLE_SORT_ASCEND}};
