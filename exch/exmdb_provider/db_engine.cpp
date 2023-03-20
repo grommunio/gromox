@@ -401,6 +401,17 @@ static void *mdpeng_scanwork(void *param)
 	return nullptr;
 }
 
+static bool db_reload(db_item_ptr &pdb, const char *dir)
+{
+	pdb.reset();
+	exmdb_server::free_env();
+	if (g_exmdb_search_yield)
+		std::this_thread::yield(); /* +2 to +3% walltime */
+	exmdb_server::build_env(EM_PRIVATE, dir);
+	pdb = db_engine_get_db(dir);
+	return pdb != nullptr && pdb->psqlite != nullptr;
+}
+
 static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction)
 {
@@ -440,14 +451,8 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		if (g_notify_stop)
 			break;
 		if (count == g_exmdb_search_pacing) {
-			pdb.reset();
-			exmdb_server::free_env();
-			if (g_exmdb_search_yield)
-				std::this_thread::yield(); /* +2 to +3% walltime */
-			exmdb_server::build_env(EM_PRIVATE, dir);
-			pdb = db_engine_get_db(dir);
-			if (pdb == nullptr || pdb->psqlite == nullptr)
-				return FALSE;
+			if (!db_reload(pdb, dir))
+				return false;
 			count = 0;
 		}
 		if (!cu_eval_msg_restriction(pdb->psqlite,
