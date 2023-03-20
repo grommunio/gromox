@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cassert>
 #include <chrono>
+#include <climits>
 #include <condition_variable>
 #include <csignal>
 #include <cstdint>
@@ -1476,7 +1478,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			b_read = *pread_byte == 0 ? false : TRUE;
 		}
 		int multi_index = -1;
-		for (size_t i = 0; i < ptable->psorts->count; ++i) {
+		static_assert(sizeof(multi_index) > sizeof(ptable->psorts->count));
+		for (unsigned int i = 0; i < ptable->psorts->count; ++i) {
 			propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 			if (propvals[i].proptag == ptable->instance_tag) {
 				multi_index = i;
@@ -1493,7 +1496,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 		}
 		void *pmultival = nullptr;
 		uint32_t multi_num = 1;
-		if (ptable->instance_tag != 0) {
+		if (multi_index >= 0) {
 			pmultival = propvals[multi_index].pvalue;
 			if (pmultival != nullptr) {
 				multi_num = det_multi_num(ptable->psorts->psort[multi_index].type & ~MV_INSTANCE, pmultival);
@@ -1621,7 +1624,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			}
 			uint16_t type = 0;
 			void *pvalue = nullptr;
-			if (ptable->instance_tag != 0) {
+			if (multi_index >= 0) {
 				type = ptable->psorts->psort[multi_index].type & ~MVI_FLAG;
 				pvalue = propvals[multi_index].pvalue;
 			}
