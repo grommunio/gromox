@@ -249,7 +249,8 @@ void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fi
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
 		if(!given.append(*pid))
 			throw DispatchError(E3057);
-	seen.convert();
+	if (!seen.convert())
+		throw DispatchError(E3062);
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
 		throw DispatchError(E3058);
 }
