@@ -2194,22 +2194,24 @@ static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
 	if (pfx == nullptr) {
 		msgprop.erase(pfxtag);
 	} else if (PROP_TYPE(pfxtag) == PT_UNICODE) {
-		msgprop.set(pfxtag, pfx);
+		if (msgprop.set(pfxtag, pfx) != 0)
+			return false;
 	} else {
 		pfx = common_util_convert_copy(TRUE, cpid, pfx);
 		if (pfx == nullptr)
 			return false;
-		msgprop.set(pfxtag, pfx);
+		if (msgprop.set(pfxtag, pfx) != 0)
+			return false;
 	}
 	if (norm == nullptr) {
 		msgprop.erase(normtag);
 	} else if (PROP_TYPE(normtag) == PT_UNICODE) {
-		msgprop.set(normtag, norm);
+		if (msgprop.set(normtag, norm) != 0)
+			return false;
 	} else {
 		norm = common_util_convert_copy(TRUE, cpid, norm);
-		if (norm == nullptr)
+		if (norm == nullptr || msgprop.set(normtag, norm) != 0)
 			return false;
-		msgprop.set(normtag, norm);
 	}
 	return TRUE;
 }

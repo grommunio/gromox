@@ -198,8 +198,8 @@ std::string sSyncState::serialize()
 			throw DispatchError(E3039);
 	}
 	ser.reset();
-	if(readOffset)
-		pproplist->set(MetaTagReadOffset, &readOffset);
+	if (readOffset != 0 && pproplist->set(MetaTagReadOffset, &readOffset) != 0)
+		/* ignore error */;
 
 	EXT_PUSH stateBuffer;
 	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
