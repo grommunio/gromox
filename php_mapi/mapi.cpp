@@ -2917,7 +2917,7 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	zend_long flags = 0;
 	zval *pzresource, *pzfolderlist, *pzrestriction = nullptr;
 	MAPI_RESOURCE *pfolder;
-	RESTRICTION restriction, *prestriction;
+	RESTRICTION restriction, *prestriction = nullptr;
 	BINARY_ARRAY entryid_array, *pentryid_array = nullptr;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "raal",
