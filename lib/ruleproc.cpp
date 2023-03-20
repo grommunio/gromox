@@ -81,10 +81,8 @@ rule_node::rule_node(rule_node &&o) :
 	name(std::move(o.name)), provider(std::move(o.provider)),
 	xcond(std::move(o.xcond)), xact(std::move(o.xact)),
 	xcnames(std::move(o.xcnames)), xanames(std::move(o.xanames)),
-	cond(o.cond), act(o.act)
+	cond(o.cond == std::addressof(o.xcond) ? std::addressof(xcond) : o.cond), act(o.act)
 {
-	if (o.cond == &o.xcond)
-		cond = &xcond;
 	o.cond = nullptr;
 	o.act = nullptr;
 }
@@ -97,11 +95,11 @@ rule_node &rule_node::operator=(rule_node &&o)
 	rule_id = o.rule_id;
 	name = std::move(o.name);
 	provider = std::move(o.provider);
+	cond = o.cond == std::addressof(o.xcond) ? std::addressof(xcond) : o.cond;
 	xcond = std::move(o.xcond);
 	xact = std::move(o.xact);
 	xcnames = std::move(o.xcnames);
 	xanames = std::move(o.xanames);
-	cond = o.cond == &o.xcond ? &xcond : o.cond;
 	o.cond = nullptr;
 	act = o.act;
 	o.act = nullptr;
