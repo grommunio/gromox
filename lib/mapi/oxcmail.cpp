@@ -3779,6 +3779,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 				          ulen > 8 ? ulen - 7 : 0);
 				if (ok) {
 					memcpy(username, "rfc822;", 7);
+					username[7] = '\0';
 					return true;
 				}
 			}
@@ -3793,6 +3794,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 			  ulen > 8 ? ulen - 7 : 0);
 		if (ok) {
 			memcpy(username, "rfc822;", 7);
+			username[7] = '\0';
 			return true;
 		}
 	}
