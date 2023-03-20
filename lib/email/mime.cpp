@@ -1917,7 +1917,7 @@ int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 static int mime_get_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
-	size_t i, content_len, tmp_len;
+	size_t i, content_len = 0, tmp_len;
 	char charset_buff[32], content_type[256], encoding_buff[128];
 	char file_name[256], temp_buff[512], content_ID[128];
 	char content_location[256], content_disposition[256], *ptoken;
