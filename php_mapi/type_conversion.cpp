@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <fmt/core.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -1068,6 +1069,15 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 	return 1;
 }
 
+template<typename V, size_t N> static inline char *itoa(V &&v, char (&buf)[N]) try
+{
+	fmt::format_to_n(buf, std::size(buf), "{}", v);
+	return buf;
+} catch (...) {
+	*buf = '\0';
+	return buf;
+}
+
 zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 {
 	char key[HXSIZEOF_Z64];
@@ -1081,10 +1091,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto andor = pres->andor;
 		zarray_init(&pzarray);
 		for (size_t i = 0; i < andor->count; ++i) {
-			snprintf(key, GX_ARRAY_SIZE(key), "%zu", i);
 			if (!restriction_to_php(&andor->pres[i], &pzentry))
 				return 0;
-			add_assoc_zval(&pzarray, key, &pzentry);
+			add_assoc_zval(&pzarray, itoa(i, key), &pzentry);
 		}
 		break;
 	}
@@ -1103,12 +1112,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_VALUE);
-		add_assoc_zval(&pzarray, key, &pzrops);		
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rcon->proptag));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_FUZZYLEVEL);
-		add_assoc_long(&pzarray, key, rcon->fuzzy_level);
+		add_assoc_zval(&pzarray, itoa(IDX_VALUE, key), &pzrops);
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rcon->proptag));
+		add_assoc_long(&pzarray, itoa(IDX_FUZZYLEVEL, key), rcon->fuzzy_level);
 		break;
 	}
 	case RES_PROPERTY: {
@@ -1118,52 +1124,39 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
 			return 0;
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_VALUE);
-		add_assoc_zval(&pzarray, key, &pzrops);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
-		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rprop->relop));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag));
+		add_assoc_zval(&pzarray, itoa(IDX_VALUE, key), &pzrops);
+		add_assoc_long(&pzarray, itoa(IDX_RELOP, key), static_cast<uint8_t>(rprop->relop));
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rprop->proptag));
 		break;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
-		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rprop->relop));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG1);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag1));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG2);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag2));
+		add_assoc_long(&pzarray, itoa(IDX_RELOP, key), static_cast<uint8_t>(rprop->relop));
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG1, key), proptag_to_phptag(rprop->proptag1));
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG2, key), proptag_to_phptag(rprop->proptag2));
 		break;
 	}
 	case RES_BITMASK: {
 		auto rbm = pres->bm;
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_TYPE);
-		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rbm->bitmask_relop));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rbm->proptag));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_MASK);
-		add_assoc_long(&pzarray, key, rbm->mask);
+		add_assoc_long(&pzarray, itoa(IDX_TYPE, key), static_cast<uint8_t>(rbm->bitmask_relop));
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rbm->proptag));
+		add_assoc_long(&pzarray, itoa(IDX_MASK, key), rbm->mask);
 		break;
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RELOP);
-		add_assoc_long(&pzarray, key, static_cast<uint8_t>(rsize->relop));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rsize->proptag));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_SIZE);
-		add_assoc_long(&pzarray, key, rsize->size);
+		add_assoc_long(&pzarray, itoa(IDX_RELOP, key), static_cast<uint8_t>(rsize->relop));
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rsize->proptag));
+		add_assoc_long(&pzarray, itoa(IDX_SIZE, key), rsize->size);
 		break;
 	}
 	case RES_EXIST: {
 		auto rex = pres->exist;
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rex->proptag));
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rex->proptag));
 		break;
 	}
 	case RES_SUBRESTRICTION: {
@@ -1171,10 +1164,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!restriction_to_php(&rsub->res, &pzrestriction))
 			return 0;	
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(rsub->subobject));
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RESTRICTION);
-		add_assoc_zval(&pzarray, key, &pzrestriction);
+		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rsub->subobject));
+		add_assoc_zval(&pzarray, itoa(IDX_RESTRICTION, key), &pzrestriction);
 		break;
 	}
 	case RES_COMMENT:
@@ -1187,10 +1178,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		if (!restriction_to_php(rcom->pres, &pzrestriction))
 			return 0;	
 		zarray_init(&pzarray);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_PROPVALS);
-		add_assoc_zval(&pzarray, key, &pzrops);
-		snprintf(key, GX_ARRAY_SIZE(key), "%d", IDX_RESTRICTION);
-		add_assoc_zval(&pzarray, key, &pzrestriction);
+		add_assoc_zval(&pzarray, itoa(IDX_PROPVALS, key), &pzrops);
+		add_assoc_zval(&pzarray, itoa(IDX_RESTRICTION, key), &pzrestriction);
 		break;
 	}
 	default:
@@ -1271,20 +1260,16 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_SHORT: {
 			zarray_init(&pzmval);
 			auto xs = static_cast<SHORT_ARRAY *>(ppropval->pvalue);
-			for (size_t j = 0; j < xs->count; ++j) {
-				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
-				add_assoc_long(&pzmval, key, xs->ps[j]);
-			}
+			for (size_t j = 0; j < xs->count; ++j)
+				add_assoc_long(&pzmval, itoa(j, key), xs->ps[j]);
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
 		case PT_MV_LONG: {
 			zarray_init(&pzmval);
 			auto xl = static_cast<LONG_ARRAY *>(ppropval->pvalue);
-			for (size_t j = 0; j < xl->count; ++j) {
-				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
-				add_assoc_long(&pzmval, key, xl->pl[j]);
-			}
+			for (size_t j = 0; j < xl->count; ++j)
+				add_assoc_long(&pzmval, itoa(j, key), xl->pl[j]);
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
@@ -1312,12 +1297,10 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_BINARY: {
 			zarray_init(&pzmval);
 			auto xb = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
-			for (size_t j = 0; j < xb->count; ++j) {
-				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
-				add_assoc_stringl(&pzmval, key,
+			for (size_t j = 0; j < xb->count; ++j)
+				add_assoc_stringl(&pzmval, itoa(j, key),
 					reinterpret_cast<const char *>(xb->pbin[j].pb),
 					xb->pbin[j].cb);
-			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
@@ -1325,22 +1308,18 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_MV_UNICODE: {
 			zarray_init(&pzmval);
 			auto xs = static_cast<STRING_ARRAY *>(ppropval->pvalue);
-			for (size_t j = 0; j < xs->count; ++j) {
-				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
-				add_assoc_string(&pzmval, key, xs->ppstr[j]);
-			}
+			for (size_t j = 0; j < xs->count; ++j)
+				add_assoc_string(&pzmval, itoa(j, key), xs->ppstr[j]);
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
 		case PT_MV_CLSID: {
 			zarray_init(&pzmval);
 			auto xb = static_cast<GUID_ARRAY *>(ppropval->pvalue);
-			for (size_t j = 0; j < xb->count; ++j) {
-				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
-				add_assoc_stringl(&pzmval, key,
+			for (size_t j = 0; j < xb->count; ++j)
+				add_assoc_stringl(&pzmval, itoa(j, key),
 					reinterpret_cast<char *>(&xb->pguid[j]),
 					sizeof(GUID));
-			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
@@ -1413,8 +1392,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 				default:
 					return 0;
 				};
-				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
-				add_assoc_zval(&pzactarray, key, &pzactval);
+				add_assoc_zval(&pzactarray, itoa(j, key), &pzactval);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzactarray);
 			break;
