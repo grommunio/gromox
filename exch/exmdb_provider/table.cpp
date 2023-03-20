@@ -1872,7 +1872,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			pstmt2 = NULL;
 		}
 		auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-		if (!common_util_begin_message_optimize(pdb->psqlite))
+		if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
 			return FALSE;
 		auto cl_1 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 		while (pstmt.step() == SQLITE_ROW) {
@@ -2299,7 +2299,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		pstmt2 = NULL;
 	}
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!common_util_begin_message_optimize(pdb->psqlite))
+	if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
 		return FALSE;
 	auto cl_0 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 	while (pstmt.step() == SQLITE_ROW) {

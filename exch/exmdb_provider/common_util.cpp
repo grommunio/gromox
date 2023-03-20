@@ -55,6 +55,7 @@ static unsigned int g_max_msg;
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
+static thread_local const char *g_opt_key_src;
 unsigned int g_max_rule_num, g_max_extrule_num;
 int g_cid_compression = -1; /* disabled(-1), default_level(0), specific_level(n) */
 static std::atomic<unsigned int> g_sequence_id;
@@ -201,6 +202,7 @@ void common_util_build_tls()
 	g_inside_flush_instance = false;
 	g_sqlite_for_oxcmail = nullptr;
 	g_opt_key = nullptr;
+	g_opt_key_src = nullptr;
 }
 
 unsigned int common_util_sequence_ID()
@@ -476,8 +478,13 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
 	return TRUE;
 }
 
-BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
+BOOL common_util_begin_message_optimize(sqlite3 *psqlite, const char *src)
 {
+	if (g_opt_key != nullptr) {
+		mlog(LV_ERR, "E-1229: cannot satisfy nested common_util_begin_message_optimize call (previous: %s, new: %s)",
+			znul(g_opt_key_src), znul(src));
+		return TRUE;
+	}
 	std::unique_ptr<prepared_statements> op(new(std::nothrow) prepared_statements);
 	if (op == nullptr)
 		return FALSE;
@@ -502,6 +509,7 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 	if (op->rcpt_str == nullptr)
 		return FALSE;
 	g_opt_key = op.release();
+	g_opt_key_src = src;
 	return TRUE;
 }
 
@@ -511,6 +519,7 @@ void common_util_end_message_optimize()
 	if (op == nullptr)
 		return;
 	g_opt_key = nullptr;
+	g_opt_key_src = nullptr;
 	delete op;
 }
 

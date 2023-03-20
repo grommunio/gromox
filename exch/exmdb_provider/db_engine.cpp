@@ -1311,7 +1311,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
 			datagram1.db_notify.pdata = padded_row1;
-			if (!common_util_begin_message_optimize(pdb->psqlite))
+			if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
 				return;
 			b_optimize = true;
 		}

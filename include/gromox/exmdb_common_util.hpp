@@ -83,7 +83,7 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid);
 extern BOOL cu_get_proptags(mapi_object_type, uint64_t id, sqlite3 *, std::vector<uint32_t> &);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
-BOOL common_util_begin_message_optimize(sqlite3 *psqlite);
+extern BOOL common_util_begin_message_optimize(sqlite3 *, const char *id);
 extern void common_util_end_message_optimize();
 extern BOOL cu_get_property(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, uint32_t proptag, void **out);
 extern BOOL cu_get_properties(mapi_object_type, uint64_t id, cpid_t, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
