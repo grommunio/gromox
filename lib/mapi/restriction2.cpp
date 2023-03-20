@@ -329,7 +329,7 @@ std::string ACTION_BLOCK::repr() const
 		s += "OOF_REPLY";
 		break;
 	case OP_DEFER_ACTION:
-		s += "DEFER_ACTION";
+		s += "DEFER_ACTION{" + std::to_string(length) + " bytes}";
 		break;
 	case OP_BOUNCE:
 		s += "BOUNCE{" + std::to_string(*static_cast<const uint32_t *>(pdata)) + "}";
@@ -360,7 +360,6 @@ std::string ACTION_BLOCK::repr() const
 	}
 	s += "}";
 	return s;
-	//length,type,flavor,flags,pdata
 }
 
 std::string RULE_ACTIONS::repr() const
