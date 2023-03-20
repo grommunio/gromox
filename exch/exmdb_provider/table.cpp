@@ -1874,20 +1874,17 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 		if (!common_util_begin_message_optimize(pdb->psqlite))
 			return FALSE;
+		auto cl_1 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 		while (pstmt.step() == SQLITE_ROW) {
 			inst_id = sqlite3_column_int64(pstmt, 3);
 			row_type = sqlite3_column_int64(pstmt, 4);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == pset->pparray[pset->count]) {
-				common_util_end_message_optimize();
+			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
-			}
 			pset->pparray[pset->count]->count = 0;
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-			if (NULL == pset->pparray[pset->count]->ppropval) {
-				common_util_end_message_optimize();
+			if (pset->pparray[pset->count]->ppropval == nullptr)
 				return FALSE;
-			}
 			count = 0;
 			for (i=0; i<pproptags->count; i++) {
 				if (!table_column_content_tmptbl(pstmt, pstmt1,
@@ -1897,10 +1894,8 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 					if (row_type == CONTENT_ROW_HEADER)
 						continue;
 					if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
-						common_util_end_message_optimize();
+					    pdb->psqlite, pproptags->pproptag[i], &pvalue))
 						return FALSE;
-					}
 				}
 				if (pvalue == nullptr)
 					continue;
@@ -1923,6 +1918,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			pset->pparray[pset->count++]->count = count;
 		}
 		common_util_end_message_optimize();
+		cl_1.release();
 		sql_transact.commit();
 		break;
 	}
@@ -2305,6 +2301,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
+	auto cl_0 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 	while (pstmt.step() == SQLITE_ROW) {
 		CONTENT_ROW_PARAM content_param;
 
@@ -2327,10 +2324,8 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		idx = sqlite3_column_int64(pstmt, 1);
 		count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-		if (NULL == ppropvals->ppropval) {
-			common_util_end_message_optimize();
+		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		}
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
@@ -2340,10 +2335,8 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				if (row_type == CONTENT_ROW_HEADER)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
-					common_util_end_message_optimize();
+				    pdb->psqlite, pproptags->pproptag[i], &pvalue))
 					return FALSE;
-				}
 			}
 			if (pvalue == nullptr)
 				continue;
@@ -2366,6 +2359,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		break;
 	}
 	common_util_end_message_optimize();
+	cl_0.release();
 	sql_transact.commit();
 	*pposition = idx - 1;
 	return TRUE;

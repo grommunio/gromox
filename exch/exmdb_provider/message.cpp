@@ -3877,11 +3877,10 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
-	if (!message_read_message(pdb->psqlite, cpid, mid_val, ppmsgctnt)) {
-		common_util_end_message_optimize();
-		return FALSE;
-	}
+	auto ret = message_read_message(pdb->psqlite, cpid, mid_val, ppmsgctnt);
 	common_util_end_message_optimize();
+	if (!ret)
+		return FALSE;
 	sql_transact.commit();
 	return TRUE;
 }

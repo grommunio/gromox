@@ -368,12 +368,11 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
-	if (!instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
-	    reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent))) {
-		common_util_end_message_optimize();
-		return FALSE;
-	}
+	auto ret = instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
+	           reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent));
 	common_util_end_message_optimize();
+	if (!ret)
+		return FALSE;
 	sql_transact.commit();
 	if (NULL == pinstance->pcontent) {
 		*pinstance_id = 0;
