@@ -237,6 +237,11 @@ static bool have_jpms()
 	return true;
 }
 
+/**
+ * Upgrade charsets (e.g. gb2312 -> gbk) or outright replace uncommon strings.
+ * This is used by either HTML/RTF readers trying to make sense of http-equiv
+ * charset=, or to postprocess cpid_to_cset() results.
+ */
 const char* replace_iconv_charset(const char *charset)
 {
 	if (strcasecmp(charset, "gb2312") == 0)
@@ -250,6 +255,16 @@ const char* replace_iconv_charset(const char *charset)
 		return "iso-2022-jp-ms";
 	else if (strcasecmp(charset, "unicode-1-1-utf-7") == 0)
 		return "utf-7";
+	else if (strcasecmp(charset, "unicode") == 0)
+		/*
+		 * MSHTML 6: umlauts are HTML-entity-encoded
+		 * MSHTML 9: umlauts are windows-1252 encoded
+		 * MSHTML 11/Word 15: BOM mark at start (sometimes -
+		 * this gets messed up when <html> is nested)
+		 * Quite random. Just return something, it's impossible
+		 * to get right all the time.
+		 */
+		return "utf-8";
 	return charset;
 }
 
