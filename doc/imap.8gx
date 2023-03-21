@@ -192,10 +192,12 @@ The lowest TLS version to offer. Possible values are: \fBtls1.0\fP,
 Default: \fItls1.2\fP
 .SH Files
 .IP \(bu 4
+\fIdata_file_path\fP/folder_lang.txt: Translations for IMAP folder names.
+.IP \(bu 4
 \fIdata_file_path\fP/imap_code.txt: Mapping from internal IMAP error codes to
 textual descriptions.
 .IP \(bu 4
-\fIdata_file_path\fP/imap_lang.txt: Translations for IMAP folder names.
+\fIdata_file_path\fP/imap_lang.txt: Settings for IMAP locales.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also

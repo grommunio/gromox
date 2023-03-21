@@ -1,9 +1,4 @@
-#folder name is encoded with base64 and charset is uft-8
-
-en: {"default-charset":"us-ascii", "draft":"RHJhZnRz", "sent":"U2VudCBJdGVtcw==", "trash":"RGVsZXRlZCBJdGVtcw==", "junk":"SnVuayBFLW1haWw="}
-
-zh_TW: {"default-charset":"gbk", "draft": "6I2J56i/", "sent":"5bey5Y+R6YCB6YKu5Lu2", "trash":"5bey5Yig6Zmk6YKu5Lu2", "junk":"5Z6D5Zy+6YKu5Lu2"}
-
-zh_CN: {"default-charset":"big5", "draft": "6I2J56i/", "sent":"5bey55m86YCB6YO15Lu2", "trash":"5bey5Yiq6Zmk6YO15Lu2",  "junk":"5Z6D5Zy+6YO15Lu2"}
-
-ja: {"default-charset":"iso-2022-jp", "draft":"5LiL5pu444GN", "sent":"6YCB5L+h5riI44G/44Ki44Kk44OG44Og", "trash":"5YmK6Zmk5riI44G/44Ki44Kk44OG44Og", "junk":"6L+35oOR44Oh44O844Or"}
+en: {"default-charset":"us-ascii"}
+zh_TW: {"default-charset":"gbk"}
+zh_CN: {"default-charset":"big5"}
+ja: {"default-charset":"iso-2022-jp"}

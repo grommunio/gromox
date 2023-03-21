@@ -28,17 +28,8 @@ using namespace gromox;
 namespace {
 
 struct LANG_FOLDER {
-	LANG_FOLDER();
-	LANG_FOLDER(const LANG_FOLDER &);
-
 	char lang[32]{};
-	char *folders[4]{};
 	char charset[256]{};
-	char draft[256]{};
-	char sent[256]{};
-	char trash[256]{};
-	char junk[256]{};
-
 	bool operator==(const char *s) const { return strcasecmp(lang, s) == 0; }
 };
 
@@ -167,28 +158,6 @@ static std::list<LANG_FOLDER> g_lang_list;
 
 static BOOL resource_load_imap_lang_list();
 
-LANG_FOLDER::LANG_FOLDER()
-{
-	folders[0] = draft;
-	folders[1] = sent;
-	folders[2] = trash;
-	folders[3] = junk;
-}
-
-LANG_FOLDER::LANG_FOLDER(const LANG_FOLDER &o)
-{
-	memcpy(lang, o.lang, arsizeof(lang));
-	memcpy(charset, o.charset, arsizeof(charset));
-	memcpy(draft, o.draft, arsizeof(draft));
-	memcpy(sent, o.sent, arsizeof(sent));
-	memcpy(trash, o.trash, arsizeof(trash));
-	memcpy(junk, o.junk, arsizeof(junk));
-	folders[0] = draft;
-	folders[1] = sent;
-	folders[2] = trash;
-	folders[3] = junk;
-}
-
 int resource_run()
 {
 	if (!resource_load_imap_lang_list()) {
@@ -240,8 +209,6 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 {
 	char *ptr;
-	size_t temp_len;
-	char temp_buff[256];
 	char line[MAX_FILE_LINE_LEN];
 	
 	const char *filename = g_config_file->get_value("imap_lang_path");
@@ -279,23 +246,7 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		}
 		if (0 == strlen(plang->lang) ||
 		    !get_digest(digest, "default-charset", plang->charset, arsizeof(plang->charset)) ||
-		    strlen(plang->charset) == 0 ||
-		    !get_digest(digest, "draft", temp_buff, arsizeof(temp_buff)) ||
-			0 == strlen(temp_buff) ||
-		    decode64(temp_buff, strlen(temp_buff), plang->draft,
-		    arsizeof(plang->draft), &temp_len) != 0 ||
-		    !get_digest(digest, "sent", temp_buff, arsizeof(temp_buff)) ||
-			0 == strlen(temp_buff) ||
-		    decode64(temp_buff, strlen(temp_buff), plang->sent,
-		    arsizeof(plang->sent), &temp_len) != 0 ||
-		    !get_digest(digest, "trash", temp_buff, arsizeof(temp_buff)) ||
-			0 == strlen(temp_buff) ||
-		    decode64(temp_buff, strlen(temp_buff), plang->trash,
-		    arsizeof(plang->trash), &temp_len) != 0 ||
-		    !get_digest(digest, "junk", temp_buff, arsizeof(temp_buff)) ||
-			0 == strlen(temp_buff) ||
-		    decode64(temp_buff, strlen(temp_buff), plang->junk,
-		    arsizeof(plang->junk), &temp_len) != 0) {
+		    strlen(plang->charset) == 0) {
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);
 			return -1;
 		}
@@ -336,16 +287,6 @@ const char* resource_get_default_charset(const char *lang)
 	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
 	    g_config_file->get_value("default_lang"));
 	return i != g_lang_list.cend() ? i->charset : nullptr;
-}
-
-const char *const *resource_get_folder_strings(const char *lang)
-{
-	auto i = std::find(g_lang_list.cbegin(), g_lang_list.cend(), lang);
-	if (i != g_lang_list.cend())
-		return i->folders;
-	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
-	    g_config_file->get_value("default_lang"));
-	return i != g_lang_list.cend() ? i->folders : nullptr;
 }
 
 const char *resource_get_error_string(unsigned int code)

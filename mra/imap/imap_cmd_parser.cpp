@@ -26,8 +26,10 @@
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
 #include "imap.hpp"
@@ -1089,10 +1091,20 @@ static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 	}
 }
 
+static const char *foldername_get(const char *lang, unsigned int fid)
+{
+	lang = folder_namedb_resolve(lang);
+	if (lang == nullptr)
+		lang = "en";
+	return folder_namedb_get(lang, fid);
+}
+
+/**
+ * See sysfolder_to_imapfolder for some notes.
+ */
 static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	const char *lang, const char *imap_folder, char *sys_folder)
 {
-	int i;
 	char *ptoken;
 	char temp_name[512];
 	char temp_folder[512];
@@ -1113,17 +1125,20 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
 	}
-	if (0 == strcasecmp(temp_folder, "INBOX")) {
+	if (strcasecmp(temp_folder, "INBOX") == 0)
 		strcpy(temp_folder, "inbox");
-	} else {
-		auto f_strings = resource_get_folder_strings(lang);
-		for (i=0; i<4; i++) {
-			if (0 == strcmp(f_strings[i], temp_folder)) {
-				gx_strlcpy(temp_folder, g_folder_list[i], arsizeof(temp_folder));
-				break;
-			}
-		}
-	}
+	else if (auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
+	    s != nullptr && strcmp(temp_folder, s) == 0)
+		gx_strlcpy(temp_folder, "draft", std::size(temp_folder));
+	else if (auto s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
+	    s != nullptr && strcmp(temp_folder, s) == 0)
+		gx_strlcpy(temp_folder, "sent", std::size(temp_folder));
+	else if (auto s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
+	    s != nullptr && strcmp(temp_folder, s) == 0)
+		gx_strlcpy(temp_folder, "trash", std::size(temp_folder));
+	else if (auto s = foldername_get(lang, PRIVATE_FID_JUNK);
+	    s != nullptr && strcmp(temp_folder, s) == 0)
+		gx_strlcpy(temp_folder, "junk", std::size(temp_folder));
 	if (NULL != ptoken) {
 		len = gx_snprintf(converted_name, arsizeof(converted_name), "%s%s", temp_folder, ptoken);
 		encode_hex_binary(converted_name,
@@ -1137,10 +1152,27 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	return TRUE;
 }
 
+/**
+ * What makes the inbox folder special for...
+ * ...Gromox: PRIVATE_FID_INBOX defines the inbox folder
+ * ...Outlook: not special (at best, its presence in the receive folder table)
+ * ...MIDB: the fixed name "inbox" specifies the inbox
+ * ...IMAP: the fixed name "INBOX" specifies the inbox
+ *
+ * What makes the wastebasket/sent/etc. folder special for...
+ * ...Gromox: PRIVATE_FID_WASTEBASKET defines the wastebasket folder
+ * ...Outlook: PR_IPM_WASTEBASKET_ENTRYID specifies the wastebasket
+ * ...MIDB: the fixed name "trash" specifies the wastebasket
+ * ...IMAP: not special
+ *
+ * Because the MIDB protocol uses a fixed identifier and the actual folder name
+ * is "lost" in the protocol (similar to "INBOX" in IMAP), we re-synthesize the
+ * folder name. The name shown for the wastebasket in IMAP thus does not
+ * necessarily coincide with the name seen in MAPI.
+ */
 static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	const char *lang, const char *sys_folder, char *imap_folder)
 {
-	int i;
 	char *ptoken;
 	char temp_name[512];
 	char temp_folder[512];
@@ -1150,20 +1182,20 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		strcpy(imap_folder, "INBOX");
 		return TRUE;
 	} else if (0 == strcmp("draft", sys_folder)) {
-		auto f_strings = resource_get_folder_strings(lang);
-		utf8_to_utf7(f_strings[0], strlen(f_strings[0]), imap_folder, 1024);
+		auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
+		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("sent", sys_folder)) {
-		auto f_strings = resource_get_folder_strings(lang);
-		utf8_to_utf7(f_strings[1], strlen(f_strings[1]), imap_folder, 1024);
+		auto s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
+		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("trash", sys_folder)) {
-		auto f_strings = resource_get_folder_strings(lang);
-		utf8_to_utf7(f_strings[2], strlen(f_strings[2]), imap_folder, 1024);
+		auto s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
+		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("junk", sys_folder)) {
-		auto f_strings = resource_get_folder_strings(lang);
-		utf8_to_utf7(f_strings[3], strlen(f_strings[3]), imap_folder, 1024);
+		auto s = foldername_get(lang, PRIVATE_FID_JUNK);
+		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	}
 	if (!decode_hex_binary(sys_folder, temp_name, arsizeof(temp_name)))
@@ -1175,17 +1207,16 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
 	}
-	if (0 == strcmp(temp_folder, "inbox")) {
+	if (strcmp(temp_folder, "inbox") == 0)
 		strcpy(temp_folder, "INBOX");
-	} else {
-		auto f_strings = resource_get_folder_strings(lang);
-		for (i=0; i<4; i++) {
-			if (0 == strcmp(g_folder_list[i], temp_folder)) {
-				gx_strlcpy(temp_folder, f_strings[i], arsizeof(temp_folder));
-				break;
-			}
-		}
-	}
+	else if (strcmp(temp_folder, "draft") == 0)
+		gx_strlcpy(temp_folder, znul(foldername_get(lang, PRIVATE_FID_DRAFT)), std::size(temp_folder));
+	else if (strcmp(temp_folder, "sent") == 0)
+		gx_strlcpy(temp_folder, znul(foldername_get(lang, PRIVATE_FID_SENT_ITEMS)), std::size(temp_folder));
+	else if (strcmp(temp_folder, "trash") == 0)
+		gx_strlcpy(temp_folder, znul(foldername_get(lang, PRIVATE_FID_DELETED_ITEMS)), std::size(temp_folder));
+	else if (strcmp(temp_folder, "junk") == 0)
+		gx_strlcpy(temp_folder, znul(foldername_get(lang, PRIVATE_FID_JUNK)), std::size(temp_folder));
 	if (ptoken != nullptr)
 		snprintf(converted_name, 512, "%s%s", temp_folder, ptoken);
 	else

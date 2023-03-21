@@ -290,7 +290,7 @@ const char *folder_namedb_resolve(const char *xpg_loc) try
 
 /**
  * @locale:	Language string matching those found in data/folder_names.txt.
- * 		Use e.g. common_util_i18n_to_lang to convert from XPG locale strings.
+ * 		Use e.g. folder_namedb_resolve to convert from XPG locale strings.
  * @tid:	Text id in data/folder_names.txt; coincides with PRIVATE_FID_*
  * 		most of the time.
  */
