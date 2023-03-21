@@ -763,8 +763,11 @@ errno_t gx_reexec(const char *const *argv) try
 #if defined(__linux__)
 	hxmc_t *resolved = nullptr;
 	auto ret = HX_readlink(&resolved, "/proc/self/exe");
-	if (ret < 0) {
-		mlog(LV_ERR, "reexec: readlink: %s", strerror(-ret));
+	if (ret == -ENOENT) {
+		mlog(LV_NOTICE, "reexec: readlink /proc/self/exe: %s; continuing without reexec-after-setuid, coredumps may be disabled", strerror(-ret));
+		return 0;
+	} else if (ret < 0) {
+		mlog(LV_ERR, "reexec: readlink /proc/self/exe: %s", strerror(-ret));
 		return -ret;
 	}
 	mlog(LV_NOTICE, "Reexecing %s", resolved);
