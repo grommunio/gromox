@@ -193,7 +193,7 @@ BOOL oxcmail_init_library(const char *org_name,
 	oxcmail_get_username = get_username;
 	textmaps_init();
 	tnef_init_library();
-	if (!rtf_init_library() || !html_init_library())
+	if (!rtf_init_library() || html_init_library() != ecSuccess)
 		return FALSE;	
 	return TRUE;
 }
@@ -3588,7 +3588,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				cpid_t cpid = num == nullptr ? CP_UTF8 : static_cast<cpid_t>(*num);
 				char *rtfout = nullptr;
 				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, cpid,
-				    &rtfout, &content_len)) {
+				    &rtfout, &content_len) == ecSuccess) {
 					auto bv = rtfcp_compress(rtfout, content_len);
 					free(rtfout);
 					if (bv != nullptr) {

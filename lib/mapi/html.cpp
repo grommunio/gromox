@@ -263,17 +263,17 @@ RTF_WRITER::~RTF_WRITER()
 		{"yellowgreen",			0x9acd32},
 	};
 
-BOOL html_init_library()
+ec_error_t html_init_library()
 {
 	textmaps_init();
 	/* Test for availability of converters */
 	auto cd = html_iconv_open();
 	if (cd == (iconv_t)-1) {
 		mlog(LV_ERR, "E-2107: iconv_open: %s", strerror(errno));
-		return FALSE;
+		return ecError;
 	}
 	iconv_close(cd);
-	return TRUE;
+	return ecSuccess;
 }
 
 static void html_set_fonttable(RTF_WRITER *w, const char *name) try
@@ -324,17 +324,17 @@ static int html_get_colortable(RTF_WRITER *w, rgb_t color)
 	return it != w->pcolor_hash.cend() ? it->second : -1;
 }
 
-static BOOL html_init_writer(RTF_WRITER *pwriter) 
+static ec_error_t html_init_writer(RTF_WRITER *pwriter)
 {
 	if (!pwriter->ext_push.init(nullptr, 0, 0))
-		return FALSE;	
+		return ecMAPIOOM;
 	html_set_fonttable(pwriter, "Times New Roman");
 	html_set_fonttable(pwriter, "Arial");
 	/* first item in font table is for symbol */
 	html_set_fonttable(pwriter, "symbol");
 	/* first item in color table is for anchor link */
 	html_set_colortable(pwriter, 0x0645AD);
-	return TRUE;
+	return ecSuccess;
 } 
  
 static std::pair<uint16_t, uint16_t>
@@ -1341,32 +1341,33 @@ static void html_string_to_utf8(cpid_t cpid,
 	iconv_close(conv_id);
 }
 
-BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
+ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
     char **pbuff_out, size_t *plength)
 {
 	RTF_WRITER writer;
 
 	std::unique_ptr<char[]> buff_inz(new(std::nothrow) char[length+1]);
 	if (buff_inz == nullptr)
-		return false;
+		return ecMAPIOOM;
 	memcpy(buff_inz.get(), pbuff_in, length);
 	buff_inz[length] = '\0';
 
 	*pbuff_out = nullptr;
 	auto pbuffer = me_alloc<char>(3 * (length + 1));
 	if (NULL == pbuffer) {
-		return FALSE;
+		return ecMAPIOOM;
 	}
 	html_string_to_utf8(cpid, buff_inz.get(), pbuffer, 3 * length + 1);
-	if (!html_init_writer(&writer)) {
+	auto ret = html_init_writer(&writer);
+	if (ret != 0) {
 		free(pbuffer);
-		return FALSE;
+		return ret;
 	}
 	auto hdoc = htmlReadMemory(pbuffer, strlen(pbuffer), nullptr, "utf-8",
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
 	if (hdoc == nullptr) {
 		free(pbuffer);
-		return FALSE;
+		return ecError;
 	}
 	auto root = xmlDocGetRootElement(hdoc);
 	if (root != nullptr) {
@@ -1375,7 +1376,7 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 		    !html_enum_write(&writer, root) ||
 		    !html_write_tail(&writer)) {
 			free(pbuffer);
-			return FALSE;
+			return ecError;
 		}
 	}
 	*plength = writer.ext_push.m_offset;
@@ -1384,5 +1385,5 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 		memcpy(*pbuff_out, writer.ext_push.m_udata, *plength);
 	xmlFreeDoc(hdoc);
 	free(pbuffer);
-	return *pbuff_out != nullptr ? TRUE : FALSE;
+	return *pbuff_out != nullptr ? ecSuccess : ecMAPIOOM;
 }

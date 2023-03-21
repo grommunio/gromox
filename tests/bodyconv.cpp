@@ -25,7 +25,7 @@ static int ts()
 	size_t fmlen = 0;
 	std::unique_ptr<char, stdlib_delete> fm;
 
-	if (!html_to_rtf(b1, sizeof(b1), CP_UTF8, &unique_tie(fm), &fmlen))
+	if (html_to_rtf(b1, sizeof(b1), CP_UTF8, &unique_tie(fm), &fmlen) != ecSuccess)
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
@@ -63,7 +63,7 @@ int main(int argc, const char **argv)
 	} else if (strcmp(argv[1], "htmltortf") == 0) {
 		std::unique_ptr<char[], stdlib_delete> out;
 		size_t outlen = 0;
-		if (html_to_rtf(all.c_str(), all.size(), CP_UTF8, &unique_tie(out), &outlen))
+		if (html_to_rtf(all.c_str(), all.size(), CP_UTF8, &unique_tie(out), &outlen) == ecSuccess)
 			std::cout << std::string_view(out.get(), outlen) << std::endl;
 	} else if (strcmp(argv[1], "rtftohtml") == 0) {
 		auto at = attachment_list_init();

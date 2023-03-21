@@ -143,7 +143,7 @@ static int instance_conv_rtfcpfromlower(MESSAGE_CONTENT *mc,
 		return ret;
 	std::unique_ptr<char[], instbody_delete> rtfout;
 	size_t rtflen = 0;
-	if (!html_to_rtf(bin->pc, bin->cb, cpid, &unique_tie(rtfout), &rtflen))
+	if (html_to_rtf(bin->pc, bin->cb, cpid, &unique_tie(rtfout), &rtflen) != ecSuccess)
 		return -1;
 	std::unique_ptr<BINARY, instbody_delete> rtfcpbin(rtfcp_compress(rtfout.get(), rtflen));
 	if (rtfcpbin == nullptr)
