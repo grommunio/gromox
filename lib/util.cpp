@@ -241,6 +241,10 @@ static bool have_jpms()
  * Upgrade charsets (e.g. gb2312 -> gbk) or outright replace uncommon strings.
  * This is used by either HTML/RTF readers trying to make sense of http-equiv
  * charset=, or to postprocess cpid_to_cset() results.
+ *
+ * Used by:
+ * < string_to_utf8 < oxcmail_parse_message_body
+ * < html_string_to_utf8 [cpid_to_cset]
  */
 const char* replace_iconv_charset(const char *charset)
 {
