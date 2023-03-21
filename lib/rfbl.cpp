@@ -954,7 +954,7 @@ static void init_locale()
 int iconv_validate()
 {
 	init_locale();
-	for (const auto s : {"UTF-7", "UTF-16LE", "windows-1252",
+	for (const auto s : {"UTF-16LE", "windows-1252",
 	     "iso-8859-1", "iso-2022-jp"}) {
 		auto k = iconv_open("UTF-8", s);
 		if (k == (iconv_t)-1) {
