@@ -1,4 +1,0 @@
-en: {"default-charset":"us-ascii"}
-zh_TW: {"default-charset":"gbk"}
-zh_CN: {"default-charset":"big5"}
-ja: {"default-charset":"iso-2022-jp"}

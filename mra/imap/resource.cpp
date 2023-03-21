@@ -16,7 +16,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/json.hpp>
 #include <gromox/midb.hpp>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
@@ -154,15 +153,20 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
-static std::list<LANG_FOLDER> g_lang_list;
-
-static BOOL resource_load_imap_lang_list();
+static constexpr LANG_FOLDER g_lang_list[] =
+	{{"en", "us-ascii"}, {"zh_TW", "gbk"}, {"zh_CN", "big5"}, {"ja", "iso-2022-jp"}};
 
 int resource_run()
 {
-	if (!resource_load_imap_lang_list()) {
-		printf("[resource]: Failed to load IMAP languages\n");
-		return -3;
+	const char *dfl_lang = g_config_file->get_value("default_lang");
+	if (dfl_lang == nullptr) {
+		dfl_lang = "en";
+		g_config_file->set_value("default_lang", dfl_lang);
+	}
+	auto it = std::find(std::begin(g_lang_list), std::end(g_lang_list), dfl_lang);
+	if (it == std::end(g_lang_list)) {
+		mlog(LV_ERR, "resource: cannot find default lang (%s) in <built-in list>\n", dfl_lang);
+		return -1;
 	}
 	for (size_t i = 0; i < arsizeof(g_default_code_table); ++i) {
 		g_def_code_table.emplace(g_default_code_table[i].first,
@@ -206,87 +210,14 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 	return "unknown error\r\n";
 }
 
-static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
-{
-	char *ptr;
-	char line[MAX_FILE_LINE_LEN];
-	
-	const char *filename = g_config_file->get_value("imap_lang_path");
-	if (NULL == filename) {
-		filename = "imap_lang.txt";
-	}
-	auto file_ptr = fopen_sd(filename, g_config_file->get_value("data_file_path"));
-	if (file_ptr == nullptr) {
-		printf("[resource]: fopen_sd %s: %s\n", filename, strerror(errno));
-        return -1;
-    }
-
-	std::list<LANG_FOLDER> temp_list;
-	for (int total = 0; fgets(line, MAX_FILE_LINE_LEN, file_ptr.get()); ++total) try {
-		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
-		   /* skip empty line or comments */
-		   continue;
-		}
-
-		ptr = strchr(line, ':');
-		if (NULL == ptr) {
-			mlog(LV_ERR, "[resource]: line %d format error in %s\n", total + 1, filename);
-			return -1;
-		}
-		
-		*ptr = '\0';
-		LANG_FOLDER lf, *plang = &lf;
-		gx_strlcpy(plang->lang, line, arsizeof(plang->lang));
-		HX_strrtrim(plang->lang);
-		HX_strltrim(plang->lang);
-		Json::Value digest;
-		if (!json_from_str(ptr + 1, digest)) {
-			mlog(LV_ERR, "[resource]: line %d format error in %s\n", total + 1, filename);
-			return -1;
-		}
-		if (0 == strlen(plang->lang) ||
-		    !get_digest(digest, "default-charset", plang->charset, arsizeof(plang->charset)) ||
-		    strlen(plang->charset) == 0) {
-			printf("[resource]: line %d format error in %s\n", total + 1, filename);
-			return -1;
-		}
-		temp_list.push_back(std::move(lf));
-	} catch (const std::bad_alloc &) {
-		printf("[resource]: out of memory while loading file %s\n", filename);
-		return -1;
-	}
-
-	const char *dfl_lang = g_config_file->get_value("default_lang");
-	if (dfl_lang == NULL) {
-		dfl_lang = "en";
-		g_config_file->set_value("default_lang", dfl_lang);
-	}
-	auto it = std::find(temp_list.cbegin(), temp_list.cend(), dfl_lang);
-	if (it == temp_list.cend()) {
-		printf("[resource]: cannot find default lang (%s) in %s\n", dfl_lang, filename);
-		return -1;
-	}
-	if (temp_list.size() > 127) {
-		printf("[resource]: too many langs in %s\n", filename);
-		return -1;
-	}
-	plist = std::move(temp_list);
-	return 0;
-}
-
-static BOOL resource_load_imap_lang_list()
-{
-	return resource_construct_lang_list(g_lang_list) == 0 ? TRUE : false;
-}
-
 const char* resource_get_default_charset(const char *lang)
 {
-	auto i = std::find(g_lang_list.cbegin(), g_lang_list.cend(), lang);
-	if (i != g_lang_list.cend())
+	auto i = std::find(std::begin(g_lang_list), std::end(g_lang_list), lang);
+	if (i != std::end(g_lang_list))
 		return i->charset;
-	i = std::find(g_lang_list.cbegin(), g_lang_list.cend(),
+	i = std::find(std::begin(g_lang_list), std::end(g_lang_list),
 	    g_config_file->get_value("default_lang"));
-	return i != g_lang_list.cend() ? i->charset : nullptr;
+	return i != std::end(g_lang_list) ? i->charset : nullptr;
 }
 
 const char *resource_get_error_string(unsigned int code)

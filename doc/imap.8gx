@@ -118,13 +118,6 @@ TLS (cf. \fBimap_listen_tls_port\fP), or through the STARTTLS command.
 .br
 Default: \fIfalse\fP
 .TP
-\fBimap_lang_path\fP
-Path to the file for IMAP folder name translations. If only a
-basename is specified, the file will be searched in
-\fIdata_file_path\fP.
-.br
-Default: \fIimap_lang.txt\fP
-.TP
 \fBimap_listen_addr\fP
 AF_INET6 socket address to bind the IMAP service to.
 .br
@@ -196,8 +189,6 @@ Default: \fItls1.2\fP
 .IP \(bu 4
 \fIdata_file_path\fP/imap_code.txt: Mapping from internal IMAP error codes to
 textual descriptions.
-.IP \(bu 4
-\fIdata_file_path\fP/imap_lang.txt: Settings for IMAP locales.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
