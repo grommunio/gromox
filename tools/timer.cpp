@@ -11,6 +11,7 @@
 #include <list>
 #include <mutex>
 #include <netdb.h>
+#include <poll.h>
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
@@ -21,7 +22,6 @@
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
-#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>

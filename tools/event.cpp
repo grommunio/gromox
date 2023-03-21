@@ -13,6 +13,7 @@
 #include <memory>
 #include <mutex>
 #include <netdb.h>
+#include <poll.h>
 #include <pthread.h>
 #include <stdexcept>
 #include <string>
@@ -26,7 +27,6 @@
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
-#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
