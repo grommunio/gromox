@@ -8,7 +8,6 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
-noinst_DATA = libgromox_common.ldd libgromox_cplus.ldd libgromox_dbop.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_mapi.ldd libgromox_rpc.ldd
 pkglibexec_PROGRAMS = cgkrepair cleaner delivery delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
@@ -17,7 +16,6 @@ plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS${NO_VSYM}}
 pamlibdir = ${libdir}/security
 if HAVE_PAM
 pamlib_LTLIBRARIES = pam_gromox.la
-noinst_DATA += pam_gromox.ldd
 endif
 if HAVE_PHP
 phpinidir = ${dcprefix}${PHP_SYSCONF_DIR}
@@ -39,19 +37,10 @@ mta_plugins = \
 	libgxm_exmdb_local.la \
 	libgxm_mlist_expand.la \
 	libgxm_remote_delivery.la
-noinst_DATA += \
-	libgxm_alias_resolve.ldd \
-	libgxm_exmdb_local.ldd \
-	libgxm_mlist_expand.ldd \
-	libgxm_remote_delivery.ldd
 mra_plugins = \
 	libgxs_event_proxy.la \
 	libgxs_event_stub.la \
 	libgxs_midb_agent.la
-noinst_DATA += \
-	libgxs_event_proxy.ldd \
-	libgxs_event_stub.ldd \
-	libgxs_midb_agent.ldd
 exchange_plugins = \
 	libgxs_exmdb_provider.la \
 	libgxs_timer_agent.la \
@@ -64,18 +53,6 @@ exchange_plugins = \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
-noinst_DATA += \
-	libgxs_exmdb_provider.ldd \
-	libgxs_timer_agent.ldd \
-	libgxp_exchange_emsmdb.ldd \
-	libgxp_exchange_nsp.ldd \
-	libgxp_exchange_rfr.ldd \
-	libgxh_ews.ldd libgxh_mh_emsmdb.ldd libgxh_mh_nsp.ldd libgxh_oxdisco.ldd libgxh_oab.ldd \
-	libgxs_authmgr.ldd \
-	libgxs_ip6_container.ldd libgxs_ip6_filter.ldd \
-	libgxs_ldap_adaptor.ldd \
-	libgxs_mysql_adaptor.ldd \
-	libgxs_user_filter.ldd
 sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
 if HAVE_OLECF
 sbin_PROGRAMS += gromox-oxm2mt
@@ -85,12 +62,13 @@ sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
 pkglibexec_SCRIPTS = tools/create_queue.sh tools/gromox-snapshot
+noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
 	php_mapi/zrpc.cpp \
 	exch/exmdb_provider/exmdb_rpc.cpp \
 	lib/exmdb_rpc.cpp
-CLEANFILES = ${BUILT_SOURCES} ${noinst_DATA}
+CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/config_file.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/fopen.cpp lib/guid2.cpp lib/int_hash.cpp lib/list_file.cpp lib/mail_func.cpp lib/mem_file.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/stream.cpp lib/timezone.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
 libgromox_common_la_LIBADD = -lpthread ${crypt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${tinyxml_LIBS} ${vmime_LIBS} ${zstd_LIBS}
@@ -287,7 +265,9 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
-noinst_PROGRAMS = tests/bdump tests/bodyconv tests/compress tests/cryptest tests/jsontest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
+noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/cryptest tests/jsontest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
+dldcheck_SOURCES = tools/dldcheck.cpp
+dldcheck_LDADD = ${dl_LIBS} ${HX_LIBS}
 TESTS = tests/utiltest
 tests_bdump_SOURCES = tests/bdump.cpp
 tests_bdump_LDADD = ${HX_LIBS} libgromox_common.la libgromox_mapi.la
@@ -399,8 +379,11 @@ uninstall-hook:
 	chmod -R u+w ${DESTDIR}${pkgdatadir}/
 	rm -Rf ${DESTDIR}${pkgdatadir}/
 
-.la.ldd:
-	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
+# On cross-compilation, dldcheck may fail to run, so allow exit code 126 (e.g. Linux) to pass
+dldcheck_files = ${lib_LTLIBRARIES} ${mta_plugins} ${mra_plugins} ${exchange_plugins} ${pamlib_LTLIBRARIES}
+dldcheck.stamp: dldcheck ${dldcheck_files}
+	${AM_V_GEN}LD_LIBRARY_PATH="${abs_builddir}/.libs" ./dldcheck "$@" ${dldcheck_files}; rv="$$?"; test "$$rv" != 1
+
 %.service: ${top_builddir}/config.status
 .tps.service:
 	${AM_V_GEN}${MKDIR_P} system; ${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@

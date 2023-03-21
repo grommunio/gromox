@@ -29,6 +29,8 @@ Makefile.in
 /cleaner
 /delivery
 /delivery-queue
+/dldcheck
+/dldcheck.stamp
 /digest
 /event
 /freebusy
