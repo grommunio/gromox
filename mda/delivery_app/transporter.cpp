@@ -695,7 +695,7 @@ int transporter_unload_library(const char* path)
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;
 
-	auto ptr = strrchr(path, '/');
+	const char *ptr = strrchr(path, '/'); /* CONST-STRCHR-MARKER */
     if (NULL != ptr) {
         ptr++;
     } else {
