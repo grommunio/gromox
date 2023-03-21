@@ -43,14 +43,14 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+#ifdef HAVE_RES_NQUERYDOMAIN
 static void dnssrv_missing(const char *dom)
 {
 	fprintf(stderr, "%sDNS SRV entry \"_autodiscover._tcp.%s\" is missing!%s\n",
 	        g_tty ? "\e[1;33m" : "", dom, g_tty ? "\e[0m" : "" /* ]] */);
 }
-
-#ifndef HAVE_RES_NQUERYDOMAIN
-static bool dnssrv_notbuilt()
+#else
+static void dnssrv_notbuilt()
 {
 	fprintf(stderr, "%sThis version was not built with DNS SRV analysis.%s\n",
 	        g_tty ? "\e[1;31m" : "", g_tty ? "\e[0m" : "");
