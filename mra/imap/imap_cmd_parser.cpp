@@ -83,7 +83,7 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 	char *last_break;
 	
 	auto len = strlen(string);
-	if (string[len-1] == ',')
+	if (len > 0 && string[len-1] == ',')
 		len --;
 	else
 		string[len] = ',';
@@ -1092,7 +1092,7 @@ static BOOL imap_cmd_parser_wildcard_match(const char *folder, const char *mask)
 static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	const char *lang, const char *imap_folder, char *sys_folder)
 {
-	int i,len;
+	int i;
 	char *ptoken;
 	char temp_name[512];
 	char temp_folder[512];
@@ -1100,8 +1100,8 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	
 	if (utf7_to_utf8(imap_folder, strlen(imap_folder), temp_name, 512) < 0)
 		return FALSE;
-	len = strlen(temp_name);
-	if ('/' == temp_name[len - 1]) {
+	auto len = strlen(temp_name);
+	if (len > 0 && temp_name[len-1] == '/') {
 		len --;
 		temp_name[len] = '\0';
 	}
@@ -1600,7 +1600,6 @@ static void writefolderlines(MEM_FILE &file)
 int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	int i, len;
 	BOOL b_found;
 	MEM_FILE temp_file;
 	char temp_name[1024];
@@ -1627,12 +1626,12 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	writefolderlines(temp_file);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	strcpy(temp_name, argv[2]);
-	len = strlen(temp_name);
-	if ('/' == temp_name[len - 1]) {
+	auto len = strlen(temp_name);
+	if (len > 0 && temp_name[len-1] == '/') {
 		len --;
 		temp_name[len] = '\0';
 	}
-	for (i=0; i<=len; i++) {
+	for (size_t i = 0; i <= len; ++i) {
 		if (temp_name[i] != '/' && temp_name[i] != '\0') {
 			temp_name1[i] = temp_name[i];
 			continue;
