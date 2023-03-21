@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 ACLOCAL_AMFLAGS = -I build-aux
-AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${HX_CFLAGS} ${crypto_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${olecf_CFLAGS} ${pff_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${xml2_CFLAGS} ${zlib_CFLAGS}
+AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${crypto_CFLAGS} ${iconv_CPPFLAGS} ${HX_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${olecf_CFLAGS} ${pff_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${xml2_CFLAGS} ${zlib_CFLAGS}
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'

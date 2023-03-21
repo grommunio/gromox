@@ -144,6 +144,7 @@ dnl Can't use AC_SEARCH_LIBS([iconv_open]) because that does not process
 dnl the "#define iconv_open libiconv_open" macro that some iconv
 dnl implementations have.
 dnl
+iconv_CPPFLAGS=""
 AC_MSG_CHECKING([for library containing iconv_open])
 AC_LINK_IFELSE([AC_LANG_SOURCE([
 	#include <iconv.h>
@@ -155,6 +156,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([
 	AC_MSG_RESULT([-liconv])
 	iconv_LIBS="-liconv"
 ])
+AC_SUBST([iconv_CPPFLAGS])
 AC_SUBST([iconv_LIBS])
 AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 	AC_PATH_PROGS([MYSQL_CONFIG], [mysql_config mariadb_config])
