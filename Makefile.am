@@ -267,7 +267,7 @@ EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/cryptest tests/jsontest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
 dldcheck_SOURCES = tools/dldcheck.cpp
-dldcheck_LDADD = ${dl_LIBS} ${HX_LIBS}
+dldcheck_LDADD = ${dl_LIBS}
 TESTS = tests/utiltest
 tests_bdump_SOURCES = tests/bdump.cpp
 tests_bdump_LDADD = ${HX_LIBS} libgromox_common.la libgromox_mapi.la
