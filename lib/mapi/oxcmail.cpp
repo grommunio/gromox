@@ -4065,10 +4065,11 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	    pskeleton->mail_type == oxcmail_type::tnef) {
 		/* do nothing */
 	} else {
+		uint8_t *flag = nullptr;
 		auto pvalue = pmsg->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
 		if (NULL != pvalue && NATIVE_BODY_RTF == *pvalue &&
-		    ((pvalue = pmsg->proplist.get<uint32_t>(PR_RTF_IN_SYNC)) == nullptr ||
-		    *pvalue == 0)) {
+		    ((flag = pmsg->proplist.get<uint8_t>(PR_RTF_IN_SYNC)) == nullptr ||
+		    *flag == 0)) {
  FIND_RTF:
 			prtf = pmsg->proplist.get<BINARY>(PR_RTF_COMPRESSED);
 			if (NULL != prtf) {
