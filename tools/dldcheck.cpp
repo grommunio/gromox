@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 		}
 		dlclose(h);
 	}
-	auto fd = open(stamp, O_CREAT | O_WRONLY, S_IRUGO | S_IWUGO);
+	auto fd = open(stamp, O_CREAT | O_WRONLY | O_TRUNC, S_IRUGO | S_IWUGO);
 	if (fd < 0)
 		return EXIT_FAILURE;
 	close(fd);
