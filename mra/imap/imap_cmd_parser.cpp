@@ -1383,37 +1383,36 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
 	sql_meta_result mres;
-	if (system_services_auth_login(pcontext->username, temp_password,
+	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres)) {
-		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
-		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
-		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		safe_memset(temp_password, 0, std::size(temp_password));
-		if (*pcontext->maildir == '\0')
-			return 1902 | DISPATCH_TAG;
-		if (*pcontext->lang == '\0')
-			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
-		pcontext->proto_stat = PROTO_STAT_AUTH;
-		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
-		char caps[128], buff[160];
-		capability_list(caps, std::size(caps), pcontext);
-		auto z = gx_snprintf(buff, std::size(buff),
-		         "%s OK [CAPABILITY %s] Logged in\r\n",
-		         tag_or_bug(pcontext->tag_string), caps);
-		imap_parser_safe_write(pcontext, buff, z);
-		return DISPATCH_CONTINUE;
-	}
-	safe_memset(temp_password, 0, std::size(temp_password));
-	imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s",
-		mres.errstr.c_str());
-	pcontext->auth_times ++;
-	if (pcontext->auth_times >= g_max_auth_times) {
+		imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s",
+			mres.errstr.c_str());
+		pcontext->auth_times ++;
+		if (pcontext->auth_times < g_max_auth_times)
+			return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (system_services_add_user_into_temp_list != nullptr)
 			system_services_add_user_into_temp_list(pcontext->username,
 				g_block_auth_fail);
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
-	return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
+	safe_memset(temp_password, 0, std::size(temp_password));
+	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
+	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
+	gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
+	if (*pcontext->maildir == '\0')
+		return 1902 | DISPATCH_TAG;
+	if (*pcontext->lang == '\0')
+		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
+	pcontext->proto_stat = PROTO_STAT_AUTH;
+	imap_parser_log_info(pcontext, LV_DEBUG, "login success");
+	char caps[128], buff[160];
+	capability_list(caps, std::size(caps), pcontext);
+	auto z = gx_snprintf(buff, std::size(buff),
+		 "%s OK [CAPABILITY %s] Logged in\r\n",
+		 tag_or_bug(pcontext->tag_string), caps);
+	imap_parser_safe_write(pcontext, buff, z);
+	return DISPATCH_CONTINUE;
 }
 
 int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
