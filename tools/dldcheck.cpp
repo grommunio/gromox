@@ -11,6 +11,8 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
+#undef EXIT_FAILURE
+#define EXIT_FAILURE 2
 
 int main(int argc, char **argv)
 {

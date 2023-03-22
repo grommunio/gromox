@@ -382,7 +382,7 @@ uninstall-hook:
 # On cross-compilation, dldcheck may fail to run, so allow exit code 126 (e.g. Linux) to pass
 dldcheck_files = ${lib_LTLIBRARIES} ${mta_plugins} ${mra_plugins} ${exchange_plugins} ${pamlib_LTLIBRARIES}
 dldcheck.stamp: dldcheck ${dldcheck_files}
-	${AM_V_GEN}LD_LIBRARY_PATH="${abs_builddir}/.libs" ./dldcheck "$@" ${dldcheck_files}; rv="$$?"; test "$$rv" != 1
+	${AM_V_GEN}LD_LIBRARY_PATH="${abs_builddir}/.libs" ./dldcheck "$@" ${dldcheck_files}; rv="$$?"; test "$$rv" != 2
 
 %.service: ${top_builddir}/config.status
 .tps.service:
