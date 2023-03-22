@@ -1383,6 +1383,11 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
 	sql_meta_result mres;
+#ifdef OTHER_STORE_ACCESS
+	auto target_mbox = strchr(pcontext->username, '!');
+	if (target_mbox != nullptr)
+		*target_mbox++ = '\0';
+#endif
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres)) {
 		safe_memset(temp_password, 0, std::size(temp_password));
@@ -1397,6 +1402,15 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
+#ifdef OTHER_STORE_ACCESS
+	/*
+	 * imap needs to be an exmdb client (which it is not) to evaluate
+	 * permissions.
+	 */
+	if (target_mbox != nullptr &&
+	    system_services_auth_meta(target_mbox, 0, mres) != 0)
+		return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
+#endif
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 	gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));

@@ -202,6 +202,7 @@ extern BOOL (*system_services_container_remove_ip)(const char *);
 extern BOOL (*system_services_judge_user)(const char *);
 extern BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 extern authmgr_login_t system_services_auth_login;
+extern gromox::errno_t (*system_services_auth_meta)(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern int (*system_services_get_id)(const char *, const char *, const char *, unsigned int *);
 extern int (*system_services_get_uid)(const char *, const char *, const char *, unsigned int *);
 extern int (*system_services_summary_folder)(const char *, const char *, int *, int *, int *, unsigned long*, unsigned int *, int *, int *);
