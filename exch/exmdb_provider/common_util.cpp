@@ -559,6 +559,13 @@ template<typename F> static F coalesce_propid(F first, F last)
 BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
     std::vector<uint32_t> &tags) try
 {
+	/*
+	 * All computed/synthesized tags should appear in these tag lists (XXX:
+	 * but needs more research to which extent), because this function is
+	 * used to feed rop_getallproptags (IMAPIProp::GetPropList) and
+	 * exmdb_server::read_message, so it's not just for the default columns
+	 * of content tables.
+	 */
 	static constexpr uint32_t folder_tags[] = {
 		PR_ASSOC_CONTENT_COUNT, PR_CONTENT_COUNT,
 		PR_MESSAGE_SIZE_EXTENDED, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
@@ -570,7 +577,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	static constexpr uint32_t msg_tags[] = {
 		PidTagMid, PR_MESSAGE_SIZE, PR_ASSOCIATED, PidTagChangeNumber,
 		PR_READ, PR_HASATTACH, PR_MESSAGE_FLAGS, PR_DISPLAY_TO,
-		PR_DISPLAY_CC, PR_DISPLAY_BCC,
+		PR_DISPLAY_CC, PR_DISPLAY_BCC, PR_MESSAGE_CLASS,
 	};
 	static constexpr uint32_t rcpt_tags[] = {
 		PR_RECIPIENT_TYPE, PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
