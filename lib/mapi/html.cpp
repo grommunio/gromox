@@ -27,7 +27,8 @@
 #include <gromox/int_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return false; } while (false)
+#define QRF(expr) do { if (pack_result{expr} != EXT_ERR_SUCCESS) return ecError; } while (false)
+#define ERF(expr) do { ec_error_t klfdv{expr}; if (klfdv != ecSuccess) return klfdv; } while (false)
 #define RTF_PARAGRAPHALIGN_DEFAULT			0
 #define RTF_PARAGRAPHALIGN_LEFT				1
 #define RTF_PARAGRAPHALIGN_CENTER			2
@@ -96,7 +97,7 @@ static constexpr struct tagentry {
 
 }
 
-static BOOL html_enum_write(RTF_WRITER *, const xmlNode *);
+static ec_error_t html_enum_write(RTF_WRITER *, const xmlNode *);
 
 static inline iconv_t html_iconv_open()
 {
@@ -353,7 +354,7 @@ html_utf8_to_utf16(iconv_t cd, const char *src, size_t ilen)
 	return wchar;
 }
 
-static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
+static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 {
 	int tmp_len;
 	char tmp_buff[24];
@@ -363,7 +364,7 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 		static_assert(UCHAR_MAX <= std::size(utf8_byte_num));
 		auto len = utf8_byte_num[static_cast<unsigned char>(*ptr)];
 		if (ptr + len > pend) {
-			return FALSE;
+			return ecError;
 		}
 		if (1 == len && isascii(*ptr)) {
 			if ('\\' == *ptr) {
@@ -391,11 +392,11 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 		tmp_len = strlen(tmp_buff);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, tmp_len));
 	}
-	return TRUE;
+	return ecSuccess;
 }
  
 /* writes RTF document header */
-static BOOL html_write_header(RTF_WRITER*pwriter)
+static ec_error_t html_write_header(RTF_WRITER*pwriter)
 {
 	int length;
 	char tmp_string[256];
@@ -410,8 +411,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 		         "{\\f%zu\\fswiss\\fcharset%d ", i++,
 		         strcasecmp(font.c_str(), "symbol") == 0 ? 2 : 0);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
-		if (!html_write_string(pwriter, font.c_str()))
-			return FALSE;
+		ERF(html_write_string(pwriter, font.c_str()));
 		QRF(pwriter->ext_push.p_bytes(";}", 2));
 	}
 	QRF(pwriter->ext_push.p_bytes("}{\\colortbl", 11));
@@ -426,16 +426,16 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 		"\n{\\*\\formatConverter converted from html;}"
 		"\\viewkind5\\viewscale100\n{\\*\\bkmkstart BM_BEGIN}");
 	QRF(pwriter->ext_push.p_bytes(tmp_string, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_tail(RTF_WRITER*pwriter)
+static ec_error_t html_write_tail(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_style_color(RTF_WRITER *pwriter, int color)
+static ec_error_t html_write_style_color(RTF_WRITER *pwriter, int color)
 {
 	int index;
 	int length;
@@ -446,10 +446,10 @@ static BOOL html_write_style_color(RTF_WRITER *pwriter, int color)
 		length = snprintf(tmp_buff, std::size(tmp_buff), "\\cf%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_style_font_family(
+static ec_error_t html_write_style_font_family(
 	RTF_WRITER *pwriter, const char *font_name)
 {
 	int index;
@@ -461,11 +461,11 @@ static BOOL html_write_style_font_family(
 		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\f%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_style_font_size(RTF_WRITER *pwriter,
-	int font_size, BOOL unit_point)
+static ec_error_t html_write_style_font_size(RTF_WRITER *pwriter,
+    int font_size, bool unit_point)
 {
 	int length;
 	char tmp_buff[256];
@@ -477,37 +477,37 @@ static BOOL html_write_style_font_size(RTF_WRITER *pwriter,
 		font_size *= 2;
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\fs%d ", font_size);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_style_line_height(RTF_WRITER *pwriter, int line_height)
+static ec_error_t html_write_style_line_height(RTF_WRITER *pwriter, int line_height)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sl%d ", line_height*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_style_margin_top(RTF_WRITER *pwriter, int margin_top)
+static ec_error_t html_write_style_margin_top(RTF_WRITER *pwriter, int margin_top)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sa%d ", margin_top*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_style_text_indent(RTF_WRITER *pwriter, int text_indent)
+static ec_error_t html_write_style_text_indent(RTF_WRITER *pwriter, int text_indent)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\fi%d ", text_indent*15);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
 static void html_trim_style_value(char *value)
@@ -592,7 +592,7 @@ static int html_convert_color(const char *value)
 	return it->second;
 }
 
-static BOOL html_match_style(const char *style_string,
+static bool html_match_style(const char *style_string,
 	const char *tag, char *value, int val_len)
 {
 	int tmp_len;
@@ -601,12 +601,12 @@ static BOOL html_match_style(const char *style_string,
 	
 	ptr = strcasestr(style_string, tag);
 	if (NULL == ptr) {
-		return FALSE;
+		return false;
 	}
 	ptr += strlen(tag);
 	while (':' != *ptr) {
 		if (' ' != *ptr && '\t' != *ptr) {
-			return FALSE;
+			return false;
 		}
 		ptr ++;
 	}
@@ -623,214 +623,201 @@ static BOOL html_match_style(const char *style_string,
 	value[tmp_len] = '\0';
 	HX_strrtrim(value);
 	HX_strltrim(value);
-	return TRUE;
+	return true;
 }
 
-static BOOL html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
+static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 {
 	int color;
 	int value_len;
 	char value[128];
-	BOOL unit_point;
 	
 	auto pattribute = xml_getprop(pelement, "style");
 	if (NULL == pattribute) {
-		return TRUE;
+		return ecSuccess;
 	}
 	if (html_match_style(pattribute,
 		"font-family", value, sizeof(value))) {
 		html_trim_style_value(value);
-		if (!html_write_style_font_family(pwriter, value))
-			return FALSE;
+		ERF(html_write_style_font_family(pwriter, value));
 	}
 	if (html_match_style(pattribute,
 		"font-size", value, sizeof(value))) {
 		value_len = strlen(value);
-		if (0 == strcasecmp(value + value_len - 2, "pt")) {
-			unit_point = TRUE;
-		} else {
-			unit_point = FALSE;
-		}
-		if (!html_write_style_font_size(pwriter,
-		    strtol(value, nullptr, 0), unit_point))
-			return FALSE;	
+		auto unit_point = strcasecmp(value + value_len - 2, "pt") == 0;
+		ERF(html_write_style_font_size(pwriter, strtol(value, nullptr, 0), unit_point));
 	}
 	if (html_match_style(pattribute,
 		"line-height", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
-			if (!html_write_style_line_height(pwriter,
-			    strtol(value, nullptr, 0)))
-				return FALSE;	
+			ERF(html_write_style_line_height(pwriter, strtol(value, nullptr, 0)));
 		}
 	}
 	if (html_match_style(pattribute,
 		"margin-top", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
-			if (!html_write_style_margin_top(pwriter,
-			    strtol(value, nullptr, 0)))
-				return FALSE;	
+			ERF(html_write_style_margin_top(pwriter, strtol(value, nullptr, 0)));
 		}
 	}
 	if (html_match_style(pattribute,
 		"text-indent", value, sizeof(value))) {
 		value_len = strlen(value);
-		if (strcasecmp(value + value_len - 2, "px") == 0 &&
-		    !html_write_style_text_indent(pwriter,
-		    strtol(value, nullptr, 0)))
-			return FALSE;
+		if (strcasecmp(value + value_len - 2, "px") == 0)
+			ERF(html_write_style_text_indent(pwriter, strtol(value, nullptr, 0)));
 	}
 	if (html_match_style(pattribute,
 		"color", value, sizeof(value))) {
 		color = html_convert_color(value);
-		if (color != -1 && !html_write_style_color(pwriter, color))
-			return FALSE;
+		if (color != -1) {
+			ERF(html_write_style_color(pwriter, color));
+		}
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_a_begin(RTF_WRITER *pwriter, const char *link)
+static ec_error_t html_write_a_begin(RTF_WRITER *pwriter, const char *link)
 {
 	char tmp_buff[1024];
 	int length = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 			"{\\field{\\*\\fldinst{HYPERLINK %s}}"
 			"{\\fldrslt\\cf0 ", link);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_a_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_a_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_bytes("}}", 2));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_b_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_b_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\b ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_b_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_b_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_i_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_i_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\i ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_i_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_i_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_div_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_div_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_div_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_div_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_h_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_h_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_h_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_h_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_p_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_p_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_p_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_p_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_s_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_s_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\strike ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_s_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_s_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_em_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_em_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\b ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_em_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_em_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_ol_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_ol_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
@@ -839,16 +826,16 @@ static BOOL html_write_ol_begin(RTF_WRITER *pwriter)
 		"{{\\*\\pn\\pnlvlbody\\pnf0\\pnindent0\\pnstart1\\pndec"
 		"{\\pntxta.}}\\fi-360\\li720\\sa200\\sl276\\slmult1 ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_ol_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_ol_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_ul_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_ul_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
@@ -857,92 +844,92 @@ static BOOL html_write_ul_begin(RTF_WRITER *pwriter)
 		"{{\\*\\pn\\pnlvlblt\\pnf1\\pnindent0{\\pntxtb\\"
 		"\'B7}}\\fi-360\\li720\\sa200\\sl276\\slmult1 ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_ul_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_ul_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_li_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_li_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pntext\\tab\\f3 \\'b7}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_li_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_li_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\par\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_center_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_center_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\qr ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_center_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_center_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\par}");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_table_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_table_begin(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('{'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_table_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_table_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_span_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_span_begin(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('{'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_span_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_span_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_font_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_font_begin(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('{'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_font_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_font_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_mark_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_mark_begin(RTF_WRITER *pwriter)
 {
 	int index;
 	int length;
@@ -954,56 +941,56 @@ static BOOL html_write_mark_begin(RTF_WRITER *pwriter)
 		length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\highlight%d ", index);
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_mark_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_mark_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_td_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_td_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\intbl\\qc ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_td_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_td_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cell}\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_th_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_th_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\intbl\\qc ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_th_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_th_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cell}\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
+static ec_error_t html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 {
 	int i;
 	int length;
@@ -1012,7 +999,7 @@ static BOOL html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\trowd\\trgaph10 ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	if (0 == cell_num) {
-		return TRUE;
+		return ecSuccess;
 	}
 	auto percell = 8503.0 / cell_num;
 	for (i=0; i<cell_num; i++) {
@@ -1022,63 +1009,63 @@ static BOOL html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 				(int)(percell*(i + 1)));
 		QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_tr_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_tr_end(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\row}\n");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_sub_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_sub_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\sub ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_sub_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_sub_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
 
-static BOOL html_write_sup_begin(RTF_WRITER *pwriter)
+static ec_error_t html_write_sup_begin(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\super ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_sup_end(RTF_WRITER *pwriter)
+static ec_error_t html_write_sup_end(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_br(RTF_WRITER *pwriter)
+static ec_error_t html_write_br(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
 	
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\line ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_hr(RTF_WRITER *pwriter)
+static ec_error_t html_write_hr(RTF_WRITER *pwriter)
 {
 	int length;
 	char tmp_buff[256];
@@ -1086,17 +1073,16 @@ static BOOL html_write_hr(RTF_WRITER *pwriter)
 	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\pard\\brdrb\\brdrs"
 			"\\brdrw10\\brsp20{\\fs4\\~}\\par\\pard ");
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL html_write_children(RTF_WRITER *pwriter, const xmlNode *pnode)
+static ec_error_t html_write_children(RTF_WRITER *pwriter, const xmlNode *pnode)
 {
-	if (!html_write_style(pwriter, pnode))
-		return FALSE;
-	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next)
-		if (!html_enum_write(pwriter, pnode))
-			return FALSE;
-	return TRUE;
+	ERF(html_write_style(pwriter, pnode));
+	for (pnode = pnode->children; pnode != nullptr; pnode = pnode->next) {
+		ERF(html_enum_write(pwriter, pnode));
+	}
+	return ecSuccess;
 }
 
 static htag lookup_tag(const xmlNode *nd)
@@ -1108,17 +1094,17 @@ static htag lookup_tag(const xmlNode *nd)
 	       it->tag : htag::none;
 }
 
-static BOOL html_check_parent_type(const xmlNode *pnode, htag tag)
+static bool html_check_parent_type(const xmlNode *pnode, htag tag)
 {
 	while (NULL != pnode->parent) {
 		pnode = pnode->parent;
 		if (pnode->type == XML_ELEMENT_NODE && lookup_tag(pnode) == tag)
-			return TRUE;	
+			return true;
 	}
-	return FALSE;
+	return false;
 }
 
-static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
+static ec_error_t html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 {
 	int color;
 	int cell_num;
@@ -1127,25 +1113,21 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 		switch (lookup_tag(pnode)) {
 		case htag::a: {
 			auto pvalue = znul(xml_getprop(pnode, "href"));
-			if (!html_write_a_begin(pwriter, pvalue) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_a_begin(pwriter, pvalue));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_a_end(pwriter);
 		}
 		case htag::b:
-			if (!html_write_b_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_b_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_b_end(pwriter);
 		case htag::i:
-			if (!html_write_i_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_i_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_i_end(pwriter);
 		case htag::div:
-			if (!html_write_div_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_div_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_div_end(pwriter);
 		case htag::h1:
 		case htag::h2:
@@ -1153,117 +1135,96 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 		case htag::h4:
 		case htag::h5:
 		case htag::h6:
-			if (!html_write_h_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_h_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_h_end(pwriter);
 		case htag::p:
-			if (!html_write_p_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_p_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_p_end(pwriter);
 		case htag::s:
-			if (!html_write_s_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_s_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_s_end(pwriter);
 		case htag::br:
 			return html_write_br(pwriter);
 		case htag::hr:
 			return html_write_hr(pwriter);
 		case htag::em:
-			if (!html_write_em_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_em_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_em_end(pwriter);
 		case htag::ol:
-			if (!html_write_ol_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_ol_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_ol_end(pwriter);
 		case htag::ul:
-			if (!html_write_ul_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_ul_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_ul_end(pwriter);
 		case htag::li:
-			if (!html_write_li_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_li_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_li_end(pwriter);
 		case htag::center:
-			if (!html_write_center_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_center_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_center_end(pwriter);
 		case htag::table:
 			if (html_check_parent_type(pnode, htag::table))
-				return TRUE;
-			if (!html_write_table_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+				return ecSuccess;
+			ERF(html_write_table_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_table_end(pwriter);
 		case htag::span:
-			if (!html_write_span_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_span_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_span_end(pwriter);
 		case htag::font: {
-			if (!html_write_font_begin(pwriter))
-				return FALSE;
+			ERF(html_write_font_begin(pwriter));
 			auto pattribute = xml_getprop(pnode, "face");
-			if (pattribute != nullptr &&
-			    !html_write_style_font_family(pwriter, pattribute))
-				return FALSE;
+			if (pattribute != nullptr)
+				ERF(html_write_style_font_family(pwriter, pattribute));
 			pattribute = xml_getprop(pnode, "color");
 			if (NULL != pattribute) {
 				color = html_convert_color(pattribute);
-				if (color != -1 &&
-				    !html_write_style_color(pwriter, color))
-					return FALSE;
+				if (color != -1)
+					ERF(html_write_style_color(pwriter, color));
 			}
 			pattribute = xml_getprop(pnode, "size");
-			if (pattribute != nullptr &&
-			    !html_write_style_font_size(pwriter,
-			    strtol(pattribute, nullptr, 0) * 3 + 8, false))
-				return FALSE;
-			if (!html_write_children(pwriter, pnode))
-				return FALSE;
+			if (pattribute != nullptr)
+				ERF(html_write_style_font_size(pwriter,
+					strtol(pattribute, nullptr, 0) * 3 + 8, false));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_font_end(pwriter);
 		}
 		case htag::mark:
-			if (!html_write_mark_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_mark_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_mark_end(pwriter);
 		case htag::td:
-			if (!html_write_td_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_td_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_td_end(pwriter);
 		case htag::th:
-			if (!html_write_th_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_th_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_th_end(pwriter);
 		case htag::tr:
 			cell_num = 0;
 			for (auto ptr = pnode->children; ptr != nullptr; ptr = ptr->next)
 				if (ptr->type == XML_ELEMENT_NODE)
 					cell_num ++;
-			if (!html_write_tr_begin(pwriter, cell_num) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_tr_begin(pwriter, cell_num));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_tr_end(pwriter);
 		case htag::sub:
-			if (!html_write_sub_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_sub_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_sub_end(pwriter);
 		case htag::sup:
-			if (!html_write_sup_begin(pwriter) ||
-			    !html_write_children(pwriter, pnode))
-				return FALSE;
+			ERF(html_write_sup_begin(pwriter));
+			ERF(html_write_children(pwriter, pnode));
 			return html_write_sup_end(pwriter);
 		default:
 			return html_write_children(pwriter, pnode);
@@ -1273,7 +1234,7 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, const xmlNode *pnode)
 		    !html_check_parent_type(pnode, htag::script))
 			return html_write_string(pwriter, signed_cast<const char *>(pnode->content));
 	}
-	return TRUE;
+	return ecSuccess;
 }
 
 static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
@@ -1335,7 +1296,7 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 	auto buffer = iconvtext(static_cast<const char *>(pbuff_in),
 	              length, cset, "UTF-8");
 	auto ret = html_init_writer(&writer);
-	if (ret != 0)
+	if (ret != ecSuccess)
 		return ret;
 	auto hdoc = htmlReadMemory(buffer.c_str(), buffer.size(), nullptr, "utf-8",
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
@@ -1344,10 +1305,9 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 	auto root = xmlDocGetRootElement(hdoc);
 	if (root != nullptr) {
 		html_enum_tables(&writer, root);
-		if (!html_write_header(&writer) ||
-		    !html_enum_write(&writer, root) ||
-		    !html_write_tail(&writer))
-			return ecError;
+		ERF(html_write_header(&writer));
+		ERF(html_enum_write(&writer, root));
+		ERF(html_write_tail(&writer));
 	}
 	*plength = writer.ext_push.m_offset;
 	*pbuff_out = me_alloc<char>(*plength);
