@@ -1315,34 +1315,8 @@ static void html_enum_tables(RTF_WRITER *pwriter, xmlNode *pnode)
 		html_enum_tables(pwriter, pnode);
 }
 
-static void html_string_to_utf8(cpid_t cpid,
-	const char *src, char *dst, size_t len)
-{
-	size_t in_len;
-	
-	cpid_cstr_compatible(cpid);
-	auto charset = cpid_to_cset(cpid);
-	if (NULL == charset) {
-		charset = "windows-1252";
-	}
-	auto cs = replace_iconv_charset(charset);
-	auto conv_id = iconv_open("UTF-8//IGNORE", cs);
-	if (conv_id == (iconv_t)-1) {
-		mlog(LV_ERR, "E-2106: iconv_open %s: %s", cs, strerror(errno));
-		snprintf(dst, len, "ICONV_ERROR");
-		return;
-	}
-	auto pin = deconst(src);
-	auto pout = dst;
-	in_len = strlen(src);
-	memset(dst, 0, len);
-	iconv(conv_id, &pin, &in_len, &pout, &len);	
-	*pout = '\0';
-	iconv_close(conv_id);
-}
-
 ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
-    char **pbuff_out, size_t *plength)
+    char **pbuff_out, size_t *plength) try
 {
 	RTF_WRITER writer;
 
@@ -1353,37 +1327,34 @@ ec_error_t html_to_rtf(const void *pbuff_in, size_t length, cpid_t cpid,
 	buff_inz[length] = '\0';
 
 	*pbuff_out = nullptr;
-	auto pbuffer = me_alloc<char>(3 * (length + 1));
-	if (NULL == pbuffer) {
-		return ecMAPIOOM;
-	}
-	html_string_to_utf8(cpid, buff_inz.get(), pbuffer, 3 * length + 1);
+	cpid_cstr_compatible(cpid);
+	auto cset = cpid_to_cset(cpid);
+	if (cset == nullptr)
+		cset = "windows-1252";
+	cset = replace_iconv_charset(cset);
+	auto buffer = iconvtext(static_cast<const char *>(pbuff_in),
+	              length, cset, "UTF-8");
 	auto ret = html_init_writer(&writer);
-	if (ret != 0) {
-		free(pbuffer);
+	if (ret != 0)
 		return ret;
-	}
-	auto hdoc = htmlReadMemory(pbuffer, strlen(pbuffer), nullptr, "utf-8",
+	auto hdoc = htmlReadMemory(buffer.c_str(), buffer.size(), nullptr, "utf-8",
 	            HTML_PARSE_NOERROR | HTML_PARSE_NOWARNING | HTML_PARSE_NONET);
-	if (hdoc == nullptr) {
-		free(pbuffer);
+	if (hdoc == nullptr)
 		return ecError;
-	}
 	auto root = xmlDocGetRootElement(hdoc);
 	if (root != nullptr) {
 		html_enum_tables(&writer, root);
 		if (!html_write_header(&writer) ||
 		    !html_enum_write(&writer, root) ||
-		    !html_write_tail(&writer)) {
-			free(pbuffer);
+		    !html_write_tail(&writer))
 			return ecError;
-		}
 	}
 	*plength = writer.ext_push.m_offset;
 	*pbuff_out = me_alloc<char>(*plength);
 	if (*pbuff_out != nullptr)
 		memcpy(*pbuff_out, writer.ext_push.m_udata, *plength);
 	xmlFreeDoc(hdoc);
-	free(pbuffer);
 	return *pbuff_out != nullptr ? ecSuccess : ecMAPIOOM;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }
