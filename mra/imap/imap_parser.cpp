@@ -1251,20 +1251,18 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	int tmp_len;
 	int flag_bits;
 	BOOL b_first;
-	BOOL b_modify;
 	char buff[1024];
 	char mid_string[256];
 	MEM_FILE temp_file;
 	
 	mem_file_init(&temp_file, &g_alloc_file);
 	std::unique_lock hl_hold(g_hash_lock);
-	b_modify = pcontext->b_modify;
 	pcontext->b_modify = FALSE;
 	pcontext->f_flags.copy_to(temp_file);
 	pcontext->f_flags.clear();
 	hl_hold.unlock();
 	
-	if (b_modify && system_services_summary_folder(pcontext->maildir,
+	if (system_services_summary_folder(pcontext->maildir,
 	    pcontext->selected_folder, &exists, &recent, nullptr, nullptr,
 	    nullptr, nullptr, &err) == MIDB_RESULT_OK) {
 		tmp_len = gx_snprintf(buff, arsizeof(buff), "* %d RECENT\r\n"
