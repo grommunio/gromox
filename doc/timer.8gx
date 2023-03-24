@@ -24,10 +24,6 @@ Output version information and exit.
 Display option summary.
 .SH Files
 .IP \(bu 4
-\fIconfig_file_path\fP/timer_acl.txt: A file with one address (IPv6 or
-v4-mapped) per line of allowed clients. In its absence, ::1 is
-default-whitelisted.
-.IP \(bu 4
 /var/lib/gromox/timer.txt: This file is used to save the state of timer(8gx)
 and persist them across restarts.
 .SH Configuration directives
@@ -44,6 +40,14 @@ An unprivileged user account to switch the process to after startup.
 To inhibit the switch, assign the empty value.
 .br
 Default: \fIgromox\fP
+.TP
+\fBtimer_hosts_allow\fP
+A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
+are allowed to converse with the timer service. No networks and no CIDR
+notations are permitted. This option deprecates the /etc/gromox/timer_acl.txt
+file used in earlier versions.
+.br
+Default: \fI::1\fP
 .TP
 \fBtimer_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the timer service on.
