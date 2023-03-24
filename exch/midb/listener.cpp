@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/socket.h>
@@ -48,7 +49,7 @@ void listener_init(const char *ip, uint16_t port)
 	g_notify_stop = true;
 }
 
-int listener_run(const char *configdir)
+int listener_run(const char *configdir, const char *hosts_allow)
 {
 	g_listen_sockd = HX_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd < 0) {
@@ -56,16 +57,22 @@ int listener_run(const char *configdir)
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);
-	
-	auto ret = list_file_read_fixedstrings("midb_acl.txt",
-	           configdir, g_acl_list);
+	auto &acl = g_acl_list;
+	if (hosts_allow != nullptr)
+		acl = gx_split(hosts_allow, ' ');
+	auto ret = list_file_read_fixedstrings("midb_acl.txt", configdir, acl);
 	if (ret == ENOENT) {
-		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
-		g_acl_list = {"::1"};
 	} else if (ret != 0) {
 		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
 		close(g_listen_sockd);
 		return -5;
+	}
+	std::sort(acl.begin(), acl.end());
+	acl.erase(std::remove(acl.begin(), acl.end(), ""), acl.end());
+	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	if (acl.size() == 0) {
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
+		acl = {"::1"};
 	}
 	return 0;
 }

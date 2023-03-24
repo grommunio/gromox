@@ -63,6 +63,7 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"default_charset", "windows-1252"},
 	{"midb_cache_interval", "30min", CFG_TIME, "1min", "1year"},
 	{"midb_cmd_debug", "0"},
+	{"midb_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"midb_listen_ip", "::1"},
 	{"midb_listen_port", "5555"},
 	{"midb_log_file", "-"},
@@ -217,7 +218,8 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;
 	}
-	if (listener_run(g_config_file->get_value("config_file_path")) != 0) {
+	if (listener_run(g_config_file->get_value("config_file_path"),
+	    g_config_file->get_value("midb_hosts_allow")) != 0) {
 		mlog(LV_ERR, "system: failed to start TCP listener");
 		return EXIT_FAILURE;
 	}

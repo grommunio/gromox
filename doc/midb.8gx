@@ -53,6 +53,14 @@ level 2 emits all commands.
 .br
 Default: \fI0\fP
 .TP
+\fBmidb_hosts_allow\fP
+A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
+are allowed to converse with the midb service. No networks and no CIDR
+notations are permitted. This option deprecates the /etc/gromox/midb_acl.txt
+file used in earlier versions.
+.br
+Default: \fI::1\fP
+.TP
 \fBmidb_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the event service on.
 .br
@@ -151,10 +159,6 @@ Default: (unspecified)
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
-.IP \(bu 4
-\fIconfig_file_path\fP/midb_acl.txt: A file with one address (IPv6 or
-v4-mapped) per line of allowed clients. In its absence, ::1 is
-default-whitelisted.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
