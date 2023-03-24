@@ -44,12 +44,18 @@ If the file has no lines, no documents will be served this way.
 If the file is absent however, a set of default entries will be used.
 .SS Default entries
 .nf
-* /sync /usr/share/grommunio-sync php index.php | /run/gromox/php-fpm.sock
-* /web /usr/share/grommunio-web php index.php | /run/gromox/php-fpm.sock
+* /sync /usr/share/grommunio-sync php index.php | /run/php-fpm/php-grommunio-sync-fpm.sock
+* /web /usr/share/grommunio-web php index.php | /run/php-fpm/php-grommunio-web-fpm.sock
 # The following only when http_old_php_handler=1:
-* /EWS /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
-* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
+* /EWS /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/php-fpm/php-gromox-fpm.sock
+* /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/php-fpm/php-gromox-fpm.sock
 .fi
+.PP
+\fBNOTE:\fP The path designated for FPM sockets varies between distributions,
+and because some distributions \fIalso\fP have security policies that involve
+path matching (e.g. via AppArmor), we are unable to choose a path that works
+out-of-the-box on all distro-provided platform configurations without fail.
+/run/php-fpm is used as the default in line with the Grommunio Appliance.
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/fastcgi.txt: URI map specifying which paths this plugin

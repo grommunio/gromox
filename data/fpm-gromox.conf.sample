@@ -1,7 +1,7 @@
 [gromox]
 user = gromox
 group = gromox
-listen = /run/gromox/php-fpm.sock
+listen = /run/php-fpm/php-gromox-fpm.sock
 listen.owner = gromox
 listen.group = gromox
 listen.mode = 0666

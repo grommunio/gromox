@@ -14,6 +14,7 @@
 #	define PKGSTATEDIR LOCALSTATEDIR "/lib/gromox"
 #	define PKGRUNDIR "/run/gromox"
 #endif
+#define FPMSOCKDIR "/run/php-fpm" /* varies even within Linux distros, so amply replace */
 #define PKGSTATEGATEWAYDIR PKGSTATEDIR "/gateway"
 #define PKGSTATEQUEUEDIR PKGSTATEDIR "/queue"
 #define PKGLOGDIR LOCALSTATEDIR "/log/gromox"

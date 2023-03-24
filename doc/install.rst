@@ -184,9 +184,10 @@ it will invalidate participants of e-mail messages, calendar events, etc.
 Users & /run
 ------------
 
-Gromox services place their sockets into /run; for this to work, they need
-permission on a suitable directory. ``data/tmpfiles-gromox.conf`` is a
-systemd-tmpfiles fragment that will accomplish this appropriately.
+Gromox services create AF_LOCAL sockets, and the standard location for this is
+the ``/run/gromox`` directory. A systemd-tmpfiles fragment is provided in the
+source tree at ``data/tmpfiles-gromox.conf`` which can trigger the creation of
+this directory when running under systemd.
 
 Gromox services run in a privilege-reduced context. To that end,
 ``data/sysusers-gromox.conf`` is a systemd-sysusers fragment that will ensure
@@ -198,11 +199,20 @@ the user identities are available.
 php-fpm config
 --------------
 
-Parts of Gromox are implemented in PHP and need both php-fpm and php-cli. A
-sample fragment for FPM is available in ``data/fpm-gromox.conf.sample``.
+Parts of Gromox are (still) implemented in PHP and need both php-fpm and
+php-cli, and we hope to remedy this in a future release. A sample fragment for
+FPM is available in ``data/fpm-gromox.conf.sample``.
 
-The choice of ``/run/gromox/php-fpm.sock`` in there coincides with the built-in
-default config for mod_fastcgi(4gx).
+The choice of ``/run/php-fpm/php-gromox-fpm.sock`` in this sample file
+coincides with the built-in default config of mod_fastcgi(4gx), which in turn
+is modeled on the default AppArmor profile(s) that are present and potentially
+enabled on the Grommunio Appliance and/or its base systems, i.e. SUSE Linux
+Enterprise and openSUSE. On other platforms, such as Debian/Ubuntu (the latter
+also uses AppArmor in some capacity), the distro-designated path for FPM
+sockets is something like ``/run/php8.2-fpm``, and you must take care of this
+by suitably modifying the php-fpm config fragment and/or
+``/etc/gromox/mod_fastcgi.txt`` to agree on the same socket location, whichever
+one you ultimately choose.
 
 
 SMTP
