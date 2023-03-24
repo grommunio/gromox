@@ -759,7 +759,7 @@ static BOOL instance_read_message(
 			if (pbuff == nullptr)
 				return FALSE;
 			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY;
-			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
+			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff);
 			break;
 		}
 		case ID_TAG_BODY_STRING8: {
@@ -794,7 +794,7 @@ static BOOL instance_read_message(
 			if (pbuff == nullptr)
 				return FALSE;
 			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
+			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff);
 			break;
 		}
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
@@ -2021,7 +2021,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				if (vc.pvalue == nullptr)
 					return FALSE;
 				tp->type = PT_UNICODE;
-				tp->pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
+				tp->pvalue = static_cast<char *>(pvalue);
 				ppropvals->count ++;
 				continue;
 			}
@@ -2059,7 +2059,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				if (pvalue == nullptr)
 					return FALSE;
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-				vc.pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
+				vc.pvalue = static_cast<char *>(pvalue);
 				ppropvals->count ++;
 				continue;
 			}
@@ -2097,7 +2097,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				return FALSE;
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			vc.pvalue = common_util_convert_copy(false,
-				    pinstance->cpid, static_cast<char *>(pvalue) + sizeof(uint32_t));
+				    pinstance->cpid, static_cast<char *>(pvalue));
 			if (vc.pvalue != nullptr) {
 				ppropvals->count++;
 				continue;
