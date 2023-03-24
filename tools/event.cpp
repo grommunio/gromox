@@ -129,6 +129,7 @@ static struct HXoption g_options_table[] = {
 
 static constexpr cfg_directive event_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
+	{"event_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"event_listen_ip", "::1"},
 	{"event_listen_port", "33333"},
 	{"event_log_file", "-"},
@@ -312,15 +313,23 @@ int main(int argc, const char **argv) try
 		tidlist.push_back(tid);
 	}
 
+	auto hosts_allow = pconfig->get_value("event_hosts_allow");
+	if (hosts_allow != nullptr)
+		g_acl_list = gx_split(hosts_allow, ' ');
 	auto err = list_file_read_fixedstrings("event_acl.txt",
 	           pconfig->get_value("config_file_path"), g_acl_list);
 	if (err == ENOENT) {
-		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
-		g_acl_list = {"::1"};
 	} else if (err != 0) {
 		printf("[system]: list_file_initd event_acl.txt: %s\n", strerror(err));
 		g_notify_stop = true;
 		return EXIT_FAILURE;
+	}
+	std::sort(g_acl_list.begin(), g_acl_list.end());
+	g_acl_list.erase(std::remove(g_acl_list.begin(), g_acl_list.end(), ""), g_acl_list.end());
+	g_acl_list.erase(std::unique(g_acl_list.begin(), g_acl_list.end()), g_acl_list.end());
+	if (g_acl_list.size() == 0) {
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
+		g_acl_list = {"::1"};
 	}
 
 	pthread_t acc_thr{}, scan_thr{};

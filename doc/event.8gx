@@ -23,11 +23,6 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/event_acl.txt: A file with one address (IPv6 or
-v4-mapped) per line of allowed clients. In its absence, ::1 is
-default-whitelisted.
 .SH Configuration directives
 The usual config file location is /etc/gromox/event.cfg.
 .TP
@@ -36,6 +31,14 @@ Colon-separated list of directories which will be scanned when locating further
 configuration files.
 .br
 Default: \fI/etc/gromox/event:/etc/gromox\fP
+.TP
+\fBevent_hosts_allow\fP
+A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
+are allowed to converse with the event service. No networks and no CIDR
+notations are permitted. This option deprecates the /etc/gromox/event_acl.txt
+file used in earlier versions.
+.br
+Default: \fI::1\fP
 .TP
 \fBevent_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the event service on.
