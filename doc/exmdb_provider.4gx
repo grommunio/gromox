@@ -51,6 +51,14 @@ level), \fBzstd-\fP\fIlevel\fP (level=1..19).
 .br
 Default: \fIzstd\-6\fP
 .TP
+\fBexmdb_hosts_allow\fP
+A space-separated list of individual IPv6 or v4-mapped IPv6 host addresses that
+are allowed to converse with the exmdb service. No networks and no CIDR
+notations are permitted. This option deprecates the /etc/gromox/exmdb_acl.txt
+file used in earlier versions.
+.br
+Default: \fI::1\fP
+.TP
 \fBexmdb_listen_port\fP
 The TCP port number for exposing the timer service on.
 .br
@@ -270,10 +278,6 @@ pdu := {
 	}
 }
 .SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_acl.txt: A file with one address (IPv6 or
-v4-mapped) per line of allowed clients. In its absence, ::1 is
-default-whitelisted.
 .IP \(bu 4
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map.
 .IP \(bu 4

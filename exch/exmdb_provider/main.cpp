@@ -38,6 +38,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"enable_dam", "1", CFG_BOOL},
 	{"exmdb_body_autosynthesis", "1", CFG_BOOL},
 	{"exmdb_file_compression", "zstd-6"},
+	{"exmdb_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"exmdb_listen_port", "5000"},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
@@ -134,7 +135,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 		exmdb_listener_init(listen_ip, listen_port);
-		if (exmdb_listener_run(get_config_path()) != 0) {
+		if (exmdb_listener_run(get_config_path(),
+		    pconfig->get_value("exmdb_hosts_allow")) != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to run exmdb listener");
 			return FALSE;
 		}

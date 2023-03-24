@@ -105,7 +105,7 @@ void exmdb_listener_init(const char *ip, uint16_t port)
 	g_notify_stop = true;
 }
 
-int exmdb_listener_run(const char *config_path)
+int exmdb_listener_run(const char *config_path, const char *hosts_allow)
 {
 	if (0 == g_listen_port) {
 		return 0;
@@ -116,15 +116,22 @@ int exmdb_listener_run(const char *config_path)
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);
-
-	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, g_acl_list);
+	auto &acl = g_acl_list;
+	if (hosts_allow != nullptr)
+		acl = gx_split(hosts_allow, ' ');
+	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, acl);
 	if (ret == ENOENT) {
-		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
-		g_acl_list = {"::1"};
 	} else if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: Failed to read ACLs from exmdb_acl.txt: %s", strerror(errno));
 		close(g_listen_sockd);
 		return -5;
+	}
+	std::sort(acl.begin(), acl.end());
+	acl.erase(std::remove(acl.begin(), acl.end(), ""), acl.end());
+	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	if (acl.size() == 0) {
+		mlog(LV_NOTICE, "exmdb_provider: defaulting to implicit access ACL containing ::1.");
+		acl = {"::1"};
 	}
 	return 0;
 }
