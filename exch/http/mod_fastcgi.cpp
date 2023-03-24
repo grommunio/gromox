@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -376,15 +377,16 @@ static int mod_fastcgi_connect_backend(const char *path)
 	/* create a UNIX domain stream socket */
 	sockd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sockd < 0)
-		return -1;
+		return -errno;
 	/* fill socket address structure with server's address */
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
 	gx_strlcpy(un.sun_path, path, GX_ARRAY_SIZE(un.sun_path));
 	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr *)&un, len) < 0) {
+		auto se = errno;
 		close(sockd);
-		return -2;
+		return -(errno = se);
 	}
 	return sockd;
 }
@@ -780,20 +782,19 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	ndr_length = sizeof(ndr_buff);
 	if (!mod_fastcgi_build_params(phttp, ndr_buff, &ndr_length))
 		return FALSE;	
-	cli_sockd = mod_fastcgi_connect_backend(phttp->pfast_context->pfnode->sock_path.c_str());
+	auto sk_path = phttp->pfast_context->pfnode->sock_path.c_str();
+	cli_sockd = mod_fastcgi_connect_backend(sk_path);
 	if (cli_sockd < 0) {
-		phttp->log(LV_DEBUG, "failed to "
-				"connect to fastcgi back-end %s",
-				phttp->pfast_context->pfnode->sock_path.c_str());
+		phttp->log(LV_ERR, "Failed to connect to fastcgi back-end %s: %s",
+			sk_path, strerror(-cli_sockd));
 		return FALSE;
 	}
-	if (16 != write(cli_sockd, tmp_buff, 16) ||
-		ndr_length != write(cli_sockd, ndr_buff,
-		ndr_length)) {
+	if (HXio_fullwrite(cli_sockd, tmp_buff, 16) != 16 ||
+	    HXio_fullwrite(cli_sockd, ndr_buff, ndr_length) != ndr_length) {
+		auto se = errno;
 		close(cli_sockd);
-		phttp->log(LV_DEBUG, "failed to "
-			"write record to fastcgi back-end %s",
-			phttp->pfast_context->pfnode->sock_path.c_str());
+		phttp->log(LV_ERR, "Failed to write record to fastcgi back-end %s: %s",
+			sk_path, strerror(se));
 		return FALSE;
 	}
 	ndr_push.init(tmp_buff, 8, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
@@ -801,9 +802,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		NDR_ERR_SUCCESS != mod_fastcgi_push_params_end(&ndr_push) ||
 		8 != ndr_push.offset || 8 != write(cli_sockd, tmp_buff, 8)) {
 		close(cli_sockd);
-		phttp->log(LV_DEBUG, "failed to "
-			"write record to fastcgi back-end %s",
-			phttp->pfast_context->pfnode->sock_path.c_str());
+		phttp->log(LV_ERR, "Failed to write record to fastcgi back-end %s", sk_path);
 		return FALSE;
 	}
 	if (phttp->pfast_context->cache_fd < 0) {
