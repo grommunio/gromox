@@ -684,7 +684,8 @@ int dbop_sqlite_upgrade(sqlite3 *db, const char *filedesc,
 		return 0;
 	auto errors = dbop_sqlite_integcheck(db, LV_ERR);
 	if (errors != 0) {
-		mlog(LV_ERR, "Upgrade of %s not started because of %zd integrity problems",
+		mlog(LV_ERR, "Upgrade of %s not started because of %zd integrity problems"
+			" <https://docs.grommunio.com/kb/sqlite.html>",
 			filedesc, errors);
 		return -EIO;
 	}
