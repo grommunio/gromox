@@ -487,33 +487,33 @@ int common_util_get_clifd()
 	return -1;
 }
 
-char* common_util_dup(const char *pstr)
+char *common_util_dup(const char *src)
 {
 	int len;
 	
-	len = strlen(pstr) + 1;
-	auto pstr1 = cu_alloc<char>(len);
-	if (pstr1 == nullptr)
+	len = strlen(src) + 1;
+	auto dst = cu_alloc<char>(len);
+	if (dst == nullptr)
 		return NULL;
-	memcpy(pstr1, pstr, len);
-	return pstr1;
+	memcpy(dst, src, len);
+	return dst;
 }
 
-static BINARY* common_util_dup_binary(const BINARY *pbin)
+static BINARY *common_util_dup_binary(const BINARY *src)
 {
-	auto pbin1 = cu_alloc<BINARY>();
-	if (pbin1 == nullptr)
+	auto dst = cu_alloc<BINARY>();
+	if (dst == nullptr)
 		return NULL;
-	pbin1->cb = pbin->cb;
-	if (0 == pbin->cb) {
-		pbin1->pb = NULL;
-		return pbin1;
+	dst->cb = src->cb;
+	if (src->cb == 0) {
+		dst->pb = nullptr;
+		return dst;
 	}
-	pbin1->pv = common_util_alloc(pbin->cb);
-	if (pbin1->pv == nullptr)
+	dst->pv = common_util_alloc(src->cb);
+	if (dst->pv == nullptr)
 		return NULL;
-	memcpy(pbin1->pv, pbin->pv, pbin->cb);
-	return pbin1;
+	memcpy(dst->pv, src->pv, src->cb);
+	return dst;
 }
 
 ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_temp)
