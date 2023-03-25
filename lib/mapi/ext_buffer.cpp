@@ -748,26 +748,22 @@ static pack_result ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTI
 	
 	TRY(pext->g_uint8(&r->same_store));
 	TRY(pext->g_uint16(&eid_size));
-	if (!r->same_store) {
-		r->pstore_eid = pext->anew<STORE_ENTRYID>();
-		if (r->pstore_eid == nullptr)
-			return EXT_ERR_ALLOC;
-		TRY(pext->g_store_eid(r->pstore_eid));
-	} else {
+	if (r->same_store) {
 		r->pstore_eid = NULL;
 		TRY(pext->advance(eid_size));
-	}
-	if (0 != r->same_store) {
 		r->pfolder_eid = pext->anew<SVREID>();
 		if (r->pfolder_eid == nullptr)
 			return EXT_ERR_ALLOC;
 		return pext->g_svreid(static_cast<SVREID *>(r->pfolder_eid));
-	} else {
-		r->pfolder_eid = pext->anew<BINARY>();
-		if (r->pfolder_eid == nullptr)
-			return EXT_ERR_ALLOC;
-		return pext->g_bin(static_cast<BINARY *>(r->pfolder_eid));
 	}
+	r->pstore_eid = pext->anew<STORE_ENTRYID>();
+	if (r->pstore_eid == nullptr)
+		return EXT_ERR_ALLOC;
+	TRY(pext->g_store_eid(r->pstore_eid));
+	r->pfolder_eid = pext->anew<BINARY>();
+	if (r->pfolder_eid == nullptr)
+		return EXT_ERR_ALLOC;
+	return pext->g_bin(static_cast<BINARY *>(r->pfolder_eid));
 }
 
 static pack_result ext_buffer_pull_zreply_action(EXT_PULL *e, ZREPLY_ACTION *r)
