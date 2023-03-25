@@ -1464,8 +1464,7 @@ void common_util_notify_receipt(const char *username, int type,
 	mlog(LV_ERR, "E-2038: ENOMEM");
 }
 
-static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
-	ZMOVECOPY_ACTION *pmovecopy)
+static MOVECOPY_ACTION *common_util_convert_from_zmovecopy(ZMOVECOPY_ACTION *src)
 {
 	int db_id;
 	int user_id;
@@ -1473,13 +1472,13 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	SVREID *psvreid;
 	EXT_PULL ext_pull;
 	
-	auto pmovecopy1 = cu_alloc<MOVECOPY_ACTION>();
-	if (pmovecopy1 == nullptr)
+	auto dst = cu_alloc<MOVECOPY_ACTION>();
+	if (dst == nullptr)
 		return NULL;
 	auto pstore_entryid = cu_alloc<STORE_ENTRYID>();
 	if (pstore_entryid == nullptr)
 		return NULL;
-	ext_pull.init(pmovecopy->store_eid.pb, pmovecopy->store_eid.cb,
+	ext_pull.init(src->store_eid.pb, src->store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
@@ -1487,24 +1486,24 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 		return NULL;	
 	auto pinfo = zs_get_info();
 	if (user_id != pinfo->user_id) {
-		pmovecopy1->same_store = 0;
-		pmovecopy1->pstore_eid = pstore_entryid;
-		pmovecopy1->pfolder_eid = &pmovecopy->folder_eid;
-		return pmovecopy1;
+		dst->same_store = 0;
+		dst->pstore_eid = pstore_entryid;
+		dst->pfolder_eid = &src->folder_eid;
+		return dst;
 	}
-	pmovecopy1->same_store = 1;
-	pmovecopy1->pstore_eid = NULL;
+	dst->same_store = 1;
+	dst->pstore_eid = nullptr;
 	psvreid = cu_alloc<SVREID>();
 	if (psvreid == nullptr)
 		return NULL;
 	psvreid->pbin = NULL;
-	if (!cu_entryid_to_fid(pmovecopy->folder_eid,
+	if (!cu_entryid_to_fid(src->folder_eid,
 	    &b_private, &db_id, &psvreid->folder_id))
 		return NULL;
 	psvreid->message_id = 0;
 	psvreid->instance = 0;
-	pmovecopy1->pfolder_eid = psvreid;
-	return pmovecopy1;
+	dst->pfolder_eid = psvreid;
+	return dst;
 }
 
 static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
@@ -1592,32 +1591,32 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 }
 
 static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
-    MOVECOPY_ACTION *pmovecopy)
+    MOVECOPY_ACTION *src)
 {
 	EXT_PUSH ext_push;
 	
-	auto pmovecopy1 = cu_alloc<ZMOVECOPY_ACTION>();
-	if (pmovecopy1 == nullptr)
+	auto dst = cu_alloc<ZMOVECOPY_ACTION>();
+	if (dst == nullptr)
 		return NULL;
-	if (0 == pmovecopy->same_store) {
-		pmovecopy1->store_eid.pv = common_util_alloc(1024);
-		if (pmovecopy1->store_eid.pv == nullptr ||
-		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
-		    ext_push.p_store_eid(*pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
+	if (!src->same_store) {
+		dst->store_eid.pv = common_util_alloc(1024);
+		if (dst->store_eid.pv == nullptr ||
+		    !ext_push.init(dst->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
+		    ext_push.p_store_eid(*src->pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
-		pmovecopy1->store_eid.cb = ext_push.m_offset;
-		pmovecopy1->folder_eid = *static_cast<BINARY *>(pmovecopy->pfolder_eid);
+		dst->store_eid.cb = ext_push.m_offset;
+		dst->folder_eid = *static_cast<BINARY *>(src->pfolder_eid);
 	} else {
 		auto pbin = common_util_to_store_entryid(pstore);
 		if (pbin == nullptr)
 			return NULL;
-		pmovecopy1->store_eid = *pbin;
-		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(pmovecopy->pfolder_eid)->folder_id);
+		dst->store_eid = *pbin;
+		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(src->pfolder_eid)->folder_id);
 		if (pbin == nullptr)
 			return NULL;
-		pmovecopy1->folder_eid = *pbin;
+		dst->folder_eid = *pbin;
 	}
-	return pmovecopy1;
+	return dst;
 }
 
 static ZREPLY_ACTION *common_util_convert_to_zreply(store_object *pstore,
