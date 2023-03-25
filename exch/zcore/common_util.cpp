@@ -1506,19 +1506,19 @@ static MOVECOPY_ACTION *common_util_convert_from_zmovecopy(ZMOVECOPY_ACTION *src
 	return dst;
 }
 
-static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
+static REPLY_ACTION *common_util_convert_from_zreply(ZREPLY_ACTION *src)
 {
 	int db_id;
 	BOOL b_private;
 	
-	auto preply1 = cu_alloc<REPLY_ACTION>();
-	if (preply1 == nullptr)
+	auto dst = cu_alloc<REPLY_ACTION>();
+	if (dst == nullptr)
 		return NULL;
-	if (!cu_entryid_to_mid(preply->message_eid, &b_private,
-	    &db_id, &preply1->template_folder_id, &preply1->template_message_id))
+	if (!cu_entryid_to_mid(src->message_eid, &b_private,
+	    &db_id, &dst->template_folder_id, &dst->template_message_id))
 		return NULL;	
-	preply1->template_guid = preply->template_guid;
-	return preply1;
+	dst->template_guid = src->template_guid;
+	return dst;
 }
 
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
@@ -1620,16 +1620,16 @@ static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
 }
 
 static ZREPLY_ACTION *common_util_convert_to_zreply(store_object *pstore,
-    REPLY_ACTION *preply)
+    REPLY_ACTION *src)
 {
-	auto preply1 = cu_alloc<ZREPLY_ACTION>();
-	if (preply1 == nullptr)
+	auto dst = cu_alloc<ZREPLY_ACTION>();
+	if (dst == nullptr)
 		return NULL;
-	if (cu_mid_to_entryid(pstore, preply->template_folder_id,
-	    preply->template_message_id) == nullptr)
+	if (cu_mid_to_entryid(pstore, src->template_folder_id,
+	    src->template_message_id) == nullptr)
 		return NULL;	
-	preply1->template_guid = preply->template_guid;
-	return preply1;
+	dst->template_guid = src->template_guid;
+	return dst;
 }
 
 BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppropvals)
