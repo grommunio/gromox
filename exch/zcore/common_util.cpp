@@ -1464,7 +1464,7 @@ void common_util_notify_receipt(const char *username, int type,
 	mlog(LV_ERR, "E-2038: ENOMEM");
 }
 
-static MOVECOPY_ACTION *common_util_convert_from_zmovecopy(ZMOVECOPY_ACTION *src)
+static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 {
 	int db_id;
 	int user_id;
@@ -1478,7 +1478,7 @@ static MOVECOPY_ACTION *common_util_convert_from_zmovecopy(ZMOVECOPY_ACTION *src
 	auto pstore_entryid = cu_alloc<STORE_ENTRYID>();
 	if (pstore_entryid == nullptr)
 		return NULL;
-	ext_pull.init(src->store_eid.pb, src->store_eid.cb,
+	ext_pull.init(src.store_eid.pb, src.store_eid.cb,
 		common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
@@ -1488,7 +1488,7 @@ static MOVECOPY_ACTION *common_util_convert_from_zmovecopy(ZMOVECOPY_ACTION *src
 	if (user_id != pinfo->user_id) {
 		dst->same_store = 0;
 		dst->pstore_eid = pstore_entryid;
-		dst->pfolder_eid = &src->folder_eid;
+		dst->pfolder_eid = deconst(&src.folder_eid);
 		return dst;
 	}
 	dst->same_store = 1;
@@ -1497,7 +1497,7 @@ static MOVECOPY_ACTION *common_util_convert_from_zmovecopy(ZMOVECOPY_ACTION *src
 	if (psvreid == nullptr)
 		return NULL;
 	psvreid->pbin = NULL;
-	if (!cu_entryid_to_fid(src->folder_eid,
+	if (!cu_entryid_to_fid(src.folder_eid,
 	    &b_private, &db_id, &psvreid->folder_id))
 		return NULL;
 	psvreid->message_id = 0;
@@ -1532,9 +1532,7 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 		switch (pactions->pblock[i].type) {
 		case OP_MOVE:
 		case OP_COPY:
-			pactions->pblock[i].pdata =
-				common_util_convert_from_zmovecopy(
-				static_cast<ZMOVECOPY_ACTION *>(pactions->pblock[i].pdata));
+			pactions->pblock[i].pdata = cu_cvt_from_zmovecopy(*static_cast<const ZMOVECOPY_ACTION *>(pactions->pblock[i].pdata));
 			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
 			break;
@@ -1590,28 +1588,27 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	return pbin;
 }
 
-static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
-    MOVECOPY_ACTION *src)
+static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOPY_ACTION &src)
 {
 	EXT_PUSH ext_push;
 	
 	auto dst = cu_alloc<ZMOVECOPY_ACTION>();
 	if (dst == nullptr)
 		return NULL;
-	if (!src->same_store) {
+	if (!src.same_store) {
 		dst->store_eid.pv = common_util_alloc(1024);
 		if (dst->store_eid.pv == nullptr ||
 		    !ext_push.init(dst->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
-		    ext_push.p_store_eid(*src->pstore_eid) != EXT_ERR_SUCCESS)
+		    ext_push.p_store_eid(*src.pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
 		dst->store_eid.cb = ext_push.m_offset;
-		dst->folder_eid = *static_cast<BINARY *>(src->pfolder_eid);
+		dst->folder_eid = *static_cast<BINARY *>(src.pfolder_eid);
 	} else {
 		auto pbin = common_util_to_store_entryid(pstore);
 		if (pbin == nullptr)
 			return NULL;
 		dst->store_eid = *pbin;
-		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(src->pfolder_eid)->folder_id);
+		pbin = cu_fid_to_entryid(pstore, static_cast<SVREID *>(src.pfolder_eid)->folder_id);
 		if (pbin == nullptr)
 			return NULL;
 		dst->folder_eid = *pbin;
@@ -1643,9 +1640,7 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 		switch (pactions->pblock[i].type) {
 		case OP_MOVE:
 		case OP_COPY:
-			pactions->pblock[i].pdata =
-				common_util_convert_to_zmovecopy(
-				pstore, static_cast<MOVECOPY_ACTION *>(pactions->pblock[i].pdata));
+			pactions->pblock[i].pdata = cu_cvt_to_zmovecopy(pstore, *static_cast<const MOVECOPY_ACTION *>(pactions->pblock[i].pdata));
 			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
 			break;
