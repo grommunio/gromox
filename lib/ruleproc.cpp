@@ -4,15 +4,19 @@
 #include <algorithm>
 #include <cstdint>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
 #include <gromox/mapitags.hpp>
+#include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
@@ -63,7 +67,13 @@ struct message_node : public folder_node {
 	void operator==(const struct message_node &) = delete;
 };
 
+struct rx_delete {
+	void operator()(BINARY *x) const { rop_util_free_binary(x); }
+	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
+};
+
 /**
+ * @ev_to:	Envelope-To, and thus also the rule executing identity
  * @cur:	current pointer to message
  */
 struct rxparam {
@@ -73,6 +83,8 @@ struct rxparam {
 	MESSAGE_CONTENT *ctnt = nullptr;
 	bool del = false, exit = false;
 };
+
+using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 }
 
@@ -396,15 +408,136 @@ static bool rx_eval_props(const MESSAGE_CONTENT *ct, const TPROPVAL_ARRAY &props
 	return false;
 }
 
+static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
+    const MOVECOPY_ACTION &mc, uint8_t act_type)
+{
+	using LLU = unsigned long long;
+	/* Resolve store */
+	if (mc.pstore_eid == nullptr)
+		return ecNotFound;
+	auto &other_store = *static_cast<const STORE_ENTRYID *>(mc.pstore_eid);
+	if (other_store.pserver_name == nullptr)
+		return ecNotFound;
+	unsigned int user_id = 0, domain_id = 0;
+	char *newdir = nullptr;
+	if (!exmdb_client::store_eid_to_user(par.cur.dir.c_str(), &other_store,
+	    &newdir, &user_id, &domain_id))
+		return ecRpcFailed;
+	if (newdir == nullptr)
+		return ecNotFound;
+
+	/* Resolve folder */
+	auto tgt_public = other_store.wrapped_provider_uid == g_muidStorePublic;
+	if (!tgt_public && other_store.wrapped_provider_uid != g_muidStorePrivate)
+		/* try parsing as FOLDER_ENTRYID directly? (cf. cu_entryid_to_fid) */
+		return ecNotFound;
+	auto &fid_bin = *static_cast<const BINARY *>(mc.pfolder_eid);
+	uint64_t dst_fid, dst_mid = 0, dst_cn = 0;
+	if (fid_bin.cb == 0) {
+		dst_fid = rop_util_make_eid_ex(1, tgt_public ?
+		          PUBLIC_FID_IPMSUBTREE : PRIVATE_FID_INBOX);
+	} else {
+		FOLDER_ENTRYID folder_eid{};
+		EXT_PULL ep;
+		ep.init(fid_bin.pb, fid_bin.cb, malloc, EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+		if (ep.g_folder_eid(&folder_eid) != pack_result::success)
+			return ecNotFound;
+		else if (folder_eid.folder_type == EITLT_PUBLIC_FOLDER && !tgt_public)
+			return ecNotFound;
+		else if (folder_eid.folder_type == EITLT_PRIVATE_FOLDER && tgt_public)
+			return ecNotFound;
+		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.global_counter));
+	}
+
+	/* Loop & permission checks. */
+	if (par.loop_check.find({newdir, dst_fid}) != par.loop_check.end())
+		return ecRootFolder;
+	uint32_t permission = 0;
+	if (!exmdb_client::get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
+		return ecRpcFailed;
+	if (!(permission & (frightsOwner | frightsCreate)))
+		return ecAccessDenied;
+
+	/* Prepare write */
+	message_content_ptr dst(message_content_dup(par.ctnt));
+	if (dst == nullptr)
+		return ecMAPIOOM;
+	if (!exmdb_client::allocate_message_id(newdir, dst_fid, &dst_mid) ||
+	    !exmdb_client::allocate_cn(newdir, &dst_cn))
+		return ecRpcFailed;
+	XID zxid{tgt_public ? rop_util_make_domain_guid(user_id) :
+	         rop_util_make_user_guid(domain_id), dst_cn};
+	char xidbuf[22];
+	BINARY xidbin;
+	EXT_PUSH ep;
+	if (!ep.init(xidbuf, std::size(xidbuf), 0) ||
+	    ep.p_xid(zxid) != pack_result::success)
+		return ecMAPIOOM;
+	xidbin.pv = xidbuf;
+	xidbin.cb = ep.m_offset;
+	PCL pcl;
+	if (!pcl.append(zxid))
+		return ecMAPIOOM;
+	std::unique_ptr<BINARY, rx_delete> pclbin(pcl.serialize());
+	if (pclbin == nullptr)
+		return ecMAPIOOM;
+	auto &props = dst->proplist;
+	if (!props.has(PR_LAST_MODIFICATION_TIME)) {
+		auto last_time = rop_util_current_nttime();
+		auto ret = props.set(PR_LAST_MODIFICATION_TIME, &last_time);
+		if (ret != 0)
+			return ecError;
+	}
+	int ret;
+	if ((ret = props.set(PidTagMid, &dst_mid)) != 0 ||
+	    (ret = props.set(PidTagChangeNumber, &dst_cn)) != 0 ||
+	    (ret = props.set(PR_CHANGE_KEY, &xidbin)) != 0 ||
+	    (ret = props.set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
+		return ecError;
+	}
+
+	/* Writeout */
+	ec_error_t e_result = ecRpcFailed;
+	if (!exmdb_client::write_message(newdir, other_store.pserver_name, CP_UTF8,
+	    dst_fid, dst.get(), &e_result)) {
+		mlog(LV_DEBUG, "ruleproc: write_message failed");
+		return ecRpcFailed;
+	} else if (e_result != ecSuccess) {
+		mlog(LV_DEBUG, "ruleproc: write_message: %s\n", mapi_strerror(e_result));
+		return ecRpcFailed;
+	}
+	if (g_ruleproc_debug)
+		mlog(LV_DEBUG, "ruleproc: OP_COPY/MOVE to %s:%llxh\n", newdir, LLU{dst_fid});
+	if (act_type != OP_MOVE)
+		return ecSuccess;
+
+	/* Copy done, delete original message object */
+	EID_ARRAY del_mids{};
+	del_mids.count = 1;
+	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
+	BOOL partial = false;
+	if (!exmdb_client::delete_messages(par.cur.dir.c_str(),
+	    tgt_public ? domain_id : user_id, CP_UTF8,
+	    nullptr, par.cur.fid, &del_mids, true, &partial))
+		mlog(LV_ERR, "ruleproc: OP_MOVE del_msg %s:%llxh failed",
+			par.cur.dir.c_str(), LLU{rop_util_get_gc_value(par.cur.mid)});
+	par.cur.dir = newdir;
+	par.cur.fid = eid_t(dst_fid);
+	par.cur.mid = eid_t(dst_mid);
+	return ecSuccess;
+}
+
 static ec_error_t op_copy(rxparam &par, const rule_node &rule,
     const MOVECOPY_ACTION &mc, uint8_t act_type)
 {
-	auto svreid = static_cast<const SVREID *>(mc.pfolder_eid);
-	if (svreid == nullptr)
+	if (mc.pfolder_eid == nullptr)
 		return ecSuccess;
 	if (!mc.same_store)
-		return ecTooComplex;
-	auto dst_fid = svreid->folder_id;
+		return op_copy_other(par, rule, mc, act_type);
+	auto &svreid = *static_cast<const SVREID *>(mc.pfolder_eid);
+	auto dst_fid = svreid.folder_id;
+	if (rop_util_get_replid(dst_fid) != 1)
+		return ecNotFound;
 	if (par.loop_check.find({par.cur.dir, dst_fid}) != par.loop_check.end())
 		return ecSuccess;
 	uint64_t dst_mid = 0;
