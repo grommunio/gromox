@@ -2,10 +2,12 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/propval.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -285,7 +287,36 @@ std::string RESTRICTION_COUNT::repr() const
 
 std::string MOVECOPY_ACTION::repr() const
 {
-	return std::string("{") + (same_store ? "same_store" : "other_store") + "}";
+	std::string s = "{same?=" + std::to_string(same_store);
+	if (pstore_eid != nullptr) {
+		s += ",store={";
+		s += bin2hex(pstore_eid, offsetof(STORE_ENTRYID, pserver_name));
+		s += "...,";
+		s += znul(pstore_eid->pserver_name);
+		s += ",";
+		s += znul(pstore_eid->pmailbox_dn);
+		s += "}";
+	}
+	if (pfolder_eid == nullptr) {
+		s += ",folder=null";
+	} else if (same_store) {
+		auto &eid = *static_cast<const SVREID *>(pfolder_eid);
+		s += ",folder={";
+		if (eid.pbin != nullptr) {
+			s += "b=";
+			s += bin2hex(eid.pbin->pb, eid.pbin->cb);
+			s += ",";
+		}
+		s += "fid=" + fmt::format("0x{:x}", rop_util_get_gc_value(eid.folder_id));
+		s += ",mid=" + fmt::format("0x{:x}", rop_util_get_gc_value(eid.message_id));
+		s += ",inst=" + std::to_string(eid.instance) + "}";
+	} else {
+		auto bv = static_cast<const BINARY *>(pfolder_eid);
+		s += ",folder=";
+		s += bin2hex(bv->pb, bv->cb);
+	}
+	s += "}";
+	return s;
 }
 
 std::string RECIPIENT_BLOCK::repr() const
