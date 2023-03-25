@@ -1506,7 +1506,7 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 	return dst;
 }
 
-static REPLY_ACTION *common_util_convert_from_zreply(ZREPLY_ACTION *src)
+static REPLY_ACTION *cu_cvt_from_zreply(const ZREPLY_ACTION &src)
 {
 	int db_id;
 	BOOL b_private;
@@ -1514,10 +1514,10 @@ static REPLY_ACTION *common_util_convert_from_zreply(ZREPLY_ACTION *src)
 	auto dst = cu_alloc<REPLY_ACTION>();
 	if (dst == nullptr)
 		return NULL;
-	if (!cu_entryid_to_mid(src->message_eid, &b_private,
+	if (!cu_entryid_to_mid(src.message_eid, &b_private,
 	    &db_id, &dst->template_folder_id, &dst->template_message_id))
 		return NULL;	
-	dst->template_guid = src->template_guid;
+	dst->template_guid = src.template_guid;
 	return dst;
 }
 
@@ -1538,9 +1538,7 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
-			pactions->pblock[i].pdata =
-				common_util_convert_from_zreply(
-				static_cast<ZREPLY_ACTION *>(pactions->pblock[i].pdata));
+			pactions->pblock[i].pdata = cu_cvt_from_zreply(*static_cast<const ZREPLY_ACTION *>(pactions->pblock[i].pdata));
 			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
 			break;
@@ -1616,16 +1614,15 @@ static ZMOVECOPY_ACTION *cu_cvt_to_zmovecopy(store_object *pstore, const MOVECOP
 	return dst;
 }
 
-static ZREPLY_ACTION *common_util_convert_to_zreply(store_object *pstore,
-    REPLY_ACTION *src)
+static ZREPLY_ACTION *cu_cvt_to_zreply(store_object *pstore, const REPLY_ACTION &src)
 {
 	auto dst = cu_alloc<ZREPLY_ACTION>();
 	if (dst == nullptr)
 		return NULL;
-	if (cu_mid_to_entryid(pstore, src->template_folder_id,
-	    src->template_message_id) == nullptr)
+	if (cu_mid_to_entryid(pstore, src.template_folder_id,
+	    src.template_message_id) == nullptr)
 		return NULL;	
-	dst->template_guid = src->template_guid;
+	dst->template_guid = src.template_guid;
 	return dst;
 }
 
@@ -1646,9 +1643,7 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
-			pactions->pblock[i].pdata =
-				common_util_convert_to_zreply(
-				pstore, static_cast<REPLY_ACTION *>(pactions->pblock[i].pdata));
+			pactions->pblock[i].pdata = cu_cvt_to_zreply(pstore, *static_cast<const REPLY_ACTION *>(pactions->pblock[i].pdata));
 			if (pactions->pblock[i].pdata == nullptr)
 				return FALSE;
 			break;
