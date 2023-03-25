@@ -1482,6 +1482,13 @@ static MOVECOPY_ACTION *cu_cvt_from_zmovecopy(const ZMOVECOPY_ACTION &src)
 		common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
+	bool tgt_public = pstore_entryid->wrapped_provider_uid == g_muidStorePublic;
+	if (tgt_public) {
+		dst->same_store  = 0;
+		dst->pstore_eid  = pstore_entryid;
+		dst->pfolder_eid = deconst(&src.folder_eid);
+		return dst;
+	}
 	if (!common_util_essdn_to_uid(pstore_entryid->pmailbox_dn, &user_id))
 		return NULL;	
 	auto pinfo = zs_get_info();
