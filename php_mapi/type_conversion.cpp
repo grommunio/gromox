@@ -1071,7 +1071,9 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 
 template<typename V, size_t N> static inline char *itoa(V &&v, char (&buf)[N]) try
 {
-	fmt::format_to_n(buf, std::size(buf), "{}", v);
+	static_assert(N > 0);
+	auto r = fmt::format_to_n(buf, std::size(buf) - 1, "{}", v);
+	buf[r.size] = '\0';
 	return buf;
 } catch (...) {
 	*buf = '\0';
