@@ -1,3 +1,22 @@
+Development 2.7.8
+=================
+
+Fixes:
+
+* exmdb_provider: repair a 4-byte cutoff when reading PR_BODY,
+  PR_TRANSPORT_MESSAGE_HEADERS if they are compressed on disk
+
+Changes:
+
+* daemons: the files /etc/gromox/exmdb_acl.txt, midb_acl.txt, event_acl.txt,
+  timer_acl.txt were made obsolete and replaced by the new (exmdb_provider.cfg)
+  "exmdb_hosts_allow", (midb.cfg) "midb_hosts_allow, (event.cfg)
+  "event_hosts_allow", (timer.cfg) "timer_hosts_allow" directives.
+* http: adjust the built-in PHP-FPM socket paths to reflect changes in
+  g-web and g-sync (this impacts test setups that run gromox-http without an
+  nginx in front)
+
+
 Gromox 2.7 (2023-03-24)
 =======================
 
