@@ -91,7 +91,7 @@ struct ct_node {
 	enum midb_cond condition = midb_cond::x_none;
 
 	union {
-		char *ct_headers[2];
+		char *ct_headers[2]{};
 		char *ct_keyword;
 		time_t ct_time;
 		size_t ct_size;
