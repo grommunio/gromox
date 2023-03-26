@@ -1417,6 +1417,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	if (pinfo == nullptr)
 		return ecError;
 	if (store_entryid.wrapped_provider_uid == g_muidStorePublic) {
+		/* pserver_name or ESSDN is ignored; can only ever open PF of own domain */
 		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 	}

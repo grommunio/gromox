@@ -1564,17 +1564,16 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
 	store_entryid.wrapped_flags = 0;
+	store_entryid.pserver_name = deconst(pstore->get_account());
 	if (pstore->b_private) {
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
-		store_entryid.pserver_name = deconst(pstore->get_account());
 		if (!common_util_username_to_essdn(pstore->get_account(),
 		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
 	} else {
 		store_entryid.wrapped_provider_uid = g_muidStorePublic;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
-		store_entryid.pserver_name = g_hostname;
 		auto pinfo = zs_get_info();
 		if (!common_util_username_to_essdn(pinfo->get_username(),
 		    tmp_buff, arsizeof(tmp_buff)))
