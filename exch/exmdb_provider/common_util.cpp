@@ -66,7 +66,9 @@ E(check_mlist_include)
 E(get_user_lang)
 E(get_timezone)
 E(get_maildir)
+E(get_homedir)
 E(get_id_from_username)
+E(get_user_ids)
 E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
@@ -76,7 +78,6 @@ E(get_handle)
 decltype(ems_send_mail) ems_send_mail;
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
-static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
 static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
@@ -142,8 +143,6 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
-	int user_id;
-	int domain_id;
 	char *pdomain;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
@@ -154,6 +153,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	if (pdomain == nullptr)
 		return FALSE;
 	*pdomain++ = '\0';
+	unsigned int user_id = 0, domain_id = 0;
 	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
@@ -174,6 +174,7 @@ void common_util_pass_service(int service_id, void *func)
 	E(SERVICE_ID_GET_USER_LANG, common_util_get_user_lang);
 	E(SERVICE_ID_GET_TIMEZONE, common_util_get_timezone);
 	E(SERVICE_ID_GET_MAILDIR, common_util_get_maildir);
+	E(SERVICE_ID_GET_HOMEDIR, common_util_get_homedir);
 	E(SERVICE_ID_GET_ID_FFROM_USERNAME, common_util_get_id_from_username);
 	E(SERVICE_ID_GET_USERNAME_FROM_ID, common_util_get_username_from_id);
 	E(SERVICE_ID_GET_USER_IDS, common_util_get_user_ids);

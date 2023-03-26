@@ -2198,6 +2198,19 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_
 	return x.p_uint64(d.folder_id);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_store_eid_to_user &d)
+{
+	d.store_eid = cu_alloc<STORE_ENTRYID>();
+	if (d.store_eid == nullptr)
+		return pack_result::alloc;
+	return x.g_store_eid(d.store_eid);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_store_eid_to_user &d)
+{
+	return x.p_store_eid(*d.store_eid);
+}
+
 #define RQ_WITH_ARGS \
 	E(get_named_propids) \
 	E(get_named_propnames) \
@@ -2316,7 +2329,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_public_folder_unread_
 	E(transport_new_mail) \
 	E(check_contact_address) \
 	E(get_public_folder_unread_count) \
-	E(notify_new_mail)
+	E(notify_new_mail) \
+	E(store_eid_to_user)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3579,6 +3593,20 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread
 	return x.p_uint32(d.count);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exresp_store_eid_to_user &d)
+{
+	TRY(x.g_str(&d.maildir));
+	TRY(x.g_uint32(&d.user_id));
+	return x.g_uint32(&d.domain_id);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
+{
+	TRY(x.p_str(d.maildir));
+	TRY(x.p_uint32(d.user_id));
+	return x.p_uint32(d.domain_id);
+}
+
 #define RSP_WITHOUT_ARGS \
 	E(ping_store) \
 	E(remove_store_properties) \
@@ -3705,7 +3733,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_public_folder_unread
 	E(allocate_ids) \
 	E(subscribe_notification) \
 	E(check_contact_address) \
-	E(get_public_folder_unread_count)
+	E(get_public_folder_unread_count) \
+	E(store_eid_to_user)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*

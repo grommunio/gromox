@@ -140,13 +140,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(UNLOAD_STORE),
 	E(DELIVER_MESSAGE),
 	E(NOTIFY_NEW_MAIL),
+	E(STORE_EID_TO_USER),
 };
 #undef E
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(arsizeof(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::notify_new_mail) + 1);
+	static_assert(arsizeof(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::store_eid_to_user) + 1);
 	const char *s = j < arsizeof(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

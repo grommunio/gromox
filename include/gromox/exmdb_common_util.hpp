@@ -33,12 +33,14 @@ struct MAIL;
 struct MIME_POOL;
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(check_mlist_include)
+E(get_user_ids)
 E(get_domain_ids)
 E(get_homedir_by_id)
 E(get_id_from_homedir)
 E(get_id_from_maildir)
 E(get_id_from_username)
 E(get_maildir)
+E(get_homedir)
 E(get_timezone)
 E(get_user_displayname)
 E(get_user_lang)

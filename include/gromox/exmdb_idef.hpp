@@ -124,3 +124,4 @@ EXMIDL(get_public_folder_unread_count, (const char *dir, const char *username, u
 EXMIDL(vacuum, (const char *dir))
 EXMIDL(unload_store, (const char *dir))
 EXMIDL(notify_new_mail, (const char *dir, uint64_t folder_id, uint64_t message_id))
+EXMIDL(store_eid_to_user, (const char *dir, const STORE_ENTRYID *store_eid, IDLOUT char **maildir, unsigned int *user_id, unsigned int *domain_id))

@@ -58,6 +58,7 @@ int run()
 	pass_service(SERVICE_ID_GET_USER_LANG, E(common_util_get_user_lang));
 	pass_service(SERVICE_ID_GET_TIMEZONE, E(common_util_get_timezone));
 	pass_service(SERVICE_ID_GET_MAILDIR, E(common_util_get_maildir));
+	pass_service(SERVICE_ID_GET_HOMEDIR, E(common_util_get_homedir));
 	pass_service(SERVICE_ID_GET_ID_FFROM_USERNAME, E(common_util_get_id_from_username));
 	pass_service(SERVICE_ID_GET_USERNAME_FROM_ID, E(common_util_get_username_from_id));
 	pass_service(SERVICE_ID_GET_USER_IDS, E(common_util_get_user_ids));

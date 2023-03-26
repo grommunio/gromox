@@ -154,6 +154,7 @@ enum class exmdb_callid : uint8_t {
 	unload_store = 0x80,
 	deliver_message = 0x81,
 	notify_new_mail = 0x82,
+	store_eid_to_user = 0x83,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -835,6 +836,10 @@ struct exreq_notify_new_mail : public exreq {
 	uint64_t folder_id, message_id;
 };
 
+struct exreq_store_eid_to_user : public exreq {
+	STORE_ENTRYID *store_eid;
+};
+
 struct exresp {
 	exmdb_callid call_id;
 };
@@ -1268,6 +1273,11 @@ struct exresp_check_contact_address : public exresp {
 
 struct exresp_get_public_folder_unread_count : public exresp {
 	uint32_t count;
+};
+
+struct exresp_store_eid_to_user : public exresp {
+	char *maildir = nullptr;
+	unsigned int user_id = 0, domain_id = 0;
 };
 
 using exreq_ping_store = exreq;

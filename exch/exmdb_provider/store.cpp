@@ -491,3 +491,27 @@ BOOL exmdb_server::unload_store(const char *dir)
 {
 	return db_engine_unload_db(dir);
 }
+
+BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_eid,
+    char **maildir, uint32_t *user_id, uint32_t *domain_id)
+{
+	unsigned int uid = 0, domid = 0;
+	char md[256];
+	if (store_eid == nullptr || store_eid->pserver_name == nullptr)
+		return false;
+	if (store_eid->wrapped_provider_uid == g_muidStorePrivate) {
+		enum display_type dt;
+		if (!common_util_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
+		    !common_util_get_maildir(store_eid->pserver_name, md, std::size(md)))
+			return false;
+	} else {
+		unsigned int orgid;
+		if (!common_util_get_domain_ids(store_eid->pserver_name, &domid, &orgid) ||
+		    !common_util_get_homedir(store_eid->pserver_name, md, std::size(md)))
+			return false;
+	}
+	*maildir = common_util_dup(md);
+	*user_id = uid;
+	*domain_id = domid;
+	return TRUE;
+}
