@@ -120,6 +120,113 @@ rule_node &rule_node::operator=(rule_node &&o)
 	return *this;
 }
 
+static void rx_delete_local(PROPNAME_ARRAY &x)
+{
+	if (x.ppropname == nullptr)
+		return;
+	for (unsigned int i = 0; i < x.count; ++i)
+		if (x.ppropname[i].kind == MNID_STRING)
+			exmdb_rpc_free(x.ppropname[i].pname);
+	exmdb_rpc_free(x.ppropname);
+}
+
+static void rx_npid_collect(const TPROPVAL_ARRAY &props, std::set<uint16_t> &m)
+{
+	for (unsigned int i = 0; i < props.count; ++i) {
+		auto id = PROP_ID(props.ppropval[i].proptag);
+		if (id >= 0x8000)
+			m.emplace(id);
+	}
+}
+
+static void rx_npid_collect(const MESSAGE_CONTENT &ctnt, std::set<uint16_t> &m)
+{
+	rx_npid_collect(ctnt.proplist, m);
+	if (ctnt.children.prcpts != nullptr)
+		for (unsigned int i = 0; i < ctnt.children.prcpts->count; ++i)
+			rx_npid_collect(*ctnt.children.prcpts->pparray[i], m);
+	if (ctnt.children.pattachments != nullptr) {
+		for (unsigned int i = 0; i < ctnt.children.pattachments->count; ++i) {
+			auto at = ctnt.children.pattachments->pplist[i];
+			if (at == nullptr)
+				continue;
+			rx_npid_collect(at->proplist, m);
+			if (at->pembedded != nullptr)
+				rx_npid_collect(*at->pembedded, m);
+		}
+	}
+}
+
+static void rx_npid_transform(TPROPVAL_ARRAY &props,
+    const std::vector<uint16_t> &src, const PROPID_ARRAY &dst)
+{
+	for (unsigned int i = 0; i < props.count; ++i) {
+		auto oldtag = props.ppropval[i].proptag;
+		if (PROP_ID(oldtag) < 0x8000)
+			continue;
+		auto it = std::find(src.begin(), src.end(), PROP_ID(oldtag));
+		if (it == src.end())
+			continue;
+		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(oldtag), dst.ppropid[it-src.begin()]);
+	}
+}
+
+static void rx_npid_transform(MESSAGE_CONTENT &ctnt,
+    const std::vector<uint16_t> &src, const PROPID_ARRAY &dst)
+{
+	rx_npid_transform(ctnt.proplist, src, dst);
+	if (ctnt.children.prcpts != nullptr)
+		for (unsigned int i = 0; i < ctnt.children.prcpts->count; ++i)
+			rx_npid_transform(*ctnt.children.prcpts->pparray[i], src, dst);
+	if (ctnt.children.pattachments != nullptr) {
+		for (unsigned int i = 0; i < ctnt.children.pattachments->count; ++i) {
+			auto at = ctnt.children.pattachments->pplist[i];
+			if (at == nullptr)
+				continue;
+			rx_npid_transform(at->proplist, src, dst);
+			if (at->pembedded != nullptr)
+				rx_npid_transform(*at->pembedded, src, dst);
+		}
+	}
+}
+
+static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
+    const char *newdir)
+{
+	std::set<uint16_t> src_id_set;
+	std::vector<uint16_t> src_id_vec;
+	rx_npid_collect(ctnt, src_id_set);
+	for (auto id : src_id_set)
+		src_id_vec.push_back(id);
+	PROPID_ARRAY src_id_arr = {1, src_id_vec.data()}, dst_id_arr{};
+	PROPNAME_ARRAY src_name_arr{};
+	auto cl_0 = make_scope_exit([&]() {
+		rx_delete_local(src_name_arr);
+		free(dst_id_arr.ppropid);
+	});
+	if (!exmdb_client::get_named_propnames(par.cur.dir.c_str(),
+	    &src_id_arr, &src_name_arr)) {
+		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
+			par.cur.dir.c_str());
+		return ecRpcFailed;
+	}
+	if (src_name_arr.count != src_id_arr.count) {
+		mlog(LV_ERR, "ruleproc: np(src) counts are fishy");
+		return ecError;
+	}
+	if (!exmdb_client::get_named_propids(newdir, TRUE,
+	    &src_name_arr, &dst_id_arr)) {
+		mlog(LV_DEBUG, "ruleproc: get_named_propids(%s) failed", newdir);
+		return ecRpcFailed;
+	}
+	if (dst_id_arr.count != src_name_arr.count) {
+		mlog(LV_ERR, "ruleproc: np(dst) counts are fishy");
+		return ecError;
+	}
+	rx_npid_transform(ctnt, src_id_vec, dst_id_arr);
+	return ecSuccess;
+}
+
 static ec_error_t rx_is_oof(const char *dir, bool *oof)
 {
 	static constexpr uint32_t tags[] = {PR_OOF_STATE};
@@ -462,6 +569,9 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	message_content_ptr dst(message_content_dup(par.ctnt));
 	if (dst == nullptr)
 		return ecMAPIOOM;
+	auto err = rx_npid_replace(par, *dst, newdir);
+	if (err != ecSuccess)
+		return err;
 	if (!exmdb_client::allocate_message_id(newdir, dst_fid, &dst_mid) ||
 	    !exmdb_client::allocate_cn(newdir, &dst_cn))
 		return ecRpcFailed;
