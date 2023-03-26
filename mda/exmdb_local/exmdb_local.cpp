@@ -43,8 +43,8 @@ bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
 bool (*exmdb_local_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*exmdb_local_check_same_org2)(
 	const char *domainname1, const char *domainname2);
-static BOOL (*exmdb_local_get_user_ids)(const char *, int *, int *, enum display_type *);
-static BOOL (*exmdb_local_get_username)(int, char *, size_t);
+static BOOL (*exmdb_local_get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
+static BOOL (*exmdb_local_get_username)(unsigned int, char *, size_t);
 
 static int exmdb_local_sequence_ID()
 {

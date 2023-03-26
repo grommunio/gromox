@@ -1753,7 +1753,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	uint64_t *pmessage_id)
 {
 	BOOL b_cn;
-	int tmp_int, tmp_int1, is_associated = 0;
+	int is_associated = 0;
 	BOOL b_exist;
 	BOOL b_result;
 	uint64_t tmp_id;
@@ -1785,10 +1785,12 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (!b_embedded && !b_cn) {
 			XID tmp_xid;
 			if (exmdb_server::is_private()) {
+				unsigned int tmp_int = 0;
 				if (!common_util_get_id_from_username(account, &tmp_int))
 					return FALSE;
 				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
 			} else {
+				unsigned int tmp_int = 0, tmp_int1 = 0;
 				if (!common_util_get_domain_ids(account, &tmp_int, &tmp_int1))
 					return FALSE;
 				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
@@ -2919,7 +2921,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 			act_idx, rule.provider.c_str(), seen);
 		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
-	int tmp_id = 0, tmp_id1 = 0;
+	unsigned int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
 		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
@@ -3223,7 +3225,7 @@ static ec_error_t opx_move_private(const char *account, sqlite3 *psqlite,
 {
 	if (pextmvcp->folder_eid.folder_type != EITLT_PRIVATE_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
-	int tmp_id = 0;
+	unsigned int tmp_id = 0;
 	if (!common_util_get_id_from_username(account, &tmp_id))
 		return ecSuccess;
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
@@ -3242,7 +3244,7 @@ static ec_error_t opx_move_public(const char *account, sqlite3 *psqlite,
 		pc = account;
 	else
 		++pc;
-	int tmp_id = 0, tmp_id1 = 0;
+	unsigned int tmp_id = 0, tmp_id1 = 0;
 	if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
 		return ecSuccess;
 	auto tmp_guid = rop_util_make_domain_guid(tmp_id);
@@ -3271,7 +3273,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 		return ecError;
 	if (!b_exist)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);
-	int tmp_id = 0, tmp_id1 = 0;
+	unsigned int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
 		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
@@ -3329,7 +3331,7 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 {
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 	if (exmdb_server::is_private()) {
-		int tmp_id = 0;
+		unsigned int tmp_id = 0;
 		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
@@ -3340,7 +3342,7 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 		if (pc == nullptr)
 			return ecSuccess;
 		++pc;
-		int tmp_id = 0, tmp_id1 = 0;
+		unsigned int tmp_id = 0, tmp_id1 = 0;
 		if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_domain_guid(tmp_id);

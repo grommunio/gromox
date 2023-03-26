@@ -51,7 +51,7 @@ static pack_result exchange_rfr_ndr_pull(int op, NDR_PULL *, void **in);
 static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static pack_result exchange_rfr_ndr_push(int op, NDR_PUSH *, void *out);
 
-static BOOL (*get_id_from_username)(const char *username, int *puser_id);
+static BOOL (*get_id_from_username)(const char *username, unsigned int *puser_id);
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
 
 static constexpr DCERPC_INTERFACE interface = {
@@ -102,13 +102,13 @@ PROC_ENTRY(proc_exchange_rfr);
 static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
     char *punused, char *pserver, size_t svlen)
 {
-	int user_id;
 	char *ptoken;
 	char username[UADDR_SIZE];
 	char hex_string[32];
 	
 	*punused = '\0';
 	auto rpc_info = get_rpc_info();
+	unsigned int user_id = 0;
 	get_id_from_username(rpc_info.username, &user_id);
 	memset(username, 0, sizeof(username));
 	gx_strlcpy(username, rpc_info.username, GX_ARRAY_SIZE(username));

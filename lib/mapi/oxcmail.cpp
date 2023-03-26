@@ -201,8 +201,7 @@ BOOL oxcmail_init_library(const char *org_name,
 static BOOL oxcmail_username_to_essdn(const char *username,
     char *pessdn, enum display_type *dtpp)
 {
-	int user_id;
-	int domain_id;
+	unsigned int user_id = 0, domain_id = 0;
 	char *pdomain;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
@@ -233,7 +232,6 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 BOOL oxcmail_essdn_to_username(const char *pessdn,
     char *username, size_t ulen)
 {
-	int user_id;
 	char tmp_buff[1024];
 	
 	auto tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
@@ -242,7 +240,7 @@ BOOL oxcmail_essdn_to_username(const char *pessdn,
 	if (0 != strncasecmp(pessdn, tmp_buff, tmp_len)) {
 		return FALSE;
 	}
-	user_id = decode_hex_int(pessdn + tmp_len + 8);
+	unsigned int user_id = decode_hex_int(&pessdn[tmp_len+8]);
 	return oxcmail_get_username(user_id, username, ulen);
 }
 

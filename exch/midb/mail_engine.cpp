@@ -2199,7 +2199,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		// gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
 
 		try {
-			int user_id = 0;
+			unsigned int user_id = 0;
 			pidb->username.resize(UADDR_SIZE);
 			if (!system_services_get_id_from_maildir(path, &user_id) ||
 			    !system_services_get_username_from_id(user_id, pidb->username.data(), pidb->username.size())) {
@@ -2567,7 +2567,6 @@ static bool system_services_lang_to_charset(const char *lang, char (&charset)[32
 
 static int mail_engine_minst(int argc, char **argv, int sockd) try
 {
-	int user_id;
 	char lang[32];
 	size_t mess_len;
 	char charset[32], tmzone[64];
@@ -2615,6 +2614,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
+	unsigned int user_id = 0;
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
@@ -2698,7 +2698,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 static int mail_engine_mdele(int argc, char **argv, int sockd)
 {
 	int i;
-	int user_id;
 	BOOL b_partial;
 	EID_ARRAY message_ids;
 
@@ -2714,6 +2713,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
+	unsigned int user_id = 0;
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id,"
@@ -2740,7 +2740,6 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 
 static int mail_engine_mcopy(int argc, char **argv, int sockd)
 {
-	int user_id;
 	char lang[32];
 	int flags_len;
 	char charset[32], tmzone[64];
@@ -2804,6 +2803,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	uint8_t b_read = pstmt.col_uint64(CTM_READ) != 0;
 	uint64_t nt_time = pstmt.col_int64(CTM_RCVDTIME);
 	pstmt.finalize();
+	unsigned int user_id = 0;
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
@@ -2907,7 +2907,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 
 static int mail_engine_mrenf(int argc, char **argv, int sockd)
 {
-	int user_id;
 	BOOL b_exist;
 	char *ptoken;
 	BINARY *pbin1;
@@ -2938,6 +2937,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
+	unsigned int user_id = 0;
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
@@ -3029,7 +3029,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 
 static int mail_engine_mmakf(int argc, char **argv, int sockd)
 {
-	int user_id;
 	char *ptoken;
 	char *ptoken1;
 	uint64_t folder_id1;
@@ -3045,6 +3044,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
+	unsigned int user_id = 0;
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
 		return MIDB_E_SSGETID;
 	if (mail_engine_get_folder_id(pidb.get(), argv[2]) != 0)

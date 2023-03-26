@@ -648,9 +648,6 @@ void zserver_stop()
 ec_error_t zs_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession)
 {
-	int org_id;
-	int user_id;
-	int domain_id;
 	char lang[32];
 	char homedir[256];
 	char tmp_name[UADDR_SIZE];
@@ -669,6 +666,7 @@ ec_error_t zs_logon(const char *username,
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);
+	unsigned int user_id = 0, domain_id = 0, org_id = 0;
 	auto iter = g_user_table.find(tmp_name);
 	if (iter != g_user_table.end()) {
 		user_id = iter->second;

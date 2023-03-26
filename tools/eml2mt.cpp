@@ -227,7 +227,7 @@ int main(int argc, const char **argv) try
 	auto cl_1 = make_scope_exit([]() { service_release("get_username_from_id", "system"); });
 	E(system_services_get_user_ids, "get_user_ids");
 	if (g_oneoff)
-		system_services_get_user_ids = [](const char *, int *, int *, display_type *) -> BOOL { return false; };
+		system_services_get_user_ids = [](const char *, unsigned int *, unsigned int *, display_type *) -> BOOL { return false; };
 	auto cl_2 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
 #undef E
 

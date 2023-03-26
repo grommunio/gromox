@@ -106,8 +106,7 @@ void exmdb_server::set_dir(const char *dir)
 
 int exmdb_server::get_account_id()
 {
-	int account_id;
-	
+	unsigned int account_id = 0;
 	auto pctx = g_env_key.get();
 	if (pctx->account_id < 0) {
 		if (pctx->b_private) {

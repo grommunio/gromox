@@ -262,7 +262,8 @@ static int userlist_parse(sqlconn &conn, const char *query,
 	return pfile.size();
 }
 
-int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) try
+int mysql_adaptor_get_class_users(unsigned int class_id,
+    std::vector<sql_user> &pfile) try
 {
 	char query[451];
 
@@ -299,7 +300,8 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
-int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
+int mysql_adaptor_get_domain_users(unsigned int domain_id,
+    std::vector<sql_user> &pfile) try
 {
 	char query[430];
 
@@ -334,7 +336,8 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	return false;
 }
 
-int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) try
+int mysql_adaptor_get_group_users(unsigned int group_id,
+    std::vector<sql_user> &pfile) try
 {
 	char query[491];
 
@@ -375,7 +378,8 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
-errno_t mysql_adaptor_scndstore_hints(int pri, std::vector<sql_user> &hints) try
+errno_t mysql_adaptor_scndstore_hints(unsigned int pri,
+    std::vector<sql_user> &hints) try
 {
 	char query[233];
 	snprintf(query, std::size(query),

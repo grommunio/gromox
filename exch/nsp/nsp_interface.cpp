@@ -535,9 +535,6 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
     FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {
 	nsp_trace(__func__, 0, pstat);
-	int org_id;
-	int domain_id;
-	
 	auto rpc_info = get_rpc_info();
 	if (flags & fAnonymousLogin) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
@@ -558,6 +555,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 		return ecLoginFailure;
 	}
 	pdomain ++;
+	unsigned int domain_id = 0, org_id = 0;
 	if (!get_domain_ids(pdomain, &domain_id, &org_id)) {
 		mlog(LV_WARN, "W-2176: could not satisfy nsp_bind request for domain %s: not found", pdomain);
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
@@ -1379,7 +1377,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		for (const auto &memb : member_list) {
 			if ((*ppoutmids)->cvalues > requested)
 				break;
-			int user_id;
+			unsigned int user_id = 0;
 			if (!get_id_from_username(memb.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
@@ -1416,7 +1414,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		for (const auto &deleg : delegate_list) {
 			if ((*ppoutmids)->cvalues > requested)
 				break;
-			int user_id;
+			unsigned int user_id = 0;
 			if (!get_id_from_username(deleg.c_str(), &user_id))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);

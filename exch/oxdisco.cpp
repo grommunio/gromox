@@ -80,10 +80,10 @@ class OxdiscoPlugin {
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
 	std::string get_redirect_addr(const char *) const;
-	BOOL username_to_essdn(const char *, char *, size_t, int &, int &) const;
-	BOOL domainname_to_essdn(const char *, char *, size_t, int &) const;
+	BOOL username_to_essdn(const char *, char *, size_t, unsigned int &, unsigned int &) const;
+	BOOL domainname_to_essdn(const char *, char *, size_t, unsigned int &) const;
 	static bool advertise_prot(enum adv_setting, const char *ua);
-	static std::string get_deploymentid(int, const char *);
+	static std::string get_deploymentid(unsigned int, const char *);
 	static void get_hex_string(const char *, char *);
 };
 
@@ -314,7 +314,7 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 
 	if (m_validate_scndrequest && strcasecmp(email, auth_info.username) != 0 &&
 	    strncasecmp(email, public_folder_email, 19) != 0) {
-		int auth_user_id = 0, auth_domain_id = 0;
+		unsigned int auth_user_id = 0, auth_domain_id = 0;
 		mysql.get_user_ids(auth_info.username, &auth_user_id, &auth_domain_id, nullptr);
 		std::vector<sql_user> hints;
 		auto err = mysql.scndstore_hints(auth_user_id, hints);
@@ -638,7 +638,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		homesrv = host_id.c_str();
 
 	std::string DisplayName, LegacyDN, DeploymentId;
-	int user_id = 0, domain_id = 0;
+	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
 		if (!mysql.get_user_displayname(email, buf.get(), 4096))
 			return -1;
@@ -962,7 +962,7 @@ std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 }
 
 BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
-    size_t dnmax, int &user_id, int &domain_id) const
+    size_t dnmax, unsigned int &user_id, unsigned int &domain_id) const
 {
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
@@ -984,10 +984,10 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
 }
 
 BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
-    size_t dnmax, int &domain_id) const
+    size_t dnmax, unsigned int &domain_id) const
 {
 	char hex_string[16];
-	int org_id = 0;
+	unsigned int org_id = 0;
 
 	mysql.get_domain_ids(domainname, &domain_id, &org_id);
 	encode_hex_int(domain_id, hex_string);
@@ -997,7 +997,7 @@ BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
 	return TRUE;
 }
 
-std::string OxdiscoPlugin::get_deploymentid(const int id,
+std::string OxdiscoPlugin::get_deploymentid(unsigned int id,
     const char *hex_string)
 {
 	char temp_hex[16];

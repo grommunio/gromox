@@ -117,7 +117,6 @@ BOOL common_util_essdn_to_username(const char *pessdn,
     char *username, size_t ulen)
 {
 	char *pat;
-	int user_id;
 	const char *plocal;
 	char tmp_essdn[1024];
 	
@@ -130,7 +129,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	if (pessdn[tmp_len+16] != '-')
 		return FALSE;
 	plocal = pessdn + tmp_len + 17;
-	user_id = decode_hex_int(pessdn + tmp_len + 8);
+	unsigned int user_id = decode_hex_int(&pessdn[tmp_len+8]);
 	if (!common_util_get_username_from_id(user_id, username, ulen))
 		return FALSE;
 	pat = strchr(username, '@');
@@ -3869,7 +3868,6 @@ BINARY* common_util_to_private_folder_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id)
 {
-	int user_id;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
@@ -3878,6 +3876,7 @@ BINARY* common_util_to_private_folder_entryid(
 	if (pbin == nullptr)
 		return nullptr;
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
+	unsigned int user_id = 0;
 	if (!common_util_get_id_from_username(username, &user_id))
 		return nullptr;
 	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
@@ -3900,7 +3899,6 @@ BINARY* common_util_to_private_message_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id, uint64_t message_id)
 {
-	int user_id;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
@@ -3909,6 +3907,7 @@ BINARY* common_util_to_private_message_entryid(
 	if (pbin == nullptr)
 		return nullptr;
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
+	unsigned int user_id = 0;
 	if (!common_util_get_id_from_username(username, &user_id))
 		return nullptr;
 	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);

@@ -515,7 +515,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	char temp_buff[1024];
 	
 	if (pbase->base_id > 0) {
-		std::vector<int> temp_file;
+		std::vector<unsigned int> temp_file;
 		if (!system_services_get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {

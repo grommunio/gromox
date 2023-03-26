@@ -324,8 +324,6 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
-	int user_id;
-	int domain_id;
 	char *pdomain;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
@@ -338,6 +336,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	}
 	*pdomain = '\0';
 	pdomain ++;
+	unsigned int user_id = 0, domain_id = 0;
 	if (!system_services_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
@@ -807,8 +806,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 static BOOL common_util_username_to_entryid(const char *username,
     const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
-	int user_id;
-	int domain_id;
+	unsigned int user_id = 0, domain_id = 0;
 	char *pdomain;
 	char x500dn[1024];
 	EXT_PUSH ext_push;

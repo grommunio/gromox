@@ -9,9 +9,9 @@ using namespace gromox;
 bool (*system_services_get_user_lang)(const char *, char *, size_t);
 bool (*system_services_get_timezone)(const char *, char *, size_t);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
-BOOL (*system_services_get_id_from_username)(const char*, int*);
+BOOL (*system_services_get_id_from_username)(const char *, unsigned int *);
 decltype(system_services_get_id_from_maildir) system_services_get_id_from_maildir;
-BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum display_type *);
+BOOL (*system_services_get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
 void (*system_services_broadcast_event)(const char*);
 
 int system_services_run()

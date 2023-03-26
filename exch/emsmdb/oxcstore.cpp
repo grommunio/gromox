@@ -19,7 +19,6 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     GUID *replguid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
     uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
-	int user_id;
 	enum logon_mode logon_mode;
 	struct tm *ptm;
 	time_t cur_time;
@@ -43,6 +42,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	}
 	if (!common_util_essdn_to_username(pessdn, username, GX_ARRAY_SIZE(username)))
 		return ecUnknownUser;
+	unsigned int user_id = 0;
 	if (!common_util_get_id_from_username(username, &user_id))
 		return ecUnknownUser;
 	if (0 != strcasecmp(username, rpc_info.username)) {
@@ -140,11 +140,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
     uint16_t *replid, GUID *replguid, GUID *pper_user_guid,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
-	int org_id;
-	int org_id1;
 	void *pvalue;
-	int domain_id;
-	int domain_id1;
 	char homedir[256];
 	GUID mailbox_guid;
 	const char *pdomain;
@@ -160,6 +156,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecUnknownUser;
 	}
 	pdomain ++;
+	unsigned int domain_id = 0, org_id = 0;
 	if (!common_util_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecUnknownUser;
 	if (NULL != pessdn) {
@@ -168,6 +165,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 			if (0 == org_id) {
 				return ecLoginFailure;
 			}
+			unsigned int domain_id1 = 0, org_id1 = 0;
 			if (!common_util_get_domain_ids(pdomain1, &domain_id1, &org_id1))
 				return ecError;
 			if (org_id != org_id1) {

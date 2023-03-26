@@ -101,7 +101,7 @@ enum ReqIndex : size_t
 
 static constexpr int AVERAGE_SESSION_PER_CONTEXT = 10;
 
-static BOOL (*get_id_from_username)(const char *, int *);
+static BOOL (*get_id_from_username)(const char *, unsigned int *);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -378,7 +378,7 @@ static BOOL nsp_preproc(int context_id)
 
 uint32_t MhNspContext::getaddressbookurl(char* dest)
 {
-	int user_id;
+	unsigned int user_id = 0;
 	char username1[UADDR_SIZE], hex_string[32];
 
 	if (dest == nullptr)
