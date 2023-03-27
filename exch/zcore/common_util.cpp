@@ -1401,7 +1401,7 @@ BOOL common_util_send_message(store_object *pstore,
 		auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
 		           pstore->get_account(), rcpt_list);
 		if (ret != ecSuccess) {
-			mlog(LV_ERR, "E-1194: cu_send_mail: %xh\n", ret);
+			mlog(LV_ERR, "E-1194: cu_send_mail: %s", mapi_strerror(ret));
 			return FALSE;
 		}
 	}
