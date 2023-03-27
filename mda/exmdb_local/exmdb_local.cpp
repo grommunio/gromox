@@ -624,7 +624,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
-		g_lda_twostep = pfile->get_ll("lda_twostep_ruleproc");
+		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));
 
 		net_failure_init(times, interval, alarm_interval);
 		bounce_audit_init(response_capacity, response_interval);
