@@ -36,6 +36,7 @@
 
 using namespace gromox;
 
+static bool g_lda_twostep;
 static char g_org_name[256];
 static thread_local ALLOC_CONTEXT *g_alloc_key;
 static thread_local const char *g_storedir;
@@ -428,11 +429,14 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	pmsg->proplist.erase(PidTagChangeNumber);
 	uint64_t folder_id, message_id = 0;
 	uint32_t r32 = 0;
+	unsigned int flags = DELIVERY_DO_RULES | DELIVERY_DO_NOTIF;
+	if (g_lda_twostep)
+		flags = 0;
 	if (!exmdb_client_remote::deliver_message(home_dir,
-	    pcontext->pcontrol->from, address, CP_ACP,
-	    DELIVERY_DO_RULES | DELIVERY_DO_NOTIF,
+	    pcontext->pcontrol->from, address, CP_ACP, flags,
 	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
 		return DELIVERY_OPERATION_ERROR;
+
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	if (dm_status == deliver_message_result::result_ok) {
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
@@ -457,9 +461,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		    strcmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
 			auto_response_reply(home_dir, address, pcontext->pcontrol->from);
-		if (b_bounce_delivered)
-			return DELIVERY_OPERATION_DELIVERED;
-		return DELIVERY_OPERATION_OK;
+		break;
 	case deliver_message_result::result_error:
 		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"error result returned when delivering "
@@ -473,8 +475,20 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		exmdb_local_log_info(pcontext, address,
 			LV_NOTICE, "user's mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return DELIVERY_MAILBOX_FULL;
+	default:
+		return DELIVERY_OPERATION_FAILURE;
 	}
-	return DELIVERY_OPERATION_FAILURE;
+
+	if (!g_lda_twostep) {
+		if (b_bounce_delivered)
+			return DELIVERY_OPERATION_DELIVERED;
+		return DELIVERY_OPERATION_OK;
+	}
+	auto err = exmdb_local_rules_execute(home_dir, pcontext->pcontrol->from,
+	           address, folder_id, message_id);
+	if (err != ecSuccess)
+		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s\n", mapi_strerror(err));
+	return DELIVERY_OPERATION_OK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1472: ENOMEM");
 	return DELIVERY_OPERATION_FAILURE;
@@ -609,6 +623,8 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		}
 		HX_unit_seconds(temp_buff, arsizeof(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
+
+		g_lda_twostep = pfile->get_ll("lda_twostep_ruleproc");
 
 		net_failure_init(times, interval, alarm_interval);
 		bounce_audit_init(response_capacity, response_interval);

@@ -30,6 +30,13 @@ Default: \fI10\fP
 \fBinterval_for_failure_statistic\fP
 Default: \fI1hour\fP
 .TP
+\fBlda_twostep_ruleproc\fP
+If set to \fI1\fP, an alternate rule processor codebase will be used which
+supports cross-store moves and OOF condition but (at this time) no delegation,
+or autoreply.
+.br
+Default: \fI0\fP
+.TP
 \fBresponse_audit_capacity\fP
 Default: \fI1000\fP
 .TP
