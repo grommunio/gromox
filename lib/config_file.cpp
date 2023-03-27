@@ -377,13 +377,8 @@ unsigned long long CONFIG_FILE::get_ll(const char *key) const
 {
 	auto sv = get_value(key);
 	if (sv == nullptr) {
-		mlog(LV_ERR, "*** config key \"%s\" has no default and was not set either", key);
-		/*
-		 * Programming error; get_ll is meant to be only used with
-		 * CONFIG_FILE objects that were initialized from a
-		 * cfg_directive array (e.g. config_file_initd).
-		 */
-		throw cfg_error();
+		mlog(LV_ERR, "*** config key \"%s\" has no default and was not set either; yielding 0", key);
+		return 0;
 	}
 	return strtoull(sv, nullptr, 0);
 }
