@@ -806,7 +806,7 @@ struct exreq_allocate_ids : public exreq {
 };
 
 struct exreq_subscribe_notification : public exreq {
-	uint16_t notificaton_type;
+	uint16_t notification_type;
 	BOOL b_whole;
 	uint64_t folder_id;
 	uint64_t message_id;

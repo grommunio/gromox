@@ -116,7 +116,7 @@ EXMIDL(read_message, (const char *dir, const char *username, cpid_t cpid, uint64
 EXMIDL(get_content_sync, (const char *dir, uint64_t folder_id, const char *username, const IDSET *pgiven, const IDSET *pseen, const IDSET *pseen_fai, const IDSET *pread, cpid_t cpid, const RESTRICTION *prestriction, BOOL b_ordered, IDLOUT uint32_t *fai_count, uint64_t *fai_total, uint32_t *normal_count, uint64_t *normal_total, EID_ARRAY *updated_mids, EID_ARRAY *chg_mids, uint64_t *last_cn, EID_ARRAY *given_mids, EID_ARRAY *deleted_mids, EID_ARRAY *nolonger_mids, EID_ARRAY *read_mids, EID_ARRAY *unread_mids, uint64_t *last_readcn))
 EXMIDL(get_hierarchy_sync, (const char *dir, uint64_t folder_id, const char *username, const IDSET *pgiven, const IDSET *pseen, IDLOUT FOLDER_CHANGES *fldchgs, uint64_t *last_cn, EID_ARRAY *given_fids, EID_ARRAY *deleted_fids))
 EXMIDL(allocate_ids, (const char *dir, uint32_t count, IDLOUT uint64_t *begin_eid))
-EXMIDL(subscribe_notification, (const char *dir, uint16_t notificaton_type, BOOL b_whole, uint64_t folder_id, uint64_t message_id, IDLOUT uint32_t *sub_id))
+EXMIDL(subscribe_notification, (const char *dir, uint16_t notification_type, BOOL b_whole, uint64_t folder_id, uint64_t message_id, IDLOUT uint32_t *sub_id))
 EXMIDL(unsubscribe_notification, (const char *dir, uint32_t sub_id))
 EXMIDL(transport_new_mail, (const char *dir, uint64_t folder_id, uint64_t message_id, uint32_t message_flags, const char *pstr_class))
 EXMIDL(check_contact_address, (const char *dir, const char *paddress, IDLOUT BOOL *b_found))

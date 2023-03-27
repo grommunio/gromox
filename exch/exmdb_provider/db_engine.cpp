@@ -551,7 +551,7 @@ static std::optional<ID_ARRAYS> db_engine_classify_id_array(db_item_ptr &pdb,
 {
 	std::vector<ID_NODE> tmp_list;
 	for (const auto &sub : pdb->nsub_list) {
-		if (!(sub.notificaton_type & bits))
+		if (!(sub.notification_type & bits))
 			continue;
 		if (sub.b_whole || (sub.folder_id == folder_id &&
 		    sub.message_id == message_id))
@@ -3682,10 +3682,10 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	for (const auto &sub : pdb->nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTCOPIED))
+			if (!(pnsub->notification_type & NOTIFICATION_TYPE_OBJECTCOPIED))
 				continue;
 		} else {
-			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTMOVED))
+			if (!(pnsub->notification_type & NOTIFICATION_TYPE_OBJECTMOVED))
 				continue;
 		}
 		if (pnsub->b_whole || (pnsub->folder_id == old_fid &&
@@ -3739,10 +3739,10 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	for (const auto &sub : pdb->nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
-			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTCOPIED))
+			if (!(pnsub->notification_type & NOTIFICATION_TYPE_OBJECTCOPIED))
 				continue;
 		} else {
-			if (!(pnsub->notificaton_type & NOTIFICATION_TYPE_OBJECTMOVED))
+			if (!(pnsub->notification_type & NOTIFICATION_TYPE_OBJECTMOVED))
 				continue;
 		}
 		if (pnsub->b_whole ||

@@ -2124,7 +2124,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_allocate_ids &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_subscribe_notification &d)
 {
-	TRY(x.g_uint16(&d.notificaton_type));
+	TRY(x.g_uint16(&d.notification_type));
 	TRY(x.g_bool(&d.b_whole));
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
@@ -2132,7 +2132,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_subscribe_notification &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_subscribe_notification &d)
 {
-	TRY(x.p_uint16(d.notificaton_type));
+	TRY(x.p_uint16(d.notification_type));
 	TRY(x.p_bool(d.b_whole));
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_uint64(d.message_id);

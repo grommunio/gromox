@@ -59,7 +59,7 @@ struct TABLE_NODE {
 struct nsub_node {
 	char *remote_id = nullptr;
 	uint32_t sub_id = 0;
-	uint8_t notificaton_type = 0;
+	uint8_t notification_type = 0;
 	BOOL b_whole = false;
 	uint64_t folder_id = 0, message_id = 0;
 };

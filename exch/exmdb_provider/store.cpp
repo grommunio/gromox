@@ -319,7 +319,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 }
 
 BOOL exmdb_server::subscribe_notification(const char *dir,
-   uint16_t notificaton_type, BOOL b_whole, uint64_t folder_id,
+   uint16_t notification_type, BOOL b_whole, uint64_t folder_id,
    uint64_t message_id, uint32_t *psub_id) try
 {
 	uint16_t replid;
@@ -339,7 +339,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 		if (pnsub->remote_id == nullptr)
 			return FALSE;
 	}
-	pnsub->notificaton_type = notificaton_type;
+	pnsub->notification_type = notification_type;
 	pnsub->b_whole = b_whole;
 	if (0 == folder_id) {
 		pnsub->folder_id = 0;
