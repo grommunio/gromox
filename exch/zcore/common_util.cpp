@@ -83,7 +83,6 @@ static int g_mime_num;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40];
 static char g_org_name[256];
-static char g_hostname[UDOM_SIZE];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
@@ -391,14 +390,12 @@ BOOL common_util_exmdb_locinfo_from_string(
 	return TRUE;
 }
 
-void common_util_init(const char *org_name, const char *hostname,
-	const char *default_charset, int mime_num,
+void common_util_init(const char *org_name, const char *default_charset, int mime_num,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
     unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *freebusy_path, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
-	gx_strlcpy(g_hostname, hostname, GX_ARRAY_SIZE(g_hostname));
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
 	g_mime_num = mime_num;
 	g_max_rcpt = max_rcpt;
@@ -425,11 +422,6 @@ int common_util_run(const char *data_path)
 		return -2;
 	}
 	return 0;
-}
-
-const char* common_util_get_hostname()
-{
-	return g_hostname;
 }
 
 const char* common_util_get_freebusy_path()
