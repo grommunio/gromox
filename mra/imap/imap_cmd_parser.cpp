@@ -30,6 +30,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mem_file.hpp>
+#include <gromox/midb.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -3386,6 +3387,7 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int 
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)
 		return ret & DISPATCH_ACTMASK;
+	bool trycreate = code == MIDB_E_NO_FOLDER;
 	size_t len = 0;
 	auto estr = (ret & DISPATCH_MIDB) ? resource_get_error_string(code) : nullptr;
 	if (ret & DISPATCH_MIDB)
@@ -3394,7 +3396,8 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int 
 	char buff[1024];
 	const char *tag = (ret & DISPATCH_TAG) ? tag_or_bug(ctx->tag_string) :
 	                  argc == 0 ? "*" : tag_or_bug(argv[0]);
-	len = gx_snprintf(buff, arsizeof(buff), "%s %s%s", tag, str, znul(estr));
+	len = gx_snprintf(buff, std::size(buff), "%s%s %s%s", tag,
+	      trycreate ? " [TRYCREATE]" : "", str, znul(estr));
 	imap_parser_safe_write(ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
 }
