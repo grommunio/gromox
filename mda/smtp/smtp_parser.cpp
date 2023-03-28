@@ -591,26 +591,15 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 	return ret & DISPATCH_ACTMASK;
 }
 
-envelope_info::envelope_info(alloc_limiter<file_block> *b)
-{
-	strcpy(parsed_domain, "unknown");
-	mem_file_init(&f_rcpt_to, b);
-}
-
-envelope_info::~envelope_info()
-{
-	mem_file_free(&f_rcpt_to);
-}
-
 void envelope_info::clear()
 {
 	from[0] = '\0';
 	strcpy(parsed_domain, "unknown");
-	f_rcpt_to.clear();
+	rcpt_to.clear();
 }
 
 smtp_context::smtp_context() :
-	stream(&g_blocks_allocator), menv(&g_files_allocator)
+	stream(&g_blocks_allocator)
 {}
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
@@ -657,30 +646,25 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
     const char *format, ...) try
 {
 	std::unique_ptr<char[], stdlib_delete> line_buf;
-	size_t i;
 	va_list ap;
 
 	va_start(ap, format);
 	vasprintf(&unique_tie(line_buf), format, ap);
 	va_end(ap);
 	
-	pcontext->menv.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	char rcpt[UADDR_SIZE];
 	std::string all_rcpts;
-	static constexpr size_t limit = 3;
-	for (i = 0; i < limit; ++i) {
-		auto size_read = pcontext->menv.f_rcpt_to.readline(rcpt, arsizeof(rcpt));
-		if (size_read == MEM_END_OF_FILE) {
+	static constexpr unsigned int limit = 3;
+	unsigned int counter = limit;
+	auto nrcpt = pcontext->menv.rcpt_to.size();
+	for (const auto &rcpt : pcontext->menv.rcpt_to) {
+		if (counter-- == 0)
 			break;
-		}
 		if (all_rcpts.size() > 0)
 			all_rcpts += ' ';
 		all_rcpts += rcpt;
 	}
-	while (pcontext->menv.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
-		++i;
-	if (i > limit)
-		all_rcpts += " + " + std::to_string(i - limit) + " others";
+	if (nrcpt > limit)
+		all_rcpts += " + " + std::to_string(nrcpt - limit) + " others";
 	mlog(level, "remote=[%s] from=<%s> to={%s} %s",
 		pcontext->connection.client_ip,
 		pcontext->menv.from, all_rcpts.c_str(), line_buf.get());

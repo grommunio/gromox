@@ -181,7 +181,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
 }
 
 int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
-    SMTP_CONTEXT *pcontext)
+    SMTP_CONTEXT *pcontext) try
 {
 	size_t string_length = 0;
     const char*smtp_reply_str, *smtp_reply_str2;
@@ -242,13 +242,13 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 			return DISPATCH_CONTINUE;
 		}
 	}
-	pcontext->last_cmd = T_RCPT_CMD;
-	/* everything is OK */
 	snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
 		email_addr.domain);
-	pcontext->menv.f_rcpt_to.writeline(buff);
-	/* 250 OK */
-	return 205;
+	pcontext->menv.rcpt_to.push_back(buff);
+	pcontext->last_cmd = T_RCPT_CMD;
+	return 205; /* 250 OK */
+} catch (const std::bad_alloc &) {
+	return 416; /* ENOMEM */
 }
 
 int smtp_cmd_handler_data(const char* cmd_line, int line_length,

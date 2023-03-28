@@ -356,13 +356,9 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	if (fwrite(pentity->penvelope->from, 1, utmp_len, fp) != utmp_len)
 		goto REMOVE_MESS;
 	/* write envelope rcpts */
-	pentity->penvelope->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while ((utmp_len = pentity->penvelope->f_rcpt_to.readline(tmp_buff, 256)) != MEM_END_OF_FILE) {
-		tmp_buff[utmp_len] = 0;
-		++utmp_len;
-		if (fwrite(tmp_buff, 1, utmp_len, fp) != utmp_len)
+	for (const auto &rcpt : pentity->penvelope->rcpt_to)
+		if (fwrite(rcpt.c_str(), 1, rcpt.size() + 1, fp) != rcpt.size() + 1)
 			goto REMOVE_MESS;
-	}
 	/* last null character for indicating end of rcpt to array */
 	*tmp_buff = 0;
 	fwrite(tmp_buff, 1, 1, fp);

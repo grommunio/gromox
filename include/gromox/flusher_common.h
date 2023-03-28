@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
+#include <string>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/generic_connection.hpp>
-#include <gromox/mem_file.hpp>
-#include <gromox/util.hpp>
 
 enum {
 	FLUSH_WHOLE_MAIL = 0,
@@ -25,16 +25,16 @@ enum {
 
 struct STREAM;
 
+/**
+ * @parsed_domain:	parsed domain according to connection
+ */
 struct envelope_info {
-	envelope_info(alloc_limiter<file_block> *);
-	NOMOVE(envelope_info);
-	~envelope_info();
 	void clear();
 
-	char parsed_domain[UDOM_SIZE]{}; /* parsed domain according connection*/
+	char parsed_domain[UDOM_SIZE]{"unknown"};
 	char hello_domain[UDOM_SIZE]{}; /* domain name after helo */
 	char from[UADDR_SIZE]{}; /* envelope's from message */
-	MEM_FILE f_rcpt_to{}; /* envelope's rcpt to message */
+	std::vector<std::string> rcpt_to; /* envelope's rcpt to message */
 };
 
 struct FLUSH_INFO {
