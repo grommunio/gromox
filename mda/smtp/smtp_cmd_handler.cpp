@@ -229,7 +229,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 		}
 		if ('\0' != path[0] && NULL != system_services_check_full &&
 		    !system_services_check_full(path)) {
-			/* 550 Mailbox <email_addr> is full */
+			/* 452 Mailbox <email_addr> is full */
 			smtp_reply_str = resource_get_smtp_code(517, 1, &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(517, 2, &string_length);
 			string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
