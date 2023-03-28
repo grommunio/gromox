@@ -23,6 +23,7 @@
 #include <sys/ipc.h>
 #include <sys/mman.h>
 #include <sys/msg.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -284,12 +285,20 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
         cur_time = time(NULL);
         strftime(time_buff, 128,"%a, %d %b %Y %H:%M:%S %z",
 			localtime_r(&cur_time, &tm_buff));
+		int af_type = 0;
+		socklen_t af_len = sizeof(af_type);
+		if (getsockopt(pentity->pconnection->sockd, SOL_SOCKET,
+		    SO_DOMAIN, &af_type, &af_len) != 0 || af_len != sizeof(af_type))
+			af_type = 0;
 		tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
-		          "(helo %s)(%s@%s)\r\n\tby %s with %s; %s\r\n",
-		          pentity->pconnection->client_ip, pentity->penvelope->parsed_domain,
-		          pentity->penvelope->hello_domain, pentity->penvelope->parsed_domain,
+		          "(%s [%s%s])\r\n\tby %s with %s%s;\r\n\t%s\r\n",
+		          pentity->pconnection->client_ip,
+		          pentity->penvelope->hello_domain,
+		          pentity->penvelope->parsed_domain,
+		          af_type == AF_INET6 ? "IPv6:" : "",
 		          pentity->pconnection->client_ip, get_host_ID(),
 		          pentity->command_protocol == HT_LMTP ? "LMTP" : "SMTP",
+		          pentity->pconnection->ssl != nullptr ? "S" : "", /* RFC 3848 */
 		          time_buff);
 		write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 		if (write_len != static_cast<size_t>(tmp_len))
