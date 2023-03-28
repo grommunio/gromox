@@ -251,7 +251,10 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			memcpy(reply_buf, smtp_reply_str, string_length);
 			string_length += sprintf(reply_buf + string_length, 
 							" queue-id: %d\r\n", pcontext->flusher.flush_ID);
-			pcontext->connection.write(reply_buf, string_length);
+			auto nreply = pcontext->command_protocol == HT_SMTP ? 1U :
+			              pcontext->menv.rcpt_to.size();
+			for (size_t i = 0; i < nreply; ++i)
+				pcontext->connection.write(reply_buf, string_length);
 			smtp_parser_log_info(pcontext, LV_NOTICE, "return OK, queue-id:%d",
 							pcontext->flusher.flush_ID);
 			smtp_parser_reset_context_session(pcontext);
@@ -261,25 +264,24 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				goto CMD_PROCESS;
 			}
 			return PROCESS_CONTINUE;
-		} else {
-			pcontext->stream.clear();
-			size = STREAM_BLOCK_SIZE;
-			pbuff = static_cast<char *>(pcontext->stream.get_write_buf(reinterpret_cast<unsigned int *>(&size)));
-			/* 
-			 * do not need to check the pbuff pointer because it will never
-			 * be NULL because of stream's characteristic
-			 */
-			
-			/* 
-			 when state is parsing block content, check if need to rewrite
-			 the part of boundary string into the clear stream
-			 */
-				memcpy(pbuff, pcontext->last_bytes, 4);
-				pcontext->stream.fwd_write_ptr(4);
-				pcontext->pre_rstlen = 4;
-			pcontext->flusher.flush_result = FLUSH_NONE;
-			/* let the context continue to be processed */
 		}
+
+		pcontext->stream.clear();
+		size = STREAM_BLOCK_SIZE;
+		pbuff = static_cast<char *>(pcontext->stream.get_write_buf(reinterpret_cast<unsigned int *>(&size)));
+		/*
+		 * do not need to check the pbuff pointer because it will never
+		 * be NULL because of stream's characteristic
+		 */
+		/*
+		 when state is parsing block content, check if need to rewrite
+		 the part of boundary string into the clear stream
+		 */
+		memcpy(pbuff, pcontext->last_bytes, 4);
+		pcontext->stream.fwd_write_ptr(4);
+		pcontext->pre_rstlen = 4;
+		pcontext->flusher.flush_result = FLUSH_NONE;
+		/* let the context continue to be processed */
 	} else if (FLUSH_TEMP_FAIL == pcontext->flusher.flush_result) {
 		/* 451 Temporary internal failure - queue message failed */
 		auto smtp_reply_str = resource_get_smtp_code(414, 1, &string_length);

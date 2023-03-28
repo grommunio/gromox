@@ -259,6 +259,11 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 
     if (T_RCPT_CMD != pcontext->last_cmd) {
         /* 503 bad sequence of command, RCPT first */
+		/*
+		 * Since @last_cmd means "last successful command", and RCPT
+		 * with unresovlable addresses is considered a failed command,
+		 * we happen to fulfill RFC 2033 §4.2 requirements here.
+		 */
 		return 509;
     }    
 	if (!smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext))
