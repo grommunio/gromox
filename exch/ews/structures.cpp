@@ -423,10 +423,70 @@ tCalendarItem::tCalendarItem(const TPROPVAL_ARRAY& propvals, const sNamedPropert
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
-
+#define pval(type) static_cast<const type*>(tp->pvalue)
 tContact::tContact(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
-{}
-
+{
+	PhoneNumbers.emplace().reserve(9); // currently available phone properties
+	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+	{
+		switch(tp->proptag)
+		{
+		// TODO FileAs
+		case PR_DISPLAY_NAME:
+			DisplayName = pval(char); break;
+		case PR_GIVEN_NAME:
+			GivenName = pval(char); break;
+		// TODO Initials
+		case PR_MIDDLE_NAME:
+			MiddleName = pval(char); break;
+		case PR_NICKNAME:
+			Nickname = pval(char); break;
+		case PR_COMPANY_NAME:
+			CompanyName = pval(char); break;
+		// TODO ContactSource
+		case PR_ASSISTANT:
+			AssistantName = pval(char); break;
+		case PR_DEPARTMENT_NAME:
+			Department = pval(char); break;
+		case PR_TITLE:
+			JobTitle = pval(char); break;
+		case PR_OFFICE_LOCATION:
+			OfficeLocation = pval(char); break;
+		case PR_SURNAME:
+			Surname = pval(char); break;
+		case PR_BUSINESS_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessPhone));
+			break;
+		case PR_HOME_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::HomePhone));
+			break;
+		case PR_PRIMARY_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::PrimaryPhone));
+			break;
+		case PR_BUSINESS2_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessPhone2));
+			break;
+		case PR_MOBILE_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::MobilePhone));
+			break;
+		case PR_PAGER_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::Pager));
+			break;
+		case PR_PRIMARY_FAX_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessFax));
+			break;
+		case PR_ASSISTANT_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::AssistantPhone));
+			break;
+		case PR_HOME2_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::HomePhone2));
+			break;
+		default:
+			break;
+		}
+	}
+}
+#undef pval
 ///////////////////////////////////////////////////////////////////////////////
 
 tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
@@ -516,6 +576,20 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		EmailAddress = data;
 	if((data = tps.get<const char>(PR_ADDRTYPE)))
 		RoutingType = data;
+}
+
+tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(std::string email,
+	Enum::EmailAddressKeyType eakt)
+{
+	Entry = email;
+	Key = eakt;
+}
+
+tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
+	Enum::PhoneNumberKeyType pnkt)
+{
+	Entry = phone;
+	Key = pnkt;
 }
 
 /**
@@ -846,6 +920,7 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			continue;
 		switch(tp->proptag)
 		{
+		//tMessage
 		case PidTagChangeNumber:
 		case PR_CONVERSATION_INDEX:
 		case PR_CONVERSATION_TOPIC:
@@ -866,6 +941,26 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 		case PR_SENT_REPRESENTING_ADDRTYPE:
 		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
 		case PR_SENT_REPRESENTING_NAME:
+		//tContact
+		case PR_DISPLAY_NAME:
+		case PR_GIVEN_NAME:
+		case PR_MIDDLE_NAME:
+		case PR_NICKNAME:
+		case PR_COMPANY_NAME:
+		case PR_ASSISTANT:
+		case PR_DEPARTMENT_NAME:
+		case PR_TITLE:
+		case PR_OFFICE_LOCATION:
+		case PR_SURNAME:
+		case PR_BUSINESS_TELEPHONE_NUMBER:
+		case PR_HOME_TELEPHONE_NUMBER:
+		case PR_PRIMARY_TELEPHONE_NUMBER:
+		case PR_BUSINESS2_TELEPHONE_NUMBER:
+		case PR_MOBILE_TELEPHONE_NUMBER:
+		case PR_PAGER_TELEPHONE_NUMBER:
+		case PR_PRIMARY_FAX_NUMBER:
+		case PR_ASSISTANT_TELEPHONE_NUMBER:
+		case PR_HOME2_TELEPHONE_NUMBER:
 			continue;
 		case PR_ASSOCIATED:
 			IsAssociated.emplace(*pval(uint8_t)); break;

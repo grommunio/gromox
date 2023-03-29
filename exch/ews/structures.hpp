@@ -33,6 +33,7 @@ struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
 struct tDistinguishedFolderId;
+struct tFindResponsePagingAttributes;
 struct tFolderId;
 struct tFolderType;
 struct tItem;
@@ -369,6 +370,39 @@ struct tEmailAddressType : public NS_EWS_Types
 };
 
 /**
+ * Types.xsd:5359
+ */
+struct tEmailAddressDictionaryEntry
+{
+	static constexpr char NAME[] = "t:Entry";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	explicit tEmailAddressDictionaryEntry(std::string, Enum::EmailAddressKeyType);
+
+	std::string Entry;
+	Enum::EmailAddressKeyType Key; //Attribute
+	std::optional<std::string> Name; //Attribute
+	std::optional<std::string> RoutingType; //Attribute
+	std::optional<Enum::MailboxTypeType> MailboxType; //Attribute
+};
+
+/**
+ * Types.xsd
+ */
+struct tPhoneNumberDictionaryEntry
+{
+	static constexpr char NAME[] = "t:Entry";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	explicit tPhoneNumberDictionaryEntry(std::string, Enum::PhoneNumberKeyType);
+
+	std::string Entry;
+	Enum::PhoneNumberKeyType Key; //Attribute
+};
+
+/**
  * Types.xsd:1862
  */
 struct tFolderId : public tBaseItemId
@@ -641,7 +675,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> DisplayBcc;
 	std::optional<bool> HasAttachments;
 	std::vector<tExtendedProperty> ExtendedProperty;
-	//<xs:element name="Culture" type="xs:language" minOccurs="0"/>
+	std::optional<std::string> Culture;
 	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0" />
 	std::optional<std::string> LastModifiedName;
 	std::optional<gromox::time_point> LastModifiedTime;
@@ -711,6 +745,92 @@ struct tContact : public tItem
 	tContact(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
 
 	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<std::string> FileAs;
+	// <xs:element name="FileAsMapping" type="t:FileAsMappingType" minOccurs="0" />
+	std::optional<std::string> DisplayName;
+	std::optional<std::string> GivenName;
+	std::optional<std::string> Initials;
+	std::optional<std::string> MiddleName;
+	std::optional<std::string> Nickname;
+	// <xs:element name="CompleteName" type="t:CompleteNameType" minOccurs="0" />
+	std::optional<std::string> CompanyName;
+	std::optional<std::vector<tEmailAddressDictionaryEntry>> EmailAddresses;
+	// <xs:element name="AbchEmailAddresses" type="t:AbchEmailAddressDictionaryType" minOccurs="0" />
+	// <xs:element name="PhysicalAddresses" type="t:PhysicalAddressDictionaryType" minOccurs="0" />
+	std::optional<std::vector<tPhoneNumberDictionaryEntry>> PhoneNumbers;
+	std::optional<std::string> AssistantName;
+	// <xs:element name="Birthday" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="BusinessHomePage" type="xs:anyURI" minOccurs="0" />
+	// <xs:element name="Children" type="t:ArrayOfStringsType" minOccurs="0" />
+	// <xs:element name="Companies" type="t:ArrayOfStringsType" minOccurs="0" />
+	std::optional<Enum::ContactSourceType> ContactSource;
+	std::optional<std::string> Department;
+	// <xs:element name="Generation" type="xs:string" minOccurs="0" />
+	// <xs:element name="ImAddresses" type="t:ImAddressDictionaryType" minOccurs="0" />
+	std::optional<std::string> JobTitle;
+	// <xs:element name="Manager" type="xs:string" minOccurs="0" />
+	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
+	std::optional<std::string> OfficeLocation;
+	// <xs:element name="PostalAddressIndex" type="t:PhysicalAddressIndexType" minOccurs="0" />
+	// <xs:element name="Profession" type="xs:string" minOccurs="0" />
+	// <xs:element name="SpouseName" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Surname;
+	// <xs:element name="WeddingAnniversary" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="HasPicture" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="PhoneticFullName" type="xs:string" minOccurs="0" />
+	// <xs:element name="PhoneticFirstName" type="xs:string" minOccurs="0" />
+	// <xs:element name="PhoneticLastName" type="xs:string" minOccurs="0" />
+	// <xs:element name="Alias" type="xs:string" minOccurs="0" />
+	// <xs:element name="Notes" type="xs:string" minOccurs="0" />
+	// <xs:element name="Photo" type="xs:base64Binary" minOccurs="0" />
+	// <xs:element name="UserSMIMECertificate" type="t:ArrayOfBinaryType" minOccurs="0" />
+	// <xs:element name="MSExchangeCertificate" type="t:ArrayOfBinaryType" minOccurs="0" />
+	// <xs:element name="DirectoryId" type="xs:string" minOccurs="0" />
+	// <xs:element name="ManagerMailbox" type="t:SingleRecipientType" minOccurs="0" />
+	// <xs:element name="DirectReports" type="t:ArrayOfRecipientsType" minOccurs="0" />
+	// <xs:element name="AccountName" type="xs:string" minOccurs="0" />
+	// <xs:element name="IsAutoUpdateDisabled" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsMessengerEnabled" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="Comment" type="xs:string" minOccurs="0" />
+	// <xs:element name="ContactShortId" type="xs:int" minOccurs="0" />
+	// <xs:element name="ContactType" type="xs:string" minOccurs="0" />
+	// <xs:element name="Gender" type="xs:string" minOccurs="0" />
+	// <xs:element name="IsHidden" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="ObjectId" type="xs:string" minOccurs="0" />
+	// <xs:element name="PassportId" type="xs:long" minOccurs="0" />
+	// <xs:element name="IsPrivate" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="SourceId" type="xs:string" minOccurs="0" />
+	// <xs:element name="TrustLevel" type="xs:int" minOccurs="0" />
+	// <xs:element name="CreatedBy" type="xs:string" minOccurs="0" />
+	// <xs:element name="Urls" type="t:ContactUrlDictionaryType" minOccurs="0" />
+	// <xs:element name="Cid" type="xs:long" minOccurs="0" />
+	// <xs:element name="SkypeAuthCertificate" type="xs:string" minOccurs="0" />
+	// <xs:element name="SkypeContext" type="xs:string" minOccurs="0" />
+	// <xs:element name="SkypeId" type="xs:string" minOccurs="0" />
+	// <xs:element name="SkypeRelationship" type="xs:string" minOccurs="0" />
+	// <xs:element name="YomiNickname" type="xs:string" minOccurs="0" />
+	// <xs:element name="XboxLiveTag" type="xs:string" minOccurs="0" />
+	// <xs:element name="InviteFree" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="HidePresenceAndProfile" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsPendingOutbound" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="SupportGroupFeeds" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="UserTileHash" type="xs:string" minOccurs="0" />
+	// <xs:element name="UnifiedInbox" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="Mris" type="t:ArrayOfStringsType" minOccurs="0" />
+	// <xs:element name="Wlid" type="xs:string" minOccurs="0" />
+	// <xs:element name="AbchContactId" type="t:GuidType" minOccurs="0" />
+	// <xs:element name="NotInBirthdayCalendar" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="ShellContactType" type="xs:string" minOccurs="0" />
+	// <xs:element name="ImMri" type="xs:string" minOccurs="0" />
+	// <xs:element name="PresenceTrustLevel" type="xs:int" minOccurs="0" />
+	// <xs:element name="OtherMri" type="xs:string" minOccurs="0" />
+	// <xs:element name="ProfileLastChanged" type="xs:string" minOccurs="0" />
+	// <xs:element name="MobileIMEnabled" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="PartnerNetworkProfilePhotoUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="PartnerNetworkThumbnailPhotoUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="PersonId" type="xs:string" minOccurs="0" />
+	// <xs:element name="ConversationGuid" type="t:GuidType" minOccurs="0" />
 };
 
 /**
@@ -1155,6 +1275,34 @@ struct tUserOofSettings
 	//<xs:element minOccurs="0" maxOccurs="1" name="EventsToDeleteIDs" type="t:ArrayOfEventIDType" />
 };
 
+/**
+ * Types.xsd:1947
+ */
+struct tFindResponsePagingAttributes
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<int> IndexedPagingOffset;
+	std::optional<int> NumeratorOffset;
+	std::optional<int> AbsoluteDenominator;
+	std::optional<bool> IncludesLastItemInRange;
+	std::optional<int> TotalItemsInView;
+};
+
+/**
+ * Types.xsd:4264
+ */
+struct tResolution : public tFindResponsePagingAttributes
+{
+	static constexpr char NAME[] = "Resolution";
+
+	tResolution() = default;
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tEmailAddressType Mailbox;
+	std::optional<tContact> Contact;
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -1495,6 +1643,40 @@ struct mGetItemResponseMessage : mResponseMessageType
 struct mGetItemResponse
 {
 	std::vector<mGetItemResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1676
+ */
+struct mResolveNamesRequest
+{
+	explicit mResolveNamesRequest(const tinyxml2::XMLElement*);
+
+	std::optional<std::vector<std::variant<tFolderId, tDistinguishedFolderId>>> ParentFolderIds;
+	std::string UnresolvedEntry;
+
+	std::optional<bool> ReturnFullContactData; //Attribute
+	std::optional<Enum::ResolveNamesSearchScopeType> SearchScope; //Attribute
+	std::optional<Enum::DefaultShapeNamesType> ContactDataShape; //Attribute
+};
+
+struct mResolveNamesResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "ResolveNamesResponseMessage";
+
+	std::optional<std::vector<tResolution>> ResolutionSet;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1694
+ */
+struct mResolveNamesResponse
+{
+	std::vector<mResolveNamesResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
