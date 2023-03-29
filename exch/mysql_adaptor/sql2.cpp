@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -8,6 +9,7 @@
 #include <errmsg.h>
 #include <map>
 #include <mysql.h>
+#include <set>
 #include <string>
 #include <typeinfo>
 #include <utility>
@@ -493,6 +495,50 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 	return false;
 }
 
+bool mysql_adaptor_get_user_props(const char *username, sql_user &sql_user) try
+{
+	char temp_name[UADDR_SIZE*2];
+	mysql_adaptor_encode_squote(username, temp_name);
+
+	sql_user.dtypx = DT_MAILUSER;
+	sql_user.username = username;
+
+	auto conn = g_sqlconn_pool.get_wait();
+
+	auto qstr =
+		"SELECT u.username, a.aliasname FROM users AS u "
+		"INNER JOIN aliases AS a ON u.username=a.mainname "
+		"WHERE u.username='"s + temp_name + "' LIMIT 3";
+	aliasmap_t amap;
+	aliasmap_load(*conn, qstr.c_str(), amap);
+	sql_user.aliases = aliasmap_extract(amap, username);
+
+	qstr =
+		"SELECT u.id, p.proptag, p.propval_bin, p.propval_str "
+		"FROM users AS u "
+		"INNER JOIN user_properties AS p ON u.id=p.user_id "
+		"WHERE u.username='"s + temp_name + "'";
+	propmap_t pmap;
+	propmap_load(*conn, qstr.c_str(), pmap);
+	conn.finish();
+
+	// check that there are only one user's properties
+	std::set<int> ids;
+	std::transform(pmap.begin(), pmap.end(),
+	  std::inserter(ids, ids.end()),
+	  [](auto pair){ return pair.first; });
+	if (ids.size() != 1)
+		return false;
+
+	sql_user.id = *ids.begin();
+	sql_user.propvals = propmap_extract(pmap, sql_user.id);
+
+	return true;
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", __func__, e.what());
+	return false;
+}
+
 static BOOL svc_mysql_adaptor(int reason, void **data)
 {
 	if (reason == PLUGIN_FREE) {
@@ -555,6 +601,7 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(check_user, "check_user");
 	E(get_mlist_memb, "get_mlist_memb");
 	E(get_user_info, "get_user_info");
+	E(get_user_props, "get_user_props");
 	E(scndstore_hints, "scndstore_hints");
 	E(domain_list_query, "domain_list_query");
 	E(homeserver, "get_homeserver");
