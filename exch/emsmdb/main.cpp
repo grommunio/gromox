@@ -19,7 +19,6 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include "bounce_producer.hpp"
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "emsmdb_ndr.h"
@@ -191,8 +190,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		rop_processor_init(average_handles, ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
-		if (bounce_gen_init(separator, get_data_path(),
-		    "notify_bounce") != 0) {
+		if (bounce_gen_init(separator, get_config_path(),
+		    get_data_path(), "notify_bounce") != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run bounce producer");
 			return FALSE;
 		}

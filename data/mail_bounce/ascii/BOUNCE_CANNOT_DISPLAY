@@ -1,6 +1,6 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, user doesn't exist!
-From: "Mail Daemon"<postmaster@system>
+From: %(postmaster)
 
 Hi,
   Your message to "%(rcpt)" can not be displayed to the user.

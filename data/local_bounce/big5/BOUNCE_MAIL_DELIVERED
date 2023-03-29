@@ -1,6 +1,6 @@
 Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?6YO15Lu25bey5oiQ5Yqf5Yiw6YGU6YO1566x?=
-From: "=?utf-8?b?57O757Wx5oqV6YGe5ZOh?="<postmaster@system>
+From: %(postmaster)
 
 您好：
   您發送到“%(rcpt)”的郵件已成功到達！

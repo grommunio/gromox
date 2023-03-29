@@ -1,6 +1,6 @@
 Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?5oqV6YCS5aSx6LSl77yM5rKh5pyJ6Laz5aSf55qE5p2D6ZmQ?=
-From: "=?utf-8?b?57O757uf5oqV6YCS5ZGY?="<postmaster@system>
+From: %(postmaster)
 
 您好：
   很抱歉通知您，您没有足够的权限向“%(rcpt)”这个邮件列表发送邮件，

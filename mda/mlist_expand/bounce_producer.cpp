@@ -36,8 +36,8 @@ int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 
-int mlex_bounce_init(const char *separator, const char *data_path,
-    const char *bounce_grp)
+int mlex_bounce_init(const char *separator, const char *cfg_path,
+    const char *data_path, const char *bounce_grp)
 {
 #define E(f, s) do { \
 	query_service2(s, f); \
@@ -51,7 +51,8 @@ int mlex_bounce_init(const char *separator, const char *data_path,
 	E(bounce_producer_get_lang, "get_user_lang");
 	E(bounce_producer_get_timezone, "get_timezone");
 #undef E
-	return bounce_gen_init(separator, data_path, bounce_grp) == 0 ? 0 : -1;
+	return bounce_gen_init(separator, cfg_path,
+	       data_path, bounce_grp) == 0 ? 0 : -1;
 }
 
 /*
@@ -122,7 +123,8 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	if (HXformat_add(fa, "time", date_buff, HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpt", rcpt_to, HXTYPE_STRING) < 0 ||
-	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0)
+	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
 	auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)

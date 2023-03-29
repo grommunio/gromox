@@ -93,7 +93,8 @@ static bool bounce_producer_make_content(buff_t gul, buff_t gutz,
 	    HXformat_add(fa, "user", username, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpts",
 	    bounce_gen_rcpts(*pbrief->children.prcpts).c_str(),
-	    HXTYPE_STRING | immed) < 0)
+	    HXTYPE_STRING | immed) < 0 ||
+	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
 	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
 	if (HXformat_add(fa, "subject", subj != nullptr ? subj : "",

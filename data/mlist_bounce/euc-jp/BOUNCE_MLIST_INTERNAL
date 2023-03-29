@@ -1,6 +1,6 @@
 Content-Type: text/plain; charset=utf-8
 Subject: =?utf-8?b?6YCB5L+h5qip6ZmQ44GM44Gq44GE44Gf44KB44CB44Oh44O844Or6YCB5L+h5aSx5pWX?=
-From: "=?utf-8?b?44K344K544OG44Og?="<postmaster@system>
+From: %(postmaster)
 
 お知らせ：
   メールリストにあるメンバーではない場合、"%(rcpt)"のメールリストへの

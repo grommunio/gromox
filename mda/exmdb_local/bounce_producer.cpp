@@ -89,7 +89,8 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	if (HXformat_add(fa, "time", date_buff, HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
 	    HXformat_add(fa, "rcpt", rcpt_to, HXTYPE_STRING) < 0 ||
-	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0)
+	    HXformat_add(fa, "rcpts", rcpt_to, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
 	auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)

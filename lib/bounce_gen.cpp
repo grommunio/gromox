@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 #include <dirent.h>
 #include <map>
+#include <netdb.h>
 #include <string>
 #include <libHX/io.h>
+#include <libHX/option.h>
 #include <gromox/bounce_gen.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapitags.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 namespace gromox {
 
 using template_map = std::map<std::string, bounce_template>;
-static std::string g_bounce_sep;
+static std::string g_bounce_sep, g_bounce_postmaster;
 static std::map<std::string, template_map> g_resource_list;
 
 static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplist)
@@ -69,10 +73,46 @@ static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplis
 	return 0;
 }
 
-errno_t bounce_gen_init(const char *sep, const char *datadir,
+static constexpr cfg_directive bounce_gen_dflt[] = {
+	{"bounce_postmaster", "postmaster@"},
+	CFG_TABLE_END,
+};
+
+errno_t bounce_gen_init(const char *sep, const char *cfgdir, const char *datadir,
     const char *bounce_grp) try
 {
 	g_bounce_sep = sep != nullptr ? sep : "";
+
+	auto cfg = config_file_initd("gromox.cfg", cfgdir, bounce_gen_dflt);
+	if (cfg == nullptr) {
+		mlog(LV_ERR, "exmdb_provider: config_file_initd master.cfg: %s",
+		       strerror(errno));
+		return EIO;
+	}
+	auto str = cfg->get_value("bounce_postmaster");
+	if (strchr(str, '@') == nullptr) {
+		mlog(LV_ERR, "master.cfg: \"bounce_postmaster\" directive has bogus value: no @ character");
+		return EINVAL;
+	}
+	g_bounce_postmaster = str;
+	if (str[strlen(str)-1] == '@') {
+		char buf[UDOM_SIZE];
+		if (gethostname(buf, std::size(buf)) != 0) {
+			mlog(LV_ERR, "gethostname: %s", strerror(errno));
+			return EINVAL;
+		}
+		static constexpr struct addrinfo hints = {AI_CANONNAME};
+		struct addrinfo *aires = nullptr;
+		auto err = getaddrinfo(buf, nullptr, &hints, &aires);
+		if (err != 0) {
+			mlog(LV_ERR, "getaddrinfo %s: %s", buf, gai_strerror(err));
+			return EINVAL;
+		}
+		auto cl_0 = make_scope_exit([&]() { freeaddrinfo(aires); });
+		g_bounce_postmaster += aires->ai_canonname;
+		mlog(LV_INFO, "bounce_gen: postmaster set to <%s>", g_bounce_postmaster.c_str());
+	}
+
 	auto di = opendir_sd(bounce_grp, datadir);
 	if (di.m_dir == nullptr) {
 		mlog(LV_ERR, "bounce_producer: opendir_sd(%s) %s: %s",
@@ -112,6 +152,8 @@ const std::string &bounce_gen_sep()
 {
 	return g_bounce_sep;
 }
+
+const char *bounce_gen_postmaster() { return g_bounce_postmaster.c_str(); }
 
 std::string bounce_gen_rcpts(const tarray_set &rcpts)
 {

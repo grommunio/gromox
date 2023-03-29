@@ -1,6 +1,6 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, mail system error!
-From: "Mail Daemon"<postmaster@system>
+From: %(postmaster)
 
 Hi,
   I am sorry to tell you that some error occurs in our mail system,

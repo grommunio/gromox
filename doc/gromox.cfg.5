@@ -1,0 +1,27 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
+.TH gromox.cfg 5 "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox.cfg \(em Central configuration file for Gromox services
+.SH Description
+The common configuration file utilized by all services. Historically, each
+service had separate configuration files, but the number of directives that
+needed explicit configuration were reduced over time to the point that there
+were too many distinct files for little value, and so, gromox.cfg came to be.
+.SH Configuration directives
+.TP
+\fBbounce_postmaster\fP
+This directive defines the Envelope-From and From addresses for
+system-generated bounce messages such as Non-Delivery-Reports (autoresponse
+messages about e.g. mailbox being full, or a target email address being
+invalid). RFC-5321-5322-consuming components like SMTP, IMAP and EAS want to
+have an SMTP-looking address in this field. Preferably, it should point to the
+administrator's mailbox (or an alias thereto).
+.br
+When the value set here has no domain part and ends in just '@', the domain is
+taken from a re-resolution of the system hostname. (At minimum, the FQDN to the
+system hostname should be in /etc/hosts.)
+.br
+Default: \fIpostmaster@\fP
+.SH See also
+\fBgromox\fP(7)

@@ -299,7 +299,7 @@ man_MANS = \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
-	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8 \
+	doc/freebusy.8gx doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
 	doc/gromox-abktpull.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \

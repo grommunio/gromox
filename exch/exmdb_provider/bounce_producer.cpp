@@ -117,7 +117,8 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	if (HXformat_add(fa, "time", date_buff,
 	    HXTYPE_STRING | immed) < 0 ||
 	    HXformat_add(fa, "from", from, HXTYPE_STRING) < 0 ||
-	    HXformat_add(fa, "rcpt", rcpt, HXTYPE_STRING) < 0)
+	    HXformat_add(fa, "rcpt", rcpt, HXTYPE_STRING) < 0 ||
+	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
 	    PR_SUBJECT, &pvalue))

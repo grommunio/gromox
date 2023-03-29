@@ -15,9 +15,10 @@ struct bounce_template {
 	size_t ctlen = 0, body_start = 0;
 };
 
-extern GX_EXPORT gromox::errno_t bounce_gen_init(const char *sep, const char *data_path, const char *bounce_class);
+extern GX_EXPORT gromox::errno_t bounce_gen_init(const char *sep, const char *cfgdir, const char *datadir, const char *bounce_class);
 extern GX_EXPORT const bounce_template *bounce_gen_lookup(const char *cset, const char *tname);
 extern GX_EXPORT const std::string &bounce_gen_sep();
+extern GX_EXPORT const char *bounce_gen_postmaster();
 
 extern GX_EXPORT std::string bounce_gen_rcpts(const tarray_set &);
 extern GX_EXPORT std::string bounce_gen_attachs(const ATTACHMENT_LIST &);
