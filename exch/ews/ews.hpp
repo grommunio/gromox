@@ -61,6 +61,7 @@ public:
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
 		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
+		decltype(mysql_adaptor_get_user_props) *get_user_props;
 	} mysql; ///< mysql adaptor function pointers
 
 	struct _exmdb {
@@ -119,6 +120,7 @@ public:
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
+	bool getUserProps(const std::string, sql_user&) const;
 
 	void experimental() const;
 

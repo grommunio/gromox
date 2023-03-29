@@ -78,6 +78,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"ResolveNames", process<Structures::mResolveNamesRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
@@ -263,6 +264,7 @@ EWSPlugin::_mysql::_mysql()
 	getService(get_homedir);
 	getService(get_maildir);
 	getService(get_username_from_id);
+	getService(get_user_props);
 #undef getService
 }
 

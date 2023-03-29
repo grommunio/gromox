@@ -447,7 +447,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		throw DispatchError(E3030);
 	sShape requestedTags = ctx.collectTags(request.FolderShape);
 
-    mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
+	mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
 	msgChanges.reserve(changes.count+deleted_fids.count);
 	sFolderSpec subfolder = folder;
@@ -615,6 +615,62 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		auto mid = rop_util_make_eid_ex(1, eid.messageId());
 		msg.Items.emplace_back(ctx.loadItem(dir, mid, itemTags));
 	}
+
+	msg.success();
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process ResolveNames
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ *
+ * @todo consider attributes
+ */
+void process(mResolveNamesRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:ResolveNamesResponse");
+
+	mResolveNamesResponse data;
+	mResolveNamesResponseMessage& msg = data.ResponseMessages.emplace_back();
+	auto& resolutionSet = msg.ResolutionSet.emplace();
+
+	sql_user u;
+	if (!ctx.getUserProps(request.UnresolvedEntry, u))
+		throw DispatchError(E3067);
+
+	auto it = u.propvals.find(PR_DISPLAY_NAME);
+
+	tResolution resol;
+	resol.Mailbox.Name = it != u.propvals.end() ? it->second : request.UnresolvedEntry;
+	resol.Mailbox.EmailAddress = request.UnresolvedEntry;
+	resol.Mailbox.RoutingType = "SMTP";
+	resol.Mailbox.MailboxType = u.dtypx == DT_MAILUSER ? Enum::Mailbox : Enum::Unknown;
+
+	TPROPVAL_ARRAY* userProps = tpropval_array_init();
+	for (auto& propval : u.propvals)
+		userProps->set(propval.first, propval.second.c_str());
+
+	tContact cnt(*userProps);
+
+	if (u.aliases.size() > 0) {
+		cnt.EmailAddresses.emplace().reserve(u.aliases.size());
+		Enum::EmailAddressKeyType eakt = Enum::EmailAddress1;
+		for (auto alias : u.aliases) {
+			cnt.EmailAddresses->emplace_back(tEmailAddressDictionaryEntry(alias, eakt));
+			if (Enum::EmailAddress1 == eakt) eakt = Enum::EmailAddress2;
+			else if (Enum::EmailAddress2 == eakt) eakt = Enum::EmailAddress3;
+			else eakt = Enum::EmailAddress1;
+		}
+	}
+
+	resol.Contact.emplace(cnt);
+	resolutionSet.emplace_back(resol);
 
 	msg.success();
 

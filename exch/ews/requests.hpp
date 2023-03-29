@@ -22,6 +22,7 @@ EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
+EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);

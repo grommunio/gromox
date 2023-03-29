@@ -131,6 +131,7 @@ E(3063, "invalid GUID format");
 E(3064, "failed to convert sync state");
 E(3065, "failed to add changed mid");
 E(3066, "failed to set synced change numbers");
+E(3067, "failed to get user's properties");
 
 #undef E
 }

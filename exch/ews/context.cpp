@@ -482,4 +482,19 @@ void EWSContext::ext_error(pack_result code)
 	}
 }
 
+/**
+ * @brief     Resolves ambiguous email addresses and display names
+ *
+ * @param     code    ext_buffer return code
+ *
+ * @return    Property values
+ */
+bool EWSContext::getUserProps(const std::string unresolvedEntry, sql_user& u) const
+{
+	if(!plugin.mysql.get_user_props(unresolvedEntry.c_str(), u))
+			throw DispatchError(E3067);
+
+	return true;
+}
+
 }
