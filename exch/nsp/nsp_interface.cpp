@@ -604,7 +604,7 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 	*pcount = std::min(list.size(), static_cast<size_t>(UINT32_MAX));
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
-		row = *pcount * pstat->num_pos / pstat->total_rec;
+		row = *pcount * static_cast<double>(pstat->num_pos) / pstat->total_rec;
 		if (row > 0 && row >= *pcount)
 			row = *pcount - 1; /* v13 pg72 §3.1.4.5.2 point 5 */
 	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
@@ -637,7 +637,8 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 	*pcount = ab_tree_get_leaves_num(pnode);
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
-		row = std::min(*pcount, *pcount * pstat->num_pos / pstat->total_rec);
+		row = std::min(*pcount, static_cast<uint32_t>(*pcount *
+		      static_cast<double>(pstat->num_pos) / pstat->total_rec));
 	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
 		row = 0;
