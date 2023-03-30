@@ -138,7 +138,7 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 	auto handle = rop_processor_add_object_handle(plogmap, logon_id, -1,
 	              {ems_objtype::logon, std::move(plogon)});
 	if (handle < 0)
-		return -3;
+		return handle;
 	std::lock_guard hl_hold(g_hash_lock);
 	auto pref = g_logon_hash.find(rlogon->get_dir());
 	if (pref != g_logon_hash.end())
@@ -148,7 +148,7 @@ int32_t rop_processor_create_logon_item(LOGMAP *plogmap,
 	return handle;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1974: ENOMEM");
-	return -1;
+	return -ENOMEM;
 }
 
 static bool object_dep(ems_objtype p, ems_objtype c)
@@ -181,35 +181,58 @@ static bool object_dep(ems_objtype p, ems_objtype c)
 	       c == ems_objtype::logon;
 }
 
+ec_error_t aoh_to_error(int x)
+{
+	switch (x) {
+	case -EEXIST:
+	case -ESRCH:
+	case -EINVAL: return ecRpcInvalidHandle;
+	case -ENOMEM: return ecServerOOM;
+	default: return ecRpcFailed;
+	}
+}
+
 int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
     int32_t parent_handle, object_node &&in_object) try
 {
 	EMSMDB_INFO *pemsmdb_info;
-	
+
+	auto eiuser = znul(emsmdb_interface_get_username());
 	auto plogitem = plogmap->p[logon_id].get();
 	if (plogitem == nullptr)
-		return -1;
-	if (plogitem->phash.size() >= emsmdb_max_obh_per_session)
-		return -3;
+		return -EINVAL;
+	if (plogitem->phash.size() >= emsmdb_max_obh_per_session) {
+		auto root = plogitem->root.get();
+		auto lo = root != nullptr && root->type == ems_objtype::logon ?
+		          static_cast<logon_object *>(root->pobject) : nullptr;
+		mlog(LV_NOTICE, "emsmdb: max_obh_per_session %u reached by <%s> accessing <%s>",
+			emsmdb_max_obh_per_session, eiuser, znul(lo->account));
+		return -EMFILE;
+	}
 
 	std::shared_ptr<object_node> parent;
 	if (parent_handle < 0) {
-		if (plogitem->root != nullptr)
-			return -4;
+		if (plogitem->root != nullptr) {
+			mlog(LV_NOTICE, "emsmdb: attempted duplicate root object assignment by <%s>", eiuser);
+			return -EEXIST;
+		}
 	} else if (parent_handle >= 0 && parent_handle < INT32_MAX) {
 		auto i = plogitem->phash.find(parent_handle);
-		if (i == plogitem->phash.end())
-			return -5;
+		if (i == plogitem->phash.end()) {
+			mlog(LV_NOTICE, "emsmdb: attempted invalid child object assignment by <%s>", eiuser);
+			return -ESRCH;
+		}
 		parent = i->second;
 	} else {
-		return -6;
+		mlog(LV_NOTICE, "emsmdb: attempted use of invalid parent object handle by <%s>", eiuser);
+		return -EINVAL;
 	}
 	auto pobjnode = std::make_shared<object_node>(std::move(in_object));
 	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle))
-		return -8;
+		return -ENOMEM;
 	auto xp = plogitem->phash.emplace(pobjnode->handle, pobjnode);
 	if (!xp.second)
-		return -8;
+		return -ENOMEM;
 	if (parent == nullptr)
 		plogitem->root = pobjnode;
 	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
@@ -221,7 +244,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	return pobjnode->handle;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1975: ENOMEM");
-	return -1;
+	return -ENOMEM;
 }
 
 void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,

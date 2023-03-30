@@ -160,7 +160,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -248,7 +248,7 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -720,7 +720,7 @@ ec_error_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
 	           hin, {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -754,7 +754,7 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
 	           hin, {ems_objtype::attach, std::move(pattachment)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -876,7 +876,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		auto hnd = rop_processor_add_object_handle(plogmap,
 		           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 		if (hnd < 0)
-			return ecError;
+			return aoh_to_error(hnd);
 		*phout = hnd;
 		*phas_named_properties = 0;
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
@@ -939,7 +939,7 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -965,7 +965,7 @@ ec_error_t rop_getattachmenttable(uint8_t table_flags, LOGMAP *plogmap,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;

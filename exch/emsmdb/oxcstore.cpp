@@ -128,9 +128,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		return ecServerOOM;
 	/* create logon map and logon object */
 	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
-	if (handle < 0) {
-		return ecError;
-	}
+	if (handle < 0)
+		return aoh_to_error(handle);
 	*phout = handle;
 	return ecSuccess;
 }
@@ -211,9 +210,8 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecServerOOM;
 	/* create logon map and logon object */
 	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
-	if (handle < 0) {
-		return ecError;
-	}
+	if (handle < 0)
+		return aoh_to_error(handle);
 	*phout = handle;
 	return ecSuccess;
 }

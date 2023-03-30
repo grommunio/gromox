@@ -1005,7 +1005,7 @@ ec_error_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_siz
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::stream, std::move(pstream)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	*pstream_size = rstream->get_length();
 	return ecSuccess;

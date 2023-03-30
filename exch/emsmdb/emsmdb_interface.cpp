@@ -111,7 +111,7 @@ void emsmdb_report()
 	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID", "GUID", "USERNAME");
 	mlog(LV_INFO, "LOGON  %-32s  MBOXUSER", "MBOXGUID");
 	mlog(LV_INFO, "--------------------------------------------------------------------------------");
-	/* Sort display by CXR. */
+	/* Sort display by user, then CXR. */
 	for (const auto &e1 : g_user_hash) {
 	for (const auto hp : e1.second) {
 		auto &h = *hp;
@@ -722,6 +722,12 @@ int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc)
 {
 	/* do nothing */
+}
+
+const char *emsmdb_interface_get_username()
+{
+	auto h = g_handle_key;
+	return h != nullptr ? h->username : nullptr;
 }
 
 const GUID* emsmdb_interface_get_handle()

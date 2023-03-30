@@ -87,7 +87,7 @@ ec_error_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;

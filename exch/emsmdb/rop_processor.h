@@ -56,6 +56,7 @@ template<typename T> T *rop_proc_get_obj(LOGMAP *l, uint8_t id, uint32_t oh, ems
 }
 extern void rop_processor_release_object_handle(LOGMAP *, uint8_t logon_id, uint32_t obj_handle);
 extern logon_object *rop_processor_get_logon_object(LOGMAP *, uint8_t logon_id);
+extern ec_error_t aoh_to_error(int);
 
 extern unsigned int emsmdb_rop_chaining, emsmdb_max_cxh_per_user;
 extern unsigned int emsmdb_max_hoc;

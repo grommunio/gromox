@@ -110,7 +110,7 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::folder, std::move(pfolder)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	*ppghost = NULL;
 	return ecSuccess;
@@ -263,7 +263,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::folder, std::move(pfolder)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	*pfolder_id = folder_id;
 	*pis_existing = 0; /* just like exchange 2010 or later */
@@ -919,7 +919,7 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;
@@ -985,7 +985,7 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	if (table_flags & MAPI_DEFERRED_ERRORS)

@@ -278,7 +278,7 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastupctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -405,7 +405,7 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -469,7 +469,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -596,7 +596,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -729,7 +729,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -802,7 +802,7 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::icsdownctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -874,7 +874,7 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	auto hnd = rop_processor_add_object_handle(logmap, logon_id, hnd_in,
 	           {ems_objtype::message, std::move(msg)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*hnd_out = hnd;
 	return ecSuccess;
 }
@@ -1019,7 +1019,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -1656,7 +1656,7 @@ ec_error_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::icsupctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }
@@ -1690,7 +1690,7 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::fastdownctx, std::move(pctx)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	*phout = hnd;
 	return ecSuccess;
 }

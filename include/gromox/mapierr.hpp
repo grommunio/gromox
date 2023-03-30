@@ -265,7 +265,7 @@ enum ec_error_t {
 	// ecDuplicateDelivery = 0x00000A2B,
 	// ecConditionViolation = 0x00000A2C,
 	// ecMaxPoolExceeded = 0x00000A2D,
-	// ecRpcInvalidHandle = 0x00000A2E,
+	ecRpcInvalidHandle = 0x00000A2E,
 	// ecEventNotFound = 0x00000A2F,
 	// ecPropNotPromoted = 0x00000A30,
 	// ecLowMdbSpace = 0x00000A31,

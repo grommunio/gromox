@@ -99,7 +99,7 @@ ec_error_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::table, std::move(ptable)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	rtable->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;

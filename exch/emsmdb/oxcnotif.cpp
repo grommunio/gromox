@@ -40,7 +40,7 @@ ec_error_t rop_registernotification(uint8_t notification_types, uint8_t reserved
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::subscription, std::move(psub)});
 	if (hnd < 0)
-		return ecError;
+		return aoh_to_error(hnd);
 	rsub->set_handle(hnd);
 	*phout = hnd;
 	return ecSuccess;
