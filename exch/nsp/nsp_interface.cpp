@@ -2405,12 +2405,16 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 	return FALSE;
 }
 
-static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const gal_list_t &plist,
+static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const AB_BASE &base,
     cpid_t codepage, char *pstr, BOOL *pb_ambiguous)
 {
 	const SIMPLE_TREE_NODE *ptnode = nullptr;
 	
-	for (auto ptr : plist) {
+	for (const auto &pair : base.phash) {
+		NSAB_NODE *node = pair.second;
+		auto ptr = &node->stree;
+		if (ab_tree_hidden(ptr) & AB_HIDE_RESOLVE)
+			continue;
 		if (!nsp_interface_resolve_node(ptr, codepage, pstr))
 			continue;
 		if (NULL != ptnode) {
@@ -2519,7 +2523,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				ptoken ++;
 			else
 				ptoken = pstrs->ppstr[i];
-			auto pnode = nsp_interface_resolve_gal(pbase->gal_list,
+			auto pnode = nsp_interface_resolve_gal(*pbase,
 						pstat->codepage, ptoken, &b_ambiguous);
 			if (NULL == pnode) {
 				*pproptag = b_ambiguous ? MID_AMBIGUOUS : MID_UNRESOLVED;

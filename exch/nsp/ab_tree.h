@@ -45,7 +45,19 @@ struct domain_node {
 using DOMAIN_NODE = domain_node;
 
 using gal_list_t = std::vector<SIMPLE_TREE_NODE *>;
-struct NSAB_NODE;
+
+struct NSAB_NODE {
+	NSAB_NODE() = default;
+	~NSAB_NODE();
+	NOMOVE(NSAB_NODE);
+
+	SIMPLE_TREE_NODE stree{};
+	int id = 0;
+	uint32_t minid = 0;
+	void *d_info = nullptr;
+	gromox::abnode_type node_type = gromox::abnode_type::remote;
+};
+
 struct AB_BASE {
 	AB_BASE() = default;
 	NOMOVE(AB_BASE);

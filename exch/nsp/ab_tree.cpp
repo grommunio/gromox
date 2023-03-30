@@ -58,17 +58,6 @@
 
 using namespace gromox;
 
-struct NSAB_NODE {
-	NSAB_NODE() = default;
-	~NSAB_NODE();
-	NOMOVE(NSAB_NODE);
-
-	SIMPLE_TREE_NODE stree{};
-	int id = 0;
-	uint32_t minid = 0;
-	void *d_info = nullptr;
-	abnode_type node_type = abnode_type::remote;
-};
 using AB_NODE = NSAB_NODE;
 
 namespace {
