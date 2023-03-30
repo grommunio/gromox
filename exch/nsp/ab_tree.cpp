@@ -93,7 +93,6 @@ static char g_nsp_org_name[256];
  */
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
-static constexpr cpid_t CP_1252 = static_cast<cpid_t>(1252);
 
 static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
 static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
@@ -363,7 +362,7 @@ static BOOL ab_tree_load_class(
 				return false;
 			}
 		}
-		ab_tree_get_display_name(&pabnode->stree, CP_1252,
+		ab_tree_get_display_name(&pabnode->stree, CP_ACP,
 			temp_buff, arsizeof(temp_buff));
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
@@ -487,7 +486,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 				}
 			}
 			char temp_buff[1024];
-			ab_tree_get_display_name(&pabnode->stree, CP_1252,
+			ab_tree_get_display_name(&pabnode->stree, CP_ACP,
 				temp_buff, arsizeof(temp_buff));
 			try {
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
@@ -532,7 +531,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 		}
 		char temp_buff[1024];
-		ab_tree_get_display_name(&pabnode->stree, CP_1252,
+		ab_tree_get_display_name(&pabnode->stree, CP_ACP,
 			temp_buff, arsizeof(temp_buff));
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
@@ -596,7 +595,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		return TRUE;
 	std::vector<sort_item> parray;
 	for (auto ptr : pbase->gal_list) {
-		ab_tree_get_display_name(ptr, CP_1252,
+		ab_tree_get_display_name(ptr, CP_ACP,
 			temp_buff, std::size(temp_buff));
 		parray.push_back(sort_item{ptr, temp_buff});
 	}

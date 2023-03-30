@@ -1,4 +1,5 @@
 {
+/* First entry is also the default entry */
 "1252": {
 	"mlist": "address list",
 	"mlist0": "custom address list",
