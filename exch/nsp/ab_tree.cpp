@@ -132,8 +132,10 @@ uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
 	}
 	count = 0;
 	do {
-		if (ab_tree_get_node_type(pnode) < abnode_type::containers)
-			count ++;
+		if (ab_tree_get_node_type(pnode) >= abnode_type::containers ||
+		    ab_tree_hidden(pnode) & AB_HIDE_FROM_AL)
+			continue;
+		count++;
 	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return count;
 }
@@ -586,7 +588,9 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		}
 		simple_tree_enum_from_node(proot, [&pbase](tree_node *nd, unsigned int) {
 			auto node_type = ab_tree_get_node_type(nd);
-			if (node_type >= abnode_type::containers || nd->pdata != nullptr)
+			if (node_type >= abnode_type::containers ||
+			    nd->pdata != nullptr ||
+			    (ab_tree_hidden(nd) & AB_HIDE_FROM_GAL))
 				return;
 			pbase->gal_list.push_back(nd);
 		});

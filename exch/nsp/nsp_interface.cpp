@@ -649,7 +649,8 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 		row = 0;
 		pnode = pnode->get_child();
 		if (pnode != nullptr) do {
-			if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
+			if (ab_tree_get_node_type(pnode) >= abnode_type::containers ||
+			    (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL))
 				continue;
 			minid = ab_tree_get_node_minid(pnode);
 			if (0 != minid && minid == pstat->cur_rec) {
@@ -883,8 +884,6 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	if (0 == pstat->container_id) {
 		for (i = start_pos; i < pbase->gal_list.size() &&
 		     i < start_pos + tmp_count; ++i) {
-			if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_GAL)
-				continue;
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
@@ -900,15 +899,12 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		}
 	} else {
 		do {
-			if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
+			if (ab_tree_get_node_type(pnode1) >= abnode_type::containers ||
+			    (ab_tree_hidden(pnode1) & AB_HIDE_FROM_AL))
 				continue;
 			if (i >= start_pos + tmp_count)
 				break;
 			if (i < start_pos) {
-				++i;
-				continue;
-			}
-			if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_AL) {
 				++i;
 				continue;
 			}
@@ -1457,8 +1453,6 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		     (*ppoutmids)->cvalues <= requested &&
 		     i < pbase->gal_list.size(); ++i) {
 			auto ptr = pbase->gal_list[i];
-			if (ab_tree_hidden(ptr) & AB_HIDE_FROM_GAL)
-				continue;
 			if (nsp_interface_match_node(ptr, pstat->codepage, pfilter)) {
 				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
@@ -1487,12 +1481,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		size_t i = 0;
 		do {
+			if (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL)
+				continue;
 			if (i >= total || (*ppoutmids)->cvalues > requested) {
 				break;
 			} else if (i < start_pos) {
 				i++;
-				continue;
-			} else if (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL) {
 				continue;
 			}
 			if (nsp_interface_match_node(pnode,
