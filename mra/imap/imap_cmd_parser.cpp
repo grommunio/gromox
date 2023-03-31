@@ -122,8 +122,8 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 				seq.min = strtol(last_break, nullptr, 0);
 				if (!seq.has_min())
 					return false;
+				seq.max = seq.min;
 			}
-			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {
 				seq.min = strtol(last_colon + 1, nullptr, 0);
@@ -140,6 +140,8 @@ static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
 				if (!seq.has_max())
 					return FALSE;
 			}
+			if (seq.min > seq.max)
+				std::swap(seq.min, seq.max);
 			last_colon = nullptr;
 		}
 		last_break = string + i + 1;

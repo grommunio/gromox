@@ -1276,8 +1276,8 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 				seq.min = strtol(last_break, nullptr, 0);
 				if (!seq.has_min())
 					return NULL;
+				seq.max = seq.min;
 			}
-			seq.max = seq.min;
 		} else if (strcmp(last_break, "*") == 0) {
 			if (strcmp(last_colon + 1, "*") != 0) {
 				seq.min = strtol(last_colon + 1, nullptr, 0);
@@ -1294,6 +1294,8 @@ static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
 				if (!seq.has_max())
 					return NULL;
 			}
+			if (seq.min > seq.max)
+				std::swap(seq.min, seq.max);
 			last_colon = nullptr;
 		}
 		last_break = string + i + 1;
