@@ -215,7 +215,8 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 	mem_file_free(&temp_file2);
 
 	if (temp_file1.size() == 0) {
-		goto EXIT_EXPAND;
+		return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
+		       hook_result::stop : hook_result::xcontinue;
 	}
 
 	pcontext_expand =  get_context();
@@ -230,7 +231,8 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 				pcontext->pcontrol->f_rcpt_to.writeline(recip.c_str());
 			}
 		}
-		goto EXIT_EXPAND;
+		return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
+		       hook_result::stop : hook_result::xcontinue;
 	}
 
 	strcpy(pcontext_expand->pcontrol->from, pcontext->pcontrol->from);
@@ -248,8 +250,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 	}
 	pcontext->pmail->dup(pcontext_expand->pmail);
 	throw_context(pcontext_expand);
-
- EXIT_EXPAND:
 	return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
 	       hook_result::stop : hook_result::xcontinue;
 }
