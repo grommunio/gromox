@@ -37,9 +37,9 @@ static bool login_gen(const char *username, const char *password,
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
 	else if (am_choice == A_EXTERNID && mres.have_xid > 0)
-		auth = fptr_ldap_login(username, password, mres);
+		auth = fptr_ldap_login(mres.username.c_str(), password, mres);
 	else if (am_choice == A_EXTERNID)
-		auth = fptr_mysql_login(username, password,
+		auth = fptr_mysql_login(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
 	auth = auth && err == 0;
 	if (!auth && mres.errstr.empty())
