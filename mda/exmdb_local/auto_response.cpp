@@ -20,7 +20,7 @@
 using namespace gromox;
 
 void auto_response_reply(const char *user_home,
-	const char *from, const char *rcpt)
+    const char *from, const char *rcpt) try
 {
 	BOOL b_found;
 	char *pcontent;
@@ -186,7 +186,7 @@ void auto_response_reply(const char *user_home,
 	}
 	auto pdomain = strchr(from, '@') + 1;
 	sprintf(pcontext->pcontrol->from, "auto-reply@%s", pdomain);
-	pcontext->pcontrol->f_rcpt_to.writeline(rcpt);
+	pcontext->pcontrol->rcpt.emplace_back(rcpt);
 	auto pmime = pcontext->pmail->add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);
@@ -210,5 +210,6 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 	enqueue_context(pcontext);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1081: ENOMEM");
 }
-

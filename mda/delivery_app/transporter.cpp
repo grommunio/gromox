@@ -230,13 +230,11 @@ int transporter_run()
 	g_file_allocator = alloc_limiter<file_block>(FILENUM_PER_CONTROL * (g_free_num + g_threads_max),
 	                   "transporter_file_alloc", "delivery.cfg:threads_num,free_contexts");
 	for (unsigned int i = 0; i < g_threads_max; ++i) {
-		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, &g_file_allocator);
 		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
 		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
 		g_data_ptr[i].fake_context.context.pcontrol = &g_data_ptr[i].fake_context.mail_control;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
-		mem_file_init(&g_free_ptr[i].mail_control.f_rcpt_to, &g_file_allocator);
 		g_free_ptr[i].mail = MAIL(g_mime_pool);
 		g_free_ptr[i].context.pmail = &g_free_ptr[i].mail;
 		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;
@@ -400,7 +398,6 @@ static gromox::hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			std::unique_lock ct_hold(g_count_lock);
 			phook->count ++;
 			ct_hold.unlock();
-			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 			hook_result = phook->hook_addr(pcontext);
 			ct_hold.lock();
 			phook->count --;
@@ -414,14 +411,12 @@ static gromox::hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 		}
 	}
 	if (pthr_data->last_thrower != g_local_hook) {
-		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		pthr_data->last_hook = g_local_hook;
 		hook_result = g_local_hook(pcontext);
 		if (hook_result != hook_result::xcontinue)
 			return hook_result;
 	}
 	if (pthr_data->last_thrower != g_remote_hook) {
-		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		pthr_data->last_hook = g_remote_hook;
 		hook_result = g_remote_hook(pcontext);
 		if (hook_result != hook_result::xcontinue)
@@ -512,7 +507,7 @@ static void *dxp_thrwork(void *arg)
 			ptr = pmessage->envelope_rcpt;
 			while ((len = strlen(ptr)) != 0) {
 				len ++;
-				pcontext->pcontrol->f_rcpt_to.writeline(ptr);
+				pcontext->pcontrol->rcpt.emplace_back(ptr);
 				ptr += len;
 			}
 			b_self = FALSE;
@@ -533,7 +528,7 @@ static void *dxp_thrwork(void *arg)
 			}
 		}
 		if (!b_self) {
-			pcontext->pcontrol->f_rcpt_to.clear();
+			pcontext->pcontrol->rcpt.clear();
 			pcontext->pmail->clear();
 			if (pass_result == hook_result::proc_error)
 				message_dequeue_save(pmessage);
@@ -877,7 +872,7 @@ static MESSAGE_CONTEXT* transporter_get_context()
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 {
 	/* reset the context object */
-	pcontext->pcontrol->f_rcpt_to.clear();
+	pcontext->pcontrol->rcpt.clear();
 	pcontext->pcontrol->queue_ID = 0;
 	pcontext->pcontrol->is_spam = FALSE;
 	pcontext->pcontrol->bound_type = BOUND_UNKNOWN;
@@ -1080,10 +1075,9 @@ static bool transporter_register_remote(HOOK_FUNCTION func)
 }
 
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
-    const char *format, ...)
+    const char *format, ...) try
 {
-	char log_buf[2048], rcpt_buff[2048];
-	size_t size_read = 0, rcpt_len = 0, i;
+	char log_buf[2048];
 	va_list ap;
 
 	va_start(ap, format);
@@ -1091,34 +1085,37 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 
-	/* maximum record 8 rcpt to address */
-	pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	for (i=0; i<8; i++) {
-		size_read = pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff + rcpt_len, 256);
-		if (size_read == MEM_END_OF_FILE) {
+	std::string rcpt_buff;
+	static constexpr unsigned int limit = 3;
+	unsigned int counter = limit;
+	auto nrcpt = pcontext->pcontrol->rcpt.size();
+	for (const auto &rcpt : pcontext->pcontrol->rcpt) {
+		if (counter-- == 0)
 			break;
-		}
-		rcpt_len += size_read;
-		rcpt_buff[rcpt_len] = ' ';
-		rcpt_len ++;
+		if (rcpt_buff.size() > 0)
+			rcpt_buff += ' ';
+		rcpt_buff += rcpt;
 	}
-	rcpt_buff[rcpt_len] = '\0';
+	if (nrcpt > limit)
+		rcpt_buff += " + " + std::to_string(nrcpt - limit) + " others";
 
 	switch (pcontext->pcontrol->bound_type) {
 	case BOUND_UNKNOWN:
 		mlog(level, "UNKNOWN message FROM: %s, "
-			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff, log_buf);
+			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff.c_str(), log_buf);
 		break;
 	case BOUND_IN:
 	case BOUND_OUT:
 	case BOUND_RELAY:
 		mlog(level, "SMTP message queue-ID: %d, FROM: %s, "
 			"TO: %s %s", pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
-			rcpt_buff, log_buf);
+			rcpt_buff.c_str(), log_buf);
 		break;
 	default:
 		mlog(level, "APP created message FROM: %s, "
-			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff, log_buf);
+			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff.c_str(), log_buf);
 		break;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1080: ENOMEM");
 }

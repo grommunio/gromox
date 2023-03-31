@@ -387,8 +387,8 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
 				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
-				pcontext->pcontrol->f_rcpt_to.clear();
-				pcontext->pcontrol->f_rcpt_to.writeline(ptr);
+				pcontext->pcontrol->rcpt.clear();
+				pcontext->pcontrol->rcpt.emplace_back(ptr);
 				gx_strlcpy(temp_rcpt, ptr, arsizeof(temp_rcpt));
 
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
@@ -470,7 +470,7 @@ static void *mdl_thrwork(void *arg)
 				} else {
 					sprintf(pbounce_context->pcontrol->from,
 					        "postmaster@%s", get_default_domain());
-					pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+					pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 					enqueue_context(pbounce_context);
 				}
 			}

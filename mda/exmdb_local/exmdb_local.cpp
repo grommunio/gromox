@@ -24,7 +24,6 @@
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/mem_file.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
@@ -100,27 +99,27 @@ int exmdb_local_run() try
 	return -3;
 }
 
-hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
+hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 {
 	int cache_ID;
-	char *pdomain;
-	BOOL remote_found;
-	char rcpt_buff[256];
 	time_t current_time;
-	MEM_FILE remote_file;
 	MESSAGE_CONTEXT *pbounce_context;
 	
-	remote_found = FALSE;
 	if (BOUND_NOTLOCAL == pcontext->pcontrol->bound_type) {
 		return hook_result::xcontinue;
 	}
-	mem_file_init(&remote_file, pcontext->pcontrol->f_rcpt_to.allocator);
+
+	/*
+	 * For diagnostic purposes, don't modify/steal from ctrl->rcpt until
+	 * the replacement list is fully constructed.
+	 */
 	bool had_error = false;
-	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff,
-	       arsizeof(rcpt_buff)) != MEM_END_OF_FILE) {
-		pdomain = strchr(rcpt_buff, '@');
+	std::vector<std::string> new_rcpts;
+	for (const auto &rcpt : pcontext->pcontrol->rcpt) {
+		auto rcpt_buff = rcpt.c_str();
+		auto pdomain = strchr(rcpt_buff, '@');
 		if (NULL == pdomain) {
-			remote_file.writeline(rcpt_buff);
+			new_rcpts.emplace_back(rcpt);
 			continue;
 		}
 		pdomain ++;
@@ -128,8 +127,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 		if (lcldom < 0)
 			continue;
 		if (lcldom == 0) {
-			remote_found = TRUE;
-			remote_file.writeline(rcpt_buff);
+			new_rcpts.emplace_back(rcpt);
 			continue;
 		}
 		switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
@@ -160,7 +158,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_NO_USER:
@@ -187,7 +185,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_MAILBOX_FULL:
@@ -211,7 +209,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_ERROR:
@@ -239,7 +237,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_FAILURE:
@@ -258,17 +256,15 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			break;
 		}
 	}
-	if (had_error) {
-		mem_file_free(&remote_file);
+	if (had_error)
 		return hook_result::proc_error;
-	}
-	if (remote_found) {
-		remote_file.copy_to(pcontext->pcontrol->f_rcpt_to);
-		mem_file_free(&remote_file);
-		return hook_result::xcontinue;
-	}
-	mem_file_free(&remote_file);
-	return hook_result::stop;
+	if (new_rcpts.empty())
+		return hook_result::stop;
+	pcontext->pcontrol->rcpt = std::move(new_rcpts);
+	return hook_result::xcontinue;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1082: ENOMEM");
+	return hook_result::proc_error;
 }
 
 static void* exmdb_local_alloc(size_t size)

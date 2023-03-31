@@ -36,7 +36,7 @@ struct CONTROL_INFO {
 	int queue_ID = 0, bound_type = 0;
 	BOOL is_spam = false, need_bounce = false;
 	char from[UADDR_SIZE]{};
-	MEM_FILE f_rcpt_to{};
+	std::vector<std::string> rcpt;
 };
 
 struct MESSAGE_CONTEXT {
