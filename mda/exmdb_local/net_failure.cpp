@@ -189,8 +189,6 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
 	offset += sizeof(HTML_02) - 1;
 	pmime_child->write_content(tmp_buff, offset, mime_encoding::none);
-	pmime->set_field("Received", "from unknown (helo localhost) "
-		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	pmime->set_field("From", pcontext->pcontrol->from);
 	pmime->set_field("To", get_admin_mailbox());
 	strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",

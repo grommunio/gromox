@@ -155,8 +155,6 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
 	pmime->set_content_param("report-type", "delivery-status");
-	pmime->set_field("Received", "from unknown (helo localhost) "
-		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	str = bounce_gen_thrindex(*pmail_original);
 	if (!str.empty())
 		pmime->set_field("Thread-Index", str.c_str());

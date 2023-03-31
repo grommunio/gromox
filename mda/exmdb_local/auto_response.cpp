@@ -196,8 +196,6 @@ void auto_response_reply(const char *user_home,
 	if ('\0' != charset[0]) {
 		pmime->set_content_param("charset", charset);
 	}
-	pmime->set_field("Received", "from unknown (helo localhost) "
-		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	pmime->set_field("From", from);
 	pmime->set_field("To", rcpt);
 	pmime->set_field("MIME-Version", "1.0");
