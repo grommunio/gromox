@@ -1735,7 +1735,8 @@ bool ab_tree_resolvename(AB_BASE *pbase, cpid_t codepage, char *pstr,
 {
 	result_list.clear();
 	for (auto ptr : pbase->gal_list) {
-		if (!ab_tree_resolve_node(ptr, codepage, pstr))
+		if ((ab_tree_hidden(ptr) & AB_HIDE_RESOLVE) ||
+		    !ab_tree_resolve_node(ptr, codepage, pstr))
 			continue;
 		result_list.push_back(ptr);
 	}
