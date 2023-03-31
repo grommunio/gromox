@@ -18,6 +18,8 @@
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -33,6 +35,8 @@ gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
+static thread_local std::unique_ptr<alloc_context> g_alloc_mgr;
+static thread_local unsigned int g_amgr_refcount;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -96,6 +100,29 @@ static bool imap_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	mlog_init(cfg->get_value("imap_log_file"), cfg->get_ll("imap_log_level"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
 	return true;
+}
+
+void imrpc_build_env()
+{
+	if (g_alloc_mgr == nullptr)
+		g_alloc_mgr = std::make_unique<alloc_context>();
+	++g_amgr_refcount;
+}
+
+static void imrpc_build_env1(const remote_svr &)
+{
+	imrpc_build_env();
+}
+
+void imrpc_free_env()
+{
+	if (--g_amgr_refcount == 0)
+		g_alloc_mgr.reset();
+}
+
+static void *imrpc_alloc(size_t z)
+{
+	return g_alloc_mgr->alloc(z);
 }
 
 int main(int argc, const char **argv) try
@@ -320,6 +347,14 @@ int main(int argc, const char **argv) try
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {
 		printf("[system]: fail trigger accept\n");
+		return EXIT_FAILURE;
+	}
+	exmdb_rpc_alloc = imrpc_alloc;
+	exmdb_rpc_free = [](void *) {};
+	exmdb_client_init(1, 0);
+	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
+	    EXMDB_CLIENT_ASYNC_CONNECT, imrpc_build_env1, imrpc_free_env, nullptr) != 0) {
+		mlog(LV_ERR, "Failed to start exmdb_client");
 		return EXIT_FAILURE;
 	}
 	

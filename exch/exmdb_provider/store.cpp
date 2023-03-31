@@ -219,10 +219,10 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	 *
 	 * In Gromox, the FOLDEROWNER bit on IPM_SUBTREE is interpreted as
 	 * store ownership. This allows users to delegate full ownership by
-	 * themselves, but the implication is that someone else can also modify
+	 * themselves, but the implication is that someone else can also
 	 * modify folders outside of IPM_SUBTREE, e.g. search folders - which
-	 * may not be strictly desired. But then, don't give the mailbox away,
-	 * I guess?
+	 * may not be strictly desired. But then, just don't give out
+	 * such broad permission in the first place, I guess.
 	 */
 		if (fid == PRIVATE_FID_IPMSUBTREE && perm & frightsOwner)
 			*ppermission |= frightsGromoxStoreOwner;

@@ -195,6 +195,8 @@ extern const char *resource_get_error_string(unsigned int);
 
 extern int system_services_run();
 extern void system_services_stop();
+extern void imrpc_build_env();
+extern void imrpc_free_env();
 
 extern BOOL (*system_services_judge_ip)(const char *);
 extern BOOL (*system_services_container_add_ip)(const char *);

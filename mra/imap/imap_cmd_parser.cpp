@@ -22,6 +22,8 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
+#include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
@@ -38,6 +40,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+namespace exmdb_client = exmdb_client_remote;
 using LLU = unsigned long long;
 
 enum {
@@ -1366,6 +1369,20 @@ static inline const char *tag_or_bug(const char *s)
 	return *s != '\0' ? s : "BUG";
 }
 
+static bool store_owner_over(const char *actor, const char *mbox, const char *mboxdir)
+{
+	if (mbox == nullptr)
+		return true; /* No impersonation of another store */
+	if (strcmp(actor, mbox) == 0)
+		return true; /* Silly way of logging in to your own mailbox but ok */
+	uint32_t perms = 0;
+	imrpc_build_env();
+	auto ok = exmdb_client::get_mbox_perm(mboxdir, actor, &perms) &&
+	          perms & frightsGromoxStoreOwner;
+	imrpc_free_env();
+	return ok;
+}
+
 static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t temp_len;
@@ -1382,17 +1399,15 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
-	sql_meta_result mres;
-#ifdef OTHER_STORE_ACCESS
+	sql_meta_result mres_auth, mres /* target */;
 	auto target_mbox = strchr(pcontext->username, '!');
 	if (target_mbox != nullptr)
 		*target_mbox++ = '\0';
-#endif
 	if (!system_services_auth_login(pcontext->username, temp_password,
-	    USER_PRIVILEGE_IMAP, mres)) {
+	    USER_PRIVILEGE_IMAP, mres_auth)) {
 		safe_memset(temp_password, 0, std::size(temp_password));
 		imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s",
-			mres.errstr.c_str());
+			mres_auth.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times < g_max_auth_times)
 			return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
@@ -1402,15 +1417,21 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
-#ifdef OTHER_STORE_ACCESS
-	/*
-	 * imap needs to be an exmdb client (which it is not) to evaluate
-	 * permissions.
-	 */
-	if (target_mbox != nullptr &&
-	    system_services_auth_meta(target_mbox, 0, mres) != 0)
-		return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
-#endif
+	if (target_mbox != nullptr) {
+		if (system_services_auth_meta(target_mbox, 0, mres) != 0)
+			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
+		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
+		    mres.maildir.c_str())) {
+			imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s", mres.errstr.c_str());
+			++pcontext->auth_times;
+			if (pcontext->auth_times < g_max_auth_times)
+				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
+			if (system_services_add_user_into_temp_list != nullptr)
+				system_services_add_user_into_temp_list(pcontext->username,
+					g_block_auth_fail);
+			return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
+		}
+	}
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 	gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
