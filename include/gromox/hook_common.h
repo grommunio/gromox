@@ -3,7 +3,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
 #define SYS_THREAD_CREATE           2
 #define SYS_THREAD_DESTROY          3

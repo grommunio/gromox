@@ -7,7 +7,6 @@
 #include <gromox/defs.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/icase.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/util.hpp>
 #define NDR_STACK_IN				0
@@ -31,15 +30,13 @@ struct HPM_INTERFACE {
 };
 
 struct http_request {
-	http_request(alloc_limiter<file_block> *);
-	NOMOVE(http_request);
-	~http_request();
 	void clear();
 
 	char method[32]{}, version[8]{};
-	MEM_FILE f_request_uri{}, f_host{}, f_user_agent{}, f_accept{};
-	MEM_FILE f_accept_language{}, f_accept_encoding{}, f_content_type{};
-	MEM_FILE f_content_length{}, f_transfer_encoding{}, f_cookie{};
+	std::string f_request_uri, f_host, f_user_agent, f_accept;
+	std::string f_accept_language, f_accept_encoding, f_content_type;
+	std::string f_content_length, f_transfer_encoding;
+	std::string f_cookie;
 	using other_map = std::unordered_map<std::string, std::string, gromox::icasehash, gromox::icasecmp>;
 	other_map f_others;
 };

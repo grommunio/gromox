@@ -100,16 +100,6 @@ static BOOL hpm_processor_register_interface(
 static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_accept.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_accept_language.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_accept_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_content_type.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_cookie.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	return &phttp->request;
 }
 
@@ -327,9 +317,6 @@ void hpm_processor_stop()
 
 bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 {
-	int tmp_len;
-	BOOL b_chunked;
-	char tmp_buff[64];
 	uint64_t content_length;
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
@@ -337,7 +324,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		auto pplugin = &p;
 		if (!pplugin->interface.preproc(phttp->context_id))
 			continue;
-		tmp_len = phttp->request.f_content_length.get_total_length();
+		auto tmp_len = phttp->request.f_content_length.size();
 		if (0 == tmp_len) {
 			content_length = 0;
 		} else {
@@ -347,10 +334,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 					"content-length is too long for hpm_processor");
 				return FALSE;
 			}
-			phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-			phttp->request.f_content_length.read(tmp_buff, tmp_len);
-			tmp_buff[tmp_len] = '\0';
-			content_length = strtoull(tmp_buff, nullptr, 0);
+			content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
 		}
 		if (content_length > g_max_size) {
 			phpm_ctx->b_preproc = FALSE;
@@ -358,16 +342,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 				" is too long for hpm_processor");
 			return FALSE;
 		}
-		b_chunked = FALSE;
-		tmp_len = phttp->request.f_transfer_encoding.get_total_length();
-		if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
-			phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-			phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
-			tmp_buff[tmp_len] = '\0';
-			if (0 == strcasecmp(tmp_buff, "chunked")) {
-				b_chunked = TRUE;
-			}
-		}
+		auto b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 		if (b_chunked || content_length > g_cache_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {

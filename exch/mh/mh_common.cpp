@@ -18,8 +18,7 @@ MhContext::MhContext(int context_id) :
 
 bool MhContext::loadHeaders()
 {
-	orig.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_CUR);
-	orig.f_user_agent.read(user_agent, std::size(user_agent));
+	user_agent = orig.f_user_agent.c_str();
 	const auto &m = orig.f_others;
 	auto i = m.find("X-RequestId");
 	request_id = i != m.end() ? i->second.c_str() : "";

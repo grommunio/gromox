@@ -513,35 +513,27 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		0 != strcasecmp(phttp->request.method, "HEAD")) {
 		return FALSE;
 	}
-	auto tmp_len = phttp->request.f_content_length.get_total_length();
+	auto tmp_len = phttp->request.f_content_length.size();
 	if (0 != tmp_len) {
 		if (tmp_len >= 32) {
 			return FALSE;
 		}
-		phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_content_length.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-		if (strtoll(tmp_buff, nullptr, 0) != 0)
+		if (strtoll(phttp->request.f_content_length.c_str(), nullptr, 0) != 0)
 			return FALSE;
 	}
-	tmp_len = phttp->request.f_host.get_total_length();
+	tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_cache");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
-	} else {
-		phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_host.read(domain, tmp_len);
-		domain[tmp_len] = '\0';
-	}
+	gx_strlcpy(domain, tmp_len == 0 ? phttp->connection.server_ip :
+	           phttp->request.f_host.c_str(), std::size(domain));
 	ptoken = strchr(domain, ':');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
 	}
-	tmp_len = phttp->request.f_request_uri.get_total_length();
+	tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot"
 			" find request uri for mod_cache");
@@ -551,10 +543,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			"request uri is too long for mod_cache");
 		return FALSE;
 	}
-	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
-	tmp_buff[tmp_len] = '\0';
-	if (!parse_uri(tmp_buff, request_uri)) {
+	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 				" uri format error for mod_cache");
 		return FALSE;

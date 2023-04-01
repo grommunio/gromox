@@ -22,7 +22,6 @@
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
 #include <gromox/mapi_types.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include "mysql_adaptor/sql2.hpp"
 
@@ -201,12 +200,7 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 //	if (strcasecmp(req->method, "POST") != 0)
 //		/* emit("All requests must be POST"); */
 //		return false;
-	char uri[1024];
-	req->f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	size_t len = req->f_request_uri.read(uri, arsizeof(uri) - 1);
-	if (len == MEM_END_OF_FILE)
-		return false;
-	uri[len] = '\0';
+	auto uri = req->f_request_uri.c_str();
 	if (strcasecmp(uri, "/autodiscover/autodiscover.xml") == 0 && brkp(uri[30]))
 		return TRUE;
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44]))
@@ -264,14 +258,11 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
-
-	char uri[1024];
 	auto req = get_request(ctx_id);
-	req->f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	size_t l = req->f_request_uri.read(uri, arsizeof(uri) - 1);
-	if (l == MEM_END_OF_FILE)
+	size_t l = req->f_request_uri.size();
+	if (l == 0)
 		return false;
-	uri[l] = '\0';
+	auto uri = req->f_request_uri.c_str();
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
 		if (!auth_info.b_authed)
 			return unauthed(ctx_id);
@@ -538,14 +529,6 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
     const char *email, const char *ars) const
 {
 	auto req = get_request(ctx_id);
-	char user_agent[64];
-	req->f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	size_t len = req->f_user_agent.read(user_agent, std::size(user_agent) - 1);
-	if (len == MEM_END_OF_FILE)
-		*user_agent = '\0';
-	else
-		user_agent[len] = '\0';
-
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
 	respdoc.InsertEndChild(decl);
@@ -555,7 +538,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
 	int ret;
 
 	if (strcasecmp(ars, response_outlook_xmlns) == 0)
-		ret = resp_web(resproot, authuser, email, user_agent);
+		ret = resp_web(resproot, authuser, email, req->f_user_agent.c_str());
 	else if (strcasecmp(ars, response_mobile_xmlns) == 0)
 		ret = resp_eas(resproot, email);
 	else {

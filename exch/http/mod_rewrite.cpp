@@ -211,8 +211,8 @@ int mod_rewrite_run(const char *sdlist) try
 	return -ENOMEM;
 }
 
-BOOL mod_rewrite_process(const char *uri_buff, size_t uri_len,
-    MEM_FILE *pf_request_uri)
+bool mod_rewrite_process(const char *uri_buff, size_t uri_len,
+    std::string &f_request_uri) try
 {
 	char tmp_buff[8192];
 	
@@ -224,9 +224,12 @@ BOOL mod_rewrite_process(const char *uri_buff, size_t uri_len,
 		tmp_buff[uri_len] = '\0';
 		if (mod_rewrite_rreplace(tmp_buff, sizeof(tmp_buff),
 		    &node.search_pattern, node.replace_string.c_str())) {
-			pf_request_uri->write(tmp_buff, strlen(tmp_buff));
+			f_request_uri = tmp_buff;
 			return TRUE;
 		}
 	}
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1086: ENOMEM");
+	return false;
 }
