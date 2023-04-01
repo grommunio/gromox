@@ -29,6 +29,8 @@ bool MhContext::getHeader(char* dest, size_t maxlen)
 
 bool MhContext::loadHeaders()
 {
+	orig.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_CUR);
+	orig.f_user_agent.read(user_agent, std::size(user_agent));
 	uint32_t tmp_len;
 	char tmp_buff[1024];
 	while (orig.f_others.read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
@@ -44,10 +46,6 @@ bool MhContext::loadHeaders()
 				continue;
 			} else if (strncasecmp(tmp_buff, "X-RequestType", 13) == 0) {
 				if (!getHeader(request_value, arsizeof(request_value)))
-					return false;
-				continue;
-			} else if (strncasecmp(tmp_buff, "User-Agent", 10) == 0) {
-				if (!getHeader(user_agent, std::size(user_agent)))
 					return false;
 				continue;
 			} else if (strncasecmp(tmp_buff, "X-ClientApplication", 19) == 0) {
