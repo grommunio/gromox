@@ -104,7 +104,7 @@ struct imap_context final : public schedule_context {
 	char selected_folder[1024]{};
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	BOOL b_modify = false;
-	MEM_FILE f_flags{};
+	std::vector<std::string> f_flags;
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};
