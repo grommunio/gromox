@@ -13,12 +13,6 @@ enum {
 	SUB_TYPE_EQUIPMENT,
 };
 
-struct icasecmp {
-	inline bool operator()(const std::string &a, const std::string &b) const {
-		return strcasecmp(a.c_str(), b.c_str()) == 0;
-	}
-};
-
 class sqlconn final {
 	public:
 	sqlconn() = default;

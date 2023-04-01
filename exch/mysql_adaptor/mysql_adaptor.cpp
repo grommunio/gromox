@@ -17,6 +17,7 @@
 #include <libHX/string.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
+#include <gromox/icase.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/util.hpp>
 #include "sql2.hpp"
