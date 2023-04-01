@@ -695,10 +695,6 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	char buff[MAX_DIGLEN];
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
-		pitem->f_digest.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		auto len = pitem->f_digest.read(buff, arsizeof(buff));
-		if (len == MEM_END_OF_FILE)
-			return 1923;
 		std::string eml_path;
 		try {
 			eml_path = std::string(pcontext->maildir) + "/eml";
@@ -709,7 +705,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		if (eml_path.size() == 0)
 			return 1923;
 		Json::Value digest;
-		if (!json_from_str({buff, len}, digest) ||
+		if (!json_from_str(pitem->f_digest, digest) ||
 		    !mjson.load_from_json(digest, eml_path.c_str()))
 			return 1923;
 	}
@@ -2708,8 +2704,6 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (result != 0)
 			return result;
 	}
-	if (b_detail)
-		system_services_free_result(&xarray);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170020: OK FETCH completed */
 	{
@@ -2989,8 +2983,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (ret != 0)
 			return ret;
 	}
-	if (b_detail)
-		system_services_free_result(&xarray);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
 	{

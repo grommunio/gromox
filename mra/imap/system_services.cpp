@@ -32,7 +32,6 @@ E(fetch_simple)
 E(fetch_detail)
 E(fetch_simple_uid)
 E(fetch_detail_uid)
-E(free_result)
 E(set_flags)
 E(unset_flags)
 E(get_flags)
@@ -79,7 +78,6 @@ int system_services_run()
 	E(system_services_list_simple, "list_simple");
 	E(system_services_list_deleted, "list_deleted");
 	E(system_services_list_detail, "list_detail");
-	E(system_services_free_result, "free_result");
 	E(system_services_fetch_simple, "fetch_simple");
 	E(system_services_fetch_detail, "fetch_detail");
 	E(system_services_fetch_simple_uid, "fetch_simple_uid");
@@ -125,7 +123,6 @@ void system_services_stop()
 	service_release("list_simple", "system");
 	service_release("list_deleted", "system");
 	service_release("list_detail", "system");
-	service_release("free_result", "system");
 	service_release("fetch_simple", "system");
 	service_release("fetch_detail", "system");
 	service_release("fetch_simple_uid", "system");
