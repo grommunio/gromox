@@ -2,10 +2,15 @@
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <string_view>
+#include <utility>
 #include <gromox/mapi_types.hpp>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "ics_state.h"
 #include "icsupctx_object.h"
+
+using namespace gromox;
 
 std::unique_ptr<icsupctx_object> icsupctx_object::create(logon_object *plogon,
     folder_object *pfolder, uint8_t sync_type)
@@ -24,14 +29,6 @@ std::unique_ptr<icsupctx_object> icsupctx_object::create(logon_object *plogon,
 	pctx->pfolder = pfolder;
 	pctx->sync_type = sync_type;
 	return pctx;
-}
-
-icsupctx_object::~icsupctx_object()
-{
-	auto pctx = this;
-	if (0 != pctx->state_property) {
-		mem_file_free(&pctx->f_state_stream);
-	}
 }
 
 BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
@@ -57,11 +54,11 @@ BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
 		return FALSE;
 	}
 	pctx->state_property = new_state_prop;
-	mem_file_init(&pctx->f_state_stream, common_util_get_allocator());
+	f_state_stream.clear();
 	return TRUE;
 }
 
-BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data)
+BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data) try
 {
 	auto pctx = this;
 	if (pctx->b_started)
@@ -72,8 +69,11 @@ BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data)
 	if (pctx->state_property == MetaTagIdsetGiven ||
 	    pctx->state_property == MetaTagIdsetGiven1)
 		return TRUE;
-	return f_state_stream.write(pstream_data->pb, pstream_data->cb) ==
-	       pstream_data->cb ? TRUE : false;
+	f_state_stream += std::string_view(pstream_data->pc, pstream_data->cb);
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1089: ENOMEM");
+	return false;
 }
 
 BOOL icsupctx_object::end_state_stream()
@@ -89,23 +89,17 @@ BOOL icsupctx_object::end_state_stream()
 	if (pctx->state_property == MetaTagIdsetGiven ||
 	    pctx->state_property == MetaTagIdsetGiven1) {
 		pctx->state_property = 0;
-		mem_file_free(&pctx->f_state_stream);
 		return TRUE;
 	}
 	auto pset = idset::create(false, REPL_TYPE_GUID);
 	if (NULL == pset) {
 		return FALSE;
 	}
-	tmp_bin.cb = pctx->f_state_stream.get_total_length();
-	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
-	if (tmp_bin.pv == nullptr) {
-		return FALSE;
-	}
-	pctx->f_state_stream.read(tmp_bin.pv, tmp_bin.cb);
-	mem_file_free(&pctx->f_state_stream);
+	tmp_bin.pv = f_state_stream.data();
+	tmp_bin.cb = f_state_stream.size();
 	auto saved_state_prop = pctx->state_property;
 	pctx->state_property = 0;
-	if (!pset->deserialize(tmp_bin))
+	if (!pset->deserialize(std::move(tmp_bin)))
 		return FALSE;
 	if (!pset->register_mapping(pctx->plogon, common_util_mapping_replica))
 		return FALSE;

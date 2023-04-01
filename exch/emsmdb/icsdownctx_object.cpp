@@ -7,6 +7,8 @@
 #include <cstring>
 #include <list>
 #include <memory>
+#include <string_view>
+#include <utility>
 #include <gromox/eid_array.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
@@ -1234,8 +1236,6 @@ icsdownctx_object::~icsdownctx_object()
 		eid_array_free(pctx->pread_messages);
 	if (pctx->punread_messages != nullptr)
 		eid_array_free(pctx->punread_messages);
-	if (pctx->state_property != 0)
-		mem_file_free(&pctx->f_state_stream);
 	proptag_array_free(pctx->pproptags);
 	if (pctx->prestriction != nullptr)
 		restriction_free(pctx->prestriction);
@@ -1262,19 +1262,26 @@ BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
 		return FALSE;
 	}
 	pctx->state_property = new_state_prop;
-	mem_file_init(&pctx->f_state_stream, common_util_get_allocator());
+	f_state_stream.clear();
 	return TRUE;
 }
 
-BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data)
+BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data) try
 {
 	auto pctx = this;
 	if (pctx->b_started)
 		return FALSE;
 	if (pctx->state_property == 0)
 		return FALSE;
-	return f_state_stream.write(pstream_data->pb, pstream_data->cb) ==
-	       pstream_data->cb ? TRUE : false;
+	f_state_stream += std::string_view(pstream_data->pc, pstream_data->cb);
+	if (f_state_stream.size() >= UINT32_MAX) {
+		mlog(LV_INFO, "I-1089: Too much ICS state sent by client");
+		return false;
+	}
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1088: ENOMEM");
+	return false;
 }
 
 BOOL icsdownctx_object::end_state_stream()
@@ -1289,16 +1296,14 @@ BOOL icsdownctx_object::end_state_stream()
 	auto pset = idset::create(false, REPL_TYPE_GUID);
 	if (pset == nullptr)
 		return FALSE;
-	tmp_bin.cb = pctx->f_state_stream.get_total_length();
-	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
-	if (tmp_bin.pv == nullptr)
-		return FALSE;
-	pctx->f_state_stream.read(tmp_bin.pv, tmp_bin.cb);
-	mem_file_free(&pctx->f_state_stream);
 	auto saved_state_property = pctx->state_property;
 	pctx->state_property = 0;
-	if (!pset->deserialize(tmp_bin))
+	tmp_bin.pv = f_state_stream.data();
+	tmp_bin.cb = f_state_stream.size();
+	if (!pset->deserialize(std::move(tmp_bin)))
 		return FALSE;
+	f_state_stream.clear();
+	f_state_stream.shrink_to_fit();
 	if (!pset->register_mapping(pctx->pstream->plogon, common_util_mapping_replica))
 		return FALSE;
 	if (!pset->convert())

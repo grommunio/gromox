@@ -2,10 +2,10 @@
 #include <cstdint>
 #include <list>
 #include <memory>
+#include <string>
 #include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/mem_file.hpp>
 
 struct folder_object;
 struct fxstream_producer;
@@ -38,8 +38,8 @@ struct icsdownctx_object final {
 	uint8_t sync_type = 0;
 	folder_object *pfolder = nullptr;
 	std::unique_ptr<ics_state> pstate; /* public member */
+	std::string f_state_stream;
 	uint32_t state_property = 0;
-	MEM_FILE f_state_stream{};
 	BOOL b_started = false;
 	ics_flow_list flow_list;
 	std::vector<uint32_t> group_list;
