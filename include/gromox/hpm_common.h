@@ -1,9 +1,12 @@
 #pragma once
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 #include <typeinfo>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/generic_connection.hpp>
+#include <gromox/icase.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/util.hpp>
@@ -37,7 +40,8 @@ struct http_request {
 	MEM_FILE f_request_uri{}, f_host{}, f_user_agent{}, f_accept{};
 	MEM_FILE f_accept_language{}, f_accept_encoding{}, f_content_type{};
 	MEM_FILE f_content_length{}, f_transfer_encoding{}, f_cookie{};
-	MEM_FILE f_others{};
+	using other_map = std::unordered_map<std::string, std::string, gromox::icasehash, gromox::icasecmp>;
+	other_map f_others;
 };
 using HTTP_REQUEST = http_request;
 

@@ -347,28 +347,11 @@ static pack_result mod_fastcgi_pull_record_header(
 	return pndr->g_uint8(&pheader->reserved);
 }
 
-static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
-    const char *tag, char *value, size_t length)
+static const char *
+mod_fastcgi_get_others_field(const http_request::other_map &m, const char *k)
 {
-	char tmp_buff[256];
-	uint32_t tag_len, val_len;
-	
-	pf_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (pf_others->read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (tag_len >= GX_ARRAY_SIZE(tmp_buff))
-			return FALSE;
-		pf_others->read(tmp_buff, tag_len);
-		tmp_buff[tag_len] = '\0';
-		pf_others->read(&val_len, sizeof(uint32_t));
-		if (0 == strcasecmp(tag, tmp_buff)) {
-			length = (length > val_len)?val_len:(length - 1);
-			pf_others->read(value, length);
-			value[length] = '\0';
-			return TRUE;
-		}
-		pf_others->seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
-	}
-	return FALSE;
+	auto i = m.find(k);
+	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
 static int mod_fastcgi_connect_backend(const char *path)
@@ -741,17 +724,18 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "close"));
 	else
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "keep-alive"));
-	if (mod_fastcgi_get_others_field(&phttp->request.f_others, "Referer",
-	    tmp_buff, arsizeof(tmp_buff)))
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_REFERER", tmp_buff));
-	if (mod_fastcgi_get_others_field(&phttp->request.f_others, "Cache-Control",
-	    tmp_buff, arsizeof(tmp_buff)))
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", tmp_buff));
-	for (const auto &hdr : pfnode->header_list)
-		if (mod_fastcgi_get_others_field(&phttp->request.f_others,
-		    hdr.c_str(), tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
+	auto val = mod_fastcgi_get_others_field(phttp->request.f_others, "Referer");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_REFERER", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "Cache-Control");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", val));
+	for (const auto &hdr : pfnode->header_list) {
+		val = mod_fastcgi_get_others_field(phttp->request.f_others, hdr.c_str());
+		if (val != nullptr)
 			QRF(mod_fastcgi_push_name_value(&ndr_push,
-			    hdr.c_str(), tmp_buff));
+			    hdr.c_str(), val));
+	}
 	if (!phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(phttp->pfast_context->content_length));

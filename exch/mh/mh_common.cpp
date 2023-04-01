@@ -16,48 +16,19 @@ MhContext::MhContext(int context_id) :
 	push_buff(std::make_unique<char[]>(push_buff_size))
 {}
 
-bool MhContext::getHeader(char* dest, size_t maxlen)
-{
-	uint32_t tmp_len;
-	orig.f_others.read(&tmp_len, sizeof(uint32_t));
-	if (tmp_len >= maxlen)
-		 return false;
-	orig.f_others.read(dest, tmp_len);
-	dest[tmp_len] = '\0';
-	return true;
-}
-
 bool MhContext::loadHeaders()
 {
 	orig.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_CUR);
 	orig.f_user_agent.read(user_agent, std::size(user_agent));
-	uint32_t tmp_len;
-	char tmp_buff[1024];
-	while (orig.f_others.read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (tmp_len >= 10 && tmp_len <= 19) {
-			orig.f_others.read(tmp_buff, tmp_len);
-			if (strncasecmp(tmp_buff, "X-RequestId", 11) == 0) {
-				if (!getHeader(request_id, arsizeof(request_id)))
-					return false;
-				continue;
-			} else if (strncasecmp(tmp_buff, "X-ClientInfo", 12) == 0) {
-				if (!getHeader(client_info, arsizeof(client_info)))
-					return false;
-				continue;
-			} else if (strncasecmp(tmp_buff, "X-RequestType", 13) == 0) {
-				if (!getHeader(request_value, arsizeof(request_value)))
-					return false;
-				continue;
-			} else if (strncasecmp(tmp_buff, "X-ClientApplication", 19) == 0) {
-				if (!getHeader(cl_app, std::size(cl_app)))
-					return false;
-				continue;
-			}
-		} else
-			orig.f_others.seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-		orig.f_others.read(&tmp_len, sizeof(uint32_t));
-		orig.f_others.seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-	}
+	const auto &m = orig.f_others;
+	auto i = m.find("X-RequestId");
+	request_id = i != m.end() ? i->second.c_str() : "";
+	i = m.find("X-ClientInfo");
+	client_info = i != m.end() ? i->second.c_str() : "";
+	i = m.find("X-RequestType");
+	gx_strlcpy(request_value, i != m.end() ? i->second.c_str() : "", std::size(request_value));
+	i = m.find("X-ClientApplication");
+	cl_app = i != m.end() ? i->second.c_str() : "";
 	return true;
 }
 

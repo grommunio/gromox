@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
@@ -335,37 +336,11 @@ void VCONN_REF::put()
 	pvconnection = nullptr;
 }
 
-static BOOL http_parser_request_head(MEM_FILE *pfile_others,
-	const char *field_name, char *field_value, int buff_len)
+static const char *
+http_parser_request_head(const http_request::other_map &m, const char *k)
 {
-	int tmp_len;
-	int name_len;
-	char name_buff[64];
-	
-	pfile_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	name_len = strlen(field_name);
-	if (name_len >= 64) {
-		return FALSE;
-	}
-	while (pfile_others->read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (name_len == tmp_len) {
-			 pfile_others->read(name_buff, tmp_len);
-			 if (0 == strncasecmp(name_buff, field_name, name_len)) {
-				 pfile_others->read(&tmp_len, sizeof(uint32_t));
-				 if (tmp_len >= buff_len) {
-					 return FALSE;
-				 }
-				 pfile_others->read(field_value, tmp_len);
-				 field_value[tmp_len] = '\0';
-				 return TRUE;
-			 }
-		} else {
-			pfile_others->seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-		}
-		pfile_others->read(&tmp_len, sizeof(uint32_t));
-		pfile_others->seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-	}
-	return FALSE;
+	auto i = m.find(k);
+	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
 static int http_parser_reconstruct_stream(STREAM &stream_src)
@@ -584,7 +559,8 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	return X_RUNOFF;
 }
 
-static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int line_length)
+static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
+    unsigned int line_length) try
 {
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
@@ -638,13 +614,13 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 				we treat it as "close" */
 			pcontext->b_close = FALSE;
 		}
-		uint32_t tmp_len1 = strlen(field_name);
-		pcontext->request.f_others.write(&tmp_len1, sizeof(uint32_t));
-		pcontext->request.f_others.write(field_name, tmp_len1);
-		pcontext->request.f_others.write(&tmp_len, sizeof(uint32_t));
-		pcontext->request.f_others.write(ptoken, tmp_len);
+		pcontext->request.f_others[field_name] = std::string_view(ptoken, tmp_len);
 	}
 	return X_RUNOFF;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1085: ENOMEM");
+	http_5xx(pcontext, "Resources exhausted", 503);
+	return X_LOOP;
 }
 
 static int htp_auth(HTTP_CONTEXT *pcontext)
@@ -954,11 +930,11 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
 
-		char tmp_buff[2048], tmp_buff1[1024];
+		char tmp_buff1[1024];
 		size_t decode_len = 0;
 		char *ptoken = nullptr;
-		if (http_parser_request_head(&pcontext->request.f_others,
-		    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+		auto tmp_buff = http_parser_request_head(pcontext->request.f_others, "Authorization");
+		if (tmp_buff != nullptr &&
 		    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
 		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1,
 		    arsizeof(tmp_buff1), &decode_len) == 0 &&
@@ -1891,7 +1867,6 @@ http_request::http_request(alloc_limiter<file_block> *b)
 	mem_file_init(&f_content_length, b);
 	mem_file_init(&f_transfer_encoding, b);
 	mem_file_init(&f_cookie, b);
-	mem_file_init(&f_others, b);
 }
 
 http_request::~http_request()
@@ -1906,7 +1881,6 @@ http_request::~http_request()
 	mem_file_free(&f_content_length);
 	mem_file_free(&f_transfer_encoding);
 	mem_file_free(&f_cookie);
-	mem_file_free(&f_others);
 }
 
 void http_request::clear()

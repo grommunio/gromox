@@ -110,7 +110,6 @@ static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 	phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_cookie.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_others.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	return &phttp->request;
 }
 
