@@ -1297,7 +1297,7 @@ BOOL icsdownctx_object::end_state_stream()
 	mem_file_free(&pctx->f_state_stream);
 	auto saved_state_property = pctx->state_property;
 	pctx->state_property = 0;
-	if (!pset->deserialize(&tmp_bin))
+	if (!pset->deserialize(tmp_bin))
 		return FALSE;
 	if (!pset->register_mapping(pctx->pstream->plogon, common_util_mapping_replica))
 		return FALSE;

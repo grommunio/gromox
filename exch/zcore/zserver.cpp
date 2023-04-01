@@ -4084,10 +4084,10 @@ ec_error_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 		return ecNotSupported;
 	BOOL b_changed = false;
 	if (pctx->get_type() == SYNC_TYPE_CONTENTS) {
-		if (!pctx->make_content(pstate, prestriction, flags, &b_changed, pcount))
+		if (!pctx->make_content(*pstate, prestriction, flags, &b_changed, pcount))
 			return ecError;
 	} else {
-		if (!pctx->make_hierarchy(pstate, flags, &b_changed, pcount))
+		if (!pctx->make_hierarchy(*pstate, flags, &b_changed, pcount))
 			return ecError;
 	}
 	*pb_changed = !!b_changed;
@@ -4241,7 +4241,7 @@ ec_error_t zs_configimport(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::icsupctx)
 		return ecNotSupported;
-	return pctx->upload_state(pstate) ? ecSuccess : ecError;
+	return pctx->upload_state(*pstate) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_stateimport(GUID hsession, uint32_t hctx, BINARY *pstate)

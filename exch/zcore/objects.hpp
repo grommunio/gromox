@@ -89,8 +89,8 @@ struct icsdownctx_object final {
 	~icsdownctx_object();
 	static std::unique_ptr<icsdownctx_object> create(folder_object *, uint8_t sync_type);
 	uint8_t get_type() const { return sync_type; }
-	BOOL make_content(const BINARY *state, const RESTRICTION *, uint16_t sync_flags, BOOL *changed, uint32_t *msg_count);
-	BOOL make_hierarchy(const BINARY *state, uint16_t sync_flags, BOOL *changed, uint32_t *fld_count);
+	BOOL make_content(const BINARY &state, const RESTRICTION *, uint16_t sync_flags, BOOL *changed, uint32_t *msg_count);
+	BOOL make_hierarchy(const BINARY &state, uint16_t sync_flags, BOOL *changed, uint32_t *fld_count);
 	BINARY *get_state();
 	BOOL sync_message_change(BOOL *found, BOOL *b_new, TPROPVAL_ARRAY *);
 	BOOL sync_folder_change(BOOL *found, TPROPVAL_ARRAY *);
@@ -116,7 +116,7 @@ struct icsupctx_object final {
 
 	public:
 	static std::unique_ptr<icsupctx_object> create(folder_object *, uint8_t sync_type);
-	BOOL upload_state(const BINARY *s) { return pstate->deserialize(s); }
+	BOOL upload_state(const BINARY &s) { return pstate->deserialize(s); }
 	BINARY *get_state() { return pstate->serialize(); }
 	store_object *get_store() const { return pstore; }
 	uint8_t get_type() const { return sync_type; }

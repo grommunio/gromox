@@ -119,8 +119,9 @@ BINARY *ics_state::serialize()
 	return pbin;
 }
 
-BOOL ics_state::deserialize(const BINARY *pbin)
+BOOL ics_state::deserialize(const BINARY &bin)
 {
+	auto pbin = &bin;
 	auto pstate = this;
 	int i;
 	EXT_PULL ext_pull;
@@ -141,7 +142,7 @@ BOOL ics_state::deserialize(const BINARY *pbin)
 			if (NULL == pset) {
 				return FALSE;
 			}
-			if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+			if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
 			    !pset->convert()) {
 				return FALSE;
 			}
@@ -153,7 +154,7 @@ BOOL ics_state::deserialize(const BINARY *pbin)
 			if (NULL == pset) {
 				return FALSE;
 			}
-			if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+			if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
 			    !pset->convert()) {
 				return FALSE;
 			}
@@ -166,7 +167,7 @@ BOOL ics_state::deserialize(const BINARY *pbin)
 				if (NULL == pset) {
 					return FALSE;
 				}
-				if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+				if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
 				    !pset->convert()) {
 					return FALSE;
 				}
@@ -179,7 +180,7 @@ BOOL ics_state::deserialize(const BINARY *pbin)
 				if (NULL == pset) {
 					return FALSE;
 				}
-				if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+				if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
 				    !pset->convert()) {
 					return FALSE;
 				}

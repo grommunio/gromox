@@ -775,7 +775,7 @@ class idset {
 	BINARY *serialize();
 	BINARY *serialize_replid() const;
 	BINARY *serialize_replguid();
-	BOOL deserialize(const BINARY *);
+	BOOL deserialize(const BINARY &);
 	/* convert from deserialize idset into serialize idset */
 	BOOL convert();
 	/* get maximum of first range in idset for specified replid */

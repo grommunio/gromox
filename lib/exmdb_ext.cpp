@@ -1901,7 +1901,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	d.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
 	if (d.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
-	if (!d.pgiven->deserialize(&tmp_bin)) {
+	if (!d.pgiven->deserialize(tmp_bin)) {
 		delete d.pgiven;
 		return EXT_ERR_FORMAT;
 	}
@@ -1915,7 +1915,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		d.pseen = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (d.pseen == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, d);
-		if (!d.pseen->deserialize(&tmp_bin))
+		if (!d.pseen->deserialize(tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, d);
 	}
 	status = x.g_uint8(&tmp_byte);
@@ -1928,7 +1928,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		d.pseen_fai = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (d.pseen_fai == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, d);
-		if (!d.pseen_fai->deserialize(&tmp_bin))
+		if (!d.pseen_fai->deserialize(tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, d);
 	}
 	status = x.g_uint8(&tmp_byte);
@@ -1941,7 +1941,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		d.pread = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (d.pread == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, d);
-		if (!d.pread->deserialize(&tmp_bin))
+		if (!d.pread->deserialize(tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, d);
 	}
 	status = x.g_nlscp(&d.cpid);
@@ -2048,7 +2048,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 	d.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
 	if (d.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
-	if (!d.pgiven->deserialize(&tmp_bin)) {
+	if (!d.pgiven->deserialize(tmp_bin)) {
 		delete d.pgiven;
 		return EXT_ERR_FORMAT;
 	}
@@ -2068,7 +2068,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 			delete d.pgiven;
 			return EXT_ERR_ALLOC;
 		}
-		if (!d.pseen->deserialize(&tmp_bin)) {
+		if (!d.pseen->deserialize(tmp_bin)) {
 			delete d.pseen;
 			delete d.pgiven;
 			return EXT_ERR_FORMAT;
