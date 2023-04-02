@@ -65,6 +65,7 @@ struct FIFO {
 	BOOL enqueue(const MEM_FILE &);
 	MEM_FILE *get_front() const;
 	void dequeue();
+	void clear();
 
 	alloc_limiter<fifo_block> *mbuf_pool = nullptr;
 	std::deque<fifo_block *> mlist;
@@ -205,6 +206,15 @@ MEM_FILE *FIFO::get_front() const
 	if (mlist.empty())
 		return nullptr;
 	return &mlist.front()->mem_file;
+}
+
+void FIFO::clear()
+{
+	MEM_FILE *m = nullptr;
+	while ((m = get_front()) != nullptr) {
+		mem_file_free(m);
+		dequeue();
+	}
 }
 
 DEQUEUE_NODE::~DEQUEUE_NODE()
@@ -731,10 +741,7 @@ static void *ev_deqwork(void *param)
 					hl_hold.unlock();
 					close(pdequeue->sockd);
 					pdequeue->sockd = -1;
-					while ((pfile = pdequeue->fifo.get_front()) != nullptr) {
-						mem_file_free(pfile);
-						pdequeue->fifo.dequeue();
-					}
+					pdequeue->fifo.clear();
 					goto NEXT_LOOP;
 				}
 				last_time = cur_time;
@@ -760,10 +767,7 @@ static void *ev_deqwork(void *param)
 			hl_hold.unlock();
 			close(pdequeue->sockd);
 			pdequeue->sockd = -1;
-			while ((pfile = pdequeue->fifo.get_front()) != nullptr) {
-				mem_file_free(pfile);
-				pdequeue->fifo.dequeue();
-			}
+			pdequeue->fifo.clear();
 			goto NEXT_LOOP;
 		}
 		
