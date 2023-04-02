@@ -12,7 +12,6 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/generic_connection.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
@@ -76,7 +75,7 @@ struct DIR_NODE {
 struct dir_tree {
 	dir_tree(alloc_limiter<DIR_NODE> *);
 	~dir_tree();
-	void load_from_memfile(MEM_FILE *);
+	void load_from_memfile(const std::vector<std::string> &);
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
 
@@ -214,8 +213,8 @@ extern int (*system_services_rename_folder)(const char *, const char *, const ch
 extern int (*system_services_ping_mailbox)(const char *, int *);
 extern int (*system_services_subscribe_folder)(const char *, const char *, int *);
 extern int (*system_services_unsubscribe_folder)(const char *, const char *, int *);
-extern int (*system_services_enum_folders)(const char *, MEM_FILE *, int *);
-extern int (*system_services_enum_subscriptions)(const char *, MEM_FILE *, int *);
+extern int (*system_services_enum_folders)(const char *, std::vector<std::string> &, int *);
+extern int (*system_services_enum_subscriptions)(const char *, std::vector<std::string> &, int *);
 extern int (*system_services_insert_mail)(const char *, const char *, const char *, const char *, long, int *);
 extern int (*system_services_remove_mail)(const char *, const char *, const std::vector<MITEM *> &, int *);
 extern int (*system_services_list_simple)(const char *, const char *, XARRAY *, int *);

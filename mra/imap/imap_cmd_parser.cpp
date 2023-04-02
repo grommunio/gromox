@@ -7,6 +7,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <cstdio>
@@ -29,7 +30,6 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/midb.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/textmaps.hpp>
@@ -1229,20 +1229,16 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	return TRUE;
 }
 
-static void imap_cmd_parser_convert_folderlist(
-	const char *lang, MEM_FILE *pfile)
+static void imap_cmd_parser_convert_folderlist(const char *lang,
+   std::vector<std::string> &pfile) try
 {
-	MEM_FILE temp_file;
-	char temp_name[512];
 	char converted_name[1024];
 	
-	mem_file_init(&temp_file, imap_parser_get_allocator());
-	while (pfile->readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE)
-		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, temp_name, converted_name))
-			temp_file.writeline(converted_name);
-	pfile->clear();
-	temp_file.copy_to(*pfile);
-	mem_file_free(&temp_file);
+	for (auto &e : pfile)
+		if (imap_cmd_parser_sysfolder_to_imapfolder(lang, e.c_str(), converted_name))
+			e = converted_name;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1814: ENOMEM");
 }
 
 int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -1654,21 +1650,20 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_CONTINUE;
 }
 
-static void writefolderlines(MEM_FILE &file)
+static void writefolderlines(std::vector<std::string> &file) try
 {
-	file.writeline("inbox");
+	file.emplace_back("inbox");
 	for (auto folder : g_folder_list)
-		file.writeline(folder);
+		file.emplace_back(folder);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1813: ENOMEM");
 }
 
 int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
-	BOOL b_found;
-	MEM_FILE temp_file;
 	char temp_name[1024];
 	char temp_name1[1024];
-	char temp_folder[1024];
 	char converted_name[1024];
 
 	if (!pcontext->is_authed())
@@ -1680,15 +1675,13 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1910;
 	if (special_folder(temp_name))
 		return 1911;
-	mem_file_init(&temp_file, imap_parser_get_allocator());
-	auto ssr = system_services_enum_folders(pcontext->maildir, &temp_file, &errnum);
+	std::vector<std::string> temp_file;
+	auto ssr = system_services_enum_folders(pcontext->maildir, temp_file, &errnum);
 	auto ret = m2icode(ssr, errnum);
-	if (ret != 0) {
-		mem_file_free(&temp_file);
+	if (ret != 0)
 		return ret;
-	}
 	writefolderlines(temp_file);
-	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
+	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 	strcpy(temp_name, argv[2]);
 	auto len = strlen(temp_name);
 	if (len > 0 && temp_name[len-1] == '/') {
@@ -1701,34 +1694,29 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		}
 		temp_name1[i] = '\0';
-		b_found = FALSE;
-		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (temp_file.readline(temp_folder,
-		       arsizeof(temp_folder)) != MEM_END_OF_FILE) {
-			if (0 == strcmp(temp_folder, temp_name1)) {
-				b_found = TRUE;
-				break;
-			}
-		}
-		if (b_found) {
+#if __cplusplus < 202000L
+		if (std::find_if(temp_file.cbegin(), temp_file.cend(),
+		    [&](const auto &i) { return strcasecmp(i.c_str(), temp_name1) == 0; }) != temp_file.cend()) {
 			temp_name1[i] = temp_name[i];
 			continue;
 		}
-		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
-		    temp_name1, converted_name)) {
-			mem_file_free(&temp_file);
-			return 1800;
+#else
+		if (std::find(temp_file.cbegin(), temp_file.cend(), temp_name1) !=
+		    temp_file.cend()) {
+			temp_name1[i] = temp_name[i];
+			continue;
 		}
+#endif
+		if (!imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
+		    temp_name1, converted_name))
+			return 1800;
 		ssr = system_services_make_folder(pcontext->maildir,
 		      converted_name, &errnum);
 		ret = m2icode(ssr, errnum);
-		if (ret != 0) {
-			mem_file_free(&temp_file);
+		if (ret != 0)
 			return ret;
-		}
 		temp_name1[i] = temp_name[i];
 	}
-	mem_file_free(&temp_file);
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, NULL);
 	return 1706;
@@ -1828,9 +1816,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int len;
 	int errnum;
 	size_t string_length = 0;
-	MEM_FILE temp_file;
 	char buff[256*1024];
-	char temp_name[1024];
 	char search_pattern[1024];
 	
 	if (!pcontext->is_authed())
@@ -1852,32 +1838,32 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		snprintf(search_pattern, 1024, "%s%s", argv[2], argv[3]);
-		mem_file_init(&temp_file, imap_parser_get_allocator());
+
+		std::vector<std::string> temp_file;
 		auto ssr = system_services_enum_folders(pcontext->maildir,
-		           &temp_file, &errnum);
+		           temp_file, &errnum);
 		auto ret = m2icode(ssr, errnum);
-		if (ret != 0) {
-			mem_file_free(&temp_file);
+		if (ret != 0)
 			return ret;
-		}
 		writefolderlines(temp_file);
-		imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
+		imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 		dir_tree temp_tree(imap_parser_get_dpool());
-		temp_tree.load_from_memfile(&temp_file);
+		temp_tree.load_from_memfile(temp_file);
 		len = 0;
-		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
-			if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+		for (const auto &temp_name : temp_file) {
+			if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern))
 				continue;
-			auto pdir = temp_tree.match(temp_name);
+			auto pdir = temp_tree.match(temp_name.c_str());
 			if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				       "* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+				       "* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n",
+				       temp_name.size(), temp_name.c_str());
 			else
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				       "* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+				       "* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n",
+				       temp_name.size(), temp_name.c_str());
 		}
-		mem_file_free(&temp_file);
+		temp_file.clear();
 		pcontext->stream.clear();
 		if (pcontext->proto_stat == PROTO_STAT_SELECT)
 			imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -1906,15 +1892,17 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	snprintf(search_pattern, 1024, "%s%s", argv[3], argv[4]);
-	mem_file_init(&temp_file, imap_parser_get_allocator());
+
+	std::vector<std::string> temp_file;
 	writefolderlines(temp_file);
-	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
+	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 	len = 0;
-	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE)
-		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+	for (const auto &temp_name : temp_file)
+		if (imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern))
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-			       "* LIST () \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-	mem_file_free(&temp_file);
+			       "* LIST () \"/\" {%zu}\r\n%s\r\n",
+			       temp_name.size(), temp_name.c_str());
+	temp_file.clear();
 	pcontext->stream.clear();
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -1933,7 +1921,6 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int i, len;
 	size_t string_length = 0;
-	MEM_FILE temp_file;
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
@@ -1945,17 +1932,16 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024)
 		return 1800;
 	snprintf(search_pattern, 1024, "%s%s", argv[2], *argv[3] == '\0' ? "*" : argv[3]);
-	mem_file_init(&temp_file, imap_parser_get_allocator());
+
+	std::vector<std::string> temp_file;
 	auto ssr = system_services_enum_folders(pcontext->maildir,
-	           &temp_file, &errnum);
+	           temp_file, &errnum);
 	auto ret = m2icode(ssr, errnum);
-	if (ret != 0) {
-		mem_file_free(&temp_file);
+	if (ret != 0)
 		return ret;
-	}
-	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
+	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	temp_tree.load_from_memfile(&temp_file);
+	temp_tree.load_from_memfile(temp_file);
 	len = 0;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
 		auto pdir = temp_tree.match("INBOX");
@@ -1981,19 +1967,20 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 					g_xproperty_list[i], temp_name);
 		}
 	}
-	temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
-		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+	for (const auto &temp_name : temp_file) {
+		if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern))
 			continue;
-		auto pdir = temp_tree.match(temp_name);
+		auto pdir = temp_tree.match(temp_name.c_str());
 		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+				"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n",
+			       temp_name.size(), temp_name.c_str());
 		else
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+				"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n",
+			       temp_name.size(), temp_name.c_str());
 	}
-	mem_file_free(&temp_file);
+	temp_file.clear();
 	pcontext->stream.clear();
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -2013,10 +2000,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int len;
 	int errnum;
 	size_t string_length = 0;
-	MEM_FILE temp_file;
-	MEM_FILE temp_file1;
 	char buff[256*1024];
-	char temp_name[1024];
 	char search_pattern[1024];
 	
 	if (!pcontext->is_authed())
@@ -2037,35 +2021,35 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	snprintf(search_pattern, 1024, "%s%s", argv[2], argv[3]);		
-	mem_file_init(&temp_file, imap_parser_get_allocator());
+	std::vector<std::string> temp_file;
 	auto ssr = system_services_enum_subscriptions(pcontext->maildir,
-	           &temp_file, &errnum);
+	           temp_file, &errnum);
 	auto ret = m2icode(ssr, errnum);
-	if (ret != 0) {
-		mem_file_free(&temp_file);
+	if (ret != 0)
 		return ret;
-	}
-	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
-	mem_file_init(&temp_file1, imap_parser_get_allocator());
-	system_services_enum_folders(pcontext->maildir, &temp_file1, &errnum);
+	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
+	std::vector<std::string> temp_file1;
+	system_services_enum_folders(pcontext->maildir, temp_file1, &errnum);
 	writefolderlines(temp_file1);
-	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file1);
+	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file1);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	temp_tree.load_from_memfile(&temp_file1);
-	mem_file_free(&temp_file1);
+	temp_tree.load_from_memfile(temp_file1);
+	temp_file1.clear();
 	len = 0;
-	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
-		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+	for (const auto &temp_name : temp_file) {
+		if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern))
 			continue;
-		auto pdir = temp_tree.match(temp_name);
+		auto pdir = temp_tree.match(temp_name.c_str());
 		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+				"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n",
+			       temp_name.size(), temp_name.c_str());
 		else
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+				"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n",
+			       temp_name.size(), temp_name.c_str());
 	}
-	mem_file_free(&temp_file);
+	temp_file.clear();
 	pcontext->stream.clear();
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);

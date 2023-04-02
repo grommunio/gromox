@@ -2,7 +2,6 @@
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
 #include "imap.hpp"
 
@@ -15,7 +14,7 @@ static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 dir_tree::dir_tree(alloc_limiter<DIR_NODE> *a) : ppool(a)
 {}
 
-void dir_tree::load_from_memfile(MEM_FILE *pfile)
+void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
 {
 	auto ptree = this;
 	char *ptr1, *ptr2;
@@ -33,10 +32,9 @@ void dir_tree::load_from_memfile(MEM_FILE *pfile)
 		proot = &pdir->node;
 	}
 
-	
-	pfile->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	size_t len;
-	while ((len = pfile->readline(temp_path, 4096)) != MEM_END_OF_FILE) {
+	for (const auto &pfile_path : pfile) {
+		gx_strlcpy(temp_path, pfile_path.c_str(), std::size(temp_path));
+		auto len = strlen(temp_path);
 		pnode = proot;
 		if (len == 0 || temp_path[len-1] != '/') {
 			temp_path[len] = '/';

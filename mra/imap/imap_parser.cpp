@@ -29,6 +29,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
+#include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/scope.hpp>

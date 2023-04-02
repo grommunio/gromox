@@ -31,7 +31,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
@@ -89,8 +88,8 @@ static int ping_mailbox(const char *path, int *perrno);
 static int rename_folder(const char *path, const char *src_name, const char *dst_name, int *perrno);
 static int subscribe_folder(const char *path, const char *folder, int *perrno);
 static int unsubscribe_folder(const char *path, const char *folder, int *perrno);
-static int enum_folders(const char *path, MEM_FILE *, int *perrno);
-static int enum_subscriptions(const char *path, MEM_FILE *, int *perrno);
+static int enum_folders(const char *path, std::vector<std::string> &, int *perrno);
+static int enum_subscriptions(const char *path, std::vector<std::string> &, int *perrno);
 static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
 static int remove_mail(const char *path, const char *folder, const std::vector<MITEM *> &, int *perrno);
 static int list_simple(const char *path, const char *folder, XARRAY *, int *perrno);
@@ -937,7 +936,8 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
+static int enum_folders(const char *path, std::vector<std::string> &pfile,
+    int *perrno) try
 {
 	int i;
 	int lines;
@@ -1009,7 +1009,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				pfile->writeline(temp_line);
+				pfile.emplace_back(temp_line);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos] = buff[i];
@@ -1036,9 +1036,13 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 		}
 	}
 	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1812: ENOMEM");
+	return MIDB_LOCAL_ENOMEM;
 }
 
-static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
+static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
+    int *perrno) try
 {
 	int i;
 	int lines;
@@ -1111,7 +1115,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				pfile->writeline(temp_line);
+				pfile.emplace_back(temp_line);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos] = buff[i];
@@ -1138,6 +1142,9 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 		}
 	}
 	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1815: ENOMEM");
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int insert_mail(const char *path, const char *folder,
