@@ -17,6 +17,7 @@
 #include <pthread.h>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
@@ -72,7 +73,7 @@ struct FIFO {
 
 struct qsock {
 	int sockd = -1;
-	ssize_t sk_write(const char *, size_t = -1);
+	ssize_t sk_write(const std::string_view &);
 	void sk_close();
 };
 
@@ -212,12 +213,10 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 		close(sockd);
 }
 
-ssize_t qsock::sk_write(const char *s, size_t z)
+ssize_t qsock::sk_write(const std::string_view &sv)
 {
-	if (z == static_cast<size_t>(-1))
-		z = strlen(s);
-	auto ret = HXio_fullwrite(sockd, s, z);
-	if (ret < 0 || static_cast<size_t>(ret) != z) {
+	auto ret = HXio_fullwrite(sockd, sv.data(), sv.size());
+	if (ret < 0 || static_cast<size_t>(ret) != sv.size()) {
 		close(sockd);
 		sockd = -1;
 	}
@@ -752,7 +751,7 @@ static void *ev_deqwork(void *param)
 		buff[len] = '\n';
 		len ++;
 		mem_file_free(&temp_file);
-		if (pdequeue->sk_write(buff, len) != len ||
+		if (pdequeue->sk_write({buff, static_cast<size_t>(len)}) != len ||
 		    !read_response(pdequeue->sockd)) {
 			hl_hold.lock();
 			auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
