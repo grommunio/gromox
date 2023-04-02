@@ -13,6 +13,7 @@
 #include <memory>
 #include <mutex>
 #include <netdb.h>
+#include <optional>
 #include <poll.h>
 #include <pthread.h>
 #include <stdexcept>
@@ -63,8 +64,7 @@ struct FIFO {
 	FIFO() = default;
 	FIFO(alloc_limiter<fifo_block> *, size_t data_size, size_t max_size);
 	BOOL enqueue(const MEM_FILE &);
-	MEM_FILE *get_front() const;
-	void dequeue();
+	std::optional<MEM_FILE> pop_front();
 	void clear();
 
 	alloc_limiter<fifo_block> *mbuf_pool = nullptr;
@@ -184,37 +184,23 @@ BOOL FIFO::enqueue(const MEM_FILE &mf)
 	return TRUE;
 }
 
-/**
- * Dequeues the top item from the specified FIFO, and gives back the data size
- * of memory to the outside allocator
- */
-void FIFO::dequeue()
+std::optional<MEM_FILE> FIFO::pop_front()
 {
+	std::optional<MEM_FILE> o;
 	if (mlist.empty())
-		return;
+		return o;
 	auto blk = mlist.front();
+	o.emplace(blk->mem_file);
 	mlist.pop_front();
 	mbuf_pool->put(blk);
-}
-
-/**
- * Returns a pointer to the data at the front of the specified FIFO, or nullptr
- * if the FIFO is empty.
- */
-MEM_FILE *FIFO::get_front() const
-{
-	if (mlist.empty())
-		return nullptr;
-	return &mlist.front()->mem_file;
+	return o;
 }
 
 void FIFO::clear()
 {
-	MEM_FILE *m = nullptr;
-	while ((m = get_front()) != nullptr) {
-		mem_file_free(m);
-		dequeue();
-	}
+	std::optional<MEM_FILE> m;
+	while ((m = pop_front()).has_value())
+		mem_file_free(&*m);
 }
 
 DEQUEUE_NODE::~DEQUEUE_NODE()
@@ -691,7 +677,6 @@ static void *ev_deqwork(void *param)
 {
 	time_t cur_time;
 	time_t last_time;
-	MEM_FILE temp_file;
 	char buff[MAX_CMD_LENGTH];
 	
  NEXT_LOOP:
@@ -722,15 +707,11 @@ static void *ev_deqwork(void *param)
 		if (g_notify_stop)
 			break;
 		dq_hold.lock();
-		auto pfile = pdequeue->fifo.get_front();
-		if (NULL != pfile) {
-			temp_file = *pfile;
-			pdequeue->fifo.dequeue();
-		}
+		std::optional<MEM_FILE> pfile = pdequeue->fifo.pop_front();
 		dq_hold.unlock();
 		time(&cur_time);
 		
-		if (NULL == pfile) {	
+		if (!pfile.has_value()) {
 			if (cur_time - last_time >= SOCKET_TIMEOUT - 3) {
 				if (pdequeue->sk_write("PING\r\n") != 6 ||
 				    !read_response(pdequeue->sockd)) {
@@ -752,12 +733,12 @@ static void *ev_deqwork(void *param)
 			continue;
 		}
 		
-		int len = temp_file.read(buff, arsizeof(buff) - 2);
+		int len = pfile->read(buff, arsizeof(buff) - 2);
 		buff[len] = '\r';
 		len ++;
 		buff[len] = '\n';
 		len ++;
-		mem_file_free(&temp_file);
+		pfile.reset();
 		if (pdequeue->sk_write({buff, static_cast<size_t>(len)}) != len ||
 		    !read_response(pdequeue->sockd)) {
 			hl_hold.lock();
