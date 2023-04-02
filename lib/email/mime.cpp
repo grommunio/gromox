@@ -439,7 +439,7 @@ bool MIME::set_content_type(const char *newtype)
 bool MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam) const
 {
 	auto pmime = this;
-	int	tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char tmp_tag[MIME_NAME_LEN];
 	char tmp_value[MIME_FIELD_LEN];
 	
@@ -459,14 +459,12 @@ bool MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam) const
 	return true;
 }
 
-static bool mime_get_content_type_field(const MIME *pmime, char *value, int length)
+static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t length)
 {
-	int offset;
-	int tag_len;
-	int val_len;
+	uint32_t tag_len, val_len;
 	char tmp_buff[MIME_FIELD_LEN];
-	
-	offset = strlen(pmime->content_type);
+
+	auto offset = strlen(pmime->content_type);
 	if (offset >= length) {
 		return false;
 	}
@@ -511,10 +509,10 @@ static bool mime_get_content_type_field(const MIME *pmime, char *value, int leng
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-bool MIME::get_field(const char *tag, char *value, int length) const
+bool MIME::get_field(const char *tag, char *value, size_t length) const
 {
 	auto pmime = this;
-	int tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char tmp_buff[MIME_NAME_LEN];
 	
 #ifdef _DEBUG_UMTA
@@ -555,7 +553,7 @@ int MIME::get_field_num(const char *tag) const
 {
 	auto pmime = this;
 	int i;
-	int	tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char tmp_buff[MIME_NAME_LEN];
 
 #ifdef _DEBUG_UMTA
@@ -595,11 +593,11 @@ int MIME::get_field_num(const char *tag) const
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-bool MIME::search_field(const char *tag, int order, char *value, int length) const
+bool MIME::search_field(const char *tag, int order, char *value, size_t length) const
 {
 	auto pmime = this;
 	int i;
-	int	tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char tmp_buff[MIME_FIELD_LEN];
 	
 #ifdef _DEBUG_UMTA
@@ -655,7 +653,7 @@ bool MIME::set_field(const char *tag, const char *value)
 {
 	auto pmime = this;
 	MEM_FILE file_tmp;
-	int		tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
 	BOOL	found_tag = FALSE;
 	int		i, mark;
@@ -743,7 +741,6 @@ bool MIME::set_field(const char *tag, const char *value)
 bool MIME::append_field(const char *tag, const char *value)
 {
 	auto pmime = this;
-	int	tag_len, val_len;
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
@@ -754,8 +751,7 @@ bool MIME::append_field(const char *tag, const char *value)
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		return false;
 	}
-	tag_len = strlen(tag);
-	val_len = strlen(value);
+	uint32_t tag_len = strlen(tag), val_len = strlen(value);
 	pmime->f_other_fields.write(&tag_len, sizeof(uint32_t));
 	pmime->f_other_fields.write(tag, tag_len);
 	pmime->f_other_fields.write(&val_len, sizeof(uint32_t));
@@ -779,7 +775,7 @@ bool MIME::remove_field(const char *tag)
 	BOOL found_tag = false;
 	MEM_FILE file_tmp;
 	char tmp_buff[MIME_FIELD_LEN];
-	int tag_len, val_len;
+	uint32_t tag_len, val_len;
 
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		return false;
@@ -816,12 +812,11 @@ bool MIME::remove_field(const char *tag)
  *		value [out]			buffer for retrieving value
  *		length				length of value
  */
-bool MIME::get_content_param(const char *tag, char *value, int length) const
+bool MIME::get_content_param(const char *tag, char *value, size_t length) const
 {
 	auto pmime = this;
-	int	tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
-	int		distance;
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
@@ -836,7 +831,7 @@ bool MIME::get_content_param(const char *tag, char *value, int length) const
 		tmp_buff[tag_len] = '\0';
 		if (0 == strcasecmp(tag, tmp_buff)) {
 			fh.read(&val_len, sizeof(uint32_t));
-			distance = (val_len > length - 1)?(length - 1):val_len;
+			auto distance = val_len > length - 1 ? length - 1 : val_len;
 			fh.read(value, distance);
 			value[distance] = '\0';
 			return true;
@@ -858,7 +853,7 @@ bool MIME::set_content_param(const char *tag, const char *value)
 {
 	auto pmime = this;
 	MEM_FILE file_tmp;
-	int	tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
 	BOOL	found_tag = FALSE;
 	int i, mark;
@@ -949,7 +944,7 @@ bool MIME::set_content_param(const char *tag, const char *value)
 bool MIME::serialize(STREAM *pstream) const
 {
 	auto pmime = this;
-	int		tag_len, val_len;
+	uint32_t tag_len, val_len;
 	long	len, tmp_len;
 	char	tmp_buff[MIME_FIELD_LEN];
 	BOOL	has_submime;
@@ -1394,7 +1389,7 @@ bool MIME::emit(write_func write, void *fd) const
 	auto pmime = this;
 	BOOL has_submime;
 	size_t len, tmp_len;
-	int	tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 	if (pmime->mime_type == mime_type::none) {
@@ -1582,7 +1577,7 @@ bool MIME::check_dot() const
 {
 	auto pmime = this;
 	size_t	tmp_len;
-	int		tag_len, val_len;
+	uint32_t tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 	if (pmime->mime_type == mime_type::none) {
@@ -1666,7 +1661,7 @@ bool MIME::check_dot() const
 ssize_t MIME::get_length() const
 {
 	auto pmime = this;
-	int		tag_len, val_len;
+	uint32_t tag_len, val_len;
 	BOOL	has_submime;
 	
 	if (pmime->mime_type == mime_type::none)

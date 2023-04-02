@@ -29,13 +29,13 @@ struct GX_EXPORT MIME {
 	bool read_content(char *out_buf, size_t *len) const;
 	bool set_content_type(const char *);
 	bool enum_field(MIME_FIELD_ENUM, void *) const;
-	bool get_field(const char *tag, char *value, int len) const;
+	bool get_field(const char *tag, char *value, size_t len) const;
 	int get_field_num(const char *tag) const;
-	bool search_field(const char *tag, int order, char *value, int len) const;
+	bool search_field(const char *tag, int order, char *value, size_t len) const;
 	bool set_field(const char *tag, const char *value);
 	bool append_field(const char *tag, const char *value);
 	bool remove_field(const char *tag);
-	bool get_content_param(const char *tag, char *value, int len) const;
+	bool get_content_param(const char *tag, char *value, size_t len) const;
 	bool set_content_param(const char *tag, const char *value);
 	int get_mimes_digest(const char *, size_t *, Json::Value &) const;
 	int get_structure_digest(const char *, size_t *, Json::Value &) const;
