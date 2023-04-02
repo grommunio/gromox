@@ -1,10 +1,8 @@
 #pragma once
-#include <string>
 #include <vector>
 #include <json/value.h>
 #include <openssl/ssl.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
@@ -60,7 +58,8 @@ struct GX_EXPORT MIME {
 	int boundary_len = 0;
 	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
 	std::vector<kvpair> f_type_params;
-	MEM_FILE f_other_fields{};
+	/* For @f_other_fields, we want (need?) some container that retains insertion order. */
+	std::vector<MIME_FIELD> f_other_fields;
 	BOOL head_touched = false;
 	char *head_begin = nullptr;
 	std::unique_ptr<char[], gromox::stdlib_delete> content_buf;

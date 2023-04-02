@@ -5102,7 +5102,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 }
 
 static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
-    /* effective-moved-from */ BINARY *hdrs, MIME_FIELD &f)
+    /* effective-moved-from */ BINARY *hdrs, MIME_FIELD &f) try
 {
 	if (hdrs == nullptr || hdrs->cb == 0) {
 		auto cbg = strdup("\r\n");
@@ -5132,10 +5132,9 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	origmime.f_type_params.insert(origmime.f_type_params.end(),
 		std::make_move_iterator(sec->f_type_params.begin()),
 		std::make_move_iterator(sec->f_type_params.end()));
-	size_t rd;
-	sec->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while ((rd = sec->f_other_fields.read(buf, arsizeof(buf))) != MEM_END_OF_FILE)
-		origmime.f_other_fields.write(buf, rd);
+	origmime.f_other_fields.insert(origmime.f_other_fields.end(),
+		std::make_move_iterator(sec->f_other_fields.begin()),
+		std::make_move_iterator(sec->f_other_fields.end()));
 
 	auto content = static_cast<char *>(HX_memdup(sec->content_begin, sec->content_length));
 	if (content == nullptr)
@@ -5147,6 +5146,9 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 	gx_strlcpy(origmime.content_type, "multipart/signed", arsizeof(origmime.content_type));
 	origmime.head_touched = TRUE;
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1093: ENOMEM");
+	return false;
 }
 
 BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
