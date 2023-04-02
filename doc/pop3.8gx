@@ -3,6 +3,8 @@
 .TH pop3 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 pop3 \(em Gromox POP3 server
+.SH Authentication
+The POP3 server supports impersonation; see imap(8gx) for details.
 .SH Synopsis
 \fBpop3\fP [\fB\-c\fP \fIconfig\fP]
 .SH Options

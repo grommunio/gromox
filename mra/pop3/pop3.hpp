@@ -103,6 +103,8 @@ extern const char *resource_get_pop3_code(unsigned int code_type, unsigned int n
 
 extern int system_services_run();
 extern void system_services_stop();
+extern void xrpc_build_env();
+extern void xrpc_free_env();
 
 extern BOOL (*system_services_judge_ip)(const char *);
 extern BOOL (*system_services_container_add_ip)(const char *);
@@ -110,6 +112,7 @@ extern BOOL (*system_services_container_remove_ip)(const char *);
 extern BOOL (*system_services_judge_user)(const char *);
 extern BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 extern authmgr_login_t system_services_auth_login;
+extern gromox::errno_t (*system_services_auth_meta)(const char *username, unsigned int wantpriv, sql_meta_result &out);
 extern int (*system_services_list_mail)(const char *, const char *, std::vector<gromox::MSG_UNIT> &, int *num, uint64_t *size);
 extern int (*system_services_delete_mail)(const char *, const char *, const std::vector<gromox::MSG_UNIT *> &);
 extern void (*system_services_broadcast_event)(const char *);

@@ -16,6 +16,8 @@
 #include <sys/types.h>
 #include <gromox/authmgr.hpp>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
@@ -25,6 +27,7 @@
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 using namespace gromox;
+namespace exmdb_client = exmdb_client_remote;
 
 template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t idx)
 {
@@ -105,6 +108,20 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	return 1700;
 }    
 
+static bool store_owner_over(const char *actor, const char *mbox, const char *mboxdir)
+{
+	if (mbox == nullptr)
+		return true; /* No impersonation of another store */
+	if (strcmp(actor, mbox) == 0)
+		return true; /* Silly way of logging in to your own mailbox but ok */
+	uint32_t perms = 0;
+	xrpc_build_env();
+	auto ok = exmdb_client::get_mbox_perm(mboxdir, actor, &perms) &&
+	          perms & frightsGromoxStoreOwner;
+	xrpc_free_env();
+	return ok;
+}
+
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
@@ -124,13 +141,17 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return 1705;
 	}
 	
-	sql_meta_result mres;
+	sql_meta_result mres_auth, mres /* target */;
+	auto target_mbox = strchr(pcontext->username, '!');
+	if (target_mbox != nullptr)
+		*target_mbox++ = '\0';
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);
 	if (!system_services_auth_login(pcontext->username, temp_password,
-	    USER_PRIVILEGE_POP3, mres)) {
-		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s", mres.errstr.c_str());
+	    USER_PRIVILEGE_POP3, mres_auth)) {
+		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s",
+			mres_auth.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= g_max_auth_times) {
 			if (system_services_add_user_into_temp_list != nullptr)
@@ -141,6 +162,24 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return 1714 | DISPATCH_CONTINUE;
 	}
 
+	safe_memset(temp_password, 0, std::size(temp_password));
+	if (target_mbox != nullptr) {
+		if (system_services_auth_meta(target_mbox, 0, mres) != 0)
+			return 1715 | DISPATCH_CONTINUE;
+		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
+		    mres.maildir.c_str())) {
+			pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s",
+				mres_auth.errstr.c_str());
+			pcontext->auth_times ++;
+			if (pcontext->auth_times >= g_max_auth_times) {
+				if (system_services_add_user_into_temp_list != nullptr)
+					system_services_add_user_into_temp_list(pcontext->username,
+						g_block_auth_fail);
+				return 1706 | DISPATCH_SHOULD_CLOSE;
+			}
+			return 1714 | DISPATCH_CONTINUE;
+		}
+	}
 	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 	pcontext->msg_array.clear();

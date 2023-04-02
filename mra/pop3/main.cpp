@@ -19,6 +19,8 @@
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/fileio.h>
+#include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
@@ -32,6 +34,8 @@ gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
+static thread_local std::unique_ptr<alloc_context> g_alloc_mgr;
+static thread_local unsigned int g_amgr_refcount;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -97,6 +101,29 @@ static bool pop3_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	mlog_init(pconfig->get_value("pop3_log_file"), pconfig->get_ll("pop3_log_level"));
 	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
 	return true;
+}
+
+void xrpc_build_env()
+{
+	if (g_alloc_mgr == nullptr)
+		g_alloc_mgr = std::make_unique<alloc_context>();
+	++g_amgr_refcount;
+}
+
+static void xrpc_build_env1(const remote_svr &)
+{
+	xrpc_build_env();
+}
+
+void xrpc_free_env()
+{
+	if (--g_amgr_refcount == 0)
+		g_alloc_mgr.reset();
+}
+
+static void *xrpc_alloc(size_t z)
+{
+	return g_alloc_mgr->alloc(z);
 }
 
 int main(int argc, const char **argv) try
@@ -319,6 +346,15 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	
+	exmdb_rpc_alloc = xrpc_alloc;
+	exmdb_rpc_free = [](void *) {};
+	exmdb_client_init(1, 0);
+	if (exmdb_client_run(g_config_file->get_value("config_file_path"),
+	    EXMDB_CLIENT_ASYNC_CONNECT, xrpc_build_env1, xrpc_free_env, nullptr) != 0) {
+		mlog(LV_ERR, "Failed to start exmdb_client");
+		return EXIT_FAILURE;
+	}
+
 	retcode = EXIT_SUCCESS;
 	printf("[system]: POP3 DAEMON is now running\n");
 	while (!g_notify_stop) {
