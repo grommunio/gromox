@@ -1,10 +1,26 @@
-Development 2.7.8
-=================
+Development 2.7.54
+==================
 
 Fixes:
 
 * exmdb_provider: repair a 4-byte cutoff when reading PR_BODY,
   PR_TRANSPORT_MESSAGE_HEADERS if they are compressed on disk
+* php_mapi: fix a case where proptag arrays had bogus keys
+* midb: resolve a crash when a P-SRHL HEADER search has not enough arguments
+* zcore: do not lose folder for OP_MOVE rules when that folder is
+  in a public store
+* mda: the DATA command in LMTP mode did not emit one status line
+  for every RCPT
+* nsp: fix janky addressbook navigation when the GAL has hidden entries
+* authmgr: resolve altnames before searching them in the LDAP backend
+
+Enhancements:
+
+* The "Hide from addresbook" functionality has gained another bit, so that name
+  resolution ("Check names" button in OL/g-web) is no longer tied to visibility
+  in the GAL.
+* Support for non-default stores in the IMAP and POP3 protocols;
+  use "actualusername!sharedmbox" as the username for login.
 
 Changes:
 
@@ -15,6 +31,7 @@ Changes:
 * http: adjust the built-in PHP-FPM socket paths to reflect changes in
   g-web and g-sync (this impacts test setups that run gromox-http without an
   nginx in front)
+* mda: update "Received" headers in messages to look more like Postfix's
 
 
 Gromox 2.7 (2023-03-24)
