@@ -29,7 +29,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/scope.hpp>
@@ -1644,13 +1643,12 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 
 static void *imps_scanwork(void *argp)
 {
+	struct bk {
+		std::string user, dir, folder;
+	};
 	int i = 0;
 	int err_num;
 	time_t cur_time;
-	char folder[128];
-	char maildir[256];
-	char username[UADDR_SIZE];
-	MEM_FILE temp_file;
 	
 	while (!g_notify_stop) {
 		i ++;
@@ -1660,8 +1658,7 @@ static void *imps_scanwork(void *argp)
 		}
 		
 		i = 0;
-		
-		mem_file_init(&temp_file, &g_alloc_file);
+		std::vector<bk> temp_file;
 		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
 		for (const auto &xpair : g_select_hash) {
@@ -1670,23 +1667,21 @@ static void *imps_scanwork(void *argp)
 				pnode=double_list_get_after(plist, pnode)) {
 				auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 				if (cur_time - pcontext->selected_time > SELECT_INTERVAL) {
-					temp_file.writeline(pcontext->username);
-					temp_file.writeline(pcontext->maildir);
-					temp_file.writeline(pcontext->selected_folder);
+					try {
+						temp_file.emplace_back(bk{pcontext->username,
+							pcontext->maildir, pcontext->selected_folder});
+					} catch (const std::bad_alloc &) {
+						mlog(LV_ERR, "E-1816: ENOMEM");
+					}
 					pcontext->selected_time = cur_time;
 				}
 			}
 		}
 		hl_hold.unlock();
-		
-		while (temp_file.readline(username, arsizeof(username)) != MEM_END_OF_FILE) {
-			if (temp_file.readline(maildir, std::size(maildir)) == MEM_END_OF_FILE ||
-			    temp_file.readline(folder, std::size(folder)) == MEM_END_OF_FILE)
-				break;
-			system_services_broadcast_select(username, folder);
-			system_services_ping_mailbox(maildir, &err_num);
+		for (const auto &e : temp_file) {
+			system_services_broadcast_select(e.user.c_str(), e.folder.c_str());
+			system_services_ping_mailbox(e.dir.c_str(), &err_num);
 		}
-		mem_file_free(&temp_file);
 	}
 	return nullptr;
 }
