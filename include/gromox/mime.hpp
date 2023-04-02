@@ -1,6 +1,9 @@
 #pragma once
+#include <string>
+#include <vector>
 #include <json/value.h>
 #include <openssl/ssl.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
@@ -56,7 +59,8 @@ struct GX_EXPORT MIME {
 	enum mime_type mime_type = mime_type::none;
 	int boundary_len = 0;
 	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
-	MEM_FILE f_type_params{}, f_other_fields{};
+	std::vector<kvpair> f_type_params;
+	MEM_FILE f_other_fields{};
 	BOOL head_touched = false;
 	char *head_begin = nullptr;
 	std::unique_ptr<char[], gromox::stdlib_delete> content_buf;

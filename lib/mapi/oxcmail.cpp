@@ -5129,10 +5129,10 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		return false;
 	if (buf[16] != '\0' && buf[16] != ';')
 		return false;
-	sec->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	origmime.f_type_params.insert(origmime.f_type_params.end(),
+		std::make_move_iterator(sec->f_type_params.begin()),
+		std::make_move_iterator(sec->f_type_params.end()));
 	size_t rd;
-	while ((rd = sec->f_type_params.read(buf, arsizeof(buf))) != MEM_END_OF_FILE)
-		origmime.f_type_params.write(buf, rd);
 	sec->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while ((rd = sec->f_other_fields.read(buf, arsizeof(buf))) != MEM_END_OF_FILE)
 		origmime.f_other_fields.write(buf, rd);

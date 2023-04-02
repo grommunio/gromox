@@ -44,7 +44,6 @@ MIME::MIME(alloc_limiter<file_block> *palloc)
 	}
 #endif
 	pmime->node.pdata		 = pmime;
-	mem_file_init(&pmime->f_type_params, palloc);
 	mem_file_init(&pmime->f_other_fields, palloc);
 }
 
@@ -59,7 +58,6 @@ MIME::~MIME()
 			pnode = pnode->get_sibling();
         }
 	}
-	mem_file_free(&pmime->f_type_params);
 	mem_file_free(&pmime->f_other_fields);
 }
 
@@ -110,8 +108,7 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length)
 			if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0) {
 				parse_field_value(mime_field.value.c_str(),
 					mime_field.value.size(), pmime->content_type,
-					std::size(pmime->content_type),
-						&pmime->f_type_params);
+					std::size(pmime->content_type), f_type_params);
 				pmime->mime_type = strncasecmp(pmime->content_type, "multipart/", 10) == 0 ?
 				                   mime_type::multiple : mime_type::single;
 			} else {
@@ -461,37 +458,27 @@ bool MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam) const
 
 static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t length)
 {
-	uint32_t tag_len, val_len;
-	char tmp_buff[MIME_FIELD_LEN];
-
 	auto offset = strlen(pmime->content_type);
 	if (offset >= length) {
 		return false;
 	}
 	memcpy(value, pmime->content_type, offset);
-	MEM_FILE fh = pmime->f_type_params;
-	fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (fh.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+	for (const auto &[k, v] : pmime->f_type_params) {
 		/* content-type: xxxxx"; "yyyyy */
-		if (offset + 4 + tag_len >= length) {
+		if (offset + 4 + k.size() >= length)
 			return false;
-		}
 		memcpy(value + offset, "; ", 2);
 		offset += 2;
-		fh.read(tmp_buff, tag_len);
-		memcpy(value + offset, tmp_buff, tag_len);
-		offset += tag_len;
-		fh.read(&val_len, sizeof(uint32_t));
-		fh.read(tmp_buff, val_len);
+		memcpy(&value[offset], k.c_str(), k.size());
+		offset += k.size();
 		/* content_type: xxxxx; yyyyy=zzz */
-		if (0 != val_len) {
-			if (offset + val_len + 1 >= length) {
+		if (!v.empty()) {
+			if (offset + v.size() + 1 >= length)
 				return false;
-			}
 			value[offset] = '=';
 			offset ++;
-			memcpy(value + offset, tmp_buff, val_len);
-			offset += val_len;
+			memcpy(&value[offset], v.c_str(), v.size());
+			offset += v.size();
 		}
 	}
 	value[offset] = '\0';
@@ -667,7 +654,7 @@ bool MIME::set_field(const char *tag, const char *value)
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		pmime->f_type_params.clear();
 		parse_field_value(value, strlen(value), tmp_buff, 256,
-			&pmime->f_type_params);
+			pmime->f_type_params);
 		if (!pmime->set_content_type(tmp_buff)) {
 			pmime->f_type_params.clear();
 			return false;
@@ -814,30 +801,17 @@ bool MIME::remove_field(const char *tag)
  */
 bool MIME::get_content_param(const char *tag, char *value, size_t length) const
 {
-	auto pmime = this;
-	uint32_t tag_len, val_len;
-	char	tmp_buff[MIME_FIELD_LEN];
-	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
 		return false;
 	}
 #endif
-	MEM_FILE fh = pmime->f_type_params;
-	fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (fh.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		fh.read(tmp_buff, tag_len);
-		tmp_buff[tag_len] = '\0';
-		if (0 == strcasecmp(tag, tmp_buff)) {
-			fh.read(&val_len, sizeof(uint32_t));
-			auto distance = val_len > length - 1 ? length - 1 : val_len;
-			fh.read(value, distance);
-			value[distance] = '\0';
+	for (const auto &[k, v] : f_type_params) {
+		if (strcasecmp(tag, k.c_str()) == 0) {
+			gx_strlcpy(value, v.c_str(), length);
 			return true;
 		} 
-		fh.read(&val_len, sizeof(uint32_t));
-		fh.read(tmp_buff, val_len);
 	}
 	return false;
 }
@@ -849,15 +823,9 @@ bool MIME::get_content_param(const char *tag, char *value, size_t length) const
  *		tag [in]			tag string
  *		value [in]			value string
  */
-bool MIME::set_content_param(const char *tag, const char *value)
+bool MIME::set_content_param(const char *tag, const char *value) try
 {
 	auto pmime = this;
-	MEM_FILE file_tmp;
-	uint32_t tag_len, val_len;
-	char	tmp_buff[MIME_FIELD_LEN];
-	BOOL	found_tag = FALSE;
-	int i, mark;
-	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
 		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
@@ -879,57 +847,16 @@ bool MIME::set_content_param(const char *tag, const char *value)
 			boundary_len = bdlen;
 		}
 	}
-	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mark = -1;
-	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		mark ++;
-		pmime->f_type_params.read(tmp_buff, tag_len);
-		tmp_buff[tag_len] = '\0';
-		if (0 == strcasecmp(tag, tmp_buff)) {
-			found_tag = TRUE;
-			break;
-		} 
-		pmime->f_type_params.read(&val_len, sizeof(uint32_t));
-		pmime->f_type_params.read(tmp_buff, val_len);
-	}
-	if (!found_tag) {
-		tag_len = strlen(tag);
-		val_len = strlen(value);
-		pmime->f_type_params.write(&tag_len, sizeof(uint32_t));
-		pmime->f_type_params.write(tag, tag_len);
-		pmime->f_type_params.write(&val_len, sizeof(uint32_t));
-		pmime->f_type_params.write(value, val_len);
-		pmime->head_touched = TRUE;
-		return true;
-	}
-	mem_file_init(&file_tmp, pmime->f_type_params.allocator);
-	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	i = 0;
-	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		pmime->f_type_params.read(tmp_buff, tag_len);
-		if (i != mark) {
-			file_tmp.write(&tag_len, sizeof(uint32_t));
-			file_tmp.write(tmp_buff, tag_len);
-		}
-		pmime->f_type_params.read(&val_len, sizeof(uint32_t));
-		pmime->f_type_params.read(tmp_buff, val_len);
-		if (i != mark) {
-			file_tmp.write(&val_len, sizeof(uint32_t));
-			file_tmp.write(tmp_buff, val_len);
-		}
-		i ++;
-	}
-	/* write the new tag-value at the end of mem file */
-	tag_len = strlen(tag);
-	val_len = strlen(value);
-	file_tmp.write(&tag_len, sizeof(uint32_t));
-	file_tmp.write(tag, tag_len);
-	file_tmp.write(&val_len, sizeof(uint32_t));
-	file_tmp.write(value, val_len);
-	file_tmp.copy_to(pmime->f_type_params);
-	mem_file_free(&file_tmp);
+	auto it = std::find_if(f_type_params.begin(), f_type_params.end(),
+	          [&](const kvpair &p) { return strcasecmp(tag, p.name.c_str()) == 0; });
+	if (it != f_type_params.end())
+		f_type_params.erase(it);
+	f_type_params.emplace_back(kvpair{tag, value});
 	pmime->head_touched = TRUE;
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1094: ENOMEM");
+	return false;
 }
 
 /*
@@ -986,20 +913,15 @@ bool MIME::serialize(STREAM *pstream) const
 		len = strlen(pmime->content_type);
 		pstream->write(pmime->content_type, len);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		fh = pmime->f_type_params;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+		for (const auto &[k, v] : f_type_params) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			pstream->write(";\r\n\t", 4);
-			fh.read(tmp_buff, tag_len);
-			pstream->write(tmp_buff, tag_len);
-			fh.read(&val_len, sizeof(uint32_t));
-			fh.read(tmp_buff, val_len);
+			pstream->write(k.c_str(), k.size());
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-			if (0 != val_len) {
-				pstream->write("=", 1);
-				pstream->write(tmp_buff, val_len);
-			}
+			if (v.empty())
+				continue;
+			pstream->write("=", 1);
+			pstream->write(v.c_str(), v.size());
 		}
 		/* \r\n for separate head and content */
 		pstream->write("\r\n\r\n", 4);
@@ -1183,28 +1105,23 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	memcpy(tmp_buff + len, pmime->content_type, val_len);
 	len += val_len;
 	/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-	fh = pmime->f_type_params;
-	fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (fh.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+	for (const auto &[k, v] : f_type_params) {
 		/* content-type: xxxxx"; \r\n\t"yyyyy */
-		if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
+		if (len > MIME_FIELD_LEN + MIME_NAME_LEN - k.size())
 			return false;
-		}
 		memcpy(tmp_buff + len, ";\r\n\t", 4);
 		len += 4;
-		fh.read(tmp_buff + len, tag_len);
-		len += tag_len;
-		fh.read(&val_len, sizeof(uint32_t));
-		if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - val_len) {
+		memcpy(&tmp_buff[len], k.c_str(), k.size());
+		len += k.size();
+		if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - v.size())
 			return false;
-		}
 		/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-		if (0 != val_len) {
-			memcpy(tmp_buff + len, "=", 1);
-			len += 1;
-			fh.read(tmp_buff + len, val_len);
-			len += val_len;
-		}
+		if (v.empty())
+			continue;
+		memcpy(&tmp_buff[len], "=", 1);
+		len += 1;
+		memcpy(&tmp_buff[len], v.c_str(), v.size());
+		len += v.size();
 	}
 	if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
 		return false;
@@ -1440,29 +1357,23 @@ bool MIME::emit(write_func write, void *fd) const
 		memcpy(tmp_buff + len, pmime->content_type, val_len);
 		len += val_len;
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		fh = pmime->f_type_params;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len,
-		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
+		for (const auto &[k, v] : f_type_params) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
-			if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
+			if (len > MIME_FIELD_LEN + MIME_NAME_LEN - k.size())
 				return false;
-			}
 			memcpy(tmp_buff + len, ";\r\n\t", 4);
 			len += 4;
-			fh.read(tmp_buff + len, tag_len);
-			len += tag_len;
-			fh.read(&val_len, sizeof(uint32_t));
-			if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - val_len) {
+			memcpy(&tmp_buff[len], k.c_str(), k.size());
+			len += k.size();
+			if (len > MIME_FIELD_LEN + MIME_NAME_LEN + 3 - v.size())
 				return false;
-			}
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-			if (0 != val_len) {
-				memcpy(tmp_buff + len, "=", 1);
-				len += 1;
-				fh.read(tmp_buff + len, val_len);
-				len += val_len;
-			}
+			if (v.empty())
+				continue;
+			memcpy(tmp_buff + len, "=", 1);
+			len += 1;
+			memcpy(&tmp_buff[len], v.c_str(), v.size());
+			len += v.size();
 		}
 		if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
 			return false;
@@ -1686,19 +1597,12 @@ ssize_t MIME::get_length() const
 		mime_len += 14;
 		mime_len += strlen(pmime->content_type);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		fh = pmime->f_type_params;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len,
-		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
+		for (const auto &[k, v] : f_type_params) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
-			mime_len += tag_len + 4;
-			fh.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
-			fh.read(&val_len, sizeof(uint32_t));
+			mime_len += k.size() + 4;
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-			if (0 != val_len) {
-				mime_len += val_len + 1;
-				fh.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
-			}
+			if (!v.empty())
+				mime_len += v.size() + 1;
 		}
 		/* \r\n for separate head and content */
 		mime_len += 4;
@@ -1883,19 +1787,12 @@ int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 		*poffset += 14;
 		*poffset += strlen(pmime->content_type);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		fh = pmime->f_type_params;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len,
-		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
+		for (const auto &[k, v] : f_type_params) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
-			*poffset += tag_len + 4;
-			fh.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
-			fh.read(&val_len, sizeof(uint32_t));
+			*poffset += k.size() + 4;
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-			if (0 != val_len) {
-				*poffset += val_len + 1;
-				fh.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
-			}
+			if (!v.empty())
+				*poffset += v.size() + 1;
 		}
 		/* \r\n for separate head and content */
 		*poffset += 4;
@@ -2109,19 +2006,12 @@ int MIME::get_structure_digest(const char *id_string, size_t *poffset,
 		*poffset += 14;
 		*poffset += strlen(pmime->content_type);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		fh = pmime->f_type_params;
-		fh.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (fh.read(&tag_len,
-		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
+		for (const auto &[k, v] : f_type_params) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
-			*poffset += tag_len + 4;
-			fh.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
-			fh.read(&val_len, sizeof(uint32_t));
+			*poffset += k.size() + 4;
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
-			if (0 != val_len) {
-				*poffset += val_len + 1;
-				fh.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
-			}
+			if (!v.empty())
+				*poffset += v.size() + 1;
 		}
 		/* \r\n for separate head and content */
 		*poffset += 4;
