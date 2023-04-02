@@ -128,47 +128,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);
-	if (system_services_auth_login(pcontext->username, temp_password,
+	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_POP3, mres)) {
-		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
-		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
-		pcontext->msg_array.clear();
-		pcontext->total_size = 0;
-		
-		if ('\0' == pcontext->maildir[0]) {
-			return 1715;
-		}
-		
-		switch (system_services_list_mail(pcontext->maildir, "inbox",
-			pcontext->msg_array, &pcontext->total_mail,
-			&pcontext->total_size)) {
-		case MIDB_RESULT_OK:
-			break;
-		case MIDB_NO_SERVER:
-			/* write back nothing and close the connection */
-			pop3_parser_log_info(pcontext, LV_WARN, "lack of midb connections");
-			return DISPATCH_SHOULD_CLOSE;
-		case MIDB_RDWR_ERROR:
-			/* write back nothing and close the connection */
-			pop3_parser_log_info(pcontext, LV_WARN, "read write error with midb server");
-			return DISPATCH_SHOULD_CLOSE;
-		case MIDB_RESULT_ERROR:
-			/* write back nothing and close the connection */
-			pop3_parser_log_info(pcontext, LV_WARN, "midb returned error result");
-			return DISPATCH_SHOULD_CLOSE;
-		case MIDB_TOO_MANY_RESULTS:
-			pop3_parser_log_info(pcontext, LV_WARN, "Too many messages in folder");
-			return DISPATCH_SHOULD_CLOSE;
-		default:
-			return DISPATCH_SHOULD_CLOSE;
-		}
-		if (pcontext->total_mail < 0 ||
-		    pcontext->msg_array.size() != static_cast<size_t>(pcontext->total_mail))
-			return 1722;
-		pcontext->is_login = TRUE;
-		pop3_parser_log_info(pcontext, LV_DEBUG, "login success");
-		return 1700;
-	} else {
 		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s", mres.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= g_max_auth_times) {
@@ -180,6 +141,44 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		return 1714 | DISPATCH_CONTINUE;
 	}
 
+	gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
+	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
+	pcontext->msg_array.clear();
+	pcontext->total_size = 0;
+
+	if ('\0' == pcontext->maildir[0]) {
+		return 1715;
+	}
+
+	switch (system_services_list_mail(pcontext->maildir, "inbox",
+		pcontext->msg_array, &pcontext->total_mail,
+		&pcontext->total_size)) {
+	case MIDB_RESULT_OK:
+		break;
+	case MIDB_NO_SERVER:
+		/* write back nothing and close the connection */
+		pop3_parser_log_info(pcontext, LV_WARN, "lack of midb connections");
+		return DISPATCH_SHOULD_CLOSE;
+	case MIDB_RDWR_ERROR:
+		/* write back nothing and close the connection */
+		pop3_parser_log_info(pcontext, LV_WARN, "read write error with midb server");
+		return DISPATCH_SHOULD_CLOSE;
+	case MIDB_RESULT_ERROR:
+		/* write back nothing and close the connection */
+		pop3_parser_log_info(pcontext, LV_WARN, "midb returned error result");
+		return DISPATCH_SHOULD_CLOSE;
+	case MIDB_TOO_MANY_RESULTS:
+		pop3_parser_log_info(pcontext, LV_WARN, "Too many messages in folder");
+		return DISPATCH_SHOULD_CLOSE;
+	default:
+		return DISPATCH_SHOULD_CLOSE;
+	}
+	if (pcontext->total_mail < 0 ||
+	    pcontext->msg_array.size() != static_cast<size_t>(pcontext->total_mail))
+		return 1722;
+	pcontext->is_login = TRUE;
+	pop3_parser_log_info(pcontext, LV_DEBUG, "login success");
+	return 1700;
 }
 
 int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
