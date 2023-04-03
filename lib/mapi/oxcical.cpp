@@ -3420,7 +3420,7 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	auto lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	bool has_start_time = false;
-	time_t start_time, end_time;
+	time_t start_time = 0, end_time = 0;
 	if (lnum != nullptr) {
 		start_time = rop_util_nttime_to_unix(*lnum);
 		has_start_time = true;
