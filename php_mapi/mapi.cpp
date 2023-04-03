@@ -11,6 +11,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/safeint.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_client.hpp>
@@ -65,6 +66,10 @@ ZEND_END_MODULE_GLOBALS(mapi)
 		RETVAL_FALSE; \
 		return; \
 	} while (false)
+
+#define ZCL_MEMORY \
+	palloc_tls_init(); \
+	auto f_memrelease = make_scope_exit(palloc_tls_free);
 
 using namespace gromox;
 
@@ -343,6 +348,7 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 
 static void mapi_resource_dtor(zend_resource *rsrc)
 {
+	ZCL_MEMORY;
 	if (rsrc->ptr == nullptr)
 		return;
 	auto presource = static_cast<MAPI_RESOURCE *>(rsrc->ptr);
@@ -632,6 +638,7 @@ static ZEND_FUNCTION(mapi_parseoneoff)
 
 static ZEND_FUNCTION(mapi_logon_zarafa)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	size_t wa_len = 0, misc_len = 0, username_len = 0, password_len = 0;
 	size_t server_len = 0, sslcert_len = 0, sslpass_len = 0;
@@ -662,6 +669,7 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 
 static ZEND_FUNCTION(mapi_logon_ex)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	char *username, *password;
 	size_t username_len = 0, password_len = 0;
@@ -704,6 +712,7 @@ static ZEND_FUNCTION(mapi_logon_ex)
 
 static ZEND_FUNCTION(mapi_openentry)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
@@ -747,6 +756,7 @@ static ZEND_FUNCTION(mapi_openentry)
 
 static ZEND_FUNCTION(mapi_openaddressbook)
 {
+	ZCL_MEMORY;
 	zval *pzresource;
 	MAPI_RESOURCE *psession, *presource;
 	
@@ -819,6 +829,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 
 static ZEND_FUNCTION(mapi_ab_resolvename)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzarray, pzrowset, *pzresource;
 	TARRAY_SET cond_set, result_set;
@@ -849,6 +860,7 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 
 static ZEND_FUNCTION(mapi_ab_getdefaultdir)
 {
+	ZCL_MEMORY;
 	BINARY entryid;
 	zval *pzresource;
 	MAPI_RESOURCE *psession;
@@ -870,6 +882,7 @@ static ZEND_FUNCTION(mapi_ab_getdefaultdir)
 
 static ZEND_FUNCTION(mapi_getmsgstorestable)
 {
+	ZCL_MEMORY;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *psession, *presource;
@@ -896,6 +909,7 @@ static ZEND_FUNCTION(mapi_getmsgstorestable)
 
 static ZEND_FUNCTION(mapi_openmsgstore)
 {
+	ZCL_MEMORY;
 	BINARY entryid;
 	size_t eid_size = 0;
 	uint32_t hobject;
@@ -928,6 +942,7 @@ static ZEND_FUNCTION(mapi_openmsgstore)
 
 static ZEND_FUNCTION(mapi_openprofilesection)
 {
+	ZCL_MEMORY;
 	size_t uidlen = 0;
 	FLATUID *puid;
 	uint32_t hobject;
@@ -964,6 +979,7 @@ static ZEND_FUNCTION(mapi_openprofilesection)
 
 static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
@@ -1005,6 +1021,7 @@ static ZEND_FUNCTION(mapi_folder_gethierarchytable)
 
 static ZEND_FUNCTION(mapi_folder_getcontentstable)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
@@ -1051,6 +1068,7 @@ static ZEND_FUNCTION(mapi_folder_getcontentstable)
 
 static ZEND_FUNCTION(mapi_folder_createmessage)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
@@ -1080,6 +1098,7 @@ static ZEND_FUNCTION(mapi_folder_createmessage)
 
 static ZEND_FUNCTION(mapi_folder_deletemessages)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzarray, *pzresource;
 	MAPI_RESOURCE *pfolder;
@@ -1106,6 +1125,7 @@ static ZEND_FUNCTION(mapi_folder_deletemessages)
 
 static ZEND_FUNCTION(mapi_folder_copymessages)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzarray, *pzsrcfolder, *pzdstfolder;
 	MAPI_RESOURCE *psrcfolder, *pdstfolder;
@@ -1136,6 +1156,7 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 
 static ZEND_FUNCTION(mapi_folder_setreadflags)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzarray, *pzresource;
 	MAPI_RESOURCE *pfolder;
@@ -1162,6 +1183,7 @@ static ZEND_FUNCTION(mapi_folder_setreadflags)
 
 static ZEND_FUNCTION(mapi_folder_createfolder)
 {
+	ZCL_MEMORY;
 	size_t name_len = 0, comment_len = 0;
 	char *pcomment = nullptr, *pfname;
 	uint32_t hobject;
@@ -1199,6 +1221,7 @@ static ZEND_FUNCTION(mapi_folder_createfolder)
 
 static ZEND_FUNCTION(mapi_folder_deletefolder)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	BINARY entryid;
 	size_t eid_size = 0;
@@ -1225,6 +1248,7 @@ static ZEND_FUNCTION(mapi_folder_deletefolder)
 
 static ZEND_FUNCTION(mapi_folder_emptyfolder)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
@@ -1247,6 +1271,7 @@ static ZEND_FUNCTION(mapi_folder_emptyfolder)
 
 static ZEND_FUNCTION(mapi_folder_copyfolder)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	char *pname;
 	size_t name_len = 0, eid_size = 0;
@@ -1281,6 +1306,7 @@ static ZEND_FUNCTION(mapi_folder_copyfolder)
 
 static ZEND_FUNCTION(mapi_msgstore_createentryid)
 {
+	ZCL_MEMORY;
 	size_t dn_len = 0;
 	BINARY entryid;
 	char *mailboxdn;
@@ -1308,6 +1334,7 @@ static ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 
 static ZEND_FUNCTION(mapi_msgstore_openentry)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	BINARY entryid{};
 	size_t eid_size = 0;
@@ -1344,6 +1371,7 @@ static ZEND_FUNCTION(mapi_msgstore_openentry)
 
 static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 {
+	ZCL_MEMORY;
 	size_t skey_size = 0, skmsg_size = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pstore;
@@ -1373,6 +1401,7 @@ static ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 
 static ZEND_FUNCTION(mapi_msgstore_advise)
 {
+	ZCL_MEMORY;
 	BINARY entryid, *pentryid;
 	size_t eid_size = 0;
 	uint32_t sub_id;
@@ -1411,6 +1440,7 @@ static ZEND_FUNCTION(mapi_msgstore_advise)
 
 static ZEND_FUNCTION(mapi_msgstore_unadvise)
 {
+	ZCL_MEMORY;
 	zend_long sub_id;
 	zval *pzresource;
 	MAPI_RESOURCE *pstore;
@@ -1448,6 +1478,7 @@ static ZEND_FUNCTION(mapi_sink_create)
 
 static ZEND_FUNCTION(mapi_sink_timedwait)
 {
+	ZCL_MEMORY;
 	zend_long tmp_time;
 	NOTIF_SINK *psink;
 	zval pznotifications, *pzressink;
@@ -1490,6 +1521,7 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 
 static ZEND_FUNCTION(mapi_table_queryallrows)
 {
+	ZCL_MEMORY;
 	zval pzrowset, *pzresource, *pzproptags = nullptr, *pzrestriction = nullptr;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
@@ -1527,6 +1559,7 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 
 static ZEND_FUNCTION(mapi_table_queryrows)
 {
+	ZCL_MEMORY;
 	zval pzrowset, *pzresource, *pzproptags;
 	TARRAY_SET rowset;
 	MAPI_RESOURCE *ptable;
@@ -1560,6 +1593,7 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 
 static ZEND_FUNCTION(mapi_table_setcolumns)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource, *pzproptags;
 	MAPI_RESOURCE *ptable;
@@ -1586,6 +1620,7 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 
 static ZEND_FUNCTION(mapi_table_seekrow)
 {
+	ZCL_MEMORY;
 	zend_long bookmark = BOOKMARK_BEGINNING, row_count = 0;
 	zval *pzresource;
 	int32_t rows_sought;
@@ -1609,6 +1644,7 @@ static ZEND_FUNCTION(mapi_table_seekrow)
 
 static ZEND_FUNCTION(mapi_table_sort)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource, *pzsortarray;
 	MAPI_RESOURCE *ptable;
@@ -1634,6 +1670,7 @@ static ZEND_FUNCTION(mapi_table_sort)
 
 static ZEND_FUNCTION(mapi_table_getrowcount)
 {
+	ZCL_MEMORY;
 	uint32_t count;
 	zval *pzresource;
 	MAPI_RESOURCE *ptable;
@@ -1656,6 +1693,7 @@ static ZEND_FUNCTION(mapi_table_getrowcount)
 
 static ZEND_FUNCTION(mapi_table_restrict)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource, *pzrestrictarray;
 	MAPI_RESOURCE *ptable;
@@ -1683,6 +1721,7 @@ static ZEND_FUNCTION(mapi_table_restrict)
 
 static ZEND_FUNCTION(mapi_table_findrow)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0, bookmark = BOOKMARK_BEGINNING;
 	uint32_t row_idx;
 	zval *pzresource, *pzrestrictarray;
@@ -1711,6 +1750,7 @@ static ZEND_FUNCTION(mapi_table_findrow)
 
 static ZEND_FUNCTION(mapi_table_createbookmark)
 {
+	ZCL_MEMORY;
 	zval *pzresource;
 	uint32_t bookmark;
 	MAPI_RESOURCE *ptable;
@@ -1733,6 +1773,7 @@ static ZEND_FUNCTION(mapi_table_createbookmark)
 
 static ZEND_FUNCTION(mapi_table_freebookmark)
 {
+	ZCL_MEMORY;
 	zend_long bookmark;
 	zval *pzresource;
 	MAPI_RESOURCE *ptable;
@@ -1755,6 +1796,7 @@ static ZEND_FUNCTION(mapi_table_freebookmark)
 
 static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 {
+	ZCL_MEMORY;
 	BINARY entryid;
 	zval *pzresource;
 	uint32_t hobject;
@@ -1790,6 +1832,7 @@ static ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 
 static ZEND_FUNCTION(mapi_message_modifyrecipients)
 {
+	ZCL_MEMORY;
 	zend_long flags = MODRECIP_ADD;
 	zval *pzadrlist, *pzresource;
 	TARRAY_SET rcpt_list;
@@ -1816,6 +1859,7 @@ static ZEND_FUNCTION(mapi_message_modifyrecipients)
 
 static ZEND_FUNCTION(mapi_message_submitmessage)
 {
+	ZCL_MEMORY;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	
@@ -1836,6 +1880,7 @@ static ZEND_FUNCTION(mapi_message_submitmessage)
 
 static ZEND_FUNCTION(mapi_message_getattachmenttable)
 {
+	ZCL_MEMORY;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage, *presource;
@@ -1864,6 +1909,7 @@ static ZEND_FUNCTION(mapi_message_getattachmenttable)
 
 static ZEND_FUNCTION(mapi_message_openattach)
 {
+	ZCL_MEMORY;
 	zend_long attach_id;
 	zval *pzresource;
 	uint32_t hobject;
@@ -1893,6 +1939,7 @@ static ZEND_FUNCTION(mapi_message_openattach)
 
 static ZEND_FUNCTION(mapi_message_createattach)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
@@ -1922,6 +1969,7 @@ static ZEND_FUNCTION(mapi_message_createattach)
 
 static ZEND_FUNCTION(mapi_message_deleteattach)
 {	
+	ZCL_MEMORY;
 	zend_long flags = 0, attach_id;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
@@ -1945,6 +1993,7 @@ static ZEND_FUNCTION(mapi_message_deleteattach)
 
 static ZEND_FUNCTION(mapi_stream_read)
 {
+	ZCL_MEMORY;
 	void *pbuff;
 	zval *pzresource;
 	uint32_t actual_bytes;
@@ -1966,6 +2015,7 @@ static ZEND_FUNCTION(mapi_stream_read)
 
 static ZEND_FUNCTION(mapi_stream_seek)
 {
+	ZCL_MEMORY;
 	zend_long flags = STREAM_SEEK_CUR, seek_offset;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
@@ -1984,6 +2034,7 @@ static ZEND_FUNCTION(mapi_stream_seek)
 
 static ZEND_FUNCTION(mapi_stream_setsize)
 {
+	ZCL_MEMORY;
 	zend_long newsize;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
@@ -2002,6 +2053,7 @@ static ZEND_FUNCTION(mapi_stream_setsize)
 
 static ZEND_FUNCTION(mapi_stream_commit)
 {
+	ZCL_MEMORY;
 	uint32_t result;
 	zval *pzresource;
 	STREAM_OBJECT *pstream;
@@ -2020,6 +2072,7 @@ static ZEND_FUNCTION(mapi_stream_commit)
 
 static ZEND_FUNCTION(mapi_stream_write)
 {
+	ZCL_MEMORY;
 	zval *pzresource;
 	size_t dblk_size = 0;
 	BINARY data_block;
@@ -2041,6 +2094,7 @@ static ZEND_FUNCTION(mapi_stream_write)
 
 static ZEND_FUNCTION(mapi_stream_stat)
 {
+	ZCL_MEMORY;
 	zval *pzresource;
 	uint32_t stream_size;
 	STREAM_OBJECT *pstream;
@@ -2067,6 +2121,7 @@ static ZEND_FUNCTION(mapi_stream_create)
 
 static ZEND_FUNCTION(mapi_openpropertytostream)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0, proptag;
 	size_t guidlen = 0;
 	void *pvalue;
@@ -2143,6 +2198,7 @@ static ZEND_FUNCTION(mapi_openpropertytostream)
 
 static ZEND_FUNCTION(mapi_message_getrecipienttable)
 {
+	ZCL_MEMORY;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage, *presource;
@@ -2171,6 +2227,7 @@ static ZEND_FUNCTION(mapi_message_getrecipienttable)
 
 static ZEND_FUNCTION(mapi_message_setreadflag)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
@@ -2193,6 +2250,7 @@ static ZEND_FUNCTION(mapi_message_setreadflag)
 
 static ZEND_FUNCTION(mapi_attach_openobj)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresource;
@@ -2223,6 +2281,7 @@ static ZEND_FUNCTION(mapi_attach_openobj)
 
 static ZEND_FUNCTION(mapi_getidsfromnames)
 {
+	ZCL_MEMORY;
 	zval *pzstore, *pznames, *pzguids;
 	PROPID_ARRAY propids;
 	MAPI_RESOURCE *pstore;
@@ -2252,6 +2311,7 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 
 static ZEND_FUNCTION(mapi_setprops)
 {
+	ZCL_MEMORY;
 	zval *pzpropvals, *pzresource;
 	MAPI_RESOURCE *probject;
 	TPROPVAL_ARRAY propvals;
@@ -2303,6 +2363,7 @@ static ZEND_FUNCTION(mapi_setprops)
 
 static ZEND_FUNCTION(mapi_copyto)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzsrc, *pzdst, *pzexcludeiids, *pzexcludeprops;
 	MAPI_RESOURCE *psrcobject, *pdstobject;
@@ -2365,6 +2426,7 @@ static ZEND_FUNCTION(mapi_copyto)
 
 static ZEND_FUNCTION(mapi_savechanges)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource;
 	MAPI_RESOURCE *probject;
@@ -2418,6 +2480,7 @@ static ZEND_FUNCTION(mapi_savechanges)
 
 static ZEND_FUNCTION(mapi_deleteprops)
 {
+	ZCL_MEMORY;
 	zval *pzresource, *pzproptags;
 	PROPTAG_ARRAY proptags;
 	MAPI_RESOURCE *probject;
@@ -2464,6 +2527,7 @@ static ZEND_FUNCTION(mapi_deleteprops)
 
 static ZEND_FUNCTION(mapi_openproperty)
 {
+	ZCL_MEMORY;
 	size_t guidlen = 0;
 	void *pvalue;
 	char *guidstr;
@@ -2636,6 +2700,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 
 static ZEND_FUNCTION(mapi_getprops)
 {
+	ZCL_MEMORY;
 	zval pzpropvals, *pzresource, *pztagarray = nullptr;
 	PROPTAG_ARRAY proptags, *pproptags = nullptr;
 	TPROPVAL_ARRAY propvals;
@@ -2726,6 +2791,7 @@ static ZEND_FUNCTION(mapi_getprops)
 
 static ZEND_FUNCTION(mapi_getnamesfromids)
 {
+	ZCL_MEMORY;
 	zval *pzarray, *pzresource;
 	char num_buff[20];
 	PROPID_ARRAY propids;
@@ -2776,6 +2842,7 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 
 static ZEND_FUNCTION(mapi_decompressrtf)
 {
+	ZCL_MEMORY;
 	pid_t pid;
 	int status, offset, bufflen, readlen;
 	size_t rtflen = 0;
@@ -2848,6 +2915,7 @@ static ZEND_FUNCTION(mapi_decompressrtf)
 
 static ZEND_FUNCTION(mapi_folder_getrulestable)
 {
+	ZCL_MEMORY;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder, *presource;
@@ -2876,6 +2944,7 @@ static ZEND_FUNCTION(mapi_folder_getrulestable)
 
 static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval pzfolderlist, pzrestriction, *pzresource;
 	uint32_t search_state;
@@ -2914,6 +2983,7 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 
 static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresource, *pzfolderlist, *pzrestriction = nullptr;
 	MAPI_RESOURCE *pfolder;
@@ -2951,6 +3021,7 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 
 static ZEND_FUNCTION(mapi_folder_modifyrules)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzrows, *pzresource;
 	RULE_LIST rule_list;
@@ -2976,6 +3047,7 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 
 static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
+	ZCL_MEMORY;
 	zend_long acl_type;
 	zval *pzresource;
 	PERMISSION_SET perm_set;
@@ -3028,6 +3100,7 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 
 static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 {
+	ZCL_MEMORY;
 	zval *pzperms, *pzresource;
 	HashTable *pdata, *ptarget_hash;
 	MAPI_RESOURCE *pfolder;
@@ -3114,6 +3187,7 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 */
 static ZEND_FUNCTION(mapi_getuseravailability)
 {
+	ZCL_MEMORY;
 	zend_long starttime, endtime;
 	BINARY entryid;
 	size_t eid_size = 0;
@@ -3145,6 +3219,7 @@ static ZEND_FUNCTION(mapi_getuseravailability)
 
 static ZEND_FUNCTION(mapi_exportchanges_config)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0, buffersize = 0;
 	zval *pzrestrict, *pzresstream, *pzincludeprops, *pzexcludeprops;
 	zval *pzresimportchanges, *pzresexportchanges;
@@ -3342,6 +3417,7 @@ static zend_bool import_folder_deletion(zval *pztarget_obj,
 
 static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 {
+	ZCL_MEMORY;
 	uint32_t flags;
 	zend_bool b_new;
 	zval *pzresource;
@@ -3427,6 +3503,7 @@ static ZEND_FUNCTION(mapi_exportchanges_synchronize)
 
 static ZEND_FUNCTION(mapi_exportchanges_updatestate)
 {
+	ZCL_MEMORY;
 	BINARY state_bin;
 	zval *pzresstream, *pzresexportchanges;
 	ICS_EXPORT_CTX *pctx;
@@ -3452,6 +3529,7 @@ static ZEND_FUNCTION(mapi_exportchanges_updatestate)
 
 static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 {
+	ZCL_MEMORY;
 	zval *pzresource;
 	ICS_EXPORT_CTX *pctx;
 	
@@ -3470,6 +3548,7 @@ static ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_config)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
@@ -3494,6 +3573,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_config)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 {
+	ZCL_MEMORY;
 	BINARY state_bin;
 	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
@@ -3519,6 +3599,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	uint32_t hobject;
 	zval *pzresprops, *pzresimport, *pzresmessage;
@@ -3553,6 +3634,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresimport, *pzresmessages;
 	ICS_IMPORT_CTX *pctx;
@@ -3580,6 +3662,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 
 static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 {
+	ZCL_MEMORY;
 	zval *pzresimport, *pzresreadstates;
 	ICS_IMPORT_CTX *pctx;
 	STATE_ARRAY message_states;
@@ -3612,6 +3695,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
@@ -3635,6 +3719,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_config)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 {
+	ZCL_MEMORY;
 	BINARY state_bin;
 	zval *pzresimport, *pzresstream;
 	ICS_IMPORT_CTX *pctx;
@@ -3662,6 +3747,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 {
+	ZCL_MEMORY;
 	zval *pzresprops, *pzresimport;
 	ICS_IMPORT_CTX *pctx;
 	TPROPVAL_ARRAY propvals;
@@ -3687,6 +3773,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 
 static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 {
+	ZCL_MEMORY;
 	zend_long flags = 0;
 	zval *pzresimport, *pzresfolders;
 	ICS_IMPORT_CTX *pctx;
@@ -3711,6 +3798,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 
 static ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 {
+	ZCL_MEMORY;
 	zval *pzobject;
 	ICS_IMPORT_CTX *pctx;
 
@@ -3730,6 +3818,7 @@ static ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 
 static ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 {
+	ZCL_MEMORY;
 	zval *pzobject;
     ICS_IMPORT_CTX *pctx;
 
@@ -3749,6 +3838,7 @@ static ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 
 static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 {
+	ZCL_MEMORY;
 	BINARY eml_bin;
 	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
@@ -3777,6 +3867,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 
 static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 {
+	ZCL_MEMORY;
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY eml_bin;
@@ -3819,6 +3910,7 @@ static ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 
 static ZEND_FUNCTION(mapi_icaltomapi)
 {
+	ZCL_MEMORY;
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY ical_bin;
@@ -3861,6 +3953,7 @@ static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS, GUID, LONG_ARRAY &);
  */
 static ZEND_FUNCTION(mapi_icaltomapi2)
 {
+	ZCL_MEMORY;
 	zval *resabook, *resfolder;
 	char *icsdata = nullptr;
 	size_t icsdatalen = 0;
@@ -3913,6 +4006,7 @@ static void imtomapi2_proc(INTERNAL_FUNCTION_PARAMETERS,
  */
 static ZEND_FUNCTION(mapi_vcftomapi2)
 {
+	ZCL_MEMORY;
 	zval *resfolder;
 	char *vcdata = nullptr;
 	size_t vcdatalen = 0;
@@ -3935,6 +4029,7 @@ static ZEND_FUNCTION(mapi_vcftomapi2)
 
 static ZEND_FUNCTION(mapi_mapitoical)
 {
+	ZCL_MEMORY;
 	BINARY ical_bin;
 	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
@@ -3958,6 +4053,7 @@ static ZEND_FUNCTION(mapi_mapitoical)
 
 static ZEND_FUNCTION(mapi_vcftomapi)
 {
+	ZCL_MEMORY;
 	size_t cbstring = 0;
 	char *szstring;
 	BINARY vcf_bin;
@@ -3985,6 +4081,7 @@ static ZEND_FUNCTION(mapi_vcftomapi)
 
 static ZEND_FUNCTION(mapi_mapitovcf)
 {
+	ZCL_MEMORY;
 	BINARY vcf_bin;
 	zval *pzressession, *pzresmessage, *pzresoptions, *pzresaddrbook;
 	MAPI_RESOURCE *pmessage;
@@ -4120,6 +4217,7 @@ static ZEND_FUNCTION(kc_session_restore)
 
 static ZEND_FUNCTION(nsp_getuserinfo)
 {
+	ZCL_MEMORY;
 	char *px500dn, *username, *pdisplay_name;
 	BINARY entryid;
 	size_t username_len = 0;
@@ -4172,6 +4270,7 @@ static ZEND_FUNCTION(nsp_essdn_to_username)
 
 static ZEND_FUNCTION(mapi_linkmessage)
 {
+	ZCL_MEMORY;
 	size_t srcheid_size = 0, msgeid_size = 0;
 	zval *pzresource;
 	BINARY search_entryid, message_entryid;

@@ -112,15 +112,15 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 		return 0;
 	auto sockd = zclient_connect();
 	if (sockd < 0) {
-		efree(tmp_bin.pb);
+		ext_pack_free(tmp_bin.pb);
 		return 0;
 	}
 	if (!zclient_write_socket(sockd, tmp_bin)) {
-		efree(tmp_bin.pb);
+		ext_pack_free(tmp_bin.pb);
 		close(sockd);
 		return 0;
 	}
-	efree(tmp_bin.pb);
+	ext_pack_free(tmp_bin.pb);
 	if (!zclient_read_socket(sockd, tmp_bin)) {
 		close(sockd);
 		return 0;
@@ -129,7 +129,7 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	if (tmp_bin.cb < 5 ||
 	    static_cast<zcore_response>(tmp_bin.pb[0]) != zcore_response::success) {
 		if (NULL != tmp_bin.pb) {
-			efree(tmp_bin.pb);
+			ext_pack_free(tmp_bin.pb);
 		}
 		return 0;
 	}
@@ -137,10 +137,10 @@ zend_bool zclient_do_rpc(const zcreq *prequest, zcresp *presponse)
 	tmp_bin.cb -= 5;
 	tmp_bin.pb += 5;
 	if (rpc_ext_pull_response(&tmp_bin, presponse) != pack_result::ok) {
-		efree(tmp_bin.pb - 5);
+		ext_pack_free(tmp_bin.pb - 5);
 		return 0;
 	}
-	efree(tmp_bin.pb - 5);
+	ext_pack_free(tmp_bin.pb - 5);
 	return 1;
 }
 

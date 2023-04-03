@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include <gromox/ext_buffer.hpp>
 #include "php.h"
 #undef slprintf
@@ -49,6 +50,20 @@ struct PUSH_CTX : public EXT_PUSH {
 	pack_result p_state_a(const STATE_ARRAY *);
 };
 
+/* This is like gromox::alloc_context, but uses the PHP allocator */
+struct pdeleter { void operator()(void *p) const { efree(p); } };
+struct palloc_ctx {
+	palloc_ctx() = default;
+	NOMOVE(palloc_ctx);
+	void *alloc(size_t);
+	void *realloc(void *, size_t);
+	void free(void *);
+	std::vector<std::unique_ptr<char[], pdeleter>> m_ptrs;
+};
+
+extern void palloc_tls_init();
+extern void palloc_tls_free();
+extern void ext_pack_free(void *);
 extern pack_result rpc_ext_push_request(const zcreq *, BINARY *);
 extern pack_result rpc_ext_pull_response(const BINARY *, zcresp *);
 

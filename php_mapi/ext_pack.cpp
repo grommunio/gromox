@@ -1,19 +1,70 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/mapidefs.h>
+#include <algorithm>
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iconv.h>
-#include <cstdint>
+#include <utility>
+#include <vector>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
+#include <gromox/util.hpp>
 #include "ext.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define GROWING_BLOCK_SIZE				0x1000
 
-/* emalloc is a macro and cannot be used like a function */
-void *ext_pack_alloc(size_t z) { return emalloc(z); }
-static void *ext_pack_realloc(void *p, size_t z) { return erealloc(p, z); }
-static void ext_pack_free(void *p) { efree(p); }
+static thread_local std::vector<void *> g_allocs;
+static thread_local unsigned int g_amgr_refcount;
+
+void palloc_tls_init()
+{
+	++g_amgr_refcount;
+}
+
+void palloc_tls_free()
+{
+	if (--g_amgr_refcount != 0)
+		return;
+	for (auto p : g_allocs)
+		efree(p);
+	g_allocs.clear();
+}
+
+/*
+ * emalloc is a macro and it cannot be used where a function pointer is
+ * expected
+ */
+void *ext_pack_alloc(size_t z) try
+{
+	g_allocs.push_back(nullptr);
+	auto p = ecalloc(1, z);
+	if (p != nullptr)
+		g_allocs.back() = p;
+	return p;
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
+static void *ext_pack_realloc(void *p, size_t z)
+{
+	auto i = std::find(g_allocs.begin(), g_allocs.end(), p);
+	if (i != g_allocs.end())
+		g_allocs.erase(i);
+	auto q = erealloc(p, z);
+	if (q == nullptr)
+		return nullptr;
+	g_allocs.push_back(q);
+	return q;
+}
+
+void ext_pack_free(void *p)
+{
+	auto i = std::find(g_allocs.begin(), g_allocs.end(), p);
+	if (i != g_allocs.end())
+		g_allocs.erase(i);
+	efree(p);
+}
 
 const EXT_BUFFER_MGT ext_buffer_mgt = {ext_pack_alloc, ext_pack_realloc, ext_pack_free};
 
