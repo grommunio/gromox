@@ -978,7 +978,7 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
 		system_services_unset_flags(pcontext->maildir,
 			pcontext->selected_folder, mid, FLAG_ANSWERED|
-			FLAG_FLAGGED|FLAG_DELETED|FLAG_SEEN|FLAG_DRAFT, &errnum);
+			FLAG_FLAGGED|FLAG_DELETED|FLAG_SEEN|FLAG_DRAFT|FLAG_RECENT, &errnum);
 		system_services_set_flags(pcontext->maildir,
 			pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
@@ -2780,6 +2780,8 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			flag_bits |= FLAG_SEEN;
 		else if (strcasecmp(temp_argv[i], "\\Draft") == 0)
 			flag_bits |= FLAG_DRAFT;
+		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
+			flag_bits |= FLAG_RECENT;			
 		else
 			return 1807;
 	}
@@ -3046,6 +3048,8 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			flag_bits |= FLAG_SEEN;
 		else if (strcasecmp(temp_argv[i], "\\Draft") == 0)
 			flag_bits |= FLAG_DRAFT;
+		else if (strcasecmp(temp_argv[i], "\\Recent") == 0)
+			flag_bits |= FLAG_RECENT;			
 		else
 			return 1807;
 	}
