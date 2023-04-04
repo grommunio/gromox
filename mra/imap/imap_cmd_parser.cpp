@@ -1590,6 +1590,12 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->proto_stat = PROTO_STAT_SELECT;
 	pcontext->b_readonly = FALSE;
 	imap_parser_add_select(pcontext);
+
+	/* Effectively canonicalize(d) argv[2] */
+	if (!imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, temp_name, buff))
+		return 1800;
+	gx_strlcpy(temp_name, buff, std::size(temp_name));
+
 	string_length = gx_snprintf(buff, arsizeof(buff),
 		"* %d EXISTS\r\n"
 		"* %d RECENT\r\n"
@@ -1603,8 +1609,9 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 		"* OK [UIDNEXT %d] predicted next UID\r\n"
+		"* LIST () \"/\" {%zu}\r\n%s\r\n"
 		"%s OK [READ-WRITE] SELECT completed\r\n",
-		LLU{uidvalid}, uidnext, argv[0]);
+		LLU{uidvalid}, uidnext, strlen(temp_name), temp_name, argv[0]);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1641,6 +1648,12 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->proto_stat = PROTO_STAT_SELECT;
 	pcontext->b_readonly = TRUE;
 	imap_parser_add_select(pcontext);
+
+	/* Effectively canonicalize(d) argv[2] */
+	if (!imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, temp_name, buff))
+		return 1800;
+	gx_strlcpy(temp_name, buff, std::size(temp_name));
+
 	string_length = gx_snprintf(buff, arsizeof(buff),
 		"* %d EXISTS\r\n"
 		"* %d RECENT\r\n"
@@ -1654,8 +1667,9 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 		"* OK [UIDNEXT %d] predicted next UID\r\n"
+		"* LIST () \"/\" {%zu}\r\n%s\r\n"
 		"%s OK [READ-ONLY] EXAMINE completed\r\n",
-		LLU{uidvalid}, uidnext, argv[0]);
+		LLU{uidvalid}, uidnext, strlen(temp_name), temp_name, argv[0]);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
