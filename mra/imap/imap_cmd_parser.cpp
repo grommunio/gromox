@@ -1591,10 +1591,10 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->b_readonly = FALSE;
 	imap_parser_add_select(pcontext);
 	string_length = gx_snprintf(buff, arsizeof(buff),
-		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-		"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
 		"* %d EXISTS\r\n"
-		"* %d RECENT\r\n",
+		"* %d RECENT\r\n"
+		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
+		"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n",
 		exists, recent);
 	if (firstunseen != -1)
 		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
@@ -1642,10 +1642,10 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->b_readonly = TRUE;
 	imap_parser_add_select(pcontext);
 	string_length = gx_snprintf(buff, arsizeof(buff),
-		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-		"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
 		"* %d EXISTS\r\n"
-		"* %d RECENT\r\n",
+		"* %d RECENT\r\n"
+		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
+		"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n",
 		exists, recent);
 	if (firstunseen != -1)
 		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
