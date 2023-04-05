@@ -21,7 +21,6 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 {
 	enum logon_mode logon_mode;
 	struct tm *ptm;
-	time_t cur_time;
 	struct tm tmp_tm;
 	char maildir[256];
 	char username[UADDR_SIZE];
@@ -109,7 +108,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	*replguid = gx_replguid_store_private;
 	replguid->time_low = user_id;
 	
-	time(&cur_time);
+	auto cur_time = time(nullptr);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
 	plogon_time->second = ptm->tm_sec;
 	plogon_time->minute = ptm->tm_min;

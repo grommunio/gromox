@@ -2102,7 +2102,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	    NOTIFICATION_TYPE_OBJECTCOPIED | NOTIFICATION_TYPE_NEWMAIL, TRUE,
 	    0, 0, &pidb->sub_id))
 		pidb->sub_id = 0;	
-	time(&pidb->load_time);
+	pidb->load_time = time(nullptr);
 	mlog(LV_NOTICE, "Ended sync_mailbox for %s", dir);
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -2242,7 +2242,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 
 void idb_item_del::operator()(IDB_ITEM *pidb)
 {
-	time(&pidb->last_time);
+	pidb->last_time = time(nullptr);
 	pidb->lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pidb->reference --;
@@ -2257,7 +2257,6 @@ IDB_ITEM::~IDB_ITEM()
 static void *midbme_scanwork(void *param)
 {
 	int count;
-	time_t now_time;
 
 	count = 0;
 	while (!g_notify_stop) {
@@ -2271,7 +2270,7 @@ static void *midbme_scanwork(void *param)
 		std::unique_lock hhold(g_hash_lock);
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 			auto pidb = &it->second;
-			time(&now_time);
+			auto now_time = time(nullptr);
 			auto last_diff = now_time - pidb->last_time;
 			auto load_diff = now_time - pidb->load_time;
 			bool clean = pidb->reference == 0 &&

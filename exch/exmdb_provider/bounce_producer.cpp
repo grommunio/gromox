@@ -63,14 +63,13 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     size_t content_size) try
 {
 	void *pvalue;
-	time_t cur_time;
 	char charset[32];
 	char date_buff[128];
 	struct tm time_buff;
 	int len;
 	char lang[32], time_zone[64];
+	auto cur_time = time(nullptr);
 
-	time(&cur_time);
 	charset[0] = '\0';
 	time_zone[0] = '\0';
 	if (common_util_get_user_lang(from, lang, arsizeof(lang))) {
@@ -154,7 +153,6 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
     uint64_t message_id, const char *bounce_type, MAIL *pmail)
 {
 	MIME *pmime;
-	time_t cur_time;
 	char subject[1024];
 	struct tm time_buff;
 	char mime_from[UADDR_SIZE];
@@ -178,7 +176,7 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime->set_field("To", tmp_buff);
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	time(&cur_time);
+	auto cur_time = time(nullptr);
 	localtime_r(&cur_time, &time_buff);
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
 	pmime->set_field("Date", date_buff);

@@ -487,10 +487,9 @@ static uint32_t emsmdb_bridge_disconnect(EMSMDB_HANDLE2 ses)
 static void produce_session(const char *tag, char *session)
 {
 	using gromox::rand;
-	time_t cur_time;
 	char temp_time[16], temp_name[16];
+	auto cur_time = time(nullptr);
 
-	time(&cur_time);
 	snprintf(temp_time, sizeof(temp_time), "%lx", static_cast<long>(cur_time));
 	if (strlen(tag) >= 16) {
 		memcpy(temp_name, tag, 16);

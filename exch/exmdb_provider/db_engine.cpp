@@ -246,7 +246,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		mlog(LV_ERR, "E-1296: ENOMEM");
 		return NULL;
 	}
-	time(&pdb->last_time);
+	pdb->last_time = time(nullptr);
 	pdb->reference ++;
 	hhold.unlock();
 	if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
@@ -287,7 +287,7 @@ db_item_ptr db_engine_get_db(const char *path)
 
 void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
-	time(&pdb->last_time);
+	pdb->last_time = time(nullptr);
 	pdb->giant_lock.unlock();
 	std::lock_guard hhold(g_hash_lock);
 	pdb->reference --;
@@ -378,7 +378,6 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it, time_
 static void *mdpeng_scanwork(void *param)
 {
 	int count;
-	time_t now_time;
 
 	count = 0;
 	while (!g_notify_stop) {
@@ -389,7 +388,7 @@ static void *mdpeng_scanwork(void *param)
 		}
 		count = 0;
 		std::lock_guard hhold(g_hash_lock);
-		time(&now_time);
+		auto now_time = time(nullptr);
 
 #if __cplusplus >= 202000L
 		std::erase_if(g_hash_table, [=](const auto &it) { return remove_from_hash(it, now_time); });

@@ -39,7 +39,6 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail) try
 {
 	MIME *pmime;
-	time_t cur_time;
 	char charset[32];
 	char tmp_buff[1024];
 	char date_buff[128];
@@ -129,7 +128,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	pmime->set_field("To", tmp_buff);
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	time(&cur_time);
+	auto cur_time = time(nullptr);
 	localtime_r(&cur_time, &time_buff);
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
 	pmime->set_field("Date", date_buff);

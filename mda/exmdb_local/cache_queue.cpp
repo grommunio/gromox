@@ -247,7 +247,6 @@ static void *mdl_thrwork(void *arg)
 {
 	const char *bounce_type = nullptr;
 	int i, scan_interval;
-	time_t scan_begin, scan_end;
     struct dirent *direntp;
 	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
 	char *ptr;
@@ -274,7 +273,7 @@ static void *mdl_thrwork(void *arg)
 			continue;
 		}
 		seekdir(dirp.m_dir.get(), 0);
-		time(&scan_begin);
+		auto scan_begin = time(nullptr);
 		while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
 			if (g_notify_stop)
 				break;
@@ -476,7 +475,7 @@ static void *mdl_thrwork(void *arg)
 			}
 			free(pbuff);
 		}
-		time(&scan_end);
+		auto scan_end = time(nullptr);
 		if (scan_end - scan_begin >= g_scan_interval) {
 			scan_interval = 0;
 		} else {

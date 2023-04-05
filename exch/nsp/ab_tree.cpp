@@ -531,7 +531,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			bhold.unlock();
 			return nullptr;
 		}
-		time(&pbase->load_time);
+		pbase->load_time = time(nullptr);
 		bhold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
@@ -593,7 +593,7 @@ static void *nspab_scanwork(void *param)
 			bhold.unlock();
 		} else {
 			bhold.lock();
-			time(&pbase->load_time);
+			pbase->load_time = time(nullptr);
 			pbase->status = BASE_STATUS_LIVING;
 			bhold.unlock();
 		}

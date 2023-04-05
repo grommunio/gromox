@@ -4382,10 +4382,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		return false;
 	
 	auto lnum = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
-	if (lnum == nullptr)
-		time(&tmp_time);
-	else
-		tmp_time = rop_util_nttime_to_unix(*lnum);
+	tmp_time = lnum == nullptr ? time(nullptr) :
+	           rop_util_nttime_to_unix(*lnum);
 	strftime(tmp_field, 128, "%a, %d %b %Y %H:%M:%S %z",
 					localtime_r(&tmp_time, &time_buff));
 	if (!phead->set_field("Date", tmp_field))
@@ -4922,7 +4920,6 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	int tmp_len;
 	BOOL b_vcard;
 	size_t offset;
-	time_t tmp_time;
 	struct tm time_buff;
 	char tmp_field[1024];
 	const char *pfile_name = nullptr;
@@ -5014,7 +5011,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		strcpy(&tmp_field[tmp_len], "\";\r\n\t");
 		tmp_len += 5;
 	}
-	time(&tmp_time);
+	auto tmp_time = time(nullptr);
 	if (NULL != pctime) {
 		tmp_time = rop_util_nttime_to_unix(*pctime);
 	}

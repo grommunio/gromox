@@ -248,10 +248,8 @@ mod_cache_get_others_field(const http_request::other_map &m, const char *k)
 static BOOL mod_cache_parse_rfc1123_dstring(
 	const char *dstring, time_t *pmtime)
 {
-	time_t cur_time;
 	struct tm tmp_tm;
-	
-	time(&cur_time);
+	auto cur_time = time(nullptr);
 	gmtime_r(&cur_time, &tmp_tm);
 	if (NULL == strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm)) {
 		return FALSE;	

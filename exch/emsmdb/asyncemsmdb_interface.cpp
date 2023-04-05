@@ -161,7 +161,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	pwait->node.pdata = pwait;
 	pwait->async_id = async_id;
 	HX_strlower(pwait->username);
-	time(&pwait->wait_time);
+	pwait->wait_time = time(nullptr);
 	if (async_id == 0)
 		pwait->out_payload.context_id = pout->flags_out;
 	else
@@ -303,14 +303,13 @@ static void *aemsi_thrwork(void *param)
 
 static void *aemsi_scanwork(void *param)
 {
-	time_t cur_time;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	
 	double_list_init(&temp_list);
 	while (!g_notify_stop) {
 		sleep(1);
-		time(&cur_time);
+		auto cur_time = time(nullptr);
 		std::unique_lock as_hold(g_async_lock);
 		for (auto iter = g_tag_hash.cbegin(); iter != g_tag_hash.end(); ){
 			auto pwait = iter->second;

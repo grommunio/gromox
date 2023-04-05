@@ -2620,7 +2620,6 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 {
 	int offset;
 	const char *pdomain;
-	time_t cur_time;
 	char tmp_path[256];
 	struct tm time_buff;
 	char mid_string[128];
@@ -2724,7 +2723,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		else
 			memcpy(tmp_buff, "Fwd: ", 5);
 		pmime->set_field("Subject", tmp_buff);
-		time(&cur_time);
+		auto cur_time = time(nullptr);
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
 			localtime_r(&cur_time, &time_buff));
 		pmime->set_field("Date", tmp_buff);

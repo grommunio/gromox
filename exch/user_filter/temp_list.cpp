@@ -49,8 +49,6 @@ void temp_list_free()
  */
 BOOL temp_list_add_string(const char *str, int interval)
 {
-	time_t current_time;
-	time_t when;
 	char temp_string[256];
 
 	if (str == nullptr)
@@ -63,8 +61,7 @@ BOOL temp_list_add_string(const char *str, int interval)
 		return FALSE;
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
-	time(&current_time);
-	when = current_time + interval;
+	auto when = time(nullptr) + interval;
 	try {
 		if (g_string_hash.size() >= g_size) {
 			auto pair = g_string_hash.emplace(temp_string, when);
@@ -96,7 +93,6 @@ BOOL temp_list_add_string(const char *str, int interval)
  */
 BOOL temp_list_query(const char *str) 
 {
-	time_t current_time;
 	char temp_string[256];
 	
 	if (str == nullptr)
@@ -109,8 +105,7 @@ BOOL temp_list_query(const char *str)
 	auto iter = g_string_hash.find(temp_string);
 	if (iter == g_string_hash.end())
 		return FALSE; /* not found */
-	time(&current_time);
-	if (current_time <= iter->second)
+	if (time(nullptr) <= iter->second)
 		return TRUE; /* found, in temp list */
 	g_string_hash.erase(temp_string);
 	return FALSE; /* is overdue */
@@ -124,9 +119,7 @@ BOOL temp_list_query(const char *str)
  */
 static size_t temp_list_collect_string_entry()
 {
-	time_t current_time;
-
-	time(&current_time);
+	auto current_time = time(nullptr);
 #if __cplusplus >= 202000L
 	return std::erase_if(g_string_hash, [&](auto &&e) { return current_time > e.second; });
 #else

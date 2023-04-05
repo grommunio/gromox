@@ -225,7 +225,7 @@ static void cl_pinger2()
 			--conn->psvr->active_handles;
 			temp_list.pop_front();
 		} else {
-			time(&conn->last_time);
+			conn->last_time = time(nullptr);
 			sv_hold.lock();
 			conn->psvr->conn_list.splice(conn->psvr->conn_list.end(), temp_list, temp_list.begin());
 			sv_hold.unlock();
@@ -478,7 +478,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	bin.pb = nullptr;
 	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_socket_timeout * 1000))
 		return false;
-	time(&conn->last_time);
+	conn->last_time = time(nullptr);
 	conn.reset();
 	if (bin.cb < 5 || bin.pb == nullptr ||
 	    static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success) {

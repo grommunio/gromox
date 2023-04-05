@@ -127,7 +127,7 @@ static USER_INFO_REF zs_query_session(GUID hsession)
 	if (hsession != pinfo->hsession)
 		return nullptr;
 	pinfo->reference ++;
-	time(&pinfo->last_time);
+	pinfo->last_time = time(nullptr);
 	tl_hold.unlock();
 	g_info_key = pinfo;
 	pinfo->lock.lock();
@@ -149,10 +149,9 @@ void user_info_del::operator()(USER_INFO *pinfo)
 }
 
 NOTIFY_ITEM::NOTIFY_ITEM(const GUID &ses, uint32_t store) :
-	hsession(ses), hstore(store)
+	hsession(ses), hstore(store), last_time(time(nullptr))
 {
 	double_list_init(&notify_list);
-	time(&last_time);
 }
 
 NOTIFY_ITEM::~NOTIFY_ITEM()
@@ -170,7 +169,6 @@ static void *zcorezs_scanwork(void *param)
 	int count;
 	int tv_msec;
 	BINARY tmp_bin;
-	time_t cur_time;
 	uint8_t tmp_byte;
 	struct pollfd fdpoll;
 	
@@ -184,7 +182,7 @@ static void *zcorezs_scanwork(void *param)
 		std::vector<std::string> maildir_list;
 		std::list<sink_node> expired_list;
 		std::unique_lock tl_hold(g_table_lock);
-		time(&cur_time);
+		auto cur_time = time(nullptr);
 		for (auto iter = g_session_table.begin(); iter != g_session_table.end(); ) {
 			auto pinfo = &iter->second;
 			if (0 != pinfo->reference) {
@@ -265,7 +263,7 @@ static void *zcorezs_scanwork(void *param)
 		}
 		if (count != 0)
 			continue;
-		time(&cur_time);
+		cur_time = time(nullptr);
 		std::unique_lock nl_hold(g_notify_lock);
 #if __cplusplus >= 202000L
 		std::erase_if(g_notify_table, [=](const auto &it) {
@@ -673,7 +671,7 @@ ec_error_t zs_logon(const char *username,
 		auto st_iter = g_session_table.find(user_id);
 		if (st_iter != g_session_table.end()) {
 			auto pinfo = &st_iter->second;
-			time(&pinfo->last_time);
+			pinfo->last_time = time(nullptr);
 			*phsession = pinfo->hsession;
 			return ecSuccess;
 		}
@@ -704,7 +702,7 @@ ec_error_t zs_logon(const char *username,
 	auto c = lang_to_charset(lang);
 	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
 	tmp_info.flags = flags;
-	time(&tmp_info.last_time);
+	tmp_info.last_time = time(nullptr);
 	tmp_info.reload_time = tmp_info.last_time;
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
 	if (tmp_info.ptree == nullptr)
@@ -2567,7 +2565,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 		if (iter == g_notify_table.end())
 			continue;
 		auto pnitem = &iter->second;
-		time(&pnitem->last_time);
+		pnitem->last_time = time(nullptr);
 		while ((pnode = double_list_pop_front(&pnitem->notify_list)) != nullptr) {
 			ppnotifications[count] = common_util_dup_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata), true);
 			common_util_free_znotification(static_cast<ZNOTIFICATION *>(pnode->pdata));
@@ -2600,7 +2598,7 @@ ec_error_t zs_notifdequeue(const NOTIF_SINK *psink,
 	}
 	auto psink_node = &holder.front();
 	psink_node->clifd = common_util_get_clifd();
-	time(&psink_node->until_time);
+	psink_node->until_time = time(nullptr);
 	psink_node->until_time += timeval;
 	psink_node->sink.hsession = psink->hsession;
 	psink_node->sink.count = psink->count;

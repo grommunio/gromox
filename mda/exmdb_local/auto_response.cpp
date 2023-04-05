@@ -25,7 +25,6 @@ void auto_response_reply(const char *user_home,
 	BOOL b_found;
 	char *pcontent;
 	BOOL b_internal;
-	time_t cur_time;
 	char charset[32]{};
 	struct tm tm_buff;
 	int i, j, fd, len;
@@ -75,7 +74,7 @@ void auto_response_reply(const char *user_home,
 	if (1 != reply_state && 2 != reply_state) {
 		return;
 	}
-	time(&cur_time);
+	auto cur_time = time(nullptr);
 	if (2 == reply_state) {
 		str_value = pconfig->get_value("START_TIME");
 		if (str_value != nullptr && strtoll(str_value, nullptr, 0) > cur_time)

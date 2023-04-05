@@ -102,7 +102,6 @@ int exmdb_local_run() try
 hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 {
 	int cache_ID;
-	time_t current_time;
 	MESSAGE_CONTEXT *pbounce_context;
 	
 	if (BOUND_NOTLOCAL == pcontext->pcontrol->bound_type) {
@@ -145,10 +144,9 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 					"fail to get bounce context");
 				break;
 			}
-			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, current_time,
+			    rcpt_buff, pcontext->pmail, time(nullptr),
 			    "BOUNCE_MAIL_DELIVERED", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"DELIVERY_OPERATION_DELIVERED %s", rcpt_buff);
@@ -172,10 +170,9 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 					"fail to get bounce context");
 				break;
 			}
-			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, current_time,
+			    rcpt_buff, pcontext->pmail, time(nullptr),
 			    "BOUNCE_NO_USER", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"No such user %s", rcpt_buff);
@@ -198,10 +195,9 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 					"fail to get bounce context");
 				break;
 			}
-			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, current_time,
+			    rcpt_buff, pcontext->pmail, time(nullptr),
 			    "BOUNCE_MAILBOX_FULL", pbounce_context->pmail)) {
 				put_context(pbounce_context);
 				break;
@@ -224,10 +220,9 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 					"fail to get bounce context");
 				break;
 			}
-			time(&current_time);
 			if (!bounce_audit_check(rcpt_buff) ||
 			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, current_time,
+			    rcpt_buff, pcontext->pmail, time(nullptr),
 			    "BOUNCE_OPERATION_ERROR", pbounce_context->pmail)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"Unspecified error during delivery to %s", rcpt_buff);
@@ -243,8 +238,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 		case DELIVERY_OPERATION_FAILURE:
 			had_error = true;
 			net_failure_statistic(0, 1, 0, 0);
-			time(&current_time);
-			cache_ID = cache_queue_put(pcontext, rcpt_buff, current_time);
+			cache_ID = cache_queue_put(pcontext, rcpt_buff, time(nullptr));
 			if (cache_ID >= 0) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_INFO,
 					"message is put into cache queue with cache ID %d and "
@@ -297,7 +291,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	MAIL *pmail;
 	size_t mess_len;
 	int sequence_ID;
-	time_t cur_time;
 	uint64_t nt_time;
 	char lang[32], charset[32], tmzone[64], hostname[UDOM_SIZE], home_dir[256];
 	uint32_t tmp_int32;
@@ -338,7 +331,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		pcontext1 = NULL;
 	}
 	
-	time(&cur_time);
 	sequence_ID = exmdb_local_sequence_ID();
 	gx_strlcpy(hostname, get_host_ID(), arsizeof(hostname));
 	if ('\0' == hostname[0]) {
@@ -347,7 +339,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		else
 			hostname[arsizeof(hostname)-1] = '\0';
 	}
-	auto mid_string = std::to_string(cur_time) + "." +
+	auto mid_string = std::to_string(time(nullptr)) + "." +
 	                  std::to_string(sequence_ID) + "." + hostname;
 	auto eml_path = std::string(home_dir) + "/eml/" + mid_string;
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);

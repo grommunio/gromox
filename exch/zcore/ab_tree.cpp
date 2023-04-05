@@ -493,7 +493,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			g_base_hash.erase(it);
 			return nullptr;
 		}
-		time(&pbase->load_time);
+		pbase->load_time = time(nullptr);
 		bl_hold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
@@ -548,7 +548,7 @@ static void *zcoreab_scanwork(void *param)
 			bl_hold.unlock();
 		} else {
 			bl_hold.lock();
-			time(&pbase->load_time);
+			pbase->load_time = time(nullptr);
 			pbase->status = BASE_STATUS_LIVING;
 			bl_hold.unlock();
 		}

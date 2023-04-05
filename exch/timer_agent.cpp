@@ -135,14 +135,13 @@ SVC_ENTRY(svc_timer_agent);
 static void *tmrag_scanwork(void *param)
 {
 	int tv_msec;
-	time_t now_time;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
 	std::list<BACK_CONN> temp_list;
 
 	while (!g_notify_stop) {
 		std::unique_lock bk_hold(g_back_lock);
-		time(&now_time);
+		auto now_time = time(nullptr);
 		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;
 		while (g_back_list.size() > 0) {
 			auto pback = &g_back_list.front();
@@ -170,7 +169,7 @@ static void *tmrag_scanwork(void *param)
 				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				bk_hold.unlock();
 			} else {
-				time(&pback->last_time);
+				pback->last_time = time(nullptr);
 				bk_hold.lock();
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
 				bk_hold.unlock();
@@ -186,7 +185,7 @@ static void *tmrag_scanwork(void *param)
 			auto pback = &temp_list.front();
 			pback->sockd = connect_timer();
 			if (-1 != pback->sockd) {
-				time(&pback->last_time);
+				pback->last_time = time(nullptr);
 				bk_hold.lock();
 				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
 				bk_hold.unlock();
@@ -229,7 +228,7 @@ static int add_timer(const char *command, int interval)
 		g_lost_list.splice(g_lost_list.end(), std::move(hold));
 		return 0;
 	}
-	time(&pback->last_time);
+	pback->last_time = time(nullptr);
 	bk_hold.lock();
 	g_back_list.splice(g_back_list.end(), std::move(hold));
 	bk_hold.unlock();
@@ -266,7 +265,7 @@ static BOOL cancel_timer(int timer_id)
 		g_lost_list.splice(g_lost_list.end(), std::move(hold));
 		return FALSE;
 	}
-	time(&pback->last_time);
+	pback->last_time = time(nullptr);
 	bk_hold.lock();
 	g_back_list.splice(g_back_list.end(), std::move(hold));
 	bk_hold.unlock();

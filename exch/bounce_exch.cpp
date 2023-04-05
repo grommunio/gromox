@@ -127,7 +127,6 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul, buff_t gutz,
     const char *bounce_type, MAIL *pmail)
 {
 	size_t out_len;
-	time_t cur_time;
 	char mime_to[1024], subject[1024], tmp_buff[1024], date_buff[128];
 	char mime_from[1024], content_type[128], content_buff[256*1024];
 	struct tm time_buff;
@@ -183,7 +182,7 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul, buff_t gutz,
 		pmime->set_field("To", mime_to);
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	time(&cur_time);
+	auto cur_time = time(nullptr);
 	localtime_r(&cur_time, &time_buff);
 	strftime(date_buff, std::size(date_buff), "%a, %d %b %Y %H:%M:%S %z", &time_buff);
 	pmime->set_field("Date", date_buff);

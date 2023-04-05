@@ -294,7 +294,7 @@ static void *mdpps_thrwork(void *pparam)
 						prouter->sockd = pconnection->sockd;
 						pconnection->thr_id = {};
 						pconnection->sockd = -1;
-						time(&prouter->last_time);
+						prouter->last_time = time(nullptr);
 						std::unique_lock r_hold(g_router_lock);
 						g_router_list.insert(prouter);
 						r_hold.unlock();
