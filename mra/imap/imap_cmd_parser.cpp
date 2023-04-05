@@ -2564,8 +2564,6 @@ static bool zero_uid_bit(const MITEM &i)
 int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	int errnum;
-	int del_num;
-	BOOL b_deleted;
 	size_t string_length = 0;
 	char buff[1024];
 	
@@ -2573,7 +2571,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	b_deleted = FALSE;
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
@@ -2595,7 +2592,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return ret;
 
 	pcontext->stream.clear();
-	del_num = 0;
+	unsigned int del_num = 0;
 	for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
@@ -2606,15 +2603,14 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* %d EXPUNGE\r\n", pitem->id - del_num);
+			"* %u EXPUNGE\r\n", pitem->id - del_num);
 		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 			return 1922;
-		b_deleted = TRUE;
 		del_num ++;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1459: ENOMEM");
 	}
-	if (b_deleted)
+	if (del_num > 0)
 		imap_parser_touch_modify(pcontext, pcontext->username,
 			pcontext->selected_folder);
 	imap_parser_echo_modify(pcontext, NULL);
@@ -3177,9 +3173,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	int errnum;
-	int del_num;
 	int max_uid;
-	BOOL b_deleted;
 	char buff[1024];
 	size_t string_length = 0;
 	std::vector<seq_node> list_seq;
@@ -3190,7 +3184,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		return 1806;
 	if (argc < 4 || !icp_parse_seq(list_seq, argv[3]))
 		return 1800;
-	b_deleted = FALSE;
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
@@ -3219,7 +3212,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		return ret;
 
 	pcontext->stream.clear();
-	del_num = 0;
+	unsigned int del_num = 0;
 	for (size_t i = 0; i < xarray.get_capacity(); ++i) try {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
@@ -3231,15 +3224,14 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* %d EXPUNGE\r\n", pitem->id - del_num);
+			"* %u EXPUNGE\r\n", pitem->id - del_num);
 		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 			return 1922;
-		b_deleted = TRUE;
 		del_num ++;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1458: ENOMEM");
 	}
-	if (b_deleted)
+	if (del_num > 0)
 		imap_parser_touch_modify(pcontext, pcontext->username,
 			pcontext->selected_folder);
 	imap_parser_echo_modify(pcontext, NULL);
