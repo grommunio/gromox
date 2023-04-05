@@ -163,7 +163,7 @@ int main(int argc, const char **argv) try
 			fprintf(stderr, "RPC load_message_instance rejected; probably message not found.\n");
 			return EXIT_FAILURE;
 		}
-		auto cl_0 = make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
+		auto cl_4 = make_scope_exit([&]() { exmdb_client_remote::unload_instance(g_storedir, inst_id); });
 		if (!exmdb_client_remote::read_message_instance(g_storedir,
 		    inst_id, ctnt)) {
 			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");

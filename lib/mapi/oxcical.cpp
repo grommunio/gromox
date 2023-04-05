@@ -3810,9 +3810,9 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
-			auto err = oxcical_export_internal(method, tzid,
-			           pembedded, pical, entryid_to_username,
-			           essdn_to_username, alloc, get_propids);
+			err = oxcical_export_internal(method, tzid,
+			      pembedded, pical, entryid_to_username,
+			      essdn_to_username, alloc, get_propids);
 			if (err != nullptr)
 				return err;
 		}

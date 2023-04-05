@@ -170,18 +170,16 @@ void flusher_stop()
 
 FLH_PLUG_ENTITY::~FLH_PLUG_ENTITY()
 {
-	auto g_flusher_plug = this;
-
-	if (g_flusher_plug->completed_init && !FLH_LibMain(PLUGIN_FREE, nullptr)) {
+	if (completed_init && !FLH_LibMain(PLUGIN_FREE, nullptr)) {
 		mlog(LV_ERR, "flusher: error executing Flusher_LibMain with "
-			   "FLUSHER_LIB_FREE in plugin %s", g_flusher_plug->path);
+			   "FLUSHER_LIB_FREE in plugin %s", path);
 		return;
 	}
-	mlog(LV_INFO, "flusher: unloading %s", g_flusher_plug->path);
+	mlog(LV_INFO, "flusher: unloading %s", path);
 	/* free the service reference of the plugin */
-	if (g_flusher_plug->list_ref.size() > 0)
-		for (auto &svc : g_flusher_plug->list_ref)
-			service_release(svc.service_name.c_str(), g_flusher_plug->file_name);
+	if (list_ref.size() > 0)
+		for (auto &svc : list_ref)
+			service_release(svc.service_name.c_str(), file_name);
 }
 
 static int flusher_increase_max_ID()

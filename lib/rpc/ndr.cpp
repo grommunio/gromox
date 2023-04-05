@@ -41,13 +41,13 @@ static size_t ndr_align_size(uint32_t offset, size_t n)
 	return n - (offset & (n - 1));
 }
 
-void NDR_PULL::init(const void *pdata, uint32_t data_size, uint32_t flags)
+void NDR_PULL::init(const void *d, uint32_t ds, uint32_t fl)
 {
 	auto pndr = this;
-	pndr->data = static_cast<const uint8_t *>(pdata);
-	pndr->data_size = data_size;
+	data = static_cast<const uint8_t *>(d);
+	data_size = ds;
 	pndr->offset = 0;
-	pndr->flags = flags;
+	flags = fl;
 	pndr->ptr_count = 0;
 }
 
@@ -186,14 +186,13 @@ pack_result NDR_PULL::g_ulong(uint32_t *v)
 	return pndr->g_uint32(v);
 }
 
-pack_result NDR_PULL::g_uint8_a(uint8_t *data, uint32_t n)
+pack_result NDR_PULL::g_uint8_a(uint8_t *d, uint32_t n)
 {
 	auto pndr = this;
 	if (pndr->data_size < n || pndr->offset + n > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	
-	memcpy(data, pndr->data + pndr->offset, n);
+	memcpy(d, &pndr->data[pndr->offset], n);
 	pndr->offset += n;
 	return NDR_ERR_SUCCESS;
 }
@@ -308,12 +307,12 @@ pack_result NDR_PULL::g_ctx_handle(CONTEXT_HANDLE *r)
 	return NDR_ERR_SUCCESS;
 }
 
-void NDR_PUSH::init(void *pdata, uint32_t alloc_size, uint32_t flags)
+void NDR_PUSH::init(void *d, uint32_t as, uint32_t fl)
 {
 	auto pndr = this;
-	pndr->data = static_cast<uint8_t *>(pdata);
-	pndr->alloc_size = alloc_size;
-	pndr->flags = flags;
+	data = static_cast<uint8_t *>(d);
+	alloc_size = as;
+	flags = fl;
 	pndr->offset = 0;
 	pndr->ptr_count = 0;
 	double_list_init(&pndr->full_ptr_list);

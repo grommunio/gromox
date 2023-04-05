@@ -151,8 +151,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				break;
 			}
 			pstmt.finalize();
-			uint32_t tag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
-			if (pmsgctnt->proplist.set(tag, &cid) != 0)
+			uint32_t wtag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
+			if (pmsgctnt->proplist.set(wtag, &cid) != 0)
 				return FALSE;	
 			break;
 		}
@@ -195,10 +195,10 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				break;
 			}
 			pstmt.finalize();
-			uint32_t tag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
-			               ID_TAG_TRANSPORTMESSAGEHEADERS :
-			               ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
-			if (pmsgctnt->proplist.set(tag, &cid) != 0)
+			uint32_t wtag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
+			                ID_TAG_TRANSPORTMESSAGEHEADERS :
+			                ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+			if (pmsgctnt->proplist.set(wtag, &cid) != 0)
 				return FALSE;	
 			break;
 		}

@@ -459,11 +459,8 @@ static int npg_read(gi_name_map &map, libolecf_item_t *root)
 	ep.init(tblpool->pv, tblpool->cb, malloc, 0);
 	for (uint16_t current_np = 0; ep.m_offset < ep.m_data_size; ++current_np) {
 		uint32_t niso = 0, iki = 0;
-		auto ret = ep.g_uint32(&niso);
-		if (ret != EXT_ERR_SUCCESS)
-			return -EIO;
-		ret = ep.g_uint32(&iki);
-		if (ret != EXT_ERR_SUCCESS)
+		if (ep.g_uint32(&niso) != pack_result::success ||
+		    ep.g_uint32(&iki) != pack_result::success)
 			return -EIO;
 		uint16_t propidx = (iki >> 16) & 0xFFFF;
 		uint16_t guididx = (iki >> 1) & 0x7FF;

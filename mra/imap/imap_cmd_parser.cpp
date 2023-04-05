@@ -1133,13 +1133,13 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	else if (auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
 	    s != nullptr && strcmp(temp_folder, s) == 0)
 		gx_strlcpy(temp_folder, "draft", std::size(temp_folder));
-	else if (auto s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
+	else if (s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
 	    s != nullptr && strcmp(temp_folder, s) == 0)
 		gx_strlcpy(temp_folder, "sent", std::size(temp_folder));
-	else if (auto s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
+	else if (s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
 	    s != nullptr && strcmp(temp_folder, s) == 0)
 		gx_strlcpy(temp_folder, "trash", std::size(temp_folder));
-	else if (auto s = foldername_get(lang, PRIVATE_FID_JUNK);
+	else if (s = foldername_get(lang, PRIVATE_FID_JUNK);
 	    s != nullptr && strcmp(temp_folder, s) == 0)
 		gx_strlcpy(temp_folder, "junk", std::size(temp_folder));
 	if (NULL != ptoken) {

@@ -489,7 +489,7 @@ errno_t message_dequeue_save(MESSAGE *pmessage)
 	ptr = pmessage->envelope_rcpt;
 	while ((len = strlen(ptr)) != 0) {
 		len++;
-		auto ret = HXio_fullwrite(fd, ptr, len);
+		ret = HXio_fullwrite(fd, ptr, len);
 		if (ret < 0 || static_cast<size_t>(ret) != len)
 			return -9999;
 		ptr += len;

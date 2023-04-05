@@ -1535,7 +1535,6 @@ int main(int argc, const char **argv)
 
 	try {
 		auto drv = make_driver(sqp);
-		int ret = 0;
 		if (g_srcguid != nullptr)
 			ret = drv->open_by_guid(g_srcguid);
 		else if (g_srcmro != nullptr)

@@ -565,7 +565,6 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
     sqlite3_stmt *pstmt, sqlite3_stmt *stm_insert_chg,
     sqlite3_stmt *stm_insert_exist, uint64_t *plast_cn) try
 {
-	uint64_t fid_val;
 	uint64_t change_num;
 	uint32_t permission;
 	std::vector<eid_t> recurse_list;
@@ -573,7 +572,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, folder_id);
 	while (gx_sql_step(pstmt) == SQLITE_ROW) {
-		fid_val = sqlite3_column_int64(pstmt, 0);
+		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
 		change_num = sqlite3_column_int64(pstmt, 1);
 		if (NULL != username) {
 			if (!cu_get_folder_permission(psqlite,

@@ -1702,14 +1702,14 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = cu_fid_to_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	case PidTagParentFolderId: {
-		auto v = cu_alloc<uint64_t>();
-		pv.pvalue = v;
+		w = cu_alloc<uint64_t>();
+		pv.pvalue = w;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
 		auto tmp_id = common_util_get_folder_parent_fid(db, id);
 		if (tmp_id == 0)
 			return GP_SKIP;
-		*v = rop_util_make_eid_ex(1, tmp_id);
+		*w = rop_util_make_eid_ex(1, tmp_id);
 		return GP_ADV;
 	}
 	case PR_PARENT_ENTRYID: {
@@ -1720,19 +1720,19 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	case PR_SUBFOLDERS: {
-		auto v = cu_alloc<uint8_t>();
-		pv.pvalue = v;
+		auto u = cu_alloc<uint8_t>();
+		pv.pvalue = u;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = !!common_util_check_subfolders(db, id);
+		*u = !!common_util_check_subfolders(db, id);
 		return GP_ADV;
 	}
 	case PR_HAS_RULES: {
-		auto v = cu_alloc<uint8_t>();
-		pv.pvalue = v;
+		auto u = cu_alloc<uint8_t>();
+		pv.pvalue = u;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*v = !!common_util_check_folder_rules(db, id);
+		*u = !!common_util_check_folder_rules(db, id);
 		return GP_ADV;
 	}
 	case PR_FOLDER_PATHNAME:
@@ -4363,7 +4363,6 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 		       cpid, message_id, &pres->xnot->res);
 	case RES_CONTENT: {
 		auto rcon = pres->cont;
-		void *pvalue = nullptr;
 		if (!rcon->comparable())
 			return FALSE;
 		if (!cu_get_property(MAPI_MESSAGE,
