@@ -109,8 +109,17 @@ folder metadata has changed and warrants being reloaded.
 The notification "MESSAGE-FLAG <username> <folder> <messageid>" informs
 listeners that the message metadata has changed and warrants being reloaded.
 .PP
+The notification "MESSAGE-EXPUNGE <username> <folder> <messageid...>" informs
+listeners that the message was deleted.
+.PP
 Clients in Dequeue Mode will receive notifications. Each notification line
 received by the client needs to be acknowledged with a "TRUE" response. It is
 not possible to exit Dequeue Mode; connection termination is the only way out.
+.PP
+Events do not echo for a particular res_id. The event_proxy(4gx) and
+event_stub(4gx) plugin implementations use the getpid() function when
+constructing the res_id for the ID/LISTEN commands. A process like imap(8gx)
+which uses both plugins will intentionally not see its own notifications over
+the gromox-event IPC system this way.
 .SH See also
 \fBgromox\fP(7), \fBevent_proxy\fP(4gx), \fBevent_stub\fP(4gx)

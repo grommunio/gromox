@@ -11,9 +11,11 @@ event_proxy installs three service functions, "broadcast_event",
 "broadcast_select" and "broadcast_unselect", though the latter two are just
 convenience functions for broadcast_event. broadcast_event is for synchronously
 sending a notification into the event distribution system. Arbitrary
-notifications and commands can be sent this way. The return value is ignored.
+notifications and commands can be sent this way. The return value (i.e. in the
+eventd network protocol) is ignored.
 .PP
 In practice, midb(8gx), imap(8gx) and pop3(8gx) issue FOLDER-TOUCH
-notifications. Only imap(8gx) issues MESSAGE-FLAG notifications.
+notifications. Only imap(8gx) issues MESSAGE-FLAG and MESSAGE-EXPUNGE
+notifications.
 .SH See also
 \fBevent\fP(8gx), \fBevent_stub\fP(4gx)

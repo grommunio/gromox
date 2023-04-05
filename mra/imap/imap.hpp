@@ -119,6 +119,7 @@ struct imap_context final : public schedule_context {
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	BOOL b_modify = false;
 	std::unordered_set<std::string> f_flags;
+	std::vector<unsigned int> f_expunged_uids;
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};
@@ -144,6 +145,7 @@ extern void imap_parser_bcast_touch(IMAP_CONTEXT *, const char *user, const char
 extern void imap_parser_echo_modify(IMAP_CONTEXT *, STREAM *);
 extern void imap_parser_bcast_flags(IMAP_CONTEXT *, const std::string &mid);
 extern void imap_parser_add_select(IMAP_CONTEXT *);
+extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
 extern void imap_parser_remove_select(IMAP_CONTEXT *);
 extern  void imap_parser_safe_write(IMAP_CONTEXT *, const void *pbuff, size_t count);
 extern alloc_limiter<file_block> *imap_parser_get_allocator();
@@ -206,6 +208,7 @@ extern void resource_stop();
 extern const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_t *len);
 extern const char *resource_get_default_charset(const char *lang);
 extern const char *resource_get_error_string(unsigned int);
+extern void imap_parser_event_expunge(const char *user, const char *folder, unsigned int uid);
 
 extern int system_services_run();
 extern void system_services_stop();

@@ -12,7 +12,7 @@ event_stub installs one service function, "install_event_stub", with which
 imap(8gx) registers a callback function that, in turn, is invoked whenever a
 notification is received from the event daemon.
 .PP
-In practice, imap handles FOLDER-TOUCH and MESSAGE-FLAG notifications received
-through this event channel.
+In practice, imap handles FOLDER-TOUCH, MESSAGE-FLAG and MESSAGE-EXPUNGE
+notifications received through this event channel.
 .SH See also
 \fBevent\fP(8gx), \fBevent_proxy\fP(4gx)

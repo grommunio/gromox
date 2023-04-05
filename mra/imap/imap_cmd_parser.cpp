@@ -2477,7 +2477,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	auto num = xarray.get_capacity();
 	if (num == 0) {
 		imap_parser_echo_modify(pcontext, nullptr);
-		return 1730;
+		return 1726;
 	}
 	std::vector<MITEM *> exp_list;
 	for (size_t i = 0; i < num; ++i) {
@@ -2517,10 +2517,8 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1459: ENOMEM");
 	}
-	if (del_num > 0)
-		imap_parser_bcast_touch(pcontext, pcontext->username,
-			pcontext->selected_folder);
-	imap_parser_echo_modify(pcontext, NULL);
+	if (!exp_list.empty())
+		imap_parser_bcast_expunge(*pcontext, exp_list);
 	/* IMAP_CODE_2170026: OK EXPUNGE completed */
 	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
 	string_length = gx_snprintf(buff, arsizeof(buff),
@@ -3204,9 +3202,8 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1458: ENOMEM");
 	}
-	if (del_num > 0)
-		imap_parser_bcast_touch(pcontext, pcontext->username,
-			pcontext->selected_folder);
+	if (!exp_list.empty())
+		imap_parser_bcast_expunge(*pcontext, exp_list);
 	imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
 	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
