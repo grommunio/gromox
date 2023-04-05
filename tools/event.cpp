@@ -428,16 +428,11 @@ static void *ev_acceptwork(void *param)
 	return nullptr;
 }
 
+using eq_iter_t = std::list<ENQUEUE_NODE>::iterator;
+using eq_lock_t = std::unique_lock<std::mutex>;
+
 static void *ev_enqwork(void *param)
 {
-	int temp_len;
-	char *pspace;
-	char *pspace1;
-	char *pspace2;
-	BOOL b_result;
-	time_t cur_time;
-	char temp_string[256];
-	
  NEXT_LOOP:
 	if (g_notify_stop)
 		return nullptr;
@@ -446,7 +441,7 @@ static void *ev_enqwork(void *param)
 	cm_hold.unlock();
 	if (g_notify_stop)
 		return nullptr;
-	std::unique_lock eq_hold(g_enqueue_lock);
+	eq_lock_t eq_hold(g_enqueue_lock);
 	if (g_enqueue_list1.size() == 0)
 		goto NEXT_LOOP;
 	auto eq_node = g_enqueue_list1.begin();
@@ -461,18 +456,21 @@ static void *ev_enqwork(void *param)
 			goto NEXT_LOOP;
 		}
 		
-		if (0 == strncasecmp(penqueue->line, "ID ", 3)) {
+		if (0 == strncasecmp(penqueue->line, "ID ", 3)) [](eq_iter_t eq_node) {
+			auto penqueue = &*eq_node;
 			snprintf(penqueue->res_id, arsizeof(penqueue->res_id), "%s", penqueue->line + 3);
 			penqueue->sk_write("TRUE\r\n");
-			continue;
-		} else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
+		}(eq_node);
+		else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
+			auto ret = [](eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold) {
+			auto penqueue = &*eq_node;
 			HOST_NODE *phost = nullptr;
 			std::shared_ptr<DEQUEUE_NODE> pdequeue;
 			try {
 				pdequeue = std::make_shared<DEQUEUE_NODE>();
 			} catch (const std::bad_alloc &) {
 				penqueue->sk_write("FALSE\r\n");
-				continue;
+				return 0;
 			}
 			snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
 			pdequeue->fifo = FIFO(FIFO_AVERAGE_LENGTH);
@@ -486,7 +484,7 @@ static void *ev_enqwork(void *param)
 				} catch (const std::bad_alloc &) {
 					hl_hold.unlock();
 					penqueue->sk_write("FALSE\r\n");
-					continue;
+					return 0;
 				}
 				gx_strlcpy(phost->res_id, penqueue->line + 7, arsizeof(phost->res_id));
 			} else {
@@ -497,7 +495,7 @@ static void *ev_enqwork(void *param)
 				phost->list.push_back(pdequeue);
 			} catch (const std::bad_alloc &) {
 				pdequeue->sk_write("FALSE\r\n");
-				continue;
+				return 0;
 			}
 			try {
 				std::lock_guard dq_hold(g_dequeue_lock);
@@ -505,7 +503,7 @@ static void *ev_enqwork(void *param)
 			} catch (const std::bad_alloc &) {
 				phost->list.pop_back();
 				pdequeue->sk_write("FALSE\r\n");
-				continue;
+				return 0;
 			}
 			pdequeue->sockd = penqueue->sockd;
 			penqueue->sockd = -1;
@@ -514,14 +512,19 @@ static void *ev_enqwork(void *param)
 			g_dequeue_waken_cond.notify_one();
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
-			goto NEXT_LOOP;
-		} else if (0 == strncasecmp(penqueue->line, "SELECT ", 7)) {
-			pspace = strchr(penqueue->line + 7, ' ');
-			temp_len = pspace - (penqueue->line + 7);
+			return 2;
+			}(eq_node, eq_hold);
+			if (ret == 2)
+				goto NEXT_LOOP;
+		} else if (0 == strncasecmp(penqueue->line, "SELECT ", 7)) [](eq_iter_t eq_node) {
+			auto penqueue = &*eq_node;
+			auto pspace = strchr(penqueue->line + 7, ' ');
+			auto temp_len = pspace - (penqueue->line + 7);
 			if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
 				penqueue->sk_write("FALSE\r\n");
-				continue;
+				return;
 			}
+			char temp_string[256];
 			memcpy(temp_string, penqueue->line + 7, temp_len);
 			temp_string[temp_len] = ':';
 			temp_len ++;
@@ -529,12 +532,12 @@ static void *ev_enqwork(void *param)
 			HX_strlower(temp_string);
 			strcat(temp_string, pspace + 1);
 			
-			b_result = FALSE;
+			bool b_result = false;
 			std::unique_lock hl_hold(g_host_lock);
 			for (auto &hnode : g_host_list) {
 				auto phost = &hnode;
 				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
-					time(&cur_time);
+					time_t cur_time = time(nullptr);
 					auto time_it = phost->hash.find(temp_string);
 					if (time_it != phost->hash.end()) {
 						time_it->second = cur_time;
@@ -542,20 +545,22 @@ static void *ev_enqwork(void *param)
 						phost->hash.emplace(temp_string, cur_time);
 					} catch (const std::bad_alloc &) {
 					}
-					b_result = TRUE;
+					b_result = true;
 					break;
 				}
 			}
 			hl_hold.unlock();
 			penqueue->sk_write(b_result ? "TRUE\r\n" : "FALSE\r\n");
-			continue;
-		} else if (0 == strncasecmp(penqueue->line, "UNSELECT ", 9)) {
-			pspace = strchr(penqueue->line + 9, ' ');
-			temp_len = pspace - (penqueue->line + 9);
+		}(eq_node);
+		else if (0 == strncasecmp(penqueue->line, "UNSELECT ", 9)) [](eq_iter_t eq_node) {
+			auto penqueue = &*eq_node;
+			auto pspace = strchr(penqueue->line + 9, ' ');
+			auto temp_len = pspace - (penqueue->line + 9);
 			if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
 				penqueue->sk_write("FALSE\r\n");
-				continue;
+				return;
 			}
+			char temp_string[256];
 			memcpy(temp_string, penqueue->line + 9, temp_len);
 			temp_string[temp_len] = ':';
 			temp_len ++;
@@ -570,34 +575,40 @@ static void *ev_enqwork(void *param)
 				phost->hash.erase(temp_string);
 			hl_hold.unlock();
 			penqueue->sk_write("TRUE\r\n");
-			continue;
-		} else if (0 == strcasecmp(penqueue->line, "QUIT")) {
+		}(eq_node); else if (0 == strcasecmp(penqueue->line, "QUIT")) {
+			auto ret = [](eq_iter_t eq_node, eq_lock_t &eq_hold) {
+			auto penqueue = &*eq_node;
 			penqueue->sk_write("BYE\r\n");
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
-			goto NEXT_LOOP;
-		} else if (0 == strcasecmp(penqueue->line, "PING")) {
+			return 2;
+			}(eq_node, eq_hold);
+			if (ret == 2)
+				goto NEXT_LOOP;
+		} else if (0 == strcasecmp(penqueue->line, "PING")) [](eq_iter_t eq_node) {
+			auto penqueue = &*eq_node;
 			penqueue->sk_write("TRUE\r\n");
-			continue;
-		} else {
-			pspace = strchr(penqueue->line, ' ');
+		}(eq_node); else [](eq_iter_t eq_node) {
+			auto penqueue = &*eq_node;
+			auto pspace = strchr(penqueue->line, ' ');
 			if (NULL == pspace) {
 				penqueue->sk_write("FALSE\r\n");
-				continue;
+				return;
 			}
-			pspace1 = strchr(pspace + 1, ' ');
+			auto pspace1 = strchr(pspace + 1, ' ');
 			if (NULL == pspace1) {
 				penqueue->sk_write("FALSE\r\n");
-				continue;
+				return;
 			}
-			pspace2 = strchr(pspace1 + 1, ' ');
+			auto pspace2 = strchr(pspace1 + 1, ' ');
 			if (pspace2 == nullptr)
 				pspace2 = penqueue->line + strlen(penqueue->line);
 			if (pspace1 - pspace > 128 || pspace2 - pspace1 > 64) {
 				penqueue->sk_write("FALSE\r\n");
-				continue;
+				return;
 			}
-			temp_len = pspace1 - (pspace + 1);
+			auto temp_len = pspace1 - (pspace + 1);
+			char temp_string[256];
 			memcpy(temp_string, pspace + 1, temp_len);
 			temp_string[temp_len] = ':';
 			temp_len ++;
@@ -617,7 +628,7 @@ static void *ev_enqwork(void *param)
 					auto pdequeue = phost->list.front();
 					phost->list.erase(phost->list.begin());
 					std::unique_lock dl_hold(pdequeue->lock);
-					b_result = pdequeue->fifo.enqueue(penqueue->line);
+					auto b_result = pdequeue->fifo.enqueue(penqueue->line);
 					dl_hold.unlock();
 					if (b_result)
 						pdequeue->waken_cond.notify_one();
@@ -626,8 +637,7 @@ static void *ev_enqwork(void *param)
 			}
 			hl_hold.unlock();
 			penqueue->sk_write("TRUE\r\n");
-			continue;
-		}
+		}(eq_node);
 	}
 	return NULL;
 }
