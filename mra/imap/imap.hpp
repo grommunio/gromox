@@ -125,7 +125,7 @@ extern int imap_parser_get_context_socket(const schedule_context *);
 extern gromox::time_point imap_parser_get_context_timestamp(const schedule_context *);
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 extern int imap_parser_threads_event_proc(int action);
-extern void imap_parser_touch_modify(IMAP_CONTEXT *, char *username, char *folder);
+extern void imap_parser_touch_modify(IMAP_CONTEXT *, const char *user, const char *folder);
 extern void imap_parser_echo_modify(IMAP_CONTEXT *, STREAM *);
 extern void imap_parser_modify_flags(IMAP_CONTEXT *, const char *mid_string);
 extern void imap_parser_add_select(IMAP_CONTEXT *);

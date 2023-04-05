@@ -53,9 +53,7 @@ using namespace gromox;
 static void *imps_thrwork(void *);
 static void *imps_scanwork(void *);
 static void imap_parser_event_proc(char *event);
-
-static void imap_parser_event_touch(char *username, char *folder);
-
+static void imap_parser_event_touch(const char *user, const char *folder);
 static void imap_parser_event_flag(const char *username, const char *folder,
 	const char *mid_string);
 
@@ -1145,7 +1143,8 @@ static DOUBLE_LIST *sh_query(const char *x)
 	return i == g_select_hash.end() ? nullptr : &i->second;
 }
 
-void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder)
+void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, const char *username,
+    const char *folder)
 {
 	char buff[1024];
 	DOUBLE_LIST_NODE *pnode;
@@ -1169,7 +1168,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	system_services_broadcast_event(buff);
 }
 
-static void imap_parser_event_touch(char *username, char *folder)
+static void imap_parser_event_touch(const char *username, const char *folder)
 {
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
