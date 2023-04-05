@@ -219,6 +219,8 @@ static BOOL ftstream_parser_read_svreid(
 		*pb_continue = TRUE;
 		return FALSE;
 	}
+	if (len == 0)
+		abort(); /* if this ever happens, make cb=0,pb=NULL */
 	if (read(pstream->fd, &ours, sizeof(uint8_t)) != sizeof(uint8_t))
 		return FALSE;
 	pstream->offset += sizeof(uint8_t);
