@@ -1003,8 +1003,6 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 {
 	unsigned int tmp_len;
-	time_t cur_time;
-	struct tm tmp_tm;
 	NDR_PULL ndr_pull;
 	char dstring[128], tmp_buff[80000], response_buff[65536];
 	char status_line[1024], *pbody, *ptoken, *ptoken1;
@@ -1173,9 +1171,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				strncasecmp(response_buff, "Content-Length:", 15) != 0 &&
 				strcasestr(response_buff, "\r\nContent-Length:") == nullptr ?
 				TRUE : false;
-			time(&cur_time);
-			gmtime_r(&cur_time, &tmp_tm);
-			strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
+			rfc1123_dstring(dstring, std::size(dstring));
 			if (strcasecmp(phttp->request.method, "HEAD") == 0)
 				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 								"HTTP/1.1 %s\r\n"

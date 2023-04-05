@@ -701,13 +701,18 @@ std::string hex2bin(std::string_view input, hex2bin_mode onbad)
 	return buf;
 }
 
+void rfc1123_dstring(char *buf, size_t z, const struct tm &tm)
+{
+	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
+}
+
 void rfc1123_dstring(char *buf, size_t z, time_t ts)
 {
 	if (ts == 0)
 		ts = time(nullptr);
 	struct tm tm;
 	gmtime_r(&ts, &tm);
-	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
+	return rfc1123_dstring(buf, z, tm);
 }
 
 void startup_banner(const char *prog)

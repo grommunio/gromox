@@ -276,14 +276,9 @@ static const char *status_text(unsigned int s)
 
 static BOOL mod_cache_exit_response(HTTP_CONTEXT *phttp, unsigned int status)
 {
-	time_t cur_time;
-	struct tm tmp_tm;
 	char dstring[128];
 	char rb[256];
-	
-	time(&cur_time);
-	gmtime_r(&cur_time, &tmp_tm);
-	strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
+	rfc1123_dstring(dstring, std::size(dstring));
 	auto rl = gx_snprintf(rb, std::size(rb),
 	          "HTTP/1.1 %s\r\n"
 	          "Date: %s\r\n"
@@ -296,7 +291,6 @@ static BOOL mod_cache_exit_response(HTTP_CONTEXT *phttp, unsigned int status)
 static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 {
 	char etag[128];
-	time_t cur_time;
 	struct tm tmp_tm;
 	int response_len;
 	char date_string[128];
@@ -305,11 +299,9 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	time(&cur_time);
-	gmtime_r(&cur_time, &tmp_tm);
-	strftime(date_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
+	rfc1123_dstring(date_string, std::size(date_string));
 	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
-	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
+	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
@@ -378,7 +370,6 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 {
 	char etag[128];
-	time_t cur_time;
 	struct tm tmp_tm;
 	int response_len;
 	char date_string[128];
@@ -388,11 +379,9 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	time(&cur_time);
-	gmtime_r(&cur_time, &tmp_tm);
-	strftime(date_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
+	rfc1123_dstring(date_string, std::size(date_string));
 	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
-	strftime(modified_string, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
+	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	content_length =  mod_cache_calculate_content_length(pcontext);	
 	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
