@@ -2717,7 +2717,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		pmime->set_field("To", tmp_buff);
 
 		auto pmime_old = imail.get_head();
-		memcpy(tmp_buff, "\x00\x00\x00\x00", 5);
+		memset(tmp_buff, '\0', std::size(tmp_buff));
 		if (pmime_old == nullptr ||
 		    !pmime_old->get_field("Subject", tmp_buff + 5, std::size(tmp_buff) - 5))
 			snprintf(tmp_buff, std::size(tmp_buff), "Fwd: (no subject)");
