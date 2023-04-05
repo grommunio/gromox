@@ -119,9 +119,6 @@ extern BOOL mysql_adaptor_get_org_domains(unsigned int org_id, std::vector<unsig
 extern BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &);
 extern BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2);
 extern BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id, std::vector<sql_group> &);
-extern BOOL mysql_adaptor_get_group_classes(unsigned int group_id, std::vector<sql_class> &);
-extern BOOL mysql_adaptor_get_sub_classes(unsigned int class_id, std::vector<sql_class> &);
-extern int mysql_adaptor_get_class_users(unsigned int class_id, std::vector<sql_user> &);
 extern int mysql_adaptor_get_group_users(unsigned int group_id, std::vector<sql_user> &);
 extern int mysql_adaptor_get_domain_users(unsigned int domain_id, std::vector<sql_user> &);
 BOOL mysql_adaptor_check_mlist_include(

@@ -262,44 +262,6 @@ static int userlist_parse(sqlconn &conn, const char *query,
 	return pfile.size();
 }
 
-int mysql_adaptor_get_class_users(unsigned int class_id,
-    std::vector<sql_user> &pfile) try
-{
-	char query[451];
-
-	auto conn = g_sqlconn_pool.get_wait();
-	if (*conn == nullptr)
-		return false;
-	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.username, a.aliasname FROM users AS u "
-	         "INNER JOIN aliases AS a ON u.username=a.mainname "
-	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username", class_id);
-	aliasmap_t amap;
-	aliasmap_load(*conn, query, amap);
-
-	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
-	         "INNER JOIN user_properties AS p ON u.id=p.user_id "
-	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
-	         "ORDER BY p.user_id, p.proptag, p.order_id", class_id);
-	propmap_t pmap;
-	propmap_load(*conn, query, pmap);
-
-	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
-	         "u.maildir, z.list_type, z.list_privilege, "
-	         "cl.classname, gr.title FROM users AS u "
-	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
-	         JOIN_WITH_DISPLAYTYPE
-	         "LEFT JOIN mlists AS z ON u.username=z.listname "
-	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
-	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname`", class_id);
-	return userlist_parse(*conn, query, amap, pmap, pfile);
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
-	return false;
-}
-
 int mysql_adaptor_get_domain_users(unsigned int domain_id,
     std::vector<sql_user> &pfile) try
 {
@@ -595,9 +557,6 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(get_domain_info, "get_domain_info");
 	E(check_same_org, "check_same_org");
 	E(get_domain_groups, "get_domain_groups");
-	E(get_group_classes, "get_group_classes");
-	E(get_sub_classes, "get_sub_classes");
-	E(get_class_users, "get_class_users");
 	E(get_group_users, "get_group_users");
 	E(get_domain_users, "get_domain_users");
 	E(check_mlist_include, "check_mlist_include");

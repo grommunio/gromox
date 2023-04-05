@@ -414,34 +414,6 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 	return false;
 }
 
-static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
-    std::vector<unsigned int> &seen, unsigned int class_id) try
-{
-	auto qstr = "SELECT child_id FROM hierarchy WHERE class_id=" + std::to_string(class_id);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-
-	size_t i, rows = pmyres.num_rows();
-	for (i = 0; i < rows; i++) {
-		auto myrow = pmyres.fetch_row();
-		auto child_id = strtoul(myrow[0], nullptr, 0);
-		if (std::find(seen.cbegin(), seen.cend(), child_id) != seen.cend())
-			continue;
-		seen.push_back(child_id);
-		if (!mysql_adaptor_expand_hierarchy(pmysql, seen, child_id))
-			return FALSE;
-	}
-	return TRUE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1711", e.what());
-	return false;
-}
-
 bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_size) try
 {
 	char temp_name[UADDR_SIZE*2];
@@ -761,92 +733,6 @@ BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id,
 	return false;
 }
 
-BOOL mysql_adaptor_get_group_classes(unsigned int group_id,
-    std::vector<sql_class> &pfile) try
-{
-	auto qstr = "SELECT h.child_id, c.classname FROM hierarchy AS h "
-	            "INNER JOIN classes AS c ON h.class_id=0 AND h.group_id=" +
-	            std::to_string(group_id) + " AND h.child_id=c.id";
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	size_t i, rows = pmyres.num_rows();
-	std::vector<sql_class> cv(rows);
-	for (i=0; i<rows; i++) {
-		auto myrow = pmyres.fetch_row();
-		cv[i].child_id = strtoul(myrow[0], nullptr, 0);
-		cv[i].name = myrow[1];
-	}
-	pfile = std::move(cv);
-	return TRUE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1726", e.what());
-	return false;
-}
-
-BOOL mysql_adaptor_get_sub_classes(unsigned int class_id,
-    std::vector<sql_class> &pfile) try
-{
-	auto qstr = "SELECT h.child_id, c.classname FROM hierarchy AS h"
-	            " INNER JOIN classes AS c ON h.class_id=" + std::to_string(class_id) +
-	            " AND h.child_id=c.id";
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	size_t i, rows = pmyres.num_rows();
-	std::vector<sql_class> cv(rows);
-	for (i=0; i<rows; i++) {
-		auto myrow = pmyres.fetch_row();
-		cv[i].child_id = strtoul(myrow[0], nullptr, 0);
-		cv[i].name = myrow[1];
-	}
-	pfile = std::move(cv);
-	return TRUE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1727", e.what());
-	return false;
-}
-
-static BOOL mysql_adaptor_hierarchy_include(sqlconn &conn,
-    const char *account, unsigned int class_id) try
-{
-	auto qstr = "SELECT username FROM members WHERE class_id="s +
-	            std::to_string(class_id) + " AND username='" + account + "'";
-	if (!conn.query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.get());
-	if (pmyres == nullptr)
-		return FALSE;
-	if (pmyres.num_rows() > 0)
-		return TRUE;
-
-	qstr = "SELECT child_id FROM hierarchy WHERE class_id=" + std::to_string(class_id);
-	if (!conn.query(qstr.c_str()))
-		return false;
-	pmyres = mysql_store_result(conn.get());
-	if (pmyres == nullptr)
-		return FALSE;
-	size_t i, rows = pmyres.num_rows();
-	for (i=0; i<rows; i++) {
-		auto myrow = pmyres.fetch_row();
-		auto child_id = strtoul(myrow[0], nullptr, 0);
-		if (mysql_adaptor_hierarchy_include(conn, account, child_id))
-			return TRUE;
-	}
-	return FALSE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1728", e.what());
-	return false;
-}
-
 BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
     const char *account) try
 {
@@ -933,18 +819,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		return b_result;
 	}
 	case mlist_type::dyngroup: {
-		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
-		if (!conn->query(qstr.c_str()))
-			return false;
-		pmyres = mysql_store_result(conn->get());
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() != 1)
-			return FALSE;		
-		myrow = pmyres.fetch_row();
-		unsigned int class_id = strtoul(myrow[0], nullptr, 0);
-		b_result = mysql_adaptor_hierarchy_include(*conn, temp_account, class_id);
-		return b_result;
+		return false;
 	}
 	default:
 		return FALSE;
@@ -1250,48 +1125,6 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 		return TRUE;
 	}
 	case mlist_type::dyngroup: {
-		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
-		if (!conn->query(qstr.c_str()))
-			return false;
-		pmyres = mysql_store_result(conn->get());
-		if (pmyres == nullptr)
-			return false;
-		if (pmyres.num_rows() != 1) {
-			*presult = MLIST_RESULT_NONE;
-			return TRUE;
-		}
-
-		myrow = pmyres.fetch_row();
-		unsigned int clsid = strtoul(myrow[0], nullptr, 0);
-		std::vector<unsigned int> file_temp{clsid};
-		if (!mysql_adaptor_expand_hierarchy(conn->get(),
-		    file_temp, clsid)) {
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
-		}
-
-		std::set<std::string, icasecmp> file_temp1;
-		for (auto class_id : file_temp) {
-			qstr = "SELECT username FROM members WHERE class_id=" + std::to_string(class_id);
-			if (!conn->query(qstr.c_str()))
-				return false;
-			pmyres = mysql_store_result(conn->get());
-			if (pmyres == nullptr)
-				return false;
-			rows = pmyres.num_rows();
-			for (i = 0; i < rows; i++) {
-				myrow = pmyres.fetch_row();
-				file_temp1.emplace(myrow[0]);
-			}
-		}
-		if (b_chkintl)
-			b_chkintl = file_temp1.find(from) == file_temp1.cend();
-		if (b_chkintl) {
-			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
-			return TRUE;
-		}
-		for (auto &&t : file_temp1)
-			pfile.push_back(std::move(t));
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	}

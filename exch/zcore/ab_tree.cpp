@@ -264,83 +264,6 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 	return pabnode->d_info != nullptr ? TRUE : false;
 }
 
-static BOOL ab_tree_load_class(
-	int class_id, SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode, AB_BASE *pbase)
-{
-	int rows;
-	AB_NODE *pabnode;
-	char temp_buff[1024];
-	std::vector<sql_class> file_subclass;
-	
-	if (!system_services_get_sub_classes(class_id, file_subclass))
-		return FALSE;
-	for (auto &&cls : file_subclass) {
-		pabnode = ab_tree_get_abnode();
-		if (NULL == pabnode) {
-			return FALSE;
-		}
-		pabnode->node_type = abnode_type::abclass;
-		pabnode->id = cls.child_id;
-		pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-		auto child_id = cls.child_id;
-		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
-		if (pabnode->d_info == nullptr) {
-			delete pabnode;
-			return false;
-		}
-		auto pclass = &pabnode->stree;
-		ptree->add_child(pnode, pclass, SIMPLE_TREE_ADD_LAST);
-		if (!ab_tree_cache_node(pbase, pabnode) ||
-		    !ab_tree_load_class(child_id, ptree, pclass, pbase))
-			return FALSE;
-	}
-
-	std::vector<sql_user> file_user;
-	rows = system_services_get_class_users(class_id, file_user);
-	if (-1 == rows) {
-		return FALSE;
-	} else if (0 == rows) {
-		return TRUE;
-	}
-	std::vector<sort_item> parray;
-	auto cl_array = make_scope_exit([&parray]() {
-		for (const auto &e : parray)
-			delete containerof(e.pnode, AB_NODE, stree);
-	});
-	for (auto &&usr : file_user) {
-		pabnode = ab_tree_get_abnode();
-		if (NULL == pabnode) {
-			return false;
-		}
-		if (usr.dtypx == DT_DISTLIST) {
-			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-				delete pabnode;
-				return false;
-			}
-		} else {
-			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-				delete pabnode;
-				return false;
-			}
-		}
-		ab_tree_get_display_name(&pabnode->stree, CP_UTF8,
-			temp_buff, std::size(temp_buff));
-		try {
-			parray.push_back(sort_item{&pabnode->stree, temp_buff});
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1670: ENOMEM");
-			delete pabnode;
-			return false;
-		}
-	}
-	std::sort(parray.begin(), parray.end());
-	for (int i = 0; i < rows; ++i)
-		ptree->add_child(pnode, parray[i].pnode, SIMPLE_TREE_ADD_LAST);
-	cl_array.release();
-	return TRUE;
-}
-
 static BOOL ab_tree_load_tree(int domain_id,
 	SIMPLE_TREE *ptree, AB_BASE *pbase)
 {
@@ -394,30 +317,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 		ptree->add_child(pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
 		if (!ab_tree_cache_node(pbase, pabnode))
 			return false;
-		
-		std::vector<sql_class> file_class;
-		if (!system_services_get_group_classes(grp_id, file_class))
-			return FALSE;
-		for (auto &&cls : file_class) {
-			pabnode = ab_tree_get_abnode();
-			if (NULL == pabnode) {
-				return FALSE;
-			}
-			pabnode->node_type = abnode_type::abclass;
-			pabnode->id = cls.child_id;
-			pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
-			auto child_id = cls.child_id;
-			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
-			if (pabnode->d_info == nullptr) {
-				delete pabnode;
-				return false;
-			}
-			auto pclass = &pabnode->stree;
-			ptree->add_child(pgroup, pclass, SIMPLE_TREE_ADD_LAST);
-			if (!ab_tree_cache_node(pbase, pabnode) ||
-			    !ab_tree_load_class(child_id, ptree, pclass, pbase))
-				return FALSE;
-		}
 		
 		std::vector<sql_user> file_user;
 		rows = system_services_get_group_users(grp_id, file_user);

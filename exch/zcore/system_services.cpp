@@ -11,12 +11,10 @@ using namespace gromox;
 decltype(system_services_auth_login) system_services_auth_login;
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(check_same_org)
-E(get_class_users)
 E(get_domain_groups)
 E(get_domain_ids)
 E(get_domain_info)
 E(get_domain_users)
-E(get_group_classes)
 E(get_group_users)
 E(get_homedir)
 E(get_id_from_username)
@@ -24,7 +22,6 @@ E(get_maildir)
 E(get_mlist_ids)
 E(get_mlist_memb)
 E(get_org_domains)
-E(get_sub_classes)
 E(get_timezone)
 E(get_user_displayname)
 E(get_user_ids)
@@ -64,9 +61,6 @@ int system_services_run()
 	E(system_services_get_org_domains, "get_org_domains");
 	E(system_services_get_domain_info, "get_domain_info");
 	E(system_services_get_domain_groups, "get_domain_groups");
-	E(system_services_get_group_classes, "get_group_classes");
-	E(system_services_get_sub_classes, "get_sub_classes");
-	E(system_services_get_class_users, "get_class_users");
 	E(system_services_get_group_users, "get_group_users");
 	E(system_services_get_domain_users, "get_domain_users");
 	E(system_services_get_mlist_ids, "get_mlist_ids");
@@ -98,9 +92,6 @@ void system_services_stop()
 	E("get_org_domains");
 	E("get_domain_info");
 	E("get_domain_groups");
-	E("get_group_classes");
-	E("get_sub_classes");
-	E("get_class_users");
 	E("get_group_users");
 	E("get_domain_users");
 	E("get_mlist_ids");
