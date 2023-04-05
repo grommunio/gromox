@@ -556,7 +556,6 @@ static constexpr char tbl_users_top[] =
     */
 "  `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0,"
 "  `maildir` varchar(128) NOT NULL DEFAULT '',"
-"  `max_size` int(10) unsigned NOT NULL,"
 "  `lang` varchar(32) NOT NULL DEFAULT '',"
 "  `timezone` varchar(64) NOT NULL DEFAULT '',"
 "  `privilege_bits` int(10) unsigned NOT NULL,"
@@ -772,6 +771,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{109, tbl_orgparam_109},
 	{110, "ALTER TABLE `users` ADD COLUMN `altname` varchar(64) AFTER `primary_email`"},
 	{111, "ALTER TABLE `users` ADD CONSTRAINT UNIQUE `altname` (`altname`)"},
+	{112, "ALTER TABLE `users` DROP COLUMN `max_size`"},
 	{0, nullptr},
 };
 
