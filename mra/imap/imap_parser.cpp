@@ -1143,7 +1143,7 @@ static DOUBLE_LIST *sh_query(const char *x)
 	return i == g_select_hash.end() ? nullptr : &i->second;
 }
 
-void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, const char *username,
+void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
     const char *folder)
 {
 	char buff[1024];
@@ -1189,7 +1189,7 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	}
 }
 
-void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string) try
+void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const char *mid_string) try
 {
 	char buff[1024];
 	DOUBLE_LIST_NODE *pnode;

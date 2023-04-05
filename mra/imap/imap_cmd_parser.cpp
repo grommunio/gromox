@@ -820,7 +820,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_modify_flags(pcontext, pitem->mid);
+				imap_parser_bcast_flags(pcontext, pitem->mid);
 			}
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
 			auto pmime = mjson.get_mime("");
@@ -856,7 +856,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_modify_flags(pcontext, pitem->mid);
+				imap_parser_bcast_flags(pcontext, pitem->mid);
 			}
 		} else if (strcasecmp(kw, "UID") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
@@ -945,7 +945,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_modify_flags(pcontext, pitem->mid);
+				imap_parser_bcast_flags(pcontext, pitem->mid);
 			}
 		}
 	}
@@ -957,7 +957,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		if (!(pitem->flag_bits & FLAG_SEEN)) {
 			system_services_unset_flags(pcontext->maildir,
 				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errnum);
-			imap_parser_modify_flags(pcontext, pitem->mid);
+			imap_parser_bcast_flags(pcontext, pitem->mid);
 		}
 	}
 	return 0;
@@ -2272,8 +2272,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (ret != 0)
 		return ret;
 	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
-	imap_parser_touch_modify(NULL, pcontext->username,
-							pcontext->selected_folder);
+	imap_parser_bcast_touch(nullptr, pcontext->username, pcontext->selected_folder);
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170015: OK <APPENDUID> APPEND completed */
@@ -2518,8 +2517,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		return ret;
 	pcontext->mid.clear();
 	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
-	imap_parser_touch_modify(NULL, pcontext->username,
-							pcontext->selected_folder);
+	imap_parser_bcast_touch(nullptr, pcontext->username, pcontext->selected_folder);
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
 		imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170015: OK <APPENDUID> APPEND completed */
@@ -2622,7 +2620,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		mlog(LV_ERR, "E-1459: ENOMEM");
 	}
 	if (del_num > 0)
-		imap_parser_touch_modify(pcontext, pcontext->username,
+		imap_parser_bcast_touch(pcontext, pcontext->username,
 			pcontext->selected_folder);
 	imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170026: OK EXPUNGE completed */
@@ -2802,7 +2800,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		auto pitem = xarray.get_item(i);
 		imap_cmd_parser_store_flags(argv[3], pitem->mid,
 			pitem->id, 0, flag_bits, pcontext);
-		imap_parser_modify_flags(pcontext, pitem->mid);
+		imap_parser_bcast_flags(pcontext, pitem->mid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1721;
@@ -3068,7 +3066,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		auto pitem = xarray.get_item(i);
 		imap_cmd_parser_store_flags(argv[4], pitem->mid,
 			pitem->id, pitem->uid, flag_bits, pcontext);
-		imap_parser_modify_flags(pcontext, pitem->mid);
+		imap_parser_bcast_flags(pcontext, pitem->mid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1724;
@@ -3239,7 +3237,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		mlog(LV_ERR, "E-1458: ENOMEM");
 	}
 	if (del_num > 0)
-		imap_parser_touch_modify(pcontext, pcontext->username,
+		imap_parser_bcast_touch(pcontext, pcontext->username,
 			pcontext->selected_folder);
 	imap_parser_echo_modify(pcontext, NULL);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
@@ -3370,7 +3368,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 	}
 	}
 	if (b_deleted)
-		imap_parser_touch_modify(pcontext,
+		imap_parser_bcast_touch(pcontext,
 			pcontext->username, prev_selected);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1242: ENOMEM");
