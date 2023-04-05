@@ -3479,14 +3479,54 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
+namespace {
+
+struct simu_node {
+	uint32_t idx, uid;
+	char flags[10];
+	std::string mid_string;
+};
+
+}
+
+static int simu_query(IDB_ITEM *pidb, const char *sql_string,
+    size_t total_mail, bool b_asc, std::vector<simu_node> &temp_list)
+{
+	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
+		return MIDB_E_SQLPREP;
+	while (pstmt.step() == SQLITE_ROW) {
+		simu_node sn;
+		sn.idx = b_asc ? pstmt.col_int64(0) :
+		         total_mail - pstmt.col_int64(0) + 1;
+		sn.mid_string = pstmt.col_text(1);
+		sn.uid = pstmt.col_int64(2);
+		auto &flags_buff = sn.flags;
+		flags_buff[0] = '(';
+		uint8_t flags_len = 1;
+		if (pstmt.col_int64(3) != 0)
+			flags_buff[flags_len++] = 'A';
+		if (pstmt.col_int64(4) != 0)
+			flags_buff[flags_len++] = 'U';
+		if (pstmt.col_int64(5) != 0)
+			flags_buff[flags_len++] = 'F';
+		if (pstmt.col_int64(6) != 0)
+			flags_buff[flags_len++] = 'D';
+		if (pstmt.col_int64(7) != 0)
+			flags_buff[flags_len++] = 'S';
+		if (pstmt.col_int64(8) != 0)
+			flags_buff[flags_len++] = 'R';
+		if (pstmt.col_int64(9) != 0)
+			flags_buff[flags_len++] = 'W';
+		flags_buff[flags_len++] = ')';
+		flags_buff[flags_len] = '\0';
+		temp_list.push_back(std::move(sn));
+	}
+	return 0;
+}
+
 static int mail_engine_psimu(int argc, char **argv, int sockd) try
 {
-	struct simu_node {
-		uint32_t idx, uid;
-		char flags[10];
-		std::string mid_string;
-	};
-
 	int total_mail = 0;
 	char temp_line[1024];
 	char sql_string[1024];
@@ -3582,41 +3622,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	}
 
 	std::vector<simu_node> temp_list;
-	auto runq = [&pidb,&temp_list,total_mail,b_asc](const char *sql_string) -> int {
-
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	while (pstmt.step() == SQLITE_ROW) {
-		simu_node sn;
-		sn.idx = b_asc ? pstmt.col_int64(0) :
-		         total_mail - pstmt.col_int64(0) + 1;
-		sn.mid_string = pstmt.col_text(1);
-		sn.uid = pstmt.col_int64(2);
-		auto &flags_buff = sn.flags;
-		flags_buff[0] = '(';
-		uint8_t flags_len = 1;
-		if (pstmt.col_int64(3) != 0)
-			flags_buff[flags_len++] = 'A';
-		if (pstmt.col_int64(4) != 0)
-			flags_buff[flags_len++] = 'U';
-		if (pstmt.col_int64(5) != 0)
-			flags_buff[flags_len++] = 'F';
-		if (pstmt.col_int64(6) != 0)
-			flags_buff[flags_len++] = 'D';
-		if (pstmt.col_int64(7) != 0)
-			flags_buff[flags_len++] = 'S';
-		if (pstmt.col_int64(8) != 0)
-			flags_buff[flags_len++] = 'R';
-		if (pstmt.col_int64(9) != 0)
-			flags_buff[flags_len++] = 'W';
-		flags_buff[flags_len++] = ')';
-		flags_buff[flags_len] = '\0';
-		temp_list.push_back(std::move(sn));
-	}
-	return 0;
-	};
-	auto iret = runq(sql_string);
+	auto iret = simu_query(pidb.get(), sql_string, total_mail, b_asc, temp_list);
 	if (iret != 0)
 		return iret;
 	if (temp_list.size() == 0 && (first == seq_node::unset || last == seq_node::unset)) {
@@ -3629,7 +3635,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		         "replied, unsent, flagged, deleted, read, recent, forwarded"
 		         " FROM messages WHERE folder_id=%llu ORDER BY idx DESC LIMIT 1",
 		         LLU{folder_id});
-		iret = runq(sql_string);
+		iret = simu_query(pidb.get(), sql_string, total_mail, b_asc, temp_list);
 		if (iret != 0)
 			return iret;
 	}
@@ -3724,9 +3730,23 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
+using dtlu_node = std::pair<std::string /* mid_string */, uint32_t /* idx */>;
+
+static int dtlu_query(IDB_ITEM *pidb, const char *sql_string,
+    size_t total_mail, bool b_asc, std::vector<dtlu_node> &temp_list)
+{
+	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
+	if (pstmt == nullptr)
+		return MIDB_E_SQLPREP;
+	while (pstmt.step() == SQLITE_ROW)
+		temp_list.emplace_back(pstmt.col_text(1),
+			b_asc ? pstmt.col_int64(0) :
+			total_mail - pstmt.col_int64(0) + 1);
+	return 0;
+}
+
 static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 {
-	using dtlu_node = std::pair<std::string /* mid_string */, uint32_t /* idx */>;
 	BOOL b_asc;
 	int total_mail = 0;
 	char sql_string[1024];
@@ -3813,18 +3833,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	}
 
 	std::vector<dtlu_node> temp_list;
-	auto runq = [&pidb,&temp_list,b_asc,total_mail](const char *sql_string) -> int {
-
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	while (pstmt.step() == SQLITE_ROW)
-		temp_list.emplace_back(pstmt.col_text(1),
-			b_asc ? pstmt.col_int64(0) :
-			total_mail - pstmt.col_int64(0) + 1);
-	return 0;
-	};
-	auto iret = runq(sql_string);
+	auto iret = dtlu_query(pidb.get(), sql_string, total_mail, b_asc, temp_list);
 	if (iret != 0)
 		return iret;
 	if (temp_list.empty() && (first == seq_node::unset || last == seq_node::unset)) {
@@ -3832,7 +3841,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string"
 		         " FROM messages WHERE folder_id=%llu ORDER BY idx"
 		         " DESC LIMIT 1", LLU{folder_id});
-		iret = runq(sql_string);
+		iret = dtlu_query(pidb.get(), sql_string, total_mail, b_asc, temp_list);
 		if (iret != 0)
 			return iret;
 	}
