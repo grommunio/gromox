@@ -50,7 +50,8 @@ enum {
 };
 
 static constexpr const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
-static constexpr const char *g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
+/* RFC 6154 says \Junk, but Thunderbird evaluates \Spam */
+static constexpr const char *g_xproperty_list[] = {"\\Drafts", "\\Sent", "\\Trash", "\\Junk \\Spam"};
 
 static inline bool special_folder(const char *name)
 {
@@ -2000,7 +2001,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			auto pdir = temp_tree.match(temp_name);
 			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-			       "* XLIST (\\%s \\Has%sChildren) \"/\" \"%s\"\r\n",
+			       "* XLIST (%s \\Has%sChildren) \"/\" \"%s\"\r\n",
 			       g_xproperty_list[i], have ? "" : "No", temp_name);
 		}
 	}
