@@ -50,33 +50,28 @@ static zend_bool zclient_read_socket(int sockd, BINARY &pbin)
 	uint32_t offset = 0;
 	uint8_t resp_buff[5];
 	
-	pbin.pb = nullptr;
+	read_len = read(sockd, resp_buff, 5);
+	if (1 == read_len) {
+		pbin.cb = 1;
+		pbin.pb = sta_malloc<uint8_t>(1);
+		if (pbin.pb == nullptr)
+			return 0;
+		pbin.pb[0] = resp_buff[0];
+		return 1;
+	} else if (read_len != 5) {
+		return 0;
+	}
+	pbin.cb = le32p_to_cpu(resp_buff + 1) + 5;
+	pbin.pb = sta_malloc<uint8_t>(pbin.cb);
+	if (pbin.pb == nullptr) {
+		pbin.cb = 0;
+		return 0;
+	}
+	memcpy(pbin.pb, resp_buff, 5);
+	offset = 5;
+	if (pbin.cb == offset)
+		return 1;
 	while (1) {
-		if (pbin.pb == nullptr) {
-			read_len = read(sockd, resp_buff, 5);
-			if (1 == read_len) {
-				pbin.cb = 1;
-				pbin.pb = sta_malloc<uint8_t>(1);
-				if (pbin.pb == nullptr)
-					return 0;
-				pbin.pb[0] = resp_buff[0];
-				return 1;
-			} else if (5 == read_len) {
-				pbin.cb = le32p_to_cpu(resp_buff + 1) + 5;
-				pbin.pb = sta_malloc<uint8_t>(pbin.cb);
-				if (pbin.pb == nullptr) {
-					pbin.cb = 0;
-					return 0;
-				}
-				memcpy(pbin.pb, resp_buff, 5);
-				offset = 5;
-				if (pbin.cb == offset)
-					return 1;
-				continue;
-			} else {
-				return 0;
-			}
-		}
 		read_len = read(sockd, pbin.pb + offset, pbin.cb - offset);
 		if (read_len <= 0) {
 			return 0;
