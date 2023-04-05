@@ -1897,12 +1897,10 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 				continue;
 			auto pdir = temp_tree.match(temp_name);
-			if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
-				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				       "* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			else
-				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				       "* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
+			       "* LIST (\\Has%sChildren) \"/\" {%zu}\r\n%s\r\n",
+			       have ? "" : "No", strlen(temp_name), temp_name);
 		}
 		mem_file_free(&temp_file);
 		pcontext->stream.clear();
@@ -1986,26 +1984,20 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	len = 0;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
 		auto pdir = temp_tree.match("INBOX");
-		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
-			len = gx_snprintf(buff + len, arsizeof(buff),
-				"* XLIST (\\Inbox \\HasChildren) \"/\" \"INBOX\"\r\n");
-		else
-			len = gx_snprintf(buff + len, arsizeof(buff),
-				"* XLIST (\\Inbox \\HasNoChildren) \"/\" \"INBOX\"\r\n");
+		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+		len = gx_snprintf(buff + len, arsizeof(buff),
+		      "* XLIST (\\Inbox \\Has%sChildren) \"/\" \"INBOX\"\r\n",
+		      have ? "" : "No");
 	}
 	for (i=0; i<4; i++) {
 		imap_cmd_parser_sysfolder_to_imapfolder(
 			pcontext->lang, g_folder_list[i], temp_name);
 		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern)) {
 			auto pdir = temp_tree.match(temp_name);
-			if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
-				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-					"* XLIST (\\%s \\HasChildren) \"/\" \"%s\"\r\n",
-					g_xproperty_list[i], temp_name);
-			else
-				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-					"* XLIST (\\%s \\HasNoChildren) \"/\" \"%s\"\r\n",
-					g_xproperty_list[i], temp_name);
+			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
+			       "* XLIST (\\%s \\Has%sChildren) \"/\" \"%s\"\r\n",
+			       g_xproperty_list[i], have ? "" : "No", temp_name);
 		}
 	}
 	temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -2013,12 +2005,10 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 			continue;
 		auto pdir = temp_tree.match(temp_name);
-		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
-			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-		else
-			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+		len += gx_snprintf(buff + len, arsizeof(buff) - len,
+		       "* XLIST (\\Has%sChildren) \"/\" {%zu}\r\n%s\r\n",
+		       have ? "" : "No", strlen(temp_name), temp_name);
 	}
 	mem_file_free(&temp_file);
 	pcontext->stream.clear();
@@ -2085,12 +2075,10 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 			continue;
 		auto pdir = temp_tree.match(temp_name);
-		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
-			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-		else
-			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+		len += gx_snprintf(buff + len, arsizeof(buff) - len,
+		       "* LSUB (\\Has%sChildren) \"/\" {%zu}\r\n%s\r\n",
+		       have ? "" : "No", strlen(temp_name), temp_name);
 	}
 	mem_file_free(&temp_file);
 	pcontext->stream.clear();
