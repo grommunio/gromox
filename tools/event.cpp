@@ -431,6 +431,198 @@ static void *ev_acceptwork(void *param)
 using eq_iter_t = std::list<ENQUEUE_NODE>::iterator;
 using eq_lock_t = std::unique_lock<std::mutex>;
 
+static void q_id(eq_iter_t eq_node)
+{
+	auto penqueue = &*eq_node;
+	snprintf(penqueue->res_id, arsizeof(penqueue->res_id), "%s", penqueue->line + 3);
+	penqueue->sk_write("TRUE\r\n");
+}
+
+static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
+{
+	auto penqueue = &*eq_node;
+	HOST_NODE *phost = nullptr;
+	std::shared_ptr<DEQUEUE_NODE> pdequeue;
+	try {
+		pdequeue = std::make_shared<DEQUEUE_NODE>();
+	} catch (const std::bad_alloc &) {
+		penqueue->sk_write("FALSE\r\n");
+		return 0;
+	}
+	snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
+	pdequeue->fifo = FIFO(FIFO_AVERAGE_LENGTH);
+	std::unique_lock hl_hold(g_host_lock);
+	auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
+	               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
+	if (host_it == g_host_list.end()) {
+		try {
+			g_host_list.emplace_back();
+			phost = &g_host_list.back();
+		} catch (const std::bad_alloc &) {
+			hl_hold.unlock();
+			penqueue->sk_write("FALSE\r\n");
+			return 0;
+		}
+		gx_strlcpy(phost->res_id, penqueue->line + 7, arsizeof(phost->res_id));
+	} else {
+		phost = &*host_it;
+	}
+	time(&phost->last_time);
+	try {
+		phost->list.push_back(pdequeue);
+	} catch (const std::bad_alloc &) {
+		pdequeue->sk_write("FALSE\r\n");
+		return 0;
+	}
+	try {
+		std::lock_guard dq_hold(g_dequeue_lock);
+		g_dequeue_list1.push_back(pdequeue);
+	} catch (const std::bad_alloc &) {
+		phost->list.pop_back();
+		pdequeue->sk_write("FALSE\r\n");
+		return 0;
+	}
+	pdequeue->sockd = penqueue->sockd;
+	penqueue->sockd = -1;
+	hl_hold.unlock();
+	pdequeue->sk_write("TRUE\r\n");
+	g_dequeue_waken_cond.notify_one();
+	eq_hold.lock();
+	g_enqueue_list.erase(eq_node);
+	return 2;
+}
+
+static void q_select(eq_iter_t eq_node)
+{
+	auto penqueue = &*eq_node;
+	auto pspace = strchr(penqueue->line + 7, ' ');
+	auto temp_len = pspace - (penqueue->line + 7);
+	if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
+		penqueue->sk_write("FALSE\r\n");
+		return;
+	}
+	char temp_string[256];
+	memcpy(temp_string, penqueue->line + 7, temp_len);
+	temp_string[temp_len] = ':';
+	temp_len++;
+	temp_string[temp_len] = '\0';
+	HX_strlower(temp_string);
+	strcat(temp_string, pspace + 1);
+
+	bool b_result = false;
+	std::unique_lock hl_hold(g_host_lock);
+	for (auto &hnode : g_host_list) {
+		auto phost = &hnode;
+		if (0 == strcmp(penqueue->res_id, phost->res_id)) {
+			time_t cur_time = time(nullptr);
+			auto time_it = phost->hash.find(temp_string);
+			if (time_it != phost->hash.end()) {
+				time_it->second = cur_time;
+			} else try {
+				phost->hash.emplace(temp_string, cur_time);
+			} catch (const std::bad_alloc &) {
+			}
+			b_result = true;
+			break;
+		}
+	}
+	hl_hold.unlock();
+	penqueue->sk_write(b_result ? "TRUE\r\n" : "FALSE\r\n");
+}
+
+static void q_unselect(eq_iter_t eq_node)
+{
+	auto penqueue = &*eq_node;
+	auto pspace = strchr(penqueue->line + 9, ' ');
+	auto temp_len = pspace - (penqueue->line + 9);
+	if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
+		penqueue->sk_write("FALSE\r\n");
+		return;
+	}
+	char temp_string[256];
+	memcpy(temp_string, penqueue->line + 9, temp_len);
+	temp_string[temp_len] = ':';
+	temp_len++;
+	temp_string[temp_len] = '\0';
+	HX_strlower(temp_string);
+	strcat(temp_string, pspace + 1);
+
+	std::unique_lock hl_hold(g_host_lock);
+	auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
+	             [&](const HOST_NODE &h) { return strcmp(penqueue->res_id, h.res_id) == 0; });
+	if (phost != g_host_list.end())
+		phost->hash.erase(temp_string);
+	hl_hold.unlock();
+	penqueue->sk_write("TRUE\r\n");
+}
+
+static int q_quit(eq_iter_t eq_node, eq_lock_t &eq_hold)
+{
+	auto penqueue = &*eq_node;
+	penqueue->sk_write("BYE\r\n");
+	eq_hold.lock();
+	g_enqueue_list.erase(eq_node);
+	return 2;
+}
+
+static void q_ping(eq_iter_t eq_node)
+{
+	auto penqueue = &*eq_node;
+	penqueue->sk_write("TRUE\r\n");
+}
+
+static void q_else(eq_iter_t eq_node)
+{
+	auto penqueue = &*eq_node;
+	auto pspace = strchr(penqueue->line, ' ');
+	if (NULL == pspace) {
+		penqueue->sk_write("FALSE\r\n");
+		return;
+	}
+	auto pspace1 = strchr(pspace + 1, ' ');
+	if (NULL == pspace1) {
+		penqueue->sk_write("FALSE\r\n");
+		return;
+	}
+	auto pspace2 = strchr(pspace1 + 1, ' ');
+	if (pspace2 == nullptr)
+		pspace2 = penqueue->line + strlen(penqueue->line);
+	if (pspace1 - pspace > 128 || pspace2 - pspace1 > 64) {
+		penqueue->sk_write("FALSE\r\n");
+		return;
+	}
+	auto temp_len = pspace1 - (pspace + 1);
+	char temp_string[256];
+	memcpy(temp_string, pspace + 1, temp_len);
+	temp_string[temp_len] = ':';
+	temp_len++;
+	temp_string[temp_len] = '\0';
+	HX_strlower(temp_string);
+	memcpy(temp_string + temp_len, pspace1 + 1, pspace2 - pspace1 - 1);
+	temp_string[temp_len + (pspace2 - pspace1 - 1)] = '\0';
+
+	std::unique_lock hl_hold(g_host_lock);
+	for (auto &hnode : g_host_list) {
+		auto phost = &hnode;
+		if (0 == strcmp(penqueue->res_id, phost->res_id) ||
+		    phost->hash.find(temp_string) == phost->hash.cend())
+			continue;
+
+		if (phost->list.size() > 0) {
+			auto pdequeue = phost->list.front();
+			phost->list.erase(phost->list.begin());
+			std::unique_lock dl_hold(pdequeue->lock);
+			auto b_result = pdequeue->fifo.enqueue(penqueue->line);
+			dl_hold.unlock();
+			if (b_result)
+				pdequeue->waken_cond.notify_one();
+			phost->list.push_back(pdequeue);
+		}
+	}
+	hl_hold.unlock();
+	penqueue->sk_write("TRUE\r\n");
+}
+
 static void *ev_enqwork(void *param)
 {
  NEXT_LOOP:
@@ -448,196 +640,32 @@ static void *ev_enqwork(void *param)
 	auto penqueue = &*eq_node;
 	g_enqueue_list.splice(g_enqueue_list.end(), g_enqueue_list1, eq_node);
 	eq_hold.unlock();
-	
+
 	while (true) {
 		if (!read_mark(penqueue)) {
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
 			goto NEXT_LOOP;
 		}
-		
-		if (0 == strncasecmp(penqueue->line, "ID ", 3)) [](eq_iter_t eq_node) {
-			auto penqueue = &*eq_node;
-			snprintf(penqueue->res_id, arsizeof(penqueue->res_id), "%s", penqueue->line + 3);
-			penqueue->sk_write("TRUE\r\n");
-		}(eq_node);
-		else if (0 == strncasecmp(penqueue->line, "LISTEN ", 7)) {
-			auto ret = [](eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold) {
-			auto penqueue = &*eq_node;
-			HOST_NODE *phost = nullptr;
-			std::shared_ptr<DEQUEUE_NODE> pdequeue;
-			try {
-				pdequeue = std::make_shared<DEQUEUE_NODE>();
-			} catch (const std::bad_alloc &) {
-				penqueue->sk_write("FALSE\r\n");
-				return 0;
-			}
-			snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
-			pdequeue->fifo = FIFO(FIFO_AVERAGE_LENGTH);
-			std::unique_lock hl_hold(g_host_lock);
-			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
-			               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
-			if (host_it == g_host_list.end()) {
-				try {
-					g_host_list.emplace_back();
-					phost = &g_host_list.back();
-				} catch (const std::bad_alloc &) {
-					hl_hold.unlock();
-					penqueue->sk_write("FALSE\r\n");
-					return 0;
-				}
-				gx_strlcpy(phost->res_id, penqueue->line + 7, arsizeof(phost->res_id));
-			} else {
-				phost = &*host_it;
-			}
-			time(&phost->last_time);
-			try {
-				phost->list.push_back(pdequeue);
-			} catch (const std::bad_alloc &) {
-				pdequeue->sk_write("FALSE\r\n");
-				return 0;
-			}
-			try {
-				std::lock_guard dq_hold(g_dequeue_lock);
-				g_dequeue_list1.push_back(pdequeue);
-			} catch (const std::bad_alloc &) {
-				phost->list.pop_back();
-				pdequeue->sk_write("FALSE\r\n");
-				return 0;
-			}
-			pdequeue->sockd = penqueue->sockd;
-			penqueue->sockd = -1;
-			hl_hold.unlock();
-			pdequeue->sk_write("TRUE\r\n");
-			g_dequeue_waken_cond.notify_one();
-			eq_hold.lock();
-			g_enqueue_list.erase(eq_node);
-			return 2;
-			}(eq_node, eq_hold);
+		if (strncasecmp(penqueue->line, "ID ", 3) == 0) {
+			q_id(eq_node);
+		} else if (strncasecmp(penqueue->line, "LISTEN ", 7) == 0) {
+			auto ret = q_listen(eq_node, eq_hold);
 			if (ret == 2)
 				goto NEXT_LOOP;
-		} else if (0 == strncasecmp(penqueue->line, "SELECT ", 7)) [](eq_iter_t eq_node) {
-			auto penqueue = &*eq_node;
-			auto pspace = strchr(penqueue->line + 7, ' ');
-			auto temp_len = pspace - (penqueue->line + 7);
-			if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
-				penqueue->sk_write("FALSE\r\n");
-				return;
-			}
-			char temp_string[256];
-			memcpy(temp_string, penqueue->line + 7, temp_len);
-			temp_string[temp_len] = ':';
-			temp_len ++;
-			temp_string[temp_len] = '\0';
-			HX_strlower(temp_string);
-			strcat(temp_string, pspace + 1);
-			
-			bool b_result = false;
-			std::unique_lock hl_hold(g_host_lock);
-			for (auto &hnode : g_host_list) {
-				auto phost = &hnode;
-				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
-					time_t cur_time = time(nullptr);
-					auto time_it = phost->hash.find(temp_string);
-					if (time_it != phost->hash.end()) {
-						time_it->second = cur_time;
-					} else try {
-						phost->hash.emplace(temp_string, cur_time);
-					} catch (const std::bad_alloc &) {
-					}
-					b_result = true;
-					break;
-				}
-			}
-			hl_hold.unlock();
-			penqueue->sk_write(b_result ? "TRUE\r\n" : "FALSE\r\n");
-		}(eq_node);
-		else if (0 == strncasecmp(penqueue->line, "UNSELECT ", 9)) [](eq_iter_t eq_node) {
-			auto penqueue = &*eq_node;
-			auto pspace = strchr(penqueue->line + 9, ' ');
-			auto temp_len = pspace - (penqueue->line + 9);
-			if (NULL == pspace ||  temp_len > 127 || strlen(pspace + 1) > 63) {
-				penqueue->sk_write("FALSE\r\n");
-				return;
-			}
-			char temp_string[256];
-			memcpy(temp_string, penqueue->line + 9, temp_len);
-			temp_string[temp_len] = ':';
-			temp_len ++;
-			temp_string[temp_len] = '\0';
-			HX_strlower(temp_string);
-			strcat(temp_string, pspace + 1);
-			
-			std::unique_lock hl_hold(g_host_lock);
-			auto phost = std::find_if(g_host_list.begin(), g_host_list.end(),
-			             [&](const HOST_NODE &h) { return strcmp(penqueue->res_id, h.res_id) == 0; });
-			if (phost != g_host_list.end())
-				phost->hash.erase(temp_string);
-			hl_hold.unlock();
-			penqueue->sk_write("TRUE\r\n");
-		}(eq_node); else if (0 == strcasecmp(penqueue->line, "QUIT")) {
-			auto ret = [](eq_iter_t eq_node, eq_lock_t &eq_hold) {
-			auto penqueue = &*eq_node;
-			penqueue->sk_write("BYE\r\n");
-			eq_hold.lock();
-			g_enqueue_list.erase(eq_node);
-			return 2;
-			}(eq_node, eq_hold);
+		} else if (strncasecmp(penqueue->line, "SELECT ", 7) == 0) {
+			q_select(eq_node);
+		} else if (strncasecmp(penqueue->line, "UNSELECT ", 9) == 0) {
+			q_unselect(eq_node);
+		} else if (strcasecmp(penqueue->line, "QUIT") == 0) {
+			auto ret = q_quit(eq_node, eq_hold);
 			if (ret == 2)
 				goto NEXT_LOOP;
-		} else if (0 == strcasecmp(penqueue->line, "PING")) [](eq_iter_t eq_node) {
-			auto penqueue = &*eq_node;
-			penqueue->sk_write("TRUE\r\n");
-		}(eq_node); else [](eq_iter_t eq_node) {
-			auto penqueue = &*eq_node;
-			auto pspace = strchr(penqueue->line, ' ');
-			if (NULL == pspace) {
-				penqueue->sk_write("FALSE\r\n");
-				return;
-			}
-			auto pspace1 = strchr(pspace + 1, ' ');
-			if (NULL == pspace1) {
-				penqueue->sk_write("FALSE\r\n");
-				return;
-			}
-			auto pspace2 = strchr(pspace1 + 1, ' ');
-			if (pspace2 == nullptr)
-				pspace2 = penqueue->line + strlen(penqueue->line);
-			if (pspace1 - pspace > 128 || pspace2 - pspace1 > 64) {
-				penqueue->sk_write("FALSE\r\n");
-				return;
-			}
-			auto temp_len = pspace1 - (pspace + 1);
-			char temp_string[256];
-			memcpy(temp_string, pspace + 1, temp_len);
-			temp_string[temp_len] = ':';
-			temp_len ++;
-			temp_string[temp_len] = '\0';
-			HX_strlower(temp_string);
-			memcpy(temp_string + temp_len, pspace1 + 1, pspace2 - pspace1 - 1);
-			temp_string[temp_len + (pspace2 - pspace1 - 1)] = '\0';
-
-			std::unique_lock hl_hold(g_host_lock);
-			for (auto &hnode : g_host_list) {
-				auto phost = &hnode;
-				if (0 == strcmp(penqueue->res_id, phost->res_id) ||
-				    phost->hash.find(temp_string) == phost->hash.cend())
-					continue;
-				
-				if (phost->list.size() > 0) {
-					auto pdequeue = phost->list.front();
-					phost->list.erase(phost->list.begin());
-					std::unique_lock dl_hold(pdequeue->lock);
-					auto b_result = pdequeue->fifo.enqueue(penqueue->line);
-					dl_hold.unlock();
-					if (b_result)
-						pdequeue->waken_cond.notify_one();
-					phost->list.push_back(pdequeue);
-				}
-			}
-			hl_hold.unlock();
-			penqueue->sk_write("TRUE\r\n");
-		}(eq_node);
+		} else if (strcasecmp(penqueue->line, "PING") == 0) {
+			q_ping(eq_node);
+		} else {
+			q_else(eq_node);
+		}
 	}
 	return NULL;
 }
