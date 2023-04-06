@@ -1590,28 +1590,21 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->proto_stat = PROTO_STAT_SELECT;
 	pcontext->b_readonly = FALSE;
 	imap_parser_add_select(pcontext);
+	string_length = gx_snprintf(buff, arsizeof(buff),
+		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
+		"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
+		"* %d EXISTS\r\n"
+		"* %d RECENT\r\n",
+		exists, recent);
 	if (firstunseen != -1)
-		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-			"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
-			"* %d EXISTS\r\n"
-			"* %d RECENT\r\n"
-			"* OK [UNSEEN %d] message %d is first unseen\r\n"
-			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
-			"* OK [UIDNEXT %d] predicted next UID\r\n"
-			"%s OK [READ-WRITE] SELECT completed\r\n", 
-			exists, recent, firstunseen, firstunseen,
-			LLU{uidvalid}, uidnext, argv[0]);
-	else
-		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-			"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
-			"* %d EXISTS\r\n"
-			"* %d RECENT\r\n"
-			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
-			"* OK [UIDNEXT %d] predicted next UID\r\n"
-			"%s OK [READ-WRITE] SELECT completed\r\n", 
-			exists, recent, LLU{uidvalid}, uidnext, argv[0]);
+		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
+			"* OK [UNSEEN %d] message %d is first unseen\r\n",
+			firstunseen, firstunseen);
+	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
+		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
+		"* OK [UIDNEXT %d] predicted next UID\r\n"
+		"%s OK [READ-WRITE] SELECT completed\r\n",
+		LLU{uidvalid}, uidnext, argv[0]);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1648,28 +1641,21 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->proto_stat = PROTO_STAT_SELECT;
 	pcontext->b_readonly = TRUE;
 	imap_parser_add_select(pcontext);
+	string_length = gx_snprintf(buff, arsizeof(buff),
+		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
+		"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
+		"* %d EXISTS\r\n"
+		"* %d RECENT\r\n",
+		exists, recent);
 	if (firstunseen != -1)
-		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-			"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
-			"* %d EXISTS\r\n"
-			"* %d RECENT\r\n"
-			"* OK [UNSEEN %d] message %d is first unseen\r\n"
-			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
-			"* OK [UIDNEXT %d] predicted next UID\r\n"
-			"%s OK [READ-ONLY] EXAMINE completed\r\n",
-			exists, recent, firstunseen, firstunseen,
-			LLU{uidvalid}, uidnext, argv[0]);
-	else
-		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-			"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n"
-			"* %d EXISTS\r\n"
-			"* %d RECENT\r\n"
-			"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
-			"* OK [UIDNEXT %d] predicted next UID\r\n"
-			"%s OK [READ-ONLY] EXAMINE completed\r\n",
-			exists, recent, LLU{uidvalid}, uidnext, argv[0]);
+		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
+			"* OK [UNSEEN %d] message %d is first unseen\r\n",
+			firstunseen, firstunseen);
+	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
+		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
+		"* OK [UIDNEXT %d] predicted next UID\r\n"
+		"%s OK [READ-ONLY] EXAMINE completed\r\n",
+		LLU{uidvalid}, uidnext, argv[0]);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
