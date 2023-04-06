@@ -43,7 +43,7 @@ icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	return pctx;
 }
 
-BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
+BOOL icsdownctx_object::make_content(const BINARY &pstate_bin,
     const RESTRICTION *prestriction, uint16_t sync_flags,
     BOOL *pb_changed, uint32_t *pmsg_count)
 {
@@ -126,7 +126,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	return TRUE;
 }
 
-BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
+BOOL icsdownctx_object::make_hierarchy(const BINARY &state,
     uint16_t sync_flags, BOOL *pb_changed, uint32_t *pfld_count)
 {
 	auto pctx = this;

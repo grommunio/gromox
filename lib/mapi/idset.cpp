@@ -569,8 +569,9 @@ static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 	memcpy(pguid->node, pb + offset, 6);
 }
 
-BOOL idset::deserialize(const BINARY *pbin) try
+BOOL idset::deserialize(const BINARY &bin) try
 {
+	auto pbin = &bin;
 	auto pset = this;
 	uint32_t offset = 0;
 	

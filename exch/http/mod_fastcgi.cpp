@@ -347,28 +347,11 @@ static pack_result mod_fastcgi_pull_record_header(
 	return pndr->g_uint8(&pheader->reserved);
 }
 
-static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
-    const char *tag, char *value, size_t length)
+static const char *
+mod_fastcgi_get_others_field(const http_request::other_map &m, const char *k)
 {
-	char tmp_buff[256];
-	uint32_t tag_len, val_len;
-	
-	pf_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (pf_others->read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (tag_len >= GX_ARRAY_SIZE(tmp_buff))
-			return FALSE;
-		pf_others->read(tmp_buff, tag_len);
-		tmp_buff[tag_len] = '\0';
-		pf_others->read(&val_len, sizeof(uint32_t));
-		if (0 == strcasecmp(tag, tmp_buff)) {
-			length = (length > val_len)?val_len:(length - 1);
-			pf_others->read(value, length);
-			value[length] = '\0';
-			return TRUE;
-		}
-		pf_others->seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
-	}
-	return FALSE;
+	auto i = m.find(k);
+	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
 static int mod_fastcgi_connect_backend(const char *path)
@@ -398,44 +381,34 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 	BOOL b_index;
 	char *ptoken;
 	char *ptoken1;
-	BOOL b_chunked;
 	char suffix[16];
 	char domain[256];
 	char file_name[256];
-	char tmp_buff[8192];
 	char request_uri[8192];
 	uint64_t content_length;
 	
-	auto tmp_len = phttp->request.f_host.get_total_length();
+	auto tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
-	} else {
-		phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_host.read(domain, tmp_len);
-		domain[tmp_len] = '\0';
-	}
+	gx_strlcpy(domain, tmp_len == 0 ? phttp->connection.server_ip :
+	           phttp->request.f_host.c_str(), std::size(domain));
 	ptoken = strchr(domain, ':');
 	if (ptoken != nullptr)
 		*ptoken = '\0';
-	tmp_len = phttp->request.f_request_uri.get_total_length();
+	tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot "
 			"find request uri for mod_fastcgi");
 		return FALSE;
-	} else if (tmp_len >= sizeof(tmp_buff)) {
+	} else if (tmp_len >= 8192) {
 		phttp->log(LV_DEBUG, "length of "
 			"request uri is too long for mod_fastcgi");
 		return FALSE;
 	}
-	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
-	tmp_buff[tmp_len] = '\0';
-	if (!parse_uri(tmp_buff, request_uri)) {
+	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
 		return FALSE;
@@ -474,8 +447,8 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 		return FALSE;
 	phttp->log(LV_DEBUG, "http request \"%s\" "
 		"to \"%s\" will be relayed to fastcgi back-end %s",
-		tmp_buff, domain, pfnode->sock_path.c_str());
-	tmp_len = phttp->request.f_content_length.get_total_length();
+		phttp->request.f_request_uri.c_str(), domain, pfnode->sock_path.c_str());
+	tmp_len = phttp->request.f_content_length.size();
 	if (0 == tmp_len) {
 		content_length = 0;
 	} else {
@@ -484,25 +457,14 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 				"content-length is too long for mod_fastcgi");
 			return FALSE;
 		}
-		phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_content_length.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-		content_length = strtoull(tmp_buff, nullptr, 0);
+		content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
 	}
 	if (content_length > g_max_size) {
 		phttp->log(LV_DEBUG, "content-length"
 			" is too long for mod_fastcgi");
 		return FALSE;
 	}
-	b_chunked = FALSE;
-	tmp_len = phttp->request.f_transfer_encoding.get_total_length();
-	if (tmp_len > 0 && tmp_len < 64) {
-		phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-		if (strcasecmp(tmp_buff, "chunked") == 0)
-			b_chunked = TRUE;
-	}
+	auto b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 	auto pcontext = &g_context_list[phttp->context_id];
 	pcontext->last_time = tp_now();
 	pcontext->pfnode = pfnode;
@@ -568,19 +530,14 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));
 	}
-	auto tmp_len = phttp->request.f_host.get_total_length();
+	auto tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
-	} else {
-		phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_host.read(domain, tmp_len);
-		domain[tmp_len] = '\0';
-	}
+	gx_strlcpy(domain, tmp_len == 0 ? phttp->connection.server_ip :
+	           phttp->request.f_host.c_str(), std::size(domain));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", domain));
 	ptoken = strchr(domain, ':');
 	if (ptoken != nullptr)
@@ -595,23 +552,21 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	snprintf(tmp_buff, arsizeof(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
-	tmp_len = phttp->request.f_request_uri.get_total_length();
+	tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot "
 			"find request uri for mod_fastcgi");
 		return FALSE;
-	} else if (tmp_len >= sizeof(tmp_buff)) {
+	} else if (tmp_len >= 8192) {
 		phttp->log(LV_DEBUG, "length of "
 			"request uri is too long for mod_fastcgi");
 		return FALSE;
 	}
-	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
-	tmp_buff[tmp_len] = '\0';
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", tmp_buff));
-	ptoken = strchr(tmp_buff, '?');
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "QUERY_STRING", ptoken == nullptr ? "" : ++ptoken));
-	if (!parse_uri(tmp_buff, uri_path)) {
+	auto furi = phttp->request.f_request_uri.c_str();
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", furi));
+	auto qmark = strchr(furi, '?');
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "QUERY_STRING", qmark == nullptr ? "" : ++qmark));
+	if (!parse_uri(furi, uri_path)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
 		return FALSE;
@@ -649,88 +604,42 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s", pfnode->dir.c_str(), uri_path + tmp_len);
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	}
-	tmp_len = phttp->request.f_accept.get_total_length();
+	tmp_len = phttp->request.f_accept.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"accept is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		tmp_buff[0] = '\0';
-	} else {
-		phttp->request.f_accept.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_accept.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT", tmp_buff));
-	tmp_len = phttp->request.f_user_agent.get_total_length();
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT", phttp->request.f_accept.c_str()));
+	tmp_len = phttp->request.f_user_agent.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"user-agent is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		tmp_buff[0] = '\0';
-	} else {
-		phttp->request.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_user_agent.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_USER_AGENT", tmp_buff));
-	tmp_len = phttp->request.f_accept_language.get_total_length();
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_USER_AGENT", phttp->request.f_user_agent.c_str()));
+	tmp_len = phttp->request.f_accept_language.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"accept-language is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		tmp_buff[0] = '\0';
-	} else {
-		phttp->request.f_accept_language.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_accept_language.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_LANGUAGE", tmp_buff));
-	tmp_len = phttp->request.f_accept_encoding.get_total_length();
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_LANGUAGE", phttp->request.f_accept_language.c_str()));
+	tmp_len = phttp->request.f_accept_encoding.size();
 	if (tmp_len > 1024) {
 		phttp->log(LV_DEBUG, "length of "
 			"accept-encoding is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		tmp_buff[0] = '\0';
-	} else {
-		phttp->request.f_accept_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_accept_encoding.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_ENCODING", tmp_buff));
-	tmp_len = phttp->request.f_cookie.get_total_length();
-	if (tmp_len > 1024) {
-		phttp->log(LV_DEBUG, "length of "
-			"cookie is too long for mod_fastcgi");
-		return FALSE;
-	}
-	if (0 != tmp_len) {
-		phttp->request.f_cookie.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_cookie.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_COOKIE", tmp_buff));
-	}
-	tmp_len = phttp->request.f_content_type.get_total_length();
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_ACCEPT_ENCODING", phttp->request.f_accept_encoding.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_COOKIE", phttp->request.f_cookie.c_str()));
+	tmp_len = phttp->request.f_content_type.size();
 	if (tmp_len > 128) {
 		phttp->log(LV_DEBUG, "length of "
 			"content-type is too long for mod_fastcgi");
 		return FALSE;
 	}
-	if (0 == tmp_len) {
-		tmp_buff[0] = '\0';
-	} else {
-		phttp->request.f_content_type.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		phttp->request.f_content_type.read(tmp_buff, tmp_len);
-		tmp_buff[tmp_len] = '\0';
-	}
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_TYPE", tmp_buff));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_TYPE", phttp->request.f_content_type.c_str()));
 	if (NULL != phttp->connection.ssl) {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_SCHEME", "https"));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTPS", "on"));
@@ -741,17 +650,18 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "close"));
 	else
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CONNECTION", "keep-alive"));
-	if (mod_fastcgi_get_others_field(&phttp->request.f_others, "Referer",
-	    tmp_buff, arsizeof(tmp_buff)))
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_REFERER", tmp_buff));
-	if (mod_fastcgi_get_others_field(&phttp->request.f_others, "Cache-Control",
-	    tmp_buff, arsizeof(tmp_buff)))
-		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", tmp_buff));
-	for (const auto &hdr : pfnode->header_list)
-		if (mod_fastcgi_get_others_field(&phttp->request.f_others,
-		    hdr.c_str(), tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
+	auto val = mod_fastcgi_get_others_field(phttp->request.f_others, "Referer");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_REFERER", val));
+	val = mod_fastcgi_get_others_field(phttp->request.f_others, "Cache-Control");
+	if (val != nullptr)
+		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_CACHE_CONTROL", val));
+	for (const auto &hdr : pfnode->header_list) {
+		val = mod_fastcgi_get_others_field(phttp->request.f_others, hdr.c_str());
+		if (val != nullptr)
 			QRF(mod_fastcgi_push_name_value(&ndr_push,
-			    hdr.c_str(), tmp_buff));
+			    hdr.c_str(), val));
+	}
 	if (!phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(phttp->pfast_context->content_length));

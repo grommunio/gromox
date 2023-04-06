@@ -12,7 +12,6 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/generic_connection.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
@@ -76,7 +75,7 @@ struct DIR_NODE {
 struct dir_tree {
 	dir_tree(alloc_limiter<DIR_NODE> *);
 	~dir_tree();
-	void load_from_memfile(MEM_FILE *);
+	void load_from_memfile(const std::vector<std::string> &);
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
 
@@ -104,7 +103,7 @@ struct imap_context final : public schedule_context {
 	char selected_folder[1024]{};
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	BOOL b_modify = false;
-	MEM_FILE f_flags{};
+	std::vector<std::string> f_flags;
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};
@@ -214,8 +213,8 @@ extern int (*system_services_rename_folder)(const char *, const char *, const ch
 extern int (*system_services_ping_mailbox)(const char *, int *);
 extern int (*system_services_subscribe_folder)(const char *, const char *, int *);
 extern int (*system_services_unsubscribe_folder)(const char *, const char *, int *);
-extern int (*system_services_enum_folders)(const char *, MEM_FILE *, int *);
-extern int (*system_services_enum_subscriptions)(const char *, MEM_FILE *, int *);
+extern int (*system_services_enum_folders)(const char *, std::vector<std::string> &, int *);
+extern int (*system_services_enum_subscriptions)(const char *, std::vector<std::string> &, int *);
 extern int (*system_services_insert_mail)(const char *, const char *, const char *, const char *, long, int *);
 extern int (*system_services_remove_mail)(const char *, const char *, const std::vector<MITEM *> &, int *);
 extern int (*system_services_list_simple)(const char *, const char *, XARRAY *, int *);
@@ -225,7 +224,6 @@ extern int (*system_services_fetch_simple)(const char *, const char *, const std
 extern int (*system_services_fetch_detail)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
 extern int (*system_services_fetch_simple_uid)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
 extern int (*system_services_fetch_detail_uid)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
-extern void (*system_services_free_result)(XARRAY *);
 extern int (*system_services_set_flags)(const char *, const char *, const char *, int, int *);
 extern int (*system_services_unset_flags)(const char *, const char *, const char *, int, int *);
 extern int (*system_services_get_flags)(const char *, const char *, const char *, int *, int *);

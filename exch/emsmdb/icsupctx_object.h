@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <gromox/mapi_types.hpp>
-#include <gromox/mem_file.hpp>
 
 struct folder_object;
 struct ics_state;
@@ -14,7 +14,6 @@ struct icsupctx_object final {
 	NOMOVE(icsupctx_object);
 
 	public:
-	~icsupctx_object();
 	static std::unique_ptr<icsupctx_object> create(logon_object *, folder_object *, uint8_t sync_type);
 	uint8_t get_sync_type() const { return sync_type; }
 	folder_object *get_parent_object() const { return pfolder; }
@@ -27,8 +26,8 @@ struct icsupctx_object final {
 	logon_object *plogon = nullptr;
 	folder_object *pfolder = nullptr;
 	std::shared_ptr<ics_state> pstate; /* public member */
+	std::string f_state_stream;
 	uint32_t state_property = 0;
-	MEM_FILE f_state_stream{};
 	BOOL b_started = false;
 	uint8_t sync_type = 0;
 };

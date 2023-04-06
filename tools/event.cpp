@@ -13,10 +13,12 @@
 #include <memory>
 #include <mutex>
 #include <netdb.h>
+#include <optional>
 #include <poll.h>
 #include <pthread.h>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
@@ -33,7 +35,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/list_file.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -54,25 +55,21 @@ using namespace gromox;
 
 namespace {
 
-struct fifo_block {
-	MEM_FILE mem_file;
-};
-
 struct FIFO {
 	FIFO() = default;
-	FIFO(alloc_limiter<fifo_block> *, size_t data_size, size_t max_size);
-	BOOL enqueue(const MEM_FILE &);
-	MEM_FILE *get_front() const;
+	FIFO(size_t ms) : max_size(ms) {}
+	BOOL enqueue(std::string &&);
+	std::optional<std::string> pop_front();
 	void dequeue();
+	void clear() { mlist.clear(); }
 
-	alloc_limiter<fifo_block> *mbuf_pool = nullptr;
-	std::deque<fifo_block *> mlist;
-	size_t data_size = 0, max_size = 0;
+	std::deque<std::string> mlist;
+	size_t max_size = 0;
 };
 
 struct qsock {
 	int sockd = -1;
-	ssize_t sk_write(const char *, size_t = -1);
+	ssize_t sk_write(const std::string_view &);
 	void sk_close();
 };
 
@@ -108,7 +105,6 @@ static constexpr unsigned int POLLIN_SET =
 	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static alloc_limiter<fifo_block> g_fifo_alloc{"g_fifo_alloc.d"};
 static alloc_limiter<file_block> g_file_alloc{"g_file_alloc.d"};
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
@@ -148,62 +144,29 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue);
 
 static void term_handler(int signo);
 
-/**
- * A FIFO implemented using a singly-linked list. The core is maintained
- * outside the FIFO, but the FIFO will give back a node-sized memory every time
- * you call deque, unless the FIFO is empty.
- */
-FIFO::FIFO(alloc_limiter<fifo_block> *pbuf_pool, size_t ds, size_t ms) :
-	mbuf_pool(pbuf_pool), data_size(ds), max_size(ms)
-{
-	if (pbuf_pool == nullptr)
-		throw std::invalid_argument("FIFO with no LIB_BUFFER");
-}
-
 /* Returns TRUE on success, or FALSE if the FIFO is full. */
-BOOL FIFO::enqueue(const MEM_FILE &mf)
+BOOL FIFO::enqueue(std::string &&line) try
 {
-#ifdef _DEBUG_UMTA
-	if (pdata == nullptr)
-		mlog(LV_DEBUG, "%s, param nullptr", __PRETTY_FUNCTION__);
-#endif
 	if (mlist.size() >= max_size)
 		return false;
-	auto blk = mbuf_pool->get();
-	if (blk == nullptr)
-		return false;
-	blk->mem_file = mf;
-	try {
-		mlist.push_back(blk);
-	} catch (const std::bad_alloc &) {
-		mbuf_pool->put(blk);
-		return false;
-	}
+	mlist.emplace_back(std::move(line));
 	return TRUE;
-}
-
-/**
- * Dequeues the top item from the specified FIFO, and gives back the data size
- * of memory to the outside allocator
- */
-void FIFO::dequeue()
-{
-	if (mlist.empty())
-		return;
-	auto blk = mlist.front();
-	mlist.pop_front();
-	mbuf_pool->put(blk);
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 /**
  * Returns a pointer to the data at the front of the specified FIFO, or nullptr
  * if the FIFO is empty.
  */
-MEM_FILE *FIFO::get_front() const
+std::optional<std::string> FIFO::pop_front()
 {
-	if (mlist.empty())
-		return nullptr;
-	return &mlist.front()->mem_file;
+	std::optional<std::string> ret;
+	if (!mlist.empty()) {
+		ret.emplace(std::move(mlist.front()));
+		mlist.pop_front();
+	}
+	return ret;
 }
 
 DEQUEUE_NODE::~DEQUEUE_NODE()
@@ -212,12 +175,10 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 		close(sockd);
 }
 
-ssize_t qsock::sk_write(const char *s, size_t z)
+ssize_t qsock::sk_write(const std::string_view &sv)
 {
-	if (z == static_cast<size_t>(-1))
-		z = strlen(s);
-	auto ret = HXio_fullwrite(sockd, s, z);
-	if (ret < 0 || static_cast<size_t>(ret) != z) {
+	auto ret = HXio_fullwrite(sockd, sv.data(), sv.size());
+	if (ret < 0 || static_cast<size_t>(ret) != sv.size()) {
 		close(sockd);
 		sockd = -1;
 	}
@@ -273,8 +234,6 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	
 	g_threads_num ++;
-	g_fifo_alloc = alloc_limiter<fifo_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
-	               "fifo_alloc", "event.cfg:threads_num");
 	g_file_alloc = alloc_limiter<file_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
 	               "file_alloc", "event.cfg:threads_num");
 	g_dequeue_list1.reserve(g_threads_num);
@@ -477,7 +436,6 @@ static void *ev_enqwork(void *param)
 	char *pspace2;
 	BOOL b_result;
 	time_t cur_time;
-	MEM_FILE temp_file;
 	char temp_string[256];
 	
  NEXT_LOOP:
@@ -517,7 +475,7 @@ static void *ev_enqwork(void *param)
 				continue;
 			}
 			snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
-			pdequeue->fifo = FIFO(&g_fifo_alloc, sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
+			pdequeue->fifo = FIFO(FIFO_AVERAGE_LENGTH);
 			std::unique_lock hl_hold(g_host_lock);
 			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
 			               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
@@ -658,14 +616,10 @@ static void *ev_enqwork(void *param)
 				if (phost->list.size() > 0) {
 					auto pdequeue = phost->list.front();
 					phost->list.erase(phost->list.begin());
-					mem_file_init(&temp_file, &g_file_alloc);
-					temp_file.write(penqueue->line, strlen(penqueue->line));
 					std::unique_lock dl_hold(pdequeue->lock);
-					b_result = pdequeue->fifo.enqueue(temp_file);
+					b_result = pdequeue->fifo.enqueue(penqueue->line);
 					dl_hold.unlock();
-					if (!b_result)
-						mem_file_free(&temp_file);
-					else
+					if (b_result)
 						pdequeue->waken_cond.notify_one();
 					phost->list.push_back(pdequeue);
 				}
@@ -682,8 +636,6 @@ static void *ev_deqwork(void *param)
 {
 	time_t cur_time;
 	time_t last_time;
-	MEM_FILE temp_file;
-	char buff[MAX_CMD_LENGTH];
 	
  NEXT_LOOP:
 	std::unique_lock dc_hold(g_dequeue_cond_mutex);
@@ -713,15 +665,11 @@ static void *ev_deqwork(void *param)
 		if (g_notify_stop)
 			break;
 		dq_hold.lock();
-		auto pfile = pdequeue->fifo.get_front();
-		if (NULL != pfile) {
-			temp_file = *pfile;
-			pdequeue->fifo.dequeue();
-		}
+		auto buff = pdequeue->fifo.pop_front();
 		dq_hold.unlock();
 		time(&cur_time);
 		
-		if (NULL == pfile) {	
+		if (!buff.has_value()) {
 			if (cur_time - last_time >= SOCKET_TIMEOUT - 3) {
 				if (pdequeue->sk_write("PING\r\n") != 6 ||
 				    !read_response(pdequeue->sockd)) {
@@ -732,10 +680,7 @@ static void *ev_deqwork(void *param)
 					hl_hold.unlock();
 					close(pdequeue->sockd);
 					pdequeue->sockd = -1;
-					while ((pfile = pdequeue->fifo.get_front()) != nullptr) {
-						mem_file_free(pfile);
-						pdequeue->fifo.dequeue();
-					}
+					pdequeue->fifo.clear();
 					goto NEXT_LOOP;
 				}
 				last_time = cur_time;
@@ -746,13 +691,9 @@ static void *ev_deqwork(void *param)
 			continue;
 		}
 		
-		int len = temp_file.read(buff, arsizeof(buff) - 2);
-		buff[len] = '\r';
-		len ++;
-		buff[len] = '\n';
-		len ++;
-		mem_file_free(&temp_file);
-		if (pdequeue->sk_write(buff, len) != len ||
+		*buff += "\r\n";
+		auto wrret = pdequeue->sk_write(*buff);
+		if (wrret < 0 || static_cast<size_t>(wrret) != buff->size() ||
 		    !read_response(pdequeue->sockd)) {
 			hl_hold.lock();
 			auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
@@ -761,10 +702,7 @@ static void *ev_deqwork(void *param)
 			hl_hold.unlock();
 			close(pdequeue->sockd);
 			pdequeue->sockd = -1;
-			while ((pfile = pdequeue->fifo.get_front()) != nullptr) {
-				mem_file_free(pfile);
-				pdequeue->fifo.dequeue();
-			}
+			pdequeue->fifo.clear();
 			goto NEXT_LOOP;
 		}
 		

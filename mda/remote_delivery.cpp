@@ -21,7 +21,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
-#include <gromox/mem_file.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
@@ -111,10 +110,8 @@ static void rd_log(const MESSAGE_CONTEXT *ctx, unsigned int level,
 	outbuf += " QID=" + std::to_string(ctrl->queue_ID) + " from=<"s +
 	          ctrl->from + "> to=";
 
-	char rcpt[UADDR_SIZE];
 	bool second_rcpt = false;
-	ctrl->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (ctrl->f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE) {
+	for (const auto &rcpt : ctrl->rcpt) {
 		if (second_rcpt)
 			outbuf += ',';
 		second_rcpt = true;
@@ -237,11 +234,9 @@ static errno_t rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	bool any_success = false;
-	char rcpt[UADDR_SIZE];
-	while (ctx->pcontrol->f_rcpt_to.readline(rcpt,
-	       arsizeof(rcpt)) != MEM_END_OF_FILE) {
+	for (const auto &rcpt : ctx->pcontrol->rcpt) {
 		char cmd[1024];
-		auto len = gx_snprintf(cmd, arsizeof(cmd), "RCPT TO: <%s>\r\n", rcpt);
+		auto len = gx_snprintf(cmd, arsizeof(cmd), "RCPT TO: <%s>\r\n", rcpt.c_str());
 		if (!rd_send_cmd(conn, cmd, len))
 			return ETIMEDOUT;
 		auto ret = rd_get_response(conn, response);
@@ -337,7 +332,6 @@ static errno_t rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 
 static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 {
-	ctx->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	rd_connection conn;
 	conn.fd = HX_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
@@ -367,7 +361,6 @@ static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	l_ctx.pmail    = ctx->pmail;
 
 	std::string errstr;
-	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	int ret;
 	try {
 		ret = rd_send_mail(ctx, errstr);
@@ -378,13 +371,11 @@ static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 		return hook_result::proc_error;
 	}
 
-	char rcpt[UADDR_SIZE];
 	mlog(LV_ERR, "remote_delivery: Local code: %s (ret=%d). "
 	        "SMTP reason string: %s. Recipient(s) affected:",
 	        strerror(ret), ret, errstr.c_str());
-	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (l_ctrl.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
-		mlog(LV_ERR, "remote_delivery:\t%s", rcpt);
+	for (const auto &rcpt : l_ctrl.rcpt)
+		mlog(LV_ERR, "remote_delivery:\t%s", rcpt.c_str());
 	return hook_result::stop;
 }
 

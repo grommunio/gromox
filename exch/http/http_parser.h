@@ -10,7 +10,6 @@
 #include <gromox/generic_connection.hpp>
 #include <gromox/hpm_common.h>
 #include <gromox/mapidefs.h>
-#include <gromox/mem_file.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #include "mod_fastcgi.h"

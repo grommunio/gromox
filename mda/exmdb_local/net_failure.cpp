@@ -87,7 +87,7 @@ void net_failure_free()
 }
 
 void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
-    int nouser_num)
+    int nouser_num) try
 {
 	BOOL need_alarm_one, need_alarm_two;
 	MESSAGE_CONTEXT *pcontext;
@@ -148,7 +148,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		sprintf(pcontext->pcontrol->from, "local-alarm@%s",
 		        get_default_domain());
 	}
-	pcontext->pcontrol->f_rcpt_to.writeline(get_admin_mailbox());
+	pcontext->pcontrol->rcpt.emplace_back(get_admin_mailbox());
 	auto pmime = pcontext->pmail->add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);
@@ -197,4 +197,6 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
 	pmime->set_field("Subject", tmp_buff);
 	enqueue_context(pcontext);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1083: ENOMEM");
 }

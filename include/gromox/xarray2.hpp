@@ -3,15 +3,15 @@
 // This file is part of Gromox.
 #pragma once
 #include <atomic>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <gromox/mem_file.hpp>
 
 struct MITEM {
 	char mid[128]{};
 	int id = 0, uid = 0;
 	char flag_bits = 0;
-	MEM_FILE f_digest{};
+	std::string f_digest;
 };
 
 struct GX_EXPORT XARRAY {

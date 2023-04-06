@@ -18,29 +18,13 @@
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
+#include <gromox/icase.hpp>
 #include <gromox/json.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-
-namespace {
-
-struct icasehash {
-	size_t operator()(std::string s) const {
-		std::transform(s.begin(), s.end(), s.begin(), HX_toupper);
-		return std::hash<std::string>{}(std::move(s));
-	}
-};
-
-struct icasecmp {
-	bool operator()(const std::string &a, const std::string &b) const {
-		return strcasecmp(a.c_str(), b.c_str()) == 0;
-	}
-};
-
-}
 
 using namespace std::string_literals;
 using namespace gromox;

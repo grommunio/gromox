@@ -55,27 +55,25 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 }
 HOOK_ENTRY(hook_mlist_expand);
 
-static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
+static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 {
 	int result, i;
 	BOOL b_touched;
-	char rcpt_to[UADDR_SIZE], delivered_to[UADDR_SIZE];
-	std::vector<std::string> temp_file1;
-	MEM_FILE temp_file2;
+	char delivered_to[UADDR_SIZE];
+	std::vector<std::string> temp_file1; /* all the expandees from mlists */
+	std::vector<std::string> unexp;
 	MESSAGE_CONTEXT *pcontext_expand;
 	MESSAGE_CONTEXT *pbounce_context;
 
-	mem_file_init(&temp_file2, pcontext->pcontrol->f_rcpt_to.allocator);
 	auto phead = pcontext->pmail->get_head();
 	if (NULL == phead) {
-		mem_file_free(&temp_file2);
 		return hook_result::proc_error;
 	}
 
 	auto num = phead->get_field_num("Delivered-To");
 	b_touched = FALSE;
-	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_to,
-	       arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
+	for (const auto &rcpt : pcontext->pcontrol->rcpt) {
+		auto rcpt_to = rcpt.c_str();
 		get_mlist_memb(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
 		switch (result) {
 		case MLIST_RESULT_OK:
@@ -96,7 +94,7 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 			}
 			break;
 		case MLIST_RESULT_NONE:
-			temp_file2.writeline(rcpt_to);
+			unexp.emplace_back(rcpt);
 			break;
 		case MLIST_RESULT_PRIVIL_DOMAIN:
 			pbounce_context = get_context();
@@ -104,13 +102,13 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 			    !mlex_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_DOMAIN",
 			    pbounce_context->pmail)) {
-				temp_file2.writeline(rcpt_to);
+				unexp.emplace_back(rcpt);
 				break;
 			}
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
@@ -139,13 +137,13 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 			    !mlex_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_INTERNAL",
 			    pbounce_context->pmail)) {
-				temp_file2.writeline(rcpt_to);
+				unexp.emplace_back(rcpt);
 				break;
 			}
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
@@ -174,13 +172,13 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 			    !mlex_bouncer_make(pcontext->pcontrol->from,
 			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_SPECIFIED",
 			    pbounce_context->pmail)) {
-				temp_file2.writeline(rcpt_to);
+				unexp.emplace_back(rcpt);
 				break;
 			}
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
-			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
@@ -206,32 +204,27 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 		}
 	}
 
-	if (!b_touched) {
-		mem_file_free(&temp_file2);
+	if (!b_touched)
 		return hook_result::xcontinue;
-	}
-	
-	temp_file2.copy_to(pcontext->pcontrol->f_rcpt_to);
-	mem_file_free(&temp_file2);
-
+	pcontext->pcontrol->rcpt = std::move(unexp);
 	if (temp_file1.size() == 0) {
-		return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
+		return pcontext->pcontrol->rcpt.empty() ?
 		       hook_result::stop : hook_result::xcontinue;
 	}
 
 	pcontext_expand =  get_context();
 	if (NULL == pcontext_expand) {
-		for (const auto &recip : temp_file1) {
+		for (auto &&recip : temp_file1) {
 			for (i = 0; i < num; ++i)
 				if (phead->search_field("Delivered-To", i,
 				    delivered_to, arsizeof(delivered_to)) &&
 				    strcasecmp(delivered_to, recip.c_str()) == 0)
 					break;
 			if (i == num) {
-				pcontext->pcontrol->f_rcpt_to.writeline(recip.c_str());
+				pcontext->pcontrol->rcpt.emplace_back(std::move(recip));
 			}
 		}
-		return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
+		return pcontext->pcontrol->rcpt.empty() ?
 		       hook_result::stop : hook_result::xcontinue;
 	}
 
@@ -245,11 +238,14 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext)
 			    strcasecmp(delivered_to, recip.c_str()) == 0)
 				break;
 		if (i == num) {
-			pcontext_expand->pcontrol->f_rcpt_to.writeline(recip.c_str());
+			pcontext_expand->pcontrol->rcpt.emplace_back(std::move(recip));
 		}
 	}
 	pcontext->pmail->dup(pcontext_expand->pmail);
 	throw_context(pcontext_expand);
-	return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ?
+	return pcontext->pcontrol->rcpt.empty() ?
 	       hook_result::stop : hook_result::xcontinue;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1084: ENOMEM");
+	return hook_result::proc_error;
 }

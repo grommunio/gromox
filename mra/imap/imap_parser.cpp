@@ -1190,7 +1190,7 @@ static void imap_parser_event_touch(char *username, char *folder)
 	}
 }
 
-void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
+void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string) try
 {
 	char buff[1024];
 	DOUBLE_LIST_NODE *pnode;
@@ -1207,21 +1207,19 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 		auto pcontext1 = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
-			pcontext1->f_flags.writeline(mid_string);
+			pcontext1->f_flags.emplace_back(mid_string);
 		}
 	}
 	hl_hold.unlock();
-	try {
-		auto buf = "MESSAGE-FLAG "s + pcontext->username + " " +
-		           pcontext->selected_folder + " " + mid_string;
-		system_services_broadcast_event(buf.c_str());
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1468: ENOMEM");
-	}
+	auto buf = "MESSAGE-FLAG "s + pcontext->username + " " +
+	           pcontext->selected_folder + " " + mid_string;
+	system_services_broadcast_event(buf.c_str());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1468: ENOMEM");
 }
 
 static void imap_parser_event_flag(const char *username, const char *folder,
-	const char *mid_string)
+    const char *mid_string) try
 {
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
@@ -1237,9 +1235,11 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 		pnode=double_list_get_after(plist, pnode)) {
 		auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
-			pcontext->f_flags.writeline(mid_string);
+			pcontext->f_flags.emplace_back(mid_string);
 		}
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1087: ENOMEM");
 }
 
 void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
@@ -1252,14 +1252,10 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	int flag_bits;
 	BOOL b_first;
 	char buff[1024];
-	char mid_string[256];
-	MEM_FILE temp_file;
 	
-	mem_file_init(&temp_file, &g_alloc_file);
 	std::unique_lock hl_hold(g_hash_lock);
 	pcontext->b_modify = FALSE;
-	pcontext->f_flags.copy_to(temp_file);
-	pcontext->f_flags.clear();
+	auto temp_file = std::move(pcontext->f_flags);
 	hl_hold.unlock();
 	
 	if (system_services_summary_folder(pcontext->maildir,
@@ -1271,17 +1267,14 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		if (NULL == pstream) {
 			pcontext->connection.write(buff, tmp_len);
 		} else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK) {
-			mem_file_free(&temp_file);
 			return;
 		}
 	}
 	
-	if (temp_file.get_total_length() == 0) {
-		mem_file_free(&temp_file);
+	if (temp_file.empty())
 		return;
-	}
-	
-	while (temp_file.readline(mid_string, sizeof(mid_string)) != MEM_END_OF_FILE) {
+	for (const auto &mid : temp_file) {
+		auto mid_string = mid.c_str();
 		if (system_services_get_id(pcontext->maildir,
 		    pcontext->selected_folder, mid_string,
 		    reinterpret_cast<unsigned int *>(&id)) != MIDB_RESULT_OK ||
@@ -1340,7 +1333,6 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK)
 			break;
 	}
-	mem_file_free(&temp_file);
 }
 
 SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
@@ -1445,7 +1437,6 @@ imap_context::imap_context() :
 	pcontext->hash_node.pdata = pcontext;
 	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
-	mem_file_init(&pcontext->f_flags, &g_alloc_file);
 }
 
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
@@ -1483,7 +1474,6 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 imap_context::~imap_context()
 {
 	auto pcontext = this;
-	mem_file_free(&pcontext->f_flags);
 	if (-1 != pcontext->message_fd) {
 		close(pcontext->message_fd);
 	}
@@ -1653,13 +1643,12 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 
 static void *imps_scanwork(void *argp)
 {
+	struct bk {
+		std::string user, dir, folder;
+	};
 	int i = 0;
 	int err_num;
 	time_t cur_time;
-	char folder[128];
-	char maildir[256];
-	char username[UADDR_SIZE];
-	MEM_FILE temp_file;
 	
 	while (!g_notify_stop) {
 		i ++;
@@ -1669,8 +1658,7 @@ static void *imps_scanwork(void *argp)
 		}
 		
 		i = 0;
-		
-		mem_file_init(&temp_file, &g_alloc_file);
+		std::vector<bk> temp_file;
 		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
 		for (const auto &xpair : g_select_hash) {
@@ -1679,23 +1667,21 @@ static void *imps_scanwork(void *argp)
 				pnode=double_list_get_after(plist, pnode)) {
 				auto pcontext = static_cast<IMAP_CONTEXT *>(pnode->pdata);
 				if (cur_time - pcontext->selected_time > SELECT_INTERVAL) {
-					temp_file.writeline(pcontext->username);
-					temp_file.writeline(pcontext->maildir);
-					temp_file.writeline(pcontext->selected_folder);
+					try {
+						temp_file.emplace_back(bk{pcontext->username,
+							pcontext->maildir, pcontext->selected_folder});
+					} catch (const std::bad_alloc &) {
+						mlog(LV_ERR, "E-1816: ENOMEM");
+					}
 					pcontext->selected_time = cur_time;
 				}
 			}
 		}
 		hl_hold.unlock();
-		
-		while (temp_file.readline(username, arsizeof(username)) != MEM_END_OF_FILE) {
-			if (temp_file.readline(maildir, std::size(maildir)) == MEM_END_OF_FILE ||
-			    temp_file.readline(folder, std::size(folder)) == MEM_END_OF_FILE)
-				break;
-			system_services_broadcast_select(username, folder);
-			system_services_ping_mailbox(maildir, &err_num);
+		for (const auto &e : temp_file) {
+			system_services_broadcast_select(e.user.c_str(), e.folder.c_str());
+			system_services_ping_mailbox(e.dir.c_str(), &err_num);
 		}
-		mem_file_free(&temp_file);
 	}
 	return nullptr;
 }

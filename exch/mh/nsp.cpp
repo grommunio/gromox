@@ -360,19 +360,14 @@ HPM_ENTRY(hpm_mh_nsp);
  */
 static BOOL nsp_preproc(int context_id)
 {
-	char tmp_uri[1024];
-
 	auto prequest = get_request(context_id);
 	if (strcasecmp(prequest->method, "POST") != 0)
 		return false;
-	auto tmp_len = prequest->f_request_uri.read(tmp_uri, std::size(tmp_uri) - 1);
-	if (tmp_len == MEM_END_OF_FILE)
-		return false;
-	tmp_uri[tmp_len] = '\0';
-	if (strncasecmp(tmp_uri, "/mapi/nspi/?MailboxId=", 22) != 0)
+	auto uri = prequest->f_request_uri.c_str();
+	if (strncasecmp(uri, "/mapi/nspi/?MailboxId=", 22) != 0)
 		return false;
 	auto pconnection = get_connection(context_id);
-	set_ep_info(context_id, tmp_uri + 22, pconnection->server_port);
+	set_ep_info(context_id, &uri[22], pconnection->server_port);
 	return TRUE;
 }
 
@@ -456,9 +451,8 @@ static void produce_session(const char *tag, char *session)
  */
 MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 {
-	char tmp_buff[1024];
-	auto tmp_len = ctx.orig.f_cookie.read(tmp_buff, arsizeof(tmp_buff) - 1);
-	if (tmp_len == MEM_END_OF_FILE) {
+	auto tmp_len = ctx.orig.f_cookie.size();
+	if (tmp_len == 0) {
 		if (strcasecmp(ctx.request_value, "Bind") != 0)
 			return ctx.error_responsecode(resp_code::missing_cookie);
 		ctx.session = nullptr;
@@ -468,8 +462,7 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 		}
 		return std::nullopt;
 	}
-	tmp_buff[tmp_len] = '\0';
-	auto pparser = cookie_parser_init(tmp_buff);
+	auto pparser = cookie_parser_init(ctx.orig.f_cookie.c_str());
 	auto string = cookie_parser_get(pparser, "sid");
 	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);

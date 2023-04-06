@@ -11,11 +11,12 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
-#include <gromox/mem_file.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -107,13 +108,6 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	if (ctrl->bound_type >= BOUND_SELF)
 		return hook_result::xcontinue;
 
-	MEM_FILE temp_file, rcpt_file;
-	mem_file_init(&temp_file, ctrl->f_rcpt_to.allocator);
-	auto cl_0 = make_scope_exit([&]() { mem_file_free(&temp_file); });
-	mem_file_init(&rcpt_file, ctrl->f_rcpt_to.allocator);
-	auto cl_1 = make_scope_exit([&]() { mem_file_free(&rcpt_file); });
-	ctrl->f_rcpt_to.copy_to(rcpt_file);
-
 	if (strchr(ctrl->from, '@') != nullptr) {
 		auto repl = xa_alias_lookup(ctrl->from);
 		if (repl.size() > 0) {
@@ -121,25 +115,26 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 			gx_strlcpy(ctrl->from, repl.c_str(), arsizeof(ctrl->from));
 		}
 	}
-
-	bool replaced = false;
-	char rcpt_to[UADDR_SIZE];
-	while (rcpt_file.readline(rcpt_to, arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
-		if (strchr(rcpt_to, '@') == nullptr) {
-			temp_file.writeline(rcpt_to);
+	/*
+	 * For diagnostic purposes, don't modify/steal from ctrl->rcpt until
+	 * the replacement list is fully constructed.
+	 */
+	std::vector<std::string> new_rcpts;
+	for (const auto &rcpt : ctrl->rcpt) {
+		if (strchr(rcpt.c_str(), '@') == nullptr) {
+			new_rcpts.emplace_back(rcpt);
 			continue;
 		}
-		auto repl = xa_alias_lookup(rcpt_to);
+		auto repl = xa_alias_lookup(rcpt.c_str());
 		if (repl.size() == 0) {
-			temp_file.writeline(rcpt_to);
+			new_rcpts.emplace_back(rcpt);
 			continue;
 		}
-		mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s", rcpt_to, repl.c_str());
-		replaced = true;
-		temp_file.writeline(repl.c_str());
+		mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s",
+			rcpt.c_str(), repl.c_str());
+		new_rcpts.emplace_back(std::move(repl));
 	}
-	if (replaced)
-		temp_file.copy_to(ctrl->f_rcpt_to);
+	ctrl->rcpt = std::move(new_rcpts);
 	return hook_result::xcontinue;
 } catch (const std::bad_alloc &) {
 	mlog(LV_INFO, "E-1611: ENOMEM");

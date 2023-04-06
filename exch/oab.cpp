@@ -5,7 +5,6 @@
 #include <string>
 #include <gromox/defs.h>
 #include <gromox/hpm_common.h>
-#include <gromox/mem_file.hpp>
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -49,15 +48,7 @@ OabPlugin::OabPlugin(){}
 BOOL OabPlugin::preproc(int ctx_id)
 {
 	auto req = get_request(ctx_id);
-	char uri[1024];
-	req->f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	size_t len = req->f_request_uri.read(uri, arsizeof(uri) - 1);
-	if (len == MEM_END_OF_FILE)
-		return false;
-	uri[len] = '\0';
-	if (strncasecmp(uri, "/OAB", 4) != 0)
-		return false;
-	return TRUE;
+	return strncasecmp(req->f_request_uri.c_str(), "/OAB", 4) == 0 ? TRUE : false;
 }
 
 /**

@@ -112,7 +112,7 @@ static void message_enqueue_init(const char *path)
 static int message_enqueue_run()
 {
 	key_t k_msg;
-    char name[256];
+	char name[266];
 
 	if (!message_enqueue_check())
 		return -1;

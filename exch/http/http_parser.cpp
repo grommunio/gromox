@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
@@ -335,37 +336,11 @@ void VCONN_REF::put()
 	pvconnection = nullptr;
 }
 
-static BOOL http_parser_request_head(MEM_FILE *pfile_others,
-	const char *field_name, char *field_value, int buff_len)
+static const char *
+http_parser_request_head(const http_request::other_map &m, const char *k)
 {
-	int tmp_len;
-	int name_len;
-	char name_buff[64];
-	
-	pfile_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	name_len = strlen(field_name);
-	if (name_len >= 64) {
-		return FALSE;
-	}
-	while (pfile_others->read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-		if (name_len == tmp_len) {
-			 pfile_others->read(name_buff, tmp_len);
-			 if (0 == strncasecmp(name_buff, field_name, name_len)) {
-				 pfile_others->read(&tmp_len, sizeof(uint32_t));
-				 if (tmp_len >= buff_len) {
-					 return FALSE;
-				 }
-				 pfile_others->read(field_value, tmp_len);
-				 field_value[tmp_len] = '\0';
-				 return TRUE;
-			 }
-		} else {
-			pfile_others->seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-		}
-		pfile_others->read(&tmp_len, sizeof(uint32_t));
-		pfile_others->seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-	}
-	return FALSE;
+	auto i = m.find(k);
+	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
 static int http_parser_reconstruct_stream(STREAM &stream_src)
@@ -577,14 +552,15 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 		return X_LOOP;
 	}
 	if (!mod_rewrite_process(ptoken + 1,
-	    tmp_len1, &pcontext->request.f_request_uri))
-		pcontext->request.f_request_uri.write(ptoken + 1, tmp_len1);
+	    tmp_len1, pcontext->request.f_request_uri))
+		pcontext->request.f_request_uri = std::string_view(&ptoken[1], tmp_len1);
 	memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 	pcontext->request.version[tmp_len] = '\0';
 	return X_RUNOFF;
 }
 
-static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int line_length)
+static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
+    unsigned int line_length) try
 {
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
@@ -609,28 +585,28 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	}
 	tmp_len = line_length - static_cast<size_t>(ptoken - line);
 	if (0 == strcasecmp(field_name, "Host")) {
-		pcontext->request.f_host.write(ptoken, tmp_len);
+		pcontext->request.f_host += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "User-Agent")) {
-		pcontext->request.f_user_agent.write(ptoken, tmp_len);
+		pcontext->request.f_user_agent += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Accept")) {
-		pcontext->request.f_accept.write(ptoken, tmp_len);
+		pcontext->request.f_accept += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Accept-Language")) {
-		pcontext->request.f_accept_language.write(ptoken, tmp_len);
+		pcontext->request.f_accept_language += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Accept-Encoding")) {
-		pcontext->request.f_accept_encoding.write(ptoken, tmp_len);
+		pcontext->request.f_accept_encoding += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Type")) {
-		pcontext->request.f_content_type.write(ptoken, tmp_len);
+		pcontext->request.f_content_type += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Length")) {
-		pcontext->request.f_content_length.write(ptoken, tmp_len);
+		pcontext->request.f_content_length += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Transfer-Encoding")) {
-		pcontext->request.f_transfer_encoding.write(ptoken, tmp_len);
+		pcontext->request.f_transfer_encoding += std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
-		pcontext->request.f_cookie.write(ptoken, tmp_len);
+		pcontext->request.f_cookie += std::string_view(ptoken, tmp_len);
 	} else {
 		if (0 == strcasecmp(field_name, "Connection") &&
 		    0 == strncasecmp(ptoken, "keep-alive", tmp_len)) {
@@ -638,13 +614,13 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 				we treat it as "close" */
 			pcontext->b_close = FALSE;
 		}
-		uint32_t tmp_len1 = strlen(field_name);
-		pcontext->request.f_others.write(&tmp_len1, sizeof(uint32_t));
-		pcontext->request.f_others.write(field_name, tmp_len1);
-		pcontext->request.f_others.write(&tmp_len, sizeof(uint32_t));
-		pcontext->request.f_others.write(ptoken, tmp_len);
+		pcontext->request.f_others[field_name] = std::string_view(ptoken, tmp_len);
 	}
 	return X_RUNOFF;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1085: ENOMEM");
+	http_5xx(pcontext, "Resources exhausted", 503);
+	return X_LOOP;
 }
 
 static int htp_auth(HTTP_CONTEXT *pcontext)
@@ -739,7 +715,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 
 static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 {
-	auto tmp_len = pcontext->request.f_request_uri.get_total_length();
+	auto tmp_len = pcontext->request.f_request_uri.size();
 	if (0 == tmp_len || tmp_len >= 1024) {
 		pcontext->log(LV_DEBUG,
 			"I-1926: rpcproxy request method error");
@@ -747,14 +723,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		return X_LOOP;
 	}
 	char tmp_buff[2048];
-	tmp_len = pcontext->request.f_request_uri.read(tmp_buff, 1024);
-	if (tmp_len == MEM_END_OF_FILE) {
-		pcontext->log(LV_DEBUG, "I-1927: rpcproxy request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
-	}
-	tmp_buff[tmp_len] = '\0';
-
+	gx_strlcpy(tmp_buff, pcontext->request.f_request_uri.c_str(), std::size(tmp_buff));
 	char *ptoken;
 	if (0 == strncmp(tmp_buff, "/rpc/rpcproxy.dll?", 18)) {
 		ptoken = tmp_buff + 18;
@@ -807,15 +776,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		return X_LOOP;
 	}
 
-	tmp_len = pcontext->request.f_content_length.read(tmp_buff, 256);
-	if (MEM_END_OF_FILE == tmp_len) {
-		pcontext->log(LV_DEBUG,
-			"I-1932: content-length of rpcproxy request error");
-		http_4xx(pcontext);
-		return X_LOOP;
-	}
-	pcontext->total_length = strtoull(tmp_buff, nullptr, 0);
-
+	pcontext->total_length = strtoull(pcontext->request.f_content_length.c_str(), nullptr, 0);
 	/* ECHO request 0x0 ~ 0x10, MS-RPCH 2.1.2.15 */
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
@@ -954,11 +915,11 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
 
-		char tmp_buff[2048], tmp_buff1[1024];
+		char tmp_buff1[1024];
 		size_t decode_len = 0;
 		char *ptoken = nullptr;
-		if (http_parser_request_head(&pcontext->request.f_others,
-		    "Authorization", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+		auto tmp_buff = http_parser_request_head(pcontext->request.f_others, "Authorization");
+		if (tmp_buff != nullptr &&
 		    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
 		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1,
 		    arsizeof(tmp_buff1), &decode_len) == 0 &&
@@ -1879,36 +1840,6 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-http_request::http_request(alloc_limiter<file_block> *b)
-{
-	mem_file_init(&f_request_uri, b);
-	mem_file_init(&f_host, b);
-	mem_file_init(&f_user_agent, b);
-	mem_file_init(&f_accept, b);
-	mem_file_init(&f_accept_language, b);
-	mem_file_init(&f_accept_encoding, b);
-	mem_file_init(&f_content_type, b);
-	mem_file_init(&f_content_length, b);
-	mem_file_init(&f_transfer_encoding, b);
-	mem_file_init(&f_cookie, b);
-	mem_file_init(&f_others, b);
-}
-
-http_request::~http_request()
-{
-	mem_file_free(&f_request_uri);
-	mem_file_free(&f_host);
-	mem_file_free(&f_user_agent);
-	mem_file_free(&f_accept);
-	mem_file_free(&f_accept_language);
-	mem_file_free(&f_accept_encoding);
-	mem_file_free(&f_content_type);
-	mem_file_free(&f_content_length);
-	mem_file_free(&f_transfer_encoding);
-	mem_file_free(&f_cookie);
-	mem_file_free(&f_others);
-}
-
 void http_request::clear()
 {
 	method[0] = '\0';
@@ -1927,8 +1858,7 @@ void http_request::clear()
 }
 
 http_context::http_context() :
-	request(&g_file_allocator), stream_in(&g_blocks_allocator),
-	stream_out(stream_in.allocator)
+	stream_in(&g_blocks_allocator), stream_out(stream_in.allocator)
 {
 	auto pcontext = this;
 	pcontext->node.pdata = pcontext;

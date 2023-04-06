@@ -3,7 +3,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
 #define SYS_THREAD_CREATE           2
 #define SYS_THREAD_DESTROY          3
@@ -36,7 +35,7 @@ struct CONTROL_INFO {
 	int queue_ID = 0, bound_type = 0;
 	BOOL is_spam = false, need_bounce = false;
 	char from[UADDR_SIZE]{};
-	MEM_FILE f_rcpt_to{};
+	std::vector<std::string> rcpt;
 };
 
 struct MESSAGE_CONTEXT {

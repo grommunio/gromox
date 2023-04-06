@@ -212,19 +212,23 @@ void sSyncState::init(const std::string& data64)
 	{
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
-			if(!given.deserialize(static_cast<BINARY *>(propval->pvalue)) || !given.convert())
+			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
+			    !given.convert())
 				throw InputError(E3053);
 			break;
 		case MetaTagCnsetSeen:
-			if(!seen.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen.convert())
+			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
+			    !seen.convert())
 				throw InputError(E3054);
 			break;
 		case MetaTagCnsetRead:
-			if(!read.deserialize(static_cast<BINARY *>(propval->pvalue)) || !read.convert())
+			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
+			    !read.convert())
 				throw InputError(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
-			if(!seen_fai.deserialize(static_cast<BINARY *>(propval->pvalue)) || !seen_fai.convert())
+			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
+			    !seen_fai.convert())
 				throw InputError(E3056);
 			break;
 		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered

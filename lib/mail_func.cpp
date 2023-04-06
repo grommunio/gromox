@@ -478,7 +478,7 @@ void parse_mime_encode_string(char *in_buff, long ibuff_len,
  *		pfile [in,out]	mem file to retrieving the parsing result of params
  */
 void parse_field_value(const char *in_buff, long buff_len, char *value,
-    long val_len, MEM_FILE *pfile)
+    long val_len, std::vector<kvpair> &pfile) try
 {
 	const char *ptr, *prev_section, *ptr_equal;
 	int distance;
@@ -516,13 +516,8 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 			HX_strltrim(param_tag);
 			HX_strrtrim(param_value);
 			HX_strltrim(param_value);
-			paratag_len = strlen(param_tag);
-			paraval_len = strlen(param_value);
 			if (0 != paratag_len || 0 != paraval_len) {
-				pfile->write(&paratag_len, sizeof(uint32_t));
-				pfile->write(param_tag, paratag_len);
-				pfile->write(&paraval_len, sizeof(uint32_t));
-				pfile->write(param_value, paraval_len);
+				pfile.emplace_back(MIME_FIELD{param_tag, param_value});
 			}
 		}
 		ptr ++;
@@ -556,14 +551,12 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 	HX_strltrim(param_tag);
 	HX_strrtrim(param_value);
 	HX_strltrim(param_value);
-	paratag_len = strlen(param_tag);
-	paraval_len = strlen(param_value);
 	if (0 != paratag_len || 0 != paraval_len) {
-		pfile->write(&paratag_len, sizeof(uint32_t));
-		pfile->write(param_tag, paratag_len);
-		pfile->write(&paraval_len, sizeof(uint32_t));
-		pfile->write(param_value, paraval_len);
+		pfile.emplace_back(MIME_FIELD{param_tag, param_value});
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1095: ENOMEM");
+	return;
 }
 
 /*

@@ -15,6 +15,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -30,7 +31,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
@@ -72,7 +72,6 @@ struct BACK_SVR {
 
 }
 
-static void free_result(XARRAY *);
 static void *midbag_scanwork(void *);
 static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
@@ -89,14 +88,13 @@ static int ping_mailbox(const char *path, int *perrno);
 static int rename_folder(const char *path, const char *src_name, const char *dst_name, int *perrno);
 static int subscribe_folder(const char *path, const char *folder, int *perrno);
 static int unsubscribe_folder(const char *path, const char *folder, int *perrno);
-static int enum_folders(const char *path, MEM_FILE *, int *perrno);
-static int enum_subscriptions(const char *path, MEM_FILE *, int *perrno);
+static int enum_folders(const char *path, std::vector<std::string> &, int *perrno);
+static int enum_subscriptions(const char *path, std::vector<std::string> &, int *perrno);
 static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
 static int remove_mail(const char *path, const char *folder, const std::vector<MITEM *> &, int *perrno);
 static int list_simple(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
-static void free_result(XARRAY *pxarray);
 static int fetch_simple(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int fetch_detail(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int fetch_simple_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
@@ -232,7 +230,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		    !E(remove_mail) || !E(list_simple) || !E(list_deleted) ||
 		    !E(list_detail) || !E(fetch_simple) || !E(fetch_detail) ||
 		    !E(fetch_simple_uid) || !E(fetch_detail_uid) ||
-		    !E(free_result) || !E(set_mail_flags) ||
+		    !E(set_mail_flags) ||
 		    !E(unset_mail_flags) || !E(get_mail_flags) ||
 		    !E(copy_mail) || !E(imap_search) || !E(imap_search_uid) ||
 		    !E(check_full)) {
@@ -938,7 +936,8 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 	return MIDB_RDWR_ERROR;
 }
 
-static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
+static int enum_folders(const char *path, std::vector<std::string> &pfile,
+    int *perrno) try
 {
 	int i;
 	int lines;
@@ -1010,7 +1009,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				pfile->writeline(temp_line);
+				pfile.emplace_back(temp_line);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos] = buff[i];
@@ -1037,9 +1036,13 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 		}
 	}
 	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1812: ENOMEM");
+	return MIDB_LOCAL_ENOMEM;
 }
 
-static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
+static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
+    int *perrno) try
 {
 	int i;
 	int lines;
@@ -1112,7 +1115,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				pfile->writeline(temp_line);
+				pfile.emplace_back(temp_line);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos] = buff[i];
@@ -1139,6 +1142,9 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 		}
 	}
 	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1815: ENOMEM");
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int insert_mail(const char *path, const char *folder,
@@ -1528,7 +1534,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 }
 
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
-	int *perrno)
+    int *perrno) try
 {
 	int lines;
 	int count;
@@ -1550,7 +1556,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([=]() {
-		free_result(pxarray);
 		pxarray->clear();
 	});
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC\r\n",
@@ -1616,8 +1621,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 				    "uid", &mitem.uid)) {
 					mitem.id = count;
 					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
-					mem_file_init(&mitem.f_digest, &g_file_allocator);
-					mitem.f_digest.write(temp_line, line_pos);
+					mitem.f_digest = std::string_view(temp_line, line_pos);
 					auto mitem_uid = mitem.uid;
 					pxarray->append(std::move(mitem), mitem_uid);
 				} else {
@@ -1653,17 +1657,8 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			last_pos = 0;
 		}
 	}
-}
-
-static void free_result(XARRAY *pxarray)
-{
-	auto num = pxarray->get_capacity();
-	for (size_t i = 0; i < num; ++i) {
-		auto pitem = pxarray->get_item(i);
-		if (NULL != pitem) {
-			mem_file_free(&pitem->f_digest);
-		}
-	}
+} catch (const std::bad_alloc &) {
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int fetch_simple(const char *path, const char *folder,
@@ -1816,7 +1811,7 @@ static int fetch_simple(const char *path, const char *folder,
 }
 
 static int fetch_detail(const char *path, const char *folder,
-    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
+    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno) try
 {
 	int lines;
 	int count;
@@ -1839,7 +1834,6 @@ static int fetch_detail(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([=]() {
-		free_result(pxarray);
 		pxarray->clear();
 	});
 	
@@ -1923,8 +1917,7 @@ static int fetch_detail(const char *path, const char *folder,
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
-							mem_file_init(&pitem->f_digest, &g_file_allocator);
-							pitem->f_digest.write(temp_line, line_pos);
+							pitem->f_digest = std::string_view(temp_line, line_pos);
 						}
 					} else {
 						b_format_error = TRUE;
@@ -1941,7 +1934,6 @@ static int fetch_detail(const char *path, const char *folder,
 
 			if (b_format_error) {
 				EH.release();
-				free_result(pxarray);
 				// no pxarray->clear?
 
 				pback.reset();
@@ -1966,6 +1958,8 @@ static int fetch_detail(const char *path, const char *folder,
 	pback.reset();
 	EH.release();
 	return MIDB_RESULT_OK;
+} catch (const std::bad_alloc &) {
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int fetch_simple_uid(const char *path, const char *folder,
@@ -2114,7 +2108,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 }
 
 static int fetch_detail_uid(const char *path, const char *folder,
-    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
+    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno) try
 {
 	int lines;
 	int count;
@@ -2138,7 +2132,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([=]() {
-		free_result(pxarray);
 		pxarray->clear();
 	});
 	
@@ -2215,8 +2208,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pspace, temp_len);
-							mem_file_init(&pitem->f_digest, &g_file_allocator);
-							pitem->f_digest.write(pspace, temp_len);
+							pitem->f_digest = std::string_view(pspace, temp_len);
 						}
 					} else {
 						b_format_error = TRUE;
@@ -2237,7 +2229,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				pback.reset();
 				*perrno = -1;
 				EH.release();
-				free_result(pxarray);
 				// no pxarray->clear?
 				return MIDB_RESULT_ERROR;
 			}
@@ -2257,6 +2248,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	pback.reset();
 	EH.release();
 	return MIDB_RESULT_OK;
+} catch (const std::bad_alloc &) {
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static int set_mail_flags(const char *path, const char *folder,
