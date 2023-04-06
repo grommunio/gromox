@@ -1844,12 +1844,27 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	
 	if (!pcontext->is_authed())
 		return 1804;
-	if (argc < 4 || (strcasecmp(argv[2], "(SPECIAL-USE)") == 0 && argc < 5))
+	/*
+	 * Return option (list all folder and in doing so, yield special-use flags):
+	 * 	LIST "" % RETURN (SPECIAL-USE)
+	 *
+	 * Selection option (list only special use folders):
+	 * 	LIST (SPECIAL-USE) "" %
+	 */
+	if (argc < 3)
 		return 1800;
-	if (0 != strcasecmp(argv[2], "(SPECIAL-USE)")) {
-		if (strlen(argv[2]) + strlen(argv[3]) >= 1024)
+	int apos = 2;
+	auto filter_special = strcasecmp(argv[2], "(SPECIAL-USE)") == 0;
+	if (filter_special)
+		++apos;
+	if (argc < apos + 2)
+		return 1800;
+	auto reference = argv[apos++];
+	auto mboxname = argv[apos++];
+	if (!filter_special) {
+		if (strlen(reference) + strlen(mboxname) >= 1024)
 			return 1800;
-		if ('\0' == argv[3][0]) {
+		if (*mboxname == '\0') {
 			if (pcontext->proto_stat == PROTO_STAT_SELECT)
 				imap_parser_echo_modify(pcontext, NULL);
 			/* IMAP_CODE_2170011: OK LIST completed */
@@ -1860,7 +1875,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			imap_parser_safe_write(pcontext, buff, string_length);
 			return DISPATCH_CONTINUE;
 		}
-		auto search_pattern = std::string(argv[2]) + argv[3];
+		auto search_pattern = std::string(reference) + mboxname;
 		std::vector<std::string> temp_file;
 		auto ssr = system_services_enum_folders(pcontext->maildir,
 		           temp_file, &errnum);
@@ -1896,9 +1911,9 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return DISPATCH_BREAK;
 	}
 
-	if (strlen(argv[3]) + strlen(argv[4]) >= 1024)
+	if (strlen(reference) + strlen(mboxname) >= 1024)
 		return 1800;
-	if ('\0' == argv[4][0]) {
+	if (*mboxname == '\0') {
 		if (pcontext->proto_stat == PROTO_STAT_SELECT)
 			imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170011: OK LIST completed */
@@ -1909,7 +1924,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	auto search_pattern = std::string(argv[3]) + argv[4];
+	auto search_pattern = std::string(reference) + mboxname;
 	std::vector<std::string> temp_file;
 	writefolderlines(temp_file);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
