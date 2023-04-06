@@ -1861,6 +1861,10 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return 1800;
 	auto reference = argv[apos++];
 	auto mboxname = argv[apos++];
+	bool return_special = filter_special;
+	if (argc >= apos + 2 && strcasecmp(argv[apos], "RETURN") == 0 &&
+	    strcasecmp(argv[apos+1], "(SPECIAL-USE)") == 0)
+		return_special = true;
 	if (strlen(reference) + strlen(mboxname) >= 1024)
 		return 1800;
 	if (*mboxname == '\0') {
@@ -1885,12 +1889,41 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			return ret;
 	}
 
-	writefolderlines(temp_file);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
-	if (!filter_special)
-		temp_tree.load_from_memfile(temp_file);
+	temp_tree.load_from_memfile(temp_file);
 	len = 0;
+	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
+		if (filter_special) {
+			len += gx_snprintf(&buff[len], std::size(buff),
+			       "* LIST (\\Inbox) \"/\" \"INBOX\"\r\n");
+		} else {
+			auto pdir = temp_tree.match("INBOX");
+			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+			len = gx_snprintf(buff + len, arsizeof(buff),
+			      "* LIST (%s\\Has%sChildren) \"/\" \"INBOX\"\r\n",
+			      return_special ? "\\Inbox " : "", have ? "" : "No");
+		}
+	}
+	for (unsigned int i = 0; i < 4; ++i) {
+		char temp_name[1024];
+		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i], temp_name);
+		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern.c_str())) {
+			if (filter_special) {
+				len += gx_snprintf(&buff[len], std::size(buff),
+				       "* LIST (%s) \"/\" \"%s\"\r\n",
+				       g_xproperty_list[i], temp_name);
+			} else {
+				auto pdir = temp_tree.match(temp_name);
+				auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+				len += gx_snprintf(buff + len, arsizeof(buff) - len,
+				       "* LIST (%s%s\\Has%sChildren) \"/\" \"%s\"\r\n",
+				       return_special ? g_xproperty_list[i] : "",
+				       return_special ? " " : "",
+				       have ? "" : "No", temp_name);
+			}
+		}
+	}
 	for (const auto &temp_name : temp_file) {
 		if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern.c_str()))
 			continue;
@@ -1928,7 +1961,6 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	int i, len;
 	size_t string_length = 0;
 	char buff[256*1024];
-	char temp_name[1024];
 	
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1960,6 +1992,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		      have ? "" : "No");
 	}
 	for (i=0; i<4; i++) {
+		char temp_name[1024];
 		imap_cmd_parser_sysfolder_to_imapfolder(
 			pcontext->lang, g_folder_list[i], temp_name);
 		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern.c_str())) {
