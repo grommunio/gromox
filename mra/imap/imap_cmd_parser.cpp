@@ -1985,6 +1985,10 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
 		auto pdir = temp_tree.match("INBOX");
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+		/*
+		 * RFC 6154 does not document \Inbox, but Thunderbird
+		 * evaluates it.
+		 */
 		len = gx_snprintf(buff + len, arsizeof(buff),
 		      "* XLIST (\\Inbox \\Has%sChildren) \"/\" \"INBOX\"\r\n",
 		      have ? "" : "No");
