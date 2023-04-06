@@ -1861,56 +1861,6 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return 1800;
 	auto reference = argv[apos++];
 	auto mboxname = argv[apos++];
-	if (!filter_special) {
-		if (strlen(reference) + strlen(mboxname) >= 1024)
-			return 1800;
-		if (*mboxname == '\0') {
-			if (pcontext->proto_stat == PROTO_STAT_SELECT)
-				imap_parser_echo_modify(pcontext, NULL);
-			/* IMAP_CODE_2170011: OK LIST completed */
-			auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-			string_length = gx_snprintf(buff, arsizeof(buff),
-				"* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
-				argv[0], imap_reply_str);
-			imap_parser_safe_write(pcontext, buff, string_length);
-			return DISPATCH_CONTINUE;
-		}
-		auto search_pattern = std::string(reference) + mboxname;
-		std::vector<std::string> temp_file;
-		auto ssr = system_services_enum_folders(pcontext->maildir,
-		           temp_file, &errnum);
-		auto ret = m2icode(ssr, errnum);
-		if (ret != 0)
-			return ret;
-		writefolderlines(temp_file);
-		imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
-		dir_tree temp_tree(imap_parser_get_dpool());
-		temp_tree.load_from_memfile(temp_file);
-		len = 0;
-		for (const auto &temp_name : temp_file) {
-			if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern.c_str()))
-				continue;
-			auto pdir = temp_tree.match(temp_name.c_str());
-			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-			       "* LIST (\\Has%sChildren) \"/\" {%zu}\r\n%s\r\n",
-			       have ? "" : "No", temp_name.size(), temp_name.c_str());
-		}
-		temp_file.clear();
-		pcontext->stream.clear();
-		if (pcontext->proto_stat == PROTO_STAT_SELECT)
-			imap_parser_echo_modify(pcontext, &pcontext->stream);
-		/* IMAP_CODE_2170011: OK LIST completed */
-		auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-		len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				"%s %s", argv[0], imap_reply_str);
-		if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
-			return 1922;
-		pcontext->write_offset = 0;
-		pcontext->sched_stat = SCHED_STAT_WRLST;
-		return DISPATCH_BREAK;
-	}
-
 	if (strlen(reference) + strlen(mboxname) >= 1024)
 		return 1800;
 	if (*mboxname == '\0') {
@@ -1919,21 +1869,43 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		/* IMAP_CODE_2170011: OK LIST completed */
 		auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
 		string_length = gx_snprintf(buff, arsizeof(buff),
-		                "* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
-		                argv[0], imap_reply_str);
+			"* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
+			argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
+
 	auto search_pattern = std::string(reference) + mboxname;
 	std::vector<std::string> temp_file;
+	if (!filter_special) {
+		auto ssr = system_services_enum_folders(pcontext->maildir,
+		           temp_file, &errnum);
+		auto ret = m2icode(ssr, errnum);
+		if (ret != 0)
+			return ret;
+	}
+
 	writefolderlines(temp_file);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
+	dir_tree temp_tree(imap_parser_get_dpool());
+	if (!filter_special)
+		temp_tree.load_from_memfile(temp_file);
 	len = 0;
-	for (const auto &temp_name : temp_file)
-		if (imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern.c_str()))
+	for (const auto &temp_name : temp_file) {
+		if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern.c_str()))
+			continue;
+		if (filter_special) {
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 			       "* LIST () \"/\" {%zu}\r\n%s\r\n",
 			       temp_name.size(), temp_name.c_str());
+			continue;
+		}
+		auto pdir = temp_tree.match(temp_name.c_str());
+		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
+		len += gx_snprintf(buff + len, arsizeof(buff) - len,
+		       "* LIST (\\Has%sChildren) \"/\" {%zu}\r\n%s\r\n",
+		       have ? "" : "No", temp_name.size(), temp_name.c_str());
+	}
 	temp_file.clear();
 	pcontext->stream.clear();
 	if (pcontext->proto_stat == PROTO_STAT_SELECT)
