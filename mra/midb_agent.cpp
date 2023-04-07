@@ -708,7 +708,7 @@ static int get_mail_id(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-OFST %s %s %s UID ASC\r\n",
+	auto length = gx_snprintf(buff, std::size(buff), "P-OFST %s %s %s UID\r\n",
 				path, folder, mid_string);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -761,7 +761,7 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "P-FDDT %s %s UID\r\n", path, folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -1291,7 +1291,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([=]() { pxarray->clear(); });
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-DELL %s %s UID ASC\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "P-DELL %s %s UID\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		return MIDB_RDWR_ERROR;
 	}
@@ -1426,14 +1426,14 @@ static int fetch_simple(const char *path, const char *folder,
 		auto pseq = &seq;
 		if (pseq->max == pseq->unset) {
 			if (pseq->min == pseq->unset)
-				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC -1 1\r\n",
+				length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s UID -1 1\r\n",
 						path, folder);
 			else
-				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC %d "
+				length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s UID %d "
 						"1000000000\r\n", path, folder,
 						pseq->min - 1);
 		} else {
-			length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC %d %d\r\n",
+			length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s UID %d %d\r\n",
 						path, folder, pseq->min - 1,
 						pseq->max - pseq->min + 1);
 		}
@@ -1580,14 +1580,14 @@ static int fetch_detail(const char *path, const char *folder,
 		auto pseq = &seq;
 		if (pseq->max == pseq->unset) {
 			if (pseq->min == pseq->unset)
-				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC -1 1\r\n",
+				length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s UID -1 1\r\n",
 						path, folder);
 			else
-				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC %d "
+				length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s UID %d "
 						"1000000000\r\n", path, folder,
 						pseq->min - 1);
 		} else {
-			length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC %d %d\r\n",
+			length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s UID %d %d\r\n",
 						path, folder, pseq->min - 1,
 						pseq->max - pseq->min + 1);
 		}
@@ -1725,7 +1725,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
+		auto length = gx_snprintf(buff, std::size(buff), "P-SIMU %s %s UID %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			return MIDB_RDWR_ERROR;
@@ -1876,7 +1876,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		auto length = gx_snprintf(buff, arsizeof(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
+		auto length = gx_snprintf(buff, std::size(buff), "P-DTLU %s %s UID %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			return MIDB_RDWR_ERROR;
