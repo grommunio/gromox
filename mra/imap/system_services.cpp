@@ -25,9 +25,7 @@ E(enum_folders)
 E(enum_subscriptions)
 E(insert_mail)
 E(remove_mail)
-E(list_simple)
 E(list_deleted)
-E(list_detail)
 E(fetch_simple)
 E(fetch_detail)
 E(fetch_simple_uid)
@@ -75,9 +73,7 @@ int system_services_run()
 	E(system_services_enum_subscriptions, "enum_subscriptions");
 	E(system_services_insert_mail, "insert_mail");
 	E(system_services_remove_mail, "remove_mail");
-	E(system_services_list_simple, "list_simple");
 	E(system_services_list_deleted, "list_deleted");
-	E(system_services_list_detail, "list_detail");
 	E(system_services_fetch_simple, "fetch_simple");
 	E(system_services_fetch_detail, "fetch_detail");
 	E(system_services_fetch_simple_uid, "fetch_simple_uid");
@@ -120,9 +116,7 @@ void system_services_stop()
 	service_release("enum_subscriptions", "system");
 	service_release("insert_mail", "system");
 	service_release("remove_mail", "system");
-	service_release("list_simple", "system");
 	service_release("list_deleted", "system");
-	service_release("list_detail", "system");
 	service_release("fetch_simple", "system");
 	service_release("fetch_detail", "system");
 	service_release("fetch_simple_uid", "system");

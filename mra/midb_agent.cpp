@@ -92,9 +92,7 @@ static int enum_folders(const char *path, std::vector<std::string> &, int *perrn
 static int enum_subscriptions(const char *path, std::vector<std::string> &, int *perrno);
 static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
 static int remove_mail(const char *path, const char *folder, const std::vector<MITEM *> &, int *perrno);
-static int list_simple(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
-static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
 static int fetch_simple(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int fetch_detail(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int fetch_simple_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
@@ -227,8 +225,8 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		    !E(rename_folder) || !E(subscribe_folder) ||
 		    !E(unsubscribe_folder) || !E(enum_folders) ||
 		    !E(enum_subscriptions) || !E(insert_mail) ||
-		    !E(remove_mail) || !E(list_simple) || !E(list_deleted) ||
-		    !E(list_detail) || !E(fetch_simple) || !E(fetch_detail) ||
+		    !E(remove_mail) || !E(list_deleted) ||
+		    !E(fetch_simple) || !E(fetch_detail) ||
 		    !E(fetch_simple_uid) || !E(fetch_detail_uid) ||
 		    !E(set_mail_flags) ||
 		    !E(unset_mail_flags) || !E(get_mail_flags) ||
@@ -1271,137 +1269,6 @@ static unsigned int di_to_flagbits(const char *ln, int pos)
 	return fl;
 }
 
-static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
-	int *perrno)
-{
-	int i;
-	int lines;
-	int count;
-	int offset;
-	int last_pos;
-	int read_len;
-	int line_pos;
-	char *pspace;
-	char *pspace1;
-	int tv_msec;
-	char temp_line[512];
-	char buff[256*1025];
-	BOOL b_format_error;
-	struct pollfd pfd_read;
-
-	auto pback = get_connection(path);
-	if (pback == nullptr)
-		return MIDB_NO_SERVER;
-	auto EH = make_scope_exit([=]() { pxarray->clear(); });
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC\r\n", path, folder);
-	if (length != write(pback->sockd, buff, length)) {
-		return MIDB_RDWR_ERROR;
-	}
-	
-	count = 0;
-	offset = 0;
-	lines = -1;
-	b_format_error = FALSE;
-	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
-		pfd_read.fd = pback->sockd;
-		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			return MIDB_RDWR_ERROR;
-		}
-		static_assert(std::size(buff) >= 256*1024 + 1);
-		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
-		if (read_len <= 0) {
-			return MIDB_RDWR_ERROR;
-		}
-		offset += read_len;
-		buff[offset] = '\0';
-		
-		if (-1 == lines) {
-			for (i=0; i<offset-1&&i<36; i++) {
-				if (buff[i] != '\r' || buff[i+1] != '\n')
-					continue;
-				if (0 == strncmp(buff, "TRUE ", 5)) {
-					lines = strtol(buff + 5, nullptr, 0);
-					if (lines < 0) {
-						return MIDB_RDWR_ERROR;
-					}
-					last_pos = i + 2;
-					line_pos = 0;
-					break;
-				} else if (0 == strncmp(buff, "FALSE ", 6)) {
-					pback.reset();
-					EH.release(); // ?
-					*perrno = strtol(buff + 6, nullptr, 0);
-					return MIDB_RESULT_ERROR;
-				}
-			}
-			if (-1 == lines) {
-				if (offset > 1024) {
-					return MIDB_RDWR_ERROR;
-				}
-				continue;
-			}
-		}
-
-		for (i=last_pos; i<offset; i++) {
-			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
-				count ++;
-			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-				temp_line[line_pos] = '\0';
-				pspace = strchr(temp_line, ' ');
-				if (NULL != pspace) {
-					pspace1 = strchr(pspace + 1, ' ');
-					if (NULL != pspace1) {
-						*pspace = '\0';
-						*pspace1 = '\0';
-						pspace ++;
-						pspace1 ++;
-						MITEM mitem;
-						gx_strlcpy(mitem.mid, temp_line, arsizeof(mitem.mid));
-						mitem.id = count;
-						mitem.uid = strtol(pspace, nullptr, 0);
-						mitem.flag_bits = s_to_flagbits(pspace1);
-						auto mitem_uid = mitem.uid;
-						pxarray->append(std::move(mitem), mitem_uid);
-					} else {
-						b_format_error = TRUE;
-					}
-				} else {
-					b_format_error = TRUE;
-				}
-				line_pos = 0;
-			} else if (buff[i] != '\r' || i != offset - 1) {
-				temp_line[line_pos] = buff[i];
-				line_pos ++;
-				if (line_pos >= 128) {
-					return MIDB_RDWR_ERROR;
-				}
-			}
-		}
-
-		if (count >= lines) {
-			pback.reset();
-			if (b_format_error) {
-				*perrno = -1;
-				return MIDB_RESULT_ERROR;
-			}
-			EH.release();
-			return MIDB_RESULT_OK;
-		}
-		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
-		if (256*1024 == offset) {
-			if ('\r' != buff[offset - 1]) {
-				offset = 0;
-			} else {
-				buff[0] = '\r';
-				offset = 1;
-			}
-			last_pos = 0;
-		}
-	}
-}
-
 static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
@@ -1531,134 +1398,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 			last_pos = 0;
 		}
 	}
-}
-
-static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
-    int *perrno) try
-{
-	int lines;
-	int count;
-	int offset;
-	int last_pos;
-	int read_len;
-	int line_pos;
-	int tv_msec;
-	char buff[64*1025];
-	char temp_line[257*1024];
-	BOOL b_format_error;
-	struct pollfd pfd_read;
-
-	if (g_file_allocator.internals().item_size == 0) {
-		*perrno = -2;
-		return MIDB_RESULT_ERROR;
-	}
-	auto pback = get_connection(path);
-	if (pback == nullptr)
-		return MIDB_NO_SERVER;
-	auto EH = make_scope_exit([=]() {
-		pxarray->clear();
-	});
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC\r\n",
-				path, folder);
-	if (length != write(pback->sockd, buff, length)) {
-		return MIDB_RDWR_ERROR;
-	}
-	
-	
-	count = 0;
-	offset = 0;
-	lines = -1;
-	b_format_error = FALSE;
-	while (true) {
-		tv_msec = SOCKET_TIMEOUT * 1000;
-		pfd_read.fd = pback->sockd;
-		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			return MIDB_RDWR_ERROR;
-		}
-		read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
-		if (read_len <= 0) {
-			return MIDB_RDWR_ERROR;
-		}
-		offset += read_len;
-		buff[offset] = '\0';
-		
-		if (-1 == lines) {
-			for (int i = 0; i < offset - 1 && i < 36; ++i) {
-				if (buff[i] != '\r' || buff[i+1] != '\n')
-					continue;
-				if (0 == strncmp(buff, "TRUE ", 5)) {
-					lines = strtol(buff + 5, nullptr, 0);
-					if (lines < 0) {
-						return MIDB_RDWR_ERROR;
-					}
-					last_pos = i + 2; /* newline_size? */
-					line_pos = 0;
-					break;
-				} else if (0 == strncmp(buff, "FALSE ", 6)) {
-					pback.reset();
-					EH.release(); // ?
-					*perrno = strtol(buff + 6, nullptr, 0);
-					return MIDB_RESULT_ERROR;
-				}
-			}
-			if (-1 == lines) {
-				if (offset > 1024) {
-					return MIDB_RDWR_ERROR;
-				}
-				continue;
-			}
-		}
-
-		for (int i = last_pos; i < offset; ++i) {
-			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
-				count ++;
-			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-				MITEM mitem;
-				if (get_digest_string(temp_line, line_pos,
-				    "file", mitem.mid, sizeof(mitem.mid)) &&
-				    get_digest_integer(temp_line, line_pos,
-				    "uid", &mitem.uid)) {
-					mitem.id = count;
-					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
-					mitem.f_digest = std::string_view(temp_line, line_pos);
-					auto mitem_uid = mitem.uid;
-					pxarray->append(std::move(mitem), mitem_uid);
-				} else {
-					b_format_error = TRUE;
-				}
-				line_pos = 0;
-			} else if (buff[i] != '\r' || i != offset - 1) {
-				temp_line[line_pos] = buff[i];
-				line_pos ++;
-				if (line_pos >= 257*1024) {
-					return MIDB_RDWR_ERROR;
-				}
-			}
-		}
-
-		if (count >= lines) {
-			pback.reset();
-			if (b_format_error) {
-				*perrno = -1;
-				return MIDB_RESULT_ERROR;
-			}
-			EH.release();
-			return MIDB_RESULT_OK;
-		}
-		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
-		if (static_cast<size_t>(offset) >= std::size(buff) - 1) {
-			if ('\r' != buff[offset - 1]) {
-				offset = 0;
-			} else {
-				buff[0] = '\r';
-				offset = 1;
-			}
-			last_pos = 0;
-		}
-	}
-} catch (const std::bad_alloc &) {
-	return MIDB_LOCAL_ENOMEM;
 }
 
 static int fetch_simple(const char *path, const char *folder,
