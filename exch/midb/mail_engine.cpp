@@ -2381,24 +2381,10 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
-static int kw_to_sort_field(const char *s)
-{
-	if (strcasecmp(s, "RCV") == 0) return FIELD_RECEIVED;
-	if (strcasecmp(s, "SUB") == 0) return FIELD_SUBJECT;
-	if (strcasecmp(s, "FRM") == 0) return FIELD_FROM;
-	if (strcasecmp(s, "RCP") == 0) return FIELD_RCPT;
-	if (strcasecmp(s, "SIZ") == 0) return FIELD_SIZE;
-	if (strcasecmp(s, "RED") == 0) return FIELD_READ;
-	if (strcasecmp(s, "FLG") == 0) return FIELD_FLAG;
-	if (strcasecmp(s, "UID") == 0) return FIELD_UID;
-	if (strcasecmp(s, "NON") == 0) return FIELD_NONE;
-	return -1;
-}
-
 /*
  * List mails in folder, returning the digests.
  * Request:
- * 	M-LIST <dir> <folder> <sort-field> <idx> <msgcount>
+ * 	M-LIST <dir> <folder> <idx> <msgcount>
  * Response:
  * 	TRUE <msgcount>
  * 	<ext digest> (repeat x msgcount)
@@ -2411,15 +2397,12 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	int total_mail;
 	char sql_string[1024];
 	
-	if ((argc != 4 && argc != 6) || strlen(argv[1]) >= 256 ||
+	if ((argc != 3 && argc != 5) || strlen(argv[1]) >= 256 ||
 	    strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	auto sort_field = kw_to_sort_field(argv[3]);
-	if (sort_field < FIELD_NONE)
-		return MIDB_E_PARAMETER_ERROR;
-	if (argc == 6) {
-		offset = strtol(argv[4], nullptr, 0);
-		length = strtol(argv[5], nullptr, 0);
+	if (argc == 5) {
+		offset = strtol(argv[3], nullptr, 0);
+		length = strtol(argv[4], nullptr, 0);
 		if (length < 0)
 			length = 0;
 	} else {
@@ -2432,7 +2415,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
 		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
@@ -3089,10 +3072,7 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	int idx, temp_len;
 	char temp_buff[1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
-	auto sort_field = kw_to_sort_field(argv[4]);
-	if (sort_field < FIELD_NONE)
+	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3100,7 +3080,7 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
 		return MIDB_E_MNG_SORTFOLDER;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " idx FROM messages WHERE mid_string=?");
@@ -3149,7 +3129,7 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 /*
  * Folder Details
  * Request:
- * 	P-FDDT <dir> <folder> <sortfield>
+ * 	P-FDDT <dir> <folder>
  * Response:
  * 	TRUE <msgcount> <#recents> <#unreads> <uidvalidity(folder_id)> <uidnext> <offset>
  * offset is first unread msg. minus 1?!
@@ -3165,9 +3145,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	char temp_buff[1024];
 	char sql_string[1024];
 	
-	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
-	if (kw_to_sort_field(argv[3]) < FIELD_NONE)
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3295,7 +3273,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 /*
  * List mails in folder, returning the MIDs.
  * Request:
- * 	P-SIML <dir> <folder> <sort-field> <idx> <msgcount>
+ * 	P-SIML <dir> <folder> <idx> <msgcount>
  * Response:
  * 	TRUE <msgcount>
  * 	<mid> <uid> <flags> (repeat x msgcount)
@@ -3315,15 +3293,12 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if ((argc != 4 && argc != 6) || strlen(argv[1]) >= 256 ||
+	if ((argc != 3 && argc != 5) || strlen(argv[1]) >= 256 ||
 	    strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	auto sort_field = kw_to_sort_field(argv[3]);
-	if (sort_field < FIELD_NONE)
-		return MIDB_E_PARAMETER_ERROR;
-	if (argc == 6) {
-		offset = strtol(argv[4], nullptr, 0);
-		length = strtol(argv[5], nullptr, 0);
+	if (argc == 5) {
+		offset = strtol(argv[3], nullptr, 0);
+		length = strtol(argv[4], nullptr, 0);
 		if (length < 0)
 			length = 0;
 	} else {
@@ -3336,7 +3311,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
 		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
@@ -3457,12 +3432,9 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
+	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	auto sort_field = kw_to_sort_field(argv[3]);
-	if (sort_field < FIELD_NONE)
-		return MIDB_E_PARAMETER_ERROR;
-	seq_node::value_type first = strtol(argv[4], nullptr, 0), last = strtol(argv[5], nullptr, 0);
+	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
 	if (last < 1 && last != seq_node::unset)
@@ -3475,7 +3447,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
 		return MIDB_E_MNG_SORTFOLDER;
 	if (first == seq_node::unset && last == seq_node::unset)
 		/* "MAX:MAX" */
@@ -3549,7 +3521,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 /*
  * List Deleted-flagged mails
  *
- * P-DELL <dir> <folder> <sort-field>
+ * P-DELL <dir> <folder>
  */
 static int mail_engine_pdell(int argc, char **argv, int sockd)
 {
@@ -3562,10 +3534,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
-	auto sort_field = kw_to_sort_field(argv[3]);
-	if (sort_field < FIELD_NONE)
+	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3573,7 +3542,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
 		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) FROM "
 		"messages WHERE folder_id=%llu AND deleted=1", LLU{folder_id});
@@ -3629,13 +3598,9 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	int total_mail = 0;
 	char sql_string[1024];
 	
-	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
+	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	auto sort_field = kw_to_sort_field(argv[3]);
-	if (sort_field < FIELD_NONE)
-		return MIDB_E_PARAMETER_ERROR;
-
-	seq_node::value_type first = strtol(argv[4], nullptr, 0), last = strtol(argv[5], nullptr, 0);
+	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
 	if (last < 1 && last != seq_node::unset)
@@ -3648,7 +3613,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
 		return MIDB_E_MNG_SORTFOLDER;
 	/* UNSET always means MAX, never MIN */
 	if (first == seq_node::unset && last == seq_node::unset)
