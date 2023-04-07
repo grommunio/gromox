@@ -132,15 +132,7 @@ using IDB_REF = std::unique_ptr<IDB_ITEM, idb_item_del>;
 enum {
 	FIELD_NONE = 0,
 	FIELD_UID,
-	FIELD_RECEIVED,
-	FIELD_SUBJECT,
-	FIELD_FROM,
-	FIELD_RCPT,
-	FIELD_SIZE,
-	FIELD_READ,
-	FIELD_FLAG
 };
-
 
 unsigned int g_midb_schema_upgrades;
 unsigned int g_midb_cache_interval, g_midb_reload_interval;
@@ -1386,32 +1378,15 @@ static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
 	       sqlite3_column_int64(pstmt, 0);
 }
 
-static const char *field_to_col(unsigned int sf)
-{
-	switch (sf) {
-	case FIELD_RECEIVED: return "received";
-	case FIELD_SUBJECT: return "subject";
-	case FIELD_FROM: return "sender";
-	case FIELD_RCPT: return "rcpt";
-	case FIELD_SIZE: return "size";
-	case FIELD_READ: return "read";
-	case FIELD_FLAG: return "flagged";
-	default: return nullptr;
-	}
-}
-
 static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
-	const char *folder_name, int sort_field)
+	const char *folder_name)
 {
 	uint32_t idx;
 	uint64_t folder_id;
 	char sql_string[1024];
-	
-	auto field_name = field_to_col(sort_field);
-	if (field_name == nullptr) {
-		field_name = "uid";
-		sort_field = FIELD_UID;
-	}
+	static constexpr unsigned int sort_field = FIELD_UID;
+	static const char field_name[] = "uid";
+
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " sort_field FROM folders WHERE name=?");
 	if (pstmt == nullptr)
@@ -2415,7 +2390,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
@@ -3080,7 +3055,7 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " idx FROM messages WHERE mid_string=?");
@@ -3311,7 +3286,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
@@ -3447,7 +3422,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	if (first == seq_node::unset && last == seq_node::unset)
 		/* "MAX:MAX" */
@@ -3542,7 +3517,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) FROM "
 		"messages WHERE folder_id=%llu AND deleted=1", LLU{folder_id});
@@ -3613,7 +3588,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2], FIELD_UID))
+	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	/* UNSET always means MAX, never MIN */
 	if (first == seq_node::unset && last == seq_node::unset)
