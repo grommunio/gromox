@@ -2278,8 +2278,11 @@ static void *midbme_scanwork(void *param)
 	std::unique_lock hhold(g_hash_lock);
 	for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 		auto pidb = &it->second;
-		if (pidb->sub_id != 0)
+		if (pidb->sub_id != 0 &&
+		    common_util_build_environment(it->first.c_str())) {
 			exmdb_client::unsubscribe_notification(it->first.c_str(), pidb->sub_id);
+			common_util_free_environment();
+		}
 		it = g_hash_table.erase(it);
 	}
 	hhold.unlock();
