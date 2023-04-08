@@ -2285,7 +2285,14 @@ static void *midbme_scanwork(void *param)
 	hhold.unlock();
 	return nullptr;
 }
-	
+
+/*
+ * Is the mailbox full?
+ * Request:
+ * 	M-CKFL <store-dir>
+ * Response:
+ * 	TRUE <0|1>
+ */
 static int mail_engine_mckfl(int argc, char **argv, int sockd)
 {
 	uint64_t quota;
@@ -2313,6 +2320,15 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE 0\r\n");
 }
 
+/*
+ * Reset the inactivity timer on midb.sqlite.
+ * What a stupid command name.
+ *
+ * Request:
+ * 	M-PING <store-dir>
+ * Response:
+ * 	TRUE
+ */
 static int mail_engine_mping(int argc, char **argv, int sockd)
 {
 	if (argc != 2 || strlen(argv[1]) >= 256)
@@ -2322,6 +2338,14 @@ static int mail_engine_mping(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
+/*
+ * Emit the list of folders in the store.
+ * Request:
+ * 	M-ENUM <store-dir>
+ * Response:
+ * 	TRUE <#folders>
+ * 	<folder-name>  // repeat x #folders
+ */
 static int mail_engine_menum(int argc, char **argv, int sockd)
 {
 	int count;
@@ -2995,7 +3019,9 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 /*
  * Create a folder.
  * Request:
- * 	M-MAKF <store-dir> <parent-folder> <child-name>
+ * 	M-MAKF <store-dir> <folder-path>
+ * folder-path: this specifies both the parent where to anchor at,
+ * and the new folder's name.
  * Response:
  * 	TRUE
  */
