@@ -1306,7 +1306,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						} catch (...) {
 							b_format_error = TRUE;
 						}
-						mitem.id = strtol(temp_line, nullptr, 0) + 1;
 						mitem.uid = strtol(pspace1, nullptr, 0);
 						mitem.flag_bits = FLAG_DELETED;
 						auto mitem_uid = mitem.uid;
@@ -1443,7 +1442,6 @@ static int fetch_simple(const char *path, const char *folder,
 						MITEM m;
 						m.mid = std::move(parts[0]);
 						m.uid = strtoul(parts[1].c_str(), nullptr, 0);
-						m.id = pseq->lo + count - 1;
 						m.flag_bits = s_to_flagbits(parts[2].c_str());
 						auto mitem_uid = m.uid;
 						pxarray->append(std::move(m), mitem_uid);
@@ -1589,7 +1587,6 @@ static int fetch_detail(const char *path, const char *folder,
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
-							pitem->id = pseq->lo + count - 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
 						}
 					} else {
@@ -1724,7 +1721,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									assert(num > 0);
 									auto pitem = pxarray->get_item(num - 1);
 									pitem->uid = uid;
-									pitem->id = strtol(temp_line, nullptr, 0) + 1;
 									try {
 										pitem->mid = pspace;
 									} catch (const std::bad_alloc &) {
@@ -1867,7 +1863,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
-							pitem->id = strtol(temp_line, nullptr, 0) + 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
 						}
 					} else {

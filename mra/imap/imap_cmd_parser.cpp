@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -32,6 +33,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/midb.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/range_set.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
@@ -2473,10 +2475,17 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (ret != 0)
 		return ret;
 	auto num = xarray.get_capacity();
+	if (num == 0) {
+		imap_parser_echo_modify(pcontext, nullptr);
+		return 1730;
+	}
 	std::vector<MITEM *> exp_list;
 	for (size_t i = 0; i < num; ++i) {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
+			continue;
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
 			continue;
 		exp_list.push_back(pitem);
 	}
@@ -2492,13 +2501,16 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
 			continue;
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
+			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-2030: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* %u EXPUNGE\r\n", pitem->id - del_num);
+			"* %u EXPUNGE\r\n", ct_item->id - del_num);
 		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 			return 1922;
 		del_num ++;
@@ -2570,36 +2582,56 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 }
 
 /**
- * Resolve SEQ_STAR in ranges
+ * Convert sequence numbers to a UID list, resolving "*" along the way.
  *
  * @range_string:	sequence numbers, e.g. "1,2:3,4:*,*:5,*:*,*"
- * @seq_list:		split-up range
+ * @uid_list:		split-up range
  */
 static errno_t parse_imap_seqx(const imap_context &ctx, char *range_string,
-    imap_seq_list &seq_list)
+    imap_seq_list &uid_list) try
 {
+	imap_seq_list seq_list;
 	auto err = parse_imap_seq(seq_list, range_string);
 	if (err != 0)
 		return err;
-	int seq_max = 0;
-	if (system_services_summary_folder(ctx.maildir, ctx.selected_folder,
-	    &seq_max, nullptr, nullptr, nullptr, nullptr, nullptr,
-	    nullptr) != MIDB_RESULT_OK)
-		return EIO;
 	for (auto &seq : seq_list) {
 		if (seq.lo == SEQ_STAR && seq.hi == SEQ_STAR) {
 			/* MAX:MAX */
-			seq.lo = seq.hi = seq_max;
+			seq.lo = seq.hi = ctx.contents.m_vec.size();
 		} else if (seq.lo == SEQ_STAR) {
 			/* MAX:99 = (99:MAX) */
 			seq.lo = seq.hi;
-			seq.hi = seq_max;
+			seq.hi = ctx.contents.m_vec.size();
 		} else if (seq.hi == SEQ_STAR) {
 			/* 99:MAX */
-			seq.hi = seq_max;
+			seq.hi = ctx.contents.m_vec.size();
+		}
+		if (seq.lo < 1)
+			seq.lo = 1;
+		if (seq.hi > ctx.contents.m_vec.size())
+			seq.hi = ctx.contents.m_vec.size();
+		for (size_t i = seq.lo; i <= seq.hi; ++i) {
+			auto uid = ctx.contents.m_vec[i-1].uid;
+			uid_list.insert(uid);
 		}
 	}
 	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
+static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
+    XARRAY &xa) try
+{
+	for (auto &range : range_list)
+		for (unsigned int uid = range.lo; uid <= range.hi; ++uid) {
+			auto mitem = ctx.contents.get_itemx(uid);
+			if (mitem != nullptr)
+				xa.append(MITEM{*mitem}, mitem->uid);
+		}
+	return 0;
+} catch (const std::bad_alloc &) {
+	return MIDB_LOCAL_ENOMEM;
 }
 
 int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -2611,22 +2643,21 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char* tmp_argv[128];
-	imap_seq_list list_seq;
+	imap_seq_list list_uid;
 	mdi_list list_data;
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_seq) != 0)
+	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0)
 		return 1800;
 	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
 		return 1800;
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = b_detail ?
-	           system_services_fetch_detail(pcontext->maildir,
-	           pcontext->selected_folder, list_seq, &xarray, &errnum) :
-	           system_services_fetch_simple(pcontext->maildir,
-	           pcontext->selected_folder, list_seq, &xarray, &errnum);
+	           system_services_fetch_detail_uid(pcontext->maildir,
+	           pcontext->selected_folder, list_uid, &xarray, &errnum) :
+	           fetch_trivial_uid(*pcontext, list_uid, xarray);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
@@ -2634,8 +2665,15 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
+		/*
+		 * fetch_detail_uid might have yielded new mails, so filter
+		 * with respect to current sequence assignment.
+		 */
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
+			continue;
 		result = imap_cmd_parser_process_fetch_item(pcontext, b_data,
-		         pitem, pitem->id, list_data);
+		         pitem, ct_item->id, list_data);
 		if (result != 0)
 			return result;
 	}
@@ -2676,11 +2714,11 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int flag_bits;
 	int temp_argc;
 	char *temp_argv[8];
-	imap_seq_list list_seq;
+	imap_seq_list list_uid;
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || parse_imap_seqx(*pcontext, argv[2], list_seq) != 0 ||
+	if (argc < 5 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
 	    !store_flagkeyword(argv[3]))
 		return 1800;
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
@@ -2712,16 +2750,19 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return 1807;
 	}
 	XARRAY xarray(g_alloc_xarray);
-	auto ssr = system_services_fetch_simple(pcontext->maildir,
-	           pcontext->selected_folder, list_seq, &xarray, &errnum);
+	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
+	           pcontext->selected_folder, list_uid, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
+			continue;
 		imap_cmd_parser_store_flags(argv[3], pitem->mid,
-			pitem->id, 0, flag_bits, pcontext);
+			ct_item->id, 0, flag_bits, pcontext);
 		imap_parser_bcast_flags(pcontext, pitem->mid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
@@ -2739,19 +2780,19 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
-	imap_seq_list list_seq;
+	imap_seq_list list_uid;
 	char uid_string[64*1024];
 	char uid_string1[64*1024];
     
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_seq) != 0 ||
+	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_uid) != 0 ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], temp_name))
 		return 1800;
 	XARRAY xarray(g_alloc_xarray);
-	auto ssr = system_services_fetch_simple(pcontext->maildir,
-	           pcontext->selected_folder, list_seq, &xarray, &errnum);
+	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
+	           pcontext->selected_folder, list_uid, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
@@ -2766,6 +2807,9 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
+		pitem = pcontext->contents.get_itemx(pitem->uid);
+		if (pitem == nullptr)
+			continue;
 		if (system_services_copy_mail(pcontext->maildir,
 		    pcontext->selected_folder, pitem->mid, temp_name,
 		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
@@ -2906,8 +2950,11 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
+			continue;
 		ret = imap_cmd_parser_process_fetch_item(pcontext, b_data,
-		      pitem, pitem->id, list_data);
+		      pitem, ct_item->id, list_data);
 		if (ret != 0)
 			return ret;
 	}
@@ -2979,8 +3026,11 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int num = xarray.get_capacity();
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
+			continue;
 		imap_cmd_parser_store_flags(argv[4], pitem->mid,
-			pitem->id, pitem->uid, flag_bits, pcontext);
+			ct_item->id, pitem->uid, flag_bits, pcontext);
 		imap_parser_bcast_flags(pcontext, pitem->mid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
@@ -3138,13 +3188,16 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		if (zero_uid_bit(*pitem) ||
 		    !icp_hint_seq(list_seq, pitem->uid, max_uid))
 			continue;
+		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
+		if (ct_item == nullptr)
+			continue;
 		auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-2086: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
 		string_length = gx_snprintf(buff, arsizeof(buff),
-			"* %u EXPUNGE\r\n", pitem->id - del_num);
+			"* %u EXPUNGE\r\n", ct_item->id - del_num);
 		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 			return 1922;
 		del_num ++;
