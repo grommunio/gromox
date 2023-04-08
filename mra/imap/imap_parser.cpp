@@ -1243,7 +1243,8 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	pcontext->b_modify = FALSE;
 	auto f_flags = std::move(pcontext->f_flags);
 	hl_hold.unlock();
-	
+
+	pcontext->contents.refresh(*pcontext, pcontext->selected_folder);
 	if (system_services_summary_folder(pcontext->maildir,
 	    pcontext->selected_folder, &exists, &recent, nullptr, nullptr,
 	    nullptr, nullptr, &err) == MIDB_RESULT_OK) {
@@ -1418,7 +1419,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) tr
 }
 
 imap_context::imap_context() :
-	stream(&g_blocks_allocator)
+	contents(g_alloc_xarray), stream(&g_blocks_allocator)
 {
 	auto pcontext = this;
     pcontext->connection.sockd = -1;

@@ -1456,6 +1456,33 @@ static int m2icode(int r, int e)
 	}
 }
 
+/**
+ * Get a listing of all mails in the folder to build the uid<->seqid mapping.
+ */
+int content_array::refresh(imap_context &ctx, const char *folder)
+{
+	XARRAY xa(g_alloc_xarray);
+	int errnum = 0;
+	imap_seq_list all_seq;
+	all_seq.insert(1, SEQ_STAR);
+	auto ssr = system_services_fetch_simple_uid(ctx.maildir, folder,
+	           all_seq, &xa, &errnum);
+	auto ret = m2icode(ssr, errnum);
+	if (ret != 0)
+		return ret;
+
+	auto &vec = xa.m_vec;
+	for (size_t i = 0; i < xa.m_vec.size(); ++i)
+		vec[i].id = i + 1;
+	n_recent = std::count_if(vec.cbegin(), vec.cend(),
+	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
+	auto iter = std::find_if(vec.cbegin(), vec.cend(),
+	            [](const MITEM &m) { return !(m.flag_bits & FLAG_SEEN); });
+	firstunseen = iter == vec.end() ? 0 : iter - vec.cbegin() + 1;
+	*this = std::move(xa);
+	return 0;
+}
+
 static int imap_cmd_parser_selex(int argc, char **argv,
     IMAP_CONTEXT *pcontext, bool readonly)
 {
@@ -1486,6 +1513,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
+	pcontext->contents.refresh(*pcontext, temp_name);
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
 	pcontext->b_readonly = readonly;

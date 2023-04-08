@@ -16,6 +16,7 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
+#include <gromox/xarray2.hpp>
 #define MAX_LINE_LENGTH (64 * 1024)
 
 struct MITEM;
@@ -85,9 +86,19 @@ struct dir_tree {
 using DIR_TREE = dir_tree;
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
+struct imap_context;
+struct content_array final : public XARRAY {
+	using XARRAY::XARRAY;
+	using XARRAY::operator=;
+	int refresh(imap_context &, const char *folder_name);
+	inline size_t n_exists() const { return m_vec.size(); }
+	unsigned int n_recent = 0, firstunseen = -1;
+};
+
 /**
  * @b_modify:	flag indicating that other clients concurrently modified the mailbox
- * 		(@f_flags is filled with changes)
+ * 		(@f_flags, @f_expunged_uids is filled with changes)
+ * @contents:	current mapping of seqid -> mid/uid for the currently selected folder
  */
 struct imap_context final : public schedule_context {
 	imap_context();
@@ -104,6 +115,7 @@ struct imap_context final : public schedule_context {
 	size_t write_length = 0, write_offset = 0;
 	time_t selected_time = 0;
 	char selected_folder[1024]{};
+	content_array contents;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	BOOL b_modify = false;
 	std::unordered_set<std::string> f_flags;
