@@ -1483,7 +1483,8 @@ static int m2icode(int r, int e)
 	}
 }
 
-int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_cmd_parser_selex(int argc, char **argv,
+    IMAP_CONTEXT *pcontext, bool readonly)
 {
 	int errnum;
 	int exists;
@@ -1514,7 +1515,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return ret;
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
-	pcontext->b_readonly = FALSE;
+	pcontext->b_readonly = readonly;
 	imap_parser_add_select(pcontext);
 
 	/* Effectively canonicalize(d) argv[2] */
@@ -1526,78 +1527,35 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		"* %d EXISTS\r\n"
 		"* %d RECENT\r\n"
 		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-		"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n",
-		exists, recent);
+		"* OK %s\r\n",
+		exists, recent, readonly ?
+		"[PERMANENTFLAGS ()] no permanent flags permitted" :
+		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited");
 	if (firstunseen != -1)
 		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 			"* OK [UNSEEN %d] message %d is first unseen\r\n",
 			firstunseen, firstunseen);
+	auto s_readonly = readonly ? "READ-ONLY" : "READ-WRITE";
+	auto s_command  = readonly ? "EXAMINE" : "SELECT";
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 		"* OK [UIDNEXT %d] predicted next UID\r\n"
 		"* LIST () \"/\" {%zu}\r\n%s\r\n"
-		"%s OK [READ-WRITE] SELECT completed\r\n",
-		LLU{uidvalid}, uidnext, strlen(temp_name), temp_name, argv[0]);
+		"%s OK [%s] %s completed\r\n",
+		LLU{uidvalid}, uidnext, strlen(temp_name), temp_name, argv[0],
+		s_readonly, s_command);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
 
+int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
+{
+	return imap_cmd_parser_selex(argc, argv, pcontext, false);
+}
+
 int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errnum;
-	int exists;
-	int recent;
-	unsigned int uidnext;
-	unsigned long uidvalid;
-	int firstunseen;
-	size_t string_length = 0;
-	char temp_name[1024];
-	char buff[1024];
-    
-	if (!pcontext->is_authed())
-		return 1804;
-	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
-	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[2], temp_name))
-		return 1800;
-	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
-		imap_parser_remove_select(pcontext);
-		pcontext->proto_stat = PROTO_STAT_AUTH;
-		pcontext->selected_folder[0] = '\0';
-	}
-	auto ssr = system_services_summary_folder(pcontext->maildir, temp_name,
-	           &exists, &recent, nullptr, &uidvalid, &uidnext,
-	           &firstunseen, &errnum);
-	auto ret = m2icode(ssr, errnum);
-	if (ret != 0)
-		return ret;
-	strcpy(pcontext->selected_folder, temp_name);
-	pcontext->proto_stat = PROTO_STAT_SELECT;
-	pcontext->b_readonly = TRUE;
-	imap_parser_add_select(pcontext);
-
-	/* Effectively canonicalize(d) argv[2] */
-	if (!imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, temp_name, buff))
-		return 1800;
-	gx_strlcpy(temp_name, buff, std::size(temp_name));
-
-	string_length = gx_snprintf(buff, arsizeof(buff),
-		"* %d EXISTS\r\n"
-		"* %d RECENT\r\n"
-		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
-		"* OK [PERMANENTFLAGS ()] no permanenet flag permitted\r\n",
-		exists, recent);
-	if (firstunseen != -1)
-		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
-			"* OK [UNSEEN %d] message %d is first unseen\r\n",
-			firstunseen, firstunseen);
-	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
-		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
-		"* OK [UIDNEXT %d] predicted next UID\r\n"
-		"* LIST () \"/\" {%zu}\r\n%s\r\n"
-		"%s OK [READ-ONLY] EXAMINE completed\r\n",
-		LLU{uidvalid}, uidnext, strlen(temp_name), temp_name, argv[0]);
-	imap_parser_safe_write(pcontext, buff, string_length);
-	return DISPATCH_CONTINUE;
+	return imap_cmd_parser_selex(argc, argv, pcontext, true);
 }
 
 static void writefolderlines(std::vector<std::string> &file) try
