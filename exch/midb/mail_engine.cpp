@@ -2383,7 +2383,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 /*
  * Digest listing for folder
  * Request:
- * 	M-LIST <store-dir> <folder-name> [<0-based seqid> <limit>]
+ * 	M-LIST <store-dir> <folder-name> <0-based seqid> <limit>
  * Response:
  * 	TRUE <#messages>         // but at most "limit"
  * 	<digest from ext/ file>  // repeat x #messages
@@ -2396,18 +2396,13 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	int total_mail;
 	char sql_string[1024];
 	
-	if ((argc != 3 && argc != 5) || strlen(argv[1]) >= 256 ||
+	if (argc != 5 || strlen(argv[1]) >= 256 ||
 	    strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	if (argc == 5) {
-		offset = strtol(argv[3], nullptr, 0);
-		length = strtol(argv[4], nullptr, 0);
-		if (length < 0)
-			length = 0;
-	} else {
-		offset = 0;
+	offset = strtol(argv[3], nullptr, 0);
+	length = strtol(argv[4], nullptr, 0);
+	if (length < 0)
 		length = 0;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
