@@ -3416,7 +3416,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 /*
  * Give summary of messages present in folder (via IMAP UID)
  * Request:
- * 	P-SIMU <store-dir> <folder-name> <1-based seqid(min)> <1-based seqid(max)>
+ * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)>
  * Response:
  * 	TRUE <#msgcount>
  * 	<0-based seqid> <mid> <uid> <flags>  // repeat x #msgcount
@@ -3460,11 +3460,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx",
-		         LLU{folder_id}, first);
-	else if (last == first)
-		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded "
-		         "FROM messages WHERE folder_id=%llu AND uid=%u",
 		         LLU{folder_id}, first);
 	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
