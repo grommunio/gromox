@@ -1189,7 +1189,7 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	}
 }
 
-void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const char *mid_string) try
+void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_string) try
 {
 	char buff[1024];
 	DOUBLE_LIST_NODE *pnode;

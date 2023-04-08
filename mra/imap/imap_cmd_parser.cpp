@@ -961,7 +961,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	return 0;
 }
 
-static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
+static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
 	int id, unsigned int uid, int flag_bits, IMAP_CONTEXT *pcontext)
 {
 	int errnum;

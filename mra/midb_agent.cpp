@@ -79,7 +79,7 @@ static int connect_midb(const char *host, uint16_t port);
 static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, const std::vector<MSG_UNIT *> &);
 static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
-static int get_mail_uid(const char *path, const char *folder, const char *mid_string, unsigned int *uid);
+static int get_mail_uid(const char *path, const char *folder, const std::string &mid, unsigned int *uid);
 static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *first_seen, int *perrno);
 static int make_folder(const char *path, const char *folder, int *perrno);
 static int remove_folder(const char *path, const char *folder, int *perrno);
@@ -96,10 +96,10 @@ static int fetch_simple(const char *path, const char *folder, const std::vector<
 static int fetch_detail(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int fetch_simple_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
 static int fetch_detail_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
-static int set_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
-static int unset_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
-static int get_mail_flags(const char *path, const char *folder, const char *mid_string, int *pflag_bits, int *perrno);
-static int copy_mail(const char *path, const char *src_folder, const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno);
+static int set_mail_flags(const char *path, const char *folder, const std::string &mid, int flag_bits, int *perrno);
+static int unset_mail_flags(const char *path, const char *folder, const std::string &mid, int flag_bits, int *perrno);
+static int get_mail_flags(const char *path, const char *folder, const std::string &mid, int *pflag_bits, int *perrno);
+static int copy_mail(const char *path, const char *src_folder, const std::string &src_mid, const char *dst_folder, std::string &dst_mid, int *perrno);
 static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, std::string &ret_buff, int *perrno);
 static BOOL check_full(const char *path);
@@ -724,7 +724,7 @@ static int get_mail_id(const char *path, const char *folder,
 }
 
 static int get_mail_uid(const char *path, const char *folder,
-    const char *mid_string, unsigned int *puid)
+    const std::string &mid_string, unsigned int *puid)
 {
 	char buff[1024];
 
@@ -732,7 +732,7 @@ static int get_mail_uid(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNID %s %s %s\r\n",
-				path, folder, mid_string);
+	              path, folder, mid_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -1173,7 +1173,6 @@ static int remove_mail(const char *path, const char *folder,
     const std::vector<MITEM *> &plist, int *perrno)
 {
 	int cmd_len;
-	int temp_len;
 	char buff[128*1025];
 
 	if (plist.empty())
@@ -1187,8 +1186,8 @@ static int remove_mail(const char *path, const char *folder,
 	for (auto pitem : plist) {
 		buff[length] = ' ';
 		length ++;
-		temp_len = strlen(pitem->mid);
-		memcpy(buff + length, pitem->mid, temp_len);
+		auto temp_len = pitem->mid.size();
+		memcpy(&buff[length], pitem->mid.c_str(), temp_len);
 		length += temp_len;
 		if (length <= 128*1024)
 			continue;
@@ -1249,12 +1248,11 @@ static unsigned int s_to_flagbits(const char *s)
 	return fl;
 }
 
-static bool get_digest_string(const Json::Value &jv, const char *tag,
-    char *buff, size_t buff_len)
+static bool get_digest_string(const Json::Value &jv, const char *tag, std::string &buff)
 {
 	if (!jv.isMember(tag))
 		return false;
-	gx_strlcpy(buff, jv[tag].asCString(), buff_len);
+	buff = jv[tag].asString();
 	return true;
 }
 
@@ -1371,7 +1369,11 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						pspace ++;
 						pspace1 ++;
 						MITEM mitem;
-						gx_strlcpy(mitem.mid, pspace, arsizeof(mitem.mid));
+						try {
+							mitem.mid = pspace;
+						} catch (...) {
+							b_format_error = TRUE;
+						}
 						mitem.id = strtol(temp_line, nullptr, 0) + 1;
 						mitem.uid = strtol(pspace1, nullptr, 0);
 						mitem.flag_bits = FLAG_DELETED;
@@ -1521,7 +1523,11 @@ static int fetch_simple(const char *path, const char *folder,
 								auto pitem = pxarray->get_item(num - 1);
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
-								gx_strlcpy(pitem->mid, temp_line, arsizeof(pitem->mid));
+								try {
+									pitem->mid = temp_line;
+								} catch (const std::bad_alloc &) {
+									b_format_error = TRUE;
+								}
 								pitem->flag_bits = s_to_flagbits(pspace1);
 							}
 						} else {
@@ -1662,7 +1668,7 @@ static int fetch_detail(const char *path, const char *folder,
 					MITEM mitem;
 					if (!json_from_str(std::string_view(temp_line, line_pos), mitem.digest)) {
 						b_format_error = TRUE;
-					} else if (get_digest_string(mitem.digest, "file", mitem.mid, std::size(mitem.mid)) &&
+					} else if (get_digest_string(mitem.digest, "file", mitem.mid) &&
 					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
 						auto mitem_uid = mitem.uid;
 						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
@@ -1814,7 +1820,11 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									auto pitem = pxarray->get_item(num - 1);
 									pitem->uid = uid;
 									pitem->id = strtol(temp_line, nullptr, 0) + 1;
-									gx_strlcpy(pitem->mid, pspace, arsizeof(pitem->mid));
+									try {
+										pitem->mid = pspace;
+									} catch (const std::bad_alloc &) {
+										b_format_error = TRUE;
+									}
 									pitem->flag_bits = s_to_flagbits(pspace2);
 								}
 							} else {
@@ -1951,7 +1961,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					if (pspace == nullptr ||
 					    !json_from_str(std::string_view(pspace, temp_len), mitem.digest)) {
 						b_format_error = TRUE;
-					} else if (get_digest_string(mitem.digest, "file", mitem.mid, std::size(mitem.mid)) &&
+					} else if (get_digest_string(mitem.digest, "file", mitem.mid) &&
 					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
@@ -2006,7 +2016,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 }
 
 static int set_mail_flags(const char *path, const char *folder,
-    const char *mid_string, int flag_bits, int *perrno)
+    const std::string &mid_string, int flag_bits, int *perrno)
 {
 	char buff[1024];
 	char flags_string[16];
@@ -2050,7 +2060,7 @@ static int set_mail_flags(const char *path, const char *folder,
 	length ++;
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
-				path, folder, mid_string, flags_string);
+	         path, folder, mid_string.c_str(), flags_string);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -2066,7 +2076,7 @@ static int set_mail_flags(const char *path, const char *folder,
 }
 	
 static int unset_mail_flags(const char *path, const char *folder,
-    const char *mid_string, int flag_bits, int *perrno)
+    const std::string &mid_string, int flag_bits, int *perrno)
 {
 	char buff[1024];
 	char flags_string[16];
@@ -2110,7 +2120,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 	length ++;
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
-				path, folder, mid_string, flags_string);
+	         path, folder, mid_string.c_str(), flags_string);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -2126,7 +2136,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 }
 	
 static int get_mail_flags(const char *path, const char *folder,
-    const char *mid_string, int *pflag_bits, int *perrno)
+    const std::string &mid_string, int *pflag_bits, int *perrno)
 {
 	char buff[1024];
 
@@ -2134,7 +2144,7 @@ static int get_mail_flags(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-GFLG %s %s %s\r\n",
-				path, folder, mid_string);
+	              path, folder, mid_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -2153,7 +2163,8 @@ static int get_mail_flags(const char *path, const char *folder,
 }
 	
 static int copy_mail(const char *path, const char *src_folder,
-    const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno)
+    const std::string &mid_string, const char *dst_folder,
+    std::string &dst_mid, int *perrno) try
 {
 	char buff[1024];
 
@@ -2161,13 +2172,13 @@ static int copy_mail(const char *path, const char *src_folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-COPY %s %s %s %s\r\n",
-				path, src_folder, mid_string, dst_folder);
+	              path, src_folder, mid_string.c_str(), dst_folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
-		strcpy(dst_mid, buff + 5);
+		dst_mid = &buff[5];
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
@@ -2175,6 +2186,8 @@ static int copy_mail(const char *path, const char *src_folder,
 		return MIDB_RESULT_ERROR;
 	}
 	return MIDB_RDWR_ERROR;
+} catch (const std::bad_alloc &) {
+	return MIDB_LOCAL_ENOMEM;
 }
 
 static ssize_t read_line(int sockd, char *buff, size_t length)

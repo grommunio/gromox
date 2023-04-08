@@ -9,7 +9,7 @@
 #include <json/value.h>
 
 struct MITEM {
-	char mid[128]{};
+	std::string mid;
 	int id = 0, uid = 0;
 	char flag_bits = 0;
 	Json::Value digest;
