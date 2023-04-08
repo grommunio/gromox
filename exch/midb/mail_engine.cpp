@@ -2451,60 +2451,6 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	return 0;
 }
 
-/*
- * UID listing for folder
- * Request:
- * 	M-UIDL <store-dir> <folder-name>
- * Response:
- * 	TRUE <#messages>
- * 	<mid> <uid>  // repeat x #messages
- */
-static int mail_engine_muidl(int argc, char **argv, int sockd) try
-{
-	using idl_node = std::pair<std::string /* mid_string */, uint32_t /* size */>;
-	int result;
-	char sql_string[1024];
-	char list_buff[256*1024];
-	
-	auto pidb = mail_engine_get_idb(argv[1]);
-	if (pidb == nullptr)
-		return MIDB_E_HASHTABLE_FULL;
-	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
-	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string, size FROM"
-	          " messages WHERE folder_id=%llu ORDER BY uid", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-
-	std::vector<idl_node> tmp_list;
-	while ((result = pstmt.step()) == SQLITE_ROW)
-		tmp_list.emplace_back(pstmt.col_text(0), pstmt.col_int64(1));
-	pstmt.finalize();
-	if (result != SQLITE_DONE)
-		return MIDB_E_SQLUNEXP;
-	auto offset = snprintf(list_buff, std::size(list_buff),
-	              "TRUE %zu\r\n", tmp_list.size());
-	for (const auto &idl : tmp_list) {
-		char temp_line[512];
-		auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%s %u\r\n",
-		                idl.first.c_str(), idl.second);
-		if (256*1024 - offset < temp_len) {
-			auto ret = cmd_write(sockd, list_buff, offset);
-			if (ret != 0)
-				return ret;
-			offset = 0;
-		}
-		memcpy(list_buff + offset, temp_line, temp_len);
-		offset += temp_len;
-	}
-	return cmd_write(sockd, list_buff, offset);
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1209: ENOMEM");
-	return MIDB_E_NO_MEMORY;
-}
-
 static bool system_services_lang_to_charset(const char *lang, char (&charset)[32])
 {
 	auto c = lang_to_charset(lang);
@@ -3325,8 +3271,8 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
  * Request:
  * 	P-SIML <store-dir> <folder-name> <0-based seqid> <limit>
  * Response:
- * 	TRUE <#messages>     // but at most "limit"
- * 	<mid> <uid> <flags>  // repeat x #messages
+ * 	TRUE <#messages>            // but at most "limit"
+ * 	<mid> <uid> <flags> <size>  // repeat x #messages
  */
 static int mail_engine_psiml(int argc, char **argv, int sockd)
 {
@@ -3377,7 +3323,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		length = total_mail - idx1 + 1;
 	idx2 = idx1 + length - 1;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string, uid, replied, "
-			"unsent, flagged, deleted, read, recent, forwarded FROM "
+	         "unsent, flagged, deleted, read, recent, forwarded, size FROM "
 			"messages WHERE folder_id=%llu AND idx>=%d AND idx<=%d "
 			"ORDER BY idx", LLU{folder_id}, idx1, idx2);
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -3406,8 +3352,8 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		flags_buff[flags_len++] = ')';
 		flags_buff[flags_len] = '\0';
 		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
-			"%s %u %s\r\n", mid_string, uid,
-			flags_buff);
+		           "%s %u %s %u\r\n", mid_string, uid, flags_buff,
+		           static_cast<unsigned int>(pstmt.col_uint64(9)));
 		if (256*1024 - temp_len < buff_len) {
 			auto ret = cmd_write(sockd, temp_buff, temp_len);
 			if (ret != 0)
@@ -4732,7 +4678,6 @@ int mail_engine_run()
 	}
 	pthread_setname_np(g_scan_tid, "mail_engine");
 	cmd_parser_register_command("M-LIST", {mail_engine_mlist, 5});
-	cmd_parser_register_command("M-UIDL", {mail_engine_muidl, 3});
 	cmd_parser_register_command("M-INST", {mail_engine_minst, 6});
 	cmd_parser_register_command("M-DELE", {mail_engine_mdele, 4, INT_MAX});
 	cmd_parser_register_command("M-COPY", {mail_engine_mcopy, 5});

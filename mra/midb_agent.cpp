@@ -393,7 +393,6 @@ static int list_mail(const char *path, const char *folder,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	char *pspace;
 	int tv_msec;
 	char temp_line[512];
 	char buff[256*1025];
@@ -403,7 +402,7 @@ static int list_mail(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([&]() { parray.clear(); });
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-UIDL %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s 0 0\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		return MIDB_RDWR_ERROR;
 	}
@@ -460,23 +459,17 @@ static int list_mail(const char *path, const char *folder,
 				count ++;
 				continue;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-				pspace = static_cast<char *>(memchr(temp_line, ' ', line_pos));
-				if (NULL == pspace) {
-					return MIDB_RDWR_ERROR;
-				}
-				*pspace = '\0';
-				if (strlen(temp_line) > 127) {
-					return MIDB_RDWR_ERROR;
-				}
-				pspace ++;
 				temp_line[line_pos] = '\0';
 				try {
-					MSG_UNIT msg{temp_line};
-					msg.size = strtol(pspace, nullptr, 0);
+					auto parts = gx_split(temp_line, ' ');
+					if (parts.size() != 4)
+						throw 0;
+					MSG_UNIT msg{std::move(parts[0])};
+					msg.size = strtoul(parts[3].c_str(), nullptr, 0);
 					auto msg_size = msg.size;
 					parray.push_back(std::move(msg));
 					*psize += msg_size;
-				} catch (const std::bad_alloc &) {
+				} catch (...) {
 					b_fail = TRUE;
 				}
 				line_pos = 0;
@@ -1428,8 +1421,6 @@ static int fetch_simple(const char *path, const char *folder,
 	int read_len;
 	int line_pos;
 	int tv_msec;
-	char *pspace;
-	char *pspace1;
 	char buff[1024];
 	char temp_line[1024];
 	BOOL b_format_error;
@@ -1508,32 +1499,18 @@ static int fetch_simple(const char *path, const char *folder,
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					temp_line[line_pos] = '\0';
-					pspace = strchr(temp_line, ' ');
-					if (NULL != pspace) {
-						pspace1 = strchr(pspace + 1, ' ');
-						if (NULL != pspace1) {
-							*pspace = '\0';
-							*pspace1 = '\0';
-							pspace ++;
-							pspace1 ++;
-							int uid = strtol(pspace, nullptr, 0);
-							if (pxarray->append(MITEM{}, uid) >= 0) {
-								auto num = pxarray->get_capacity();
-								assert(num > 0);
-								auto pitem = pxarray->get_item(num - 1);
-								pitem->uid = uid;
-								pitem->id = pseq->min + count - 1;
-								try {
-									pitem->mid = temp_line;
-								} catch (const std::bad_alloc &) {
-									b_format_error = TRUE;
-								}
-								pitem->flag_bits = s_to_flagbits(pspace1);
-							}
-						} else {
-							b_format_error = TRUE;
-						}
-					} else {
+					try {
+						auto parts = gx_split(temp_line, ' ');
+						if (parts.size() != 4)
+							throw 0;
+						MITEM m;
+						m.mid = std::move(parts[0]);
+						m.uid = strtoul(parts[1].c_str(), nullptr, 0);
+						m.id = pseq->min + count - 1;
+						m.flag_bits = s_to_flagbits(parts[2].c_str());
+						auto mitem_uid = m.uid;
+						pxarray->append(std::move(m), mitem_uid);
+					} catch (...) {
 						b_format_error = TRUE;
 					}
 					line_pos = 0;
