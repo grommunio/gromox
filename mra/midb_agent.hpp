@@ -15,7 +15,5 @@ enum {
 	FLAG_DELETED  = 0x8,
 	FLAG_SEEN     = 0x10,
 	FLAG_DRAFT    = 0x20,
-	/* bits for controlling of f_digest, if not set, 
-	means mem_file is not initialized. */
 	FLAG_LOADED   = 0x80,
 };

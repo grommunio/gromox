@@ -705,9 +705,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		}
 		if (eml_path.size() == 0)
 			return 1923;
-		Json::Value digest;
-		if (!json_from_str(pitem->f_digest, digest) ||
-		    !mjson.load_from_json(digest, eml_path.c_str()))
+		if (!mjson.load_from_json(pitem->digest, eml_path.c_str()))
 			return 1923;
 	}
 

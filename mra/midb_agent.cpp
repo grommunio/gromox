@@ -30,6 +30,7 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/scope.hpp>
@@ -75,8 +76,6 @@ struct BACK_SVR {
 static void *midbag_scanwork(void *);
 static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
-static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
-static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
 static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, const std::vector<MSG_UNIT *> &);
 static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
@@ -1250,21 +1249,37 @@ static unsigned int s_to_flagbits(const char *s)
 	return fl;
 }
 
-static unsigned int di_to_flagbits(const char *ln, int pos)
+static bool get_digest_string(const Json::Value &jv, const char *tag,
+    char *buff, size_t buff_len)
 {
-	unsigned int fl = 0;
-	int v;
-	if (get_digest_integer(ln, pos, "replied", &v) && v == 1)
+	if (!jv.isMember(tag))
+		return false;
+	gx_strlcpy(buff, jv[tag].asCString(), buff_len);
+	return true;
+}
+
+static bool get_digest_integer(const Json::Value &jv, const char *tag, int &i)
+{
+	if (!jv.isMember(tag))
+		return false;
+	i = jv[tag].asUInt();
+	return true;
+}
+
+static unsigned int di_to_flagbits(const Json::Value &jv)
+{
+	unsigned int fl = 0, v;
+	if (jv.isMember("replied") && (v = jv["replied"].asUInt()) != 0)
 		fl |= FLAG_ANSWERED;
-	if (get_digest_integer(ln, pos, "unsent", &v) && v == 1)
+	if (jv.isMember("unsent") && (v = jv["unsent"].asUInt()) != 0)
 		fl |= FLAG_DRAFT;
-	if (get_digest_integer(ln, pos, "flag", &v) && v == 1)
+	if (jv.isMember("flag") && (v = jv["flag"].asUInt()) != 0)
 		fl |= FLAG_FLAGGED;
-	if (get_digest_integer(ln, pos, "deleted", &v) && v == 1)
+	if (jv.isMember("deleted") && (v = jv["deleted"].asUInt()) != 0)
 		fl |= FLAG_DELETED;
-	if (get_digest_integer(ln, pos, "read", &v) && v == 1)
+	if (jv.isMember("read") && (v = jv["read"].asUInt()) != 0)
 		fl |= FLAG_SEEN;
-	if (get_digest_integer(ln, pos, "recent", &v) && v == 1)
+	if (jv.isMember("recent") && (v = jv["recent"].asUInt()) != 0)
 		fl |= FLAG_RECENT;
 	return fl;
 }
@@ -1645,18 +1660,17 @@ static int fetch_detail(const char *path, const char *folder,
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					MITEM mitem;
-					if (get_digest_string(temp_line, line_pos,
-					    "file", mitem.mid, sizeof(mitem.mid)) &&
-					    get_digest_integer(temp_line, line_pos,
-					    "uid", &mitem.uid)) {
+					if (!json_from_str(std::string_view(temp_line, line_pos), mitem.digest)) {
+						b_format_error = TRUE;
+					} else if (get_digest_string(mitem.digest, "file", mitem.mid, std::size(mitem.mid)) &&
+					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
 						auto mitem_uid = mitem.uid;
 						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = pseq->min + count - 1;
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
-							pitem->f_digest = std::string_view(temp_line, line_pos);
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(mitem.digest);
 						}
 					} else {
 						b_format_error = TRUE;
@@ -1934,10 +1948,11 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					pspace = search_string(temp_line, " ", 16);
 					temp_len = line_pos - (pspace + 1 - temp_line);
 					MITEM mitem;
-					if (pspace != nullptr && get_digest_string(pspace,
-					    temp_len, "file", mitem.mid, sizeof(mitem.mid)) && 
-					    get_digest_integer(pspace, temp_len, "uid",
-					    &mitem.uid)) {
+					if (pspace == nullptr ||
+					    !json_from_str(std::string_view(pspace, temp_len), mitem.digest)) {
+						b_format_error = TRUE;
+					} else if (get_digest_string(mitem.digest, "file", mitem.mid, std::size(mitem.mid)) &&
+					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
 						auto mitem_uid = mitem.uid;
@@ -1946,8 +1961,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pspace, temp_len);
-							pitem->f_digest = std::string_view(pspace, temp_len);
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(mitem.digest);
 						}
 					} else {
 						b_format_error = TRUE;
@@ -2282,73 +2296,4 @@ static int connect_midb(const char *ip_addr, uint16_t port)
 		return -1;
 	}
 	return sockd;
-}
-
-static BOOL get_digest_string(const char *src, int length, const char *tag,
-    char *buff, int buff_len)
-{
-	char *ptr1, *ptr2;
-	char temp_tag[256];
-	
-	auto len = gx_snprintf(temp_tag, arsizeof(temp_tag), "\"%s\"", tag);
-	ptr1 = search_string(src, temp_tag, length);
-	if (NULL == ptr1) {
-		return FALSE;
-	}
-
-	ptr1 += len;
-	ptr1 = static_cast<char *>(memchr(ptr1, ':', length - (ptr1 - src)));
-	if (NULL == ptr1) {
-		return FALSE;
-	}
-	ptr1 ++;
-	while (' ' == *ptr1 || '\t' == *ptr1) {
-		ptr1 ++;
-		if (ptr1 - src >= length) {
-			return FALSE;
-		}
-	}
-	ptr2 = ptr1;
-	if ('"' == *ptr2) {
-		do {
-			ptr2 ++;
-			if (ptr2 - src >= length) {
-				return FALSE;
-			}
-		} while ('"' != *ptr2 || '\\' == *(ptr2 - 1));
-	}
-	while (',' != *ptr2 && '}' != *ptr2) {
-		ptr2 ++;
-		if (ptr2 - src >= length) {
-			return FALSE;
-		}
-	}
-
-	if (ptr2 - ptr1 <= buff_len - 1) {
-		len = ptr2 - ptr1;
-	} else {
-		len = buff_len - 1;
-	}
-	memcpy(buff, ptr1, len);
-	buff[len] = '\0';
-	if ('"' == buff[0]) {
-		len --;
-		memmove(buff, buff + 1, len);
-		buff[len] = '\0';
-	}
-	if ('"' == buff[len - 1]) {
-		buff[len - 1] = '\0';
-	}
-	return TRUE;
-}
-
-static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger)
-{
-	char num_buff[32];
-	
-	if (get_digest_string(src, length, tag, num_buff, 32)) {
-		*pinteger = strtol(num_buff, nullptr, 0);
-		return TRUE;
-	}
-	return FALSE;
 }

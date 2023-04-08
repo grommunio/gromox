@@ -6,12 +6,13 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <json/value.h>
 
 struct MITEM {
 	char mid[128]{};
 	int id = 0, uid = 0;
 	char flag_bits = 0;
-	std::string f_digest;
+	Json::Value digest;
 };
 
 struct GX_EXPORT XARRAY {
