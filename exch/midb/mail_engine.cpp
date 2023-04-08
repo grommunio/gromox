@@ -3353,7 +3353,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 /*
  * Give summary of messages present in folder
  * Request:
- * 	P-SIML <store-dir> <folder-name> [<0-based seqid> <limit>]
+ * 	P-SIML <store-dir> <folder-name> <0-based seqid> <limit>
  * Response:
  * 	TRUE <#messages>     // but at most "limit"
  * 	<mid> <uid> <flags>  // repeat x #messages
@@ -3373,18 +3373,13 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if ((argc != 3 && argc != 5) || strlen(argv[1]) >= 256 ||
+	if (argc != 5 || strlen(argv[1]) >= 256 ||
 	    strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
-	if (argc == 5) {
-		offset = strtol(argv[3], nullptr, 0);
-		length = strtol(argv[4], nullptr, 0);
-		if (length < 0)
-			length = 0;
-	} else {
-		offset = 0;
+	offset = strtol(argv[3], nullptr, 0);
+	length = strtol(argv[4], nullptr, 0);
+	if (length < 0)
 		length = 0;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
