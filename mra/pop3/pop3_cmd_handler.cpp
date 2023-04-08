@@ -163,7 +163,9 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	}
 
 	safe_memset(temp_password, 0, std::size(temp_password));
-	if (target_mbox != nullptr) {
+	if (target_mbox == nullptr) {
+		mres = std::move(mres_auth);
+	} else {
 		if (system_services_auth_meta(target_mbox, 0, mres) != 0)
 			return 1715 | DISPATCH_CONTINUE;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
