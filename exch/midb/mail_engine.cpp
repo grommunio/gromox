@@ -2300,8 +2300,6 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	TPROPVAL_ARRAY propvals;
 	uint32_t tmp_proptags[2];
 	
-	if (argc != 2 || strlen(argv[1]) >= 256)
-		return MIDB_E_PARAMETER_ERROR;
 	proptags.count = 2;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PR_PROHIBIT_RECEIVE_QUOTA;
@@ -2331,8 +2329,6 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
  */
 static int mail_engine_mping(int argc, char **argv, int sockd)
 {
-	if (argc != 2 || strlen(argv[1]) >= 256)
-		return MIDB_E_PARAMETER_ERROR;
 	mail_engine_get_idb(argv[1]);
 	exmdb_client::ping_store(argv[1]);
 	return cmd_write(sockd, "TRUE\r\n");
@@ -2354,8 +2350,6 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 2 || strlen(argv[1]) >= 256)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2396,9 +2390,6 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	int total_mail;
 	char sql_string[1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 ||
-	    strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	offset = strtol(argv[3], nullptr, 0);
 	length = strtol(argv[4], nullptr, 0);
 	if (length < 0)
@@ -2472,8 +2463,6 @@ static int mail_engine_muidl(int argc, char **argv, int sockd) try
 	char sql_string[1024];
 	char list_buff[256*1024];
 	
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -2544,8 +2533,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	uint64_t message_id;
 	char sql_string[1024];
 	
-	if (argc != 6 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	uint8_t b_unsent = strchr(argv[4], 'U') != nullptr;
 	uint8_t b_read = strchr(argv[4], 'S') != nullptr;
 	if (strcmp(argv[2], "draft") == 0)
@@ -2671,8 +2658,6 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	BOOL b_partial;
 	EID_ARRAY message_ids;
 
-	if (argc < 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	message_ids.count = 0;
 	message_ids.pids = cu_alloc<uint64_t>(argc - 3);
 	if (message_ids.pids == nullptr)
@@ -2726,8 +2711,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	uint64_t message_id;
 	char sql_string[1024];
 
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024 ||
-	    strlen(argv[4]) >= 1024)
+	if (strlen(argv[4]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
 	std::string eml_path;
 	try {
@@ -2911,8 +2895,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL propval_buff[5];
 
-	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024 ||
-	    strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
+	if (strlen(argv[3]) >= 1024 || strcmp(argv[2], argv[3]) == 0)
 		return MIDB_E_PARAMETER_ERROR;
 	if (spname_to_fid(argv[2]) != 0)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3030,8 +3013,6 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	char decoded_name[512];
 	char encoded_name[1024];
 
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	if (!decode_hex_binary(argv[2], decoded_name, arsizeof(decoded_name)))
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -3088,8 +3069,6 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	BOOL b_result;
 	BOOL b_partial;
 	
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	if (spname_to_fid(argv[2]) != 0)
 		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -3124,8 +3103,6 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	int idx, temp_len;
 	char temp_buff[1024];
 	
-	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3162,8 +3139,6 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	uint32_t uid;
 	char temp_buff[1024];
 
-	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3203,8 +3178,6 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	char temp_buff[1024];
 	char sql_string[1024];
 	
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3271,8 +3244,6 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 {
 	char sql_string[1024];
 
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3297,8 +3268,6 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
 {
 	char sql_string[1024];
 
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3328,8 +3297,6 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 2 || strlen(argv[1]) >= 256)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3373,9 +3340,6 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 ||
-	    strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	offset = strtol(argv[3], nullptr, 0);
 	length = strtol(argv[4], nullptr, 0);
 	if (length < 0)
@@ -3515,8 +3479,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3620,8 +3582,6 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	char sql_string[1024];
 	char temp_buff[256*1024];
 	
-	if (argc != 3 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3692,8 +3652,6 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	int total_mail = 0;
 	char sql_string[1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
 	if (first < 1 && first != seq_node::unset)
 		return MIDB_E_PARAMETER_ERROR;
@@ -3790,8 +3748,6 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3877,8 +3833,6 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3966,8 +3920,6 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 	char flags_buff[32];
 	char temp_buff[1024];
 
-	if (argc != 4 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -4029,8 +3981,6 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	char tmp_buff[16*1024];
 	char list_buff[256*1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
 	    decode64(argv[4], tmp_len, tmp_buff, arsizeof(tmp_buff), &decode_len) != 0)
@@ -4110,8 +4060,6 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	char tmp_buff[16*1024];
 	char list_buff[256*1024];
 	
-	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
-		return MIDB_E_PARAMETER_ERROR;
 	auto tmp_len = strlen(argv[4]);
 	if (tmp_len >= sizeof(tmp_buff) ||
 	    decode64(argv[4], tmp_len, tmp_buff, arsizeof(tmp_buff), &decode_len) != 0)
@@ -4177,8 +4125,6 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
  */
 static int mail_engine_xunld(int argc, char **argv, int sockd)
 {
-	if (argc != 2)
-		return MIDB_E_PARAMETER_ERROR;
 	std::lock_guard hhold(g_hash_lock);
 	auto it = g_hash_table.find(argv[1]);
 	if (it == g_hash_table.end())
@@ -4201,8 +4147,6 @@ static int mail_engine_xunld(int argc, char **argv, int sockd)
  */
 static int mail_engine_xrsym(int argc, char **argv, int sockd)
 {
-	if (argc != 2)
-		return MIDB_E_PARAMETER_ERROR;
 	auto idb = mail_engine_peek_idb(argv[1]);
 	if (idb == nullptr) {
 		mail_engine_get_idb(argv[1], true);
@@ -4225,8 +4169,6 @@ static int mail_engine_xrsym(int argc, char **argv, int sockd)
  */
 static int mail_engine_xrsyf(int argc, char **argv, int sockd)
 {
-	if (argc != 3)
-		return MIDB_E_PARAMETER_ERROR;
 	auto idb = mail_engine_get_idb(argv[1]);
 	if (idb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -4786,35 +4728,35 @@ int mail_engine_run()
 		return -5;
 	}
 	pthread_setname_np(g_scan_tid, "mail_engine");
-	cmd_parser_register_command("M-LIST", mail_engine_mlist);
-	cmd_parser_register_command("M-UIDL", mail_engine_muidl);
-	cmd_parser_register_command("M-INST", mail_engine_minst);
-	cmd_parser_register_command("M-DELE", mail_engine_mdele);
-	cmd_parser_register_command("M-COPY", mail_engine_mcopy);
-	cmd_parser_register_command("M-MAKF", mail_engine_mmakf);
-	cmd_parser_register_command("M-REMF", mail_engine_mremf);
-	cmd_parser_register_command("M-RENF", mail_engine_mrenf);
-	cmd_parser_register_command("M-ENUM", mail_engine_menum);
-	cmd_parser_register_command("M-CKFL", mail_engine_mckfl);
-	cmd_parser_register_command("M-PING", mail_engine_mping);
-	cmd_parser_register_command("P-OFST", mail_engine_pofst);
-	cmd_parser_register_command("P-UNID", mail_engine_punid);
-	cmd_parser_register_command("P-FDDT", mail_engine_pfddt);
-	cmd_parser_register_command("P-SUBF", mail_engine_psubf);
-	cmd_parser_register_command("P-UNSF", mail_engine_punsf);
-	cmd_parser_register_command("P-SUBL", mail_engine_psubl);
-	cmd_parser_register_command("P-SIML", mail_engine_psiml);
-	cmd_parser_register_command("P-SIMU", mail_engine_psimu);
-	cmd_parser_register_command("P-DELL", mail_engine_pdell);
-	cmd_parser_register_command("P-DTLU", mail_engine_pdtlu);
-	cmd_parser_register_command("P-SFLG", mail_engine_psflg);
-	cmd_parser_register_command("P-RFLG", mail_engine_prflg);
-	cmd_parser_register_command("P-GFLG", mail_engine_pgflg);
-	cmd_parser_register_command("P-SRHL", mail_engine_psrhl);
-	cmd_parser_register_command("P-SRHU", mail_engine_psrhu);
-	cmd_parser_register_command("X-UNLD", mail_engine_xunld);
-	cmd_parser_register_command("X-RSYM", mail_engine_xrsym);
-	cmd_parser_register_command("X-RSYF", mail_engine_xrsyf);
+	cmd_parser_register_command("M-LIST", {mail_engine_mlist, 5});
+	cmd_parser_register_command("M-UIDL", {mail_engine_muidl, 3});
+	cmd_parser_register_command("M-INST", {mail_engine_minst, 6});
+	cmd_parser_register_command("M-DELE", {mail_engine_mdele, 4, INT_MAX});
+	cmd_parser_register_command("M-COPY", {mail_engine_mcopy, 5});
+	cmd_parser_register_command("M-MAKF", {mail_engine_mmakf, 3});
+	cmd_parser_register_command("M-REMF", {mail_engine_mremf, 3});
+	cmd_parser_register_command("M-RENF", {mail_engine_mrenf, 4});
+	cmd_parser_register_command("M-ENUM", {mail_engine_menum, 2});
+	cmd_parser_register_command("M-CKFL", {mail_engine_mckfl, 2});
+	cmd_parser_register_command("M-PING", {mail_engine_mping, 2});
+	cmd_parser_register_command("P-OFST", {mail_engine_pofst, 4});
+	cmd_parser_register_command("P-UNID", {mail_engine_punid, 4});
+	cmd_parser_register_command("P-FDDT", {mail_engine_pfddt, 3});
+	cmd_parser_register_command("P-SUBF", {mail_engine_psubf, 3});
+	cmd_parser_register_command("P-UNSF", {mail_engine_punsf, 3});
+	cmd_parser_register_command("P-SUBL", {mail_engine_psubl, 2});
+	cmd_parser_register_command("P-SIML", {mail_engine_psiml, 5});
+	cmd_parser_register_command("P-SIMU", {mail_engine_psimu, 5});
+	cmd_parser_register_command("P-DELL", {mail_engine_pdell, 3});
+	cmd_parser_register_command("P-DTLU", {mail_engine_pdtlu, 5});
+	cmd_parser_register_command("P-SFLG", {mail_engine_psflg, 5});
+	cmd_parser_register_command("P-RFLG", {mail_engine_prflg, 5});
+	cmd_parser_register_command("P-GFLG", {mail_engine_pgflg, 4});
+	cmd_parser_register_command("P-SRHL", {mail_engine_psrhl, 5});
+	cmd_parser_register_command("P-SRHU", {mail_engine_psrhu, 5});
+	cmd_parser_register_command("X-UNLD", {mail_engine_xunld, 2});
+	cmd_parser_register_command("X-RSYM", {mail_engine_xrsym, 2});
+	cmd_parser_register_command("X-RSYF", {mail_engine_xrsyf, 3});
 	exmdb_client_register_proc(reinterpret_cast<void *>(mail_engine_notification_proc));
 	return 0;
 }

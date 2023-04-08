@@ -40,7 +40,7 @@ static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static std::list<midb_conn> g_connlist_active, g_connlist_idle;
-static std::unordered_map<std::string, MIDB_CMD_HANDLER> g_cmd_entry;
+static std::unordered_map<std::string, midb_cmd> g_cmd_entry;
 unsigned int g_cmd_debug;
 
 static void *midcp_thrwork(void *);
@@ -81,7 +81,7 @@ void cmd_parser_put_connection(std::list<midb_conn> &&holder)
 
 int cmd_parser_run()
 {
-	cmd_parser_register_command("PING", cmd_parser_ping);
+	cmd_parser_register_command("PING", {cmd_parser_ping, 2});
 	g_notify_stop = false;
 
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
@@ -129,9 +129,17 @@ midb_conn::~midb_conn()
 		close(sockd);
 }
 
-void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER handler)
+void cmd_parser_register_command(const char *command, const midb_cmd &info)
 {
-	g_cmd_entry.emplace(command, handler);
+	auto r = g_cmd_entry.emplace(command, info);
+	if (!r.second)
+		mlog(LV_ERR, "Could not add \"%s\" to command table: already present", command);
+	auto &i = r.first->second;
+	if (i.max_args == 0)
+		i.max_args = i.min_args;
+	if (i.min_args < 2)
+		/* midcp_exec1 always needs a store-dir */
+		mlog(LV_ERR, "midb_cmd::min_args must be at least 2, even for %s", command);
 }
 
 static thread_local int dbg_current_argc;
@@ -180,9 +188,19 @@ static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *
 	auto cmd_iter = g_cmd_entry.find(argv[0]);
 	if (cmd_iter == g_cmd_entry.end())
 		return {false, 0};
+	const auto &info = cmd_iter->second;
+	/*
+	 * [1] is always the store-dir for length checking.
+	 * [2], if present, is a folder-name for length checking (X-RSYF has a GCV, but strlen doesn't hurt)
+	 */
+	if (argc < info.min_args || argc > info.max_args ||
+	    strlen(argv[1]) >= 256)
+		return {false, MIDB_E_PARAMETER_ERROR};
+	if (argc >= 3 && strlen(argv[1]) >= 1024)
+		return {false, MIDB_E_PARAMETER_ERROR};
 	if (!common_util_build_environment(argv[1]))
 		return {false, 0};
-	auto err = cmd_iter->second(argc, argv, conn->sockd);
+	auto err = info.func(argc, argv, conn->sockd);
 	common_util_free_environment();
 	if (err == 0)
 		return {true, 0};
