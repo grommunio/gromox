@@ -15,13 +15,18 @@ struct MITEM {
 	Json::Value digest;
 };
 
+/**
+ * Two-way indexed message set.
+ * @m_vec:	index from seqid -> MITEM
+ * @m_hash:	index from imapuid -> MITEM
+ */
 struct GX_EXPORT XARRAY {
-	XARRAY(std::atomic<size_t> &m) : m_limit(m) {}
+	XARRAY(std::atomic<size_t> &m) : m_limit(&m) {}
 	~XARRAY();
 
 	std::vector<MITEM> m_vec;
 	std::unordered_map<unsigned int, size_t> m_hash;
-	std::atomic<size_t> &m_limit;
+	std::atomic<size_t> *m_limit = nullptr;
 
 	int append(MITEM &&, unsigned int tag);
 	MITEM *get_item(size_t idx) {
