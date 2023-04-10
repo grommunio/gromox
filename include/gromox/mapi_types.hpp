@@ -744,7 +744,7 @@ struct repl_node {
 		uint16_t replid;
 		GUID replguid;
 	};
-	using range_list_t = std::vector<gromox::range_node<uint64_t>>;
+	using range_list_t = gromox::range_set<uint64_t>;
 	range_list_t range_list; /* GLOBSET */
 };
 

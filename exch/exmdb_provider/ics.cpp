@@ -78,7 +78,7 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 		return FALSE;
 	for (const auto &range_node : *prange_list) {
 		if (range_node.hi - range_node.lo >= IDSET_CACHE_MIN_RANGE) try {
-			pcache->range_list.push_back(range_node);
+			pcache->range_list.vec().push_back(range_node);
 			continue;
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1623: ENOMEM");

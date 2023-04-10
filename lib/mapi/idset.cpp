@@ -68,46 +68,7 @@ BOOL idset::append_range(uint16_t replid,
 	                  [&](const repl_node &n) { return n.replid == replid; });
 	if (prepl_node == repl_list.end())
 		prepl_node = repl_list.emplace(repl_list.end(), replid);
-	auto &range_list = prepl_node->range_list;
-	auto iter = range_list.begin();
-	bool merge = false;
-	/*
-	 * If newrange fills a gap between iter->hi and
-	 * std::next(iter)->lo precisely, then it will simply be
-	 * right-adjacent to iter now and gets merged; thus never showing up as
-	 * left-adjacent in subsequent iterations (not that there is any more
-	 * iteration - the loop exits anyway).
-	 */
-	for (; iter != range_list.end(); ++iter) {
-		bool nr_is_after  = low_value > iter->hi + 1;
-		bool nr_is_before = high_value + 1 < iter->lo;
-		merge = !nr_is_after && !nr_is_before;
-		if (merge) {
-			iter->lo = std::min(iter->lo, low_value);
-			iter->hi = std::max(iter->hi, high_value);
-			break;
-		}
-		if (nr_is_before)
-			break;
-	}
-	if (!merge) {
-		/* newrange is non-adjacent non-overlapping. */
-		range_list.emplace(iter, low_value, high_value);
-		return TRUE;
-	}
-	/*
-	 * When a merge happened, new adjacencies/overlaps could have formed.
-	 * Because of the property that no left adjacencies could have been
-	 * introduced (see above), we only need to check to the right of @iter,
-	 * and also only on the high side.
-	 */
-	auto bigone = iter;
-	for (++iter; iter != range_list.end(); iter = range_list.erase(iter)) {
-		auto ext_right = iter->hi > bigone->hi && iter->lo <= bigone->hi + 1;
-		if (!ext_right)
-			break;
-		bigone->hi = iter->hi;
-	}
+	prepl_node->range_list.insert(low_value, high_value);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1614: ENOMEM");
@@ -126,24 +87,7 @@ void idset::remove(uint64_t eid) try
 	                  [&](const repl_node &n) { return n.replid == replid; });
 	if (prepl_node == repl_list.end())
 		return;
-	auto &range_list = prepl_node->range_list;
-	for (auto nd = range_list.begin(); nd != range_list.end(); ++nd) {
-		if (value == nd->lo && value == nd->hi) {
-			range_list.erase(nd);
-			return;
-		} else if (value == nd->lo) {
-			++nd->lo;
-			return;
-		} else if (value == nd->hi) {
-			--nd->hi;
-			return;
-		} else if (value > nd->lo && value < nd->hi) {
-			auto lo = nd->lo;
-			nd->lo = value + 1;
-			range_list.emplace(nd, lo, value - 1);
-			return;
-		}
-	}
+	prepl_node->range_list.erase(value);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1615: ENOMEM");
 }
@@ -411,7 +355,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 				break;
 			try {
 				auto x = rop_util_gc_to_value(common_bytes);
-				globset.emplace_back(x, x);
+				globset.vec().emplace_back(x, x);
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1616: ENOMEM");
 				return 0;
@@ -444,7 +388,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 			for (int i = 0; i < 8; ++i) {
 				if (!(bitmask & (1U << i))) {
 					if (prange_node.has_value()) {
-						globset.push_back(std::move(*prange_node));
+						globset.vec().push_back(std::move(*prange_node));
 						prange_node.reset();
 					}
 				} else if (!prange_node.has_value()) {
@@ -455,7 +399,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 				}
 			}
 			if (prange_node.has_value()) {
-				globset.push_back(std::move(*prange_node));
+				globset.vec().push_back(std::move(*prange_node));
 				//prange_node.reset();
 			}
 			break;
@@ -485,7 +429,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 				pbin->pb + offset, 6 - stack_length);
 			offset += 6 - stack_length;
 			auto high_value = rop_util_gc_to_value(common_bytes);
-			globset.emplace_back(low_value, high_value);
+			globset.vec().emplace_back(low_value, high_value);
 			break;
 		}
 		}
