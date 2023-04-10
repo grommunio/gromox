@@ -1936,7 +1936,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					temp_len = line_pos - (pspace + 1 - temp_line);
 					MITEM mitem;
 					if (pspace == nullptr ||
-					    !json_from_str(std::string_view(pspace, temp_len), mitem.digest)) {
+					    !json_from_str(std::string_view(&pspace[1], temp_len), mitem.digest)) {
 						b_format_error = TRUE;
 					} else if (get_digest_string(mitem.digest, "file", mitem.mid) &&
 					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
