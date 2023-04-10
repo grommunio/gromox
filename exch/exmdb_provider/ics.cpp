@@ -41,7 +41,7 @@ struct IDSET_CACHE {
 
 	sqlite3 *psqlite = nullptr;
 	xstmt pstmt;
-	std::vector<range_node> range_list;
+	repl_node::range_list_t range_list;
 };
 
 }
@@ -64,7 +64,7 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	    "(id_val INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
 	pcache->pstmt = NULL;
-	const std::vector<range_node> *prange_list = nullptr;
+	const repl_node::range_list_t *prange_list = nullptr;
 	for (const auto &repl_node : pset->get_repl_list()) {
 		if (repl_node.replid == 1) {
 			prange_list = &repl_node.range_list;

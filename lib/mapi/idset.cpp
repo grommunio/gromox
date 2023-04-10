@@ -314,7 +314,7 @@ static uint8_t idset_stack_get_common_bytes(const byte_stack &stack, GLOBCNT &co
 	return common_length;
 }
 
-static BOOL idset_encode_globset(BINARY *pbin, const std::vector<range_node> &globset)
+static BOOL idset_encode_globset(BINARY *pbin, const repl_node::range_list_t &globset)
 {
 	if (globset.size() == 1) {
 		auto prange_node = globset.begin();
@@ -433,8 +433,7 @@ BINARY *idset::serialize()
 	return repl_type == REPL_TYPE_ID ? serialize_replid() : serialize_replguid();
 }
 
-static uint32_t idset_decode_globset(const BINARY *pbin,
-    std::vector<range_node> &globset) try
+static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t &globset) try
 {
 	uint32_t offset = 0;
 	byte_stack bytes_stack;
@@ -498,7 +497,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			}
 			common_bytes.ab[5] = start_value;
 			auto low_value = rop_util_gc_to_value(common_bytes);
-			std::optional<range_node> prange_node;
+			std::optional<range_node<uint64_t>> prange_node;
 			prange_node.emplace(low_value, low_value);
 			for (int i = 0; i < 8; ++i) {
 				if (!(bitmask & (1U << i))) {
@@ -633,7 +632,7 @@ BOOL idset::convert() try
 	return false;
 }
 
-std::pair<bool, std::vector<range_node> *> idset::get_range_by_id(uint16_t replid)
+std::pair<bool, repl_node::range_list_t *> idset::get_range_by_id(uint16_t replid)
 {
 	auto &set = *this;
 	if (set.b_serialize || set.repl_type != REPL_TYPE_GUID) {

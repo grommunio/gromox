@@ -10,6 +10,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/range_set.hpp>
 
 struct STORE_ENTRYID {
 	uint32_t flags;
@@ -734,19 +735,6 @@ using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
-struct range_node {
-#if defined(COMPILE_DIAG) || defined(DEBUG_UMTA)
-	range_node(uint64_t a, uint64_t b) noexcept : low_value(a), high_value(b) { assert(low_value <= high_value); }
-	~range_node() { assert(low_value <= high_value); }
-#else
-	range_node(uint64_t a, uint64_t b) noexcept : low_value(a), high_value(b) {}
-#endif
-	constexpr inline bool contains(uint64_t i) const
-		{ return low_value <= i && i <= high_value; }
-	uint64_t low_value, high_value;
-};
-using RANGE_NODE = range_node;
-
 struct repl_node {
 	repl_node() = default;
 	repl_node(uint16_t r) : replid(r) {}
@@ -756,7 +744,8 @@ struct repl_node {
 		uint16_t replid;
 		GUID replguid;
 	};
-	std::vector<range_node> range_list; /* GLOBSET */
+	using range_list_t = std::vector<gromox::range_node<uint64_t>>;
+	range_list_t range_list; /* GLOBSET */
 };
 
 class idset {
@@ -787,7 +776,7 @@ class idset {
 
 	private:
 	BOOL append_internal(uint16_t, uint64_t);
-	std::pair<bool, std::vector<range_node> *> get_range_by_id(uint16_t);
+	std::pair<bool, repl_node::range_list_t *> get_range_by_id(uint16_t);
 
 	void *pparam = nullptr;
 	REPLICA_MAPPING mapping = nullptr;
