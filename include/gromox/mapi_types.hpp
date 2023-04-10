@@ -775,7 +775,6 @@ class idset {
 	void dump() const;
 
 	private:
-	BOOL append_internal(uint16_t, uint64_t);
 	std::pair<bool, repl_node::range_list_t *> get_range_by_id(uint16_t);
 
 	void *pparam = nullptr;

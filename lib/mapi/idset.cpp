@@ -51,59 +51,10 @@ BOOL idset::register_mapping(void *p, REPLICA_MAPPING m)
 	return TRUE;
 }
 
-BOOL idset::append_internal(uint16_t replid, uint64_t value) try
-{
-	auto pset = this;
-	if (!pset->b_serialize)
-		return FALSE;
-	auto prepl_node = std::find_if(pset->repl_list.begin(), pset->repl_list.end(),
-	                  [&](const repl_node &n) { return n.replid == replid; });
-	if (prepl_node == pset->repl_list.end())
-		prepl_node = pset->repl_list.emplace(pset->repl_list.end(), replid);
-
-	auto &range_list = prepl_node->range_list;
-	auto prange_node = range_list.begin();
-	for (; prange_node != range_list.end(); ++prange_node) {
-		if (prange_node->contains(value)) {
-			return TRUE;
-		} else if (value == prange_node->low_value - 1) {
-			prange_node->low_value = value;
-			if (prange_node == range_list.begin())
-				return TRUE;
-			auto prange_node1 = std::prev(prange_node);
-			if (prange_node1->high_value < prange_node->low_value)
-				return TRUE;
-			prange_node->low_value = prange_node1->low_value;
-			range_list.erase(prange_node1);
-			return TRUE;
-		} else if (value == prange_node->high_value + 1) {
-			prange_node->high_value = value;
-			auto prange_node1 = std::next(prange_node);
-			if (prange_node1 == range_list.end())
-				return TRUE;
-			if (prange_node1->low_value > prange_node->high_value)
-				return TRUE;
-			prange_node->high_value = prange_node1->high_value;
-			range_list.erase(prange_node1);
-			return TRUE;
-		} else if (prange_node->low_value > value) {
-			break;
-		}
-	}
-	if (prange_node != range_list.end())
-		range_list.emplace(prange_node, value, value);
-	else
-		range_list.emplace_back(value, value);
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1613: ENOMEM");
-	return false;
-}
-
 BOOL idset::append(uint64_t eid)
 {
-	return append_internal(rop_util_get_replid(eid),
-	       rop_util_get_gc_value(eid));
+	auto x = rop_util_get_gc_value(eid);
+	return append_range(rop_util_get_replid(eid), x, x);
 }
 
 BOOL idset::append_range(uint16_t replid,
@@ -206,19 +157,11 @@ BOOL idset::concatenate(const IDSET *pset_src)
 		return FALSE;
 	auto &src_list = pset_src->repl_list;
 	for (auto prepl_node = src_list.begin();
-	     prepl_node != src_list.end(); ++prepl_node) {
-		for (const auto &range_node : prepl_node->range_list) {
-			if (range_node.high_value == range_node.low_value) {
-				if (!pset_dst->append_internal(prepl_node->replid,
-				    range_node.low_value))
-					return FALSE;	
-			} else {
-				if (!append_range(prepl_node->replid,
-				    range_node.low_value, range_node.high_value))
-					return FALSE;	
-			}
-		}
-	}
+	     prepl_node != src_list.end(); ++prepl_node)
+		for (const auto &range_node : prepl_node->range_list)
+			if (!append_range(prepl_node->replid,
+			    range_node.low_value, range_node.high_value))
+				return FALSE;
 	return TRUE;
 }
 
