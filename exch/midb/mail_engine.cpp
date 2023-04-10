@@ -153,7 +153,6 @@ static char g_default_charset[32];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
-static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *);
 static bool ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
 
 template<typename T> static inline bool
@@ -1203,16 +1202,16 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = midb_cond::uid;
 			if (++i >= argc)
 				return {};
-			auto plist1 = ct_parse_seq(argv[i]);
-			if (plist1 == nullptr)
+			auto r = std::make_unique<std::vector<seq_node>>();
+			if (parse_imap_seq(*r, argv[i]) != 0)
 				return {};
-			ptree_node->ct_seq = plist1.release();
+			ptree_node->ct_seq = r.release();
 		} else {
-			auto plist1 = ct_parse_seq(argv[i]);
-			if (plist1 == nullptr)
+			auto r = std::make_unique<std::vector<seq_node>>();
+			if (parse_imap_seq(*r, argv[i]) != 0)
 				return {};
 			ptree_node->condition = midb_cond::id;
-			ptree_node->ct_seq = plist1.release();
+			ptree_node->ct_seq = r.release();
 		}
 		plist->push_back(std::move(ctn));
 	}
@@ -1229,73 +1228,6 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build(int argc, char **arg
 	if (argc < 3)
 		return {};
 	return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
-}
-
-static std::unique_ptr<std::vector<seq_node>> ct_parse_seq(char *string) try
-{
-	char *last_colon;
-	char *last_break;
-	
-	auto len = strlen(string);
-	if (string[len-1] == ',')
-		len --;
-	else
-		string[len] = ',';
-	auto plist = std::make_unique<std::vector<seq_node>>();
-	last_break = string;
-	last_colon = NULL;
-	for (size_t i = 0; i <= len; ++i) {
-		if (!HX_isdigit(string[i]) && string[i] != '*' &&
-		    string[i] != ',' && string[i] != ':')
-			return NULL;
-		if (':' == string[i]) {
-			if (NULL != last_colon) {
-				return NULL;
-			} else {
-				last_colon = string + i;
-				*last_colon = '\0';
-			}
-			continue;
-		} else if (string[i] != ',') {
-			continue;
-		}
-		if (string + i - last_break == 0)
-			return NULL;
-		string[i] = '\0';
-		seq_node seq;
-		if (last_colon == nullptr) {
-			if (*last_break != '*') {
-				seq.min = strtol(last_break, nullptr, 0);
-				if (!seq.has_min())
-					return NULL;
-				seq.max = seq.min;
-			}
-		} else if (strcmp(last_break, "*") == 0) {
-			if (strcmp(last_colon + 1, "*") != 0) {
-				seq.min = strtol(last_colon + 1, nullptr, 0);
-				if (!seq.has_min())
-					return NULL;
-			}
-			last_colon = nullptr;
-		} else {
-			seq.min = strtol(last_break, nullptr, 0);
-			if (!seq.has_min())
-				return NULL;
-			if (strcmp(last_colon + 1, "*") != 0) {
-				seq.max = strtol(last_colon + 1, nullptr, 0);
-				if (!seq.has_max())
-					return NULL;
-			}
-			if (seq.min > seq.max)
-				std::swap(seq.min, seq.max);
-			last_colon = nullptr;
-		}
-		last_break = string + i + 1;
-		plist->push_back(std::move(seq));
-	}
-	return plist;
-} catch (const std::bad_alloc &) {
-	return nullptr;
 }
 
 static bool ct_hint_seq(const std::vector<seq_node> &list,

@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <climits>
 #include <clocale>
 #include <csignal>
 #include <cstdarg>
@@ -1365,6 +1366,46 @@ std::string json_to_str(const Json::Value &jv)
 	Json::StreamWriterBuilder swb;
 	swb["indentation"] = "";
 	return Json::writeString(swb, jv);
+}
+
+errno_t parse_imap_seq(std::vector<seq_node> &r, const char *s) try
+{
+	char *end = nullptr;
+	r.clear();
+	for (; *s != '\0'; s = &end[1]) {
+		if (*s == ',') {
+			end = const_cast<char *>(s);
+			continue;
+		}
+		auto min = *s == '*' ? ULONG_MAX : strtoul(s, &end, 0);
+		if (*s == '*')
+			end = const_cast<char *>(&s[1]);
+		if (*end == '\0') {
+			r.emplace_back(min, min);
+			break;
+		} else if (*end == ',') {
+			r.emplace_back(min, min);
+			continue;
+		} else if (*end != ':') {
+			return EINVAL;
+		}
+		s = &end[1];
+		auto max = *s == '*' ? ULONG_MAX : strtoul(s, &end, 0);
+		if (*s == '*')
+			end = const_cast<char *>(&s[1]);
+		if (max < min)
+			std::swap(min, max);
+		if (*end == '\0') {
+			r.emplace_back(min, max);
+			break;
+		} else if (*end != ',') {
+			return EINVAL;
+		}
+		r.emplace_back(min, max);
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
 }
 
 }

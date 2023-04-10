@@ -84,77 +84,6 @@ static BOOL icp_hint_seq(const std::vector<seq_node> &list,
 	return FALSE;
 }
 
-static BOOL icp_parse_seq(std::vector<seq_node> &list, char *string) try
-{
-	char *last_colon;
-	char *last_break;
-	
-	auto len = strlen(string);
-	if (len > 0 && string[len-1] == ',')
-		len --;
-	else
-		string[len] = ',';
-
-	list.clear();
-	last_break = string;
-	last_colon = NULL;
-	for (size_t i = 0; i <= len; ++i) {
-		if (!HX_isdigit(string[i]) && string[i] != '*'
-			&& ',' != string[i] && ':' != string[i]) {
-			return FALSE;
-		}
-		if (':' == string[i]) {
-			if (NULL != last_colon) {
-				return FALSE;
-			} else {
-				last_colon = string + i;
-				*last_colon = '\0';
-			}
-			continue;
-		} else if (string[i] != ',') {
-			continue;
-		}
-		if (0 == string + i - last_break) {
-			return FALSE;
-		}
-		string[i] = '\0';
-		seq_node seq;
-		if (last_colon == nullptr) {
-			if (*last_break != '*') {
-				seq.min = strtol(last_break, nullptr, 0);
-				if (!seq.has_min())
-					return false;
-				seq.max = seq.min;
-			}
-		} else if (strcmp(last_break, "*") == 0) {
-			if (strcmp(last_colon + 1, "*") != 0) {
-				seq.min = strtol(last_colon + 1, nullptr, 0);
-				if (!seq.has_min())
-					return FALSE;
-			}
-			last_colon = nullptr;
-		} else {
-			seq.min = strtol(last_break, nullptr, 0);
-			if (!seq.has_min())
-				return FALSE;
-			if (strcmp(last_colon + 1, "*") != 0) {
-				seq.max = strtol(last_colon + 1, nullptr, 0);
-				if (!seq.has_max())
-					return FALSE;
-			}
-			if (seq.min > seq.max)
-				std::swap(seq.min, seq.max);
-			last_colon = nullptr;
-		}
-		last_break = string + i + 1;
-		list.push_back(std::move(seq));
-	}
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1211: ENOMEM");
-	return false;
-}
-
 static void imap_cmd_parser_find_arg_node(DOUBLE_LIST *plist,
 	const char *arg_name, DOUBLE_LIST *plist_to)
 {
@@ -2692,7 +2621,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || !icp_parse_seq(list_seq, argv[2]))
+	if (argc < 4 || parse_imap_seq(list_seq, argv[2]) != 0)
 		return 1800;
 	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
@@ -2756,7 +2685,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || !icp_parse_seq(list_seq, argv[2]) ||
+	if (argc < 5 || parse_imap_seq(list_seq, argv[2]) != 0 ||
 	    !store_flagkeyword(argv[3]))
 		return 1800;
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
@@ -2821,7 +2750,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
     
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || !icp_parse_seq(list_seq, argv[2]) ||
+	if (argc < 4 || parse_imap_seq(list_seq, argv[2]) != 0 ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], temp_name))
 		return 1800;
@@ -2963,7 +2892,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || !icp_parse_seq(list_seq, argv[3]))
+	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
 	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
 	    &b_data, argv[4], tmp_argv, arsizeof(tmp_argv)))
@@ -3022,7 +2951,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 6 || !icp_parse_seq(list_seq, argv[3]) ||
+	if (argc < 6 || parse_imap_seq(list_seq, argv[3]) != 0 ||
 	    !store_flagkeyword(argv[4]))
 		return 1800;
 	if ('(' == argv[5][0] && ')' == argv[5][strlen(argv[5]) - 1]) {
@@ -3086,7 +3015,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || !icp_parse_seq(list_seq, argv[3]) ||
+	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0 ||
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[4], temp_name))
 		return 1800;
@@ -3185,7 +3114,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	if (argc < 4 || !icp_parse_seq(list_seq, argv[3]))
+	if (argc < 4 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = system_services_list_deleted(pcontext->maildir,

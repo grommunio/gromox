@@ -164,6 +164,7 @@ extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint
 extern GX_EXPORT void mlog_init(const char *file, unsigned int level);
 extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void *), void * = nullptr) noexcept;
+extern GX_EXPORT errno_t parse_imap_seq(std::vector<seq_node> &out, const char *in);
 
 extern GX_EXPORT const uint8_t utf8_byte_num[256];
 

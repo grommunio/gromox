@@ -175,6 +175,21 @@ static int t_id8()
 	return EXIT_SUCCESS;
 }
 
+static int t_seq()
+{
+	std::vector<seq_node> r;
+	auto err = parse_imap_seq(r, "1,3:4,6:*,,");
+	assert(err == 0);
+	assert(r.size() == 3);
+	err = parse_imap_seq(r, "4:3,*:6");
+	assert(err == 0);
+	assert(r.size() == 2);
+	err = parse_imap_seq(r, "1,*");
+	assert(err == 0);
+	assert(r.size() == 2);
+	return 0;
+}
+
 static int t_interval()
 {
 	const char *in = " 1 d 1 h 1 min 1 s ";
@@ -345,7 +360,7 @@ int main()
 		return EXIT_FAILURE;
 	using fpt = decltype(&t_interval);
 	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
-	             t_id7, t_id8};
+	             t_id7, t_id8, t_seq};
 	for (auto f : fct) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS)
