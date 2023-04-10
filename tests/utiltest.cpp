@@ -72,8 +72,7 @@ static int t_id1()
 	s.append_range(1, 14, 21);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
-	assert(l.front().low_value == 1);
-	assert(l.front().high_value == 21);
+	assert(l.front().lo == 1 && l.front().hi == 21);
 	return EXIT_SUCCESS;
 }
 
@@ -85,8 +84,7 @@ static int t_id2()
 	s.append_range(1, 1, 17);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
-	assert(l.front().low_value == 1);
-	assert(l.front().high_value == 21);
+	assert(l.front().lo == 1 && l.front().hi == 21);
 	return EXIT_SUCCESS;
 }
 
@@ -98,8 +96,7 @@ static int t_id3()
 	s.append_range(1, 20, 29);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
-	assert(l.front().low_value == 1);
-	assert(l.front().high_value == 29);
+	assert(l.front().lo == 1 && l.front().hi == 29);
 	return EXIT_SUCCESS;
 }
 
@@ -111,8 +108,7 @@ static int t_id4()
 	s.append_range(1, 1, 19);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
-	assert(l.front().low_value == 1);
-	assert(l.front().high_value == 29);
+	assert(l.front().lo == 1 && l.front().hi == 29);
 	return EXIT_SUCCESS;
 }
 
@@ -124,8 +120,7 @@ static int t_id5()
 	s.append_range(1, 15, 19);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
-	assert(l.front().low_value == 1);
-	assert(l.front().high_value == 40);
+	assert(l.front().lo == 1 && l.front().hi == 40);
 	return EXIT_SUCCESS;
 }
 
@@ -137,8 +132,7 @@ static int t_id6()
 	s.append_range(1, 1, 40);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 1);
-	assert(l.front().low_value == 1);
-	assert(l.front().high_value == 40);
+	assert(l.front().lo == 1 && l.front().hi == 40);
 	return EXIT_SUCCESS;
 }
 
@@ -149,29 +143,21 @@ static int t_id7()
 	s.append_range(1, 71, 79);
 	auto &l = s.get_repl_list().front().range_list;
 	assert(l.size() == 2);
-	assert(l.front().low_value == 11);
-	assert(l.front().high_value == 19);
-	assert(l.back().low_value == 71);
-	assert(l.back().high_value == 79);
+	assert(l.front().lo == 11 && l.front().hi == 19);
+	assert(l.back().lo == 71 && l.back().hi == 79);
 	s.append_range(1, 41, 49);
 	assert(l.size() == 3);
-	assert(l.front().low_value == 11);
-	assert(l.front().high_value == 19);
-	assert(std::next(l.begin())->low_value == 41);
-	assert(std::next(l.begin())->high_value == 49);
-	assert(l.back().low_value == 71);
-	assert(l.back().high_value == 79);
+	assert(l.front().lo == 11 && l.front().hi == 19);
+	assert(std::next(l.begin())->lo == 41 && std::next(l.begin())->hi == 49);
+	assert(l.back().lo == 71 && l.back().hi == 79);
 	/* gap filler */
 	s.append_range(1, 20, 40);
 	assert(l.size() == 2);
-	assert(l.front().low_value == 11);
-	assert(l.front().high_value == 49);
-	assert(l.back().low_value == 71);
-	assert(l.back().high_value == 79);
+	assert(l.front().lo == 11 && l.front().hi == 49);
+	assert(l.back().lo == 71 && l.back().hi == 79);
 	s.append_range(1, 50, 70);
 	assert(l.size() == 1);
-	assert(l.front().low_value == 11);
-	assert(l.front().high_value == 79);
+	assert(l.front().lo == 11 && l.front().hi == 79);
 	return EXIT_SUCCESS;
 }
 

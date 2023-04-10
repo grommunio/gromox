@@ -77,15 +77,14 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	if (stmt == nullptr)
 		return FALSE;
 	for (const auto &range_node : *prange_list) {
-		if (range_node.high_value - range_node.low_value >= IDSET_CACHE_MIN_RANGE) try {
+		if (range_node.hi - range_node.lo >= IDSET_CACHE_MIN_RANGE) try {
 			pcache->range_list.push_back(range_node);
 			continue;
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1623: ENOMEM");
 			return false;
 		}
-		for (auto ival = range_node.low_value;
-		     ival <= range_node.high_value; ++ival) {
+		for (auto ival = range_node.lo; ival <= range_node.hi; ++ival) {
 			sqlite3_reset(stmt);
 			sqlite3_bind_int64(stmt, 1, ival);
 			if (stmt.step() != SQLITE_DONE)

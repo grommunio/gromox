@@ -72,19 +72,19 @@ BOOL idset::append_range(uint16_t replid,
 	auto iter = range_list.begin();
 	bool merge = false;
 	/*
-	 * If newrange fills a gap between iter->high_value and
-	 * std::next(iter)->low_value precisely, then it will simply be
+	 * If newrange fills a gap between iter->hi and
+	 * std::next(iter)->lo precisely, then it will simply be
 	 * right-adjacent to iter now and gets merged; thus never showing up as
 	 * left-adjacent in subsequent iterations (not that there is any more
 	 * iteration - the loop exits anyway).
 	 */
 	for (; iter != range_list.end(); ++iter) {
-		bool nr_is_after  = low_value > iter->high_value + 1;
-		bool nr_is_before = high_value + 1 < iter->low_value;
+		bool nr_is_after  = low_value > iter->hi + 1;
+		bool nr_is_before = high_value + 1 < iter->lo;
 		merge = !nr_is_after && !nr_is_before;
 		if (merge) {
-			iter->low_value = std::min(iter->low_value, low_value);
-			iter->high_value = std::max(iter->high_value, high_value);
+			iter->lo = std::min(iter->lo, low_value);
+			iter->hi = std::max(iter->hi, high_value);
 			break;
 		}
 		if (nr_is_before)
@@ -103,11 +103,10 @@ BOOL idset::append_range(uint16_t replid,
 	 */
 	auto bigone = iter;
 	for (++iter; iter != range_list.end(); iter = range_list.erase(iter)) {
-		auto ext_right = iter->high_value > bigone->high_value &&
-		                 iter->low_value <= bigone->high_value + 1;
+		auto ext_right = iter->hi > bigone->hi && iter->lo <= bigone->hi + 1;
 		if (!ext_right)
 			break;
-		bigone->high_value = iter->high_value;
+		bigone->hi = iter->hi;
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -129,18 +128,18 @@ void idset::remove(uint64_t eid) try
 		return;
 	auto &range_list = prepl_node->range_list;
 	for (auto nd = range_list.begin(); nd != range_list.end(); ++nd) {
-		if (value == nd->low_value && value == nd->high_value) {
+		if (value == nd->lo && value == nd->hi) {
 			range_list.erase(nd);
 			return;
-		} else if (value == nd->low_value) {
-			++nd->low_value;
+		} else if (value == nd->lo) {
+			++nd->lo;
 			return;
-		} else if (value == nd->high_value) {
-			--nd->high_value;
+		} else if (value == nd->hi) {
+			--nd->hi;
 			return;
-		} else if (value > nd->low_value && value < nd->high_value) {
-			auto lo = nd->low_value;
-			nd->low_value = value + 1;
+		} else if (value > nd->lo && value < nd->hi) {
+			auto lo = nd->lo;
+			nd->lo = value + 1;
 			range_list.emplace(nd, lo, value - 1);
 			return;
 		}
@@ -160,7 +159,7 @@ BOOL idset::concatenate(const IDSET *pset_src)
 	     prepl_node != src_list.end(); ++prepl_node)
 		for (const auto &range_node : prepl_node->range_list)
 			if (!append_range(prepl_node->replid,
-			    range_node.low_value, range_node.high_value))
+			    range_node.lo, range_node.hi))
 				return FALSE;
 	return TRUE;
 }
@@ -261,20 +260,20 @@ static BOOL idset_encode_globset(BINARY *pbin, const repl_node::range_list_t &gl
 {
 	if (globset.size() == 1) {
 		auto prange_node = globset.begin();
-		auto common_bytes = rop_util_value_to_gc(prange_node->low_value);
-		if (prange_node->high_value == prange_node->low_value) {
+		auto common_bytes = rop_util_value_to_gc(prange_node->lo);
+		if (prange_node->hi == prange_node->lo) {
 			if (!idset_encoding_push_command(pbin, 6, common_bytes.ab))
 				return FALSE;
 		} else {
-			auto common_bytes1 = rop_util_value_to_gc(prange_node->high_value);
+			auto common_bytes1 = rop_util_value_to_gc(prange_node->hi);
 			if (!idset_encode_range_command(pbin, 6,
 			    common_bytes.ab, common_bytes1.ab))
 				return FALSE;
 		}
 		return idset_encode_end_command(pbin);
 	}
-	auto common_bytes = rop_util_value_to_gc(globset.front().low_value);
-	auto common_bytes1 = rop_util_value_to_gc(globset.back().high_value);
+	auto common_bytes  = rop_util_value_to_gc(globset.front().lo);
+	auto common_bytes1 = rop_util_value_to_gc(globset.back().hi);
 	uint8_t stack_length;
 	for (stack_length = 0; stack_length < 6; ++stack_length)
 		if (common_bytes.ab[stack_length] != common_bytes1.ab[stack_length])
@@ -283,14 +282,14 @@ static BOOL idset_encode_globset(BINARY *pbin, const repl_node::range_list_t &gl
 	    !idset_encoding_push_command(pbin, stack_length, common_bytes.ab))
 		return FALSE;
 	for (const auto &range_node : globset) {
-		common_bytes = rop_util_value_to_gc(range_node.low_value);
-		if (range_node.high_value == range_node.low_value) {
+		common_bytes = rop_util_value_to_gc(range_node.lo);
+		if (range_node.hi == range_node.lo) {
 			if (!idset_encoding_push_command(pbin,
 			    6 - stack_length, &common_bytes.ab[stack_length]))
 				return FALSE;
 			continue;
 		}
-		common_bytes1 = rop_util_value_to_gc(range_node.high_value);
+		common_bytes1 = rop_util_value_to_gc(range_node.hi);
 		int i;
 		for (i = stack_length; i < 6; ++i)
 			if (common_bytes.ab[i] != common_bytes1.ab[i])
@@ -452,7 +451,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 					auto x = low_value + i + 1;
 					prange_node.emplace(x, x);
 				} else {
-					prange_node->high_value ++;
+					++prange_node->hi;
 				}
 			}
 			if (prange_node.has_value()) {
@@ -608,7 +607,7 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 	}
 	auto pnode = prange_list->begin();
 	*peid = rop_util_make_eid_ex(replid, pnode == prange_list->end() ? 0 :
-	        prange_list->front().high_value);
+	        prange_list->front().hi);
 	return TRUE;
 }
 
@@ -641,8 +640,7 @@ BOOL idset::enum_repl(uint16_t replid, void *p, REPLICA_ENUM repl_enum)
 	if (prange_list == nullptr)
 		return TRUE;
 	for (auto &range_node : *prange_list) {
-		for (auto ival = range_node.low_value;
-		     ival <= range_node.high_value; ++ival) {
+		for (auto ival = range_node.lo; ival <= range_node.hi; ++ival) {
 			auto tmp_eid = rop_util_make_eid_ex(replid, ival);
 			repl_enum(p, tmp_eid);
 		}
@@ -660,8 +658,7 @@ void idset::dump() const
 			else
 				fprintf(stderr, "\t#%u ", repl_node.replid);
 			using LLU = unsigned long long;
-			fprintf(stderr, "%llxh--%llxh\n", LLU{range.low_value},
-			        LLU{range.high_value});
+			fprintf(stderr, "%llxh--%llxh\n", LLU{range.lo}, LLU{range.hi});
 		}
 	}
 	fprintf(stderr, "}\n");
