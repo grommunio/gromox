@@ -5,8 +5,10 @@
 #else
 #	define GX_RANGE_NODE_ASSERT
 #endif
+#include <cstdint>
 #include <utility>
 #include <vector>
+#include <gromox/defs.h>
 
 namespace gromox {
 
@@ -118,5 +120,9 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 		}
 	}
 };
+
+using imap_seq_list = range_set<uint32_t>;
+
+extern GX_EXPORT errno_t parse_imap_seq(imap_seq_list &out, const char *in);
 
 }

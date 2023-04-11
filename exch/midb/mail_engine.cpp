@@ -1234,17 +1234,16 @@ static bool ct_hint_seq(const imap_seq_list &list,
     unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {
-		auto pseq = &seq;
-		if (pseq->max == SEQ_STAR) {
-			if (pseq->min == SEQ_STAR) {
+		if (seq.hi == SEQ_STAR) {
+			if (seq.lo == SEQ_STAR) {
 				if (num == max_uid)
 					return true;
 			} else {
-				if (num >= pseq->min)
+				if (num >= seq.lo)
 					return true;
 			}
 		} else {
-			if (pseq->max >= num && pseq->min <= num)
+			if (seq.hi >= num && seq.lo <= num)
 				return true;
 		}
 	}

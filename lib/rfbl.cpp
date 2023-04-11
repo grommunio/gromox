@@ -55,6 +55,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
 #include <gromox/paths.h>
+#include <gromox/range_set.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -1381,10 +1382,10 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 		if (*s == '*')
 			end = const_cast<char *>(&s[1]);
 		if (*end == '\0') {
-			r.emplace_back(min, min);
+			r.insert(min, min);
 			break;
 		} else if (*end == ',') {
-			r.emplace_back(min, min);
+			r.insert(min, min);
 			continue;
 		} else if (*end != ':') {
 			return EINVAL;
@@ -1396,12 +1397,12 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 		if (max < min)
 			std::swap(min, max);
 		if (*end == '\0') {
-			r.emplace_back(min, max);
+			r.insert(min, max);
 			break;
 		} else if (*end != ',') {
 			return EINVAL;
 		}
-		r.emplace_back(min, max);
+		r.insert(min, max);
 	}
 	return 0;
 } catch (const std::bad_alloc &) {

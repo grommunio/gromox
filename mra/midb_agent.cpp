@@ -33,6 +33,7 @@
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/msg_unit.hpp>
+#include <gromox/range_set.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
@@ -1432,18 +1433,18 @@ static int fetch_simple(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == SEQ_STAR) {
-			if (pseq->min == SEQ_STAR)
+		if (pseq->hi == SEQ_STAR) {
+			if (pseq->lo == SEQ_STAR)
 				length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s -1 1\r\n",
 						path, folder);
 			else
 				length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s %d "
 						"1000000000\r\n", path, folder,
-						pseq->min - 1);
+				         pseq->lo - 1);
 		} else {
 			length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s %d %d\r\n",
-						path, folder, pseq->min - 1,
-						pseq->max - pseq->min + 1);
+			         path, folder, pseq->lo - 1,
+			         pseq->hi - pseq->lo + 1);
 		}
 		if (length != write(pback->sockd, buff, length)) {
 			return MIDB_RDWR_ERROR;
@@ -1506,7 +1507,7 @@ static int fetch_simple(const char *path, const char *folder,
 						MITEM m;
 						m.mid = std::move(parts[0]);
 						m.uid = strtoul(parts[1].c_str(), nullptr, 0);
-						m.id = pseq->min + count - 1;
+						m.id = pseq->lo + count - 1;
 						m.flag_bits = s_to_flagbits(parts[2].c_str());
 						auto mitem_uid = m.uid;
 						pxarray->append(std::move(m), mitem_uid);
@@ -1576,18 +1577,18 @@ static int fetch_detail(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == SEQ_STAR) {
-			if (pseq->min == SEQ_STAR)
+		if (pseq->hi == SEQ_STAR) {
+			if (pseq->lo == SEQ_STAR)
 				length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s -1 1\r\n",
 						path, folder);
 			else
 				length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s %d "
 						"1000000000\r\n", path, folder,
-						pseq->min - 1);
+				         pseq->lo - 1);
 		} else {
 			length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s %d %d\r\n",
-						path, folder, pseq->min - 1,
-						pseq->max - pseq->min + 1);
+			         path, folder, pseq->lo - 1,
+			         pseq->hi - pseq->lo + 1);
 		}
 		if (length != write(pback->sockd, buff, length)) {
 			return MIDB_RDWR_ERROR;
@@ -1652,7 +1653,7 @@ static int fetch_detail(const char *path, const char *folder,
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
-							pitem->id = pseq->min + count - 1;
+							pitem->id = pseq->lo + count - 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(mitem.digest);
 						}
 					} else {
@@ -1723,7 +1724,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	for (const auto &seq : list) {
 		auto pseq = &seq;
 		auto length = gx_snprintf(buff, std::size(buff), "P-SIMU %s %s %d %d\r\n", path, folder,
-					pseq->min, pseq->max);
+		              pseq->lo, pseq->hi);
 		if (length != write(pback->sockd, buff, length)) {
 			return MIDB_RDWR_ERROR;
 		}
@@ -1878,7 +1879,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	for (const auto &seq : list) {
 		auto pseq = &seq;
 		auto length = gx_snprintf(buff, std::size(buff), "P-DTLU %s %s %d %d\r\n", path,
-					folder, pseq->min, pseq->max);
+		              folder, pseq->lo, pseq->hi);
 		if (length != write(pback->sockd, buff, length)) {
 			return MIDB_RDWR_ERROR;
 		}
