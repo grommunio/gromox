@@ -95,7 +95,7 @@ struct ct_node {
 		char *ct_keyword;
 		time_t ct_time;
 		size_t ct_size;
-		std::vector<seq_node> *ct_seq;
+		imap_seq_list *ct_seq;
 	};
 };
 using CONDITION_TREE_NODE = ct_node;
@@ -153,7 +153,7 @@ static char g_default_charset[32];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 
-static bool ct_hint_seq(const std::vector<seq_node> &plist, unsigned int num, unsigned int max_uid);
+static bool ct_hint_seq(const imap_seq_list &plist, unsigned int num, unsigned int max_uid);
 
 template<typename T> static inline bool
 array_find_str(const T &kwlist, const char *s)
@@ -1202,12 +1202,12 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = midb_cond::uid;
 			if (++i >= argc)
 				return {};
-			auto r = std::make_unique<std::vector<seq_node>>();
+			auto r = std::make_unique<imap_seq_list>();
 			if (parse_imap_seq(*r, argv[i]) != 0)
 				return {};
 			ptree_node->ct_seq = r.release();
 		} else {
-			auto r = std::make_unique<std::vector<seq_node>>();
+			auto r = std::make_unique<imap_seq_list>();
 			if (parse_imap_seq(*r, argv[i]) != 0)
 				return {};
 			ptree_node->condition = midb_cond::id;
@@ -1230,7 +1230,7 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build(int argc, char **arg
 	return mail_engine_ct_build_internal(argv[1], argc - 2, argv + 2);
 }
 
-static bool ct_hint_seq(const std::vector<seq_node> &list,
+static bool ct_hint_seq(const imap_seq_list &list,
     unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {

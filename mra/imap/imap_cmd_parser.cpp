@@ -63,7 +63,7 @@ static inline bool special_folder(const char *name)
 	return false;
 }
 
-static BOOL icp_hint_seq(const std::vector<seq_node> &list,
+static BOOL icp_hint_seq(const imap_seq_list &list,
 	unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {
@@ -2615,7 +2615,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char* tmp_argv[128];
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 	DOUBLE_LIST list_data;
 	DOUBLE_LIST_NODE nodes[1024];
 	
@@ -2681,7 +2681,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int flag_bits;
 	int temp_argc;
 	char *temp_argv[8];
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
@@ -2744,7 +2744,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 	char uid_string[64*1024];
 	char uid_string1[64*1024];
     
@@ -2885,7 +2885,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	char* tmp_argv[128];
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 	DOUBLE_LIST list_data;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE nodes[1024];
@@ -2947,7 +2947,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, i, flag_bits, temp_argc;
 	char *temp_argv[8];
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
@@ -3010,7 +3010,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 	char uid_string[64*1024];
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
@@ -3108,7 +3108,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	int max_uid;
 	char buff[1024];
 	size_t string_length = 0;
-	std::vector<seq_node> list_seq;
+	imap_seq_list list_seq;
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;

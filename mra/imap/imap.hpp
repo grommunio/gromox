@@ -218,10 +218,10 @@ extern int (*system_services_enum_subscriptions)(const char *, std::vector<std::
 extern int (*system_services_insert_mail)(const char *, const char *, const char *, const char *, long, int *);
 extern int (*system_services_remove_mail)(const char *, const char *, const std::vector<MITEM *> &, int *);
 extern int (*system_services_list_deleted)(const char *, const char *, XARRAY *, int *);
-extern int (*system_services_fetch_simple)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
-extern int (*system_services_fetch_detail)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
-extern int (*system_services_fetch_simple_uid)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
-extern int (*system_services_fetch_detail_uid)(const char *, const char *, const std::vector<gromox::seq_node> &, XARRAY *, int *);
+extern int (*system_services_fetch_simple)(const char *, const char *, const gromox::imap_seq_list &, XARRAY *, int *);
+extern int (*system_services_fetch_detail)(const char *, const char *, const gromox::imap_seq_list &, XARRAY *, int *);
+extern int (*system_services_fetch_simple_uid)(const char *, const char *, const gromox::imap_seq_list &, XARRAY *, int *);
+extern int (*system_services_fetch_detail_uid)(const char *, const char *, const gromox::imap_seq_list &, XARRAY *, int *);
 extern int (*system_services_set_flags)(const char *, const char *, const std::string &mid, int, int *);
 extern int (*system_services_unset_flags)(const char *, const char *, const std::string &mid, int, int *);
 extern int (*system_services_get_flags)(const char *, const char *, const std::string &mid, int *, int *);

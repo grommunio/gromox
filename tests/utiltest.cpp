@@ -177,7 +177,7 @@ static int t_id8()
 
 static int t_seq()
 {
-	std::vector<seq_node> r;
+	imap_seq_list r;
 	auto err = parse_imap_seq(r, "1,3:4,6:*,,");
 	assert(err == 0);
 	assert(r.size() == 3);

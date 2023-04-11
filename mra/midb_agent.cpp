@@ -92,10 +92,10 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &, int 
 static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
 static int remove_mail(const char *path, const char *folder, const std::vector<MITEM *> &, int *perrno);
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
-static int fetch_simple(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
-static int fetch_detail(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
-static int fetch_simple_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
-static int fetch_detail_uid(const char *path, const char *folder, const std::vector<seq_node> &, XARRAY *, int *perrno);
+static int fetch_simple(const char *path, const char *folder, const imap_seq_list &, XARRAY *, int *perrno);
+static int fetch_detail(const char *path, const char *folder, const imap_seq_list &, XARRAY *, int *perrno);
+static int fetch_simple_uid(const char *path, const char *folder, const imap_seq_list &, XARRAY *, int *perrno);
+static int fetch_detail_uid(const char *path, const char *folder, const imap_seq_list &, XARRAY *, int *perrno);
 static int set_mail_flags(const char *path, const char *folder, const std::string &mid, int flag_bits, int *perrno);
 static int unset_mail_flags(const char *path, const char *folder, const std::string &mid, int flag_bits, int *perrno);
 static int get_mail_flags(const char *path, const char *folder, const std::string &mid, int *pflag_bits, int *perrno);
@@ -1411,7 +1411,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 }
 
 static int fetch_simple(const char *path, const char *folder,
-    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
+    const imap_seq_list &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -1548,7 +1548,7 @@ static int fetch_simple(const char *path, const char *folder,
 }
 
 static int fetch_detail(const char *path, const char *folder,
-    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno) try
+    const imap_seq_list &list, XARRAY *pxarray, int *perrno) try
 {
 	int lines;
 	int count;
@@ -1699,7 +1699,7 @@ static int fetch_detail(const char *path, const char *folder,
 }
 
 static int fetch_simple_uid(const char *path, const char *folder,
-    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno)
+    const imap_seq_list &list, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -1848,7 +1848,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 }
 
 static int fetch_detail_uid(const char *path, const char *folder,
-    const std::vector<seq_node> &list, XARRAY *pxarray, int *perrno) try
+    const imap_seq_list &list, XARRAY *pxarray, int *perrno) try
 {
 	int lines;
 	int count;

@@ -1368,7 +1368,7 @@ std::string json_to_str(const Json::Value &jv)
 	return Json::writeString(swb, jv);
 }
 
-errno_t parse_imap_seq(std::vector<seq_node> &r, const char *s) try
+errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 {
 	char *end = nullptr;
 	r.clear();
