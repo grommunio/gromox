@@ -1235,8 +1235,8 @@ static bool ct_hint_seq(const std::vector<seq_node> &list,
 {
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == seq_node::unset) {
-			if (pseq->min == seq_node::unset) {
+		if (pseq->max == SEQ_STAR) {
+			if (pseq->min == SEQ_STAR) {
 				if (num == max_uid)
 					return true;
 			} else {
@@ -3361,11 +3361,11 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	char temp_buff[256*1024];
 	
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
-	if (first < 1 && first != seq_node::unset)
+	if (first < 1 && first != SEQ_STAR)
 		return MIDB_E_PARAMETER_ERROR;
-	if (last < 1 && last != seq_node::unset)
+	if (last < 1 && last != SEQ_STAR)
 		return MIDB_E_PARAMETER_ERROR;
-	if (first != seq_node::unset && last != seq_node::unset && last < first)
+	if (first != SEQ_STAR && last != SEQ_STAR && last < first)
 		std::swap(first, last);
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3375,19 +3375,19 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		return MIDB_E_NO_FOLDER;
 	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
-	if (first == seq_node::unset && last == seq_node::unset)
+	if (first == SEQ_STAR && last == SEQ_STAR)
 		/* "MAX:MAX" */
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded "
 		         "FROM messages WHERE folder_id=%llu "
 		         "ORDER BY idx DESC LIMIT 1", LLU{folder_id});
-	else if (first == seq_node::unset)
+	else if (first == SEQ_STAR)
 		/* "MAX:99" */
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded "
 		         "FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx DESC LIMIT 1",
 		         LLU{folder_id}, last);
-	else if (last == seq_node::unset)
+	else if (last == SEQ_STAR)
 		/* "99:MAX" */
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded "
@@ -3403,7 +3403,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto iret = simu_query(pidb.get(), sql_string, total_mail, temp_list);
 	if (iret != 0)
 		return iret;
-	if (temp_list.size() == 0 && (first == seq_node::unset || last == seq_node::unset)) {
+	if (temp_list.size() == 0 && (first == SEQ_STAR || last == SEQ_STAR)) {
 		/*
 		 * RFC 3501: "a UID range of 559:* always includes the UID of
 		 * the last message in the mailbox, even if 559 is higher than
@@ -3529,11 +3529,11 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	char sql_string[1024];
 	
 	seq_node::value_type first = strtol(argv[3], nullptr, 0), last = strtol(argv[4], nullptr, 0);
-	if (first < 1 && first != seq_node::unset)
+	if (first < 1 && first != SEQ_STAR)
 		return MIDB_E_PARAMETER_ERROR;
-	if (last < 1 && last != seq_node::unset)
+	if (last < 1 && last != SEQ_STAR)
 		return MIDB_E_PARAMETER_ERROR;
-	if (first != seq_node::unset && last != seq_node::unset && last < first)
+	if (first != SEQ_STAR && last != SEQ_STAR && last < first)
 		std::swap(first, last);
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
@@ -3544,15 +3544,15 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
 		return MIDB_E_MNG_SORTFOLDER;
 	/* UNSET always means MAX, never MIN */
-	if (first == seq_node::unset && last == seq_node::unset)
+	if (first == SEQ_STAR && last == SEQ_STAR)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string"
 		         " FROM messages WHERE folder_id=%llu ORDER BY idx DESC LIMIT 1",
 		         LLU{folder_id});
-	else if (first == seq_node::unset)
+	else if (first == SEQ_STAR)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid<=%u "
 		         " ORDER BY idx DESC LIMIT 1", LLU{folder_id}, last);
-	else if (last == seq_node::unset)
+	else if (last == SEQ_STAR)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u"
 		         " ORDER BY idx", LLU{folder_id}, first);
@@ -3569,7 +3569,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	auto iret = dtlu_query(pidb.get(), sql_string, total_mail, temp_list);
 	if (iret != 0)
 		return iret;
-	if (temp_list.empty() && (first == seq_node::unset || last == seq_node::unset)) {
+	if (temp_list.empty() && (first == SEQ_STAR || last == SEQ_STAR)) {
 		/* Rerun like in pshru */
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string"
 		         " FROM messages WHERE folder_id=%llu ORDER BY idx"

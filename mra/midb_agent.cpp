@@ -1432,8 +1432,8 @@ static int fetch_simple(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == pseq->unset) {
-			if (pseq->min == pseq->unset)
+		if (pseq->max == SEQ_STAR) {
+			if (pseq->min == SEQ_STAR)
 				length = gx_snprintf(buff, std::size(buff), "P-SIML %s %s -1 1\r\n",
 						path, folder);
 			else
@@ -1576,8 +1576,8 @@ static int fetch_detail(const char *path, const char *folder,
 	
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == pseq->unset) {
-			if (pseq->min == pseq->unset)
+		if (pseq->max == SEQ_STAR) {
+			if (pseq->min == SEQ_STAR)
 				length = gx_snprintf(buff, std::size(buff), "M-LIST %s %s -1 1\r\n",
 						path, folder);
 			else

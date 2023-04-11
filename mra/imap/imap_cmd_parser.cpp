@@ -68,8 +68,8 @@ static BOOL icp_hint_seq(const std::vector<seq_node> &list,
 {
 	for (const auto &seq : list) {
 		auto pseq = &seq;
-		if (pseq->max == pseq->unset) {
-			if (pseq->min == pseq->unset) {
+		if (pseq->max == SEQ_STAR) {
+			if (pseq->min == SEQ_STAR) {
 				if (num == max_uid)
 					return TRUE;
 			} else {

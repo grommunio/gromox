@@ -89,10 +89,11 @@ static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000
 
 namespace gromox {
 
+static constexpr uint32_t SEQ_STAR = -1;
+
 struct seq_node {
 	using value_type = unsigned int;
-	static constexpr value_type unset = -1;
-	value_type min = unset, max = unset;
+	value_type min = SEQ_STAR, max = SEQ_STAR;
 };
 
 struct stdlib_delete {
