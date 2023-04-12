@@ -1487,11 +1487,8 @@ static int imap_cmd_parser_selex(int argc, char **argv,
     IMAP_CONTEXT *pcontext, bool readonly)
 {
 	int errnum;
-	int exists;
-	int recent;
 	unsigned int uidnext;
 	unsigned long uidvalid;
-	int firstunseen;
 	size_t string_length = 0;
 	char temp_name[1024];
 	char buff[1024];
@@ -1508,12 +1505,14 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	}
 	
 	auto ssr = system_services_summary_folder(pcontext->maildir, temp_name,
-	           &exists, &recent, nullptr, &uidvalid, &uidnext,
-	           &firstunseen, &errnum);
+	           nullptr, nullptr, nullptr, &uidvalid, &uidnext,
+	           nullptr, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	pcontext->contents.refresh(*pcontext, temp_name);
+	ret = pcontext->contents.refresh(*pcontext, temp_name);
+	if (ret != 0)
+		return ret;
 	strcpy(pcontext->selected_folder, temp_name);
 	pcontext->proto_stat = PROTO_STAT_SELECT;
 	pcontext->b_readonly = readonly;
@@ -1525,17 +1524,19 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	gx_strlcpy(temp_name, buff, std::size(temp_name));
 
 	string_length = gx_snprintf(buff, arsizeof(buff),
-		"* %d EXISTS\r\n"
-		"* %d RECENT\r\n"
+		"* %zu EXISTS\r\n"
+		"* %u RECENT\r\n"
 		"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 		"* OK %s\r\n",
-		exists, recent, readonly ?
+		pcontext->contents.n_exists(),
+		pcontext->contents.n_recent, readonly ?
 		"[PERMANENTFLAGS ()] no permanent flags permitted" :
 		"[PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited");
-	if (firstunseen != -1)
+	if (pcontext->contents.firstunseen != 0)
 		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
-			"* OK [UNSEEN %d] message %d is first unseen\r\n",
-			firstunseen, firstunseen);
+			"* OK [UNSEEN %u] message %u is first unseen\r\n",
+			pcontext->contents.firstunseen,
+			pcontext->contents.firstunseen);
 	auto s_readonly = readonly ? "READ-ONLY" : "READ-WRITE";
 	auto s_command  = readonly ? "EXAMINE" : "SELECT";
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,

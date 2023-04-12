@@ -1232,8 +1232,6 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		return;
 	int id;
 	int err;
-	int recent;
-	int exists;
 	int tmp_len;
 	int flag_bits;
 	BOOL b_first;
@@ -1244,14 +1242,12 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	auto f_flags = std::move(pcontext->f_flags);
 	hl_hold.unlock();
 
-	pcontext->contents.refresh(*pcontext, pcontext->selected_folder);
-	if (system_services_summary_folder(pcontext->maildir,
-	    pcontext->selected_folder, &exists, &recent, nullptr, nullptr,
-	    nullptr, nullptr, &err) == MIDB_RESULT_OK) {
+	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder) == 0) {
 		tmp_len = gx_snprintf(buff, arsizeof(buff),
-		          "* %d EXISTS\r\n"
-		          "* %d RECENT\r\n",
-		          exists, recent);
+		          "* %zu EXISTS\r\n"
+		          "* %u RECENT\r\n",
+		          pcontext->contents.n_exists(),
+		          pcontext->contents.n_recent);
 		if (NULL == pstream) {
 			pcontext->connection.write(buff, tmp_len);
 		} else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK) {
