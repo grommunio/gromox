@@ -1629,15 +1629,14 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
-		if (pstmt1.step() != SQLITE_ROW) {
-			uidnext ++;
+		if (pstmt1.step() != SQLITE_ROW)
 			mail_engine_insert_message(
 				pstmt2, &uidnext, message_id,
 				pstmt.col_text(1),
 				sqlite3_column_int64(pstmt, 3),
 				sqlite3_column_int64(pstmt, 4),
 				sqlite3_column_int64(pstmt, 2));
-		} else {
+		else
 			mail_engine_sync_message(pidb,
 				pstmt2, stm_upd_msg, &uidnext, message_id,
 				sqlite3_column_int64(pstmt, 4),
@@ -1648,7 +1647,6 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 				sqlite3_column_int64(pstmt, 3),
 				sqlite3_column_int64(pstmt1, 3),
 				sqlite3_column_int64(pstmt1, 4));
-		}
 		if (++procmsgs % 512 == 0)
 			mlog(LV_NOTICE, "sync_contents %s fld %llu progress: %zu/%zu",
 			        dir, LLU{folder_id}, procmsgs, totalmsgs);
