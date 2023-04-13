@@ -309,8 +309,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
 	         "INNER JOIN aliases AS a ON u.username=a.mainname "
-	         "WHERE u.group_id=%d AND (SELECT COUNT(*) AS num "
-	         "FROM members AS m WHERE u.username=m.username)=0",
+	         "WHERE u.group_id=%d",
 	         group_id);
 	aliasmap_t amap;
 	aliasmap_load(*conn, query, amap);
@@ -318,7 +317,6 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.group_id=%d AND u.id=p.user_id "
-	         "WHERE (SELECT COUNT(*) AS num FROM members AS m WHERE u.username=m.username)=0 "
 	         "ORDER BY p.user_id, p.proptag, p.order_id",
 	         group_id);
 	propmap_t pmap;
@@ -332,8 +330,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN `groups` AS `gr` ON `u`.`username`=`gr`.`groupname` "
-	         "WHERE u.group_id=%d AND (SELECT COUNT(*) AS num "
-	         "FROM members AS m WHERE u.username=m.username)=0", group_id);
+	         "WHERE u.group_id=%d", group_id);
 	return userlist_parse(*conn, query, amap, pmap, pfile);
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "mysql_adaptor: %s %s", __func__, e.what());
