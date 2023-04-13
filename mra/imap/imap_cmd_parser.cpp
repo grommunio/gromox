@@ -43,6 +43,7 @@ using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 using LLU = unsigned long long;
+using mdi_list = std::vector<std::string>; /* message data item (RFC 3501 §6.4.5) */
 
 enum {
 	TYPE_WILDS = 1,
@@ -83,24 +84,8 @@ static BOOL icp_hint_seq(const imap_seq_list &list,
 	return FALSE;
 }
 
-static void imap_cmd_parser_find_arg_node(DOUBLE_LIST *plist,
-	const char *arg_name, DOUBLE_LIST *plist_to)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		if (strcasecmp(static_cast<char *>(pnode->pdata), arg_name) == 0) {
-			double_list_remove(plist, pnode);
-			double_list_append_as_tail(plist_to, pnode);
-			break;
-		}
-	}
-}
-
-static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
-	DOUBLE_LIST_NODE *nodes, BOOL *pb_detail, BOOL *pb_data,
-	char *string, char **argv, int argc)
+static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
+    BOOL *pb_detail, BOOL *pb_data, char *string, char **argv, int argc) try
 {
 	int len;
 	int i, j;
@@ -115,8 +100,6 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 	char buff[1024];
 	char temp_buff[1024];
 	char* tmp_argv1[128];
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 
 	if ('(' == string[0]) {
 		if (')' != string[strlen(string) - 1]) {
@@ -130,20 +113,15 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 	if (tmp_argc < 1)
 		return FALSE;
 	b_macro = FALSE;
-	double_list_init(plist);
 	for (i=0; i<tmp_argc; i++) {
-		for (pnode=double_list_get_head(plist); NULL!=pnode;
-		     pnode = double_list_get_after(plist, pnode))
-			if (strcasecmp(static_cast<char *>(pnode->pdata), argv[i]) == 0)
-				break;
-		if (pnode != nullptr)
+		if (std::find_if(plist.cbegin(), plist.cend(),
+		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }) != plist.cend())
 			continue;
 		if (0 == strcasecmp(argv[i], "ALL") ||
 			0 == strcasecmp(argv[i], "FAST") ||
 			0 == strcasecmp(argv[i], "FULL")) {
 			b_macro = TRUE;
-			nodes[i].pdata = argv[i];
-			double_list_append_as_tail(plist, &nodes[i]);
+			plist.emplace_back(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "BODY") ||
 			0 == strcasecmp(argv[i], "BODYSTRUCTURE") ||
 			0 == strcasecmp(argv[i], "ENVELOPE") ||
@@ -154,8 +132,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 			0 == strcasecmp(argv[i], "RFC822.SIZE") ||
 			0 == strcasecmp(argv[i], "RFC822.TEXT") ||
 			0 == strcasecmp(argv[i], "UID")) {
-			nodes[i].pdata = argv[i];
-			double_list_append_as_tail(plist, &nodes[i]);
+			plist.emplace_back(argv[i]);
 		} else if (0 == strncasecmp(argv[i], "BODY[", 5) ||
 			0 == strncasecmp(argv[i], "BODY.PEEK[", 10)) {
 			pend = strchr(argv[i], ']');
@@ -246,8 +223,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 				if ((count == 1 && ptr1 == last_ptr) || ptr1 == pend - 1)
 					return FALSE;
 			}
-			nodes[i].pdata = argv[i];
-			double_list_append_as_tail(plist, &nodes[i]);
+			plist.emplace_back(argv[i]);
 		} else {
 			return FALSE;
 		}
@@ -258,29 +234,20 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 	*pb_detail = FALSE;
 	/* stream object contain file information */
 	*pb_data = FALSE;
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto kw = static_cast<const char *>(pnode->pdata);
+	for (size_t i = 0; i < plist.size(); ++i) {
+		auto kw = plist[i].c_str();
 		if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FAST") == 0 ||
 		    strcasecmp(kw, "FULL") == 0) {
-			i ++;
-			nodes[i].pdata = deconst("INTERNALDATE");
-			double_list_append_as_tail(plist, &nodes[i]);
-			i ++;
-			nodes[i].pdata = deconst("RFC822.SIZE");
-			double_list_append_as_tail(plist, &nodes[i]);
+			plist.emplace_back("INTERNALDATE");
+			plist.emplace_back("RFC822.SIZE");
 			if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FULL") == 0) {
-				i ++;
-				nodes[i].pdata = deconst("ENVELOPE");
-				double_list_append_as_tail(plist, &nodes[i]);
+				plist.emplace_back("ENVELOPE");
 				if(0 == strcasecmp(kw, "FULL")) {
-					i ++;
-					nodes[i].pdata = deconst("BODY");
-					double_list_append_as_tail(plist, &nodes[i]);
+					plist.emplace_back("BODY");
 				}
 			}
 			*pb_detail = TRUE;
-			pnode->pdata = deconst("FLAGS");
+			kw = "FLAGS";
 		} else if (strcasecmp(kw, "RFC822") == 0 ||
 		    strcasecmp(kw, "RFC822.HEADER") == 0 ||
 		    strcasecmp(kw, "RFC822.TEXT") == 0) {
@@ -299,22 +266,18 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 			*pb_detail = TRUE;
 		}
 	}
-	/* sort args and make simple at the head */
-	double_list_init(&temp_list);
-	imap_cmd_parser_find_arg_node(plist, "UID", &temp_list);
-	imap_cmd_parser_find_arg_node(plist, "FLAGS", &temp_list);
-	imap_cmd_parser_find_arg_node(plist, "INTERNALDATE", &temp_list);
-	imap_cmd_parser_find_arg_node(plist, "RFC822.SIZE", &temp_list);
-	imap_cmd_parser_find_arg_node(plist, "ENVELOPE", &temp_list);
-	imap_cmd_parser_find_arg_node(plist, "RFC822.HEADER", &temp_list);
-	imap_cmd_parser_find_arg_node(plist, "RFC822.TEXT", &temp_list);
-	double_list_append_list(&temp_list, plist);
-	*plist = temp_list;
-	double_list_free(&temp_list);
-	imap_cmd_parser_find_arg_node(plist, "BODY", plist);
-	imap_cmd_parser_find_arg_node(plist, "BODYSTRUCTURE", plist);
-	imap_cmd_parser_find_arg_node(plist, "RFC822", plist);
+	/* move to front (UID goes in front of plist) */
+	for (const auto kw : {"RFC822.TEXT", "RFC822.HEADER", "ENVELOPE", "RFC822.SIZE", "INTERNALDATE", "FLAGS", "UID"})
+		std::stable_partition(plist.begin(), plist.end(),
+			[kw](const std::string &e) { return strcasecmp(e.c_str(), kw) == 0; });
+	/* move to back */
+	for (const auto kw : {"BODY", "BODYSTRUCTURE", "RFC822"})
+		std::stable_partition(plist.begin(), plist.end(),
+			[kw](const std::string &e) { return strcasecmp(e.c_str(), kw) != 0; });
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1271: ENOMEM");
+	return false;
 }
 
 static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_string)
@@ -453,8 +416,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	return l2 >= 0 && static_cast<size_t>(l2) >= val_len - 1 ? -1 : l2;
 }
 
-static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
-    MJSON *pjson, const char *cmd_tag, char *buff, int max_len, const char *pbody,
+static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext, MJSON *pjson,
+    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *temp_tag, size_t offset, ssize_t length,
 	const char *storage_path)
 {
@@ -598,7 +561,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 				mlog(LV_ERR, "E-1465: ENOMEM");
 			}
 
-			len = imap_cmd_parser_match_field(cmd_tag, eml_path.c_str(),
+			len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
 			      pmime->get_offset(MJSON_MIME_HEAD),
 			      pmime->get_length(MJSON_MIME_HEAD),
 			      b_not, temp_tag, offset, length, buff + buff_len,
@@ -617,7 +580,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 }
 
 static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
-	BOOL b_data, MITEM *pitem, int item_id, DOUBLE_LIST *pitem_list)
+    BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list)
 {
 	int errnum;
 	MJSON mjson(imap_parser_get_jpool());
@@ -641,15 +604,14 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	int buff_len = 0;
 	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 	            "* %d FETCH (", item_id);
-	for (auto pnode = double_list_get_head(pitem_list); pnode != nullptr;
-		pnode=double_list_get_after(pitem_list, pnode)) {
+	for (auto &kwss : pitem_list) {
 		if (!b_first) {
 			b_first = TRUE;
 		} else {
 			buff[buff_len] = ' ';
 			buff_len ++;
 		}
-		auto kw = static_cast<const char *>(pnode->pdata);
+		auto kw = kwss.c_str();
 		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            arsizeof(buff) - buff_len, "BODY ");
@@ -789,7 +751,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            arsizeof(buff) - buff_len, "UID %d", pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
-			auto pbody = strchr(static_cast<char *>(pnode->pdata), '[');
+			auto pbody = strchr(kwss.data(), '[');
 			auto pend = strchr(pbody + 1, ']');
 			size_t offset = 0, length = -1;
 			if (pend[1] == '<') {
@@ -842,24 +804,24 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
 						len = imap_cmd_parser_print_structure(
-						      pcontext, &temp_mjson, static_cast<char *>(pnode->pdata),
+						      pcontext, &temp_mjson, kwss.c_str(),
 							buff + buff_len, MAX_DIGLEN - buff_len,
 							pbody, final_id, ptr, offset, length,
 						      mjson.get_mail_filename());
 					else
 						len = imap_cmd_parser_print_structure(pcontext,
-						      &mjson, static_cast<char *>(pnode->pdata),
+						      &mjson, kwss.c_str(),
 						      buff + buff_len, MAX_DIGLEN - buff_len,
 						      pbody, temp_id, ptr, offset, length, nullptr);
 				} else {
 					len = imap_cmd_parser_print_structure(pcontext,
-					      &mjson, static_cast<char *>(pnode->pdata),
+					      &mjson, kwss,
 					      buff + buff_len, MAX_DIGLEN - buff_len,
 					      pbody, temp_id, ptr, offset, length, nullptr);
 				}
 			} else {
 				len = imap_cmd_parser_print_structure(pcontext,
-				      &mjson, static_cast<char *>(pnode->pdata),
+				      &mjson, kwss,
 				      buff + buff_len, MAX_DIGLEN - buff_len,
 				      pbody, temp_id, ptr, offset, length, nullptr);
 			}
@@ -2573,14 +2535,13 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char* tmp_argv[128];
 	imap_seq_list list_seq;
-	DOUBLE_LIST list_data;
-	DOUBLE_LIST_NODE nodes[1024];
+	mdi_list list_data;
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (argc < 4 || parse_imap_seq(list_seq, argv[2]) != 0)
 		return 1800;
-	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
+	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
 		return 1800;
 	XARRAY xarray(g_alloc_xarray);
@@ -2597,7 +2558,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		result = imap_cmd_parser_process_fetch_item(pcontext, b_data,
-		         pitem, pitem->id, &list_data);
+		         pitem, pitem->id, list_data);
 		if (result != 0)
 			return result;
 	}
@@ -2843,25 +2804,18 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	size_t string_length = 0;
 	char* tmp_argv[128];
 	imap_seq_list list_seq;
-	DOUBLE_LIST list_data;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE nodes[1024];
+	mdi_list list_data;
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
 	if (argc < 5 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
-	if (!imap_cmd_parser_parse_fetch_args(&list_data, nodes, &b_detail,
+	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[4], tmp_argv, arsizeof(tmp_argv)))
 		return 1800;
-	for (pnode=double_list_get_head(&list_data); NULL!=pnode;
-	     pnode = double_list_get_after(&list_data, pnode))
-		if (strcasecmp(static_cast<char *>(pnode->pdata), "UID") == 0)
-			break;
-	if (NULL == pnode) {
-		nodes[1023].pdata = deconst("UID");
-		double_list_insert_as_head(&list_data, &nodes[1023]);
-	}
+	if (std::find_if(list_data.cbegin(), list_data.cend(),
+	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }) == list_data.cend())
+		list_data.emplace_back("UID");
 	XARRAY xarray(g_alloc_xarray);
 	auto ssr = b_detail ?
 	           system_services_fetch_detail_uid(pcontext->maildir,
@@ -2876,7 +2830,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		ret = imap_cmd_parser_process_fetch_item(pcontext, b_data,
-		      pitem, pitem->id, &list_data);
+		      pitem, pitem->id, list_data);
 		if (ret != 0)
 			return ret;
 	}
