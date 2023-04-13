@@ -1,5 +1,5 @@
-Development 2.7.54
-==================
+Development 2.7.140
+===================
 
 Fixes:
 
@@ -13,6 +13,9 @@ Fixes:
   for every RCPT
 * nsp: fix janky addressbook navigation when the GAL has hidden entries
 * authmgr: resolve altnames before searching them in the LDAP backend
+* php_mapi: reduce memory block retention scopes so that requests with a large
+  response (~128MB+) won't die from Out Of Memory
+* midb: fix E-1903 error appearing on shutdown
 
 Enhancements:
 
@@ -21,6 +24,11 @@ Enhancements:
   in the GAL.
 * Support for non-default stores in the IMAP and POP3 protocols;
   use "actualusername!sharedmbox" as the username for login.
+* imap: allow setting \Recent flag with STORE command
+* imap: send TRYCREATE on failed SELECT
+* imap: output \Junk alongside \Spam for the junk folder
+* imap: emit special-use flags with plain LIST when so requested in the command
+* imap: add LIST response to SELECT/EXAMINE
 
 Changes:
 
