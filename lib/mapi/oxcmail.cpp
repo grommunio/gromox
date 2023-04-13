@@ -5308,8 +5308,14 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		return TRUE;
 	} else if (mime_skeleton.mail_type == oxcmail_type::xsigned) {
 		auto a = pmsg->children.pattachments;
-		if (a == nullptr || a->count != 1)
+		if (a == nullptr || a->count == 0) {
+			/* No idea what gives. But oh well, emit just the header then. */
+			pmime->mime_type = mime_type::single;
+			return TRUE;
+		} else if (a->count != 1) {
+			mlog(LV_DEBUG, "Signed SMIME mail with more than one attachment, what is this?!");
 			return false;
+		}
 		auto pbin = a->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 		if (!smime_signed_writeout(*pmail, *pmime, pbin, mime_field))
 			return false;
