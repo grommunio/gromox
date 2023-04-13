@@ -76,7 +76,6 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			if (conn_num < 0)
 				conn_num = 8;
 		}
-		printf("[event_stub]: event connection number is %d\n", conn_num);
 
 		str_value = pfile->get_value("EVENT_HOST");
 		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
@@ -89,8 +88,9 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			if (g_event_port == 0)
 				g_event_port = 33333;
 		}
-		printf("[event_stub]: event address is [%s]:%hu\n",
-		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
+		mlog(LV_INFO, "event_stub: receiving events from nexus at [%s]:%hu, with up to %d connections",
+		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port,
+		       conn_num);
 
 		g_notify_stop = false;
 		int ret = 0;
