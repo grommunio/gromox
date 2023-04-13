@@ -51,32 +51,25 @@ Default: \fIroot\fP
 Default: \fI1 minute\fP
 .TP
 \fBschema_upgrade\fP
-This controls what to do when a database schema update is available.
-Because there is no locking mechanism available that works across machines,
-the mysql_adaptor plugin does not use any locking locally either. As a result,
-the default is to not perform any upgrades.
+This controls what to do when a database schema update is available. Because
+the mysql_adaptor plugin is loaded by many programs across potentially multiple
+machines, the basic default is to do nothing.
 .RS
 .TP
-\fBautoupdate\fP
-Do perform automatic schema upgrades when mysql_adaptor is started. Warning:
-This option can potentially be harmful if multiple programs try to upgrade the
-database at the same time.
-.TP
 \fBhost:\fP\fIxyz\fP
-Perform automatic schema upgrades, but only when executing from http(8gx)
-and only when http.cfg's \fBhost_id\fP value matches \fIxyz\fP.
+Perform automatic schema upgrades if the program which has loaded mysql_adaptor
+is http(8gx) and only if http.cfg's \fBhost_id\fP value matches \fIxyz\fP.
 .TP
-\fBskip\fP
-No automatic schema upgrades are performed. The initialization will report
-completion and the program continues execution. The mysql_adaptor plugin may
-not properly work when desired tables are missing and cannot deliver data.
-.TP
-\fBabort\fP
-No automatic schema upgrades are performed. The initialization is aborted and
-the program terminates. Schema upgrades can be done manually with
-gromox\-dbop(8gx).
+(any other value)
+No automatic schema upgrades are performed in the process which has loaded the
+plugin. The plugin may be unable to process or produce certain data, e.g. if it
+relies on a table that has not yet been created. Generally, no restart is
+needed when that upgrade is finally performed, because SQL queries just start
+working. However, there may be some caches, e.g. in the zcore(8gx) address book
+that could remain empty until the refresh timer expires or a manual reload is
+triggered.
 .PP
-Default: \fIskip\fP
+Default: \fIhost:(system_hostname)\fP
 .RE
 .SH See also
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)

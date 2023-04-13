@@ -55,19 +55,17 @@ static bool db_upgrade_check_2(MYSQL *conn)
 		mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d is recent.", current);
 		return true;
 	}
-	mlog(LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
+	bool not_me = g_parm.schema_upgrade == SSU_NOT_ME;
+	mlog(not_me ? LV_INFO : LV_NOTICE, "mysql_adaptor: Current schema n%d. Update available: n%d.",
 	       current, recent);
+	if (not_me)
+		return true;
 	static constexpr const char *msg =
 		"The upgrade either needs to be manually done with gromox-dbop(8gx), "
 		"or configure mysql_adaptor(4gx) [see warning in manpage] to do it.";
-	if (g_parm.schema_upgrade == S_SKIP) {
-		mlog(LV_NOTICE, "mysql_adaptor: Configured action: skip.");
-		puts(msg);
+	if (g_parm.schema_upgrade == SSU_NOT_ENABLED) {
+		mlog(LV_INFO, "mysql_adaptor: Configured action: disabled. %s", msg);
 		return true;
-	} else if (g_parm.schema_upgrade != S_AUTOUP) {
-		mlog(LV_ERR, "mysql_adaptor: Configured action: abort.");
-		puts(msg);
-		return false;
 	}
 	mlog(LV_INFO, "mysql_adaptor: Configured action: autoupgrade (now).");
 	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
@@ -479,18 +477,14 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 	auto v = cfg->get_value("schema_upgrade");
 	if (v == nullptr)
 		v = cfg->get_value("schema_upgrades");
-	par.schema_upgrade = S_SKIP;
+	par.schema_upgrade = SSU_NOT_ENABLED;
 	auto prog_id = get_prog_id();
 	auto host_id = get_host_ID();
-	if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
-	    prog_id != nullptr && strcmp(prog_id, "http") == 0 &&
-	    strcmp(v + 5, host_id) == 0) {
-		par.schema_upgrade = S_AUTOUP;
-	} else if (v != nullptr && strcmp(v, "skip") == 0) {
-		par.schema_upgrade = S_SKIP;
-	} else if (v != nullptr && strcmp(v, "autoupgrade") == 0) {
-		par.schema_upgrade = S_AUTOUP;
-	}
+	if (prog_id == nullptr || strcmp(prog_id, "http") != 0)
+		par.schema_upgrade = SSU_NOT_ME;
+	else if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
+	    prog_id != nullptr && strcmp(&v[5], host_id) == 0)
+		par.schema_upgrade = SSU_AUTOUPGRADE;
 
 	par.enable_firsttimepw = cfg->get_ll("enable_firsttime_password");
 	mysql_adaptor_init(std::move(par));

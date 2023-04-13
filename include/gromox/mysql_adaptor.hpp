@@ -31,14 +31,14 @@ enum class mlist_type {
 	normal = 0, group, domain, dyngroup /* class */,
 };
 
-enum sql_schema_upgrade {
-	S_ABORT, S_SKIP, S_AUTOUP,
+enum sql_schema_upgrade : uint8_t {
+	SSU_NOT_ENABLED, SSU_NOT_ME, SSU_AUTOUPGRADE,
 };
 
 struct mysql_adaptor_init_param {
 	std::string host, user, pass, dbname;
 	int port = 0, conn_num = 0, timeout = 0;
-	enum sql_schema_upgrade schema_upgrade = S_ABORT;
+	enum sql_schema_upgrade schema_upgrade = SSU_NOT_ENABLED;
 	bool enable_firsttimepw = false;
 };
 
