@@ -512,7 +512,8 @@ static constexpr char tbl_mlists_top[] =
 "  `list_privilege` tinyint(4) NOT NULL DEFAULT 0,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `listname` (`listname`),"
-"  KEY `domain_id` (`domain_id`)"
+"  KEY `domain_id` (`domain_id`),"
+"  CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static constexpr char tbl_orgs_top[] =
@@ -772,6 +773,9 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{110, "ALTER TABLE `users` ADD COLUMN `altname` varchar(64) AFTER `primary_email`"},
 	{111, "ALTER TABLE `users` ADD CONSTRAINT UNIQUE `altname` (`altname`)"},
 	{112, "ALTER TABLE `users` DROP COLUMN `max_size`"},
+	/* 113: Enforce constraint for 114 */
+	{113, "DELETE `mlists` FROM `mlists` LEFT JOIN `users` ON `mlists`.`listname`=`users`.`username` WHERE `users`.`username` IS NULL"},
+	{114, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"},
 	{0, nullptr},
 };
 
