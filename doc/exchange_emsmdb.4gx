@@ -121,6 +121,11 @@ Outlook can be started with the \fB/rpcinfo\fP command-line parameter to
 display a status table about the RPC connections it has open. Alternatively,
 one can Ctrl-MouseBtn3 (right button) on the status tray icon to call up a
 context menu, from which "Connection status..." can be selected for the same.
+.SH Signals
+When SIGUSR1 is received by this module, it will dump an overview of current
+EMSMDB sessions to the configured log device (stderr/journal by default).
+EMSMDB sessions are not linked to any one HTTP connection in particular,
+and multiple HTTP connections may exercise one session.
 .SH Normative references
 .IP \(bu 4
 DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open
