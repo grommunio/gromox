@@ -380,7 +380,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 
 static int imap_cmd_parser_match_field(const char *cmd_tag,
 	const char *file_path, size_t offset, size_t length, BOOL b_not,
-	char *tags, size_t offset1, ssize_t length1, char *value, size_t val_len)
+    const char *tags, size_t offset1, ssize_t length1, char *value, size_t val_len)
 {
 	int i;
 	BOOL b_hit;
@@ -454,8 +454,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 }
 
 static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
-	MJSON *pjson, char *cmd_tag, char *buff, int max_len, const char *pbody,
-	const char *temp_id, char *temp_tag, size_t offset, ssize_t length,
+    MJSON *pjson, const char *cmd_tag, char *buff, int max_len, const char *pbody,
+    const char *temp_id, const char *temp_tag, size_t offset, ssize_t length,
 	const char *storage_path)
 {
 	int len;
