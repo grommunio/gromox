@@ -492,17 +492,6 @@ static constexpr char tbl_hierarchy_top[] =
 "  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static constexpr char tbl_members_top[] =
-"CREATE TABLE `members` ("
-"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
-"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
-"  `class_id` int(10) unsigned NOT NULL,"
-"  PRIMARY KEY (`id`),"
-"  UNIQUE KEY `class_id_2` (`class_id`,`username`),"
-"  KEY `username` (`username`),"
-"  KEY `class_id` (`class_id`)"
-") DEFAULT CHARSET=utf8mb4";
-
 static constexpr char tbl_mlists_top[] =
 "CREATE TABLE `mlists` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -593,7 +582,6 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"forwards", tbl_forwards_top},
 	{"groups", tbl_groups_top},
 	{"hierarchy", tbl_hierarchy_top},
-	{"members", tbl_members_top},
 	{"mlists", tbl_mlists_top},
 	{"options", tbl_options_1},
 	{"orgs", tbl_orgs_top},
@@ -776,6 +764,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	/* 113: Enforce constraint for 114 */
 	{113, "DELETE `mlists` FROM `mlists` LEFT JOIN `users` ON `mlists`.`listname`=`users`.`username` WHERE `users`.`username` IS NULL"},
 	{114, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"},
+	{115, "DROP TABLE `members`"},
 	{0, nullptr},
 };
 
