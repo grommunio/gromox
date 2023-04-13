@@ -11,7 +11,7 @@ OXCROPS as issued by the EcDoRpcExt2 call or the MAPIHTTP EXECUTE call.
 .PP
 EMSMDB is a DCE/RPC interface with just a few RPC calls (6 are still used
 today). ecDoRpcExt2, a call offered by that interface, takes an opaque byte
-buffer argument not interprted by DCE/RPC. That byte buffer contains another
+buffer argument not interpreted by DCE/RPC. That byte buffer contains another
 protocol, "Remote Operation(s) Encoding Protocol" [OXCROPS]. No reason for this
 wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
 the extra EMSMDB framing.
