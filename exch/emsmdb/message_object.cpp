@@ -1555,7 +1555,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			return TRUE;
 		*v &= ~MSGFLAG_UNMODIFIED;
 		propval.proptag = PR_MESSAGE_FLAGS;
-		propval.pvalue = pvalue;
+		propval.pvalue = v;
 		if (!exmdb_client::set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
 			return FALSE;

@@ -1097,7 +1097,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		break;
 	case rfClearNotifyRead:
 	case rfClearNotifyUnread:
-	case rfClearNotifyRead | rfClearNotifyUnread:
+	case rfClearNotifyRead | rfClearNotifyUnread: {
 		if (read_flag & rfClearNotifyRead) {
 			if (!exmdb_client_remove_instance_property(dir,
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED,
@@ -1128,17 +1128,19 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		    pmessage->instance_id, PR_MESSAGE_FLAGS,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		if (!(*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNMODIFIED))
+		auto v = static_cast<uint32_t *>(pvalue);
+		if (!(*v & MSGFLAG_UNMODIFIED))
 			return TRUE;
-		*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
+		*v &= ~MSGFLAG_UNMODIFIED;
 		propval.proptag = PR_MESSAGE_FLAGS;
-		propval.pvalue = pvalue;
+		propval.pvalue = v;
 		if (!exmdb_client_set_instance_property(dir,
 		    pmessage->instance_id, &propval, &result))
 			return FALSE;
 		if (!exmdb_client::mark_modified(dir, pmessage->message_id))
 			return FALSE;
 		return TRUE;
+	}
 	default:
 		return TRUE;
 	}
