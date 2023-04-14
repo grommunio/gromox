@@ -1082,10 +1082,10 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;
-		if (pvb_enabled(pvalue)) {
-			tmp_byte = 0;
-			*pb_changed = TRUE;
-		}
+		if (!pvb_enabled(pvalue))
+			break;
+		tmp_byte = 0;
+		*pb_changed = TRUE;
 		break;
 	case rfGenerateReceiptOnly:
 		if (!exmdb_client_get_instance_property(dir,
@@ -1128,16 +1128,16 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		    pmessage->instance_id, PR_MESSAGE_FLAGS,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		if (*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNMODIFIED) {
-			*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
-			propval.proptag = PR_MESSAGE_FLAGS;
-			propval.pvalue = pvalue;
-			if (!exmdb_client_set_instance_property(dir,
-			    pmessage->instance_id, &propval, &result))
-				return FALSE;
-			if (!exmdb_client::mark_modified(dir, pmessage->message_id))
-				return FALSE;
-		}
+		if (!(*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNMODIFIED))
+			return TRUE;
+		*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
+		propval.proptag = PR_MESSAGE_FLAGS;
+		propval.pvalue = pvalue;
+		if (!exmdb_client_set_instance_property(dir,
+		    pmessage->instance_id, &propval, &result))
+			return FALSE;
+		if (!exmdb_client::mark_modified(dir, pmessage->message_id))
+			return FALSE;
 		return TRUE;
 	default:
 		return TRUE;

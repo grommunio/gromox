@@ -588,10 +588,10 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ, &pvalue))
 			return FALSE;
-		if (pvb_enabled(pvalue)) {
-			tmp_byte = 0;
-			b_changed = TRUE;
-		}
+		if (!pvb_enabled(pvalue))
+			break;
+		tmp_byte = 0;
+		b_changed = TRUE;
 		break;
 	case rfGenerateReceiptOnly:
 		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
