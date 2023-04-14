@@ -189,14 +189,12 @@ BOOL exmdb_server::sum_hierarchy(const char *dir,
 	return TRUE;
 }
 	
-BOOL exmdb_server::load_hierarchy_table(const char *dir,
-	uint64_t folder_id, const char *username, uint8_t table_flags,
-	const RESTRICTION *prestriction, uint32_t *ptable_id,
-	uint32_t *prow_count)
+BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
+    const char *username, uint8_t table_flags, const RESTRICTION *prestriction,
+    uint32_t *ptable_id, uint32_t *prow_count) try
 {
 	uint64_t fid_val;
 	uint32_t table_id;
-	TABLE_NODE *ptnode;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -221,19 +219,13 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir,
 		"depth INTEGER NOT NULL)", table_id);
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	ptnode = me_alloc<TABLE_NODE>();
-	if (ptnode == nullptr)
-		return FALSE;
-	memset(ptnode, 0, sizeof(TABLE_NODE));
-	ptnode->node.pdata = ptnode;
+	auto ptnode = std::make_unique<table_node>();
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
-		if (NULL == ptnode->remote_id) {
-			free(ptnode);
+		if (ptnode->remote_id == nullptr)
 			return FALSE;
-		}
 	}
 	ptnode->type = table_type::hierarchy;
 	ptnode->folder_id = fid_val;
@@ -247,41 +239,26 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir,
 	}
 	if (NULL != prestriction) {
 		ptnode->prestriction = restriction_dup(prestriction);
-		if (NULL == ptnode->prestriction) {
-			if (ptnode->remote_id != nullptr)
-				free(ptnode->remote_id);
-			free(ptnode);
+		if (ptnode->prestriction == nullptr)
 			return FALSE;
-		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (folder_id,"
 					" depth) VALUES (?, ?)", ptnode->table_id);
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-	if (pstmt == nullptr) {
-		if (ptnode->prestriction != nullptr)
-			restriction_free(ptnode->prestriction);
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	*prow_count = 0;
 	if (!table_load_hierarchy(pdb->psqlite, fid_val, username, table_flags,
-	    prestriction, pstmt, 1, prow_count)) {
-		pstmt.finalize();
-		if (ptnode->prestriction != nullptr)
-			restriction_free(ptnode->prestriction);
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
+	    prestriction, pstmt, 1, prow_count))
 		return FALSE;
-	}
 	pstmt.finalize();
 	if (table_transact.commit() != 0)
 		return false;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
+	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
@@ -569,7 +546,7 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
 static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	uint64_t fid_val, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
-	uint32_t *ptable_id, uint32_t *prow_count)
+   uint32_t *ptable_id, uint32_t *prow_count) try
 {
 	int multi_index = 0;
 	size_t tag_count = 0;
@@ -634,13 +611,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	auto ptnode = me_alloc<TABLE_NODE>();
-	if (ptnode == nullptr)
-		return FALSE;
+	auto ptnode = std::make_unique<table_node>();
 	xstmt pstmt, pstmt1;
 	sqlite3 *psqlite = nullptr;
-	memset(ptnode, 0, sizeof(TABLE_NODE));
-	ptnode->node.pdata = ptnode;
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	bool all_ok = false;
@@ -653,15 +626,6 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			gx_sql_exec(psqlite, "ROLLBACK");
 			sqlite3_close(psqlite);
 		}
-		if (ptnode->psorts != nullptr)
-			sortorder_set_free(ptnode->psorts);
-		if (ptnode->prestriction != nullptr)
-			restriction_free(ptnode->prestriction);
-		if (ptnode->username != nullptr)
-			free(ptnode->username);
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
 	});
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
@@ -1167,12 +1131,14 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	all_ok = true;
 	if (table_transact.commit() != 0)
 		return false;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
+	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
 	if (*ptable_id == 0)
 		*ptable_id = table_id;
 	*prow_count = 0;
 	table_sum_table_count(pdb, table_id, prow_count); 
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return FALSE;
 }
 
 BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
@@ -1285,11 +1251,10 @@ BOOL exmdb_server::load_perm_table_v1(const char *dir, uint64_t folder_id,
 }
 
 BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
-    uint32_t table_flags, uint32_t *ptable_id, uint32_t *prow_count)
+    uint32_t table_flags, uint32_t *ptable_id, uint32_t *prow_count) try
 {
 	uint64_t fid_val;
 	uint32_t table_id;
-	TABLE_NODE *ptnode;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1309,19 +1274,13 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 		"AUTOINCREMENT, member_id INTEGER UNIQUE NOT NULL)", table_id);
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	ptnode = me_alloc<TABLE_NODE>();
-	if (ptnode == nullptr)
-		return FALSE;
-	memset(ptnode, 0, sizeof(TABLE_NODE));
-	ptnode->node.pdata = ptnode;
+	auto ptnode = std::make_unique<table_node>();
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
-		if (NULL == ptnode->remote_id) {
-			free(ptnode);
+		if (ptnode->remote_id == nullptr)
 			return FALSE;
-		}
 	}
 	ptnode->type = table_type::permission;
 	ptnode->folder_id = fid_val;
@@ -1329,25 +1288,19 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u "
 		"(member_id) VALUES (?)", ptnode->table_id);
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-	if (pstmt == nullptr) {
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	*prow_count = 0;
-	if (!table_load_permissions(pdb->psqlite, fid_val, pstmt, prow_count)) {
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
+	if (!table_load_permissions(pdb->psqlite, fid_val, pstmt, prow_count))
 		return FALSE;
-	}
 	pstmt.finalize();
 	if (table_transact.commit() != 0)
 		return false;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
+	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static bool table_evaluate_rule_restriction(sqlite3 *psqlite, uint64_t rule_id,
@@ -1467,14 +1420,12 @@ static BOOL table_load_rules(sqlite3 *psqlite, uint64_t folder_id,
 	return TRUE;
 }
 
-BOOL exmdb_server::load_rule_table(const char *dir,
-	uint64_t folder_id, uint8_t table_flags,
-	const RESTRICTION *prestriction,
-	uint32_t *ptable_id, uint32_t *prow_count)
+BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
+    uint8_t table_flags, const RESTRICTION *prestriction, uint32_t *ptable_id,
+    uint32_t *prow_count) try
 {
 	uint64_t fid_val;
 	uint32_t table_id;
-	TABLE_NODE *ptnode;
 	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1494,59 +1445,38 @@ BOOL exmdb_server::load_rule_table(const char *dir,
 		"AUTOINCREMENT, rule_id INTEGER UNIQUE NOT NULL)", table_id);
 	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	ptnode = me_alloc<TABLE_NODE>();
-	if (ptnode == nullptr)
-		return FALSE;
-	memset(ptnode, 0, sizeof(TABLE_NODE));
-	ptnode->node.pdata = ptnode;
+	auto ptnode = std::make_unique<table_node>();
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
 	if (NULL != remote_id) {
 		ptnode->remote_id = strdup(remote_id);
-		if (NULL == ptnode->remote_id) {
-			free(ptnode);
+		if (ptnode->remote_id == nullptr)
 			return FALSE;
-		}
 	}
 	ptnode->type = table_type::rule;
 	ptnode->folder_id = fid_val;
 	if (NULL != prestriction) {
 		ptnode->prestriction = restriction_dup(prestriction);
-		if (NULL == ptnode->prestriction) {
-			if (ptnode->remote_id != nullptr)
-				free(ptnode->remote_id);
-			free(ptnode);
+		if (ptnode->prestriction == nullptr)
 			return FALSE;
-		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u "
 		"(rule_id) VALUES (?)", ptnode->table_id);
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-	if (pstmt == nullptr) {
-		if (ptnode->prestriction != nullptr)
-			restriction_free(ptnode->prestriction);
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
+	if (pstmt == nullptr)
 		return FALSE;
-	}
 	*prow_count = 0;
 	if (!table_load_rules(pdb->psqlite, fid_val, table_flags, prestriction,
-	    pstmt, prow_count)) {
-		pstmt.finalize();
-		if (ptnode->prestriction != nullptr)
-			restriction_free(ptnode->prestriction);
-		if (ptnode->remote_id != nullptr)
-			free(ptnode->remote_id);
-		free(ptnode);
+	    pstmt, prow_count))
 		return FALSE;
-	}
 	pstmt.finalize();
 	if (table_transact.commit() != 0)
 		return false;
-	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
+	double_list_append_as_tail(&pdb->tables.table_list, &ptnode.release()->node);
 	*ptable_id = ptnode->table_id;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)

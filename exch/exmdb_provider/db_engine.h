@@ -34,7 +34,7 @@ struct dynamic_node {
 };
 using DYNAMIC_NODE = dynamic_node;
 
-enum class table_type {
+enum class table_type : uint8_t {
 	hierarchy, content, permission, rule,
 };
 
@@ -42,24 +42,29 @@ enum class instance_type {
 	message, attachment,
 };
 
-struct TABLE_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t table_id;
-	enum table_type type;
-	char *remote_id;
-	uint64_t folder_id;
-	GUID handle_guid;
-	uint32_t table_flags;
-	cpid_t cpid;
-	char *username;
-	RESTRICTION *prestriction;
-	SORTORDER_SET *psorts;
-	uint32_t instance_tag;
-	uint32_t extremum_tag;
-	uint32_t header_id;
-	BOOL b_search;
-	BOOL b_hint;		/* is table touched in batch-mode */
+struct table_node {
+	struct clone_t {};
+
+	table_node();
+	table_node(const table_node &, clone_t);
+	~table_node();
+	NOMOVE(table_node);
+
+	DOUBLE_LIST_NODE node{};
+	uint32_t table_id = 0, table_flags = 0;
+	cpid_t cpid = CP_ACP;
+	enum table_type type = table_type::hierarchy;
+	bool cloned = false;
+	char *remote_id = nullptr, *username = nullptr;
+	uint64_t folder_id = 0;
+	GUID handle_guid{};
+	RESTRICTION *prestriction = nullptr;
+	SORTORDER_SET *psorts = nullptr;
+	uint32_t instance_tag = 0, extremum_tag = 0, header_id = 0;
+	BOOL b_search = false;
+	BOOL b_hint = false; /* is table touched in batch-mode */
 };
+using TABLE_NODE = table_node;
 
 struct nsub_node {
 	char *remote_id = nullptr;

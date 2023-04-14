@@ -338,6 +338,36 @@ dynamic_node &dynamic_node::operator=(dynamic_node &&o) noexcept
 	return *this;
 }
 
+table_node::table_node()
+{
+	node.pdata = this;
+}
+
+table_node::table_node(const table_node &o, clone_t) :
+	table_id(o.table_id), table_flags(o.table_flags), cpid(o.cpid),
+	type(o.type), cloned(true), remote_id(o.remote_id), username(o.username),
+	folder_id(o.folder_id), handle_guid(o.handle_guid),
+	prestriction(o.prestriction), psorts(o.psorts),
+	instance_tag(o.instance_tag), extremum_tag(o.extremum_tag),
+	header_id(o.header_id), b_search(o.b_search), b_hint(o.b_hint)
+{
+	node.pdata = this;
+}
+
+table_node::~table_node()
+{
+	if (cloned)
+		return;
+	if (username != nullptr)
+		free(username);
+	if (remote_id != nullptr)
+		free(remote_id);
+	if (prestriction != nullptr)
+		restriction_free(prestriction);
+	if (psorts != nullptr)
+		sortorder_set_free(psorts);
+}
+
 DB_ITEM::~DB_ITEM()
 {
 	auto pdb = this;
@@ -345,16 +375,8 @@ DB_ITEM::~DB_ITEM()
 	
 	pdb->instance_list.clear();
 	dynamic_list.clear();
-	while ((pnode = double_list_pop_front(&pdb->tables.table_list)) != nullptr) {
-		auto ptable = static_cast<TABLE_NODE *>(pnode->pdata);
-		if (ptable->remote_id != nullptr)
-			free(ptable->remote_id);
-		if (ptable->prestriction != nullptr)
-			restriction_free(ptable->prestriction);
-		if (ptable->psorts != nullptr)
-			sortorder_set_free(ptable->psorts);
-		free(ptable);
-	}
+	while ((pnode = double_list_pop_front(&pdb->tables.table_list)) != nullptr)
+		delete static_cast<table_node *>(pnode->pdata);
 	double_list_free(&pdb->tables.table_list);
 	if (NULL != pdb->tables.psqlite) {
 		sqlite3_close(pdb->tables.psqlite);
@@ -2845,6 +2867,11 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	
 	pmodified_row = NULL;
 	double_list_init(&tmp_list);
+	auto cl_0 = make_scope_exit([&tmp_list]() {
+		DOUBLE_LIST_NODE *n;
+		while ((n = double_list_pop_front(&tmp_list)) != nullptr)
+			delete static_cast<table_node *>(n->pdata);
+	});
 	for (pnode=double_list_get_head(&pdb->tables.table_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->tables.table_list, pnode)) {
 		auto ptable = static_cast<const TABLE_NODE *>(pnode->pdata);
@@ -3365,14 +3392,12 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 		continue;
 		}
  REFRESH_TABLE:
-		auto ptnode = cu_alloc<TABLE_NODE>();
+		auto ptnode = std::make_unique<table_node>(*ptable, table_node::clone_t{});
 		if (ptnode == nullptr)
 			return;
-		*ptnode = *ptable;
 		if (ptable->psorts->ccategories != 0)
 			ptnode->table_flags |= TABLE_FLAG_NONOTIFICATIONS;
-		ptnode->node.pdata = ptnode;
-		double_list_append_as_tail(&tmp_list, &ptnode->node);
+		double_list_append_as_tail(&tmp_list, &ptnode.release()->node);
 	}
 	if (double_list_get_nodes_num(&tmp_list) == 0)
 		return;
