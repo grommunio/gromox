@@ -39,14 +39,16 @@ xtransaction::~xtransaction()
 
 void xtransaction::commit()
 {
+	if (m_db == nullptr)
+		return;
 	sqlite3_exec(m_db, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
 	m_db = nullptr;
 }
 
 xtransaction gx_sql_begin_trans(sqlite3 *db)
 {
-	sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
-	return xtransaction(db);
+	auto ret = gx_sql_exec(db, "BEGIN TRANSACTION");
+	return xtransaction(ret == SQLITE_OK ? db : nullptr);
 }
 
 int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
