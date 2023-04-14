@@ -1049,8 +1049,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	static const uint8_t fake_false = false;
 	TAGGED_PROPVAL propval_buff[2];
 	
-	read_flag &= rfSuppressReceipt | rfClearReadFlag | rfGenerateReceiptOnly |
-	             rfClearNotifyRead | rfClearNotifyUnread;
+	read_flag &= ~rfReserved;
 	const char *username = nullptr;
 	if (!pmessage->pstore->b_private) {
 		auto pinfo = zs_get_info();

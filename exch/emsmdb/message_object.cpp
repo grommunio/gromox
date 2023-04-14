@@ -1481,6 +1481,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	*pb_changed = FALSE;
 	auto dir = pmessage->plogon->get_dir();
 
+	read_flag &= ~rfReserved;
 	switch (read_flag) {
 	case rfDefault:
 	case rfSuppressReceipt:

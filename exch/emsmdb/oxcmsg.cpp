@@ -563,6 +563,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	b_changed = FALSE;
 	auto dir = plogon->get_dir();
 
+	read_flag &= ~rfReserved;
 	switch (read_flag) {
 	case rfDefault:
 	case rfSuppressReceipt:
