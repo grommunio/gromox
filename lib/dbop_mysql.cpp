@@ -480,18 +480,6 @@ static constexpr char tbl_groups_top[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static constexpr char tbl_hierarchy_top[] =
-"CREATE TABLE `hierarchy` ("
-"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
-"  `class_id` int(10) unsigned NOT NULL,"
-"  `child_id` int(10) unsigned NOT NULL,"
-"  `group_id` int(10) unsigned NOT NULL,"
-"  PRIMARY KEY (`id`),"
-"  KEY `class_id` (`class_id`),"
-"  KEY `child_id` (`child_id`),"
-"  KEY `group_id` (`group_id`)"
-") DEFAULT CHARSET=utf8mb4";
-
 static constexpr char tbl_mlists_top[] =
 "CREATE TABLE `mlists` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -581,7 +569,6 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"domains", tbl_domains_top},
 	{"forwards", tbl_forwards_top},
 	{"groups", tbl_groups_top},
-	{"hierarchy", tbl_hierarchy_top},
 	{"options", tbl_options_1},
 	{"orgs", tbl_orgs_top},
 	{"specifieds", tbl_specifieds_top},
@@ -764,6 +751,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{114, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"},
 	{115, "DROP TABLE `members`"},
 	{116, "ALTER TABLE `classes` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{117, "DROP TABLE `hierarchy`"},
 	{0, nullptr},
 };
 
