@@ -428,7 +428,7 @@ static constexpr char tbl_classes_top[] =
 "CREATE TABLE `classes` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
-"  `listname` varchar(320) CHARACTER SET ascii DEFAULT NULL,"
+"  `listname` varchar(320) CHARACTER SET ascii DEFAULT NOT NULL,"
 "  `filters` TEXT,"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
@@ -641,7 +641,6 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{2, "ALTER TABLE `aliases` CHANGE COLUMN `aliasname` `aliasname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{3, "ALTER TABLE `aliases` CHANGE COLUMN `mainname` `mainname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{4, "ALTER TABLE `associations` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
-	{6, "ALTER TABLE `classes` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{7, "ALTER TABLE `domains` CHANGE COLUMN `domainname` `domainname` varchar(255) CHARACTER SET ascii NOT NULL"},
 	{8, "ALTER TABLE `forwards` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{9, "ALTER TABLE `forwards` CHANGE COLUMN `destination` `destination` varchar(320) CHARACTER SET ascii NOT NULL"},
@@ -764,6 +763,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{113, "DELETE `mlists` FROM `mlists` LEFT JOIN `users` ON `mlists`.`listname`=`users`.`username` WHERE `users`.`username` IS NULL"},
 	{114, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"},
 	{115, "DROP TABLE `members`"},
+	{116, "ALTER TABLE `classes` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{0, nullptr},
 };
 
