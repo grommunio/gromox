@@ -1922,7 +1922,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 	if (0 == pentryids->count) {
 		restriction.rt = RES_PROPERTY;
 		restriction.pres = &res_prop;
-		res_prop.relop = flags == CLEAR_READ_FLAG ? RELOP_NE : RELOP_EQ;
+		res_prop.relop = flags == rfClearReadFlag ? RELOP_NE : RELOP_EQ;
 		res_prop.proptag = PR_READ;
 		res_prop.propval.proptag = PR_READ;
 		res_prop.propval.pvalue = deconst(&fake_false);
@@ -1962,7 +1962,7 @@ ec_error_t zs_setreadflags(GUID hsession, uint32_t hfolder,
 			continue;
 		b_notify = FALSE;
 		b_changed = FALSE;
-		if (flags == CLEAR_READ_FLAG) {
+		if (flags == rfClearReadFlag) {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
 			    username, CP_ACP, message_id, PR_READ, &pvalue))
 				return ecError;

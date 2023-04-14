@@ -1049,8 +1049,8 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	static const uint8_t fake_false = false;
 	TAGGED_PROPVAL propval_buff[2];
 	
-	read_flag &= SUPPRESS_RECEIPT | GENERATE_RECEIPT_ONLY |
-	             CLEAR_RN_PENDING | CLEAR_NRN_PENDING | CLEAR_READ_FLAG;
+	read_flag &= rfSuppressReceipt | rfClearReadFlag | rfGenerateReceiptOnly |
+	             rfClearNotifyRead | rfClearNotifyUnread;
 	const char *username = nullptr;
 	if (!pmessage->pstore->b_private) {
 		auto pinfo = zs_get_info();
@@ -1060,8 +1060,8 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	*pb_changed = FALSE;
 	auto dir = pmessage->pstore->get_dir();
 	switch (read_flag) {
-	case MSG_READ_FLAG_DEFAULT:
-	case SUPPRESS_RECEIPT:
+	case rfDefault:
+	case rfSuppressReceipt:
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
@@ -1069,7 +1069,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			break;
 		tmp_byte = 1;
 		*pb_changed = TRUE;
-		if (read_flag != MSG_READ_FLAG_DEFAULT)
+		if (read_flag != rfDefault)
 			break;
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id,
@@ -1078,7 +1078,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
-	case CLEAR_READ_FLAG:
+	case rfClearReadFlag:
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;
@@ -1087,7 +1087,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			*pb_changed = TRUE;
 		}
 		break;
-	case GENERATE_RECEIPT_ONLY:
+	case rfGenerateReceiptOnly:
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED,
 		    &pvalue))
@@ -1095,10 +1095,10 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
-	case CLEAR_RN_PENDING:
-	case CLEAR_NRN_PENDING:
-	case CLEAR_RN_PENDING | CLEAR_NRN_PENDING:
-		if (read_flag & CLEAR_RN_PENDING) {
+	case rfClearNotifyRead:
+	case rfClearNotifyUnread:
+	case rfClearNotifyRead | rfClearNotifyUnread:
+		if (read_flag & rfClearNotifyRead) {
 			if (!exmdb_client_remove_instance_property(dir,
 			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED,
 			    &result))
@@ -1111,7 +1111,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			    PR_READ_RECEIPT_REQUESTED))
 				return FALSE;
 		}
-		if (read_flag & CLEAR_NRN_PENDING) {
+		if (read_flag & rfClearNotifyUnread) {
 			if (!exmdb_client_remove_instance_property(dir,
 			    pmessage->instance_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &result))

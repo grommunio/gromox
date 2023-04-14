@@ -976,12 +976,13 @@ enum {
 #define RESOLVE_METHOD_NO_CONFLICT_NOTIFICATION		0x00000002
 
 enum {
-	MSG_READ_FLAG_DEFAULT = 0, /* Gromox-specific name */
-	SUPPRESS_RECEIPT = 0x1U,
-	CLEAR_READ_FLAG = 0x4U,
-	GENERATE_RECEIPT_ONLY = 0x10U,
-	CLEAR_RN_PENDING = 0x20U,
-	CLEAR_NRN_PENDING = 0x40U,
+	rfDefault             = 0x0U,
+	rfSuppressReceipt     = 0x1U,
+	rfClearReadFlag       = 0x4U,
+	rfReserved            = 0xAU,
+	rfGenerateReceiptOnly = 0x10U,
+	rfClearNotifyRead     = 0x20U,
+	rfClearNotifyUnread   = 0x40U,
 };
 
 #define LOCK_STAT_1STLOCK							0x0

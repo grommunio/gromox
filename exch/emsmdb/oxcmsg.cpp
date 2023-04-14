@@ -564,8 +564,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	auto dir = plogon->get_dir();
 
 	switch (read_flag) {
-	case MSG_READ_FLAG_DEFAULT:
-	case SUPPRESS_RECEIPT:
+	case rfDefault:
+	case rfSuppressReceipt:
 		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ, &pvalue))
 			return FALSE;	
@@ -573,7 +573,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 			break;
 		tmp_byte = 1;
 		b_changed = TRUE;
-		if (read_flag != MSG_READ_FLAG_DEFAULT)
+		if (read_flag != rfDefault)
 			break;
 		if (!exmdb_client::get_message_property(dir,
 		    username, CP_ACP, message_id,
@@ -582,7 +582,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
-	case CLEAR_READ_FLAG:
+	case rfClearReadFlag:
 		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ, &pvalue))
 			return FALSE;
@@ -591,24 +591,24 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 			b_changed = TRUE;
 		}
 		break;
-	case GENERATE_RECEIPT_ONLY:
+	case rfGenerateReceiptOnly:
 		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
 		if (pvb_enabled(pvalue))
 			b_notify = TRUE;
 		break;
-	case CLEAR_RN_PENDING:
-	case CLEAR_NRN_PENDING:
-	case CLEAR_RN_PENDING | CLEAR_NRN_PENDING:
-		if (read_flag & CLEAR_RN_PENDING &&
+	case rfClearNotifyRead:
+	case rfClearNotifyUnread:
+	case rfClearNotifyRead | rfClearNotifyUnread:
+		if (read_flag & rfClearNotifyRead &&
 		    exmdb_client::get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 		    pvb_enabled(pvalue) &&
 		    !exmdb_client::remove_message_property(dir,
 		    pinfo->cpid, message_id, PR_READ_RECEIPT_REQUESTED))
 			return FALSE;
-		if (read_flag & CLEAR_NRN_PENDING &&
+		if (read_flag & rfClearNotifyUnread &&
 		    exmdb_client::get_message_property(dir,
 		    username, CP_ACP, message_id,
 		    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
