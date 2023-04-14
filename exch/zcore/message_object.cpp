@@ -1078,6 +1078,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			b_notify = TRUE;
 		break;
 	case rfClearReadFlag:
+	case rfClearReadFlag | rfSuppressReceipt:
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;
