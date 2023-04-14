@@ -30,6 +30,7 @@ Enhancements:
 * imap: output \Junk alongside \Spam for the junk folder
 * imap: emit special-use flags with plain LIST when so requested in the command
 * imap: add LIST response to SELECT/EXAMINE
+* pff2mt: add --with-assoc, --without-assoc
 
 Changes:
 
@@ -41,6 +42,8 @@ Changes:
   g-web and g-sync (this impacts test setups that run gromox-http without an
   nginx in front)
 * mda: update "Received" headers in messages to look more like Postfix's
+* pff2mt: --without-assoc is now the default
+  (This is only a concern with .ost files, as .pst does not have FAI messages.)
 
 
 Gromox 2.7 (2023-03-24)

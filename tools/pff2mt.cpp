@@ -119,7 +119,7 @@ using namespace gromox;
 static std::vector<uint32_t> g_only_objs;
 static gi_folder_map_t g_folder_map;
 static unsigned int g_splice;
-static int g_with_hidden = -1;
+static int g_with_hidden = -1, g_with_assoc;
 static const char *g_ascii_charset;
 
 static void cb_only_obj(const HXoptcb *cb)
@@ -131,6 +131,8 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"with-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 1, "Do import FAI messages"},
+	{"without-assoc", 0, HXTYPE_VAL, &g_with_assoc, nullptr, nullptr, 0, "Skip FAI messages [default]"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
 	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "NID"},
@@ -921,7 +923,10 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	} else if (is_mapi_message(ident)) {
 		if (g_show_tree)
 			do_print(depth++, item);
-		return do_message(depth, parent, item, ident);
+		if (g_with_assoc ||
+		    (ident & NID_TYPE_MASK) != NID_TYPE_ASSOC_MESSAGE)
+			return do_message(depth, parent, item, ident);
+		return 0;
 	} else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS) {
 		ret = do_recips(depth, parent, item);
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
