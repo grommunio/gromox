@@ -5,6 +5,7 @@ Fixes:
 
 * exmdb_provider: repair a 4-byte cutoff when reading PR_BODY,
   PR_TRANSPORT_MESSAGE_HEADERS if they are compressed on disk
+* emsmdb: setting multiple mails as read/unread was repaired
 * php_mapi: fix a case where proptag arrays had bogus keys
 * midb: resolve a crash when a P-SRHL HEADER search has not enough arguments
 * zcore: do not lose folder for OP_MOVE rules when that folder is

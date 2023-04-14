@@ -584,6 +584,7 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 			b_notify = TRUE;
 		break;
 	case rfClearReadFlag:
+	case rfClearReadFlag | rfSuppressReceipt:
 		if (!exmdb_client::get_message_property(dir, username, CP_ACP,
 		    message_id, PR_READ, &pvalue))
 			return FALSE;
