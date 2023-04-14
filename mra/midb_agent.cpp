@@ -1654,7 +1654,7 @@ static int fetch_detail(const char *path, const char *folder,
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = pseq->lo + count - 1;
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(mitem.digest);
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
 						}
 					} else {
 						b_format_error = TRUE;
@@ -1949,7 +1949,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							assert(num > 0);
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
-							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(mitem.digest);
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
 						}
 					} else {
 						b_format_error = TRUE;
