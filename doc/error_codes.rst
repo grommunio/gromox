@@ -51,13 +51,43 @@ Synchronization Log
 	18:14:35 Moved a message that failed synchronization to 'Lokale Fehler'. Message subject -> 'Test-in-shared-cal'. You can view  this message in your offline folder only.
 	18:14:35 Downloading from server '63545368-4067-726f-6d6d-756e1f000000@locally.de'
 	18:14:35 Done
+	# other examples
+	# [80040803-30141506-0-533]
+	# [80004005-501-FFFFFEAE-324]
+	# [80004005-501-4B9-560]
+
+.. code-block:: text
+
+	# Exchange log
+	Error is [0x80070005-0x000004dc-0x00000524].
+	Exchange response headers:
+	0: ropSetProps (10) Processed(1) Completed(0)
+	      ROP result: 0
+	      Response codes: 0
+	1: ropSetProps (10) Processed(1) Completed(0)
+	      ROP result: 0
+	      Response codes: 0
+	2: ropFlushRecipients (14) Processed(1) Completed(0)
+	      ROP result: 0
+	      Response codes: 0
+	3: ropSetProps (10) Processed(1) Completed(0)
+	      ROP result: 0
+	      Response codes: 0
+	4: ropTransportSend (74) Processed(1) Completed(0)
+	      ROP result: 0
+	      Response codes: 1244 [0x4dc]
 
 Components of the sync error number vector:
 
-# local side: operation return code (MAPI)
-# local side: unsure - some error code, or possibly a length
-# remote side: operation return code (e.g. ROP)
-# remote side: unsure - some error code (Exchange Storage Engine or DoRpc function call?), or possibly the length of the RPC
+# local side: operation error code (e.g. MAPI)
+  * 0x80070057: MAPI_E_INVALID_PARAMETER
+  * 0x80040803: SYNC_E_NO_PARENT
+# possibly the "response code"
+# ROP result
+  * 0x4B9: ecNullObject
+  * 80070057: MAPI_E_INVALID_PARAMETER
+  * 0xFFFFFEAE: JET_errBadParentPageLink
+# possibly the "response code" or the length of the request
 
 The synchronization log messages contain a URL that has long been defunct but
 never updated. (outlook2000_us.asp is really telling.)
