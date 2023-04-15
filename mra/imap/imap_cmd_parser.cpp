@@ -343,17 +343,17 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 
 static int imap_cmd_parser_match_field(const char *cmd_tag,
 	const char *file_path, size_t offset, size_t length, BOOL b_not,
-    const char *tags, size_t offset1, ssize_t length1, char *value, size_t val_len)
+    const char *tags, size_t offset1, ssize_t length1, char *value,
+    size_t val_len) try
 {
 	int i;
 	BOOL b_hit;
 	int tmp_argc, fd;
 	char* tmp_argv[128];
 	char buff[128*1024];
-	char buff1[128*1024];
 	char temp_buff[1024];
 	MIME_FIELD mime_field;
-	
+
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
 		return -1;
@@ -376,7 +376,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		return -1;
 	}
 	close(fd);
-	size_t len, len1 = 0, buff_len = 0;
+	size_t len, buff_len = 0;
+	std::string buff1;
 	while ((len = parse_mime_field(buff + buff_len, length - buff_len,
 	       &mime_field)) != 0) {
 		b_hit = FALSE;
@@ -384,23 +385,17 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 			if (strcasecmp(tmp_argv[i], mime_field.name.c_str()) != 0)
 				continue;
 			if (!b_not) {
-				memcpy(buff1 + len1, buff + buff_len, len);
-				len1 += len;
+				buff1 += std::string_view(&buff[buff_len], len);
 				break;
 			}
 			b_hit = TRUE;
 		}
-		if (b_not && !b_hit) {
-			memcpy(buff1 + len1, buff + buff_len, len);
-			len1 += len;
-		}
+		if (b_not && !b_hit)
+			buff1 += std::string_view(&buff[buff_len], len);
 		buff_len += len;
 	}
-	buff1[len1] = '\r';
-	len1 ++;
-	buff1[len1] = '\n';
-	len1 ++;
-	buff1[len1] = '\0';
+	buff1 += "\r\n";
+	const auto len1 = buff1.size();
 	if (-1 == length1) {
 		length1 = len1;
 	}
@@ -411,9 +406,11 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		if (offset1 + length1 > len1)
 			length1 = len1 - offset1;
 		l2 = gx_snprintf(value, val_len,
-		     "BODY%s {%zd}\r\n%s", pbody, length1, buff1 + offset1);
+		     "BODY%s {%zd}\r\n%s", pbody, length1, &buff1[offset1]);
 	}
 	return l2 >= 0 && static_cast<size_t>(l2) >= val_len - 1 ? -1 : l2;
+} catch (const std::bad_alloc &) {
+	return -1;
 }
 
 static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext, MJSON *pjson,
@@ -611,7 +608,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			buff[buff_len] = ' ';
 			buff_len ++;
 		}
-		auto kw = kwss.c_str();
+		auto kw = kwss.data();
 		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            arsizeof(buff) - buff_len, "BODY ");
@@ -751,7 +748,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            arsizeof(buff) - buff_len, "UID %d", pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
-			auto pbody = strchr(kwss.data(), '[');
+			auto pbody = strchr(kw, '[');
 			auto pend = strchr(pbody + 1, ']');
 			size_t offset = 0, length = -1;
 			if (pend[1] == '<') {
