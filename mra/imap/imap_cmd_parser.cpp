@@ -2522,6 +2522,39 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_BREAK;
 }
 
+/**
+ * Resolve SEQ_STAR in ranges
+ *
+ * @range_string:	sequence numbers, e.g. "1,2:3,4:*,*:5,*:*,*"
+ * @seq_list:		split-up range
+ */
+static errno_t parse_imap_seqx(const imap_context &ctx, char *range_string,
+    imap_seq_list &seq_list)
+{
+	auto err = parse_imap_seq(seq_list, range_string);
+	if (err != 0)
+		return err;
+	int seq_max = 0;
+	if (system_services_summary_folder(ctx.maildir, ctx.selected_folder,
+	    &seq_max, nullptr, nullptr, nullptr, nullptr, nullptr,
+	    nullptr) != MIDB_RESULT_OK)
+		return EIO;
+	for (auto &seq : seq_list) {
+		if (seq.lo == SEQ_STAR && seq.hi == SEQ_STAR) {
+			/* MAX:MAX */
+			seq.lo = seq.hi = seq_max;
+		} else if (seq.lo == SEQ_STAR) {
+			/* MAX:99 = (99:MAX) */
+			seq.lo = seq.hi;
+			seq.hi = seq_max;
+		} else if (seq.hi == SEQ_STAR) {
+			/* 99:MAX */
+			seq.hi = seq_max;
+		}
+	}
+	return 0;
+}
+
 int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
@@ -2536,7 +2569,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || parse_imap_seq(list_seq, argv[2]) != 0)
+	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_seq) != 0)
 		return 1800;
 	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
@@ -2600,7 +2633,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 5 || parse_imap_seq(list_seq, argv[2]) != 0 ||
+	if (argc < 5 || parse_imap_seqx(*pcontext, argv[2], list_seq) != 0 ||
 	    !store_flagkeyword(argv[3]))
 		return 1800;
 	if ('(' == argv[4][0] && ')' == argv[4][strlen(argv[4]) - 1]) {
@@ -2665,7 +2698,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
     
 	if (pcontext->proto_stat != PROTO_STAT_SELECT)
 		return 1805;
-	if (argc < 4 || parse_imap_seq(list_seq, argv[2]) != 0 ||
+	if (argc < 4 || parse_imap_seqx(*pcontext, argv[2], list_seq) != 0 ||
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], temp_name))
 		return 1800;
