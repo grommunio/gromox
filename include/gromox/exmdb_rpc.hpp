@@ -1317,10 +1317,10 @@ using exresp_ping_store = exresp;
 using exresp_notify_new_mail = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
-	char *dir;
-	BOOL b_table;
-	LONG_ARRAY id_array;
-	DB_NOTIFY db_notify;
+	char *dir = nullptr;
+	BOOL b_table = false;
+	LONG_ARRAY id_array{};
+	DB_NOTIFY db_notify{};
 };
 
 extern GX_EXPORT pack_result exmdb_ext_pull_request(const BINARY *, exreq *&);
