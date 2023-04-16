@@ -2322,80 +2322,6 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
-/*
- * Digest listing for folder
- * Request:
- * 	M-LIST <store-dir> <folder-name> <0-based seqid> <limit>
- * Response:
- * 	TRUE <#messages>         // but at most "limit"
- * 	<digest from ext/ file>  // repeat x #messages
- */
-static int mail_engine_mlist(int argc, char **argv, int sockd)
-{
-	int offset;
-	int length;
-	int idx1, idx2;
-	int total_mail;
-	char sql_string[1024];
-	
-	offset = strtol(argv[3], nullptr, 0);
-	length = strtol(argv[4], nullptr, 0);
-	if (length < 0)
-		length = 0;
-	auto pidb = mail_engine_get_idb(argv[1]);
-	if (pidb == nullptr)
-		return MIDB_E_HASHTABLE_FULL;
-	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
-	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
-		return MIDB_E_MNG_SORTFOLDER;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
-	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	if (pstmt.step() != SQLITE_ROW)
-		return MIDB_E_SQLUNEXP;
-	total_mail = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
-	if (offset < 0) {
-		idx1 = std::max(1, total_mail + 1 + offset);
-	} else {
-		if (offset >= total_mail) {
-			pidb.reset();
-			return cmd_write(sockd, "TRUE 0\r\n");
-		}
-		idx1 = offset + 1;
-	}
-	if (length == 0 || total_mail - idx1 + 1 < length)
-		length = total_mail - idx1 + 1;
-	idx2 = idx1 + length - 1;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string FROM messages "
-	         "WHERE folder_id=%llu AND idx>=%d AND idx<=%d ORDER BY idx",
-	         LLU{folder_id}, idx1, idx2);
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	char temp_buff[32];
-	auto temp_len = gx_snprintf(temp_buff, std::size(temp_buff), "TRUE %d\r\n", length);
-	auto ret = cmd_write(sockd, temp_buff, temp_len);
-	if (ret != 0)
-		return ret;
-	while (pstmt.step() == SQLITE_ROW) {
-		Json::Value digest;
-		if (mail_engine_get_digest(pidb->psqlite,
-		    pstmt.col_text(0), digest) == 0)
-			return MIDB_E_DIGEST;
-		auto djson = json_to_str(digest);
-		djson.append("\r\n");
-		ret = cmd_write(sockd, djson.c_str(), djson.size());
-		if (ret != 0)
-			return ret;
-	}
-	return 0;
-}
-
 static bool system_services_lang_to_charset(const char *lang, char (&charset)[32])
 {
 	auto c = lang_to_charset(lang);
@@ -4617,7 +4543,6 @@ int mail_engine_run()
 		return -5;
 	}
 	pthread_setname_np(g_scan_tid, "mail_engine");
-	cmd_parser_register_command("M-LIST", {mail_engine_mlist, 5});
 	cmd_parser_register_command("M-INST", {mail_engine_minst, 6});
 	cmd_parser_register_command("M-DELE", {mail_engine_mdele, 4, INT_MAX});
 	cmd_parser_register_command("M-COPY", {mail_engine_mcopy, 5});
