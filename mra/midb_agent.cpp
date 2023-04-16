@@ -475,8 +475,7 @@ static int list_mail(const char *path, const char *folder,
 				}
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
-				temp_line[line_pos] = buff[i];
-				line_pos++;
+				temp_line[line_pos++] = buff[i];
 				if (line_pos >= 256) {
 					return MIDB_RDWR_ERROR;
 				}
@@ -536,17 +535,14 @@ static int delete_mail(const char *path, const char *folder,
 	cmd_len = length;
 	
 	for (auto pmsg : plist) {
-		buff[length] = ' ';
-		length ++;
+		buff[length++] = ' ';
 		temp_len = pmsg->file_name.size();
 		memcpy(buff + length, pmsg->file_name.c_str(), temp_len);
 		length += temp_len;
 		if (length <= 128 * 1024)
 			continue;
-		buff[length] = '\r';
-		length ++;
-		buff[length] = '\n';
-		length ++;
+		buff[length++] = '\r';
+		buff[length++] = '\n';
 		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 		if (ret != 0)
 			return ret;
@@ -561,10 +557,8 @@ static int delete_mail(const char *path, const char *folder,
 	}
 
 	if (length > cmd_len) {
-		buff[length] = '\r';
-		length ++;
-		buff[length] = '\n';
-		length ++;
+		buff[length++] = '\r';
+		buff[length++] = '\n';
 		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 		if (ret != 0)
 			return ret;
@@ -601,18 +595,13 @@ static int imap_search(const char *path, const char *folder,
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", argv[i]) + 1;
 	}
-	buff1[length1] = '\0';
-	length1 ++;
+	buff1[length1++] = '\0';
 	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
 	length += encode_len;
 	buff1.reset();
-	
-	buff[length] = '\r';
-	length ++;
-	buff[length] = '\n';
-	length ++;
-	
+	buff[length++] = '\r';
+	buff[length++] = '\n';
 	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
 	if (ret != 0)
 		return ret;
@@ -657,18 +646,13 @@ static int imap_search_uid(const char *path, const char *folder,
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", argv[i]) + 1;
 	}
-	buff1[length1] = '\0';
-	length1 ++;
+	buff1[length1++] = '\0';
 	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
 	length += encode_len;
 	buff1.reset();
-	
-	buff[length] = '\r';
-	length ++;
-	buff[length] = '\n';
-	length ++;
-	
+	buff[length++] = '\r';
+	buff[length++] = '\n';
 	auto ret = rw_command(pback->sockd, buff.get(), length, cbufsize);
 	if (ret != 0)
 		return ret;
@@ -1003,8 +987,7 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 				pfile.emplace_back(temp_line);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
-				temp_line[line_pos] = buff[i];
-				line_pos ++;
+				temp_line[line_pos++] = buff[i];
 				if (line_pos >= 512) {
 					return MIDB_RDWR_ERROR;
 				}
@@ -1109,8 +1092,7 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 				pfile.emplace_back(temp_line);
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
-				temp_line[line_pos] = buff[i];
-				line_pos ++;
+				temp_line[line_pos++] = buff[i];
 				if (line_pos > 150) {
 					return MIDB_RDWR_ERROR;
 				}
@@ -1178,17 +1160,14 @@ static int remove_mail(const char *path, const char *folder,
 	cmd_len = length;
 	
 	for (auto pitem : plist) {
-		buff[length] = ' ';
-		length ++;
+		buff[length++] = ' ';
 		auto temp_len = pitem->mid.size();
 		memcpy(&buff[length], pitem->mid.c_str(), temp_len);
 		length += temp_len;
 		if (length <= 128*1024)
 			continue;
-		buff[length] = '\r';
-		length ++;
-		buff[length] = '\n';
-		length ++;
+		buff[length++] = '\r';
+		buff[length++] = '\n';
 		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 		if (ret != 0)
 			return ret;
@@ -1204,10 +1183,8 @@ static int remove_mail(const char *path, const char *folder,
 	}
 
 	if (length > cmd_len) {
-		buff[length] = '\r';
-		length ++;
-		buff[length] = '\n';
-		length ++;
+		buff[length++] = '\r';
+		buff[length++] = '\n';
 		auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 		if (ret != 0)
 			return ret;
@@ -1358,10 +1335,8 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 				if (NULL != pspace) {
 					pspace1 = strchr(pspace + 1, ' ');
 					if (NULL != pspace1) {
-						*pspace = '\0';
-						*pspace1 = '\0';
-						pspace ++;
-						pspace1 ++;
+						*pspace++ = '\0';
+						*pspace1++ = '\0';
 						MITEM mitem;
 						try {
 							mitem.mid = pspace;
@@ -1381,8 +1356,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 				}
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
-				temp_line[line_pos] = buff[i];
-				line_pos ++;
+				temp_line[line_pos++] = buff[i];
 				if (line_pos >= 128) {
 					return MIDB_RDWR_ERROR;
 				}
@@ -1785,12 +1759,9 @@ static int fetch_simple_uid(const char *path, const char *folder,
 						if (NULL != pspace1) {
 							pspace2 = strchr(pspace1 + 1, ' ');
 							if (NULL != pspace2) {
-								*pspace = '\0';
-								*pspace1 = '\0';
-								*pspace2 = '\0';
-								pspace ++;
-								pspace1 ++;
-								pspace2 ++;
+								*pspace++ = '\0';
+								*pspace1++ = '\0';
+								*pspace2++ = '\0';
 								int uid = strtol(pspace1, nullptr, 0);
 								if (pxarray->append(MITEM{}, uid) >= 0) {
 									auto num = pxarray->get_capacity();
@@ -1816,8 +1787,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 					}
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
+					temp_line[line_pos++] = buff[i];
 					if (line_pos >= 128) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -1941,8 +1911,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						b_format_error = TRUE;
 					} else if (get_digest_string(mitem.digest, "file", mitem.mid) &&
 					    get_digest_integer(mitem.digest, "uid", mitem.uid)) {
-						*pspace = '\0';
-						pspace ++;
+						*pspace++ = '\0';
 						auto mitem_uid = mitem.uid;
 						if (pxarray->append(std::move(mitem), mitem_uid) >= 0) {
 							auto num = pxarray->get_capacity();
@@ -1956,8 +1925,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					}
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
+					temp_line[line_pos++] = buff[i];
 					if (line_pos >= 257 * 1024) {
 						return MIDB_RDWR_ERROR;
 					}
@@ -2006,36 +1974,29 @@ static int set_mail_flags(const char *path, const char *folder,
 	flags_string[0] = '(';
 	int length = 1;
 	if (flag_bits & FLAG_ANSWERED) {
-		flags_string[length] = 'A';
-		length ++;
+		flags_string[length++] = 'A';
 	}
 	
 	if (flag_bits & FLAG_DRAFT) {
-		flags_string[length] = 'U';
-		length ++;
+		flags_string[length++] = 'U';
 	}
 	
 	if (flag_bits & FLAG_FLAGGED) {
-		flags_string[length] = 'F';
-		length ++;
+		flags_string[length++] = 'F';
 	}
 	
 	if (flag_bits & FLAG_DELETED) {
-		flags_string[length] = 'D';
-		length ++;
+		flags_string[length++] = 'D';
 	}
 	
 	if (flag_bits & FLAG_SEEN) {
-		flags_string[length] = 'S';
-		length ++;
+		flags_string[length++] = 'S';
 	}
 	
 	if (flag_bits & FLAG_RECENT) {
-		flags_string[length] = 'R';
-		length ++;
+		flags_string[length++] = 'R';
 	}
-	flags_string[length] = ')';
-	length ++;
+	flags_string[length++] = ')';
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
 	         path, folder, mid_string.c_str(), flags_string);
@@ -2066,36 +2027,29 @@ static int unset_mail_flags(const char *path, const char *folder,
 	flags_string[0] = '(';
 	int length = 1;
 	if (flag_bits & FLAG_ANSWERED) {
-		flags_string[length] = 'A';
-		length ++;
+		flags_string[length++] = 'A';
 	}
 	
 	if (flag_bits & FLAG_DRAFT) {
-		flags_string[length] = 'U';
-		length ++;
+		flags_string[length++] = 'U';
 	}
 	
 	if (flag_bits & FLAG_FLAGGED) {
-		flags_string[length] = 'F';
-		length ++;
+		flags_string[length++] = 'F';
 	}
 	
 	if (flag_bits & FLAG_DELETED) {
-		flags_string[length] = 'D';
-		length ++;
+		flags_string[length++] = 'D';
 	}
 	
 	if (flag_bits & FLAG_SEEN) {
-		flags_string[length] = 'S';
-		length ++;
+		flags_string[length++] = 'S';
 	}
 	
 	if (flag_bits & FLAG_RECENT) {
-		flags_string[length] = 'R';
-		length ++;
+		flags_string[length++] = 'R';
 	}
-	flags_string[length] = ')';
-	length ++;
+	flags_string[length++] = ')';
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
 	         path, folder, mid_string.c_str(), flags_string);
