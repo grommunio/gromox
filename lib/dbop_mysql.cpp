@@ -428,7 +428,7 @@ static constexpr char tbl_classes_top[] =
 "CREATE TABLE `classes` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
-"  `listname` varchar(320) CHARACTER SET ascii DEFAULT NOT NULL,"
+"  `listname` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `filters` TEXT,"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
