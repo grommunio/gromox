@@ -145,9 +145,8 @@ static bool list_file_read_midb(const char *filename) try
 		svr.prefix = "/";
 		strcpy(pserver->ip_addr, "::1");
 		pserver->port = 5555;
-		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
+		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j)
 			g_lost_list.push_back(BACK_CONN{-1, 0, pserver});
-		}
 		return true;
 	}
 	for (decltype(list_num) i = 0; i < list_num; ++i) {
@@ -156,9 +155,8 @@ static bool list_file_read_midb(const char *filename) try
 		svr.prefix = pitem[i].prefix;
 		gx_strlcpy(pserver->ip_addr, pitem[i].ip_addr, arsizeof(pserver->ip_addr));
 		pserver->port = pitem[i].port;
-		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
+		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j)
 			g_lost_list.emplace_back(BACK_CONN{-1, 0, pserver});
-		}
 	}
 	return true;
 } catch (const std::bad_alloc &) {
@@ -276,11 +274,10 @@ static void *midbag_scanwork(void *param)
 			auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
 			while (srv.conn_list.size() > 0) {
 				auto pback = &srv.conn_list.front();
-				if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
+				if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3)
 					temp_list.splice(temp_list.end(), srv.conn_list, srv.conn_list.begin());
-				} else {
+				else
 					srv.conn_list.splice(srv.conn_list.end(), srv.conn_list, srv.conn_list.begin());
-				}
 				if (pback == tail)
 					break;
 			}
@@ -404,9 +401,8 @@ static int list_mail(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([&]() { parray.clear(); });
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s 0 0\r\n", path, folder);
-	if (length != write(pback->sockd, buff, length)) {
+	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
-	}
 
 	*psize = 0;
 	count = 0;
@@ -417,14 +413,12 @@ static int list_mail(const char *path, const char *folder,
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			return MIDB_RDWR_ERROR;
-		}
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
-		}
 		offset += read_len;
 		buff[offset] = '\0';
 		
@@ -434,9 +428,8 @@ static int list_mail(const char *path, const char *folder,
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
 					lines = strtol(buff + 5, nullptr, 0);
-					if (lines < 0) {
+					if (lines < 0)
 						return MIDB_RDWR_ERROR;
-					}
 					*pnum = lines;
 					last_pos = i + 2;
 					line_pos = 0;
@@ -448,9 +441,8 @@ static int list_mail(const char *path, const char *folder,
 				}
 			}
 			if (-1 == lines) {
-				if (offset > 1024) {
+				if (offset > 1024)
 					return MIDB_RDWR_ERROR;
-				}
 				continue;
 			}
 		}
@@ -476,9 +468,8 @@ static int list_mail(const char *path, const char *folder,
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
-				if (line_pos >= 256) {
+				if (line_pos >= 256)
 					return MIDB_RDWR_ERROR;
-				}
 			}
 		}
 
@@ -579,7 +570,6 @@ static int imap_search(const char *path, const char *folder,
     const char *charset, int argc, char **argv, std::string &ret_buff,
     int *perrno) try
 {
-	int i;
 	size_t encode_len;
 
 	auto pback = get_connection(path);
@@ -591,10 +581,9 @@ static int imap_search(const char *path, const char *folder,
 	auto length = gx_snprintf(buff.get(), cbufsize,
 	              "P-SRHL %s %s %s ", path, folder, charset);
 	int length1 = 0;
-	for (i=0; i<argc; i++) {
+	for (int i = 0; i < argc; ++i)
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", argv[i]) + 1;
-	}
 	buff1[length1++] = '\0';
 	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
@@ -630,7 +619,6 @@ static int imap_search_uid(const char *path, const char *folder,
    const char *charset, int argc, char **argv, std::string &ret_buff,
    int *perrno) try
 {
-	int i;
 	size_t encode_len;
 
 	auto pback = get_connection(path);
@@ -642,10 +630,9 @@ static int imap_search_uid(const char *path, const char *folder,
 	auto length = gx_snprintf(buff.get(), cbufsize,
 	              "P-SRHU %s %s %s ", path, folder, charset);
 	int length1 = 0;
-	for (i=0; i<argc; i++) {
+	for (int i = 0; i < argc; ++i)
 		length1 += gx_snprintf(&buff1[length1], cbufsize - length1,
 					"%s", argv[i]) + 1;
-	}
 	buff1[length1++] = '\0';
 	encode64(buff1.get(), length1, &buff[length], cbufsize - length,
 		&encode_len);
@@ -749,24 +736,18 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 			pback.reset();
 			return MIDB_RESULT_ERROR;
 		}
-		if (NULL != pexists) {
+		if (pexists != nullptr)
 			*pexists = exists;
-		}
-		if (NULL != precent) {
+		if (precent != nullptr)
 			*precent = recent;
-		}
-		if (NULL != punseen) {
+		if (punseen != nullptr)
 			*punseen = unseen;
-		}
-		if (NULL != puidvalid) {
+		if (puidvalid != nullptr)
 			*puidvalid = uidvalid;
-		}
-		if (NULL != puidnext) {
+		if (puidnext != nullptr)
 			*puidnext = uidnext;
-		}
-		if (NULL != pfirst_unseen) {
+		if (pfirst_unseen != nullptr)
 			*pfirst_unseen = first_unseen + 1;
-		}
 		pback.reset();
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
@@ -930,9 +911,8 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-ENUM %s\r\n", path);
-	if (length != write(pback->sockd, buff, length)) {
+	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
-	}
 	
 	count = 0;
 	offset = 0;
@@ -941,14 +921,12 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			return MIDB_RDWR_ERROR;
-		}
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
-		}
 		offset += read_len;
 		buff[offset] = '\0';
 		
@@ -958,9 +936,8 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
 					lines = strtol(buff + 5, nullptr, 0);
-					if (lines < 0) {
+					if (lines < 0)
 						return MIDB_RDWR_ERROR;
-					}
 					last_pos = i + 2;
 					line_pos = 0;
 					break;
@@ -972,9 +949,8 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 				return MIDB_RDWR_ERROR;
 			}
 			if (-1 == lines) {
-				if (offset > 1024) {
+				if (offset > 1024)
 					return MIDB_RDWR_ERROR;
-				}
 				continue;
 			}
 		}
@@ -988,9 +964,8 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
-				if (line_pos >= 512) {
+				if (line_pos >= 512)
 					return MIDB_RDWR_ERROR;
-				}
 			}
 		}
 
@@ -1034,11 +1009,9 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBL %s\r\n", path);
-	if (length != write(pback->sockd, buff, length)) {
+	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
-	}
-	
-	
+
 	count = 0;
 	offset = 0;
 	lines = -1;
@@ -1046,14 +1019,12 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			return MIDB_RDWR_ERROR;
-		}
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
-		}
 		offset += read_len;
 		buff[offset] = '\0';
 		
@@ -1063,9 +1034,8 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
 					lines = strtol(buff + 5, nullptr, 0);
-					if (lines < 0) {
+					if (lines < 0)
 						return MIDB_RDWR_ERROR;
-					}
 					last_pos = i + 2;
 					line_pos = 0;
 					break;
@@ -1077,9 +1047,8 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 				return MIDB_RDWR_ERROR;
 			}
 			if (-1 == lines) {
-				if (offset > 1024) {
+				if (offset > 1024)
 					return MIDB_RDWR_ERROR;
-				}
 				continue;
 			}
 		}
@@ -1093,9 +1062,8 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
-				if (line_pos > 150) {
+				if (line_pos > 150)
 					return MIDB_RDWR_ERROR;
-				}
 			}
 		}
 
@@ -1276,9 +1244,8 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([=]() { pxarray->clear(); });
 	auto length = gx_snprintf(buff, std::size(buff), "P-DELL %s %s\r\n", path, folder);
-	if (length != write(pback->sockd, buff, length)) {
+	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
-	}
 	
 	count = 0;
 	offset = 0;
@@ -1288,14 +1255,12 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			return MIDB_RDWR_ERROR;
-		}
 		static_assert(std::size(buff) >= 256*1024 + 1);
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return MIDB_RDWR_ERROR;
-		}
 		offset += read_len;
 		buff[offset] = '\0';
 		
@@ -1305,9 +1270,8 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 					continue;
 				if (0 == strncmp(buff, "TRUE ", 5)) {
 					lines = strtol(buff + 5, nullptr, 0);
-					if (lines < 0) {
+					if (lines < 0)
 						return MIDB_RDWR_ERROR;
-					}
 					last_pos = i + 2;
 					line_pos = 0;
 					break;
@@ -1319,9 +1283,8 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 				}
 			}
 			if (-1 == lines) {
-				if (offset > 1024) {
+				if (offset > 1024)
 					return MIDB_RDWR_ERROR;
-				}
 				continue;
 			}
 		}
@@ -1357,9 +1320,8 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 				line_pos = 0;
 			} else if (buff[i] != '\r' || i != offset - 1) {
 				temp_line[line_pos++] = buff[i];
-				if (line_pos >= 128) {
+				if (line_pos >= 128)
 					return MIDB_RDWR_ERROR;
-				}
 			}
 		}
 
@@ -1699,10 +1661,8 @@ static int fetch_simple_uid(const char *path, const char *folder,
 		auto pseq = &seq;
 		auto length = gx_snprintf(buff, std::size(buff), "P-SIMU %s %s %d %d\r\n", path, folder,
 		              pseq->lo, pseq->hi);
-		if (length != write(pback->sockd, buff, length)) {
+		if (write(pback->sockd, buff, length) != length)
 			return MIDB_RDWR_ERROR;
-		}
-		
 		
 		count = 0;
 		offset = 0;
@@ -1712,13 +1672,11 @@ static int fetch_simple_uid(const char *path, const char *folder,
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (1 != poll(&pfd_read, 1, tv_msec)) {
+			if (poll(&pfd_read, 1, tv_msec) != 1)
 				return MIDB_RDWR_ERROR;
-			}
 			read_len = read(pback->sockd, buff + offset, std::size(buff) - 1 - offset);
-			if (read_len <= 0) {
+			if (read_len <= 0)
 				return MIDB_RDWR_ERROR;
-			}
 			offset += read_len;
 			buff[offset] = '\0';
 
@@ -1728,9 +1686,8 @@ static int fetch_simple_uid(const char *path, const char *folder,
 						continue;
 					if (0 == strncmp(buff, "TRUE ", 5)) {
 						lines = strtol(buff + 5, nullptr, 0);
-						if (lines < 0) {
+						if (lines < 0)
 							return MIDB_RDWR_ERROR;
-						}
 						last_pos = i + 2;
 						line_pos = 0;
 						break;
@@ -1741,9 +1698,8 @@ static int fetch_simple_uid(const char *path, const char *folder,
 					}
 				}
 				if (-1 == lines) {
-					if (offset > 1024) {
+					if (offset > 1024)
 						return MIDB_RDWR_ERROR;
-					}
 					continue;
 				}
 			}
@@ -1788,9 +1744,8 @@ static int fetch_simple_uid(const char *path, const char *folder,
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
 					temp_line[line_pos++] = buff[i];
-					if (line_pos >= 128) {
+					if (line_pos >= 128)
 						return MIDB_RDWR_ERROR;
-					}
 				}
 			}
 
@@ -1850,9 +1805,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 		auto pseq = &seq;
 		auto length = gx_snprintf(buff, std::size(buff), "P-DTLU %s %s %d %d\r\n", path,
 		              folder, pseq->lo, pseq->hi);
-		if (length != write(pback->sockd, buff, length)) {
+		if (write(pback->sockd, buff, length) != length)
 			return MIDB_RDWR_ERROR;
-		}
 		
 		count = 0;
 		offset = 0;
@@ -1862,14 +1816,12 @@ static int fetch_detail_uid(const char *path, const char *folder,
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
-			if (1 != poll(&pfd_read, 1, tv_msec)) {
+			if (poll(&pfd_read, 1, tv_msec) != 1)
 				return MIDB_RDWR_ERROR;
-			}
 			static_assert(std::size(buff) >= 64*1024 + 1);
 			read_len = read(pback->sockd, buff + offset, 64*1024 - offset);
-			if (read_len <= 0) {
+			if (read_len <= 0)
 				return MIDB_RDWR_ERROR;
-			}
 			offset += read_len;
 			buff[offset] = '\0';
 
@@ -1879,9 +1831,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						continue;
 					if (0 == strncmp(buff, "TRUE ", 5)) {
 						lines = strtol(buff + 5, nullptr, 0);
-						if (lines < 0) {
+						if (lines < 0)
 							return MIDB_RDWR_ERROR;
-						}
 						last_pos = i + 2;
 						line_pos = 0;
 						break;
@@ -1892,9 +1843,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					}
 				}
 				if (-1 == lines) {
-					if (offset > 1024) {
+					if (offset > 1024)
 						return MIDB_RDWR_ERROR;
-					}
 					continue;
 				}
 			}
@@ -1926,9 +1876,8 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
 					temp_line[line_pos++] = buff[i];
-					if (line_pos >= 257 * 1024) {
+					if (line_pos >= 257 * 1024)
 						return MIDB_RDWR_ERROR;
-					}
 				}
 			}
 
@@ -1973,29 +1922,18 @@ static int set_mail_flags(const char *path, const char *folder,
 
 	flags_string[0] = '(';
 	int length = 1;
-	if (flag_bits & FLAG_ANSWERED) {
+	if (flag_bits & FLAG_ANSWERED)
 		flags_string[length++] = 'A';
-	}
-	
-	if (flag_bits & FLAG_DRAFT) {
+	if (flag_bits & FLAG_DRAFT)
 		flags_string[length++] = 'U';
-	}
-	
-	if (flag_bits & FLAG_FLAGGED) {
+	if (flag_bits & FLAG_FLAGGED)
 		flags_string[length++] = 'F';
-	}
-	
-	if (flag_bits & FLAG_DELETED) {
+	if (flag_bits & FLAG_DELETED)
 		flags_string[length++] = 'D';
-	}
-	
-	if (flag_bits & FLAG_SEEN) {
+	if (flag_bits & FLAG_SEEN)
 		flags_string[length++] = 'S';
-	}
-	
-	if (flag_bits & FLAG_RECENT) {
+	if (flag_bits & FLAG_RECENT)
 		flags_string[length++] = 'R';
-	}
 	flags_string[length++] = ')';
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
@@ -2026,29 +1964,18 @@ static int unset_mail_flags(const char *path, const char *folder,
 
 	flags_string[0] = '(';
 	int length = 1;
-	if (flag_bits & FLAG_ANSWERED) {
+	if (flag_bits & FLAG_ANSWERED)
 		flags_string[length++] = 'A';
-	}
-	
-	if (flag_bits & FLAG_DRAFT) {
+	if (flag_bits & FLAG_DRAFT)
 		flags_string[length++] = 'U';
-	}
-	
-	if (flag_bits & FLAG_FLAGGED) {
+	if (flag_bits & FLAG_FLAGGED)
 		flags_string[length++] = 'F';
-	}
-	
-	if (flag_bits & FLAG_DELETED) {
+	if (flag_bits & FLAG_DELETED)
 		flags_string[length++] = 'D';
-	}
-	
-	if (flag_bits & FLAG_SEEN) {
+	if (flag_bits & FLAG_SEEN)
 		flags_string[length++] = 'S';
-	}
-	
-	if (flag_bits & FLAG_RECENT) {
+	if (flag_bits & FLAG_RECENT)
 		flags_string[length++] = 'R';
-	}
 	flags_string[length++] = ')';
 	flags_string[length] = '\0';
 	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
@@ -2135,13 +2062,11 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			return -ETIMEDOUT;
-		}
 		auto read_len = read(sockd, buff + offset,  length - offset);
-		if (read_len < 0) {
+		if (read_len < 0)
 			return read_len;
-		}
 		buff[offset+read_len] = '\0';
 		if (read_len == 0)
 			return 0;
@@ -2152,9 +2077,8 @@ static ssize_t read_line(int sockd, char *buff, size_t length)
 			buff[offset] = '\0';
 			return 1;
 		}
-		if (length == offset) {
+		if (length == offset)
 			return -ENOBUFS;
-		}
 	}
 }
 
@@ -2168,9 +2092,8 @@ static BOOL check_full(const char *path)
 	if (pback == nullptr)
 		return TRUE;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-CKFL %s\r\n", path);
-	if (length != write(pback->sockd, buff, length)) {
+	if (write(pback->sockd, buff, length) != length)
 		return TRUE;
-	}
 
 	offset = 0;
 	while (true) {
@@ -2179,20 +2102,15 @@ static BOOL check_full(const char *path)
 		if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) <= 0)
 			return TRUE;
 		read_len = read(pback->sockd, buff + offset, 1024 - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return TRUE;
-		}
 		offset += read_len;
 		if (offset >= 2 && '\r' == buff[offset - 2] &&
 			'\n' == buff[offset - 1]) {
 			if (8 == offset && 0 == strncasecmp("TRUE ", buff, 5)) {
 				time(&pback->last_time);
 				pback.reset();
-				if ('1' == buff[5]) {
-					return FALSE;
-				} else {
-					return TRUE;
-				}
+				return buff[5] == '1' ? false : TRUE;
 			} else if (offset > 8 && 0 == strncasecmp("FALSE ", buff, 6)) {
 				time(&pback->last_time);
 				pback.reset();
@@ -2200,9 +2118,8 @@ static BOOL check_full(const char *path)
 			}
 			return TRUE;
 		}
-		if (1024 == offset) {
+		if (offset == 1024)
 			return TRUE;
-		}
 	}
 }
 
