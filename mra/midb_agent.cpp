@@ -397,7 +397,7 @@ static int list_mail(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([&]() { parray.clear(); });
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s 0 0\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s 1 -1\r\n", path, folder);
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 
@@ -452,10 +452,10 @@ static int list_mail(const char *path, const char *folder,
 				temp_line[line_pos] = '\0';
 				try {
 					auto parts = gx_split(temp_line, ' ');
-					if (parts.size() != 4)
+					if (parts.size() != 5)
 						throw 0;
-					MSG_UNIT msg{std::move(parts[0])};
-					msg.size = strtoul(parts[3].c_str(), nullptr, 0);
+					MSG_UNIT msg{std::move(parts[1])};
+					msg.size = strtoul(parts[4].c_str(), nullptr, 0);
 					auto msg_size = msg.size;
 					parray.push_back(std::move(msg));
 					*psize += msg_size;

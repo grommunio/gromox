@@ -3137,112 +3137,11 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 }
 
-/*
- * Give summary of messages present in folder
- * Request:
- * 	P-SIML <store-dir> <folder-name> <0-based seqid> <limit>
- * Response:
- * 	TRUE <#messages>            // but at most "limit"
- * 	<mid> <uid> <flags> <size>  // repeat x #messages
- */
-static int mail_engine_psiml(int argc, char **argv, int sockd)
-{
-	int offset;
-	int length;
-	int temp_len;
-	int buff_len;
-	uint32_t uid;
-	int flags_len;
-	int idx1, idx2;
-	int total_mail;
-	char flags_buff[16];
-	char temp_line[1024];
-	char sql_string[1024];
-	char temp_buff[256*1024];
-	
-	offset = strtol(argv[3], nullptr, 0);
-	length = strtol(argv[4], nullptr, 0);
-	if (length < 0)
-		length = 0;
-	auto pidb = mail_engine_get_idb(argv[1]);
-	if (pidb == nullptr)
-		return MIDB_E_HASHTABLE_FULL;
-	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
-	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
-		return MIDB_E_MNG_SORTFOLDER;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
-	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	if (pstmt.step() != SQLITE_ROW)
-		return MIDB_E_NO_FOLDER;
-	total_mail = sqlite3_column_int64(pstmt, 0);
-	pstmt.finalize();
-	if (offset < 0) {
-		idx1 = std::max(1, total_mail + 1 + offset);
-	} else {
-		if (offset >= total_mail) {
-			pidb.reset();
-			return cmd_write(sockd, "TRUE 0\r\n");
-		}
-		idx1 = offset + 1;
-	}
-	if (length == 0 || total_mail - idx1 + 1 < length)
-		length = total_mail - idx1 + 1;
-	idx2 = idx1 + length - 1;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string, uid, replied, "
-	         "unsent, flagged, deleted, read, recent, forwarded, size FROM "
-			"messages WHERE folder_id=%llu AND idx>=%d AND idx<=%d "
-			"ORDER BY idx", LLU{folder_id}, idx1, idx2);
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	temp_len = sprintf(temp_buff, "TRUE %d\r\n", length);
-	while (pstmt.step() == SQLITE_ROW) {
-		auto mid_string = pstmt.col_text(0);
-		uid = sqlite3_column_int64(pstmt, 1);
-		flags_buff[0] = '(';
-		flags_len = 1;
-		if (pstmt.col_int64(2) != 0)
-			flags_buff[flags_len++] = 'A';
-		if (pstmt.col_int64(3) != 0)
-			flags_buff[flags_len++] = 'U';
-		if (pstmt.col_int64(4) != 0)
-			flags_buff[flags_len++] = 'F';
-		if (pstmt.col_int64(5) != 0)
-			flags_buff[flags_len++] = 'D';
-		if (pstmt.col_int64(6) != 0)
-			flags_buff[flags_len++] = 'S';
-		if (pstmt.col_int64(7) != 0)
-			flags_buff[flags_len++] = 'R';
-		if (pstmt.col_int64(8) != 0)
-			flags_buff[flags_len++] = 'W';
-		flags_buff[flags_len++] = ')';
-		flags_buff[flags_len] = '\0';
-		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
-		           "%s %u %s %u\r\n", mid_string, uid, flags_buff,
-		           static_cast<unsigned int>(pstmt.col_uint64(9)));
-		if (256*1024 - temp_len < buff_len) {
-			auto ret = cmd_write(sockd, temp_buff, temp_len);
-			if (ret != 0)
-				return ret;
-			temp_len = 0;
-		}
-		memcpy(temp_buff + temp_len, temp_line, buff_len);
-		temp_len += buff_len;
-	}
-	pstmt.finalize();
-	pidb.reset();
-	return cmd_write(sockd, temp_buff, temp_len);
-}
-
 namespace {
 
 struct simu_node {
 	uint32_t idx, uid;
+	unsigned int size;
 	char flags[10];
 	std::string mid_string;
 };
@@ -3279,6 +3178,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 			flags_buff[flags_len++] = 'W';
 		flags_buff[flags_len++] = ')';
 		flags_buff[flags_len] = '\0';
+		sn.size = pstmt.col_uint64(10);
 		temp_list.push_back(std::move(sn));
 	}
 	return 0;
@@ -3290,7 +3190,7 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
  * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)>
  * Response:
  * 	TRUE <#msgcount>
- * 	<0-based seqid> <mid> <uid> <flags>  // repeat x #msgcount
+ * 	<0-based seqid> <mid> <uid> <flags> <size>  // repeat x #msgcount
  */
 static int mail_engine_psimu(int argc, char **argv, int sockd) try
 {
@@ -3317,24 +3217,24 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		/* "MAX:MAX" */
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded "
+		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu "
 		         "ORDER BY idx DESC LIMIT 1", LLU{folder_id});
 	else if (first == SEQ_STAR)
 		/* "MAX:99" */
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded "
+		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx DESC LIMIT 1",
 		         LLU{folder_id}, last);
 	else if (last == SEQ_STAR)
 		/* "99:MAX" */
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded "
+		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx",
 		         LLU{folder_id}, first);
 	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded "
+		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u AND uid<=%u "
 		         "ORDER BY idx", LLU{folder_id}, first, last);
 
@@ -3349,7 +3249,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		 * any assigned UID value".
 		 */
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
-		         "replied, unsent, flagged, deleted, read, recent, forwarded"
+		         "replied, unsent, flagged, deleted, read, recent, forwarded, size"
 		         " FROM messages WHERE folder_id=%llu ORDER BY idx DESC LIMIT 1",
 		         LLU{folder_id});
 		iret = simu_query(pidb.get(), sql_string, total_mail, temp_list);
@@ -3360,8 +3260,8 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto temp_len = snprintf(temp_buff, std::size(temp_buff),
 	                "TRUE %zu\r\n", temp_list.size());
 	for (const auto &sn : temp_list) {
-		auto buff_len = gx_snprintf(temp_line, std::size(temp_line), "%u %s %u %s\r\n",
-		                sn.idx - 1, sn.mid_string.c_str(), sn.uid, sn.flags);
+		auto buff_len = gx_snprintf(temp_line, std::size(temp_line), "%u %s %u %s %u\r\n",
+		                sn.idx - 1, sn.mid_string.c_str(), sn.uid, sn.flags, sn.size);
 		if (256*1024 - temp_len < buff_len) {
 			auto ret = cmd_write(sockd, temp_buff, temp_len);
 			if (ret != 0)
@@ -4558,7 +4458,6 @@ int mail_engine_run()
 	cmd_parser_register_command("P-SUBF", {mail_engine_psubf, 3});
 	cmd_parser_register_command("P-UNSF", {mail_engine_punsf, 3});
 	cmd_parser_register_command("P-SUBL", {mail_engine_psubl, 2});
-	cmd_parser_register_command("P-SIML", {mail_engine_psiml, 5});
 	cmd_parser_register_command("P-SIMU", {mail_engine_psimu, 5});
 	cmd_parser_register_command("P-DELL", {mail_engine_pdell, 3});
 	cmd_parser_register_command("P-DTLU", {mail_engine_pdtlu, 5});
