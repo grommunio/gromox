@@ -26,8 +26,6 @@ E(enum_subscriptions)
 E(insert_mail)
 E(remove_mail)
 E(list_deleted)
-E(fetch_simple)
-E(fetch_detail)
 E(fetch_simple_uid)
 E(fetch_detail_uid)
 E(set_flags)
@@ -74,8 +72,6 @@ int system_services_run()
 	E(system_services_insert_mail, "insert_mail");
 	E(system_services_remove_mail, "remove_mail");
 	E(system_services_list_deleted, "list_deleted");
-	E(system_services_fetch_simple, "fetch_simple");
-	E(system_services_fetch_detail, "fetch_detail");
 	E(system_services_fetch_simple_uid, "fetch_simple_uid");
 	E(system_services_fetch_detail_uid, "fetch_detail_uid");
 	E(system_services_set_flags, "set_mail_flags");
@@ -117,8 +113,6 @@ void system_services_stop()
 	service_release("insert_mail", "system");
 	service_release("remove_mail", "system");
 	service_release("list_deleted", "system");
-	service_release("fetch_simple", "system");
-	service_release("fetch_detail", "system");
 	service_release("fetch_simple_uid", "system");
 	service_release("fetch_detail_uid", "system");
 	service_release("set_mail_flags", "system");
