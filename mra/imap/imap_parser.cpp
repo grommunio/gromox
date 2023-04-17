@@ -1194,7 +1194,7 @@ void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_stri
 	for (auto pcontext1 : *plist) {
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
-			pcontext1->f_flags.emplace_back(mid_string);
+			pcontext1->f_flags.emplace(mid_string);
 			pcontext1->b_modify = TRUE;
 		}
 	}
@@ -1219,7 +1219,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	}
 	for (auto pcontext : *plist)
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
-			pcontext->f_flags.emplace_back(mid_string);
+			pcontext->f_flags.emplace(mid_string);
 			pcontext->b_modify = TRUE;
 		}
 } catch (const std::bad_alloc &) {
@@ -1241,7 +1241,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	
 	std::unique_lock hl_hold(g_hash_lock);
 	pcontext->b_modify = FALSE;
-	auto temp_file = std::move(pcontext->f_flags);
+	auto f_flags = std::move(pcontext->f_flags);
 	hl_hold.unlock();
 	
 	if (system_services_summary_folder(pcontext->maildir,
@@ -1258,9 +1258,9 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		}
 	}
 	
-	if (temp_file.empty())
+	if (f_flags.empty())
 		return;
-	for (const auto &mid : temp_file) {
+	for (const auto &mid : f_flags) {
 		auto mid_string = mid.c_str();
 		if (system_services_get_id(pcontext->maildir,
 		    pcontext->selected_folder, mid_string,
