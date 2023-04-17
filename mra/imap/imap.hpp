@@ -84,6 +84,10 @@ struct dir_tree {
 using DIR_TREE = dir_tree;
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
+/**
+ * @b_modify:	flag indicating that other clients concurrently modified the mailbox
+ * 		(@f_flags is filled with changes)
+ */
 struct imap_context final : public schedule_context {
 	imap_context();
 	~imap_context();

@@ -1226,6 +1226,8 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 
 void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 {
+	if (!pcontext->b_modify)
+		return;
 	int id;
 	int err;
 	int recent;
