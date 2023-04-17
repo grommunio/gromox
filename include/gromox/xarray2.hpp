@@ -36,6 +36,10 @@ struct GX_EXPORT XARRAY {
 		auto i = m_hash.find(tag);
 		return i != m_hash.end() ? &m_vec[i->second] : nullptr;
 	}
+	void remove(const MITEM *m) {
+		m_hash.erase(m->uid);
+		m_vec.erase(m_vec.begin() + m->id - 1);
+	}
 	inline size_t get_capacity() const { return m_vec.size(); }
 	void clear();
 };
