@@ -433,6 +433,7 @@ static constexpr char tbl_classes_top[] =
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  PRIMARY KEY (`id`),"
 "  KEY `listname` (`listname`),"
+"  CONSTRAINT `classes_ibfk_2` FOREIGN KEY (`listname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE,"
 "  FOREIGN KEY (`domain_id`) REFERENCES domains (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
@@ -490,7 +491,7 @@ static constexpr char tbl_mlists_top[] =
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `listname` (`listname`),"
 "  KEY `domain_id` (`domain_id`),"
-"  CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"
+"  CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
 static constexpr char tbl_orgs_top[] =
@@ -750,8 +751,12 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{113, "DELETE `mlists` FROM `mlists` LEFT JOIN `users` ON `mlists`.`listname`=`users`.`username` WHERE `users`.`username` IS NULL"},
 	{114, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`)"},
 	{115, "DROP TABLE `members`"},
-	{116, "ALTER TABLE `classes` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{117, "DROP TABLE `hierarchy`"},
+	{118, "DELETE `classes` FROM `classes` LEFT JOIN `users` ON `classes`.`listname`=`users`.`username` WHERE `users`.`username` IS NULL"},
+	{119, "ALTER TABLE `classes` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{120, "ALTER TABLE `classes` ADD CONSTRAINT `classes_ibfk_2` FOREIGN KEY (`listname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
+	{121, "ALTER TABLE `mlists` DROP CONSTRAINT `mlists_ibfk_1`"},
+	{122, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
 	{0, nullptr},
 };
 
