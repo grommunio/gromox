@@ -637,7 +637,7 @@ static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (gx_sql_col_uint64(pstmt_message, 13) >
+				if (gx_sql_col_uint64(pstmt_message, 12) >
 				    ptree_node->ct_size)
 					b_result1 = true;
 				break;
@@ -741,7 +741,7 @@ static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 					1, mid_string, -1, SQLITE_STATIC);
 				if (gx_sql_step(pstmt_message) != SQLITE_ROW)
 					break;
-				if (gx_sql_col_uint64(pstmt_message, 13) < ptree_node->ct_size)
+				if (gx_sql_col_uint64(pstmt_message, 12) < ptree_node->ct_size)
 					b_result1 = true;
 				break;
 			case midb_cond::subject: {
