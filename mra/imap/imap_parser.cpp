@@ -1195,6 +1195,7 @@ void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_stri
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
 			pcontext1->f_flags.emplace_back(mid_string);
+			pcontext1->b_modify = TRUE;
 		}
 	}
 	hl_hold.unlock();
@@ -1219,6 +1220,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	for (auto pcontext : *plist)
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
 			pcontext->f_flags.emplace_back(mid_string);
+			pcontext->b_modify = TRUE;
 		}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1087: ENOMEM");
