@@ -1130,16 +1130,18 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 		}
 		if (array_find_istr(kwlist1, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			ptree_node->ct_keyword = mail_engine_ct_to_utf8(charset, argv[i]).release();
 			if (ptree_node->ct_keyword == nullptr)
 				return {};
 		} else if (array_find_istr(kwlist2, argv[i])) {
-			if (++i >= argc)
+			if (i + 1 > argc)
 				return {};
 			ptree_node->condition = cond_str_to_cond(argv[i]);
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			if (strptime(argv[i], "%d-%b-%Y", &tmp_tm) == nullptr)
@@ -1158,14 +1160,15 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 				return {};
 			ptree_node->pbranch = plist1.release();
 		} else if (0 == strcasecmp(argv[i], "OR")) {
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			tmp_argc = mail_engine_ct_compile_criteria(
 								argc, argv, i, tmp_argv);
 			if (tmp_argc == -1)
 				return {};
 			i += tmp_argc;
-			if (++i >= argc)
+			if (i + 1 > argc)
 				return {};
 			tmp_argc1 = mail_engine_ct_compile_criteria(
 					argc, argv, i, tmp_argv + tmp_argc);
@@ -1185,22 +1188,26 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
 			ptree_node->condition = midb_cond::header;
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			ptree_node->ct_headers[0] = strdup(argv[i]);
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			ptree_node->ct_headers[1] = strdup(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "LARGER") ||
 			0 == strcasecmp(argv[i], "SMALLER")) {
 			ptree_node->condition = strcasecmp(argv[i], "LARGER") == 0 ?
 			                        midb_cond::larger : midb_cond::smaller;
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			ptree_node->ct_size = strtol(argv[i], nullptr, 0);
 		} else if (0 == strcasecmp(argv[i], "UID")) {
 			ptree_node->condition = midb_cond::uid;
-			if (++i >= argc)
+			i ++;
+			if (i + 1 > argc)
 				return {};
 			auto r = std::make_unique<imap_seq_list>();
 			if (parse_imap_seq(*r, argv[i]) != 0)
