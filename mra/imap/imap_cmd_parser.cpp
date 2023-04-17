@@ -2509,7 +2509,11 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return result;
 	buff.append("\r\n");
 	pcontext->stream.clear();
-	imap_parser_echo_modify(pcontext, &pcontext->stream);
+	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
+		return 1922;
+	buff.clear();
+	if (pcontext->proto_stat == PROTO_STAT_SELECT)
+		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1719, 1, &string_length);
 	buff += argv[0];
