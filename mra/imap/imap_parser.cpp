@@ -399,9 +399,9 @@ static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
 	    pcontext->selected_folder, &exists, &recent, NULL, NULL, NULL, NULL, &err)) {
 		char temp_buff[64];
 		auto len = gx_snprintf(temp_buff, arsizeof(temp_buff),
-		           "* %d RECENT\r\n"
-		           "* %d EXISTS\r\n",
-		           recent, exists);
+		           "* %d EXISTS\r\n"
+		           "* %d RECENT\r\n",
+		           exists, recent);
 		pcontext->connection.write(temp_buff, len);
 	}
 	std::unique_lock ll_hold(g_list_lock);
@@ -1243,9 +1243,10 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	if (system_services_summary_folder(pcontext->maildir,
 	    pcontext->selected_folder, &exists, &recent, nullptr, nullptr,
 	    nullptr, nullptr, &err) == MIDB_RESULT_OK) {
-		tmp_len = gx_snprintf(buff, arsizeof(buff), "* %d RECENT\r\n"
-									   "* %d EXISTS\r\n",
-									   recent, exists);
+		tmp_len = gx_snprintf(buff, arsizeof(buff),
+		          "* %d EXISTS\r\n"
+		          "* %d RECENT\r\n",
+		          exists, recent);
 		if (NULL == pstream) {
 			pcontext->connection.write(buff, tmp_len);
 		} else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK) {
