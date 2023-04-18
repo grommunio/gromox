@@ -1,3 +1,21 @@
+Development 2.8.39
+==================
+
+Fixes:
+
+* imap: consistently show EXISTS status before RECENT
+* imap: move EXISTS/RECENT response after SEARCH result
+* imap: skip reporting EXISTS/RECENT if folder is unchanged
+* imap: make FETCH RFC822 report FLAGS as well
+* imap: SEARCH by size used the wrong column
+* imap: avoid double status reporting when one message is changed multiple times
+* imap: add and populate a per-context seqid list
+
+Enhancements:
+
+* imap: broadcast changes to mailbox from EXPUNGE commands
+
+
 Gromox 2.8 (2023-04-15)
 =======================
 
