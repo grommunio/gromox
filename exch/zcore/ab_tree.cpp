@@ -1669,7 +1669,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
-		if (rcon->comparable())
+		if (!rcon->comparable())
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rcon->proptag, &pvalue))
