@@ -429,6 +429,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 			return FALSE;
 		pbase->domain_list.push_back(std::move(dnode));
 	}
+	pbase->gal_hidden_count = 0;
 	for (auto &domain : pbase->domain_list) {
 		auto pdomain = &domain;
 		auto proot = pdomain->tree.get_root();
@@ -1668,7 +1669,7 @@ static bool ab_tree_match_node(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		return TRUE;
 	case RES_CONTENT: {
 		auto rcon = pfilter->cont;
-		if (rcon->comparable())
+		if (!rcon->comparable())
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rcon->proptag, &pvalue))
