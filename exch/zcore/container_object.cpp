@@ -849,8 +849,13 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 		return FALSE;
 	*pnum = 0;
 	if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
-		*pnum = std::min(pbase->gal_list.size() - pbase->gal_hidden_count,
-		        static_cast<size_t>(UINT32_MAX));
+		auto gs = pbase->gal_list.size();
+		auto hi = pbase->gal_hidden_count;
+		if (hi > gs) {
+			mlog(LV_ERR, "E-1157: ludicrous number of hidden AB entries");
+			hi = 0;
+		}
+		*pnum = std::min(gs - hi, static_cast<size_t>(UINT32_MAX));
 		return TRUE;
 	} else if (0 == pcontainer->id.abtree_id.minid) {
 		*pnum = 0;
