@@ -1430,9 +1430,11 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		size_t slurp_size = 0;
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
 		if (slurp_data == nullptr)
-			return;
-		djson.assign(slurp_data.get(), slurp_size);
-	} else {
+			mid_string = nullptr;
+		else
+			djson.assign(slurp_data.get(), slurp_size);
+	}
+	if (mid_string == nullptr) {
 		if (!common_util_switch_allocator())
 			return;
 		if (!exmdb_client::read_message(dir, nullptr, CP_ACP,
