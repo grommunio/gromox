@@ -1014,7 +1014,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	char temp_folder[512];
 	char converted_name[512];
 	
-	if (utf7_to_utf8(imap_folder, strlen(imap_folder), temp_name, 512) < 0)
+	if (mutf7_to_utf8(imap_folder, strlen(imap_folder), temp_name, 512) < 0)
 		return FALSE;
 	auto len = strlen(temp_name);
 	if (len > 0 && temp_name[len-1] == '/') {
@@ -1087,19 +1087,19 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		return TRUE;
 	} else if (0 == strcmp("draft", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_DRAFT);
-		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
+		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("sent", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_SENT_ITEMS);
-		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
+		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("trash", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_DELETED_ITEMS);
-		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
+		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	} else if (0 == strcmp("junk", sys_folder)) {
 		auto s = foldername_get(lang, PRIVATE_FID_JUNK);
-		utf8_to_utf7(s, strlen(s), imap_folder, 1024);
+		utf8_to_mutf7(s, strlen(s), imap_folder, 1024);
 		return TRUE;
 	}
 	if (!decode_hex_binary(sys_folder, temp_name, arsizeof(temp_name)))
@@ -1125,7 +1125,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		snprintf(converted_name, 512, "%s%s", temp_folder, ptoken);
 	else
 		strcpy(converted_name, temp_folder);
-	if (utf8_to_utf7(converted_name, strlen(converted_name),
+	if (utf8_to_mutf7(converted_name, strlen(converted_name),
 	    imap_folder, 1024) <= 0)
 		return FALSE;
 	return TRUE;

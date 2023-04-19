@@ -630,7 +630,16 @@ static const char B64Chars[64] = {
   '8', '9', '+', ','
 };
 
-int utf7_to_utf8 (const char *u7, size_t u7len, char *u8, size_t u8len)
+/**
+ * @u7:		input buffer (need not be \0-terminated)
+ * @u7len:	number of bytes to read from @u8
+ * @u8:		output buffer
+ * @u8len:	size of output buffer
+ *
+ * On error, -1 is returned. On success, the number of bytes emitted to @u8,
+ * not including the final \0 that is emitted.
+ */
+int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len)
 {
   char *u8end;
   int b, ch, k;
@@ -709,7 +718,16 @@ int utf7_to_utf8 (const char *u7, size_t u7len, char *u8, size_t u8len)
   return p - u8;
 }
 
-int utf8_to_utf7 (const char *u8, size_t u8len, char *u7, size_t u7len)
+/**
+ * @u8:		input buffer (need not be \0-terminated)
+ * @u8len:	number of bytes to read from @u8
+ * @u7:		output buffer
+ * @u7len:	size of output buffer
+ *
+ * On error, -1 is returned. On success, the number of bytes emitted to @u7,
+ * not including the final \0 that is emitted.
+ */
+int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len)
 {
   char *u7end;
   char *buf, *p;
