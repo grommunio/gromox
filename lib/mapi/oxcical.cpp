@@ -3631,12 +3631,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 
 		auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
-		if (ptz_component == nullptr)
-			/* nothing */;
-		else if (b_allday && g_oxcical_allday_ymd)
-			pilineDTS.append_param("VALUE", "DATE");
-		else
+		if (ptz_component != nullptr) {
 			pilineDTS.append_param("TZID", tzid);
+			if (b_allday && g_oxcical_allday_ymd)
+				pilineDTS.append_param("VALUE", "DATE");
+		}
 	} else {
 		propname = {MNID_ID, PSETID_TASK, PidLidTaskStartDate};
 		if (!get_propids(&propnames, &propids))
@@ -3666,13 +3665,12 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		auto piline = &pcomponent->append_line("DTEND", tmp_buff);
-		if (ptz_component == nullptr)
-			/* nothing */;
-		else if (b_allday && g_oxcical_allday_ymd)
-			piline->append_param("VALUE", "DATE");
-		else
-			piline->append_param("TZID", tzid);
+		auto &pilineDTE = pcomponent->append_line("DTEND", tmp_buff);
+		if (ptz_component != nullptr) {
+			pilineDTE.append_param("TZID", tzid);
+			if (b_allday && g_oxcical_allday_ymd)
+				pilineDTE.append_param("VALUE", "DATE");
+		}
 	}
 
 	err = oxcical_export_task(*pmsg, *pcomponent, ptz_component, get_propids);
