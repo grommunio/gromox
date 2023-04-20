@@ -66,9 +66,8 @@ enum {
 };
 
 enum class midb_cond {
-	x_none,	all, answered, before, deleted, draft, flagged,
-	larger, is_new, old, on, recent, seen,
-	sent_before, sent_on, sent_since, since, smaller,
+	x_none,	all, answered, deleted, draft, flagged,
+	is_new, old, recent, seen,
 	unanswered, undeleted, undraft, unflagged, unseen,
 
 	/* ct_headers */
@@ -76,6 +75,12 @@ enum class midb_cond {
 
 	/* ct_keyword */
 	bcc, body, cc, from, keyword, subject, text, to, unkeyword,
+
+	/* ct_time */
+	before, on, sent_before, sent_on, sent_since, since,
+
+	/* ct_size */
+	larger, smaller,
 
 	/* ct_seq */
 	id, uid,
@@ -1050,6 +1055,12 @@ ct_node::ct_node(ct_node &&o) :
 		ct_headers[0] = o.ct_headers[0];
 		ct_headers[1] = o.ct_headers[1];
 		o.ct_headers[0] = o.ct_headers[1] = nullptr;
+		break;
+	case midb_cond::before ... midb_cond::since:
+		ct_time = o.ct_time;
+		break;
+	case midb_cond::larger ... midb_cond::smaller:
+		ct_size = o.ct_size;
 		break;
 	default:
 		break;
