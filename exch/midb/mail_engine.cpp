@@ -66,10 +66,19 @@ enum {
 };
 
 enum class midb_cond {
-	x_none, all, answered, bcc, before, body, cc, deleted, draft, flagged, from,
-	header, id, keyword, larger, is_new, old, on, recent, seen,
-	sent_before, sent_on, sent_since, since, smaller, subject, text, to,
-	uid, unanswered, undeleted, undraft, unflagged, unkeyword, unseen,
+	x_none,	all, answered, before, deleted, draft, flagged,
+	larger, is_new, old, on, recent, seen,
+	sent_before, sent_on, sent_since, since, smaller,
+	unanswered, undeleted, undraft, unflagged, unseen,
+
+	/* ct_headers */
+	header,
+
+	/* ct_keyword */
+	bcc, body, cc, from, keyword, subject, text, to, unkeyword,
+
+	/* ct_seq */
+	id, uid,
 };
 
 enum class midb_conj {
@@ -1028,30 +1037,43 @@ ct_node::ct_node(ct_node &&o) :
 	pbranch(o.pbranch), conjunction(o.conjunction), condition(o.condition)
 {
 	o.pbranch = nullptr;
-	if (cond_is_id(condition)) {
+	switch (condition) {
+	case midb_cond::id ... midb_cond::uid:
 		ct_seq = o.ct_seq;
 		o.ct_seq = nullptr;
-	} else if (cond_w_stmt(condition)) {
+		break;
+	case midb_cond::bcc ... midb_cond::unkeyword:
 		ct_keyword = o.ct_keyword;
 		o.ct_keyword = nullptr;
-	} else if (condition == midb_cond::header) {
+		break;
+	case midb_cond::header:
 		ct_headers[0] = o.ct_headers[0];
 		ct_headers[1] = o.ct_headers[1];
 		o.ct_headers[0] = o.ct_headers[1] = nullptr;
+		break;
+	default:
+		break;
 	}
 	o.condition = midb_cond::x_none;
 }
 
 ct_node::~ct_node()
 {
-	if (pbranch != nullptr) {
-	} else if (cond_is_id(condition)) {
-		delete ct_seq;
-	} else if (cond_w_stmt(condition)) {
+	if (pbranch != nullptr)
+		return;
+	switch (condition) {
+	case midb_cond::bcc ... midb_cond::unkeyword:
 		free(ct_keyword);
-	} else if (condition == midb_cond::header) {
+		break;
+	case midb_cond::id ... midb_cond::uid:
+		delete ct_seq;
+		break;
+	case midb_cond::header:
 		free(ct_headers[0]);
 		free(ct_headers[1]);
+		break;
+	default:
+		break;
 	}
 }
 
