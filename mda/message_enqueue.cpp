@@ -34,6 +34,7 @@
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #include "smtp/smtp_aux.hpp"
+#include "smtp/smtp_parser.h"
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 
@@ -67,20 +68,6 @@ static char         g_path[256];
 static int			g_msg_id;
 static int			g_last_flush_ID;
 static int			g_last_pos;
-
-static void *(*query_serviceF)(const char *, const std::type_info &);
-static int (*get_queue_length)();
-static BOOL (*register_cancel)(CANCEL_FUNCTION);
-static const char *(*get_host_ID)();
-static const char *(*get_config_path)();
-static const char *(*get_data_path)();
-static const char *(*get_state_path)();
-static int (*get_extra_num)(int);
-static const char *(*get_extra_tag)(int, int);
-static const char *(*get_extra_value)(int, int);
-static BOOL (*set_flush_ID)(int);
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
-#define query_service1(n) query_service2(#n, n)
 
 /*
  *    @param
@@ -216,7 +203,6 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	struct tm tm_buff;
 	FILE *fp;
 	size_t write_len, utmp_len;
-	int j, tmp_len, copy_result;
 	unsigned int size;
 	static constexpr uint32_t smtp_type = SMTP_IN;
 
@@ -247,23 +233,24 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		if (getsockopt(pentity->pconnection->sockd, SOL_SOCKET,
 		    SO_DOMAIN, &af_type, &af_len) != 0 || af_len != sizeof(af_type))
 			af_type = 0;
-		tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
+		auto tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
 		          "(%s [%s%s])\r\n\tby %s with %s%s;\r\n\t%s\r\n",
 		          pentity->pconnection->client_ip,
 		          pentity->penvelope->hello_domain,
 		          pentity->penvelope->parsed_domain,
 		          af_type == AF_INET6 ? "IPv6:" : "",
-		          pentity->pconnection->client_ip, get_host_ID(),
+		          pentity->pconnection->client_ip, g_config_file->get_value("host_id"),
 		          pentity->command_protocol == HT_LMTP ? "LMTP" : "SMTP",
 		          pentity->pconnection->ssl != nullptr ? "S" : "", /* RFC 3848 */
 		          time_buff);
 		write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 		if (write_len != static_cast<size_t>(tmp_len))
 			goto REMOVE_MESS;
-		for (j=0; j<get_extra_num(pentity->context_ID); j++) {
+		auto max = flh_get_extra_num(pentity->context_ID);
+		for (int j = 0; j < max; ++j) {
 			tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%s: %s\r\n",
-					get_extra_tag(pentity->context_ID, j),
-					get_extra_value(pentity->context_ID, j));
+			          flh_get_extra_tag(pentity->context_ID, j),
+			          flh_get_extra_value(pentity->context_ID, j));
 			write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 			if (write_len != static_cast<size_t>(tmp_len))
 				goto REMOVE_MESS;
@@ -272,6 +259,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		fp = (FILE*)pentity->pflusher->flush_ptr;
 	}
 	/* write stream into mess file */
+	int copy_result;
 	while (true) {
 		size = MAX_LINE_LENGTH;
 		copy_result = pentity->pstream->copyline(tmp_buff, &size);
@@ -376,24 +364,14 @@ static int message_enqueue_retrieve_max_ID() try
 	return 0;
 }
 
-static BOOL flh_message_enqueue(int reason, void** ppdata)
+BOOL FLH_LibMain(int reason)
 {
 	const char *queue_path;
 
 	switch (reason) {
 	case PLUGIN_INIT: {
-		query_serviceF = reinterpret_cast<decltype(query_serviceF)>(ppdata[0]);
-		query_service1(get_queue_length);
-		query_service1(register_cancel);
-		query_service1(get_host_ID);
-		query_service1(set_flush_ID);
-		query_service1(get_config_path);
-		query_service1(get_data_path);
-		query_service1(get_state_path);
-		query_service1(get_extra_num);
-		query_service1(get_extra_tag);
-		query_service1(get_extra_value);
-		auto pfile = config_file_initd("message_enqueue.cfg", get_config_path(), nullptr);
+		auto pfile = config_file_initd("message_enqueue.cfg",
+		             g_config_file->get_value("config_file_path"), nullptr);
 		if (pfile == nullptr) {
 			mlog(LV_ERR, "message_enqueue: config_file_initd message_enqueue.cfg: %s",
 				strerror(errno));
@@ -409,11 +387,11 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 			mlog(LV_ERR, "message_enqueue: failed to run the module");
 			return false;
 		}
-		if (!register_cancel(message_enqueue_cancel)) {
+		if (!flusher_register_cancel(message_enqueue_cancel)) {
 			mlog(LV_ERR, "message_enqueue: failed to register cancel flushing");
 			return false;
 		}
-		set_flush_ID(g_last_flush_ID);
+		flusher_set_flush_ID(g_last_flush_ID);
 		return TRUE;
 	}
 	case PLUGIN_FREE:
@@ -422,4 +400,3 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 	}
 	return TRUE;
 }
-BOOL FLH_LibMain(int r, void **p) { return flh_message_enqueue((r), (p)); }

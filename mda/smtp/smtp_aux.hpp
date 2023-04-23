@@ -11,6 +11,7 @@ enum {
 
 struct FLUSH_ENTITY;
 struct smtp_context;
+using CANCEL_FUNCTION = void (*)(FLUSH_ENTITY *);
 using SMTP_CONTEXT = smtp_context;
 
 extern void flusher_init(size_t queue_len);
@@ -24,6 +25,9 @@ extern int listener_trigger_accept();
 extern void listener_stop_accept();
 extern void listener_stop();
 extern void message_enqueue_handle_workitem(FLUSH_ENTITY &);
+extern BOOL flusher_register_cancel(CANCEL_FUNCTION);
+extern void flusher_set_flush_ID(int);
+extern BOOL FLH_LibMain(int);
 
 extern uint16_t g_listener_ssl_port;
 

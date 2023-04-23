@@ -40,10 +40,7 @@ struct FLH_PLUG_ENTITY {
 }
 
 static BOOL flusher_load_plugin();
-static void *flusher_queryservice(const char *service, const std::type_info &);
-static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func);
 static int flusher_increase_max_ID();
-static void flusher_set_flush_ID(int);
 	
 static std::unique_ptr<FLH_PLUG_ENTITY> g_flusher_plug;
 static bool g_can_register;
@@ -129,11 +126,8 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 
 static BOOL flusher_load_plugin()
 {
-	static void *const server_funcs[] = {reinterpret_cast<void *>(flusher_queryservice)};
-	BOOL    main_result;
-	
 	g_can_register = true; /* so message_enqueue can set g_current_ID at start */
-	main_result = FLH_LibMain(PLUGIN_INIT, const_cast<void **>(server_funcs));
+	auto main_result = FLH_LibMain(PLUGIN_INIT);
 	g_can_register = false;
 	if (!main_result) {
 		mlog(LV_ERR, "flusher: failed to execute init in flusher plugin");
@@ -150,7 +144,7 @@ void flusher_stop()
 
 FLH_PLUG_ENTITY::~FLH_PLUG_ENTITY()
 {
-	if (completed_init && !FLH_LibMain(PLUGIN_FREE, nullptr)) {
+	if (completed_init && !FLH_LibMain(PLUGIN_FREE)) {
 		mlog(LV_ERR, "flusher: error executing Flusher_LibMain with "
 			   "FLUSHER_LIB_FREE in plugin %s", path);
 		return;
@@ -172,7 +166,7 @@ static int flusher_increase_max_ID()
 	return next;
 }
 
-static void flusher_set_flush_ID(int ID)
+void flusher_set_flush_ID(int ID)
 {
 	/*
 	 * FLH can dictate the starting value at PLUGIN_INIT;
@@ -183,63 +177,7 @@ static void flusher_set_flush_ID(int ID)
 		g_current_ID = ID;
 }
 
-static void *flusher_queryservice(const char *service, const std::type_info &ti)
-{
-	void *ret_addr;
-	
-#define E(s, f) \
-	do { \
-		if (strcmp(service, (s)) == 0) \
-			return reinterpret_cast<void *>(f); \
-	} while (false)
-	E("get_queue_length", +[]() { return g_max_queue_len; });
-	E("register_cancel", flusher_register_cancel);
-	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
-	E("get_extra_num", +[](unsigned int id) {
-		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
-		return smtp_parser_get_extra_num(c);
-	});
-	E("get_extra_tag", +[](unsigned int id, int pos) {
-		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
-		return smtp_parser_get_extra_tag(c, pos);
-	});
-	E("get_extra_value", +[](unsigned int id, int pos) {
-		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
-		return smtp_parser_get_extra_value(c, pos);
-	});
-	E("set_flush_ID", flusher_set_flush_ID);
-	E("get_config_path", +[]() {
-		auto r = g_config_file->get_value("config_file_path");
-		return r != nullptr ? r : PKGSYSCONFDIR;
-	});
-	E("get_data_path", +[]() {
-		auto r = g_config_file->get_value("data_file_path");
-		return r != nullptr ? r : PKGDATADIR "/smtp:" PKGDATADIR;
-	});
-	E("get_state_path", +[]() {
-		auto r = g_config_file->get_value("state_file_path");
-		return r != nullptr ? r : PKGSTATEDIR;
-	});
-#undef E
-	/* check if already exists in the reference list */
-	for (const auto &svc : g_flusher_plug->list_ref)
-		if (svc.service_name == service)
-			return svc.service_addr;
-	ret_addr = service_query(service, g_flusher_plug->file_name, ti);
-	if (NULL == ret_addr) {
-		return NULL;
-	}
-	try {
-		g_flusher_plug->list_ref.push_back(SERVICE_NODE{ret_addr, service});
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1241: failed to allocate memory for service name");
-		service_release(service, g_flusher_plug->file_name);
-		return NULL;
-	}
-	return ret_addr;
-}
-
-static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
+BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
 {
 	if (!g_can_register || g_flusher_plug->flush_cancel != nullptr)
 		return FALSE;

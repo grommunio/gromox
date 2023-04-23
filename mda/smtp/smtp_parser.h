@@ -96,6 +96,9 @@ extern gromox::time_point smtp_parser_get_context_timestamp(const schedule_conte
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
+extern int flh_get_extra_num(unsigned int ctx);
+extern const char *flh_get_extra_tag(unsigned int ctx, int pos);
+extern const char *flh_get_extra_value(unsigned int ctx, int pos);
 extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);

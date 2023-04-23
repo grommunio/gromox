@@ -662,6 +662,11 @@ int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)
 	return pcontext->ext_data.cur_pos;
 }
 
+int flh_get_extra_num(unsigned int i)
+{
+	return smtp_parser_get_extra_num(static_cast<smtp_context *>(smtp_parser_get_contexts_list()[i]));
+}
+
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos)
 {
 	if (pos >= MAX_EXTRA_DATA_INDEX || pos < 0) {
@@ -670,10 +675,20 @@ const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos)
 	return pcontext->ext_data.ext_tag[pos];
 }
 
+const char *flh_get_extra_tag(unsigned int i, int j)
+{
+	return smtp_parser_get_extra_tag(static_cast<smtp_context *>(smtp_parser_get_contexts_list()[i]), j);
+}
+
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos)
 {
 	if (pos >= MAX_EXTRA_DATA_INDEX || pos < 0) {
 		return NULL;
 	}
 	return pcontext->ext_data.ext_data[pos];
+}
+
+const char *flh_get_extra_value(unsigned int i, int j)
+{
+	return smtp_parser_get_extra_value(static_cast<smtp_context *>(smtp_parser_get_contexts_list()[i]), j);
 }
