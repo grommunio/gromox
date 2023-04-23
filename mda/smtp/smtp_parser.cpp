@@ -72,12 +72,8 @@ alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
  *        threads_num        number of threads in the pool
  *        dm_valid           is domain list valid
  *        max_mail_length    maximum mail size
- *        max_mail_sessions  maximum mail sessions per connection
- *        blktime_sessions   block interval if max sessions is exceeded
  *        flushing_size      maximum size the stream can hold
  *        timeout            seconds if there's no data comes from connection
- *        auth_times         maximum authentication times, session permit
- *        blktime_auths      block interval if max auths is exceeded
  */
 void smtp_parser_init(const smtp_param &param)
 {
@@ -526,23 +522,10 @@ SCHEDULE_CONTEXT **smtp_parser_get_contexts_list()
 static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-	const char* smtp_reply_str;
-	
 	/* check the line length */
 	if (line_length > 1000) {
 		/* 500 syntax error - line too long */
 		return 502;
-	}
-	if (pcontext->session_num == static_cast<unsigned int>(g_param.max_mail_sessions) &&
-		(4 != line_length || 0 != strncasecmp(cmd_line, "QUIT", 4))) {
-		/* reach the maximum of mail transactions */
-		smtp_reply_str = resource_get_smtp_code(529, 1, &string_length);
-		pcontext->connection.write(smtp_reply_str, string_length);
-		smtp_parser_log_info(pcontext, LV_NOTICE, "added %s into temporary list because"
-							" it exceeds the maximum mail number on session",
-							pcontext->connection.client_ip);
-		return DISPATCH_SHOULD_CLOSE; 
 	}
 	if (g_param.cmd_prot & HT_LMTP) {
 		if (strncasecmp(cmd_line, "LHLO", 4) == 0)

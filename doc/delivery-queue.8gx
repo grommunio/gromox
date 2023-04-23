@@ -20,12 +20,6 @@ Display option summary.
 The usual config file location is /etc/gromox/\fBsmtp.cfg\fP. (Deviation from
 the process name due to compatibility with older installations.)
 .TP
-\fBblock_interval_sessions\fP
-The amount of time a source IP address is blocked from connecting to the
-service because it tried to queue too many messages.
-.br
-Default: \fI1 minute\fP
-.TP
 \fBcommand_protocol\fP
 Selects what kind of hello command is accepted of clients. Can be \fIlmtp\fP,
 \fIsmtp\fP or \fIboth\fP.
@@ -132,12 +126,6 @@ This flag controls whether clients must utilize TLS, either by way of implicit
 TLS (cf. \fBlda_listen_tls_port\fP), or through the STARTTLS command.
 .br
 Default: \fIfalse\fP
-.TP
-\fBsmtp_max_mail_num\fP
-The maximum number of messages that a client is allowed to queue within one
-connection before its source IP address is blocked.
-.br
-Default: \fI10\fP
 .TP
 \fBsmtp_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.

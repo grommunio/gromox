@@ -78,13 +78,11 @@ using SMTP_CONTEXT = smtp_context;
 
 struct smtp_param {
 	unsigned int context_num = 0;
-	BOOL need_auth = false, support_pipeline = TRUE;
+	BOOL support_pipeline = TRUE;
 	BOOL support_starttls = false, force_starttls = false;
 	size_t max_mail_length = 64ULL * 1024 * 1024;
-	int max_mail_sessions = 0; /* max num of mails in any one session */
 	size_t flushing_size = 0;
 	gromox::time_duration timeout{std::chrono::seconds{0x7fffffff}};
-	int auth_times = 0, blktime_auths = 60, blktime_sessions = 60;
 	unsigned int cmd_prot = HT_LMTP | HT_SMTP;
 	std::string cert_path, cert_passwd, key_path;
 };

@@ -50,8 +50,6 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 };
 
 static constexpr cfg_directive smtp_cfg_defaults[] = {
-	{"block_interval_auths", "1min", CFG_TIME, "1s"},
-	{"block_interval_session", "1min", CFG_TIME, "1s"},
 	{"command_protocol", "both"},
 	{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
 	{"context_average_mem", "256K", CFG_SIZE, "64K"},
@@ -68,11 +66,8 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"running_identity", RUNNING_IDENTITY},
-	{"smtp_auth_times", "3", CFG_SIZE, "1"},
 	{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"smtp_force_starttls", "false", CFG_BOOL},
-	{"smtp_max_mail_num", "100", CFG_SIZE},
-	{"smtp_need_auth", "false", CFG_BOOL},
 	{"smtp_support_pipeline", "true", CFG_BOOL},
 	{"smtp_support_starttls", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
@@ -218,28 +213,10 @@ int main(int argc, const char **argv) try
 	if (listen_tls_port > 0)
 		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 
-	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
-	mlog(LV_NOTICE, "dq: auth_needed is %s", scfg.need_auth ? "ON" : "OFF");
-
-	scfg.auth_times = g_config_file->get_ll("smtp_auth_times");
-	mlog(LV_INFO, "dq: maximum authentication failure count is %d", 
-	       scfg.auth_times);
-
-	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_auths, 0);
-	mlog(LV_INFO, "dq: blocking clients for %s when authentication failure count "
-			"is exceeded", temp_buff);
-
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.max_mail_length, 1024, 0);
 	mlog(LV_NOTICE, "dq: maximum mail length is %s", temp_buff);
 
-	scfg.max_mail_sessions = g_config_file->get_ll("smtp_max_mail_num");
-	scfg.blktime_sessions = g_config_file->get_ll("block_interval_session");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_sessions, 0);
-	mlog(LV_INFO, "dq: blocking remote side for %s when mails number is exceed for one "
-			"session", temp_buff);
-	
 	str_val = g_config_file->get_value("command_protocol");
 	if (strcasecmp(str_val, "both") == 0)
 		scfg.cmd_prot = HT_LMTP | HT_SMTP;
