@@ -13,8 +13,6 @@
 #include <gromox/svc_loader.hpp>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
-#include <list>
-#include <mutex>
 #include <sys/types.h>
 #include <utility>
 #include "smtp_aux.hpp"
@@ -50,8 +48,6 @@ static void flusher_set_flush_ID(int);
 static std::unique_ptr<FLH_PLUG_ENTITY> g_flusher_plug;
 static bool g_can_register;
 static size_t g_max_queue_len;
-static std::mutex g_flush_mutex;
-static std::list<FLUSH_ENTITY> g_flush_queue;
 static std::atomic<int> g_current_ID;
 
 void flusher_init(size_t queue_len) try
@@ -109,20 +105,6 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext) try
 	return true;
 } catch (const std::bad_alloc &) {
 	return false;
-}
-
-static std::list<FLUSH_ENTITY> flusher_get_from_queue()
-{
-	std::list<FLUSH_ENTITY> e2;
-	std::lock_guard fl_hold(g_flush_mutex);
-	if (g_flush_queue.size() > 0)
-		e2.splice(e2.end(), g_flush_queue, g_flush_queue.begin());
-	return e2;
-}
-
-static BOOL flusher_feedback_entity(std::list<FLUSH_ENTITY> &&e2)
-{
-	return contexts_pool_wakeup_context(e2.front().pcontext, CONTEXT_TURNING);
 }
 
 /*
@@ -210,10 +192,8 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 		if (strcmp(service, (s)) == 0) \
 			return reinterpret_cast<void *>(f); \
 	} while (false)
-	E("feedback_entity", flusher_feedback_entity);
 	E("get_queue_length", +[]() { return g_max_queue_len; });
 	E("register_cancel", flusher_register_cancel);
-	E("get_from_queue", flusher_get_from_queue);
 	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
 	E("get_extra_num", +[](unsigned int id) {
 		auto c = static_cast<smtp_context *>(smtp_parser_get_contexts_list()[id]);
