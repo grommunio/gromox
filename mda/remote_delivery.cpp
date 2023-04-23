@@ -354,11 +354,6 @@ static errno_t rd_send_mail(const MESSAGE_CONTEXT *ctx, std::string &response)
 
 static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 {
-	CONTROL_INFO l_ctrl = *ctx->pcontrol;
-	MESSAGE_CONTEXT l_ctx;
-	l_ctx.pcontrol = &l_ctrl;
-	l_ctx.pmail    = ctx->pmail;
-
 	std::string errstr;
 	int ret;
 	try {
@@ -373,7 +368,7 @@ static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	mlog(LV_ERR, "remote_delivery: Local code: %s (ret=%d). "
 	        "SMTP reason string: %s. Recipient(s) affected:",
 	        strerror(ret), ret, errstr.c_str());
-	for (const auto &rcpt : l_ctrl.rcpt)
+	for (const auto &rcpt : ctx->pcontrol->rcpt)
 		mlog(LV_ERR, "remote_delivery:\t%s", rcpt.c_str());
 	return hook_result::stop;
 }
