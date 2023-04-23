@@ -9,6 +9,7 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
+struct FLUSH_ENTITY;
 struct smtp_context;
 using SMTP_CONTEXT = smtp_context;
 
@@ -22,6 +23,7 @@ extern int listener_run();
 extern int listener_trigger_accept();
 extern void listener_stop_accept();
 extern void listener_stop();
+extern void message_enqueue_handle_workitem(FLUSH_ENTITY &);
 
 extern uint16_t g_listener_ssl_port;
 

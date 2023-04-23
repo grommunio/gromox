@@ -105,9 +105,7 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext) try
 	pentity->context_ID     = pcontext->context_id;
 	pentity->pcontext       = pcontext;
 	pentity->command_protocol = pcontext->command_protocol;
-
-	std::lock_guard fl_hold(g_flush_mutex);
-	g_flush_queue.push_back(std::move(e));
+	message_enqueue_handle_workitem(e);
 	return true;
 } catch (const std::bad_alloc &) {
 	return false;

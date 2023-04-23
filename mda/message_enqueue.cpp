@@ -37,6 +37,7 @@
 #include <gromox/plugin.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
+#include "smtp/smtp_aux.hpp"
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 
@@ -223,28 +224,31 @@ static BOOL message_enqueue_check() try
 	return false;
 }
 
+void message_enqueue_handle_workitem(FLUSH_ENTITY &e)
+{
+	if (!message_enqueue_try_save_mess(&e)) {
+		e.pflusher->flush_result = FLUSH_TEMP_FAIL;
+		return;
+	}
+	if (e.pflusher->flush_action == FLUSH_WHOLE_MAIL) {
+		MSG_BUFF msg;
+		msg.msg_type = MESSAGE_MESS;
+		msg.msg_content = e.pflusher->flush_ID;
+		msgsnd(g_msg_id, &msg, sizeof(uint32_t), IPC_NOWAIT);
+		++g_enqueued_num;
+	}
+	e.pflusher->flush_result = FLUSH_RESULT_OK;
+}
+
 static void *meq_thrwork(void *arg)
 {
-	MSG_BUFF msg;
-
 	while (!g_notify_stop) {
 		auto entlist = get_from_queue(); /* always size 1 */
 		if (entlist.size() == 0) {
             usleep(50000);
             continue;
         }
-		auto pentity = &entlist.front();
-		if (message_enqueue_try_save_mess(pentity)) {
-			if (FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action) {
-    			msg.msg_type = MESSAGE_MESS;
-    			msg.msg_content = pentity->pflusher->flush_ID;
-				msgsnd(g_msg_id, &msg, sizeof(uint32_t), IPC_NOWAIT);
-				g_enqueued_num ++;
-			}
-			pentity->pflusher->flush_result = FLUSH_RESULT_OK;
-		} else {
-			pentity->pflusher->flush_result = FLUSH_TEMP_FAIL;
-		}
+		message_enqueue_handle_workitem(entlist.front());
 		feedback_entity(std::move(entlist));
 	}
 	return NULL;
