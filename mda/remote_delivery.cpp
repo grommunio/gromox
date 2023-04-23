@@ -101,11 +101,11 @@ static int rd_run()
 	return 0;
 }
 
-static void rd_log(const MESSAGE_CONTEXT *ctx, unsigned int level,
+static void rd_log(const CONTROL_INFO &eci, unsigned int level,
     const char *fmt, ...)
 {
 	std::string outbuf = "[remote_delivery]";
-	auto ctrl = ctx->pcontrol;
+	auto ctrl = &eci;
 	outbuf += " QID=" + std::to_string(ctrl->queue_ID) + " from=<"s +
 	          ctrl->from + "> to=";
 
@@ -334,7 +334,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 	rd_connection conn;
 	conn.fd = HX_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
-		rd_log(ctx, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
+		rd_log(*ctx->pcontrol, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
 			g_mx_host.c_str(), g_mx_port, strerror(-conn.fd));
 		return EHOSTUNREACH;
 	}
@@ -344,7 +344,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 
 	if (ret == ETIMEDOUT)
 		return ret;
-	rd_log(ctx, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
+	rd_log(*ctx->pcontrol, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
 	/* change reason to connection refused */
 	if (ret == 0 || 1)
 		ret = ECONNREFUSED;

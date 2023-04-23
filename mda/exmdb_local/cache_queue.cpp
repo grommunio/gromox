@@ -452,17 +452,17 @@ static void *mdl_thrwork(void *arg)
 			    ENVELOPE_FROM_NULL) != 0) {
 				pbounce_context = get_context();
 				if (NULL == pbounce_context) {
-					exmdb_local_log_info(pcontext, ptr, LV_ERR, "fail to get one "
+					exmdb_local_log_info(*pcontext->pcontrol, ptr, LV_ERR, "fail to get one "
 						"context for bounce mail");
 				} else if (!bounce_audit_check(temp_rcpt)) {
-					exmdb_local_log_info(pcontext, ptr, LV_ERR, "will not "
+					exmdb_local_log_info(*pcontext->pcontrol, ptr, LV_ERR, "will not "
 						"produce bounce message, because of too many "
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
 				} else if (!exml_bouncer_make(temp_from,
 				    temp_rcpt, pcontext->pmail, original_time,
 				    bounce_type, pbounce_context->pmail)) {
-					exmdb_local_log_info(pcontext, ptr, LV_ERR,
+					exmdb_local_log_info(*pcontext->pcontrol, ptr, LV_ERR,
 						"error during exml_bouncer_make for %s",
 						temp_rcpt);
 					put_context(pbounce_context);

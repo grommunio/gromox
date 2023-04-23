@@ -140,7 +140,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext);
 
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
 static MESSAGE_CONTEXT *transporter_dequeue_context();
-static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
+static void transporter_log_info(const CONTROL_INFO &, int level, const char *format, ...);
 
 ANTI_LOOP::ANTI_LOOP()
 {
@@ -513,7 +513,7 @@ static void *dxp_thrwork(void *arg)
 		pthr_data->last_thrower = NULL;
 		auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 		if (pass_result == hook_result::xcontinue) {
-			transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by "
+			transporter_log_info(*pcontext->pcontrol, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
 			if (!b_self) {
 				auto ret = message_dequeue_save(pmessage);
@@ -976,7 +976,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (pass_result == hook_result::xcontinue) {
 		ret_val = FALSE;
-		transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by any "
+		transporter_log_info(*pcontext->pcontrol, LV_DEBUG, "Message cannot be processed by any "
 			"hook registered in MPC");
 	} else {
 		ret_val = TRUE;
@@ -1071,7 +1071,7 @@ static bool transporter_register_remote(HOOK_FUNCTION func)
 	return true;
 }
 
-static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
+static void transporter_log_info(const CONTROL_INFO &ctrl, int level,
     const char *format, ...) try
 {
 	char log_buf[2048];
@@ -1085,8 +1085,8 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	std::string rcpt_buff;
 	static constexpr unsigned int limit = 3;
 	unsigned int counter = limit;
-	auto nrcpt = pcontext->pcontrol->rcpt.size();
-	for (const auto &rcpt : pcontext->pcontrol->rcpt) {
+	auto nrcpt = ctrl.rcpt.size();
+	for (const auto &rcpt : ctrl.rcpt) {
 		if (counter-- == 0)
 			break;
 		if (rcpt_buff.size() > 0)
@@ -1096,21 +1096,21 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	if (nrcpt > limit)
 		rcpt_buff += " + " + std::to_string(nrcpt - limit) + " others";
 
-	switch (pcontext->pcontrol->bound_type) {
+	switch (ctrl.bound_type) {
 	case BOUND_UNKNOWN:
 		mlog(level, "UNKNOWN message FROM: %s, "
-			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff.c_str(), log_buf);
+			"TO: %s %s", ctrl.from, rcpt_buff.c_str(), log_buf);
 		break;
 	case BOUND_IN:
 	case BOUND_OUT:
 	case BOUND_RELAY:
 		mlog(level, "SMTP message queue-ID: %d, FROM: %s, "
-			"TO: %s %s", pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
+			"TO: %s %s", ctrl.queue_ID, ctrl.from,
 			rcpt_buff.c_str(), log_buf);
 		break;
 	default:
 		mlog(level, "APP created message FROM: %s, "
-			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff.c_str(), log_buf);
+			"TO: %s %s", ctrl.from, rcpt_buff.c_str(), log_buf);
 		break;
 	}
 } catch (const std::bad_alloc &) {

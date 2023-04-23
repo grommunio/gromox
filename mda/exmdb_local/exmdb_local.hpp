@@ -37,7 +37,7 @@ extern void exmdb_local_init(const char *org_name, const char *default_charset);
 extern int exmdb_local_run();
 extern gromox::hook_result exmdb_local_hook(MESSAGE_CONTEXT *);
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);
-extern void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext, const char *rcpt_to, int level, const char *format, ...);
+extern void exmdb_local_log_info(const CONTROL_INFO &, const char *rcpt, int level, const char *format, ...);
 
 extern void net_failure_init(int times, int interval, int alarm_interval);
 extern int net_failure_run();
