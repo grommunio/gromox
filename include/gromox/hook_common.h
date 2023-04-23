@@ -39,8 +39,8 @@ struct CONTROL_INFO {
 };
 
 struct MESSAGE_CONTEXT {
-	CONTROL_INFO *pcontrol = nullptr;
-	MAIL *pmail = nullptr;
+	CONTROL_INFO ctrl;
+	MAIL mail; /* Note limitations of MAIL's default ctor */
 };
 
 using HOOK_FUNCTION = gromox::hook_result (*)(MESSAGE_CONTEXT *);

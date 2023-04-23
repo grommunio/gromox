@@ -136,7 +136,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
 	}
 	/* at the begin of file, write the length of message */
-	auto maillen = pcontext->pmail->get_length();
+	auto maillen = pcontext->mail.get_length();
 	if (maillen < 0) {
 		mlog(LV_ERR, "exmdb_local: failed to get mail length");
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
@@ -151,11 +151,11 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
-	uint32_t enc_qid    = cpu_to_le32(pcontext->pcontrol->queue_ID);
-	uint32_t enc_bound  = cpu_to_le32(pcontext->pcontrol->bound_type);
-	uint32_t enc_spam   = cpu_to_le32(pcontext->pcontrol->is_spam);
-	uint32_t enc_bounce = cpu_to_le32(pcontext->pcontrol->need_bounce);
-	if (!pcontext->pmail->to_file(fd.get()) ||
+	uint32_t enc_qid    = cpu_to_le32(pcontext->ctrl.queue_ID);
+	uint32_t enc_bound  = cpu_to_le32(pcontext->ctrl.bound_type);
+	uint32_t enc_spam   = cpu_to_le32(pcontext->ctrl.is_spam);
+	uint32_t enc_bounce = cpu_to_le32(pcontext->ctrl.need_bounce);
+	if (!pcontext->mail.to_file(fd.get()) ||
 	    write(fd.get(), &enc_qid, sizeof(enc_qid)) != sizeof(enc_qid) ||
 	    write(fd.get(), &enc_bound, sizeof(enc_bound)) != sizeof(enc_bound) ||
 	    write(fd.get(), &enc_spam, sizeof(enc_spam)) != sizeof(enc_spam) ||
@@ -166,8 +166,8 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
     }
 	/* write envelope from */
-	auto temp_len = strlen(pcontext->pcontrol->from) + 1;
-	auto wrret = write(fd.get(), pcontext->pcontrol->from, temp_len);
+	auto temp_len = strlen(pcontext->ctrl.from) + 1;
+	auto wrret = write(fd.get(), pcontext->ctrl.from, temp_len);
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1357: remove %s: %s",
@@ -324,7 +324,7 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_ERR, "exmdb_local: partial read from %s", temp_path.c_str());
 				continue;
 			}
-			if (!pcontext->pmail->load_from_str_move(pbuff, mess_len)) {
+			if (!pcontext->mail.load_from_str_move(pbuff, mess_len)) {
 				free(pbuff);
 				mlog(LV_ERR, "exmdb_local: failed to retrieve message %s in "
 				       "cache queue into mail object", temp_path.c_str());
@@ -336,28 +336,28 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_WARN, "W-1555: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
-			pcontext->pcontrol->queue_ID = le32p_to_cpu(ptr);
+			pcontext->ctrl.queue_ID = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
 				mlog(LV_WARN, "W-1556: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
-			pcontext->pcontrol->bound_type = le32p_to_cpu(ptr);
+			pcontext->ctrl.bound_type = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
 				mlog(LV_WARN, "W-1557: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
-			pcontext->pcontrol->is_spam = le32p_to_cpu(ptr);
+			pcontext->ctrl.is_spam = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
 				mlog(LV_WARN, "W-1558: garbage in %s; review and delete", temp_path.c_str());
 				continue;
 			}
-			pcontext->pcontrol->need_bounce = le32p_to_cpu(ptr);
+			pcontext->ctrl.need_bounce = le32p_to_cpu(ptr);
 			ptr += sizeof(uint32_t);
 			size -= sizeof(uint32_t);
 
@@ -366,7 +366,7 @@ static void *mdl_thrwork(void *arg)
 			auto zlen = strnlen(ptr, size);
 			if (zlen > INT32_MAX)
 				zlen = INT32_MAX;
-			snprintf(pcontext->pcontrol->from, arsizeof(pcontext->pcontrol->from),
+			snprintf(pcontext->ctrl.from, arsizeof(pcontext->ctrl.from),
 			         "%.*s", static_cast<int>(zlen), ptr);
 			snprintf(temp_from, arsizeof(temp_from),
 			         "%.*s", static_cast<int>(zlen), ptr);
@@ -386,8 +386,8 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
 				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
-				pcontext->pcontrol->rcpt.clear();
-				pcontext->pcontrol->rcpt.emplace_back(ptr);
+				pcontext->ctrl.rcpt.clear();
+				pcontext->ctrl.rcpt.emplace_back(ptr);
 				gx_strlcpy(temp_rcpt, ptr, arsizeof(temp_rcpt));
 
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
@@ -446,30 +446,30 @@ static void *mdl_thrwork(void *arg)
 			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)
 				mlog(LV_WARN, "W-1432: remove %s: %s",
 				        temp_path.c_str(), strerror(errno));
-			need_bounce &= pcontext->pcontrol->need_bounce;
+			need_bounce &= pcontext->ctrl.need_bounce;
 			
-			if (need_bounce && strcasecmp(pcontext->pcontrol->from,
+			if (need_bounce && strcasecmp(pcontext->ctrl.from,
 			    ENVELOPE_FROM_NULL) != 0) {
 				pbounce_context = get_context();
 				if (NULL == pbounce_context) {
-					exmdb_local_log_info(*pcontext->pcontrol, ptr, LV_ERR, "fail to get one "
+					exmdb_local_log_info(pcontext->ctrl, ptr, LV_ERR, "fail to get one "
 						"context for bounce mail");
 				} else if (!bounce_audit_check(temp_rcpt)) {
-					exmdb_local_log_info(*pcontext->pcontrol, ptr, LV_ERR, "will not "
+					exmdb_local_log_info(pcontext->ctrl, ptr, LV_ERR, "will not "
 						"produce bounce message, because of too many "
 						"mails to %s", temp_rcpt);
 					put_context(pbounce_context);
 				} else if (!exml_bouncer_make(temp_from,
-				    temp_rcpt, pcontext->pmail, original_time,
-				    bounce_type, pbounce_context->pmail)) {
-					exmdb_local_log_info(*pcontext->pcontrol, ptr, LV_ERR,
+				    temp_rcpt, &pcontext->mail, original_time,
+				    bounce_type, &pbounce_context->mail)) {
+					exmdb_local_log_info(pcontext->ctrl, ptr, LV_ERR,
 						"error during exml_bouncer_make for %s",
 						temp_rcpt);
 					put_context(pbounce_context);
 				} else {
-					sprintf(pbounce_context->pcontrol->from,
+					sprintf(pbounce_context->ctrl.from,
 					        "postmaster@%s", get_default_domain());
-					pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+					pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 					enqueue_context(pbounce_context);
 				}
 			}

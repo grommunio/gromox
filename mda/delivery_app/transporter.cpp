@@ -66,18 +66,6 @@ struct SERVICE_NODE {
     char                *service_name;
 };
 
-struct FIXED_CONTEXT {
-	CONTROL_INFO mail_control{};
-	MAIL mail{};
-	MESSAGE_CONTEXT context{};
-};
-
-struct FREE_CONTEXT {
-	CONTROL_INFO mail_control{};
-	MAIL mail{};
-	MESSAGE_CONTEXT context{};
-};
-
 struct CIRCLE_NODE {
 	DOUBLE_LIST_NODE node{};
 	HOOK_FUNCTION hook_addr = nullptr;
@@ -88,11 +76,14 @@ struct ANTI_LOOP {
 	DOUBLE_LIST free_list{}, thrown_list{};
 };
 
+/**
+ * @mctx:	message context (main iteration; never used for bounces)
+ */
 struct THREAD_DATA {
 	DOUBLE_LIST_NODE	node;
 	pthread_t			id;
 	BOOL				wait_on_event;
-	FIXED_CONTEXT		fake_context;
+	MESSAGE_CONTEXT mctx;
 	ANTI_LOOP			anti_loop;
 	HOOK_FUNCTION		last_hook;
 	HOOK_FUNCTION		last_thrower;
@@ -108,7 +99,7 @@ static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
 static gromox::atomic_bool g_notify_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
-static std::vector<FREE_CONTEXT *> g_free_list, g_queue_list;
+static std::vector<MESSAGE_CONTEXT *> g_free_list, g_queue_list; /* ctx for generating new messages */
 static DOUBLE_LIST		g_lib_list;
 static DOUBLE_LIST		 g_hook_list;
 static DOUBLE_LIST		 g_unloading_list;
@@ -119,7 +110,7 @@ static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
-static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
+static std::unique_ptr<MESSAGE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
 static std::unique_ptr<CIRCLE_NODE[]> g_circles_ptr;
 
@@ -210,7 +201,7 @@ int transporter_run()
 	}
 
 	try {
-		g_free_ptr = std::make_unique<FREE_CONTEXT[]>(g_free_num);
+		g_free_ptr = std::make_unique<MESSAGE_CONTEXT[]>(g_free_num);
 	} catch (const std::bad_alloc &) {
 		transporter_collect_resource();
 		mlog(LV_ERR, "transporter: failed to allocate memory for free list");
@@ -226,16 +217,10 @@ int transporter_run()
 		mlog(LV_ERR, "transporter: failed to init MIME pool");
         return -4;
 	}
-	for (unsigned int i = 0; i < g_threads_max; ++i) {
-		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
-		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
-		g_data_ptr[i].fake_context.context.pcontrol = &g_data_ptr[i].fake_context.mail_control;
-	}
-	for (size_t i = 0; i < g_free_num; ++i) {
+	for (unsigned int i = 0; i < g_threads_max; ++i)
+		g_data_ptr[i].mctx.mail = MAIL(g_mime_pool);
+	for (size_t i = 0; i < g_free_num; ++i)
 		g_free_ptr[i].mail = MAIL(g_mime_pool);
-		g_free_ptr[i].context.pmail = &g_free_ptr[i].mail;
-		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;
-	}
 
 	for (const auto &i : g_plugin_names) {
 		int ret = transporter_load_library(i.c_str());
@@ -483,8 +468,8 @@ static void *dxp_thrwork(void *arg)
 			b_self = TRUE;
 		} else {
 			cannot_served_times = 0;
-			pcontext = &pthr_data->fake_context.context;
-			if (!pcontext->pmail->load_from_str_move(static_cast<char *>(pmessage->mail_begin),
+			pcontext = &pthr_data->mctx;
+			if (!pcontext->mail.load_from_str_move(static_cast<char *>(pmessage->mail_begin),
 			    pmessage->mail_length)) {
 				mlog(LV_ERR, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
@@ -496,15 +481,15 @@ static void *dxp_thrwork(void *arg)
 					message_dequeue_put(pmessage);
 				continue;
 			}	
-			pcontext->pcontrol->queue_ID = pmessage->flush_ID;
-			pcontext->pcontrol->bound_type = pmessage->bound_type;
-			pcontext->pcontrol->is_spam = pmessage->is_spam;
-			pcontext->pcontrol->need_bounce = TRUE;
-			gx_strlcpy(pcontext->pcontrol->from, pmessage->envelope_from, arsizeof(pcontext->pcontrol->from));
+			pcontext->ctrl.queue_ID = pmessage->flush_ID;
+			pcontext->ctrl.bound_type = pmessage->bound_type;
+			pcontext->ctrl.is_spam = pmessage->is_spam;
+			pcontext->ctrl.need_bounce = TRUE;
+			gx_strlcpy(pcontext->ctrl.from, pmessage->envelope_from, std::size(pcontext->ctrl.from));
 			ptr = pmessage->envelope_rcpt;
 			while ((len = strlen(ptr)) != 0) {
 				len ++;
-				pcontext->pcontrol->rcpt.emplace_back(ptr);
+				pcontext->ctrl.rcpt.emplace_back(ptr);
 				ptr += len;
 			}
 			b_self = FALSE;
@@ -513,7 +498,7 @@ static void *dxp_thrwork(void *arg)
 		pthr_data->last_thrower = NULL;
 		auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 		if (pass_result == hook_result::xcontinue) {
-			transporter_log_info(*pcontext->pcontrol, LV_DEBUG, "Message cannot be processed by "
+			transporter_log_info(pcontext->ctrl, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
 			if (!b_self) {
 				auto ret = message_dequeue_save(pmessage);
@@ -525,8 +510,8 @@ static void *dxp_thrwork(void *arg)
 			}
 		}
 		if (!b_self) {
-			pcontext->pcontrol->rcpt.clear();
-			pcontext->pmail->clear();
+			pcontext->ctrl.rcpt.clear();
+			pcontext->mail.clear();
 			if (pass_result == hook_result::proc_error)
 				message_dequeue_save(pmessage);
 			message_dequeue_put(pmessage);
@@ -856,8 +841,8 @@ static MESSAGE_CONTEXT* transporter_get_context()
 	auto free_ctx = g_free_list.front();
 	g_free_list.erase(g_free_list.begin());
 	ctx_hold.unlock();
-	auto pcontext = &free_ctx->context;
-	pcontext->pcontrol->bound_type = BOUND_SELF;
+	auto pcontext = free_ctx;
+	pcontext->ctrl.bound_type = BOUND_SELF;
 	return pcontext;
 }
 
@@ -869,16 +854,15 @@ static MESSAGE_CONTEXT* transporter_get_context()
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 {
 	/* reset the context object */
-	pcontext->pcontrol->rcpt.clear();
-	pcontext->pcontrol->queue_ID = 0;
-	pcontext->pcontrol->is_spam = FALSE;
-	pcontext->pcontrol->bound_type = BOUND_UNKNOWN;
-	pcontext->pcontrol->need_bounce = FALSE;
-	pcontext->pcontrol->from[0] = '\0';
-	pcontext->pmail->clear();
-	auto free_ctx = containerof(pcontext, FREE_CONTEXT, context);
+	pcontext->ctrl.rcpt.clear();
+	pcontext->ctrl.queue_ID = 0;
+	pcontext->ctrl.is_spam = FALSE;
+	pcontext->ctrl.bound_type = BOUND_UNKNOWN;
+	pcontext->ctrl.need_bounce = FALSE;
+	pcontext->ctrl.from[0] = '\0';
+	pcontext->mail.clear();
 	std::lock_guard ctx_hold(g_context_lock);
-	g_free_list.push_back(free_ctx);
+	g_free_list.push_back(pcontext);
 }
 
 /*
@@ -894,9 +878,8 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 				"plugin try to enqueue message context");
 		return;
 	}
-	auto free_ctx = containerof(pcontext, FREE_CONTEXT, context);
 	std::unique_lock q_hold(g_queue_lock);
-	g_queue_list.push_back(free_ctx); /* reserved, so should not throw */
+	g_queue_list.push_back(pcontext); /* reserved, so should not throw */
 	q_hold.unlock();
 	/* wake up one thread */
 	g_waken_cond.notify_one();
@@ -915,7 +898,7 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
 	auto free_ctx = g_queue_list.front();
 	g_queue_list.erase(g_queue_list.begin());
 	q_hold.unlock();
-	return &free_ctx->context;
+	return free_ctx;
 }
 
 /*
@@ -976,7 +959,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (pass_result == hook_result::xcontinue) {
 		ret_val = FALSE;
-		transporter_log_info(*pcontext->pcontrol, LV_DEBUG, "Message cannot be processed by any "
+		transporter_log_info(pcontext->ctrl, LV_DEBUG, "Message cannot be processed by any "
 			"hook registered in MPC");
 	} else {
 		ret_val = TRUE;

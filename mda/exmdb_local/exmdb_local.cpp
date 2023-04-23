@@ -104,7 +104,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 	int cache_ID;
 	MESSAGE_CONTEXT *pbounce_context;
 	
-	if (BOUND_NOTLOCAL == pcontext->pcontrol->bound_type) {
+	if (BOUND_NOTLOCAL == pcontext->ctrl.bound_type) {
 		return hook_result::xcontinue;
 	}
 
@@ -114,7 +114,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 	 */
 	bool had_error = false;
 	std::vector<std::string> new_rcpts;
-	for (const auto &rcpt : pcontext->pcontrol->rcpt) {
+	for (const auto &rcpt : pcontext->ctrl.rcpt) {
 		auto rcpt_buff = rcpt.c_str();
 		auto pdomain = strchr(rcpt_buff, '@');
 		if (NULL == pdomain) {
@@ -135,104 +135,104 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			break;
 		case DELIVERY_OPERATION_DELIVERED:
 			net_failure_statistic(1, 0, 0, 0);
-			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
+			if (!pcontext->ctrl.need_bounce ||
+			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"fail to get bounce context");
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, time(nullptr),
-			    "BOUNCE_MAIL_DELIVERED", pbounce_context->pmail)) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+			    !exml_bouncer_make(pcontext->ctrl.from,
+			    rcpt_buff, &pcontext->mail, time(nullptr),
+			    "BOUNCE_MAIL_DELIVERED", &pbounce_context->mail)) {
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"DELIVERY_OPERATION_DELIVERED %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from,
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_NO_USER:
 			net_failure_statistic(0, 0, 0, 1);
-			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
+			if (!pcontext->ctrl.need_bounce ||
+			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"fail to get bounce context");
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, time(nullptr),
-			    "BOUNCE_NO_USER", pbounce_context->pmail)) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+			    !exml_bouncer_make(pcontext->ctrl.from,
+			    rcpt_buff, &pcontext->mail, time(nullptr),
+			    "BOUNCE_NO_USER", &pbounce_context->mail)) {
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"No such user %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from,
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_MAILBOX_FULL:
-			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
+			if (!pcontext->ctrl.need_bounce ||
+			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"fail to get bounce context");
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, time(nullptr),
-			    "BOUNCE_MAILBOX_FULL", pbounce_context->pmail)) {
+			    !exml_bouncer_make(pcontext->ctrl.from,
+			    rcpt_buff, &pcontext->mail, time(nullptr),
+			    "BOUNCE_MAILBOX_FULL", &pbounce_context->mail)) {
 				put_context(pbounce_context);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from,
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_ERROR:
 			had_error = true;
 			net_failure_statistic(0, 0, 1, 0);
-			if (!pcontext->pcontrol->need_bounce ||
-			    strcasecmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) == 0)
+			if (!pcontext->ctrl.need_bounce ||
+			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"fail to get bounce context");
 				break;
 			}
 			if (!bounce_audit_check(rcpt_buff) ||
-			    !exml_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_buff, pcontext->pmail, time(nullptr),
-			    "BOUNCE_OPERATION_ERROR", pbounce_context->pmail)) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+			    !exml_bouncer_make(pcontext->ctrl.from,
+			    rcpt_buff, &pcontext->mail, time(nullptr),
+			    "BOUNCE_OPERATION_ERROR", &pbounce_context->mail)) {
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 					"Unspecified error during delivery to %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from,
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from,
 				"postmaster@%s", get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_FAILURE:
@@ -240,12 +240,12 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			net_failure_statistic(0, 1, 0, 0);
 			cache_ID = cache_queue_put(pcontext, rcpt_buff, time(nullptr));
 			if (cache_ID >= 0) {
-				exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_INFO,
+				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_INFO,
 					"message is put into cache queue with cache ID %d and "
 					"wait to be delivered next time", cache_ID);
 				break;
 			}
-			exmdb_local_log_info(*pcontext->pcontrol, rcpt_buff, LV_ERR,
+			exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
 				"failed to put message into cache queue");
 			break;
 		}
@@ -254,7 +254,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 		return hook_result::proc_error;
 	if (new_rcpts.empty())
 		return hook_result::stop;
-	pcontext->pcontrol->rcpt = std::move(new_rcpts);
+	pcontext->ctrl.rcpt = std::move(new_rcpts);
 	return hook_result::xcontinue;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1082: ENOMEM");
@@ -288,7 +288,6 @@ static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 {
-	MAIL *pmail;
 	size_t mess_len;
 	int sequence_ID;
 	uint64_t nt_time;
@@ -300,7 +299,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 
 	if (!exmdb_local_get_user_info(address, home_dir, arsizeof(home_dir),
 	    lang, arsizeof(lang), tmzone, arsizeof(tmzone))) {
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR, "fail"
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
 	}
@@ -309,19 +308,19 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	    !exmdb_local_lang_to_charset(lang, charset) || *charset == '\0')
 		strcpy(charset, g_default_charset);
 	if ('\0' == home_dir[0]) {
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR,
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"<%s> has no mailbox here", address);
 		return DELIVERY_NO_USER;
 	}
 	if (tmzone[0] == '\0')
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	
-	pmail = pcontext->pmail;
-	if (pcontext->pmail->check_dot()) {
+	auto pmail = &pcontext->mail;
+	if (pcontext->mail.check_dot()) {
 		pcontext1 = get_context();
 		if (NULL != pcontext1) {
-			if (pcontext->pmail->transfer_dot(pcontext1->pmail)) {
-				pmail = pcontext1->pmail;
+			if (pcontext->mail.transfer_dot(&pcontext1->mail)) {
+				pmail = &pcontext1->mail;
 			} else {
 				put_context(pcontext1);
 				pcontext1 = NULL;
@@ -348,7 +347,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR,
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"open WR %s: %s", eml_path.c_str(), strerror(se));
 		errno = se;
 		return DELIVERY_OPERATION_FAILURE;
@@ -362,7 +361,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR,
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
 		return DELIVERY_OPERATION_FAILURE;
 	}
@@ -379,7 +378,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR,
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"permanent failure getting mail digest");
 		return DELIVERY_OPERATION_ERROR;
 	}
@@ -399,7 +398,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1388: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR, "fail "
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");
 		return DELIVERY_OPERATION_ERROR;
 	}
@@ -408,7 +407,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	nt_time = rop_util_current_nttime();
 	if (pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0)
 		/* ignore */;
-	if (!pcontext->pcontrol->need_bounce) {
+	if (!pcontext->ctrl.need_bounce) {
 		tmp_int32 = UINT32_MAX;
 		if (pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) != 0)
 			/* ignore */;
@@ -421,7 +420,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	if (g_lda_twostep)
 		flags = 0;
 	if (!exmdb_client_remote::deliver_message(home_dir,
-	    pcontext->pcontrol->from, address, CP_ACP, flags,
+	    pcontext->ctrl.from, address, CP_ACP, flags,
 	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
 		return DELIVERY_OPERATION_ERROR;
 
@@ -443,24 +442,24 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	message_content_free(pmsg);
 	switch (dm_status) {
 	case deliver_message_result::result_ok:
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_DEBUG,
+		exmdb_local_log_info(pcontext->ctrl, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
-		if (pcontext->pcontrol->need_bounce &&
-		    strcmp(pcontext->pcontrol->from, ENVELOPE_FROM_NULL) != 0&&
+		if (pcontext->ctrl.need_bounce &&
+		    strcmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) != 0&&
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
-			auto_response_reply(home_dir, address, pcontext->pcontrol->from);
+			auto_response_reply(home_dir, address, pcontext->ctrl.from);
 		break;
 	case deliver_message_result::result_error:
-		exmdb_local_log_info(*pcontext->pcontrol, address, LV_ERR,
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	case deliver_message_result::mailbox_full_bysize:
-		exmdb_local_log_info(*pcontext->pcontrol, address,
+		exmdb_local_log_info(pcontext->ctrl, address,
 			LV_NOTICE, "user's mailbox has reached quota limit");
 		return DELIVERY_MAILBOX_FULL;
 	case deliver_message_result::mailbox_full_bymsg:
-		exmdb_local_log_info(*pcontext->pcontrol, address,
+		exmdb_local_log_info(pcontext->ctrl, address,
 			LV_NOTICE, "user's mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return DELIVERY_MAILBOX_FULL;
 	default:
@@ -472,7 +471,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 			return DELIVERY_OPERATION_DELIVERED;
 		return DELIVERY_OPERATION_OK;
 	}
-	auto err = exmdb_local_rules_execute(home_dir, pcontext->pcontrol->from,
+	auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
 	           address, folder_id, message_id);
 	if (err != ecSuccess)
 		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s\n", mapi_strerror(err));

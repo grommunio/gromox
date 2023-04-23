@@ -65,30 +65,30 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 	MESSAGE_CONTEXT *pcontext_expand;
 	MESSAGE_CONTEXT *pbounce_context;
 
-	auto phead = pcontext->pmail->get_head();
+	auto phead = pcontext->mail.get_head();
 	if (NULL == phead) {
 		return hook_result::proc_error;
 	}
 
 	auto num = phead->get_field_num("Delivered-To");
 	b_touched = FALSE;
-	for (const auto &rcpt : pcontext->pcontrol->rcpt) {
+	for (const auto &rcpt : pcontext->ctrl.rcpt) {
 		auto rcpt_to = rcpt.c_str();
-		get_mlist_memb(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
+		get_mlist_memb(rcpt_to, pcontext->ctrl.from, &result, temp_file1);
 		switch (result) {
 		case MLIST_RESULT_OK:
 			b_touched = TRUE;
-			switch (pcontext->pcontrol->bound_type) {
+			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
-					"mlist %s is expanded", pcontext->pcontrol->queue_ID,
-					pcontext->pcontrol->from, rcpt_to, rcpt_to);
+					"mlist %s is expanded", pcontext->ctrl.queue_ID,
+					pcontext->ctrl.from, rcpt_to, rcpt_to);
 				break;
 			default:
 				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
-					"mlist %s is expanded", pcontext->pcontrol->from, rcpt_to,
+					"mlist %s is expanded", pcontext->ctrl.from, rcpt_to,
 					rcpt_to);
 				break;
 			}
@@ -99,105 +99,105 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 		case MLIST_RESULT_PRIVIL_DOMAIN:
 			pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
-			    !mlex_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_DOMAIN",
-			    pbounce_context->pmail)) {
+			    !mlex_bouncer_make(pcontext->ctrl.from,
+			    rcpt_to, &pcontext->mail, "BOUNCE_MLIST_DOMAIN",
+			    &pbounce_context->mail)) {
 				unexp.emplace_back(rcpt);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from, "postmaster@%s",
 				get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
-			switch (pcontext->pcontrol->bound_type) {
+			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
-					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
-					rcpt_to, pcontext->pcontrol->from, rcpt_to);
+					pcontext->ctrl.queue_ID, pcontext->ctrl.from,
+					rcpt_to, pcontext->ctrl.from, rcpt_to);
 				break;
 			default:
 				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
-					pcontext->pcontrol->from, rcpt_to,
-					pcontext->pcontrol->from, rcpt_to);
+					pcontext->ctrl.from, rcpt_to,
+					pcontext->ctrl.from, rcpt_to);
 				break;
 			}
 			break;
 		case MLIST_RESULT_PRIVIL_INTERNAL:
 			pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
-			    !mlex_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_INTERNAL",
-			    pbounce_context->pmail)) {
+			    !mlex_bouncer_make(pcontext->ctrl.from,
+			    rcpt_to, &pcontext->mail, "BOUNCE_MLIST_INTERNAL",
+			    &pbounce_context->mail)) {
 				unexp.emplace_back(rcpt);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from, "postmaster@%s",
 				get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
-			switch (pcontext->pcontrol->bound_type) {
+			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
-					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
-					rcpt_to, pcontext->pcontrol->from, rcpt_to);
+					pcontext->ctrl.queue_ID, pcontext->ctrl.from,
+					rcpt_to, pcontext->ctrl.from, rcpt_to);
 				break;
 			default:
 				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
-					pcontext->pcontrol->from, rcpt_to,
-					pcontext->pcontrol->from, rcpt_to);
+					pcontext->ctrl.from, rcpt_to,
+					pcontext->ctrl.from, rcpt_to);
 				break;
 			}
 			break;
 		case MLIST_RESULT_PRIVIL_SPECIFIED:
 			pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
-			    !mlex_bouncer_make(pcontext->pcontrol->from,
-			    rcpt_to, pcontext->pmail, "BOUNCE_MLIST_SPECIFIED",
-			    pbounce_context->pmail)) {
+			    !mlex_bouncer_make(pcontext->ctrl.from,
+			    rcpt_to, &pcontext->mail, "BOUNCE_MLIST_SPECIFIED",
+			    &pbounce_context->mail)) {
 				unexp.emplace_back(rcpt);
 				break;
 			}
-			pbounce_context->pcontrol->need_bounce = FALSE;
-			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
+			pbounce_context->ctrl.need_bounce = FALSE;
+			sprintf(pbounce_context->ctrl.from, "postmaster@%s",
 				get_default_domain());
-			pbounce_context->pcontrol->rcpt.emplace_back(pcontext->pcontrol->from);
+			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
-			switch (pcontext->pcontrol->bound_type) {
+			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
 			case BOUND_OUT:
 			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders' message can be accepted",
-					pcontext->pcontrol->queue_ID, pcontext->pcontrol->from,
-					rcpt_to, pcontext->pcontrol->from, rcpt_to);
+					pcontext->ctrl.queue_ID, pcontext->ctrl.from,
+					rcpt_to, pcontext->ctrl.from, rcpt_to);
 				break;
 			default:
 				mlog(LV_DEBUG, "APP created message FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders's message can be accepted",
-					pcontext->pcontrol->from, rcpt_to,
-					pcontext->pcontrol->from, rcpt_to);
+					pcontext->ctrl.from, rcpt_to,
+					pcontext->ctrl.from, rcpt_to);
 				break;
 			}
 			break;
@@ -206,9 +206,9 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 
 	if (!b_touched)
 		return hook_result::xcontinue;
-	pcontext->pcontrol->rcpt = std::move(unexp);
+	pcontext->ctrl.rcpt = std::move(unexp);
 	if (temp_file1.size() == 0) {
-		return pcontext->pcontrol->rcpt.empty() ?
+		return pcontext->ctrl.rcpt.empty() ?
 		       hook_result::stop : hook_result::xcontinue;
 	}
 
@@ -221,15 +221,15 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 				    strcasecmp(delivered_to, recip.c_str()) == 0)
 					break;
 			if (i == num) {
-				pcontext->pcontrol->rcpt.emplace_back(std::move(recip));
+				pcontext->ctrl.rcpt.emplace_back(std::move(recip));
 			}
 		}
-		return pcontext->pcontrol->rcpt.empty() ?
+		return pcontext->ctrl.rcpt.empty() ?
 		       hook_result::stop : hook_result::xcontinue;
 	}
 
-	strcpy(pcontext_expand->pcontrol->from, pcontext->pcontrol->from);
-	pcontext_expand->pcontrol->need_bounce = pcontext->pcontrol->need_bounce;
+	strcpy(pcontext_expand->ctrl.from, pcontext->ctrl.from);
+	pcontext_expand->ctrl.need_bounce = pcontext->ctrl.need_bounce;
 
 	for (auto &&recip : temp_file1) {
 		for (i = 0; i < num; ++i)
@@ -238,12 +238,12 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 			    strcasecmp(delivered_to, recip.c_str()) == 0)
 				break;
 		if (i == num) {
-			pcontext_expand->pcontrol->rcpt.emplace_back(std::move(recip));
+			pcontext_expand->ctrl.rcpt.emplace_back(std::move(recip));
 		}
 	}
-	pcontext->pmail->dup(pcontext_expand->pmail);
+	pcontext->mail.dup(&pcontext_expand->mail);
 	throw_context(pcontext_expand);
-	return pcontext->pcontrol->rcpt.empty() ?
+	return pcontext->ctrl.rcpt.empty() ?
 	       hook_result::stop : hook_result::xcontinue;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1084: ENOMEM");

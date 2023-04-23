@@ -218,7 +218,7 @@ static errno_t rd_mailfrom(rd_connection &conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[UADDR_SIZE+24];
-	auto f = strcmp(ctx->pcontrol->from, ENVELOPE_FROM_NULL) != 0 ? ctx->pcontrol->from : "";
+	auto f = strcmp(ctx->ctrl.from, ENVELOPE_FROM_NULL) != 0 ? ctx->ctrl.from : "";
 	auto len = gx_snprintf(cmd, arsizeof(cmd), "MAIL FROM: <%s>\r\n", f);
 	if (!rd_send_cmd(conn, cmd, len))
 		return ETIMEDOUT;
@@ -233,7 +233,7 @@ static errno_t rd_rcptto(rd_connection &conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	bool any_success = false;
-	for (const auto &rcpt : ctx->pcontrol->rcpt) {
+	for (const auto &rcpt : ctx->ctrl.rcpt) {
 		char cmd[1024];
 		auto len = gx_snprintf(cmd, arsizeof(cmd), "RCPT TO: <%s>\r\n", rcpt.c_str());
 		if (!rd_send_cmd(conn, cmd, len))
@@ -261,8 +261,8 @@ static errno_t rd_data(rd_connection &&conn, const MESSAGE_CONTEXT *ctx, std::st
 		return ret;
 	if (ret != 0)
 		return ret;
-	bool did_data = conn.tls != nullptr ? ctx->pmail->to_tls(conn.tls.get()) :
-	                ctx->pmail->to_file(conn.fd);
+	bool did_data = conn.tls != nullptr ? ctx->mail.to_tls(conn.tls.get()) :
+	                ctx->mail.to_file(conn.fd);
 	if (!did_data) {
 		ret = rd_get_response(conn, response);
 		if (ret == ETIMEDOUT)
@@ -334,7 +334,7 @@ static errno_t rd_send_mail(const MESSAGE_CONTEXT *ctx, std::string &response)
 	rd_connection conn;
 	conn.fd = HX_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
-		rd_log(*ctx->pcontrol, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
+		rd_log(ctx->ctrl, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
 			g_mx_host.c_str(), g_mx_port, strerror(-conn.fd));
 		return EHOSTUNREACH;
 	}
@@ -344,7 +344,7 @@ static errno_t rd_send_mail(const MESSAGE_CONTEXT *ctx, std::string &response)
 
 	if (ret == ETIMEDOUT)
 		return ret;
-	rd_log(*ctx->pcontrol, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
+	rd_log(ctx->ctrl, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
 	/* change reason to connection refused */
 	if (ret == 0 || 1)
 		ret = ECONNREFUSED;
@@ -368,7 +368,7 @@ static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	mlog(LV_ERR, "remote_delivery: Local code: %s (ret=%d). "
 	        "SMTP reason string: %s. Recipient(s) affected:",
 	        strerror(ret), ret, errstr.c_str());
-	for (const auto &rcpt : ctx->pcontrol->rcpt)
+	for (const auto &rcpt : ctx->ctrl.rcpt)
 		mlog(LV_ERR, "remote_delivery:\t%s", rcpt.c_str());
 	return hook_result::stop;
 }
