@@ -36,15 +36,9 @@ bool MAIL::set_header(const char *hdr, const char *val)
 	return static_cast<MIME *>(node->pdata)->set_field(hdr, val);
 }
 
-MIME::MIME(alloc_limiter<file_block> *palloc)
+MIME::MIME()
 {
 	auto pmime = this;
-#ifdef _DEBUG_UMTA
-	if (palloc == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer found in %s", __PRETTY_FUNCTION__);
-		return;
-	}
-#endif
 	pmime->node.pdata		 = pmime;
 }
 

@@ -103,5 +103,4 @@ int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
-extern alloc_limiter<file_block> g_files_allocator;
 extern smtp_param g_param;

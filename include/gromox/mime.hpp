@@ -17,7 +17,7 @@ using MIME_FIELD_ENUM = BOOL (*)(const char *, const char *, void *);
 struct LIB_BUFFER;
 struct MAIL;
 struct GX_EXPORT MIME {
-	MIME(alloc_limiter<file_block> *);
+	MIME();
 	NOMOVE(MIME);
 	~MIME();
 

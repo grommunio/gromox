@@ -117,7 +117,6 @@ static std::mutex g_queue_lock, g_cond_mutex, g_mpc_list_lock, g_count_lock;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
-static alloc_limiter<file_block> g_file_allocator("g_file_allocator.d");
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
@@ -227,8 +226,6 @@ int transporter_run()
 		mlog(LV_ERR, "transporter: failed to init MIME pool");
         return -4;
 	}
-	g_file_allocator = alloc_limiter<file_block>(FILENUM_PER_CONTROL * (g_free_num + g_threads_max),
-	                   "transporter_file_alloc", "delivery.cfg:threads_num,free_contexts");
 	for (unsigned int i = 0; i < g_threads_max; ++i) {
 		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
 		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;

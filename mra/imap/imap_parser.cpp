@@ -77,7 +77,6 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static alloc_limiter<file_block> g_alloc_file{"g_alloc_file.d"};
 static alloc_limiter<DIR_NODE> g_alloc_dir{"g_alloc_dir.d"};
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static std::shared_ptr<MIME_POOL> g_mime_pool;
@@ -203,8 +202,6 @@ int imap_parser_run()
 	if (num < 1024*1024) {
 		num = 1024*1024;
 	}
-	g_alloc_file = alloc_limiter<file_block>(num,
-	               "imap_alloc_file", "imap.cfg:context_num");
 	num = 4*g_context_num;
 	if (num < 200) {
 		num = 200;
@@ -1748,11 +1745,6 @@ static void *imps_scanwork(void *argp)
 		}
 	}
 	return nullptr;
-}
-
-alloc_limiter<file_block> *imap_parser_get_allocator()
-{
-	return &g_alloc_file;
 }
 
 std::shared_ptr<MIME_POOL> imap_parser_get_mpool()

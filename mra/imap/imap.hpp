@@ -148,7 +148,6 @@ extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
 extern void imap_parser_remove_select(IMAP_CONTEXT *);
 extern  void imap_parser_safe_write(IMAP_CONTEXT *, const void *pbuff, size_t count);
-extern alloc_limiter<file_block> *imap_parser_get_allocator();
 extern std::shared_ptr<MIME_POOL> imap_parser_get_mpool();
 /* get allocator for mjson mime */
 extern alloc_limiter<MJSON_MIME> *imap_parser_get_jpool();
