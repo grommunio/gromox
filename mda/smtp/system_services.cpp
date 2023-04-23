@@ -10,7 +10,6 @@
 E(judge_user)
 E(add_user_into_temp_list)
 E(check_user)
-E(check_full)
 #undef E
 
 using namespace gromox;
@@ -29,7 +28,6 @@ int system_services_run()
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E2(system_services_check_user, "check_user");
-	E2(system_services_check_full, "check_full");
 	return 0;
 #undef E
 #undef E2
@@ -44,6 +42,4 @@ void system_services_stop()
 	if (NULL != system_services_check_user) {
 		service_release("check_user", "system");
 	}
-	if (system_services_check_full != nullptr)
-		service_release("check_full", "system");
 }

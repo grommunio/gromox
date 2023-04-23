@@ -227,20 +227,6 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				pcontext->menv.from, buff);
 			return DISPATCH_CONTINUE;
 		}
-		if ('\0' != path[0] && NULL != system_services_check_full &&
-		    !system_services_check_full(path)) {
-			/* 452 Mailbox <email_addr> is full */
-			smtp_reply_str = resource_get_smtp_code(517, 1, &string_length);
-			smtp_reply_str2 = resource_get_smtp_code(517, 2, &string_length);
-			string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
-			                "%s<%s>%s", smtp_reply_str, buff,
-			                smtp_reply_str2);
-			pcontext->connection.write(reason, string_length);
-			mlog(LV_NOTICE, "remote=[%s] from=<%s> to=<%s>  Mailbox is full",
-				pcontext->connection.client_ip,
-				pcontext->menv.from, buff);
-			return DISPATCH_CONTINUE;
-		}
 	}
 	snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
 		email_addr.domain);
