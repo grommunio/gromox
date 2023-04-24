@@ -69,13 +69,12 @@ using HOOK_PLUG_ENTITY = hook_plug_entity;
  * @mctx:	message context (main iteration; never used for bounces)
  */
 struct THREAD_DATA {
-	DOUBLE_LIST_NODE	node;
-	pthread_t			id;
-	BOOL				wait_on_event;
+	DOUBLE_LIST_NODE node{};
+	pthread_t id{};
+	bool wait_on_event = false;
 	MESSAGE_CONTEXT mctx;
 	std::vector<HOOK_FUNCTION> anti_loop;
-	HOOK_FUNCTION		last_hook;
-	HOOK_FUNCTION		last_thrower;
+	HOOK_FUNCTION last_hook = nullptr, last_thrower = nullptr;
 };
 
 }
