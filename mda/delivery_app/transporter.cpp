@@ -722,29 +722,29 @@ static void transporter_clean_up_unloading()
 				can_clean = FALSE;
 			}
 		}
-		if (can_clean) {
-			try {
-				stack.push_back(pnode);
-			} catch (...) {
-			}
-			/* empty the list_hook of plib */
-			while (double_list_pop_front(&plib->list_hook) != nullptr)
-				/* nothing */;
-			double_list_free(&plib->list_hook);
-			/* free the service reference of the plugin */
-			for (pnode1=double_list_get_head(&plib->list_reference); NULL!=pnode1;
-				pnode1=double_list_get_after(&plib->list_reference, pnode1)) {
-				service_release(static_cast<SERVICE_NODE *>(pnode1->pdata)->service_name,
-					plib->file_name);
-			}
-			/* free the reference list */
-			while ((pnode1 = double_list_pop_front(&plib->list_reference)) != nullptr) {
-				free(static_cast<SERVICE_NODE *>(pnode1->pdata)->service_name);
-				free(pnode1->pdata);
-			}
-			mlog(LV_INFO, "transporter: unloading %s", plib->file_name);
-			dlclose(plib->handle);
+		if (!can_clean)
+			continue;
+		try {
+			stack.push_back(pnode);
+		} catch (...) {
 		}
+		/* empty the list_hook of plib */
+		while (double_list_pop_front(&plib->list_hook) != nullptr)
+			/* nothing */;
+		double_list_free(&plib->list_hook);
+		/* free the service reference of the plugin */
+		for (pnode1 = double_list_get_head(&plib->list_reference); NULL != pnode1;
+		     pnode1 = double_list_get_after(&plib->list_reference, pnode1)) {
+			service_release(static_cast<SERVICE_NODE *>(pnode1->pdata)->service_name,
+				plib->file_name);
+		}
+		/* free the reference list */
+		while ((pnode1 = double_list_pop_front(&plib->list_reference)) != nullptr) {
+			free(static_cast<SERVICE_NODE *>(pnode1->pdata)->service_name);
+			free(pnode1->pdata);
+		}
+		mlog(LV_INFO, "transporter: unloading %s", plib->file_name);
+		dlclose(plib->handle);
 	}
 	while (!stack.empty()) {
 		double_list_remove(&g_unloading_list, stack.back());
