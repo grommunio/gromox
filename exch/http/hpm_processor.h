@@ -9,7 +9,7 @@ struct http_context;
 using HTTP_CONTEXT = http_context;
 
 struct hpm_service_node {
-	void *service_addr;
+	void *service_addr = nullptr;
 	std::string service_name;
 };
 
