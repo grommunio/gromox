@@ -55,7 +55,6 @@ struct HOOK_ENTRY {
     DOUBLE_LIST_NODE    node_lib;
     HOOK_FUNCTION       hook_addr;
 	HOOK_PLUG_ENTITY *plib;
-	int					count;
 	BOOL				valid;
 };
 
@@ -104,7 +103,7 @@ static DOUBLE_LIST		g_lib_list;
 static DOUBLE_LIST		 g_hook_list;
 static DOUBLE_LIST		 g_unloading_list;
 static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
-static std::mutex g_queue_lock, g_cond_mutex, g_count_lock;
+static std::mutex g_queue_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
@@ -371,13 +370,7 @@ static gromox::hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 				goto NEXT_LOOP;
 			}
 			pthr_data->last_hook = phook->hook_addr;
-			std::unique_lock ct_hold(g_count_lock);
-			phook->count ++;
-			ct_hold.unlock();
 			hook_result = phook->hook_addr(pcontext);
-			ct_hold.lock();
-			phook->count --;
-			ct_hold.unlock();
 			if (hook_result != hook_result::xcontinue)
 				return hook_result;
 		}
@@ -702,22 +695,11 @@ int transporter_unload_library(const char* path)
 static void transporter_clean_up_unloading()
 {
 	DOUBLE_LIST_NODE *pnode, *pnode1;
-	BOOL can_clean;
 	std::vector<DOUBLE_LIST_NODE *> stack;
 
 	for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_unloading_list, pnode)) {
 		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
-		can_clean = TRUE;
-		for (pnode1=double_list_get_head(&plib->list_hook); NULL!=pnode1;
-			pnode1=double_list_get_after(&plib->list_hook, pnode1)) {
-			auto phook = static_cast<HOOK_ENTRY *>(pnode1->pdata);
-			if (0 != phook->count) {
-				can_clean = FALSE;
-			}
-		}
-		if (!can_clean)
-			continue;
 		try {
 			stack.push_back(pnode);
 		} catch (...) {
@@ -996,7 +978,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     for (pnode=double_list_get_head(&g_hook_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = static_cast<HOOK_ENTRY *>(pnode->pdata);
-		if (!phook->valid && phook->count == 0) {
+		if (!phook->valid) {
 			found_hook = TRUE;
 			break;
         }
@@ -1005,7 +987,6 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
 		phook = me_alloc<HOOK_ENTRY>();
 		phook->node_hook.pdata = phook;
 		phook->node_lib.pdata = phook;
-		phook->count = 0;
 		phook->valid = FALSE;
 	}
     if (NULL == phook) {
