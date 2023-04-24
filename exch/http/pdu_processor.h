@@ -30,13 +30,18 @@ struct DCERPC_ENDPOINT {
 	uint16_t tcp_port = 0; /* only for ncacn_http */
 };
 
+struct pdu_service_node {
+	void *service_addr = nullptr;
+	std::string service_name;
+};
+
 struct PROC_PLUGIN {
-	PROC_PLUGIN();
+	PROC_PLUGIN() = default;
 	PROC_PLUGIN(PROC_PLUGIN &&) noexcept;
 	~PROC_PLUGIN();
 	void operator=(PROC_PLUGIN &&) noexcept = delete;
 
-	DOUBLE_LIST list_reference{};
+	std::vector<pdu_service_node> list_reference;
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	std::string file_name;
