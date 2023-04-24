@@ -65,16 +65,6 @@ struct hook_plug_entity {
 };
 using HOOK_PLUG_ENTITY = hook_plug_entity;
 
-struct CIRCLE_NODE {
-	DOUBLE_LIST_NODE node{};
-	HOOK_FUNCTION hook_addr = nullptr;
-};
-
-struct ANTI_LOOP {
-	ANTI_LOOP();
-	DOUBLE_LIST free_list{}, thrown_list{};
-};
-
 /**
  * @mctx:	message context (main iteration; never used for bounces)
  */
@@ -83,7 +73,7 @@ struct THREAD_DATA {
 	pthread_t			id;
 	BOOL				wait_on_event;
 	MESSAGE_CONTEXT mctx;
-	ANTI_LOOP			anti_loop;
+	std::vector<HOOK_FUNCTION> anti_loop;
 	HOOK_FUNCTION		last_hook;
 	HOOK_FUNCTION		last_thrower;
 };
@@ -109,7 +99,6 @@ static pthread_t		 g_scan_id;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<MESSAGE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
-static std::unique_ptr<CIRCLE_NODE[]> g_circles_ptr;
 
 static void *dxp_thrwork(void *);
 static void *dxp_scanwork(void *);
@@ -126,12 +115,6 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext);
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
 static MESSAGE_CONTEXT *transporter_dequeue_context();
 static void transporter_log_info(const CONTROL_INFO &, int level, const char *format, ...);
-
-ANTI_LOOP::ANTI_LOOP()
-{
-	double_list_init(&free_list);
-	double_list_init(&thrown_list);
-}
 
 hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
 	list_reference(std::move(o.list_reference)), handle(o.handle),
@@ -191,27 +174,13 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
 int transporter_run()
 {
 	try {
-		g_circles_ptr = std::make_unique<CIRCLE_NODE[]>(g_threads_max * MAX_THROWING_NUM);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "transporter: failed to allocate memory for circle list");
-        return -1;
-	}
-	try {
 		g_data_ptr = std::make_unique<THREAD_DATA[]>(g_threads_max);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "transporter: failed to allocate memory for threads data");
 		return -2;
 	}
-	for (size_t i = 0; i < g_threads_max; ++i) {
+	for (size_t i = 0; i < g_threads_max; ++i)
 		g_data_ptr[i].node.pdata = &g_data_ptr[i];
-		auto panti = &g_data_ptr[i].anti_loop;
-		for (size_t j = 0; j < MAX_THROWING_NUM; ++j) {
-			auto pcircle = &g_circles_ptr[i*MAX_THROWING_NUM+j];
-			pcircle->node.pdata = pcircle;
-			double_list_append_as_tail(&panti->free_list, &pcircle->node);
-		}
-	}
-
 	try {
 		g_free_ptr = std::make_unique<MESSAGE_CONTEXT[]>(g_free_num);
 	} catch (const std::bad_alloc &) {
@@ -288,7 +257,6 @@ void transporter_stop()
 	g_lib_list.clear();
 	g_data_ptr.reset();
 	g_free_ptr.reset();
-	g_circles_ptr.reset();
 	g_path[0] = '\0';
 	g_threads_min = 0;
 	g_threads_max = 0;
@@ -682,8 +650,6 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
 static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 {
 	BOOL ret_val;
-	DOUBLE_LIST_NODE *pnode;
-	CIRCLE_NODE *pcircle;
 	HOOK_FUNCTION last_thrower, last_hook;
 
 	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
@@ -698,34 +664,31 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		return FALSE;
 	}	
 	/* check if this hook is throwing the second message */
-	for (pnode=double_list_get_head(&pthr_data->anti_loop.thrown_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		&pthr_data->anti_loop.thrown_list, pnode)) {
-		if (static_cast<CIRCLE_NODE *>(pnode->pdata)->hook_addr ==
-			pthr_data->last_hook) {
-			break;
-		}
-	}
-	if (NULL != pnode) {
+	if (std::find(pthr_data->anti_loop.cbegin(),
+	    pthr_data->anti_loop.cend(), pthr_data->last_hook) !=
+	    pthr_data->anti_loop.cend()) {
 		mlog(LV_ERR, "transporter: message infinite loop is detected");
 		transporter_put_context(pcontext);
 		return FALSE;
 	}
-	/* append this hook into thrown list */
-	pcircle = reinterpret_cast<CIRCLE_NODE *>(double_list_pop_front(&pthr_data->anti_loop.free_list));
-	if (NULL == pcircle) {
+	if (pthr_data->anti_loop.size() >= MAX_THROWING_NUM) {
 		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
 			"can throw");
 		transporter_put_context(pcontext);
         return FALSE;
 	}
+	try {
+		pthr_data->anti_loop.push_back(last_hook);
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
+			"can throw");
+		transporter_put_context(pcontext);
+		return false;
+	}
 	/* save the last hook and last thrower, like function's call operation */
 	last_hook = pthr_data->last_hook;
 	last_thrower = pthr_data->last_thrower;
-	pcircle->hook_addr = pthr_data->last_hook;
 	pthr_data->last_thrower = pthr_data->last_hook;
-	double_list_append_as_tail(&pthr_data->anti_loop.thrown_list,
-		&pcircle->node);
 	auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (pass_result == hook_result::xcontinue) {
 		ret_val = FALSE;
@@ -734,8 +697,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	} else {
 		ret_val = TRUE;
 	}
-	pnode = double_list_pop_back(&pthr_data->anti_loop.thrown_list);
-	double_list_append_as_tail(&pthr_data->anti_loop.free_list, pnode);
+	pthr_data->anti_loop.pop_back();
 	transporter_put_context(pcontext);
 	/* recover last thrower and last hook, like function's return operation */
 	pthr_data->last_hook = last_hook;
