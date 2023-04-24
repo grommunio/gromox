@@ -311,7 +311,8 @@ int hpm_processor_run() try
 
 void hpm_processor_stop()
 {
-	g_plugin_list.clear();
+	while (!g_plugin_list.empty())
+		g_plugin_list.pop_back();
 	g_context_list.reset();
 }
 

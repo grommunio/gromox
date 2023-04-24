@@ -298,8 +298,8 @@ void pdu_processor_stop()
 		mlog(LV_WARN, "W-1573: %zu PDU_PROCESSORs remaining", z);
 		g_processor_list.clear();
 	}
-
-	g_plugin_list.clear();
+	while (!g_plugin_list.empty())
+		g_plugin_list.pop_back();
 	g_endpoint_list.clear();
 	g_async_hash.reset();
 }
