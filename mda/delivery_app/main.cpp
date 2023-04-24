@@ -205,11 +205,11 @@ int main(int argc, const char **argv)
 	transporter_init(PKGLIBDIR,
 		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
 		free_contexts, false);
+	auto cleanup_12 = make_scope_exit(transporter_stop);
     if (0 != transporter_run()) { 
 		mlog(LV_ERR, "system: failed to start transporter");
 		return EXIT_FAILURE;
     }
-	auto cleanup_12 = make_scope_exit(transporter_stop);
 
 	retcode = EXIT_SUCCESS;
 	mlog(LV_NOTICE, "system: LDA is now running");
