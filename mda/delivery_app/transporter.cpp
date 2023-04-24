@@ -104,7 +104,7 @@ static DOUBLE_LIST		g_lib_list;
 static DOUBLE_LIST		 g_hook_list;
 static DOUBLE_LIST		 g_unloading_list;
 static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
-static std::mutex g_queue_lock, g_cond_mutex, g_mpc_list_lock, g_count_lock;
+static std::mutex g_queue_lock, g_cond_mutex, g_count_lock;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
@@ -358,14 +358,8 @@ static gromox::hook_result transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data)
 {
 	DOUBLE_LIST_NODE *pnode, *phead, *ptail;
-	/*
-	 *	first get the head and tail of list, this will be thread safe because 
-	 *	the list is growing list, all new nodes will be appended at tail
-	 */
-	std::unique_lock ml_hold(g_mpc_list_lock);
 	phead = double_list_get_head(&g_hook_list);
 	ptail = double_list_get_tail(&g_hook_list);
-	ml_hold.unlock();
 	
 	hook_result hook_result = hook_result::xcontinue;
 	for (pnode=phead; NULL!=pnode;
@@ -1022,7 +1016,6 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     double_list_append_as_tail(&g_cur_lib->list_hook, &phook->node_lib);
 	if (!found_hook) {
     	/* acquire write lock when to modify the hooks list */
-		std::lock_guard ml_hold(g_mpc_list_lock);
     	double_list_append_as_tail(&g_hook_list, &phook->node_hook);
     	/* append also the hook into lib's hook list */
 	}
