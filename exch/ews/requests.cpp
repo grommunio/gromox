@@ -424,6 +424,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	sSyncState syncState;
 	if(request.SyncState && !request.SyncState->empty())
 		syncState.init(*request.SyncState);
+	syncState.convert();
 
 	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId->folderId);
 	if(!folder.target)
@@ -499,6 +500,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	sSyncState syncState;
 	if(request.SyncState && !request.SyncState->empty())
 		syncState.init(*request.SyncState);
+	syncState.convert();
 
 	if(!folder.target)
 		folder.target = ctx.auth_info.username;
@@ -526,8 +528,6 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	    &last_readcn))
 		throw DispatchError(E3031);
 
-	if(!syncState.given.convert() || !syncState.seen.convert() || !syncState.read.convert())
-		throw DispatchError(E3064);
 	sShape itemTags = ctx.collectTags(request.ItemShape);
 	itemTags.tags.emplace_back(PidTagChangeNumber);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())

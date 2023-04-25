@@ -272,29 +272,34 @@ void sSyncState::init(const std::string& data64)
 	{
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
-			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !given.convert())
+			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3053);
 			break;
 		case MetaTagCnsetSeen:
-			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !seen.convert())
+			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3054);
 			break;
 		case MetaTagCnsetRead:
-			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !read.convert())
+			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
-			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !seen_fai.convert())
+			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3056);
 			break;
 		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
 			readOffset = *static_cast<uint32_t*>(propval->pvalue);
 		}
 	}
+}
+
+/**
+ * @brief      Call convert on all idsets
+ */
+void sSyncState::convert()
+{
+	if(!given.convert() || !seen.convert() || !read.convert() || !seen_fai.convert())
+			throw DispatchError(E3064);
 }
 
 /**
@@ -305,16 +310,12 @@ void sSyncState::init(const std::string& data64)
  */
 void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
 {
-	seen.clear();
-	if(!given.convert())
-		throw DispatchError(E3062);
 	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
 		given.remove(*pid);
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
 		if(!given.append(*pid))
 			throw DispatchError(E3057);
-	if (!seen.convert())
-		throw DispatchError(E3062);
+	seen.clear();
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
 		throw DispatchError(E3058);
 }

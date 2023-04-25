@@ -214,6 +214,7 @@ struct sSyncState
 {
 	sSyncState();
 
+	void convert();
 	void init(const std::string&);
 	void update(const EID_ARRAY&, const EID_ARRAY&, uint64_t);
 	std::string serialize();
