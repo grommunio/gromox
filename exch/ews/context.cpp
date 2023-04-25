@@ -489,7 +489,7 @@ void EWSContext::ext_error(pack_result code)
  *
  * @return    Property values
  */
-bool EWSContext::getUserProps(const std::string unresolvedEntry, sql_user& u) const
+bool EWSContext::getUserProps(const std::string& unresolvedEntry, sql_user& u) const
 {
 	if(!plugin.mysql.get_user_props(unresolvedEntry.c_str(), u))
 			throw DispatchError(E3067);

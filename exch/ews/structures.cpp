@@ -578,8 +578,8 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		RoutingType = data;
 }
 
-tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(std::string email,
-	Enum::EmailAddressKeyType eakt)
+tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& email,
+	const Enum::EmailAddressKeyType& eakt)
 {
 	Entry = email;
 	Key = eakt;

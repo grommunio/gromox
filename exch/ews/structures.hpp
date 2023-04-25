@@ -378,7 +378,7 @@ struct tEmailAddressDictionaryEntry
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	explicit tEmailAddressDictionaryEntry(std::string, Enum::EmailAddressKeyType);
+	explicit tEmailAddressDictionaryEntry(const std::string&, const Enum::EmailAddressKeyType&);
 
 	std::string Entry;
 	Enum::EmailAddressKeyType Key; //Attribute

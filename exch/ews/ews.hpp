@@ -120,7 +120,7 @@ public:
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
-	bool getUserProps(const std::string, sql_user&) const;
+	bool getUserProps(const std::string&, sql_user&) const;
 
 	void experimental() const;
 

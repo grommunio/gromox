@@ -646,7 +646,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 	auto it = u.propvals.find(PR_DISPLAY_NAME);
 
-	tResolution resol;
+	tResolution& resol = resolutionSet.emplace_back();
 	resol.Mailbox.Name = it != u.propvals.end() ? it->second : request.UnresolvedEntry;
 	resol.Mailbox.EmailAddress = request.UnresolvedEntry;
 	resol.Mailbox.RoutingType = "SMTP";
@@ -656,21 +656,15 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	for (auto& propval : u.propvals)
 		userProps->set(propval.first, propval.second.c_str());
 
-	tContact cnt(*userProps);
+	tContact& cnt = resol.Contact.emplace(*userProps);
 
 	if (u.aliases.size() > 0) {
 		cnt.EmailAddresses.emplace().reserve(u.aliases.size());
-		Enum::EmailAddressKeyType eakt = Enum::EmailAddress1;
-		for (auto alias : u.aliases) {
-			cnt.EmailAddresses->emplace_back(tEmailAddressDictionaryEntry(alias, eakt));
-			if (Enum::EmailAddress1 == eakt) eakt = Enum::EmailAddress2;
-			else if (Enum::EmailAddress2 == eakt) eakt = Enum::EmailAddress3;
-			else eakt = Enum::EmailAddress1;
-		}
+		size_t index = 0;
+		for (auto& alias : u.aliases)
+			cnt.EmailAddresses->emplace_back(tEmailAddressDictionaryEntry(std::move(alias),
+			                                                              Enum::EmailAddressKeyType(index++)));
 	}
-
-	resol.Contact.emplace(cnt);
-	resolutionSet.emplace_back(resol);
 
 	msg.success();
 
