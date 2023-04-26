@@ -19,6 +19,17 @@
 using namespace gromox;
 #define s_rgbSPlus "040000008200E00074C5B7101A82E008"
 
+static int t_utf7()
+{
+	auto a = "Gelöschte Elemente", b = "Gel&APY-schte Elemente";
+	char buf[80];
+	utf8_to_mutf7(a, strlen(a), buf, std::size(buf));
+	printf("%s -> %s\n", a, buf);
+	utf8_to_mutf7(b, strlen(b), buf, std::size(buf));
+	printf("%s -> %s\n", b, buf);
+	return EXIT_SUCCESS;
+}
+
 static int t_extpp()
 {
 	auto s = hex2bin(s_rgbSPlus "000000009b2dbdb2255659027cf33d2a183706db6bc9240adbd249557c96f6783dcc06d8f9c48b1f");
@@ -347,6 +358,8 @@ static int t_cmp_icaltime()
 
 int main()
 {
+	if (t_utf7() != 0)
+		return EXIT_FAILURE;
 	char buf[2];
 	randstring(buf + 2, 0, "A");
 	randstring(buf, 1, "");

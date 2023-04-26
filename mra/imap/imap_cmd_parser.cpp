@@ -86,18 +86,15 @@ static BOOL icp_hint_seq(const imap_seq_list &list,
 	return FALSE;
 }
 
-static std::string utf7_encode(const std::string_view &u8)
+static std::string quote_encode(const char *u7)
 {
-	/* UTF-7(-IMAP) is so pathological in growth (x5). +2 for quotes */
-	auto u7_size = u8.size() * 5 + 2;
-	std::string u7;
-	u7.resize(u7_size);
-	auto ret = utf8_to_mutf7(u8.data(), u8.size(), u7.data(), u7_size);
-	if (ret <= 0)
-		u7.clear();
-	else
-		u7.resize(ret);
-	return u7;
+	std::unique_ptr<char[], stdlib_delete> q(HX_strquote(u7, HXQUOTE_DQUOTE, nullptr));
+	return "\""s + q.get() + "\"";
+}
+
+static std::string quote_encode(const std::string &u7)
+{
+	return quote_encode(u7.c_str());
 }
 
 static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
@@ -1558,9 +1555,9 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
 		"* OK [UIDNEXT %d] predicted next UID\r\n"
-		"* LIST () \"/\" \"%s\"\r\n"
+		"* LIST () \"/\" %s\r\n"
 		"%s OK [%s] %s completed\r\n",
-		LLU{uidvalid}, uidnext, utf7_encode(temp_name).c_str(), argv[0],
+		LLU{uidvalid}, uidnext, quote_encode(temp_name).c_str(), argv[0],
 		s_readonly, s_command);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
@@ -1815,16 +1812,16 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern.c_str())) {
 			if (filter_special) {
 				len += gx_snprintf(&buff[len], std::size(buff),
-				       "* LIST (%s) \"/\" \"%s\"\r\n",
-				       g_xproperty_list[i], temp_name);
+				       "* LIST (%s) \"/\" %s\r\n",
+				       g_xproperty_list[i], quote_encode(temp_name).c_str());
 			} else {
 				auto pdir = temp_tree.match(temp_name);
 				auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
-				       "* LIST (%s%s\\Has%sChildren) \"/\" \"%s\"\r\n",
+				       "* LIST (%s%s\\Has%sChildren) \"/\" %s\r\n",
 				       return_special ? g_xproperty_list[i] : "",
 				       return_special ? " " : "",
-				       have ? "" : "No", temp_name);
+				       have ? "" : "No", quote_encode(temp_name).c_str());
 			}
 		}
 	}
@@ -1833,15 +1830,15 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			continue;
 		if (filter_special) {
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-			       "* LIST () \"/\" \"%s\"\r\n",
-			       utf7_encode(temp_name).c_str());
+			       "* LIST () \"/\" %s\r\n",
+			       quote_encode(temp_name).c_str());
 			continue;
 		}
 		auto pdir = temp_tree.match(temp_name.c_str());
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
 		len += gx_snprintf(buff + len, arsizeof(buff) - len,
-		       "* LIST (\\Has%sChildren) \"/\" \"%s\"\r\n",
-		       have ? "" : "No", utf7_encode(temp_name).c_str());
+		       "* LIST (\\Has%sChildren) \"/\" %s\r\n",
+		       have ? "" : "No", quote_encode(temp_name).c_str());
 	}
 	temp_file.clear();
 	pcontext->stream.clear();
@@ -1903,8 +1900,9 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			auto pdir = temp_tree.match(temp_name);
 			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
-			       "* XLIST (%s \\Has%sChildren) \"/\" \"%s\"\r\n",
-			       g_xproperty_list[i], have ? "" : "No", temp_name);
+			       "* XLIST (%s \\Has%sChildren) \"/\" %s\r\n",
+			       g_xproperty_list[i], have ? "" : "No",
+			       quote_encode(temp_name).c_str());
 		}
 	}
 	for (const auto &temp_name : temp_file) {
@@ -1913,8 +1911,8 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		auto pdir = temp_tree.match(temp_name.c_str());
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
 		len += gx_snprintf(buff + len, arsizeof(buff) - len,
-		       "* XLIST (\\Has%sChildren) \"/\" \"%s\"\r\n",
-		       have ? "" : "No", utf7_encode(temp_name).c_str());
+		       "* XLIST (\\Has%sChildren) \"/\" %s\r\n",
+		       have ? "" : "No", quote_encode(temp_name).c_str());
 	}
 	temp_file.clear();
 	pcontext->stream.clear();
@@ -1979,8 +1977,8 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		auto pdir = temp_tree.match(temp_name.c_str());
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
 		len += gx_snprintf(buff + len, arsizeof(buff) - len,
-		       "* LSUB (\\Has%sChildren) \"/\" \"%s\"\r\n",
-		       have ? "" : "No", utf7_encode(temp_name).c_str());
+		       "* LSUB (\\Has%sChildren) \"/\" %s\r\n",
+		       have ? "" : "No", quote_encode(temp_name).c_str());
 	}
 	temp_file.clear();
 	pcontext->stream.clear();
@@ -2032,7 +2030,8 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return ret;
 	/* IMAP_CODE_2170014: OK STATUS completed */
 	auto imap_reply_str = resource_get_imap_code(1714, 1, &string_length);
-	string_length = gx_snprintf(buff, arsizeof(buff), "* STATUS \"%s\" (", utf7_encode(argv[2]).c_str());
+	string_length = gx_snprintf(buff, arsizeof(buff), "* STATUS %s (",
+	                quote_encode(argv[2]).c_str());
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
 		if (!b_first) {
