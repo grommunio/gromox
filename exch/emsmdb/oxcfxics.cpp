@@ -59,9 +59,8 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 		return NULL;	
 	exmdb_client::unload_table(plogon->get_dir(), table_id);
 	pmessage_ids = eid_array_init();
-	if (NULL == pmessage_ids) {
+	if (pmessage_ids == nullptr)
 		return NULL;
-	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
@@ -106,37 +105,31 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		username = NULL;
 	}
 	auto pfldctnt = folder_content_init();
-	if (NULL == pfldctnt) {
+	if (pfldctnt == nullptr)
 		return NULL;
-	}
 	if (!exmdb_client::get_folder_all_proptags(plogon->get_dir(),
-	    folder_id, &tmp_proptags)) {
+	    folder_id, &tmp_proptags))
 		return NULL;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::get_folder_properties(plogon->get_dir(), pinfo->cpid,
-	    folder_id, &tmp_proptags, &tmp_propvals)) {
+	    folder_id, &tmp_proptags, &tmp_propvals))
 		return NULL;
-	}
 	auto pproplist = pfldctnt->get_proplist();
-	for (size_t i = 0; i < tmp_propvals.count; ++i) {
+	for (size_t i = 0; i < tmp_propvals.count; ++i)
 		if (pproplist->set(tmp_propvals.ppropval[i]) != 0)
 			return NULL;
-	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {
 		if (!exmdb_client::get_mapping_guid(plogon->get_dir(), replid,
-		    &b_found, &long_term_id.guid) || !b_found) {
+		    &b_found, &long_term_id.guid) || !b_found)
 			return NULL;
-		}
 		long_term_id.global_counter = rop_util_get_gc_array(folder_id);
 		common_util_domain_to_essdn(plogon->get_account(),
 			tmp_essdn, std::size(tmp_essdn));
 		pbin = common_util_to_folder_replica(
 				&long_term_id, tmp_essdn);
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return NULL;
-		}
 		if (pproplist->set(MetaTagNewFXFolder, pbin) != 0)
 			return NULL;
 		return pfldctnt;
@@ -144,17 +137,15 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	if (b_fai) {
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, TRUE);
-		if (NULL == pmessage_ids) {
+		if (pmessage_ids == nullptr)
 			return NULL;
-		}
 		pfldctnt->append_failist_internal(pmessage_ids);
 	}
 	if (b_normal) {
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, FALSE);
-		if (NULL == pmessage_ids) {
+		if (pmessage_ids == nullptr)
 			return NULL;
-		}
 		pfldctnt->append_normallist_internal(pmessage_ids);
 	}
 	if (!b_sub)
@@ -169,27 +160,23 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	}
 	if (!exmdb_client::load_hierarchy_table(plogon->get_dir(),
 	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
-	    &table_id, &row_count)) {
+	    &table_id, &row_count))
 		return NULL;
-	}
 	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
 	if (!exmdb_client::query_table(plogon->get_dir(), nullptr, CP_ACP,
-	    table_id, &tmp_proptags, 0, row_count, &tmp_set)) {
+	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
 		return NULL;
-	}
 	exmdb_client::unload_table(plogon->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
-		if (NULL == pfolder_id) {
+		if (pfolder_id == nullptr)
 			return NULL;
-		}
 		auto psubfldctnt = oxcfxics_load_folder_content(
 		                   plogon, *pfolder_id, TRUE, TRUE, TRUE);
-		if (NULL == psubfldctnt) {
+		if (psubfldctnt == nullptr)
 			return NULL;
-		}
 		if (!pfldctnt->append_subfolder_internal(std::move(*psubfldctnt)))
 			return NULL;
 	}
@@ -205,9 +192,8 @@ ec_error_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE) {
+	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -334,13 +320,11 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 		max_rop -= 32;
 	else
 		max_rop = 0;
-	if (max_rop > 0x7b00) {
+	if (max_rop > 0x7b00)
 		max_rop = 0x7b00;
-	}
 	uint16_t len = buffer_size == 0xBABE ? max_buffer_size : buffer_size;
-	if (len > max_rop) {
+	if (len > max_rop)
 		len = max_rop;
-	}
 	ptransfer_data->pv = common_util_alloc(len);
 	if (ptransfer_data->pv == nullptr)
 		return ecServerOOM;
@@ -356,9 +340,8 @@ ec_error_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 		    pin_progress_count, ptotal_step_count))
 			return ecError;
 	}
-	if (0xBABE != buffer_size && len > max_rop) {
+	if (buffer_size != 0xBABE && len > max_rop)
 		return ecBufferTooSmall;
-	}
 	*ptransfer_status = !b_last ? TRANSFER_STATUS_PARTIAL : TRANSFER_STATUS_DONE;
 	ptransfer_data->cb = len;
 	return ecSuccess;
@@ -395,9 +378,8 @@ ec_error_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 	             FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS)) ? TRUE : false;
 	auto pfldctnt = oxcfxics_load_folder_content(plogon, pfolder->folder_id,
 	           TRUE, TRUE, b_sub);
-	if (NULL == pfldctnt) {
+	if (pfldctnt == nullptr)
 		return ecError;
-	}
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (pctx == nullptr)
 		return ecError;
@@ -486,9 +468,8 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	if (!send_options_ok(send_options))
 		return ecInvalidParam;
 	/* just like exchange 2010 or later */
-	if (flags & FAST_COPY_TO_FLAG_MOVE) {
+	if (flags & FAST_COPY_TO_FLAG_MOVE)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -518,9 +499,8 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		                static_cast<folder_object *>(pobject)->folder_id,
 		                b_fai, b_normal, b_sub);
-		if (NULL == pfldctnt) {
+		if (pfldctnt == nullptr)
 			return ecError;
-		}
 		auto pproplist = pfldctnt->get_proplist();
 		for (unsigned int i = 0; i < pproptags->count; ++i)
 			pproplist->erase(pproptags->pproptag[i]);
@@ -597,9 +577,8 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	if (!send_options_ok(send_options))
 		return ecInvalidParam;
 	/* just like exchange 2010 or later */
-	if (flags & FAST_COPY_PROPERTIES_FLAG_MOVE) {
+	if (flags & FAST_COPY_PROPERTIES_FLAG_MOVE)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -627,9 +606,8 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		                static_cast<folder_object *>(pobject)->folder_id,
 		                b_fai, b_normal, b_sub);
-		if (NULL == pfldctnt) {
+		if (pfldctnt == nullptr)
 			return ecError;
-		}
 		auto pproplist = pfldctnt->get_proplist();
 		for (unsigned int i = 0; i < pproplist->count; ) {
 			if (pproplist->ppropval[i].proptag != MetaTagNewFXFolder) {
@@ -714,14 +692,12 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	uint32_t permission;
 	
 	if (SYNC_TYPE_CONTENTS != sync_type &&
-		SYNC_TYPE_HIERARCHY != sync_type) {
+	    sync_type != SYNC_TYPE_HIERARCHY)
 		return ecInvalidParam;
-	}
 	if (!send_options_ok(send_options))
 		return ecInvalidParam;
-	if (SYNC_TYPE_HIERARCHY == sync_type && NULL != pres) {
+	if (sync_type == SYNC_TYPE_HIERARCHY && pres != nullptr)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -859,10 +835,8 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (import_flags & (~(IMPORT_FLAG_ASSOCIATED|
-		IMPORT_FLAG_FAILONCONFLICT))) {
+	if (import_flags & (~(IMPORT_FLAG_ASSOCIATED | IMPORT_FLAG_FAILONCONFLICT)))
 		return ecInvalidParam;
-	}
 	if (4 != ppropvals->count ||
 	    ppropvals->ppropval[0].proptag != PR_SOURCE_KEY ||
 	    ppropvals->ppropval[1].proptag != PR_LAST_MODIFICATION_TIME ||
@@ -888,10 +862,9 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (!common_util_binary_to_xid(pbin, &tmp_xid))
 		return ecError;
 	auto tmp_guid = plogon->guid();
-	if (tmp_guid != tmp_xid.guid) {
+	if (tmp_guid != tmp_xid.guid)
 		return simc_otherstore(plogmap, logon_id, import_flags, pctx, ppropvals,
 		       pmessage_id, hin, phout);
-	}
 	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	auto dir = plogon->get_dir();
 	if (!exmdb_client::check_message(dir, folder_id, message_id, &b_exist))
@@ -956,15 +929,13 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		if (bin == nullptr)
 			return ecError;
 		if (!common_util_pcl_compare(bin,
-		    static_cast<BINARY *>(ppropvals->ppropval[3].pvalue), &result)) {
+		    static_cast<BINARY *>(ppropvals->ppropval[3].pvalue), &result))
 			return ecError;
-		}
-		if (PCL_INCLUDE & result) {
+		if (result & PCL_INCLUDE) {
 			return SYNC_E_IGNORE;
 		} else if (PCL_CONFLICT == result) {
-			if (IMPORT_FLAG_FAILONCONFLICT & import_flags) {
+			if (import_flags & IMPORT_FLAG_FAILONCONFLICT)
 				return SYNC_E_CONFLICT;
-			}
 		}
 	}
 	if (!b_new) {
@@ -1052,15 +1023,8 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		if (flag != nullptr && *flag != 0)
 			continue;
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
-		if (flag == nullptr || *flag == 0) {
-			if (0 == pread_stat[i].mark_as_read) {
-				continue;
-			}
-		} else {
-			if (0 != pread_stat[i].mark_as_read) {
-				continue;
-			}
-		}
+		if ((flag == nullptr || *flag == 0) == (pread_stat[i].mark_as_read == 0))
+			continue;
 		if (plogon->is_private()) {
 			if (!exmdb_client::set_message_read_state(dir,
 			    nullptr, message_id, pread_stat[i].mark_as_read, &read_cn))
@@ -1145,9 +1109,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (!exmdb_client::get_folder_property(dir, CP_ACP,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return SYNC_E_NO_PARENT;
-		}
 		parent_type = *static_cast<uint32_t *>(pvalue);
 	}
 	if (parent_type == FOLDER_SEARCH)
@@ -1166,9 +1129,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (tmp_guid != tmp_xid.guid) {
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-			if (-1 == domain_id) {
+			if (domain_id == -1)
 				return ecInvalidParam;
-			}
 			if (!common_util_check_same_org(domain_id, plogon->account_id))
 				return ecInvalidParam;
 			if (!exmdb_client::get_mapping_replid(dir,
@@ -1195,16 +1157,14 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (!exmdb_client::get_folder_by_name(dir, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), &tmp_fid))
 			return ecError;
-		if (0 != tmp_fid) {
+		if (tmp_fid != 0)
 			return ecDuplicateName;
-		}
 		if (!exmdb_client::allocate_cn(dir, &change_num))
 			return ecError;
 		tmp_propvals.count = 0;
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
-		if (NULL == tmp_propvals.ppropval) {
+		if (tmp_propvals.ppropval == nullptr)
 			return ecServerOOM;
-		}
 		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
 		tmp_propvals.ppropval[1].proptag = PidTagParentFolderId;
@@ -1241,9 +1201,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue),
 	    static_cast<BINARY *>(phichyvals->ppropval[4].pvalue), &result))
 		return ecError;
-	if (PCL_INCLUDE & result) {
+	if (result & PCL_INCLUDE)
 		return SYNC_E_IGNORE;
-	}
 	if (plogon->logon_mode != logon_mode::owner) {
 		if (!exmdb_client::get_folder_perm(dir,
 		    folder_id, rpc_info.username, &permission))
@@ -1260,9 +1219,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		within public mailbox is not supported */
 		if (!plogon->is_private())
 			return ecNotSupported;
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
+		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM)
 			return ecAccessDenied;
-		}
 		if (plogon->logon_mode != logon_mode::owner) {
 			if (!exmdb_client::get_folder_perm(dir,
 			    parent_id1, rpc_info.username, &permission))
@@ -1278,9 +1236,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
 		    parent_id, folder_id, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), false,
-			&b_exist, &b_partial)) {
+		    &b_exist, &b_partial))
 			return ecError;
-		}
 		if (b_exist)
 			return ecDuplicateName;
 		if (b_partial)
@@ -1290,9 +1247,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return ecError;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5 + ppropvals->count);
-	if (NULL == tmp_propvals.ppropval) {
+	if (tmp_propvals.ppropval == nullptr)
 		return ecServerOOM;
-	}
 	tmp_propvals.ppropval[0].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals.ppropval[0].pvalue = phichyvals->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PR_CHANGE_KEY;
@@ -1347,11 +1303,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		return ecNotSupported;
 	auto sync_type = pctx->get_sync_type();
 	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
-	if (SYNC_DELETES_FLAG_HIERARCHY & flags) {
-		if (SYNC_TYPE_CONTENTS == sync_type) {
-			return ecNotSupported;
-		}
-	}
+	if ((flags & SYNC_DELETES_FLAG_HIERARCHY) && sync_type == SYNC_TYPE_CONTENTS)
+		return ecNotSupported;
 	pctx->mark_started();
 	auto pfolder = pctx->get_parent_object();
 	auto folder_id = pfolder->folder_id;
@@ -1373,9 +1326,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		message_ids.count = 0;
 		message_ids.pids = cu_alloc<uint64_t>(pbins->count);
-		if (NULL == message_ids.pids) {
+		if (message_ids.pids == nullptr)
 			return ecServerOOM;
-		}
 	}
 	for (size_t i = 0; i < pbins->count; ++i) {
 		if (22 != pbins->pbin[i].cb) {
@@ -1407,9 +1359,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (tmp_guid != tmp_xid.guid) {
 				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-				if (-1 == domain_id) {
+				if (domain_id == -1)
 					return ecInvalidParam;
-				}
 				if (!common_util_check_same_org(domain_id,
 				    plogon->account_id))
 					return ecInvalidParam;
@@ -1452,9 +1403,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 				if (!exmdb_client::get_folder_property(dir,
 				    CP_ACP, eid, PR_FOLDER_TYPE, &pvalue))
 					return ecError;
-				if (NULL == pvalue) {
+				if (pvalue == nullptr)
 					return ecSuccess;
-				}
 				if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 					goto DELETE_FOLDER;
 			}
@@ -1495,12 +1445,10 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	
 	if (22 != psrc_folder_id->cb ||
 		22 != psrc_message_id->cb ||
-		22 != pdst_message_id->cb) {
+	    pdst_message_id->cb != 22)
 		return ecInvalidParam;
-	}
-	if (pchange_number->cb < 17 || pchange_number->cb > 24) {
+	if (pchange_number->cb < 17 || pchange_number->cb > 24)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -1562,16 +1510,14 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    src_mid, PR_ASSOCIATED, &pvalue))
 		return ecError;
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return ecNotFound;
-	}
 	BOOL b_fai = *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
 	    src_mid, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
 		return ecError;
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return ecError;
-	}
 	if (!common_util_pcl_compare(static_cast<BINARY *>(pvalue), pchange_list, &result))
 		return ecError;
 	BOOL b_newer = result == PCL_INCLUDED ? TRUE : false;
@@ -1640,9 +1586,8 @@ ec_error_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 		pstate = static_cast<icsupctx_object *>(pobject)->get_state();
 	else
 		return ecNotSupported;
-	if (NULL == pstate) {
+	if (pstate == nullptr)
 		return ecError;
-	}
 	auto pctx = fastdownctx_object::create(plogon, 0);
 	if (pctx == nullptr)
 		return ecError;
@@ -1733,9 +1678,8 @@ ec_error_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
 	if (!exmdb_client::allocate_ids(plogon->get_dir(), count, &begin_eid))
 		return ecError;
 	/* allocate too many eids within an interval */
-	if (0 == begin_eid) {
+	if (begin_eid == 0)
 		return ecError;
-	}
 	*pguid = plogon->guid();
 	*pglobal_count = rop_util_get_gc_array(begin_eid);
 	return ecSuccess;
