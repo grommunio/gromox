@@ -122,3 +122,9 @@ extern void fxs_propsort(MESSAGE_CONTENT &);
 
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
+
+static inline uint32_t fx_divisor(uint64_t total)
+{
+	uint32_t r = total / 0xFFFF;
+	return r > 0 ? r : 1;
+}

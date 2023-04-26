@@ -194,11 +194,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	pctx->progress_steps = 0;
 	pctx->next_progress_steps = 0;
 	pctx->total_steps = total_normal + total_fai;
-	size_t i;
-	for (i = 0; i < 64; ++i)
-		if ((pctx->total_steps >> i) <= 0xFFFF)
-			break;
-	pctx->ratio = 1ULL << i;
+	pctx->divisor = fx_divisor(pctx->total_steps);
 	return TRUE;
 }
 
@@ -515,7 +511,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		rop_util_free_binary(pbin);
 	pctx->progress_steps = 0;
 	pctx->total_steps = pctx->pstream->total_length();
-	pctx->ratio = 1;
+	pctx->divisor = fx_divisor(pctx->total_steps);
 	return TRUE;
 }
 
@@ -1209,12 +1205,11 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
-	auto pctx = this;
-	*pprogress = pctx->progress_steps / pctx->ratio;
-	*ptotal = pctx->total_steps / pctx->ratio;
+	*pprogress = progress_steps / divisor;
+	*ptotal = total_steps / divisor;
 	if (*ptotal == 0)
 		*ptotal = 1;
-	if (!icsdownctx_object_get_buffer_internal(pctx, pbuff, plen, pb_last))
+	if (!icsdownctx_object_get_buffer_internal(this, pbuff, plen, pb_last))
 		return FALSE;	
 	if (*pb_last)
 		*pprogress = *ptotal;

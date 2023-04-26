@@ -50,9 +50,8 @@ struct icsdownctx_object final {
 	EID_ARRAY *punread_messages = nullptr;
 	uint8_t send_options = 0;
 	uint16_t sync_flags = 0;
-	uint32_t extra_flags = 0;
+	uint32_t extra_flags = 0, divisor = 1;
 	PROPTAG_ARRAY *pproptags = nullptr;
 	RESTRICTION *prestriction = nullptr;
 	uint64_t total_steps = 0, progress_steps = 0, next_progress_steps = 0;
-	uint64_t ratio = 0;
 };

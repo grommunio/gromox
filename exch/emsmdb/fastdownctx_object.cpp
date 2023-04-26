@@ -125,6 +125,7 @@ BOOL fastdownctx_object::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
 		return FALSE;	
 	pctx->progress_steps = 0;
 	pctx->total_steps = pctx->pstream->total_length();
+	divisor = fx_divisor(total_steps);
 	return TRUE;
 }
 
@@ -135,6 +136,7 @@ BOOL fastdownctx_object::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
 		return FALSE;	
 	pctx->progress_steps = 0;
 	pctx->total_steps = pctx->pstream->total_length();
+	divisor = fx_divisor(total_steps);
 	return TRUE;
 }
 
@@ -152,6 +154,7 @@ BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
 	tpropval_array_free(pproplist);
 	pctx->progress_steps = 0;
 	pctx->total_steps = pctx->pstream->total_length();
+	divisor = fx_divisor(total_steps);
 	return TRUE;
 }
 
@@ -252,6 +255,7 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 	pctx->pfldctnt = std::move(fc);
 	pctx->progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
+	divisor = fx_divisor(total_steps);
 	return TRUE;
 }
 	
@@ -266,6 +270,7 @@ BOOL fastdownctx_object::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&fc)
 	pctx->pfldctnt = std::move(fc);
 	pctx->progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
+	divisor = fx_divisor(total_steps);
 	return TRUE;
 }
 
@@ -279,6 +284,7 @@ BOOL fastdownctx_object::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
 	pctx->pmsglst = msglst;
 	pctx->progress_steps = 0;
 	total_steps = std::count_if(flow_list.cbegin(), flow_list.cend(), is_message);
+	divisor = fx_divisor(total_steps);
 	return TRUE;
 }
 
@@ -380,17 +386,13 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 BOOL fastdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
-	auto pctx = this;
-	uint16_t ratio;
-	
-	ratio = pctx->total_steps / 0xFFFF + 1;
-	*ptotal = pctx->total_steps / ratio;
+	*ptotal = total_steps / divisor;
 	if (0 == *ptotal) {
 		*ptotal = 1;
 	}
 	if (!fastdownctx_object_get_buffer_internal(this, pbuff, plen, pb_last))
 		return FALSE;	
-	*pprogress = pctx->progress_steps / ratio;
+	*pprogress = progress_steps / divisor;
 	if (*pb_last)
 		*pprogress = *ptotal;
 	return TRUE;

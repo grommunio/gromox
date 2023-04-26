@@ -38,7 +38,7 @@ struct fxstream_producer {
 	public:
 	~fxstream_producer();
 	static std::unique_ptr<fxstream_producer> create(logon_object *, uint8_t string_option);
-	inline int total_length() const { return offset; }
+	inline uint32_t total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
 	BOOL write_uint32(uint32_t);
 	BOOL write_proplist(const TPROPVAL_ARRAY *);
