@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <memory>
@@ -77,7 +78,7 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 
 static std::unique_ptr<FOLDER_CONTENT>
 oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
-    BOOL b_fai, BOOL b_normal, BOOL b_sub)
+    bool b_fai, bool b_normal, bool b_sub)
 {
 	BOOL b_found;
 	BINARY *pbin;
@@ -479,9 +480,6 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int i;
-	BOOL b_sub;
-	BOOL b_fai;
-	BOOL b_normal;
 	ems_objtype object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
@@ -507,28 +505,17 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecError;
 	switch (object_type) {
 	case ems_objtype::folder: {
-		if (0 == level) {
-			b_sub = TRUE;
-			b_fai = TRUE;
-			b_normal = TRUE;
-			for (i=0; i<pproptags->count; i++) {
-				switch (pproptags->pproptag[i]) {
-				case PR_CONTAINER_HIERARCHY:
-					b_sub = FALSE;
-					break;
-				case PR_CONTAINER_CONTENTS:
-					b_normal = FALSE;
-					break;
-				case PR_FOLDER_ASSOCIATED_CONTENTS:
-					b_fai = FALSE;
-					break;
-				}
-			}
-		} else {
-			b_sub = FALSE;
-			b_fai = FALSE;
-			b_normal = FALSE;
-		}
+		/*
+		 * @proptags is an exclude list. OXFXICS says """This field
+		 * does not determine what properties and subobjects the server
+		 * copies for descendant subobjects of the InputServerObject
+		 * field.""", which legitimates applying it only to level 0.
+		 * Cf. rop_fasttransfersourcecopyproperties too.
+		 */
+		auto bg = &pproptags->pproptag[0], end = &pproptags->pproptag[pproptags->count];
+		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) == end;
+		auto b_fai    = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) == end;
+		auto b_normal = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) == end;
 		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		                static_cast<folder_object *>(pobject)->folder_id,
 		                b_fai, b_normal, b_sub);
@@ -606,9 +593,6 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int i;
-	BOOL b_sub;
-	BOOL b_fai;
-	BOOL b_normal;
 	ems_objtype object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
@@ -634,28 +618,15 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		return ecError;
 	switch (object_type) {
 	case ems_objtype::folder: {
-		if (0 == level) {
-			b_sub = FALSE;
-			b_fai = FALSE;
-			b_normal = FALSE;
-			for (i=0; i<pproptags->count; i++) {
-				switch (pproptags->pproptag[i]) {
-				case PR_CONTAINER_HIERARCHY:
-					b_sub = TRUE;
-					break;
-				case PR_CONTAINER_CONTENTS:
-					b_normal = TRUE;
-					break;
-				case PR_FOLDER_ASSOCIATED_CONTENTS:
-					b_fai = TRUE;
-					break;
-				}
-			}
-		} else {
-			b_sub = FALSE;
-			b_fai = FALSE;
-			b_normal = FALSE;
-		}
+		/*
+		 * OXCFXICS v24 §2.2.3.1.1.2: @proptags specifies """a list of
+		 * properties and subobjects to include, as opposed to
+		 * exclude""" [like rop_fasttransfersourcecopyproperties]
+		 */
+		auto bg = &pproptags->pproptag[0], end = &pproptags->pproptag[pproptags->count];
+		auto b_sub    = level == 0 && std::find(bg, end, PR_CONTAINER_HIERARCHY) != end;
+		auto b_normal = level == 0 && std::find(bg, end, PR_CONTAINER_CONTENTS) != end;
+		auto b_fai    = level == 0 && std::find(bg, end, PR_FOLDER_ASSOCIATED_CONTENTS) != end;
 		auto pfldctnt = oxcfxics_load_folder_content(plogon,
 		                static_cast<folder_object *>(pobject)->folder_id,
 		                b_fai, b_normal, b_sub);
