@@ -105,7 +105,6 @@ static time_duration g_timeout;
 unsigned int g_http_debug;
 bool g_http_php;
 static thread_local HTTP_CONTEXT *g_context_key;
-static alloc_limiter<file_block> g_file_allocator{"g_file_allocator.d"};
 static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator{"g_inchannel_allocator.d"};
 static alloc_limiter<RPC_OUT_CHANNEL> g_outchannel_allocator{"g_outchannel_allocator.d"};
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
@@ -246,8 +245,6 @@ int http_parser_run()
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
 #endif
 	}
-	g_file_allocator = alloc_limiter<file_block>(16 * g_context_num,
-	                   "http_file_allocator", "http.cfg:context_num");
 	try {
 		g_context_list = std::make_unique<HTTP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);

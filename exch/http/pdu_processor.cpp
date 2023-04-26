@@ -48,13 +48,6 @@ using namespace gromox;
 
 namespace {
 
-/* structure for describing service reference */
-struct pdu_service_node {
-	DOUBLE_LIST_NODE node;
-	void *service_addr;
-	char *service_name;
-};
-
 struct ndr_stack_root {
 	alloc_context in_stack, out_stack;
 };
@@ -298,8 +291,8 @@ void pdu_processor_stop()
 		mlog(LV_WARN, "W-1573: %zu PDU_PROCESSORs remaining", z);
 		g_processor_list.clear();
 	}
-
-	g_plugin_list.clear();
+	while (!g_plugin_list.empty())
+		g_plugin_list.pop_back();
 	g_endpoint_list.clear();
 	g_async_hash.reset();
 }
@@ -3123,16 +3116,10 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
 #endif
 }
 
-PROC_PLUGIN::PROC_PLUGIN()
-{
-	double_list_init(&list_reference);
-}
-
 PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) noexcept :
-	list_reference(o.list_reference), lib_main(o.lib_main),
+	list_reference(std::move(o.list_reference)), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)
 {
-	o.list_reference = {};
 	o.handle = nullptr;
 	o.completed_init = false;
 }
@@ -3140,7 +3127,6 @@ PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) noexcept :
 PROC_PLUGIN::~PROC_PLUGIN()
 {
 	PLUGIN_MAIN func;
-	DOUBLE_LIST_NODE *pnode;
 	auto pplugin = this;
 	
 	if (pplugin->file_name.size() > 0)
@@ -3149,15 +3135,8 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
 		func(PLUGIN_FREE, NULL);
-	
-	/* free the reference list */
-	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
-		service_release(static_cast<pdu_service_node *>(pnode->pdata)->service_name,
-			pplugin->file_name.c_str());
-		free(static_cast<pdu_service_node *>(pnode->pdata)->service_name);
-		free(pnode->pdata);
-	}
-	double_list_free(&pplugin->list_reference);
+	for (const auto &nd : list_reference)
+		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
 	if (handle != nullptr)
 		dlclose(handle);
 }
@@ -3223,7 +3202,6 @@ static uint64_t pdu_processor_get_binding_handle()
 
 static void *pdu_processor_queryservice(const char *service, const std::type_info &ti)
 {
-	DOUBLE_LIST_NODE *pnode;
 	void *ret_addr;
 
 	if (NULL == g_cur_plugin) {
@@ -3297,37 +3275,20 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(pdu_processor_async_reply);
 	}
 	/* check if already exists in the reference list */
-	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
-		NULL!=pnode;
-		pnode=double_list_get_after(&g_cur_plugin->list_reference, pnode)) {
-		auto pservice = static_cast<pdu_service_node *>(pnode->pdata);
-		if (0 == strcmp(service, pservice->service_name)) {
-			return pservice->service_addr;
-		}
-	}
+	for (const auto &nd : g_cur_plugin->list_reference)
+		if (nd.service_name == service)
+			return nd.service_addr;
 	auto fn = g_cur_plugin->file_name.c_str();
 	ret_addr = service_query(service, fn, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	auto pservice = me_alloc<pdu_service_node>();
-	if (NULL == pservice) {
-		mlog(LV_DEBUG, "pdu_processor: Failed to allocate memory for service node");
+	try {
+		g_cur_plugin->list_reference.emplace_back(pdu_service_node{ret_addr, service});
+	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
 		return NULL;
 	}
-	pservice->service_name = me_alloc<char>(strlen(service) + 1);
-	if (NULL == pservice->service_name) {
-		mlog(LV_DEBUG, "pdu_processor: Failed to allocate memory for service name");
-		service_release(service, fn);
-		free(pservice);
-		return NULL;
-	}
-	strcpy(pservice->service_name, service);
-	pservice->node.pdata = pservice;
-	pservice->service_addr = ret_addr;
-	double_list_append_as_tail(&g_cur_plugin->list_reference,
-		&pservice->node);
 	return ret_addr;
 }
 

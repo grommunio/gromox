@@ -56,9 +56,3 @@ struct FLUSH_ENTITY final {
 	unsigned int command_protocol = 0;
 	SMTP_CONTEXT *pcontext = nullptr;
 };
-
-using CANCEL_FUNCTION = void (*)(FLUSH_ENTITY *);
-
-extern "C" { /* dlsym */
-extern GX_EXPORT BOOL FLH_LibMain(int reason, void **ptrs);
-}

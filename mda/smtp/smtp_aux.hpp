@@ -9,7 +9,9 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
+struct FLUSH_ENTITY;
 struct smtp_context;
+using CANCEL_FUNCTION = void (*)(FLUSH_ENTITY *);
 using SMTP_CONTEXT = smtp_context;
 
 extern void flusher_init(size_t queue_len);
@@ -22,6 +24,10 @@ extern int listener_run();
 extern int listener_trigger_accept();
 extern void listener_stop_accept();
 extern void listener_stop();
+extern void message_enqueue_handle_workitem(FLUSH_ENTITY &);
+extern BOOL flusher_register_cancel(CANCEL_FUNCTION);
+extern void flusher_set_flush_ID(int);
+extern BOOL FLH_LibMain(int);
 
 extern uint16_t g_listener_ssl_port;
 
@@ -46,4 +52,3 @@ extern void system_services_stop();
 extern BOOL (*system_services_judge_user)(const char*);
 extern BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 extern bool (*system_services_check_user)(const char *, char *, size_t);
-extern BOOL (*system_services_check_full)(const char*);

@@ -184,9 +184,9 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 	auto pdomain = strchr(from, '@') + 1;
-	sprintf(pcontext->pcontrol->from, "auto-reply@%s", pdomain);
-	pcontext->pcontrol->rcpt.emplace_back(rcpt);
-	auto pmime = pcontext->pmail->add_head();
+	snprintf(pcontext->ctrl.from, std::size(pcontext->ctrl.from), "auto-reply@%s", pdomain);
+	pcontext->ctrl.rcpt.emplace_back(rcpt);
+	auto pmime = pcontext->mail.add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);
 		return;

@@ -31,11 +31,6 @@ enum class mime_type {
 	none, single, single_obj, multiple,
 };
 
-struct file_block {
-	DOUBLE_LIST_NODE list_node;
-	char buf[FILE_BLOCK_SIZE];
-};
-
 struct stream_block {
 	DOUBLE_LIST_NODE list_node;
 	char buf[STREAM_BLOCK_SIZE];

@@ -135,27 +135,27 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	if (NULL == pcontext) {
 		return;
 	}
-	pcontext->pcontrol->bound_type = BOUND_ALARM;
-	pcontext->pcontrol->need_bounce = FALSE;
+	pcontext->ctrl.bound_type = BOUND_ALARM;
+	pcontext->ctrl.need_bounce = FALSE;
 	auto pdomain = strchr(get_admin_mailbox(), '@');
 	if (NULL == pdomain) {
 		put_context(pcontext);
 		return;
 	}
 	if (0 == strcasecmp(pdomain, get_default_domain())) {
-		gx_strlcpy(pcontext->pcontrol->from, "local-alarm@system.mail", GX_ARRAY_SIZE(pcontext->pcontrol->from));
+		gx_strlcpy(pcontext->ctrl.from, "local-alarm@system.mail", GX_ARRAY_SIZE(pcontext->ctrl.from));
 	} else {
-		sprintf(pcontext->pcontrol->from, "local-alarm@%s",
+		sprintf(pcontext->ctrl.from, "local-alarm@%s",
 		        get_default_domain());
 	}
-	pcontext->pcontrol->rcpt.emplace_back(get_admin_mailbox());
-	auto pmime = pcontext->pmail->add_head();
+	pcontext->ctrl.rcpt.emplace_back(get_admin_mailbox());
+	auto pmime = pcontext->mail.add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);
 		return;
 	}
 	pmime->set_content_type("multipart/related");
-	auto pmime_child = pcontext->pmail->add_child(pmime, MIME_ADD_LAST);
+	auto pmime_child = pcontext->mail.add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime_child) {
 		put_context(pcontext);
 		return;
@@ -189,7 +189,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
 	offset += sizeof(HTML_02) - 1;
 	pmime_child->write_content(tmp_buff, offset, mime_encoding::none);
-	pmime->set_field("From", pcontext->pcontrol->from);
+	pmime->set_field("From", pcontext->ctrl.from);
 	pmime->set_field("To", get_admin_mailbox());
 	strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 	         localtime_r(&current_time, &time_buff));

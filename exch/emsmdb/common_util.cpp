@@ -63,7 +63,6 @@ static int g_average_blocks;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static char g_submit_command[1024];
-static alloc_limiter<file_block> g_file_allocator{"emsmdb.g_file_allocator.d"};
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -1702,11 +1701,6 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 	return ecSuccess;
 }
 
-alloc_limiter<file_block> *common_util_get_allocator()
-{
-	return &g_file_allocator;
-}
-
 void common_util_init(const char *org_name, int average_blocks,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
@@ -1760,8 +1754,6 @@ int common_util_run()
 		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}
-	g_file_allocator = alloc_limiter<file_block>(g_average_blocks * context_num,
-	                   "emsmdb_file_allocator", "http.cfg:context_num");
 	auto mime_num = std::clamp(16 * context_num, 1024, 16 * 1024);
 	g_mime_pool = MIME_POOL::create(mime_num, 16,
 	              "emsmdb_mime_pool (http.cfg:context_num)");

@@ -78,13 +78,11 @@ using SMTP_CONTEXT = smtp_context;
 
 struct smtp_param {
 	unsigned int context_num = 0;
-	BOOL need_auth = false, support_pipeline = TRUE;
+	BOOL support_pipeline = TRUE;
 	BOOL support_starttls = false, force_starttls = false;
 	size_t max_mail_length = 64ULL * 1024 * 1024;
-	int max_mail_sessions = 0; /* max num of mails in any one session */
 	size_t flushing_size = 0;
 	gromox::time_duration timeout{std::chrono::seconds{0x7fffffff}};
-	int auth_times = 0, blktime_auths = 60, blktime_sessions = 60;
 	unsigned int cmd_prot = HT_LMTP | HT_SMTP;
 	std::string cert_path, cert_passwd, key_path;
 };
@@ -95,13 +93,15 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_stop();
 extern int smtp_parser_get_context_socket(const schedule_context *);
 extern gromox::time_point smtp_parser_get_context_timestamp(const schedule_context *);
-int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
-const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
-const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
+extern int smtp_parser_get_extra_num(const smtp_context *);
+extern const char *smtp_parser_get_extra_tag(const smtp_context *, int pos);
+extern const char *smtp_parser_get_extra_value(const smtp_context *, int pos);
+extern int flh_get_extra_num(unsigned int ctx);
+extern const char *flh_get_extra_tag(unsigned int ctx, int pos);
+extern const char *flh_get_extra_value(unsigned int ctx, int pos);
 extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
-extern alloc_limiter<file_block> g_files_allocator;
 extern smtp_param g_param;

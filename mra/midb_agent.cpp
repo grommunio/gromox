@@ -112,7 +112,6 @@ static pthread_t g_scan_id;
 static std::list<BACK_CONN> g_lost_list;
 static std::list<BACK_SVR> g_server_list;
 static std::mutex g_server_lock;
-static alloc_limiter<file_block> g_file_allocator{"midb_agent.g_file_allocator.d"};
 static int g_file_ratio;
 
 static constexpr cfg_directive midb_agent_cfg_defaults[] = {
@@ -200,11 +199,6 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			return false;
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
-		if (g_file_ratio > 0) {
-			g_file_allocator = alloc_limiter<file_block>(get_context_num() * g_file_ratio,
-			                   "midb_agent_file_alloc",
-			                   "midb.cfg:context_num,context_average_mem");
-		}
 
 		g_notify_stop = false;
 		auto ret = pthread_create4(&g_scan_id, nullptr, midbag_scanwork, nullptr);
@@ -1497,10 +1491,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	BOOL b_format_error;
 	struct pollfd pfd_read;
 
-	if (g_file_allocator.internals().item_size == 0) {
-		*perrno = -2;
-		return MIDB_RESULT_ERROR;
-	}
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;

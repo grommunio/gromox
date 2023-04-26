@@ -46,12 +46,11 @@ struct rd_connection {
 };
 }
 
-static errno_t rd_starttls(rd_connection &&, MESSAGE_CONTEXT *, std::string &);
+static errno_t rd_starttls(rd_connection &&, const MESSAGE_CONTEXT *, std::string &);
 
 static constexpr unsigned int network_timeout = 180;
 static std::unique_ptr<SSL_CTX, rd_delete> g_tls_ctx;
 static std::unique_ptr<std::mutex[]> g_tls_mutex_buf;
-static alloc_limiter<file_block> g_files_allocator{"remote_delivery.g_files_allocator.d"};
 static std::string g_mx_host;
 static uint16_t g_mx_port;
 static bool g_enable_tls;
@@ -102,11 +101,11 @@ static int rd_run()
 	return 0;
 }
 
-static void rd_log(const MESSAGE_CONTEXT *ctx, unsigned int level,
+static void rd_log(const CONTROL_INFO &eci, unsigned int level,
     const char *fmt, ...)
 {
 	std::string outbuf = "[remote_delivery]";
-	auto ctrl = ctx->pcontrol;
+	auto ctrl = &eci;
 	outbuf += " QID=" + std::to_string(ctrl->queue_ID) + " from=<"s +
 	          ctrl->from + "> to=";
 
@@ -194,7 +193,7 @@ static errno_t rd_get_response(const rd_connection &conn,
 	return want_code != 0 && response[0] == want_code ? 0 : EBADMSG;
 }
 
-static errno_t rd_hello(const rd_connection &conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_hello(const rd_connection &conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[1024];
@@ -215,11 +214,11 @@ static errno_t rd_hello(const rd_connection &conn, MESSAGE_CONTEXT *ctx,
 	return ret;
 }
 
-static errno_t rd_mailfrom(rd_connection &conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_mailfrom(rd_connection &conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[UADDR_SIZE+24];
-	auto f = strcmp(ctx->pcontrol->from, ENVELOPE_FROM_NULL) != 0 ? ctx->pcontrol->from : "";
+	auto f = strcmp(ctx->ctrl.from, ENVELOPE_FROM_NULL) != 0 ? ctx->ctrl.from : "";
 	auto len = gx_snprintf(cmd, arsizeof(cmd), "MAIL FROM: <%s>\r\n", f);
 	if (!rd_send_cmd(conn, cmd, len))
 		return ETIMEDOUT;
@@ -230,11 +229,11 @@ static errno_t rd_mailfrom(rd_connection &conn, MESSAGE_CONTEXT *ctx,
 	return ret;
 }
 
-static errno_t rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_rcptto(rd_connection &conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	bool any_success = false;
-	for (const auto &rcpt : ctx->pcontrol->rcpt) {
+	for (const auto &rcpt : ctx->ctrl.rcpt) {
 		char cmd[1024];
 		auto len = gx_snprintf(cmd, arsizeof(cmd), "RCPT TO: <%s>\r\n", rcpt.c_str());
 		if (!rd_send_cmd(conn, cmd, len))
@@ -253,7 +252,7 @@ static errno_t rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
 	return 0;
 }
 
-static errno_t rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &response)
+static errno_t rd_data(rd_connection &&conn, const MESSAGE_CONTEXT *ctx, std::string &response)
 {
 	if (!rd_send_cmd(conn, "DATA\r\n", 6))
 		return ETIMEDOUT;
@@ -262,8 +261,8 @@ static errno_t rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &
 		return ret;
 	if (ret != 0)
 		return ret;
-	bool did_data = conn.tls != nullptr ? ctx->pmail->to_tls(conn.tls.get()) :
-	                ctx->pmail->to_file(conn.fd);
+	bool did_data = conn.tls != nullptr ? ctx->mail.to_tls(conn.tls.get()) :
+	                ctx->mail.to_file(conn.fd);
 	if (!did_data) {
 		ret = rd_get_response(conn, response);
 		if (ret == ETIMEDOUT)
@@ -285,7 +284,7 @@ static errno_t rd_data(rd_connection &&conn, MESSAGE_CONTEXT *ctx, std::string &
 	return 0;
 }
 
-static errno_t rd_session_begin(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_session_begin(rd_connection &&conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	auto ret = rd_hello(conn, ctx, response);
@@ -304,7 +303,7 @@ static errno_t rd_session_begin(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 	return rd_data(std::move(conn), ctx, response);
 }
 
-static errno_t rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
+static errno_t rd_starttls(rd_connection &&conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	if (!rd_send_cmd(conn, "STARTTLS\r\n", 10))
@@ -330,12 +329,12 @@ static errno_t rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 	return rd_session_begin(std::move(conn), ctx, response);
 }
 
-static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
+static errno_t rd_send_mail(const MESSAGE_CONTEXT *ctx, std::string &response)
 {
 	rd_connection conn;
 	conn.fd = HX_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
-		rd_log(ctx, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
+		rd_log(ctx->ctrl, LV_ERR, "Could not connect to SMTP [%s]:%hu: %s",
 			g_mx_host.c_str(), g_mx_port, strerror(-conn.fd));
 		return EHOSTUNREACH;
 	}
@@ -345,7 +344,7 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 
 	if (ret == ETIMEDOUT)
 		return ret;
-	rd_log(ctx, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
+	rd_log(ctx->ctrl, LV_DEBUG, "SMTP said answered \"%s\" after connection", response.c_str());
 	/* change reason to connection refused */
 	if (ret == 0 || 1)
 		ret = ECONNREFUSED;
@@ -355,11 +354,6 @@ static errno_t rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 
 static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 {
-	CONTROL_INFO l_ctrl = *ctx->pcontrol;
-	MESSAGE_CONTEXT l_ctx;
-	l_ctx.pcontrol = &l_ctrl;
-	l_ctx.pmail    = ctx->pmail;
-
 	std::string errstr;
 	int ret;
 	try {
@@ -374,7 +368,7 @@ static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	mlog(LV_ERR, "remote_delivery: Local code: %s (ret=%d). "
 	        "SMTP reason string: %s. Recipient(s) affected:",
 	        strerror(ret), ret, errstr.c_str());
-	for (const auto &rcpt : l_ctrl.rcpt)
+	for (const auto &rcpt : ctx->ctrl.rcpt)
 		mlog(LV_ERR, "remote_delivery:\t%s", rcpt.c_str());
 	return hook_result::stop;
 }
@@ -397,8 +391,6 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 			strerror(errno));
 		return false;
 	}
-	g_files_allocator = alloc_limiter<file_block>(256 * get_threads_num(),
-	                    "rd_files_alloc", "delivery.cfg:threads_num");
 	g_mx_host = cfg_file->get_value("mx_host");
 	g_mx_port = cfg_file->get_ll("mx_port");
 	g_enable_tls = cfg_file->get_ll("starttls_support");

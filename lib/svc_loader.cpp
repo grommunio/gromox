@@ -128,7 +128,8 @@ int service_run()
 
 void service_stop()
 {
-	g_list_plug.clear();
+	while (!g_list_plug.empty())
+		g_list_plug.pop_back();
 }
 
 /*

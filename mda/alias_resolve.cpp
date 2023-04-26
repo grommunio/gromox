@@ -104,7 +104,7 @@ static void xa_refresh_thread()
 
 static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 {
-	auto ctrl = ctx->pcontrol;
+	auto ctrl = &ctx->ctrl;
 	if (ctrl->bound_type >= BOUND_SELF)
 		return hook_result::xcontinue;
 

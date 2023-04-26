@@ -34,7 +34,6 @@ gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
-alloc_limiter<file_block> g_files_allocator{"g_files_allocator.d"};
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -43,7 +42,6 @@ static struct HXoption g_options_table[] = {
 };
 
 static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_midb_agent.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
 	"libgxs_authmgr.so",
@@ -51,8 +49,6 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 };
 
 static constexpr cfg_directive smtp_cfg_defaults[] = {
-	{"block_interval_auths", "1min", CFG_TIME, "1s"},
-	{"block_interval_session", "1min", CFG_TIME, "1s"},
 	{"command_protocol", "both"},
 	{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
 	{"context_average_mem", "256K", CFG_SIZE, "64K"},
@@ -69,11 +65,8 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"listen_ssl_port", "lda_listen_tls_port", CFG_ALIAS},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"running_identity", RUNNING_IDENTITY},
-	{"smtp_auth_times", "3", CFG_SIZE, "1"},
 	{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
 	{"smtp_force_starttls", "false", CFG_BOOL},
-	{"smtp_max_mail_num", "100", CFG_SIZE},
-	{"smtp_need_auth", "false", CFG_BOOL},
 	{"smtp_support_pipeline", "true", CFG_BOOL},
 	{"smtp_support_starttls", "false", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
@@ -219,28 +212,10 @@ int main(int argc, const char **argv) try
 	if (listen_tls_port > 0)
 		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 
-	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
-	mlog(LV_NOTICE, "dq: auth_needed is %s", scfg.need_auth ? "ON" : "OFF");
-
-	scfg.auth_times = g_config_file->get_ll("smtp_auth_times");
-	mlog(LV_INFO, "dq: maximum authentication failure count is %d", 
-	       scfg.auth_times);
-
-	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_auths, 0);
-	mlog(LV_INFO, "dq: blocking clients for %s when authentication failure count "
-			"is exceeded", temp_buff);
-
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
 	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.max_mail_length, 1024, 0);
 	mlog(LV_NOTICE, "dq: maximum mail length is %s", temp_buff);
 
-	scfg.max_mail_sessions = g_config_file->get_ll("smtp_max_mail_num");
-	scfg.blktime_sessions = g_config_file->get_ll("block_interval_session");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), scfg.blktime_sessions, 0);
-	mlog(LV_INFO, "dq: blocking remote side for %s when mails number is exceed for one "
-			"session", temp_buff);
-	
 	str_val = g_config_file->get_value("command_protocol");
 	if (strcasecmp(str_val, "both") == 0)
 		scfg.cmd_prot = HT_LMTP | HT_SMTP;
@@ -298,9 +273,6 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
-	size_t fa_blocks_num = scfg.context_num * 128;
-	g_files_allocator = alloc_limiter<file_block>(fa_blocks_num,
-	                    "smtp_files_alloc", "smtp.cfg:context_num");
 	g_blocks_allocator = alloc_limiter<stream_block>(scfg.context_num * context_aver_mem,
 	                     "smtp_blocks_alloc", "smtp.cfg:context_num,context_aver_mem");
 	smtp_parser_init(scfg);

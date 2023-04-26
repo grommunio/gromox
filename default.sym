@@ -1,6 +1,5 @@
 {
 global:
-	FLH_LibMain;
 	HPM_LibMain;
 	HOOK_LibMain;
 	PROC_LibMain;

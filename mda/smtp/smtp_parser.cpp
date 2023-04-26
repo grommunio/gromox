@@ -72,12 +72,8 @@ alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
  *        threads_num        number of threads in the pool
  *        dm_valid           is domain list valid
  *        max_mail_length    maximum mail size
- *        max_mail_sessions  maximum mail sessions per connection
- *        blktime_sessions   block interval if max sessions is exceeded
  *        flushing_size      maximum size the stream can hold
  *        timeout            seconds if there's no data comes from connection
- *        auth_times         maximum authentication times, session permit
- *        blktime_auths      block interval if max auths is exceeded
  */
 void smtp_parser_init(const smtp_param &param)
 {
@@ -526,23 +522,10 @@ SCHEDULE_CONTEXT **smtp_parser_get_contexts_list()
 static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
-	const char* smtp_reply_str;
-	
 	/* check the line length */
 	if (line_length > 1000) {
 		/* 500 syntax error - line too long */
 		return 502;
-	}
-	if (pcontext->session_num == static_cast<unsigned int>(g_param.max_mail_sessions) &&
-		(4 != line_length || 0 != strncasecmp(cmd_line, "QUIT", 4))) {
-		/* reach the maximum of mail transactions */
-		smtp_reply_str = resource_get_smtp_code(529, 1, &string_length);
-		pcontext->connection.write(smtp_reply_str, string_length);
-		smtp_parser_log_info(pcontext, LV_NOTICE, "added %s into temporary list because"
-							" it exceeds the maximum mail number on session",
-							pcontext->connection.client_ip);
-		return DISPATCH_SHOULD_CLOSE; 
 	}
 	if (g_param.cmd_prot & HT_LMTP) {
 		if (strncasecmp(cmd_line, "LHLO", 4) == 0)
@@ -674,12 +657,17 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	mlog(LV_ERR, "E-1609: ENOMEM");
 }
 
-int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)
+int smtp_parser_get_extra_num(const smtp_context *pcontext)
 {
 	return pcontext->ext_data.cur_pos;
 }
 
-const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos)
+int flh_get_extra_num(unsigned int i)
+{
+	return smtp_parser_get_extra_num(static_cast<const smtp_context *>(smtp_parser_get_contexts_list()[i]));
+}
+
+const char* smtp_parser_get_extra_tag(const smtp_context *pcontext, int pos)
 {
 	if (pos >= MAX_EXTRA_DATA_INDEX || pos < 0) {
 		return NULL;
@@ -687,10 +675,20 @@ const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos)
 	return pcontext->ext_data.ext_tag[pos];
 }
 
-const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos)
+const char *flh_get_extra_tag(unsigned int i, int j)
+{
+	return smtp_parser_get_extra_tag(static_cast<const smtp_context *>(smtp_parser_get_contexts_list()[i]), j);
+}
+
+const char* smtp_parser_get_extra_value(const smtp_context *pcontext, int pos)
 {
 	if (pos >= MAX_EXTRA_DATA_INDEX || pos < 0) {
 		return NULL;
 	}
 	return pcontext->ext_data.ext_data[pos];
+}
+
+const char *flh_get_extra_value(unsigned int i, int j)
+{
+	return smtp_parser_get_extra_value(static_cast<const smtp_context *>(smtp_parser_get_contexts_list()[i]), j);
 }

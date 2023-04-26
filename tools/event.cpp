@@ -105,7 +105,6 @@ static constexpr unsigned int POLLIN_SET =
 	POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR | POLLNVAL;
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static alloc_limiter<file_block> g_file_alloc{"g_file_alloc.d"};
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static std::vector<std::shared_ptr<DEQUEUE_NODE>> g_dequeue_list1;
@@ -234,8 +233,6 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	
 	g_threads_num ++;
-	g_file_alloc = alloc_limiter<file_block>(g_threads_num * FIFO_AVERAGE_LENGTH,
-	               "file_alloc", "event.cfg:threads_num");
 	g_dequeue_list1.reserve(g_threads_num);
 	
 	std::vector<pthread_t> tidlist;

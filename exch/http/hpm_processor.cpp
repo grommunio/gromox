@@ -218,10 +218,7 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		return NULL;
 	}
 	try {
-		hpm_service_node nd;
-		nd.service_name = service;
-		nd.service_addr = ret_addr;
-		g_cur_plugin->list_reference.push_back(std::move(nd));
+		g_cur_plugin->list_reference.emplace_back(hpm_service_node{ret_addr, service});
 	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
 		mlog(LV_ERR, "E-1636: ENOMEM");
@@ -311,7 +308,8 @@ int hpm_processor_run() try
 
 void hpm_processor_stop()
 {
-	g_plugin_list.clear();
+	while (!g_plugin_list.empty())
+		g_plugin_list.pop_back();
 	g_context_list.reset();
 }
 

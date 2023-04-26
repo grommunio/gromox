@@ -15,19 +15,15 @@ using namespace gromox;
  *	@return
  *		mime pool object
  */
-MIME_POOL::MIME_POOL(size_t num, int ratio, const char *name, const char *hint) :
-	allocator(name)
+MIME_POOL::MIME_POOL(size_t num, int ratio, const char *name, const char *hint)
 {
-	auto pmime_pool = this;
-
 	if (ratio < 4) {
 		ratio = 4;
 	} else if (ratio > 256) {
 		ratio = 256;
 	}
-	pmime_pool->allocator = alloc_limiter<file_block>(num * ratio, name, hint);
 	for (size_t i = 0; i < num; ++i) {
-		pbegin.emplace_back(&pmime_pool->allocator, this);
+		pbegin.emplace_back(this);
 		free_list.push_back(&pbegin.back());
 	}
 }

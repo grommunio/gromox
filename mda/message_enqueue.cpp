@@ -13,12 +13,9 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <list>
-#include <pthread.h>
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
-#include <utility>
 #include <libHX/string.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
@@ -26,7 +23,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
@@ -37,6 +33,8 @@
 #include <gromox/plugin.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
+#include "smtp/smtp_aux.hpp"
+#include "smtp/smtp_parser.h"
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 
@@ -62,34 +60,14 @@ struct MSG_BUFF {
 
 }
 
-static void *meq_thrwork(void *);
 static BOOL message_enqueue_check();
 static int message_enqueue_retrieve_max_ID();
 static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
 
 static char         g_path[256];
 static int			g_msg_id;
-static pthread_t    g_flushing_thread;
-static gromox::atomic_bool g_notify_stop;
 static int			g_last_flush_ID;
-static int			g_enqueued_num;
 static int			g_last_pos;
-
-static void *(*query_serviceF)(const char *, const std::type_info &);
-static int (*get_queue_length)();
-static BOOL (*feedback_entity)(std::list<FLUSH_ENTITY> &&);
-static BOOL (*register_cancel)(CANCEL_FUNCTION);
-static std::list<FLUSH_ENTITY> (*get_from_queue)();
-static const char *(*get_host_ID)();
-static const char *(*get_config_path)();
-static const char *(*get_data_path)();
-static const char *(*get_state_path)();
-static int (*get_extra_num)(int);
-static const char *(*get_extra_tag)(int, int);
-static const char *(*get_extra_value)(int, int);
-static BOOL (*set_flush_ID)(int);
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
-#define query_service1(n) query_service2(#n, n)
 
 /*
  *    @param
@@ -98,9 +76,7 @@ static BOOL (*set_flush_ID)(int);
 static void message_enqueue_init(const char *path)
 {
 	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
-	g_notify_stop = true;
     g_last_flush_ID = 0;
-	g_enqueued_num = 0;
 	g_last_pos = 0;
 }
 
@@ -132,13 +108,6 @@ static int message_enqueue_run()
         return -6;
     }
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
-	g_notify_stop = false;
-	auto ret = pthread_create4(&g_flushing_thread, nullptr, meq_thrwork, nullptr);
-	if (ret != 0) {
-		mlog(LV_ERR, "message_enqueue: failed to create flushing thread: %s", strerror(ret));
-        return -7;
-    }
-	pthread_setname_np(g_flushing_thread, "flusher");
     return 0;
 }
 
@@ -159,22 +128,9 @@ static void message_enqueue_cancel(FLUSH_ENTITY *pentity) try
 	mlog(LV_ERR, "E-1528: ENOMEM");
 }
 
-static int message_enqueue_stop()
-{
-	if (!g_notify_stop) {
-		g_notify_stop = true;
-		if (!pthread_equal(g_flushing_thread, {})) {
-			pthread_kill(g_flushing_thread, SIGALRM);
-			pthread_join(g_flushing_thread, NULL);
-		}
-	}
-    return 0;
-}
-
 static void message_enqueue_free()
 {
     g_path[0] = '\0';
-	g_notify_stop = true;
     g_last_flush_ID = 0;
 	g_last_pos = 0;
 	g_msg_id = -1;
@@ -223,31 +179,19 @@ static BOOL message_enqueue_check() try
 	return false;
 }
 
-static void *meq_thrwork(void *arg)
+void message_enqueue_handle_workitem(FLUSH_ENTITY &e)
 {
-	MSG_BUFF msg;
-
-	while (!g_notify_stop) {
-		auto entlist = get_from_queue(); /* always size 1 */
-		if (entlist.size() == 0) {
-            usleep(50000);
-            continue;
-        }
-		auto pentity = &entlist.front();
-		if (message_enqueue_try_save_mess(pentity)) {
-			if (FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action) {
-    			msg.msg_type = MESSAGE_MESS;
-    			msg.msg_content = pentity->pflusher->flush_ID;
-				msgsnd(g_msg_id, &msg, sizeof(uint32_t), IPC_NOWAIT);
-				g_enqueued_num ++;
-			}
-			pentity->pflusher->flush_result = FLUSH_RESULT_OK;
-		} else {
-			pentity->pflusher->flush_result = FLUSH_TEMP_FAIL;
-		}
-		feedback_entity(std::move(entlist));
+	if (!message_enqueue_try_save_mess(&e)) {
+		e.pflusher->flush_result = FLUSH_TEMP_FAIL;
+		return;
 	}
-	return NULL;
+	if (e.pflusher->flush_action == FLUSH_WHOLE_MAIL) {
+		MSG_BUFF msg;
+		msg.msg_type = MESSAGE_MESS;
+		msg.msg_content = e.pflusher->flush_ID;
+		msgsnd(g_msg_id, &msg, sizeof(uint32_t), IPC_NOWAIT);
+	}
+	e.pflusher->flush_result = FLUSH_RESULT_OK;
 }
 
 BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
@@ -259,7 +203,6 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	struct tm tm_buff;
 	FILE *fp;
 	size_t write_len, utmp_len;
-	int j, tmp_len, copy_result;
 	unsigned int size;
 	static constexpr uint32_t smtp_type = SMTP_IN;
 
@@ -290,23 +233,24 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		if (getsockopt(pentity->pconnection->sockd, SOL_SOCKET,
 		    SO_DOMAIN, &af_type, &af_len) != 0 || af_len != sizeof(af_type))
 			af_type = 0;
-		tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
+		auto tmp_len = sprintf(tmp_buff, "X-Lasthop: %s\r\nReceived: from %s "
 		          "(%s [%s%s])\r\n\tby %s with %s%s;\r\n\t%s\r\n",
 		          pentity->pconnection->client_ip,
 		          pentity->penvelope->hello_domain,
 		          pentity->penvelope->parsed_domain,
 		          af_type == AF_INET6 ? "IPv6:" : "",
-		          pentity->pconnection->client_ip, get_host_ID(),
+		          pentity->pconnection->client_ip, g_config_file->get_value("host_id"),
 		          pentity->command_protocol == HT_LMTP ? "LMTP" : "SMTP",
 		          pentity->pconnection->ssl != nullptr ? "S" : "", /* RFC 3848 */
 		          time_buff);
 		write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 		if (write_len != static_cast<size_t>(tmp_len))
 			goto REMOVE_MESS;
-		for (j=0; j<get_extra_num(pentity->context_ID); j++) {
+		auto max = flh_get_extra_num(pentity->context_ID);
+		for (int j = 0; j < max; ++j) {
 			tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%s: %s\r\n",
-					get_extra_tag(pentity->context_ID, j),
-					get_extra_value(pentity->context_ID, j));
+			          flh_get_extra_tag(pentity->context_ID, j),
+			          flh_get_extra_value(pentity->context_ID, j));
 			write_len = fwrite(tmp_buff, 1, tmp_len, fp);
 			if (write_len != static_cast<size_t>(tmp_len))
 				goto REMOVE_MESS;
@@ -315,6 +259,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		fp = (FILE*)pentity->pflusher->flush_ptr;
 	}
 	/* write stream into mess file */
+	int copy_result;
 	while (true) {
 		size = MAX_LINE_LENGTH;
 		copy_result = pentity->pstream->copyline(tmp_buff, &size);
@@ -419,26 +364,14 @@ static int message_enqueue_retrieve_max_ID() try
 	return 0;
 }
 
-static BOOL flh_message_enqueue(int reason, void** ppdata)
+BOOL FLH_LibMain(int reason)
 {
 	const char *queue_path;
 
 	switch (reason) {
 	case PLUGIN_INIT: {
-		query_serviceF = reinterpret_cast<decltype(query_serviceF)>(ppdata[0]);
-		query_service1(get_queue_length);
-		query_service1(feedback_entity);
-		query_service1(register_cancel);
-		query_service1(get_from_queue);
-		query_service1(get_host_ID);
-		query_service1(set_flush_ID);
-		query_service1(get_config_path);
-		query_service1(get_data_path);
-		query_service1(get_state_path);
-		query_service1(get_extra_num);
-		query_service1(get_extra_tag);
-		query_service1(get_extra_value);
-		auto pfile = config_file_initd("message_enqueue.cfg", get_config_path(), nullptr);
+		auto pfile = config_file_initd("message_enqueue.cfg",
+		             g_config_file->get_value("config_file_path"), nullptr);
 		if (pfile == nullptr) {
 			mlog(LV_ERR, "message_enqueue: config_file_initd message_enqueue.cfg: %s",
 				strerror(errno));
@@ -454,19 +387,16 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 			mlog(LV_ERR, "message_enqueue: failed to run the module");
 			return false;
 		}
-		if (!register_cancel(message_enqueue_cancel)) {
+		if (!flusher_register_cancel(message_enqueue_cancel)) {
 			mlog(LV_ERR, "message_enqueue: failed to register cancel flushing");
 			return false;
 		}
-		set_flush_ID(g_last_flush_ID);
+		flusher_set_flush_ID(g_last_flush_ID);
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		if (message_enqueue_stop() != 0)
-			return false;
 		message_enqueue_free();
 		return TRUE;
 	}
 	return TRUE;
 }
-BOOL FLH_LibMain(int r, void **p) { return flh_message_enqueue((r), (p)); }
