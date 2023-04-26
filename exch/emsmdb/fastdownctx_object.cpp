@@ -42,10 +42,9 @@ bool fxdown_flow_list::record_tag(uint32_t tag)
 
 bool fxdown_flow_list::record_messagelist(EID_ARRAY *pmsglst)
 {
-	for (size_t i = 0; i < pmsglst->count; ++i) {
+	for (size_t i = 0; i < pmsglst->count; ++i)
 		if (!record_node(FUNC_ID_MESSAGE, &pmsglst->pids[i]))
 			return false;
-	}
 	return true;
 }
 
@@ -68,14 +67,12 @@ bool fxdown_flow_list::record_foldermessages(const FOLDER_MESSAGES *pfldmsgs)
 
 bool fxdown_flow_list::record_foldermessagesnodelprops(const FOLDER_MESSAGES *pfldmsgs)
 {
-	if (NULL != pfldmsgs->pfai_msglst) {
-		if (!record_messagelist(pfldmsgs->pfai_msglst))
-			return false;
-	}
-	if (NULL != pfldmsgs->pnormal_msglst) {
-		if (!record_messagelist(pfldmsgs->pnormal_msglst))
-			return false;
-	}
+	if (pfldmsgs->pfai_msglst != nullptr &&
+	    !record_messagelist(pfldmsgs->pfai_msglst))
+		return false;
+	if (pfldmsgs->pnormal_msglst != nullptr &&
+	    !record_messagelist(pfldmsgs->pnormal_msglst))
+		return false;
 	return true;
 }
 
@@ -143,9 +140,8 @@ BOOL fastdownctx_object::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
 BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
 {
 	auto pproplist = pstate->serialize();
-	if (NULL == pproplist) {
+	if (pproplist == nullptr)
 		return FALSE;
-	}
 	auto pctx = this;
 	if (!pctx->pstream->write_state(pproplist)) {
 		tpropval_array_free(pproplist);
@@ -298,9 +294,8 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 	if (pctx->flow_list.size() == 0) {
 		if (!pctx->pstream->read_buffer(pbuff, plen, pb_last))
 			return FALSE;	
-		if (NULL == pctx->pmsglst && NULL == pctx->pfldctnt) {
+		if (pctx->pmsglst == nullptr && pctx->pfldctnt == nullptr)
 			pctx->progress_steps += *plen;
-		}
 		return TRUE;
 	}
 	len = 0;
@@ -343,9 +338,8 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 				    *static_cast<const uint64_t *>(param), &pmsgctnt))
 					return FALSE;
 			}
-			if (NULL == pmsgctnt) {
+			if (pmsgctnt == nullptr)
 				continue;
-			}
 			if (pctx->pmsglst != nullptr) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
 			} else if (!pctx->b_chginfo) {
@@ -364,9 +358,8 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 					PR_ENTRYID, PR_ORIGINAL_ENTRYID);
 			}
 			fxs_propsort(*pmsgctnt);
-			if (!pctx->pstream->write_message(pmsgctnt)) {
+			if (!pctx->pstream->write_message(pmsgctnt))
 				return FALSE;
-			}
 			pctx->progress_steps ++;
 			break;
 		}
@@ -387,9 +380,8 @@ BOOL fastdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
 	*ptotal = total_steps / divisor;
-	if (0 == *ptotal) {
+	if (*ptotal == 0)
 		*ptotal = 1;
-	}
 	if (!fastdownctx_object_get_buffer_internal(this, pbuff, plen, pb_last))
 		return FALSE;	
 	*pprogress = progress_steps / divisor;
@@ -417,7 +409,6 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 fastdownctx_object::~fastdownctx_object()
 {
 	auto pctx = this;
-	if (NULL != pctx->pmsglst) {
+	if (pctx->pmsglst != nullptr)
 		eid_array_free(pctx->pmsglst);
-	}
 }
