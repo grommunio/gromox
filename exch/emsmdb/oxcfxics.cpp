@@ -479,7 +479,6 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
     uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int i;
 	ems_objtype object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
@@ -523,9 +522,8 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			return ecError;
 		}
 		auto pproplist = pfldctnt->get_proplist();
-		for (i=0; i<pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i)
 			pproplist->erase(pproptags->pproptag[i]);
-		}
 		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
 		break;
@@ -536,7 +534,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!exmdb_client::read_message_instance(plogon->get_dir(),
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
-		for (i=0; i<pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			switch (pproptags->pproptag[i]) {
 			case PR_MESSAGE_RECIPIENTS:	
 				msgctnt.children.prcpts = NULL;
@@ -563,7 +561,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		if (!exmdb_client::read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		for (i=0; i<pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			switch (pproptags->pproptag[i]) {
 			case PR_ATTACH_DATA_OBJ:
 				attctnt.pembedded = NULL;
@@ -592,7 +590,6 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
     uint8_t send_options, const PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	int i;
 	ems_objtype object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
@@ -634,8 +631,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		}
 		auto pproplist = pfldctnt->get_proplist();
-		i = 0;
-		while (i < pproplist->count) {
+		for (unsigned int i = 0; i < pproplist->count; ) {
 			if (pproplist->ppropval[i].proptag != MetaTagNewFXFolder) {
 				if (!pproptags->has(pproplist->ppropval[i].proptag)) {
 					pproplist->erase(pproplist->ppropval[i].proptag);
@@ -654,8 +650,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!exmdb_client::read_message_instance(plogon->get_dir(),
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
-		i = 0;
-		while (i < msgctnt.proplist.count) {
+		for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
 			if (!pproptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&msgctnt.proplist,
 						msgctnt.proplist.ppropval[i].proptag);
@@ -680,8 +675,7 @@ ec_error_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		if (!exmdb_client::read_attachment_instance(plogon->get_dir(),
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		i = 0;
-		while (i < attctnt.proplist.count) {
+		for (unsigned int i = 0; i < attctnt.proplist.count; ) {
 			if (!pproptags->has(attctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&attctnt.proplist,
 						attctnt.proplist.ppropval[i].proptag);
@@ -999,7 +993,6 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
     const MESSAGE_READ_STAT *pread_stat, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_owner;
 	ems_objtype object_type;
@@ -1034,7 +1027,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		if (!(permission & frightsReadAny))
 			username = rpc_info.username;
 	}
-	for (i=0; i<count; i++) {
+	for (unsigned int i = 0; i < count; ++i) {
 		if (!common_util_binary_to_xid(&pread_stat[i].message_xid, &tmp_xid))
 			return ecError;
 		auto tmp_guid = plogon->guid();
@@ -1087,7 +1080,6 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
     const TPROPVAL_ARRAY *ppropvals, uint64_t *pfolder_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	XID tmp_xid;
 	BOOL b_exist;
 	BINARY *pbin;
@@ -1228,9 +1220,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[6].proptag = PidTagChangeNumber;
 		tmp_propvals.ppropval[6].pvalue = &change_num;
 		tmp_propvals.count = 7;
-		for (i=0; i<ppropvals->count; i++) {
+		for (unsigned int i = 0; i < ppropvals->count; ++i)
 			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-		}
 		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
@@ -1313,9 +1304,8 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[4].pvalue = &change_num;
 	tmp_propvals.count = 5;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i)
 		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::set_folder_properties(dir,
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
