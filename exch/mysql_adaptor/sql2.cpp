@@ -495,44 +495,113 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 	return false;
 }
 
-bool mysql_adaptor_get_user_props(const char *username, sql_user &sql_user) try
+/**
+ * @brief      Get aliases of user
+ *
+ * @param      username  User to get aliases for
+ * @param      aliases   [out] List of aliases retrieved
+ *
+ * @return     true if successful, false otherwise
+ */
+bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>& aliases) try
 {
 	char temp_name[UADDR_SIZE*2];
 	mysql_adaptor_encode_squote(username, temp_name);
 
-	sql_user.dtypx = DT_MAILUSER;
-	sql_user.username = username;
-
 	auto conn = g_sqlconn_pool.get_wait();
-
-	auto qstr =
-		"SELECT u.username, a.aliasname FROM users AS u "
-		"INNER JOIN aliases AS a ON u.username=a.mainname "
-		"WHERE u.username='"s + temp_name + "' LIMIT 3";
-	aliasmap_t amap;
-	aliasmap_load(*conn, qstr.c_str(), amap);
-	sql_user.aliases = aliasmap_extract(amap, username);
-
-	qstr =
-		"SELECT u.id, p.proptag, p.propval_bin, p.propval_str "
-		"FROM users AS u "
-		"INNER JOIN user_properties AS p ON u.id=p.user_id "
-		"WHERE u.username='"s + temp_name + "'";
-	propmap_t pmap;
-	propmap_load(*conn, qstr.c_str(), pmap);
-	conn.finish();
-
-	// check that there are only one user's properties
-	std::set<int> ids;
-	std::transform(pmap.begin(), pmap.end(),
-	  std::inserter(ids, ids.end()),
-	  [](auto pair){ return pair.first; });
-	if (ids.size() != 1)
+	auto qstr = fmt::format("SELECT aliasname FROM aliases WHERE mainname='{}'", temp_name);
+	DB_RESULT res;
+	if(!conn->query(qstr.c_str()) || !(res = mysql_store_result(conn->get())))
 		return false;
 
-	sql_user.id = *ids.begin();
-	sql_user.propvals = propmap_extract(pmap, sql_user.id);
+	aliases.clear();
+	aliases.reserve(res.num_rows());
+	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
+		aliases.emplace_back(row[0]);
+	return true;
 
+} catch (const std::exception &e) {
+	mlog(LV_ERR, "%s: %s", __func__, e.what());
+	return false;
+}
+
+/**
+ * @brief     Get user properties from MySQL
+ *
+ * Unsupported multi-value or binary properties are omitted.
+ * The resulting properties structure must be properly freed.
+ *
+ * @param      username     User to get aliases for
+ * @param      properties   [out] Tagged propvals retrieved
+ *
+ * @return     true if successful, false otherwise
+ */
+bool mysql_adaptor_get_user_properties(const char* username, TPROPVAL_ARRAY& properties) try
+{
+	char temp_name[UADDR_SIZE*2];
+	mysql_adaptor_encode_squote(username, temp_name);
+
+	auto qstr = fmt::format("SELECT u.id, p.proptag, p.propval_bin, p.propval_str "
+	                        "FROM users AS u "
+	                        "INNER JOIN user_properties AS p ON u.id=p.user_id "
+	                        "WHERE u.username='{}'", temp_name);
+
+	auto conn = g_sqlconn_pool.get_wait();
+	DB_RESULT res;
+	if(!conn->query(qstr.c_str()) || !(res = mysql_store_result(conn->get())))
+		return false;
+
+	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
+	{
+		uint32_t tag = uint32_t(strtoul(row[1], nullptr, 0));
+		const char* strval = row[3];
+		if(!strval) // Binary values are currently not supported
+			continue;
+
+		switch(PROP_TYPE(tag))
+		{
+		case PT_BOOLEAN: {
+			uint8_t converted = uint8_t(strtoul(strval, nullptr, 0));
+			properties.set(tag, &converted);
+			break;
+		}
+		case PT_SHORT: {
+			uint16_t converted = uint16_t(strtoul(strval, nullptr, 0));
+			properties.set(tag, &converted);
+			break;
+		}
+		case PT_LONG:
+		case PT_ERROR: {
+			uint32_t converted = uint32_t(strtoul(strval, nullptr, 0));
+			properties.set(tag, &converted);
+			break;
+		}
+		case PT_I8:
+		case PT_CURRENCY:
+		case PT_SYSTIME: {
+			uint64_t converted = strtoull(strval, nullptr, 0);
+			properties.set(tag, &converted);
+			break;
+		}
+		case PT_FLOAT: {
+			float converted = strtof(strval, nullptr);
+			properties.set(tag, &converted);
+			break;
+		}
+		case PT_DOUBLE:
+		case PT_APPTIME: {
+			float converted = strtof(strval, nullptr);
+			properties.set(tag, &converted);
+			break;
+		}
+		case PT_STRING8:
+		case PT_UNICODE:
+			if(!row[3])
+				continue;
+			properties.set(tag, strval);
+			break;
+		}
+	}
 	return true;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", __func__, e.what());
@@ -601,7 +670,8 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(check_user, "check_user");
 	E(get_mlist_memb, "get_mlist_memb");
 	E(get_user_info, "get_user_info");
-	E(get_user_props, "get_user_props");
+	E(get_user_aliases, "get_user_aliases");
+	E(get_user_properties, "get_user_properties");
 	E(scndstore_hints, "scndstore_hints");
 	E(domain_list_query, "domain_list_query");
 	E(homeserver, "get_homeserver");

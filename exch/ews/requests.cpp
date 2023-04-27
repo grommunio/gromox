@@ -629,6 +629,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
  * @param      ctx       Request context
  *
  * @todo consider attributes
+ * @todo support contacts
  */
 void process(mResolveNamesRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
@@ -640,28 +641,29 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	mResolveNamesResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& resolutionSet = msg.ResolutionSet.emplace();
 
-	sql_user u;
-	if (!ctx.getUserProps(request.UnresolvedEntry, u))
-		throw DispatchError(E3067);
 
-	auto it = u.propvals.find(PR_DISPLAY_NAME);
+	TPROPVAL_ARRAY userProps{};
+	if(!ctx.plugin.mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
+		throw DispatchError(E3067);
+	TAGGED_PROPVAL* displayName = userProps.find(PR_DISPLAY_NAME);
 
 	tResolution& resol = resolutionSet.emplace_back();
-	resol.Mailbox.Name = it != u.propvals.end() ? it->second : request.UnresolvedEntry;
+	resol.Mailbox.Name = displayName? static_cast<const char*>(displayName->pvalue) : request.UnresolvedEntry;
 	resol.Mailbox.EmailAddress = request.UnresolvedEntry;
 	resol.Mailbox.RoutingType = "SMTP";
-	resol.Mailbox.MailboxType = u.dtypx == DT_MAILUSER ? Enum::Mailbox : Enum::Unknown;
+	resol.Mailbox.MailboxType = Enum::Mailbox; // Currently the only supported
 
-	TPROPVAL_ARRAY* userProps = tpropval_array_init();
-	for (auto& propval : u.propvals)
-		userProps->set(propval.first, propval.second.c_str());
+	tContact& cnt = resol.Contact.emplace(userProps);
+	tpropval_array_free_internal(&userProps);
 
-	tContact& cnt = resol.Contact.emplace(*userProps);
-
-	if (u.aliases.size() > 0) {
-		cnt.EmailAddresses.emplace().reserve(u.aliases.size());
+	std::vector<std::string> aliases;
+	if(!ctx.plugin.mysql.get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
+		throw DispatchError(E3068);
+	if (aliases.size() > 0) {
+		aliases.resize(min(aliases.size(), 3ul));
+		cnt.EmailAddresses.emplace().reserve(aliases.size());
 		size_t index = 0;
-		for (auto& alias : u.aliases)
+		for (auto& alias : aliases)
 			cnt.EmailAddresses->emplace_back(tEmailAddressDictionaryEntry(std::move(alias),
 			                                                              Enum::EmailAddressKeyType(index++)));
 	}

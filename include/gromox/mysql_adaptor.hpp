@@ -102,7 +102,8 @@ extern BOOL mysql_adaptor_get_username_from_id(unsigned int user_id, char *usern
 extern BOOL mysql_adaptor_get_id_from_username(const char *username, unsigned int *user_id);
 extern BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *user_id);
 extern bool mysql_adaptor_get_user_displayname(const char *username, char *dispname, size_t);
-extern bool mysql_adaptor_get_user_props(const char *username, sql_user&);
+extern bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>&);
+extern bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY&);
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits);
 extern bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t);

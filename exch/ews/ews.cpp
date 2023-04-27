@@ -264,7 +264,8 @@ EWSPlugin::_mysql::_mysql()
 	getService(get_homedir);
 	getService(get_maildir);
 	getService(get_username_from_id);
-	getService(get_user_props);
+	getService(get_user_aliases);
+	getService(get_user_properties);
 #undef getService
 }
 
