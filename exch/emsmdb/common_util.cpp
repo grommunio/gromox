@@ -281,6 +281,30 @@ void common_util_get_domain_server(const char *account_name, char *pserver)
 	sprintf(pserver, "f98430ae-22ad-459a-afba-68c972eefc56@%s", account_name);
 }
 
+BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
+{
+	ONEOFF_ENTRYID e{};
+
+	e.ctrl_flags    = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
+	e.pdisplay_name = dispname != nullptr && *dispname != '\0' ?
+	                  deconst(dispname) : deconst(username);
+	e.paddress_type = deconst("SMTP");
+	e.pmail_address = deconst(username);
+	auto bin = cu_alloc<BINARY>();
+	if (bin == nullptr)
+		return nullptr;
+	bin->pv = common_util_alloc(1280);
+	if (bin->pv == nullptr)
+		return nullptr;
+	EXT_PUSH push;
+	if (!push.init(bin->pv, 1280, EXT_FLAG_UTF16))
+		return nullptr;
+	if (push.p_oneoff_eid(e) != pack_result::success)
+		return nullptr;
+	bin->cb = push.m_offset;
+	return bin;
+}
+
 BINARY* common_util_username_to_addressbook_entryid(const char *username)
 {
 	char x500dn[1024];

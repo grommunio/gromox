@@ -72,6 +72,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	const std::string search_buff = "EX:"s + essdn_sender.get();
 	search_sender.cb = search_buff.size() + 1;
 	search_sender.pv = deconst(search_buff.c_str());
+	bool oneoff_repr = false;
 	if (strcasecmp(account, representing_username) == 0) {
 		strcpy(essdn_repr.get(), essdn_sender.get());
 		strcpy(dispname_repr, dispname_sender);
@@ -85,9 +86,15 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		if (eid_repr == nullptr)
 			return ecRpcFailed;
 	} else {
-		return ecRpcFailed;
+		strcpy(essdn_repr.get(), representing_username);
+		strcpy(dispname_repr, representing_username);
+		eid_repr = cu_username_to_oneoff(representing_username, representing_username);
+		if (eid_repr == nullptr)
+			return ecServerOOM;
+		oneoff_repr = true;
 	}
-	const std::string sk_repr = "EX:"s + essdn_repr.get();
+	const std::string sk_repr = oneoff_repr ? ("SMTP:"s + representing_username) :
+	                            ("EX:"s + essdn_repr.get());
 	search_repr.cb = sk_repr.size() + 1;
 	search_repr.pv = deconst(sk_repr.c_str());
 	char msgid[UADDR_SIZE+2];
@@ -104,7 +111,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_SENDER_ENTRYID, send_as ? eid_repr : eid_sender},
 		{PR_SENDER_SEARCH_KEY, send_as ? &search_repr : &search_sender},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
-		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
+		{PR_SENT_REPRESENTING_ADDRTYPE, deconst(oneoff_repr ? "SMTP" : "EX")},
 		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_repr.get()},
 		{PR_SENT_REPRESENTING_NAME, dispname_repr},
 		{PR_SENT_REPRESENTING_ENTRYID, eid_repr},
