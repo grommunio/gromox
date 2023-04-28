@@ -72,10 +72,11 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	const std::string search_buff = "EX:"s + essdn_sender.get();
 	search_sender.cb = search_buff.size() + 1;
 	search_sender.pv = deconst(search_buff.c_str());
-	if (0 != strcasecmp(account, representing_username)) {
-		if (!common_util_username_to_essdn(representing_username,
-		    essdn_repr.get(), essdn_buff_size))
-			return ecRpcFailed;
+	if (strcasecmp(account, representing_username) == 0) {
+		strcpy(essdn_repr.get(), essdn_sender.get());
+		strcpy(dispname_repr, dispname_sender);
+	} else if (common_util_username_to_essdn(representing_username,
+	    essdn_repr.get(), essdn_buff_size)) {
 		if (!common_util_get_user_displayname(representing_username,
 		    dispname_repr, arsizeof(dispname_repr)))
 			return ecRpcFailed;
@@ -84,8 +85,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		if (eid_repr == nullptr)
 			return ecRpcFailed;
 	} else {
-		strcpy(essdn_repr.get(), essdn_sender.get());
-		strcpy(dispname_repr, dispname_sender);
+		return ecRpcFailed;
 	}
 	const std::string sk_repr = "EX:"s + essdn_repr.get();
 	search_repr.cb = sk_repr.size() + 1;
