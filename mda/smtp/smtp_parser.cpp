@@ -495,7 +495,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 			pcontext->stream.rewind_write_ptr(4);
 	}    
 	flusher_put_to_queue(pcontext);
-	return PROCESS_SLEEPING;
+	return PROCESS_CONTINUE;
 }
 
 /* 
