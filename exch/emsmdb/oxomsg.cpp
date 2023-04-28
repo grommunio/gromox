@@ -45,17 +45,14 @@ enum class repr_grant {
 static ec_error_t oxomsg_rectify_message(message_object *pmessage,
     const char *representing_username, bool send_as) try
 {
-	BINARY *pentryid;
 	uint64_t nt_time;
 	uint8_t tmp_byte;
 	int32_t tmp_level;
-	BINARY search_bin;
-	BINARY search_bin1;
+	BINARY search_sender, search_repr;
 	static constexpr size_t essdn_buff_size = 1024;
-	auto essdn_buff = std::make_unique<char[]>(essdn_buff_size);
-	auto essdn_buff1 = std::make_unique<char[]>(essdn_buff_size);
-	char tmp_display[256];
-	char tmp_display1[256];
+	auto essdn_sender = std::make_unique<char[]>(essdn_buff_size);
+	auto essdn_repr = std::make_unique<char[]>(essdn_buff_size);
+	char dispname_sender[256], dispname_repr[256];
 	PROBLEM_ARRAY tmp_problems;
 	
 	auto account = pmessage->plogon->get_account();
@@ -63,36 +60,36 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	tmp_byte = 1;
 	nt_time = rop_util_current_nttime();
 	tmp_level = -1;
-	if (!common_util_username_to_essdn(account, essdn_buff.get(), essdn_buff_size))
+	if (!common_util_username_to_essdn(account, essdn_sender.get(), essdn_buff_size))
 		return ecRpcFailed;
 	if (!common_util_get_user_displayname(account,
-	    tmp_display, arsizeof(tmp_display)))
+	    dispname_sender, arsizeof(dispname_sender)))
 		return ecRpcFailed;
-	pentryid = common_util_username_to_addressbook_entryid(account);
-	if (pentryid == nullptr)
+	auto eid_sender = common_util_username_to_addressbook_entryid(account);
+	if (eid_sender == nullptr)
 		return ecRpcFailed;
-	auto pentryid1 = pentryid;
-	const std::string search_buff = "EX:"s + essdn_buff.get();
-	search_bin.cb = search_buff.size() + 1;
-	search_bin.pv = deconst(search_buff.c_str());
+	auto eid_repr = eid_sender;
+	const std::string search_buff = "EX:"s + essdn_sender.get();
+	search_sender.cb = search_buff.size() + 1;
+	search_sender.pv = deconst(search_buff.c_str());
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
-		    essdn_buff1.get(), essdn_buff_size))
+		    essdn_repr.get(), essdn_buff_size))
 			return ecRpcFailed;
 		if (!common_util_get_user_displayname(representing_username,
-		    tmp_display1, arsizeof(tmp_display1)))
+		    dispname_repr, arsizeof(dispname_repr)))
 			return ecRpcFailed;
-		pentryid1 = common_util_username_to_addressbook_entryid(
+		eid_repr = common_util_username_to_addressbook_entryid(
 										representing_username);
-		if (pentryid1 == nullptr)
+		if (eid_repr == nullptr)
 			return ecRpcFailed;
 	} else {
-		strcpy(essdn_buff1.get(), essdn_buff.get());
-		strcpy(tmp_display1, tmp_display);
+		strcpy(essdn_repr.get(), essdn_sender.get());
+		strcpy(dispname_repr, dispname_sender);
 	}
-	const std::string search_buff1 = "EX:"s + essdn_buff1.get();
-	search_bin1.cb = search_buff1.size() + 1;
-	search_bin1.pv = deconst(search_buff1.c_str());
+	const std::string sk_repr = "EX:"s + essdn_repr.get();
+	search_repr.cb = sk_repr.size() + 1;
+	search_repr.pv = deconst(sk_repr.c_str());
 	char msgid[UADDR_SIZE+2];
 	make_inet_msgid(msgid, arsizeof(msgid), 0x4553);
 	TAGGED_PROPVAL pv[] = {
@@ -102,16 +99,16 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_MESSAGE_LOCALE_ID, &pinfo->lcid_string},
 		{PR_SENDER_SMTP_ADDRESS, deconst(send_as ? representing_username : account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
-		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn_buff1.get() : essdn_buff.get()},
-		{PR_SENDER_NAME, send_as ? tmp_display1 : tmp_display},
-		{PR_SENDER_ENTRYID, send_as ? pentryid1 : pentryid},
-		{PR_SENDER_SEARCH_KEY, send_as ? &search_bin1 : &search_bin},
+		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn_repr.get() : essdn_sender.get()},
+		{PR_SENDER_NAME, send_as ? dispname_repr : dispname_sender},
+		{PR_SENDER_ENTRYID, send_as ? eid_repr : eid_sender},
+		{PR_SENDER_SEARCH_KEY, send_as ? &search_repr : &search_sender},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
-		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_buff1.get()},
-		{PR_SENT_REPRESENTING_NAME, tmp_display1},
-		{PR_SENT_REPRESENTING_ENTRYID, pentryid1},
-		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_repr.get()},
+		{PR_SENT_REPRESENTING_NAME, dispname_repr},
+		{PR_SENT_REPRESENTING_ENTRYID, eid_repr},
+		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_repr},
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
