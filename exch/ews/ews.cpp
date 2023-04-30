@@ -19,6 +19,7 @@
 #include <gromox/scope.hpp>
 
 #include "exceptions.hpp"
+#include "include/gromox/mime_pool.hpp"
 #include "requests.hpp"
 #include "soaputil.hpp"
 
@@ -29,7 +30,6 @@ using namespace gromox::EWS;
 using namespace tinyxml2;
 
 using Exceptions::DispatchError;
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -248,7 +248,8 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 bool EWSPlugin::logEnabled(const std::string_view& requestName) const
 {return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;}
 
-EWSPlugin::EWSPlugin()
+EWSPlugin::EWSPlugin() :
+	mimePool(MIME_POOL::create(std::clamp(16*get_context_num(), 1024u, 16*1024u), 16, "ews_mime_pool"))
 {loadConfig();}
 
 /**

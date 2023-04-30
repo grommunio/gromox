@@ -544,7 +544,7 @@ static T fromXMLAttr(const tinyxml2::XMLElement* xml, const char* name)
 //Serialization
 
 template<typename T> static void toXMLNodeDispatch(tinyxml2::XMLElement*, const T&);
-template<typename T> static void toXMLNode(tinyxml2::XMLElement*, const char*, const T&);
+template<typename T> static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement*, const char*, const T&);
 
 /**
  * @brief      Fill XMLElement with serialized data
@@ -644,11 +644,11 @@ static void toXMLNodeDispatch(tinyxml2::XMLElement* xml, const T& value)
  * @tparam     T       Type to store
  */
 template<typename T>
-static void toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& value)
+static tinyxml2::XMLElement* toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& value)
 {
 	if constexpr(BaseType<T>::container == OPTIONAL)
 		if(!value)
-			return;
+			return nullptr;
 	tinyxml2::XMLElement* xml;
 	if constexpr(BaseType<T>::container == VARIANT)
 	{
@@ -659,6 +659,7 @@ static void toXMLNode(tinyxml2::XMLElement* parent, const char* name, const T& v
 	else
 		xml = parent->InsertNewChildElement(name);
 	toXMLNodeDispatch(xml, value);
+	return xml;
 }
 
 /**

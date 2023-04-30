@@ -133,6 +133,12 @@ E(3065, "failed to add changed mid");
 E(3066, "failed to set synced change numbers");
 E(3067, "failed to get user properties");
 E(3068, "failed to get user aliases");
+E(3069, "failed to get named property ids");
+E(3070, "failed to get named property names");
+E(3071, "failed to read message");
+E(3072, "failed to export message");
+E(3073, "mail export error");
+E(3074, "failed to serialize message");
 
 #undef E
 }

@@ -7,6 +7,8 @@
 
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mail.hpp>
+#include <gromox/oxcmail.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -48,6 +50,22 @@ T& defaulted(std::optional<T>& container, Args&&... args)
 } // Anonymous namespace
 
 /**
+ * @brief      Get named property IDs
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      propNames List of property names to retrieve
+ *
+ * @return     Array of property IDs
+ */
+PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames) const
+{
+	PROPID_ARRAY namedIds{};
+	if(!plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds))
+		throw DispatchError(E3069);
+	return namedIds;
+}
+
+/**
  * @brief      Resolve named tags
  *
  * Resolves the tag names to numeric tags and assembles them to property tags
@@ -65,9 +83,8 @@ T& defaulted(std::optional<T>& container, Args&&... args)
 void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY_NAME>& names,
                               const std::vector<uint16_t>& types, sShape& result) const
 {
-	PROPID_ARRAY namedIds;
 	PROPNAME_ARRAY propNames{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};
-	plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds);
+	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames);
 	if(namedIds.count != types.size())
 		return;
 	result.namedTags.reserve(namedIds.count);
@@ -78,6 +95,23 @@ void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY
 		if(result.namedTags.try_emplace(PROP_TAG(types[i], namedIds.ppropid[i]), names[i]).second)
 			result.tags.emplace_back(PROP_TAG(types[i], namedIds.ppropid[i]));
 	}
+}
+
+/**
+ * @brief      Get property name from ID
+ *
+ * @param      dir     Home directory of user or domain
+ * @param      id      Id of the property
+ *
+ * @return     Property name
+ */
+PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) const
+{
+	PROPID_ARRAY propids{1, &id};
+	PROPNAME_ARRAY propnames{};
+	if(!plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
+		throw DispatchError(E3070);
+	return propnames.ppropname;
 }
 
 /**
@@ -309,8 +343,39 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 /**
  * @brief     Stub overload for generic items
  */
-void EWSContext::loadSpecial(const std::string&, uint64_t, tItem&, uint64_t) const
-{}
+void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tItem& item, uint64_t special) const
+{
+	if(special & sShape::MimeContent)
+	{
+		auto& exmdb = plugin.exmdb;
+		MESSAGE_CONTENT* content;
+		if(!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content))
+			throw DispatchError(E3071);
+		MAIL mail;
+		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
+		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
+		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
+		                   {*name = getPropertyName(dir, id); return TRUE;};
+		if(!oxcmail_export(content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail,
+		                   alloc, getPropIds, getPropName))
+			throw DispatchError(E3072);
+		auto mailLen = mail.get_length();
+		if(mailLen < 0)
+			throw DispatchError(E3073);
+		alloc_limiter<stream_block> allocator(mailLen/STREAM_BLOCK_SIZE+1, "ews::loadMime");
+		STREAM tempStream(&allocator);
+		if(!mail.serialize(&tempStream))
+			throw DispatchError(E3074);
+		auto& mimeContent = item.MimeContent.emplace();
+		mimeContent.reserve(mailLen);
+		uint8_t* data;
+		unsigned int size = STREAM_BLOCK_SIZE;
+		while((data = static_cast<uint8_t*>(tempStream.get_read_buf(&size))) != nullptr) {
+			mimeContent.insert(mimeContent.end(), data, data+size);
+			size = STREAM_BLOCK_SIZE;
+		}
+	}
+}
 
 /**
  * @brief     Load message attributes not contained in tags
@@ -322,6 +387,7 @@ void EWSContext::loadSpecial(const std::string&, uint64_t, tItem&, uint64_t) con
  */
 void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tMessage& message, uint64_t special) const
 {
+	loadSpecial(dir, mid, static_cast<tItem&>(message), special);
 	if(special & sShape::Recipients)
 	{
 		TARRAY_SET rcpts;

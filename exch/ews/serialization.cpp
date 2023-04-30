@@ -439,6 +439,9 @@ tIndexedFieldURI::tIndexedFieldURI(const XMLElement* xml) :
 
 void tItem::serialize(XMLElement* xml) const
 {
+	auto mc = XMLDUMPT(MimeContent);
+	if(mc)
+		mc->SetAttribute("CharacterSet", "UTF-8");
 	XMLDUMPT(ItemId);
 	XMLDUMPT(ParentFolderId);
 	XMLDUMPT(ItemClass);
@@ -471,6 +474,7 @@ void tItem::serialize(XMLElement* xml) const
 }
 
 tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
+	XMLINIT(IncludeMimeContent),
 	XMLINIT(BodyType),
 	XMLINIT(AdditionalProperties)
 {}

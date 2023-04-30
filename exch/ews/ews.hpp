@@ -15,6 +15,8 @@
 
 #include "soaputil.hpp"
 
+struct MIME_POOL;
+
 namespace gromox::EWS {
 
 namespace Structures
@@ -82,6 +84,7 @@ public:
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
 	int experimental = 0; ///< Enable experimental requests, 0 = disabled
 
+	std::shared_ptr<MIME_POOL> mimePool;
 private:
 	static const std::unordered_map<std::string, Handler> requestMap;
 
@@ -116,6 +119,7 @@ public:
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, const Structures::sShape&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
@@ -140,6 +144,8 @@ private:
 
 	void loadSpecial(const std::string&, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tMessage&, uint64_t) const;
+
+	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };
 
 }

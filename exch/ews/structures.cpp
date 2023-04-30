@@ -1102,6 +1102,8 @@ void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter
 {
 	for(uint32_t tag : tagsIdOnly)
 		tagIns = tag;
+	if(IncludeMimeContent && *IncludeMimeContent)
+		special |= sShape::MimeContent;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
 			additional.tags(tagIns, nameIns, typeIns, special);

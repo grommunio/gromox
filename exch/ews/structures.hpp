@@ -193,8 +193,9 @@ struct sShape
 	static constexpr uint64_t ToRecipients =  1 << 0;
 	static constexpr uint64_t CcRecipients =  1 << 1;
 	static constexpr uint64_t BccRecipients = 1 << 2;
-	static constexpr uint64_t Body = 1 << 3;
-	static constexpr uint64_t MessageFlags = 1 << 4;
+	static constexpr uint64_t Body =          1 << 3;
+	static constexpr uint64_t MessageFlags =  1 << 4;
+	static constexpr uint64_t MimeContent =   1 << 5;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 };
@@ -644,7 +645,7 @@ struct tItem : public NS_EWS_Types
 
 	tItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap&);
 
-	//<xs:element name="MimeContent" type="t:MimeContentType" minOccurs="0" />
+	std::optional<sBase64Binary> MimeContent; ///< exmdb::read_message
 	std::optional<tItemId> ItemId; ///< PR_ENTRYID+PR_CHANGEKEY
 	std::optional<tFolderId> ParentFolderId; ///< PR_PARENT_ENTRYID
 	std::optional<std::string> ItemClass; ///< PR_MESSAGE_CLASS
@@ -843,7 +844,7 @@ struct tItemResponseShape
 	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
 
 	//Enum::DefaultShapeNamesType BaseShape;
-	//std::optional<bool> IncludeMimeContent;
+	std::optional<bool> IncludeMimeContent;
 	std::optional<Enum::BodyTypeResponseType> BodyType;
 	//std::optional<Enum::BodyTypeResponseType> UniqueBodyType;
 	//std::optional<Enum::BodyTypeResponseType> NormalizedBodyType;
