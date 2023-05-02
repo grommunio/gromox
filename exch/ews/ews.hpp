@@ -86,10 +86,12 @@ public:
 
 	std::shared_ptr<MIME_POOL> mimePool;
 private:
+	struct DebugCtx;
 	static const std::unordered_map<std::string, Handler> requestMap;
 
 	static void writeheader(int, int, size_t);
 
+	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
 	bool invertFilter = true;
 
