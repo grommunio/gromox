@@ -1673,7 +1673,7 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (!exmdb_client::allocate_cn(src_store->get_dir(), &change_num))
+	if (!exmdb_client::allocate_cn(dst_store->get_dir(), &change_num))
 		return ecError;
 	propval.proptag = PidTagChangeNumber;
 	propval.pvalue = &change_num;
