@@ -1648,16 +1648,16 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 	return TRUE;
 }
 
-ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
-    store_object *pstore1, uint64_t folder_id1)
+ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
+    store_object *dst_store, uint64_t folder_id1)
 {
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
-	auto username = pstore->b_private ? nullptr : pinfo->get_username();
-	if (!exmdb_client::read_message(pstore->get_dir(), username,
+	auto username = src_store->b_private ? nullptr : pinfo->get_username();
+	if (!exmdb_client::read_message(src_store->get_dir(), username,
 	    pinfo->cpid, message_id, &pmsgctnt))
 		return ecError;
 	if (pmsgctnt == nullptr)
@@ -1673,12 +1673,12 @@ ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
+	if (!exmdb_client::allocate_cn(src_store->get_dir(), &change_num))
 		return ecError;
 	propval.proptag = PidTagChangeNumber;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
+	auto pbin = cu_xid_to_bin({src_store->guid(), change_num});
 	if (pbin == nullptr)
 		return ecError;
 	propval.proptag = PR_CHANGE_KEY;
@@ -1691,8 +1691,8 @@ ec_error_t cu_remote_copy_message(store_object *pstore, uint64_t message_id,
 		return ecError;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	ec_error_t e_result = ecError;
-	if (!exmdb_client::write_message(pstore1->get_dir(),
-	    pstore1->get_account(), pinfo->cpid, folder_id1,
+	if (!exmdb_client::write_message(dst_store->get_dir(),
+	    dst_store->get_account(), pinfo->cpid, folder_id1,
 	    pmsgctnt, &e_result) || e_result != ecSuccess)
 		return e_result;
 	return ecSuccess;
@@ -1814,8 +1814,8 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	return pmessage_ids;
 }
 
-ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
-    store_object *pstore1, uint64_t folder_id1, const char *new_name)
+ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
+    store_object *dst_store, uint64_t folder_id1, const char *new_name)
 {
 	uint64_t new_fid;
 	uint32_t table_id;
@@ -1827,10 +1827,10 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (!exmdb_client::get_folder_all_proptags(pstore->get_dir(),
+	if (!exmdb_client::get_folder_all_proptags(src_store->get_dir(),
 	    folder_id, &tmp_proptags))
 		return ecError;
-	if (!exmdb_client::get_folder_properties(pstore->get_dir(), CP_ACP,
+	if (!exmdb_client::get_folder_properties(src_store->get_dir(), CP_ACP,
 	    folder_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
 	if (NULL != new_name) {
@@ -1838,45 +1838,45 @@ ec_error_t cu_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 		propval.pvalue = deconst(new_name);
 		common_util_set_propvals(&tmp_propvals, &propval);
 	}
-	if (!common_util_create_folder(pstore1, folder_id1, &tmp_propvals, &new_fid))
+	if (!common_util_create_folder(dst_store, folder_id1, &tmp_propvals, &new_fid))
 		return ecError;
 	auto pinfo = zs_get_info();
 	const char *username = nullptr;
-	if (!pstore->owner_mode()) {
+	if (!src_store->owner_mode()) {
 		username = pinfo->get_username();
-		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
+		if (!exmdb_client::get_folder_perm(src_store->get_dir(),
 		    folder_id, username, &permission))
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner)))
 			return ecAccessDenied;
 	}
 	pmessage_ids = common_util_load_folder_messages(
-						pstore, folder_id, username);
+						src_store, folder_id, username);
 	if (pmessage_ids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		auto err = cu_remote_copy_message(pstore, pmessage_ids->pids[i],
-		           pstore1, new_fid);
+		auto err = cu_remote_copy_message(src_store, pmessage_ids->pids[i],
+		           dst_store, new_fid);
 		if (err != ecSuccess)
 			return err;
 	}
-	username = pstore->owner_mode() ? nullptr : pinfo->get_username();
-	if (!exmdb_client::load_hierarchy_table(pstore->get_dir(), folder_id,
+	username = src_store->owner_mode() ? nullptr : pinfo->get_username();
+	if (!exmdb_client::load_hierarchy_table(src_store->get_dir(), folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return ecError;
 	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
-	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, CP_ACP,
+	if (!exmdb_client::query_table(src_store->get_dir(), nullptr, CP_ACP,
 	    table_id, &tmp_proptags, 0, row_count, &tmp_set))
 		return ecError;
-	exmdb_client::unload_table(pstore->get_dir(), table_id);
+	exmdb_client::unload_table(src_store->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
 			return ecError;
-		auto err = cu_remote_copy_folder(pstore, *pfolder_id, pstore1,
+		auto err = cu_remote_copy_folder(src_store, *pfolder_id, dst_store,
 		           new_fid, nullptr);
 		if (err != ecSuccess)
 			return err;
