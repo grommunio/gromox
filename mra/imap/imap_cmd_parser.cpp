@@ -611,7 +611,6 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	}
 
 	BOOL b_first = FALSE;
-	bool flag_set = false;
 	int buff_len = 0;
 	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 	            "* %d FETCH (", item_id);
@@ -708,7 +707,6 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			buff_len += strftime(buff + buff_len, MAX_DIGLEN - buff_len,
 							"INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
 		} else if (strcasecmp(kw, "RFC822") == 0) {
-			flag_set = true;
 			buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 			            "RFC822 {%zd}\r\n<<{file}%s|0|%zd\r\n",
 			            mjson.get_mail_length(),
@@ -738,7 +736,6 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            arsizeof(buff) - buff_len,
 			            "RFC822.SIZE %zd", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
-			flag_set = true;
 			auto pmime = mjson.get_mime("");
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len,
@@ -764,7 +761,6 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			            arsizeof(buff) - buff_len, "UID %d", pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
-			flag_set = true;
 			auto pbody = strchr(kw, '[');
 			auto pend = strchr(pbody + 1, ']');
 			size_t offset = 0, length = -1;
@@ -854,16 +850,6 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len, ")\r\n");
 	if (pcontext->stream.write(buff, buff_len) != STREAM_WRITE_OK)
 		return 1922;
-
-	if (flag_set) {
-		buff_len = gx_snprintf(buff, std::size(buff) - buff_len, "* %d FETCH (", item_id);
-		char str[128];
-		imap_cmd_parser_convert_flags_string(pitem->flag_bits, str);
-		buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len, "FLAGS %s)\r\n", str);
-		if (pcontext->stream.write(buff, buff_len) != STREAM_WRITE_OK)
-			return 1922;
-	}
-
 	if (!pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (!(pitem->flag_bits & FLAG_SEEN)) {
