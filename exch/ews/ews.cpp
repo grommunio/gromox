@@ -224,13 +224,14 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 		return unauthed(ctx_id);
 	bool enableLog = false;
 	auto[response, code] = dispatch(ctx_id, auth_info, content, len, enableLog);
+	auto logLevel = code == 200? LV_DEBUG : LV_ERR;
 	if(enableLog && response_logging >= 2)
-		mlog(LV_DEBUG, "[ews#%d] Response: %s", ctx_id, response.c_str());
+		mlog(logLevel, "[ews#%d] Response: %s", ctx_id, response.c_str());
 	if(enableLog && response_logging)
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
-		mlog(LV_DEBUG, "[ews#%d] Done, code %d, %zu bytes, %.3fms", ctx_id, code, response.size(), duration);
+		mlog(logLevel, "[ews#%d] Done, code %d, %zu bytes, %.3fms", ctx_id, code, response.size(), duration);
 	}
 	if(response.length() > std::numeric_limits<int>::max())
 	{
