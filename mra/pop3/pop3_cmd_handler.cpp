@@ -137,14 +137,14 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	}
 	if (pcontext->is_login)
 		return 1720;
+	auto target_mbox = strchr(pcontext->username, '!');
+	if (target_mbox != nullptr)
+		*target_mbox++ = '\0';
 	if ('\0' == pcontext->username[0]) {
 		return 1705;
 	}
 	
 	sql_meta_result mres_auth, mres /* target */;
-	auto target_mbox = strchr(pcontext->username, '!');
-	if (target_mbox != nullptr)
-		*target_mbox++ = '\0';
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);

@@ -1286,6 +1286,10 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	if (strlen(argv[0]) == 0 || decode64_ex(argv[0], strlen(argv[0]),
 	    temp_password, arsizeof(temp_password), &temp_len) != 0)
 		return 1820 | DISPATCH_TAG;
+
+	auto target_mbox = strchr(pcontext->username, '!');
+	if (target_mbox != nullptr)
+		*target_mbox++ = '\0';
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
@@ -1294,9 +1298,6 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
 	sql_meta_result mres_auth, mres /* target */;
-	auto target_mbox = strchr(pcontext->username, '!');
-	if (target_mbox != nullptr)
-		*target_mbox++ = '\0';
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres_auth)) {
 		safe_memset(temp_password, 0, std::size(temp_password));
@@ -1363,6 +1364,9 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	if (pcontext->is_authed())
 		return 1803;
+	auto target_mbox = strchr(argv[2], '!');
+	if (target_mbox != nullptr)
+		*target_mbox++ = '\0';
 	gx_strlcpy(pcontext->username, argv[2], arsizeof(pcontext->username));
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
@@ -1375,9 +1379,6 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	HX_strltrim(temp_password);
 
 	sql_meta_result mres_auth, mres /* target */;
-	auto target_mbox = strchr(pcontext->username, '!');
-	if (target_mbox != nullptr)
-		*target_mbox++ = '\0';
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres_auth)) {
 		imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", mres.errstr.c_str());
