@@ -106,12 +106,12 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		return EINVAL;
 	}
 	dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
-	if (dtypx != DT_MAILUSER) {
+	if (dtypx != DT_MAILUSER && !(wantpriv & WANTPRIV_METAONLY)) {
 		mres.errstr = "User is not a real user";
 		return EACCES;
 	}
 	auto temp_status = strtoul(myrow[2], nullptr, 0);
-	if (temp_status != 0 && !(wantpriv & WANTPRIV_SKIP_ADDRSTATUS)) {
+	if (temp_status != 0 && !(wantpriv & WANTPRIV_METAONLY)) {
 		auto uval = temp_status & AF_USER__MASK;
 		if (temp_status & AF_DOMAIN__MASK) {
 			mres.errstr = fmt::format("Domain of user \"{}\" is disabled!", username);
@@ -122,7 +122,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		}
 		return EACCES;
 	}
-	wantpriv &= ~WANTPRIV_SKIP_ADDRSTATUS;
+	wantpriv &= ~WANTPRIV_METAONLY;
 
 	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
 	if (wantpriv != 0 && !(allowedsvc & wantpriv)) {
