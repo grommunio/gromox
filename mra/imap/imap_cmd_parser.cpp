@@ -1314,7 +1314,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	if (target_mbox == nullptr) {
 		mres = std::move(mres_auth);
 	} else {
-		if (system_services_auth_meta(target_mbox, 0, mres) != 0)
+		if (system_services_auth_meta(target_mbox, WANTPRIV_SKIP_ADDRSTATUS, mres) != 0)
 			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {
@@ -1395,7 +1395,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (target_mbox == nullptr) {
 		mres = std::move(mres_auth);
 	} else {
-		if (system_services_auth_meta(target_mbox, 0, mres) != 0)
+		if (system_services_auth_meta(target_mbox, WANTPRIV_SKIP_ADDRSTATUS, mres) != 0)
 			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {

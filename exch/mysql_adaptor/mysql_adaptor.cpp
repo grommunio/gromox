@@ -111,7 +111,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		return EACCES;
 	}
 	auto temp_status = strtoul(myrow[2], nullptr, 0);
-	if (0 != temp_status) {
+	if (temp_status != 0 && !(wantpriv & WANTPRIV_SKIP_ADDRSTATUS)) {
 		auto uval = temp_status & AF_USER__MASK;
 		if (temp_status & AF_DOMAIN__MASK) {
 			mres.errstr = fmt::format("Domain of user \"{}\" is disabled!", username);
@@ -122,6 +122,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		}
 		return EACCES;
 	}
+	wantpriv &= ~WANTPRIV_SKIP_ADDRSTATUS;
 
 	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
 	if (wantpriv != 0 && !(allowedsvc & wantpriv)) {

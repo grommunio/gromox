@@ -9,6 +9,8 @@
  * %PUBADDR:	(unused)
  * %SMTP, %CHAT, %VIDEO, %FILES, %ARCHIVE:
  * 		pam_gromox with service=...
+ * %WANTPRIV_SKIP_ADDRSTATUS: Callers of auth_meta can use this flag to
+ * indicate ignoring address_status because they use login switching (a!b)
  */
 enum {
 	USER_PRIVILEGE_EXCH = 0,
@@ -21,6 +23,7 @@ enum {
 	USER_PRIVILEGE_VIDEO = 1U << 5,
 	USER_PRIVILEGE_FILES = 1U << 6,
 	USER_PRIVILEGE_ARCHIVE = 1U << 7,
+	WANTPRIV_SKIP_ADDRSTATUS = 0x10000U,
 };
 
 /**
