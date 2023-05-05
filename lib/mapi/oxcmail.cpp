@@ -354,10 +354,7 @@ static BOOL oxcmail_get_content_param(const MIME *pmime,
 		value[tmp_len - 1] = '\0';
 		memmove(value, value + 1, tmp_len - 1);
 	}
-	if ('\0' == value[0]) {
-		return FALSE;
-	}
-	return TRUE;
+	return *value != '\0' ? TRUE : false;
 }
 
 static BOOL oxcmail_get_field_param(char *field,
@@ -397,10 +394,7 @@ static BOOL oxcmail_get_field_param(char *field,
 		value[tmp_len - 1] = '\0';
 		memmove(value, value + 1, tmp_len - 1);
 	}
-	if ('\0' == value[0]) {
-		return FALSE;
-	}
-	return TRUE;
+	return *value == '\0' ? TRUE : false;
 }
 
 static void oxcmail_split_filename(char *file_name, char *extension)
@@ -2226,11 +2220,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			if ('>' == tmp_buff[tmp_int32 - 1]) {
 				tmp_buff[tmp_int32 - 1] = '\0';
 			}
-			if ('<' == tmp_buff[0]) {
-				newval = tmp_buff + 1;
-			} else {
-				newval = tmp_buff;
-			}
+			newval = tmp_buff[0] == '<' ? tmp_buff + 1 : tmp_buff;
 			uint32_t tag = oxcmail_check_ascii(newval) ?
 			                  PR_ATTACH_CONTENT_ID : PR_ATTACH_CONTENT_ID_A;
 			if (pattachment->proplist.set(tag, newval) != 0) {
@@ -2761,15 +2751,9 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields, 
 	if (1 != strlen(tmp_buff)) {
 		return true;
 	}
-	if ('2' == tmp_buff[0]) {
-		kind = 2;
-	} else if ('4' == tmp_buff[0]) {
-		kind = 4;
-	} else if ('5' == tmp_buff[0]) {
-		kind = 5;
-	} else {
+	if (*tmp_buff != '2' && *tmp_buff != '4' && *tmp_buff != '5')
 		return true;
-	}
+	kind = *tmp_buff - '0';
 	ptoken1 ++;
 	ptoken2 = strchr(ptoken1, '.');
 	if (NULL == ptoken2) {
