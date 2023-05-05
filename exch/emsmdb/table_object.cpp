@@ -23,14 +23,21 @@
 
 using namespace gromox;
 
+/**
+ * @table_id:	New table id. Use 0 to unload without reassignment.
+ *
+ * m_loaded is cleared. The caller needs to re-assign m_loaded=true
+ * if the null table was obtained from exmdb.
+ */
 static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
 	auto dir = ptable->plogon->get_dir();
-	if (ptable->m_table_id != 0) {
+	if (ptable->m_loaded && ptable->m_table_id != 0) {
 		exmdb_client::unload_table(dir, ptable->m_table_id);
 		if (ptable->rop_id == ropGetContentsTable ||
 		    ptable->rop_id == ropGetHierarchyTable)
 			emsmdb_interface_remove_table_notify(dir, ptable->m_table_id);
+		ptable->m_loaded = false;
 	}
 	if (0 != table_id) {
 		if (ptable->rop_id == ropGetContentsTable ||
@@ -42,14 +49,6 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 	ptable->m_table_id = table_id;
 }
 
-BOOL table_object::is_loaded()
-{
-	auto ptable = this;
-	if (ptable->rop_id == ropGetAttachmentTable)
-		return TRUE;
-	return m_table_id == 0 ? false : TRUE;
-}
-
 BOOL table_object::load()
 {
 	auto ptable = this;
@@ -59,7 +58,7 @@ BOOL table_object::load()
 	
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
-	if (m_table_id != 0)
+	if (m_loaded)
 		/* Already done */
 		return TRUE;
 	switch (ptable->rop_id) {
@@ -118,7 +117,9 @@ BOOL table_object::load()
 			__PRETTY_FUNCTION__);
 		return TRUE;
 	}
+	/* exmdb may legitimately reeturn a new_table_id of 0. */
 	table_object_set_table_id(ptable, table_id);
+	m_loaded = true;
 	return TRUE;
 }
 

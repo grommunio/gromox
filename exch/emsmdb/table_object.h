@@ -25,7 +25,7 @@ struct table_object {
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	const SORTORDER_SET *get_sorts() const { return m_sorts; }
 	BOOL set_sorts(const SORTORDER_SET *);
-	BOOL is_loaded();
+	bool is_loaded() const { return rop_id == ropGetAttachmentTable || m_loaded; }
 	BOOL load();
 	void unload();
 	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
@@ -54,6 +54,7 @@ struct table_object {
 	LOGMAP *plogmap = nullptr;
 	void *pparent_obj = nullptr;
 	uint8_t logon_id = 0, rop_id = 0, table_flags = 0;
+	bool m_loaded = false;
 	PROPTAG_ARRAY *m_columns = nullptr;
 	SORTORDER_SET *m_sorts = nullptr;
 	RESTRICTION *m_restriction = nullptr;

@@ -546,7 +546,12 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
 	return b->cb == 16 ? b : nullptr;
 }
 
-/* under public mode username always available for read state */
+/*
+ *
+ * ptable_id can remain untouched when the folder does not exist.
+ *
+ * Under public mode username, always available for read state.
+ */
 static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	uint64_t fid_val, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
@@ -571,8 +576,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (pstmt.step() != SQLITE_ROW)
+		if (pstmt.step() != SQLITE_ROW) {
+			*ptable_id = 0;
+			*prow_count = 0;
 			return TRUE;
+		}
 		b_search = pstmt.col_int64(0) != 0;
 	}
 	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
@@ -1147,6 +1155,12 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	return FALSE;
 }
 
+/**
+ * @ptable_id:	output table id
+ *
+ * *ptable_id can be 0 even with a success return code, indicating that no data
+ * is available (e.g. folder was deleted while table object is still open).
+ */
 BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 	uint64_t folder_id, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
