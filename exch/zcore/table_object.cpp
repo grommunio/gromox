@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cassert>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -30,10 +31,17 @@ using namespace gromox;
 static void table_object_reset(table_object *);
 static BOOL table_object_get_store_table_all_proptags(PROPTAG_ARRAY *);
 
+/**
+ * @table_id:	New table id. Use 0 to unload without reassignment.
+ *
+ * m_loaded is cleared. The caller needs to re-assign m_loaded=true
+ * if the null table was obtained from exmdb.
+ */
 static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
-	if (0 != ptable->table_id) {
+	if (ptable->m_loaded && ptable->table_id != 0) {
 		exmdb_client::unload_table(ptable->pstore->get_dir(), ptable->table_id);
+		ptable->m_loaded = false;
 	}
 	ptable->table_id = table_id;
 }
@@ -86,23 +94,32 @@ BOOL table_object::load()
 {
 	auto ptable = this;
 	uint32_t row_num, permission, new_table_id, new_table_flags;
-	
+
+	/* ...also a lot of special cases where m_table_id stays 0. */
 	if (ptable->table_type == zcore_tbltype::attachment ||
 		ptable->table_type == zcore_tbltype::recipient ||
 	    ptable->table_type == zcore_tbltype::container) {
-		return TRUE;
+		m_loaded = true;
 	} else if (ptable->table_type == zcore_tbltype::store) {
-		return storetbl_refresh(this) == 0 ? TRUE : false;
+		auto ret = storetbl_refresh(this);
+		if (ret != 0)
+			return false;
+		m_loaded = true;
 	} else if (ptable->table_type == zcore_tbltype::abcontusr) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
-		return ct->load_user_table(ptable->prestriction);
+		auto ok = ct->load_user_table(ptable->prestriction);
+		if (!ok)
+			return false;
+		m_loaded = true;
 	} else if (ptable->table_type == zcore_tbltype::distlist) {
 		auto u = static_cast<user_object *>(ptable->pparent_obj);
-		return u->load_list_members(ptable->prestriction) == ecSuccess ? TRUE : false;
+		auto err = u->load_list_members(ptable->prestriction);
+		if (err != ecSuccess)
+			return false;
+		m_loaded = true;
 	}
-	if (0 != ptable->table_id) {
+	if (m_loaded)
 		return TRUE;
-	}
 	switch (ptable->table_type) {
 	case zcore_tbltype::hierarchy: {
 		auto pinfo = zs_get_info();
@@ -157,7 +174,9 @@ BOOL table_object::load()
 		mlog(LV_WARN, "%s - not calling table_object_set_table_id", __PRETTY_FUNCTION__);
 		return TRUE;
 	}
+	/* exmdb may legitimately reeturn a new_table_id of 0. */
 	table_object_set_table_id(ptable, new_table_id);
+	m_loaded = true;
 	return TRUE;
 }
 
@@ -543,6 +562,7 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
     uint32_t row_count, TARRAY_SET *pset)
 {
+	assert(m_loaded);
 	auto ptable = this;
 	PROPTAG_ARRAY tmp_columns;
 	if (cols == nullptr) {
@@ -611,6 +631,7 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 
 void table_object::seek_current(BOOL b_forward, uint32_t row_count)
 {
+	assert(m_loaded);
 	auto ptable = this;
 	uint32_t total_rows;
 	
@@ -682,6 +703,7 @@ BOOL table_object::set_restriction(const RESTRICTION *res)
 
 void table_object::set_position(uint32_t pos)
 {
+	assert(m_loaded);
 	auto ptable = this;
 	auto total_rows = get_total();
 	if (pos > total_rows)
@@ -792,6 +814,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex) try
 
 BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
+	assert(m_loaded);
 	auto ptable = this;
 	uint32_t tmp_type;
 	int32_t tmp_position;

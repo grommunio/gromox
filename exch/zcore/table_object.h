@@ -56,10 +56,10 @@ struct table_object {
 	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
 
 	store_object *pstore = nullptr;
-	uint32_t handle = 0;
+	uint32_t handle = 0, table_flags = 0;
 	void *pparent_obj = nullptr;
 	zcore_tbltype table_type{};
-	uint32_t table_flags = 0;
+	bool m_loaded = false;
 	tarray_set *fixed_data = nullptr;
 	PROPTAG_ARRAY *pcolumns = nullptr;
 	SORTORDER_SET *psorts = nullptr;
