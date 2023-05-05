@@ -1409,6 +1409,17 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 	return ENOMEM;
 }
 
+/*
+ * On match, 0 is returned; otherwise anything non-zero.
+ */
+int strtailcase(const char *h, const char *n)
+{
+	size_t hz = strlen(h), nz = strlen(n);
+	if (hz < nz)
+		return -1;
+	return strcasecmp(&h[hz-nz], n);
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

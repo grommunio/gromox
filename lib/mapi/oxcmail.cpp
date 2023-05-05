@@ -3966,43 +3966,34 @@ static BOOL oxcmail_export_content_class(
 
 static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 {
-	int tmp_len;
-	
-	tmp_len = strlen(pmessage_class);
 	if (0 == strcasecmp( pmessage_class,
 		"IPM.Note.SMIME.MultipartSigned")) {
 		return oxcmail_type::xsigned;
 	}
-	if (0 == strncasecmp(pmessage_class, "IPM.InfoPathForm.",
-		17) && 0 == strcasecmp(pmessage_class + tmp_len - 22,
-		".SMIME.MultipartSigned")) {
+	if (strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0 &&
+	    strtailcase(pmessage_class, ".SMIME.MultipartSigned") == 0)
 		return oxcmail_type::xsigned;
-	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Note.SMIME")) {
 		return oxcmail_type::encrypted;
 	}
-	if (0 == strncasecmp(pmessage_class, "IPM.InfoPathForm.",
-		17) && 0 == strcasecmp(pmessage_class + tmp_len - 6,
-		".SMIME")) {
+	if (strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0 &&
+	    strtailcase(pmessage_class, ".SMIME") == 0)
 		return oxcmail_type::encrypted;
-	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Note") ||
 		0 == strncasecmp(pmessage_class, "IPM.Note.", 9) ||
 		0 == strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17)) {
 		return oxcmail_type::normal;
 	}
-	if (0 == strncasecmp(pmessage_class, "REPORT.", 7) &&
-		(0 == strcasecmp(pmessage_class + tmp_len - 3, ".DR") ||
-		0 == strcasecmp(pmessage_class + tmp_len - 12, ".Expanded.DR") ||
-		0 == strcasecmp(pmessage_class + tmp_len - 11, ".Relayed.DR") ||
-		0 == strcasecmp(pmessage_class + tmp_len - 11, ".Delayed.DR") ||
-		0 == strcasecmp(pmessage_class + tmp_len - 4, ".NDR"))) {
-		return oxcmail_type::dsn;
-	}
-	if (0 == strncasecmp(pmessage_class, "REPORT.", 7) &&
-		(0 == strcasecmp(pmessage_class + tmp_len - 6, ".IPNRN") ||
-		0 == strcasecmp(pmessage_class + tmp_len - 7, ".IPNNRN"))) {
-		return oxcmail_type::mdn;
+	if (strncasecmp(pmessage_class, "REPORT.", 7) == 0) {
+		if (strtailcase(pmessage_class, ".DR") == 0 ||
+		    strtailcase(pmessage_class, ".Expanded.DR") == 0 ||
+		    strtailcase(pmessage_class, ".Relayed.DR") == 0 ||
+		    strtailcase(pmessage_class, ".Delayed.DR") == 0 ||
+		    strtailcase(pmessage_class, ".NDR") == 0)
+			return oxcmail_type::dsn;
+		if (strtailcase(pmessage_class, ".IPNRN") == 0 ||
+		    strtailcase(pmessage_class, ".IPNNRN") == 0)
+			return oxcmail_type::mdn;
 	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Appointment") ||
 		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Request") ||
@@ -4620,7 +4611,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, char *pdsn_content,
 	int max_length)
 {
-	int tmp_len;
 	char action[16];
 	TARRAY_SET *prcpts;
 	char tmp_buff[1024];
@@ -4651,25 +4641,18 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 	}
 	
-	tmp_len = strlen(pmessage_class);
-	if (0 == strcasecmp(pmessage_class
-		+ tmp_len - 3, ".DR")) {
+	if (strtailcase(pmessage_class, ".DR") == 0)
 		strcpy(action, "delivered");
-	} else if (0 == strcasecmp(pmessage_class
-		+ tmp_len - 12, ".Expanded.DR")) {
+	else if (strtailcase(pmessage_class, ".Expanded.DR") == 0)
 		strcpy(action, "expanded");
-	} else if (0 == strcasecmp(pmessage_class
-		+ tmp_len - 11, ".Relayed.DR")) {
+	else if (strtailcase(pmessage_class, ".Relayed.DR") == 0)
 		strcpy(action, "relayed");
-	} else if (0 == strcasecmp(pmessage_class
-		+ tmp_len - 11, ".Delayed.DR")) {
+	else if (strtailcase(pmessage_class, ".Delayed.DR") == 0)
 		strcpy(action, "delayed");
-	} else if (0 == strcasecmp(pmessage_class
-		+ tmp_len - 4, ".NDR")) {
+	else if (strtailcase(pmessage_class, ".NDR") == 0)
 		strcpy(action, "failed");
-	} else {
+	else
 		*action = '\0';
-	}
 	if (NULL == pmsg->children.prcpts) {
 		goto SERIALIZE_DSN;
 	}
@@ -4772,7 +4755,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
 		return FALSE;
 	tmp_len = strlen(pmessage_class);
-	strcpy(tmp_buff, strcasecmp(pmessage_class + tmp_len - 6, ".IPNRN") == 0 ?
+	strcpy(tmp_buff, tmp_len >= 6 && strcasecmp(&pmessage_class[tmp_len-6], ".IPNRN") == 0 ?
 	       "manual-action/MDN-sent-automatically; displayed" :
 	       "manual-action/MDN-sent-automatically; deleted");
 	if (!dsn.append_field(pdsn_fields, "Disposition", tmp_buff))
