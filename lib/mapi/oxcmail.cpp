@@ -668,35 +668,36 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			              std::size(str_buff) - str_offset, "%s@%s",
 			              email_addr.local_part, email_addr.domain);
 
-		if (email_addr.has_addr() &&
-		    oxcmail_check_ascii(email_addr.local_part) &&
-		    oxcmail_check_ascii(email_addr.domain)) {
-			uint32_t offset1 = ext_push.m_offset;
-			if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
-				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
-			         email_addr.local_part, email_addr.domain);
-			tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
-			auto status = ext_push.p_oneoff_eid(tmp_entry);
-			if (EXT_ERR_CHARCNV == status) {
-				ext_push.m_offset = offset1 + sizeof(uint32_t);
-				tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
-				status = ext_push.p_oneoff_eid(tmp_entry);
-			}
-			if (EXT_ERR_SUCCESS != status) {
-				return FALSE;
-			}
-			uint32_t offset2 = ext_push.m_offset;
-			uint32_t bytes = offset2 - (offset1 + sizeof(uint32_t));
-			ext_push.m_offset = offset1;
-			if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
-				return FALSE;
-			ext_push.m_offset = offset2;
-			pad_len = ((bytes + 3) & ~3) - bytes;
-			if (ext_push.p_bytes(pad_bytes, pad_len) != EXT_ERR_SUCCESS)
-				return FALSE;
-			count++;
+		if (!email_addr.has_addr() ||
+		    !oxcmail_check_ascii(email_addr.local_part) ||
+		    !oxcmail_check_ascii(email_addr.domain))
+			continue;
+
+		uint32_t offset1 = ext_push.m_offset;
+		if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
+			return FALSE;
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
+			 email_addr.local_part, email_addr.domain);
+		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
+		auto status = ext_push.p_oneoff_eid(tmp_entry);
+		if (EXT_ERR_CHARCNV == status) {
+			ext_push.m_offset = offset1 + sizeof(uint32_t);
+			tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO;
+			status = ext_push.p_oneoff_eid(tmp_entry);
 		}
+		if (EXT_ERR_SUCCESS != status) {
+			return FALSE;
+		}
+		uint32_t offset2 = ext_push.m_offset;
+		uint32_t bytes = offset2 - (offset1 + sizeof(uint32_t));
+		ext_push.m_offset = offset1;
+		if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
+			return FALSE;
+		ext_push.m_offset = offset2;
+		pad_len = ((bytes + 3) & ~3) - bytes;
+		if (ext_push.p_bytes(pad_bytes, pad_len) != EXT_ERR_SUCCESS)
+			return FALSE;
+		count++;
 	}
 	if (0 != count) {
 		tmp_bin.cb = ext_push.m_offset;
