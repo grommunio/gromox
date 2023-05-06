@@ -1,8 +1,13 @@
-Development 2.8.39
+Development 2.8.95
 ==================
 
 Fixes:
 
+* zcore: plug memory leak when address book data structure reloads
+* zcore: fix inverted evaluation of RES_CONTENT::comparable
+* zcore: moving messages from one store to another obtained CNs
+  from the wrong store and could fail the operation
+* oxcical: add TZID for allday events
 * imap: consistently show EXISTS status before RECENT
 * imap: move EXISTS/RECENT response after SEARCH result
 * imap: skip reporting EXISTS/RECENT if folder is unchanged
@@ -10,10 +15,19 @@ Fixes:
 * imap: SEARCH by size used the wrong column
 * imap: avoid double status reporting when one message is changed multiple times
 * imap: add and populate a per-context seqid list
+* midb: unbreak search matching based on dates and sizes
+* imap: cease emitting extraneous FETCH FLAGS responses
+  (works around a shortcoming in the KDE kmail client)
+* emsmdb: avoid hitting an assertion when sort-reloading a table of a
+  deleted folder
 
 Enhancements:
 
+* emsmdb: support forwarding meeting requests from organizers
+  that are not local to the installation
 * imap: broadcast changes to mailbox from EXPUNGE commands
+* midb: auto-regenerate ext/ digests when missing
+* Log the filename of the SQLite database when a query fails
 
 
 Gromox 2.8 (2023-04-15)
