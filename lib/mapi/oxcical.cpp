@@ -2757,16 +2757,13 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 			*rcpttype == MAPI_BCC ? "NON-PARTICIPANT" :
 			"REQ-PARTICIPANT";
 		piline->append_param("ROLE", role);
-		if (NULL != partstat) {
+		if (partstat != nullptr)
 			piline->append_param("PARTSTAT", partstat);
-		}
-		if (b_rsvp) {
+		if (b_rsvp)
 			piline->append_param("RSVP", "TRUE");
-		}
 		auto name = pmsg->children.prcpts->pparray[i]->get<const char>(PR_DISPLAY_NAME);
-		if (name != nullptr) {
+		if (name != nullptr)
 			piline->append_param("CN", name);
-		}
 		if (oxcmail_get_smtp_address(*pmsg->children.prcpts->pparray[i],
 		    nullptr /* tags_self */, entryid_to_username,
 		    essdn_to_username, alloc, username, std::size(username))) {
@@ -3210,11 +3207,10 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 			return "E-2220";
 	} else if (!b_allday) {
 		char tmp_buff[1024];
-		if (NULL == ptz_component) {
+		if (ptz_component == nullptr)
 			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		} else {
+		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		}
 		auto line = &com.append_line("RECURRENCE-ID", tmp_buff);
 		if (ptz_component != nullptr)
 			line->append_param("TZID", tzid);
@@ -3476,9 +3472,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			apprecurr.recur_pat.patterntype) {
 			str = "Hijri";
 		}
-		if (str != nullptr) {
+		if (str != nullptr)
 			pical.append_line("X-MICROSOFT-CALSCALE", str);
-		}
 	}
 	
 	struct tm tmp_tm;
@@ -3578,9 +3573,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		          strcmp(method, "COUNTER") == 0 ?
 		          "COMMENT" : "DESCRIPTION";
 		auto piline = &pcomponent->append_line(kw, str);
-		if (NULL != planguage) {
+		if (planguage != nullptr)
 			piline->append_param("LANGUAGE", planguage);
-		}
 	}
 	/* IPM.Activity is RTF-only in Outlook, nothing in PR_BODY */
 	
@@ -3613,9 +3607,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	str = pmsg->proplist.get<char>(PR_SUBJECT);
 	if (str != nullptr) {
 		auto piline = &pcomponent->append_line("SUMMARY", str);
-		if (NULL != planguage) {
+		if (planguage != nullptr)
 			piline->append_param("LANGUAGE", planguage);
-		}
 	}
 	
 	if (has_start_time) {
@@ -3748,12 +3741,10 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 		if (!get_propids(&propnames, &propids))
 			return E_2201;
 		str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
-		if (str != nullptr) {
+		if (str != nullptr)
 			piline->append_param("ALTREP", str);
-		}
-		if (NULL != planguage) {
+		if (planguage != nullptr)
 			piline->append_param("LANGUAGE", planguage);
-		}
 	}
 	
 	if (NULL != psequence) {
@@ -3788,15 +3779,13 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	auto flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
-	if (flag != nullptr) {
+	if (flag != nullptr)
 		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
-	}
 	
 	if (!b_exceptional && pmsg->children.pattachments != nullptr) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
-			if (NULL == pmsg->children.pattachments->pplist[i]->pembedded) {
+			if (pmsg->children.pattachments->pplist[i]->pembedded == nullptr)
 				continue;
-			}
 			auto pembedded = pmsg->children.pattachments->pplist[i]->pembedded;
 			str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS);
 			if (str == nullptr)
