@@ -94,8 +94,9 @@ void attachment_list_free(ATTACHMENT_LIST *plist)
 	free(plist);
 }
 
-void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index)
+void attachment_list::remove(uint16_t index)
 {
+	auto plist = this;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	if (index >= plist->count) {
@@ -110,9 +111,9 @@ void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index)
 	attachment_content_free(pattachment);
 }
 
-BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
-	ATTACHMENT_CONTENT *pattachment)
+BOOL attachment_list::append_internal(attachment_content *pattachment)
 {
+	auto plist = this;
 	if (plist->count >= 0x8000) {
 		return FALSE;
 	}
@@ -129,8 +130,9 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	return TRUE;
 }
 
-ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *src)
+attachment_list *attachment_list::dup() const
 {
+	auto src = this;
 	auto dst = attachment_list_init();
 	if (dst == nullptr)
 		return NULL;
@@ -140,7 +142,7 @@ ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *src)
 			attachment_list_free(dst);
 			return NULL;
 		}
-		if (!attachment_list_append_internal(dst, pattachment)) {
+		if (!dst->append_internal(pattachment)) {
 			attachment_content_free(pattachment);
 			attachment_list_free(dst);
 			return NULL;
@@ -286,7 +288,7 @@ message_content *message_content::dup() const
 		}
 	}
 	if (src->children.pattachments != nullptr) {
-		dst->children.pattachments = attachment_list_dup(src->children.pattachments);
+		dst->children.pattachments = src->children.pattachments->dup();
 		if (dst->children.pattachments == nullptr) {
 			message_content_free(dst);
 			return NULL;

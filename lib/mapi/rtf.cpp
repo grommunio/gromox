@@ -2808,8 +2808,7 @@ static errno_t push_da_pic(RTF_READER *reader, EXT_PUSH &picture_push,
 		return EINVAL;
 	}
 	auto atx = attachment_content_init();
-	if (atx == nullptr ||
-	    !attachment_list_append_internal(reader->pattachments, atx)) {
+	if (atx == nullptr || !reader->pattachments->append_internal(atx)) {
 		free(bin.pv);
 		return EINVAL;
 	}

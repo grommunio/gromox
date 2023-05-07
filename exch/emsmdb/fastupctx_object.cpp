@@ -490,7 +490,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				return ecServerOOM;
 			}
 			pmsgctnt = pnode->msg;
-			if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
+			if (!pmsgctnt->children.pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
 				return ecRpcFailed;
 			}

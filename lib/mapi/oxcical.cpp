@@ -1684,7 +1684,7 @@ static BOOL oxcical_parse_atx_value(const ical_line &piline,
 	pattachment = attachment_content_init();
 	if (pattachment == nullptr)
 		return FALSE;
-	if (!attachment_list_append_internal(pattachments, pattachment)) {
+	if (!pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
 		return FALSE;
 	}
@@ -1756,7 +1756,7 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 	pattachment = attachment_content_init();
 	if (pattachment == nullptr)
 		return FALSE;
-	if (!attachment_list_append_internal(pattachments, pattachment)) {
+	if (!pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
 		return FALSE;
 	}
@@ -2220,7 +2220,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			auto pattachment = attachment_content_init();
 			if (pattachment == nullptr)
 				return "E-2723: ENOMEM";
-			if (!attachment_list_append_internal(pattachments, pattachment)) {
+			if (!pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
 				return "E-2724";
 			}
@@ -2550,7 +2550,7 @@ message_ptr oxcical_import_single(const char *str_zone,
 		auto at = attachment_content_init();
 		if (at == nullptr)
 			return nullptr;
-		if (!attachment_list_append_internal(atlist, at)) {
+		if (!atlist->append_internal(at)) {
 			attachment_content_free(at);
 			return nullptr;
 		}

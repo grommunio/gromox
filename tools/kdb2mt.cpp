@@ -1313,7 +1313,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	std::swap(atc->proplist, *props);
 	atc->proplist.erase_if(skip_property);
 	if (parent.type == MAPI_MESSAGE) {
-		if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
+		if (!parent.message->children.pattachments->append_internal(atc.get()))
 			throw std::bad_alloc();
 		atc.release();
 	}

@@ -257,7 +257,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		pattachment = attachment_content_init();
 		if (pattachment == nullptr)
 			return FALSE;
-		if (!attachment_list_append_internal(pattachments, pattachment)) {
+		if (!pattachments->append_internal(pattachment)) {
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
@@ -981,7 +981,6 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	int i;
 	uint32_t proptag;
 	TARRAY_SET *prcpts;
-	ATTACHMENT_LIST *pattachments;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1095,8 +1094,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	}
 	if (pmsgctnt->children.pattachments != nullptr &&
 	    (b_force || ict->children.pattachments == nullptr)) {
-		pattachments = attachment_list_dup(
-		               pmsgctnt->children.pattachments);
+		auto pattachments = pmsgctnt->children.pattachments->dup();
 		if (pattachments == nullptr)
 			return FALSE;
 		if (!instance_identify_attachments(pattachments)) {
@@ -1319,7 +1317,7 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 	}
 	if (i >= pmsgctnt->children.pattachments->count)
 		return TRUE;
-	attachment_list_remove(pmsgctnt->children.pattachments, i);
+	pmsgctnt->children.pattachments->remove(i);
 	if (0 == pmsgctnt->children.pattachments->count) {
 		attachment_list_free(pmsgctnt->children.pattachments);
 		pmsgctnt->children.pattachments = NULL;
@@ -1358,7 +1356,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 				}
 			}
-			if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
+			if (!pmsgctnt->children.pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
 				return FALSE;
 			}
@@ -1390,7 +1388,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 				attachment_content_free(
 					pmsgctnt->children.pattachments->pplist[i]);
 				pmsgctnt->children.pattachments->pplist[i] = pattachment;
-			} else if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
+			} else if (!pmsgctnt->children.pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
 				return FALSE;
 			}
@@ -2909,7 +2907,7 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 		*pb_result = FALSE;
 		return TRUE;	
 	}
-	auto pattachments = attachment_list_dup(srcmsg->children.pattachments);
+	auto pattachments = srcmsg->children.pattachments->dup();
 	if (pattachments == nullptr)
 		return FALSE;
 	if (dstmsg->children.pattachments != nullptr)
@@ -3023,7 +3021,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 		}
 		pembedded->proplist.erase(PidTagMid);
 		pattachment->set_embedded_internal(pembedded);
-		if (!attachment_list_append_internal(pattachments, pattachment)) {
+		if (!pattachments->append_internal(pattachment)) {
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
@@ -3048,7 +3046,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 	}
 	pembedded->proplist.erase(PidTagMid);
 	pattachment->set_embedded_internal(pembedded);
-	if (!attachment_list_append_internal(pattachments, pattachment)) {
+	if (!pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
 		return FALSE;
 	}

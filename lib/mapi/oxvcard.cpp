@@ -270,7 +270,7 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 			pattachment = attachment_content_init();
 			if (pattachment == nullptr)
 				return nullptr;
-			if (!attachment_list_append_internal(pattachments, pattachment)) {
+			if (!pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
 				return nullptr;
 			}

@@ -20,10 +20,15 @@ struct GX_EXPORT property_groupinfo {
 };
 using PROPERTY_GROUPINFO = property_groupinfo;
 
-struct ATTACHMENT_LIST {
+struct attachment_list {
+	void remove(uint16_t index);
+	BOOL append_internal(attachment_content *);
+	attachment_list *dup() const;
+
 	uint16_t count;
 	attachment_content **pplist;
 };
+using ATTACHMENT_LIST = attachment_list;
 
 struct MESSAGE_CHILDREN {
 	TARRAY_SET *prcpts;
@@ -107,10 +112,6 @@ extern ATTACHMENT_CONTENT *attachment_content_init();
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
 extern ATTACHMENT_LIST *attachment_list_init();
 void attachment_list_free(ATTACHMENT_LIST *plist);
-void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index);
-BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
-	ATTACHMENT_CONTENT *pattachment);
-extern ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *plist);
 extern GX_EXPORT std::unique_ptr<FOLDER_CONTENT> folder_content_init();
 extern MESSAGE_CONTENT *message_content_init();
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);

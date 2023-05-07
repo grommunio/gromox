@@ -1563,7 +1563,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (NULL == pattachment) {
 				return NULL;
 			}
-			if (!attachment_list_append_internal(pattachments, pattachment)) {
+			if (!pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
 				return NULL;
 			}

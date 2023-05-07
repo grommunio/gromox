@@ -2123,8 +2123,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	if (NULL == pattachment) {
 		return;
 	}
-	if (!attachment_list_append_internal(
-		pmime_enum->pmsg->children.pattachments, pattachment)) {
+	if (!pmime_enum->pmsg->children.pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
 		return;
 	}
@@ -2536,8 +2535,7 @@ static BOOL oxcmail_merge_message_attachments(
 		return TRUE;
 	}
 	while (0 != pmsg->children.pattachments->count) {
-		if (!attachment_list_append_internal(pmsg1->children.pattachments,
-		    pmsg->children.pattachments->pplist[0]))
+		if (!pmsg1->children.pattachments->append_internal(pmsg->children.pattachments->pplist[0]))
 			return FALSE;
 		pmsg->children.pattachments->count --;
 		if (pmsg->children.pattachments->count == 0)
@@ -3051,8 +3049,7 @@ static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 	pattachment = attachment_content_init();
 	if (pattachment == nullptr)
 		return FALSE;
-	if (!attachment_list_append_internal(
-		pmsg->children.pattachments, pattachment)) {
+	if (!pmsg->children.pattachments->append_internal(pattachment)) {
 		attachment_content_free(pattachment);
 		return FALSE;
 	}

@@ -876,7 +876,7 @@ static int do_attach(unsigned int depth, const parent_desc &parent, libpff_item_
 	if (ret < 0)
 		return ret;
 	if (parent.type == MAPI_MESSAGE) {
-		if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
+		if (!parent.message->children.pattachments->append_internal(atc.get()))
 			throw std::bad_alloc();
 		atc.release();
 	}

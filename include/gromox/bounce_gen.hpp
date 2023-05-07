@@ -3,7 +3,7 @@
 #include <string>
 #include <gromox/defs.h>
 
-struct ATTACHMENT_LIST;
+struct attachment_list;
 struct MAIL;
 struct tarray_set;
 
@@ -21,7 +21,7 @@ extern GX_EXPORT const std::string &bounce_gen_sep();
 extern GX_EXPORT const char *bounce_gen_postmaster();
 
 extern GX_EXPORT std::string bounce_gen_rcpts(const tarray_set &);
-extern GX_EXPORT std::string bounce_gen_attachs(const ATTACHMENT_LIST &);
+extern GX_EXPORT std::string bounce_gen_attachs(const attachment_list &);
 extern GX_EXPORT std::string bounce_gen_attachs(const MAIL &, const char *cset);
 extern GX_EXPORT std::string bounce_gen_thrindex(const MAIL &);
 extern GX_EXPORT std::string bounce_gen_charset(const MAIL &);

@@ -397,7 +397,7 @@ static int do_attachs(libolecf_item_t *msg_dir, unsigned int natx,
 		attachment_content_ptr atc(attachment_content_init());
 		std::swap(atc->proplist.count, props->count);
 		std::swap(atc->proplist.ppropval, props->ppropval);
-		if (!attachment_list_append_internal(&atxlist, atc.get()))
+		if (!atxlist.append_internal(atc.get()))
 			throw std::bad_alloc();
 		atc.release();
 	}
