@@ -1441,12 +1441,12 @@ int XARRAY::append(MITEM &&ptr, unsigned int tag) try
 		m_vec.push_back(std::move(ptr));
 	} catch (const std::bad_alloc &) {
 		m_hash.erase(tag);
-		++m_limit;
+		++*m_limit;
 		return -1;
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
-	++m_limit;
+	++*m_limit;
 	return -1;
 }
 
@@ -1455,10 +1455,10 @@ void XARRAY::clear()
 	auto z = m_vec.size();
 	m_vec.clear();
 	m_hash.clear();
-	m_limit += z;
+	*m_limit += z;
 }
 
 XARRAY::~XARRAY()
 {
-	m_limit += m_vec.size();
+	*m_limit += m_vec.size();
 }

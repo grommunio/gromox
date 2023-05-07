@@ -19,6 +19,8 @@ struct MITEM {
  * Two-way indexed message set.
  * @m_vec:	index from seqid -> MITEM
  * @m_hash:	index from imapuid -> MITEM
+ *
+ * To keep XARRAY move-assignable, m_limit is a pointer.
  */
 struct GX_EXPORT XARRAY {
 	XARRAY(std::atomic<size_t> &m) : m_limit(&m) {}
