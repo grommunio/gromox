@@ -1435,7 +1435,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (NULL == prcpts) {
 				return NULL;
 			}
-			message_content_set_rcpts_internal(pmsg, prcpts);
+			pmsg->set_rcpts_internal(prcpts);
 			auto tf = static_cast<TNEF_PROPSET *>(attribute.pvalue);
 			for (size_t i = 0; i < tf->count; ++i) {
 				ptnef_proplist = tf->pplist[i];
@@ -1500,7 +1500,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (NULL == pattachments) {
 		return NULL;
 	}
-	message_content_set_attachments_internal(pmsg, pattachments);
+	pmsg->set_attachments_internal(pattachments);
 	while (true) {
 		if (b_props && attribute.attr_id != ATTRIBUTE_ID_ATTACHRENDDATA) {
 			mlog(LV_DEBUG, "tnef: attAttachment should be "

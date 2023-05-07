@@ -73,7 +73,8 @@ enum class repr_grant {
 };
 
 struct MAIL;
-struct MESSAGE_CONTENT;
+struct message_content;
+using MESSAGE_CONTENT = message_content;
 struct message_object;
 struct store_object;
 

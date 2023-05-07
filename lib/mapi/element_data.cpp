@@ -57,7 +57,7 @@ ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *src)
 		}
 	}
 	if (src->pembedded != nullptr) {
-		dst->pembedded = message_content_dup(src->pembedded);
+		dst->pembedded = src->pembedded->dup();
 		if (dst->pembedded == nullptr) {
 			attachment_content_free(dst);
 			return NULL;
@@ -230,23 +230,18 @@ MESSAGE_CONTENT* message_content_init()
 	return pmsgctnt;
 }
 
-TPROPVAL_ARRAY* message_content_get_proplist(MESSAGE_CONTENT *pmsgctnt)
+void message_content::set_rcpts_internal(TARRAY_SET *prcpts)
 {
-	return &pmsgctnt->proplist;
-}
-
-void message_content_set_rcpts_internal(
-	MESSAGE_CONTENT *pmsgctnt, TARRAY_SET *prcpts)
-{
+	auto pmsgctnt = this;
 	if (NULL != pmsgctnt->children.prcpts) {
 		tarray_set_free(pmsgctnt->children.prcpts);
 	}
 	pmsgctnt->children.prcpts = prcpts;
 }
 
-void message_content_set_attachments_internal(
-	MESSAGE_CONTENT *pmsgctnt, ATTACHMENT_LIST *pattachments)
+void message_content::set_attachments_internal(ATTACHMENT_LIST *pattachments)
 {
+	auto pmsgctnt = this;
 	if (NULL != pmsgctnt->children.pattachments) {
 		attachment_list_free(pmsgctnt->children.pattachments);
 	}
@@ -270,8 +265,9 @@ void message_content_free(MESSAGE_CONTENT *pmsgctnt)
 	free(pmsgctnt);
 }
 
-MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *src)
+message_content *message_content::dup() const
 {
+	auto src = this;
 	auto dst = message_content_init();
 	if (dst == nullptr)
 		return NULL;

@@ -16,7 +16,8 @@
 struct ATTACHMENT_CONTENT;
 struct FOLDER_CHANGES;
 struct logon_object;
-struct MESSAGE_CONTENT;
+struct message_content;
+using MESSAGE_CONTENT = message_content;
 struct MSGCHG_PARTIAL;
 struct PROGRESS_INFORMATION;
 struct PROGRESS_MESSAGE;

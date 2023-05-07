@@ -266,7 +266,7 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
 				return nullptr;
-			message_content_set_attachments_internal(pmsg.get(), pattachments);
+			pmsg->set_attachments_internal(pattachments);
 			pattachment = attachment_content_init();
 			if (pattachment == nullptr)
 				return nullptr;

@@ -17,7 +17,8 @@ enum class oxcmail_body {
 };
 
 struct ical;
-struct MESSAGE_CONTENT;
+struct message_content;
+using MESSAGE_CONTENT = message_content;
 struct MIME_POOL;
 struct vcard;
 

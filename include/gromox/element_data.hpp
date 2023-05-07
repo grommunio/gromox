@@ -58,10 +58,16 @@ struct PROGRESS_INFORMATION {
 	uint64_t normal_size;
 };
 
-struct MESSAGE_CONTENT {
+struct message_content {
+	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
+	void set_rcpts_internal(TARRAY_SET *);
+	void set_attachments_internal(ATTACHMENT_LIST *);
+	message_content *dup() const;
+
 	TPROPVAL_ARRAY proplist;
 	MESSAGE_CHILDREN children;
 };
+using MESSAGE_CONTENT = message_content;
 
 struct ATTACHMENT_CONTENT {
 	TPROPVAL_ARRAY proplist; /* PR_ATTACH_NUM must be the first */
@@ -106,14 +112,8 @@ extern ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *plist);
 extern GX_EXPORT std::unique_ptr<FOLDER_CONTENT> folder_content_init();
 extern MESSAGE_CONTENT *message_content_init();
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);
-TPROPVAL_ARRAY* message_content_get_proplist(MESSAGE_CONTENT *pmsgctnt);
-void message_content_set_rcpts_internal(
-	MESSAGE_CONTENT *pmsgctnt, TARRAY_SET *prcpts);
-void message_content_set_attachments_internal(
-	MESSAGE_CONTENT *pmsgctnt, ATTACHMENT_LIST *pattachments);
 void message_content_free_internal(MESSAGE_CONTENT *pmsgctnt);
 void message_content_free(MESSAGE_CONTENT *pmsgctnt);
-extern MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *);
 
 namespace gromox {
 struct mc_delete {

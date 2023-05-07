@@ -716,7 +716,7 @@ static BOOL oxcical_parse_recipients(const ical_component &main_ev,
 	if (prcpts == nullptr)
 		return FALSE;
 	tmp_byte = 0;
-	message_content_set_rcpts_internal(pmsg, prcpts);
+	pmsg->set_rcpts_internal(prcpts);
 	for (const auto &line : main_ev.line_list) {
 		auto piline = &line;
 		if (strcasecmp(piline->m_name.c_str(), "ATTENDEE") != 0)
@@ -1677,8 +1677,7 @@ static BOOL oxcical_parse_atx_value(const ical_line &piline,
 		pattachments = attachment_list_init();
 		if (pattachments == nullptr)
 			return FALSE;
-		message_content_set_attachments_internal(
-			pmsg, pattachments);
+		pmsg->set_attachments_internal(pattachments);
 	} else {
 		pattachments = pmsg->children.pattachments;
 	}
@@ -1750,8 +1749,7 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 		pattachments = attachment_list_init();
 		if (pattachments == nullptr)
 			return FALSE;
-		message_content_set_attachments_internal(
-			pmsg, pattachments);
+		pmsg->set_attachments_internal(pattachments);
 	} else {
 		pattachments = pmsg->children.pattachments;
 	}
@@ -2214,7 +2212,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			pattachments = attachment_list_init();
 			if (pattachments == nullptr)
 				return "E-2722";
-			message_content_set_attachments_internal(pmsg, pattachments);
+			pmsg->set_attachments_internal(pattachments);
 		}
 		for (auto event : pevent_list) {
 			if (event == pmain_event)
@@ -2547,7 +2545,7 @@ message_ptr oxcical_import_single(const char *str_zone,
 	auto atlist = attachment_list_init();
 	if (atlist == nullptr)
 		return nullptr;
-	message_content_set_attachments_internal(cmsg.get(), atlist);
+	cmsg->set_attachments_internal(atlist);
 	for (auto &&emb : vec) {
 		auto at = attachment_content_init();
 		if (at == nullptr)

@@ -215,7 +215,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
 		return FALSE;
-	message_content_set_rcpts_internal(pmsgctnt, prcpts);
+	pmsgctnt->set_rcpts_internal(prcpts);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
@@ -243,7 +243,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	pattachments = attachment_list_init();
 	if (pattachments == nullptr)
 		return FALSE;
-	message_content_set_attachments_internal(pmsgctnt, pattachments);
+	pmsgctnt->set_attachments_internal(pattachments);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
 	          "attachments WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
@@ -466,7 +466,7 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	inode.username = pinstance1->username;
 	pinstance->type = instance_type::message;
 	pinstance->b_new = FALSE;
-	pinstance->pcontent = message_content_dup(pmsgctnt);
+	pinstance->pcontent = pmsgctnt->dup();
 	if (pinstance->pcontent == nullptr)
 		return FALSE;
 	pdb->instance_list.push_back(std::move(inode));
@@ -534,7 +534,7 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 			*pb_result = FALSE;
 			return TRUE;	
 		}
-		pmsgctnt = message_content_dup(atx->pembedded);
+		pmsgctnt = atx->pembedded->dup();
 		if (pmsgctnt == nullptr)
 			return FALSE;
 		if (NULL != pmsgctnt->children.pattachments &&
@@ -1090,7 +1090,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 			tarray_set_free(prcpts);
 			return FALSE;
 		}
-		message_content_set_rcpts_internal(ict, prcpts);
+		ict->set_rcpts_internal(prcpts);
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
 	}
 	if (pmsgctnt->children.pattachments != nullptr &&
@@ -1103,7 +1103,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 			attachment_list_free(pattachments);
 			return FALSE;
 		}
-		message_content_set_attachments_internal(ict, pattachments);
+		ict->set_attachments_internal(pattachments);
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
 	}
 	return TRUE;
@@ -1228,7 +1228,6 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 {
 	int i;
 	uint32_t proptag;
-	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1284,7 +1283,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	}
 	if (pattctnt->pembedded != nullptr &&
 	    (!b_force || static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->pembedded == nullptr)) {
-		pmsgctnt = message_content_dup(pattctnt->pembedded);
+		auto pmsgctnt = pattctnt->pembedded->dup();
 		if (pmsgctnt == nullptr)
 			return FALSE;
 		if (!instance_identify_message(pmsgctnt)) {
@@ -1428,14 +1427,14 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 			return FALSE;
-		auto pmsgctnt = message_content_dup(ict);
+		auto pmsgctnt = ict->dup();
 		if (pmsgctnt == nullptr)
 			return FALSE;
 		attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent), pmsgctnt);
 		*pe_result = ecSuccess;
 		return TRUE;
 	}
-	auto pmsgctnt = message_content_dup(ict);
+	auto pmsgctnt = ict->dup();
 	if (pmsgctnt == nullptr)
 		return FALSE;	
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> upmsgctnt(pmsgctnt);
@@ -2989,7 +2988,6 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 	BOOL b_inconflict;
 	uint32_t tmp_status;
 	MESSAGE_CONTENT msgctnt;
-	MESSAGE_CONTENT *pembedded;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -3018,7 +3016,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 		pattachment = attachment_content_init();
 		if (pattachment == nullptr)
 			return FALSE;
-		pembedded = message_content_dup(&msgctnt);
+		auto pembedded = msgctnt.dup();
 		if (NULL == pembedded) {
 			attachment_content_free(pattachment);
 			return FALSE;
@@ -3043,7 +3041,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 	pattachment = attachment_content_init();
 	if (pattachment == nullptr)
 		return FALSE;
-	pembedded = message_content_dup(pmsgctnt);
+	auto pembedded = pmsgctnt->dup();
 	if (NULL == pembedded) {
 		attachment_content_free(pattachment);
 		return FALSE;

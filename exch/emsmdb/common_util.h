@@ -14,7 +14,8 @@
 
 struct logon_object;
 struct MAIL;
-struct MESSAGE_CONTENT;
+struct message_content;
+using MESSAGE_CONTENT = message_content;
 struct MIME_POOL;
 
 void* common_util_alloc(size_t size);

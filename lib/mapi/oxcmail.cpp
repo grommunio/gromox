@@ -2887,7 +2887,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		tarray_set_free(dsn_info.prcpts);
 		return NULL;
 	}
-	message_content_set_rcpts_internal(pmsg, dsn_info.prcpts);
+	pmsg->set_rcpts_internal(dsn_info.prcpts);
 	if (!dsn.enum_fields(*dsn.get_message_fields(),
 	    oxcmail_enum_dsn_reporting_mta, pmsg)) {
 		return NULL;
@@ -3169,7 +3169,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	message_content_set_rcpts_internal(pmsg, prcpts);
+	pmsg->set_rcpts_internal(prcpts);
 	if (!pmail->get_charset(default_charset))
 		gx_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
 	field_param.alloc = alloc;
@@ -3457,7 +3457,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			message_content_free(pmsg1);
 		return NULL;
 	}
-	message_content_set_attachments_internal(pmsg, pattachments);
+	pmsg->set_attachments_internal(pattachments);
 	if (b_smime) {
 		if (!oxcmail_parse_smime_message(pmail, pmsg)) {
 			message_content_free(pmsg);

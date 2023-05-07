@@ -566,7 +566,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		return ecAccessDenied;
 
 	/* Prepare write */
-	message_content_ptr dst(message_content_dup(par.ctnt));
+	message_content_ptr dst(par.ctnt->dup());
 	if (dst == nullptr)
 		return ecMAPIOOM;
 	auto err = rx_npid_replace(par, *dst, newdir);

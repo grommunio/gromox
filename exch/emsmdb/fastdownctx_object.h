@@ -10,7 +10,8 @@ struct FOLDER_MESSAGES;
 struct fxstream_producer;
 struct ics_state;
 struct logon_object;
-struct MESSAGE_CONTENT;
+struct message_content;
+using MESSAGE_CONTENT = message_content;
 using flow_node = std::pair<uint8_t, const void *>;
 
 struct fxdown_flow_list : public std::list<flow_node> {

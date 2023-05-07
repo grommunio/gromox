@@ -195,7 +195,7 @@ static ec_error_t
 fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	uint64_t change_num;
-	auto pproplist = message_content_get_proplist(pctx->m_content);
+	auto pproplist = pctx->m_content->get_proplist();
 	static constexpr uint32_t tags[] = {
 		PR_CONVERSATION_ID, PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
@@ -363,13 +363,13 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (NULL == prcpts) {
 			return ecServerOOM;
 		}
-		message_content_set_rcpts_internal(m_content, prcpts);
+		m_content->set_rcpts_internal(prcpts);
 		pattachments = attachment_list_init();
 		if (NULL == pattachments) {
 			return ecServerOOM;
 		}
-		message_content_set_attachments_internal(m_content, pattachments);
-		pproplist = message_content_get_proplist(m_content);
+		m_content->set_attachments_internal(pattachments);
+		pproplist = m_content->get_proplist();
 		uint8_t tmp_byte = marker == STARTFAIMSG;
 		if (pproplist->set(PR_ASSOCIATED, &tmp_byte) != 0)
 			return ecRpcFailed;
@@ -556,14 +556,13 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				message_content_free(pmsgctnt);
 				return ecServerOOM;
 			}
-			message_content_set_rcpts_internal(pmsgctnt, prcpts);
+			pmsgctnt->set_rcpts_internal(prcpts);
 			pattachments = attachment_list_init();
 			if (NULL == pattachments) {
 				message_content_free(pmsgctnt);
 				return ecServerOOM;
 			}
-			message_content_set_attachments_internal(
-							pmsgctnt, pattachments);
+			pmsgctnt->set_attachments_internal(pattachments);
 			attachment_content_set_embedded_internal(pnode->atx, pmsgctnt);
 		}
 		pmarker->marker = marker;

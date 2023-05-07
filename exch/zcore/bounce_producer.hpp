@@ -2,6 +2,6 @@
 #include <gromox/mapi_types.hpp>
 
 struct MAIL;
-struct MESSAGE_CONTENT;
+struct message_content;
 
-extern BOOL zcore_bouncer_make(const char *username, MESSAGE_CONTENT *brief, const char *bounce_type, MAIL *);
+extern BOOL zcore_bouncer_make(const char *username, message_content *brief, const char *bounce_type, MAIL *);

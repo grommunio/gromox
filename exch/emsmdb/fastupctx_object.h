@@ -15,7 +15,8 @@
 struct fxstream_parser;
 struct logon_object;
 struct ATTACHMENT_CONTENT;
-struct MESSAGE_CONTENT;
+struct message_content;
+using MESSAGE_CONTENT = message_content;
 struct TPROPVAL_ARRAY;
 
 struct fxup_marker_node {
