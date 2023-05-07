@@ -21,12 +21,16 @@ static void t_card()
 	l.append_value(std::move(v));
 
 	char buf[128000];
-	C.serialize(buf, std::size(buf));
-	printf("%s\n", buf);
+	if (!C.serialize(buf, std::size(buf)))
+		printf("ERROR\n");
+	else
+		printf("%s\n", buf);
 	C.clear();
 	C.load_single_from_str_move(buf);
-	C.serialize(buf, std::size(buf));
-	printf("%s\n", buf);
+	if (!C.serialize(buf, std::size(buf)))
+		printf("ERROR\n");
+	else
+		printf("%s\n", buf);
 
 	strcpy(buf, "BEGIN:VCARD\n\nEND:VCARD\n");
 	C.load_single_from_str_move(buf);
