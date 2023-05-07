@@ -3093,24 +3093,21 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	char tmp_buff[256];
 	PROPID_ARRAY propids;
 	char mime_charset[64];
-	MESSAGE_CONTENT *pmsg;
 	char default_charset[64];
 	namemap phash;
 	MIME_ENUM_PARAM mime_enum{phash};
 	FIELD_ENUM_PARAM field_param{phash};
 	ATTACHMENT_LIST *pattachments;
 	
-	pmsg = message_content_init();
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return NULL;
 	/* set default message class */
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note") != 0) {
-		message_content_free(pmsg);
 		return NULL;
 	}
 	prcpts = tarray_set_init();
 	if (NULL == prcpts) {
-		message_content_free(pmsg);
 		return NULL;
 	}
 	pmsg->set_rcpts_internal(prcpts);
@@ -3118,18 +3115,16 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		gx_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
-	field_param.pmsg = pmsg;
+	field_param.pmsg = pmsg.get();
 	field_param.charset = default_charset;
 	field_param.last_propid = 0x8000;
 	field_param.b_flag_del = false;
 	const auto phead = pmail->get_head();
 	if (NULL == phead) {
-		message_content_free(pmsg);
 		return NULL;
 	}
 	field_param.b_classified = phead->get_field("X-Microsoft-Classified", tmp_buff, 16);
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param)) {
-		message_content_free(pmsg);
 		return NULL;
 	}
 	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
@@ -3140,7 +3135,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_EMAIL_ADDRESS, PR_SENT_REPRESENTING_EMAIL_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_ENTRYID, PR_SENT_REPRESENTING_ENTRYID)) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	} else if (!pmsg->proplist.has(PR_SENT_REPRESENTING_NAME) &&
@@ -3151,26 +3145,22 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENDER_EMAIL_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENDER_SEARCH_KEY) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ENTRYID, PR_SENDER_ENTRYID)) {
-			message_content_free(pmsg);
 			return NULL;
 		}	
 	}
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		tmp_int32 = IMPORTANCE_NORMAL;
 		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	}
 	if (!pmsg->proplist.has(PR_SENSITIVITY)) {
 		tmp_int32 = SENSITIVITY_NONE;
 		if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	}
 	if (!oxcmail_parse_transport_message_header(phead, &pmsg->proplist)) {
-		message_content_free(pmsg);
 		return NULL;
 	}
 	auto ts = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
@@ -3178,7 +3168,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		mime_enum.nttime_stamp = rop_util_unix_to_nttime(time(NULL));
 		if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME,
 		    &mime_enum.nttime_stamp) != 0) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	} else {
@@ -3186,46 +3175,38 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	}
 	if (pmsg->proplist.set(PR_CREATION_TIME, &mime_enum.nttime_stamp) != 0 ||
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &mime_enum.nttime_stamp) != 0) {
-		message_content_free(pmsg);
 		return NULL;
 	}
 
 	auto head_ct = phead->content_type;
 	if (strcasecmp(head_ct, "application/ms-tnef") == 0 &&
 	    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
-	auto pmsg1 = oxcmail_parse_tnef(phead, alloc, get_propids);
+	std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(phead, alloc, get_propids));
 	if (pmsg1 != nullptr) {
-		auto cl_1 = make_scope_exit([&]() { message_content_free(pmsg1); });
-		if (tnef_vfy_check_key(pmsg1, tmp_buff)) {
-			if (!oxcmail_fetch_propname(pmsg, phash, alloc, get_propids)) {
-				message_content_free(pmsg);
+		if (tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
+			if (!oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 				return NULL;
-			}
-			if (!oxcmail_copy_message_proplist(pmsg, pmsg1)) {
-				message_content_free(pmsg);
+			if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
 				return NULL;
-			}
 			prcpts = pmsg1->children.prcpts;
 			pmsg1->children.prcpts =
 				pmsg->children.prcpts;
 			pmsg->children.prcpts = prcpts;
-			message_content_free(pmsg);
 			if (field_param.b_flag_del)
-				oxcmail_remove_flag_propties(pmsg1, get_propids);
-			cl_1.release();
-			return pmsg1;
+				oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
+			return pmsg1.release();
 		}
 	}
 	}
 	if (strcasecmp(head_ct, "multipart/report") == 0 &&
 	    oxcmail_get_content_param(phead, "report-type", tmp_buff, 128) &&
 	    strcasecmp("delivery-status", tmp_buff) == 0)
-		mime_enum.preport = oxcmail_parse_dsn(pmail, pmsg);
+		mime_enum.preport = oxcmail_parse_dsn(pmail, pmsg.get());
 	if ((strcasecmp(head_ct, "multipart/report") == 0 &&
 	    oxcmail_get_content_param(phead, "report-type", tmp_buff, 128) &&
 	    strcasecmp("disposition-notification", tmp_buff) == 0) ||
 	    strcasecmp("message/disposition-notification", head_ct) == 0)
-		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg);
+		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg.get());
 
 	bool b_alternative = false, b_smime = false;
 	if (strcasecmp(head_ct, "multipart/mixed") == 0) {
@@ -3235,44 +3216,34 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    strcasecmp(pmime->content_type, "text/plain") == 0 &&
 		    strcasecmp(pmime1->content_type, "application/ms-tnef") == 0 &&
 		    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
-		auto pmsg1 = oxcmail_parse_tnef(pmime1, alloc, get_propids);
+		std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(pmime1, alloc, get_propids));
 		if (pmsg1 != nullptr) {
-			auto cl_1 = make_scope_exit([&]() { message_content_free(pmsg1); });
-			if (tnef_vfy_check_key(pmsg1, tmp_buff)) {
+			if (tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
 				if (!oxcmail_parse_message_body(default_charset, pmime, &pmsg->proplist) ||
-				    !oxcmail_fetch_propname(pmsg, phash, alloc, get_propids)) {
-					message_content_free(pmsg);
+				    !oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 					return NULL;
-				}
-				if (!oxcmail_copy_message_proplist(pmsg, pmsg1)) {
-					message_content_free(pmsg);
+				if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
 					return NULL;
-				}
 				prcpts = pmsg1->children.prcpts;
 				pmsg1->children.prcpts =
 					pmsg->children.prcpts;
 				pmsg->children.prcpts = prcpts;
-				message_content_free(pmsg);
 				if (field_param.b_flag_del)
-					oxcmail_remove_flag_propties(pmsg1, get_propids);
-				cl_1.release();
-				return pmsg1;
+					oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
+				return pmsg1.release();
 			}
 		}
 		}
 	} else if (smime_clearsigned(head_ct, phead, tmp_buff)) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != 0) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 		b_smime = true;
 	} else if (strcasecmp(head_ct, "application/pkcs7-mime") == 0 ||
 	    strcasecmp(head_ct, "application/x-pkcs7-mime") == 0) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME") != 0 ||
-		    !oxcmail_parse_encrypted(phead, &field_param.last_propid, phash, pmsg)) {
-			message_content_free(pmsg);
+		    !oxcmail_parse_encrypted(phead, &field_param.last_propid, phash, pmsg.get()))
 			return NULL;
-		}
 		b_smime = true;
 	}
 	mime_enum.b_result = true;
@@ -3282,7 +3253,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
 	mime_enum.pmime_pool = pmail->pmime_pool;
-	mime_enum.pmsg = pmsg;
+	mime_enum.pmsg = pmsg.get();
 	mime_enum.phash = phash;
 	pmime = phead;
 	for (i=0; i<MAXIMUM_SEARCHING_DEPTH; i++) {
@@ -3333,41 +3304,35 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	if (NULL != mime_enum.pplain) {
 		if (!oxcmail_parse_message_body(default_charset,
 			mime_enum.pplain, &pmsg->proplist)) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	}
 	if (NULL != mime_enum.phtml) {
 		if (!oxcmail_parse_message_body(default_charset,
 			mime_enum.phtml, &pmsg->proplist)) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	} else if (NULL != mime_enum.penriched) {
 		if (!oxcmail_parse_message_body(default_charset,
 			mime_enum.penriched, &pmsg->proplist)) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 	}
 	size_t content_len = 0;
-	MESSAGE_CONTENT *pmsg1 = nullptr; /* ical */
+	std::unique_ptr<message_content, mc_delete> pmsg1; /* ical */
 	if (NULL != mime_enum.pcalendar) {
 		auto rdlength = mime_enum.pcalendar->get_length();
 		if (rdlength < 0) {
 			mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
-			message_content_free(pmsg);
 			return nullptr;
 		}
 		content_len = rdlength;
 		auto contoutsize = 3 * content_len + 2;
 		std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contoutsize));
 		if (NULL == pcontent) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 		if (!mime_enum.pcalendar->read_content(pcontent.get(), &content_len)) {
-			message_content_free(pmsg);
 			return NULL;
 		}
 		pcontent[content_len] = '\0';
@@ -3384,8 +3349,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
-				pmsg1 = oxcical_import_single(str_zone, ical, alloc,
-				        get_propids, oxcmail_username_to_entryid).release();
+				pmsg1.reset(oxcical_import_single(str_zone, ical, alloc,
+				        get_propids, oxcmail_username_to_entryid).release());
 				if (pmsg1 == nullptr)
 					mime_enum.pcalendar = NULL;
 			}
@@ -3394,52 +3359,33 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	
 	pattachments = attachment_list_init();
 	if (NULL == pattachments) {
-		message_content_free(pmsg);
-		if (mime_enum.pcalendar != nullptr)
-			message_content_free(pmsg1);
 		return NULL;
 	}
 	pmsg->set_attachments_internal(pattachments);
 	if (b_smime) {
-		if (!oxcmail_parse_smime_message(pmail, pmsg)) {
-			message_content_free(pmsg);
+		if (!oxcmail_parse_smime_message(pmail, pmsg.get()))
 			return NULL;
-		}
 	} else {
 		mime_enum.last_propid = field_param.last_propid;
 		pmail->enum_mime(oxcmail_enum_attachment, &mime_enum);
 		if (!mime_enum.b_result) {
-			message_content_free(pmsg);
-			if (mime_enum.pcalendar != nullptr)
-				message_content_free(pmsg1);
 			return NULL;
 		}
 	}
-	if (!oxcmail_fetch_propname(pmsg, phash, alloc, get_propids)) {
-		message_content_free(pmsg);
-		if (mime_enum.pcalendar != nullptr)
-			message_content_free(pmsg1);
+	if (!oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 		return NULL;
-	}
 	if (NULL != mime_enum.pcalendar) {
 		if (!pmsg1->proplist.has(PR_MESSAGE_CLASS)) {
 			/* multiple calendar objects in attachment list */
 			if (pmsg1->children.pattachments != nullptr &&
-			    !oxcmail_merge_message_attachments(pmsg1, pmsg)) {
-				message_content_free(pmsg);
-				message_content_free(pmsg1);
+			    !oxcmail_merge_message_attachments(pmsg1.get(), pmsg.get()))
 				return NULL;
-			}
-			message_content_free(pmsg1);
+			pmsg1.reset();
 		} else {
-			if (!oxcmail_copy_message_proplist(pmsg, pmsg1) ||
-			    !oxcmail_merge_message_attachments(pmsg, pmsg1)) {
-				message_content_free(pmsg);
-				message_content_free(pmsg1);
+			if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()) ||
+			    !oxcmail_merge_message_attachments(pmsg.get(), pmsg1.get()))
 				return NULL;
-			}
-			message_content_free(pmsg);
-			pmsg = pmsg1;
+			pmsg = std::move(pmsg1);
 			/* calendar message object can not be displayed
 				correctly without PidTagRtfCompressed convert
 				PidTagHtml to PidTagRtfCompressed */
@@ -3468,19 +3414,16 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			std::string plainbuf;
 			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf);
 			if (ret < 0) {
-				message_content_free(pmsg);
 				return NULL;
 			}
 			if (ret == CP_UTF8) {
 				if (pmsg->proplist.set(PR_BODY_W, plainbuf.data()) != 0) {
-					message_content_free(pmsg);
 					return nullptr;
 				}
 			} else {
 				auto z = 3 * plainbuf.size() + 1;
 				auto s = static_cast<char *>(alloc(z));
 				if (s == nullptr) {
-					message_content_free(pmsg);
 					return NULL;
 				}
 				auto encoding = cpid_to_cset(cpid);
@@ -3497,19 +3440,16 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		if (s != nullptr) {
 			auto phtml_bin = static_cast<BINARY *>(alloc(sizeof(BINARY)));
 			if (NULL == phtml_bin) {
-				message_content_free(pmsg);
 				return NULL;
 			}
 			phtml_bin->pc = plain_to_html(s);
 			if (phtml_bin->pc == nullptr) {
-				message_content_free(pmsg);
 				return NULL;
 			}
 			phtml_bin->cb = strlen(phtml_bin->pc);
 			pmsg->proplist.set(PR_HTML, phtml_bin);
 			tmp_int32 = CP_UTF8;
 			if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0) {
-				message_content_free(pmsg);
 				return nullptr;
 			}
 		}
@@ -3523,18 +3463,16 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidSmartNoAttach};
 		const PROPNAME_ARRAY propnames = {1, &propname};
 		if (!get_propids(&propnames, &propids)) {
-			message_content_free(pmsg);
 			return nullptr;
 		}
 		tmp_byte = 1;
 		if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]), &tmp_byte) != 0) {
-			message_content_free(pmsg);
 			return nullptr;
 		}
 	}
 	if (field_param.b_flag_del)
-		oxcmail_remove_flag_propties(pmsg, get_propids);
-	return pmsg;
+		oxcmail_remove_flag_propties(pmsg.get(), get_propids);
+	return pmsg.release();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2182: ENOMEM");
 	return nullptr;
