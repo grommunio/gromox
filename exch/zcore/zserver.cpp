@@ -646,7 +646,6 @@ void zserver_stop()
 ec_error_t zs_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession)
 {
-	char lang[32];
 	char homedir[256];
 	char tmp_name[UADDR_SIZE];
 	
@@ -699,7 +698,7 @@ ec_error_t zs_logon(const char *username,
 	} catch (const std::bad_alloc &) {
 		return ecServerOOM;
 	}
-	auto c = lang_to_charset(lang);
+	auto c = lang_to_charset(tmp_info.lang.c_str());
 	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
 	tmp_info.flags = flags;
 	tmp_info.last_time = time(nullptr);
