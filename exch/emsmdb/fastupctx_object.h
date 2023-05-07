@@ -12,9 +12,9 @@
 #define ROOT_ELEMENT_MESSAGELIST			4
 #define ROOT_ELEMENT_TOPFOLDER				5
 
+struct attachment_content;
 struct fxstream_parser;
 struct logon_object;
-struct ATTACHMENT_CONTENT;
 struct message_content;
 using MESSAGE_CONTENT = message_content;
 struct TPROPVAL_ARRAY;
@@ -23,7 +23,7 @@ struct fxup_marker_node {
 	uint32_t marker;
 	union {
 		MESSAGE_CONTENT *msg;
-		ATTACHMENT_CONTENT *atx;
+		attachment_content *atx;
 		TPROPVAL_ARRAY *props;
 		uint32_t instance_id;
 		uint64_t folder_id;

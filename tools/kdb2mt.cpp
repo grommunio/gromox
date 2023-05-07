@@ -1180,7 +1180,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 		return 0;
 	ctnt->proplist.erase_if(skip_property);
 	if (parent.type == MAPI_ATTACH)
-		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
+		parent.attach->set_embedded_internal(ctnt.release());
 	if (parent.type != MAPI_FOLDER)
 		return 0;
 

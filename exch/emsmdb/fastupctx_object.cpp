@@ -563,7 +563,7 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				return ecServerOOM;
 			}
 			pmsgctnt->set_attachments_internal(pattachments);
-			attachment_content_set_embedded_internal(pnode->atx, pmsgctnt);
+			pnode->atx->set_embedded_internal(pmsgctnt);
 		}
 		pmarker->marker = marker;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||

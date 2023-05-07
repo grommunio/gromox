@@ -2290,7 +2290,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
 				if (ret == ecSuccess &&
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
-					attachment_content_set_embedded_internal(pattachment, pmsg);
+					pattachment->set_embedded_internal(pmsg);
 					tmp_int32 = ATTACH_EMBEDDED_MSG;
 					if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == 0)
 						pmime_enum->b_result = true;
@@ -2340,7 +2340,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (pmsg == nullptr)
 				return;
-			attachment_content_set_embedded_internal(pattachment, pmsg);
+			pattachment->set_embedded_internal(pmsg);
 			pmime_enum->b_result = true;
 			return;
 		}

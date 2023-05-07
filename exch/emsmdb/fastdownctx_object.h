@@ -4,7 +4,7 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 
-struct ATTACHMENT_CONTENT;
+struct attachment_content;
 struct FOLDER_CONTENT;
 struct FOLDER_MESSAGES;
 struct fxstream_producer;
@@ -36,7 +36,7 @@ struct fastdownctx_object final {
 	static std::unique_ptr<fastdownctx_object> create(logon_object *, uint8_t string_option);
 	/* make_xxx function can be invoked only once on the object */
 	BOOL make_messagecontent(MESSAGE_CONTENT *);
-	BOOL make_attachmentcontent(ATTACHMENT_CONTENT *);
+	BOOL make_attachmentcontent(attachment_content *);
 	BOOL make_foldercontent(BOOL subfolders, std::unique_ptr<FOLDER_CONTENT> &&);
 	BOOL make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&);
 	BOOL make_messagelist(BOOL chginfo, EID_ARRAY *msglst);

@@ -305,7 +305,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			if (!instance_load_message(psqlite, message_id1,
 			    &last_id, &pmsgctnt1))
 				return FALSE;
-			attachment_content_set_embedded_internal(pattachment, pmsgctnt1);
+			pattachment->set_embedded_internal(pmsgctnt1);
 		}
 		sqlite3_reset(pstmt1);
 	}
@@ -1150,7 +1150,7 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	inode.username = pinstance1->username;
 	pinstance->type = instance_type::attachment;
 	pinstance->b_new = FALSE;
-	pinstance->pcontent = attachment_content_dup(pattachment);
+	pinstance->pcontent = pattachment->dup();
 	if (pinstance->pcontent == nullptr)
 		return FALSE;
 	pdb->instance_list.push_back(std::move(inode));
@@ -1290,7 +1290,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
-		attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pmsgctnt);
+		static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->set_embedded_internal(pmsgctnt);
 	}
 	return TRUE;
 }
@@ -1347,7 +1347,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 			return FALSE;
 		auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent);
-		auto pattachment = attachment_content_dup(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent));
+		auto pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->dup();
 		if (pattachment == nullptr)
 			return FALSE;
 		if (pinstance->b_new) {
@@ -1430,7 +1430,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto pmsgctnt = ict->dup();
 		if (pmsgctnt == nullptr)
 			return FALSE;
-		attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent), pmsgctnt);
+		static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent)->set_embedded_internal(pmsgctnt);
 		*pe_result = ecSuccess;
 		return TRUE;
 	}
@@ -3022,7 +3022,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 			return FALSE;
 		}
 		pembedded->proplist.erase(PidTagMid);
-		attachment_content_set_embedded_internal(pattachment, pembedded);
+		pattachment->set_embedded_internal(pembedded);
 		if (!attachment_list_append_internal(pattachments, pattachment)) {
 			attachment_content_free(pattachment);
 			return FALSE;
@@ -3047,7 +3047,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 		return FALSE;
 	}
 	pembedded->proplist.erase(PidTagMid);
-	attachment_content_set_embedded_internal(pattachment, pembedded);
+	pattachment->set_embedded_internal(pembedded);
 	if (!attachment_list_append_internal(pattachments, pattachment)) {
 		attachment_content_free(pattachment);
 		return FALSE;

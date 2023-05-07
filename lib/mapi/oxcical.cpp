@@ -2227,7 +2227,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			auto pembedded = message_content_init();
 			if (pembedded == nullptr)
 				return "E-2725";
-			attachment_content_set_embedded_internal(pattachment, pembedded);
+			pattachment->set_embedded_internal(pembedded);
 			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != 0)
 				return "E-2726";
 			
@@ -2554,7 +2554,7 @@ message_ptr oxcical_import_single(const char *str_zone,
 			attachment_content_free(at);
 			return nullptr;
 		}
-		attachment_content_set_embedded_internal(at, emb.release());
+		at->set_embedded_internal(emb.release());
 	}
 	return cmsg;
 }

@@ -5,7 +5,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/mapi_types.hpp>
 
-struct ATTACHMENT_CONTENT;
+struct attachment_content;
 
 struct GX_EXPORT property_groupinfo {
 	property_groupinfo(uint32_t group_id);
@@ -22,7 +22,7 @@ using PROPERTY_GROUPINFO = property_groupinfo;
 
 struct ATTACHMENT_LIST {
 	uint16_t count;
-	ATTACHMENT_CONTENT **pplist;
+	attachment_content **pplist;
 };
 
 struct MESSAGE_CHILDREN {
@@ -69,10 +69,14 @@ struct message_content {
 };
 using MESSAGE_CONTENT = message_content;
 
-struct ATTACHMENT_CONTENT {
+struct attachment_content {
+	void set_embedded_internal(message_content *);
+	attachment_content *dup() const;
+
 	TPROPVAL_ARRAY proplist; /* PR_ATTACH_NUM must be the first */
 	MESSAGE_CONTENT *pembedded;
 };
+using ATTACHMENT_CONTENT = attachment_content;
 
 struct FOLDER_MESSAGES {
 	EID_ARRAY *pfai_msglst;
@@ -100,9 +104,7 @@ struct FOLDER_CHANGES {
 };
 
 extern ATTACHMENT_CONTENT *attachment_content_init();
-extern void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *, MESSAGE_CONTENT *embed);
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
-extern ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *);
 extern ATTACHMENT_LIST *attachment_list_init();
 void attachment_list_free(ATTACHMENT_LIST *plist);
 void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index);

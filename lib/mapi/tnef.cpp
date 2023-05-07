@@ -1185,7 +1185,7 @@ static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
 		           TRUE, alloc, get_propids, u2e);
 		if (emb == nullptr)
 			return X_ERROR;
-		attachment_content_set_embedded_internal(atc, emb);
+		atc->set_embedded_internal(emb);
 	} else {
 		bv->cb -= 16;
 		memmove(bv->pb, bv->pb + 16, bv->cb);

@@ -13,7 +13,7 @@
 #define STRING_OPTION_CPID						0x02
 #define STRING_OPTION_FORCE_UNICODE				0x08
 
-struct ATTACHMENT_CONTENT;
+struct attachment_content;
 struct FOLDER_CHANGES;
 struct logon_object;
 struct message_content;
@@ -43,7 +43,7 @@ struct fxstream_producer {
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
 	BOOL write_uint32(uint32_t);
 	BOOL write_proplist(const TPROPVAL_ARRAY *);
-	BOOL write_attachmentcontent(BOOL delprop, const ATTACHMENT_CONTENT *);
+	BOOL write_attachmentcontent(BOOL delprop, const attachment_content *);
 	BOOL write_messagecontent(BOOL delprop, const MESSAGE_CONTENT *);
 	BOOL write_message(const MESSAGE_CONTENT *);
 	BOOL write_progresstotal(const PROGRESS_INFORMATION *);

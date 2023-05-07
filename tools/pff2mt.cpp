@@ -816,7 +816,7 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 {
 	auto ctnt = extract_message(depth, parent, item);
 	if (parent.type == MAPI_ATTACH)
-		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
+		parent.attach->set_embedded_internal(ctnt.release());
 	if (parent.type != MAPI_FOLDER)
 		return 0;
 

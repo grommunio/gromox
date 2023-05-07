@@ -27,9 +27,9 @@ ATTACHMENT_CONTENT* attachment_content_init()
 	return pattachment;
 }
 
-void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *pattachment,
-    MESSAGE_CONTENT *pembedded)
+void attachment_content::set_embedded_internal(message_content *pembedded)
 {
+	auto pattachment = this;
 	if (NULL != pattachment->pembedded) {
 		message_content_free(pattachment->pembedded);
 	}
@@ -45,8 +45,9 @@ void attachment_content_free(ATTACHMENT_CONTENT *pattachment)
 	free(pattachment);
 }
 
-ATTACHMENT_CONTENT *attachment_content_dup(const ATTACHMENT_CONTENT *src)
+attachment_content *attachment_content::dup() const
 {
+	auto src = this;
 	auto dst = attachment_content_init();
 	if (dst == nullptr)
 		return NULL;
@@ -134,7 +135,7 @@ ATTACHMENT_LIST *attachment_list_dup(const ATTACHMENT_LIST *src)
 	if (dst == nullptr)
 		return NULL;
 	for (unsigned int i = 0; i < src->count; ++i) {
-		auto pattachment = attachment_content_dup(src->pplist[i]);
+		auto pattachment = src->pplist[i]->dup();
 		if (NULL == pattachment) {
 			attachment_list_free(dst);
 			return NULL;
