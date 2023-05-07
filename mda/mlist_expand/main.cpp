@@ -62,8 +62,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 	char delivered_to[UADDR_SIZE];
 	std::vector<std::string> temp_file1; /* all the expandees from mlists */
 	std::vector<std::string> unexp;
-	MESSAGE_CONTEXT *pcontext_expand;
-	MESSAGE_CONTEXT *pbounce_context;
 
 	auto phead = pcontext->mail.get_head();
 	if (NULL == phead) {
@@ -96,8 +94,8 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 		case MLIST_RESULT_NONE:
 			unexp.emplace_back(rcpt);
 			break;
-		case MLIST_RESULT_PRIVIL_DOMAIN:
-			pbounce_context = get_context();
+		case MLIST_RESULT_PRIVIL_DOMAIN: {
+			auto pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
 			    !mlex_bouncer_make(pcontext->ctrl.from,
 			    rcpt_to, &pcontext->mail, "BOUNCE_MLIST_DOMAIN",
@@ -110,7 +108,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 				get_default_domain());
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			throw_context(pbounce_context);
-			pbounce_context = NULL;
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
@@ -131,8 +128,9 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			break;
-		case MLIST_RESULT_PRIVIL_INTERNAL:
-			pbounce_context = get_context();
+		}
+		case MLIST_RESULT_PRIVIL_INTERNAL: {
+			auto pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
 			    !mlex_bouncer_make(pcontext->ctrl.from,
 			    rcpt_to, &pcontext->mail, "BOUNCE_MLIST_INTERNAL",
@@ -145,7 +143,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 				get_default_domain());
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			throw_context(pbounce_context);
-			pbounce_context = NULL;
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
@@ -166,8 +163,9 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			break;
-		case MLIST_RESULT_PRIVIL_SPECIFIED:
-			pbounce_context = get_context();
+		}
+		case MLIST_RESULT_PRIVIL_SPECIFIED: {
+			auto pbounce_context = get_context();
 			if (pbounce_context == nullptr ||
 			    !mlex_bouncer_make(pcontext->ctrl.from,
 			    rcpt_to, &pcontext->mail, "BOUNCE_MLIST_SPECIFIED",
@@ -180,7 +178,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 				get_default_domain());
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			throw_context(pbounce_context);
-			pbounce_context = NULL;
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
@@ -202,6 +199,7 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 			}
 			break;
 		}
+		}
 	}
 
 	if (!b_touched)
@@ -212,7 +210,7 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 		       hook_result::stop : hook_result::xcontinue;
 	}
 
-	pcontext_expand =  get_context();
+	auto pcontext_expand = get_context();
 	if (NULL == pcontext_expand) {
 		for (auto &&recip : temp_file1) {
 			for (i = 0; i < num; ++i)
