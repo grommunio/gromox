@@ -198,10 +198,6 @@ int imap_parser_run()
 		CRYPTO_set_locking_callback(imap_parser_ssl_locking);
 #endif
 	}
-	num = 1024*g_context_num;
-	if (num < 1024*1024) {
-		num = 1024*1024;
-	}
 	num = 4*g_context_num;
 	if (num < 200) {
 		num = 200;
