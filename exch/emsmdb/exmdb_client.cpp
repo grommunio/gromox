@@ -53,18 +53,6 @@ int run()
 #undef E
 	/* pass the service functions to exmdb_provider */
 #define E(s) reinterpret_cast<void *>(s)
-	pass_service(SERVICE_ID_GET_USER_DISPLAYNAME, E(common_util_get_user_displayname));
-	pass_service(SERVICE_ID_CHECK_MLIST_INCLUDE, E(common_util_check_mlist_include));
-	pass_service(SERVICE_ID_GET_USER_LANG, E(common_util_get_user_lang));
-	pass_service(SERVICE_ID_GET_TIMEZONE, E(common_util_get_timezone));
-	pass_service(SERVICE_ID_GET_MAILDIR, E(common_util_get_maildir));
-	pass_service(SERVICE_ID_GET_HOMEDIR, E(common_util_get_homedir));
-	pass_service(SERVICE_ID_GET_ID_FFROM_USERNAME, E(common_util_get_id_from_username));
-	pass_service(SERVICE_ID_GET_USERNAME_FROM_ID, E(common_util_get_username_from_id));
-	pass_service(SERVICE_ID_GET_USER_IDS, E(common_util_get_user_ids));
-	pass_service(SERVICE_ID_GET_DOMAIN_IDS, E(common_util_get_domain_ids));
-	pass_service(SERVICE_ID_GET_ID_FROM_MAILDIR, E(common_util_get_id_from_maildir));
-	pass_service(SERVICE_ID_GET_ID_FROM_HOMEDIR, E(common_util_get_id_from_homedir));
 	pass_service(SERVICE_ID_SEND_MAIL, E(ems_send_mail));
 	pass_service(SERVICE_ID_GET_MIME_POOL, E(common_util_get_mime_pool));
 	pass_service(SERVICE_ID_GET_HANDLE, E(emsmdb_interface_get_handle));

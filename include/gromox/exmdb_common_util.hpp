@@ -32,6 +32,7 @@ enum {
 struct MAIL;
 struct MIME_POOL;
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
+E(get_username_from_id)
 E(check_mlist_include)
 E(get_user_ids)
 E(get_domain_ids)

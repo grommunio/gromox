@@ -61,6 +61,7 @@ int g_cid_compression = -1; /* disabled(-1), default_level(0), specific_level(n)
 static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
+E(get_username_from_id)
 E(get_user_displayname)
 E(check_mlist_include)
 E(get_user_lang)
@@ -77,7 +78,6 @@ E(get_handle)
 #undef E
 decltype(ems_send_mail) ems_send_mail;
 
-static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
@@ -169,18 +169,6 @@ void common_util_pass_service(int service_id, void *func)
 {
 #define E(v, ptr) case (v): (ptr) = reinterpret_cast<decltype(ptr)>(func); break;
 	switch (service_id) {
-	E(SERVICE_ID_GET_USER_DISPLAYNAME, common_util_get_user_displayname);
-	E(SERVICE_ID_CHECK_MLIST_INCLUDE, common_util_check_mlist_include);
-	E(SERVICE_ID_GET_USER_LANG, common_util_get_user_lang);
-	E(SERVICE_ID_GET_TIMEZONE, common_util_get_timezone);
-	E(SERVICE_ID_GET_MAILDIR, common_util_get_maildir);
-	E(SERVICE_ID_GET_HOMEDIR, common_util_get_homedir);
-	E(SERVICE_ID_GET_ID_FFROM_USERNAME, common_util_get_id_from_username);
-	E(SERVICE_ID_GET_USERNAME_FROM_ID, common_util_get_username_from_id);
-	E(SERVICE_ID_GET_USER_IDS, common_util_get_user_ids);
-	E(SERVICE_ID_GET_DOMAIN_IDS, common_util_get_domain_ids);
-	E(SERVICE_ID_GET_ID_FROM_MAILDIR, common_util_get_id_from_maildir);
-	E(SERVICE_ID_GET_ID_FROM_HOMEDIR, common_util_get_id_from_homedir);
 	E(SERVICE_ID_SEND_MAIL, ems_send_mail);
 	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
 	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);

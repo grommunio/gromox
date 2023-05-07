@@ -243,6 +243,29 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 #undef IDLOUT
 		register_service("exmdb_client_register_proc", exmdb_server::register_proc);
 		register_service("pass_service", common_util_pass_service);
+
+#define E(f, s) do { \
+	query_service2(s, f); \
+	if ((f) == nullptr) { \
+		mlog(LV_ERR, "exmdb: failed to get the \"%s\" service", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+		E(common_util_get_user_ids, "get_user_ids");
+		E(common_util_get_domain_ids, "get_domain_ids");
+		E(common_util_get_maildir, "get_maildir");
+		E(common_util_get_homedir, "get_homedir");
+		E(common_util_get_id_from_maildir, "get_id_from_maildir");
+		E(common_util_get_id_from_homedir, "get_id_from_homedir");
+		E(common_util_get_id_from_username, "get_id_from_username");
+		E(common_util_get_username_from_id, "get_username_from_id");
+		E(common_util_get_user_displayname, "get_user_displayname");
+		E(common_util_check_mlist_include, "check_mlist_include");
+		E(common_util_get_user_lang, "get_user_lang");
+		E(common_util_get_timezone, "get_timezone");
+
+#undef E
 		return TRUE;
 	}
 	case PLUGIN_FREE:
