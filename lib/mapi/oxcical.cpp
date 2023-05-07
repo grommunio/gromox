@@ -2385,8 +2385,9 @@ static BOOL oxcical_classify_calendar(const ical &pical, uidxevent_list_t &ul) t
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
 		auto piline = pcomponent->get_line("UID");
-		auto puid = piline != nullptr ? piline->get_first_subvalue() : "";
-		ul[puid].push_back(pcomponent);
+		auto puid = piline != nullptr ? piline->get_first_subvalue() : nullptr;
+		if (puid != nullptr)
+			ul[puid].push_back(pcomponent);
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
