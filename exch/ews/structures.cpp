@@ -9,7 +9,7 @@
  */
 #include <algorithm>
 #include <iterator>
-
+#include <utility>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
@@ -875,7 +875,7 @@ gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder&& folder) : folder(folder)
+tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

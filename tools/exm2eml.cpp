@@ -183,8 +183,9 @@ int main(int argc, const char **argv) try
 		}
 	}
 	if (g_export_mode == EXPORT_MAIL) {
-		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html, mimepool,
-		    &imail, zalloc, cu_get_propids, cu_get_propname)) {
+		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html,
+		    std::move(mimepool), &imail, zalloc, cu_get_propids,
+		    cu_get_propname)) {
 			fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
 		}

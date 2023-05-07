@@ -1227,7 +1227,7 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_pa
 	build_param.msg_path = pjson->path.c_str();
 	build_param.storage_path = temp_path;
 	build_param.depth = 1;
-	build_param.ppool = pool;
+	build_param.ppool = std::move(pool);
 	build_param.build_result = TRUE;
 	pjson->enum_mime(mjson_enum_build, &build_param);
 	if (!build_param.build_result)
