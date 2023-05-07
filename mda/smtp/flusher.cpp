@@ -85,19 +85,18 @@ int flusher_run()
  */
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext) try
 {
-	FLUSH_ENTITY e, *pentity = &e;
+	FLUSH_ENTITY e;
 	if (0 == pcontext->flusher.flush_ID) {
 		pcontext->flusher.flush_ID = flusher_increase_max_ID();
 	}
-	
-	pentity->is_spam        = pcontext->is_spam;
-	pentity->pconnection    = &pcontext->connection;
-	pentity->penvelope      = &pcontext->menv;
-	pentity->pflusher       = &pcontext->flusher;
-	pentity->pstream        = &pcontext->stream;
-	pentity->context_ID     = pcontext->context_id;
-	pentity->pcontext       = pcontext;
-	pentity->command_protocol = pcontext->command_protocol;
+	e.is_spam        = pcontext->is_spam;
+	e.pconnection    = &pcontext->connection;
+	e.penvelope      = &pcontext->menv;
+	e.pflusher       = &pcontext->flusher;
+	e.pstream        = &pcontext->stream;
+	e.context_ID     = pcontext->context_id;
+	e.pcontext       = pcontext;
+	e.command_protocol = pcontext->command_protocol;
 	message_enqueue_handle_workitem(e);
 	return true;
 } catch (const std::bad_alloc &) {
