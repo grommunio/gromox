@@ -1635,9 +1635,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
 	}
 	
-	if (!pmsg->proplist.has(PR_INTERNET_CPID)) {
-		pmsg->proplist.set(PR_INTERNET_CPID, &cpid);
-	}
+	if (!pmsg->proplist.has(PR_INTERNET_CPID) &&
+	    pmsg->proplist.set(PR_INTERNET_CPID, &cpid) != 0)
+		return nullptr;
 	tnef_message_to_unicode(cpid, pmsg);
 	pmsg->proplist.erase(PidTagMid);
 	pmsg->proplist.erase(PR_ENTRYID);

@@ -3566,7 +3566,10 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			phtml_bin->cb = strlen(phtml_bin->pc);
 			pmsg->proplist.set(PR_HTML, phtml_bin);
 			tmp_int32 = CP_UTF8;
-			pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32);
+			if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0) {
+				message_content_free(pmsg);
+				return nullptr;
+			}
 		}
 	}
 	if (atxlist_all_hidden(pmsg->children.pattachments)) {
@@ -4085,12 +4088,11 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 	auto str  = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = pmsg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && str1 != nullptr) {
-		if (strcasecmp(str, str1) != 0) {
-			oxcmail_export_address(pmsg, alloc, tags_sender,
-				cset, tmp_field, std::size(tmp_field));
-			if (!phead->set_field("Sender", tmp_field))
-				return FALSE;
-		}
+		if (strcasecmp(str, str1) != 0 &&
+		    oxcmail_export_address(pmsg, alloc, tags_sender, cset,
+		    tmp_field, std::size(tmp_field)) &&
+		    !phead->set_field("Sender", tmp_field))
+			return FALSE;
 		return true;
 	}
 	str  = pmsg->proplist.get<char>(PR_SENDER_ADDRTYPE);
@@ -4102,9 +4104,11 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 	str1 = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (str == nullptr || str1 == nullptr || strcasecmp(str, str1) == 0)
 		return true;
-	oxcmail_export_address(pmsg, alloc, tags_sender,
-		cset, tmp_field, std::size(tmp_field));
-	return phead->set_field("Sender", tmp_field);
+	if (oxcmail_export_address(pmsg, alloc, tags_sender, cset,
+	    tmp_field, std::size(tmp_field)) &&
+	    !phead->set_field("Sender", tmp_field))
+		return false;
+	return true;
 }
 
 static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
