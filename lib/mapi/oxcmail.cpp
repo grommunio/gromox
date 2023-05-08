@@ -1567,14 +1567,12 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	}
 	size_t length = rdlength;
 	auto content_size = 3 * length + 2;
-	auto pcontent = me_alloc<char>(content_size);
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_size));
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (!pmime->read_content(pcontent, &length)) {
-		free(pcontent);
+	if (!pmime->read_content(pcontent.get(), &length))
 		return TRUE;
-	}
 	if (oxcmail_get_content_param(pmime, "charset", temp_charset, 32))
 		gx_strlcpy(best_charset, temp_charset, GX_ARRAY_SIZE(best_charset));
 	else
@@ -1583,49 +1581,43 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	if (0 == strcasecmp(content_type, "text/html")) {
 		uint32_t tmp_int32 = cset_to_cpid(best_charset);
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0) {
-			free(pcontent);
 			return FALSE;
 		}
 		tmp_bin.cb = length;
-		tmp_bin.pc = pcontent;
+		tmp_bin.pc = pcontent.get();
 		if (pproplist->set(PR_HTML, &tmp_bin) != 0) {
-			free(pcontent);
 			return false;
 		}
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
 		pcontent[length] = '\0';
 		TAGGED_PROPVAL propval;
-		if (string_to_utf8(best_charset, pcontent, pcontent + length + 1,
+		if (string_to_utf8(best_charset, &pcontent[0], &pcontent[length+1],
 		    content_size - length - 1)) {
-			auto s = pcontent + length + 1;
+			auto s = &pcontent[length+1];
 			propval.proptag = PR_BODY;
 			propval.pvalue = s;
 			if (!utf8_check(s))
 				utf8_filter(s);
 		} else {
 			propval.proptag = PR_BODY_A;
-			propval.pvalue = pcontent;
+			propval.pvalue = pcontent.get();
 		}
 		if (pproplist->set(propval) != 0) {
-			free(pcontent);
 			return false;
 		}
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
 		pcontent[length] = '\0';
-		enriched_to_html(pcontent, pcontent + length + 1, 2*length);
+		enriched_to_html(&pcontent[0], &pcontent[length+1], 2 * length);
 		uint32_t tmp_int32 = cset_to_cpid(best_charset);
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0) {
-			free(pcontent);
 			return FALSE;
 		}
-		tmp_bin.cb = strlen(pcontent + length + 1);
-		tmp_bin.pc = pcontent + length + 1;
+		tmp_bin.cb = strlen(&pcontent[length+1]);
+		tmp_bin.pc = &pcontent[length+1];
 		if (pproplist->set(PR_HTML, &tmp_bin) != 0) {
-			free(pcontent);
 			return false;
 		}
 	}
-	free(pcontent);
 	return TRUE;
 }
 
@@ -1703,16 +1695,14 @@ static BOOL oxcmail_parse_binhex(const MIME *pmime, ATTACHMENT_CONTENT *pattachm
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = me_alloc<char>(content_len);
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (!pmime->read_content(pcontent, &content_len) ||
-	    !binhex_deserialize(&binhex, pcontent, content_len)) {
-		free(pcontent);
+	if (!pmime->read_content(pcontent.get(), &content_len) ||
+	    !binhex_deserialize(&binhex, pcontent.get(), content_len))
 		return FALSE;
-	}
-	free(pcontent);
+	pcontent.reset();
 	if (!b_filename) {
 		strcpy(tmp_buff, binhex.file_name);
 		if (!oxcmail_set_mac_attachname(&pattachment->proplist,
@@ -1813,29 +1803,24 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = me_alloc<char>(content_len);
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (!phmime->read_content(pcontent, &content_len)) {
-		free(pcontent);
+	if (!phmime->read_content(pcontent.get(), &content_len))
 		return FALSE;
-	}
 	propname = {MNID_STRING, PSETID_ATTACHMENT, 0, deconst(PidNameAttachmentMacInfo)};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
 	tmp_bin.cb = content_len;
-	tmp_bin.pc = pcontent;
+	tmp_bin.pc = pcontent.get();
 	if (pattachment->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
 	(*plast_propid) ++;
-	ext_pull.init(pcontent, content_len, alloc, 0);
+	ext_pull.init(pcontent.get(), content_len, alloc, 0);
 	if (EXT_ERR_SUCCESS != applefile_pull_file(&ext_pull, &applefile)) {
-		free(pcontent);
 		return FALSE;
 	}
 	for (i=0; i<applefile.count; i++) {
@@ -1845,7 +1830,6 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 			memcpy(tmp_buff, bv->pb, std::min(bv->cb, static_cast<uint32_t>(255)));
 			if (!oxcmail_set_mac_attachname(&pattachment->proplist,
 			    b_description, tmp_buff)) {
-				free(pcontent);
 				return FALSE;
 			}
 		}
@@ -1856,7 +1840,6 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 			oxcmail_compose_mac_additional(as->finfo.fd_type,
 				as->finfo.fd_creator, &tmp_bin);
 			if (pattachment->proplist.set(PR_ATTACH_ADDITIONAL_INFO, &tmp_bin) != 0) {
-				free(pcontent);
 				return FALSE;
 			}
 		}
@@ -1864,36 +1847,24 @@ static BOOL oxcmail_parse_appledouble(const MIME *pmime,
 	rdlength = pdmime->get_length();
 	if (rdlength < 0) {
 		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
-		free(pcontent);
 		return false;
 	}
 	size_t content_len1 = rdlength;
-	auto pcontent1 = me_alloc<char>(content_len1);
+	std::unique_ptr<char[], stdlib_delete> pcontent1(me_alloc<char>(content_len1));
 	if (NULL == pcontent1) {
-		free(pcontent);
 		return FALSE;
 	}
-	if (!pdmime->read_content(pcontent1, &content_len1)) {
-		free(pcontent1);
-		free(pcontent);
+	if (!pdmime->read_content(pcontent1.get(), &content_len1))
 		return FALSE;
-	}
-	pbin = apple_util_appledouble_to_macbinary(
-			&applefile, pcontent1, content_len1);
+	pbin = apple_util_appledouble_to_macbinary(&applefile, pcontent1.get(), content_len1);
 	if (NULL == pbin) {
-		free(pcontent1);
-		free(pcontent);
 		return FALSE;
 	}
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, pbin) != 0) {
 		rop_util_free_binary(pbin);
-		free(pcontent1);
-		free(pcontent);
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
-	free(pcontent1);
-	free(pcontent);
 	return TRUE;
 }
 
@@ -1913,48 +1884,40 @@ static BOOL oxcmail_parse_macbinary(const MIME *pmime,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = me_alloc<char>(content_len);
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (!pmime->read_content(pcontent, &content_len)) {
-		free(pcontent);
+	if (!pmime->read_content(pcontent.get(), &content_len))
 		return FALSE;
-	}
-	ext_pull.init(pcontent, content_len, alloc, 0);
+	ext_pull.init(pcontent.get(), content_len, alloc, 0);
 	if (EXT_ERR_SUCCESS != macbinary_pull_binary(&ext_pull, &macbin)) {
-		free(pcontent);
 		return FALSE;
 	}
 	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
 	if (!b_filename) {
 		strcpy(tmp_buff, macbin.header.file_name);
 		if (!oxcmail_set_mac_attachname(&pattachment->proplist,
 		    b_description, tmp_buff)) {
-			free(pcontent);
 			return FALSE;
 		}
 	}
 	pbin = apple_util_macbinary_to_appledouble(&macbin);
 	if (NULL == pbin) {
-		free(pcontent);
 		return FALSE;
 	}
 	PROPERTY_NAME propname = {MNID_STRING, PSETID_ATTACHMENT,
 	                         0, deconst(PidNameAttachmentMacInfo)};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
 		rop_util_free_binary(pbin);
-		free(pcontent);
 		return FALSE;
 	}
 	if (pattachment->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), pbin) != 0) {
 		rop_util_free_binary(pbin);
-		free(pcontent);
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
@@ -1963,16 +1926,13 @@ static BOOL oxcmail_parse_macbinary(const MIME *pmime,
 	oxcmail_compose_mac_additional(macbin.header.type,
 					macbin.header.creator, &tmp_bin);
 	if (pattachment->proplist.set(PR_ATTACH_ADDITIONAL_INFO, &tmp_bin) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
 	tmp_bin.cb = content_len;
-	tmp_bin.pc = pcontent;
+	tmp_bin.pc = pcontent.get();
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
-	free(pcontent);
 	return TRUE;
 }
 
@@ -1994,17 +1954,14 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 	}
 	size_t content_len = rdlength;
 	size_t contallocsz = content_len;
-	auto pcontent = me_alloc<char>(contallocsz);
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contallocsz));
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (!pmime->read_content(pcontent, &content_len)) {
-		free(pcontent);
+	if (!pmime->read_content(pcontent.get(), &content_len))
 		return FALSE;
-	}
-	ext_pull.init(pcontent, content_len, alloc, 0);
+	ext_pull.init(pcontent.get(), content_len, alloc, 0);
 	if (EXT_ERR_SUCCESS != applefile_pull_file(&ext_pull, &applefile)) {
-		free(pcontent);
 		return oxcmail_parse_macbinary(pmime,
 			pattachment, b_filename, b_description,
 			alloc, plast_propid, phash);
@@ -2012,23 +1969,19 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
 	PROPERTY_NAME propname = {MNID_STRING, PSETID_ATTACHMENT,
 	                         0, deconst(PidNameAttachmentMacInfo)};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
-		free(pcontent);
 		return FALSE;
 	}
 	pbin = apple_util_applesingle_to_appledouble(&applefile);
 	if (NULL == pbin) {
-		free(pcontent);
 		return FALSE;
 	}
 	if (pattachment->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), pbin) != 0) {
 		rop_util_free_binary(pbin);
-		free(pcontent);
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
@@ -2040,7 +1993,6 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 			memcpy(tmp_buff, bv->pb, std::min(bv->cb, static_cast<uint32_t>(255)));
 			if (!oxcmail_set_mac_attachname(&pattachment->proplist,
 			    b_description, tmp_buff)) {
-				free(pcontent);
 				return FALSE;
 			}
 		}
@@ -2051,23 +2003,19 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 			oxcmail_compose_mac_additional(as->finfo.fd_type,
 				as->finfo.fd_creator, &tmp_bin);
 			if (pattachment->proplist.set(PR_ATTACH_ADDITIONAL_INFO, &tmp_bin) != 0) {
-				free(pcontent);
 				return FALSE;
 			}
 		}
 	}
 	pbin = apple_util_applesingle_to_macbinary(&applefile);
 	if (NULL == pbin) {
-		free(pcontent);
 		return FALSE;
 	}
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, pbin) != 0) {
 		rop_util_free_binary(pbin);
-		free(pcontent);
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
-	free(pcontent);
 	return TRUE;
 }
 
@@ -3139,7 +3087,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	ICAL ical;
 	MIME *pmime;
 	MIME *pmime1;
-	char *pcontent;
 	uint8_t tmp_byte;
 	TARRAY_SET *prcpts;
 	uint32_t tmp_int32;
@@ -3414,27 +3361,26 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		}
 		content_len = rdlength;
 		auto contoutsize = 3 * content_len + 2;
-		pcontent = me_alloc<char>(contoutsize);
+		std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contoutsize));
 		if (NULL == pcontent) {
 			message_content_free(pmsg);
 			return NULL;
 		}
-		if (!mime_enum.pcalendar->read_content(pcontent, &content_len)) {
-			free(pcontent);
+		if (!mime_enum.pcalendar->read_content(pcontent.get(), &content_len)) {
 			message_content_free(pmsg);
 			return NULL;
 		}
 		pcontent[content_len] = '\0';
 		if (!oxcmail_get_content_param(mime_enum.pcalendar, "charset",
 		    mime_charset, arsizeof(mime_charset)))
-			gx_strlcpy(mime_charset, !utf8_check(pcontent) ?
+			gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
 				default_charset : "utf-8", arsizeof(mime_charset));
-		if (!string_to_utf8(mime_charset, pcontent,
+		if (!string_to_utf8(mime_charset, pcontent.get(),
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
 		} else {
-			if (!utf8_check(pcontent + content_len + 1))
-				utf8_filter(pcontent + content_len + 1);
+			if (!utf8_check(&pcontent[content_len+1]))
+				utf8_filter(&pcontent[content_len+1]);
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
@@ -3444,7 +3390,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 					mime_enum.pcalendar = NULL;
 			}
 		}
-		free(pcontent);
 	}
 	
 	pattachments = attachment_list_init();
