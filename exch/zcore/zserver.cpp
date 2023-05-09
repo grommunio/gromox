@@ -1722,7 +1722,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			continue;
 		ids.pids[ids.count++] = message_id;
 	}
-	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? false : TRUE; /* XXX */
+	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (!notify_non_read) {
 		if (!exmdb_client::delete_messages(pstore->get_dir(),
 		    pstore->account_id, pinfo->cpid, username,
