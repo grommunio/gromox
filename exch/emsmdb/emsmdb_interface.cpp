@@ -309,7 +309,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	HX_strlower(temp_handle.username);
 	std::unique_lock gl_hold(g_lock);
 	if (g_handle_hash.size() >= g_handle_hash_max) {
-		mlog(LV_WARN, "W-1577: g_handle_hash is full");
+		mlog(LV_WARN, "W-2300: g_handle_hash full, maximum of %zu items reached", g_handle_hash_max);
 		return FALSE;
 	}
 	temp_handle.info.plogmap = rop_processor_create_logmap();
@@ -328,6 +328,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter == g_user_hash.end()) {
 		if (g_user_hash.size() >= g_user_hash_max) {
+			mlog(LV_WARN, "W-2301: g_user_hash full, reached maximum of %zu items", g_user_hash_max);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
 			return FALSE;
@@ -788,7 +789,7 @@ BOOL emsmdb_interface_alloc_handle_number(uint32_t *pnum)
 		return FALSE;
 	}
 	if (phandle->last_handle >= INT32_MAX) {
-		mlog(LV_ERR, "E-2139: Very long lived connection, awkward situation - I am not implemented!");
+		mlog(LV_ERR, "E-2304: Very long lived connection, awkward situation - I am not implemented!");
 		return false;
 	}
 	*pnum = phandle->last_handle++;
@@ -848,7 +849,7 @@ BOOL emsmdb_interface_set_rop_num(int num)
 }
 
 void emsmdb_interface_add_table_notify(const char *dir,
-	uint32_t table_id, uint32_t handle, uint8_t logon_id, GUID *pguid)
+    uint32_t table_id, uint32_t handle, uint8_t logon_id, GUID *pguid) try
 {
 	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM tmp_notify;
@@ -858,12 +859,13 @@ void emsmdb_interface_add_table_notify(const char *dir,
 	tmp_notify.guid = *pguid;
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	try {
-		if (g_notify_hash.size() < g_notify_hash_max)
-			g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_WARN, "W-1541: ENOMEM");
+	if (g_notify_hash.size() >= g_notify_hash_max) {
+		mlog(LV_WARN, "W-2302: g_notify_hash full, reached maximum of %zu items", g_notify_hash_max);
+		return;
 	}
+	g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+} catch (const std::bad_alloc &) {
+	mlog(LV_WARN, "W-1541: ENOMEM");
 }
 
 static BOOL emsmdb_interface_get_table_notify(const char *dir,
@@ -894,7 +896,7 @@ void emsmdb_interface_remove_table_notify(
 }
 
 void emsmdb_interface_add_subscription_notify(const char *dir,
-	uint32_t sub_id, uint32_t handle, uint8_t logon_id, GUID *pguid)
+    uint32_t sub_id, uint32_t handle, uint8_t logon_id, GUID *pguid) try
 {
 	char tag_buff[TAG_SIZE];
 	NOTIFY_ITEM tmp_notify;
@@ -906,12 +908,13 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	try {
-		if (g_notify_hash.size() < g_notify_hash_max)
-			g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_WARN, "W-1542: ENOMEM");
+	if (g_notify_hash.size() >= g_notify_hash_max) {
+		mlog(LV_WARN, "W-2303: g_notify_hash full, reached maximum of %zu items", g_notify_hash_max);
+		return;
 	}
+	g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+} catch (const std::bad_alloc &) {
+	mlog(LV_WARN, "W-1542: ENOMEM");
 }
 
 static BOOL emsmdb_interface_get_subscription_notify(
@@ -1142,6 +1145,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 	if (double_list_get_nodes_num(&phandle->notify_list)
 		>= MAX_NOTIFY_RESPONSE_NUM) {
+		mlog(LV_WARN, "W-2305: handle->notify_list full (one session), reached maximum of %u items", MAX_NOTIFY_RESPONSE_NUM);
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
