@@ -98,7 +98,6 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	char sql_string[124];
 	uint64_t message_id1;
 	uint64_t attachment_id;
-	MESSAGE_CONTENT *pmsgctnt;
 	MESSAGE_CONTENT *pmsgctnt1;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
@@ -113,10 +112,9 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		return TRUE;
 	}
 	pstmt.finalize();
-	pmsgctnt = message_content_init();
+	std::unique_ptr<message_content, mc_delete> pmsgctnt(message_content_init());
 	if (pmsgctnt == nullptr)
 		return FALSE;
-	auto cl_msgctnt = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	std::vector<uint32_t> proptags;
 	if (!cu_get_proptags(MAPI_MESSAGE, message_id,
 	    psqlite, proptags))
@@ -309,8 +307,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		sqlite3_reset(pstmt1);
 	}
-	*ppmsgctnt = pmsgctnt;
-	cl_msgctnt.release();
+	*ppmsgctnt = pmsgctnt.release();
 	return TRUE;
 }
 

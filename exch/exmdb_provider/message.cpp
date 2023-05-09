@@ -2295,11 +2295,10 @@ static BOOL message_make_dem(const char *username,
 	uint64_t tmp_eid;
 	uint64_t mid_val;
 	uint64_t nt_time;
-	MESSAGE_CONTENT *pmsg;
 	
 	if (!exmdb_server::is_private())
 		return TRUE;
-	pmsg = message_content_init();
+	std::unique_ptr<message_content, mc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return FALSE;
 	nt_time = rop_util_current_nttime();
@@ -2311,14 +2310,12 @@ static BOOL message_make_dem(const char *username,
 	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != 0 ||
 	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0 ||
 	    pmsg->proplist.set(PR_RULE_ERROR, &rule_error) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	auto newval = common_util_to_private_message_entryid(
 				psqlite, username, folder_id, message_id);
 	if (newval == nullptr ||
 	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, newval) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	newval = common_util_to_private_folder_entryid(
@@ -2326,20 +2323,16 @@ static BOOL message_make_dem(const char *username,
 	if (newval == nullptr ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, newval) != 0 ||
 	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	tmp_eid = rop_util_make_eid_ex(1, rule_id);
 	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	if (!message_write_message(false, psqlite, username, CP_ACP, false,
-	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
-		message_content_free(pmsg);
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val))
 		return FALSE;
-	}
-	message_content_free(pmsg);
+	pmsg.reset();
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
 		psqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
@@ -2776,10 +2769,9 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	uint8_t tmp_byte;
 	EXT_PUSH ext_push;
 	RULE_ACTIONS actions;
-	MESSAGE_CONTENT *pmsg;
 	uint64_t tmp_ids[MAX_DAMS_PER_RULE_FOLDER];
 	
-	pmsg = message_content_init();
+	std::unique_ptr<message_content, mc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
 		return FALSE;
 	nt_time = rop_util_current_nttime();
@@ -2790,14 +2782,12 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	    pmsg->proplist.set(PR_MESSAGE_DELIVERY_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0 ||
 	    pmsg->proplist.set(PR_DAM_BACK_PATCHED, &tmp_byte) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	auto pvalue = common_util_to_private_message_entryid(
 	              rp.sqlite, rp.ev_to, rp.folder_id, rp.message_id);
 	if (pvalue == nullptr ||
 	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	svreid.pbin = NULL;
@@ -2807,7 +2797,6 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	tmp_eid = rop_util_make_eid_ex(1, rp.folder_id);
 	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != 0 ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	pvalue = common_util_to_private_folder_entryid(
@@ -2815,13 +2804,11 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	if (pvalue == nullptr ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != 0 ||
 	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	actions.pblock = static_cast<ACTION_BLOCK *>(common_util_alloc(sizeof(ACTION_BLOCK) *
 	                 dam_list.size()));
 	if (NULL == actions.pblock) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	actions.count = 0;
@@ -2837,25 +2824,21 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	}
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    ext_push.p_rule_actions(actions) != EXT_ERR_SUCCESS) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	BINARY tmp_bin;
 	tmp_bin.pb = ext_push.m_udata;
 	tmp_bin.cb = ext_push.m_offset;
 	if (pmsg->proplist.set(PR_CLIENT_ACTIONS, &tmp_bin) != 0) {
-		message_content_free(pmsg);
 		return FALSE;
 	}
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
 	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
 	    !message_write_message(false, rp.sqlite, rp.ev_to, CP_ACP, false,
-	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
-		message_content_free(pmsg);
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val))
 		return FALSE;
-	}
-	message_content_free(pmsg);
+	pmsg.reset();
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
 		rp.sqlite, PR_LOCAL_COMMIT_TIME_MAX, &nt_time, &b_result);
 	seen.msg.emplace_back(message_node{PRIVATE_FID_DEFERRED_ACTION, mid_val});
