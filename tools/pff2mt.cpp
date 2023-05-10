@@ -576,8 +576,11 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		pv.pvalue = &u.bin;
 		break;
 	case PT_CLSID:
-		if (dsize != sizeof(u.guid))
-			throw YError("PF-1040: GUID size incorrect: " + std::to_string(dsize));
+		if (dsize != sizeof(u.guid)) {
+			fprintf(stderr, "PF-1040: Encountered property %xh with icorrect GUID size (%zu)\n",
+			        pv.proptag, dsize);
+			return;
+		}
 		memcpy(&u.guid, buf.get(), sizeof(u.guid));
 		pv.pvalue = &u.guid;
 		break;
