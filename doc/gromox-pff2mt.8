@@ -21,6 +21,14 @@ OST (Offline Storage Table)
 By default, pff2mt creates a new folder "Import of <xyz.pst> on <date>"
 within IPM_SUBTREE ("Top of Information Store") and places all PFF objects into
 that new subfolder.
+.PP
+Note that folders of non-default mailboxes are stored in a flat fashion in OST.
+A secretary.ost file with hierarchy like "(Boss)\\Inbox\\2021\\Invoices",
+"(Boss)\\Inbox\\2022\\Invoices" is flattened to "(Boss)\\Inbox",
+"(Boss)\\2021", "(Boss)\\Invoices", "Boss\\2022" and "(Boss)\\Invoices". The
+presence of \fBtwo\fP folders with the same name \fBat the same level\fP means
+gromox-mt2exm errors out when it tries to create a folder whose name already
+exists. This limits the usefulness of importing OST files.
 .SH Options
 .TP
 \fB\-p\fP
