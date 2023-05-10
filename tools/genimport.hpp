@@ -47,6 +47,7 @@ struct parent_desc {
 		MESSAGE_CONTENT *message;
 		ATTACHMENT_CONTENT *attach;
 	};
+	gi_name_map *names = nullptr;
 
 	static inline parent_desc as_msg(MESSAGE_CONTENT *m)
 	{

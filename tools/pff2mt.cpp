@@ -254,7 +254,8 @@ static bool is_mapi_message(uint32_t nid)
 	return nid == NID_TYPE_NORMAL_MESSAGE || nid == NID_TYPE_ASSOC_MESSAGE;
 }
 
-static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
+static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc,
+    libpff_item_t *atx, gi_name_map &name_map)
 {
 	int atype = LIBPFF_ATTACHMENT_TYPE_UNDEFINED;
 	uint64_t asize = 0;
@@ -283,7 +284,9 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t
 			return 0;
 		}
 		tlog("[attachment type=%c embedded_msg]\n", atype);
-		auto ret = do_item(depth + 1, parent_desc::as_attach(atc), emb_item.get());
+		auto pd = parent_desc::as_attach(atc);
+		pd.names = &name_map;
+		auto ret = do_item(depth + 1, std::move(pd), emb_item.get());
 		if (ret < 0)
 			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
@@ -467,7 +470,60 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 	return tp;
 }
 
-static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
+static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
+    uint32_t proptag)
+{
+	if (seen.find(proptag) != seen.end())
+		return; /* already sent */
+	libpff_nti_entry_ptr nti_entry;
+	uint8_t nti_type = 0;
+
+	if (libpff_record_entry_get_name_to_id_map_entry(rent, &unique_tie(nti_entry), nullptr) < 1)
+		return;
+	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
+		return;
+	std::unique_ptr<char[], stdlib_delete> pnstr;
+	PROPERTY_NAME pn_req{};
+	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
+	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
+		return;
+	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
+		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
+			return;
+		pn_req.kind = MNID_ID;
+	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
+		size_t dsize = 0;
+		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
+			return;
+		/* malloc: match up with allocator used by ext_buffer.cpp etc. */
+		pnstr.reset(me_alloc<char>(dsize + 1));
+		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
+			return;
+		pn_req.kind = MNID_STRING;
+		pn_req.pname = pnstr.get();
+	}
+
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw std::bad_alloc();
+	if (ep.p_uint32(GXMT_NAMEDPROP) != pack_result::success ||
+	    ep.p_uint32(proptag) != pack_result::success ||
+	    ep.p_uint32(0) != pack_result::success ||
+	    ep.p_uint64(0) != pack_result::success ||
+	    ep.p_propname(pn_req) != pack_result::success)
+		throw YError("PG-1139");
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PG-1140: %s", strerror(-ret));
+	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PG-1141: %s", strerror(-ret));
+	seen.emplace(proptag, std::move(pn_req));
+}
+
+static void recordent_to_tpropval(libpff_record_entry_t *rent,
+    TPROPVAL_ARRAY *ar, gi_name_map *name_map)
 {
 	libpff_error_ptr err, e2, e3;
 	unsigned int etype = 0, vtype = 0;
@@ -516,6 +572,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
 	pv.pvalue = buf.get();
+	if (etype >= 0x8000 && name_map != nullptr)
+		emit_namedprop(*name_map, rent, pv.proptag);
 	switch (vtype) {
 	case PT_SHORT:
 		if (dsize == sizeof(uint16_t))
@@ -653,7 +711,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		throw std::bad_alloc();
 }
 
-static void recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *props)
+static void recordset_to_tpropval_a(libpff_record_set_t *rset,
+    TPROPVAL_ARRAY *props, gi_name_map *name_map)
 {
 	int nent = 0;
 	libpff_error_ptr err;
@@ -664,12 +723,13 @@ static void recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *p
 		if (libpff_record_set_get_entry_by_index(rset, i,
 		    &unique_tie(rent), &~unique_tie(err)) < 1)
 			throw az_error("PF-1029", err);
-		recordent_to_tpropval(rent.get(), props);
+		recordent_to_tpropval(rent.get(), props, name_map);
 	}
 }
 
 /* Collect all recordsets' properties into one TPROPVAL_ARRAY */
-static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
+static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item,
+    gi_name_map *name_map)
 {
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
@@ -684,13 +744,14 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 		if (libpff_item_get_record_set_by_index(item, n,
 		    &unique_tie(rset), &~unique_tie(err)) < 1)
 			throw az_error("PF-1022", err);
-		recordset_to_tpropval_a(rset.get(), props.get());
+		recordset_to_tpropval_a(rset.get(), props.get(), name_map);
 	}
 	return props;
 }
 
 /* Collect each recordset as its own TPROPVAL_ARRAY */
-static tarray_set_ptr item_to_tarray_set(libpff_item_t *item)
+static tarray_set_ptr item_to_tarray_set(libpff_item_t *item,
+    gi_name_map *name_map)
 {
 	tarray_set_ptr tset(tarray_set_init());
 	if (tset == nullptr)
@@ -708,7 +769,7 @@ static tarray_set_ptr item_to_tarray_set(libpff_item_t *item)
 		tpropval_array_ptr tprops(tpropval_array_init());
 		if (tprops == nullptr)
 			throw std::bad_alloc();
-		recordset_to_tpropval_a(rset.get(), tprops.get());
+		recordset_to_tpropval_a(rset.get(), tprops.get(), name_map);
 		auto ret = tset->append_move(std::move(tprops));
 		if (ret == ENOMEM)
 			throw std::bad_alloc();
@@ -719,9 +780,9 @@ static tarray_set_ptr item_to_tarray_set(libpff_item_t *item)
 static int do_folder(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item)
 {
-	auto props = item_to_tpropval_a(item);
+	auto props = item_to_tpropval_a(item, parent.names);
 	if (g_show_tree) {
-		auto tset = item_to_tarray_set(item);
+		auto tset = item_to_tarray_set(item, parent.names);
 		gi_dump_tarray_set(depth, *tset);
 	} else {
 		auto name = props->get<char>(PR_DISPLAY_NAME);
@@ -782,7 +843,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 static message_content_ptr extract_message(unsigned int depth,
     const parent_desc &parent, libpff_item_t *item)
 {
-	auto props = item_to_tpropval_a(item);
+	auto props = item_to_tpropval_a(item, parent.names);
 	message_content_ptr ctnt(message_content_init());
 	if (ctnt == nullptr)
 		throw std::bad_alloc();
@@ -796,7 +857,9 @@ static message_content_ptr extract_message(unsigned int depth,
 	std::swap(ctnt->proplist.ppropval, props->ppropval);
 	libpff_item_ptr recip_set;
 	if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
-		auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), recip_set.get());
+		auto pd = parent_desc::as_msg(ctnt.get());
+		pd.names = parent.names;
+		auto ret = do_item(depth, std::move(pd), recip_set.get());
 		if (ret < 0)
 			throw YError("PF-1052: %s", strerror(-ret));
 	}
@@ -808,7 +871,9 @@ static message_content_ptr extract_message(unsigned int depth,
 			if (libpff_message_get_attachment(item, atidx,
 			    &unique_tie(atx), &unique_tie(err)) < 1)
 				throw az_error("PF-1017", err);
-			auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
+			auto pd = parent_desc::as_msg(ctnt.get());
+			pd.names = parent.names;
+			auto ret = do_item(depth, std::move(pd), atx.get());
 			if (ret < 0)
 				throw YError("PF-1053: %s", strerror(-ret));
 		}
@@ -862,7 +927,7 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 		tpropval_array_ptr props(tpropval_array_init());
 		if (props == nullptr)
 			throw std::bad_alloc();
-		recordset_to_tpropval_a(rset.get(), props.get());
+		recordset_to_tpropval_a(rset.get(), props.get(), parent.names);
 		if (parent.message->children.prcpts->append_move(std::move(props)) == ENOMEM)
 			throw std::bad_alloc();
 	}
@@ -874,11 +939,11 @@ static int do_attach(unsigned int depth, const parent_desc &parent, libpff_item_
 	attachment_content_ptr atc(attachment_content_init());
 	if (atc == nullptr)
 		throw std::bad_alloc();
-	auto props = item_to_tpropval_a(item);
+	auto props = item_to_tpropval_a(item, parent.names);
 	std::swap(atc->proplist.count, props->count);
 	std::swap(atc->proplist.ppropval, props->ppropval);
 	do_print(depth++, item);
-	auto ret = do_attach2(depth, atc.get(), item);
+	auto ret = do_attach2(depth, atc.get(), item, *parent.names);
 	if (ret < 0)
 		return ret;
 	if (parent.type == MAPI_MESSAGE) {
@@ -944,7 +1009,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		 * one level.
 		 */
 		do_print(depth++, item);
-		auto tset = item_to_tarray_set(item);
+		auto tset = item_to_tarray_set(item, parent.names);
 		gi_dump_tarray_set(depth, *tset);
 	}
 
@@ -1064,99 +1129,8 @@ static void az_fmap_splice_rft(libpff_file_t *file)
 		if (libpff_item_get_identifier(subitem.get(), &ident, &~unique_tie(err)) < 1)
 			throw az_error("PF-1009", err);
 		if ((ident & NID_TYPE_MASK) == NID_TYPE_RECEIVE_FOLDER_TABLE)
-			az_fmap_splice_rft2(*item_to_tarray_set(subitem.get()));
+			az_fmap_splice_rft2(*item_to_tarray_set(subitem.get(), nullptr));
 	}
-}
-
-static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
-{
-	libpff_nti_entry_ptr nti_entry;
-	uint32_t etype = 0, vtype = 0;
-	uint8_t nti_type = 0;
-
-	if (libpff_record_entry_get_entry_type(rent, &etype, nullptr) < 1 ||
-	    etype < 0x8000 ||
-	    libpff_record_entry_get_value_type(rent, &vtype, nullptr) < 1)
-		return;
-	if (libpff_record_entry_get_name_to_id_map_entry(rent, &unique_tie(nti_entry), nullptr) < 1)
-		return;
-	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
-		return;
-	std::unique_ptr<char[], stdlib_delete> pnstr;
-	PROPERTY_NAME pn_req{};
-	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
-	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
-		return;
-	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
-		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
-			return;
-		pn_req.kind = MNID_ID;
-	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
-		size_t dsize = 0;
-		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
-			return;
-		/* malloc: match up with allocator used by ext_buffer.cpp etc. */
-		pnstr.reset(me_alloc<char>(dsize + 1));
-		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
-			return;
-		pn_req.kind = MNID_STRING;
-		pn_req.pname = pnstr.get();
-	}
-	map.emplace(PROP_TAG(vtype, etype), std::move(pn_req));
-}
-
-static void npg_set(gi_name_map &map, libpff_record_set_t *rset)
-{
-	int nent = 0;
-	if (libpff_record_set_get_number_of_entries(rset, &nent, nullptr) < 1)
-		return;
-	for (int i = 0; i < nent; ++i) {
-		libpff_record_entry_ptr rent;
-		if (libpff_record_set_get_entry_by_index(rset, i,
-		    &unique_tie(rent), nullptr) > 0)
-			npg_ent(map, rent.get());
-	}
-}
-
-static void npg_item(gi_name_map &map, libpff_item_t *item)
-{
-	uint32_t ident = 0;
-	libpff_item_get_identifier(item, &ident, nullptr);
-	int nsets = 0;
-	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) > 0) {
-		for (int n = 0; n < nsets; ++n) {
-			libpff_record_set_ptr rset;
-			if (libpff_item_get_record_set_by_index(item, n,
-			    &unique_tie(rset), nullptr) > 0)
-				npg_set(map, rset.get());
-		}
-	}
-
-	int nsub = 0, atype = 0;
-	if (libpff_item_get_number_of_sub_items(item, &nsub, nullptr) > 0) {
-		for (int i = 0; i < nsub; ++i) {
-			libpff_item_ptr subitem;
-			if (libpff_item_get_sub_item(item, i, &unique_tie(subitem), nullptr) > 0)
-				npg_item(map, subitem.get());
-		}
-	}
-	nsub = 0;
-	if (libpff_message_get_number_of_attachments(item, &nsub, nullptr) > 0) {
-		for (int i = 0; i < nsub; ++i) {
-			libpff_item_ptr subitem;
-			if (libpff_message_get_attachment(item, i, &unique_tie(subitem), nullptr) > 0)
-				npg_item(map, subitem.get());
-		}
-	}
-	if (libpff_attachment_get_type(item, &atype, nullptr) > 0 &&
-	    atype == LIBPFF_ATTACHMENT_TYPE_ITEM) {
-		libpff_item_ptr subitem;
-		if (libpff_attachment_get_item(item, &unique_tie(subitem), nullptr) > 0)
-			npg_item(map, subitem.get());
-	}
-	libpff_item_ptr subitem;
-	if (libpff_message_get_recipients(item, &unique_tie(subitem), nullptr) > 0)
-		npg_item(map, subitem.get());
 }
 
 static errno_t do_file(const char *filename) try
@@ -1229,22 +1203,24 @@ static errno_t do_file(const char *filename) try
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
-	fprintf(stderr, "pff: Building list of named properties...\n");
 	gi_name_map name_map;
-	start = tp_now();
-	npg_item(name_map, root.get());
-	stop = tp_now();
-	fprintf(stderr, "pff: ... %fs\n",
-	        std::chrono::duration<double>(stop - start).count());
 	gi_dump_name_map(name_map);
 	gi_name_map_write(name_map);
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");
-	if (g_only_objs.size() == 0)
-		return do_item(0, {}, root.get());
+	if (g_only_objs.size() == 0) {
+		parent_desc pd{};
+		pd.names = &name_map;
+		auto ret = do_item(0, std::move(pd), root.get());
+		if (ret < 0)
+			return ret;
+		gi_dump_name_map(name_map);
+		return 0;
+	}
 
 	auto pd = parent_desc::as_folder(~0ULL);
+	pd.names = &name_map;
 	for (const auto nid : g_only_objs) {
 		if (libpff_file_get_item_by_identifier(file.get(), nid,
 		    &~unique_tie(root), &~unique_tie(err)) < 1)
@@ -1253,6 +1229,7 @@ static errno_t do_file(const char *filename) try
 		if (ret < 0)
 			return ret;
 	}
+	gi_dump_name_map(name_map);
 	return 0;
 } catch (const char *e) {
 	fprintf(stderr, "pff: Exception: %s\n", e);

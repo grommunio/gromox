@@ -1,3 +1,11 @@
+Development 2.9.6
+=================
+
+Enhancements:
+
+* pff2mt: speedup operation by 70%+
+
+
 Gromox 2.9 (2023-05-10)
 =======================
 
