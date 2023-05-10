@@ -530,6 +530,34 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	return folderSpec;
 }
 
+/**
+ * @brief      Get specification of folder containing the message
+ *
+ * @param      eid    Message entry ID
+ *
+ * @return     Folder specification
+ */
+sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
+{
+	sFolderSpec folderSpec;
+	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
+	folderSpec.folderId = rop_util_make_eid_ex(1, eid.folderId());
+	if(eid.isPrivate())
+	{
+		char temp[UADDR_SIZE];
+		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+			throw DispatchError(E3026);
+		folderSpec.target = temp;
+	}
+	else
+	{
+		sql_domain domaininfo;
+		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+			throw DispatchError(E3027);
+		folderSpec.target = domaininfo.name;
+	}
+	return folderSpec;
+}
 
 /**
  * @brief     Convert EXT_PUSH/EXT_PULL return code to exception

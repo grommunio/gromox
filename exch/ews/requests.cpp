@@ -604,20 +604,23 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 	response->SetName("m:GetItemResponse");
 
 	mGetItemResponse data;
-	mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
-	msg.Items.reserve(request.ItemIds.size());
 	auto dir = ctx.getDir();
 	sShape itemTags = ctx.collectTags(request.ItemShape, dir);
 	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
 		throw DispatchError(E3032);
+	data.ResponseMessages.reserve(request.ItemIds.size());
 	for(auto& itemId : request.ItemIds) {
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec parentFolder = ctx.resolveFolder(eid);
+		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny)) {
+			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Access denied");
+			continue;
+		}
+		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = rop_util_make_eid_ex(1, eid.messageId());
 		msg.Items.emplace_back(ctx.loadItem(dir, mid, itemTags));
+		msg.success();
 	}
-
-	msg.success();
-
 	data.serialize(response);
 }
 

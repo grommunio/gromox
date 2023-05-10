@@ -145,6 +145,14 @@ uint32_t sMessageEntryId::accountId() const
 {return folder_database_guid.time_low;}
 
 /**
+ * @brief     Retrieve parent folder ID from entryID
+ *
+ * @return    folder ID
+ */
+uint64_t sMessageEntryId::folderId() const
+{return rop_util_gc_to_value(folder_global_counter);}
+
+/**
  * @brief     Retrieve message ID from entryID
  *
  * @return    message ID

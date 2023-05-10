@@ -119,12 +119,11 @@ private:
  */
 struct sMessageEntryId : public MESSAGE_ENTRYID
 {
-	// sMessageEntryId(const tinyxml2::XMLAttribute*);
+	sMessageEntryId() = default;
 	sMessageEntryId(const void*, uint64_t);
 
-	// std::string serialize() const;
-
 	uint32_t accountId() const;
+	uint64_t folderId() const;
 	uint64_t messageId() const;
 	bool isPrivate() const;
 private:
@@ -1632,6 +1631,8 @@ struct mGetItemRequest
 struct mGetItemResponseMessage : mResponseMessageType
 {
 	static constexpr char NAME[] = "GetItemResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
 
 	std::vector<sItem> Items;
 

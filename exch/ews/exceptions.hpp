@@ -139,6 +139,8 @@ E(3071, "failed to read message");
 E(3072, "failed to export message");
 E(3073, "mail export error");
 E(3074, "failed to serialize message");
+E(3075, "failed to get username from id");
+E(3076, "failed to get domain info from id");
 
 #undef E
 }

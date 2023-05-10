@@ -21,6 +21,7 @@ namespace gromox::EWS {
 
 namespace Structures
 {
+struct sMessageEntryId;
 struct sShape;
 struct sFolderSpec;
 struct tCalendarItem;
@@ -127,6 +128,7 @@ public:
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
+	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 
 	void experimental() const;
 
