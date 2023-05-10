@@ -1,5 +1,5 @@
-Development 2.8.95
-==================
+Gromox 2.9 (2023-05-10)
+=======================
 
 Fixes:
 
@@ -18,6 +18,7 @@ Fixes:
 * midb: unbreak search matching based on dates and sizes
 * imap: cease emitting extraneous FETCH FLAGS responses
   (works around a shortcoming in the KDE kmail client)
+* imap: resolve E-1995 erroneously showing when memory use is fine
 * emsmdb: avoid hitting an assertion when sort-reloading a table of a
   deleted folder
 
@@ -28,6 +29,7 @@ Enhancements:
 * imap: broadcast changes to mailbox from EXPUNGE commands
 * midb: auto-regenerate ext/ digests when missing
 * Log the filename of the SQLite database when a query fails
+* emsmdb: add log messages for notification queue limits
 
 
 Gromox 2.8 (2023-04-15)
