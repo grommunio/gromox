@@ -22,6 +22,7 @@
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/clock.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
@@ -121,6 +122,7 @@ static gi_folder_map_t g_folder_map;
 static unsigned int g_splice;
 static int g_with_hidden = -1, g_with_assoc;
 static const char *g_ascii_charset;
+static size_t g_msg_count;
 
 static void cb_only_obj(const HXoptcb *cb)
 {
@@ -829,6 +831,7 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		throw std::bad_alloc();
+	++g_msg_count;
 	if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(ident) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(static_cast<uint32_t>(parent.type)) != EXT_ERR_SUCCESS ||
@@ -1165,6 +1168,7 @@ static errno_t do_file(const char *filename) try
 		return EIO;
 	}
 	fprintf(stderr, "pff: Reading %s...\n", filename);
+	auto start = tp_now();
 	errno = 0;
 	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ,
 	    &~unique_tie(err)) < 1) {
@@ -1180,6 +1184,9 @@ static errno_t do_file(const char *filename) try
 			fprintf(stderr, "pff: \"%s\" not recognized as PFF\n", filename);
 		return ECANCELED;
 	}
+	auto stop = tp_now();
+	fprintf(stderr, "pff: ... %fs\n",
+	        std::chrono::duration<double>(stop - start).count());
 	int cpid = CP_ACP;
 	if (libpff_file_get_ascii_codepage(file.get(), &cpid, &~unique_tie(err)) < 1)
 		/* ignore */;
@@ -1224,7 +1231,11 @@ static errno_t do_file(const char *filename) try
 		throw az_error("PF-1025", err);
 	fprintf(stderr, "pff: Building list of named properties...\n");
 	gi_name_map name_map;
+	start = tp_now();
 	npg_item(name_map, root.get());
+	stop = tp_now();
+	fprintf(stderr, "pff: ... %fs\n",
+	        std::chrono::duration<double>(stop - start).count());
 	gi_dump_name_map(name_map);
 	gi_name_map_write(name_map);
 
@@ -1285,5 +1296,6 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "pff: Import unsuccessful.\n");
 		return EXIT_FAILURE;
 	}
+	fprintf(stderr, "pff: emitted %zu messages\n", g_msg_count);
 	return EXIT_SUCCESS;
 }
