@@ -597,6 +597,15 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	data.serialize(response);
 }
 
+/**
+ * @brief      Process GetItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ *
+ * @todo optimize shape generation
+ */
 void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
 	ctx.experimental();
@@ -604,14 +613,14 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 	response->SetName("m:GetItemResponse");
 
 	mGetItemResponse data;
-	auto dir = ctx.getDir();
-	sShape itemTags = ctx.collectTags(request.ItemShape, dir);
-	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
-		throw DispatchError(E3032);
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	for(auto& itemId : request.ItemIds) {
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
+		std::string dir = ctx.getDir(parentFolder);
+		sShape itemTags = ctx.collectTags(request.ItemShape, dir);
+		if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
+			throw DispatchError(E3032);
 		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny)) {
 			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Access denied");
 			continue;
