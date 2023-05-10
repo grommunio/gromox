@@ -11,6 +11,12 @@
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 
+enum {
+	GXMT_FOLDER = static_cast<unsigned int>(MAPI_FOLDER),
+	GXMT_MESSAGE = static_cast<unsigned int>(MAPI_MESSAGE),
+	GXMT_NAMEDPROP = 250,
+};
+
 struct PERMISSION_DATA;
 class YError final : public std::exception {
 	public:

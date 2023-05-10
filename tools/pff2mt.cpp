@@ -1200,7 +1200,7 @@ static errno_t do_file(const char *filename) try
 	}
 
 	uint8_t xsplice = g_splice;
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
 	if (ret < 0)
 		throw YError("PF-1132: %s", strerror(errno));
 	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));

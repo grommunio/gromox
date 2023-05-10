@@ -101,7 +101,7 @@ static void exm_read_base_maps()
 		throw YError("PG-1009: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
 		throw YError("PG-1126: %s", strerror(errno));
-	if (memcmp(magic, "GXMT0002", 8) != 0)
+	if (memcmp(magic, "GXMT0003", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
 	ret = HXio_fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret == 0)
@@ -364,15 +364,28 @@ static int exm_packet(const void *buf, size_t bufsize)
 	EXT_PULL ep;
 	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
 	ob_desc obd;
-	uint32_t type = 0;
+	uint32_t type = 0, parent_type = 0;
 	if (ep.g_uint32(&type) != EXT_ERR_SUCCESS ||
 	    ep.g_uint32(&obd.nid) != EXT_ERR_SUCCESS)
 		throw YError("PG-1121");
-	obd.mapitype = static_cast<enum mapi_object_type>(type);
-	if (ep.g_uint32(&type) != EXT_ERR_SUCCESS ||
+	if (ep.g_uint32(&parent_type) != pack_result::success ||
 	    ep.g_uint64(&obd.parent.folder_id) != EXT_ERR_SUCCESS)
 		throw YError("PG-1116");
-	obd.parent.type = static_cast<enum mapi_object_type>(type);
+	if (type == GXMT_NAMEDPROP) {
+		PROPERTY_NAME propname{};
+		if (ep.g_propname(&propname) != pack_result::success)
+			throw YError("PG-1138");
+		try {
+			g_src_name_map.insert_or_assign(obd.nid, propname);
+		} catch (const std::bad_alloc &) {
+			free(propname.pname);
+			throw;
+		}
+		free(propname.pname);
+		return 0;
+	}
+	obd.mapitype = static_cast<enum mapi_object_type>(type);
+	obd.parent.type = static_cast<enum mapi_object_type>(parent_type);
 	if (obd.mapitype == MAPI_FOLDER && g_do_delivery) {
 		return 0;
 	} else if (obd.mapitype == MAPI_FOLDER) {

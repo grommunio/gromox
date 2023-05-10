@@ -547,7 +547,7 @@ static errno_t do_file(const char *filename) try
 	if (ret != 0)
 		return ret;
 
-	auto wrret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	auto wrret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
 	if (wrret < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;

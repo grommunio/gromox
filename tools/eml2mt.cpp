@@ -260,7 +260,7 @@ int main(int argc, const char **argv) try
 		}
 	}
 
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
 	if (ret < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;

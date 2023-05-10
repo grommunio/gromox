@@ -4,7 +4,7 @@ Message Transfer Format
 MT is meant for immediate consumption, not storage.
 As such, it was not designed with endian-independent encoding.
 
-* ``char magic[8] = "GXMT0002";``
+* ``char magic[8] = "GXMT0003";``
   File identification.
 * ``uint32_t splice_flag;``
   Whether the root object of this MT stream is a new folder (0),
@@ -44,9 +44,10 @@ to create folders/messages. Each packet/frame is:
   Size in bytes for the frame that follows.
 * Frame:
 	* ``uint32_t mapi_objtype;``
-	  ``MAPI_FOLDER`` (3) or ``MAPI_MESSAGE`` (5).
+	  ``MAPI_FOLDER`` (3), ``MAPI_MESSAGE`` (5), or 250 for a namedprop.
 	* ``uint32_t nid;``
-	  Folder/Message ID
+	  Folder ID (MAPI_FOLDER), Message ID (MAPI_MESSAGE), or propid
+	  (namedprop)
 	* ``uint32_t parent_type;``
 	* ``uint64_t parent_fid;``
 	  Parent folder ID.
@@ -57,3 +58,5 @@ to create folders/messages. Each packet/frame is:
 			* PERMISSION_DATA serialized struct
 	* For objtype MAPI_MESSAGE:
 		* MESSAGE_CONTENT serialized struct
+	* For objtype 250 (named property):
+		* PROPERTY_NAME serialized struct

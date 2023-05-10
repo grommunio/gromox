@@ -1374,7 +1374,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
 	uint8_t xsplice = g_splice;
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0002", 8);
+	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
 	if (ret < 0)
 		throw YError("PK-1032: %s", strerror(errno));
 	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
