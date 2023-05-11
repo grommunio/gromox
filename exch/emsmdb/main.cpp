@@ -45,6 +45,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"ems_max_active_notifh", "0", CFG_SIZE, "0"},
 	{"ems_max_active_sessions", "0", CFG_SIZE, "0"},
 	{"ems_max_active_users", "0", CFG_SIZE, "0"},
+	{"ems_max_pending_sesnotif", "128", CFG_SIZE, "0"},
 	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
 	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
 	{"emsmdb_private_folder_softdelete", "0", CFG_BOOL},
@@ -81,6 +82,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	ems_max_active_notifh = pconfig->get_ll("ems_max_active_notifh");
 	ems_max_active_sessions = pconfig->get_ll("ems_max_active_sessions");
 	ems_max_active_users = pconfig->get_ll("ems_max_active_users");
+	ems_max_pending_sesnotif = pconfig->get_ll("ems_max_pending_sesnotif");
 	return true;
 } catch (const cfg_error &) {
 	return false;

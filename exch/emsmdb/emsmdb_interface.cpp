@@ -39,8 +39,6 @@
 #define HANDLE_EXCHANGE_EMSMDB			2
 
 #define HANDLE_EXCHANGE_ASYNCEMSMDB		3
-#define MAX_NOTIFY_RESPONSE_NUM			128
-
 #define MAX_CONTENT_ROW_DELETED			6
 
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
@@ -98,13 +96,15 @@ static std::unordered_map<GUID, HANDLE_DATA> g_handle_hash;
 static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
 size_t ems_max_active_sessions, ems_max_active_users, ems_max_active_notifh;
-static size_t ems_high_active_sessions, ems_high_active_users, ems_high_active_notifh;
+size_t ems_max_pending_sesnotif;
+static size_t ems_high_active_sessions, ems_high_active_users;
+static size_t ems_high_active_notifh, ems_high_pending_sesnotif;
 
 static void *emsi_scanwork(void *);
 
 void emsmdb_report()
 {
-	size_t sessions = 0, logons = 0;
+	size_t sessions = 0, logons = 0, pend_notif = 0;
 	std::unique_lock gl_hold(g_lock);
 	mlog(LV_INFO, "EMSMDB Sessions:");
 	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID #NF", "GUID", "USERNAME");
@@ -115,10 +115,12 @@ void emsmdb_report()
 	for (const auto hp : e1.second) {
 		auto &h = *hp;
 		auto &ei = h.info;
+		auto pn = double_list_get_nodes_num(&h.notify_list);
 		mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u %3zu",
 			bin2hex(&h.guid, sizeof(GUID)).c_str(), h.username, h.cxr,
-			ei.cpid, ei.lcid_string, double_list_get_nodes_num(&h.notify_list));
+			ei.cpid, ei.lcid_string, pn);
 		++sessions;
+		pend_notif += pn;
 		for (unsigned int i = 0; i < std::size(ei.plogmap->p); ++i) {
 			auto li = ei.plogmap->p[i].get();
 			if (li == nullptr)
@@ -142,7 +144,9 @@ void emsmdb_report()
 		logons);
 	gl_hold.unlock();
 	std::lock_guard gl2(g_notify_lock);
-	mlog(LV_INFO, "NotifyHandles %zu/%zu", g_notify_hash.size(), ems_high_active_notifh);
+	mlog(LV_INFO, "NotifyHandles %zu/%zu, NotifyPending %zu/%zu",
+		g_notify_hash.size(), ems_high_active_notifh,
+		pend_notif, ems_high_pending_sesnotif);
 }
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
@@ -1157,12 +1161,14 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	default:
 		break;
 	}
-	if (double_list_get_nodes_num(&phandle->notify_list)
-		>= MAX_NOTIFY_RESPONSE_NUM) {
-		mlog(LV_WARN, "W-2305: handle->notify_list full (one session), reached maximum of %u items", MAX_NOTIFY_RESPONSE_NUM);
+	auto notifnum = double_list_get_nodes_num(&phandle->notify_list);
+	if (notifnum >= ems_max_pending_sesnotif) {
+		mlog(LV_WARN, "W-2305: EMS session %s reached maximum of %zu pending notifications",
+			bin2hex(phandle->guid).c_str(), ems_max_pending_sesnotif);
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
+	ems_high_pending_sesnotif = std::max(ems_high_pending_sesnotif, notifnum);
 	cxr = phandle->cxr;
 	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 	pnode = me_alloc<DOUBLE_LIST_NODE>();

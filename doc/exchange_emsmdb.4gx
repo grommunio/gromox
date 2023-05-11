@@ -44,6 +44,13 @@ Maximum number of concurrently active mailbox identities.
 .br
 Default: (unlimited)
 .TP
+\fBems_max_pending_sesnotif\fP
+Maximum number of pending notifications for an EMSMDB session. (If a client
+accrues too many pending notifications, there may be something wrong with the
+client.)
+.br
+Default: \fI128\fP
+.TP
 \fBemsmdb_max_cxh_per_user\fP
 The maximum number of RPC context handles any one user can have at any one
 time.

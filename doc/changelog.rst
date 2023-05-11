@@ -1,4 +1,4 @@
-Development 2.9.7
+Development 2.9.8
 =================
 
 Enhancements:
@@ -7,7 +7,7 @@ Enhancements:
 * emsmdb: strike limits (raise to infinity) for session handles, user handles
   and notify handles
 * emsmdb: new configuration directives ems_max_active_notifh,
-  ems_max_active_sessions, ems_max_active_users
+  ems_max_active_sessions, ems_max_active_users, ems_max_pending_sesnotif
 
 
 Gromox 2.9 (2023-05-10)
