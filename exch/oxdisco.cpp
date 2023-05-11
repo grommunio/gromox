@@ -912,17 +912,67 @@ BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 	add_child(resp_imap, "type", "imap");
 	add_child(resp_imap, "hostname", t_host_id);
 	add_child(resp_imap, "port", "143");
-	add_child(resp_imap, "socketType", "plain");
+	add_child(resp_imap, "socketType", "STARTTLS");
 	add_child(resp_imap, "authentication", "password-cleartext");
 	add_child(resp_imap, "username", username);
+
+	auto resp_imaps = add_child(resp_prov, "incomingServer");
+	add_child(resp_imaps, "type", "imap");
+	add_child(resp_imaps, "hostname", t_host_id);
+	add_child(resp_imaps, "port", "993");
+	add_child(resp_imaps, "socketType", "SSL/TLS");
+	add_child(resp_imaps, "authentication", "password-cleartext");
+	add_child(resp_imaps, "username", username);
+
+	auto resp_pop = add_child(resp_prov, "incomingServer");
+	add_child(resp_pop, "type", "pop3");
+	add_child(resp_pop, "hostname", t_host_id);
+	add_child(resp_pop, "port", "110");
+	add_child(resp_pop, "socketType", "STARTTLS");
+	add_child(resp_pop, "authentication", "password-cleartext");
+	add_child(resp_pop, "username", username);
+
+	auto resp_pops = add_child(resp_prov, "incomingServer");
+	add_child(resp_pops, "type", "pop3");
+	add_child(resp_pops, "hostname", t_host_id);
+	add_child(resp_pops, "port", "995");
+	add_child(resp_pops, "socketType", "SSL/TLS");
+	add_child(resp_pops, "authentication", "password-cleartext");
+	add_child(resp_pops, "username", username);
 
 	auto resp_smtp = add_child(resp_prov, "outgoingServer");
 	add_child(resp_smtp, "type", "smtp");
 	add_child(resp_smtp, "hostname", t_host_id);
 	add_child(resp_smtp, "port", "25");
-	add_child(resp_smtp, "socketType", "plain");
+	add_child(resp_smtp, "socketType", "none");
 	add_child(resp_smtp, "authentication", "password-cleartext");
 	add_child(resp_smtp, "username", username);
+
+	auto resp_submission = add_child(resp_prov, "outgoingServer");
+	add_child(resp_submission, "type", "submission");
+	add_child(resp_submission, "hostname", t_host_id);
+	add_child(resp_submission, "port", "587");
+	add_child(resp_submission, "socketType", "STARTTLS");
+	add_child(resp_submission, "authentication", "password-cleartext");
+	add_child(resp_submission, "username", username);
+
+	auto resp_caldav = add_child(resp_prov, "calendarServer");
+	add_child(resp_caldav, "type", "caldav");
+	add_child(resp_caldav, "hostname", t_host_id);
+	add_child(resp_caldav, "port", "443");
+	add_child(resp_caldav, "socketType", "SSL/TLS");
+	add_child(resp_caldav, "authentication", "password-cleartext");
+	add_child(resp_caldav, "username", username);
+	add_child(resp_caldav, "path", "/dav/");
+
+	auto resp_carddav = add_child(resp_prov, "contactsServer");
+	add_child(resp_carddav, "type", "carddav");
+	add_child(resp_carddav, "hostname", t_host_id);
+	add_child(resp_carddav, "port", "443");
+	add_child(resp_carddav, "socketType", "SSL/TLS");
+	add_child(resp_carddav, "authentication", "password-cleartext");
+	add_child(resp_carddav, "username", username);
+	add_child(resp_carddav, "path", "/dav/");
 
 	int code = 200;
 	XMLPrinter printer(nullptr, !pretty_response);
