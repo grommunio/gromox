@@ -29,18 +29,26 @@ Default: \fI1000\fP
 \fBaverage_mem\fP
 Default: \fI4K\fP
 .TP
+\fBems_max_active_notifh\fP
+Maximum number of concurrently active notify handles.
+.br
+Default: (unlimited)
+.TP
+\fBems_max_active_sessions\fP
+Maximum number of concurrently active EMSMDB session handles.
+.br
+Default: (unlimited)
+.TP
+\fBems_max_active_users\fP
+Maximum number of concurrently active mailbox identities.
+.br
+Default: (unlimited)
+.TP
 \fBemsmdb_max_cxh_per_user\fP
 The maximum number of RPC context handles any one user can have at any one
 time.
 .br
 Default: \fI100\fP
-.TP
-\fBemsmdb_max_hoc\fP
-A value used for sizing of internal hash tables. It does not directly affect
-the number of handles a user can open, but the total number of handles in the
-entire emsmdb system.
-.br
-Default: \fI10\fP
 .TP
 \fBemsmdb_max_obh_per_session\fP
 The maximum number of object handles each session can have at any one time

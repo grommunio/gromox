@@ -49,7 +49,6 @@ static unsigned int g_max_rop_payloads = 96;
 
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
-unsigned int emsmdb_max_hoc = 10;
 unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;
 
 std::unique_ptr<LOGMAP> rop_processor_create_logmap() try

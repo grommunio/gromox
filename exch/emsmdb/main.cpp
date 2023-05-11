@@ -42,8 +42,10 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"async_threads_num", "4", CFG_SIZE, "1", "20"},
 	{"average_handles", "1000", CFG_SIZE, "100"},
 	{"average_mem", "4K", CFG_SIZE, "4K"},
+	{"ems_max_active_notifh", "0", CFG_SIZE, "0"},
+	{"ems_max_active_sessions", "0", CFG_SIZE, "0"},
+	{"ems_max_active_users", "0", CFG_SIZE, "0"},
 	{"emsmdb_max_cxh_per_user", "100", CFG_SIZE, "100"},
-	{"emsmdb_max_hoc", "10", CFG_SIZE, "1"},
 	{"emsmdb_max_obh_per_session", "500", CFG_SIZE, "500"},
 	{"emsmdb_private_folder_softdelete", "0", CFG_BOOL},
 	{"emsmdb_rop_chaining", "1"},
@@ -76,6 +78,9 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	emsmdb_max_obh_per_session = pconfig->get_ll("emsmdb_max_obh_per_session");
 	emsmdb_pvt_folder_softdel = pconfig->get_ll("emsmdb_private_folder_softdelete");
 	emsmdb_rop_chaining = pconfig->get_ll("emsmdb_rop_chaining");
+	ems_max_active_notifh = pconfig->get_ll("ems_max_active_notifh");
+	ems_max_active_sessions = pconfig->get_ll("ems_max_active_sessions");
+	ems_max_active_users = pconfig->get_ll("ems_max_active_users");
 	return true;
 } catch (const cfg_error &) {
 	return false;

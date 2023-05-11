@@ -39,9 +39,6 @@
 #define HANDLE_EXCHANGE_EMSMDB			2
 
 #define HANDLE_EXCHANGE_ASYNCEMSMDB		3
-
-#define AVERAGE_NOTIFY_NUM				4
-
 #define MAX_NOTIFY_RESPONSE_NUM			128
 
 #define MAX_CONTENT_ROW_DELETED			6
@@ -100,15 +97,17 @@ static thread_local HANDLE_DATA *g_handle_key;
 static std::unordered_map<GUID, HANDLE_DATA> g_handle_hash;
 static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
-static size_t g_handle_hash_max, g_user_hash_max, g_notify_hash_max;
+size_t ems_max_active_sessions, ems_max_active_users, ems_max_active_notifh;
+static size_t ems_high_active_sessions, ems_high_active_users, ems_high_active_notifh;
 
 static void *emsi_scanwork(void *);
 
 void emsmdb_report()
 {
-	std::lock_guard gl_hold(g_lock);
+	size_t sessions = 0, logons = 0;
+	std::unique_lock gl_hold(g_lock);
 	mlog(LV_INFO, "EMSMDB Sessions:");
-	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID", "GUID", "USERNAME");
+	mlog(LV_INFO, "%-32s  %-32s  CXR CPID LCID #NF", "GUID", "USERNAME");
 	mlog(LV_INFO, "LOGON  %-32s  MBOXUSER", "MBOXGUID");
 	mlog(LV_INFO, "--------------------------------------------------------------------------------");
 	/* Sort display by user, then CXR. */
@@ -116,9 +115,10 @@ void emsmdb_report()
 	for (const auto hp : e1.second) {
 		auto &h = *hp;
 		auto &ei = h.info;
-		mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u",
+		mlog(LV_INFO, "%-32s  %-32s  /%-2u %-4u %-4u %3zu",
 			bin2hex(&h.guid, sizeof(GUID)).c_str(), h.username, h.cxr,
-			ei.cpid, ei.lcid_string);
+			ei.cpid, ei.lcid_string, double_list_get_nodes_num(&h.notify_list));
+		++sessions;
 		for (unsigned int i = 0; i < std::size(ei.plogmap->p); ++i) {
 			auto li = ei.plogmap->p[i].get();
 			if (li == nullptr)
@@ -128,6 +128,7 @@ void emsmdb_report()
 				mlog(LV_INFO, "%5u  null", i);
 				continue;
 			}
+			++logons;
 			auto lo = static_cast<logon_object *>(root->pobject);
 			mlog(LV_INFO, "%5u  %-32s  %s(%u)", i,
 			        bin2hex(&lo->mailbox_guid, sizeof(lo->mailbox_guid)).c_str(),
@@ -135,6 +136,13 @@ void emsmdb_report()
 		}
 	}
 	}
+	mlog(LV_INFO, "Mailboxes %zu/%zu, EMSMDB ses %zu/%zu/%zu, ROPLogons %zu",
+		g_user_hash.size(), ems_high_active_users,
+		sessions, g_handle_hash.size(), ems_high_active_sessions,
+		logons);
+	gl_hold.unlock();
+	std::lock_guard gl2(g_notify_lock);
+	mlog(LV_INFO, "NotifyHandles %zu/%zu", g_notify_hash.size(), ems_high_active_notifh);
 }
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
@@ -308,8 +316,10 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	gx_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
 	HX_strlower(temp_handle.username);
 	std::unique_lock gl_hold(g_lock);
-	if (g_handle_hash.size() >= g_handle_hash_max) {
-		mlog(LV_WARN, "W-2300: g_handle_hash full, maximum of %zu items reached", g_handle_hash_max);
+	if (ems_max_active_sessions > 0 &&
+	    g_handle_hash.size() >= ems_max_active_sessions) {
+		mlog(LV_WARN, "W-2300: g_handle_hash full (%zu handles)",
+			ems_max_active_sessions);
 		return FALSE;
 	}
 	temp_handle.info.plogmap = rop_processor_create_logmap();
@@ -320,6 +330,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 
 	try {
 		auto xp = g_handle_hash.emplace(temp_handle.guid, std::move(temp_handle));
+		ems_high_active_sessions = std::max(ems_high_active_sessions, g_handle_hash.size());
 		phandle = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1578: ENOMEM");
@@ -327,14 +338,17 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	}
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter == g_user_hash.end()) {
-		if (g_user_hash.size() >= g_user_hash_max) {
-			mlog(LV_WARN, "W-2301: g_user_hash full, reached maximum of %zu items", g_user_hash_max);
+		if (ems_max_active_users > 0 &&
+		    g_user_hash.size() >= ems_max_active_users) {
+			mlog(LV_WARN, "W-2301: g_user_hash full (%zu handles)",
+				ems_max_active_users);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
 			return FALSE;
 		}
 		try {
 			auto xp = g_user_hash.emplace(phandle->username, std::vector<HANDLE_DATA *>{});
+			ems_high_active_users = std::max(ems_high_active_users, g_user_hash.size());
 			uh_iter = xp.first;
 		} catch (const std::bad_alloc &) {
 			g_handle_hash.erase(phandle->guid);
@@ -416,12 +430,6 @@ void emsmdb_interface_init()
 
 int emsmdb_interface_run()
 {
-	int context_num;
-	
-	context_num = get_context_num();
-	g_handle_hash_max = (context_num + 1) * emsmdb_max_hoc;
-	g_user_hash_max = context_num + 1;
-	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, emsi_scanwork, nullptr);
 	if (ret != 0) {
@@ -859,11 +867,14 @@ void emsmdb_interface_add_table_notify(const char *dir,
 	tmp_notify.guid = *pguid;
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	if (g_notify_hash.size() >= g_notify_hash_max) {
-		mlog(LV_WARN, "W-2302: g_notify_hash full, reached maximum of %zu items", g_notify_hash_max);
+	if (ems_max_active_notifh > 0 &&
+	    g_notify_hash.size() >= ems_max_active_notifh) {
+		mlog(LV_WARN, "W-2302: g_notify_hash full (%zu handles)",
+			ems_max_active_notifh);
 		return;
 	}
 	g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+	ems_high_active_notifh = std::max(ems_high_active_notifh, g_notify_hash.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_WARN, "W-1541: ENOMEM");
 }
@@ -908,11 +919,14 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	if (g_notify_hash.size() >= g_notify_hash_max) {
-		mlog(LV_WARN, "W-2303: g_notify_hash full, reached maximum of %zu items", g_notify_hash_max);
+	if (ems_max_active_notifh > 0 &&
+	    g_notify_hash.size() >= ems_max_active_notifh) {
+		mlog(LV_WARN, "W-2303: g_notify_hash full (%zu handles)",
+			ems_max_active_notifh);
 		return;
 	}
 	g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+	ems_high_active_notifh = std::max(ems_high_active_notifh, g_notify_hash.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_WARN, "W-1542: ENOMEM");
 }
