@@ -37,6 +37,7 @@
  *
  *  More properties!                  0x8000..0xFFFE
  */
+namespace {
 enum {
 	PR_NULL = PROP_TAG(PT_NULL, 0x0000), /* PidTagNull */
 	PR_EMS_TEMPLATE_BLOB = PROP_TAG(PT_BINARY, 0x0001), /* PidTagTemplateData */
@@ -1100,6 +1101,8 @@ enum {
 	PR_EMS_AB_PARENT_ENTRYID = PROP_TAG(PT_BINARY, 0xFFFC), /* PidTagAddressBookParentEntryId */
 	PR_EMS_AB_CONTAINERID = PROP_TAG(PT_LONG, 0xFFFD), /* PidTagAddressBookContainerId */
 };
+using proptag_t = decltype(PR_NULL);
+}
 
 enum {
 	PidLidAttendeeCriticalChange = 0x0001,

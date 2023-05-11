@@ -40,6 +40,10 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+namespace {
+unsigned int format_as(proptag_t x) { return x; }
+}
+
 static bool discover_ids(sqlite3 *db, const std::string &query,
     std::vector<std::string> &used)
 {

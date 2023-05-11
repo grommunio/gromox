@@ -17,6 +17,7 @@
  * (i.e. the operator should have returned unsigned all the time)
  */
 #define PROP_TAG(type, tag) ((((unsigned int)tag) << 16) | (type))
+namespace {
 enum {
 	/*
 	 * MAPI sucks, episode #17: INSIDE MAPI pg.36 and
@@ -70,6 +71,8 @@ enum {
 	PT_MV_CLSID = 0x1048, /* PtypMultipleGuid */
 	PT_MV_BINARY = 0x1102, /* PtypMultipleBinary */
 };
+using proptype_t = decltype(PT_NULL);
+}
 
 #include "mapitags.hpp"
 
