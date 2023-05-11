@@ -359,8 +359,8 @@ sFolder EWSContext::loadFolder(const sFolderSpec& folder, Structures::sShape& sh
  * - loading of attachment metadata
  *
  * @param     dir     Store to load from
- * @param     mid     Message to load
  * @param     fid     Parent folder ID
+ * @param     mid     Message to load
  * @param     item    Message object to store data in
  * @param     special Bit mask of attributes to load
  */
@@ -423,8 +423,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
  * @brief     Load message attributes not contained in tags
  *
  * @param     dir     Store to load from
- * @param     mid     Message to load
  * @param     fid     Parent folder ID
+ * @param     mid     Message to load
  * @param     message Message object to store data in
  * @param     special Bit mask of attributes to load
  */
@@ -457,6 +457,50 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			case 3: //Bcc recipient
 				if(special & sShape::BccRecipients)
 					defaulted(message.BccRecipients).emplace_back(**tps);
+				break;
+			}
+		}
+	}
+}
+
+/**
+ * @brief     Load message attributes not contained in tags
+ *
+ * @param     dir     Store to load from
+ * @param     fid     Parent folder ID
+ * @param     mid     Message to load
+ * @param     calItem Calendar object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tCalendarItem& calItem, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
+	if(special & sShape::Attendees)
+	{
+		TARRAY_SET rcpts;
+		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		{
+			mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%lu)", dir.c_str(), mid);
+			return;
+		}
+		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
+		{
+			uint32_t* recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+			if(!recipientType)
+				continue;
+			switch(*recipientType)
+			{
+			case 1: //Required attendee
+				if(special & sShape::RequiredAttendees)
+					defaulted(calItem.RequiredAttendees).emplace_back(**tps);
+				break;
+			case 2: //Optional attendee
+				if(special & sShape::OptionalAttendees)
+					defaulted(calItem.OptionalAttendees).emplace_back(**tps);
+				break;
+			case 3: //Resource
+				if(special & sShape::Resources)
+					defaulted(calItem.Resources).emplace_back(**tps);
 				break;
 			}
 		}

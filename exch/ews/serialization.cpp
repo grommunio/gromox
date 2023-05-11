@@ -314,9 +314,105 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(CalendarEventDetails);
 }
 
+void tIntervalRecurrencePatternBase::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPT(Interval);}
+
+void tRelativeYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DaysOfWeek);
+	XMLDUMPT(DayOfWeekIndex);
+	XMLDUMPT(Month);
+}
+
+void tAbsoluteYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DayOfMonth);
+	XMLDUMPT(Month);
+}
+
+void tRelativeMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+
+	XMLDUMPT(DaysOfWeek);
+	XMLDUMPT(DayOfWeekIndex);
+}
+
+void tAbsoluteMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+
+	XMLDUMPT(DayOfMonth);
+}
+
+void tWeeklyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+
+	XMLDUMPT(DaysOfWeek);
+	XMLDUMPT(FirstDayOfWeek);
+}
+
+void tDailyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+}
+
+void tRecurrenceRangeBase::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(StartDate);
+}
+
+void tNoEndRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
+{
+	tRecurrenceRangeBase::serialize(xml);
+}
+
+void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
+{
+	tRecurrenceRangeBase::serialize(xml);
+
+	XMLDUMPT(EndDate);
+}
+
+void tNumberedRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
+{
+	tRecurrenceRangeBase::serialize(xml);
+
+	XMLDUMPT(NumberOfOccurrences);
+}
+
+void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(RecurrencePattern);
+	XMLDUMPT(RecurrenceRange);
+}
+
 void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
+
+	XMLDUMPT(UID);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(IsAllDayEvent);
+	XMLDUMPT(LegacyFreeBusyStatus);
+	XMLDUMPT(Location);
+	XMLDUMPT(IsMeeting);
+	XMLDUMPT(IsCancelled);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(MeetingRequestWasSent);
+	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(MyResponseType);
+	XMLDUMPT(Organizer);
+	XMLDUMPT(RequiredAttendees);
+	XMLDUMPT(OptionalAttendees);
+	XMLDUMPT(Resources);
+	XMLDUMPT(AppointmentReplyTime);
+	XMLDUMPT(AppointmentSequenceNumber);
+	XMLDUMPT(AppointmentState);
+	XMLDUMPT(Recurrence);
+	XMLDUMPT(AllowNewTimeProposal);
 }
 
 tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
@@ -630,6 +726,15 @@ tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescripti
 
 void tSingleRecipient::serialize(XMLElement* xml) const
 {XMLDUMPT(Mailbox);}
+
+void tAttendee::serialize(XMLElement* xml) const
+{
+	XMLDUMPT(Mailbox);
+	XMLDUMPT(ResponseType);
+	XMLDUMPT(LastResponseTime);
+	XMLDUMPT(ProposedStart);
+	XMLDUMPT(ProposedEnd);
+}
 
 void tSmtpDomain::serialize(XMLElement* xml) const
 {

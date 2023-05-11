@@ -18,6 +18,7 @@
 
 #include "ews.hpp"
 #include "structures.hpp"
+#include "namedtags.hpp"
 
 using namespace gromox::EWS;
 using namespace gromox::EWS::Exceptions;
@@ -222,6 +223,104 @@ constexpr size_t typeWidth(uint16_t type)
 	case PT_MV_BINARY:    return sizeof(BINARY_ARRAY);
 	default:              return 0;
 	}
+}
+
+/**
+ * @brief Generate space separated list of days as string
+ *
+ * @param weekrecur    Bit pattern
+ * @param daysofweek   Return string
+ *
+ * PatterTypeSpecific Week
+ * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
+ * Sa (1 bit): (0x00000040) The event occurs on Saturday.
+ * F  (1 bit): (0x00000020) The event occurs on Friday.
+ * Th (1 bit): (0x00000010) The event occurs on Thursday.
+ * W  (1 bit): (0x00000008) The event occurs on Wednesday.
+ * Tu (1 bit): (0x00000004) The event occurs on Tuesday.
+ * M  (1 bit): (0x00000002) The event occurs on Monday.
+ * Su (1 bit): (0x00000001) The event occurs on Sunday.
+ * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
+ */
+void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
+{
+	for (size_t wd = 0; wd < 7; ++wd)
+		if (weekrecur & (1 << wd))
+			daysofweek.append(Enum::DayOfWeekType(wd)).append(" ");
+	// remove trailing space
+	daysofweek.erase(
+		std::find_if(daysofweek.rbegin(), daysofweek.rend(), [](int ch) {return !std::isspace(ch);}).base(),
+		daysofweek.end());
+}
+
+/**
+ * @brief Process recurrence data
+ *
+ * It loads the data into recurrence pattern and recurrence range structures.
+ *
+ * @param recurData    Recurrence data
+ * @param rp           Destination recurrence pattern
+ * @param rr           Destination recurrence range
+ */
+void process_recurrence(const BINARY* recurData,
+	tRecurrencePattern& rp, tRecurrenceRange& rr)
+{
+	EXT_PULL ext_pull;
+	APPOINTMENT_RECUR_PAT apprecurr;
+	ext_pull.init(recurData->pb, recurData->cb, gromox::zalloc, EXT_FLAG_UTF16);
+	ICAL_TIME itime;
+	if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+		throw InputError(E3109);
+
+	auto startdate = rop_util_nttime_to_unix2(rop_util_rtime_to_nttime(apprecurr.recur_pat.startdate));
+	std::string daysofweek("");
+	switch (apprecurr.recur_pat.patterntype)
+	{
+	case PATTERNTYPE_DAY:
+		rp = tDailyRecurrencePattern(apprecurr.recur_pat.period / 1440);
+		break;
+	case PATTERNTYPE_WEEK:
+	{
+		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
+		rp = tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, Enum::DayOfWeekType(size_t(apprecurr.recur_pat.firstdow)));
+		break;
+	}
+	case PATTERNTYPE_MONTH:
+	case PATTERNTYPE_MONTHEND:
+	case PATTERNTYPE_HJMONTH:
+	case PATTERNTYPE_HJMONTHEND:
+	{
+		auto monthly = apprecurr.recur_pat.period % 12 != 0;
+		ical_get_itime_from_yearday(1601, apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
+		if (monthly)
+			rp = tAbsoluteMonthlyRecurrencePattern(apprecurr.recur_pat.period, apprecurr.recur_pat.pts.dayofmonth);
+		else
+			rp = tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth, Enum::MonthNamesType(size_t(itime.month - 1)));
+		break;
+	}
+	case PATTERNTYPE_MONTHNTH:
+	case PATTERNTYPE_HJMONTHNTH:
+	{
+		auto monthly = apprecurr.recur_pat.period % 12 != 0;
+		ical_get_itime_from_yearday(1601, apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
+		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
+		std::string dayofweekindex = Enum::DayOfWeekIndexType(size_t(apprecurr.recur_pat.pts.monthnth.recurnum - 1));
+		if (monthly)
+			rp = tRelativeMonthlyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, dayofweekindex);
+		else
+			rp = tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex, Enum::MonthNamesType(size_t(itime.month - 1)));
+		break;
+	}
+	default:
+		throw InputError(E3110);
+	}
+
+	if (apprecurr.recur_pat.endtype == ENDTYPE_AFTER_N_OCCURRENCES)
+		rr = tNumberedRecurrenceRange(startdate, apprecurr.recur_pat.occurrencecount);
+	else if (apprecurr.recur_pat.endtype == ENDTYPE_AFTER_DATE)
+		rr = tEndDateRecurrenceRange(startdate, rop_util_nttime_to_unix2(rop_util_rtime_to_nttime(apprecurr.recur_pat.enddate)));
+	else
+		rr = tNoEndRecurrenceRange(startdate);
 }
 
 }
@@ -965,7 +1064,99 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
 ///////////////////////////////////////////////////////////////////////////////
 
 tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
-{}
+{
+	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
+	const TAGGED_PROPVAL* prop;
+	if((prop = shape.get(PR_SENDER_ADDRTYPE)))
+		fromProp(prop, defaulted(Organizer).Mailbox.RoutingType);
+	if((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+		fromProp(prop, defaulted(Organizer).Mailbox.EmailAddress);
+	if((prop = shape.get(PR_SENDER_NAME)))
+		fromProp(prop, defaulted(Organizer).Mailbox.Name);
+
+	if ((prop = shape.get(NtAppointmentNotAllowPropose)))
+		AllowNewTimeProposal.emplace(!*static_cast<const uint8_t*>(prop->pvalue));
+
+	if ((prop = shape.get(NtAppointmentRecur)))
+	{
+		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
+		if(recurData->cb > 0) {
+			tRecurrencePattern rp{};
+			tRecurrenceRange rr{};
+
+			process_recurrence(recurData, rp, rr);
+
+			auto& rec = Recurrence.emplace();
+			rec.RecurrencePattern = rp;
+			rec.RecurrenceRange = rr;
+		}
+	}
+
+	if ((prop = shape.get(NtAppointmentReplyTime)))
+		AppointmentReplyTime.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	fromProp(shape.get(NtAppointmentSequence), AppointmentSequenceNumber);
+
+	if((prop = shape.get(NtAppointmentStateFlags)))
+	{
+		const uint32_t* stateFlags = static_cast<const uint32_t*>(prop->pvalue);
+		AppointmentState.emplace(*stateFlags);
+		IsMeeting = *stateFlags & asfMeeting ? TRUE : false;
+		IsCancelled = *stateFlags & asfCanceled ? TRUE : false;
+	}
+
+	fromProp(shape.get(NtAppointmentSubType), IsAllDayEvent);
+
+	if ((prop = shape.get(NtBusyStatus)))
+	{
+		const uint32_t* busyStatus = static_cast<const uint32_t*>(prop->pvalue);
+		Enum::LegacyFreeBusyType freeBusy = Enum::NoData;
+		switch (*busyStatus)
+		{
+			case olFree:             freeBusy = Enum::Free; break;
+			case olTentative:        freeBusy = Enum::Tentative; break;
+			case olBusy:             freeBusy = Enum::Busy; break;
+			case olOutOfOffice:      freeBusy = Enum::OOF; break;
+			case olWorkingElsewhere: freeBusy = Enum::WorkingElsewhere; break;
+		}
+		LegacyFreeBusyStatus.emplace(freeBusy);
+	}
+
+	if ((prop = shape.get(NtCommonEnd)))
+		End.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	if ((prop = shape.get(NtCommonStart)))
+		Start.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	fromProp(shape.get(NtFInvited), MeetingRequestWasSent);
+	fromProp(shape.get(NtLocation), Location);
+
+	if ((prop = shape.get(NtResponseStatus)))
+	{
+		const uint8_t* responseStatus = static_cast<const uint8_t*>(prop->pvalue);
+		Enum::ResponseTypeType responseType = Enum::Unknown;
+		switch(*responseStatus)
+		{
+			case olResponseOrganized:    responseType = Enum::Organizer; break;
+			case olResponseTentative:    responseType = Enum::Tentative; break;
+			case olResponseAccepted:     responseType = Enum::Accept; break;
+			case olResponseDeclined:     responseType = Enum::Decline; break;
+			case olResponseNotResponded: responseType = Enum::NoResponseReceived; break;
+		}
+		MyResponseType.emplace(responseType);
+
+	}
+
+	if ((prop = shape.get(NtGlobalObjectId)))
+	{
+		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
+		if(goid->cb > 0) {
+			std::string uid(goid->cb*2+1, 0);
+			encode_hex_binary(goid->pb, goid->cb, uid.data(), int(uid.size()));
+			UID.emplace(std::move(uid));
+		}
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1226,6 +1417,17 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 		EmailAddress = data;
 	if((data = tps.get<const char>(PR_ADDRTYPE)))
 		RoutingType = data;
+}
+
+tAttendee::tAttendee(const TPROPVAL_ARRAY& tps)
+{
+	const char* data;
+	if((data = tps.get<const char>(PR_DISPLAY_NAME)))
+		Mailbox.Name = data;
+	if((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
+		Mailbox.EmailAddress = data;
+	if((data = tps.get<const char>(PR_ADDRTYPE)))
+		Mailbox.RoutingType = data;
 }
 
 tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& email,
@@ -1585,13 +1787,41 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
+	// {"calendar:DeletedOccurrences", },
+	// {"calendar:EndTimeZone", },
+	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
+	// {"calendar:ModifiedOccurrences", },
+	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
+	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
+	{"calendar:Organizer", PR_SENDER_NAME},
+	// {"calendar:OriginalStart", },
+	// {"calendar:StartTimeZone", },
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
-	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_UNICODE}}
+	{"calendar:AllowNewTimeProposal", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose, const_cast<char*>("AppointmentSubType")}, PT_BOOLEAN}},
+	{"calendar:AppointmentReplyTime", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentReplyTime, const_cast<char*>("AppointmentReplyTime")}, PT_SYSTIME}},
+	{"calendar:AppointmentState", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")}, PT_LONG}},
+	{"calendar:AppointmentSequenceNumber", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence, const_cast<char*>("AppointmentSequence")}, PT_LONG}},
+	{"calendar:End", {{MNID_ID, PSETID_COMMON, PidLidCommonEnd, const_cast<char*>("CommonEnd")}, PT_SYSTIME}},
+	{"calendar:IsAllDayEvent", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType, const_cast<char*>("AppointmentSubType")}, PT_BOOLEAN}},
+	{"calendar:IsCancelled", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")}, PT_LONG}},
+	{"calendar:IsMeeting", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")}, PT_LONG}},
+	{"calendar:IsRecurring", {{MNID_ID, PSETID_APPOINTMENT, PidLidRecurring, const_cast<char*>("Recurring")}, PT_BOOLEAN}},
+	{"calendar:LegacyFreeBusyStatus", {{MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus, const_cast<char*>("BusyStatus")}, PT_LONG}},
+	{"calendar:Location", {{MNID_ID, PSETID_APPOINTMENT, PidLidLocation, const_cast<char*>("Location")}, PT_UNICODE}},
+	{"calendar:MeetingRequestWasSent", {{MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, const_cast<char*>("FInvited")}, PT_BOOLEAN}},
+	{"calendar:MyResponseType", {{MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus, const_cast<char*>("ResponseStatus")}, PT_LONG}},
+	{"calendar:Recurrence", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
+	{"calendar:Start", {{MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")}, PT_SYSTIME}},
+	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
+	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_UNICODE}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
+	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
+	{"calendar:Resources", sShape::Resources},
 	{"item:Attachments", sShape::Attachments},
 	{"item:Body", sShape::Body},
 	{"item:IsDraft", sShape::MessageFlags},
@@ -1731,7 +1961,7 @@ tItem::tItem(const sShape& shape)
 		fromProp(prop, defaulted(ItemId).ChangeKey);
 	fromProp(shape.get(PR_CLIENT_SUBMIT_TIME), DateTimeSent);
 	if((prop = shape.get(PR_CONVERSATION_ID)))
-	fromProp(prop, defaulted(ConversationId).Id);
+		fromProp(prop, defaulted(ConversationId).Id);
 	fromProp(shape.get(PR_CREATION_TIME), DateTimeCreated);
 	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
 	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);
@@ -1755,7 +1985,7 @@ tItem::tItem(const sShape& shape)
 	}
 	fromProp(shape.get(PR_MESSAGE_SIZE), Size);
 	if((prop = shape.get(PR_PARENT_ENTRYID)))
-	fromProp(prop, defaulted(ParentFolderId).Id);
+		fromProp(prop, defaulted(ParentFolderId).Id);
 	if((v32 = shape.get<uint32_t>(PR_SENSITIVITY)))
 		Sensitivity = *v32 == SENSITIVITY_PRIVATE? Enum::Private :
 		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL? Enum::Confidential :

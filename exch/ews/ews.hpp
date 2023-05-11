@@ -191,6 +191,7 @@ private:
 
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };

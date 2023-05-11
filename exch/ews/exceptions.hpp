@@ -173,6 +173,8 @@ inline std::string E3105(const std::string_view& val) {return fmt::format("inval
 inline std::string E3106(const std::string_view& val) {return fmt::format("invalid i8 value '{}'", val);}
 inline std::string E3107(const std::string_view& val) {return fmt::format("annot deserialize property of unsupported type {}", val);}
 E(3108, "missing child node in SetItemField object");
+E(3109, "PidLidAppointmentRecur contents not recognized");
+E(3110, "Invalid recurrence type");
 
 #undef E
 }

@@ -1358,6 +1358,21 @@ enum { /* for PidLidRecurrenceType */
 	rectypeYearly,
 };
 
+enum { /* for PidLidAppointmentStateFlags */
+	asfMeeting  = 0x1U,
+	asfReceived = 0x2U,
+	asfCanceled = 0x4U,
+};
+
+enum { /* for PidLidResponseStatus */
+	olResponseNone = 0,
+	olResponseOrganized,
+	olResponseTentative,
+	olResponseAccepted,
+	olResponseDeclined,
+	olResponseNotResponded,
+};
+
 /*
  * Not in MSMAPI; Gromox-specific name. Documented for ropOpenMessage,
  * ropOpenEmbeddedMessage, ropOpenAttachment, ropOpenStream, (via OXODLGT,

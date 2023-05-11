@@ -265,15 +265,19 @@ public:
 	static constexpr uint8_t FL_EXT =   1 << 1; ///< Tag was requested as extended attribute
 	static constexpr uint8_t FL_RM =    1 << 2; ///< Tag was requested for removal
 
-	static constexpr uint64_t ToRecipients =  1 << 0;
-	static constexpr uint64_t CcRecipients =  1 << 1;
-	static constexpr uint64_t BccRecipients = 1 << 2;
-	static constexpr uint64_t Body =          1 << 3;
-	static constexpr uint64_t MessageFlags =  1 << 4;
-	static constexpr uint64_t MimeContent =   1 << 5;
-	static constexpr uint64_t Attachments =   1 << 6;
+	static constexpr uint64_t ToRecipients =      1 << 0;
+	static constexpr uint64_t CcRecipients =      1 << 1;
+	static constexpr uint64_t BccRecipients =     1 << 2;
+	static constexpr uint64_t Body =              1 << 3;
+	static constexpr uint64_t MessageFlags =      1 << 4;
+	static constexpr uint64_t MimeContent =       1 << 5;
+	static constexpr uint64_t Attachments =       1 << 6;
+	static constexpr uint64_t RequiredAttendees = 1 << 7;
+	static constexpr uint64_t OptionalAttendees = 1 << 8;
+	static constexpr uint64_t Resources =         1 << 9;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
+	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
 
 	sShape() = default;
 	explicit sShape(const TPROPVAL_ARRAY&);
@@ -695,7 +699,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 10> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 13> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -911,6 +915,234 @@ struct tItemId : public tBaseItemId
 };
 
 /**
+ * Types.xsd:396
+ */
+struct tSingleRecipient
+{
+	tEmailAddressType Mailbox;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:4419
+ */
+struct tAttendee
+{
+	static constexpr char NAME[] = "Attendee";
+
+	tEmailAddressType Mailbox;
+	std::optional<Enum::ResponseTypeType> ResponseType;
+	std::optional<gromox::time_point> LastResponseTime;
+	std::optional<gromox::time_point> ProposedStart;
+	std::optional<gromox::time_point> ProposedEnd;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tAttendee() = default;
+	explicit tAttendee(const TPROPVAL_ARRAY&);
+};
+
+/**
+ * Types.xsd:4529
+ */
+struct tRecurrencePatternBase {}; // <xs:complexType name="RecurrencePatternBaseType" abstract="true" />
+
+/**
+ * Types.xsd:4531
+ */
+struct tIntervalRecurrencePatternBase : public tRecurrencePatternBase
+{
+	int Interval;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tIntervalRecurrencePatternBase(const int& i) : Interval(i) {}
+};
+
+/**
+ * Types.xsd:4577
+ */
+struct tRelativeYearlyRecurrencePattern : public tRecurrencePatternBase
+{
+	static constexpr char NAME[] = "RelativeYearlyRecurrence";
+
+	std::string DaysOfWeek;
+	Enum::DayOfWeekIndexType DayOfWeekIndex;
+	Enum::MonthNamesType Month;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tRelativeYearlyRecurrencePattern() = default;
+	tRelativeYearlyRecurrencePattern(const std::string& dow,
+		const Enum::DayOfWeekIndexType& dowi, const Enum::MonthNamesType& mnt) :
+		DaysOfWeek(dow), DayOfWeekIndex(dowi), Month(mnt) {};
+};
+
+/**
+ * Types.xsd:4589
+ */
+struct tAbsoluteYearlyRecurrencePattern : public tRecurrencePatternBase
+{
+	static constexpr char NAME[] = "AbsoluteYearlyRecurrence";
+
+	int DayOfMonth;
+	Enum::MonthNamesType Month;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tAbsoluteYearlyRecurrencePattern(const int& dom, const Enum::MonthNamesType& mnt) :
+		DayOfMonth(dom), Month(mnt) {};
+};
+
+/**
+ * Types.xsd:4600
+ */
+struct tRelativeMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "RelativeMonthlyRecurrence";
+
+	std::string DaysOfWeek;
+	Enum::DayOfWeekIndexType DayOfWeekIndex;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tRelativeMonthlyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekIndexType& dowi) :
+		tIntervalRecurrencePatternBase(i), DaysOfWeek(dow), DayOfWeekIndex(dowi) {};
+};
+
+/**
+ * Types.xsd:4611
+ */
+struct tAbsoluteMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "AbsoluteMonthlyRecurrence";
+	int DayOfMonth;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tAbsoluteMonthlyRecurrencePattern(const int& i, const int& dom) :
+		tIntervalRecurrencePatternBase(i), DayOfMonth(dom) {};
+};
+
+/**
+ * Types.xsd:4621
+ */
+struct tWeeklyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "WeeklyRecurrence";
+
+	std::string DaysOfWeek;
+	Enum::DayOfWeekType FirstDayOfWeek;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tWeeklyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekType& fdow) :
+		tIntervalRecurrencePatternBase(i), DaysOfWeek(dow), FirstDayOfWeek(fdow) {};
+};
+
+/**
+ * Types.xsd:4632
+ */
+struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "DailyRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tDailyRecurrencePattern(const int& i) : tIntervalRecurrencePatternBase(i) {};
+};
+
+/**
+ * Types.xsd:4848
+ */
+using tRecurrencePattern = std::variant<
+	tRelativeYearlyRecurrencePattern,
+	tAbsoluteYearlyRecurrencePattern,
+	tRelativeMonthlyRecurrencePattern,
+	tAbsoluteMonthlyRecurrencePattern,
+	tWeeklyRecurrencePattern,
+	tDailyRecurrencePattern
+>;
+
+/**
+ * Types.xsd:4814
+ */
+struct tRecurrenceRangeBase
+{
+	gromox::time_point StartDate;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tRecurrenceRangeBase() = default;
+	tRecurrenceRangeBase(const gromox::time_point& sd) : StartDate(sd) {};
+};
+
+/**
+ * Types.xsd:4820
+ */
+struct tNoEndRecurrenceRange : public tRecurrenceRangeBase
+{
+	static constexpr char NAME[] = "NoEndRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tNoEndRecurrenceRange() = default;
+	tNoEndRecurrenceRange(const gromox::time_point& sd) : tRecurrenceRangeBase(sd) {};
+};
+
+/**
+ * Types.xsd:4826
+ */
+struct tEndDateRecurrenceRange : public tRecurrenceRangeBase
+{
+	static constexpr char NAME[] = "EndDateRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	gromox::time_point EndDate;
+	tEndDateRecurrenceRange() = default;
+	tEndDateRecurrenceRange(const gromox::time_point& sd, const gromox::time_point& ed) :
+		tRecurrenceRangeBase(sd), EndDate(ed) {};
+};
+
+/**
+ * Types.xsd:4836
+ */
+struct tNumberedRecurrenceRange : public tRecurrenceRangeBase
+{
+	static constexpr char NAME[] = "NumberedRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	int NumberOfOccurrences;
+
+	tNumberedRecurrenceRange() = default;
+	tNumberedRecurrenceRange(const gromox::time_point& sd, const int& noo) :
+		tRecurrenceRangeBase(sd), NumberOfOccurrences(noo) {};
+};
+
+/**
+ * Types.xsd:4878
+ */
+using tRecurrenceRange = std::variant<
+	tNoEndRecurrenceRange,
+	tEndDateRecurrenceRange,
+	tNumberedRecurrenceRange
+>;
+
+/**
+ * Types.xsd:4888
+ */
+struct tRecurrenceType
+{
+	tRecurrencePattern RecurrencePattern;
+	tRecurrenceRange RecurrenceRange;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:2353
  */
 struct tItem : public NS_EWS_Types
@@ -1006,6 +1238,73 @@ struct tCalendarItem : public tItem
 	explicit tCalendarItem(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
+
+	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
+
+	//<!-- iCalendar properties -->
+	std::optional<std::string> UID; // TODO use std::string? UID is hexed goid
+	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
+
+	// <!-- Single and Occurrence only -->
+	std::optional<gromox::time_point> Start;
+	std::optional<gromox::time_point> End;
+
+	// <!-- Occurrence only -->
+	std::optional<gromox::time_point> OriginalStart;
+	std::optional<bool> IsAllDayEvent;
+	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
+	std::optional<std::string> Location;
+	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	std::optional<bool> IsMeeting;
+	std::optional<bool> IsCancelled;
+	std::optional<bool> IsRecurring;
+	std::optional<bool> MeetingRequestWasSent;
+	std::optional<bool> IsResponseRequested;
+	// <xs:element name="CalendarItemType" type="t:CalendarItemTypeType" minOccurs="0" />
+	std::optional<Enum::ResponseTypeType> MyResponseType;
+	std::optional<tSingleRecipient> Organizer;
+	std::optional<std::vector<tAttendee>> RequiredAttendees;
+	std::optional<std::vector<tAttendee>> OptionalAttendees;
+	std::optional<std::vector<tAttendee>> Resources;
+	// <xs:element name="InboxReminders" type="t:ArrayOfInboxReminderType" minOccurs="0" />
+
+	// <!-- Conflicting and adjacent meetings -->
+	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
+	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
+	std::optional<gromox::time_point> AppointmentReplyTime;
+	std::optional<int> AppointmentSequenceNumber;
+	std::optional<int> AppointmentState;
+
+	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
+	std::optional<tRecurrenceType> Recurrence;
+	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="DeletedOccurrences" type="t:NonEmptyArrayOfDeletedOccurrencesType" minOccurs="0" />
+	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
+	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
+	std::optional<bool> AllowNewTimeProposal;
+	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="StartTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+	// <xs:element name="JoinOnlineMeetingUrl" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
+	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
+	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
 /**
@@ -1278,16 +1577,6 @@ struct tSyncFolderHierarchyDelete : public NS_EWS_Types
 	tSyncFolderHierarchyDelete(const sBase64Binary&);
 
 	tFolderId FolderId;
-
-	void serialize(tinyxml2::XMLElement*) const;
-};
-
-/**
- * Types.xsd:396
- */
-struct tSingleRecipient
-{
-	tEmailAddressType Mailbox;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
