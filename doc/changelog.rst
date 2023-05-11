@@ -1,11 +1,11 @@
-Development 2.9.8
+Development 2.9.9
 =================
 
 Enhancements:
 
 * pff2mt: speedup operation by 70%+
 * emsmdb: strike limits (raise to infinity) for session handles, user handles
-  and notify handles
+  and notify handles, and raise limit for ems_max_pending_sesnotif to 1K
 * emsmdb: new configuration directives ems_max_active_notifh,
   ems_max_active_sessions, ems_max_active_users, ems_max_pending_sesnotif
 
