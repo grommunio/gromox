@@ -1559,10 +1559,8 @@ static void *imps_thrwork(void *argp)
 			if (pcontext == nullptr)
 				break;
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
-				std::unique_lock hl_hold(g_hash_lock);
 				if (pcontext->b_modify) {
 					pcontext->b_modify = false;
-					hl_hold.unlock();
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 					if (pcontext == ptail)
