@@ -1,5 +1,9 @@
-Development 2.9.9
-=================
+Development 2.9.13
+==================
+
+Fixes:
+
+* imap: restore notifications during IDLE
 
 Enhancements:
 

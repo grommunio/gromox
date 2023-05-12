@@ -1560,7 +1560,6 @@ static void *imps_thrwork(void *argp)
 				break;
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
 				if (pcontext->b_modify) {
-					pcontext->b_modify = false;
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 					if (pcontext == ptail)
