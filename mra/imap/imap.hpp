@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <gromox/atomic.hpp>
 #include <gromox/authmgr.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
@@ -117,7 +118,7 @@ struct imap_context final : public schedule_context {
 	char selected_folder[1024]{};
 	content_array contents;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
-	BOOL b_modify = false;
+	gromox::atomic_bool b_modify{false};
 	std::unordered_set<std::string> f_flags;
 	std::vector<unsigned int> f_expunged_uids;
 	char tag_string[32]{};

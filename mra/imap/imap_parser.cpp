@@ -1141,7 +1141,7 @@ void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
 	}
 	for (auto pcontext1 : *plist)
 		if (pcontext != pcontext1 && 0 == strcmp(folder, pcontext1->selected_folder)) {
-			pcontext1->b_modify = TRUE;
+			pcontext1->b_modify = true;
 		}
 	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
@@ -1161,7 +1161,7 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	}
 	for (auto pcontext : *plist)
 		if (0 == strcmp(folder, pcontext->selected_folder)) {
-			pcontext->b_modify = TRUE;
+			pcontext->b_modify = true;
 		}
 }
 
@@ -1180,7 +1180,7 @@ void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_stri
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
 			pcontext1->f_flags.emplace(mid_string);
-			pcontext1->b_modify = TRUE;
+			pcontext1->b_modify = true;
 		}
 	}
 	hl_hold.unlock();
@@ -1205,7 +1205,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	for (auto pcontext : *plist)
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
 			pcontext->f_flags.emplace(mid_string);
-			pcontext->b_modify = TRUE;
+			pcontext->b_modify = true;
 		}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1087: ENOMEM");
@@ -1233,7 +1233,7 @@ void imap_parser_bcast_expunge(const imap_context &current,
 			continue;
 		for (auto p : exp_list)
 			other->f_expunged_uids.emplace_back(p->uid);
-		other->b_modify = TRUE;
+		other->b_modify = true;
 	}
 	hl_hold.unlock();
 	/* Bcast to other entities */
@@ -1261,7 +1261,7 @@ void imap_parser_event_expunge(const char *user, const char *folder, unsigned in
 	for (auto ctx : *ctx_list) {
 		if (strcmp(ctx->selected_folder, folder) == 0) {
 			ctx->f_expunged_uids.emplace_back(uid);
-			ctx->b_modify = TRUE;
+			ctx->b_modify = true;
 		}
 	}
 }
@@ -1303,7 +1303,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	char buff[1024];
 	
 	std::unique_lock hl_hold(g_hash_lock);
-	pcontext->b_modify = FALSE;
+	pcontext->b_modify = false;
 	auto f_expunged = std::move(pcontext->f_expunged_uids);
 	auto f_flags = std::move(pcontext->f_flags);
 	hl_hold.unlock();
@@ -1561,7 +1561,7 @@ static void *imps_thrwork(void *argp)
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
 				std::unique_lock hl_hold(g_hash_lock);
 				if (pcontext->b_modify) {
-					pcontext->b_modify = FALSE;
+					pcontext->b_modify = false;
 					hl_hold.unlock();
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
@@ -1684,7 +1684,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 		if (plist->size() == 0) {
 			g_select_hash.erase(temp_string);
 		} else {
-			pcontext->b_modify = FALSE;
+			pcontext->b_modify = false;
 			pcontext->f_flags.clear();
 			pcontext->f_expunged_uids.clear();
 			for (auto pcontext1 : *plist) {
