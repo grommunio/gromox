@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #pragma once
-#include <atomic>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -23,12 +22,8 @@ struct MITEM {
  * To keep XARRAY move-assignable, m_limit is a pointer.
  */
 struct GX_EXPORT XARRAY {
-	XARRAY(std::atomic<size_t> &m) : m_limit(&m) {}
-	~XARRAY();
-
 	std::vector<MITEM> m_vec;
 	std::unordered_map<unsigned int, size_t> m_hash;
-	std::atomic<size_t> *m_limit = nullptr;
 
 	int append(MITEM &&, unsigned int tag);
 	MITEM *get_item(size_t idx) {

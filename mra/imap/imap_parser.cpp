@@ -66,7 +66,6 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
-std::atomic<size_t> g_alloc_xarray;
 alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
@@ -211,7 +210,6 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray = g_average_num * g_context_num;
 	num = 10*g_context_num;
 	if (num < 1000) {
 		num = 1000;
@@ -1480,7 +1478,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) tr
 }
 
 imap_context::imap_context() :
-	contents(g_alloc_xarray), stream(&g_blocks_allocator)
+	stream(&g_blocks_allocator)
 {
 	auto pcontext = this;
     pcontext->connection.sockd = -1;

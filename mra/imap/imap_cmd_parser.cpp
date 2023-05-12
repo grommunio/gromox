@@ -1461,7 +1461,7 @@ static int m2icode(int r, int e)
  */
 int content_array::refresh(imap_context &ctx, const char *folder)
 {
-	XARRAY xa(g_alloc_xarray);
+	XARRAY xa;
 	int errnum = 0;
 	imap_seq_list all_seq;
 	all_seq.insert(1, SEQ_STAR);
@@ -2472,7 +2472,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return 1805;
 	if (pcontext->b_readonly)
 		return 1806;
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = system_services_list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -2655,7 +2655,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (!imap_cmd_parser_parse_fetch_args(list_data, &b_detail,
 	    &b_data, argv[3], tmp_argv, arsizeof(tmp_argv)))
 		return 1800;
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = b_detail ?
 	           system_services_fetch_detail_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum) :
@@ -2751,7 +2751,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		else
 			return 1807;
 	}
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
@@ -2792,7 +2792,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	    strlen(argv[3]) == 0 || strlen(argv[3]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[3], temp_name))
 		return 1800;
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_uid, &xarray, &errnum);
 	auto result = m2icode(ssr, errnum);
@@ -2939,7 +2939,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (std::find_if(list_data.cbegin(), list_data.cend(),
 	    [](const std::string &e) { return strcasecmp(e.c_str(), "UID") == 0; }) == list_data.cend())
 		list_data.emplace_back("UID");
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = b_detail ?
 	           system_services_fetch_detail_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum) :
@@ -3019,7 +3019,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		else
 			return 1807;
 	}
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -3059,7 +3059,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	    strlen(argv[4]) == 0 || strlen(argv[4]) >= 1024 ||
 	    !imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang, argv[4], temp_name))
 		return 1800;
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = system_services_fetch_simple_uid(pcontext->maildir,
 	           pcontext->selected_folder, list_seq, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -3156,7 +3156,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		return 1806;
 	if (argc < 4 || parse_imap_seq(list_seq, argv[3]) != 0)
 		return 1800;
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	auto ssr = system_services_list_deleted(pcontext->maildir,
 	           pcontext->selected_folder, &xarray, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -3239,7 +3239,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 	pcontext->selected_folder[0] = '\0';
 	if (pcontext->b_readonly)
 		return;
-	XARRAY xarray(g_alloc_xarray);
+	XARRAY xarray;
 	result = system_services_list_deleted(pcontext->maildir,
 	         prev_selected, &xarray, &errnum);
 	switch(result) {
