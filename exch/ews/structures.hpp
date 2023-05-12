@@ -130,7 +130,7 @@ struct sMessageEntryId : public MESSAGE_ENTRYID
 
 	uint32_t accountId() const;
 	uint64_t folderId() const;
-	uint64_t messageId() const;
+	eid_t messageId() const;
 	bool isPrivate() const;
 private:
 	void init(const void*, uint64_t);
@@ -324,6 +324,16 @@ public:
 	tBaseItemId(const sBase64Binary&, const std::optional<sBase64Binary>& = std::nullopt);
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:1560
+ */
+struct tRequestAttachmentId : public tBaseItemId
+{
+	static constexpr char NAME[] = "AttachmentId";
+
+	using tBaseItemId::tBaseItemId;
 };
 
 /**
@@ -1442,6 +1452,39 @@ struct mResponseMessageType : public NS_EWS_Messages
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Messages.xsd:1482
+ */
+struct mGetAttachmentRequest
+{
+	mGetAttachmentRequest(const tinyxml2::XMLElement*);
+
+	//<xs:element name="AttachmentShape" type="t:AttachmentResponseShapeType" minOccurs="0"/>
+	std::vector<tRequestAttachmentId> AttachmentIds;
+};
+
+/**
+ * Messages.xsd:1492
+ */
+struct mGetAttachmentResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "GetAttachmentResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+	using mResponseMessageType::success;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::vector<sAttachment> Attachments;
+};
+
+struct mGetAttachmentResponse
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::vector<mGetAttachmentResponseMessage> ResponseMessages;
+};
+
+/**
  * Messages.xsd:692
  */
 struct mGetFolderRequest
@@ -1777,6 +1820,9 @@ struct mResolveNamesRequest
 	std::optional<Enum::DefaultShapeNamesType> ContactDataShape; //Attribute
 };
 
+/**
+ * Messages.xsd:1706
+ */
 struct mResolveNamesResponseMessage : mResponseMessageType
 {
 	static constexpr char NAME[] = "ResolveNamesResponseMessage";

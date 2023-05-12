@@ -22,21 +22,26 @@ namespace gromox::EWS {
 
 namespace Structures
 {
+struct sAttachmentId;
 struct sMessageEntryId;
 struct sShape;
 struct sFolderSpec;
 struct tCalendarItem;
 struct tContact;
 struct tDistinguishedFolderId;
+struct tFileAttachment;
 struct tFolderId;
 struct tFolderResponseShape;
 struct tItem;
+struct tItemAttachment;
 struct tItemResponseShape;
 struct tMailbox;
 struct tMessage;
 struct tPath;
+struct tReferenceAttachment;
 struct tSerializableTimeZone;
 
+using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
 using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 }
 
@@ -147,6 +152,7 @@ public:
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&) const;
+	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, const Structures::sShape&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;

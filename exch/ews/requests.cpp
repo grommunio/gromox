@@ -106,6 +106,37 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 //Request implementations
 
 /**
+ * @brief      Process GetAttachment
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetAttachmentResponse");
+
+	mGetAttachmentResponse data;
+	data.ResponseMessages.reserve(request.AttachmentIds.size());
+	for(const tRequestAttachmentId& raid : request.AttachmentIds)
+	{
+		sAttachmentId aid(raid.Id.data(), raid.Id.size());
+		sFolderSpec parentFolder = ctx.resolveFolder(aid);
+		std::string dir = ctx.getDir(parentFolder);
+		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny)) {
+			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Access denied");
+			continue;
+		}
+		mGetAttachmentResponseMessage& msg = data.ResponseMessages.emplace_back();
+		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
+		msg.success();
+	}
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetFolder
  *
  * Return properties of a list of folders.
@@ -403,7 +434,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 }
 
 /**
- * @brief      Process GetFolder
+ * @brief      Process SyncFolderHierachy
  *
  * Return folder updates and hierarchy sync information
  *
@@ -626,7 +657,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 			continue;
 		}
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
-		auto mid = rop_util_make_eid_ex(1, eid.messageId());
+		auto mid = eid.messageId();
 		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, itemTags));
 		msg.success();
 	}

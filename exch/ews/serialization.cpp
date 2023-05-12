@@ -649,10 +649,24 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 	XMLDUMPT(ExternalReply);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
+	XMLINIT(AttachmentIds)
+{}
+
+void mGetAttachmentResponseMessage::serialize(XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Attachments);
+}
+
+void mGetAttachmentResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 mGetFolderRequest::mGetFolderRequest(const XMLElement* xml) :
 	XMLINIT(FolderShape), XMLINIT(FolderIds)
 {}
-
 
 void mGetFolderResponseMessage::serialize(XMLElement* xml) const
 {

@@ -332,6 +332,25 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 }
 
 /**
+ * @brief     Load attachment
+ *
+ * @param     dir      Store to load from
+ * @param     aid      Attachment ID
+ *
+ * @return    Attachment structure
+ */
+sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
+{
+	auto aInst = plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
+	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN};
+	TPROPVAL_ARRAY props;
+	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
+	if(!plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+		throw DispatchError(E3082);
+	return tAttachment::create(aid, props);
+}
+
+/**
  * @brief     Load generic special fields
  *
  * Currently supports

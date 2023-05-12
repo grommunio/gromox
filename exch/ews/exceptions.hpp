@@ -147,6 +147,7 @@ E(3079, "failed to get attachment count");
 E(3080, "failed to get attachment properties");
 E(3081, "attachment ID data to large");
 E(3082, "bad property for message entry id");
+E(3083, "failed to get attachment properties");
 
 #undef E
 }

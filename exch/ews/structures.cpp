@@ -262,8 +262,8 @@ uint64_t sMessageEntryId::folderId() const
  *
  * @return    message ID
  */
-uint64_t sMessageEntryId::messageId() const
-{return rop_util_gc_to_value(message_global_counter);}
+eid_t sMessageEntryId::messageId() const
+{return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_global_counter));}
 
 /**
  * @brief     Retrieve message type
@@ -998,8 +998,10 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
 
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
 {
+	TAGGED_PROPVAL* tp = props.find(PR_ATTACH_DATA_BIN);
+	if(tp)
+		Content.emplace(*tp);
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -126,6 +126,7 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
+	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetItem", process<Structures::mGetItemRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
@@ -484,7 +485,6 @@ struct EWSPlugin::MessageInstanceKey {
 	inline bool operator<(const MessageInstanceKey& o) const
 	{return std::tie(mid, dir) < std::tie(o.mid, o.dir);}
 };
-
 
 EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
 	plugin(p), dir(d), instanceId(i)
