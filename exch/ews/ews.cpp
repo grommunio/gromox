@@ -317,7 +317,10 @@ bool EWSPlugin::logEnabled(const std::string_view& requestName) const
 
 EWSPlugin::EWSPlugin() :
 	mimePool(MIME_POOL::create(std::clamp(16*get_context_num(), 1024u, 16*1024u), 16, "ews_mime_pool"))
-{loadConfig();}
+{
+	loadConfig();
+	cache.run(cache_interval);
+}
 
 /**
  * @brief      Initialize mysql adaptor function pointers
@@ -384,6 +387,16 @@ void EWSPlugin::loadConfig()
 	cfg->get_int("ews_pretty_response", &pretty_response);
 	cfg->get_int("ews_request_logging", &request_logging);
 	cfg->get_int("ews_response_logging", &response_logging);
+
+	int temp;
+	if(cfg->get_int("ews_cache_interval", &temp))
+		cache_interval = std::chrono::milliseconds(temp);
+	if(cfg->get_int("ews_cache_attachment_instance_lifetime", &temp))
+		cache_attachment_instance_lifetime = std::chrono::milliseconds(temp);
+	if(cfg->get_int("ews_cache_message_instance_lifetime", &temp))
+		cache_message_instance_lifetime = std::chrono::milliseconds(temp);
+
+
 	const char* logFilter = cfg->get_value("ews_log_filter");
 	if(logFilter && strlen(logFilter))
 	{
@@ -451,3 +464,87 @@ static BOOL ews_main(int reason, void **data)
 }
 
 HPM_ENTRY(ews_main);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//Cache
+
+struct EWSPlugin::AttachmentInstanceKey {
+	std::string dir;
+	uint64_t mid;
+	uint32_t aid;
+
+	inline bool operator<(const AttachmentInstanceKey& o) const
+	{return std::tie(mid, aid, dir) < std::tie(o.mid, o.aid, o.dir);}
+};
+
+struct EWSPlugin::MessageInstanceKey {
+	std::string dir;
+	uint64_t mid;
+
+	inline bool operator<(const MessageInstanceKey& o) const
+	{return std::tie(mid, dir) < std::tie(o.mid, o.dir);}
+};
+
+
+EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
+	plugin(p), dir(d), instanceId(i)
+{}
+
+/**
+ * @brief     Unload instance
+ */
+EWSPlugin::ExmdbInstance::~ExmdbInstance()
+{plugin.exmdb.unload_instance(dir.c_str(), instanceId);}
+
+
+/**
+ * @brief      Load message instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      fid   Parent folder ID
+ * @param      mid   Message ID
+ *
+ * @return     Message instance information
+ */
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const std::string& dir, uint64_t fid,
+                                                                         uint64_t mid) const
+{
+	MessageInstanceKey mkey{dir, mid};
+	try {
+		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(mkey, cache_message_instance_lifetime));
+	} catch(const std::out_of_range&) {
+	}
+	uint32_t instanceId;
+	if(!exmdb.load_message_instance(dir.c_str(), nullptr, CP_ACP, false,fid, mid, &instanceId))
+		throw DispatchError(Exceptions::E3077);
+	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	cache.emplace(cache_message_instance_lifetime, mkey, instance);
+	return instance;
+}
+
+/**
+ * @brief      Load attachment instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      fid   Parent folder ID
+ * @param      mid   Message ID
+ * @param      aid   Attachment ID
+ *
+ * @return     Attachment instance information
+ */
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(const std::string& dir, uint64_t fid,
+                                                                            uint64_t mid, uint32_t aid) const
+{
+	AttachmentInstanceKey akey{dir, mid, aid};
+	try {
+		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(akey, cache_attachment_instance_lifetime));
+	} catch(const std::out_of_range&) {
+	}
+	auto messageInstance = loadMessageInstance(dir, fid, mid);
+	uint32_t instanceId;
+	if(!exmdb.load_attachment_instance(dir.c_str(), messageInstance->instanceId, aid, &instanceId))
+		throw DispatchError(Exceptions::E3078);
+	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	cache.emplace(cache_message_instance_lifetime, akey, instance);
+	return instance;
+}

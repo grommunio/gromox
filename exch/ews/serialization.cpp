@@ -110,6 +110,17 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+void sAttachmentId::serialize(XMLElement* xml) const
+{
+	char buff[128], enc[256];
+	EXT_PUSH ext_push;
+	ext_push.init(buff, 128, 0, nullptr);
+	EXT_TRY(ext_push.p_msg_eid(*this));
+	EXT_TRY(ext_push.p_uint32(attachment_num));
+	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
+	xml->SetAttribute("Id", enc);
+}
+
 /**
  * @brief     Decode Base64 encoded data from XML element
  */
@@ -130,7 +141,7 @@ sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64
 /**
  * @brief     Return Base64 encoded data
  *
- * @return    std::string conatining base64 encoded data
+ * @return    std::string containing base64 encoded data
  */
 std::string sBase64Binary::serialize() const
 {return empty()? std::string() : b64encode(data(), size());}
@@ -239,6 +250,19 @@ void sTimePoint::serialize(XMLElement* xml) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void tAttachment::serialize(XMLElement* xml) const
+{
+	XMLDUMPT(AttachmentId);
+	XMLDUMPT(Name);
+	XMLDUMPT(ContentType);
+	XMLDUMPT(ContentId);
+	XMLDUMPT(ContentLocation);
+	XMLDUMPT(AttachmentOriginalUrl);
+	XMLDUMPT(Size);
+	XMLDUMPT(LastModifiedTime);
+	XMLDUMPT(IsInline);
+}
 
 void tBaseFolderType::serialize(XMLElement* xml) const
 {
@@ -359,6 +383,13 @@ void tEmailAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPA(MailboxType);
 }
 
+void tFileAttachment::serialize(tinyxml2::XMLElement* xml) const
+{
+	tAttachment::serialize(xml);
+	XMLDUMPT(IsContactPhoto);
+	XMLDUMPT(Content);
+}
+
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(Entry.c_str());
@@ -448,6 +479,7 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(Subject);
 	XMLDUMPT(Sensitivity);
 	XMLDUMPT(Body);
+	XMLDUMPT(Attachments);
 	XMLDUMPT(DateTimeReceived);
 	XMLDUMPT(Size);
 	XMLDUMPT(Categories);

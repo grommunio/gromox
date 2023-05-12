@@ -33,11 +33,14 @@ struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
 struct tDistinguishedFolderId;
+struct tFileAttachment;
 struct tFindResponsePagingAttributes;
 struct tFolderId;
 struct tFolderType;
 struct tItem;
+struct tItemAttachment;
 struct tMessage;
+struct tReferenceAttachment;
 struct tSearchFolderType;
 struct tSerializableTimeZone;
 struct tSyncFolderHierarchyCreate;
@@ -75,6 +78,8 @@ struct NS_EWS_Types : public NSInfo
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
 
 /**
  * @brief     Convenience wrapper for Base64 encoded data
@@ -121,6 +126,7 @@ struct sMessageEntryId : public MESSAGE_ENTRYID
 {
 	sMessageEntryId() = default;
 	sMessageEntryId(const void*, uint64_t);
+	explicit sMessageEntryId(const TAGGED_PROPVAL&);
 
 	uint32_t accountId() const;
 	uint64_t folderId() const;
@@ -128,6 +134,24 @@ struct sMessageEntryId : public MESSAGE_ENTRYID
 	bool isPrivate() const;
 private:
 	void init(const void*, uint64_t);
+};
+
+/**
+ * @brief      Attachment ID
+ *
+ * Allows referencing attachments by message entry ID and attachment index.
+ *
+ * @todo
+ */
+struct sAttachmentId : public sMessageEntryId
+{
+	sAttachmentId(const sMessageEntryId&, uint32_t);
+	sAttachmentId(const TAGGED_PROPVAL&, uint32_t);
+	sAttachmentId(const void*, uint64_t);
+
+	uint32_t attachment_num;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -195,6 +219,7 @@ struct sShape
 	static constexpr uint64_t Body =          1 << 3;
 	static constexpr uint64_t MessageFlags =  1 << 4;
 	static constexpr uint64_t MimeContent =   1 << 5;
+	static constexpr uint64_t Attachments =   1 << 6;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 };
@@ -264,6 +289,28 @@ struct sTimePoint
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename T> using vector_inserter = std::back_insert_iterator<std::vector<T>>;
+
+/**
+ * Types.xsd:1611
+ */
+struct tAttachment : public NS_EWS_Types
+{
+	explicit tAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
+
+	static sAttachment create(const sAttachmentId&, const TPROPVAL_ARRAY&);
+
+	std::optional<sAttachmentId> AttachmentId;
+	std::optional<std::string> Name;
+	std::optional<std::string> ContentType;
+	std::optional<std::string> ContentId;
+	std::optional<std::string> ContentLocation;
+	std::optional<std::string> AttachmentOriginalUrl;
+	std::optional<int32_t> Size;
+	std::optional<sTimePoint> LastModifiedTime;
+	std::optional<bool> IsInline;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 class tBaseItemId
 {
@@ -403,6 +450,28 @@ struct tPhoneNumberDictionaryEntry
 };
 
 /**
+ * Types.xsd:1665
+ */
+struct tReferenceAttachment : public tAttachment
+{
+	static constexpr char NAME[] = "ReferenceAttachment";
+
+	//tReferenceAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
+	using tAttachment::tAttachment;
+
+	//<xs:element name="AttachLongPathName" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="ProviderType" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="ProviderEndpointUrl" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="AttachmentThumbnailUrl" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="AttachmentPreviewUrl" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="PermissionType" type="xs:int" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="OriginalPermissionType" type="xs:int" minOccurs="0" maxOccurs="1"/>
+	//<xs:element name="AttachmentIsFolder" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+
+	//void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:1862
  */
 struct tFolderId : public tBaseItemId
@@ -519,7 +588,22 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 9> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 10> specialMap; ///< Mapping for special properties
+};
+
+/**
+ * Types.xsd:1654
+ */
+struct tFileAttachment : public tAttachment
+{
+	static constexpr char NAME[] = "FileAttachment";
+
+	tFileAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
+
+	std::optional<bool> IsContactPhoto;
+	std::optional<sBase64Binary> Content;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -651,6 +735,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> Subject; ///< PR_SUBJECT
 	std::optional<Enum::SensitivityChoicesType> Sensitivity; ///< PR_SENSITIVITY
 	std::optional<tBody> Body; ///< PR_BODY or PR_HTML
+	std::vector<sAttachment> Attachments;
 	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
 	std::optional<sTimePoint> DateTimeReceived; ///< PR_MESSAGE_DELIVERY_TIME
 	std::optional<uint64_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
@@ -831,6 +916,34 @@ struct tContact : public tItem
 	// <xs:element name="PartnerNetworkThumbnailPhotoUrl" type="xs:string" minOccurs="0" />
 	// <xs:element name="PersonId" type="xs:string" minOccurs="0" />
 	// <xs:element name="ConversationGuid" type="t:GuidType" minOccurs="0" />
+};
+
+/**
+ * Types.xsd:1611
+ */
+struct tItemAttachment : public tAttachment
+{
+	static constexpr char NAME[] = "ItemAttachment";
+
+	//tItemAttachment(const sAttachmentId&, const TPROPVAL_ARRAY&);
+	using tAttachment::tAttachment;
+
+	//<xs:element name="Item" type="t:ItemType"/>
+	//<xs:element name="Message" type="t:MessageType"/>
+	//<xs:element name="SharingMessage" type="t:SharingMessageType"/>
+	//<xs:element name="CalendarItem" type="t:CalendarItemType"/>
+	//<xs:element name="Contact" type="t:ContactItemType"/>
+	//<xs:element name="MeetingMessage" type="t:MeetingMessageType"/>
+	//<xs:element name="MeetingRequest" type="t:MeetingRequestMessageType"/>
+	//<xs:element name="MeetingResponse" type="t:MeetingResponseMessageType"/>
+	//<xs:element name="MeetingCancellation" type="t:MeetingCancellationMessageType"/>
+	//<xs:element name="Task" type="t:TaskType"/>
+	//<xs:element name="PostItem" type="t:PostItemType"/>
+	//<xs:element name="RoleMember" type="t:RoleMemberItemType"/>
+	//<xs:element name="Network" type="t:NetworkItemType"/>
+	//<xs:element name="Person" type="t:AbchPersonItemType"/>
+
+	//void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**

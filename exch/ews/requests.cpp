@@ -627,7 +627,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		}
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = rop_util_make_eid_ex(1, eid.messageId());
-		msg.Items.emplace_back(ctx.loadItem(dir, mid, itemTags));
+		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, itemTags));
 		msg.success();
 	}
 	data.serialize(response);

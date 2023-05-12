@@ -43,6 +43,75 @@ template<typename T, typename... Args>
 T& defaulted(std::optional<T>& container, Args&&... args)
 {return container? *container : container.emplace(std::forward<Args...>(args)...);}
 
+/**
+ * @brief      Fill field from property
+ *
+ * Value version.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ *
+ * @tparam     T          Target type
+ * @tparam     PT         Property type
+ */
+template<typename T, typename PT=T, std::enable_if_t<!std::is_pointer_v<PT>, bool> = false>
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<T>& target)
+{
+	const TAGGED_PROPVAL* prop = props.find(tag);
+	if(prop)
+		target.emplace(*static_cast<const PT*>(prop->pvalue));
+}
+
+/**
+ * @brief      Fill field from property
+ *
+ * Pointer version.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ *
+ * @tparam     T          Target type
+ * @tparam     PT         Property type
+ */
+template<typename T, typename PT=T, std::enable_if_t<std::is_pointer_v<PT>, bool> = true>
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<T>& target)
+{
+	const TAGGED_PROPVAL* prop = props.find(tag);
+	if(prop)
+		target.emplace(static_cast<PT>(prop->pvalue));
+}
+
+/**
+ * @brief      Fill string from property
+ *
+ * Shortcut for fromProp<std::string, const char*>.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ */
+template<>
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<std::string>& target)
+{return fromProp<std::string, const char*>(props, tag, target);}
+
+/**
+ * @brief      Fill time field from property
+ *
+ * Automatically performs conversion from NT to UNIX timestamp.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ */
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<sTimePoint>& target)
+{
+	const TAGGED_PROPVAL* prop = props.find(tag);
+	if(prop)
+		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +132,31 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TRY(expr) EWSContext::ext_error(expr)
+
+/**
+ * @brief      Create attachment ID from message entry ID and index
+ */
+sAttachmentId::sAttachmentId(const sMessageEntryId& meid, uint32_t num) : sMessageEntryId(meid), attachment_num(num)
+{}
+
+/**
+ * @brief      Create attachment ID from message entry ID property and index
+ */
+sAttachmentId::sAttachmentId(const TAGGED_PROPVAL& tp, uint32_t num) : sMessageEntryId(tp), attachment_num(num)
+{}
+
+/**
+ * @brief      Load attachment id from binary data
+ */
+sAttachmentId::sAttachmentId(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size > std::numeric_limits<uint32_t>::max())
+		throw DeserializationError(E3081);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_msg_eid(this));
+	TRY(ext_pull.g_uint32(&attachment_num));
+}
 
 /**
  * @brief     Parse entry ID from binary data
@@ -120,6 +214,17 @@ bool sFolderEntryId::isPrivate() const
  */
 sMessageEntryId::sMessageEntryId(const void* data, uint64_t size)
 {init(data, size);}
+
+/**
+ * @brief      Create message entry ID from property
+ */
+sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
+{
+	if(PROP_TYPE(tp.proptag) != PT_BINARY)
+		throw DispatchError(E3082);
+	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
+	init(bin->pv, bin->cb);
+}
 
 /**
  * @brief     Parse entry ID from binary data
@@ -345,6 +450,30 @@ sTimePoint sTimePoint::fromNT(uint64_t timestamp)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Types implementation
+
+tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+{
+	AttachmentId.emplace(aid);
+	fromProp(props, PR_DISPLAY_NAME, Name);
+	fromProp(props, PR_ATTACH_MIME_TAG, ContentType);
+	fromProp(props, PR_ATTACH_SIZE, Size);
+	fromProp(props, PR_LAST_MODIFICATION_TIME, LastModifiedTime);
+}
+
+sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+{
+	const TAGGED_PROPVAL* prop = props.find(PR_ATTACH_METHOD);
+	if(prop)
+		switch(*static_cast<const uint32_t*>(prop->pvalue)) {
+		case ATTACH_EMBEDDED_MSG:
+			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, props);
+		case ATTACH_BY_REFERENCE:
+			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, props);
+		}
+	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, props);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief     Convert propvals to structured folder information
@@ -826,6 +955,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"item:Attachments", sShape::Attachments},
 	{"item:Body", sShape::Body},
 	{"item:IsDraft", sShape::MessageFlags},
 	{"item:IsFromMe", sShape::MessageFlags},
@@ -862,6 +992,14 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
 	if(specials != specialMap.end() && specials->first == FieldURI)
 		special |= specials->second;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
+{
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

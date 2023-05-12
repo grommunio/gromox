@@ -141,6 +141,12 @@ E(3073, "mail export error");
 E(3074, "failed to serialize message");
 E(3075, "failed to get username from id");
 E(3076, "failed to get domain info from id");
+E(3077, "failed to load message instance");
+E(3078, "failed to load attachment instance");
+E(3079, "failed to get attachment count");
+E(3080, "failed to get attachment properties");
+E(3081, "attachment ID data to large");
+E(3082, "bad property for message entry id");
 
 #undef E
 }

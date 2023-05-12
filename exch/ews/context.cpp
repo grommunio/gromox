@@ -332,13 +332,23 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 }
 
 /**
- * @brief     Stub overload for generic items
+ * @brief     Load generic special fields
+ *
+ * Currently supports
+ * - loading of mime content
+ * - loading of attachment metadata
+ *
+ * @param     dir     Store to load from
+ * @param     mid     Message to load
+ * @param     fid     Parent folder ID
+ * @param     item    Message object to store data in
+ * @param     special Bit mask of attributes to load
  */
-void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tItem& item, uint64_t special) const
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tItem& item, uint64_t special) const
 {
+	auto& exmdb = plugin.exmdb;
 	if(special & sShape::MimeContent)
 	{
-		auto& exmdb = plugin.exmdb;
 		MESSAGE_CONTENT* content;
 		if(!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content))
 			throw DispatchError(E3071);
@@ -366,6 +376,27 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tItem& item, 
 			size = STREAM_BLOCK_SIZE;
 		}
 	}
+	if(special & sShape::Attachments)
+	{
+		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_SIZE,
+		                            PR_LAST_MODIFICATION_TIME};
+		auto mInst = plugin.loadMessageInstance(dir, fid, mid);
+		uint16_t count;
+		if(!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+			throw DispatchError(E3079);
+		sAttachmentId aid(this->getItemEntryId(dir, mid), 0);
+		item.Attachments.reserve(count);
+		for(uint16_t i = 0; i < count; ++i)
+		{
+			auto aInst = plugin.loadAttachmentInstance(dir, fid, mid, i);
+			TPROPVAL_ARRAY props;
+			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
+			if(!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+				throw DispatchError(E3080);
+			aid.attachment_num = i;
+			item.Attachments.emplace_back(tAttachment::create(aid, props));
+		}
+	}
 }
 
 /**
@@ -373,12 +404,13 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tItem& item, 
  *
  * @param     dir     Store to load from
  * @param     mid     Message to load
+ * @param     fid     Parent folder ID
  * @param     message Message object to store data in
  * @param     special Bit mask of attributes to load
  */
-void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tMessage& message, uint64_t special) const
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tMessage& message, uint64_t special) const
 {
-	loadSpecial(dir, mid, static_cast<tItem&>(message), special);
+	loadSpecial(dir, fid, mid, static_cast<tItem&>(message), special);
 	if(special & sShape::Recipients)
 	{
 		TARRAY_SET rcpts;
@@ -415,18 +447,19 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t mid, tMessage& mes
  * @brief     Load (message) item from store
  *
  * @param     dir     Store to load item from
+ * @param     fid     Parent folder ID
  * @param     mid     ID of the message to laod
  * @param     shape   Item shape
  *
  * @return    Loaded item
  */
-sItem EWSContext::loadItem(const std::string&dir, uint64_t mid, const sShape& shape) const
+sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, const sShape& shape) const
 {
 	PROPTAG_ARRAY requestedTags{uint16_t(shape.tags.size()), const_cast<uint32_t*>(shape.tags.data())};
 	TPROPVAL_ARRAY itemProps = getItemProps(dir, mid, requestedTags);
 	sItem item = tItem::create(itemProps, shape.namedTags);
 	if(shape.special)
-		std::visit([&](auto&& item){loadSpecial(dir, mid, item, shape.special);}, item);
+		std::visit([&](auto&& item){loadSpecial(dir, fid, mid, item, shape.special);}, item);
 	return item;
 }
 
@@ -537,14 +570,14 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 	{
 		char temp[UADDR_SIZE];
 		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
-			throw DispatchError(E3026);
+			throw DispatchError(E3075);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
 		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
-			throw DispatchError(E3027);
+			throw DispatchError(E3076);
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
