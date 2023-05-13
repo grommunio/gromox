@@ -108,7 +108,7 @@ PKG_CHECK_MODULES([tinyxml], [tinyxml2])
 PKG_CHECK_MODULES([vmime], [vmime >= 0.9.2])
 PKG_CHECK_MODULES([xml2], [libxml-2.0])
 PKG_CHECK_MODULES([zlib], [zlib])
-PKG_CHECK_MODULES([zstd], [libzstd])
+PKG_CHECK_MODULES([zstd], [libzstd >= 1.4])
 have_pamheader=""
 AC_CHECK_HEADERS([crypt.h endian.h syslog.h])
 AC_CHECK_HEADERS([sys/endian.h sys/epoll.h sys/event.h sys/random.h sys/xattr.h])
