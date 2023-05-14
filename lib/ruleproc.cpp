@@ -196,9 +196,13 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 	std::set<uint16_t> src_id_set;
 	std::vector<uint16_t> src_id_vec;
 	rx_npid_collect(ctnt, src_id_set);
+	if (src_id_set.size() == 0)
+		return ecSuccess;
 	for (auto id : src_id_set)
 		src_id_vec.push_back(id);
-	PROPID_ARRAY src_id_arr = {1, src_id_vec.data()}, dst_id_arr{};
+	PROPID_ARRAY src_id_arr, dst_id_arr{};
+	src_id_arr.count = src_id_vec.size();
+	src_id_arr.ppropid = src_id_vec.data();
 	PROPNAME_ARRAY src_name_arr{};
 	auto cl_0 = make_scope_exit([&]() {
 		rx_delete_local(src_name_arr);
