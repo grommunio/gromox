@@ -8,7 +8,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair cleaner delivery delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair cleaner delivery delivery-queue event freebusy gromox-snapshot http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -61,7 +61,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
-pkglibexec_SCRIPTS = tools/create_queue.sh tools/gromox-snapshot
+pkglibexec_SCRIPTS = tools/create_queue.sh
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
@@ -251,6 +251,8 @@ gromox_oxm2mt_SOURCES = tools/genimport.cpp tools/oxm2mt.cpp
 gromox_oxm2mt_LDADD = ${HX_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${mysql_LIBS} ${olecf_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pff2mt.cpp
 gromox_pff2mt_LDADD = ${HX_LIBS} ${iconv_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
+gromox_snapshot_SOURCES = tools/snapshot.cpp
+gromox_snapshot_LDADD = ${HX_LIBS} libgromox_common.la
 timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 

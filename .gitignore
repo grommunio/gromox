@@ -51,6 +51,7 @@ Makefile.in
 /gromox-mt2exm
 /gromox-oxm2mt
 /gromox-pff2mt
+/gromox-snapshot
 /http
 /imap
 /midb

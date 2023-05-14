@@ -5,7 +5,6 @@ ConditionPathIsDirectory=/var/lib/gromox/user
 
 [Service]
 Type=oneshot
-User=gromox
 ExecStart=@libexecdir@/gromox/gromox-snapshot
 PrivateDevices=no
 PrivateNetwork=yes
