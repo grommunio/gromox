@@ -874,19 +874,19 @@ unsigned int newline_size(const char *s, size_t z)
 	return 0;
 }
 
-bool cu_validate_msgclass(const char *k)
+ec_error_t cu_validate_msgclass(const char *k)
 {
 	/* MS-OXCSTOR v25 §2.2.1.2ff */
 	auto z = strlen(k);
 	if (z + 1 > 255 || k[0] == '.' || (z > 0 && k[z-1] == '.'))
-		return false;
+		return ecInvalidParam;
 	for (size_t i = 0; i < z; ++i) {
 		if (k[i] < 0x20 || k[i] > 0x7E)
-			return false;
+			return ecInvalidParam;
 		if (k[i] == '.' && k[i+1] == '.')
-			return false;
+			return ecInvalidParam;
 	}
-	return true;
+	return ecSuccess;
 }
 
 bool cpid_cstr_compatible(cpid_t cpid)

@@ -144,7 +144,7 @@ extern GX_EXPORT int setup_sigalrm();
 extern GX_EXPORT size_t qp_encoded_size_estimate(const char *, size_t);
 extern GX_EXPORT void safe_memset(void *, uint8_t, size_t);
 extern GX_EXPORT unsigned int newline_size(const char *, size_t);
-extern GX_EXPORT bool cu_validate_msgclass(const char *);
+extern GX_EXPORT ec_error_t cu_validate_msgclass(const char *);
 extern GX_EXPORT bool cpid_cstr_compatible(cpid_t);
 extern GX_EXPORT bool cset_cstr_compatible(const char *);
 extern GX_EXPORT size_t mb_to_utf8_len(const char *);

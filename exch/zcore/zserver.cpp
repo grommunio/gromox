@@ -3054,8 +3054,9 @@ ec_error_t zs_getreceivefolder(GUID hsession,
 	
 	if (pstrclass == nullptr)
 		pstrclass = "";
-	if (!cu_validate_msgclass(pstrclass))
-		return ecInvalidParam;
+	auto ret = cu_validate_msgclass(pstrclass);
+	if (ret != ecSuccess)
+		return ret;
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
