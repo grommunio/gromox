@@ -43,12 +43,10 @@ void container_object::clear()
 {
 	auto pcontainer = this;
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
-		if (NULL == pcontainer->contents.pminid_array) {
+		if (pcontainer->contents.pminid_array == nullptr)
 			return;
-		}
-		if (NULL != pcontainer->contents.pminid_array->pl) {
+		if (pcontainer->contents.pminid_array->pl != nullptr)
 			free(pcontainer->contents.pminid_array->pl);
-		}
 		free(pcontainer->contents.pminid_array);
 		pcontainer->contents.pminid_array = NULL;
 	} else {
@@ -199,14 +197,12 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			return FALSE;
 		auto pinfo = zs_get_info();
 		if (!ab_tree_match_minids(pbase.get(), pcontainer->id.abtree_id.minid,
-			pinfo->cpid, prestriction, &minid_array)) {
+		    pinfo->cpid, prestriction, &minid_array))
 			return FALSE;	
-		}
 		pbase.reset();
 		pminid_array = me_alloc<LONG_ARRAY>();
-		if (NULL == pminid_array) {
+		if (pminid_array == nullptr)
 			return FALSE;
-		}
 		pcontainer->contents.pminid_array = pminid_array;
 		pminid_array->count = minid_array.count;
 		if (0 == minid_array.count) {
@@ -223,9 +219,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			sizeof(uint32_t)*minid_array.count);
 		return TRUE;
 	}
-	if (NULL != pcontainer->contents.prow_set) {
+	if (pcontainer->contents.prow_set != nullptr)
 		return TRUE;
-	}
 	auto pinfo = zs_get_info();
 	if (!exmdb_client::load_content_table(pinfo->get_maildir(),
 	    pinfo->cpid, pcontainer->id.exmdb_id.folder_id, nullptr, 0,
@@ -259,28 +254,24 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			return FALSE;
 		pparent_entryid = zcsab_prepend(cu_fid_to_entryid(pstore,
 		                  pcontainer->id.exmdb_id.folder_id), MAPI_ABCONT, UINT32_MAX);
-		if (NULL == pparent_entryid) {
+		if (pparent_entryid == nullptr)
 			return FALSE;
-		}
 	} else {
 		tmp_set.count = 0;
 	}
 	exmdb_client::unload_table(pinfo->get_maildir(), table_id);
 	pcontainer->contents.prow_set = tarray_set_init();
-	if (NULL == pcontainer->contents.prow_set) {
+	if (pcontainer->contents.prow_set == nullptr)
 		return FALSE;
-	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		for (unsigned int j = 0; j < 3; ++j) {
 			auto pdisplayname = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j]);
-			if (NULL == pdisplayname) {
+			if (pdisplayname == nullptr)
 				pdisplayname = tmp_set.pparray[i]->get<char>(PR_DISPLAY_NAME);
-			}
 			auto paddress_type = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+1]);
 			auto paddress = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+2]);
-			if (NULL == paddress || NULL == paddress_type) {
+			if (paddress == nullptr || paddress_type == nullptr)
 				continue;
-			}
 			if (0 == strcasecmp(paddress_type, "EX")) {
 				if (!common_util_essdn_to_username(paddress,
 				    username, GX_ARRAY_SIZE(username)))
@@ -291,34 +282,29 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				continue;
 			}
 			tpropval_array_ptr ppropvals(tpropval_array_init());
-			if (NULL == ppropvals) {
+			if (ppropvals == nullptr)
 				return FALSE;
-			}
 			if (ppropvals->set(PR_SMTP_ADDRESS, username) != 0 ||
 			    ppropvals->set(PR_ACCOUNT, username) != 0 ||
 			    ppropvals->set(PR_ADDRTYPE, "SMTP") != 0 ||
-			    ppropvals->set(PR_EMAIL_ADDRESS, username) != 0) {
+			    ppropvals->set(PR_EMAIL_ADDRESS, username) != 0)
 				return FALSE;
-			}
 			if (NULL != pdisplayname) {
 				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != 0 ||
 				    ppropvals->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplayname) != 0 ||
-				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != 0) {
+				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != 0)
 					return FALSE;
-				}
 			}
 			for (size_t k = 0; k < GX_ARRAY_SIZE(tmp_proptags); ++k) {
 				uint32_t tag = tmp_proptags[k];
 				auto newval = tmp_set.pparray[i]->getval(tag);
 				if (newval == nullptr)
 					continue;
-				if (ppropvals->set(tag, newval) != 0) {
+				if (ppropvals->set(tag, newval) != 0)
 					return FALSE;
-				}
 			}
-			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != 0) {
+			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != 0)
 				return FALSE;
-			}
 			auto msgid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 			if (msgid == nullptr)
 				return FALSE;
@@ -328,22 +314,19 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
 			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
 			    ppropvals->set(PR_TEMPLATEID, pvalue) != 0 ||
-			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != 0) {
+			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != 0)
 				return FALSE;
-			}
 			tmp_bin.cb = sizeof(muidZCSAB);
 			tmp_bin.pv = deconst(&muidZCSAB);
 			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != 0)
 				return FALSE;
 			tmp_int = static_cast<uint32_t>(MAPI_MAILUSER);
-			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0) {
+			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0)
 				return FALSE;
-			}
 			tmp_int = DT_MAILUSER;
 			if (ppropvals->set(PR_DISPLAY_TYPE, &tmp_int) != 0 ||
-			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != 0) {
+			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != 0)
 				return FALSE;
-			}
 			if (prestriction != nullptr &&
 			    !container_object_match_contact_message(ppropvals.get(), prestriction))
 				continue;
@@ -373,9 +356,8 @@ BOOL container_object_fetch_special_property(
 	}
 	case PR_ENTRYID: {
 		pvalue = cu_alloc<BINARY>();
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
 		ab_entryid.version = 1;
@@ -393,18 +375,16 @@ BOOL container_object_fetch_special_property(
 	}
 	case PR_CONTAINER_FLAGS:
 		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		*static_cast<uint32_t *>(pvalue) = AB_RECIPIENTS |
 			AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_DEPTH:
 		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		*static_cast<uint32_t *>(pvalue) = 0;
 		*ppvalue = pvalue;
 		return TRUE;
@@ -415,9 +395,8 @@ BOOL container_object_fetch_special_property(
 		return TRUE;
 	case PR_EMS_AB_IS_MASTER:
 		pvalue = cu_alloc<uint8_t>();
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		*static_cast<uint8_t *>(pvalue) = 0;
 		*ppvalue = pvalue;
 		return TRUE;
@@ -434,17 +413,15 @@ static BOOL container_object_fetch_special_properties(
 	void *pvalue;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		if (!container_object_fetch_special_property(
 		    special_type, pproptags->pproptag[i], &pvalue))
 			return FALSE;	
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			continue;
-		}
 		ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 		ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
@@ -465,9 +442,8 @@ static BOOL container_object_fetch_folder_properties(
 	auto folder_id = *pvfid;
 	pout_propvals->count = 0;
 	pout_propvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == pout_propvals->ppropval) {
+	if (pout_propvals->ppropval == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		pout_propvals->ppropval[pout_propvals->count].proptag =
 										pproptags->pproptag[i];
@@ -505,9 +481,8 @@ static BOOL container_object_fetch_folder_properties(
 				pvalue = zcsab_prepend(cu_fid_to_entryid(store, *fid),
 				         MAPI_ABCONT, UINT32_MAX);
 			}
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
@@ -515,9 +490,8 @@ static BOOL container_object_fetch_folder_properties(
 			auto pvalue = ppropvals->get<uint32_t>(PR_SUBFOLDERS);
 			BOOL b_sub = pvalue == nullptr || *pvalue == 0 ? false : TRUE;
 			pvalue = cu_alloc<uint32_t>();
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			*pvalue = b_sub ?
 				AB_RECIPIENTS | AB_UNMODIFIABLE :
 				AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
@@ -532,32 +506,28 @@ static BOOL container_object_fetch_folder_properties(
 			for (; *pc != '\0'; ++pc)
 				if (*pc == '\\')
 					count ++;
-			if (count < 3) {
+			if (count < 3)
 				return FALSE;
-			}
 			count -= 2;
 			auto pvalue = cu_alloc<uint32_t>();
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			*pvalue = count;
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
 		case PR_DISPLAY_NAME: {
 			auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
 		}
 		case PR_EMS_AB_IS_MASTER: {
 			auto pvalue = cu_alloc<uint8_t>();
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			*pvalue = 0;
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
@@ -644,17 +614,15 @@ container_object_get_specialtables_from_node(const SIMPLE_TREE_NODE *pnode,
 	if (pset->count + 1 >= count) {
 		count += SR_GROW_TPROPVAL_ARRAY;
 		pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
-		if (NULL == pparray) {
+		if (pparray == nullptr)
 			return FALSE;
-		}
 		memcpy(pparray, pset->pparray,
 			pset->count*sizeof(TPROPVAL_ARRAY*));
 		pset->pparray = pparray;
 	}
 	pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-	if (NULL == pset->pparray[pset->count]) {
+	if (pset->pparray[pset->count] == nullptr)
 		return FALSE;
-	}
 	if (!ab_tree_fetch_node_properties(pnode, pproptags,
 	    pset->pparray[pset->count]))
 		return FALSE;	
@@ -703,17 +671,15 @@ static BOOL container_object_query_folder_hierarchy(
 		if (pset->count + 1 >= count) {
 			count += SR_GROW_TPROPVAL_ARRAY;
 			pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
-			if (NULL == pparray) {
+			if (pparray == nullptr)
 				return FALSE;
-			}
 			memcpy(pparray, pset->pparray,
 				pset->count*sizeof(TPROPVAL_ARRAY*));
 			pset->pparray = pparray;
 		}
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == pset->pparray[pset->count]) {
+		if (pset->pparray[pset->count] == nullptr)
 			return FALSE;
-		}
 		if (!container_object_fetch_folder_properties(
 		    tmp_set.pparray[i], pproptags, pset->pparray[pset->count]))
 			return FALSE;	
@@ -737,9 +703,8 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 	}
 	tmp_set.count = 0;
 	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(100);
-	if (NULL == tmp_set.pparray) {
+	if (tmp_set.pparray == nullptr)
 		return FALSE;
-	}
 	if (CONTAINER_TYPE_FOLDER == pcontainer->type) {
 		if (!container_object_query_folder_hierarchy(pcontainer->id.exmdb_id.folder_id,
 		    pproptags, b_depth, &tmp_set))
@@ -750,25 +715,22 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			return FALSE;
 		if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_ROOT) {
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == tmp_set.pparray[tmp_set.count]) {
+			if (tmp_set.pparray[tmp_set.count] == nullptr)
 				return FALSE;
-			}
 			if (!container_object_fetch_special_properties(SPECIAL_CONTAINER_GAL,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
 				return FALSE;
 			tmp_set.count ++;
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == tmp_set.pparray[tmp_set.count]) {
+			if (tmp_set.pparray[tmp_set.count] == nullptr)
 				return FALSE;
-			}
 			if (!container_object_fetch_special_properties(SPECIAL_CONTAINER_PROVIDER,
 			    pproptags, tmp_set.pparray[tmp_set.count]))
 				return FALSE;
 			tmp_set.count ++;
 			tmp_set.pparray[tmp_set.count] = cu_alloc<TPROPVAL_ARRAY>();
-			if (NULL == tmp_set.pparray[tmp_set.count]) {
+			if (tmp_set.pparray[tmp_set.count] == nullptr)
 				return FALSE;
-			}
 			auto pinfo = zs_get_info();
 			if (!exmdb_client::get_folder_properties(pinfo->get_maildir(),
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
@@ -810,14 +772,12 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 	}
 	pset->count = 0;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(tmp_set.count);
-	if (NULL == pset->pparray) {
+	if (pset->pparray == nullptr)
 		return FALSE;
-	}
 	uint32_t end_pos = safe_add_s(start_pos, row_needed, nullptr);
 	if (row_needed >= 0) {
-		if (end_pos > tmp_set.count) {
+		if (end_pos > tmp_set.count)
 			end_pos = tmp_set.count;
-		}
 		for (size_t i = start_pos; i < end_pos; ++i)
 			pset->pparray[pset->count++] = tmp_set.pparray[i];
 	} else {
@@ -927,9 +887,8 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 	}
 	pset->count = 0;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_count);
-	if (NULL == pset->pparray) {
+	if (pset->pparray == nullptr)
 		return FALSE;
-	}
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (NULL != pcontainer->contents.pminid_array &&
 			0 == pcontainer->contents.pminid_array->count) {
@@ -949,9 +908,8 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				    ab_tree_hidden(ptnode) & AB_HIDE_FROM_AL)
 					continue;
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-				if (NULL == pset->pparray[pset->count]) {
+				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
-				}
 				if (!ab_tree_fetch_node_properties(ptnode,
 				    pproptags, pset->pparray[pset->count]))
 					return FALSE;	
@@ -962,17 +920,14 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (ab_tree_hidden(pbase->gal_list[i]) & AB_HIDE_FROM_GAL)
 					continue;
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-				if (NULL == pset->pparray[pset->count]) {
+				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
-				}
 				if (!ab_tree_fetch_node_properties(pbase->gal_list[i],
-				    pproptags, pset->pparray[pset->count])) {
+				    pproptags, pset->pparray[pset->count]))
 					return FALSE;
-				}
 				pset->count++;
-				if (pset->count == row_count) {
+				if (pset->count == row_count)
 					break;
-				}
 			}
 		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY) {
 			return TRUE;
@@ -991,31 +946,26 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					continue;
 				i++;
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-				if (NULL == pset->pparray[pset->count]) {
+				if (pset->pparray[pset->count] == nullptr)
 					return FALSE;
-				}
 				if (!ab_tree_fetch_node_properties(ptnode,
 				    pproptags, pset->pparray[pset->count]))
 					return FALSE;
 				pset->count++;
-				if (pset->count == row_count) {
+				if (pset->count == row_count)
 					break;
-				}
 			} while ((ptnode = ptnode->get_sibling()) != nullptr);
 		}
 	} else {
-		if (NULL == pcontainer->contents.prow_set) {
-			if (!pcontainer->load_user_table(nullptr))
-				return FALSE;	
-		}
-		if (pcontainer->contents.prow_set != nullptr) {
+		if (pcontainer->contents.prow_set == nullptr &&
+		    !pcontainer->load_user_table(nullptr))
+			return FALSE;
+		if (pcontainer->contents.prow_set != nullptr)
 			for (size_t i = first_pos;
 			     i < pcontainer->contents.prow_set->count &&
-			     i < first_pos+row_count; ++i) {
+			     i < first_pos+row_count; ++i)
 				pset->pparray[pset->count++] =
 					pcontainer->contents.prow_set->pparray[i];
-			}
-		}
 	}
 	if (!b_forward) {
 		for (size_t i = 0; i < pset->count / 2; ++i) {
