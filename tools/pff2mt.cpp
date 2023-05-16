@@ -93,6 +93,7 @@ enum {
 	NID_TYPE_ATTACHMENT_TABLE = 0x11,
 	NID_TYPE_RECIPIENT_TABLE = 0x12,
 	NID_TYPE_SEARCH_TABLE_INDEX = 0x13,
+	/* 0x14..0x19 do occur in PST as well(!) */
 	NID_TYPE_LTP = 0x1F,
 	NID_TYPE_MASK = 0x1F,
 };
@@ -110,6 +111,12 @@ enum {
 	NID_SEARCH_GATHERER_QUEUE = 0x280 | NID_TYPE_INTERNAL,
 	NID_SEARCH_GATHERER_DESCRIPTOR = 0x2A0 | NID_TYPE_INTERNAL,
 	NID_SEARCH_GATHERER_FOLDER_QUEUE = 0x320 | NID_TYPE_INTERNAL,
+	NID_ASSOC_CONTENTS_TABLE_TEMPLATE = 0x600 | NID_TYPE_ASSOC_CONTENTS_TABLE,
+	NID_SEARCH_CONTENTS_TABLE_TEMPLATE = 0x600 | NID_TYPE_SEARCH_CONTENTS_TABLE,
+	NID_HIERARCHY_TABLE_TEMPLATE = 0x600 | NID_TYPE_HIERARCHY_TABLE,
+	NID_CONTENTS_TABLE_TEMPLATE = 0x600 | NID_TYPE_CONTENTS_TABLE,
+	NID_ATTACHMENT_TABLE_TEMPLATE = 0x660 | NID_TYPE_ATTACHMENT_TABLE,
+	NID_RECIPIENT_TABLE_TEMPLATE = 0x680 | NID_TYPE_RECIPIENT_TABLE,
 };
 
 }
@@ -161,6 +168,7 @@ static const char *az_nid_type_to_str(uint8_t t)
 	case NID_TYPE_INTERNAL: return "int";
 	case NID_TYPE_NORMAL_FOLDER: return "folder";
 	case NID_TYPE_SEARCH_FOLDER: return "sf";
+	case NID_TYPE_NORMAL_MESSAGE: return "msg";
 	case NID_TYPE_ATTACHMENT: return "atx";
 	case NID_TYPE_SEARCH_UPDATE_QUEUE: return "srchupdq";
 	case NID_TYPE_SEARCH_CRITERIA_OBJECT: return "srchcritobj";
@@ -168,8 +176,8 @@ static const char *az_nid_type_to_str(uint8_t t)
 	case NID_TYPE_CONTENTS_TABLE_INDEX: return "conttblidx";
 	case NID_TYPE_RECEIVE_FOLDER_TABLE: return "rcvfldtbl";
 	case NID_TYPE_OUTGOING_QUEUE_TABLE: return "outgoingq";
-	case NID_TYPE_HIERARCHY_TABLE: return "hier";
-	case NID_TYPE_CONTENTS_TABLE: return "contents";
+	case NID_TYPE_HIERARCHY_TABLE: return "hiertbl";
+	case NID_TYPE_CONTENTS_TABLE: return "conttbl";
 	case NID_TYPE_ASSOC_CONTENTS_TABLE: return "assoccnttbl";
 	case NID_TYPE_SEARCH_CONTENTS_TABLE: return "srchconttbl";
 	case NID_TYPE_ATTACHMENT_TABLE: return "atxtbl";
@@ -187,6 +195,7 @@ static const char *az_pffitem_type_to_str(uint8_t t)
 	case LIBPFF_ITEM_TYPE_ACTIVITY: return "activity";
 	case LIBPFF_ITEM_TYPE_APPOINTMENT: return "appointment";
 	case LIBPFF_ITEM_TYPE_ATTACHMENT: return "attachment";
+	case LIBPFF_ITEM_TYPE_CONFIGURATION: return "config";
 	case LIBPFF_ITEM_TYPE_CONTACT: return "contact";
 	case LIBPFF_ITEM_TYPE_DISTRIBUTION_LIST: return "dlist";
 	case LIBPFF_ITEM_TYPE_DOCUMENT: return "document";
@@ -219,6 +228,18 @@ static const char *az_special_ident(uint32_t nid)
 	E(NID_SEARCH_GATHERER_QUEUE)
 	E(NID_SEARCH_GATHERER_DESCRIPTOR)
 	E(NID_SEARCH_GATHERER_FOLDER_QUEUE)
+	E(NID_ASSOC_CONTENTS_TABLE_TEMPLATE)
+	E(NID_SEARCH_CONTENTS_TABLE_TEMPLATE)
+	E(NID_HIERARCHY_TABLE_TEMPLATE)
+	E(NID_CONTENTS_TABLE_TEMPLATE)
+	E(NID_ATTACHMENT_TABLE_TEMPLATE)
+	E(NID_RECIPIENT_TABLE_TEMPLATE)
+	}
+	switch (nid & ~NID_TYPE_MASK) {
+	case 0x2220 | NID_TYPE_NORMAL_FOLDER: return "<spamfld>";
+	case 0x8020 | NID_TYPE_NORMAL_FOLDER: return "<ipmsub>";
+	case 0x8040 | NID_TYPE_NORMAL_FOLDER: return "<srchfld>";
+	case 0x8060 | NID_TYPE_NORMAL_FOLDER: return "<deleted-items>";
 	}
 	return "";
 }
