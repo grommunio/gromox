@@ -728,11 +728,10 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 						pmessage->folder_id, pmessage->message_id);
 		return TRUE;
 	case PR_SOURCE_KEY:
-		if (NULL == pmessage->pembedding) {
-			*ppvalue = cu_mid_to_sk(pmessage->pstore, pmessage->message_id);
-			return TRUE;
-		}
-		return FALSE;
+		if (pmessage->pembedding != nullptr)
+			return false;
+		*ppvalue = cu_mid_to_sk(pmessage->pstore, pmessage->message_id);
+		return TRUE;
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;

@@ -661,10 +661,7 @@ BOOL table_object::set_columns(const PROPTAG_ARRAY *cols)
 		return TRUE;
 	}
 	ptable->pcolumns = proptag_array_dup(cols);
-	if (NULL == ptable->pcolumns) {
-		return FALSE;
-	}
-	return TRUE;
+	return ptable->pcolumns != nullptr ? TRUE : false;
 }
 
 BOOL table_object::set_sorts(const SORTORDER_SET *so)
@@ -678,10 +675,7 @@ BOOL table_object::set_sorts(const SORTORDER_SET *so)
 		return TRUE;
 	}
 	ptable->psorts = sortorder_set_dup(so);
-	if (NULL == ptable->psorts) {
-		return FALSE;
-	}
-	return TRUE;
+	return ptable->psorts != nullptr ? TRUE : false;
 }
 
 BOOL table_object::set_restriction(const RESTRICTION *res)
@@ -695,10 +689,7 @@ BOOL table_object::set_restriction(const RESTRICTION *res)
 		return TRUE;
 	}
 	ptable->prestriction = restriction_dup(res);
-	if (NULL == ptable->prestriction) {
-		return FALSE;
-	}
-	return TRUE;
+	return ptable->prestriction != nullptr ? TRUE : false;
 }
 
 void table_object::set_position(uint32_t pos)
