@@ -67,46 +67,37 @@ object_tree_init_root(const char *maildir) try
 	
 	auto prootobj = std::make_unique<root_object>();
 	prootobj->maildir = strdup(maildir);
-	if (NULL == prootobj->maildir) {
+	if (prootobj->maildir == nullptr)
 		return NULL;
-	}
 	prootobj->b_touched = FALSE;
 	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat", maildir);
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 		prootobj->pprivate_proplist = tpropval_array_init();
-		if (NULL == prootobj->pprivate_proplist) {
+		if (prootobj->pprivate_proplist == nullptr)
 			return NULL;
-		}
 		prootobj->pprof_set = tarray_set_init();
-		if (NULL == prootobj->pprof_set) {
+		if (prootobj->pprof_set == nullptr)
 			return NULL;
-		}
 		return prootobj;
 	}
 	auto pbuff = std::make_unique<char[]>(node_stat.st_size);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return NULL;
-	}
-	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size) {
+	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return NULL;
-	}
 	ext_pull.init(pbuff.get(), node_stat.st_size, common_util_alloc, EXT_FLAG_WCOUNT);
-	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS) {
+	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	prootobj->pprivate_proplist = propvals.dup();
-	if (NULL == prootobj->pprivate_proplist) {
+	if (prootobj->pprivate_proplist == nullptr)
 		return NULL;
-	}
-	if (ext_pull.g_tarray_set(&prof_set) != EXT_ERR_SUCCESS) {
+	if (ext_pull.g_tarray_set(&prof_set) != EXT_ERR_SUCCESS)
 		return NULL;
-	}
 	pbuff.reset();
 	prootobj->pprof_set = prof_set.dup();
-	if (NULL == prootobj->pprof_set) {
+	if (prootobj->pprof_set == nullptr)
 		return NULL;
-	}
 	return prootobj;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1099: ENOMEM");
@@ -209,9 +200,8 @@ OBJECT_TREE::~OBJECT_TREE()
 {
 	auto pobjtree = this;
 	auto proot = tree.get_root();
-	if (NULL != proot) {
+	if (proot != nullptr)
 		object_tree_release_objnode(pobjtree, static_cast<OBJECT_NODE *>(proot->pdata));
-	}
 	pobjtree->tree.clear();
 }
 
@@ -271,9 +261,8 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 	}
 	pobjtree->last_handle = 0;
 	auto prootobj = object_tree_init_root(maildir);
-	if (NULL == prootobj) {
+	if (prootobj == nullptr)
 		return NULL;
-	}
 	auto handle = pobjtree->add_object_handle(-1, {zs_objtype::root, std::move(prootobj)});
 	if (handle == INVALID_HANDLE)
 		return nullptr;
@@ -309,9 +298,8 @@ void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return NULL;
-	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	return prootobj->pprivate_proplist->getval(proptag);
 }
@@ -320,9 +308,8 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return FALSE;
-	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	auto ret = prootobj->pprivate_proplist->set(*ppropval);
@@ -341,9 +328,8 @@ void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return;
-	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	prootobj->pprivate_proplist->erase(proptag);
@@ -354,22 +340,19 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return NULL;
-	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	for (size_t i = 0; i < prootobj->pprof_set->count; ++i) {
 		auto pguid = prootobj->pprof_set->pparray[i]->get<GUID>(PROP_TAG_PROFILESCLSID);
-		if (NULL == pguid) {
+		if (pguid == nullptr)
 			continue;
-		}
 		if (*pguid == sec_guid)
 			return prootobj->pprof_set->pparray[i];
 	}
 	tpropval_array_ptr pproplist(tpropval_array_init());
-	if (NULL == pproplist) {
+	if (pproplist == nullptr)
 		return NULL;
-	}
 	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != 0 ||
 	    prootobj->pprof_set->append_move(std::move(pproplist)) != 0)
 		return NULL;
@@ -380,9 +363,8 @@ void OBJECT_TREE::touch_profile_sec()
 {
 	auto pobjtree = this;
 	auto proot = pobjtree->tree.get_root();
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return;
-	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	object_tree_write_root(prootobj);
@@ -395,9 +377,8 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	char account[UADDR_SIZE];
 	
 	auto pnode = pobjtree->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return INVALID_HANDLE;
-	}
 	pnode = pnode->get_child();
 	if (NULL != pnode) {
 		do {
@@ -422,20 +403,17 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 				return INVALID_HANDLE;	
 		}
 	} else {
-		if (account_id != pinfo->domain_id) {
+		if (account_id != pinfo->domain_id)
 			return INVALID_HANDLE;
-		}
 		gx_strlcpy(dir, pinfo->get_homedir(), arsizeof(dir));
 		auto pdomain = strchr(pinfo->get_username(), '@');
-		if (NULL == pdomain) {
+		if (pdomain == nullptr)
 			return INVALID_HANDLE;
-		}
 		pdomain ++;
 		gx_strlcpy(account, pdomain, GX_ARRAY_SIZE(account));
 	}
 	auto pstore = store_object::create(b_private, account_id, account, dir);
-	if (NULL == pstore) {
+	if (pstore == nullptr)
 		return INVALID_HANDLE;
-	}
 	return add_object_handle(ROOT_HANDLE, {zs_objtype::store, std::move(pstore)});
 }
