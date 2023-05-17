@@ -152,19 +152,16 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 		return TRUE;
 	}
 	auto pindex_map = cu_alloc<int>(ppropids->count);
-	if (NULL == pindex_map) {
+	if (pindex_map == nullptr)
 		return FALSE;
-	}
 	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
-	if (NULL == ppropnames->ppropname) {
+	if (ppropnames->ppropname == nullptr)
 		return FALSE;
-	}
 	ppropnames->count = ppropids->count;
 	tmp_propids.count = 0;
 	tmp_propids.ppropid = cu_alloc<uint16_t>(ppropids->count);
-	if (NULL == tmp_propids.ppropid) {
+	if (tmp_propids.ppropid == nullptr)
 		return FALSE;
-	}
 	auto pstore = this;
 	for (i=0; i<ppropids->count; i++) {
 		if (ppropids->ppropid[i] < 0x8000) {
@@ -183,13 +180,11 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 			pindex_map[i] = -tmp_propids.count;
 		}
 	}
-	if (0 == tmp_propids.count) {
+	if (tmp_propids.count == 0)
 		return TRUE;
-	}
 	if (!exmdb_client::get_named_propnames(
-		pstore->dir, &tmp_propids, &tmp_propnames)) {
+	    pstore->dir, &tmp_propids, &tmp_propnames))
 		return FALSE;	
-	}
 	for (i=0; i<ppropids->count; i++) {
 		if (pindex_map[i] >= 0)
 			continue;
@@ -223,9 +218,8 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 	if (!exmdb_client_get_named_propid(pstore->dir,
 	    b_create, ppropname, ppropid))
 		return FALSE;
-	if (0 == *ppropid) {
+	if (*ppropid == 0)
 		return TRUE;
-	}
 	store_object_cache_propname(pstore, *ppropid, ppropname);
 	return TRUE;
 }
@@ -242,19 +236,16 @@ BOOL store_object::get_named_propids(BOOL b_create,
 		return TRUE;
 	}
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
-	if (NULL == pindex_map) {
+	if (pindex_map == nullptr)
 		return FALSE;
-	}
 	ppropids->count = ppropnames->count;
 	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
-	if (NULL == ppropids->ppropid) {
+	if (ppropids->ppropid == nullptr)
 		return FALSE;
-	}
 	tmp_propnames.count = 0;
 	tmp_propnames.ppropname = cu_alloc<PROPERTY_NAME>(ppropnames->count);
-	if (NULL == tmp_propnames.ppropname) {
+	if (tmp_propnames.ppropname == nullptr)
 		return FALSE;
-	}
 	auto pstore = this;
 	for (i=0; i<ppropnames->count; i++) {
 		if (ppropnames->ppropname[i].guid == PS_MAPI) {
@@ -278,21 +269,18 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = -tmp_propnames.count;
 		}
 	}
-	if (0 == tmp_propnames.count) {
+	if (tmp_propnames.count == 0)
 		return TRUE;
-	}
 	if (!exmdb_client::get_named_propids(pstore->dir,
-		b_create, &tmp_propnames, &tmp_propids)) {
+	    b_create, &tmp_propnames, &tmp_propids))
 		return FALSE;	
-	}
 	for (i=0; i<ppropnames->count; i++) {
 		if (pindex_map[i] >= 0)
 			continue;
 		ppropids->ppropid[i] = tmp_propids.ppropid[-pindex_map[i]-1];
-		if (0 != ppropids->ppropid[i]) {
+		if (ppropids->ppropid[i] != 0)
 			store_object_cache_propname(pstore,
 				ppropids->ppropid[i], ppropnames->ppropname + i);
-		}
 	}
 	return TRUE;
 }
@@ -316,17 +304,15 @@ store_object::get_property_groupinfo(uint32_t group_id) try
 {
 	auto pstore = this;
 	
-	if (group_id == msgchg_grouping_get_last_group_id()) {
+	if (group_id == msgchg_grouping_get_last_group_id())
 		return get_last_property_groupinfo();
-	}
 	auto node = std::find_if(group_list.begin(), group_list.end(),
 	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
 	if (node != group_list.end())
 		return &*node;
 	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, group_id);
-	if (NULL == pgpinfo) {
+	if (pgpinfo == nullptr)
 		return NULL;
-	}
 	group_list.push_back(std::move(*pgpinfo));
 	return &group_list.back();
 } catch (const std::bad_alloc &) {
@@ -409,14 +395,11 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	auto pstore = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
-	if (!exmdb_client::get_store_all_proptags(
-		pstore->dir, &tmp_proptags)) {
+	if (!exmdb_client::get_store_all_proptags(pstore->dir, &tmp_proptags))
 		return FALSE;	
-	}
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 50);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
@@ -551,35 +534,30 @@ static void *store_object_get_oof_property(const char *maildir,
 			    mime_string_to_utf8("utf-8", mime_field.value.c_str(), subject,
 			    std::size(subject)))
 					return common_util_dup(subject);
-			if ('\r' == pbuff[offset] && '\n' == pbuff[offset + 1]) {
+			if (pbuff[offset] == '\r' && pbuff[offset+1] == '\n')
 				return NULL;
-			}
 		}
 		return NULL;
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
 		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
-		if (NULL == pconfig) {
+		if (pconfig == nullptr)
 			return NULL;
-		}
 		pvalue = cu_alloc<uint64_t>();
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return NULL;
-		}
 		str_value = pconfig->get_value(proptag == PR_EC_OUTOFOFFICE_FROM ? "START_TIME" : "END_TIME");
-		if (NULL == str_value) {
+		if (str_value == nullptr)
 			return NULL;
-		}
 		*static_cast<uint64_t *>(pvalue) = rop_util_unix_to_nttime(strtoll(str_value, nullptr, 0));
 		return pvalue;
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
 		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
-		if (NULL == pconfig) {
+		if (pconfig == nullptr)
 			return deconst(&fake_false);
-		}
 		str_value = pconfig->get_value(proptag == PR_EC_ALLOW_EXTERNAL ?
 		            "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE");
 		pvalue = str_value == nullptr || strtol(str_value, nullptr, 0) == 0 ?
@@ -629,9 +607,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		static constexpr size_t dsize = UADDR_SIZE + 17;
 		auto dispname = cu_alloc<char>(dsize);
 		*ppvalue = dispname;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		if (!pstore->b_private)
 			snprintf(dispname, dsize, "Public Folders - %s", pstore->account);
 		else if (!system_services_get_user_displayname(pstore->account,
@@ -645,9 +622,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		static constexpr size_t dsize = UADDR_SIZE;
 		auto dispname = cu_alloc<char>(dsize);
 		*ppvalue = dispname;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		if (!system_services_get_user_displayname(pstore->account,
 		    dispname, dsize))
 			return FALSE;	
@@ -665,17 +641,15 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	}
 	case PR_DEFAULT_STORE:
 		*ppvalue = cu_alloc<uint8_t>();
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		*static_cast<uint8_t *>(*ppvalue) = pstore->primary_mode();
 		return TRUE;
 	case PR_ACCESS: {
 		auto acval = cu_alloc<uint32_t>();
 		*ppvalue = acval;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		if (pstore->owner_mode()) {
 			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
@@ -702,9 +676,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	}
 	case PR_RIGHTS: {
 		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		if (pstore->owner_mode()) {
 			*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 			return TRUE;
@@ -732,18 +705,16 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
 		*ppvalue = tstr;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
 	case PR_EXTENDED_RULE_SIZE_LIMIT: {
 		auto r = cu_alloc<uint32_t>();
 		*ppvalue = r;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		*r = g_max_extrule_len;
 		return TRUE;
 	}
@@ -752,9 +723,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		*ppvalue = common_util_username_to_addressbook_entryid(
 												pstore->account);
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_MAILBOX_OWNER_NAME: {
 		if (!pstore->b_private)
@@ -765,26 +735,23 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if ('\0' == temp_buff[0]) {
 			auto tstr = cu_alloc<char>(strlen(pstore->account) + 1);
 			*ppvalue = tstr;
-			if (NULL == *ppvalue) {
+			if (*ppvalue == nullptr)
 				return FALSE;
-			}
 			strcpy(tstr, pstore->account);
 			return TRUE;
 		}
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
 		*ppvalue = tstr;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
 		auto r = cu_alloc<uint32_t>();
 		*ppvalue = r;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		*r = g_max_mail_len;
 		return TRUE;
 	}
@@ -802,9 +769,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_RESOURCE_FLAGS: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		*v = pstore->owner_mode() ?
 		     STATUS_PRIMARY_IDENTITY | STATUS_DEFAULT_STORE | STATUS_PRIMARY_STORE :
 		     STATUS_NO_DEFAULT_STORE;
@@ -821,9 +787,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_STORE_SUPPORT_MASK: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		if (!pstore->b_private) {
 			*v = EC_SUPPORTMASK_PUBLIC;
 			return TRUE;
@@ -848,9 +813,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_ENTRYID:
 	case PR_STORE_ENTRYID:
 		*ppvalue = common_util_to_store_entryid(pstore);
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_USER_NAME: {
 		auto pinfo = zs_get_info();
@@ -860,9 +824,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_USER_ENTRYID: {
 		auto pinfo = zs_get_info();
 		*ppvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	}
 	case PR_FINDER_ENTRYID:
@@ -870,70 +833,62 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_IPM_FAVORITES_ENTRYID:
 		*ppvalue = cu_fid_to_entryid(pstore,
 		           rop_util_make_eid_ex(1, pstore->b_private ?
 		           PRIVATE_FID_SHORTCUTS : PUBLIC_FID_IPMSUBTREE));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_IPM_SUBTREE_ENTRYID:
 		/* else case:: different from native MAPI */
 		*ppvalue = cu_fid_to_entryid(pstore, rop_util_make_eid_ex(1,
 		           pstore->b_private ? PRIVATE_FID_IPMSUBTREE : PUBLIC_FID_IPMSUBTREE));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_IPM_OUTBOX_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_IPM_SENTMAIL_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_IPM_WASTEBASKET_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_SCHEDULE_FOLDER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_COMMON_VIEWS_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 	case PR_NON_IPM_SUBTREE_ENTRYID:
@@ -941,18 +896,16 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_EFORMS_REGISTRY_ENTRYID:
 		if (pstore->b_private)
 			return FALSE;
 		*ppvalue = cu_fid_to_entryid(pstore,
 			rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY));
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_EC_SERVER_VERSION:
 		*ppvalue = deconst(PACKAGE_VERSION);
@@ -969,9 +922,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = store_object_get_oof_property(pstore->get_dir(), proptag);
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_EC_USER_LANGUAGE:
 		if (!pstore->b_private)
@@ -991,9 +943,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return TRUE;
 		}
 		*ppvalue = common_util_dup(temp_buff);
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	}
 	return FALSE;
@@ -1007,23 +958,20 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
-	if (NULL == tmp_proptags.pproptag) {
+	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	ppropvals->count = 0;
 	auto pstore = this;
 	for (i=0; i<pproptags->count; i++) {
 		void *pvalue = nullptr;
 		if (store_object_get_calculated_property(this,
 		    pproptags->pproptag[i], &pvalue)) {
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
@@ -1031,9 +979,8 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
-	if (0 == tmp_proptags.count) {
+	if (tmp_proptags.count == 0)
 		return TRUE;
-	}
 	auto pinfo = zs_get_info();
 	if (pstore->b_private && pinfo->user_id == pstore->account_id) {
 		for (i=0; i<tmp_proptags.count; i++) {
@@ -1050,18 +997,15 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 					sizeof(uint32_t) * (tmp_proptags.count - i));
 			}
 		}	
-		if (0 == tmp_proptags.count) {
+		if (tmp_proptags.count == 0)
 			return TRUE;
-		}	
 	}
 	if (!exmdb_client::get_store_properties(
 		pstore->dir, pinfo->cpid, &tmp_proptags,
-		&tmp_propvals)) {
+	    &tmp_propvals))
 		return FALSE;	
-	}
-	if (0 == tmp_propvals.count) {
+	if (tmp_propvals.count == 0)
 		return TRUE;
-	}
 	memcpy(ppropvals->ppropval +
 		ppropvals->count, tmp_propvals.ppropval,
 		sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
@@ -1092,9 +1036,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
 		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
-		if (NULL == pconfig) {
+		if (pconfig == nullptr)
 			return FALSE;
-		}
 		auto v = *static_cast<const uint32_t *>(pvalue);
 		pconfig->set_value("OOF_STATE", v == 1 ? "1" : v == 2 ? "2" : "0");
 		return pconfig->save();
@@ -1102,9 +1045,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
 		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
-		if (NULL == pconfig) {
+		if (pconfig == nullptr)
 			return FALSE;
-		}
 		long long t = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(pvalue));
 		snprintf(temp_buff, arsizeof(temp_buff), "%lld", t);
 		pconfig->set_value(proptag == PR_EC_OUTOFOFFICE_FROM ?
@@ -1126,9 +1068,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
 			           "\tcharset=\"utf-8\"\r\n\r\n%s",
 			           static_cast<const char *>(pvalue));
@@ -1168,35 +1109,31 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
 			           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
 			           static_cast<const char *>(pvalue));
 		} else {
 			buff_len = node_stat.st_size;
 			pbuff = cu_alloc<char>(buff_len + strlen(static_cast<const char *>(pvalue)) + 16);
-			if (NULL == pbuff) {
+			if (pbuff == nullptr)
 				return FALSE;
-			}
 			ptoken = cu_alloc<char>(buff_len + 1);
-			if (NULL == ptoken) {
+			if (ptoken == nullptr)
 				return FALSE;
-			}
 			if (read(fd.get(), ptoken, buff_len) != buff_len)
 				return FALSE;
 			ptoken[buff_len] = '\0';
 			ptoken = strstr(ptoken, "\r\n\r\n");
-			if (NULL == ptoken) {
+			if (ptoken == nullptr)
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
 				           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
 				           static_cast<const char *>(pvalue));
-			} else {
+			else
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
 				           "charset=\"utf-8\"\r\nSubject: %s%s",
 				           static_cast<const char *>(pvalue), ptoken);
-			}
 		}
 		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
@@ -1206,9 +1143,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
 		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
-		if (NULL == pconfig) {
+		if (pconfig == nullptr)
 			return FALSE;
-		}
 		pconfig->set_value(proptag == PR_EC_ALLOW_EXTERNAL ?
 		                      "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE",
 		                      *static_cast<const uint8_t *>(pvalue) == 0 ? "0" : "1");
@@ -1236,9 +1172,8 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[0].pvalue = deconst(pdisplayname);
-	if (!exmdb_client::allocate_cn(pstore->dir, &change_num)) {
+	if (!exmdb_client::allocate_cn(pstore->dir, &change_num))
 		return FALSE;
-	}
 	tmp_propvals.ppropval[1].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pstore->dir, CP_ACP, folder_id,
@@ -1246,13 +1181,11 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	    pbin_pcl == nullptr)
 		return FALSE;
 	auto pbin_changekey = cu_xid_to_bin({rop_util_make_user_guid(pstore->account_id), change_num});
-	if (NULL == pbin_changekey) {
+	if (pbin_changekey == nullptr)
 		return FALSE;
-	}
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
-	if (NULL == pbin_pcl) {
+	if (pbin_pcl == nullptr)
 		return FALSE;
-	}
 	last_time = rop_util_current_nttime();
 	tmp_propvals.ppropval[2].proptag = PR_CHANGE_KEY;
 	tmp_propvals.ppropval[2].pvalue = pbin_changekey;
@@ -1396,9 +1329,8 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS};
 	
 	if (!exmdb_client::load_permission_table(
-		pstore->dir, folder_id, 0, &table_id, &row_num)) {
+	    pstore->dir, folder_id, 0, &table_id, &row_num))
 		return FALSE;
-	}
 	proptags.count = 2;
 	proptags.pproptag = deconst(proptag_buff);
 	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
@@ -1412,33 +1344,27 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 		if (max_count == pperm_set->count) {
 			max_count += 100;
 			pperm_row = cu_alloc<PERMISSION_ROW>(max_count);
-			if (NULL == pperm_row) {
+			if (pperm_row == nullptr)
 				return FALSE;
-			}
-			if (0 != pperm_set->count) {
+			if (pperm_set->count != 0)
 				memcpy(pperm_row, pperm_set->prows,
 					sizeof(PERMISSION_ROW)*pperm_set->count);
-			}
 			pperm_set->prows = pperm_row;
 		}
 		auto pentryid = permission_set.pparray[i]->get<BINARY>(PR_ENTRYID);
 		/* ignore the default and anonymous user */
-		if (NULL == pentryid || 0 == pentryid->cb) {
+		if (pentryid == nullptr || pentryid->cb == 0)
 			continue;
-		}
 		size_t j;
-		for (j=0; j<pperm_set->count; j++) {
+		for (j = 0; j < pperm_set->count; j++)
 			if (pperm_set->prows[j].entryid.cb ==
 				pentryid->cb && 0 == memcmp(
 				pperm_set->prows[j].entryid.pb,
-				pentryid->pb, pentryid->cb)) {
+			    pentryid->pb, pentryid->cb))
 				break;	
-			}
-		}
 		auto prights = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
-		if (NULL == prights) {
+		if (prights == nullptr)
 			continue;
-		}
 		if (j < pperm_set->count) {
 			pperm_set->prows[j].member_rights |= *prights;
 			continue;
@@ -1463,9 +1389,8 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	
 	if (!exmdb_client::load_hierarchy_table(
 		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
-		NULL, &table_id, &row_num)) {
+	    NULL, &table_id, &row_num))
 		return FALSE;
-	}
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PidTagFolderId;
@@ -1475,9 +1400,8 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		if (0 == tmp_set.pparray[i]->count) {
+		if (tmp_set.pparray[i]->count == 0)
 			continue;
-		}
 		if (!store_object_get_folder_permissions(this,
 		    *static_cast<uint64_t *>(tmp_set.pparray[i]->ppropval[0].pvalue), pperm_set))
 			return FALSE;	
