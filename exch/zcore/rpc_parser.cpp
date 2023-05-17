@@ -56,9 +56,8 @@ void rpc_parser_init(unsigned int thread_num)
 BOOL rpc_parser_activate_connection(int clifd)
 {
 	auto pclient = gromox::me_alloc<CLIENT_NODE>();
-	if (NULL == pclient) {
+	if (pclient == nullptr)
 		return FALSE;
-	}
 	pclient->node.pdata = pclient;
 	pclient->clifd = clifd;
 	std::unique_lock cl_hold(g_conn_lock);
@@ -139,9 +138,8 @@ static void *zcrp_thrwork(void *param)
 	if (NULL == pbuff) {
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (1 == poll(&fdpoll, 1, tv_msec)) {
+		if (poll(&fdpoll, 1, tv_msec) == 1)
 			write(clifd, &tmp_byte, 1);
-		}
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -158,9 +156,8 @@ static void *zcrp_thrwork(void *param)
 			goto NEXT_CLIFD;
 		}
 		offset += read_len;
-		if (offset == buff_len) {
+		if (offset == buff_len)
 			break;
-		}
 	}
 	common_util_build_environment();
 	tmp_bin.pv = pbuff;
@@ -171,9 +168,8 @@ static void *zcrp_thrwork(void *param)
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (1 == poll(&fdpoll, 1, tv_msec)) {
+		if (poll(&fdpoll, 1, tv_msec) == 1)
 			write(clifd, &tmp_byte, 1);
-		}
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -186,9 +182,8 @@ static void *zcrp_thrwork(void *param)
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (1 == poll(&fdpoll, 1, tv_msec)) {
+		if (poll(&fdpoll, 1, tv_msec) == 1)
 			write(clifd, &tmp_byte, 1);
-		}
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -201,17 +196,15 @@ static void *zcrp_thrwork(void *param)
 		common_util_free_environment();
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
-		if (1 == poll(&fdpoll, 1, tv_msec)) {
+		if (poll(&fdpoll, 1, tv_msec) == 1)
 			write(clifd, &tmp_byte, 1);
-		}
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
-	if (1 == poll(&fdpoll, 1, tv_msec)) {
+	if (poll(&fdpoll, 1, tv_msec) == 1)
 		write(clifd, tmp_bin.pb, tmp_bin.cb);
-	}
 	shutdown(clifd, SHUT_WR);
 	uint8_t tmp_byte;
 	if (read(clifd, &tmp_byte, 1))

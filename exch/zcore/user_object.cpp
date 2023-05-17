@@ -156,9 +156,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	ppropvals->count = 0;
 	auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(6);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	if (w_otype) {
 		vc->proptag = PR_OBJECT_TYPE;
 		vc->pvalue = deconst(&fake_type);
@@ -174,9 +173,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (!wx_name ||
 	    ab_tree_get_minid_type(puser->minid) != minid_type::address ||
 	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
-	    username, GX_ARRAY_SIZE(username))) {
+	    username, GX_ARRAY_SIZE(username)))
 		return TRUE;
-	}
 	if (w_smtp) {
 		vc->proptag = PR_SMTP_ADDRESS;
 		vc->pvalue = common_util_dup(username);
@@ -204,9 +202,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	if (w_dname && system_services_get_user_displayname(username,
 	    tmp_buff, arsizeof(tmp_buff))) {
-		if ('\0' == tmp_buff[0]) {
+		if (*tmp_buff == '\0')
 			strcpy(tmp_buff, username);
-		}
 		vc->proptag = PR_DISPLAY_NAME;
 		vc->pvalue = common_util_dup(tmp_buff);
 		if (vc->pvalue == nullptr)

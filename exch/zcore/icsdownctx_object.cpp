@@ -341,14 +341,12 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_DISPLAY_NAME;
 	pvalue = tmp_propvals.getval(PR_DISPLAY_NAME);
-	if (NULL != pvalue) {
+	if (pvalue != nullptr)
 		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
-	}
 	pproplist->ppropval[pproplist->count].proptag = PR_CONTAINER_CLASS;
 	pvalue = tmp_propvals.getval(PR_CONTAINER_CLASS);
-	if (NULL != pvalue) {
+	if (pvalue != nullptr)
 		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
-	}
 	pproplist->ppropval[pproplist->count].proptag = PR_ATTR_HIDDEN;
 	pvalue = tmp_propvals.getval(PR_ATTR_HIDDEN);
 	pproplist->ppropval[pproplist->count++].pvalue =
@@ -356,9 +354,8 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 
 	pproplist->ppropval[pproplist->count].proptag = PR_EXTENDED_FOLDER_FLAGS;
 	pvalue = tmp_propvals.getval(PR_EXTENDED_FOLDER_FLAGS);
-	if (NULL != pvalue) {
+	if (pvalue != nullptr)
 		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
-	}
 	*pb_found = TRUE;
 	if (!pctx->pstate->pgiven->append(fid) ||
 	    !pctx->pstate->pseen->append(change_num))

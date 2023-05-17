@@ -17,9 +17,8 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 		return NULL;
 	}
 	pctx->pstate = ics_state::create_shared(sync_type);
-	if (NULL == pctx->pstate) {
+	if (pctx->pstate == nullptr)
 		return NULL;
-	}
 	pctx->pstore = pfolder->pstore;
 	pctx->folder_id = pfolder->folder_id;
 	pctx->sync_type = sync_type;

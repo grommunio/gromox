@@ -33,9 +33,8 @@ static void *zcls_thrwork(void *param)
 		socklen_t len = sizeof(unix_addr);
 		memset(&unix_addr, 0, sizeof(unix_addr));
 		int clifd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr), &len);
-		if (-1 == clifd) {
+		if (clifd == -1)
 			continue;
-		}
 		if (!rpc_parser_activate_connection(clifd))
 			close(clifd);
     }

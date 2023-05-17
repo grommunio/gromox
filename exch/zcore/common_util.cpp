@@ -330,9 +330,8 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
-	if (NULL == pdomain) {
+	if (pdomain == nullptr)
 		return FALSE;
-	}
 	*pdomain = '\0';
 	pdomain ++;
 	unsigned int user_id = 0, domain_id = 0;

@@ -20,22 +20,18 @@ static void ics_state_clear(ICS_STATE *pstate)
 static BOOL ics_state_init(ICS_STATE *pstate)
 {
 	pstate->pgiven = idset::create(true, REPL_TYPE_ID);
-	if (NULL == pstate->pgiven) {
+	if (pstate->pgiven == nullptr)
 		return FALSE;
-	}
 	pstate->pseen = idset::create(true, REPL_TYPE_ID);
-	if (NULL == pstate->pseen) {
+	if (pstate->pseen == nullptr)
 		return FALSE;
-	}
 	if (ICS_TYPE_CONTENTS == pstate->type) {
 		pstate->pseen_fai = idset::create(true, REPL_TYPE_ID);
-		if (NULL == pstate->pseen_fai) {
+		if (pstate->pseen_fai == nullptr)
 			return FALSE;
-		}
 		pstate->pread = idset::create(true, REPL_TYPE_ID);
-		if (NULL == pstate->pread) {
+		if (pstate->pread == nullptr)
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -80,9 +76,8 @@ BINARY *ics_state::serialize()
 			return deconst(&fake_bin);
 	}
 	std::unique_ptr<TPROPVAL_ARRAY, mdel> pproplist(tpropval_array_init());
-	if (NULL == pproplist) {
+	if (pproplist == nullptr)
 		return NULL;
-	}
 	std::unique_ptr<BINARY, mdel> ser(pstate->pgiven->serialize());
 	if (ser == nullptr || pproplist->set(MetaTagIdsetGiven1, ser.get()) != 0)
 		return NULL;
@@ -112,9 +107,8 @@ BINARY *ics_state::serialize()
 		return nullptr;
 	pbin->cb = ext_push.m_offset;
 	pbin->pv = common_util_alloc(pbin->cb);
-	if (pbin->pv == nullptr) {
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	memcpy(pbin->pv, ext_push.m_udata, pbin->cb);
 	return pbin;
 }
@@ -129,9 +123,8 @@ BOOL ics_state::deserialize(const BINARY &bin)
 	
 	ics_state_clear(pstate);
 	ics_state_init(pstate);
-	if (pbin->cb <= 16) {
+	if (pbin->cb <= 16)
 		return TRUE;
-	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return FALSE;	
@@ -139,51 +132,43 @@ BOOL ics_state::deserialize(const BINARY &bin)
 		switch (propvals.ppropval[i].proptag) {
 		case MetaTagIdsetGiven1: {
 			auto pset = idset::create(false, REPL_TYPE_ID);
-			if (NULL == pset) {
+			if (pset == nullptr)
 				return FALSE;
-			}
 			if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
-			    !pset->convert()) {
+			    !pset->convert())
 				return FALSE;
-			}
 			pstate->pgiven = std::move(pset);
 			break;
 		}
 		case MetaTagCnsetSeen: {
 			auto pset = idset::create(false, REPL_TYPE_ID);
-			if (NULL == pset) {
+			if (pset == nullptr)
 				return FALSE;
-			}
 			if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
-			    !pset->convert()) {
+			    !pset->convert())
 				return FALSE;
-			}
 			pstate->pseen = std::move(pset);
 			break;
 		}
 		case MetaTagCnsetSeenFAI:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
 				auto pset = idset::create(false, REPL_TYPE_ID);
-				if (NULL == pset) {
+				if (pset == nullptr)
 					return FALSE;
-				}
 				if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
-				    !pset->convert()) {
+				    !pset->convert())
 					return FALSE;
-				}
 				pstate->pseen_fai = std::move(pset);
 			}
 			break;
 		case MetaTagCnsetRead:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
 				auto pset = idset::create(false, REPL_TYPE_ID);
-				if (NULL == pset) {
+				if (pset == nullptr)
 					return FALSE;
-				}
 				if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
-				    !pset->convert()) {
+				    !pset->convert())
 					return FALSE;
-				}
 				pstate->pread = std::move(pset);
 			}
 			break;

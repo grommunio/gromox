@@ -32,9 +32,8 @@ BOOL exmdb_client_get_named_propid(const char *dir,
 	PROPID_ARRAY tmp_propids;
 	const PROPNAME_ARRAY tmp_propnames = {1, deconst(ppropname)};
 	if (!exmdb_client::get_named_propids(dir,
-		b_create, &tmp_propnames, &tmp_propids)) {
+	    b_create, &tmp_propnames, &tmp_propids))
 		return FALSE;	
-	}
 	*ppropid = *tmp_propids.ppropid;
 	return TRUE;
 }
@@ -49,9 +48,8 @@ BOOL exmdb_client_get_folder_property(const char *dir, cpid_t cpid,
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client::get_folder_properties(
 		dir, cpid, folder_id, &tmp_proptags,
-		&tmp_propvals)) {
+	    &tmp_propvals))
 		return FALSE;	
-	}
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;
 }
@@ -65,9 +63,8 @@ BOOL exmdb_client_get_message_property(const char *dir, const char *username,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client::get_message_properties(dir,
-		username, cpid, message_id, &tmp_proptags, &tmp_propvals)) {
+	    username, cpid, message_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	}
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;
 }
@@ -81,9 +78,8 @@ BOOL exmdb_client_delete_message(const char *dir, int account_id, cpid_t cpid,
 	message_ids.count = 1;
 	message_ids.pids = &message_id;
 	if (!exmdb_client::delete_messages(dir, account_id,
-		cpid, NULL, folder_id, &message_ids, b_hard, &b_partial)) {
+	    cpid, NULL, folder_id, &message_ids, b_hard, &b_partial))
 		return FALSE;	
-	}
 	*pb_done = !b_partial ? TRUE : false;
 	return TRUE;
 }
@@ -98,9 +94,8 @@ BOOL exmdb_client_get_instance_property(
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client::get_instance_properties(dir,
-		0, instance_id, &tmp_proptags, &tmp_propvals)) {
+	    0, instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	}
 	*ppval = tmp_propvals.count == 0 ? nullptr : tmp_propvals.ppropval->pvalue;
 	return TRUE;
 }
@@ -112,9 +107,8 @@ BOOL exmdb_client_set_instance_property(
 	PROBLEM_ARRAY tmp_problems;
 	const TPROPVAL_ARRAY tmp_propvals = {1, deconst(ppropval)};
 	if (!exmdb_client::set_instance_properties(dir,
-		instance_id, &tmp_propvals, &tmp_problems)) {
+	    instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	}
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
 	return TRUE;
 }
@@ -128,9 +122,8 @@ BOOL exmdb_client_remove_instance_property(const char *dir,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client::remove_instance_properties(
-		dir, instance_id, &tmp_proptags, &tmp_problems)) {
+	    dir, instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
-	}
 	*presult = tmp_problems.count == 0 ? 0 : tmp_problems.pproblem->err;
 	return TRUE;
 }
@@ -143,9 +136,8 @@ BOOL exmdb_client_remove_message_property(const char *dir,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	if (!exmdb_client::remove_message_properties(
-		dir, cpid, message_id, &tmp_proptags)) {
+	    dir, cpid, message_id, &tmp_proptags))
 		return FALSE;	
-	}
 	return TRUE;
 }
 

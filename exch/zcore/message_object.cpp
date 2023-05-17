@@ -908,10 +908,9 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
 	for (i=0; i<ppropvals->count; i++) {
-		for (j=0; j<problems.count; j++) {
+		for (j = 0; j < problems.count; j++)
 			if (i == problems.pproblem[j].index)
 				break;
-		}
 		if (j < problems.count)
 			continue;
 		pmessage->b_touched = TRUE;
@@ -975,10 +974,9 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
 	for (i=0; i<pproptags->count; i++) {
-		for (j=0; j<problems.count; j++) {
+		for (j = 0; j < problems.count; j++)
 			if (i == problems.pproblem[j].index)
 				break;
-		}
 		if (j < problems.count)
 			continue;
 		pmessage->b_touched = TRUE;
