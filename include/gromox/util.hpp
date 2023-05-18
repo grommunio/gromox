@@ -153,6 +153,7 @@ extern GX_EXPORT size_t utf8_to_utf16_len(const char *);
 inline size_t utf16_to_utf8_len(size_t z) { return z / 2 * 3 + 1; }
 extern GX_EXPORT int iconv_validate();
 extern GX_EXPORT const std::string *ianatz_to_tzdef(const char *, const char * = nullptr);
+extern GX_EXPORT const std::string *wintz_to_tzdef(const char *, const char * = nullptr);
 extern GX_EXPORT bool get_digest(const char *src, const char *tag, char *out, size_t outmax);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, const char *v);
 extern GX_EXPORT bool set_digest(char *src, size_t length, const char *tag, uint64_t v);

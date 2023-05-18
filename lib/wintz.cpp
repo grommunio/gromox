@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* strcasestr */
 #include <algorithm>
@@ -98,30 +98,46 @@ static errno_t wintz_load_tzdefs(const char *dirs)
 	return 0;
 }
 
+static errno_t wintz_load_once(const char *dirs)
+{
+	unsigned int exp = 0;
+	if (!wintz_loaded.compare_exchange_strong(exp, 1))
+		return 0;
+	auto ret = wintz_load_namemap(dirs);
+	if (ret != 0)
+		return ret;
+	ret = wintz_load_tzdefs(dirs);
+	if (ret != 0)
+		return ret;
+	return 0;
+}
+
 namespace gromox {
+
+const std::string *wintz_to_tzdef(const char *izone, const char *dirs)
+{
+	if (dirs == nullptr)
+		dirs = PKGDATADIR;
+	if (wintz_load_once(dirs) != 0)
+		return nullptr;
+	auto ti = wzone_to_tzdef.find(izone);
+	if (ti == wzone_to_tzdef.end())
+		return nullptr;
+	return &ti->second;
+}
 
 const std::string *ianatz_to_tzdef(const char *izone, const char *dirs)
 {
 	if (dirs == nullptr)
 		dirs = PKGDATADIR;
-	unsigned int exp = 0;
-	if (wintz_loaded.compare_exchange_strong(exp, 1)) {
-		auto ret = wintz_load_namemap(dirs);
-		if (ret != 0)
-			return nullptr;
-		ret = wintz_load_tzdefs(dirs);
-		if (ret != 0)
-			return nullptr;
-	}
+	if (wintz_load_once(dirs) != 0)
+		return nullptr;
 	std::string lizone = izone;
 	HX_strlower(lizone.data());
 	auto wi = iana_to_wzone.find(lizone);
 	if (wi == iana_to_wzone.end())
 		return nullptr;
-	auto ti = wzone_to_tzdef.find(wi->second);
-	if (ti == wzone_to_tzdef.end())
-		return nullptr;
-	return &ti->second;
+	return wintz_to_tzdef(wi->second.c_str());
 }
 
 }

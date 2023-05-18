@@ -1,4 +1,18 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// This file is part of Gromox.
+/*
+ * tzdump -f xyz.tzd
+ * 	Dump info from the given timezonedef file.
+ * tzdump -z [name...]
+ * 	Dump info for the given IANA zone name(s), e.g. "Europe/Berlin".
+ * tzdump -Z [name...]
+ * 	Dump info for the given Windows zone name(s), e.g. "AUS Central".
+ */
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <gromox/fileio.h>
 #include <gromox/ext_buffer.hpp>
@@ -74,11 +88,14 @@ static int d_files(int argc, char **argv)
 	return ret;
 }
 
-static int d_zones(int argc, char **argv)
+static int d_zones(int argc, char **argv, bool windows)
 {
 	int ret = EXIT_SUCCESS;
 	for (; argc-- > 0; ++argv) {
-		auto buf = ianatz_to_tzdef(*argv);
+		auto zone = *argv;
+		if (windows)
+			std::replace(&zone[0], &zone[strlen(zone)], ' ', '_');
+		auto buf = windows ? wintz_to_tzdef(*argv) : ianatz_to_tzdef(*argv);
 		if (buf == nullptr) {
 			fprintf(stderr, "%s: zone name not recognized\n", *argv);
 			ret = EXIT_FAILURE;
@@ -96,6 +113,8 @@ int main(int argc, char **argv)
 	if (argc >= 2 && strcmp(argv[1], "-f") == 0)
 		return d_files(argc - 2, &argv[2]);
 	else if (argc >= 2 && strcmp(argv[1], "-z") == 0)
-		return d_zones(argc - 2, &argv[2]);
+		return d_zones(argc - 2, &argv[2], false);
+	else if (argc >= 2 && strcmp(argv[1], "-Z") == 0)
+		return d_zones(argc - 2, &argv[2], true);
 	return EXIT_SUCCESS;
 }
