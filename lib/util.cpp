@@ -937,6 +937,17 @@ int pthread_create4(pthread_t *t, std::nullptr_t, void *(*f)(void *), void *a) n
 	return ret;
 }
 
+void replace_unsafe_basename(char *s)
+{
+	/* Replace chars with special meaning (sh, make) */
+	for (; *s != '\0'; ++s) {
+		auto safe = isascii(*s) && (isalnum(*s) ||
+		            *s == '+' || *s == '-' || *s == '^' || *s == '_');
+		if (!safe)
+			*s = '_';
+	}
+}
+
 }
 
 /*

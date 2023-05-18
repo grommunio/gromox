@@ -9,8 +9,6 @@
  * tzdump -Z [name...]
  * 	Dump info for the given Windows zone name(s), e.g. "AUS Central".
  */
-#include <algorithm>
-#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -94,7 +92,7 @@ static int d_zones(int argc, char **argv, bool windows)
 	for (; argc-- > 0; ++argv) {
 		auto zone = *argv;
 		if (windows)
-			std::replace(&zone[0], &zone[strlen(zone)], ' ', '_');
+			replace_unsafe_basename(zone);
 		auto buf = windows ? wintz_to_tzdef(*argv) : ianatz_to_tzdef(*argv);
 		if (buf == nullptr) {
 			fprintf(stderr, "%s: zone name not recognized\n", *argv);

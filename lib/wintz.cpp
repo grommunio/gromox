@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* strcasestr */
-#include <algorithm>
 #include <atomic>
 #include <cerrno>
 #include <cstdio>
@@ -69,7 +68,7 @@ static errno_t wintz_load_namemap(const char *dirs)
 		auto p = strcasestr(ovs.c_str(), " Standard Time");
 		if (p != nullptr)
 			ovs.erase(p - ovs.c_str(), 14);
-		std::replace(ovs.begin(), ovs.end(), ' ', '_');
+		replace_unsafe_basename(ovs.data());
 		for (auto &&i : gx_split(ivs, ' '))
 			if (!i.empty())
 				iana_to_wzone.emplace(std::move(i), ovs);
