@@ -2635,7 +2635,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	}
 
 	char buf[4096];
-	snprintf(buf, sizeof(buf), PKGDATADIR "/displayTable-%X-%X.abkt", locale_id, type);
+	snprintf(buf, sizeof(buf), PKGDATADIR "/%x-%x.abkt", locale_id, type);
 	wrapfd fd = open(buf, O_RDONLY);
 	if (fd.get() < 0)
 		return MAPI_E_UNKNOWN_LCID;
