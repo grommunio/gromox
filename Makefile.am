@@ -61,7 +61,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
-pkglibexec_SCRIPTS = tools/create_queue.sh
+pkglibexec_SCRIPTS = tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
@@ -367,17 +367,12 @@ install-exec-hook:
 	${MKDIR_P} ${DESTDIR}${sbindir}
 	rm -fv ${DESTDIR}${pkglibdir}/libmapi4zf.*
 
-install-exec-local:
-	${MKDIR_P} ${DESTDIR}${pkglibexecdir}
-	cp -av ${srcdir}/tools/kdb-uidex* ${DESTDIR}${pkglibexecdir}/
-
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${mandir}/man8 ${DESTDIR}${pkgdatadir}/http/php
 	cp -av ${srcdir}/data/* ${DESTDIR}${pkgdatadir}/
 	cp -av ${srcdir}/exch/php/* ${DESTDIR}${pkgdatadir}/http/php/
 
 uninstall-hook:
-	rm -Rf UNINSTALL_HOOK ${DESTDIR}${pkglibexecdir}/kdb-uidex*
 	chmod -R u+w ${DESTDIR}${pkgdatadir}/
 	rm -Rf ${DESTDIR}${pkgdatadir}/
 
