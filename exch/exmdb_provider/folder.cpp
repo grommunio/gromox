@@ -220,7 +220,7 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 	if (!sql_transact)
 		return false;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) FROM"
-			" messages WHERE parent_fid=%llu AND is_associated=0",
+			" messages WHERE parent_fid=%llu AND is_associated=0 AND is_deleted=0",
 			LLU{rop_util_get_gc_value(folder_id)});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
@@ -234,7 +234,7 @@ BOOL exmdb_server::query_folder_messages(const char *dir,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id, read_state,"
 			" mid_string FROM messages WHERE parent_fid=%llu AND "
-			"is_associated=0", LLU{rop_util_get_gc_value(folder_id)});
+			"is_associated=0 AND is_deleted=0", LLU{rop_util_get_gc_value(folder_id)});
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
