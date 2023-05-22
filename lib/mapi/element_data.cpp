@@ -27,13 +27,13 @@ ATTACHMENT_CONTENT* attachment_content_init()
 	return pattachment;
 }
 
-void attachment_content::set_embedded_internal(message_content *pembedded)
+void attachment_content::set_embedded_internal(message_content *e)
 {
 	auto pattachment = this;
 	if (NULL != pattachment->pembedded) {
 		message_content_free(pattachment->pembedded);
 	}
-	pattachment->pembedded = pembedded;
+	pattachment->pembedded = e;
 }
 
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment)
@@ -117,14 +117,13 @@ BOOL attachment_list::append_internal(attachment_content *pattachment)
 	if (plist->count >= 0x8000) {
 		return FALSE;
 	}
-	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
-	if (plist->count + 1U >= count) {
-		count += SR_GROW_ATTACHMENT_CONTENT;
-		auto pplist = re_alloc<ATTACHMENT_CONTENT *>(plist->pplist, count);
-		if (NULL == pplist) {
+	auto c = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
+	if (plist->count + 1U >= c) {
+		c += SR_GROW_ATTACHMENT_CONTENT;
+		auto new_list = re_alloc<ATTACHMENT_CONTENT *>(plist->pplist, c);
+		if (new_list == nullptr)
 			return FALSE;
-		}
-		plist->pplist = pplist;
+		plist->pplist = new_list;
 	}
 	plist->pplist[plist->count++] = pattachment;
 	return TRUE;

@@ -153,8 +153,8 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 /**
  * @brief     Explicit initialization for direct serialization
  */
-sFolderSpec::sFolderSpec(const std::string& target, uint64_t folderId) :
-    target(target), folderId(folderId)
+sFolderSpec::sFolderSpec(const std::string &t, uint64_t fid) :
+	target(t), folderId(fid)
 {}
 
 /**
@@ -891,9 +891,9 @@ mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::mo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-mResponseMessageType::mResponseMessageType(const std::string& ResponseClass, const std::optional<std::string>& ResponseCode,
-                                           const std::optional<std::string>& MessageText) :
-    ResponseClass(ResponseClass), MessageText(MessageText), ResponseCode(ResponseCode)
+mResponseMessageType::mResponseMessageType(const std::string& rclass,
+    const std::optional<std::string> &rcode, const std::optional<std::string> &mt) :
+	ResponseClass(rclass), MessageText(mt), ResponseCode(rcode)
 {}
 
 /**

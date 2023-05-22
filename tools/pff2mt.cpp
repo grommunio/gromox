@@ -1233,9 +1233,9 @@ static errno_t do_file(const char *filename) try
 	if (g_only_objs.size() == 0) {
 		parent_desc pd{};
 		pd.names = &name_map;
-		auto ret = do_item(0, std::move(pd), root.get());
-		if (ret < 0)
-			return ret;
+		auto iret = do_item(0, std::move(pd), root.get());
+		if (iret < 0)
+			return iret;
 		gi_dump_name_map(name_map);
 		return 0;
 	}

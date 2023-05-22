@@ -92,8 +92,8 @@ private:
 class EWSContext
 {
 public:
-	inline EWSContext(int ID, HTTP_AUTH_INFO auth_info, const char* data, uint64_t length, EWSPlugin& plugin)
-       : ID(ID), orig(*get_request(ID)), auth_info(auth_info), request(data, length), plugin(plugin)
+	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
+		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
 	Structures::sProptags collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;

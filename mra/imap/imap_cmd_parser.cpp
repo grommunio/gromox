@@ -100,8 +100,6 @@ static std::string quote_encode(const std::string &u7)
 static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
     BOOL *pb_detail, BOOL *pb_data, char *string, char **argv, int argc) try
 {
-	int len;
-	int i, j;
 	int count;
 	char *ptr;
 	char *ptr1;
@@ -126,7 +124,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 	if (tmp_argc < 1)
 		return FALSE;
 	b_macro = FALSE;
-	for (i=0; i<tmp_argc; i++) {
+	for (int i = 0; i < tmp_argc; ++i) {
 		if (std::find_if(plist.cbegin(), plist.cend(),
 		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }) != plist.cend())
 			continue;
@@ -157,7 +155,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 				return FALSE;
 			while (']' != *ptr) {
 				if ('.' == *ptr) {
-					len = ptr - last_ptr;
+					size_t len = ptr - last_ptr, j = 0;
 					if (len == 0)
 						return FALSE;
 					for (j = 0; j < len; ++j)
@@ -170,7 +168,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 				ptr ++;
 			}
 			
-			len = pend - last_ptr;
+			size_t len = pend - last_ptr;
 			if ((len == 0 && *last_ptr == '.') || len >= 1024)
 				return FALSE;
 			memcpy(buff, last_ptr, len);
@@ -181,7 +179,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 				0 != strcasecmp(buff, "MIME") &&
 				0 != strncasecmp(buff, "HEADER.FIELDS ", 14) &&
 				0 != strncasecmp(buff, "HEADER.FIELDS.NOT ", 18)) {
-				for (j = 0; j < len; ++j)
+				for (size_t j = 0; j < len; ++j)
 					if (!HX_isdigit(buff[j]))
 						return FALSE;
 			} else if (0 == strncasecmp(buff, "HEADER.FIELDS ", 14)) {

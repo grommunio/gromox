@@ -155,13 +155,13 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 	auto start = std::chrono::high_resolution_clock::now();
 	auto req = get_request(ctx_id);
 	if (strcasecmp(req->method, "POST") != 0) {
-		static constexpr char content[] =
+		static constexpr char rsp[] =
 			"HTTP/1.1 405 Method Not Allowed\r\n"
 			"Content-Length: 0\r\n"
 			"Connection: Keep-Alive\r\n"
 			"WWW-Authenticate: Basic realm=\"ews realm\"\r\n"
 			"\r\n";
-		return write_response(ctx_id, content, strlen(content));
+		return write_response(ctx_id, rsp, strlen(rsp));
 	}
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
