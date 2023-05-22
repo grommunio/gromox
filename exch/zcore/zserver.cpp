@@ -1375,6 +1375,14 @@ ec_error_t zs_modifyrules(GUID hsession,
 		for (size_t i = 0; i < plist->count; ++i)
 			if (plist->prule[i].flags != ROW_ADD)
 				return ecInvalidParam;
+	if (!pfolder->pstore->owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
+		    pfolder->folder_id, pinfo->get_username(), &permission))
+			return ecError;
+		if (!(permission & frightsOwner))
+			return ecAccessDenied;
+	}
 	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
 }
 
