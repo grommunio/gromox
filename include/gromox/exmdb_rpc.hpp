@@ -40,7 +40,7 @@ enum class exmdb_callid : uint8_t {
 	set_folder_by_class = 0x0e,
 	get_folder_class_table = 0x0f,
 	check_folder_id = 0x10,
-	query_folder_messages = 0x11,
+	// query_folder_messages = 0x11,
 	check_folder_deleted = 0x12,
 	get_folder_by_name = 0x13,
 	get_folder_perm = 0x14,
@@ -218,10 +218,6 @@ struct exreq_set_folder_by_class : public exreq {
 };
 
 struct exreq_check_folder_id : public exreq {
-	uint64_t folder_id;
-};
-
-struct exreq_query_folder_messages : public exreq {
 	uint64_t folder_id;
 };
 
@@ -897,10 +893,6 @@ struct exresp_get_folder_class_table : public exresp {
 
 struct exresp_check_folder_id : public exresp {
 	BOOL b_exist;
-};
-
-struct exresp_query_folder_messages : public exresp {
-	TARRAY_SET set;
 };
 
 struct exresp_check_folder_deleted : public exresp {

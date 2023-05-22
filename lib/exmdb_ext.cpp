@@ -188,16 +188,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_folder_id &d)
 	return x.p_uint64(d.folder_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_query_folder_messages &d)
-{
-	return x.g_uint64(&d.folder_id);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_query_folder_messages &d)
-{
-	return x.p_uint64(d.folder_id);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_folder_deleted &d)
 {
 	return x.g_uint64(&d.folder_id);
@@ -2223,7 +2213,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_store_eid_to_user &d)
 	E(get_folder_by_class) \
 	E(set_folder_by_class) \
 	E(check_folder_id) \
-	E(query_folder_messages) \
 	E(check_folder_deleted) \
 	E(get_folder_by_name) \
 	E(get_folder_perm) \
@@ -2580,16 +2569,6 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_check_folder_id &d)
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_folder_id &d)
 {
 	return x.p_bool(d.b_exist);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exresp_query_folder_messages &d)
-{
-	return x.g_tarray_set(&d.set);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_query_folder_messages &d)
-{
-	return x.p_tarray_set(d.set);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_check_folder_deleted &d)
@@ -3650,7 +3629,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
 	E(set_folder_by_class) \
 	E(get_folder_class_table) \
 	E(check_folder_id) \
-	E(query_folder_messages) \
 	E(check_folder_deleted) \
 	E(get_folder_by_name) \
 	E(get_folder_perm) \

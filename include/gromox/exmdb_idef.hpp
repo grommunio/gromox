@@ -14,7 +14,6 @@ EXMIDL(get_folder_by_class, (const char *dir, const char *str_class, IDLOUT uint
 EXMIDL(set_folder_by_class, (const char *dir, uint64_t folder_id, const char *str_class, IDLOUT BOOL *b_result))
 EXMIDL(get_folder_class_table, (const char *dir, IDLOUT TARRAY_SET *table))
 EXMIDL(check_folder_id, (const char *dir, uint64_t folder_id, IDLOUT BOOL *b_exist))
-EXMIDL(query_folder_messages, (const char *dir, uint64_t folder_id, IDLOUT TARRAY_SET *set))
 EXMIDL(check_folder_deleted, (const char *dir, uint64_t folder_id, IDLOUT BOOL *b_del))
 EXMIDL(get_folder_by_name, (const char *dir, uint64_t parent_id, const char *str_name, IDLOUT uint64_t *folder_id))
 EXMIDL(get_folder_perm, (const char *dir, uint64_t folder_id, const char *username, IDLOUT uint32_t *permission))
