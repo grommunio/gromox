@@ -4145,7 +4145,6 @@ static void mail_engine_delete_notification_folder(
 static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 	uint64_t parent_id, const char *parent_name)
 {
-	int tmp_len;
 	char *ptoken;
 	uint64_t folder_id;
 	char temp_name[512];
@@ -4167,7 +4166,7 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 		if (ptoken == nullptr ||
 		    strlen(ptoken) + strlen(parent_name) >= 512)
 			continue;
-		tmp_len = sprintf(temp_name, "%s%s", parent_name, ptoken);
+		auto tmp_len = snprintf(temp_name, sizeof(temp_name), "%s%s", parent_name, ptoken);
 		encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET name='%s' "
 		        "WHERE folder_id=%llu", encoded_name, LLU{folder_id});
