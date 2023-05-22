@@ -1347,6 +1347,14 @@ ec_error_t zs_modifypermissions(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
+	if (!pfolder->pstore->owner_mode()) {
+		uint32_t permission = 0;
+		if (!exmdb_client::get_folder_perm(pfolder->pstore->get_dir(),
+		    pfolder->folder_id, pinfo->get_username(), &permission))
+			return ecError;
+		if (!(permission & frightsOwner))
+			return ecAccessDenied;
+	}
 	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
 }
 
