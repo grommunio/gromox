@@ -91,6 +91,24 @@ static void nsp_trace(const char *func, bool is_exit, const STAT *s,
 	}
 }
 
+static const BINARY *nsp_photo_rpc(const char *dir)
+{
+	if (*dir == '\0')
+		return nullptr;
+	const PROPERTY_NAME xn = {MNID_STRING, PSETID_GROMOX, 0, deconst("photo")};
+	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
+	PROPID_ARRAY name_rsp{};
+	if (!get_named_propids(dir, false, &name_req, &name_rsp) ||
+	    name_rsp.count != name_req.count || name_rsp.ppropid[0] == 0)
+		return nullptr;
+	uint32_t proptag = PROP_TAG(PT_BINARY, name_rsp.ppropid[0]);
+	const PROPTAG_ARRAY tags = {1, deconst(&proptag)};
+	TPROPVAL_ARRAY values{};
+	if (!get_store_properties(dir, CP_ACP, &tags, &values))
+		return nullptr;
+	return values.get<const BINARY>(proptag);
+}
+
 static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
     BOOL b_ephid, cpid_t codepage, uint32_t proptag, PROPERTY_VALUE *pprop,
     void *pbuff, size_t pbsize)
@@ -456,13 +474,20 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			"ncacn_http:%s", rpc_info.ep_host);
 		return ecSuccess;
 	}
-	case PR_EMS_AB_THUMBNAIL_PHOTO:
+	case PR_EMS_AB_THUMBNAIL_PHOTO: {
 		if (!ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, std::size(dn)))
 			return ecNotFound;
+		auto bv = nsp_photo_rpc(dn);
+		if (bv != nullptr) {
+			pprop->value.bin = *bv;
+			return ecSuccess;
+		}
+		/* Old access for monohost installations */
 		HX_strlcat(dn, "/config/portrait.jpg", arsizeof(dn));
 		if (!common_util_load_file(dn, &pprop->value.bin))
 			return ecNotFound;
 		return ecSuccess;
+	}
 	}
 	/* User-defined props */
 	if (node_type == abnode_type::user || node_type == abnode_type::mlist) {

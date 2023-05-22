@@ -22,6 +22,8 @@ using namespace gromox;
 
 static constexpr unsigned int SR_GROW_NSP_PROPROW = 40, SR_GROW_NSP_ROWSET = 100;
 static GUID g_server_guid;
+decltype(get_named_propids) get_named_propids;
+decltype(get_store_properties) get_store_properties;
 
 GUID common_util_get_server_guid()
 {

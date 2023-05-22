@@ -90,6 +90,10 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 			mlog(LV_INFO, "nsp: bind session will be checked");
 		ab_tree_init(org_name, table_size, cache_interval);
 
+		query_service2("exmdb_client_get_named_propids", get_named_propids);
+		query_service2("exmdb_client_get_store_properties", get_store_properties);
+		if (get_named_propids == nullptr || get_store_properties == nullptr)
+			return false;
 #define regsvr(n) register_service(#n, n)
 		if (!regsvr(nsp_interface_bind) ||
 		    !regsvr(nsp_interface_compare_mids) ||

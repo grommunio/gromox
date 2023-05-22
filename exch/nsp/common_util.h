@@ -73,3 +73,6 @@ extern LPROPTAG_ARRAY *common_util_proptagarray_init();
 uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern int common_util_run();
+
+extern BOOL (*get_named_propids)(const char *dir, BOOL create, const PROPNAME_ARRAY *, PROPID_ARRAY *);
+extern BOOL (*get_store_properties)(const char *dir, cpid_t, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
