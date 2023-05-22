@@ -1,4 +1,4 @@
-Development 2.24.38
+Development 2.24.53
 ===================
 
 Fixes:
@@ -13,6 +13,8 @@ Changes:
 * oxcmail: export no longer generates a MIME epilogue, which should
   workaround Outlook's broken S/MIME validator which fails to include
   epilogues in the signature verification.
+* http: recognition for the ``http_old_php_hanlder`` directive
+  has been removed
 
 
 Gromox 2.24 (2024-02-10)
@@ -715,7 +717,6 @@ Changes:
 
 * oxdisco: new module providing the AutoDiscover endpoints,
   replacing the PHP-based implementation
-  (To go back to the old implementation, set http.cfg:http_old_php_handler=1)
 * oab: new module providing the OAB endpoint
 * ews: new module providing the EWS endpoint,
   replacing the PHP-based implementation

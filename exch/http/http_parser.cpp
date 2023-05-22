@@ -120,7 +120,7 @@ static time_duration g_timeout;
 std::string g_http_remote_host_hdr;
 unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
-bool g_http_php, g_enforce_auth;
+bool g_enforce_auth;
 static thread_local HTTP_CONTEXT *g_context_key;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;

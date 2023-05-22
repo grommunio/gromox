@@ -160,16 +160,6 @@ static int mod_fastcgi_defaults()
 	node.dir = DATADIR "/grommunio-web";
 	node.sock_path = FPMSOCKDIR "/php-grommunio-web-fpm.sock";
 	g_fastcgi_list.push_back(node);
-	if (!g_http_php)
-		return 0;
-	/* Only if http_old_php_handler: */
-	node.path = "/EWS";
-	node.dir = PKGDATADIR "/http/php/ews";
-	node.header_list = {"X-MAPIHttpCapability", "X-AnchorMailbox", "X-ClientCanHandle"};
-	node.sock_path = FPMSOCKDIR "/php-gromox-fpm.sock";
-	g_fastcgi_list.push_back(node);
-	node.path = "/ews";
-	g_fastcgi_list.push_back(node);
 	return 0;
 }
 

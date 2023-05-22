@@ -125,7 +125,6 @@ static int mod_rewrite_default()
 	}
 	node.reg_set = true;
 	g_rewrite_list.push_back(std::move(node));
-
 	return 0;
 }
 

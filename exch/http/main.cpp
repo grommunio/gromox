@@ -104,7 +104,6 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_listen_tls_port", "0"},
 	{"http_log_file", "-"},
 	{"http_log_level", "4" /* LV_NOTICE */},
-	{"http_old_php_handler", "0", CFG_BOOL},
 	{"http_rqbody_flush_size", "512K", CFG_SIZE, "0"},
 	{"http_rqbody_max_size", "50M", CFG_SIZE, "1"},
 	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
@@ -141,7 +140,6 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
 	g_enforce_auth = cfg->get_ll("http_enforce_auth");
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");
 	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");
-	g_http_php = cfg->get_ll("http_old_php_handler");
 
 	if (xcfg == nullptr)
 		xcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);

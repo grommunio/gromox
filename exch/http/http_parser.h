@@ -141,5 +141,5 @@ extern std::string http_make_err_response(const http_context &, http_status);
 
 extern unsigned int g_http_debug, g_msrpc_debug;
 extern size_t g_rqbody_flush_size, g_rqbody_max_size;
-extern bool g_http_php, g_enforce_auth;
+extern bool g_enforce_auth;
 extern std::string g_http_remote_host_hdr;
