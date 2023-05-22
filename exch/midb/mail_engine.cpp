@@ -1583,9 +1583,24 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 	dir = common_util_get_maildir();
 	mlog(LV_NOTICE, "Running sync_contents for %s, folder %llu",
 	        dir, LLU{folder_id});
-	if (!exmdb_client::query_folder_messages(dir,
-	    rop_util_make_eid_ex(1, folder_id), &rows))
-		return FALSE;
+
+	{
+		uint32_t table_id = 0, row_count = 0;
+		if (!exmdb_client::load_content_table(dir, CP_ACP,
+		    rop_util_make_eid_ex(1, folder_id), nullptr, TABLE_FLAG_NONOTIFICATIONS,
+		    nullptr, nullptr, &table_id, &row_count))
+			return false;
+		auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
+		static constexpr uint32_t proptags_0[] = {
+			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
+			PR_MESSAGE_DELIVERY_TIME, PidTagMidString,
+		};
+		static constexpr PROPTAG_ARRAY proptags_1[] = {std::size(proptags_0), deconst(proptags_0)};
+		if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
+		    proptags_1, 0, row_count, &rows))
+			return false;
+	}
+
 	snprintf(sql_string, arsizeof(sql_string), "SELECT uidnext FROM"
 	          " folders WHERE folder_id=%llu", LLU{folder_id});
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -1622,9 +1637,11 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 		if (num == nullptr)
 			continue;
 		auto message_id = rop_util_get_gc_value(*num);
-		auto flags = rows.pparray[i]->get<const uint32_t>(PR_MESSAGE_FLAGS);
+		auto flags = rows.pparray[i]->get<uint32_t>(PR_MESSAGE_FLAGS);
 		if (flags == nullptr)
 			continue;
+		*flags &= ~(MSGFLAG_HASATTACH | MSGFLAG_FROMME | MSGFLAG_ASSOCIATED |
+		          MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
 		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 		auto recv_time = rows.pparray[i]->get<uint64_t>(PR_MESSAGE_DELIVERY_TIME);
 		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
