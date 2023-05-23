@@ -3116,14 +3116,6 @@ static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
 #endif
 }
 
-PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) noexcept :
-	list_reference(std::move(o.list_reference)), lib_main(o.lib_main),
-	file_name(std::move(o.file_name)), completed_init(o.completed_init)
-{
-	o.handle = nullptr;
-	o.completed_init = false;
-}
-
 PROC_PLUGIN::~PROC_PLUGIN()
 {
 	PLUGIN_MAIN func;
@@ -3137,8 +3129,6 @@ PROC_PLUGIN::~PROC_PLUGIN()
 		func(PLUGIN_FREE, NULL);
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
-	if (handle != nullptr)
-		dlclose(handle);
 }
 
 /* this function can also be invoked from hpm_plugins,
@@ -3284,7 +3274,7 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 		return NULL;
 	}
 	try {
-		g_cur_plugin->list_reference.emplace_back(pdu_service_node{ret_addr, service});
+		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
 	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
 		return NULL;

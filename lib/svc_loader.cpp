@@ -41,7 +41,7 @@ struct service_entry {
 	std::vector<reference_node> list_reference;
 };
 
-struct SVC_PLUG_ENTITY {
+struct SVC_PLUG_ENTITY : public gromox::generic_module {
 	SVC_PLUG_ENTITY() = default;
 	SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&) noexcept;
 	~SVC_PLUG_ENTITY();
@@ -50,10 +50,6 @@ struct SVC_PLUG_ENTITY {
 	std::vector<std::shared_ptr<service_entry>> list_service;
 	std::atomic<int> ref_count = 0;
 	std::vector<std::string> ref_holders;
-	void *handle = nullptr;
-	PLUGIN_MAIN lib_main = nullptr;
-	std::string file_name, full_path;
-	bool completed_init = false;
 };
 
 }
@@ -174,7 +170,6 @@ static int service_load_library(const char *path)
 		return PLUGIN_NO_MAIN;
 	}
 	plug.file_name = path;
-	plug.full_path = fake_path;
 	g_list_plug.push_back(std::move(plug));
 	/*
 	 *  indicate the current lib node when plugin rigisters service
@@ -186,15 +181,11 @@ static int service_load_library(const char *path)
 }
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
+	generic_module(std::move(o)),
 	list_service(std::move(o.list_service)), ref_count(o.ref_count.load()),
-	ref_holders(std::move(o.ref_holders)),
-	handle(o.handle), lib_main(o.lib_main),
-	file_name(std::move(o.file_name)), full_path(std::move(o.full_path)),
-	completed_init(o.completed_init)
+	ref_holders(std::move(o.ref_holders))
 {
 	o.ref_count = 0;
-	o.handle = nullptr;
-	o.completed_init = false;
 }
 
 SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
@@ -220,8 +211,6 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it will be unloaded */
 		func(PLUGIN_FREE, NULL);
-	if (handle != nullptr)
-		dlclose(handle);
 }
 
 /*
@@ -383,4 +372,19 @@ void service_trigger_all(unsigned int ev)
 		p.lib_main(ev, nullptr);
 	}
 	g_cur_plug = nullptr;
+}
+
+generic_module::generic_module(generic_module &&o) noexcept :
+	file_name(std::move(o.file_name)), handle(o.handle),
+	lib_main(o.lib_main), completed_init(o.completed_init)
+{
+	o.handle = nullptr;
+	o.lib_main = nullptr;
+	o.completed_init = false;
+}
+
+generic_module::~generic_module()
+{
+	if (handle != nullptr)
+		dlclose(handle);
 }

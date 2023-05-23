@@ -2,6 +2,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include <gromox/dcerpc.hpp>
 #include <gromox/double_list.hpp>
@@ -30,22 +31,13 @@ struct DCERPC_ENDPOINT {
 	uint16_t tcp_port = 0; /* only for ncacn_http */
 };
 
-struct pdu_service_node {
-	void *service_addr = nullptr;
-	std::string service_name;
-};
-
-struct PROC_PLUGIN {
+struct PROC_PLUGIN : public gromox::generic_module {
 	PROC_PLUGIN() = default;
-	PROC_PLUGIN(PROC_PLUGIN &&) noexcept;
+	PROC_PLUGIN(PROC_PLUGIN &&o) noexcept : generic_module(std::move(o)) {}
 	~PROC_PLUGIN();
 	void operator=(PROC_PLUGIN &&) noexcept = delete;
 
-	std::vector<pdu_service_node> list_reference;
-	void *handle = nullptr;
-	PLUGIN_MAIN lib_main = nullptr;
-	std::string file_name;
-	bool completed_init = false;
+	std::vector<gromox::service_node> list_reference;
 };
 
 /* virtual connection to DCE RPC server, actually only data structure of context */

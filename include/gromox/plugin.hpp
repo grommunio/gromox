@@ -2,6 +2,7 @@
  *  define the constant for plugin's return value load, unload, reload actions.
  */
 #pragma once
+#include <string>
 #include <gromox/common_types.hpp>
 
 /* enumeration for indicate the ation of plugin_main function */
@@ -34,3 +35,24 @@ enum{
 };
 
 using PLUGIN_MAIN = BOOL (*)(int, void **);
+
+namespace gromox {
+
+struct service_node {
+	void *service_addr = nullptr;
+	std::string service_name;
+};
+
+struct generic_module {
+	generic_module() = default;
+	generic_module(generic_module &&) noexcept;
+	~generic_module();
+	void operator=(generic_module &&) noexcept = delete;
+
+	std::string file_name;
+	void *handle = nullptr;
+	PLUGIN_MAIN lib_main = nullptr;
+	bool completed_init = false;
+};
+
+}

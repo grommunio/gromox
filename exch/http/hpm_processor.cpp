@@ -218,22 +218,13 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		return NULL;
 	}
 	try {
-		g_cur_plugin->list_reference.emplace_back(hpm_service_node{ret_addr, service});
+		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
 	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
 		mlog(LV_ERR, "E-1636: ENOMEM");
 		return nullptr;
 	}
 	return ret_addr;
-}
-
-HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) noexcept :
-	list_reference(std::move(o.list_reference)), interface(o.interface),
-	handle(o.handle), lib_main(o.lib_main),
-	file_name(std::move(o.file_name)), completed_init(o.completed_init)
-{
-	o.handle = nullptr;
-	o.completed_init = false;
 }
 
 HPM_PLUGIN::~HPM_PLUGIN()
@@ -250,8 +241,6 @@ HPM_PLUGIN::~HPM_PLUGIN()
 	/* free the reference list */
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
-	if (handle != nullptr)
-		dlclose(handle);
 }
 
 static int hpm_processor_load_library(const char *plugin_name)

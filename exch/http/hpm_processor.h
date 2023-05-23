@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <utility>
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/hpm_common.h>
@@ -8,23 +9,14 @@
 struct http_context;
 using HTTP_CONTEXT = http_context;
 
-struct hpm_service_node {
-	void *service_addr = nullptr;
-	std::string service_name;
-};
-
-struct HPM_PLUGIN {
+struct HPM_PLUGIN : public gromox::generic_module {
 	HPM_PLUGIN() = default;
-	HPM_PLUGIN(HPM_PLUGIN &&) noexcept;
+	HPM_PLUGIN(HPM_PLUGIN &&o) noexcept : generic_module(std::move(o)) {}
 	~HPM_PLUGIN();
 	void operator=(HPM_PLUGIN &&) noexcept = delete;
 
-	std::vector<hpm_service_node> list_reference;
 	HPM_INTERFACE interface{};
-	void *handle = nullptr;
-	PLUGIN_MAIN lib_main = nullptr;
-	std::string file_name;
-	bool completed_init = false;
+	std::vector<gromox::service_node> list_reference;
 };
 
 extern void hpm_processor_init(int context_num, std::vector<std::string> &&names, uint64_t cache_size, uint64_t max_size);
