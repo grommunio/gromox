@@ -249,12 +249,16 @@ static void *service_query_service(const char *service, const std::type_info &ti
 }
 
 /*
- *  register the plugin-provide service function
- *  @param
- *      func_name [in]    name for the service
- *      addr [in]         pointer of function
- *  @return
- *      TRUE or FALSE
+ * Publish a symbol to the process.
+ *
+ * There is no corresponding symbol unexporting. From the invocation
+ * of service_stop onwards (also the only place modules can get
+ * unloaded), g_list_service is invalid and is left in that state
+ * since the process is about to terminate anyway.
+ *
+ * @func_name:	symbol name
+ * @addr:	function address
+ * @ti:		typeinfo for function
  */
 BOOL service_register_service(const char *func_name, void *addr,
     const std::type_info &ti) try
@@ -285,11 +289,16 @@ BOOL service_register_service(const char *func_name, void *addr,
 	return false;
 }
 
-/*
- *	query the registered service
- *	@param
- *		service_name [in]	indicate the service name
- *		module [in]			indicate the module name
+/**
+ * Obtain a module symbol reference.
+ *
+ * For e.g. hpm_symbol_get and pdu_symbol_get: those are effectively an
+ * implementation of a -rdynamic like feature (and we would not want to rely on
+ * rdynamic, for portability reasons).
+ *
+ * @service_name:	symbol name
+ * @module:		name of requesting module
+ * @ti:			typeinfo for cross-checking expectations
  */
 void *service_query(const char *service_name, const char *module, const std::type_info &ti)
 {
@@ -335,10 +344,10 @@ void *service_query(const char *service_name, const char *module, const std::typ
 }
 
 /*
- *	release the queried service
- *	@param
- *		service_name [in]	indicate the service name
- *		module [in]			indicate the module name
+ * Drop reference to a symbol
+ *
+ * @service_name:	symbol name
+ * @module:		name of requesting module
  */
 void service_release(const char *service_name, const char *module)
 {
