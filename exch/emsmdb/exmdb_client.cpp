@@ -9,7 +9,6 @@
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
-#include "../exmdb_provider/sfptrids.hpp"
 
 using namespace gromox;
 
@@ -24,7 +23,7 @@ namespace exmdb_client_ems {
 int run()
 {
 	void (*register_proc)(void*);
-	void (*pass_service)(int, void*);
+	void (*pass_service)(const char *, void *); // cross-plugin symbol exchange
 	
 #define EXMIDL(n, p) do { \
 	query_service2("exmdb_client_" #n, n); \
@@ -53,9 +52,9 @@ int run()
 #undef E
 	/* pass the service functions to exmdb_provider */
 #define E(s) reinterpret_cast<void *>(s)
-	pass_service(SERVICE_ID_SEND_MAIL, E(ems_send_mail));
-	pass_service(SERVICE_ID_GET_MIME_POOL, E(common_util_get_mime_pool));
-	pass_service(SERVICE_ID_GET_HANDLE, E(emsmdb_interface_get_handle));
+	pass_service("ems_send_mail", E(ems_send_mail));
+	pass_service("get_mime_pool", E(common_util_get_mime_pool));
+	pass_service("get_handle", E(emsmdb_interface_get_handle));
 #undef E
 	return 0;
 }

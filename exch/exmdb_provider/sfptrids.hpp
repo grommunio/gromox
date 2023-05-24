@@ -1,6 +1,0 @@
-#pragma once
-enum {
-	SERVICE_ID_SEND_MAIL = 1,
-	SERVICE_ID_GET_MIME_POOL,
-	SERVICE_ID_GET_HANDLE,
-};

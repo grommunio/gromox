@@ -56,7 +56,7 @@ void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
 extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 extern BOOL common_util_username_to_essdn(const char *username, char *dn, size_t);
-void common_util_pass_service(int service_id, void *func);
+extern void common_util_pass_service(const char *name, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
 extern void common_util_build_tls();

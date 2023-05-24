@@ -35,7 +35,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include "sfptrids.hpp"
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 using XUI = unsigned int;
@@ -165,14 +164,12 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	return TRUE;
 }
 	
-void common_util_pass_service(int service_id, void *func)
+void common_util_pass_service(const char *name, void *func)
 {
-#define E(v, ptr) case (v): (ptr) = reinterpret_cast<decltype(ptr)>(func); break;
-	switch (service_id) {
-	E(SERVICE_ID_SEND_MAIL, ems_send_mail);
-	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
-	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);
-	}
+#define E(v, ptr) do { if (strcmp(name, (v)) == 0) { (ptr) = reinterpret_cast<decltype(ptr)>(func); return; } } while (false)
+	E("ems_send_mail", ems_send_mail);
+	E("get_mime_pool", common_util_get_mime_pool);
+	E("get_handle", common_util_get_handle);
 #undef E
 }
 
