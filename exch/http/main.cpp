@@ -430,9 +430,9 @@ int main(int argc, const char **argv) try
 		if (g_usr_signalled.exchange(false)) {
 			extern void http_report();
 			http_report();
-			service_trigger_all(PLUGIN_USR1);
-			hpm_processor_trigger(PLUGIN_USR1);
-			pdu_processor_trigger(PLUGIN_USR1);
+			service_trigger_all(PLUGIN_REPORT);
+			hpm_processor_trigger(PLUGIN_REPORT);
+			pdu_processor_trigger(PLUGIN_REPORT);
 		}
 	}
 	return retcode;

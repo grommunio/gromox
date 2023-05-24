@@ -126,7 +126,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	case PLUGIN_RELOAD:
 		exch_emsmdb_reload(nullptr);
 		return TRUE;
-	case PLUGIN_USR1:
+	case PLUGIN_REPORT:
 		emsmdb_report();
 		return TRUE;
 	case PLUGIN_INIT: {
