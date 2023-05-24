@@ -1471,17 +1471,23 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = sa;
 		return TRUE;
 	}
-	case PR_EMS_AB_THUMBNAIL_PHOTO:
+	case PR_EMS_AB_THUMBNAIL_PHOTO: {
 		if (!ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, std::size(dn)))
 			return TRUE;
-		pvalue = cu_alloc<BINARY>();
+		auto pvalue = cu_alloc<BINARY>();
 		if (pvalue == nullptr)
 			return FALSE;
+		auto bv = cu_read_storenamedprop(dn, PSETID_GROMOX, "photo", PT_BINARY);
+		if (bv != nullptr) {
+			*ppvalue = bv;
+			return TRUE;
+		}
 		HX_strlcat(dn, "/config/portrait.jpg", std::size(dn));
-		if (!common_util_load_file(dn, static_cast<BINARY *>(pvalue)))
+		if (!common_util_load_file(dn, pvalue))
 			return TRUE;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	}
 	/* User-defined props */
 	if (node_type == abnode_type::user || node_type == abnode_type::mlist) {
