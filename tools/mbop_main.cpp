@@ -14,6 +14,7 @@
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
@@ -277,6 +278,10 @@ static errno_t delstoreprop(const GUID &guid, const char *name)
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
 		return EINVAL;
+	if (strcmp(name, "zcore_profsect") == 0)
+		unlink((g_storedir + "/config/zarafa.dat"s).c_str());
+	else if (strcmp(name, "photo") == 0)
+		unlink((g_storedir + "/config/portrait.jpg"s).c_str());
 	return 0;
 }
 

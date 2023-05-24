@@ -4,15 +4,17 @@
 .SH Name
 gromox\-mbop \(em Mailbox operations utility
 .SH Synopsis
-\fBgromox\-mbop\fP {\fB\-d\fP \fImbox\fP|\fB\-u\fP \fIu@d.de\fP} \fIcommand\fP
-[command-args...]
+\fBgromox\-mbop\fP {\fB\-d\fP \fImbox\fP|\fB\-u\fP [\fIuser\fP]\fB@d.de\fP}
+\fIcommand\fP [command-args...]
 .SH Global options
 .TP
 \fB\-d\fP \fI/var/lib/gromox/user/1/2\fP
 Lookup the mailbox parameters from the associated filesystem location.
 .TP
-\fB\-u\fP \fIu@d.de\fP
-Lookup the mailbox parameters from the associated username.
+\fB\-u\fP [\fIuser\fP]\fB@example.com\fP
+Lookup the mailbox parameters by the associated username. (To access a public
+store of a domain, leave out the local part, i.e. use
+\fB@\fP\fIexample.com\fP.)
 .SH Commands
 .IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
@@ -67,17 +69,13 @@ the mailbox via a notification channel.
 The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
 exchange.sqlite3, which rebuilds and compacts the database file.
 .SH clear-photo
-From Gromox 2.9.53 onwards, the user's profile picture is stored in the Gromox
-"exchange.sqlite3" database, and "portrait.jpg" in the filesystem has been
-obsoleted. The clear-photo command will delete the user picture from the SQLite
-db. Note that, when there is no mailbox-level profile picture set, Gromox
-server processes may serve an image from another source, e.g. LDAP.
+The clear-photo command will delete the user picture. Note that, when there is
+no mailbox-level profile picture set, Gromox server processes may serve an
+image from another source, e.g. LDAP.
 .SH clear-profile
 Similar to MSMAPI, PHP-MAPI keeps a MAPI profile which contains a store list
-and also the settings for grommunio-web. From Gromox 2.9.55, the MAPI profile
-is stored in the Gromox "exchange.sqlite3" database, and "zarafa.dat" in the
-filesystem has been obsoleted. The clear-profile command will delete the
-profile from the SQLite db.
+and also the settings for grommunio-web. The clear-profile command will delete
+this MAPI profile. Note that it gets regenerated when PHP-MAPI is exercised.
 .SH Folder specification
 \fIfolder_spec\fP can either be a numeric identifier, or a path-like
 specification into the folder hierarchy. If the name starts with the slash
