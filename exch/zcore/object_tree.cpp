@@ -56,14 +56,33 @@ root_object::~root_object()
 		tarray_set_free(pprof_set);
 }
 
+static errno_t object_tree_deserialize(root_object &root,
+    const void *buf, size_t size)
+{
+	EXT_PULL ep;
+	TPROPVAL_ARRAY propvals;
+
+	ep.init(buf, size, common_util_alloc, EXT_FLAG_WCOUNT);
+	if (ep.g_tpropval_a(&propvals) != pack_result::success)
+		return EINVAL;
+	root.pprivate_proplist = propvals.dup();
+	if (root.pprivate_proplist == nullptr)
+		return ENOMEM;
+
+	TARRAY_SET prof_set;
+	if (ep.g_tarray_set(&prof_set) != pack_result::success)
+		return EINVAL;
+	root.pprof_set = prof_set.dup();
+	if (root.pprof_set == nullptr)
+		return ENOMEM;
+	return 0;
+}
+
 static std::unique_ptr<root_object>
 object_tree_init_root(const char *maildir) try
 {
-	EXT_PULL ext_pull;
 	char tmp_path[256];
-	TARRAY_SET prof_set;
 	struct stat node_stat;
-	TPROPVAL_ARRAY propvals;
 	
 	auto prootobj = std::make_unique<root_object>();
 	prootobj->maildir = strdup(maildir);
@@ -86,17 +105,7 @@ object_tree_init_root(const char *maildir) try
 		return NULL;
 	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return NULL;
-	ext_pull.init(pbuff.get(), node_stat.st_size, common_util_alloc, EXT_FLAG_WCOUNT);
-	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
-		return NULL;
-	prootobj->pprivate_proplist = propvals.dup();
-	if (prootobj->pprivate_proplist == nullptr)
-		return NULL;
-	if (ext_pull.g_tarray_set(&prof_set) != EXT_ERR_SUCCESS)
-		return NULL;
-	pbuff.reset();
-	prootobj->pprof_set = prof_set.dup();
-	if (prootobj->pprof_set == nullptr)
+	if (object_tree_deserialize(*prootobj, pbuff.get(), node_stat.st_size) != 0)
 		return NULL;
 	return prootobj;
 } catch (const std::bad_alloc &) {
