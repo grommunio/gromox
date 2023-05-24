@@ -261,6 +261,25 @@ static int main(int argc, const char **argv)
 
 }
 
+static errno_t delstoreprop(const GUID &guid, const char *name)
+{
+	const PROPERTY_NAME xn = {MNID_STRING, guid, 0, deconst(name)};
+	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
+	PROPID_ARRAY name_rsp{};
+	if (!exmdb_client::get_named_propids(g_storedir, false, &name_req, &name_rsp))
+		return EINVAL;
+	if (name_rsp.count != name_req.count)
+		return EINVAL;
+	if (name_rsp.ppropid[0] == 0)
+		return 0;
+	uint32_t proptag = PROP_TAG(PT_BINARY, name_rsp.ppropid[0]);
+	/* In the future, some names may require us to use a different PT */
+	const PROPTAG_ARRAY tags = {1, &proptag};
+	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
+		return EINVAL;
+	return 0;
+}
+
 int main(int argc, const char **argv)
 {
 	using namespace global;
@@ -296,6 +315,10 @@ int main(int argc, const char **argv)
 		ret = delmsg::main(argc, argv);
 	} else if (strcmp(argv[0], "emptyfld") == 0) {
 		ret = emptyfld::main(argc, argv);
+	} else if (strcmp(argv[0], "clear-photo") == 0) {
+		ret = delstoreprop(PSETID_GROMOX, "photo");
+	} else if (strcmp(argv[0], "clear-profile") == 0) {
+		ret = delstoreprop(PSETID_GROMOX, "zcore_profsect");
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL) {
