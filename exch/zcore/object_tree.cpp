@@ -81,14 +81,19 @@ static errno_t object_tree_deserialize(root_object &root,
 static std::unique_ptr<root_object>
 object_tree_init_root(const char *maildir) try
 {
-	char tmp_path[256];
-	struct stat node_stat;
-	
 	auto prootobj = std::make_unique<root_object>();
 	prootobj->maildir = strdup(maildir);
 	if (prootobj->maildir == nullptr)
 		return NULL;
 	prootobj->b_touched = FALSE;
+	auto bv = cu_read_storenamedprop(maildir, PSETID_GROMOX,
+	          "zcore_profsect", PT_BINARY);
+	if (bv != nullptr && object_tree_deserialize(*prootobj, bv->pb, bv->cb) == 0)
+		return prootobj;
+
+	char tmp_path[256];
+	struct stat node_stat;
+
 	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat", maildir);
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
@@ -124,6 +129,8 @@ static void object_tree_write_root(root_object *prootobj)
 	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != EXT_ERR_SUCCESS ||
 	    ext_push.p_tarray_set(*prootobj->pprof_set) != EXT_ERR_SUCCESS)
 		return;
+	cu_write_storenamedprop(prootobj->maildir, PSETID_GROMOX,
+		"zcore_profsect", PT_BINARY, ext_push.m_udata, ext_push.m_offset);
 	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
 		prootobj->maildir);
 	std::lock_guard lk(prootobj->writeout_mtx);
