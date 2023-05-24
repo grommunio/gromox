@@ -1,9 +1,14 @@
-Development 2.9.13
+Development 2.9.58
 ==================
 
 Fixes:
 
 * imap: restore notifications during IDLE
+* midb: do not present softdeleted messages to IMAP
+* zcore: validate permissions when inbox rules or folder permissions are edited
+* lda_twostep_ruleproc: resolve array out-of-bounds access when
+  resolving named properties
+* snapshot: switch back to root user identity to be able to purge snapshots
 
 Enhancements:
 
@@ -12,6 +17,16 @@ Enhancements:
   and notify handles, and raise limit for ems_max_pending_sesnotif to 1K
 * emsmdb: new configuration directives ems_max_active_notifh,
   ems_max_active_sessions, ems_max_active_users, ems_max_pending_sesnotif
+* mbop: new subcommands `clear-photo` and `clear-profile`
+
+Changes:
+
+* The PHP-MAPI profile is now stored in the mail store as a property
+  rather than as a flat file. The upgrade is automatically performed
+  when the MAPI profile gets modified via PHP-MAPI.
+* The user profile picture is now stored in the mail store as a
+  property rather than as a flat file. The upgrade is automatically
+  performed when the photo is modified via PHP-MAPI.
 
 
 Gromox 2.9 (2023-05-10)
