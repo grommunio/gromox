@@ -284,6 +284,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	const char *username;
 	
 	*ppartial_completion = 1;
+	flags &= ~GX_DELMSG_NOTIFY_UNREAD;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
