@@ -528,6 +528,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	bool b_hard   = del_flags & DELETE_HARD_DELETE;
 	bool b_normal = del_flags & DEL_MESSAGES;
 	bool b_fai    = del_flags & DEL_ASSOCIATED;
+	auto s_normal = b_normal ? "0" : "NULL";
+	auto s_fai    = b_fai ? "0" : "NULL";
 	BOOL b_check = true;
 	uint32_t folder_type;
 	char sql_string[256];
@@ -618,11 +620,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 				return TRUE;
 			}
 		}
-	}
-	if (b_normal && b_fai) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-		         " message_size, is_associated, is_deleted FROM"
-		         " messages WHERE parent_fid=%llu", LLU{fid_val});
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
+		         " message_size, is_associated, is_deleted FROM messages "
+		         "WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
+		         LLU{fid_val}, s_normal, s_fai);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -658,72 +659,6 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 			if (b_check) {
 				if (b_hard)
 					snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages "
-					        "WHERE message_id=%llu", LLU{message_id});
-				else
-					snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
-						"is_deleted=1 WHERE message_id=%llu",
-						LLU{message_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-					return FALSE;
-			}
-			if (!b_hard && !b_private) {
-				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
-				        " WHERE message_id=%llu", LLU{message_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-					return FALSE;
-			}
-		}
-		pstmt.finalize();
-		if (!b_check) {
-			if (b_hard)
-				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages WHERE "
-				        "parent_fid=%llu", LLU{fid_val});
-			else
-				snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
-				        "is_deleted=1 WHERE parent_fid=%llu", LLU{fid_val});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-				return FALSE;
-		}
-	} else if (b_normal || b_fai) {
-		bool is_associated = !b_normal;
-		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
-		         " message_size, is_deleted FROM messages "
-		         "WHERE parent_fid=%llu AND is_associated=%d",
-		         LLU{fid_val}, is_associated);
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr)
-			return FALSE;
-		while (pstmt.step() == SQLITE_ROW) {
-			bool is_deleted = pstmt.col_int64(2);
-			if (!b_hard && is_deleted)
-				continue;
-			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
-			if (b_check) {
-				BOOL b_owner = false;
-				if (!common_util_check_message_owner(pdb->psqlite,
-				    message_id, username, &b_owner))
-					return FALSE;
-				if (!b_owner) {
-					*pb_partial = TRUE;
-					continue;
-				}
-			}
-			if (pmessage_count != nullptr)
-				(*pmessage_count) ++;
-			if (b_hard && is_associated && pfai_size != nullptr)
-				*pfai_size += sqlite3_column_int64(pstmt, 1);
-			else if (b_hard && !is_associated && pnormal_size != nullptr)
-				*pnormal_size += sqlite3_column_int64(pstmt, 1);
-			if (0 == is_deleted) {
-				db_engine_proc_dynamic_event(pdb, cpid,
-					dynamic_event::del_msg, fid_val,
-					message_id, 0);
-				db_engine_notify_message_deletion(
-					pdb, fid_val, message_id);
-			}
-			if (b_check) {
-				if (b_hard)
-					snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages "
 						"WHERE message_id=%llu", LLU{message_id});
 				else
 					snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
@@ -743,12 +678,12 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		if (!b_check) {
 			if (b_hard)
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages WHERE"
-						" parent_fid=%llu AND is_associated=%d",
-						LLU{fid_val}, is_associated);
+				         " parent_fid=%llu AND is_associated IN (%s,%s)",
+				         LLU{fid_val}, s_normal, s_fai);
 			else
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET is_deleted=1"
-						" WHERE parent_fid=%llu AND is_associated=%d",
-						LLU{fid_val}, is_associated);
+				         " WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
+				         LLU{fid_val}, s_normal, s_fai);
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
 		}
