@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <memory>
-#include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
@@ -40,7 +39,6 @@ struct root_object {
 	char *maildir = nullptr;
 	TPROPVAL_ARRAY *pprivate_proplist = nullptr;
 	TARRAY_SET *pprof_set = nullptr;
-	std::mutex writeout_mtx;
 };
 
 }
@@ -120,9 +118,7 @@ object_tree_init_root(const char *maildir) try
 
 static void object_tree_write_root(root_object *prootobj)
 {
-	int fd;
 	EXT_PUSH ext_push;
-	char tmp_path[256];
 	
 	if (!prootobj->b_touched ||
 	    !ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) ||
@@ -131,14 +127,6 @@ static void object_tree_write_root(root_object *prootobj)
 		return;
 	cu_write_storenamedprop(prootobj->maildir, PSETID_GROMOX,
 		"zcore_profsect", PT_BINARY, ext_push.m_udata, ext_push.m_offset);
-	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
-		prootobj->maildir);
-	std::lock_guard lk(prootobj->writeout_mtx);
-	fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
-	if (fd < 0)
-		return;
-	write(fd, ext_push.m_udata, ext_push.m_offset);
-	close(fd);
 }
 
 static void object_tree_free_root(root_object *prootobj)
