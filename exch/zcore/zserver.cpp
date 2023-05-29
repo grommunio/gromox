@@ -1701,7 +1701,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	bool notify_non_read = flags & ZC_DELMSG_NOTIFY_UNREAD;
+	bool notify_non_read = flags & GX_DELMSG_NOTIFY_UNREAD;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
