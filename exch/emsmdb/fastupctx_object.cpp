@@ -169,7 +169,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 }
 
 static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
-    uint64_t folder_id, BOOL b_normal, BOOL b_fai, BOOL b_sub)
+    uint64_t folder_id, unsigned int flags)
 {
 	BOOL b_partial;
 	const char *username;
@@ -183,8 +183,8 @@ static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::empty_folder(pctx->pstream->plogon->get_dir(),
-	    pinfo->cpid, username, folder_id, TRUE, b_normal, b_fai,
-	    b_sub, &b_partial))
+	    pinfo->cpid, username, folder_id, flags | DELETE_HARD_DELETE,
+	    &b_partial))
 		return FALSE;	
 	if (b_partial)
 		return FALSE;
@@ -687,7 +687,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
 			    static_cast<folder_object *>(pctx->pobject)->folder_id,
-			    TRUE, FALSE, FALSE))
+			    DEL_MESSAGES))
 				return FALSE;	
 		}
 		break;
@@ -699,7 +699,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 		if (0 == last_marker) {
 			if (fastupctx_object_empty_folder(pctx,
 			    static_cast<folder_object *>(pctx->pobject)->folder_id,
-			    FALSE, TRUE, FALSE))
+			    DEL_ASSOCIATED))
 				return FALSE;	
 		}
 		break;
@@ -711,7 +711,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
 			    static_cast<folder_object *>(pctx->pobject)->folder_id,
-			    FALSE, FALSE, TRUE))
+			    DEL_FOLDERS))
 				return FALSE;	
 		}
 		break;

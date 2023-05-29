@@ -521,11 +521,13 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 }
 
 static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
-	const char *username, uint64_t folder_id, BOOL b_hard,
-	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial,
-	uint64_t *pnormal_size, uint64_t *pfai_size,
+    const char *username, uint64_t folder_id, unsigned int del_flags,
+    BOOL *pb_partial, uint64_t *pnormal_size, uint64_t *pfai_size,
 	uint32_t *pmessage_count, uint32_t *pfolder_count)
 {
+	bool b_hard   = del_flags & DELETE_HARD_DELETE;
+	bool b_normal = del_flags & DEL_MESSAGES;
+	bool b_fai    = del_flags & DEL_ASSOCIATED;
 	BOOL b_check = true;
 	uint32_t folder_type;
 	char sql_string[256];
@@ -751,7 +753,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 				return FALSE;
 		}
 	}
-	if (!b_sub)
+	if (!(del_flags & DEL_FOLDERS))
 		return TRUE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
 	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{fid_val});
@@ -780,16 +782,18 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 			}
 		}
 		BOOL b_partial = false;
-		if (!folder_empty_folder(pdb, cpid, username, fid_val, b_hard,
-		    TRUE, TRUE, false, &b_partial, pnormal_size, pfai_size,
+		unsigned int new_flags = (del_flags & DELETE_HARD_DELETE) | DEL_MESSAGES | DEL_ASSOCIATED;
+		if (!folder_empty_folder(pdb, cpid, username, fid_val,
+		    new_flags, &b_partial, pnormal_size, pfai_size,
 		    nullptr, nullptr))
 			return FALSE;
 		if (b_partial) {
 			*pb_partial = TRUE;
 			continue;
 		}
-		if (!folder_empty_folder(pdb, cpid, username, fid_val, b_hard,
-		    false, false, TRUE, &b_partial, pnormal_size, pfai_size,
+		new_flags = (del_flags & DELETE_HARD_DELETE) | DEL_FOLDERS;
+		if (!folder_empty_folder(pdb, cpid, username, fid_val,
+		    new_flags, &b_partial, pnormal_size, pfai_size,
 		    nullptr, nullptr))
 			return FALSE;
 		if (b_partial) {
@@ -889,8 +893,9 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	} else if (b_hard) {
 		BOOL b_partial = false;
 		uint64_t normal_size = 0, fai_size = 0;
-		if (!folder_empty_folder(pdb, cpid, nullptr, fid_val, TRUE,
-		    TRUE, TRUE, TRUE, &b_partial, &normal_size, &fai_size,
+		if (!folder_empty_folder(pdb, cpid, nullptr, fid_val,
+		    DELETE_HARD_DELETE | DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS,
+		    &b_partial, &normal_size, &fai_size,
 		    nullptr, nullptr) || b_partial ||
 		    !cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE, normal_size, fai_size))
 			return FALSE;
@@ -936,8 +941,8 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 }
 
 BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
-	const char *username, uint64_t folder_id, BOOL b_hard,
-	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial)
+    const char *username, uint64_t folder_id, unsigned int flags,
+    BOOL *pb_partial)
 {
 	char sql_string[256];
 	
@@ -950,8 +955,8 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	if (!folder_empty_folder(pdb, cpid, username, fid_val, b_hard,
-	    b_normal, b_fai, b_sub, pb_partial, &normal_size, &fai_size,
+	if (!folder_empty_folder(pdb, cpid, username, fid_val, flags,
+	    pb_partial, &normal_size, &fai_size,
 	    &message_count, &folder_count))
 		return FALSE;
 	if (message_count > 0) {

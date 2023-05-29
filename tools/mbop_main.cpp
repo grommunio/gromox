@@ -193,8 +193,10 @@ static int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 		auto old_msgc = delcount(eid);
+		unsigned int flags = g_soft ? 0 : DELETE_HARD_DELETE;
+		flags |= g_recursive ? DEL_FOLDERS : 0;
 		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
-		          eid, !g_soft, true, false, g_recursive, &partial);
+		          eid, flags, &partial);
 		if (!ok) {
 			fprintf(stderr, "empty_folder %s failed\n", *argv);
 			return EXIT_FAILURE;

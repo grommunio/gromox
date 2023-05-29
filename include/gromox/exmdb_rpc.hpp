@@ -50,7 +50,7 @@ enum class exmdb_callid : uint8_t {
 	set_folder_properties = 0x18,
 	remove_folder_properties = 0x19,
 	delete_folder = 0x1a,
-	empty_folder = 0x1b,
+	// empty_folder_v1 = 0x1b,
 	check_folder_cycle = 0x1c,
 	copy_folder_internal = 0x1d,
 	get_search_criteria = 0x1e,
@@ -155,6 +155,7 @@ enum class exmdb_callid : uint8_t {
 	deliver_message = 0x81,
 	notify_new_mail = 0x82,
 	store_eid_to_user = 0x83,
+	empty_folder = 0x84,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -271,10 +272,7 @@ struct exreq_empty_folder : public exreq {
 	cpid_t cpid;
 	char *username;
 	uint64_t folder_id;
-	BOOL b_hard;
-	BOOL b_normal;
-	BOOL b_fai;
-	BOOL b_sub;
+	uint32_t flags;
 };
 
 struct exreq_check_folder_cycle : public exreq {

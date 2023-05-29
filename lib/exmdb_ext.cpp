@@ -321,10 +321,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_empty_folder &d)
 	else
 		TRY(x.g_str(&d.username));
 	TRY(x.g_uint64(&d.folder_id));
-	TRY(x.g_bool(&d.b_hard));
-	TRY(x.g_bool(&d.b_normal));
-	TRY(x.g_bool(&d.b_fai));
-	return x.g_bool(&d.b_sub);
+	return x.g_uint32(&d.flags);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_empty_folder &d)
@@ -337,10 +334,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_empty_folder &d)
 		TRY(x.p_str(d.username));
 	}
 	TRY(x.p_uint64(d.folder_id));
-	TRY(x.p_bool(d.b_hard));
-	TRY(x.p_bool(d.b_normal));
-	TRY(x.p_bool(d.b_fai));
-	return x.p_bool(d.b_sub);
+	return x.p_uint32(d.flags);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_folder_cycle &d)

@@ -1399,6 +1399,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		if (SYNC_TYPE_CONTENTS == sync_type) {
 			message_ids.pids[message_ids.count++] = eid;
 		} else {
+			unsigned int empty_flags = DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
+			empty_flags |= b_hard ? DELETE_HARD_DELETE : 0;
 			if (plogon->is_private()) {
 				if (!exmdb_client::get_folder_property(dir,
 				    CP_ACP, eid, PR_FOLDER_TYPE, &pvalue))
@@ -1409,8 +1411,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 					goto DELETE_FOLDER;
 			}
 			if (!exmdb_client::empty_folder(dir,
-			    pinfo->cpid, username, eid, b_hard, TRUE, TRUE,
-			    TRUE, &b_partial) || b_partial)
+			    pinfo->cpid, username, eid, empty_flags,
+			    &b_partial) || b_partial)
 				return ecError;
  DELETE_FOLDER:
 			if (!exmdb_client::delete_folder(dir,
