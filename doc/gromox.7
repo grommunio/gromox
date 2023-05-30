@@ -142,8 +142,6 @@ subsystems), as such, we have put them in this general category.
 .IP \(bu 4
 authmgr(4gx) \(em Demultiplexer for authentication requests
 .IP \(bu 4
-ip6_container(4gx) \(em trivial source connection counter
-.IP \(bu 4
 ldap_adaptor(4gx) \(em LDAP connector for authentication
 .IP \(bu 4
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
@@ -224,9 +222,6 @@ imap(8gx): /etc/gromox/authmgr.cfg, /etc/gromox/event_proxy.cfg,
 /etc/gromox/event_stub.cfg, /etc/gromox/imap.cfg, /etc/gromox/ldap_adaptor.cfg,
 /etc/gromox/mysql_adaptor.cfg
 .IP \(bu 4
-ip6_container(4gx) inside (no process by default):
-/etc/gromox/ip6_container.cfg
-.IP \(bu 4
 midb_agent(4gx) inside delivery-queue(8gx), imap(8gx), pop3(8gx):
 /etc/gromox/midb_agent.cfg
 .IP \(bu 4
@@ -300,8 +295,6 @@ manpage.
 mod_rewrite(4gx) plugins, and the http(8gx) process.
 .IP \(bu 4
 /etc/gromox/imap.cfg: used by the imap(8gx) process.
-.IP \(bu 4
-/etc/gromox/ip6_container.cfg: used by the ip6_container(4gx) plugin.
 .IP \(bu 4
 /etc/gromox/ldap_adaptor.cfg: used by the ldap_adaptor(4gx) plugin, accessed
 process-wise by delivery(8gx), delivery-queue(8gx), http(8gx), imap(8gx),

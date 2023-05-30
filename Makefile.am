@@ -49,7 +49,7 @@ exchange_plugins = \
 	libgxp_exchange_rfr.la \
 	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
 	libgxs_authmgr.la \
-	libgxs_ip6_container.la libgxs_ip6_filter.la \
+	libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
@@ -180,10 +180,6 @@ libgxs_authmgr_la_SOURCES = exch/authmgr.cpp exch/ldap_adaptor.hpp
 libgxs_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxs_authmgr_la_DEPENDENCIES = ${default_sym}
-libgxs_ip6_container_la_SOURCES = exch/ip6_container.cpp
-libgxs_ip6_container_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_ip6_container_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libgxs_ip6_container_la_DEPENDENCIES = ${default_sym}
 libgxs_ip6_filter_la_SOURCES = exch/ip6_filter.cpp
 libgxs_ip6_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_ip6_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -307,7 +303,7 @@ man_MANS = \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
 	doc/gromox-mt2exm.8 doc/gromox-snapshot.8 doc/http.8gx \
-	doc/imap.8gx doc/ip6_container.4gx \
+	doc/imap.8gx \
 	doc/kdb-uidextract.8 doc/kdb-uidextract-limited.8 \
 	doc/ldap_adaptor.4gx \
 	doc/mapi.4gx doc/mapi.7gx doc/midb.8gx doc/midb_agent.4gx \

@@ -469,8 +469,6 @@ static int http_end(HTTP_CONTEXT *ctx)
 	}
 
 	ctx->connection.reset();
-	if (system_services_container_remove_ip != nullptr)
-		system_services_container_remove_ip(ctx->connection.client_ip);
 	http_parser_context_clear(ctx);
 	return PROCESS_CLOSE;
 }

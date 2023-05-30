@@ -215,22 +215,6 @@ static void *imls_thrwork(void *arg)
 			contexts_pool_put_context(pcontext, CONTEXT_FREE);
 			continue;
 		}
-		/* pass the client ipaddr into the ipaddr container */
-		if (system_services_container_add_ip != nullptr &&
-		    !system_services_container_add_ip(client_hostip)) {
-			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
-			imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
-			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
-			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
-				  imap_reply_str2);
-			write(sockd2, buff, len);
-			mlog(LV_DEBUG, "Connection %s is denied by "
-				"ipaddr container", client_hostip);
-			close(sockd2);
-			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
-			continue;
-		}
 
 		if (!use_tls) {
 			char caps[128];

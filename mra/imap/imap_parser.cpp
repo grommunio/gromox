@@ -343,8 +343,6 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 			write(pcontext->connection.sockd, imap_reply_str, string_length);
 			imap_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-			if (system_services_container_remove_ip != nullptr)
-				system_services_container_remove_ip(pcontext->connection.client_ip);
 			imap_parser_context_clear(pcontext);
 			return PROCESS_CLOSE;
 		}
@@ -378,8 +376,6 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 	} else {
 		pcontext->connection.reset();
 	}
-	if (system_services_container_remove_ip != nullptr)
-		system_services_container_remove_ip(pcontext->connection.client_ip);
 	imap_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }
@@ -984,8 +980,6 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->file_path.clear();
 	}
-	if (system_services_container_remove_ip != nullptr)
-		system_services_container_remove_ip(pcontext->connection.client_ip);
 	imap_parser_context_clear(pcontext);
 	return PROCESS_CLOSE;
 }

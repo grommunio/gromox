@@ -216,8 +216,6 @@ extern void imrpc_build_env();
 extern void imrpc_free_env();
 
 extern BOOL (*system_services_judge_ip)(const char *);
-extern BOOL (*system_services_container_add_ip)(const char *);
-extern BOOL (*system_services_container_remove_ip)(const char *);
 extern BOOL (*system_services_judge_user)(const char *);
 extern BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 extern authmgr_login_t system_services_auth_login;
