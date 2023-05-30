@@ -1234,7 +1234,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	}
 
 	BOOL b_check = true, b_result, b_partial;
-	char sql_string[102];
+	char sql_string[132];
 	uint32_t message_size, permission = rightsNone;
 	
 	if (b_normal || b_fai) {
@@ -1253,17 +1253,20 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				goto COPY_SUBFOLDER;
 			}
 		}
-	}
-	if (b_normal && b_fai) {
+		auto s_normal = b_normal ? "0" : "NULL";
+		auto s_fai    = b_fai ? "1" : "NULL";
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
-		         " is_associated FROM messages WHERE "
-		         "parent_fid=%llu AND is_deleted=0", LLU{fid_val});
+		         " is_associated, is_deleted FROM messages WHERE "
+		         "parent_fid=%llu AND is_associated IN (%s,%s)",
+		         LLU{fid_val}, s_normal, s_fai);
+
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW) {
+			if (!b_private && pstmt.col_uint64(2) != 0)
+				continue;
 			auto message_id = pstmt.col_uint64(0);
-			bool is_associated = pstmt.col_uint64(1);
 			if (b_check) {
 				BOOL b_owner = false;
 				if (!common_util_check_message_owner(pdb->psqlite,
@@ -1282,52 +1285,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				*pb_partial = TRUE;
 				continue;
 			}
-			if (0 == is_associated) {
-				if (pnormal_size != nullptr)
-					*pnormal_size += message_size;
-			} else {
-				if (pfai_size != nullptr)
-					*pfai_size += message_size;
-			}
-			db_engine_proc_dynamic_event(pdb, cpid,
-				dynamic_event::new_msg, dst_fid,
-				message_id1, 0);
-		}
-		return TRUE;
-	}
-	if (b_normal || b_fai) {
-		bool is_associated = !b_normal;
-		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
-		         " is_deleted FROM messages WHERE "
-		         "parent_fid=%llu AND is_associated=%d",
-		         LLU{fid_val}, is_associated);
-
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr)
-			return FALSE;
-		while (pstmt.step() == SQLITE_ROW) {
-			if (!b_private && sqlite3_column_int64(pstmt, 1) != 0)
-				continue;
-			auto message_id = pstmt.col_uint64(0);
-			if (b_check) {
-				BOOL b_owner = false;
-				if (!common_util_check_message_owner(pdb->psqlite,
-				    message_id, username, &b_owner))
-					return FALSE;
-				if (!b_owner) {
-					*pb_partial = TRUE;
-					continue;
-				}
-			}
-			uint64_t message_id1 = 0;
-			if (!common_util_copy_message(pdb->psqlite,
-			    account_id, message_id, dst_fid, &message_id1,
-			    &b_result, &message_size))
-				return FALSE;
-			if (!b_result) {
-				*pb_partial = TRUE;
-				continue;
-			}
+			auto is_associated = pstmt.col_uint64(1) != 0;
 			if (0 == is_associated) {
 				if (pnormal_size != nullptr)
 					*pnormal_size += message_size;
