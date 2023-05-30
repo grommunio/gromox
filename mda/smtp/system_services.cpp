@@ -35,9 +35,7 @@ int system_services_run()
 
 void system_services_stop()
 {
-	service_release("ip_filter_judge", "system");
 	service_release("user_filter_judge", "system");
-	service_release("ip_filter_add", "system");
 	service_release("user_filter_add", "system");
 	if (NULL != system_services_check_user) {
 		service_release("check_user", "system");

@@ -49,7 +49,6 @@ exchange_plugins = \
 	libgxp_exchange_rfr.la \
 	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
 	libgxs_authmgr.la \
-	libgxs_ip6_filter.la \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
@@ -180,10 +179,6 @@ libgxs_authmgr_la_SOURCES = exch/authmgr.cpp exch/ldap_adaptor.hpp
 libgxs_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxs_authmgr_la_DEPENDENCIES = ${default_sym}
-libgxs_ip6_filter_la_SOURCES = exch/ip6_filter.cpp
-libgxs_ip6_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_ip6_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxs_ip6_filter_la_DEPENDENCIES = ${default_sym}
 libgxs_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp exch/ldap_adaptor.hpp
 libgxs_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_ldap_adaptor_la_LIBADD = libgromox_common.la libgromox_cplus.la ${libldap_LIBS}

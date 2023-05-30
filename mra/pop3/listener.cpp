@@ -185,22 +185,6 @@ static void *p3ls_thrwork(void *arg)
 			continue;        
 		}
 		pcontext->type = CONTEXT_CONSTRUCTING;
-		/* pass the client ipaddr into the ipaddr filter */
-		if (system_services_judge_ip != nullptr &&
-		    !system_services_judge_ip(client_hostip)) {
-			/* access denied */
-			pop3_reply_str = resource_get_pop3_code(1712, 1, &string_length);
-			pop3_reply_str2 = resource_get_pop3_code(1712, 2, &string_length);
-			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
-				  pop3_reply_str2);
-			write(sockd2, buff, len);
-			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
-				client_hostip);
-			close(sockd2);
-			/* release the context */
-			contexts_pool_put_context(pcontext, CONTEXT_FREE);
-			continue;
-		}
 
 		if (!use_tls) {
 			/* +OK <domain> Service ready */
