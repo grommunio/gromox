@@ -337,6 +337,32 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_empty_folder &d)
 	return x.p_uint32(d.flags);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_purge_softdelete &d)
+{
+	uint8_t b;
+	TRY(x.g_uint8(&b));
+	if (b == 0)
+		d.username = nullptr;
+	else
+		TRY(x.g_str(&d.username));
+	TRY(x.g_uint64(&d.folder_id));
+	TRY(x.g_uint32(&d.del_flags));
+	return x.g_uint64(&d.cutoff);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_purge_softdelete &d)
+{
+	if (d.username == nullptr) {
+		TRY(x.p_uint8(0));
+	} else {
+		TRY(x.p_uint8(1));
+		TRY(x.p_str(d.username));
+	}
+	TRY(x.p_uint64(d.folder_id));
+	TRY(x.p_uint32(d.del_flags));
+	return x.p_uint64(d.cutoff);
+}
+
 static pack_result exmdb_pull(EXT_PULL &x, exreq_check_folder_cycle &d)
 {
 	TRY(x.g_uint64(&d.src_fid));
@@ -2313,7 +2339,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_store_eid_to_user &d)
 	E(check_contact_address) \
 	E(get_public_folder_unread_count) \
 	E(notify_new_mail) \
-	E(store_eid_to_user)
+	E(store_eid_to_user) \
+	E(purge_softdelete)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3608,7 +3635,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
 	E(transport_new_mail) \
 	E(vacuum) \
 	E(unload_store) \
-	E(notify_new_mail)
+	E(notify_new_mail) \
+	E(purge_softdelete)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \

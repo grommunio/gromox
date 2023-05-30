@@ -74,6 +74,8 @@ enum {
 using proptype_t = decltype(PT_NULL);
 }
 
+using mapitime_t = uint64_t;
+
 #include "mapitags.hpp"
 
 enum {
