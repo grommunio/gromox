@@ -1,4 +1,4 @@
-Development 2.9.58
+Development 2.9.61
 ==================
 
 Fixes:
@@ -12,6 +12,7 @@ Fixes:
 
 Enhancements:
 
+* DNSBL filtering mechanism, cf. ``man dnsbl_filter``
 * pff2mt: speedup operation by 70%+
 * emsmdb: strike limits (raise to infinity) for session handles, user handles
   and notify handles, and raise limit for ems_max_pending_sesnotif to 1K

@@ -1,0 +1,23 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2023 grommunio GmbH
+.TH dnsbl_filter 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+dnsbl_filter \(em DNS Blacklist filtering
+.SH Description
+dnsbl_filter is a module which will query a Domain Name System Realtime
+Blackhole/Blacklist/Block List to deny access to IP addresses attempting to
+connect to Gromox services.
+.SH Configuration directives
+The config file location is /etc/gromox/master.cfg; service specific
+locations are /etc/gromox/http/master.cfg, /etc/gromox/imap/master.cfg and
+/etc/gromox/pop3/master.cfg.
+.TP
+\fBdnsbl_client\fP
+This sets the zone suffix to use for queries. If no zone is set, no
+DNSBL checking takes place.
+.br
+Example: \fIzen.spamhaus.org\fP
+.br
+Default: (unset)
+.SH See also
+\fBgromox\fP(7)

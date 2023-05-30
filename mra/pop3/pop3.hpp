@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 #include <openssl/ssl.h>
 #include <gromox/authmgr.hpp>
@@ -106,6 +107,7 @@ extern void system_services_stop();
 extern void xrpc_build_env();
 extern void xrpc_free_env();
 
+extern bool (*system_services_judge_ip)(const char *host, std::string &reason);
 extern BOOL (*system_services_judge_user)(const char *);
 extern BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 extern authmgr_login_t system_services_auth_login;

@@ -136,11 +136,12 @@ static void *imls_thrwork(void *arg)
 {
 	bool use_tls = reinterpret_cast<uintptr_t>(arg);
 	socklen_t addrlen;
-	int sockd2, client_port, flag;
+	int sockd2, client_port, len, flag;
 	size_t string_length = 0;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
-	const char *imap_reply_str;
+	const char *imap_reply_str, *imap_reply_str2;
+	char buff[1024];
 	
 	for (;;) {
 		addrlen = sizeof(client_peer);
@@ -198,6 +199,23 @@ static void *imls_thrwork(void *arg)
 			continue;        
 		}
 		pcontext->type = CONTEXT_CONSTRUCTING;
+		/* pass the client ipaddr into the ipaddr filter */
+		std::string reason;
+		if (system_services_judge_ip != nullptr &&
+		    !system_services_judge_ip(client_hostip, reason)) {
+			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
+			imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
+			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
+			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
+				  imap_reply_str2);
+			write(sockd2, buff, len);
+			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
+				client_hostip, reason.c_str());
+			close(sockd2);
+			/* release the context */
+			contexts_pool_put_context(pcontext, CONTEXT_FREE);
+			continue;
+		}
 
 		if (!use_tls) {
 			char caps[128];

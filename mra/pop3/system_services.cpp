@@ -5,6 +5,7 @@
 #include "pop3.hpp"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
+E(judge_ip)
 E(judge_user)
 E(add_user_into_temp_list)
 E(auth_login)
@@ -26,6 +27,7 @@ int system_services_run()
 #define E2(f, s) \
 	((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))))
 
+	E2(system_services_judge_ip, "ip_filter_judge");
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_auth_login, "auth_login_gen");
@@ -40,6 +42,7 @@ int system_services_run()
 
 void system_services_stop()
 {
+	service_release("ip_filter_judge", "system");
 	service_release("user_filter_judge", "system");
 	service_release("user_filter_add", "system");
 	service_release("mysql_auth_meta", "system");

@@ -197,6 +197,23 @@ static void *htls_thrwork(void *arg)
 			continue;
 		}
 		pcontext->type = CONTEXT_CONSTRUCTING;
+		/* pass the client ipaddr into the ipaddr filter */
+		std::string reason;
+		if (system_services_judge_ip != nullptr &&
+		    !system_services_judge_ip(client_hostip, reason)) {
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
+								"Content-Length: 0\r\n"
+								"Connection: close\r\n"
+								"\r\n");
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				mlog(LV_WARN, "W-1983: write: %s", strerror(errno));
+			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
+				client_hostip, reason.c_str());
+			close(sockd2);
+			/* release the context */
+			contexts_pool_put_context(pcontext, CONTEXT_FREE);
+			continue;
+		}
 
 		/* construct the context object */
 		pcontext->connection.last_timestamp = tp_now();

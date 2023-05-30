@@ -48,7 +48,7 @@ exchange_plugins = \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
 	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
-	libgxs_authmgr.la \
+	libgxs_authmgr.la libgxs_dnsbl_filter.la \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
@@ -179,6 +179,10 @@ libgxs_authmgr_la_SOURCES = exch/authmgr.cpp exch/ldap_adaptor.hpp
 libgxs_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxs_authmgr_la_DEPENDENCIES = ${default_sym}
+libgxs_dnsbl_filter_la_SOURCES = exch/dnsbl_filter.cpp
+libgxs_dnsbl_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxs_dnsbl_filter_la_LIBADD = libgromox_common.la
+EXTRA_libgxs_dnsbl_filter_la_DEPENDENCIES = ${default_sym}
 libgxs_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp exch/ldap_adaptor.hpp
 libgxs_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_ldap_adaptor_la_LIBADD = libgromox_common.la libgromox_cplus.la ${libldap_LIBS}
@@ -287,7 +291,7 @@ man_MANS = \
 	doc/alias_resolve.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/cleaner.8gx doc/gromox-compress.8 \
-	doc/delivery.8gx doc/delivery-queue.8gx \
+	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
