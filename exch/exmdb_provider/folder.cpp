@@ -535,7 +535,6 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	char sql_string[256];
 	
 	*pb_partial = FALSE;
-	uint64_t fid_val = folder_id;
 	auto b_private = exmdb_server::is_private();
 	if (!common_util_get_folder_type(pdb->psqlite, folder_id, &folder_type))
 		return FALSE;
@@ -548,7 +547,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		         "messages.is_associated FROM messages JOIN "
 		         "search_result ON messages.message_id="
 		         "search_result.message_id AND "
-		         "search_result.folder_id=%llu", LLU{fid_val});
+		         "search_result.folder_id=%llu", LLU{folder_id});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -588,12 +587,12 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 				*pnormal_size += sqlite3_column_int64(pstmt, 2);
 			db_engine_proc_dynamic_event(pdb, cpid,
 				dynamic_event::del_msg,
-				fid_val, message_id, 0);
+				folder_id, message_id, 0);
 			db_engine_proc_dynamic_event(pdb, cpid,
 				dynamic_event::del_msg,
 				parent_fid, message_id, 0);
 			db_engine_notify_link_deletion(
-				pdb, fid_val, message_id);
+				pdb, folder_id, message_id);
 			db_engine_notify_message_deletion(
 				pdb, parent_fid, message_id);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages "
@@ -609,7 +608,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		} else {
 			uint32_t permission = rightsNone;
 			if (!cu_get_folder_permission(pdb->psqlite,
-			    fid_val, username, &permission))
+			    folder_id, username, &permission))
 				return FALSE;
 			if (permission & (frightsOwner | frightsDeleteAny)) {
 				b_check	= FALSE;
@@ -623,7 +622,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 		         " message_size, is_associated, is_deleted FROM messages "
 		         "WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
-		         LLU{fid_val}, s_normal, s_fai);
+		         LLU{folder_id}, s_normal, s_fai);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -651,10 +650,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 				*pnormal_size += sqlite3_column_int64(pstmt, 1);
 			if (0 == is_deleted) {
 				db_engine_proc_dynamic_event(pdb, cpid,
-					dynamic_event::del_msg, fid_val,
+					dynamic_event::del_msg, folder_id,
 					message_id, 0);
 				db_engine_notify_message_deletion(
-					pdb, fid_val, message_id);
+					pdb, folder_id, message_id);
 			}
 			if (b_check) {
 				if (b_hard)
@@ -679,11 +678,11 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 			if (b_hard)
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages WHERE"
 				         " parent_fid=%llu AND is_associated IN (%s,%s)",
-				         LLU{fid_val}, s_normal, s_fai);
+				         LLU{folder_id}, s_normal, s_fai);
 			else
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET is_deleted=1"
 				         " WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
-				         LLU{fid_val}, s_normal, s_fai);
+				         LLU{folder_id}, s_normal, s_fai);
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
 		}
@@ -691,13 +690,13 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	if (!(del_flags & DEL_FOLDERS))
 		return TRUE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
-	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{fid_val});
+	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{folder_id});
 
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
-		fid_val = sqlite3_column_int64(pstmt, 0);
+		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
 		if ((b_private && fid_val < PRIVATE_FID_CUSTOM) ||
 		    (!b_private && fid_val < PUBLIC_FID_CUSTOM)) {
 			*pb_partial = TRUE;
