@@ -934,7 +934,6 @@ static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode,
 	case USER_BUSINESS_TEL: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 	case USER_NICK_NAME: tag = PR_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PR_HOME_ADDRESS_STREET; break;
-	case USER_CREATE_DAY: *value = '\0'; return true;
 	case USER_STORE_PATH: gx_strlcpy(value, u->maildir.c_str(), vsize); return true;
 	}
 	if (tag == 0)

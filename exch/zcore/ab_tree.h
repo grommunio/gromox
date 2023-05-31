@@ -23,7 +23,6 @@
 #define USER_BUSINESS_TEL					5
 #define USER_NICK_NAME						6
 #define USER_HOME_ADDRESS					7
-#define USER_CREATE_DAY						8
 #define USER_STORE_PATH						9
 
 struct domain_node {
