@@ -398,7 +398,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		else if (node_type == abnode_type::user)
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
+			gx_strlcpy(dn, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(dn));
 		else
 			return ecNotFound;
 		if (*dn == '\0')
@@ -418,7 +418,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		else if (node_type == abnode_type::user)
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
+			gx_strlcpy(dn, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(dn));
 		else
 			return ecNotFound;
 		if (*dn == '\0')
@@ -475,7 +475,8 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	}
 	case PR_EMS_AB_THUMBNAIL_PHOTO: {
-		if (!ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, std::size(dn)))
+		auto path = ab_tree_get_user_info(pnode, USER_STORE_PATH);
+		if (path == nullptr)
 			return ecNotFound;
 		auto bv = nsp_photo_rpc(dn);
 		if (bv != nullptr) {
@@ -483,6 +484,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecSuccess;
 		}
 		/* Old access for monohost installations */
+		gx_strlcpy(dn, path, sizeof(dn));
 		HX_strlcat(dn, "/config/portrait.jpg", arsizeof(dn));
 		if (!common_util_load_file(dn, &pprop->value.bin))
 			return ecNotFound;
@@ -1387,8 +1389,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
-		char mlistaddr[UADDR_SIZE]{};
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, mlistaddr, std::size(mlistaddr));
+		auto mlistaddr = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
+		if (mlistaddr == nullptr) {
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
+			return ecNotFound;
+		}
 		std::vector<std::string> member_list;
 		int ret = 0;
 		if (!get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list)) {
@@ -1425,9 +1431,10 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
-		char maildir[256], temp_buff[1024];
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff, GX_ARRAY_SIZE(temp_buff));
-		if (!get_maildir(temp_buff, maildir, arsizeof(maildir))) {
+		char maildir[256];
+		auto temp_buff = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
+		if (temp_buff == nullptr ||
+		    !get_maildir(temp_buff, maildir, arsizeof(maildir))) {
 			*ppoutmids = nullptr;
 			*pprows = nullptr;
 			return ecError;
@@ -2239,7 +2246,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	int base_id;
 	uint32_t tmp_mid;
 	char maildir[256];
-	char username[UADDR_SIZE];
 	
 	if (mid == 0)
 		return ecInvalidObject;
@@ -2257,8 +2263,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		return ecInvalidObject;
 	if (ab_tree_get_node_type(ptnode) != abnode_type::user)
 		return ecInvalidObject;
-	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
-	if (strcasecmp(username, rpc_info.username) != 0)
+	auto username = ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS);
+	if (username == nullptr || strcasecmp(username, rpc_info.username) != 0)
 		return ecAccessDenied;
 	if (!get_maildir(username, maildir, arsizeof(maildir)))
 		return ecError;
@@ -2285,11 +2291,13 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		if (ptnode == nullptr)
 			continue;
-		ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
-		if (flags & MOD_FLAG_DELETE)
-			tmp_list.erase(username);
-		else
-			tmp_list.emplace(username);
+		auto username = ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS);
+		if (username != nullptr) {
+			if (flags & MOD_FLAG_DELETE)
+				tmp_list.erase(username);
+			else
+				tmp_list.emplace(username);
+		}
 	}
 	if (tmp_list.size() == item_num)
 		return ecSuccess;
@@ -2396,29 +2404,30 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 	if (strcasestr(dn, pstr) != nullptr)
 		return TRUE;
 	switch(ab_tree_get_node_type(pnode)) {
-	case abnode_type::user:
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+	case abnode_type::user: {
+		auto s = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_NICK_NAME);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_JOB_TITLE);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_COMMENT);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_MOBILE_TEL);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_BUSINESS_TEL);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_HOME_ADDRESS);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
 		break;
+	}
 	case abnode_type::mlist:
 		ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		if (strcasestr(dn, pstr) != nullptr)

@@ -755,7 +755,7 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	switch (pabnode->node_type) {
 	case abnode_type::user:
 		id = pabnode->id;
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, cusername, arsizeof(cusername));
+		gx_strlcpy(cusername, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(cusername));
 		ptoken = strchr(cusername, '@');
 		if (NULL != ptoken) {
 			*ptoken = '\0';
@@ -993,15 +993,13 @@ ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *pnode)
 	return alist;
 }
 
-bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type,
-    char *value, size_t vsize)
+const char *ab_tree_get_user_info(const tree_node *pnode, unsigned int type)
 {
-	value[0] = '\0';
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	if (pabnode->node_type != abnode_type::user &&
 	    pabnode->node_type != abnode_type::remote &&
 	    pabnode->node_type != abnode_type::mlist)
-		return false;
+		return nullptr;
 	auto u = static_cast<const sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
@@ -1010,8 +1008,7 @@ bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type,
 			tag = PR_SMTP_ADDRESS;
 			break;
 		}
-		gx_strlcpy(value, u->username.c_str(), vsize);
-		return true;
+		return u->username.c_str();
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PR_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;
@@ -1019,14 +1016,12 @@ bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type,
 	case USER_BUSINESS_TEL: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 	case USER_NICK_NAME: tag = PR_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PR_HOME_ADDRESS_STREET; break;
-	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); return true;
+	case USER_STORE_PATH: return u->maildir.c_str();
 	}
 	if (tag == 0)
-		return false;
+		return nullptr;
 	auto it = u->propvals.find(tag);
-	if (it != u->propvals.cend())
-		gx_strlcpy(value, it->second.c_str(), vsize);
-	return true;
+	return it != u->propvals.cend() ? it->second.c_str() : "";
 }
 
 void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
@@ -1063,8 +1058,7 @@ void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode, char *dn, int length)
 	auto xab = containerof(pnode, AB_NODE, stree);
 	if (xab->node_type >= abnode_type::containers)
 		return;
-	memset(username, 0, sizeof(username));
-	ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
+	gx_strlcpy(username, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(username));
 	ptoken = strchr(username, '@');
 	HX_strlower(username);
 	if (NULL != ptoken) {
