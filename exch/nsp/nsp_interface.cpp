@@ -423,11 +423,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		if (*dn == '\0')
 			return ecNotFound;
-		std::vector<std::string> alias_list;
-		try {
-			alias_list = ab_tree_get_object_aliases(pnode);
-		} catch (...) {
-		}
+		auto alias_list = ab_tree_get_object_aliases(pnode);
 		pprop->value.string_array.count = 1 + alias_list.size();
 		pprop->value.string_array.ppstr = ndr_stack_anew<char *>(NDR_STACK_OUT, pprop->value.string_array.count);
 		if (pprop->value.string_array.ppstr == nullptr)

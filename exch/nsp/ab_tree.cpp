@@ -983,14 +983,11 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 	}
 }
 
-std::vector<std::string>
+const std::vector<std::string> &
 ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *pnode)
 {
-	std::vector<std::string> alist;
 	auto pabnode = containerof(pnode, AB_NODE, stree);
-	for (const auto &a : static_cast<sql_user *>(pabnode->d_info)->aliases)
-		alist.push_back(a);
-	return alist;
+	return static_cast<const sql_user *>(pabnode->d_info)->aliases;
 }
 
 const char *ab_tree_get_user_info(const tree_node *pnode, unsigned int type)

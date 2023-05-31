@@ -116,7 +116,7 @@ extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *, uint32_t minid);
 extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
 extern gromox::abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
 extern void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, cpid_t, char *str_dname, size_t dn_size);
-extern std::vector<std::string> ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *);
+extern const std::vector<std::string> &ab_tree_get_object_aliases(const tree_node *);
 extern const char *ab_tree_get_user_info(const tree_node *, unsigned int type);
 extern void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *, char *mail_address, char *create_day, int *list_priv);
 extern void ab_tree_get_mlist_title(cpid_t, char *title);
