@@ -1279,22 +1279,6 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
 			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
 				"photo", PT_BINARY, bv->pb, bv->cb);
-			std::string pic_path;
-			try {
-				pic_path = pstore->dir + "/config/portrait.jpg"s;
-			} catch (const std::bad_alloc &) {
-				mlog(LV_ERR, "E-1494: ENOMEM");
-			}
-			/* Write to temp file first */
-			wrapfd fd = open(pic_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
-			if (fd.get() < 0)
-				break;
-			auto rdret = HXio_fullwrite(fd.get(), bv->pb, bv->cb);
-			if (rdret < 0 || static_cast<size_t>(rdret) != bv->cb ||
-			    fd.close_wr() != 0) {
-				mlog(LV_ERR, "E-1236: write %s: %s", pic_path.c_str(), strerror(errno));
-				return false;
-			}
 			break;
 		}
 		default:
