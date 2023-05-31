@@ -104,7 +104,7 @@ static std::mutex g_base_lock;
 
 static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, cpid_t codepage, char *str_dname, size_t dn_size);
-static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, unsigned int type, char *value, size_t vsize);
+static const char *ab_tree_get_user_info(const tree_node *, unsigned int type);
 
 uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
 {
@@ -756,9 +756,10 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 			guid.node[2], guid.node[3],
 			guid.node[4], guid.node[5]);
 		break;
-	case abnode_type::user:
+	case abnode_type::user: {
 		id = pabnode->id;
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
+		auto u = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
+		gx_strlcpy(username, znul(u), sizeof(username));
 		ptoken = strchr(username, '@');
 		if (ptoken != nullptr)
 			*ptoken = '\0';
@@ -774,6 +775,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 			g_zcab_org_name, hex_string1, hex_string, username);
 		HX_strupper(pbuff);
 		break;
+	}
 	case abnode_type::mlist: try {
 		id = pabnode->id;
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
@@ -907,16 +909,14 @@ ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *pnode, abnode_type type)
 	return alist;
 }
 
-static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode,
-    unsigned int type, char *value, size_t vsize)
+static const char *ab_tree_get_user_info(const tree_node *pnode, unsigned int type)
 {
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	value[0] = '\0';
 	if (pabnode->node_type != abnode_type::user &&
 	    pabnode->node_type != abnode_type::remote &&
 	    pabnode->node_type != abnode_type::mlist)
-		return false;
+		return nullptr;
 	auto u = static_cast<const sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
@@ -925,8 +925,7 @@ static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode,
 			tag = PR_SMTP_ADDRESS;
 			break;
 		}
-		gx_strlcpy(value, u->username.c_str(), vsize);
-		return true;
+		return u->username.c_str();
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PR_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;
@@ -934,14 +933,12 @@ static bool ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode,
 	case USER_BUSINESS_TEL: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 	case USER_NICK_NAME: tag = PR_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PR_HOME_ADDRESS_STREET; break;
-	case USER_STORE_PATH: gx_strlcpy(value, u->maildir.c_str(), vsize); return true;
+	case USER_STORE_PATH: return u->maildir.c_str();
 	}
 	if (tag == 0)
-		return false;
+		return nullptr;
 	auto it = u->propvals.find(tag);
-	if (it != u->propvals.cend())
-		gx_strlcpy(value, it->second.c_str(), vsize);
-	return true;
+	return it != u->propvals.cend() ? it->second.c_str() : "";
 }
 
 static void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
@@ -973,8 +970,7 @@ static void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode,
 	
 	if (xab->node_type >= abnode_type::containers)
 		return;
-	memset(username, 0, sizeof(username));
-	ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
+	gx_strlcpy(username, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(username));
 	ptoken = strchr(username, '@');
 	HX_strlower(username);
 	if (ptoken != nullptr)
@@ -1424,7 +1420,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		else if (node_type == abnode_type::user)
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
+			gx_strlcpy(dn, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(dn));
 		else
 			return TRUE;
 		if (*dn == '\0')
@@ -1438,7 +1434,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		else if (node_type == abnode_type::user)
-			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
+			gx_strlcpy(dn, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(dn));
 		else
 			return TRUE;
 		if (*dn == '\0')
@@ -1471,7 +1467,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PR_EMS_AB_THUMBNAIL_PHOTO: {
-		if (!ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, std::size(dn)))
+		auto path = ab_tree_get_user_info(pnode, USER_STORE_PATH);
+		if (path == nullptr)
 			return TRUE;
 		auto pvalue = cu_alloc<BINARY>();
 		if (pvalue == nullptr)
@@ -1481,6 +1478,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			*ppvalue = bv;
 			return TRUE;
 		}
+		gx_strlcpy(dn, path, sizeof(dn));
 		HX_strlcat(dn, "/config/portrait.jpg", std::size(dn));
 		if (!common_util_load_file(dn, pvalue))
 			return TRUE;
@@ -1552,29 +1550,30 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	if (strcasestr(dn, pstr) != nullptr)
 		return TRUE;
 	switch(ab_tree_get_node_type(pnode)) {
-	case abnode_type::user:
-		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+	case abnode_type::user: {
+		auto s = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_NICK_NAME);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_JOB_TITLE);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_COMMENT, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_COMMENT);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_MOBILE_TEL);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_BUSINESS_TEL);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
-		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		if (strcasestr(dn, pstr) != nullptr)
+		s = ab_tree_get_user_info(pnode, USER_HOME_ADDRESS);
+		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
 		break;
+	}
 	case abnode_type::mlist:
 		ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		if (strcasestr(dn, pstr) != nullptr)
