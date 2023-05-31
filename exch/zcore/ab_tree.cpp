@@ -1547,6 +1547,9 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 		auto s = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
 		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;
+		for (const auto &a : ab_tree_get_object_aliases(pnode))
+			if (strcasestr(a.c_str(), pstr) != nullptr)
+				return TRUE;
 		s = ab_tree_get_user_info(pnode, USER_NICK_NAME);
 		if (s != nullptr && strcasestr(s, pstr) != nullptr)
 			return TRUE;

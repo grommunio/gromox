@@ -13,6 +13,7 @@ Fixes:
 Enhancements:
 
 * DNSBL filtering mechanism, cf. ``man dnsbl_filter``
+* Address book name resolution now evaluates alias addresses
 * pff2mt: speedup operation by 70%+
 * emsmdb: strike limits (raise to infinity) for session handles, user handles
   and notify handles, and raise limit for ems_max_pending_sesnotif to 1K
