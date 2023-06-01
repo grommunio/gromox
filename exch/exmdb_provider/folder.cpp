@@ -632,6 +632,13 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 				return TRUE;
 			}
 		}
+		/*
+		 * First need to count the sizes before doing a sweeping
+		 * removal. When a bulk delete is used (!b_check&&b_hard), we
+		 * could also use COUNT() and SUM() to fill in pmessage_count,
+		 * pmessage_size, pfai_size. But delete counters are currently
+		 * inconsistent (XXX: GXL-407).
+		 */
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 		         " message_size, is_associated, is_deleted FROM messages "
 		         "WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
@@ -689,6 +696,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		pstmt.finalize();
 		if (!b_check) {
 			if (b_hard)
+				/* Sweep removal */
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages WHERE"
 				         " parent_fid=%llu AND is_associated IN (%s,%s)",
 				         LLU{folder_id}, s_normal, s_fai);
