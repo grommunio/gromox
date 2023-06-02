@@ -520,6 +520,44 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	return TRUE;
 }
 
+static int need_msg_perm_check(sqlite3 *db, const char *user, uint64_t fid)
+{
+	if (user == nullptr)
+		return false;
+	uint32_t perms;
+	if (!cu_get_folder_permission(db, fid, user, &perms))
+		return -1;
+	if (perms & (frightsOwner | frightsDeleteAny))
+		return false;
+	if (perms & frightsDeleteOwned)
+		return true;
+	/* Not enouugh perms to act within this folder, so skip it */
+	return -1;
+}
+
+static int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid,
+    uint64_t mid = 0)
+{
+	if (user == nullptr)
+		return true;
+	uint32_t perms;
+	if (!cu_get_folder_permission(db, fid, user, &perms))
+		return -1;
+	if (mid == 0)
+		/* Whether the folder itself may be deleted */
+		return !!(perms & frightsOwner);
+
+	/* For messages inside. */
+	if (perms & (frightsOwner | frightsDeleteAny))
+		return true;
+	if (!(perms & frightsDeleteOwned))
+		return false;
+	BOOL owner = false;
+	if (!common_util_check_message_owner(db, mid, user, &owner))
+		return -1;
+	return !!owner;
+}
+
 static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
     uint64_t folder_id, unsigned int del_flags, BOOL *pb_partial,
     uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pmessage_count,
@@ -547,26 +585,12 @@ static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
 			continue;
 		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
-		if (NULL != username) {
-			uint32_t permission;
-			if (!cu_get_folder_permission(pdb->psqlite,
-			    parent_fid, username, &permission))
-				return FALSE;
-			if (permission & (frightsOwner | frightsDeleteAny)) {
-				/* do nothing */
-			} else if (permission & frightsDeleteOwned) {
-				BOOL b_owner = false;
-				if (!common_util_check_message_owner(pdb->psqlite,
-				    message_id, username, &b_owner))
-					return FALSE;
-				if (!b_owner) {
-					*pb_partial = TRUE;
-					continue;
-				}
-			} else {
-				*pb_partial = TRUE;
-				continue;
-			}
+		auto ret = have_delete_perm(pdb->psqlite, username, parent_fid, message_id);
+		if (ret < 0)
+			return false;
+		if (ret == 0) {
+			*pb_partial = TRUE;
+			continue;
 		}
 		if (pmessage_count != nullptr)
 			(*pmessage_count) ++;
@@ -616,22 +640,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		       pmessage_count, pfolder_count);
 
 	if (b_normal || b_fai) {
-		if (NULL == username) {
-			b_check = FALSE;
-		} else {
-			uint32_t permission = rightsNone;
-			if (!cu_get_folder_permission(pdb->psqlite,
-			    folder_id, username, &permission))
-				return FALSE;
-			if (permission & (frightsOwner | frightsDeleteAny)) {
-				b_check	= FALSE;
-			} else if (permission & frightsDeleteOwned) {
-				b_check = TRUE;
-			} else {
-				*pb_partial = TRUE;
-				return TRUE;
-			}
-		}
+		auto ret = need_msg_perm_check(pdb->psqlite, username, folder_id);
+		if (ret < 0)
+			return false;
+		b_check = ret > 0 ? TRUE : false;
 		/*
 		 * First need to count the sizes before doing a sweeping
 		 * removal. When a bulk delete is used (!b_check&&b_hard), we
@@ -726,15 +738,12 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		bool is_deleted = pstmt.col_int64(1);
 		if (!b_hard && is_deleted)
 			continue;
-		if (NULL != username) {
-			uint32_t permission = rightsNone;
-			if (!cu_get_folder_permission(pdb->psqlite,
-			    fid_val, username, &permission))
-				return FALSE;
-			if (!(permission & frightsOwner)) {
-				*pb_partial = TRUE;
-				continue;
-			}
+		auto ret = have_delete_perm(pdb->psqlite, username, fid_val);
+		if (ret < 0)
+			return false;
+		if (ret == 0) {
+			*pb_partial = TRUE;
+			continue;
 		}
 		BOOL b_partial = false;
 		unsigned int new_flags = (del_flags & DELETE_HARD_DELETE) | DEL_MESSAGES | DEL_ASSOCIATED;
