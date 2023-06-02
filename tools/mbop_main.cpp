@@ -226,11 +226,7 @@ static int help()
 	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
-	fprintf(stderr, "Command list:\n");
-	fprintf(stderr, "\tdelmsg    Issue \"delete_message\" RPCs\n");
-	fprintf(stderr, "\temptyfld  Issue \"empty_folder\" RPCs\n");
-	fprintf(stderr, "\tunload    Issue the \"unload\" RPC\n");
-	fprintf(stderr, "\tvacuum    Issue the \"vacuum\" RPC\n");
+	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld unload vacuum\n");
 	return EXIT_FAILURE;
 }
 
