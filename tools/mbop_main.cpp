@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/scope.hpp>
@@ -211,6 +212,42 @@ static int main(int argc, const char **argv)
 
 }
 
+namespace purgesoftdel {
+
+static unsigned int g_recursive;
+static const char *g_age_str;
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'r', HXTYPE_NONE, &g_recursive, nullptr, nullptr, 0, "Process folders recursively"},
+	{nullptr, 't', HXTYPE_STRING, &g_age_str, nullptr, nullptr, 0, "Messages need to be older than...", "TIMESPEC"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int main(int argc, const char **argv)
+{
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
+	while (*++argv != nullptr) {
+		uint64_t id = strtoull(*argv, nullptr, 0);
+		eid_t eid = id == 0 ? lookup_eid_by_name(g_storedir, *argv) : rop_util_make_eid_ex(1, id);
+		if (eid == 0) {
+			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			return EXIT_FAILURE;
+		}
+		unsigned int flags = g_recursive ? DEL_FOLDERS : 0;
+		auto ok = exmdb_client::purge_softdelete(g_storedir, nullptr,
+		          eid, flags, age);
+		if (!ok) {
+			fprintf(stderr, "purge_softdel %s failed\n", *argv);
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_SUCCESS;
+}
+
+}
+
 namespace global {
 
 static char *g_arg_username, *g_arg_userdir;
@@ -322,6 +359,8 @@ int main(int argc, const char **argv)
 		ret = delstoreprop(PSETID_GROMOX, "photo");
 	} else if (strcmp(argv[0], "clear-profile") == 0) {
 		ret = delstoreprop(PSETID_GROMOX, "zcore_profsect");
+	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
+		ret = purgesoftdel::main(argc, argv);
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL) {
