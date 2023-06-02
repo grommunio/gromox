@@ -31,6 +31,87 @@ namespace
 inline gromox::time_point nttime_to_time_point(uint64_t nttime)
 {return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
 
+/**
+ * @brief     Access contained value, create if empty
+ *
+ * @param     container   (Possibly empty) container
+ * @param     args        Arguments used for creation if container is empty
+ *
+ * @return    Reference to contained value
+ */
+template<typename T, typename... Args>
+T& defaulted(std::optional<T>& container, Args&&... args)
+{return container? *container : container.emplace(std::forward<Args...>(args)...);}
+
+/**
+ * @brief      Fill field from property
+ *
+ * Value version.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ *
+ * @tparam     T          Target type
+ * @tparam     PT         Property type
+ */
+template<typename T, typename PT=T, std::enable_if_t<!std::is_pointer_v<PT>, bool> = false>
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<T>& target)
+{
+	const TAGGED_PROPVAL* prop = props.find(tag);
+	if(prop)
+		target.emplace(*static_cast<const PT*>(prop->pvalue));
+}
+
+/**
+ * @brief      Fill field from property
+ *
+ * Pointer version.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ *
+ * @tparam     T          Target type
+ * @tparam     PT         Property type
+ */
+template<typename T, typename PT=T, std::enable_if_t<std::is_pointer_v<PT>, bool> = true>
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<T>& target)
+{
+	const TAGGED_PROPVAL* prop = props.find(tag);
+	if(prop)
+		target.emplace(static_cast<PT>(prop->pvalue));
+}
+
+/**
+ * @brief      Fill string from property
+ *
+ * Shortcut for fromProp<std::string, const char*>.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ */
+template<>
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<std::string>& target)
+{return fromProp<std::string, const char*>(props, tag, target);}
+
+/**
+ * @brief      Fill time field from property
+ *
+ * Automatically performs conversion from NT to UNIX timestamp.
+ *
+ * @param      props      Property list
+ * @param      tag        Tag to search for
+ * @param      target     Target field
+ */
+void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<sTimePoint>& target)
+{
+	const TAGGED_PROPVAL* prop = props.find(tag);
+	if(prop)
+		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +132,31 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TRY(expr) EWSContext::ext_error(expr)
+
+/**
+ * @brief      Create attachment ID from message entry ID and index
+ */
+sAttachmentId::sAttachmentId(const sMessageEntryId& meid, uint32_t num) : sMessageEntryId(meid), attachment_num(num)
+{}
+
+/**
+ * @brief      Create attachment ID from message entry ID property and index
+ */
+sAttachmentId::sAttachmentId(const TAGGED_PROPVAL& tp, uint32_t num) : sMessageEntryId(tp), attachment_num(num)
+{}
+
+/**
+ * @brief      Load attachment id from binary data
+ */
+sAttachmentId::sAttachmentId(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size > std::numeric_limits<uint32_t>::max())
+		throw DeserializationError(E3081);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_msg_eid(this));
+	TRY(ext_pull.g_uint32(&attachment_num));
+}
 
 /**
  * @brief     Parse entry ID from binary data
@@ -99,6 +205,73 @@ uint64_t sFolderEntryId::folderId() const
  */
 bool sFolderEntryId::isPrivate() const
 {return folder_type == EITLT_PRIVATE_FOLDER;}
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+sMessageEntryId::sMessageEntryId(const void* data, uint64_t size)
+{init(data, size);}
+
+/**
+ * @brief      Create message entry ID from property
+ */
+sMessageEntryId::sMessageEntryId(const TAGGED_PROPVAL& tp)
+{
+	if(PROP_TYPE(tp.proptag) != PT_BINARY)
+		throw DispatchError(E3082);
+	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
+	init(bin->pv, bin->cb);
+}
+
+/**
+ * @brief     Parse entry ID from binary data
+ *
+ * @param     data     Buffer containing the entry ID
+ * @param     size     Size of the buffer
+ */
+void sMessageEntryId::init(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size >	std::numeric_limits<uint32_t>::max())
+		throw DeserializationError(E3050);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_msg_eid(this));
+}
+
+/**
+ * @brief     Retrieve account ID from entry ID
+ *
+ * @return    User or domain ID (depending on isPrivate())
+ */
+uint32_t sMessageEntryId::accountId() const
+{return folder_database_guid.time_low;}
+
+/**
+ * @brief     Retrieve parent folder ID from entryID
+ *
+ * @return    folder ID
+ */
+uint64_t sMessageEntryId::folderId() const
+{return rop_util_gc_to_value(folder_global_counter);}
+
+/**
+ * @brief     Retrieve message ID from entryID
+ *
+ * @return    message ID
+ */
+eid_t sMessageEntryId::messageId() const
+{return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_global_counter));}
+
+/**
+ * @brief     Retrieve message type
+ *
+ * @return    true if message is private, false otherwise
+ */
+bool sMessageEntryId::isPrivate() const
+{return message_type == EITLT_PRIVATE_MESSAGE;}
 
 #undef TRY
 
@@ -212,29 +385,34 @@ void sSyncState::init(const std::string& data64)
 	{
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
-			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !given.convert())
+			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3053);
 			break;
 		case MetaTagCnsetSeen:
-			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !seen.convert())
+			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3054);
 			break;
 		case MetaTagCnsetRead:
-			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !read.convert())
+			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
-			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)) ||
-			    !seen_fai.convert())
+			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
 				throw InputError(E3056);
 			break;
 		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
 			readOffset = *static_cast<uint32_t*>(propval->pvalue);
 		}
 	}
+}
+
+/**
+ * @brief      Call convert on all idsets
+ */
+void sSyncState::convert()
+{
+	if(!given.convert() || !seen.convert() || !read.convert() || !seen_fai.convert())
+			throw DispatchError(E3064);
 }
 
 /**
@@ -245,16 +423,12 @@ void sSyncState::init(const std::string& data64)
  */
 void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
 {
-	seen.clear();
-	if(!given.convert())
-		throw DispatchError(E3062);
 	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
 		given.remove(*pid);
 	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
 		if(!given.append(*pid))
 			throw DispatchError(E3057);
-	if (!seen.convert())
-		throw DispatchError(E3062);
+	seen.clear();
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))
 		throw DispatchError(E3058);
 }
@@ -276,6 +450,30 @@ sTimePoint sTimePoint::fromNT(uint64_t timestamp)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Types implementation
+
+tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+{
+	AttachmentId.emplace(aid);
+	fromProp(props, PR_DISPLAY_NAME, Name);
+	fromProp(props, PR_ATTACH_MIME_TAG, ContentType);
+	fromProp(props, PR_ATTACH_SIZE, Size);
+	fromProp(props, PR_LAST_MODIFICATION_TIME, LastModifiedTime);
+}
+
+sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
+{
+	const TAGGED_PROPVAL* prop = props.find(PR_ATTACH_METHOD);
+	if(prop)
+		switch(*static_cast<const uint32_t*>(prop->pvalue)) {
+		case ATTACH_EMBEDDED_MSG:
+			return sAttachment(std::in_place_type_t<tItemAttachment>(), aid, props);
+		case ATTACH_BY_REFERENCE:
+			return sAttachment(std::in_place_type_t<tReferenceAttachment>(), aid, props);
+		}
+	return sAttachment(std::in_place_type_t<tFileAttachment>(), aid, props);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief     Convert propvals to structured folder information
@@ -358,6 +556,76 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tCalendarItem::tCalendarItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+#define pval(type) static_cast<const type*>(tp->pvalue)
+tContact::tContact(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+{
+	PhoneNumbers.emplace().reserve(9); // currently available phone properties
+	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
+	{
+		switch(tp->proptag)
+		{
+		// TODO FileAs
+		case PR_DISPLAY_NAME:
+			DisplayName = pval(char); break;
+		case PR_GIVEN_NAME:
+			GivenName = pval(char); break;
+		// TODO Initials
+		case PR_MIDDLE_NAME:
+			MiddleName = pval(char); break;
+		case PR_NICKNAME:
+			Nickname = pval(char); break;
+		case PR_COMPANY_NAME:
+			CompanyName = pval(char); break;
+		// TODO ContactSource
+		case PR_ASSISTANT:
+			AssistantName = pval(char); break;
+		case PR_DEPARTMENT_NAME:
+			Department = pval(char); break;
+		case PR_TITLE:
+			JobTitle = pval(char); break;
+		case PR_OFFICE_LOCATION:
+			OfficeLocation = pval(char); break;
+		case PR_SURNAME:
+			Surname = pval(char); break;
+		case PR_BUSINESS_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessPhone));
+			break;
+		case PR_HOME_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::HomePhone));
+			break;
+		case PR_PRIMARY_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::PrimaryPhone));
+			break;
+		case PR_BUSINESS2_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessPhone2));
+			break;
+		case PR_MOBILE_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::MobilePhone));
+			break;
+		case PR_PAGER_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::Pager));
+			break;
+		case PR_PRIMARY_FAX_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessFax));
+			break;
+		case PR_ASSISTANT_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::AssistantPhone));
+			break;
+		case PR_HOME2_TELEPHONE_NUMBER:
+			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::HomePhone2));
+			break;
+		default:
+			break;
+		}
+	}
+}
+#undef pval
+///////////////////////////////////////////////////////////////////////////////
+
 tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
     Id(name)
 {}
@@ -394,6 +662,19 @@ decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 	{"SystemTimeArray", PT_MV_SYSTIME},
 }};
 
+decltype(tExtendedFieldURI::propsetIds) tExtendedFieldURI::propsetIds = {
+	&PSETID_MEETING,
+	&PSETID_APPOINTMENT,
+	&PSETID_COMMON,
+	&PS_PUBLIC_STRINGS,
+	&PSETID_ADDRESS,
+	&PS_INTERNET_HEADERS,
+	&PSETID_CALENDARASSISTANT,
+	&PSETID_UNIFIEDMESSAGING,
+	&PSETID_TASK,
+	&PSETID_SHARING
+};
+
 /**
  * @brief     Generate URI from tag ID
  *
@@ -411,6 +692,41 @@ tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
 	proptag[3] = digits[(tag >> 24) & 0xF];
 	proptag[4] = digits[(tag >> 20) & 0xF];
 	proptag[5] = digits[(tag >> 16) & 0xF];
+}
+
+/**
+ * @brief     Initialize from properties
+ *
+ * Maps
+ * `PR_DISPLAY_NAME` -> Name
+ * `PR_EMAIL_ADDRESS` -> EmailAddress
+ * `PR_ADDRTYPE` ->RoutingType
+ *
+ * @param     tps     Properties to use
+ */
+tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
+{
+	const char* data;
+	if((data = tps.get<const char>(PR_DISPLAY_NAME)))
+		Name = data;
+	if((data = tps.get<const char>(PR_EMAIL_ADDRESS)))
+		EmailAddress = data;
+	if((data = tps.get<const char>(PR_ADDRTYPE)))
+		RoutingType = data;
+}
+
+tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& email,
+	const Enum::EmailAddressKeyType& eakt)
+{
+	Entry = email;
+	Key = eakt;
+}
+
+tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
+	Enum::PhoneNumberKeyType pnkt)
+{
+	Entry = phone;
+	Key = pnkt;
 }
 
 /**
@@ -437,7 +753,7 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
  * @param     types   Inserter to use for the type of each named property
  */
 void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PROPERTY_NAME>& names,
-                             vector_inserter<uint16_t>& types) const
+                             vector_inserter<uint16_t>& types, uint64_t&) const
 {
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
@@ -448,10 +764,10 @@ void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PR
 		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
 		tags = PROP_TAG(type->second, tagId);
 	}
-	else if(PropertySetId)
+	else if(PropertySetId || DistinguishedPropertySetId)
 	{
 		PROPERTY_NAME name{};
-		name.guid = *PropertySetId;
+		name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
 		if(PropertyName)
 		{
 			name.kind = MNID_STRING;
@@ -517,29 +833,74 @@ const char* tExtendedFieldURI::typeName(uint16_t type)
 tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) : propval(tp), propname(pn)
 {}
 
-void tExtendedProperty::serialize(const void* data, size_t idx, uint16_t type, XMLElement* xml) const
+/**
+ * @brief      Unpack multi-value property
+ *
+ * @param      data  Property data
+ * @param      type  Property type
+ * @param      xml   XML node to store values in
+ * @param      value Pointer to member containing values
+ *
+ * @tparam     C     Structure used to hold values
+ * @tparam     T     Type of the values to store
+ */
+template<typename C, typename T>
+inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLElement* xml, T* C::*value) const
+{
+	const C* content = static_cast<const C*>(data);
+	for(T* val = content->*value; val < content->*value+content->count; ++val)
+		if constexpr(std::is_same_v<T, char*>)
+			serialize(*val, type&~0x1000, xml->InsertNewChildElement("t:Value"));
+		else
+			serialize(val, type&~0x1000, xml->InsertNewChildElement("t:Value"));
+}
+
+/**
+ * @brief      Write property value to XML
+ *
+ * @param      data  Property data
+ * @param      type  Property type
+ * @param      xml   XML node to store value(s) in
+ */
+void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* xml) const
 {
 	switch(type)
 	{
 	case PT_BOOLEAN:
-		return xml->SetText(bool(*(reinterpret_cast<const char*>(data)+idx)));
+		return xml->SetText(bool(*(reinterpret_cast<const char*>(data))));
 	case PT_SHORT:
-		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)));
 	case PT_LONG:
 	case PT_ERROR:
-		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)));
 	case PT_I8:
 	case PT_CURRENCY:
 	case PT_SYSTIME:
-		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)));
 	case PT_FLOAT:
-		return xml->SetText(*(reinterpret_cast<const float*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const float*>(data)));
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		return xml->SetText(*(reinterpret_cast<const double*>(data)+idx));
+		return xml->SetText(*(reinterpret_cast<const double*>(data)));
 	case PT_STRING8:
 	case PT_UNICODE:
 		return xml->SetText((reinterpret_cast<const char*>(data)));
+	case PT_MV_SHORT:
+		return serializeMV(data, type, xml, &SHORT_ARRAY::ps);
+	case PT_MV_LONG:
+		return serializeMV(data, type, xml, &LONG_ARRAY::pl);
+	case PT_MV_I8:
+	case PT_MV_CURRENCY:
+	case PT_MV_SYSTIME:
+		return serializeMV(data, type, xml, &LONGLONG_ARRAY::pll);
+	case PT_MV_FLOAT:
+		return serializeMV(data, type, xml, &FLOAT_ARRAY::mval);
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		return serializeMV(data, type, xml, &DOUBLE_ARRAY::mval);
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+		return serializeMV(data, type, xml, &STRING_ARRAY::ppstr);
 	}
 }
 
@@ -555,14 +916,18 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
 	{"item:ConversationId", PR_CONVERSATION_ID},
 	{"item:DisplayTo", PR_DISPLAY_TO},
-    {"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
-    {"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
-    {"item:HasAttachments", PR_HASATTACH},
+	{"item:DateTimeCreated", PR_CREATION_TIME},
+	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
+	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
+	{"item:HasAttachments", PR_HASATTACH},
 	{"item:Importance", PR_IMPORTANCE},
-    {"item:InReplyTo", PR_IN_REPLY_TO_ID},
+	{"item:InReplyTo", PR_IN_REPLY_TO_ID},
 	{"item:IsAssociated", PR_ASSOCIATED},
 	{"item:ItemClass", PR_MESSAGE_CLASS},
-	{"item:Size", PR_MESSAGE_SIZE_EXTENDED},
+	{"item:LastModifiedName", PR_LAST_MODIFIER_NAME},
+	{"item:LastModifiedTime", PR_LAST_MODIFICATION_TIME},
+	{"item:Sensitivity", PR_SENSITIVITY},
+	{"item:Size", PR_MESSAGE_SIZE},
 	{"item:Subject", PR_SUBJECT},
 	{"message:ConversationIndex", PR_CONVERSATION_INDEX},
 	{"message:ConversationTopic", PR_CONVERSATION_TOPIC},
@@ -570,7 +935,15 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:From", PR_SENT_REPRESENTING_EMAIL_ADDRESS},
 	{"message:From", PR_SENT_REPRESENTING_NAME},
 	{"message:InternetMessageId", PR_INTERNET_MESSAGE_ID},
+	{"message:IsDeliveryReceiptRequested", PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED},
 	{"message:IsRead", PR_READ},
+	{"message:IsReadReceiptRequested", PR_READ_RECEIPT_REQUESTED},
+	{"message:ReceivedBy", PR_RECEIVED_BY_ADDRTYPE},
+	{"message:ReceivedBy", PR_RECEIVED_BY_EMAIL_ADDRESS},
+	{"message:ReceivedBy", PR_RECEIVED_BY_NAME},
+	{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_ADDRTYPE},
+	{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_EMAIL_ADDRESS},
+	{"message:ReceivedRepresenting", PR_RCVD_REPRESENTING_NAME},
 	{"message:References", PR_INTERNET_REFERENCES},
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
@@ -578,8 +951,21 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
-	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_STRING8}}
+	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_UNICODE}}
 };
+
+decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
+	{"item:Attachments", sShape::Attachments},
+	{"item:Body", sShape::Body},
+	{"item:IsDraft", sShape::MessageFlags},
+	{"item:IsFromMe", sShape::MessageFlags},
+	{"item:IsResend", sShape::MessageFlags},
+	{"item:IsSubmitted", sShape::MessageFlags},
+	{"item:IsUnmodified", sShape::MessageFlags},
+	{"message:BccRecipients", sShape::BccRecipients},
+	{"message:CcRecipients", sShape::CcRecipients},
+	{"message:ToRecipients", sShape::ToRecipients},
+}};
 
 /**
  * @brief     Collect property tags and names for field URI
@@ -587,9 +973,10 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY_NAME>& nameins,
-                     vector_inserter<uint16_t>& typeins) const
+                     vector_inserter<uint16_t>& typeins, uint64_t& special) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
 	for(auto it = tags.first; it != tags.second; ++it)
@@ -600,6 +987,20 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
 		nameins = it->second.first;
 		typeins = it->second.second;
 	}
+	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
+	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
+	if(specials != specialMap.end() && specials->first == FieldURI)
+		special |= specials->second;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
+{
+	TAGGED_PROPVAL* tp = props.find(PR_ATTACH_DATA_BIN);
+	if(tp)
+		Content.emplace(*tp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -610,9 +1011,10 @@ void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                                vector_inserter<uint16_t>& typeIns) const
+                                vector_inserter<uint16_t>& typeIns, uint64_t& special) const
 {
 	size_t baseShape = BaseShape.index();
 	for(uint32_t tag : tagsIdOnly)
@@ -622,7 +1024,7 @@ void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_insert
 			tagIns = tag;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			additional.tags(tagIns, nameIns, typeIns);
+			additional.tags(tagIns, nameIns, typeIns, special);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -648,6 +1050,14 @@ std::string tGuid::serialize() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * TODO: Implement tag mapping
+ */
+void tIndexedFieldURI::tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 #define pval(type) static_cast<const type*>(tp->pvalue)
 
 tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps)
@@ -658,27 +1068,62 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			continue;
 		switch(tp->proptag)
 		{
+		//tMessage
 		case PidTagChangeNumber:
 		case PR_CONVERSATION_INDEX:
 		case PR_CONVERSATION_TOPIC:
 		case PR_READ:
 		case PR_INTERNET_MESSAGE_ID:
 		case PR_INTERNET_REFERENCES:
+		case PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED:
+		case PR_READ_RECEIPT_REQUESTED:
+		case PR_RECEIVED_BY_ADDRTYPE:
+		case PR_RECEIVED_BY_EMAIL_ADDRESS:
+		case PR_RECEIVED_BY_NAME:
+		case PR_RCVD_REPRESENTING_ADDRTYPE:
+		case PR_RCVD_REPRESENTING_EMAIL_ADDRESS:
+		case PR_RCVD_REPRESENTING_NAME:
 		case PR_SENDER_ADDRTYPE:
 		case PR_SENDER_EMAIL_ADDRESS:
 		case PR_SENDER_NAME:
 		case PR_SENT_REPRESENTING_ADDRTYPE:
 		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
 		case PR_SENT_REPRESENTING_NAME:
+		//tContact
+		case PR_DISPLAY_NAME:
+		case PR_GIVEN_NAME:
+		case PR_MIDDLE_NAME:
+		case PR_NICKNAME:
+		case PR_COMPANY_NAME:
+		case PR_ASSISTANT:
+		case PR_DEPARTMENT_NAME:
+		case PR_TITLE:
+		case PR_OFFICE_LOCATION:
+		case PR_SURNAME:
+		case PR_BUSINESS_TELEPHONE_NUMBER:
+		case PR_HOME_TELEPHONE_NUMBER:
+		case PR_PRIMARY_TELEPHONE_NUMBER:
+		case PR_BUSINESS2_TELEPHONE_NUMBER:
+		case PR_MOBILE_TELEPHONE_NUMBER:
+		case PR_PAGER_TELEPHONE_NUMBER:
+		case PR_PRIMARY_FAX_NUMBER:
+		case PR_ASSISTANT_TELEPHONE_NUMBER:
+		case PR_HOME2_TELEPHONE_NUMBER:
 			continue;
 		case PR_ASSOCIATED:
 			IsAssociated.emplace(*pval(uint8_t)); break;
+		case PR_BODY:
+			if(!Body)
+				Body.emplace(pval(char), Enum::Text); //Do not overwrite (Best -> HTML takes precedence)
+			break;
 		case PR_CHANGE_KEY:
 			ItemId? ItemId->ChangeKey = *tp : ItemId.emplace().ChangeKey.emplace(*tp); break;
 		case PR_CLIENT_SUBMIT_TIME:
 			DateTimeSent = sTimePoint::fromNT(*pval(uint64_t)); break;
 		case PR_CONVERSATION_ID:
 			ConversationId.emplace(*tp); break;
+		case PR_CREATION_TIME:
+			DateTimeCreated.emplace(nttime_to_time_point(*pval(uint64_t))); break;
 		case PR_DISPLAY_CC:
 			DisplayCc.emplace(pval(char)); break;
 		case PR_DISPLAY_BCC:
@@ -693,9 +1138,13 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			Flag.emplace().FlagStatus = *pval(uint32_t) == followupFlagged? Enum::Flagged :
 			                            *pval(uint32_t) == followupComplete? Enum::Complete : Enum::NotFlagged;
 			break;
+		case PR_HTML: {
+			const BINARY* content = pval(BINARY);
+			Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML); break;
+			}
 		case PR_IMPORTANCE:
 			Importance = *pval(uint32_t) == IMPORTANCE_LOW? Enum::Low :
-							 *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
+			             *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
 			break;
 		case PR_IN_REPLY_TO_ID:
 			InReplyTo.emplace(pval(char)); break;
@@ -707,10 +1156,24 @@ tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps
 			ItemClass.emplace(pval(char)); break;
 		case PR_MESSAGE_DELIVERY_TIME:
 			DateTimeReceived = sTimePoint::fromNT(*pval(uint64_t)); break;
-		case PR_MESSAGE_SIZE_EXTENDED:
-			Size.emplace(*pval(uint64_t)); break;
+		case PR_MESSAGE_FLAGS:
+			IsSubmitted = *pval(uint32_t) & MSGFLAG_SUBMITTED;
+			IsDraft = *pval(uint32_t) & MSGFLAG_UNSENT;
+			IsFromMe = *pval(uint32_t) & MSGFLAG_FROMME;
+			IsResend = *pval(uint32_t) & MSGFLAG_RESEND;
+			IsUnmodified = *pval(uint32_t) & MSGFLAG_UNMODIFIED;
+			break;
+		case PR_MESSAGE_SIZE:
+			Size.emplace(*pval(uint32_t)); break;
 		case PR_PARENT_ENTRYID:
 			ParentFolderId.emplace(*tp); break;
+		case PR_SENSITIVITY:
+			try {
+				Sensitivity.emplace(size_t(*pval(uint32_t)));
+			} catch (EnumError& e) {
+				mlog(LV_WARN, "[ews] could not set sensitivity: %s", e.what());
+			}
+			break;
 		case PR_SUBJECT:
 			Subject.emplace(pval(char)); break;
 		default:
@@ -728,16 +1191,45 @@ sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& na
 		return tItem(itemProps, namedProps);
 	if(!strcasecmp(itemClass, "IPM.Note"))
 		return tMessage(itemProps, namedProps);
+	else if(!strcasecmp(itemClass, "IPM.Appointment"))
+		return tCalendarItem(itemProps, namedProps);
+	else if(!strcasecmp(itemClass, "IPM.Contact"))
+		return tContact(itemProps, namedProps);
 	return tItem(itemProps, namedProps);
 }
 
+/**
+ * @brief     Try to map named property
+ *
+ * Tries to find the corresponding named property in the map and stores it in
+ * the proper field or an extended property.
+ * Returns immediately if the given property tag is not in the named property
+ * range.
+ *
+ * @param     tp          Property to map
+ * @param     namedProps  Map of requested named properties
+ *
+ * @return    true if property was mapped, false otherwise
+ */
 bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& namedProps)
 {
 	sNamedPropertyMap::const_iterator entry;
 	if(PROP_ID(tp.proptag) < 0x8000 || (entry = namedProps.find(tp.proptag)) == namedProps.end())
 		return false;
 	const PROPERTY_NAME& pn = entry->second;
-	//Here we can catch known property names and map them to the appropriate attributes
+	if(pn.kind == MNID_STRING)
+	{
+		if(pn.guid == PS_PUBLIC_STRINGS)
+		{
+			if(!strcmp(pn.pname, "Keywords"))
+			{
+				const STRING_ARRAY* content = static_cast<const STRING_ARRAY*>(tp.pvalue);
+				if(content->count)
+					Categories.emplace(content->ppstr, content->ppstr+content->count);
+				return true;
+			}
+		}
+	}
 	//Otherwise just put it into an extended attribute
 	ExtendedProperty.emplace_back(tp, pn);
 	return true;
@@ -751,15 +1243,32 @@ bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& 
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                              vector_inserter<uint16_t>& typeIns) const
+                              vector_inserter<uint16_t>& typeIns, uint64_t& special) const
 {
 	for(uint32_t tag : tagsIdOnly)
 		tagIns = tag;
+	if(IncludeMimeContent && *IncludeMimeContent)
+		special |= sShape::MimeContent;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			additional.tags(tagIns, nameIns, typeIns);
+			additional.tags(tagIns, nameIns, typeIns, special);
+	if(special & sShape::Body)
+	{
+		std::string_view type = BodyType? *BodyType : Enum::Best;
+		if(type == Enum::Best || type == Enum::Text)
+			tagIns = PR_BODY;
+		if(type == Enum::Best || type == Enum::HTML)
+			tagIns = PR_HTML;
+		special &= ~sShape::Body;
+	}
+	if(special & sShape::MessageFlags)
+	{
+		tagIns = PR_MESSAGE_FLAGS;
+		special &= ~sShape::MessageFlags;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -781,18 +1290,34 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
 			InternetMessageId = pval(char); break;
 		case PR_INTERNET_REFERENCES:
 			References = pval(char); break;
+		case PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED:
+			IsDeliveryReceiptRequested = *pval(bool); break;
+		case PR_READ_RECEIPT_REQUESTED:
+			IsReadReceiptRequested = *pval(bool); break;
+		case PR_RECEIVED_BY_ADDRTYPE:
+			defaulted(ReceivedBy).Mailbox.RoutingType = pval(char); break;
+		case PR_RECEIVED_BY_EMAIL_ADDRESS:
+			defaulted(ReceivedBy).Mailbox.EmailAddress = pval(char); break;
+		case PR_RECEIVED_BY_NAME:
+			defaulted(ReceivedBy).Mailbox.Name = pval(char); break;
+		case PR_RCVD_REPRESENTING_ADDRTYPE:
+			defaulted(ReceivedRepresenting).Mailbox.RoutingType = pval(char); break;
+		case PR_RCVD_REPRESENTING_EMAIL_ADDRESS:
+			defaulted(ReceivedRepresenting).Mailbox.EmailAddress = pval(char); break;
+		case PR_RCVD_REPRESENTING_NAME:
+			defaulted(ReceivedRepresenting).Mailbox.Name = pval(char); break;
 		case PR_SENDER_ADDRTYPE:
-			Sender? Sender->Mailbox.RoutingType = pval(char) : Sender.emplace().Mailbox.RoutingType = pval(char); break;
+			defaulted(Sender).Mailbox.RoutingType = pval(char); break;
 		case PR_SENDER_EMAIL_ADDRESS:
-			Sender? Sender->Mailbox.EmailAddress = pval(char) : Sender.emplace().Mailbox.EmailAddress = pval(char); break;
+			defaulted(Sender).Mailbox.EmailAddress = pval(char); break;
 		case PR_SENDER_NAME:
-			Sender? Sender->Mailbox.Name = pval(char) : Sender.emplace().Mailbox.Name = pval(char); break;
+			defaulted(Sender).Mailbox.Name = pval(char); break;
 		case PR_SENT_REPRESENTING_ADDRTYPE:
-			From? From->Mailbox.RoutingType = pval(char) : From.emplace().Mailbox.RoutingType = pval(char); break;
+			defaulted(From).Mailbox.RoutingType = pval(char); break;
 		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
-			From? From->Mailbox.EmailAddress = pval(char) : From.emplace().Mailbox.EmailAddress = pval(char); break;
+			defaulted(From).Mailbox.EmailAddress = pval(char); break;
 		case PR_SENT_REPRESENTING_NAME:
-			From? From->Mailbox.Name = pval(char) : From.emplace().Mailbox.Name = pval(char); break;
+			defaulted(From).Mailbox.Name = pval(char); break;
 		default:
 			break;
 		}
@@ -808,10 +1333,11 @@ tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& name
  * @param     tags    Inserter to use for property tags
  * @param     names   Inserter to use for property names
  * @param     types   Inserter to use for the type of each named property
+ * @param     special Bit map to store special property flags in
  */
 void tPath::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                     vector_inserter<uint16_t>& typeIns) const
-{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns);}, *static_cast<const Base*>(this));};
+                     vector_inserter<uint16_t>& typeIns, uint64_t& special) const
+{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns, special);}, *static_cast<const Base*>(this));};
 
 ///////////////////////////////////////////////////////////////////////////////
 

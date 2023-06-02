@@ -5,6 +5,7 @@
 #pragma once
 #include <optional>
 #include <unordered_map>
+#include <variant>
 
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -12,21 +13,36 @@
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/mapi_types.hpp>
 
+#include "ObjectCache.hpp"
 #include "soaputil.hpp"
+
+struct MIME_POOL;
 
 namespace gromox::EWS {
 
 namespace Structures
 {
-struct sProptags;
+struct sAttachmentId;
+struct sMessageEntryId;
+struct sShape;
 struct sFolderSpec;
+struct tCalendarItem;
+struct tContact;
 struct tDistinguishedFolderId;
+struct tFileAttachment;
 struct tFolderId;
 struct tFolderResponseShape;
+struct tItem;
+struct tItemAttachment;
 struct tItemResponseShape;
 struct tMailbox;
+struct tMessage;
 struct tPath;
+struct tReferenceAttachment;
 struct tSerializableTimeZone;
+
+using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
+using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 }
 
 
@@ -54,6 +70,8 @@ public:
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
 		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
+		decltype(mysql_adaptor_get_user_aliases) *get_user_aliases;
+		decltype(mysql_adaptor_get_user_properties) *get_user_properties;
 	} mysql; ///< mysql adaptor function pointers
 
 	struct _exmdb {
@@ -67,17 +85,44 @@ public:
 		bool get_message_property(const char*, const char*, cpid_t, uint64_t, uint32_t, void **ppval) const;
 	} exmdb;
 
+	struct ExmdbInstance {
+		const EWSPlugin& plugin; ///< Plugin used to release the instance
+		std::string dir; ///< Home directory of domain or user
+		uint32_t instanceId; ///< Instance ID
+
+		ExmdbInstance(const EWSPlugin&, const std::string&, uint32_t);
+		ExmdbInstance(const ExmdbInstance&) = delete;
+		ExmdbInstance& operator=(const ExmdbInstance&) = delete;
+		~ExmdbInstance();
+	};
+
+	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
+	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
+
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
 	int experimental = 0; ///< Enable experimental requests, 0 = disabled
+	std::chrono::milliseconds cache_interval{10'000}; ///< Interval for cache cleanup
+	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; /// Lifetime of attachment instances
+	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; /// Lifetime of message instances
 
+	std::shared_ptr<MIME_POOL> mimePool;
 private:
+	struct AttachmentInstanceKey;
+	struct MessageInstanceKey;
+
+	using CacheKey = std::variant<AttachmentInstanceKey, MessageInstanceKey>;
+	using CacheObj = std::variant<std::shared_ptr<ExmdbInstance>>;
+	struct DebugCtx;
 	static const std::unordered_map<std::string, Handler> requestMap;
 
 	static void writeheader(int, int, size_t);
 
+	mutable ObjectCache<CacheKey, CacheObj> cache;
+
+	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
 	bool invertFilter = true;
 
@@ -96,8 +141,8 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
-	Structures::sProptags collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;
-	Structures::sProptags collectTags(const Structures::tFolderResponseShape&, const std::optional<std::string>& = std::nullopt) const;
+	Structures::sShape collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;
+	Structures::sShape collectTags(const Structures::tFolderResponseShape&, const std::optional<std::string>& = std::nullopt) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
@@ -106,10 +151,14 @@ public:
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&) const;
+	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
+	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, const Structures::sShape&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
+	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 
 	void experimental() const;
 
@@ -125,7 +174,12 @@ public:
 
 private:
 	void getNamedTags(const std::string&, const std::vector<PROPERTY_NAME>&, const
-	                  std::vector<uint16_t>&, Structures::sProptags&) const;
+	                  std::vector<uint16_t>&, Structures::sShape&) const;
+
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
+
+	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };
 
 }

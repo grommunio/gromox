@@ -7,6 +7,8 @@
 
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mail.hpp>
+#include <gromox/oxcmail.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -33,7 +35,35 @@ inline std::string &tolower(std::string &str)
 	return str;
 }
 
+/**
+ * @brief     Access contained value, create if empty
+ *
+ * @param     container   (Possibly empty) container
+ * @param     args        Arguments used for creation if container is empty
+ *
+ * @return    Reference to contained value
+ */
+template<typename T, typename... Args>
+T& defaulted(std::optional<T>& container, Args&&... args)
+{return container? *container : container.emplace(std::forward<Args...>(args)...);}
+
 } // Anonymous namespace
+
+/**
+ * @brief      Get named property IDs
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      propNames List of property names to retrieve
+ *
+ * @return     Array of property IDs
+ */
+PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames) const
+{
+	PROPID_ARRAY namedIds{};
+	if(!plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds))
+		throw DispatchError(E3069);
+	return namedIds;
+}
 
 /**
  * @brief      Resolve named tags
@@ -51,12 +81,11 @@ inline std::string &tolower(std::string &str)
  * @param      Result to store resolved tags in
  */
 void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY_NAME>& names,
-                              const std::vector<uint16_t>& types, sProptags& result) const
+                              const std::vector<uint16_t>& types, sShape& result) const
 {
-	PROPID_ARRAY namedIds;
 	PROPNAME_ARRAY propNames{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};
-	plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds);
-	if(namedIds.count == types.size())
+	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames);
+	if(namedIds.count != types.size())
 		return;
 	result.namedTags.reserve(namedIds.count);
 	for(size_t i = 0; i < namedIds.count; ++i)
@@ -64,8 +93,25 @@ void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY
 		if(namedIds.ppropid[i] == 0) // Failed to retrieve named property
 			continue;
 		if(result.namedTags.try_emplace(PROP_TAG(types[i], namedIds.ppropid[i]), names[i]).second)
-			result.tags.emplace_back(namedIds.ppropid[i]);
+			result.tags.emplace_back(PROP_TAG(types[i], namedIds.ppropid[i]));
 	}
+}
+
+/**
+ * @brief      Get property name from ID
+ *
+ * @param      dir     Home directory of user or domain
+ * @param      id      Id of the property
+ *
+ * @return     Property name
+ */
+PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) const
+{
+	PROPID_ARRAY propids{1, &id};
+	PROPNAME_ARRAY propnames{};
+	if(!plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
+		throw DispatchError(E3070);
+	return propnames.ppropname;
 }
 
 /**
@@ -76,15 +122,15 @@ void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY
  *
  * @return     Tag list and named property map
  */
-sProptags EWSContext::collectTags(const tItemResponseShape& shape, const std::optional<std::string>& dir) const
+sShape EWSContext::collectTags(const tItemResponseShape& shape, const std::optional<std::string>& dir) const
 {
-	sProptags result;
+	sShape result;
 	std::vector<PROPERTY_NAME> names;
 	std::vector<uint16_t> types;
 	auto tagIns = std::back_inserter(result.tags);
 	auto nameIns = std::back_inserter(names);
 	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns);
+	shape.tags(tagIns, nameIns, typeIns, result.special);
 	if(dir && !dir->empty() && !names.empty())
 		getNamedTags(*dir, names, types, result);
 	return result;
@@ -98,15 +144,15 @@ sProptags EWSContext::collectTags(const tItemResponseShape& shape, const std::op
  *
  * @return     Tag list and named property map
  */
-sProptags EWSContext::collectTags(const tFolderResponseShape& shape, const std::optional<std::string>& dir) const
+sShape EWSContext::collectTags(const tFolderResponseShape& shape, const std::optional<std::string>& dir) const
 {
-	sProptags result;
+	sShape result;
 	std::vector<PROPERTY_NAME> names;
 	std::vector<uint16_t> types;
 	auto tagIns = std::back_inserter(result.tags);
 	auto nameIns = std::back_inserter(names);
 	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns);
+	shape.tags(tagIns, nameIns, typeIns, result.special);
 	if(dir && !dir->empty() && !names.empty())
 		getNamedTags(*dir, names, types, result);
 	return result;
@@ -286,6 +332,157 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 }
 
 /**
+ * @brief     Load attachment
+ *
+ * @param     dir      Store to load from
+ * @param     aid      Attachment ID
+ *
+ * @return    Attachment structure
+ */
+sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
+{
+	auto aInst = plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
+	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN};
+	TPROPVAL_ARRAY props;
+	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
+	if(!plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+		throw DispatchError(E3082);
+	return tAttachment::create(aid, props);
+}
+
+/**
+ * @brief     Load generic special fields
+ *
+ * Currently supports
+ * - loading of mime content
+ * - loading of attachment metadata
+ *
+ * @param     dir     Store to load from
+ * @param     mid     Message to load
+ * @param     fid     Parent folder ID
+ * @param     item    Message object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tItem& item, uint64_t special) const
+{
+	auto& exmdb = plugin.exmdb;
+	if(special & sShape::MimeContent)
+	{
+		MESSAGE_CONTENT* content;
+		if(!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content))
+			throw DispatchError(E3071);
+		MAIL mail;
+		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
+		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
+		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
+		                   {*name = getPropertyName(dir, id); return TRUE;};
+		if(!oxcmail_export(content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail,
+		                   alloc, getPropIds, getPropName))
+			throw DispatchError(E3072);
+		auto mailLen = mail.get_length();
+		if(mailLen < 0)
+			throw DispatchError(E3073);
+		alloc_limiter<stream_block> allocator(mailLen/STREAM_BLOCK_SIZE+1, "ews::loadMime");
+		STREAM tempStream(&allocator);
+		if(!mail.serialize(&tempStream))
+			throw DispatchError(E3074);
+		auto& mimeContent = item.MimeContent.emplace();
+		mimeContent.reserve(mailLen);
+		uint8_t* data;
+		unsigned int size = STREAM_BLOCK_SIZE;
+		while((data = static_cast<uint8_t*>(tempStream.get_read_buf(&size))) != nullptr) {
+			mimeContent.insert(mimeContent.end(), data, data+size);
+			size = STREAM_BLOCK_SIZE;
+		}
+	}
+	if(special & sShape::Attachments)
+	{
+		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_SIZE,
+		                            PR_LAST_MODIFICATION_TIME};
+		auto mInst = plugin.loadMessageInstance(dir, fid, mid);
+		uint16_t count;
+		if(!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+			throw DispatchError(E3079);
+		sAttachmentId aid(this->getItemEntryId(dir, mid), 0);
+		item.Attachments.reserve(count);
+		for(uint16_t i = 0; i < count; ++i)
+		{
+			auto aInst = plugin.loadAttachmentInstance(dir, fid, mid, i);
+			TPROPVAL_ARRAY props;
+			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
+			if(!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+				throw DispatchError(E3080);
+			aid.attachment_num = i;
+			item.Attachments.emplace_back(tAttachment::create(aid, props));
+		}
+	}
+}
+
+/**
+ * @brief     Load message attributes not contained in tags
+ *
+ * @param     dir     Store to load from
+ * @param     mid     Message to load
+ * @param     fid     Parent folder ID
+ * @param     message Message object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tMessage& message, uint64_t special) const
+{
+	loadSpecial(dir, fid, mid, static_cast<tItem&>(message), special);
+	if(special & sShape::Recipients)
+	{
+		TARRAY_SET rcpts;
+		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		{
+			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%lu)", dir.c_str(), mid);
+			return;
+		}
+		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
+		{
+			uint32_t* recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+			if(!recipientType)
+				continue;
+			switch(*recipientType)
+			{
+			case 1: //Primary recipient
+				if(special & sShape::ToRecipients)
+					defaulted(message.ToRecipients).emplace_back(**tps);
+				break;
+			case 2: //Cc recipient
+				if(special & sShape::CcRecipients)
+					defaulted(message.CcRecipients).emplace_back(**tps);
+				break;
+			case 3: //Bcc recipient
+				if(special & sShape::BccRecipients)
+					defaulted(message.BccRecipients).emplace_back(**tps);
+				break;
+			}
+		}
+	}
+}
+
+/**
+ * @brief     Load (message) item from store
+ *
+ * @param     dir     Store to load item from
+ * @param     fid     Parent folder ID
+ * @param     mid     ID of the message to laod
+ * @param     shape   Item shape
+ *
+ * @return    Loaded item
+ */
+sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, const sShape& shape) const
+{
+	PROPTAG_ARRAY requestedTags{uint16_t(shape.tags.size()), const_cast<uint32_t*>(shape.tags.data())};
+	TPROPVAL_ARRAY itemProps = getItemProps(dir, mid, requestedTags);
+	sItem item = tItem::create(itemProps, shape.namedTags);
+	if(shape.special)
+		std::visit([&](auto&& item){loadSpecial(dir, fid, mid, item, shape.special);}, item);
+	return item;
+}
+
+/**
  * @brief    Normalize mailbox specification
  *
  * Ensures that `RoutingType` equals "smtp", performing essdn resolution if
@@ -376,6 +573,34 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	return folderSpec;
 }
 
+/**
+ * @brief      Get specification of folder containing the message
+ *
+ * @param      eid    Message entry ID
+ *
+ * @return     Folder specification
+ */
+sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
+{
+	sFolderSpec folderSpec;
+	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
+	folderSpec.folderId = rop_util_make_eid_ex(1, eid.folderId());
+	if(eid.isPrivate())
+	{
+		char temp[UADDR_SIZE];
+		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+			throw DispatchError(E3075);
+		folderSpec.target = temp;
+	}
+	else
+	{
+		sql_domain domaininfo;
+		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+			throw DispatchError(E3076);
+		folderSpec.target = domaininfo.name;
+	}
+	return folderSpec;
+}
 
 /**
  * @brief     Convert EXT_PUSH/EXT_PULL return code to exception

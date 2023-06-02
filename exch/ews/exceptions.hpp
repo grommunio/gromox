@@ -131,6 +131,23 @@ E(3063, "invalid GUID format");
 E(3064, "failed to convert sync state");
 E(3065, "failed to add changed mid");
 E(3066, "failed to set synced change numbers");
+E(3067, "failed to get user properties");
+E(3068, "failed to get user aliases");
+E(3069, "failed to get named property ids");
+E(3070, "failed to get named property names");
+E(3071, "failed to read message");
+E(3072, "failed to export message");
+E(3073, "mail export error");
+E(3074, "failed to serialize message");
+E(3075, "failed to get username from id");
+E(3076, "failed to get domain info from id");
+E(3077, "failed to load message instance");
+E(3078, "failed to load attachment instance");
+E(3079, "failed to get attachment count");
+E(3080, "failed to get attachment properties");
+E(3081, "attachment ID data to large");
+E(3082, "bad property for message entry id");
+E(3083, "failed to get attachment properties");
 
 #undef E
 }

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <thread>
 #include <unordered_map>
 
 #include <tinyxml2.h>
@@ -19,6 +20,7 @@
 #include <gromox/scope.hpp>
 
 #include "exceptions.hpp"
+#include "include/gromox/mime_pool.hpp"
 #include "requests.hpp"
 #include "soaputil.hpp"
 
@@ -30,6 +32,58 @@ using namespace tinyxml2;
 
 using Exceptions::DispatchError;
 
+/**
+ * @brief      Context data for debugging purposes
+ *
+ * Will only be present if explicitely requested by the
+ * `ews_debug` configuration directive.
+ */
+struct EWSPlugin::DebugCtx
+{
+	static constexpr uint8_t FL_LOCK = 1 << 0;
+	static constexpr uint8_t FL_RATELIMIT = 1 << 1;
+
+	explicit DebugCtx(const std::string_view&);
+
+	std::mutex requestLock{};
+	std::chrono::high_resolution_clock::time_point last;
+	std::chrono::high_resolution_clock::duration minRequestTime{};
+	uint8_t flags = 0;
+};
+
+/**
+ * @brief      Initialize debugging context
+ *
+ * Takes a string containing comma-separated debugging options.
+ * Supported options are:
+ * - `sequential`: Disable parallel processing of requests
+ * - `rate_limit=<x>`: Only process <x> requests per second.
+ *   Currently implies `sequential` (might be changed in the future).
+ *
+ * @param      opts    Debugging option string
+ */
+EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
+{
+	size_t start = 0;
+	for(size_t end = opts.find(',', start); start != std::string_view::npos; end = opts.find(',', start))
+	{
+		std::string_view opt = opts.substr(start, end-start);
+		start = end+(end != std::string_view::npos);
+		if(opt == "sequential")
+			flags |= FL_LOCK;
+		else if(opt.substr(0, 11) == "rate_limit=")
+		{
+			unsigned long rateLimit = uint32_t(std::stoul(std::string(opt.substr(11))));
+			if(rateLimit)
+			{
+				flags |= FL_RATELIMIT | FL_LOCK;
+				minRequestTime = std::chrono::nanoseconds(1000000000/rateLimit);
+			}
+		}
+		else
+			mlog(LV_WARN, "[ews] Ignoring unknown debug directive '%s'", std::string(opt).c_str());
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -72,11 +126,14 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
+	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
+	{"GetItem", process<Structures::mGetItemRequest>},
 	{"GetMailTips", process<Structures::mGetMailTipsRequest>},
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"ResolveNames", process<Structures::mResolveNamesRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
@@ -168,13 +225,14 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 		return unauthed(ctx_id);
 	bool enableLog = false;
 	auto[response, code] = dispatch(ctx_id, auth_info, content, len, enableLog);
+	auto logLevel = code == 200? LV_DEBUG : LV_ERR;
 	if(enableLog && response_logging >= 2)
-		mlog(LV_DEBUG, "[ews] Response: %s", response.c_str());
+		mlog(logLevel, "[ews#%d] Response: %s", ctx_id, response.c_str());
 	if(enableLog && response_logging)
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
-		mlog(LV_DEBUG, "[ews] Done, code %d, %zu bytes, %.3fms", code, response.size(), duration);
+		mlog(logLevel, "[ews#%d] Done, code %d, %zu bytes, %.3fms", ctx_id, code, response.size(), duration);
 	}
 	if(response.length() > std::numeric_limits<int>::max())
 	{
@@ -198,18 +256,30 @@ BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len,
                                                 bool& enableLog) try
 {
+	std::unique_ptr<std::lock_guard<std::mutex>> lockProxy;
+	if(debug)
+	{
+		if(debug->flags & DebugCtx::FL_LOCK)
+			lockProxy.reset(new std::lock_guard(debug->requestLock));
+		if(debug->flags & DebugCtx::FL_RATELIMIT)
+		{
+			auto now = std::chrono::high_resolution_clock::now();
+			std::this_thread::sleep_for(debug->last-now+debug->minRequestTime);
+			debug->last = now;
+		}
+	}
 	enableLog = false;
 	using namespace std::string_literals;
 	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
 	if(!rpc_new_stack())
-		mlog(LV_WARN, "[ews]: Failed to allocate stack, exmdb might not work");
+		mlog(LV_WARN, "[ews#%d]: Failed to allocate stack, exmdb might not work", ctx_id);
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
 	if(request_logging >= 2)
 	{
 		for(const XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 			enableLog = enableLog || logEnabled(xml->Name());
 		if(enableLog)
-			mlog(LV_DEBUG, "[ews] Incoming data: %.*s", len > INT_MAX ? INT_MAX : static_cast<int>(len),
+			mlog(LV_DEBUG, "[ews#%d] Incoming data: %.*s", ctx_id,  len > INT_MAX ? INT_MAX : static_cast<int>(len),
 			     static_cast<const char *>(data));
 	}
 	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
@@ -220,7 +290,7 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 		responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 		responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 		if(logThis && request_logging)
-			mlog(LV_DEBUG, "[ews] Processing %s", xml->Name());
+			mlog(LV_DEBUG, "[ews#%d] Processing %s", ctx_id,  xml->Name());
 		auto handler = requestMap.find(xml->Name());
 		if(handler == requestMap.end())
 		    throw Exceptions::UnknownRequestError("Unknown request '"s+xml->Name()+"'.");
@@ -246,8 +316,12 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 bool EWSPlugin::logEnabled(const std::string_view& requestName) const
 {return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;}
 
-EWSPlugin::EWSPlugin()
-{loadConfig();}
+EWSPlugin::EWSPlugin() :
+	mimePool(MIME_POOL::create(std::clamp(16*get_context_num(), 1024u, 16*1024u), 16, "ews_mime_pool"))
+{
+	loadConfig();
+	cache.run(cache_interval);
+}
 
 /**
  * @brief      Initialize mysql adaptor function pointers
@@ -262,6 +336,8 @@ EWSPlugin::_mysql::_mysql()
 	getService(get_homedir);
 	getService(get_maildir);
 	getService(get_username_from_id);
+	getService(get_user_aliases);
+	getService(get_user_properties);
 #undef getService
 }
 
@@ -312,6 +388,16 @@ void EWSPlugin::loadConfig()
 	cfg->get_int("ews_pretty_response", &pretty_response);
 	cfg->get_int("ews_request_logging", &request_logging);
 	cfg->get_int("ews_response_logging", &response_logging);
+
+	int temp;
+	if(cfg->get_int("ews_cache_interval", &temp))
+		cache_interval = std::chrono::milliseconds(temp);
+	if(cfg->get_int("ews_cache_attachment_instance_lifetime", &temp))
+		cache_attachment_instance_lifetime = std::chrono::milliseconds(temp);
+	if(cfg->get_int("ews_cache_message_instance_lifetime", &temp))
+		cache_message_instance_lifetime = std::chrono::milliseconds(temp);
+
+
 	const char* logFilter = cfg->get_value("ews_log_filter");
 	if(logFilter && strlen(logFilter))
 	{
@@ -323,6 +409,9 @@ void EWSPlugin::loadConfig()
 			logFilters.emplace_back(logFilter);
 		std::sort(logFilters.begin(), logFilters.end());
 	}
+	const char* debugOpts = cfg->get_value("ews_debug");
+	if(debugOpts)
+		debug.reset(new DebugCtx(debugOpts));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -376,3 +465,86 @@ static BOOL ews_main(int reason, void **data)
 }
 
 HPM_ENTRY(ews_main);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//Cache
+
+struct EWSPlugin::AttachmentInstanceKey {
+	std::string dir;
+	uint64_t mid;
+	uint32_t aid;
+
+	inline bool operator<(const AttachmentInstanceKey& o) const
+	{return std::tie(mid, aid, dir) < std::tie(o.mid, o.aid, o.dir);}
+};
+
+struct EWSPlugin::MessageInstanceKey {
+	std::string dir;
+	uint64_t mid;
+
+	inline bool operator<(const MessageInstanceKey& o) const
+	{return std::tie(mid, dir) < std::tie(o.mid, o.dir);}
+};
+
+EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
+	plugin(p), dir(d), instanceId(i)
+{}
+
+/**
+ * @brief     Unload instance
+ */
+EWSPlugin::ExmdbInstance::~ExmdbInstance()
+{plugin.exmdb.unload_instance(dir.c_str(), instanceId);}
+
+
+/**
+ * @brief      Load message instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      fid   Parent folder ID
+ * @param      mid   Message ID
+ *
+ * @return     Message instance information
+ */
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const std::string& dir, uint64_t fid,
+                                                                         uint64_t mid) const
+{
+	MessageInstanceKey mkey{dir, mid};
+	try {
+		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(mkey, cache_message_instance_lifetime));
+	} catch(const std::out_of_range&) {
+	}
+	uint32_t instanceId;
+	if(!exmdb.load_message_instance(dir.c_str(), nullptr, CP_ACP, false,fid, mid, &instanceId))
+		throw DispatchError(Exceptions::E3077);
+	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	cache.emplace(cache_message_instance_lifetime, mkey, instance);
+	return instance;
+}
+
+/**
+ * @brief      Load attachment instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      fid   Parent folder ID
+ * @param      mid   Message ID
+ * @param      aid   Attachment ID
+ *
+ * @return     Attachment instance information
+ */
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(const std::string& dir, uint64_t fid,
+                                                                            uint64_t mid, uint32_t aid) const
+{
+	AttachmentInstanceKey akey{dir, mid, aid};
+	try {
+		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(akey, cache_attachment_instance_lifetime));
+	} catch(const std::out_of_range&) {
+	}
+	auto messageInstance = loadMessageInstance(dir, fid, mid);
+	uint32_t instanceId;
+	if(!exmdb.load_attachment_instance(dir.c_str(), messageInstance->instanceId, aid, &instanceId))
+		throw DispatchError(Exceptions::E3078);
+	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	cache.emplace(cache_message_instance_lifetime, akey, instance);
+	return instance;
+}

@@ -27,6 +27,19 @@ struct StrEnum : public std::string
 	StrEnum(Args&&... args) : std::string(std::forward<Args...>(args...))
 	{check(*this);}
 
+	StrEnum(size_t index, size_t def=Choices.size())
+	{
+		if(index >= Choices.size() && def >= Choices.size())
+		{
+			std::string msg = "Invalid index ";
+			msg += std::to_string(index);
+			msg += " for enum ";
+			printChoices(msg);
+			throw gromox::EWS::Exceptions::EnumError(msg);
+		}
+		assign(Choices[index >= Choices.size()? def : index]);
+	}
+
 	template<typename Arg>
 	StrEnum& operator=(Arg&& arg)
 	{
@@ -42,14 +55,8 @@ struct StrEnum : public std::string
 				return;
 		std::string msg = "\"";
 		msg += v;
-		msg += "\" is not one of [\"";
-		msg += Choices[0];
-		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
-		{
-			msg += "\", \"";
-			msg += *it;
-		}
-		msg += "\"]";
+		msg += "\" is not one of ";
+		printChoices(msg);
 		throw gromox::EWS::Exceptions::EnumError(msg);
 	}
 
@@ -64,6 +71,19 @@ struct StrEnum : public std::string
 		}
 		return -1;
 	}
+
+private:
+	static void printChoices(std::string& dest)
+	{
+		dest += '[';
+		dest += Choices[0];
+		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
+		{
+			dest += "\", \"";
+			dest += *it;
+		}
+		dest += "\"]";
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,19 +96,36 @@ struct Enum
 
 	//String constants used in enums
 #define STR(NAME) static constexpr char NAME[] = #NAME
+	STR(ActiveDirectory);
+	STR(ActiveDirectoryContacts);
+	STR(Address);
 	STR(All);
 	STR(AllProperties);
 	STR(ApplicationTime);
 	STR(ApplicationTimeArray);
+	STR(Appointment);
+	STR(AssistantPhone);
 	STR(Best);
 	STR(Binary);
 	STR(BinaryArray);
 	STR(Boolean);
+	STR(BusinessFax);
+	STR(BusinessMobile);
+	STR(BusinessPhone);
+	STR(BusinessPhone2);
 	STR(Busy);
+	STR(CalendarAssistant);
+	STR(Callback);
+	STR(CarPhone);
 	STR(CLSID);
 	STR(CLSIDArray);
+	STR(CompanyMainPhone);
 	STR(Complete);
+	STR(Common);
+	STR(Confidential);
 	STR(Contact);
+	STR(Contacts);
+	STR(ContactsActiveDirectory);
 	STR(Currency);
 	STR(CurrencyArray);
 	STR(CustomMailTip);
@@ -100,6 +137,9 @@ struct Enum
 	STR(Disabled);
 	STR(Double);
 	STR(DoubleArray);
+	STR(EmailAddress1);
+	STR(EmailAddress2);
+	STR(EmailAddress3);
 	STR(Enabled);
 	STR(Error);
 	STR(Excellent); // Smithers
@@ -114,13 +154,19 @@ struct Enum
 	STR(Friday);
 	STR(Good);
 	STR(GroupMailbox);
+	STR(HomeFax);
+	STR(HomePhone);
+	STR(HomePhone2);
 	STR(HTML);
 	STR(High);
 	STR(IdOnly);
 	STR(ImplicitContact);
 	STR(Integer);
 	STR(IntegerArray);
+	STR(InternetHeaders);
 	STR(InvalidRecipient);
+	STR(IPPhone);
+	STR(Isdn);
 	STR(Known);
 	STR(Long);
 	STR(LongArray);
@@ -129,9 +175,13 @@ struct Enum
 	STR(Mailbox);
 	STR(MailboxFullStatus);
 	STR(MaxMessageSize);
+	STR(Meeting);
 	STR(MergedOnly);
+	STR(Mms);
+	STR(MobilePhone);
 	STR(ModerationStatus);
 	STR(Monday);
+	STR(Msn);
 	STR(NoData);
 	STR(None);
 	STR(Normal);
@@ -146,15 +196,23 @@ struct Enum
 	STR(OneOff);
 	STR(Optional);
 	STR(Organizer);
+	STR(OtherFax);
+	STR(OtherTelephone);
 	STR(OutOfOfficeMessage);
+	STR(Pager);
+	STR(Personal);
 	STR(PcxPeopleSearch);
 	STR(PolicyNudges);
 	STR(Poor);
 	STR(PreferAccessibleContent);
+	STR(PrimaryPhone);
+	STR(Private);
 	STR(PrivateDL);
 	STR(ProtectionRules);
 	STR(PublicDL);
 	STR(PublicFolder);
+	STR(PublicStrings);
+	STR(RadioPhone);
 	STR(RecipientSuggestions);
 	STR(Required);
 	STR(Resource);
@@ -163,18 +221,24 @@ struct Enum
 	STR(Scheduled);
 	STR(Scope);
 	STR(SharePointURLs);
+	STR(Sharing); //=Caring
 	STR(Short);
 	STR(ShortArray);
+	STR(Store);
 	STR(String);
 	STR(StringArray);
 	STR(Sunday);
 	STR(SystemTime);
 	STR(SystemTimeArray);
+	STR(Task);
+	STR(Telex);
 	STR(Tentative);
 	STR(Text);
 	STR(Thursday);
 	STR(TotalMemberCount);
+	STR(TtyTddPhone);
 	STR(Tuesday);
+	STR(UnifiedMessaging);
 	STR(UnifiedMessagingConfiguration);
 	STR(Unknown);
 	STR(User);
@@ -257,9 +321,13 @@ struct Enum
 
 	//Enum types
 	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
+	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
+	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
 	using DefaultShapeNamesType = StrEnum<IdOnly, Default, AllProperties, PcxPeopleSearch>; ///< Types.xsd:1255
 	using DistinguishedFolderIdNameType = StrEnum<calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot, publicfoldersroot, root, junkemail, searchfolders, voicemail, recoverableitemsroot, recoverableitemsdeletions, recoverableitemsversions, recoverableitemspurges, recoverableitemsdiscoveryholds, archiveroot, archivemsgfolderroot, archivedeleteditems, archiveinbox, archiverecoverableitemsroot, archiverecoverableitemsdeletions, archiverecoverableitemsversions, archiverecoverableitemspurges, archiverecoverableitemsdiscoveryholds, syncissues, conflicts, localfailures, serverfailures, recipientcache, quickcontacts, conversationhistory, adminauditlogs, todosearch, mycontacts, directory, imcontactlist, peopleconnect, favorites, mecontact, personmetadata, teamspaceactivity, teamspacemessaging, teamspaceworkitems, scheduled, orionnotes, tagitems, alltaggeditems, allcategorizeditems, externalcontacts, teamchat, teamchathistory, yammerdata, yammerroot, yammerinbound, yammeroutbound, yammerfeeds, kaizaladata, messageingestion, onedriveroot, onedriverecylebin, onedrivesystem, onedrivevolume, important, starred, archiv>; //Types.xsd:1768
+	using DistinguishedPropertySetType = StrEnum<Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task, Sharing>; ///< Types.xsd:1040
+	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd 5205
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
 	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333
@@ -269,7 +337,10 @@ struct Enum
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
 	using MeetingAttendeeType = StrEnum<Organizer, Required, Optional, Room, Resource>; ///< Types.xsd:6278
+	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
+	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd: 4255
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
+	using SensitivityChoicesType = StrEnum<Normal, Personal, Private, Confidential>; ///< Types.xsd:1698
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
 	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
