@@ -2956,9 +2956,9 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	pidb.reset();
 	folder_id = rop_util_make_eid_ex(1, folder_id);
 	if (!exmdb_client::empty_folder(argv[1], CP_ACP, nullptr, folder_id,
-	    TRUE, TRUE, TRUE, FALSE, &b_partial) || b_partial ||
+	    DELETE_HARD_DELETE | DEL_MESSAGES | DEL_ASSOCIATED, &b_partial) || b_partial ||
 	    !exmdb_client::empty_folder(argv[1], CP_ACP, nullptr, folder_id,
-	    TRUE, FALSE, FALSE, TRUE, &b_partial) || b_partial ||
+	    DELETE_HARD_DELETE | DEL_FOLDERS, &b_partial) || b_partial ||
 	    !exmdb_client::delete_folder(argv[1], CP_ACP, folder_id, TRUE,
 	    &b_result) || !b_result)
 		return MIDB_E_MDB_DELETEFOLDER;

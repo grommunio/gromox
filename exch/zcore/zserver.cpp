@@ -1701,7 +1701,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	bool notify_non_read = flags & ZC_DELMSG_NOTIFY_UNREAD;
+	bool notify_non_read = flags & GX_DELMSG_NOTIFY_UNREAD;
 	
 	auto pinfo = zs_query_session(hsession);
 	if (pinfo == nullptr)
@@ -2198,10 +2198,13 @@ ec_error_t zs_deletefolder(GUID hsession,
 		return ecError;
 	if (!b_exist)
 		return ecSuccess;
-	BOOL b_normal = (flags & DEL_MESSAGES) ? TRUE : false;
-	BOOL b_fai = b_normal;
-	BOOL b_sub = (flags & DEL_FOLDERS) ? TRUE : false;
-	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
+	if (flags & DEL_MESSAGES)
+		/*
+		 * MAPI has the %DEL_ASSOCIATED associated flag, but its use is
+		 * not specified for IMAPIFolder::DeleteFolder.
+		 * Deletion of FAI is implicit in the specs' wording though.
+		 */
+		flags |= DEL_ASSOCIATED;
 	if (pstore->b_private) {
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), CP_ACP,
 		    folder_id, PR_FOLDER_TYPE, &pvalue))
@@ -2211,17 +2214,18 @@ ec_error_t zs_deletefolder(GUID hsession,
 		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			goto DELETE_FOLDER;
 	}
-	if (b_sub || b_normal || b_fai) {
+	if (flags & (DEL_FOLDERS | DEL_MESSAGES | DEL_ASSOCIATED)) {
 		if (!exmdb_client::empty_folder(pstore->get_dir(), pinfo->cpid,
-		    username, folder_id, b_hard, b_normal, b_fai, b_sub, &b_partial))
+		    username, folder_id, flags, &b_partial))
 			return ecError;
 		if (b_partial)
 			/* failure occurs, stop deleting folder */
 			return ecSuccess;
 	}
  DELETE_FOLDER:
-	return exmdb_client::delete_folder(pstore->get_dir(),
-	       pinfo->cpid, folder_id, b_hard, &b_done) ? ecSuccess : ecError;
+	return exmdb_client::delete_folder(pstore->get_dir(), pinfo->cpid,
+	       folder_id, (flags & DELETE_HARD_DELETE) ? TRUE : false, &b_done) ?
+	       ecSuccess : ecError;
 }
 
 ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
@@ -2253,11 +2257,9 @@ ec_error_t zs_emptyfolder(GUID hsession, uint32_t hfolder, uint32_t flags)
 			return ecAccessDenied;
 		username = pinfo->get_username();
 	}
-	BOOL b_fai = (flags & DEL_ASSOCIATED) ? TRUE : false;
-	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	return exmdb_client::empty_folder(pstore->get_dir(),
 	       pinfo->cpid, username, pfolder->folder_id,
-	       b_hard, TRUE, b_fai, TRUE, &b_partial) ? ecSuccess : ecError;
+	       flags | DEL_MESSAGES | DEL_FOLDERS, &b_partial) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
@@ -2330,8 +2332,8 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 			return ret;
 		if (!b_copy) {
 			if (!exmdb_client::empty_folder(src_store->get_dir(),
-			    pinfo->cpid, username, folder_id, false, TRUE,
-			    TRUE, TRUE, &b_partial))
+			    pinfo->cpid, username, folder_id,
+			    DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS, &b_partial))
 				return ecError;
 			if (b_partial)
 				/* failure occurs, stop deleting folder */
@@ -4725,10 +4727,14 @@ ec_error_t zs_importdeletion(GUID hsession,
 				if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 					goto DELETE_FOLDER;
 			}
+			{
+			unsigned int f = b_hard ? DELETE_HARD_DELETE : 0;
+			f |= DEL_MESSAGES | DEL_ASSOCIATED | DEL_FOLDERS;
 			if (!exmdb_client::empty_folder(pstore->get_dir(),
-			    pinfo->cpid, username, eid, b_hard, TRUE, TRUE, TRUE,
-			    &b_partial) || b_partial)
+			    pinfo->cpid, username, eid, f, &b_partial) ||
+			    b_partial)
 				return ecError;
+			}
  DELETE_FOLDER:
 			if (!exmdb_client::delete_folder(pstore->get_dir(),
 			    pinfo->cpid, eid, b_hard, &b_result) || !b_result)

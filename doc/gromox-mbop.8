@@ -17,11 +17,25 @@ store of a domain, leave out the local part, i.e. use
 \fB@\fP\fIexample.com\fP.)
 .SH Commands
 .IP \(bu 4
+clear-photo: delete user picture
+.IP \(bu 4
+clear-profile: delete user's PHP-MAPI profile
+.IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
+.IP \(bu 4
+purge-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
 vacuum: issue the "vacuum" RPC for a mailbox
+.SH clear-photo
+The clear-photo command will delete the user picture. Note that, when there is
+no mailbox-level profile picture set, Gromox server processes may serve an
+image from another source, e.g. LDAP.
+.SH clear-profile
+Similar to MSMAPI, PHP-MAPI keeps a MAPI profile which contains a store list
+and also the settings for grommunio-web. The clear-profile command will delete
+this MAPI profile. Note that it gets regenerated when PHP-MAPI is exercised.
 .SH delmsg
 .SS Synopsis
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_spec\fP
@@ -54,6 +68,18 @@ Besides messages, also delete subfolders.
 .TP
 \fB\-\-soft\fP
 Perform a soft deletion. (This feature is experimental.) Default is hard.
+.SH purge-softdelete
+.SS Synopsis
+\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBpurge-softdelete\fP [\fB\-r\fP]
+\fIfolder_spec\fP...
+.SS Description
+This command removes all messages from a folder which are marked as
+softdeleted. (The entire mailbox can be processed by specifying the root
+folder plus the -r option.)
+.SS Subcommand options
+.TP
+\fB-R\fP
+Recurse into subfolders.
 .SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to
@@ -68,14 +94,6 @@ the mailbox via a notification channel.
 .SH vacuum
 The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
 exchange.sqlite3, which rebuilds and compacts the database file.
-.SH clear-photo
-The clear-photo command will delete the user picture. Note that, when there is
-no mailbox-level profile picture set, Gromox server processes may serve an
-image from another source, e.g. LDAP.
-.SH clear-profile
-Similar to MSMAPI, PHP-MAPI keeps a MAPI profile which contains a store list
-and also the settings for grommunio-web. The clear-profile command will delete
-this MAPI profile. Note that it gets regenerated when PHP-MAPI is exercised.
 .SH Folder specification
 \fIfolder_spec\fP can either be a numeric identifier, or a path-like
 specification into the folder hierarchy. If the name starts with the slash

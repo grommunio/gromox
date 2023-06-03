@@ -74,6 +74,8 @@ enum {
 using proptype_t = decltype(PT_NULL);
 }
 
+using mapitime_t = uint64_t;
+
 #include "mapitags.hpp"
 
 enum {
@@ -769,7 +771,7 @@ enum { /* for IMAPIFolder::{DeleteFolder, DeleteMessage, EmptyFolder} */
 	DEL_FOLDERS             = 0x4U,
 	DEL_ASSOCIATED          = 0x8U, /* MAPI only, not used in OXCROPS. */
 	DELETE_HARD_DELETE      = 0x10U,
-	ZC_DELMSG_NOTIFY_UNREAD = 0x40000000U, /* Gromox-specific */
+	GX_DELMSG_NOTIFY_UNREAD = 0x40000000U, /* Gromox-specific */
 };
 
 enum {

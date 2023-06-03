@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/scope.hpp>
@@ -193,8 +194,10 @@ static int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 		auto old_msgc = delcount(eid);
+		unsigned int flags = g_soft ? 0 : DELETE_HARD_DELETE;
+		flags |= g_recursive ? DEL_FOLDERS : 0;
 		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
-		          eid, !g_soft, true, false, g_recursive, &partial);
+		          eid, flags, &partial);
 		if (!ok) {
 			fprintf(stderr, "empty_folder %s failed\n", *argv);
 			return EXIT_FAILURE;
@@ -203,6 +206,42 @@ static int main(int argc, const char **argv)
 		if (partial)
 			printf("Partial completion\n");
 		printf("Folder %s: %u messages deleted\n", *argv, diff);
+	}
+	return EXIT_SUCCESS;
+}
+
+}
+
+namespace purgesoftdel {
+
+static unsigned int g_recursive;
+static const char *g_age_str;
+static constexpr HXoption g_options_table[] = {
+	{nullptr, 'r', HXTYPE_NONE, &g_recursive, nullptr, nullptr, 0, "Process folders recursively"},
+	{nullptr, 't', HXTYPE_STRING, &g_age_str, nullptr, nullptr, 0, "Messages need to be older than...", "TIMESPEC"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
+static int main(int argc, const char **argv)
+{
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+		return EXIT_FAILURE;
+	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
+	while (*++argv != nullptr) {
+		uint64_t id = strtoull(*argv, nullptr, 0);
+		eid_t eid = id == 0 ? lookup_eid_by_name(g_storedir, *argv) : rop_util_make_eid_ex(1, id);
+		if (eid == 0) {
+			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
+			return EXIT_FAILURE;
+		}
+		unsigned int flags = g_recursive ? DEL_FOLDERS : 0;
+		auto ok = exmdb_client::purge_softdelete(g_storedir, nullptr,
+		          eid, flags, age);
+		if (!ok) {
+			fprintf(stderr, "purge_softdel %s failed\n", *argv);
+			return EXIT_FAILURE;
+		}
 	}
 	return EXIT_SUCCESS;
 }
@@ -224,11 +263,7 @@ static int help()
 	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
-	fprintf(stderr, "Command list:\n");
-	fprintf(stderr, "\tdelmsg    Issue \"delete_message\" RPCs\n");
-	fprintf(stderr, "\temptyfld  Issue \"empty_folder\" RPCs\n");
-	fprintf(stderr, "\tunload    Issue the \"unload\" RPC\n");
-	fprintf(stderr, "\tvacuum    Issue the \"vacuum\" RPC\n");
+	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld unload vacuum\n");
 	return EXIT_FAILURE;
 }
 
@@ -324,6 +359,8 @@ int main(int argc, const char **argv)
 		ret = delstoreprop(PSETID_GROMOX, "photo");
 	} else if (strcmp(argv[0], "clear-profile") == 0) {
 		ret = delstoreprop(PSETID_GROMOX, "zcore_profsect");
+	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
+		ret = purgesoftdel::main(argc, argv);
 	} else {
 		ret = simple_rpc::main(argc, argv);
 		if (ret == -EINVAL) {

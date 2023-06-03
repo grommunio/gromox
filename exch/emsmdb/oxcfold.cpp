@@ -284,6 +284,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	const char *username;
 	
 	*ppartial_completion = 1;
+	flags &= ~GX_DELMSG_NOTIFY_UNREAD;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
@@ -319,15 +320,17 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 		*ppartial_completion = 0;
 		return ecSuccess;
 	}
-	BOOL b_normal = (flags & DEL_MESSAGES) ? TRUE : false;
-	BOOL b_fai    = b_normal;
-	BOOL b_sub    = (flags & DEL_FOLDERS) ? TRUE : false;
-	BOOL b_hard   = (flags & DELETE_HARD_DELETE) ? TRUE : false;
+	if (flags & DEL_MESSAGES)
+		/*
+		 * MAPI has the %DEL_ASSOCIATED associated flag, but its use is
+		 * not specified for IMAPIFolder::DeleteFolder. Consequently,
+		 * %DEL_ASSOCIATED is not specified in OXCROPS either.
+		 * Deletion of FAI is implicit in the specs' wording though.
+		 */
+		flags |= DEL_ASSOCIATED;
 	if (plogon->is_private()) {
-		if (!emsmdb_pvt_folder_softdel) {
+		if (!emsmdb_pvt_folder_softdel)
 			flags |= DELETE_HARD_DELETE;
-			b_hard = TRUE;
-		}
 		if (!exmdb_client::get_folder_property(plogon->get_dir(),
 		    CP_ACP, folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
@@ -338,10 +341,9 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			goto DELETE_FOLDER;
 	}
-	if (b_sub || b_normal || b_fai) {
+	if (flags & (DEL_FOLDERS | DEL_MESSAGES | DEL_ASSOCIATED)) {
 		if (!exmdb_client::empty_folder(plogon->get_dir(), pinfo->cpid,
-		    username, folder_id, b_hard, b_normal, b_fai,
-		    b_sub, &b_partial))
+		    username, folder_id, flags, &b_partial))
 			return ecError;
 		if (b_partial) {
 			/* failure occurs, stop deleting folder */
@@ -351,7 +353,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	}
  DELETE_FOLDER:
 	if (!exmdb_client::delete_folder(plogon->get_dir(), pinfo->cpid,
-	    folder_id, b_hard, &b_done))
+	    folder_id, (flags & DELETE_HARD_DELETE) ? TRUE : false, &b_done))
 		return ecError;
 	*ppartial_completion = !b_done;
 	return ecSuccess;
@@ -714,7 +716,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	return ecSuccess;
 }
 
-static ec_error_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
+static ec_error_t oxcfold_emptyfolder(unsigned int flags,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_partial;
@@ -731,7 +733,6 @@ static ec_error_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associate
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	BOOL b_fai = want_delete_associated == 0 ? false : TRUE;
 	auto rpc_info = get_rpc_info();
 	if (!plogon->is_private())
 		/* just like Exchange 2013 or later */
@@ -753,7 +754,7 @@ static ec_error_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associate
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::empty_folder(dir, pinfo->cpid, username,
-	    pfolder->folder_id, b_hard, TRUE, b_fai, TRUE, &b_partial))
+	    pfolder->folder_id, flags | DEL_MESSAGES | DEL_FOLDERS, &b_partial))
 		return ecError;
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;
@@ -763,7 +764,7 @@ ec_error_t rop_emptyfolder(uint8_t want_asynchronous,
     uint8_t want_delete_associated, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	return oxcfold_emptyfolder(FALSE, want_delete_associated,
+	return oxcfold_emptyfolder(want_delete_associated ? DEL_ASSOCIATED : 0,
 			ppartial_completion, plogmap, logon_id, hin);	
 }
 
@@ -771,7 +772,7 @@ ec_error_t rop_harddeletemessagesandsubfolders(uint8_t want_asynchronous,
     uint8_t want_delete_associated, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	return oxcfold_emptyfolder(TRUE, want_delete_associated,
+	return oxcfold_emptyfolder(DELETE_HARD_DELETE | (want_delete_associated ? DEL_ASSOCIATED : 0),
 			ppartial_completion, plogmap, logon_id, hin);
 }
 
