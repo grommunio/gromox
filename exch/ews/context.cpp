@@ -66,35 +66,25 @@ PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_
 }
 
 /**
- * @brief      Resolve named tags
+ * @brief      Load named tags into shape
  *
- * Resolves the tag names to numeric tags and assembles them to property tags
- * using the types array. names and types must have the same length.
- * Names not resolved are omitted.
+ * Immediatly returns if the shape is already associated with the store.
  *
- * The resolved tags are appended to result.tags and additionally inserted into
- * result.namedTags mapping tags back to their names.
- *
- * @param      Home directory of the user or domain
- * @param      List of property names to resolve
- * @param      List of property types
- * @param      Result to store resolved tags in
+ * @param      dir    Home directory of user or domain
+ * @param      shape  Shape to load tags into
  */
-void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY_NAME>& names,
-                              const std::vector<uint16_t>& types, sShape& result) const
+void EWSContext::getNamedTags(const std::string& dir, sShape& shape) const
 {
-	PROPNAME_ARRAY propNames{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};
-	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames);
-	if(namedIds.count != types.size())
+	if(shape.store == dir)
 		return;
-	result.namedTags.reserve(namedIds.count);
-	for(size_t i = 0; i < namedIds.count; ++i)
-	{
-		if(namedIds.ppropid[i] == 0) // Failed to retrieve named property
-			continue;
-		if(result.namedTags.try_emplace(PROP_TAG(types[i], namedIds.ppropid[i]), names[i]).second)
-			result.tags.emplace_back(PROP_TAG(types[i], namedIds.ppropid[i]));
-	}
+	PROPNAME_ARRAY propNames = shape.namedProperties();
+	if(propNames.count == 0)
+		return;
+	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames);
+	if(namedIds.count != propNames.count)
+		return;
+	shape.namedProperties(namedIds);
+	shape.store = dir;
 }
 
 /**
@@ -112,50 +102,6 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
 	if(!plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
 		throw DispatchError(E3070);
 	return propnames.ppropname;
-}
-
-/**
- * @brief      Determine tags required for item shape
- *
- * @param      Requested item shape
- * @param      Home directory of the user or domain
- *
- * @return     Tag list and named property map
- */
-sShape EWSContext::collectTags(const tItemResponseShape& shape, const std::optional<std::string>& dir) const
-{
-	sShape result;
-	std::vector<PROPERTY_NAME> names;
-	std::vector<uint16_t> types;
-	auto tagIns = std::back_inserter(result.tags);
-	auto nameIns = std::back_inserter(names);
-	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns, result.special);
-	if(dir && !dir->empty() && !names.empty())
-		getNamedTags(*dir, names, types, result);
-	return result;
-}
-
-/**
- * @brief      Determine tags required for folder shape
- *
- * @param      Requested folder shape
- * @param      Home directory of the user or domain
- *
- * @return     Tag list and named property map
- */
-sShape EWSContext::collectTags(const tFolderResponseShape& shape, const std::optional<std::string>& dir) const
-{
-	sShape result;
-	std::vector<PROPERTY_NAME> names;
-	std::vector<uint16_t> types;
-	auto tagIns = std::back_inserter(result.tags);
-	auto nameIns = std::back_inserter(names);
-	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns, result.special);
-	if(dir && !dir->empty() && !names.empty())
-		getNamedTags(*dir, names, types, result);
-	return result;
 }
 
 /**
@@ -243,6 +189,13 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		throw DispatchError(E3006(RoutingType));
 }
 
+/**
+ * @brief      Get user or domain maildir from folder spec
+ *
+ * @param      folder  Folder specification
+ *
+ * @return     Home directory of user or domain
+ */
 std::string EWSContext::getDir(const sFolderSpec& folder) const
 {
 	const char* target = folder.target? folder.target->c_str() : auth_info.username;
@@ -314,6 +267,24 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
 }
 
 /**
+ * @brief      Get item property value
+ *
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      tag   Tag ID
+ *
+ * @return     Pointer to property value or nullptr if not found
+ */
+const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+{
+	PROPTAG_ARRAY proptags{1, &tag};
+	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
+	if(props.count != 1 || props.ppropval->proptag != tag)
+		throw DispatchError(E3024);
+	return props.count == 1 && props.ppropval->proptag == tag? props.ppropval->pvalue : nullptr;
+}
+
+/**
  * @brief     Get properties of a message item
  *
  * @param     dir     User home dir
@@ -348,6 +319,22 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 	if(!plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 		throw DispatchError(E3082);
 	return tAttachment::create(aid, props);
+}
+
+/**
+ * @brief      Load folder properties
+ *
+ * @param      folder  Folder specification
+ * @param      shape   Requested folder shape
+ *
+ * @return     Folder data
+ */
+sFolder EWSContext::loadFolder(const sFolderSpec& folder, Structures::sShape& shape) const
+{
+	shape.clean();
+	getNamedTags(getDir(folder), shape);
+	shape.properties(getFolderProps(folder, shape.proptags()));
+	return tBaseFolderType::create(shape);
 }
 
 /**
@@ -404,7 +391,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if(!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
 			throw DispatchError(E3079);
 		sAttachmentId aid(this->getItemEntryId(dir, mid), 0);
-		item.Attachments.reserve(count);
+		item.Attachments.emplace().reserve(count);
 		for(uint16_t i = 0; i < count; ++i)
 		{
 			auto aInst = plugin.loadAttachmentInstance(dir, fid, mid, i);
@@ -413,7 +400,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			if(!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
 			aid.attachment_num = i;
-			item.Attachments.emplace_back(tAttachment::create(aid, props));
+			item.Attachments->emplace_back(tAttachment::create(aid, props));
 		}
 	}
 }
@@ -463,20 +450,21 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 }
 
 /**
- * @brief     Load (message) item from store
+ * @brief      Load item
  *
- * @param     dir     Store to load item from
- * @param     fid     Parent folder ID
- * @param     mid     ID of the message to laod
- * @param     shape   Item shape
+ * @param      dir    Store directory
+ * @param      fid    Parent folder ID
+ * @param      mid    Message ID
+ * @param      shape  Requested item shape
  *
- * @return    Loaded item
+ * @return     The s item.
  */
-sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, const sShape& shape) const
+sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sShape& shape) const
 {
-	PROPTAG_ARRAY requestedTags{uint16_t(shape.tags.size()), const_cast<uint32_t*>(shape.tags.data())};
-	TPROPVAL_ARRAY itemProps = getItemProps(dir, mid, requestedTags);
-	sItem item = tItem::create(itemProps, shape.namedTags);
+	shape.clean();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
+	sItem item = tItem::create(shape);
 	if(shape.special)
 		std::visit([&](auto&& item){loadSpecial(dir, fid, mid, item, shape.special);}, item);
 	return item;

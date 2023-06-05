@@ -24,14 +24,17 @@ namespace Structures
 {
 struct sAttachmentId;
 struct sMessageEntryId;
-struct sShape;
+class  sShape;
 struct sFolderSpec;
+struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
+struct tContactsFolderType;
 struct tDistinguishedFolderId;
 struct tFileAttachment;
 struct tFolderId;
 struct tFolderResponseShape;
+struct tFolderType;
 struct tItem;
 struct tItemAttachment;
 struct tItemResponseShape;
@@ -40,8 +43,11 @@ struct tMessage;
 struct tPath;
 struct tReferenceAttachment;
 struct tSerializableTimeZone;
+struct tSearchFolderType;
+struct tTasksFolderType;
 
 using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
+using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
 using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 }
 
@@ -141,8 +147,6 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
-	Structures::sShape collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;
-	Structures::sShape collectTags(const Structures::tFolderResponseShape&, const std::optional<std::string>& = std::nullopt) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
@@ -150,10 +154,12 @@ public:
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
+	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
-	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, const Structures::sShape&) const;
+	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
+	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
@@ -173,13 +179,28 @@ public:
 	static void ext_error(pack_result);
 
 private:
-	void getNamedTags(const std::string&, const std::vector<PROPERTY_NAME>&, const
-	                  std::vector<uint16_t>&, Structures::sShape&) const;
+	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
+	void getNamedTags(const std::string&, Structures::sShape&) const;
 
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };
+
+/**
+ * @brief      Get single item property
+ *
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      tag   Tag ID
+ *
+ * @tparam     T     Type to return
+ *
+ * @return     Pointer to property or nullptr if not found.
+ */
+template<typename T>
+const T* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+{return static_cast<const T*>(getItemProp(dir, mid, tag));}
 
 }

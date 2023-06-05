@@ -151,10 +151,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 
 	response->SetName("m:GetFolderResponse");
 
-	sShape requestedTags = ctx.collectTags(request.FolderShape);
-	if(requestedTags.tags.size() > std::numeric_limits<decltype(PROPTAG_ARRAY::count)>::max())
-		throw InputError(E3029);
-	const PROPTAG_ARRAY tags{uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
+	sShape shape(request.FolderShape);
 
 	mGetFolderResponse data;
 	data.ResponseMessages.reserve(request.FolderIds.size());
@@ -177,9 +174,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 		}
 
 		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
-		TPROPVAL_ARRAY folderProps = ctx.getFolderProps(folderSpec, tags);
-		msg.Folders.emplace_back(tBaseFolderType::create(folderProps));
-
+		msg.Folders.emplace_back(ctx.loadFolder(folderSpec, shape));
 		msg.success();
 	}
 	data.serialize(response);
@@ -476,7 +471,8 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, nullptr,
 	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
 		throw DispatchError(E3030);
-	sShape requestedTags = ctx.collectTags(request.FolderShape);
+
+	sShape shape(request.FolderShape);
 
 	mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
@@ -490,9 +486,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		subfolder.folderId = *folderId;
 		if(!(ctx.permissions(ctx.auth_info.username, subfolder, dir.c_str()) & frightsVisible))
 			continue;
-		PROPTAG_ARRAY tags {uint16_t(requestedTags.tags.size()), requestedTags.tags.data()};
-		TPROPVAL_ARRAY props = ctx.getFolderProps(sFolderSpec(*folder.target, *folderId), tags);
-		auto folderData = tBaseFolderType::create(props);
+		auto folderData = ctx.loadFolder(subfolder, shape);
 		if(syncState.given.hint(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
@@ -559,11 +553,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	    &last_readcn))
 		throw DispatchError(E3031);
 
-	sShape itemTags = ctx.collectTags(request.ItemShape);
-	itemTags.tags.emplace_back(PidTagChangeNumber);
-	if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
-		throw DispatchError(E3032);
-	PROPTAG_ARRAY requestedTags{uint16_t(itemTags.tags.size()), itemTags.tags.data()};
+	sShape shape(request.ItemShape);
 
 	uint32_t maxItems = request.MaxChangesReturned;
 	bool clipped = false;
@@ -587,14 +577,13 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	maxItems -= chg_mids.count = min(chg_mids.count, maxItems);
 	for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
 	{
-		TPROPVAL_ARRAY itemProps = ctx.getItemProps(dir, *mid, requestedTags);
-		uint64_t* changeNum = itemProps.get<uint64_t>(PidTagChangeNumber);
+		const uint64_t* changeNum = ctx.getItemProp<uint64_t>(dir, *mid, PidTagChangeNumber);
 		if(!changeNum)
 			continue;
 		if(eid_array_check(&updated_mids, *mid))
-			msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, tItem::create(itemProps)}});
+			msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
 		else
-			msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, tItem::create(itemProps)}});
+			msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
 		if(!syncState.given.append(*mid) || !syncState.seen.append(*changeNum))
 			throw DispatchError(E3065);
 	}
@@ -645,20 +634,18 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 
 	mGetItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
+	sShape shape(request.ItemShape);
 	for(auto& itemId : request.ItemIds) {
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
-		sShape itemTags = ctx.collectTags(request.ItemShape, dir);
-		if(itemTags.tags.size() > std::numeric_limits<uint16_t>::max())
-			throw DispatchError(E3032);
 		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny)) {
 			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Access denied");
 			continue;
 		}
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = eid.messageId();
-		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, itemTags));
+		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		msg.success();
 	}
 	data.serialize(response);
@@ -696,7 +683,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	resol.Mailbox.RoutingType = "SMTP";
 	resol.Mailbox.MailboxType = Enum::Mailbox; // Currently the only supported
 
-	tContact& cnt = resol.Contact.emplace(userProps);
+	tContact& cnt = resol.Contact.emplace(sShape(userProps));
 	tpropval_array_free_internal(&userProps);
 
 	std::vector<std::string> aliases;

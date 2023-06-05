@@ -33,12 +33,19 @@ struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
 struct tDistinguishedFolderId;
+struct tExtendedFieldURI;
+struct tExtendedProperty;
+struct tFieldURI;
 struct tFileAttachment;
 struct tFindResponsePagingAttributes;
 struct tFolderId;
+struct tFolderResponseShape;
 struct tFolderType;
+struct tIndexedFieldURI;
 struct tItem;
 struct tItemAttachment;
+struct tItemResponseShape;
+struct tPath;
 struct tMessage;
 struct tReferenceAttachment;
 struct tSearchFolderType;
@@ -91,6 +98,7 @@ struct sBase64Binary : public std::vector<uint8_t>
 {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
+	sBase64Binary(const BINARY*);
 	explicit sBase64Binary(const tinyxml2::XMLElement*);
 	explicit sBase64Binary(const tinyxml2::XMLAttribute*);
 
@@ -204,14 +212,44 @@ using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 
-/**
- * @brief      Utility struct to manage property tags and property name information
- */
-struct sShape
+class sShape
 {
-	std::vector<uint32_t> tags; ///< Properties return from the store
-	sNamedPropertyMap namedTags; ///< Tag -> named property mapping
-	uint64_t special = 0; ///< Fields that are not accessible by properties
+	/**
+	 * @brief     Property metadata
+	 *
+	 * Keep track of how properties were requested and whether they have been
+	 * read.
+	 * Enables distinction between extended properties and named fields that
+	 * may be requested independently from each other.
+	 */
+	struct PropInfo
+	{
+		explicit PropInfo(uint8_t=0, const PROPERTY_NAME* = nullptr);
+		PropInfo(uint8_t, const TAGGED_PROPVAL*);
+
+		const TAGGED_PROPVAL* prop = nullptr;
+		const PROPERTY_NAME* name = nullptr;
+		uint8_t flags = 0;
+	};
+
+	std::vector<uint32_t> tags; ///< Tags requested + named tags
+
+	std::vector<uint32_t> namedTags; ///< Named tags (ID and type, ID might be 0 if unknown)
+	std::vector<PROPERTY_NAME> names; ///< Requested named properties
+	std::vector<uint8_t> nameMeta; ///< Flags for named tags
+
+	std::unordered_map<uint32_t, PropInfo> props; ///<
+
+	void collectExtendedProperty(const tExtendedFieldURI&);
+	void collectExtendedProperty(const tFieldURI&);
+	void collectExtendedProperty(const tIndexedFieldURI&);
+
+	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
+
+public:
+	static constexpr uint8_t FL_ANY =   0;
+	static constexpr uint8_t FL_FIELD = 1 << 0; ///< Tag was requested as field
+	static constexpr uint8_t FL_EXT =   1 << 1; ///< Tag was requested as extended attribute
 
 	static constexpr uint64_t ToRecipients =  1 << 0;
 	static constexpr uint64_t CcRecipients =  1 << 1;
@@ -222,6 +260,34 @@ struct sShape
 	static constexpr uint64_t Attachments =   1 << 6;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
+
+	sShape() = default;
+	explicit sShape(const TPROPVAL_ARRAY&);
+	explicit sShape(const tFolderResponseShape&);
+	explicit sShape(const tItemResponseShape&);
+
+	sShape(const sShape&) = delete;
+	sShape(sShape&&) = delete;
+
+	sShape& operator=(const sShape&) = delete;
+	sShape& operator=(sShape&&) = delete;
+
+	void clean();
+	bool namedProperties(const PROPID_ARRAY&);
+	PROPNAME_ARRAY namedProperties() const;
+	void properties(const TPROPVAL_ARRAY&);
+	PROPTAG_ARRAY proptags() const;
+
+	void add(uint32_t, uint8_t=0);
+	void add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
+
+	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
+	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
+	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
+	void putExtended(std::vector<tExtendedProperty>&) const;
+
+	uint64_t special = 0; ///< Fields that are not directly accessible by properties
+	std::string store; ///< For which store the named properties are valid
 };
 
 /**
@@ -287,8 +353,6 @@ struct sTimePoint
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T> using vector_inserter = std::back_insert_iterator<std::vector<T>>;
 
 /**
  * Types.xsd:1611
@@ -524,7 +588,7 @@ struct tExtendedFieldURI
 	std::optional<tGuid> PropertySetId; // Attribute.
 	std::optional<std::string> PropertyName; //Attribute
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	static const char* typeName(uint16_t);
 
@@ -555,7 +619,7 @@ private:
  */
 struct tBaseFolderType : public NS_EWS_Types
 {
-	explicit tBaseFolderType(const TPROPVAL_ARRAY&);
+	explicit tBaseFolderType(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -573,7 +637,7 @@ struct tBaseFolderType : public NS_EWS_Types
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
 
-	static sFolder create(const TPROPVAL_ARRAY&);
+	static sFolder create(const sShape&);
 protected:
 	tBaseFolderType(const tBaseFolderType&) = default;
 	tBaseFolderType(tBaseFolderType&&) noexcept = default;
@@ -591,7 +655,7 @@ struct tFieldURI
 
 	tFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	std::string FieldURI; //Attribute
 
@@ -639,7 +703,7 @@ struct tIndexedFieldURI
 
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
@@ -654,7 +718,9 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 
 	tPath(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
+
+	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
 };
 
 /**
@@ -664,7 +730,7 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
-	explicit tFolderType(const TPROPVAL_ARRAY&);
+	explicit tFolderType(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -736,7 +802,7 @@ struct tItem : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Item";
 
-	tItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap&);
+	explicit tItem(const sShape&);
 
 	std::optional<sBase64Binary> MimeContent; ///< exmdb::read_message
 	std::optional<tItemId> ItemId; ///< PR_ENTRYID+PR_CHANGEKEY
@@ -745,10 +811,9 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> Subject; ///< PR_SUBJECT
 	std::optional<Enum::SensitivityChoicesType> Sensitivity; ///< PR_SENSITIVITY
 	std::optional<tBody> Body; ///< PR_BODY or PR_HTML
-	std::vector<sAttachment> Attachments;
-	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
+	std::optional<std::vector<sAttachment>> Attachments;
 	std::optional<sTimePoint> DateTimeReceived; ///< PR_MESSAGE_DELIVERY_TIME
-	std::optional<uint64_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
+	std::optional<int32_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
 	std::optional<std::vector<sString>> Categories; ///< Named property "PS_PUBLIC_STRINGS:Keywords:PT_MV_UNICODE"
 	std::optional<Enum::ImportanceChoicesType> Importance; ///< PR_IMPORTANCE
 	std::optional<std::string> InReplyTo; ///< PR_IN_REPLY_TO_ID
@@ -759,7 +824,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<bool> IsUnmodified;
 	//<xs:element name="InternetMessageHeaders" type="t:NonEmptyArrayOfInternetHeadersType" minOccurs="0" />
 	std::optional<sTimePoint> DateTimeSent;
-	std::optional<gromox::time_point> DateTimeCreated;
+	std::optional<sTimePoint> DateTimeCreated;
 	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
 	//std::optional<gromox::time_point> ReminderDueBy;
 	//std::optional<bool> ReminderIsSet;
@@ -773,7 +838,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> Culture;
 	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0" />
 	std::optional<std::string> LastModifiedName;
-	std::optional<gromox::time_point> LastModifiedTime;
+	std::optional<sTimePoint> LastModifiedTime;
 	std::optional<bool> IsAssociated;
 	//<xs:element name="WebClientReadFormQueryString" type="xs:string" minOccurs="0" />
 	//<xs:element name="WebClientEditFormQueryString" type="xs:string" minOccurs="0" />
@@ -815,7 +880,7 @@ struct tItem : public NS_EWS_Types
 
 	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
 
-	static sItem create(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	static sItem create(const sShape&);
 };
 
 /**
@@ -825,7 +890,7 @@ struct tCalendarItem : public tItem
 {
 	static constexpr char NAME[] = "CalendarItem";
 
-	tCalendarItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	explicit tCalendarItem(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -837,7 +902,7 @@ struct tContact : public tItem
 {
 	static constexpr char NAME[] = "Contact";
 
-	tContact(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	explicit tContact(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -961,9 +1026,9 @@ struct tItemAttachment : public tAttachment
  */
 struct tItemResponseShape
 {
-	tItemResponseShape(const tinyxml2::XMLElement*);
+	explicit tItemResponseShape(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	//Enum::DefaultShapeNamesType BaseShape;
 	std::optional<bool> IncludeMimeContent;
@@ -977,7 +1042,8 @@ struct tItemResponseShape
 	//std::optional<int32_t> MaximumBodySize;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr std::array<uint32_t, 3> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY, PR_MESSAGE_CLASS};
+	static constexpr std::array<uint32_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
+	static constexpr std::array<uint32_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
 };
 
 /**
@@ -1093,7 +1159,7 @@ struct tMessage : public tItem
 {
 	static constexpr char NAME[] = "Message";
 
-	tMessage(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	explicit tMessage(const sShape&);
 
 	std::optional<tSingleRecipient> Sender; ///< PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME
 	std::optional<std::vector<tEmailAddressType>> ToRecipients;
@@ -1188,14 +1254,15 @@ struct tSyncFolderItemsReadFlag : public NS_EWS_Types
  */
 struct tFolderResponseShape
 {
-	tFolderResponseShape(const tinyxml2::XMLElement*);
+	explicit tFolderResponseShape(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr uint32_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY, PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr uint32_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr uint32_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY};
 	static constexpr uint32_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 };
 

@@ -28,6 +28,39 @@ using namespace tinyxml2;
 namespace
 {
 
+/**
+ * @brief      Helper struct for property type derivation
+ *
+ * Provides a mapping from the requested EWS/C++ type to the (likely)
+ * corresponding property type (e.g. std::string -> const char*).
+ * Fundamental type are mapped automatically, compound types always need an
+ * explicit mapping (via template specialization).
+ *
+ * Note that this is only for convenience and does not provide any type safety.
+ *
+ * @tparam     T     Requested type
+ */
+template<typename T> struct _propType {
+	using type = typename std::conditional_t<std::is_fundamental_v<T>, T, void>;
+};
+
+template<> struct _propType<bool> {using type = uint8_t;};
+template<> struct _propType<std::string> {using type = char*;};
+template<> struct _propType<sBase64Binary> {using type = BINARY*;};
+
+/**
+ * Type alias mapping EWS/C++ type to property type.
+ */
+template<typename T> using PropType	= typename _propType<T>::type;
+
+
+/**
+ * @brief      Convert Windows NT timestamp to gromox time point
+ *
+ * @param      nttime  Windows timestamp
+ *
+ * @return     gromox timestamp
+ */
 inline gromox::time_point nttime_to_time_point(uint64_t nttime)
 {return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
 
@@ -46,68 +79,51 @@ T& defaulted(std::optional<T>& container, Args&&... args)
 /**
  * @brief      Fill field from property
  *
- * Value version.
+ * @param      prop       Property or nullptr
+ * @param      target     Destination variable
  *
- * @param      props      Property list
- * @param      tag        Tag to search for
- * @param      target     Target field
- *
- * @tparam     T          Target type
- * @tparam     PT         Property type
+ * @tparam     T          Type of the field
+ * @tparam     PT         Type of the value contained in the property
  */
-template<typename T, typename PT=T, std::enable_if_t<!std::is_pointer_v<PT>, bool> = false>
-void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<T>& target)
+template<typename T, typename PT=PropType<T>, std::enable_if_t<!std::is_same_v<PT, void>, bool> = true>
+void fromProp(const TAGGED_PROPVAL* prop, std::optional<T>& target)
 {
-	const TAGGED_PROPVAL* prop = props.find(tag);
-	if(prop)
+	if(!prop)
+		return;
+	if constexpr(std::is_pointer_v<PT>)
+		target.emplace(static_cast<PT>(prop->pvalue));
+	else
 		target.emplace(*static_cast<const PT*>(prop->pvalue));
 }
 
 /**
  * @brief      Fill field from property
  *
- * Pointer version.
+ * @param      prop       Property or nullptr
+ * @param      target     Destination variable
  *
- * @param      props      Property list
- * @param      tag        Tag to search for
- * @param      target     Target field
- *
- * @tparam     T          Target type
- * @tparam     PT         Property type
+ * @tparam     T          Type of the field
+ * @tparam     PT         Type of the value contained in the property
  */
-template<typename T, typename PT=T, std::enable_if_t<std::is_pointer_v<PT>, bool> = true>
-void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<T>& target)
+template<typename T, typename PT=PropType<T>, std::enable_if_t<!std::is_same_v<PT, void>, bool> = true>
+void fromProp(const TAGGED_PROPVAL* prop, T& target)
 {
-	const TAGGED_PROPVAL* prop = props.find(tag);
-	if(prop)
-		target.emplace(static_cast<PT>(prop->pvalue));
+	if(!prop)
+		return;
+	if constexpr(std::is_pointer_v<PT>)
+		target = static_cast<PT>(prop->pvalue);
+	else
+		target = *static_cast<const PT*>(prop->pvalue);
 }
 
 /**
- * @brief      Fill string from property
+ * @brief      Read time point from property
  *
- * Shortcut for fromProp<std::string, const char*>.
- *
- * @param      props      Property list
- * @param      tag        Tag to search for
- * @param      target     Target field
+ * @param      prop    Property or nullptr
+ * @param      target  Destination variable
  */
-template<>
-void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<std::string>& target)
-{return fromProp<std::string, const char*>(props, tag, target);}
-
-/**
- * @brief      Fill time field from property
- *
- * Automatically performs conversion from NT to UNIX timestamp.
- *
- * @param      props      Property list
- * @param      tag        Tag to search for
- * @param      target     Target field
- */
-void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<sTimePoint>& target)
+void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 {
-	const TAGGED_PROPVAL* prop = props.find(tag);
 	if(prop)
 		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
 }
@@ -115,6 +131,14 @@ void fromProp(const TPROPVAL_ARRAY& props, uint32_t tag, std::optional<sTimePoin
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Construct from BINARY pointer
+ *
+ * @param      bin   Binary data. Must not be nullptr.
+ */
+sBase64Binary::sBase64Binary(const BINARY* bin)
+{assign(bin->pb, bin->pb+bin->cb);}
 
 /**
  * @brief     Initilize binary data from tagged propval
@@ -346,6 +370,200 @@ sFolderSpec& sFolderSpec::normalize()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+sShape::PropInfo::PropInfo(uint8_t f, const PROPERTY_NAME* n) : name(n), flags(f)
+{}
+
+sShape::PropInfo::PropInfo(uint8_t f, const TAGGED_PROPVAL* p) : prop(p), flags(f)
+{}
+
+/**
+ * @brief      Initialize shape from folder shape
+ *
+ * @param      shape  Requested shape
+ */
+sShape::sShape(const tFolderResponseShape& shape)
+{shape.tags(*this);}
+
+/**
+ * @brief      Initialize shape from item shape
+ *
+ * @param      shape  Requested shape
+ */
+sShape::sShape(const tItemResponseShape& shape)
+{shape.tags(*this);}
+
+
+/**
+ * @brief      Initialize shape properties
+ *
+ * Marks each property as explicitely requested as field.
+ *
+ * @param      tp     Array of propvals
+ */
+sShape::sShape(const TPROPVAL_ARRAY& tp)
+{
+	props.reserve(tp.count);
+	for(const TAGGED_PROPVAL* prop = tp.ppropval; prop != tp.ppropval+tp.count; ++prop)
+		props.emplace(prop->proptag, PropInfo(FL_FIELD, prop));
+}
+
+/**
+ * @brief      Add a tag to the shape
+ *
+ * @param      tag    Tag ID
+ * @param      flags  Shape target flags
+ */
+void sShape::add(uint32_t tag, uint8_t flags)
+{
+	auto it = props.find(tag);
+	if(it == props.end()) {
+		tags.emplace_back(tag);
+		it = props.emplace(tag, flags).first;
+	}
+	it->second.flags |= flags;
+}
+
+/**
+ * @brief      Add named property to the shape
+ *
+ * @param      name   Property name
+ * @param      type   Property type
+ * @param      flags  Shape target flags
+ */
+void sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
+{
+	names.emplace_back(name);
+	namedTags.emplace_back(type);
+	nameMeta.emplace_back(flags);
+}
+
+/**
+ * @brief      Reset all properties to unloaded
+ */
+void sShape::clean()
+{
+	for(auto& entry : props)
+		entry.second.prop = nullptr;
+}
+
+/**
+ * @brief      Retrieve property by tag
+ *
+ * @param      tag   Tag ID
+ * @param      mask  Mask of flags or FL_ANY
+ *
+ * @return     Pointer to property or nullptr if not found
+ */
+const TAGGED_PROPVAL* sShape::get(uint32_t tag, uint8_t mask) const
+{
+	auto it = props.find(tag);
+	if(it == props.end() || (mask != FL_ANY && !(it->second.flags & mask)))
+		return nullptr;
+	return it->second.prop;
+}
+
+/**
+ * @brief      Retrieve property by name
+ *
+ * @param      name  Property name
+ * @param      mask  Mask of flags or FL_ANY
+ *
+ * @return     Pointer to property or nullptr if not found
+ */
+const TAGGED_PROPVAL* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
+{
+	auto it = std::find(names.begin(), names.end(), name);
+	if(it == names.end())
+		return nullptr;
+	auto index = std::distance(names.begin(), it);
+	return get(namedTags[index], mask);
+}
+
+/**
+ * @brief      Get property data
+ *
+ * @param      tag   Tag ID
+ * @param      mask  Mask of flags or FL_ANY
+ *
+ * @tparam     T     Property value type
+ *
+ * @return     Pointer to property value or nullptr if not found
+ */
+template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
+{
+	const TAGGED_PROPVAL* prop = get(tag, mask);
+	return prop? static_cast<const T*>(prop->pvalue) : nullptr;
+}
+
+/**
+ * @brief      Wrap requested property names
+ *
+ * @return     The propname array
+ */
+PROPNAME_ARRAY sShape::namedProperties() const
+{return PROPNAME_ARRAY{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};}
+
+/**
+ * @brief      Set named property IDs
+ *
+ * The ID array must have the same count as the stored property names.
+ *
+ * @param      ids   IDs of the named properties
+ *
+ * @return     true if successful, false otherwise.
+ */
+bool sShape::namedProperties(const PROPID_ARRAY& ids)
+{
+	if(ids.count != names.size()) //Abort if sizes don't match
+		return false;
+	size_t before = props.size();
+	for(uint32_t tag : namedTags) //Remove all named tags
+		props.erase(tag);
+	tags.resize(tags.size()-before+props.size()); //Truncate named IDs
+	for(size_t index = 0; index < names.size(); ++index) { //Add named IDs
+		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids.ppropid[index]);
+		namedTags[index] = tag;
+		if(!PROP_ID(tag))
+			continue;
+		props.emplace(tag, PropInfo(nameMeta[index], &names[index]));
+		tags.emplace_back(tag);
+	}
+	return true;
+}
+
+/**
+ * @brief      Set properties
+ *
+ * @param      properties  Properties to set
+ */
+void sShape::properties(const TPROPVAL_ARRAY& properties)
+{
+	for(const TAGGED_PROPVAL* prop = properties.ppropval; prop != properties.ppropval+properties.count; ++prop)
+		props[prop->proptag].prop = prop;
+}
+
+/**
+ * @brief      Wrap requested property tag IDs
+ *
+ * @return     Tag ID array
+ */
+PROPTAG_ARRAY sShape::proptags() const
+{return PROPTAG_ARRAY{uint16_t(tags.size()), const_cast<uint32_t*>(tags.data())};}
+
+/**
+ * @brief      Store extended properties
+ *
+ * @param      extprops  Location to store extended properties in
+ */
+void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
+{
+	for(const auto& prop : props)
+		if(prop.second.flags & FL_EXT && prop.second.prop)
+			extprops.emplace_back(*prop.second.prop, prop.second.name? *prop.second.name : NONAME);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief     Default constructor
  *
@@ -454,10 +672,10 @@ sTimePoint sTimePoint::fromNT(uint64_t timestamp)
 tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 {
 	AttachmentId.emplace(aid);
-	fromProp(props, PR_DISPLAY_NAME, Name);
-	fromProp(props, PR_ATTACH_MIME_TAG, ContentType);
-	fromProp(props, PR_ATTACH_SIZE, Size);
-	fromProp(props, PR_LAST_MODIFICATION_TIME, LastModifiedTime);
+	fromProp(props.find(PR_DISPLAY_NAME), Name);
+	fromProp(props.find(PR_ATTACH_MIME_TAG), ContentType);
+	fromProp(props.find(PR_ATTACH_SIZE), Size);
+	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
 }
 
 sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
@@ -475,54 +693,24 @@ sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/**
- * @brief     Convert propvals to structured folder information
- *
- * @param     folderProps     folder property values
- */
-tBaseFolderType::tBaseFolderType(const TPROPVAL_ARRAY& folderProps)
+
+tBaseFolderType::tBaseFolderType(const sShape& shape)
 {
-	tFolderId& fId = FolderId.emplace();
-	for(const TAGGED_PROPVAL* tp = folderProps.ppropval; tp < folderProps.ppropval+folderProps.count; ++tp)
-	{
-		switch(tp->proptag)
-		{
-		case PR_CONTENT_UNREAD:
-			break;
-		case PR_CHANGE_KEY:
-			fId.ChangeKey.emplace(*tp); break;
-		case PR_CONTAINER_CLASS:
-			FolderClass = reinterpret_cast<const char*>(tp->pvalue); break;
-		case PR_CONTENT_COUNT:
-			TotalCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
-		case PR_DISPLAY_NAME:
-			DisplayName = reinterpret_cast<const char*>(tp->pvalue); break;
-		case PR_ENTRYID:
-			fId.Id = *tp; break;
-		case PR_FOLDER_CHILD_COUNT:
-			ChildFolderCount = *reinterpret_cast<uint32_t*>(tp->pvalue); break;
-		case PR_PARENT_ENTRYID:
-			ParentFolderId.emplace().Id = *tp; break;
-		default:
-			ExtendedProperty.emplace_back(*tp);
-		}
-	}
+	fromProp(shape.get(PR_CHANGE_KEY), defaulted(FolderId).ChangeKey);
+	fromProp(shape.get(PR_CONTAINER_CLASS), FolderClass);
+	fromProp(shape.get(PR_CONTENT_COUNT), TotalCount);
+	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
+	fromProp(shape.get(PR_ENTRYID), defaulted(FolderId).Id);
+	fromProp(shape.get(PR_FOLDER_CHILD_COUNT), ChildFolderCount);
+	fromProp(shape.get(PR_PARENT_ENTRYID), defaulted(ParentFolderId).Id);
+	shape.putExtended(ExtendedProperty);
 }
 
-/**
- * @brief     Create folder from properties
- *
- * Automatically uses information from the tags to fill in folder id and type.
- *
- * @param     folderProps     Folder properties
- *
- * @return    Variant containing the folder information struct
- */
-sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
+sFolder tBaseFolderType::create(const sShape& shape)
 {
 	enum Type : uint8_t {NORMAL, CALENDAR, TASKS, CONTACTS, SEARCH};
-	const char* frClass = folderProps.get<const char>(PR_CONTAINER_CLASS);
-	const uint32_t* frType = folderProps.get<uint32_t>(PR_FOLDER_TYPE);
+	const char* frClass = shape.get<char>(PR_CONTAINER_CLASS, sShape::FL_ANY);
+	const uint32_t* frType = shape.get<uint32_t>(PR_FOLDER_TYPE, sShape::FL_ANY);
 	Type folderType = NORMAL;
 	if(frType && *frType == FOLDER_SEARCH)
 		folderType = SEARCH;
@@ -538,17 +726,19 @@ sFolder tBaseFolderType::create(const TPROPVAL_ARRAY& folderProps)
 	switch(folderType)
 	{
 	case CALENDAR:
-		return tCalendarFolderType(folderProps);
+		return tCalendarFolderType(shape);
 	case CONTACTS:
-		return tContactsFolderType(folderProps);
+		return tContactsFolderType(shape);
 	case SEARCH:
-		return tSearchFolderType(folderProps);
+		return tSearchFolderType(shape);
 	case TASKS:
-		return tTasksFolderType(folderProps);
+		return tTasksFolderType(shape);
 	default:
-		return tFolderType(folderProps);
+		return tFolderType(shape);
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBase64Binary>& chKey) :
     Id(fEntryID), ChangeKey(chKey)
@@ -556,74 +746,47 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tCalendarItem::tCalendarItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
-#define pval(type) static_cast<const type*>(tp->pvalue)
-tContact::tContact(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+
+tContact::tContact(const sShape& shape) : tItem(shape)
 {
-	PhoneNumbers.emplace().reserve(9); // currently available phone properties
-	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
-	{
-		switch(tp->proptag)
-		{
-		// TODO FileAs
-		case PR_DISPLAY_NAME:
-			DisplayName = pval(char); break;
-		case PR_GIVEN_NAME:
-			GivenName = pval(char); break;
-		// TODO Initials
-		case PR_MIDDLE_NAME:
-			MiddleName = pval(char); break;
-		case PR_NICKNAME:
-			Nickname = pval(char); break;
-		case PR_COMPANY_NAME:
-			CompanyName = pval(char); break;
-		// TODO ContactSource
-		case PR_ASSISTANT:
-			AssistantName = pval(char); break;
-		case PR_DEPARTMENT_NAME:
-			Department = pval(char); break;
-		case PR_TITLE:
-			JobTitle = pval(char); break;
-		case PR_OFFICE_LOCATION:
-			OfficeLocation = pval(char); break;
-		case PR_SURNAME:
-			Surname = pval(char); break;
-		case PR_BUSINESS_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessPhone));
-			break;
-		case PR_HOME_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::HomePhone));
-			break;
-		case PR_PRIMARY_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::PrimaryPhone));
-			break;
-		case PR_BUSINESS2_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessPhone2));
-			break;
-		case PR_MOBILE_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::MobilePhone));
-			break;
-		case PR_PAGER_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::Pager));
-			break;
-		case PR_PRIMARY_FAX_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::BusinessFax));
-			break;
-		case PR_ASSISTANT_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::AssistantPhone));
-			break;
-		case PR_HOME2_TELEPHONE_NUMBER:
-			PhoneNumbers->emplace_back(tPhoneNumberDictionaryEntry(pval(char), Enum::HomePhone2));
-			break;
-		default:
-			break;
-		}
-	}
+	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
+	fromProp(shape.get(PR_GIVEN_NAME), GivenName);
+	// TODO Initials
+	fromProp(shape.get(PR_MIDDLE_NAME), MiddleName);
+	fromProp(shape.get(PR_NICKNAME), Nickname);
+	fromProp(shape.get(PR_COMPANY_NAME), CompanyName);
+	// TODO ContactSource
+	fromProp(shape.get(PR_ASSISTANT), AssistantName);
+	fromProp(shape.get(PR_DEPARTMENT_NAME), Department);
+	fromProp(shape.get(PR_TITLE), JobTitle);
+	fromProp(shape.get(PR_OFFICE_LOCATION), OfficeLocation);
+	fromProp(shape.get(PR_SURNAME), Surname);
+	const char* val;
+	if((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
+	if((val = shape.get<char>(PR_HOME_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone));
+	if((val = shape.get<char>(PR_PRIMARY_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::PrimaryPhone));
+	if((val = shape.get<char>(PR_BUSINESS2_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone2));
+	if((val = shape.get<char>(PR_MOBILE_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::MobilePhone));
+	if((val = shape.get<char>(PR_PAGER_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Pager));
+	if((val = shape.get<char>(PR_PRIMARY_FAX_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessFax));
+	if((val = shape.get<char>(PR_ASSISTANT_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::AssistantPhone));
+	if((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone2));
+
 }
-#undef pval
+
 ///////////////////////////////////////////////////////////////////////////////
 
 tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
@@ -741,43 +904,30 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
 		PropertyName = propname.pname;
 }
 
-/**
- * @brief     Collect property tags and names for field URI
 
- * @param     tags    Inserter to use for property tags
- * @param     names   Inserter to use for property names
- * @param     types   Inserter to use for the type of each named property
- */
-void tExtendedFieldURI::tags(vector_inserter<uint32_t>& tags, vector_inserter<PROPERTY_NAME>& names,
-                             vector_inserter<uint16_t>& types, uint64_t&) const
+void tExtendedFieldURI::tags(sShape& shape) const
 {
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
 	if(type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
 		throw InputError(E3059(PropertyType));
-	if(PropertyTag)
-	{
+	if(PropertyTag) {
 		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
-		tags = PROP_TAG(type->second, tagId);
+		shape.add(PROP_TAG(type->second, tagId), sShape::FL_EXT);
 	}
 	else if(PropertySetId || DistinguishedPropertySetId)
 	{
 		PROPERTY_NAME name{};
 		name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
-		if(PropertyName)
-		{
+		if(PropertyName) {
 			name.kind = MNID_STRING;
 			name.pname = const_cast<char*>(PropertyName->c_str());
-		}
-		else if(PropertyId)
-		{
+		} else if(PropertyId) {
 			name.kind = MNID_ID;
 			name.lid = *PropertyId;
-		}
-		else
+		} else
 			throw InputError(E3060);
-		names = name;
-		types = type->second;
+		shape.add(name, type->second, sShape::FL_EXT);
 	}
 	else
 		throw InputError(E3061);
@@ -963,34 +1113,23 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"message:ToRecipients", sShape::ToRecipients},
 }};
 
-/**
- * @brief     Collect property tags and names for field URI
-
- * @param     tags    Inserter to use for property tags
- * @param     names   Inserter to use for property names
- * @param     types   Inserter to use for the type of each named property
- * @param     special Bit map to store special property flags in
- */
-void tFieldURI::tags(vector_inserter<uint32_t>& tagins, vector_inserter<PROPERTY_NAME>& nameins,
-                     vector_inserter<uint16_t>& typeins, uint64_t& special) const
+void tFieldURI::tags(sShape& shape) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
 	for(auto it = tags.first; it != tags.second; ++it)
-		tagins = it->second;
+		shape.add(it->second, sShape::FL_FIELD);
+
 	auto names = nameMap.equal_range(FieldURI);
 	for(auto it = names.first; it != names.second; ++it)
-	{
-		nameins = it->second.first;
-		typeins = it->second.second;
-	}
+		shape.add(it->second.first, it->second.second, sShape::FL_FIELD);
+
 	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
 	if(specials != specialMap.end() && specials->first == FieldURI)
-		special |= specials->second;
+		shape.special |= specials->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
 {
@@ -1004,33 +1143,27 @@ tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY&
 /**
  * @brief     Collect property tags and names for folder shape
 
- * @param     tags    Inserter to use for property tags
- * @param     names   Inserter to use for property names
- * @param     types   Inserter to use for the type of each named property
- * @param     special Bit map to store special property flags in
+ * @param     shape   Shape to store tags in
  */
-void tFolderResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                                vector_inserter<uint16_t>& typeIns, uint64_t& special) const
+void tFolderResponseShape::tags(sShape& shape) const
 {
+	for(uint32_t tag : tagsStructural)
+		shape.add(tag);
 	size_t baseShape = BaseShape.index();
 	for(uint32_t tag : tagsIdOnly)
-		tagIns = tag;
+		shape.add(tag, sShape::FL_FIELD);
 	if(baseShape >= 1)
 		for(uint32_t tag : tagsDefault)
-			tagIns = tag;
+			shape.add(tag, sShape::FL_FIELD);
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			additional.tags(tagIns, nameIns, typeIns, special);
+			additional.tags(shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tFolderType::tFolderType(const TPROPVAL_ARRAY& folderProps) :
-    tBaseFolderType(folderProps)
-{
-	if(folderProps.has(PR_CONTENT_UNREAD))
-		UnreadCount = *folderProps.get<uint32_t>(PR_CONTENT_UNREAD);
-}
+tFolderType::tFolderType(const sShape& shape) : tBaseFolderType(shape)
+{fromProp(shape.get(PR_CONTENT_UNREAD), UnreadCount);}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1049,149 +1182,73 @@ std::string tGuid::serialize() const
 /**
  * TODO: Implement tag mapping
  */
-void tIndexedFieldURI::tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const
+void tIndexedFieldURI::tags(sShape&) const
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define pval(type) static_cast<const type*>(tp->pvalue)
-
-tItem::tItem(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps)
+tItem::tItem(const sShape& shape)
 {
-	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
-	{
-		if(mapNamedProperty(*tp, namedProps))
-			continue;
-		switch(tp->proptag)
-		{
-		//tMessage
-		case PidTagChangeNumber:
-		case PR_CONVERSATION_INDEX:
-		case PR_CONVERSATION_TOPIC:
-		case PR_READ:
-		case PR_INTERNET_MESSAGE_ID:
-		case PR_INTERNET_REFERENCES:
-		case PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED:
-		case PR_READ_RECEIPT_REQUESTED:
-		case PR_RECEIVED_BY_ADDRTYPE:
-		case PR_RECEIVED_BY_EMAIL_ADDRESS:
-		case PR_RECEIVED_BY_NAME:
-		case PR_RCVD_REPRESENTING_ADDRTYPE:
-		case PR_RCVD_REPRESENTING_EMAIL_ADDRESS:
-		case PR_RCVD_REPRESENTING_NAME:
-		case PR_SENDER_ADDRTYPE:
-		case PR_SENDER_EMAIL_ADDRESS:
-		case PR_SENDER_NAME:
-		case PR_SENT_REPRESENTING_ADDRTYPE:
-		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
-		case PR_SENT_REPRESENTING_NAME:
-		//tContact
-		case PR_DISPLAY_NAME:
-		case PR_GIVEN_NAME:
-		case PR_MIDDLE_NAME:
-		case PR_NICKNAME:
-		case PR_COMPANY_NAME:
-		case PR_ASSISTANT:
-		case PR_DEPARTMENT_NAME:
-		case PR_TITLE:
-		case PR_OFFICE_LOCATION:
-		case PR_SURNAME:
-		case PR_BUSINESS_TELEPHONE_NUMBER:
-		case PR_HOME_TELEPHONE_NUMBER:
-		case PR_PRIMARY_TELEPHONE_NUMBER:
-		case PR_BUSINESS2_TELEPHONE_NUMBER:
-		case PR_MOBILE_TELEPHONE_NUMBER:
-		case PR_PAGER_TELEPHONE_NUMBER:
-		case PR_PRIMARY_FAX_NUMBER:
-		case PR_ASSISTANT_TELEPHONE_NUMBER:
-		case PR_HOME2_TELEPHONE_NUMBER:
-			continue;
-		case PR_ASSOCIATED:
-			IsAssociated.emplace(*pval(uint8_t)); break;
-		case PR_BODY:
-			if(!Body)
-				Body.emplace(pval(char), Enum::Text); //Do not overwrite (Best -> HTML takes precedence)
-			break;
-		case PR_CHANGE_KEY:
-			ItemId? ItemId->ChangeKey = *tp : ItemId.emplace().ChangeKey.emplace(*tp); break;
-		case PR_CLIENT_SUBMIT_TIME:
-			DateTimeSent = sTimePoint::fromNT(*pval(uint64_t)); break;
-		case PR_CONVERSATION_ID:
-			ConversationId.emplace(*tp); break;
-		case PR_CREATION_TIME:
-			DateTimeCreated.emplace(nttime_to_time_point(*pval(uint64_t))); break;
-		case PR_DISPLAY_CC:
-			DisplayCc.emplace(pval(char)); break;
-		case PR_DISPLAY_BCC:
-			DisplayBcc.emplace(pval(char)); break;
-		case PR_DISPLAY_TO:
-			DisplayTo.emplace(pval(char)); break;
-		case PR_ENTRYID:
-			ItemId? ItemId->Id = *tp : ItemId.emplace(*tp); break;
-		case PR_HASATTACH:
-			HasAttachments.emplace(*pval(uint8_t)); break;
-		case PR_FLAG_STATUS:
-			Flag.emplace().FlagStatus = *pval(uint32_t) == followupFlagged? Enum::Flagged :
-			                            *pval(uint32_t) == followupComplete? Enum::Complete : Enum::NotFlagged;
-			break;
-		case PR_HTML: {
-			const BINARY* content = pval(BINARY);
-			Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML); break;
-			}
-		case PR_IMPORTANCE:
-			Importance = *pval(uint32_t) == IMPORTANCE_LOW? Enum::Low :
-			             *pval(uint32_t) == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
-			break;
-		case PR_IN_REPLY_TO_ID:
-			InReplyTo.emplace(pval(char)); break;
-		case PR_LAST_MODIFIER_NAME:
-			LastModifiedName.emplace(pval(char)); break;
-		case PR_LAST_MODIFICATION_TIME:
-			LastModifiedTime.emplace(nttime_to_time_point(*pval(uint64_t))); break;
-		case PR_MESSAGE_CLASS:
-			ItemClass.emplace(pval(char)); break;
-		case PR_MESSAGE_DELIVERY_TIME:
-			DateTimeReceived = sTimePoint::fromNT(*pval(uint64_t)); break;
-		case PR_MESSAGE_FLAGS:
-			IsSubmitted = *pval(uint32_t) & MSGFLAG_SUBMITTED;
-			IsDraft = *pval(uint32_t) & MSGFLAG_UNSENT;
-			IsFromMe = *pval(uint32_t) & MSGFLAG_FROMME;
-			IsResend = *pval(uint32_t) & MSGFLAG_RESEND;
-			IsUnmodified = *pval(uint32_t) & MSGFLAG_UNMODIFIED;
-			break;
-		case PR_MESSAGE_SIZE:
-			Size.emplace(*pval(uint32_t)); break;
-		case PR_PARENT_ENTRYID:
-			ParentFolderId.emplace(*tp); break;
-		case PR_SENSITIVITY:
-			try {
-				Sensitivity.emplace(size_t(*pval(uint32_t)));
-			} catch (EnumError& e) {
-				mlog(LV_WARN, "[ews] could not set sensitivity: %s", e.what());
-			}
-			break;
-		case PR_SUBJECT:
-			Subject.emplace(pval(char)); break;
-		default:
-			ExtendedProperty.emplace_back(*tp);
-		}
+	const uint32_t* v32;
+	const TAGGED_PROPVAL* prop;
+	fromProp(shape.get(PR_ASSOCIATED), IsAssociated);
+	const TAGGED_PROPVAL *bodyText = shape.get(PR_BODY), *bodyHtml = shape.get(PR_HTML);
+	if(bodyHtml) {
+		const BINARY* content = reinterpret_cast<const BINARY*>(bodyHtml->pvalue);
+		Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML);
 	}
-}
+	else if(bodyText)
+		Body.emplace(reinterpret_cast<const char*>(bodyText->pvalue), Enum::Text);
 
-#undef pval
+	if((prop = shape.get(PR_CHANGE_KEY)))
+		fromProp(prop, defaulted(ItemId).ChangeKey);
+	fromProp(shape.get(PR_CLIENT_SUBMIT_TIME), DateTimeSent);
+	if((prop = shape.get(PR_CONVERSATION_ID)))
+	fromProp(prop, defaulted(ConversationId).Id);
+	fromProp(shape.get(PR_CREATION_TIME), DateTimeCreated);
+	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
+	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);
+	fromProp(shape.get(PR_DISPLAY_TO),DisplayTo);
+	if((prop = shape.get(PR_ENTRYID)))
+		fromProp(prop, defaulted(ItemId).Id);
+	fromProp(shape.get(PR_HASATTACH), HasAttachments);
+	if((v32 = shape.get<uint32_t>(PR_IMPORTANCE)))
+		Importance = *v32 == IMPORTANCE_LOW? Enum::Low : *v32 == IMPORTANCE_HIGH? Enum::High : Enum::Normal;
+	fromProp(shape.get(PR_IN_REPLY_TO_ID), InReplyTo);
+	fromProp(shape.get(PR_LAST_MODIFIER_NAME), LastModifiedName);
+	fromProp(shape.get(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
+	fromProp(shape.get(PR_MESSAGE_CLASS), ItemClass);
+	fromProp(shape.get(PR_MESSAGE_DELIVERY_TIME), DateTimeReceived);
+	if((v32 = shape.get<uint32_t>(PR_MESSAGE_FLAGS))) {
+		IsSubmitted = *v32 & MSGFLAG_SUBMITTED;
+		IsDraft = *v32 & MSGFLAG_UNSENT;
+		IsFromMe = *v32 & MSGFLAG_FROMME;
+		IsResend = *v32 & MSGFLAG_RESEND;
+		IsUnmodified = *v32 & MSGFLAG_UNMODIFIED;
+	}
+	fromProp(shape.get(PR_MESSAGE_SIZE), Size);
+	if((prop = shape.get(PR_PARENT_ENTRYID)))
+	fromProp(prop, defaulted(ParentFolderId).Id);
+	if((v32 = shape.get<uint32_t>(PR_SENSITIVITY)))
+		Sensitivity = *v32 == SENSITIVITY_PRIVATE? Enum::Private :
+		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL? Enum::Confidential :
+		              *v32 == SENSITIVITY_PERSONAL? Enum::Personal : Enum::Normal;
+	fromProp(shape.get(PR_SUBJECT), Subject);
+	shape.putExtended(ExtendedProperty);
+};
 
-sItem tItem::create(const TPROPVAL_ARRAY& itemProps, const sNamedPropertyMap& namedProps)
+sItem tItem::create(const sShape& shape)
 {
-	const char* itemClass = itemProps.get<const char>(PR_MESSAGE_CLASS);
+	const char* itemClass = shape.get<char>(PR_MESSAGE_CLASS, sShape::FL_ANY);
 	if(!itemClass)
-		return tItem(itemProps, namedProps);
+		return tItem(shape);
 	if(!strcasecmp(itemClass, "IPM.Note"))
-		return tMessage(itemProps, namedProps);
+		return tMessage(shape);
 	else if(!strcasecmp(itemClass, "IPM.Appointment"))
-		return tCalendarItem(itemProps, namedProps);
+		return tCalendarItem(shape);
 	else if(!strcasecmp(itemClass, "IPM.Contact"))
-		return tContact(itemProps, namedProps);
-	return tItem(itemProps, namedProps);
+		return tContact(shape);
+	return tItem(shape);
 }
 
 /**
@@ -1234,106 +1291,85 @@ bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& 
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief     Collect property tags and names for item shape
+ * @brief     Collect property tags and names for folder shape
 
- * @param     tags    Inserter to use for property tags
- * @param     names   Inserter to use for property names
- * @param     types   Inserter to use for the type of each named property
- * @param     special Bit map to store special property flags in
+ * @param     shape   Shape to store tags in
  */
-void tItemResponseShape::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                              vector_inserter<uint16_t>& typeIns, uint64_t& special) const
+void tItemResponseShape::tags(sShape& shape) const
 {
+
+	for(uint32_t tag : tagsStructural)
+		shape.add(tag);
 	for(uint32_t tag : tagsIdOnly)
-		tagIns = tag;
+		shape.add(tag, sShape::FL_FIELD);
 	if(IncludeMimeContent && *IncludeMimeContent)
-		special |= sShape::MimeContent;
+		shape.special |= sShape::MimeContent;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
-			additional.tags(tagIns, nameIns, typeIns, special);
-	if(special & sShape::Body)
+			additional.tags(shape);
+	if(shape.special & sShape::Body)
 	{
 		std::string_view type = BodyType? *BodyType : Enum::Best;
 		if(type == Enum::Best || type == Enum::Text)
-			tagIns = PR_BODY;
+			shape.add(PR_BODY, sShape::FL_FIELD);
 		if(type == Enum::Best || type == Enum::HTML)
-			tagIns = PR_HTML;
-		special &= ~sShape::Body;
+			shape.add(PR_HTML, sShape::FL_FIELD);
+		shape.special &= ~sShape::Body;
 	}
-	if(special & sShape::MessageFlags)
+	if(shape.special & sShape::MessageFlags)
 	{
-		tagIns = PR_MESSAGE_FLAGS;
-		special &= ~sShape::MessageFlags;
+		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);
+		shape.special &= ~sShape::MessageFlags;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define pval(type) static_cast<const type*>(tp->pvalue)
-
-tMessage::tMessage(const TPROPVAL_ARRAY& propvals, const sNamedPropertyMap& namedProps) : tItem(propvals, namedProps)
+tMessage::tMessage(const sShape& shape) : tItem(shape)
 {
-	for(const TAGGED_PROPVAL* tp = propvals.ppropval; tp < propvals.ppropval+propvals.count; ++tp)
-		switch(tp->proptag)
-		{
-		case PR_CONVERSATION_INDEX:
-			ConversationIndex = *tp; break;
-		case PR_CONVERSATION_TOPIC:
-		   ConversationTopic = pval(char); break;
-		case PR_READ:
-			IsRead = *pval(bool); break;
-		case PR_INTERNET_MESSAGE_ID:
-			InternetMessageId = pval(char); break;
-		case PR_INTERNET_REFERENCES:
-			References = pval(char); break;
-		case PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED:
-			IsDeliveryReceiptRequested = *pval(bool); break;
-		case PR_READ_RECEIPT_REQUESTED:
-			IsReadReceiptRequested = *pval(bool); break;
-		case PR_RECEIVED_BY_ADDRTYPE:
-			defaulted(ReceivedBy).Mailbox.RoutingType = pval(char); break;
-		case PR_RECEIVED_BY_EMAIL_ADDRESS:
-			defaulted(ReceivedBy).Mailbox.EmailAddress = pval(char); break;
-		case PR_RECEIVED_BY_NAME:
-			defaulted(ReceivedBy).Mailbox.Name = pval(char); break;
-		case PR_RCVD_REPRESENTING_ADDRTYPE:
-			defaulted(ReceivedRepresenting).Mailbox.RoutingType = pval(char); break;
-		case PR_RCVD_REPRESENTING_EMAIL_ADDRESS:
-			defaulted(ReceivedRepresenting).Mailbox.EmailAddress = pval(char); break;
-		case PR_RCVD_REPRESENTING_NAME:
-			defaulted(ReceivedRepresenting).Mailbox.Name = pval(char); break;
-		case PR_SENDER_ADDRTYPE:
-			defaulted(Sender).Mailbox.RoutingType = pval(char); break;
-		case PR_SENDER_EMAIL_ADDRESS:
-			defaulted(Sender).Mailbox.EmailAddress = pval(char); break;
-		case PR_SENDER_NAME:
-			defaulted(Sender).Mailbox.Name = pval(char); break;
-		case PR_SENT_REPRESENTING_ADDRTYPE:
-			defaulted(From).Mailbox.RoutingType = pval(char); break;
-		case PR_SENT_REPRESENTING_EMAIL_ADDRESS:
-			defaulted(From).Mailbox.EmailAddress = pval(char); break;
-		case PR_SENT_REPRESENTING_NAME:
-			defaulted(From).Mailbox.Name = pval(char); break;
-		default:
-			break;
-		}
+	const TAGGED_PROPVAL* prop;
+	fromProp(shape.get(PR_CONVERSATION_INDEX), ConversationIndex);
+	fromProp(shape.get(PR_CONVERSATION_TOPIC), ConversationTopic);
+	fromProp(shape.get(PR_INTERNET_MESSAGE_ID), InternetMessageId);
+	fromProp(shape.get(PR_INTERNET_REFERENCES), References);
+	fromProp(shape.get(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED), IsDeliveryReceiptRequested);
+	if((prop = shape.get(PR_RCVD_REPRESENTING_ADDRTYPE)))
+		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.RoutingType);
+	if((prop = shape.get(PR_RCVD_REPRESENTING_EMAIL_ADDRESS)))
+		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.EmailAddress);
+	if((prop = shape.get(PR_RCVD_REPRESENTING_NAME)))
+		fromProp(prop, defaulted(ReceivedRepresenting).Mailbox.Name);
+	fromProp(shape.get(PR_READ), IsRead);
+	fromProp(shape.get(PR_READ_RECEIPT_REQUESTED), IsReadReceiptRequested);
+	if((prop = shape.get(PR_RECEIVED_BY_ADDRTYPE)))
+		fromProp(prop, defaulted(ReceivedBy).Mailbox.RoutingType);
+	if((prop = shape.get(PR_RECEIVED_BY_EMAIL_ADDRESS)))
+		fromProp(prop, defaulted(ReceivedBy).Mailbox.EmailAddress);
+	if((prop = shape.get(PR_RECEIVED_BY_NAME)))
+		fromProp(prop, defaulted(ReceivedBy).Mailbox.Name);
+	if((prop = shape.get(PR_SENDER_ADDRTYPE)))
+		fromProp(prop, defaulted(Sender).Mailbox.RoutingType);
+	if((prop = shape.get(PR_SENDER_EMAIL_ADDRESS)))
+		fromProp(prop, defaulted(Sender).Mailbox.EmailAddress);
+	if((prop = shape.get(PR_SENDER_NAME)))
+		fromProp(prop, defaulted(Sender).Mailbox.Name);
+	if((prop = shape.get(PR_SENT_REPRESENTING_ADDRTYPE)))
+		fromProp(prop, defaulted(From).Mailbox.RoutingType);
+	if((prop = shape.get(PR_SENT_REPRESENTING_EMAIL_ADDRESS)))
+		fromProp(prop, defaulted(From).Mailbox.EmailAddress);
+	if((prop = shape.get(PR_SENT_REPRESENTING_NAME)))
+		fromProp(prop, defaulted(From).Mailbox.Name);
 }
-
-#undef pval
 
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief     Collect property tags and names for path specification
 
- * @param     tags    Inserter to use for property tags
- * @param     names   Inserter to use for property names
- * @param     types   Inserter to use for the type of each named property
- * @param     special Bit map to store special property flags in
+ * @param     shape   Shape to write tags to
  */
-void tPath::tags(vector_inserter<uint32_t>& tagIns, vector_inserter<PROPERTY_NAME>& nameIns,
-                     vector_inserter<uint16_t>& typeIns, uint64_t& special) const
-{return std::visit([&](auto&& v){return v.tags(tagIns, nameIns, typeIns, special);}, *static_cast<const Base*>(this));};
+void tPath::tags(sShape& shape) const
+{return std::visit([&](auto&& v){return v.tags(shape);}, static_cast<const Base&>(*this));};
 
 ///////////////////////////////////////////////////////////////////////////////
 

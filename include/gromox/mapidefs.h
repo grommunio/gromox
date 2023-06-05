@@ -989,6 +989,9 @@ struct PROPERTY_NAME {
 	GUID guid;
 	uint32_t lid;
 	char *pname;
+
+	inline bool operator==(const PROPERTY_NAME& o) const
+	{return kind == o.kind && guid == o.guid && (kind == MNID_STRING? !strcmp(pname, o.pname) : lid == o.lid);}
 };
 
 struct PROPERTY_XNAME {

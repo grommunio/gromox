@@ -88,7 +88,7 @@ E(3020, "failed to query calendar");
 E(3021, "request is marked experimental and can be enabled with 'ews_experimental = 1'");
 E(3022, "failed to get folder entry id");
 E(3023, "failed to get folder properties");
-E(3024, "failed to get item entry id");
+E(3024, "failed to get item property");
 E(3025, "failed to get item properties");
 E(3026, "failed to get username from id");
 E(3027, "failed to get domain info from id");
