@@ -1,3 +1,11 @@
+Development 2.10.6
+==================
+
+Enhancements:
+
+* exmdb: attachment storage with hash-based filenames
+
+
 Gromox 2.10 (2023-06-15)
 ========================
 

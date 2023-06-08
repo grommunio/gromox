@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <atomic>
 #include <cassert>
@@ -16,9 +19,15 @@
 #include <new>
 #include <pthread.h>
 #include <string>
+#include <string_view>
 #include <unistd.h>
+#ifdef HAVE_XXHASH
+#	include <xxhash.h>
+#endif
 #include <libHX/defs.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
+#include <openssl/evp.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
@@ -45,13 +54,26 @@ using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
+
+class fhash {
+	public:
+	fhash(std::string_view);
+	const std::string &str() const { return cid; }
+	const char *c_str() const { return cid.c_str(); }
+
+	private:
+	void hexify(const unsigned char *);
+	std::string cid;
+};
+
 struct prepared_statements {
 	xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
+
 }
 
 static char g_exmdb_org_name[256];
-static unsigned int g_max_msg;
+static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
@@ -1563,10 +1585,13 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	std::string cid = pstmt.col_text(1);
 	pstmt.finalize();
 
-	/*
-	 * Try compressed variant first. Fail any serious errors.
-	 * Only when it was not found do check the uncompressed variant.
-	 */
+	if (strchr(cid.c_str(), '/') != nullptr) {
+		/* v3 */
+		auto blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 0);
+		if (blk != nullptr)
+			return blk;
+		return nullptr;
+	}
 	auto blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 2);
 	if (blk != nullptr)
 		return blk;
@@ -2728,28 +2753,98 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 	return TRUE;
 }
 
-static BOOL cu_set_msg_body_v0(sqlite3 *, uint64_t mid, const char *dir, const char *cid, uint32_t proptag, const char *);
-
-static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
-    const char *dir, const char *cid, uint32_t proptag, const char *value)
+fhash::fhash(const std::string_view data)
 {
-	auto path = cu_cid_path(dir, cid, 2);
-	auto remove_file = make_scope_exit([&]() {
-		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1236: remove %s: %s",
-			        path.c_str(), strerror(errno));
-	});
-	auto ret = gx_compress_tofile(value, path.c_str(), g_cid_compression);
-	if (ret != 0) {
-		mlog(LV_ERR, "E-1235: compress_tofile %s: %s\n",
-		     path.c_str(), strerror(ret));
-		return false;
+	if (g_cid_use_xxhash) {
+#ifdef HAVE_XXHASH
+		XXH128_canonical_t canon;
+		XXH128_canonicalFromHash(&canon, XXH3_128bits(data.data(), data.size()));
+		cid = "X-00/0000000000000000000000000000000000";
+		hexify(reinterpret_cast<const unsigned char *>(canon.digest));
+		return;
+#endif
 	}
-	if (!cu_update_object_cid(psqlite, MAPI_MESSAGE, message_id,
-	    proptag, cid))
-		return TRUE;
-	remove_file.release();
-	return TRUE;
+	unsigned char digest[EVP_MAX_MD_SIZE];
+	unsigned int outsize = 0;
+	auto ret = EVP_Digest(reinterpret_cast<const unsigned char *>(data.data()),
+	           data.size(), digest, &outsize, EVP_sha3_256(), nullptr);
+	if (ret < 1)
+		return;
+	cid = "S-00/00000000000000000000000000000000000000000000000000000000000000";
+	hexify(digest);
+}
+
+void fhash::hexify(const unsigned char *digest)
+{
+	static constexpr char digits[] = "0123456789abcdef";
+	unsigned int z = 2;
+	cid[z++] = digits[(digest[0] & 0xF0) >> 4];
+	cid[z++] = digits[digest[0] & 0x0F];
+	cid[z++] = '/';
+	for (unsigned int i = 1; z < cid.size(); ++i) {
+		cid[z++] = digits[(digest[i] & 0xF0) >> 4];
+		cid[z++] = digits[digest[i] & 0x0F];
+	}
+}
+
+/**
+ * @data:	[in] attachment/body
+ * @cid:	[out] generated CID string for the database
+ * @path:	[out] generated path
+ */
+static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
+    std::string &cid, std::string &path) try
+{
+	fhash hval(data);
+	if (maildir == nullptr)
+		maildir = exmdb_server::get_dir();
+	path = maildir + "/cid/"s + hval.str();
+	cid  = hval.str();
+	std::unique_ptr<char[], stdlib_delete> extradir(HX_dirname(path.c_str()));
+	if (extradir == nullptr)
+		return ENOMEM;
+	auto ret = HX_mkdir(extradir.get(), S_IRUGO | S_IWUGO | S_IXUGO);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2388: mkdir %s: %s", extradir.get(), strerror(-ret));
+		return -ret;
+	}
+
+	/* See if the object already exists. (Skip compression.) */
+	wrapfd check_fd = open(path.c_str(), O_RDONLY);
+	struct stat sb;
+	if (check_fd.get() >= 0 && fstat(check_fd.get(), &sb) == 0 &&
+	    sb.st_size > 0)
+		return 0;
+	check_fd.close_rd();
+
+	gromox::tmpfile tmf;
+	ret = tmf.open_linkable(maildir, O_RDWR | O_TRUNC);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-2308: open(%s)[%s]: %s", maildir, tmf.m_path.c_str(), strerror(-ret));
+		return -ret;
+	}
+	/*
+	 * zstd already has some form of uncompressability detection
+	 * (huf_compress.c), so we do not have to implement our own. Besides,
+	 * even if the overall compressibility in a file is low, there may
+	 * still be a block where it is comparatively high.
+	 */
+	auto err = gx_compress_tofd(data, tmf, g_cid_compression);
+	if (err != 0)
+		return err;
+	/*
+	 * If another thread created a writeout in the meantime, we will now
+	 * overwrite it. Since the contents are the same, that has no ill
+	 * effect (POSIX guarantees atomicity). But it is somewhat inefficient,
+	 * because now the filesystem will writeout our thread's second copy
+	 * and ditch the blocks from the first copy, which is pointless churn.
+	 * It is not too terrible, considering this can only happen for newly
+	 * instantiated @paths.
+	 */
+	return tmf.link_to(path.c_str());
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2305: ENOMEM");
+	return ENOMEM;
 }
 
 static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
@@ -2790,82 +2885,11 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return FALSE;
-	uint64_t ncid = 0;
-	if (!common_util_allocate_cid(psqlite, &ncid))
-		return FALSE;
-	char cid[HXSIZEOF_Z64];
-	snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
-	if (g_cid_compression > 0)
-		return cu_set_msg_body_v2(psqlite, message_id, dir, cid, proptag,
-		       static_cast<const char *>(pvalue));
-	return cu_set_msg_body_v0(psqlite, message_id, dir, cid, proptag,
-	       static_cast<const char *>(pvalue));
-}
-
-static BOOL cu_set_msg_body_v0(sqlite3 *psqlite, uint64_t message_id,
-    const char *dir, const char *cid, uint32_t proptag, const char *value)
-{
-	auto path = cu_cid_path(dir, cid, 0);
-	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-1627: open %s O_CREAT: %s", path.c_str(), strerror(errno));
-		return FALSE;
-	}
-	auto remove_file = make_scope_exit([&]() {
-		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1382: remove %s: %s",
-			        path.c_str(), strerror(errno));
-	});
-	if (PROP_TYPE(proptag) == PT_UNICODE) {
-		/*
-		 * Gromox < 1.14 uses this count for computation of
-		 * PR_MESSAGE_SIZE. Only needs to be approximate.
-		 */
-		uint32_t len = cpu_to_le32(std::min(strlen(value) / 2,
-		               static_cast<size_t>(UINT32_MAX)));
-		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
-			return FALSE;
-	}
-	auto len = strlen(value);
-	auto ret = write(fd.get(), value, len);
-	if (ret < 0 || static_cast<size_t>(ret) != len)
-		return FALSE;
-	/* Give a NUL byte to appease old Gromox < 0.21. */
-	if (write(fd.get(), "", 1) != 1 || fd.close_wr() != 0) {
-		mlog(LV_ERR, "E-1684: write %s: %s", path.c_str(), strerror(errno));
+	std::string cid, path;
+	if (cu_cid_writeout(dir, static_cast<const char *>(pvalue), cid, path) != 0)
 		return false;
-	}
-	if (!cu_update_object_cid(psqlite, MAPI_MESSAGE, message_id, proptag, cid))
+	if (!cu_update_object_cid(psqlite, MAPI_MESSAGE, message_id, proptag, cid.c_str()))
 		return TRUE;
-	remove_file.release();
-	return TRUE;
-}
-
-static BOOL cu_set_obj_cid_val_v0(sqlite3 *, mapi_object_type, uint64_t, const char *dir, const char *cid, const TAGGED_PROPVAL *);
-
-static BOOL cu_set_obj_cid_val_v2(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t message_id, const char *dir, const char *cid,
-    const TAGGED_PROPVAL *prop)
-{
-	auto path = cu_cid_path(dir, cid, 2);
-	auto remove_file = make_scope_exit([&]() {
-		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1237: remove %s: %s",
-			        path.c_str(), strerror(errno));
-	});
-	/*
-	 * zstd already has some form of uncompressability detection
-	 * (huf_compress.c), so we do not have to implement our own. Besides,
-	 * even if the overall entropy for a file is high, maybe there still is
-	 * a block where it's comparatively low.
-	 */
-	auto &bv = *static_cast<const BINARY *>(prop->pvalue);
-	auto ret = gx_compress_tofile(std::string_view(bv.pc, bv.cb),
-	           path.c_str(), g_cid_compression);
-	if (ret != 0 || !cu_update_object_cid(psqlite, table_type, message_id,
-	    prop->proptag, cid))
-		return false;
-	remove_file.release();
 	return TRUE;
 }
 
@@ -2886,44 +2910,13 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return FALSE;
-	uint64_t ncid = 0;
-	if (!common_util_allocate_cid(psqlite, &ncid))
-		return FALSE;
-	char cid[HXSIZEOF_Z64];
-	snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
-	if (g_cid_compression > 0)
-		return cu_set_obj_cid_val_v2(psqlite, table_type, message_id,
-		       dir, cid, ppropval);
-	return cu_set_obj_cid_val_v0(psqlite, table_type, message_id, dir, cid,
-	       ppropval);
-}
-
-static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t message_id, const char *dir, const char *cid,
-    const TAGGED_PROPVAL *ppropval)
-{
-	auto path = cu_cid_path(dir, cid, 0);
-	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
-	if (fd.get() < 0) {
-		mlog(LV_ERR, "E-1628: open %s O_CREAT: %s", path.c_str(), strerror(errno));
-		return FALSE;
-	}
-	auto remove_file = make_scope_exit([&]() {
-		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1389: remove %s: %s",
-			        path.c_str(), strerror(errno));
-	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	auto ret = write(fd.get(), bv->pv, bv->cb);
-	if (ret < 0 || static_cast<size_t>(ret) != bv->cb ||
-	    fd.close_wr() != 0) {
-		mlog(LV_ERR, "E-1685: write %s: %s", path.c_str(), strerror(errno));
+	std::string cid, path;
+	if (cu_cid_writeout(dir, std::string_view(bv->pc, bv->cb), cid, path) != 0)
 		return false;
-	}
-	if (!cu_update_object_cid(psqlite, table_type,
-	    message_id, ppropval->proptag, cid))
+	if (!cu_update_object_cid(psqlite, table_type, message_id,
+	    ppropval->proptag, cid.c_str()))
 		return FALSE;
-	remove_file.release();
 	return TRUE;
 }
 
@@ -5294,6 +5287,13 @@ BOOL common_util_indexing_sub_contents(
 static uint32_t cu_get_cid_length(const char *cid, uint16_t proptype)
 {
 	auto dir = exmdb_server::get_dir();
+	if (strchr(cid, '/') != nullptr) {
+		/* v3 */
+		auto size = gx_decompressed_size(cu_cid_path(dir, cid, 0).c_str());
+		if (size != SIZE_MAX)
+			return size <= UINT32_MAX ? size : UINT32_MAX;
+		return 0;
+	}
 	auto size = gx_decompressed_size(cu_cid_path(dir, cid, 2).c_str());
 	if (size != SIZE_MAX)
 		return size <= UINT32_MAX ? size : UINT32_MAX;

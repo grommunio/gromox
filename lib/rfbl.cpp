@@ -1341,7 +1341,7 @@ errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 
 	auto strm = ZSTD_createCStream();
 	auto cl_0 = make_scope_exit([&]() { ZSTD_freeCStream(strm); });
-	ZSTD_initCStream(strm, complvl);
+	ZSTD_initCStream(strm, complvl == 0 ? ZSTD_minCLevel() : complvl);
 	ZSTD_CCtx_setParameter(strm, ZSTD_c_checksumFlag, 1);
 	ZSTD_CCtx_setPledgedSrcSize(strm, inbuf.size());
 	ZSTD_inBuffer inds = {inbuf.data(), inbuf.size()};
