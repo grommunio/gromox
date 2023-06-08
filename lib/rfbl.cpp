@@ -1294,16 +1294,13 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 	return ENOMEM;
 }
 
-errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t complvl)
+errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 {
-	wrapfd fd(open(outfile, O_WRONLY | O_TRUNC | O_CREAT, 0666));
-	if (fd.get() < 0)
-		return errno;
 	if (complvl == 0)
 		/* Our default is even more important than zstd's own default */
 		complvl = 6;
 #ifdef HAVE_FSETXATTR
-	if (fsetxattr(fd.get(), "btrfs.compression", "none", 4, XATTR_CREATE) != 0)
+	if (fsetxattr(fd, "btrfs.compression", "none", 4, XATTR_CREATE) != 0)
 		/* ignore */;
 #endif
 
@@ -1323,7 +1320,7 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t 
 		auto zr = ZSTD_compressStream2(strm, &outds, &inds, ZSTD_e_continue);
 		if (ZSTD_isError(zr))
 			return EIO;
-		auto r2 = HXio_fullwrite(fd.get(), outds.dst, outds.pos);
+		auto r2 = HXio_fullwrite(fd, outds.dst, outds.pos);
 		if (r2 < 0 || static_cast<size_t>(r2) != outds.pos)
 			return EIO;
 	}
@@ -1332,12 +1329,21 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t 
 		auto zr = ZSTD_compressStream2(strm, &outds, &inds, ZSTD_e_end);
 		if (ZSTD_isError(zr))
 			return EIO;
-		auto r2 = HXio_fullwrite(fd.get(), outds.dst, outds.pos);
+		auto r2 = HXio_fullwrite(fd, outds.dst, outds.pos);
 		if (r2 < 0 || static_cast<size_t>(r2) != outds.pos)
 			return EIO;
 		if (zr == 0)
 			break;
 	}
+	return 0;
+}
+
+errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t complvl)
+{
+	wrapfd fd(open(outfile, O_WRONLY | O_TRUNC | O_CREAT, 0666));
+	auto ret = gx_compress_tofd(inbuf, fd.get(), complvl);
+	if (ret != 0)
+		return ret;
 	return fd.close_wr();
 }
 
