@@ -17,6 +17,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1480,11 +1481,11 @@ static BOOL common_util_get_message_display_recipients(sqlite3 *psqlite,
 	return false;
 }
 
-std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try
+std::string cu_cid_path(const char *dir, const char *id, unsigned int type) try
 {
 	if (dir == nullptr)
 		dir = exmdb_server::get_dir();
-	auto path = dir + "/cid/"s + std::to_string(id);
+	auto path = dir + "/cid/"s + id;
 	if (type == 2)
 		path += ".zst";
 	else if (type == 1)
@@ -1495,9 +1496,9 @@ std::string cu_cid_path(const char *dir, uint64_t id, unsigned int type) try
 	return {};
 }
 
-static void *cu_get_object_text_v0(const char *, uint64_t, uint32_t, uint32_t, cpid_t);
+static void *cu_get_object_text_v0(const char *dir, const char *cid, uint32_t, uint32_t, cpid_t);
 
-static void *cu_get_object_text_vx(const char *dir, uint64_t cid,
+static void *cu_get_object_text_vx(const char *dir, const char *cid,
     uint32_t proptag, uint32_t db_proptag, cpid_t cpid, unsigned int type)
 {
 	BINARY dxbin{};
@@ -1525,7 +1526,7 @@ static void *cu_get_object_text_vx(const char *dir, uint64_t cid,
 }
 
 static void *cu_get_object_text(sqlite3 *psqlite,
-    cpid_t cpid, uint64_t message_id, uint32_t proptag)
+    cpid_t cpid, uint64_t message_id, uint32_t proptag) try
 {
 	char sql_string[128];
 	
@@ -1559,27 +1560,30 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return nullptr;
 	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
-	uint64_t cid = sqlite3_column_int64(pstmt, 1);
+	std::string cid = pstmt.col_text(1);
 	pstmt.finalize();
 
 	/*
 	 * Try compressed variant first. Fail any serious errors.
 	 * Only when it was not found do check the uncompressed variant.
 	 */
-	auto blk = cu_get_object_text_vx(dir, cid, proptag, proptag1, cpid, 2);
+	auto blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 2);
 	if (blk != nullptr)
 		return blk;
 	if (errno != ENOENT)
 		return nullptr;
-	blk = cu_get_object_text_vx(dir, cid, proptag, proptag1, cpid, 1);
+	blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 1);
 	if (blk != nullptr)
 		return blk;
 	if (errno != ENOENT)
 		return nullptr;
-	return cu_get_object_text_v0(dir, cid, proptag, proptag1, cpid);
+	return cu_get_object_text_v0(dir, cid.c_str(), proptag, proptag1, cpid);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2387: ENOMEM");
+	return nullptr;
 }
 
-static void *cu_get_object_text_v0(const char *dir, uint64_t cid,
+static void *cu_get_object_text_v0(const char *dir, const char *cid,
     uint32_t proptag, uint32_t proptag1, cpid_t cpid)
 {
 	wrapfd fd = open(cu_cid_path(dir, cid, 0).c_str(), O_RDONLY);
@@ -2595,7 +2599,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 }
 
 static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t object_id, uint32_t proptag, uint64_t cid)
+    uint64_t object_id, uint32_t proptag, const char *cid)
 {
 	char sql_string[256];
 	
@@ -2610,7 +2614,7 @@ static BOOL cu_update_object_cid(sqlite3 *psqlite, mapi_object_type table_type,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, cid);
+	sqlite3_bind_text(pstmt, 1, cid, -1, SQLITE_STATIC);
 	return pstmt.step() == SQLITE_DONE ? TRUE : false;
 }
 
@@ -2724,10 +2728,10 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 	return TRUE;
 }
 
-static BOOL cu_set_msg_body_v0(sqlite3 *, uint64_t, const char *, uint64_t, uint32_t, const char *);
+static BOOL cu_set_msg_body_v0(sqlite3 *, uint64_t mid, const char *dir, const char *cid, uint32_t proptag, const char *);
 
 static BOOL cu_set_msg_body_v2(sqlite3 *psqlite, uint64_t message_id,
-    const char *dir, uint64_t cid, uint32_t proptag, const char *value)
+    const char *dir, const char *cid, uint32_t proptag, const char *value)
 {
 	auto path = cu_cid_path(dir, cid, 2);
 	auto remove_file = make_scope_exit([&]() {
@@ -2786,9 +2790,11 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return FALSE;
-	uint64_t cid = 0;
-	if (!common_util_allocate_cid(psqlite, &cid))
+	uint64_t ncid = 0;
+	if (!common_util_allocate_cid(psqlite, &ncid))
 		return FALSE;
+	char cid[HXSIZEOF_Z64];
+	snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 	if (g_cid_compression >= 0)
 		return cu_set_msg_body_v2(psqlite, message_id, dir, cid, proptag,
 		       static_cast<const char *>(pvalue));
@@ -2797,7 +2803,7 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 }
 
 static BOOL cu_set_msg_body_v0(sqlite3 *psqlite, uint64_t message_id,
-    const char *dir, uint64_t cid, uint32_t proptag, const char *value)
+    const char *dir, const char *cid, uint32_t proptag, const char *value)
 {
 	auto path = cu_cid_path(dir, cid, 0);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
@@ -2835,10 +2841,10 @@ static BOOL cu_set_msg_body_v0(sqlite3 *psqlite, uint64_t message_id,
 	return TRUE;
 }
 
-static BOOL cu_set_obj_cid_val_v0(sqlite3 *, mapi_object_type, uint64_t, const char *, uint64_t, const TAGGED_PROPVAL *);
+static BOOL cu_set_obj_cid_val_v0(sqlite3 *, mapi_object_type, uint64_t, const char *dir, const char *cid, const TAGGED_PROPVAL *);
 
 static BOOL cu_set_obj_cid_val_v2(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t message_id, const char *dir, uint64_t cid,
+    uint64_t message_id, const char *dir, const char *cid,
     const TAGGED_PROPVAL *prop)
 {
 	auto path = cu_cid_path(dir, cid, 2);
@@ -2880,9 +2886,11 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 	auto dir = exmdb_server::get_dir();
 	if (dir == nullptr)
 		return FALSE;
-	uint64_t cid = 0;
-	if (!common_util_allocate_cid(psqlite, &cid))
+	uint64_t ncid = 0;
+	if (!common_util_allocate_cid(psqlite, &ncid))
 		return FALSE;
+	char cid[HXSIZEOF_Z64];
+	snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 	if (g_cid_compression >= 0)
 		return cu_set_obj_cid_val_v2(psqlite, table_type, message_id,
 		       dir, cid, ppropval);
@@ -2891,7 +2899,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 }
 
 static BOOL cu_set_obj_cid_val_v0(sqlite3 *psqlite, mapi_object_type table_type,
-    uint64_t message_id, const char *dir, uint64_t cid,
+    uint64_t message_id, const char *dir, const char *cid,
     const TAGGED_PROPVAL *ppropval)
 {
 	auto path = cu_cid_path(dir, cid, 0);
@@ -3120,22 +3128,28 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				    id, pstmt, *ppropvals, i))
 					return FALSE;	
 				continue;
-			case ID_TAG_BODY:
+			case ID_TAG_BODY: {
 				if (!g_inside_flush_instance)
 					break;
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 				if (!cu_update_object_cid(psqlite,
-				    table_type, id, PR_BODY,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				    table_type, id, PR_BODY, cid))
 					return FALSE;	
 				continue;
-			case ID_TAG_BODY_STRING8:
+			}
+			case ID_TAG_BODY_STRING8: {
 				if (!g_inside_flush_instance)
 					break;
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 				if (!cu_update_object_cid(psqlite,
-				    table_type, id, PR_BODY_A,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				    table_type, id, PR_BODY_A, cid))
 					return FALSE;	
 				continue;
+			}
 			case PR_BODY:
 			case PR_BODY_A:
 			case PR_TRANSPORT_MESSAGE_HEADERS:
@@ -3147,20 +3161,28 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 					ppropvals->ppropval[i].proptag;
 				pproblems->pproblem[pproblems->count++].err = ecError;
 				continue;
-			case ID_TAG_HTML:
+			case ID_TAG_HTML: {
 				if (!g_inside_flush_instance)
 					break;
-				if (!cu_update_object_cid(psqlite, table_type, id, PR_HTML,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				if (!cu_update_object_cid(psqlite, table_type,
+				    id, PR_HTML, cid))
 					return FALSE;	
 				continue;
-			case ID_TAG_RTFCOMPRESSED:
+			}
+			case ID_TAG_RTFCOMPRESSED: {
 				if (!g_inside_flush_instance)
 					break;
-				if (!cu_update_object_cid(psqlite, table_type, id, PR_RTF_COMPRESSED,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				if (!cu_update_object_cid(psqlite, table_type,
+				    id, PR_RTF_COMPRESSED, cid))
 					return FALSE;	
 				continue;
+			}
 			case PR_HTML:
 			case PR_RTF_COMPRESSED:
 				if (cu_set_object_cid_value(psqlite,
@@ -3171,22 +3193,28 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 					ppropvals->ppropval[i].proptag;
 				pproblems->pproblem[pproblems->count++].err = ecError;
 				continue;
-			case ID_TAG_TRANSPORTMESSAGEHEADERS:
+			case ID_TAG_TRANSPORTMESSAGEHEADERS: {
 				if (!g_inside_flush_instance)
 					break;
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 				if (!cu_update_object_cid(psqlite, table_type,
-				    id, PR_TRANSPORT_MESSAGE_HEADERS,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				    id, PR_TRANSPORT_MESSAGE_HEADERS, cid))
 					return FALSE;	
 				continue;
-			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+			}
+			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
 				if (!g_inside_flush_instance)
 					break;
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 				if (!cu_update_object_cid(psqlite, table_type,
-				    id, PR_TRANSPORT_MESSAGE_HEADERS_A,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				    id, PR_TRANSPORT_MESSAGE_HEADERS_A, cid))
 					return FALSE;	
 				continue;
+			}
 			}
 			break;
 		case MAPI_MAILUSER:
@@ -3198,22 +3226,28 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_RECORD_KEY:
 			case PR_ATTACH_NUM:
 				continue;
-			case ID_TAG_ATTACHDATABINARY:
+			case ID_TAG_ATTACHDATABINARY: {
 				if (!g_inside_flush_instance)
 					break;
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 				if (!cu_update_object_cid(psqlite,
-				    table_type, id, PR_ATTACH_DATA_BIN,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				    table_type, id, PR_ATTACH_DATA_BIN, cid))
 					return FALSE;	
 				continue;
-			case ID_TAG_ATTACHDATAOBJECT:
+			}
+			case ID_TAG_ATTACHDATAOBJECT: {
 				if (!g_inside_flush_instance)
 					break;
+				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
+				char cid[HXSIZEOF_Z64];
+				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
 				if (!cu_update_object_cid(psqlite,
-				    table_type, id, PR_ATTACH_DATA_OBJ,
-				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				    table_type, id, PR_ATTACH_DATA_OBJ, cid))
 					return FALSE;	
 				continue;
+			}
 			case PR_ATTACH_DATA_BIN:
 			case PR_ATTACH_DATA_OBJ:
 				if (cu_set_object_cid_value(psqlite,
@@ -5273,7 +5307,7 @@ BOOL common_util_indexing_sub_contents(
  * exact science either, due to potential compression or potential presence of
  * midb EML copies.
  */
-static uint32_t cu_get_cid_length(uint64_t cid, uint16_t proptype)
+static uint32_t cu_get_cid_length(const char *cid, uint16_t proptype)
 {
 	auto dir = exmdb_server::get_dir();
 	auto size = gx_decompressed_size(cu_cid_path(dir, cid, 2).c_str());
@@ -5317,17 +5351,29 @@ uint32_t common_util_calculate_message_size(
 		case PidTagChangeNumber:
 			continue;
 		case ID_TAG_BODY:
-		case ID_TAG_TRANSPORTMESSAGEHEADERS:
-			message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_UNICODE);
+		case ID_TAG_TRANSPORTMESSAGEHEADERS: {
+			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
+			char cid[HXSIZEOF_Z64];
+			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			message_size += cu_get_cid_length(cid, PT_UNICODE);
 			break;
+		}
 		case ID_TAG_BODY_STRING8:
-		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-			message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_STRING8);
+		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
+			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
+			char cid[HXSIZEOF_Z64];
+			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			message_size += cu_get_cid_length(cid, PT_STRING8);
 			break;
+		}
 		case ID_TAG_HTML:
-		case ID_TAG_RTFCOMPRESSED:
-			message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_BINARY);
+		case ID_TAG_RTFCOMPRESSED: {
+			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
+			char cid[HXSIZEOF_Z64];
+			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			message_size += cu_get_cid_length(cid, PT_BINARY);
 			break;
+		}
 		default:
 			message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			break;
@@ -5352,9 +5398,13 @@ uint32_t common_util_calculate_message_size(
 				case PR_ATTACH_NUM:
 					continue;
 				case ID_TAG_ATTACHDATABINARY:
-				case ID_TAG_ATTACHDATAOBJECT:
-					message_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_BINARY);
+				case ID_TAG_ATTACHDATAOBJECT: {
+					auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
+					char cid[HXSIZEOF_Z64];
+					snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+					message_size += cu_get_cid_length(cid, PT_BINARY);
 					break;
+				}
 				default:
 					message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 				}
@@ -5381,9 +5431,13 @@ uint32_t common_util_calculate_attachment_size(
 		case PR_ATTACH_NUM:
 			continue;
 		case ID_TAG_ATTACHDATABINARY:
-		case ID_TAG_ATTACHDATAOBJECT:
-			attachment_size += cu_get_cid_length(*static_cast<uint64_t *>(ppropval->pvalue), PT_BINARY);
+		case ID_TAG_ATTACHDATAOBJECT: {
+			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
+			char cid[HXSIZEOF_Z64];
+			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			attachment_size += cu_get_cid_length(cid, PT_BINARY);
 			break;
+		}
 		default:
 			attachment_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 		}

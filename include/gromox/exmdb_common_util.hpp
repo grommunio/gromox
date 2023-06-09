@@ -112,7 +112,7 @@ BOOL common_util_check_message_associated(
 BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	uint64_t message_id, BOOL b_native,
 	uint32_t **ppmessage_flags);
-extern std::string cu_cid_path(const char *, uint64_t, unsigned int type);
+extern std::string cu_cid_path(const char *dir, const char *cid, unsigned int type);
 void common_util_set_message_read(sqlite3 *psqlite,
 	uint64_t message_id, uint8_t is_read);
 extern BOOL common_util_addressbook_entryid_to_username(const BINARY *eid, char *username, size_t);

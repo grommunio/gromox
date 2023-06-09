@@ -5,6 +5,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <libHX/defs.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
@@ -35,7 +36,10 @@ static int instance_get_raw(MESSAGE_CONTENT *mc, BINARY *&bin, unsigned int tag)
 	if (data == nullptr)
 		return 0;
 	uint32_t length = 0;
-	auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length, tag);
+	auto cid = *static_cast<uint64_t *>(data);
+	char cidstr[HXSIZEOF_Z64];
+	snprintf(cidstr, sizeof(cidstr), "%llu", static_cast<unsigned long long>(cid));
+	auto content = instance_read_cid_content(cidstr, &length, tag);
 	if (content == nullptr)
 		return -1;
 	bin = cu_alloc<BINARY>();
