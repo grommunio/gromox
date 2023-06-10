@@ -80,6 +80,7 @@ void *propval_dup(uint16_t type, const void *pvi)
 	}
 	case PT_STRING8:
 	case PT_UNICODE:
+	case PT_GXI_STRING:
 		return strdup(static_cast<const char *>(pvi));
 	case PT_CLSID: {
 		auto preturn = me_alloc<GUID>();
@@ -338,6 +339,7 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_I8:
 	case PT_STRING8:
 	case PT_UNICODE:
+	case PT_GXI_STRING:
 	case PT_SYSTIME:
 	case PT_CLSID:
 		break;
@@ -429,6 +431,7 @@ uint32_t propval_size(uint16_t type, const void *pvalue)
 		return sizeof(uint64_t);
 	case PT_STRING8:
 	case PT_UNICODE:
+	case PT_GXI_STRING:
 		return strlen(static_cast<const char *>(pvalue));
 	case PT_CLSID:
 		return 16;
@@ -581,6 +584,7 @@ int propval_compare(const void *pvalue1, const void *pvalue2, uint16_t proptype)
 		       *static_cast<const double *>(pvalue2));
 	case PT_STRING8:
 	case PT_UNICODE:
+	case PT_GXI_STRING:
 		return strcasecmp(static_cast<const char *>(pvalue1),
 		       static_cast<const char *>(pvalue2));
 	case PT_CLSID:

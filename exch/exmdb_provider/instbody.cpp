@@ -32,14 +32,11 @@ unsigned int exmdb_body_autosynthesis;
 /* Get an arbitrary body, no fallbacks. */
 static int instance_get_raw(MESSAGE_CONTENT *mc, BINARY *&bin, unsigned int tag)
 {
-	auto data = mc->proplist.getval(tag);
-	if (data == nullptr)
+	auto cid = mc->proplist.get<const char>(tag);
+	if (cid == nullptr)
 		return 0;
 	uint32_t length = 0;
-	auto cid = *static_cast<uint64_t *>(data);
-	char cidstr[HXSIZEOF_Z64];
-	snprintf(cidstr, sizeof(cidstr), "%llu", static_cast<unsigned long long>(cid));
-	auto content = instance_read_cid_content(cidstr, &length, tag);
+	auto content = instance_read_cid_content(cid, &length, tag);
 	if (content == nullptr)
 		return -1;
 	bin = cu_alloc<BINARY>();

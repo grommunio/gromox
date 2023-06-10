@@ -132,15 +132,14 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
 			uint32_t proptag = pstmt.col_uint64(0);
-			auto cid = pstmt.col_uint64(1);
-			if (cid == 0) {
+			auto cid = pstmt.col_text(1);
+			if (cid == nullptr) {
 				mlog(LV_DEBUG, "W-1441: illegal CID reference in msg %llu prop %xh",
 					LLU{message_id}, tag);
 				break;
 			}
-			pstmt.finalize();
 			uint32_t wtag = proptag == PR_BODY ? ID_TAG_BODY : ID_TAG_BODY_STRING8;
-			if (pmsgctnt->proplist.set(wtag, &cid) != 0)
+			if (pmsgctnt->proplist.set(wtag, cid) != 0)
 				return FALSE;	
 			break;
 		}
@@ -153,15 +152,14 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			auto cid = pstmt.col_uint64(0);
-			if (cid == 0) {
+			auto cid = pstmt.col_text(0);
+			if (cid == nullptr) {
 				mlog(LV_DEBUG, "W-1442: illegal CID reference in msg %llu prop %xh",
 					LLU{message_id}, tag);
 				break;
 			}
-			pstmt.finalize();
 			tag = tag == PR_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
-			if (pmsgctnt->proplist.set(tag, &cid) != 0)
+			if (pmsgctnt->proplist.set(tag, cid) != 0)
 				return FALSE;
 			break;
 		}
@@ -176,17 +174,16 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
 			uint32_t proptag = pstmt.col_uint64(0);
-			auto cid = pstmt.col_uint64(1);
-			if (cid == 0) {
+			auto cid = pstmt.col_text(1);
+			if (cid == nullptr) {
 				mlog(LV_DEBUG, "W-1444: illegal CID reference in msg %llu prop %xh",
 					LLU{message_id}, tag);
 				break;
 			}
-			pstmt.finalize();
 			uint32_t wtag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
 			                ID_TAG_TRANSPORTMESSAGEHEADERS :
 			                ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
-			if (pmsgctnt->proplist.set(wtag, &cid) != 0)
+			if (pmsgctnt->proplist.set(wtag, cid) != 0)
 				return FALSE;	
 			break;
 		}
@@ -267,11 +264,10 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 				if (pstmt2 == nullptr || pstmt2.step() != SQLITE_ROW)
 					return FALSE;
-				auto cid = pstmt2.col_uint64(0);
-				pstmt2.finalize();
+				auto cid = pstmt2.col_text(0);
 				tag = tag == PR_ATTACH_DATA_BIN ?
 				      ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
-				if (pattachment->proplist.set(tag, &cid) != 0)
+				if (pattachment->proplist.set(tag, cid) != 0)
 					return FALSE;
 				break;
 			}
@@ -696,9 +692,7 @@ static BOOL instance_read_attachment(
 			auto pbin = cu_alloc<BINARY>();
 			if (pbin == nullptr)
 				return FALSE;
-			auto cid = *static_cast<uint64_t *>(pattachment1->proplist.ppropval[i].pvalue);
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{cid});
+			auto cidstr = static_cast<const char *>(pattachment1->proplist.ppropval[i].pvalue);
 			pbin->pv = instance_read_cid_content(cidstr, &pbin->cb, 0);
 			if (pbin->pv == nullptr)
 				return FALSE;
@@ -746,9 +740,7 @@ static BOOL instance_read_message(
 	for (i=0; i<pmsgctnt1->proplist.count; i++) {
 		switch (pmsgctnt1->proplist.ppropval[i].proptag) {
 		case ID_TAG_BODY: {
-			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{cid});
+			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 			if (pbuff == nullptr)
 				return FALSE;
@@ -757,9 +749,7 @@ static BOOL instance_read_message(
 			break;
 		}
 		case ID_TAG_BODY_STRING8: {
-			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{cid});
+			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, 0);
 			if (pbuff == nullptr)
 				return FALSE;
@@ -769,9 +759,7 @@ static BOOL instance_read_message(
 		}
 		case ID_TAG_HTML:
 		case ID_TAG_RTFCOMPRESSED: {
-			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{cid});
+			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, &length,
 			        pmsgctnt1->proplist.ppropval[i].proptag);
 			if (pbuff == nullptr)
@@ -788,9 +776,7 @@ static BOOL instance_read_message(
 			break;
 		}
 		case ID_TAG_TRANSPORTMESSAGEHEADERS: {
-			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{cid});
+			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 			if (pbuff == nullptr)
 				return FALSE;
@@ -799,9 +785,7 @@ static BOOL instance_read_message(
 			break;
 		}
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
-			auto cid = *static_cast<uint64_t *>(pmsgctnt1->proplist.ppropval[i].pvalue);
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{cid});
+			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, 0);
 			if (pbuff == nullptr)
 				return FALSE;
@@ -1828,10 +1812,8 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			proptype = PT_BINARY;
 			auto pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 			if (NULL == pbin) {
-				auto lnum = pattachment->proplist.get<const uint64_t>(ID_TAG_ATTACHDATABINARY);
-				if (lnum != nullptr) {
-					char cidstr[HXSIZEOF_Z64];
-					snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
+				auto cidstr = pattachment->proplist.get<const char>(ID_TAG_ATTACHDATABINARY);
+				if (cidstr != nullptr) {
 					pvalue = instance_read_cid_content(cidstr, &length, 0);
 					if (pvalue == nullptr)
 						return FALSE;
@@ -1846,10 +1828,8 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 				proptype = PT_OBJECT;
 				pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_OBJ);
 				if (NULL == pbin) {
-					auto lnum = pattachment->proplist.get<const uint64_t>(ID_TAG_ATTACHDATAOBJECT);
-					if (lnum != nullptr) {
-						char cidstr[HXSIZEOF_Z64];
-						snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
+					auto cidstr = pattachment->proplist.get<const char>(ID_TAG_ATTACHDATAOBJECT);
+					if (cidstr != nullptr) {
 						pvalue = instance_read_cid_content(cidstr, &length, 0);
 						if (pvalue == nullptr)
 							return FALSE;
@@ -1875,13 +1855,11 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 		}
 		case PR_ATTACH_DATA_BIN:
 		case PR_ATTACH_DATA_OBJ: {
-			auto lnum = pattachment->proplist.get<const uint64_t>(
-			            pproptags->pproptag[i] == PR_ATTACH_DATA_BIN ?
-			            ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT);
-			if (lnum == nullptr)
+			auto cidstr = pattachment->proplist.get<const char>(
+			              pproptags->pproptag[i] == PR_ATTACH_DATA_BIN ?
+			              ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT);
+			if (cidstr == nullptr)
 				break;
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
 			pvalue = instance_read_cid_content(cidstr, &length, 0);
 			if (pvalue == nullptr)
 				return FALSE;
@@ -2016,10 +1994,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			break;
 		}
 		case PR_TRANSPORT_MESSAGE_HEADERS_U: {
-			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (lnum != nullptr) {
-				char cidstr[HXSIZEOF_Z64];
-				snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
+			auto cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS);
+			if (cidstr != nullptr) {
 				pvalue = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 				if (pvalue == nullptr)
 					return FALSE;
@@ -2033,11 +2009,9 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				ppropvals->count ++;
 				continue;
 			}
-			lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (lnum == nullptr)
+			cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (cidstr == nullptr)
 				break;
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
 			pvalue = instance_read_cid_content(cidstr, nullptr, 0);
 			if (pvalue == nullptr)
 				return FALSE;
@@ -2063,10 +2037,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			ppropvals->count++;
 			continue;
 		case PR_TRANSPORT_MESSAGE_HEADERS: {
-			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (lnum != nullptr) {
-				char cidstr[HXSIZEOF_Z64];
-				snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
+			auto cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS);
+			if (cidstr != nullptr) {
 				pvalue = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 				if (pvalue == nullptr)
 					return FALSE;
@@ -2075,11 +2047,9 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				ppropvals->count ++;
 				continue;
 			}
-			lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (lnum == nullptr)
+			cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (cidstr == nullptr)
 				break;
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
 			pvalue = instance_read_cid_content(cidstr, nullptr, 0);
 			if (pvalue == nullptr)
 				return FALSE;
@@ -2093,10 +2063,8 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			break;
 		}
 		case PR_TRANSPORT_MESSAGE_HEADERS_A: {
-			auto lnum = pmsgctnt->proplist.get<const uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (lnum != nullptr) {
-				char cidstr[HXSIZEOF_Z64];
-				snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
+			auto cidstr = pmsgctnt->proplist.get<const char>(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (cidstr != nullptr) {
 				pvalue = instance_read_cid_content(cidstr, nullptr, 0);
 				if (pvalue == nullptr)
 					return FALSE;
@@ -2105,11 +2073,9 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 				ppropvals->count ++;
 				continue;
 			}
-			lnum = pmsgctnt->proplist.get<uint64_t>(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (lnum == nullptr)
+			cidstr = pmsgctnt->proplist.get<char>(ID_TAG_TRANSPORTMESSAGEHEADERS);
+			if (cidstr == nullptr)
 				break;
-			char cidstr[HXSIZEOF_Z64];
-			snprintf(cidstr, sizeof(cidstr), "%llu", LLU{*lnum});
 			pvalue = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 			if (pvalue == nullptr)
 				return FALSE;

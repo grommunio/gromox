@@ -3131,9 +3131,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_BODY: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_BODY, cid))
 					return FALSE;	
@@ -3142,9 +3140,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_BODY_STRING8: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_BODY_A, cid))
 					return FALSE;	
@@ -3164,9 +3160,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_HTML: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite, table_type,
 				    id, PR_HTML, cid))
 					return FALSE;	
@@ -3175,9 +3169,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_RTFCOMPRESSED: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite, table_type,
 				    id, PR_RTF_COMPRESSED, cid))
 					return FALSE;	
@@ -3196,9 +3188,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_TRANSPORTMESSAGEHEADERS: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite, table_type,
 				    id, PR_TRANSPORT_MESSAGE_HEADERS, cid))
 					return FALSE;	
@@ -3207,9 +3197,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite, table_type,
 				    id, PR_TRANSPORT_MESSAGE_HEADERS_A, cid))
 					return FALSE;	
@@ -3229,9 +3217,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_ATTACHDATABINARY: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_ATTACH_DATA_BIN, cid))
 					return FALSE;	
@@ -3240,9 +3226,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case ID_TAG_ATTACHDATAOBJECT: {
 				if (!g_inside_flush_instance)
 					break;
-				auto ncid = *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue);
-				char cid[HXSIZEOF_Z64];
-				snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+				auto cid = static_cast<const char *>(ppropvals->ppropval[i].pvalue);
 				if (!cu_update_object_cid(psqlite,
 				    table_type, id, PR_ATTACH_DATA_OBJ, cid))
 					return FALSE;	
@@ -5352,25 +5336,19 @@ uint32_t common_util_calculate_message_size(
 			continue;
 		case ID_TAG_BODY:
 		case ID_TAG_TRANSPORTMESSAGEHEADERS: {
-			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
-			char cid[HXSIZEOF_Z64];
-			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			auto cid = static_cast<const char *>(ppropval->pvalue);
 			message_size += cu_get_cid_length(cid, PT_UNICODE);
 			break;
 		}
 		case ID_TAG_BODY_STRING8:
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
-			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
-			char cid[HXSIZEOF_Z64];
-			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			auto cid = static_cast<const char *>(ppropval->pvalue);
 			message_size += cu_get_cid_length(cid, PT_STRING8);
 			break;
 		}
 		case ID_TAG_HTML:
 		case ID_TAG_RTFCOMPRESSED: {
-			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
-			char cid[HXSIZEOF_Z64];
-			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			auto cid = static_cast<const char *>(ppropval->pvalue);
 			message_size += cu_get_cid_length(cid, PT_BINARY);
 			break;
 		}
@@ -5399,9 +5377,7 @@ uint32_t common_util_calculate_message_size(
 					continue;
 				case ID_TAG_ATTACHDATABINARY:
 				case ID_TAG_ATTACHDATAOBJECT: {
-					auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
-					char cid[HXSIZEOF_Z64];
-					snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+					auto cid = static_cast<const char *>(ppropval->pvalue);
 					message_size += cu_get_cid_length(cid, PT_BINARY);
 					break;
 				}
@@ -5432,9 +5408,7 @@ uint32_t common_util_calculate_attachment_size(
 			continue;
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT: {
-			auto ncid = *static_cast<uint64_t *>(ppropval->pvalue);
-			char cid[HXSIZEOF_Z64];
-			snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
+			auto cid = static_cast<const char *>(ppropval->pvalue);
 			attachment_size += cu_get_cid_length(cid, PT_BINARY);
 			break;
 		}
