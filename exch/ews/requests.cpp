@@ -281,7 +281,7 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 			time_t start = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
 			time_t end = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
 			tFreeBusyView fbv(ctx.auth_info.username, maildir.c_str(), start, end, ctx);
-			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(move(fbv));
+			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 			for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
 			{
 				event.StartTime.offset = request.TimeZone->offset(event.StartTime.time);

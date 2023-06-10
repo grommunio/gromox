@@ -49,8 +49,6 @@ static char *binStatus(char (&dest)[8], uint32_t status)
 	return dest;
 }
 
-static constexpr char commonContent[] = "\r\n%s"; ///< Content template
-
 namespace hpm_mh {
 
 /**

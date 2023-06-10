@@ -2636,8 +2636,7 @@ static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
 
 int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errnum;
-	int i, num;
+	int i, num, errnum = 0;
 	BOOL b_data;
 	BOOL b_detail;
 	char buff[1024];

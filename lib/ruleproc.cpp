@@ -816,7 +816,7 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 		return err;
 	std::sort(rule_list.begin(), rule_list.end());
 
-	rxparam par = {ev_from, ev_to, {dir, folder_id, msg_id}, {{dir, folder_id}}};
+	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}, {{dir, folder_id}}};
 	if (!exmdb_client::read_message(par.cur.dir.c_str(), nullptr, CP_ACP,
 	    par.cur.mid, &par.ctnt))
 		return ecError;

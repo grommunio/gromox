@@ -82,7 +82,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 {
 	const cfg_directive *kdend = nullptr;
 	char line[MAX_LINE_LEN];	/* current line being processed */
-	size_t i, table_size;		   /* loop counter, table line num */
+	size_t table_size;		   /* loop counter, table line num */
 
 	if (key_desc != nullptr) {
 		kdend = key_desc;
@@ -110,12 +110,9 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 	}
 	rewind(fin);
 	/* read the first 2 entries from each line, the rest are comments */
-
-	for (i=0; fgets(line, MAX_LINE_LEN, fin); i++) {
-		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
-			i--;
+	while (fgets(line, MAX_LINE_LEN, fin) != nullptr) {
+		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#')
 			continue;
-		}
 		/* prevent line exceed maximum length ---MAX_LINE_LEN */
 		line[sizeof(line) - 1] = '\0';
 		config_file_parse_line(cfg, line, key_desc, kdend);

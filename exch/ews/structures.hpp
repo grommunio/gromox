@@ -23,7 +23,7 @@ namespace tinyxml2
 }
 
 namespace gromox::EWS
-{struct EWSContext;}
+{class EWSContext;}
 
 namespace gromox::EWS::Structures
 {

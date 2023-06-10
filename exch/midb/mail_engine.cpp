@@ -1024,20 +1024,6 @@ static int mail_engine_ct_compile_criteria(int argc,
 	}
 }
 
-static inline bool cond_is_id(enum midb_cond x)
-{
-	return x == midb_cond::id || x == midb_cond::uid;
-}
-
-static inline bool cond_w_stmt(enum midb_cond x)
-{
-	return x == midb_cond::bcc || x == midb_cond::body ||
-	       x == midb_cond::cc || x == midb_cond::from ||
-	       x == midb_cond::keyword || x == midb_cond::subject ||
-	       x == midb_cond::text || x == midb_cond::to ||
-	       x == midb_cond::unkeyword;
-}
-
 ct_node::ct_node(ct_node &&o) :
 	pbranch(o.pbranch), conjunction(o.conjunction), condition(o.condition)
 {
@@ -1595,9 +1581,9 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id) try
 			PidTagMid, PR_MESSAGE_FLAGS, PR_LAST_MODIFICATION_TIME,
 			PR_MESSAGE_DELIVERY_TIME, PidTagMidString,
 		};
-		static constexpr PROPTAG_ARRAY proptags_1[] = {std::size(proptags_0), deconst(proptags_0)};
+		static constexpr PROPTAG_ARRAY proptags_1 = {std::size(proptags_0), deconst(proptags_0)};
 		if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
-		    proptags_1, 0, row_count, &rows))
+		    &proptags_1, 0, row_count, &rows))
 			return false;
 	}
 

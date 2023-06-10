@@ -526,7 +526,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
 	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout)
 {
 	AUX_INFO aux_out;
-	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
 	char username[UADDR_SIZE];
 	char temp_buff[1024];
@@ -650,7 +649,6 @@ int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	auto pcxh = &cxh;
 	int result;
 	uint16_t cxr;
-	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
 	auto input_flags = *pflags;

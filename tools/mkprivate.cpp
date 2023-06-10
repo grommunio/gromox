@@ -221,7 +221,7 @@ int main(int argc, const char **argv) try
 	unsigned int flags = 0;
 	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (!sql_transact)
-		return false;
+		return EXIT_FAILURE;
 	if (opt_create_old)
 		flags |= DBOP_SCHEMA_0;
 	if (opt_verbose)
