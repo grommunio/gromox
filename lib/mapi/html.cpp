@@ -626,12 +626,6 @@ static bool html_match_style(const char *style_string,
 	return true;
 }
 
-static constexpr bool strtail(const char *hay, const char *needle)
-{
-	auto hz = strlen(hay), nz = strlen(needle);
-	return hz >= nz && strcasecmp(&hay[hz-nz], needle) == 0;
-}
-
 static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 {
 	int color;
