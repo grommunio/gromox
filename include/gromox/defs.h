@@ -123,7 +123,7 @@ template<typename U, typename V> static int three_way_compare(U &&a, V &&b)
 	return (a < b) ? -1 : (a == b) ? 0 : 1;
 }
 
-#ifdef COMPILE_DIAG
+#if defined(COMPILE_DIAG) && !defined(__clang__)
 struct errno_t {
 	constexpr errno_t(int x) : m_value(x) {
 #ifdef COVERITY
