@@ -90,18 +90,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	uint64_t message_id, uint32_t *plast_id,
 	MESSAGE_CONTENT **ppmsgctnt)
 {
-	uint64_t cid;
-	uint32_t row_id;
-	uint32_t last_id;
-	uint32_t proptag;
-	uint64_t rcpt_id;
-	TARRAY_SET *prcpts;
 	char sql_string[124];
-	uint64_t message_id1;
-	uint64_t attachment_id;
-	MESSAGE_CONTENT *pmsgctnt1;
-	ATTACHMENT_LIST *pattachments;
-	ATTACHMENT_CONTENT *pattachment;
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU{message_id});
@@ -142,9 +131,9 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			proptag = sqlite3_column_int64(pstmt, 0);
-			cid = sqlite3_column_int64(pstmt, 1);
-			if (cid <= 0) {
+			uint32_t proptag = pstmt.col_uint64(0);
+			auto cid = pstmt.col_uint64(1);
+			if (cid == 0) {
 				mlog(LV_DEBUG, "W-1441: illegal CID reference in msg %llu prop %xh",
 					LLU{message_id}, tag);
 				break;
@@ -164,8 +153,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			cid = sqlite3_column_int64(pstmt, 0);
-			if (cid <= 0) {
+			auto cid = pstmt.col_uint64(0);
+			if (cid == 0) {
 				mlog(LV_DEBUG, "W-1442: illegal CID reference in msg %llu prop %xh",
 					LLU{message_id}, tag);
 				break;
@@ -186,9 +175,9 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				return FALSE;
-			proptag = sqlite3_column_int64(pstmt, 0);
-			cid = sqlite3_column_int64(pstmt, 1);
-			if (cid <= 0) {
+			uint32_t proptag = pstmt.col_uint64(0);
+			auto cid = pstmt.col_uint64(1);
+			if (cid == 0) {
 				mlog(LV_DEBUG, "W-1444: illegal CID reference in msg %llu prop %xh",
 					LLU{message_id}, tag);
 				break;
@@ -211,7 +200,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		}
 	}
-	prcpts = tarray_set_init();
+	auto prcpts = tarray_set_init();
 	if (prcpts == nullptr)
 		return FALSE;
 	pmsgctnt->set_rcpts_internal(prcpts);
@@ -220,13 +209,13 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	row_id = 0;
+	uint32_t row_id = 0;
 	while (pstmt.step() == SQLITE_ROW) {
 		auto pproplist = prcpts->emplace();
 		if (pproplist == nullptr || pproplist->set(PR_ROWID, &row_id) != 0)
 			return FALSE;	
 		row_id ++;
-		rcpt_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t rcpt_id = pstmt.col_uint64(0);
 		std::vector<uint32_t> rcpt_tags;
 		if (!cu_get_proptags(MAPI_MAILUSER, rcpt_id, psqlite, rcpt_tags))
 			return false;
@@ -239,7 +228,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 	}
 	pstmt.finalize();
-	pattachments = attachment_list_init();
+	auto pattachments = attachment_list_init();
 	if (pattachments == nullptr)
 		return FALSE;
 	pmsgctnt->set_attachments_internal(pattachments);
@@ -253,7 +242,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt1 == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
-		pattachment = attachment_content_init();
+		auto pattachment = attachment_content_init();
 		if (pattachment == nullptr)
 			return FALSE;
 		if (!pattachments->append_internal(pattachment)) {
@@ -263,7 +252,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		if (pattachment->proplist.set(PR_ATTACH_NUM, plast_id) != 0)
 			return FALSE;	
 		(*plast_id) ++;
-		attachment_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t attachment_id = pstmt.col_uint64(0);
 		if (!cu_get_proptags(MAPI_ATTACH,
 		    attachment_id, psqlite, proptags))
 			return FALSE;
@@ -278,7 +267,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				auto pstmt2 = gx_sql_prep(psqlite, sql_string);
 				if (pstmt2 == nullptr || pstmt2.step() != SQLITE_ROW)
 					return FALSE;
-				cid = sqlite3_column_int64(pstmt2, 0);
+				auto cid = pstmt2.col_uint64(0);
 				pstmt2.finalize();
 				tag = tag == PR_ATTACH_DATA_BIN ?
 				      ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT;
@@ -299,8 +288,9 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		sqlite3_bind_int64(pstmt1, 1, attachment_id);
 		if (pstmt1.step() == SQLITE_ROW) {
-			message_id1 = sqlite3_column_int64(pstmt1, 0);
-			last_id = 0;
+			uint64_t message_id1 = pstmt1.col_uint64(0);
+			uint32_t last_id = 0;
+			message_content *pmsgctnt1 = nullptr;
 			if (!instance_load_message(psqlite, message_id1,
 			    &last_id, &pmsgctnt1))
 				return FALSE;
