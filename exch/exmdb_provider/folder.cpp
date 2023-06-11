@@ -2443,10 +2443,6 @@ static bool folder_purge_softdel(db_item_ptr &db, cpid_t cpid,
 			*partial = true;
 			continue;
 		}
-		if (sub_partial) {
-			*partial = true;
-			continue;
-		}
 		if (fld_count != nullptr)
 			++*fld_count;
 		snprintf(qstr, sizeof(qstr), "DELETE FROM folders "
