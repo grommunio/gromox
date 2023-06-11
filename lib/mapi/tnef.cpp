@@ -7,6 +7,7 @@
 #include <ctime>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -1182,7 +1183,7 @@ static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
 	auto bv = static_cast<BINARY *>(tnef_pv->pvalue);
 	if (memcmp(bv->pb, &IID_IMessage, sizeof(IID_IMessage)) == 0) {
 		auto emb = tnef_deserialize_internal(bv->pb + 16, bv->cb - 16,
-		           TRUE, alloc, get_propids, u2e);
+		           TRUE, alloc, std::move(get_propids), u2e);
 		if (emb == nullptr)
 			return X_ERROR;
 		atc->set_embedded_internal(emb);
@@ -1652,7 +1653,7 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 	USERNAME_TO_ENTRYID username_to_entryid)
 {
 	return tnef_deserialize_internal(pbuff, length, FALSE,
-			alloc, get_propids, username_to_entryid);
+	       alloc, std::move(get_propids), username_to_entryid);
 }
 
 pack_result tnef_push::p_propname(const PROPERTY_NAME &rr)
@@ -2555,7 +2556,7 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16))
 		return NULL;
 	ext_push.tnef_alloc = alloc;
-	ext_push.tnef_getpropname = get_propname;
+	ext_push.tnef_getpropname = std::move(get_propname);
 	if (!tnef_serialize_internal(ext_push, false, pmsg))
 		return NULL;
 	auto pbin = me_alloc<BINARY>();

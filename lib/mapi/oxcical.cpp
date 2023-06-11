@@ -2358,7 +2358,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 			return FALSE;
 		auto err = oxcical_import_internal(str_zone, "PUBLISH", false,
-		           calendartype, pical, event_list, alloc, get_propids,
+		           calendartype, pical, event_list, alloc, std::move(get_propids),
 		           username_to_entryid, pembedded, nullptr, nullptr,
 		           nullptr, nullptr);
 		if (err != nullptr) {
@@ -2534,7 +2534,7 @@ message_ptr oxcical_import_single(const char *str_zone,
     USERNAME_TO_ENTRYID username_to_entryid)
 {
 	std::vector<message_ptr> vec;
-	if (oxcical_import_multi(str_zone, pical, alloc, get_propids,
+	if (oxcical_import_multi(str_zone, pical, alloc, std::move(get_propids),
 	    username_to_entryid, vec) != ecSuccess || vec.size() == 0)
 		return nullptr;
 	if (vec.size() == 1)
@@ -3816,7 +3816,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	ESSDN_TO_USERNAME essdn_to_username)
 {
 	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
-	           entryid_to_username, essdn_to_username, alloc, get_propids);
+	           entryid_to_username, essdn_to_username, alloc, std::move(get_propids));
 	if (err != nullptr) {
 		mlog(LV_ERR, "%s", err);
 		return false;

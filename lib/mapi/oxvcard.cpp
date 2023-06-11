@@ -7,6 +7,7 @@
 #include <cstring>
 #include <ctime>
 #include <string>
+#include <utility>
 #include <vector>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -672,7 +673,7 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 	if (i >= pmsg->proplist.count)
 		/* If no namedprops were set, we can exit early */
 		return pmsg.release();
-	if (!oxvcard_get_propids(&propids, get_propids))
+	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
 		return nullptr;
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
@@ -718,7 +719,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER,
 		PR_TTYTDD_PHONE_NUMBER};
 	
-	if (!oxvcard_get_propids(&propids, get_propids))
+	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
 		return FALSE;
 	vcard.clear();
 	vcard.append_line("PROFILE", "VCARD");

@@ -2380,7 +2380,7 @@ static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
 		return NULL;
 	}
 	pmsg = tnef_deserialize(pcontent, content_len, alloc,
-			get_propids, oxcmail_username_to_entryid);
+	       std::move(get_propids), oxcmail_username_to_entryid);
 	free(pcontent);
 	return pmsg;
 }
@@ -4782,7 +4782,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		MAIL imail;
 		if (!oxcmail_export(pattachment->pembedded,
 		    b_tnef ? TRUE : false, pskeleton->body_type, std::move(ppool), &imail,
-		    alloc, get_propids, get_propname))
+		    alloc, std::move(get_propids), get_propname))
 			return FALSE;
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
