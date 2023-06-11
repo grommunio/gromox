@@ -723,11 +723,9 @@ tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& em
 }
 
 tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
-	Enum::PhoneNumberKeyType pnkt)
-{
-	Entry = phone;
-	Key = pnkt;
-}
+    Enum::PhoneNumberKeyType pnkt) :
+	Entry(std::move(phone)), Key(std::move(pnkt))
+{}
 
 /**
  * @brief     Generate URI from named property
