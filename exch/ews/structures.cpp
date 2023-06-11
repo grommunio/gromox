@@ -716,11 +716,9 @@ tEmailAddressType::tEmailAddressType(const TPROPVAL_ARRAY& tps)
 }
 
 tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const std::string& email,
-	const Enum::EmailAddressKeyType& eakt)
-{
-	Entry = email;
-	Key = eakt;
-}
+    const Enum::EmailAddressKeyType &eakt) :
+	Entry(email), Key(eakt)
+{}
 
 tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
     Enum::PhoneNumberKeyType pnkt) :
