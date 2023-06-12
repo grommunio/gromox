@@ -562,43 +562,50 @@ bool mysql_adaptor_get_user_properties(const char* username, TPROPVAL_ARRAY& pro
 		{
 		case PT_BOOLEAN: {
 			uint8_t converted = uint8_t(strtoul(strval, nullptr, 0));
-			properties.set(tag, &converted);
+			if (properties.set(tag, &converted) != 0)
+				return false;
 			break;
 		}
 		case PT_SHORT: {
 			uint16_t converted = uint16_t(strtoul(strval, nullptr, 0));
-			properties.set(tag, &converted);
+			if (properties.set(tag, &converted) != 0)
+				return false;
 			break;
 		}
 		case PT_LONG:
 		case PT_ERROR: {
 			uint32_t converted = uint32_t(strtoul(strval, nullptr, 0));
-			properties.set(tag, &converted);
+			if (properties.set(tag, &converted) != 0)
+				return false;
 			break;
 		}
 		case PT_I8:
 		case PT_CURRENCY:
 		case PT_SYSTIME: {
 			uint64_t converted = strtoull(strval, nullptr, 0);
-			properties.set(tag, &converted);
+			if (properties.set(tag, &converted) != 0)
+				return false;
 			break;
 		}
 		case PT_FLOAT: {
 			float converted = strtof(strval, nullptr);
-			properties.set(tag, &converted);
+			if (properties.set(tag, &converted) != 0)
+				return false;
 			break;
 		}
 		case PT_DOUBLE:
 		case PT_APPTIME: {
 			float converted = strtof(strval, nullptr);
-			properties.set(tag, &converted);
+			if (properties.set(tag, &converted) != 0)
+				return false;
 			break;
 		}
 		case PT_STRING8:
 		case PT_UNICODE:
 			if(!row[3])
 				continue;
-			properties.set(tag, strval);
+			if (properties.set(tag, strval) != 0)
+				return false;
 			break;
 		}
 	}
