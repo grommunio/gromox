@@ -4782,7 +4782,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		MAIL imail;
 		if (!oxcmail_export(pattachment->pembedded,
 		    b_tnef ? TRUE : false, pskeleton->body_type, std::move(ppool), &imail,
-		    alloc, std::move(get_propids), get_propname))
+		    alloc, std::move(get_propids), std::move(get_propname)))
 			return FALSE;
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
