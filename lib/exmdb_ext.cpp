@@ -2382,7 +2382,8 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 	case exmdb_callid::get_folder_class_table:
 	case exmdb_callid::allocate_cn:
 	case exmdb_callid::vacuum:
-	case exmdb_callid::unload_store: {
+	case exmdb_callid::unload_store:
+	case exmdb_callid::purge_datafiles: {
 		prequest = cu_alloc<exreq>();
 		if (prequest == nullptr)
 			return EXT_ERR_ALLOC;
@@ -2435,6 +2436,7 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 	case exmdb_callid::allocate_cn:
 	case exmdb_callid::vacuum:
 	case exmdb_callid::unload_store:
+	case exmdb_callid::purge_datafiles:
 		status = EXT_ERR_SUCCESS;
 		break;
 #define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t *>(prequest)); break;
@@ -3636,7 +3638,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
 	E(vacuum) \
 	E(unload_store) \
 	E(notify_new_mail) \
-	E(purge_softdelete)
+	E(purge_softdelete) \
+	E(purge_datafiles)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \

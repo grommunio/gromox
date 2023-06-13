@@ -1,17 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022–2023 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
+#include <cerrno>
 #include <cstdint>
+#include <cstring>
+#include <dirent.h>
+#include <memory>
+#include <sqlite3.h>
+#include <string>
+#include <unistd.h>
+#include <utility>
+#include <vector>
+#include <fmt/core.h>
+#include <libHX/string.h>
+#include <sys/stat.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/tie.hpp>
 #include "db_engine.h"
 
 using LLU = unsigned long long;
+using namespace std::string_literals;
 using namespace gromox;
+
+struct sql_del {
+	void operator()(sqlite3 *x) const { sqlite3_close(x); }
+};
 
 BOOL exmdb_server::vacuum(const char *dir)
 {
@@ -286,4 +306,137 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	if (!cu_adjust_store_size(db->psqlite, ADJ_DECREASE, normal_size, fai_size))
 		return false;
 	return xact.commit() == 0 ? TRUE : false;
+}
+
+static bool purg_discover_ids(sqlite3 *db, const std::string &query,
+    std::vector<std::string> &used)
+{
+	auto stm = gx_sql_prep(db, query.c_str());
+	if (stm == nullptr)
+		return false;
+	while (stm.step() == SQLITE_ROW)
+		used.push_back(stm.col_text(0));
+	return true;
+}
+
+namespace {
+unsigned int format_as(proptag_t x) { return x; }
+}
+
+static bool purg_discover_cids(sqlite3 *db, const char *dir,
+    std::vector<std::string> &used)
+{
+	used.clear();
+	auto query = fmt::format("SELECT propval FROM message_properties "
+	             "WHERE proptag IN ({},{},{},{},{},{})",
+	             PR_TRANSPORT_MESSAGE_HEADERS,
+	             PR_TRANSPORT_MESSAGE_HEADERS_A,
+	             PR_BODY, PR_BODY_A, PR_HTML, PR_RTF_COMPRESSED);
+	if (!purg_discover_ids(db, query, used))
+		return false;
+	query = fmt::format("SELECT propval FROM attachment_properties "
+	        "WHERE proptag IN ({},{})",
+	        PR_ATTACH_DATA_BIN, PR_ATTACH_DATA_OBJ);
+	return purg_discover_ids(db, query, used);
+}
+
+static bool purg_discover_mids(const char *dir, std::vector<std::string> &used)
+{
+	used.clear();
+	std::unique_ptr<sqlite3, sql_del> db;
+	auto dbpath = dir + "/exmdb/midb.sqlite3"s;
+	auto ret = access(dbpath.c_str(), R_OK);
+	if (ret < 0 && errno == ENOENT)
+		/* File is allowed to be absent and is equivalent to used={}. */
+		return true;
+	ret = sqlite3_open_v2(dbpath.c_str(), &unique_tie(db),
+	      SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		mlog(LV_ERR, "E-2386: cannot open %s: %s", dbpath.c_str(), sqlite3_errstr(ret));
+		return false;
+	}
+	return purg_discover_ids(db.get(), "SELECT mid_string FROM messages", used);
+}
+
+static uint64_t purg_delete_unused_files(const std::string &cid_dir,
+    const std::vector<std::string> &used_ids, time_t upper_bound_ts)
+{
+	std::unique_ptr<DIR, file_deleter> dh(opendir(cid_dir.c_str()));
+	if (dh == nullptr) {
+		mlog(LV_ERR, "E-2387: cannot open %s: %s", cid_dir.c_str(), strerror(errno));
+		return UINT64_MAX;
+	}
+
+	mlog(LV_INFO, "I-2388: purge_data: processing %s...", cid_dir.c_str());
+	struct dirent *de;
+	auto dfd = dirfd(dh.get());
+	uint64_t bytes = 0;
+	size_t filecount = 0;
+	while ((de = readdir(dh.get())) != nullptr) {
+		if (*de->d_name == '.')
+			continue;
+		std::string defix = de->d_name;
+		if (defix.size() > 4 &&
+		    (defix.compare(defix.size() - 4, 4, ".zst") == 0 ||
+		    defix.compare(defix.size() - 4, 4, ".v1z") == 0))
+			defix.erase(defix.size() - 4);
+		if (std::binary_search(used_ids.begin(), used_ids.end(), defix))
+			continue;
+		struct stat sb;
+		if (fstatat(dfd, de->d_name, &sb, 0) != 0)
+			/* e.g. removal by another racing entity, just don't bother */
+			continue;
+		if (sb.st_mtime >= upper_bound_ts)
+			continue;
+		if (unlinkat(dfd, de->d_name, 0) != 0) {
+			mlog(LV_ERR, "E-2392: unlink %s: %s", de->d_name, strerror(errno));
+		} else {
+			bytes += sb.st_size;
+			++filecount;
+		}
+	}
+	char buf[32];
+	HX_unit_size(buf, arsizeof(buf), bytes, 0, 0);
+	mlog(LV_NOTICE, "I-2393: Purged %zu files (%sB) from %s",
+	     filecount, buf, cid_dir.c_str());
+	return bytes;
+}
+
+static void sort_unique(std::vector<std::string> &c)
+{
+	std::sort(c.begin(), c.end());
+	c.erase(std::unique(c.begin(), c.end()), c.end());
+}
+
+static bool purg_clean_cid(sqlite3 *db, const char *maildir, time_t upper_bound_ts)
+{
+	std::vector<std::string> used;
+	if (!purg_discover_cids(db, maildir, used))
+		return false;
+	sort_unique(used);
+	return purg_delete_unused_files(maildir + "/cid"s,
+	       std::move(used), upper_bound_ts) < UINT64_MAX;
+}
+
+static bool purg_clean_mid(const char *maildir, time_t upper_bound_ts)
+{
+	std::vector<std::string> used;
+	if (!purg_discover_mids(maildir, used))
+		return false;
+	sort_unique(used);
+	if (purg_delete_unused_files(maildir + "/eml"s, used, upper_bound_ts) == UINT64_MAX)
+		return false;
+	if (purg_delete_unused_files(maildir + "/ext"s, used, upper_bound_ts) == UINT64_MAX)
+		return false;
+	return true;
+}
+
+BOOL exmdb_server::purge_datafiles(const char *dir)
+{
+	auto db = db_engine_get_db(dir);
+	if (db == nullptr || db->psqlite == nullptr)
+		return false;
+	auto upper_bound_ts = time(nullptr) - 60;
+	return purg_clean_cid(db->psqlite, dir, upper_bound_ts) &&
+	       purg_clean_mid(dir, upper_bound_ts) ? TRUE : false;
 }

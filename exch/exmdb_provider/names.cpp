@@ -143,13 +143,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(STORE_EID_TO_USER),
 	E(EMPTY_FOLDER),
 	E(PURGE_SOFTDELETE),
+	E(PURGE_DATAFILES),
 };
 #undef E
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::purge_softdelete) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::purge_datafiles) + 1);
 	const char *s = j < arsizeof(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

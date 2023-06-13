@@ -157,6 +157,7 @@ enum class exmdb_callid : uint8_t {
 	store_eid_to_user = 0x83,
 	empty_folder = 0x84,
 	purge_softdelete = 0x85,
+	purge_datafiles = 0x86,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -1285,6 +1286,7 @@ using exreq_get_folder_class_table = exreq;
 using exreq_allocate_cn = exreq;
 using exreq_vacuum = exreq;
 using exreq_unload_store = exreq;
+using exreq_purge_datafiles = exreq;
 using exresp_remove_folder_properties = exresp;
 using exresp_reload_content_table = exresp;
 using exresp_unload_table = exresp;
@@ -1314,6 +1316,7 @@ using exresp_unload_store = exresp;
 using exresp_ping_store = exresp;
 using exresp_notify_new_mail = exresp;
 using exresp_purge_softdelete = exresp;
+using exresp_purge_datafiles = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;
