@@ -173,6 +173,8 @@ uint32_t common_util_calculate_message_size(
 uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment);
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
+extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
+extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t mid = 0);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num;
 extern int g_cid_compression;

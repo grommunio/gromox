@@ -387,17 +387,6 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	return TRUE;
 }
 
-BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
-	uint64_t message_id)
-{
-	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
-		return false;
-	db_engine_notify_new_mail(pdb, rop_util_get_gc_value(folder_id),
-		rop_util_get_gc_value(message_id));
-	return TRUE;
-}
-
 static BOOL table_check_address_in_contact_folder(
 	sqlite3_stmt *pstmt_subfolder, sqlite3_stmt *pstmt_search,
 	uint64_t folder_id, const char *paddress, BOOL *pb_found)
@@ -479,38 +468,4 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 		return FALSE;
 	return table_check_address_in_contact_folder(pstmt1, pstmt2,
 	       PRIVATE_FID_CONTACTS, paddress, pb_found);
-}
-
-BOOL exmdb_server::vacuum(const char *dir)
-{
-	return db_engine_vacuum(dir);
-}
-
-BOOL exmdb_server::unload_store(const char *dir)
-{
-	return db_engine_unload_db(dir);
-}
-
-BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_eid,
-    char **maildir, uint32_t *user_id, uint32_t *domain_id)
-{
-	unsigned int uid = 0, domid = 0;
-	char md[256];
-	if (store_eid == nullptr || store_eid->pserver_name == nullptr)
-		return false;
-	if (store_eid->wrapped_provider_uid == g_muidStorePrivate) {
-		enum display_type dt;
-		if (!common_util_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
-		    !common_util_get_maildir(store_eid->pserver_name, md, std::size(md)))
-			return false;
-	} else {
-		unsigned int orgid;
-		if (!common_util_get_domain_ids(store_eid->pserver_name, &domid, &orgid) ||
-		    !common_util_get_homedir(store_eid->pserver_name, md, std::size(md)))
-			return false;
-	}
-	*maildir = common_util_dup(md);
-	*user_id = uid;
-	*domain_id = domid;
-	return TRUE;
 }
