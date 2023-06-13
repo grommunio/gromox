@@ -263,7 +263,7 @@ static int help()
 	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
-	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld unload vacuum\n");
+	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld purge-datafiles unload vacuum\n");
 	return EXIT_FAILURE;
 }
 
@@ -281,7 +281,9 @@ static int main(int argc, const char **argv)
 	bool ok = false;
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (strcmp(argv[0], "unload") == 0) {
+	if (strcmp(argv[0], "purge-datafiles") == 0) {
+		ok = exmdb_client::purge_datafiles(g_storedir);
+	} else if (strcmp(argv[0], "unload") == 0) {
 		ok = exmdb_client::unload_store(g_storedir);
 	} else if (strcmp(argv[0], "vacuum") == 0) {
 		ok = exmdb_client::vacuum(g_storedir);

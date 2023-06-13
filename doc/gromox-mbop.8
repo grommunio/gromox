@@ -23,6 +23,8 @@ clear-profile: delete user's PHP-MAPI profile
 .IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
+purge-datafiles: remove orphaned attachments/content files from disk
+.IP \(bu 4
 purge-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
@@ -68,6 +70,9 @@ Besides messages, also delete subfolders.
 .TP
 \fB\-\-soft\fP
 Perform a soft deletion. (This feature is experimental.) Default is hard.
+.SH purge-datafiles
+The "purge-datafiles" RPC makes exmdb_provider remove attachment and content
+files from disk that are no longer referenced by any message.
 .SH purge-softdelete
 .SS Synopsis
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBpurge-softdelete\fP [\fB\-r\fP]
