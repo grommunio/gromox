@@ -14,6 +14,7 @@
 #include <gromox/mapi_types.hpp>
 
 #include "ObjectCache.hpp"
+#include "exceptions.hpp"
 #include "soaputil.hpp"
 
 struct MIME_POOL;
@@ -72,12 +73,14 @@ public:
 	struct _mysql {
 		_mysql();
 
+		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_homedir)* get_homedir;
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
-		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
-		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 		decltype(mysql_adaptor_get_user_aliases) *get_user_aliases;
+		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
+		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
 		decltype(mysql_adaptor_get_user_properties) *get_user_properties;
+		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 	} mysql; ///< mysql adaptor function pointers
 
 	struct _exmdb {
@@ -156,7 +159,8 @@ public:
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
-	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&) const;
+	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
+	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
@@ -165,6 +169,8 @@ public:
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	void updated(const std::string&, const Structures::sMessageEntryId&) const;
+	std::string username_to_essdn(const std::string&) const;
 
 	void experimental() const;
 
@@ -176,11 +182,12 @@ public:
 	EWSPlugin& plugin;
 
 	static void* alloc(size_t);
+	template<typename T> static T* alloc(size_t=1);
+	template<typename T, typename... Args> static T* construct(Args&&...);
 	static void ext_error(pack_result);
 
 private:
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
-	void getNamedTags(const std::string&, Structures::sShape&) const;
 
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
@@ -202,5 +209,39 @@ private:
 template<typename T>
 const T* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
 {return static_cast<const T*>(getItemProp(dir, mid, tag));}
+
+/**
+ * @brief      Throwing convenience wrapper for alloc
+ *
+ * @param      count  Number of elements to allocate memory for
+ *
+ * @tparam     T      Type to allocate memory for
+ *
+ * @return     Pointer to allocated memory
+ */
+template<typename T>
+inline T* EWSContext::alloc(size_t count)
+{
+	T* res = static_cast<T*>(alloc(sizeof(T)*count));
+	if(!res)
+		throw Exceptions::DispatchError("OOM");
+	return res;
+}
+
+/**
+ * @brief      Throwing convenience wrapper for alloc
+ *
+ * @param      count  Number of elements to allocate memory for
+ *
+ * @tparam     T      Type to allocate memory for
+ *
+ * @return     Pointer to allocated memory
+ */
+template<typename T, typename... Args>
+inline T* EWSContext::construct(Args&&... args)
+{
+	static_assert(std::is_trivially_destructible_v<T>, "Can only construct trivially destructible types");
+	return new(alloc<T>()) T(std::forward<Args...>(args...));
+}
 
 }

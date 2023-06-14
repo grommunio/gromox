@@ -456,6 +456,35 @@ static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
 }
 
 /**
+ * @brief      Find fitting XML node to deserialize variant
+ *
+ * While fromXMLNodeVariant tries to find a fitting type for a given XML node,
+ * fromXMLNodeVariantFind instead serches for a fitting child node for any of
+ * the variants types.
+ *
+ * @param      parent  Parent XML node
+ *
+ * @tparam     T       Variant type
+ * @tparam     I       Variant index
+ *
+ * @return     Variant containing the object
+ */
+template<typename T, size_t I=0>
+T fromXMLNodeVariantFind(const tinyxml2::XMLElement* parent)
+{
+	if constexpr(I >= std::variant_size_v<T>)
+		throw Exceptions::DeserializationError(Exceptions::E3098);
+	else {
+		using Contained = std::variant_alternative_t<I, T>;
+		const char* tname = getName<Contained>();
+		const tinyxml2::XMLElement* child;
+		if(!tname || !(child = parent->FirstChildElement(tname)))
+			return fromXMLNodeVariantFind<T, I+1>(parent);
+		return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
+	}
+}
+
+/**
  * @brief      Unpack list type
  *
  * @param      child  XMLElement containing data

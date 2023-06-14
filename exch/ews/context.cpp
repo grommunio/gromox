@@ -9,6 +9,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/pcl.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -22,6 +23,17 @@ using namespace Structures;
 
 namespace
 {
+
+/**
+ * @brief     Generic deleter struct
+ *
+ * Provides explicit deleters for classes without destructor.
+ */
+struct Cleaner
+{
+	inline void operator()(BINARY* x) {rop_util_free_binary(x);}
+};;
+
 /**
  * @brief      Convert string to lower case
  *
@@ -54,13 +66,14 @@ T& defaulted(std::optional<T>& container, Args&&... args)
  *
  * @param      dir       Home directory of user or domain
  * @param      propNames List of property names to retrieve
+ * @param      create Whether to create requested names if necessary
  *
  * @return     Array of property IDs
  */
-PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames) const
+PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames, bool create) const
 {
 	PROPID_ARRAY namedIds{};
-	if(!plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds))
+	if(!plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds))
 		throw DispatchError(E3069);
 	return namedIds;
 }
@@ -72,15 +85,16 @@ PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_
  *
  * @param      dir    Home directory of user or domain
  * @param      shape  Shape to load tags into
+ * @param      create Whether to create requested names if necessary
  */
-void EWSContext::getNamedTags(const std::string& dir, sShape& shape) const
+void EWSContext::getNamedTags(const std::string& dir, sShape& shape, bool create) const
 {
 	if(shape.store == dir)
 		return;
 	PROPNAME_ARRAY propNames = shape.namedProperties();
 	if(propNames.count == 0)
 		return;
-	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames);
+	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames, create);
 	if(namedIds.count != propNames.count)
 		return;
 	shape.namedProperties(namedIds);
@@ -588,6 +602,96 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
+}
+
+/**
+ * @brief      Mark message as updated
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      username  Account name of the user updating the message
+ * @param      mid       Message ID
+ *
+ * @todo Perhaps this should work on an instance
+ */
+void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) const
+{
+	uint64_t changeNum;
+	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
+		throw DispatchError(E3084);
+	TAGGED_PROPVAL _props[8];
+	TPROPVAL_ARRAY props{0, _props};
+	uint64_t localCommitTime = rop_util_current_nttime();
+	_props[props.count].proptag = PR_LOCAL_COMMIT_TIME;
+	_props[props.count++].pvalue = &localCommitTime;
+	_props[props.count].proptag = PR_LAST_MODIFICATION_TIME;
+	_props[props.count++].pvalue = &localCommitTime;
+
+	char displayName[1024];
+	_props[props.count].proptag = PR_LAST_MODIFIER_NAME;
+	if(!plugin.mysql.get_user_displayname(auth_info.username, displayName, std::size(displayName)) || !*displayName)
+		_props[props.count++].pvalue = displayName;
+	else
+		_props[props.count++].pvalue = const_cast<char*>(auth_info.username);
+
+	uint8_t abEidBuff[1280];
+	EXT_PUSH wAbEid;
+	std::string essdn = username_to_essdn(auth_info.username);
+	EMSAB_ENTRYID abEid{0, 1, DT_MAILUSER, essdn.data()};
+	if(!wAbEid.init(abEidBuff, std::size(abEidBuff), EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
+		throw DispatchError(E3085);
+	BINARY abEidContainer{wAbEid.m_offset, {abEidBuff}};
+	_props[props.count].proptag = PR_LAST_MODIFIER_ENTRYID;
+	_props[props.count++].pvalue = &abEidContainer;
+
+	XID changeKey{(mid.isPrivate()? rop_util_make_user_guid : rop_util_make_domain_guid)(mid.accountId()), changeNum};
+	uint8_t ckeyBuff[24];
+	EXT_PUSH wCkey;
+	if(!wCkey.init(ckeyBuff, std::size(ckeyBuff), 0) || wCkey.p_xid(changeKey) != EXT_ERR_SUCCESS)
+		throw DispatchError(E3086);
+	BINARY changeKeyContainer{wCkey.m_offset, {ckeyBuff}};
+	_props[props.count].proptag = PR_CHANGE_KEY;
+	_props[props.count++].pvalue = &changeKeyContainer;
+
+	const BINARY* currentPclContainer = getItemProp<BINARY>(dir, mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
+	PCL pcl;
+	if(!currentPclContainer || !pcl.deserialize(currentPclContainer))
+		throw DispatchError(E3087);
+	pcl.append(changeKey);
+	std::unique_ptr<BINARY, Cleaner> serializedPcl(pcl.serialize());
+	if(!serializedPcl)
+		throw DispatchError(E3088);
+	_props[props.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
+	_props[props.count++].pvalue = serializedPcl.get();
+
+	_props[props.count].proptag = PidTagChangeNumber;
+	_props[props.count++].pvalue = &changeNum;
+
+	PROBLEM_ARRAY problems;
+	if(!plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+		throw DispatchError(E3089);
+
+}
+
+/**
+ * @brief      Convert username to ESSDN
+ *
+ * @param      essdn   Username to convert
+ *
+ * @throw      DispatchError   Conversion failed
+ *
+ * @return     ESSDN
+ */
+std::string EWSContext::username_to_essdn(const std::string& username) const
+{
+	uint32_t userId, domainId;
+	size_t at = username.find('@');
+	if(at == username.npos)
+		throw DispatchError(E3090(username));
+	std::string_view userpart = std::string_view(username).substr(0, at);
+	if(!plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
+		throw DispatchError(E3091(username));
+	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
+	                   plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
 
 /**

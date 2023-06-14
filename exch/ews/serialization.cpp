@@ -23,7 +23,7 @@ using namespace std::string_literals;
 
 //Shortcuts to call toXML* and fromXML* functions on members
 #define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, #name)) ///< Init member from XML node
-#define VXMLINIT(name) name(fromXMLNode<decltype(name)>(xml, nullptr)) ///< Init variant from XML node
+#define VXMLINIT(name) name(fromXMLNodeVariantFind<decltype(name)>(xml)) ///< Init variant from XML node
 #define XMLDUMPM(name) toXMLNode(xml, "m:"#name, name) ///< Write member into XML node (Messages namespace)
 #define XMLDUMPT(name) toXMLNode(xml, "t:"#name, name) ///< Write member into XML node (Types namespace)
 #define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, #name)) ///< Initialize member from XML attribute
@@ -318,6 +318,13 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	tItem::serialize(xml);
 }
 
+tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
+	fieldURI(fromXMLNodeVariantFind<tPath::Base>(xml))
+{}
+
+void tConflictResults::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPT(Count);}
+
 void tContact::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
@@ -414,16 +421,30 @@ void tExtendedFieldURI::serialize(XMLElement* xml) const
 	XMLDUMPA(PropertyName);
 }
 
+tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
+	XMLINIT(ExtendedFieldURI)
+{
+	const XMLElement* value = xml->FirstChildElement("Value");
+	const XMLElement* values = xml->FirstChildElement("Values");
+	uint16_t type = ExtendedFieldURI.type();
+	propval.proptag = ExtendedFieldURI.tag()? ExtendedFieldURI.tag() : type;
+	bool ismv = type & MV_FLAG;
+	if(value && values)
+		throw InputError(E3094);
+	if(ismv && !values)
+		throw InputError(E3095);
+	if(!ismv && !value)
+		throw InputError(E3096);
+	deserialize(ismv? values : value, type);
+}
+
 void tExtendedProperty::serialize(XMLElement* xml) const
 {
 	const void* data = propval.pvalue;
 	if(!data)
 		return;
+	XMLDUMPT(ExtendedFieldURI);
 	bool ismv = propval.proptag & MV_FLAG;
-	if(propname.kind == KIND_NONE)
-		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
-	else
-		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(PROP_TYPE(propval.proptag), propname));
 	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
 	serialize(data, PROP_TYPE(propval.proptag), value);
 }
@@ -512,6 +533,11 @@ void tItem::serialize(XMLElement* xml) const
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
 
+tItemChange::tItemChange(const XMLElement* xml) :
+	XMLINIT(ItemId),
+	XMLINIT(Updates)
+{}
+
 tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
 	XMLINIT(IncludeMimeContent),
 	XMLINIT(BodyType),
@@ -588,6 +614,18 @@ tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement*
 tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
+
+tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
+{
+	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
+		if(std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
+		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+			item = child;
+			break;
+		}
+	if(!item)
+		throw InputError(E3097);
+}
 
 void tSingleRecipient::serialize(XMLElement* xml) const
 {XMLDUMPT(Mailbox);}
@@ -744,7 +782,12 @@ void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 	XMLDUMPM(AllowExternalOof);
 }
 
-//TODO: Verify namespaces
+void mItemInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Items);
+}
+
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPA(ResponseClass);
@@ -843,3 +886,16 @@ void mResolveNamesResponseMessage::serialize(XMLElement* xml) const
 
 void mResolveNamesResponse::serialize(XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
+
+mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :
+	XMLINIT(ItemChanges)
+{}
+
+void mUpdateItemResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mUpdateItemResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mItemInfoResponseMessage::serialize(xml);
+	XMLDUMPM(ConflictResults);
+}

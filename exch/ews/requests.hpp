@@ -27,6 +27,7 @@ EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);
+EWSFUNC(mUpdateItemRequest);
 
 #undef EWSFUNC
 

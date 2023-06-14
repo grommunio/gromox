@@ -28,10 +28,12 @@ namespace gromox::EWS
 namespace gromox::EWS::Structures
 {
 
+struct tAppendToItemField;
 struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
+struct tDeleteItemField;
 struct tDistinguishedFolderId;
 struct tExtendedFieldURI;
 struct tExtendedProperty;
@@ -44,12 +46,15 @@ struct tFolderType;
 struct tIndexedFieldURI;
 struct tItem;
 struct tItemAttachment;
+struct tItemChange;
 struct tItemResponseShape;
 struct tPath;
 struct tMessage;
 struct tReferenceAttachment;
 struct tSearchFolderType;
 struct tSerializableTimeZone;
+struct tSetItemField;
+class sShape;
 struct tSyncFolderHierarchyCreate;
 struct tSyncFolderHierarchyUpdate;
 struct tSyncFolderHierarchyDelete;
@@ -177,7 +182,7 @@ struct sFolderSpec
 	sFolderSpec& normalize();
 
 	std::optional<std::string> target;
-	uint64_t folderId;
+	uint64_t folderId=0;
 	enum : uint8_t {AUTO, PRIVATE, PUBLIC} location = AUTO;
 
 private:
@@ -210,6 +215,11 @@ using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderTy
 	*/
 using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 
+/**
+ * c.f. Types.xsd:1502
+ */
+using sItemChangeDescription = std::variant<tAppendToItemField, tSetItemField, tDeleteItemField>;
+
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 
 class sShape
@@ -238,7 +248,10 @@ class sShape
 	std::vector<PROPERTY_NAME> names; ///< Requested named properties
 	std::vector<uint8_t> nameMeta; ///< Flags for named tags
 
-	std::unordered_map<uint32_t, PropInfo> props; ///<
+	std::vector<TAGGED_PROPVAL> wProps; ///< List of properties meant to be written
+	std::vector<uint32_t> dTags; ///< List of tags to remove
+
+	std::unordered_map<uint32_t, PropInfo> props; ///< Tag -> Property mapping
 
 	void collectExtendedProperty(const tExtendedFieldURI&);
 	void collectExtendedProperty(const tFieldURI&);
@@ -250,6 +263,7 @@ public:
 	static constexpr uint8_t FL_ANY =   0;
 	static constexpr uint8_t FL_FIELD = 1 << 0; ///< Tag was requested as field
 	static constexpr uint8_t FL_EXT =   1 << 1; ///< Tag was requested as extended attribute
+	static constexpr uint8_t FL_RM =    1 << 2; ///< Tag was requested for removal
 
 	static constexpr uint64_t ToRecipients =  1 << 0;
 	static constexpr uint64_t CcRecipients =  1 << 1;
@@ -265,6 +279,7 @@ public:
 	explicit sShape(const TPROPVAL_ARRAY&);
 	explicit sShape(const tFolderResponseShape&);
 	explicit sShape(const tItemResponseShape&);
+	explicit sShape(const tItemChange&);
 
 	sShape(const sShape&) = delete;
 	sShape(sShape&&) = delete;
@@ -278,13 +293,20 @@ public:
 	void properties(const TPROPVAL_ARRAY&);
 	PROPTAG_ARRAY proptags() const;
 
-	void add(uint32_t, uint8_t=0);
-	void add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
+	sShape& add(uint32_t, uint8_t=0);
+	sShape& add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
+
+	void write(const TAGGED_PROPVAL&);
+	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
+	TPROPVAL_ARRAY write() const;
+
+	PROPTAG_ARRAY remove() const;
 
 	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
 	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
+
 
 	uint64_t special = 0; ///< Fields that are not directly accessible by properties
 	std::string store; ///< For which store the named properties are valid
@@ -575,20 +597,25 @@ struct tExtendedFieldURI
 
 	static constexpr char NAME[] = "ExtendedFieldURI";
 
+	tExtendedFieldURI() = default;
 	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
 	explicit tExtendedFieldURI(uint32_t);
 	tExtendedFieldURI(uint16_t, const PROPERTY_NAME&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	std::optional<std::string> PropertyTag; //Attribute
+	std::optional<int32_t> PropertyTag; //Attribute
 	Enum::MapiPropertyTypeType PropertyType; //Attribute
 	std::optional<int32_t> PropertyId; // Attribute
 	std::optional<Enum::DistinguishedPropertySetType> DistinguishedPropertySetId; //Attribute
 	std::optional<tGuid> PropertySetId; // Attribute.
 	std::optional<std::string> PropertyName; //Attribute
 
-	void tags(sShape&) const;
+	void tags(sShape&, bool=true) const;
+	uint16_t type() const;
+
+	uint32_t tag() const;
+	PROPERTY_NAME name() const;
 
 	static const char* typeName(uint16_t);
 
@@ -601,17 +628,21 @@ struct tExtendedFieldURI
  */
 struct tExtendedProperty
 {
+	explicit tExtendedProperty(const tinyxml2::XMLElement*);
 	explicit tExtendedProperty(const TAGGED_PROPVAL&, const PROPERTY_NAME& = PROPERTY_NAME{KIND_NONE, {}, 0, nullptr});
 
-	TAGGED_PROPVAL propval;
-	PROPERTY_NAME propname;
+	tExtendedFieldURI ExtendedFieldURI;
+	TAGGED_PROPVAL propval{};
 
 	void serialize(tinyxml2::XMLElement*) const;
 private:
 	void serialize(const void*, uint16_t, tinyxml2::XMLElement*) const;
+	void deserialize(const tinyxml2::XMLElement*, uint16_t, void* = nullptr);
 
 	template<typename C, typename T>
 	void serializeMV(const void*, uint16_t, tinyxml2::XMLElement*, T* C::*) const;
+	template<typename C, typename T>
+	void deserializeMV(const tinyxml2::XMLElement*, uint16_t, T* C::*);
 };
 
 /**
@@ -655,7 +686,7 @@ struct tFieldURI
 
 	tFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(sShape&) const;
+	void tags(sShape&, bool=true) const;
 
 	std::string FieldURI; //Attribute
 
@@ -703,7 +734,7 @@ struct tIndexedFieldURI
 
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(sShape&) const;
+	void tags(sShape&, bool=true) const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
@@ -733,9 +764,10 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 {
 	using Base = std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>;
 
-	tPath(const tinyxml2::XMLElement*);
+	explicit tPath(const tinyxml2::XMLElement*);
+	explicit inline tPath(Base&& b) : Base(b) {}
 
-	void tags(sShape&) const;
+	void tags(sShape&, bool=true) const;
 
 	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
 };
@@ -771,6 +803,60 @@ struct tCalendarFolderType : public tBaseFolderType
 };
 
 /**
+ * Types.xsd:1386
+ */
+struct tChangeDescription
+{
+	struct Field
+	{
+		using FieldConv = std::function<void(const tinyxml2::XMLElement*, sShape&)>;
+
+		FieldConv conv;
+		const char* type = nullptr;
+	};
+
+	explicit tChangeDescription(const tinyxml2::XMLElement*);
+
+	tPath fieldURI;
+
+	static const Field* find(const char*, const char*);
+	template<typename T>
+	static TAGGED_PROPVAL mkProp(uint32_t, const T&);
+	static void convProp(const char*, const char*, const tinyxml2::XMLElement*, sShape&);
+
+	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	template<typename ET, typename PT=uint32_t>
+	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
+
+	static std::array<const char*, 15> itemTypes;
+	static std::array<Field, 2> fields2;
+	static std::unordered_multimap<std::string, Field> fields;
+};
+
+/**
+ * Types.xsd:1462
+ *
+ * TODO: implement functionality
+ */
+struct tAppendToItemField : public tChangeDescription
+{
+	static constexpr char NAME[] = "AppendToItemField";
+
+	using tChangeDescription::tChangeDescription;
+};
+
+/**
+ * Types.xsd:6939
+ */
+struct tConflictResults
+{
+	int Count;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:2064
  */
 struct tContactsFolderType : public tBaseFolderType
@@ -785,6 +871,16 @@ struct tContactsFolderType : public tBaseFolderType
 	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
 	//<xs:element name="SourceId" type="xs:string" minOccurs="0"/>
 	//<xs:element name="AccountName" type="xs:string" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:1447
+ */
+struct tDeleteItemField : public tChangeDescription
+{
+	static constexpr char NAME[] = "DeleteItemField";
+
+	using tChangeDescription::tChangeDescription;
 };
 
 /**
@@ -894,8 +990,6 @@ struct tItem : public NS_EWS_Types
 	//<xs:element name="InferenceClassification" type="t:InferenceClassificationType" minOccurs="0" />
 
 	void serialize(tinyxml2::XMLElement*) const;
-
-	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
 
 	static sItem create(const sShape&);
 };
@@ -1038,6 +1132,19 @@ struct tItemAttachment : public tAttachment
 	//void serialize(tinyxml2::XMLElement*) const;
 };
 
+struct tItemChange
+{
+	static constexpr char NAME[] = "ItemChange";
+
+	tItemChange(const tinyxml2::XMLElement*);
+
+	tItemId ItemId;
+	//<xs:element name="OccurrenceItemId" type="t:OccurrenceItemIdType"/>
+	//<xs:element name="RecurringMasterItemId" type="t:RecurringMasterItemIdType"/>
+	std::vector<sItemChangeDescription> Updates;
+	//<xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
+};
+
 /**
  * Types.xsd:1287
  */
@@ -1086,6 +1193,20 @@ struct tSerializableTimeZoneTime
 	int32_t Month;
 	Enum::DayOfWeekType DayOfWeek;
 	std::optional<int32_t> Year;
+};
+
+/**
+ * Types.xsd:1409
+ */
+struct tSetItemField : public tChangeDescription
+{
+	static constexpr char NAME[] = "SetItemField";
+
+	explicit tSetItemField(const tinyxml2::XMLElement*);
+
+	void put(sShape&) const;
+
+	const tinyxml2::XMLElement* item = nullptr;
 };
 
 /**
@@ -1754,6 +1875,13 @@ struct mGetUserOofSettingsResponse
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+struct mItemInfoResponseMessage : public mResponseMessageType
+{
+	std::vector<sItem> Items;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 /**
  * @brief      Out-of-office settings set request
  *
@@ -1922,6 +2050,40 @@ struct mResolveNamesResponseMessage : mResponseMessageType
 struct mResolveNamesResponse
 {
 	std::vector<mResolveNamesResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:973
+ */
+struct mUpdateItemRequest
+{
+	explicit mUpdateItemRequest(const tinyxml2::XMLElement*);
+
+	//<xs:element name="SavedItemFolderId" type="t:TargetFolderIdType" minOccurs="0"/>
+	std::vector<tItemChange> ItemChanges;
+	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
+	//<xs:attribute name="MessageDisposition" type="t:MessageDispositionType"  use="optional"/>
+	//<xs:attribute name="SendMeetingInvitationsOrCancellations" type="t:CalendarItemUpdateOperationType"  use="optional"/>
+	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
+};
+
+/**
+ * Messages.xsd:1000
+ */
+struct mUpdateItemResponseMessage : public mItemInfoResponseMessage
+{
+	static constexpr char NAME[] = "UpdateItemResponseMessage";
+
+	tConflictResults ConflictResults;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+struct mUpdateItemResponse
+{
+	std::vector<mUpdateItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

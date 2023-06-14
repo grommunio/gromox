@@ -53,16 +53,11 @@ template<> struct _propType<sBase64Binary> {using type = BINARY*;};
  */
 template<typename T> using PropType	= typename _propType<T>::type;
 
-
 /**
- * @brief      Convert Windows NT timestamp to gromox time point
- *
- * @param      nttime  Windows timestamp
- *
- * @return     gromox timestamp
+ * Type used for the count member of a class.
  */
-inline gromox::time_point nttime_to_time_point(uint64_t nttime)
-{return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(nttime));}
+template<class C>
+using count_t = decltype(C::count);
 
 /**
  * @brief     Access contained value, create if empty
@@ -129,6 +124,41 @@ void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 }
 
 /**
+ * @brief      Get maximum number of contained objects
+ *
+ * @tparam     C     Container class
+ *
+ * @return     Maximum number of objects
+ */
+template<class C>
+constexpr size_t max_count()
+{return std::numeric_limits<count_t<C>>::max();}
+
+/**
+ * @brief      Convert STL vector to gromox array
+ *
+ * The resulting array does not own the content and merely provides a view of
+ * the data, acting as a compatibility layer between STL and gromox types.
+ *
+ * Throws a DispatchError if the destination array type does not have
+ * sufficient capacity for the data.
+ *
+ * @param      data  Data to wrap
+ *
+ * @tparam     C     Container class
+ * @tparam     T     Contained object type
+ *
+ * @return     Gromox array view of the data
+ */
+template<class C, typename T>
+inline C mkArray(const std::vector<T>& data)
+{
+	if(data.size() > max_count<C>())
+		throw DispatchError(E3099);
+	return C{count_t<C>(data.size()), const_cast<T*>(data.data())};
+}
+
+/**
  * @brief      Remove leading and trailing whitespaces
  *
  * @param      sv      String to trim
@@ -141,6 +171,57 @@ std::string_view trim(const std::string_view& sv)
 	while(from < to && std::isspace(sv[from])) ++from;
 	while(to > from && std::isspace(sv[to-1])) --to;
 	return sv.substr(from, to-from);
+}
+
+/**
+ * @brief      Determine size of the primary property structure
+ *
+ * Calculates amount of memory to allocate for a given type.
+ * Includes only the primary structure used for storage, i.e. the contained
+ * type itself for single values and a management structure
+ * (e.g. BINARY, X_ARRAY) for complext types. Does not take into account any
+ * further necessary allocations.
+ *
+ * In case of dynamic length types (e.g. PT_UNICODE), returns 0.
+ *
+ * @param      type  Property type ID
+ *
+ * @return     Memory requirement of property type
+ */
+constexpr size_t typeWidth(uint16_t type)
+{
+	switch (type) {
+	case PT_UNSPECIFIED:  return sizeof(TYPED_PROPVAL);
+	case PT_BOOLEAN:      return 1;
+	case PT_SHORT:        return 2;
+	case PT_LONG:
+	case PT_FLOAT:
+	case PT_ERROR:        return 4;
+	case PT_DOUBLE:
+	case PT_CURRENCY:
+	case PT_APPTIME:
+	case PT_I8:
+	case PT_SYSTIME:      return 8;
+	case PT_OBJECT:
+	case PT_BINARY:       return sizeof(BINARY);
+	case PT_CLSID:        return sizeof(GUID);
+	case PT_SVREID:       return sizeof(SVREID);
+	case PT_SRESTRICTION: return sizeof(RESTRICTION);
+	case PT_ACTIONS:      return sizeof(RULE_ACTIONS);
+	case PT_MV_SHORT:     return sizeof(SHORT_ARRAY);
+	case PT_MV_LONG:      return sizeof(LONG_ARRAY);
+	case PT_MV_FLOAT:     return sizeof(FLOAT_ARRAY);
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:   return sizeof(DOUBLE_ARRAY);
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME:   return sizeof(LONGLONG_ARRAY);
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:   return sizeof(STRING_ARRAY);
+	case PT_MV_CLSID:     return sizeof(GUID_ARRAY);
+	case PT_MV_BINARY:    return sizeof(BINARY_ARRAY);
+	default:              return 0;
+	}
 }
 
 }
@@ -407,6 +488,22 @@ sShape::sShape(const tFolderResponseShape& shape)
 sShape::sShape(const tItemResponseShape& shape)
 {shape.tags(*this);}
 
+/**
+ * @brief      Initialize shape from changes list
+ *
+ * @param      changes  List of item changes
+ */
+sShape::sShape(const tItemChange& changes)
+{
+	for(const auto& change : changes.Updates) {
+		if(std::holds_alternative<tSetItemField>(change))
+			std::get<tSetItemField>(change).fieldURI.tags(*this);
+		else if(std::holds_alternative<tDeleteItemField>(change))
+			std::get<tDeleteItemField>(change).fieldURI.tags(*this, false);
+		else
+			mlog(LV_WARN, "[ews] AppendToItemField not implemented - ignoring");
+	}
+}
 
 /**
  * @brief      Initialize shape properties
@@ -427,15 +524,18 @@ sShape::sShape(const TPROPVAL_ARRAY& tp)
  *
  * @param      tag    Tag ID
  * @param      flags  Shape target flags
+ *
+ * @return     Reference to self
  */
-void sShape::add(uint32_t tag, uint8_t flags)
+sShape& sShape::add(uint32_t tag, uint8_t flags)
 {
 	auto it = props.find(tag);
 	if(it == props.end()) {
-		tags.emplace_back(tag);
+		((flags & FL_RM)? dTags : tags).emplace_back(tag);
 		it = props.emplace(tag, flags).first;
 	}
 	it->second.flags |= flags;
+	return *this;
 }
 
 /**
@@ -444,13 +544,71 @@ void sShape::add(uint32_t tag, uint8_t flags)
  * @param      name   Property name
  * @param      type   Property type
  * @param      flags  Shape target flags
+ *
+ * @return     Reference to self
  */
-void sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
+sShape& sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
 {
 	names.emplace_back(name);
 	namedTags.emplace_back(type);
 	nameMeta.emplace_back(flags);
+	return *this;
 }
+
+/**
+ * @brief      Provide array of tags marked for deletion
+ *
+ * @return     Tag array to delete
+ */
+PROPTAG_ARRAY sShape::remove() const
+{return mkArray<PROPTAG_ARRAY>(dTags);}
+
+/**
+ * @brief      Add property for writing
+ *
+ * Added properties currently cannot be read/removed and are not registered
+ * in the central structure used by `get` due to lack of use cases and
+ * significant additional overhead.
+ *
+ * Does not perform a deep copy of the property, the value must stay valid.
+ *
+ * @param      tp    Property to add
+ */
+void sShape::write(const TAGGED_PROPVAL& tp)
+{
+	/* Currently not needed, but I'll leave this here in case it becomes necessary
+    TAGGED_PROPVAL* prop = EWSContext::alloc<TAGGED_PROPVAL>();
+	*prop = tp;
+	props[tp.proptag].prop = prop; */
+	wProps.emplace_back(tp);
+}
+
+/**
+ * @brief      Add named property for writing
+ *
+ * Automatically provides the correct tag ID.
+ * If the name cannot be found nothing happens.
+ *
+ * @param      name  Property name
+ * @param      tp    Property to add
+ */
+void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
+{
+	auto it = std::find(names.begin(), names.end(), name);
+	if(it == names.end())
+		return;
+	auto index = std::distance(names.begin(), it);
+	TAGGED_PROPVAL augmented{namedTags[index], tp.pvalue};
+	write(augmented);
+}
+
+/**
+ * @brief      Provide array of properties to write to exmdb
+ *
+ * @return     Array of properties to write
+ */
+TPROPVAL_ARRAY sShape::write() const
+{return mkArray<TPROPVAL_ARRAY>(wProps);}
 
 /**
  * @brief      Reset all properties to unloaded
@@ -531,17 +689,27 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 {
 	if(ids.count != names.size()) //Abort if sizes don't match
 		return false;
-	size_t before = props.size();
-	for(uint32_t tag : namedTags) //Remove all named tags
-		props.erase(tag);
-	tags.resize(tags.size()-before+props.size()); //Truncate named IDs
+	size_t namedAdd = 0, namedRm = 0;
+	for(uint32_t tag : namedTags) {//Remove all named tags
+		auto it = props.find(tag);
+		if(it == props.end())
+			continue;
+		++((it->second.flags & FL_RM)? namedRm : namedAdd);
+		props.erase(it);
+	}
+	tags.resize(tags.size()-namedAdd);
+	dTags.resize(dTags.size()-namedRm);//Truncate named IDs
 	for(size_t index = 0; index < names.size(); ++index) { //Add named IDs
 		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids.ppropid[index]);
 		namedTags[index] = tag;
 		if(!PROP_ID(tag))
 			continue;
-		props.emplace(tag, PropInfo(nameMeta[index], &names[index]));
-		tags.emplace_back(tag);
+		if(nameMeta[index] & FL_RM)
+			dTags.emplace_back(tag);
+		else {
+			props.emplace(tag, PropInfo(nameMeta[index], &names[index]));
+			tags.emplace_back(tag);
+		}
 	}
 	return true;
 }
@@ -766,6 +934,147 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Alphabetically sorted array of valid item-related XML tags
+ */
+decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
+	"CalendarItem",
+	"Contact",
+	"DistributionList",
+	"Item",
+	"MeetingCancellation",
+	"MeetingMessage",
+	"MeetingRequest",
+	"MeetingResponse",
+	"Message",
+	"Network",
+	"Person",
+	"PostItem",
+	"RoleMember",
+	"SharingMessage",
+	"Task"
+};
+
+/**
+ * List of field -> conversion function mapping
+ */
+decltype(tChangeDescription::fields) tChangeDescription::fields = {{
+	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
+	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
+	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
+	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
+}};
+
+
+/**
+ * @brief      Find field information for given type/name combination
+ *
+ * Tries to find the best match for the type, i.e. if an exact match for the
+ * given type exists, returns the corresponding field, otherwise selects the
+ * generic fallback (unset type) for that field.
+ *
+ * This behavior is necessary because the typing is inconsistent in Outlook,
+ * e.g. the item:Sensitivity URI might be given as Message::Sensitivity field.
+ *
+ * @param      type  Object type name
+ * @param      name  Field name
+ *
+ * @return     Field information or nullptr if not found
+ */
+const tChangeDescription::Field* tChangeDescription::find(const char* type, const char* name)
+{
+	const Field *specific = nullptr, *general = nullptr;
+	auto matches = fields.equal_range(name);
+	for(auto it = matches.first; it != matches.second; ++it)
+		if(!it->second.type)
+			general = &it->second;
+		else if(!strcmp(it->second.type, type))
+			specific = &it->second;
+	return specific? specific : general;
+}
+
+/**
+ * @brief      Create property
+ *
+ * @param      tag   Tag ID
+ * @param      val   Property value
+ *
+ * @tparam     T     Type of the contained value
+ *
+ * @return     Property containing a copy of the value
+ */
+template<typename T>
+TAGGED_PROPVAL tChangeDescription::mkProp(uint32_t tag, const T& val)
+{
+	TAGGED_PROPVAL tp{tag, EWSContext::alloc<T>()};
+	*static_cast<T*>(tp.pvalue) = val;
+	return tp;
+}
+
+/**
+ * @brief      Convert XML object to property
+ *
+ * @param      type   Object name
+ * @param      name   Field name
+ * @param      value  Value structure
+ * @param      shape  Shape to write the property to
+ */
+void tChangeDescription::convProp(const char* type, const char* name, const tinyxml2::XMLElement* value, sShape& shape)
+{
+	const Field* field = find(type, name);
+	if(!field) {
+		mlog(LV_WARN, "No conversion for %s::%s", type, name);
+		return;
+	}
+	field->conv(value, shape);
+}
+
+/**
+ * @brief      Property conversion function for boolean fields
+ *
+ * @param      tag    Tag ID
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ */
+void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& shape)
+{
+	bool value;
+	if(v->QueryBoolText(&value))
+		throw DeserializationError(E3100(v->GetText()? v->GetText() : "(nil)"));
+	shape.write(mkProp(tag, uint8_t(value? TRUE : false)));
+}
+
+/**
+ * @brief      Property coversion function for enumerations
+ *
+ * Converts string to corresponding index and stores it in a numeric property.
+ *
+ * @param      tag    Tag ID
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ *
+ * @tparam     ET     Enumeration type
+ * @tparam     PT     Numeric property type
+ */
+template<typename ET, typename PT>
+void tChangeDescription::convEnumIndex(uint32_t tag, const XMLElement* v, sShape& shape)
+{shape.write(mkProp(tag, PT(ET(v->GetText()).index())));}
+
+/**
+ * @brief      Property conversion function for boolean fields
+ *
+ * @param      tag    Tag ID
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ */
+void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& shape)
+{
+	const char* text = v->GetText();
+	shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(text? text : "")});
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tContact::tContact(const sShape& shape) : tItem(shape)
 {
 	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
@@ -859,18 +1168,9 @@ decltype(tExtendedFieldURI::propsetIds) tExtendedFieldURI::propsetIds = {
  * @param     tag     Property tag ID
  */
 tExtendedFieldURI::tExtendedFieldURI(uint32_t tag) :
-    PropertyTag(std::in_place_t(), 6, '0'),
+    PropertyTag(PROP_ID(tag)),
     PropertyType(typeName(PROP_TYPE(tag)))
-{
-	static constexpr char digits[] = "0123456789abcdef";
-	std::string& proptag = *PropertyTag;
-	proptag[0] = '0';
-	proptag[1] = 'x';
-	proptag[2] = digits[(tag >> 28) & 0xF];
-	proptag[3] = digits[(tag >> 24) & 0xF];
-	proptag[4] = digits[(tag >> 20) & 0xF];
-	proptag[5] = digits[(tag >> 16) & 0xF];
-}
+{}
 
 /**
  * @brief     Initialize from properties
@@ -919,33 +1219,65 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
 		PropertyName = propname.pname;
 }
 
+/**
+ * @brief      Get Tag ID
+ *
+ * @return     Tag ID or 0 if named property
+ */
+uint32_t tExtendedFieldURI::tag() const
+{return PropertyTag? PROP_TAG(type(), *PropertyTag) : 0;}
 
-void tExtendedFieldURI::tags(sShape& shape) const
+/**
+ * @brief      Get property name
+ *
+ * @return     Property name or KIND_NONE name if regular tag.
+ */
+PROPERTY_NAME tExtendedFieldURI::name() const
+{
+	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
+	if(!PropertySetId && !DistinguishedPropertySetId)
+		return NONAME;
+	PROPERTY_NAME name{};
+	name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
+	if(PropertyName) {
+		name.kind = MNID_STRING;
+		name.pname = const_cast<char*>(PropertyName->c_str());
+	} else if(PropertyId) {
+		name.kind = MNID_ID;
+		name.lid = *PropertyId;
+	} else
+		return NONAME;
+	return name;
+}
+
+/**
+ * @brief      Write tag information to shape
+ *
+ * @param      shape  Shape to store tag in
+ * @param      add    Whether the tag is to be added or removed
+ */
+void tExtendedFieldURI::tags(sShape& shape, bool add) const
+{
+	if(PropertyTag)
+		shape.add(tag(), add? sShape::FL_EXT : sShape::FL_RM);
+	else if((PropertySetId || DistinguishedPropertySetId) && (PropertyName || PropertyId))
+		shape.add(name(), type(), add? sShape::FL_EXT : sShape::FL_RM);
+	else
+		throw InputError(E3061);
+}
+
+/**
+ * @brief      Get tag type
+ *
+ * @return     Tag type ID
+ */
+uint16_t tExtendedFieldURI::type() const
 {
 	static auto compval = [](const TMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto type = std::lower_bound(typeMap.begin(), typeMap.end(), PropertyType.c_str(), compval);
 	if(type == typeMap.end() || strcmp(type->first, PropertyType.c_str()))
 		throw InputError(E3059(PropertyType));
-	if(PropertyTag) {
-		unsigned long long tagId = std::stoull(*PropertyTag, nullptr, 16);
-		shape.add(PROP_TAG(type->second, tagId), sShape::FL_EXT);
-	}
-	else if(PropertySetId || DistinguishedPropertySetId)
-	{
-		PROPERTY_NAME name{};
-		name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
-		if(PropertyName) {
-			name.kind = MNID_STRING;
-			name.pname = const_cast<char*>(PropertyName->c_str());
-		} else if(PropertyId) {
-			name.kind = MNID_ID;
-			name.lid = *PropertyId;
-		} else
-			throw InputError(E3060);
-		shape.add(name, type->second, sShape::FL_EXT);
-	}
-	else
-		throw InputError(E3061);
+	return type->second;
 }
 
 /**
@@ -991,8 +1323,112 @@ const char* tExtendedFieldURI::typeName(uint16_t type)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) : propval(tp), propname(pn)
+tExtendedProperty::tExtendedProperty(const TAGGED_PROPVAL& tp, const PROPERTY_NAME& pn) :
+	  ExtendedFieldURI(pn.kind == KIND_NONE? tExtendedFieldURI(tp.proptag) : tExtendedFieldURI(PROP_TYPE(tp.proptag), pn)),
+	  propval(tp)
 {}
+
+/**
+ * @brief      Deserialize multi-value property
+ *
+ * @param      xml     XML values node
+ * @param      type    Property type
+ * @param      values  Member to write values to
+ *
+ * @tparam     C     Container type
+ * @tparam     T     Value type
+ */
+template<typename C, typename T>
+void tExtendedProperty::deserializeMV(const XMLElement* xml, uint16_t type, T* C::* values)
+{
+	C* container = static_cast<C*>(propval.pvalue);
+	container->count = 0;
+	for(const XMLElement* child = xml->FirstChildElement("Value"); child; child = child->NextSiblingElement("Value"))
+		++container->count;
+	container->*values = EWSContext::alloc<T>(container->count);
+	const XMLElement* child = xml->FirstChildElement("Value");
+	for(T* value = container->*values; value < container->*values+container->count; ++value) {
+		deserialize(child, type&~MV_FLAG, value);
+		child = child->NextSiblingElement("Value");
+	}
+}
+
+/**
+ * @brief      Deserialize property
+ *
+ * @param      xml   XML value node
+ * @param      type  Property type
+ * @param      dest  Value destination or nullptr to automatically allocate
+ */
+void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* dest)
+{
+	size_t allocSize = typeWidth(type);
+	if(!dest)
+		propval.pvalue = dest = allocSize? EWSContext::alloc(allocSize) : nullptr;
+	const char* content = xml->GetText();
+	switch(type) {
+	case PT_SHORT:{
+		int temp;
+		XMLError res = xml->QueryIntText(&temp);
+		if(res != XML_SUCCESS || temp & ~0xFFFF)
+			throw DeserializationError(E3101(content? content : "(nil)"));
+		*static_cast<uint16_t*>(dest) = uint16_t(temp);
+		break;
+	}
+	case PT_ERROR:
+	case PT_LONG:
+		if(xml->QueryUnsignedText(static_cast<uint32_t*>(dest)) != XML_SUCCESS)
+			throw DeserializationError(E3102(content? content : "(nil)"));
+		break;
+	case PT_FLOAT:
+		if(xml->QueryFloatText(static_cast<float*>(dest)) != XML_SUCCESS)
+			throw DeserializationError(E3103(content? content : "(nil)"));
+		break;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		if(xml->QueryDoubleText(static_cast<double*>(dest)) != XML_SUCCESS)
+			throw DeserializationError(E3104(content? content : "(nil)"));
+		break;
+	case PT_BOOLEAN:
+		if(xml->QueryBoolText(static_cast<bool*>(dest)) != XML_SUCCESS)
+			throw DeserializationError(E3105(content? content : "(nil)"));
+		break;
+	case PT_CURRENCY:
+	case PT_I8:
+	case PT_SYSTIME:
+		if(xml->QueryUnsigned64Text(static_cast<uint64_t*>(dest)) != XML_SUCCESS)
+			throw DeserializationError(E3106(content? content : "(nil)"));
+		break;
+	case PT_STRING8:
+	case PT_UNICODE: {
+		size_t len = xml->GetText()? strlen(xml->GetText()) : 0;
+		if(!dest)
+			propval.pvalue = dest = EWSContext::alloc(len+1);
+		else
+			dest = *static_cast<char**>(dest) = EWSContext::alloc<char>(len+1);
+		memcpy(static_cast<char*>(dest), len? xml->GetText() : "", len+1);
+		break;
+	}
+	case PT_MV_SHORT:
+		deserializeMV(xml, type, &SHORT_ARRAY::ps); break;
+	case PT_MV_LONG:
+		deserializeMV(xml, type, &LONG_ARRAY::pl); break;
+	case PT_MV_FLOAT:
+		deserializeMV(xml, type, &FLOAT_ARRAY::mval); break;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		deserializeMV(xml, type, &DOUBLE_ARRAY::mval); break;
+	case PT_MV_I8:
+	case PT_MV_CURRENCY:
+	case PT_MV_SYSTIME:
+		deserializeMV(xml, type, &LONGLONG_ARRAY::pll); break;
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+		deserializeMV(xml, type, &STRING_ARRAY::ppstr); break;
+	default:
+		throw NotImplementedError(E3107(tExtendedFieldURI::typeName(type)));
+	}
+}
 
 /**
  * @brief      Unpack multi-value property
@@ -1011,9 +1447,9 @@ inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLE
 	const C* content = static_cast<const C*>(data);
 	for(T* val = content->*value; val < content->*value+content->count; ++val)
 		if constexpr(std::is_same_v<T, char*>)
-			serialize(*val, type&~0x1000, xml->InsertNewChildElement("t:Value"));
+			serialize(*val, type&~MV_FLAG, xml->InsertNewChildElement("t:Value"));
 		else
-			serialize(val, type&~0x1000, xml->InsertNewChildElement("t:Value"));
+			serialize(val, type&~MV_FLAG, xml->InsertNewChildElement("t:Value"));
 }
 
 /**
@@ -1028,7 +1464,7 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 	switch(type)
 	{
 	case PT_BOOLEAN:
-		return xml->SetText(bool(*(reinterpret_cast<const char*>(data))));
+		return xml->SetText(bool(*(reinterpret_cast<const uint8_t*>(data))));
 	case PT_SHORT:
 		return xml->SetText(*(reinterpret_cast<const uint16_t*>(data)));
 	case PT_LONG:
@@ -1129,15 +1565,15 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"message:ToRecipients", sShape::ToRecipients},
 }};
 
-void tFieldURI::tags(sShape& shape) const
+void tFieldURI::tags(sShape& shape, bool add) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
 	for(auto it = tags.first; it != tags.second; ++it)
-		shape.add(it->second, sShape::FL_FIELD);
+		shape.add(it->second, add? sShape::FL_FIELD : sShape::FL_RM);
 
 	auto names = nameMap.equal_range(FieldURI);
 	for(auto it = names.first; it != names.second; ++it)
-		shape.add(it->second.first, it->second.second, sShape::FL_FIELD);
+		shape.add(it->second.first, it->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
 
 	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
@@ -1198,7 +1634,7 @@ std::string tGuid::serialize() const
 /**
  * TODO: Implement tag mapping
  */
-void tIndexedFieldURI::tags(sShape&) const
+void tIndexedFieldURI::tags(sShape&, bool) const
 {}
 
 
@@ -1305,43 +1741,6 @@ sItem tItem::create(const sShape& shape)
 	return tItem(shape);
 }
 
-/**
- * @brief     Try to map named property
- *
- * Tries to find the corresponding named property in the map and stores it in
- * the proper field or an extended property.
- * Returns immediately if the given property tag is not in the named property
- * range.
- *
- * @param     tp          Property to map
- * @param     namedProps  Map of requested named properties
- *
- * @return    true if property was mapped, false otherwise
- */
-bool tItem::mapNamedProperty(const TAGGED_PROPVAL& tp, const sNamedPropertyMap& namedProps)
-{
-	sNamedPropertyMap::const_iterator entry;
-	if(PROP_ID(tp.proptag) < 0x8000 || (entry = namedProps.find(tp.proptag)) == namedProps.end())
-		return false;
-	const PROPERTY_NAME& pn = entry->second;
-	if(pn.kind == MNID_STRING)
-	{
-		if(pn.guid == PS_PUBLIC_STRINGS)
-		{
-			if(!strcmp(pn.pname, "Keywords"))
-			{
-				const STRING_ARRAY* content = static_cast<const STRING_ARRAY*>(tp.pvalue);
-				if(content->count)
-					Categories.emplace(content->ppstr, content->ppstr+content->count);
-				return true;
-			}
-		}
-	}
-	//Otherwise just put it into an extended attribute
-	ExtendedProperty.emplace_back(tp, pn);
-	return true;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -1422,8 +1821,8 @@ tMessage::tMessage(const sShape& shape) : tItem(shape)
 
  * @param     shape   Shape to write tags to
  */
-void tPath::tags(sShape& shape) const
-{return std::visit([&](auto&& v){return v.tags(shape);}, static_cast<const Base&>(*this));};
+void tPath::tags(sShape& shape, bool add) const
+{return std::visit([&](auto&& v){return v.tags(shape, add);}, asVariant());};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1484,6 +1883,29 @@ gromox::time_point tSerializableTimeZone::apply(const gromox::time_point& tp) co
  */
 gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) const
 {return tp-offset(tp);}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Write property to shape
+ *
+ * @param      shape  Shape to write property to
+ */
+void tSetItemField::put(sShape& shape) const
+{
+	const XMLElement* child = item->FirstChildElement();
+	if(!child)
+		throw DeserializationError(E3108);
+	if(!strcmp(child->Name(), "ExtendedProperty")) {
+		tExtendedProperty prop(child);
+		if(prop.ExtendedFieldURI.tag())
+			shape.write(prop.propval);
+		else
+			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+	}
+	else
+		convProp(item->Name(), child->Name(), child, shape);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

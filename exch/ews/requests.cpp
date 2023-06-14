@@ -702,4 +702,52 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 	data.serialize(response);
 }
+
+/**
+ * @brief      Process UpdateItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ *
+ * @todo check whether instances should rathe be used
+ */
+void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:UpdateItemResponse");
+
+	mUpdateItemResponse data;
+	data.ResponseMessages.reserve(request.ItemChanges.size());
+
+	sShape idOnly;
+	idOnly.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
+	for(const auto& change : request.ItemChanges) {
+		mUpdateItemResponseMessage& msg = data.ResponseMessages.emplace_back();
+		sMessageEntryId mid(change.ItemId.Id.data(), change.ItemId.Id.size());
+		sFolderSpec parentFolder = ctx.resolveFolder(mid);
+		std::string dir = ctx.getDir(parentFolder);
+		sShape shape(change);
+		ctx.getNamedTags(dir, shape, true);
+		for(const auto& update : change.Updates) {
+			if(holds_alternative<tSetItemField>(update))
+				std::get<tSetItemField>(update).put(shape);
+		}
+		TPROPVAL_ARRAY props = shape.write();
+		PROPTAG_ARRAY tagsRm = shape.remove();
+		PROBLEM_ARRAY problems;
+		if(!ctx.plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+			throw DispatchError(E3092);
+		if(!ctx.plugin.exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
+			throw DispatchError(E3093);
+		ctx.updated(dir, mid);
+		msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
+		msg.ConflictResults.Count = problems.count;
+		msg.success();
+	}
+
+	data.serialize(response);
+}
+
 }

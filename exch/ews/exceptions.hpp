@@ -148,6 +148,31 @@ E(3080, "failed to get attachment properties");
 E(3081, "attachment ID data to large");
 E(3082, "bad property for message entry id");
 E(3083, "failed to get attachment properties");
+E(3084, "failed to allocate change number");
+E(3085, "failed to serialize address book entry id");
+E(3086, "failed to serialize change key");
+E(3087, "failed to load predecessor change list");
+E(3088, "failed to generate predecessor change list");
+E(3089, "failed to update message");
+inline std::string E3090(const std::string_view& username) {return fmt::format("invalid username '{}'", username);}
+inline std::string E3091(const std::string_view& username) {return fmt::format("failed to get user info for '{}'", username);}
+E(3092, "failed to set item properties");
+E(3093, "failed to remove item properties");
+E(3094, "only one of 'Value' or 'Values' allowed");
+E(3095, "multi-value property must be set with 'Values'");
+E(3096, "single-value property must be set with 'Value'");
+E(3097, "no valid item object found");
+E(3098, "could not find matching node for variant deserialization");
+E(3099, "array too big for container");
+inline std::string E3100(const std::string_view& val) {return fmt::format("invalid boolean value '{}'", val);}
+inline std::string E3101(const std::string_view& val) {return fmt::format("invalid short value '{}'", val);}
+inline std::string E3102(const std::string_view& val) {return fmt::format("invalid long value '{}'", val);}
+inline std::string E3103(const std::string_view& val) {return fmt::format("invalid float value '{}'", val);}
+inline std::string E3104(const std::string_view& val) {return fmt::format("invalid double value '{}'", val);}
+inline std::string E3105(const std::string_view& val) {return fmt::format("invalid boolean value '{}'", val);}
+inline std::string E3106(const std::string_view& val) {return fmt::format("invalid i8 value '{}'", val);}
+inline std::string E3107(const std::string_view& val) {return fmt::format("annot deserialize property of unsupported type {}", val);}
+E(3108, "missing child node in SetItemField object");
 
 #undef E
 }
