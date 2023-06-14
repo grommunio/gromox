@@ -8,7 +8,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair cleaner delivery delivery-queue event freebusy gromox-snapshot http imap midb pop3 rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event freebusy gromox-snapshot http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -60,7 +60,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
-pkglibexec_SCRIPTS = tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
+pkglibexec_SCRIPTS = tools/cleaner tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
@@ -198,8 +198,6 @@ EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
 
 cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp tools/genimport.hpp
 cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
-cleaner_SOURCES = tools/cleaner.cpp
-cleaner_LDADD = ${fmt_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_cplus.la
 freebusy_SOURCES = tools/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}

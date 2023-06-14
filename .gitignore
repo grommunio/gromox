@@ -26,7 +26,6 @@ Makefile.in
 /stamp-h1
 
 /cgkrepair
-/cleaner
 /delivery
 /delivery-queue
 /dldcheck
