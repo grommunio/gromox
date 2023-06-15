@@ -703,7 +703,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	if(!ctx.plugin.mysql.get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
 		throw DispatchError(E3068);
 	if (aliases.size() > 0) {
-		aliases.resize(min(aliases.size(), 3ul));
+		aliases.resize(min(aliases.size(), size_t(3)));
 		cnt.EmailAddresses.emplace().reserve(aliases.size());
 		size_t index = 0;
 		for (auto& alias : aliases)
