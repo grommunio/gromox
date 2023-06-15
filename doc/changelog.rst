@@ -1,5 +1,5 @@
-Development 2.9.61
-==================
+Development 2.9.124
+===================
 
 Fixes:
 
@@ -19,7 +19,8 @@ Enhancements:
   and notify handles, and raise limit for ems_max_pending_sesnotif to 1K
 * emsmdb: new configuration directives ems_max_active_notifh,
   ems_max_active_sessions, ems_max_active_users, ems_max_pending_sesnotif
-* mbop: new subcommands `clear-photo` and `clear-profile`
+* mbop: new subcommands ``clear-photo``, ``clear-profile``,
+  ``purge-softdelete``, ``purge-datafiles``
 
 Changes:
 
@@ -29,6 +30,8 @@ Changes:
 * The user profile picture is now stored in the mail store as a
   property rather than as a flat file. The upgrade is automatically
   performed when the photo is modified via PHP-MAPI.
+* ``/usr/libexec/gromox/cleaner`` is obsolete and replaced by mbop subcommand
+  ``purge-datafiles``.
 
 
 Gromox 2.9 (2023-05-10)
