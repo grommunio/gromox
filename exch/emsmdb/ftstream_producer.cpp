@@ -86,11 +86,11 @@ static bool fxstream_producer_open(fxstream_producer &p)
 	if (p.fd >= 0)
 		return true; /* already open */
 	auto path = LOCAL_DISK_TMPDIR;
-	p.fd = open_tmpfile(path, &p.path, O_RDWR | O_TRUNC);
-	if (p.fd >= 0)
+	auto ret = p.fd.open_anon(path, O_RDWR | O_TRUNC);
+	if (ret >= 0)
 		return true;
-	mlog(LV_ERR, "E-1338: open{%s, %s}: %s", path, p.path.c_str(),
-	        strerror(errno));
+	mlog(LV_ERR, "E-1338: open_anon(%s)[%s]: %s", path, p.fd.m_path.c_str(),
+		strerror(-ret));
 	return false;
 }
 
@@ -883,17 +883,6 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	return nullptr;
 }
 
-fxstream_producer::~fxstream_producer()
-{
-	auto pstream = this;
-	if (pstream->fd < 0)
-		return;
-	close(pstream->fd);
-	if (pstream->path.size() > 0 && remove(pstream->path.c_str()) < 0 &&
-	    errno != ENOENT)
-		mlog(LV_WARN, "W-1371: remove %s: %s", pstream->path.c_str(), strerror(errno));
-}
-
 BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
 	auto pstream = this;
@@ -970,13 +959,7 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 		pstream->read_offset += *plen;
 	}
 	*pb_last = TRUE;
-	if (-1 != pstream->fd) {
-		close(pstream->fd);
-		pstream->fd = -1;
-		if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1340: remove: %s: %s",
-			        pstream->path.c_str(), strerror(errno));
-	}
+	pstream->fd.close();
 	pstream->offset = 0;
 	pstream->buffer_offset = 0;
 	pstream->read_offset = 0;

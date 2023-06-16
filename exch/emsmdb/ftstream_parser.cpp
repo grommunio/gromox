@@ -837,10 +837,10 @@ std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) t
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
-	pstream->fd = open_tmpfile(path, &pstream->path, O_RDWR | O_TRUNC);
-	if (pstream->fd < 0) {
-		mlog(LV_ERR, "E-1668: open{%s, %s}: %s", path,
-		        pstream->path.c_str(), strerror(-pstream->fd));
+	auto ret = pstream->fd.open_anon(path, O_RDWR | O_TRUNC);
+	if (ret < 0) {
+		mlog(LV_ERR, "E-1668: open_anon(%s)[%s]: %s", path,
+			pstream->fd.m_path.c_str(), strerror(-ret));
 		return nullptr;
 	}
 	pstream->plogon = plogon;
@@ -848,13 +848,4 @@ std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) t
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1450: ENOMEM");
 	return nullptr;
-}
-
-fxstream_parser::~fxstream_parser()
-{
-	auto pstream = this;
-	close(pstream->fd);
-	if (pstream->path.size() > 0 && remove(pstream->path.c_str()) < 0 &&
-	    errno != ENOENT)
-		mlog(LV_WARN, "W-1392: remove %s: %s", pstream->path.c_str(), strerror(errno));
 }

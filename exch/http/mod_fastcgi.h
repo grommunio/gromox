@@ -3,6 +3,7 @@
 #include <ctime>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/fileio.h>
 #define RESPONSE_TIMEOUT				-1
 #define RESPONSE_WAITING				0
 #define RESPONSE_AVAILABLE				1
@@ -16,9 +17,9 @@ struct FASTCGI_CONTEXT {
 	uint64_t content_length = 0;
 	const FASTCGI_NODE *pfnode = nullptr;
 	uint64_t cache_size = 0;
-	int cache_fd = -1, cli_sockd = -1;
+	gromox::tmpfile cache_fd;
 	gromox::time_point last_time{};
-	std::string tmpfile;
+	int cli_sockd = -1;
 };
 
 struct http_context;

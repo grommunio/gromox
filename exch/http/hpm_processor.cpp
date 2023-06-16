@@ -45,10 +45,9 @@ namespace {
 struct HPM_CONTEXT {
 	const HPM_INTERFACE *pinterface = nullptr;
 	BOOL b_preproc = false, b_chunked = false, b_end = false;
-	int cache_fd = -1;
+	gromox::tmpfile cache_fd;
 	uint32_t chunk_size = 0, chunk_offset = 0;
 	uint64_t content_length = 0, cache_size = 0;
-	std::string tmpfile;
 };
 
 }
@@ -336,18 +335,17 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
 				return false;
 			}
-			phpm_ctx->cache_fd = open_tmpfile(path, &phpm_ctx->tmpfile,
-			                     O_RDWR | O_TRUNC);
-			if (phpm_ctx->cache_fd < 0) {
-				mlog(LV_ERR, "E-2090: open{%s, %s}: %s",
-				        path, phpm_ctx->tmpfile.c_str(),
-				        strerror(-phpm_ctx->cache_fd));
+			auto ret = phpm_ctx->cache_fd.open_anon(path, O_RDWR | O_TRUNC);
+			if (ret < 0) {
+				mlog(LV_ERR, "E-2090: open(%s)[%s]: %s",
+				        path, phpm_ctx->cache_fd.m_path.c_str(),
+				        strerror(-ret));
 				phpm_ctx->b_preproc = FALSE;
 				return FALSE;
 			}
 			phpm_ctx->cache_size = 0;
 		} else {
-			phpm_ctx->cache_fd = -1;
+			phpm_ctx->cache_fd.close();
 		}
 		phpm_ctx->b_chunked = b_chunked;
 		if (b_chunked) {
@@ -533,14 +531,8 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			free(pcontent);
 			return FALSE;
 		}
-		close(phpm_ctx->cache_fd);
-		phpm_ctx->cache_fd = -1;
+		phpm_ctx->cache_fd.close();
 		phpm_ctx->content_length = node_stat.st_size;
-		if (!phpm_ctx->tmpfile.empty() &&
-		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
-		    errno != ENOENT)
-			mlog(LV_WARN, "W-1347: remove %s: %s",
-			        phpm_ctx->tmpfile.c_str(), strerror(errno));
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
 				pcontent, phpm_ctx->content_length);
@@ -577,15 +569,7 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	if (NULL != phpm_ctx->pinterface->term) {
 		phpm_ctx->pinterface->term(phttp->context_id);
 	}
-	if (phpm_ctx->cache_fd >= 0) {
-		close(phpm_ctx->cache_fd);
-		phpm_ctx->cache_fd = -1;
-		if (!phpm_ctx->tmpfile.empty() &&
-		    unlink(phpm_ctx->tmpfile.c_str()) < 0 &&
-		    errno != ENOENT)
-			mlog(LV_WARN, "W-1369: remove %s: %s",
-			        phpm_ctx->tmpfile.c_str(), strerror(errno));
-	}
+	phpm_ctx->cache_fd.close();
 	phpm_ctx->content_length = 0;
 	phpm_ctx->b_preproc = FALSE;
 	phpm_ctx->pinterface = NULL;

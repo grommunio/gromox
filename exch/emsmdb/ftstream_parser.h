@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
-#include <string>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
 
@@ -14,14 +13,12 @@ struct fxstream_parser {
 	NOMOVE(fxstream_parser);
 
 	public:
-	~fxstream_parser();
 	static std::unique_ptr<fxstream_parser> create(logon_object *);
 	BOOL write_buffer(const BINARY *transfer_data);
 	ec_error_t process(fastupctx_object &);
 
-	int fd = -1;
+	gromox::tmpfile fd;
 	uint32_t offset = 0, st_size = 0;
-	std::string path;
 	logon_object *plogon = nullptr; /* plogon is a protected member */
 };
 using FTSTREAM_PARSER = fxstream_parser;

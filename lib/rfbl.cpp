@@ -1030,31 +1030,69 @@ bool set_digest(char *json, size_t iomax, const char *key, uint64_t val)
 	return set_digest2(json, iomax, key, Json::Value::UInt64(val));
 }
 
-int open_tmpfile(const char *dir, std::string *fullname, unsigned int flags,
-    unsigned int mode) try
+void tmpfile::close()
 {
-	int fd;
-	if (fullname != nullptr)
-		fullname->clear();
+	if (m_fd < 0)
+		return;
+	::close(m_fd);
+	m_fd = -1;
+	if (m_path.empty())
+		return;
+	remove(m_path.c_str());
+	m_path.clear();
+}
+
+int tmpfile::open_anon(const char *dir, unsigned int flags, unsigned int mode)
+{
+#if defined(O_TMPFILE)
+	return open_impl(dir, flags, mode, true);
+#else
+	return open_impl(dir, flags, mode, false);
+#endif
+}
+
+int tmpfile::open_linkable(const char *dir, unsigned int flags, unsigned int mode)
+{
+	return open_impl(dir, flags, mode, false);
+}
+
+int tmpfile::open_impl(const char *dir, unsigned int flags, unsigned int mode,
+    bool make_anon) try
+{
+	close();
 #ifdef O_TMPFILE
-	fd = open(dir, O_TMPFILE | flags, mode);
-	if (fd >= 0)
-		return fd;
-	if (errno != EISDIR && errno != EOPNOTSUPP)
-		return -errno;
+	if (make_anon) {
+		m_path.clear();
+		m_fd = open(dir, O_TMPFILE | flags, mode);
+		if (m_fd >= 0)
+			return m_fd;
+		if (errno != EISDIR && errno != EOPNOTSUPP)
+			return -errno;
+	}
 #endif
 	char tn[17];
 	randstring(tn, 16, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-	std::string tf;
-	if (fullname == nullptr)
-		fullname = &tf;
-	*fullname = dir + "/"s + tn;
-	fd = open(fullname->c_str(), O_CREAT | flags, mode);
-	if (fd >= 0)
-		return fd;
-	return -errno;
+	m_path = dir + "/"s + tn;
+	m_fd = open(m_path.c_str(), O_CREAT | flags, mode);
+	return m_fd >= 0 ? m_fd : -errno;
 } catch (const std::bad_alloc &) {
 	return -ENOMEM;
+}
+
+errno_t tmpfile::link_to(const char *newpath)
+{
+	if (m_path.empty())
+		return EINVAL;
+	if (m_fd < 0)
+		return EBADF;
+	/*
+	 * The use of renameat2(RENAME_NOREPLACE) to speed up the CID writer in
+	 * one particular edge case was evaluated, but it is not worth it.
+	 */
+	if (rename(m_path.c_str(), newpath) != 0)
+		return errno;
+	m_path.clear();
+	return 0;
 }
 
 void mlog_init(const char *filename, unsigned int max_level)

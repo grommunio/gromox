@@ -474,17 +474,16 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
 			return false;
 		}
-		pcontext->cache_fd = open_tmpfile(path, &pcontext->tmpfile,
-		                     O_RDWR | O_TRUNC);
-		if (pcontext->cache_fd < 0) {
-			mlog(LV_ERR, "E-2078: open_tmpfile{%s, %s}: %s",
-			        path, pcontext->tmpfile.c_str(),
-			        strerror(-pcontext->cache_fd));
+		auto ret = pcontext->cache_fd.open_anon(path, O_RDWR | O_TRUNC);
+		if (ret < 0) {
+			mlog(LV_ERR, "E-2078: open_anon(%s)[%s]: %s",
+			        path, pcontext->cache_fd.m_path.c_str(),
+			        strerror(-ret));
 			return FALSE;
 		}
 		pcontext->cache_size = 0;
 	} else {
-		pcontext->cache_fd = -1;
+		pcontext->cache_fd.close();
 	}
 	pcontext->b_index = b_index;
 	pcontext->b_chunked = b_chunked;
@@ -761,14 +760,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 					" read cache file for mod_fastcgi");
 				return FALSE;
 			} else if (0 == tmp_len) {
-				close(phttp->pfast_context->cache_fd);
-				phttp->pfast_context->cache_fd = -1;
-				if (!phttp->pfast_context->tmpfile.empty() &&
-				    unlink(phttp->pfast_context->tmpfile.c_str()) < 0 &&
-				    errno != ENOENT)
-					mlog(LV_WARN, "W-1362: unlink %s: %s",
-					        phttp->pfast_context->tmpfile.c_str(),
-					        strerror(errno));
+				phttp->pfast_context->cache_fd.close();
 				break;
 			}
 			ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
@@ -814,15 +806,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 {
-	auto &fc = *phttp->pfast_context;
-	if (fc.cache_fd >= 0) {
-		close(phttp->pfast_context->cache_fd);
-		phttp->pfast_context->cache_fd = -1;
-		if (!fc.tmpfile.empty() && unlink(fc.tmpfile.c_str()) < 0 &&
-		    errno != ENOENT)
-			mlog(LV_WARN, "W-1362: unlink %s: %s",
-				fc.tmpfile.c_str(), strerror(errno));
-	}
+	phttp->pfast_context->cache_fd.close();
 	if (phttp->pfast_context->cli_sockd != -1) {
 		close(phttp->pfast_context->cli_sockd);
 		phttp->pfast_context->cli_sockd = -1;

@@ -2,9 +2,9 @@
 #include <cstdint>
 #include <list>
 #include <memory>
-#include <string>
 #include <sys/types.h>
 #include <gromox/double_list.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #define FTSTREAM_PRODUCER_POINT_LENGTH			1024
 #define FTSTREAM_PRODUCER_BUFFER_LENGTH			4*1024*1024
@@ -37,7 +37,6 @@ struct fxstream_producer {
 	NOMOVE(fxstream_producer);
 
 	public:
-	~fxstream_producer();
 	static std::unique_ptr<fxstream_producer> create(logon_object *, uint8_t string_option);
 	inline uint32_t total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
@@ -55,9 +54,9 @@ struct fxstream_producer {
 	BOOL write_state(const TPROPVAL_ARRAY *);
 	BOOL write_hierarchysync(const FOLDER_CHANGES *fldchgs, const TPROPVAL_ARRAY *del, const TPROPVAL_ARRAY *state);
 
-	int type = 0, fd = -1;
+	int type = 0;
 	uint32_t offset = 0;
-	std::string path;
+	gromox::tmpfile fd;
 	uint8_t buffer[FTSTREAM_PRODUCER_BUFFER_LENGTH]{};
 	uint32_t buffer_offset = 0, read_offset = 0;
 	uint8_t string_option = 0;

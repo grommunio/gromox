@@ -38,6 +38,28 @@ struct DIR_mp {
 	std::unique_ptr<DIR, file_deleter> m_dir;
 };
 
+/**
+ * open_anon():	make a file
+ * open_link():	make a file that can subsequently be linked into the filesystem
+ * linkto():	make the temporary permannt using a given name
+ * 		[requires open_link to be used]
+ */
+class tmpfile {
+	public:
+	~tmpfile() { close(); }
+	operator int() const { return m_fd; }
+	void close();
+	int open_anon(const char *dir, unsigned int flags, unsigned int mode = 0666);
+	int open_linkable(const char *dir, unsigned int flags, unsigned int mode = 0666);
+	errno_t link_to(const char *newpath);
+
+	int m_fd = -1;
+	std::string m_path;
+
+	private:
+	int open_impl(const char *dir, unsigned int flags, unsigned int mode, bool anon);
+};
+
 class wrapfd {
 	public:
 	wrapfd(int z) : m_fd{z} {}
@@ -75,6 +97,5 @@ extern GX_EXPORT errno_t gx_compress_tofd(std::string_view, int fd, uint8_t comp
 extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0);
 extern GX_EXPORT std::string base64_decode(const std::string_view &);
 extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);
-extern GX_EXPORT int open_tmpfile(const char *, std::string *, unsigned int, unsigned int = 0600);
 
 }
