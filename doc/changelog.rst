@@ -1,11 +1,16 @@
-Development 2.15.1
-==================
+Development 2.15.17
+===================
 
 Fixes:
 
 * oxvcard: export to .vcf now positions the VERSION property in accordance with
   the vCard 4.0 specification.
 * oxcmail: cease gratuitous RTF conversion of calendar items
+
+Enhancements:
+
+* Define the "suspended" user state (think of it as a "non-receiving shared
+  mailbox").
 
 
 Gromox 2.15 (2023-10-18)

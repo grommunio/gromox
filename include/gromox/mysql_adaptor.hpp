@@ -9,20 +9,28 @@
 
 enum {
 	/* Reason codes (users.address_status) for forbidden login */
-	AF_USER_NORMAL      = 0x00,
-	AF_USER_SUSPENDED   = 0x01,
+	AF_USER_NORMAL      = 0x00, // login pres recv
+	AF_USER_SUSPENDED   = 0x01, //       pres
 	AF_USER_DELETED     = 0x03,
-	AF_USER_SHAREDMBOX  = 0x04,
+	AF_USER_SHAREDMBOX  = 0x04, //       pres recv
 	AF_USER_CONTACT     = 0x05,
 	AF_USER__MASK       = 0x0F,
 
-	// historically: groups with AF_GROUP__MASK = 0xC0, with statuses NORMAL..DELETED
 	AF_DOMAIN_NORMAL    = 0x00,
 	AF_DOMAIN_SUSPENDED = 0x10,
 	AF_DOMAIN_DELETED   = 0x30,
 	AF_DOMAIN__MASK     = 0x30,
 
-	/* note: users.address_status is a tinyint(4), so only 7 "usable" bits */
+	/*
+	 * Note: users.address_status is a tinyint(4), which has a range of
+	 * -127..128, so 7 bits are usable. Oddly enough, historically the high
+	 * bits were also defined to be in use (but probably never were, due to
+	 * the range limit):
+	 *
+	 * AF_GROUP__MASK = 0xC0,
+	 *
+	 * The (4) is the display width. 6 bits are currently in use.
+	 */
 };
 
 enum class mlist_type {
@@ -129,3 +137,32 @@ extern BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
 extern bool mysql_adaptor_get_user_info(const char *username, char *maildir, size_t msize, char *lang, size_t lsize, char *timezone, size_t tsize);
 extern void mysql_adaptor_encode_squote(const char *in, char *out);
 extern gromox::errno_t mysql_adaptor_get_homeserver(const char *ent, bool is_pvt, std::pair<std::string, std::string> &);
+
+/**
+ * Determines whether an arbitrary actor can generally open/read the primary
+ * store of a target user. (Further restrictions like ACLs not covered here.)
+ *
+ * @v:	address_status of the target user
+ */
+static inline bool afuser_store_present(unsigned int st)
+{
+	st &= AF_USER__MASK;
+	return st <= AF_USER_SUSPENDED || st == AF_USER_SHAREDMBOX;
+}
+
+/* Should usually be combined with afuser_store_present */
+static inline bool afuser_store_canrecv(unsigned int st)
+{
+	return st == AF_USER_NORMAL || st == AF_USER_SHAREDMBOX;
+}
+
+/**
+ * Determines whether an actor A is permitted to utilize the
+ * ropLogin/mapi_logon_zarafa functionality (on his own store).
+ *
+ * allowed := user value is exactly AF_USER_NORMAL &&
+ *            domain is allowed (all bits of AF_DOMAIN__MASK are zero)
+ *
+ * Thus, the only permissible value is AF_USER_NORMAL.
+ */
+static inline bool afuser_login_allowed(unsigned int st) { return st == AF_USER_NORMAL; }

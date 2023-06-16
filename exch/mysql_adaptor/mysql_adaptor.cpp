@@ -111,7 +111,7 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		return EACCES;
 	}
 	auto address_status = strtoul(myrow[2], nullptr, 0);
-	if (address_status != 0 && !(wantpriv & WANTPRIV_METAONLY)) {
+	if (!afuser_login_allowed(address_status) && !(wantpriv & WANTPRIV_METAONLY)) {
 		auto uval = address_status & AF_USER__MASK;
 		if (address_status & AF_DOMAIN__MASK)
 			mres.errstr = fmt::format("Domain of user \"{}\" is disabled!", username);
@@ -921,8 +921,7 @@ bool mysql_adaptor_check_user(const char *user_raw, const char *delim,
 	auto myrow = pmyres.fetch_row();
 	if (path != nullptr)
 		gx_strlcpy(path, myrow[1], dsize);
-	unsigned int status = strtoul(myrow[0], nullptr, 0);
-	return status == AF_USER_NORMAL || status == AF_USER_SHAREDMBOX;
+	return afuser_store_canrecv(strtoul(myrow[0], nullptr, 0));
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1731", e.what());
 	return false;

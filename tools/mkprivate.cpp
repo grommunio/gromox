@@ -179,7 +179,7 @@ int main(int argc, const char **argv) try
 	}
 	
 	unsigned int address_status = strtoul(myrow[4], nullptr, 0);
-	if (address_status != AF_USER_NORMAL && address_status != AF_USER_SHAREDMBOX)
+	if (!afuser_store_present(address_status))
 		printf("Warning: Account status (0x%x) indicates this user object normally does not have a mailbox. Proceeding anyway for now...\n", address_status);
 	
 	std::string dir = znul(myrow[1]), lang = znul(myrow[2]);
