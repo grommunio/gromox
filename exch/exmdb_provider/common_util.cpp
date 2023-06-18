@@ -57,7 +57,7 @@ thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
 static thread_local const char *g_opt_key_src;
 unsigned int g_max_rule_num, g_max_extrule_num;
-int g_cid_compression = -1; /* disabled(-1), default_level(0), specific_level(n) */
+unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
 static std::atomic<unsigned int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -2795,7 +2795,7 @@ static BOOL common_util_set_message_body(sqlite3 *psqlite, cpid_t cpid,
 		return FALSE;
 	char cid[HXSIZEOF_Z64];
 	snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
-	if (g_cid_compression >= 0)
+	if (g_cid_compression > 0)
 		return cu_set_msg_body_v2(psqlite, message_id, dir, cid, proptag,
 		       static_cast<const char *>(pvalue));
 	return cu_set_msg_body_v0(psqlite, message_id, dir, cid, proptag,
@@ -2891,7 +2891,7 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, mapi_object_type table_typ
 		return FALSE;
 	char cid[HXSIZEOF_Z64];
 	snprintf(cid, sizeof(cid), "%llu", LLU{ncid});
-	if (g_cid_compression >= 0)
+	if (g_cid_compression > 0)
 		return cu_set_obj_cid_val_v2(psqlite, table_type, message_id,
 		       dir, cid, ppropval);
 	return cu_set_obj_cid_val_v0(psqlite, table_type, message_id, dir, cid,

@@ -175,18 +175,16 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		
 		auto str = pconfig->get_value("exmdb_file_compression");
 		if (str == nullptr || !parse_bool(str))
-			g_cid_compression = -1;
+			g_cid_compression = 0;
 		else if (strcasecmp(str, "yes") == 0 ||
 		    strcasecmp(str, "zstd") == 0)
-			g_cid_compression = 0;
+			g_cid_compression = 6;
 		else if (strncasecmp(str, "zstd-", 5) == 0)
 			g_cid_compression = strtoul(str + 5, nullptr, 0);
 		else
 			mlog(LV_WARN, "Compression scheme \"%s\" not understood, deactivating", str);
-		if (g_cid_compression < 0)
+		if (g_cid_compression == 0)
 			mlog(LV_INFO, "Content File Compression: off");
-		else if (g_cid_compression == 0)
-			mlog(LV_INFO, "Content File Compression: default/zstd-6"); /* cf. rfbl.cpp */
 		else
 			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
 

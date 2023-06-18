@@ -182,7 +182,6 @@ extern const char *exmdb_rpc_idtoname(exmdb_callid);
 extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
 extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t mid = 0);
 
-extern unsigned int g_max_rule_num, g_max_extrule_num;
-extern int g_cid_compression;
+extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;

@@ -1296,9 +1296,6 @@ errno_t gx_decompress_file(const char *infile, BINARY &outbin,
 
 errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 {
-	if (complvl == 0)
-		/* Our default is even more important than zstd's own default */
-		complvl = 6;
 #ifdef HAVE_FSETXATTR
 	if (fsetxattr(fd, "btrfs.compression", "none", 4, XATTR_CREATE) != 0)
 		/* ignore */;

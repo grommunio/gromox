@@ -46,8 +46,7 @@ Default: \fIon\fP
 .TP
 \fBexmdb_file_compression\fP
 Compress content files (bodytexts and attachments). Possible values: \fBno\fP,
-\fByes\fP (Gromox recommendation), \fBzstd\fP (zstd at a Gromox-recommended
-level), \fBzstd-\fP\fIlevel\fP (level=1..19).
+\fByes\fP (zstd\-6), \fBzstd-\fP\fIlevel\fP (level=1..19).
 .br
 Default: \fIzstd\-6\fP
 .TP
