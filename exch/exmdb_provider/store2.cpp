@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022–2023 grommunio GmbH
 // This file is part of Gromox.
+#define _GNU_SOURCE 1 /* AT_* */
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <dirent.h>
+#include <fcntl.h>
 #include <memory>
 #include <sqlite3.h>
 #include <string>
@@ -358,16 +360,17 @@ static bool purg_discover_mids(const char *dir, std::vector<std::string> &used)
 	return purg_discover_ids(db.get(), "SELECT mid_string FROM messages", used);
 }
 
-static uint64_t purg_delete_unused_files(const std::string &cid_dir,
+static std::pair<uint64_t, size_t>
+purg_delete_unused_files4(const std::string &cid_dir, const std::string &subdir,
     const std::vector<std::string> &used_ids, time_t upper_bound_ts)
 {
-	std::unique_ptr<DIR, file_deleter> dh(opendir(cid_dir.c_str()));
+	std::unique_ptr<DIR, file_deleter> dh(opendir((cid_dir + "/" + subdir).c_str()));
 	if (dh == nullptr) {
-		mlog(LV_ERR, "E-2387: cannot open %s: %s", cid_dir.c_str(), strerror(errno));
-		return UINT64_MAX;
+		mlog(LV_ERR, "E-2387: cannot open %s/%s: %s",
+			cid_dir.c_str(), subdir.c_str(), strerror(errno));
+		return {UINT64_MAX, 0};
 	}
 
-	mlog(LV_INFO, "I-2388: purge_data: processing %s...", cid_dir.c_str());
 	struct dirent *de;
 	auto dfd = dirfd(dh.get());
 	uint64_t bytes = 0;
@@ -375,26 +378,53 @@ static uint64_t purg_delete_unused_files(const std::string &cid_dir,
 	while ((de = readdir(dh.get())) != nullptr) {
 		if (*de->d_name == '.')
 			continue;
-		std::string defix = de->d_name;
-		if (defix.size() > 4 &&
-		    (defix.compare(defix.size() - 4, 4, ".zst") == 0 ||
-		    defix.compare(defix.size() - 4, 4, ".v1z") == 0))
-			defix.erase(defix.size() - 4);
+		std::string defix;
+		if (subdir.empty()) {
+			defix = de->d_name;
+			if (defix.size() > 4 &&
+			    (defix.compare(defix.size() - 4, 4, ".zst") == 0 ||
+			    defix.compare(defix.size() - 4, 4, ".v1z") == 0))
+				defix.erase(defix.size() - 4);
+		} else {
+			defix = subdir + "/" + de->d_name;
+		}
 		if (std::binary_search(used_ids.begin(), used_ids.end(), defix))
 			continue;
 		struct stat sb;
 		if (fstatat(dfd, de->d_name, &sb, 0) != 0)
 			/* e.g. removal by another racing entity, just don't bother */
 			continue;
+		if (S_ISDIR(sb.st_mode)) {
+			auto [a, b] = purg_delete_unused_files4(cid_dir, defix.c_str(),
+			              used_ids, upper_bound_ts);
+			if (a != UINT64_MAX) {
+				bytes += a;
+				filecount += b;
+			}
+			if (unlinkat(dfd, de->d_name, AT_REMOVEDIR) != 0 && errno != ENOTEMPTY)
+				mlog(LV_ERR, "E-2399: unlink %s/%s: %s",
+					subdir.c_str(), de->d_name, strerror(errno));
+			continue;
+		}
 		if (sb.st_mtime >= upper_bound_ts)
 			continue;
 		if (unlinkat(dfd, de->d_name, 0) != 0) {
-			mlog(LV_ERR, "E-2392: unlink %s: %s", de->d_name, strerror(errno));
+			mlog(LV_ERR, "E-2392: unlink %s/%s: %s", subdir.c_str(), de->d_name, strerror(errno));
 		} else {
 			bytes += sb.st_size;
 			++filecount;
 		}
 	}
+	return {bytes, filecount};
+}
+
+static uint64_t purg_delete_unused_files(const std::string &cid_dir,
+    const std::vector<std::string> &used_ids, time_t upper_bound_ts)
+{
+	mlog(LV_INFO, "I-2388: purge_data: processing %s...", cid_dir.c_str());
+	auto [bytes, filecount] = purg_delete_unused_files4(cid_dir, {}, used_ids, upper_bound_ts);
+	if (bytes == UINT64_MAX)
+		return bytes;
 	char buf[32];
 	HX_unit_size(buf, arsizeof(buf), bytes, 0, 0);
 	mlog(LV_NOTICE, "I-2393: Purged %zu files (%sB) from %s",
