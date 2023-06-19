@@ -17,26 +17,26 @@ store of a domain, leave out the local part, i.e. use
 \fB@\fP\fIexample.com\fP.)
 .SH Commands
 .IP \(bu 4
-clear-photo: delete user picture
+clear\-photo: delete user picture
 .IP \(bu 4
-clear-profile: delete user's PHP-MAPI profile
+clear\-profile: delete user's PHP-MAPI profile
 .IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
-purge-datafiles: remove orphaned attachments/content files from disk
+purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
-purge-softdelete: remove soft-deleted items from a folder
+purge\-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
 vacuum: issue the "vacuum" RPC for a mailbox
-.SH clear-photo
-The clear-photo command will delete the user picture. Note that, when there is
+.SH clear\-photo
+The clear\-photo command will delete the user picture. Note that, when there is
 no mailbox-level profile picture set, Gromox server processes may serve an
 image from another source, e.g. LDAP.
-.SH clear-profile
+.SH clear\-profile
 Similar to MSMAPI, PHP-MAPI keeps a MAPI profile which contains a store list
-and also the settings for grommunio-web. The clear-profile command will delete
+and also the settings for grommunio-web. The clear\-profile command will delete
 this MAPI profile. Note that it gets regenerated when PHP-MAPI is exercised.
 .SH delmsg
 .SS Synopsis
@@ -70,10 +70,10 @@ Besides messages, also delete subfolders.
 .TP
 \fB\-\-soft\fP
 Perform a soft deletion. (This feature is experimental.) Default is hard.
-.SH purge-datafiles
-The "purge-datafiles" RPC makes exmdb_provider remove attachment and content
+.SH purge\-datafiles
+The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.
-.SH purge-softdelete
+.SH purge\-softdelete
 .SS Synopsis
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBpurge-softdelete\fP [\fB\-r\fP]
 [\fB\-t\fP \fItimespec\fP] \fIfolder_spec\fP...
