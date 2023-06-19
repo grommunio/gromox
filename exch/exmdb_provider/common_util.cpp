@@ -23,6 +23,7 @@
 #include <unistd.h>
 #ifdef HAVE_XXHASH
 #	include <xxhash.h>
+#	include <xxh3.h>
 #endif
 #include <libHX/defs.h>
 #include <libHX/io.h>

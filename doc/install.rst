@@ -32,6 +32,7 @@ Optional deps:
 * libc/libresolv with "res_nquerydomain" & "ns_initparse" functions
 * libolecf
 * libpff
+* libxxhash >= 0.7
 * Linux-PAM
 * PHP 7/8 headers
 
