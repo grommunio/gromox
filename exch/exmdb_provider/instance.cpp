@@ -2869,6 +2869,12 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 	for (unsigned int i = 0; i < pattachments->count; ++i) {
 		for (unsigned int j = 0; j < pattachments->pplist[i]->proplist.count; ++j) {
 			auto tag = pattachments->pplist[i]->proplist.ppropval[j].proptag;
+			switch (PROP_TYPE(tag)) {
+			case PT_UNSPECIFIED:
+			case PT_NULL:
+			case PT_GXI_STRING:
+				continue;
+			}
 			if (!proptag_array_append(pproptags1.get(), tag))
 				return FALSE;
 		}

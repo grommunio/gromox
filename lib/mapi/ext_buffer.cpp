@@ -2715,6 +2715,7 @@ pack_result EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	CASE(PT_MV_CLSID, GUID_ARRAY, p_guid_a);
 	CASE(PT_MV_BINARY, BINARY_ARRAY, p_bin_a);
 	default:
+		mlog(LV_ERR, "E-2901: illegal proptype (%xh) serialized", type);
 		return EXT_ERR_BAD_SWITCH;
 	}
 #undef CASE
