@@ -37,7 +37,10 @@ image from another source, e.g. LDAP.
 .SH clear\-profile
 Similar to MSMAPI, PHP-MAPI keeps a MAPI profile which contains a store list
 and also the settings for grommunio-web. The clear\-profile command will delete
-this MAPI profile. Note that it gets regenerated when PHP-MAPI is exercised.
+the copy of this data stored in exmdb. Note that zcore(8) may still hold a copy
+of the MAPI profile in memory and could write that back to exmdb, nullifying
+the effect of the clear\-profile command. Also, if the store list is absent,
+a new one will implicitly be created when PHP-MAPI/zcore is used.
 .SH delmsg
 .SS Synopsis
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_spec\fP
