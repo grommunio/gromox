@@ -708,6 +708,28 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	return X_LOOP;
 }
 
+static int htp_auth_1(http_context &ctx)
+{
+	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
+	if (line == nullptr)
+		return X_RUNOFF;
+	/* http://www.iana.org/assignments/http-authschemes */
+	if (strncasecmp(line, "Basic ", 6) == 0) {
+		char decoded[1024];
+		size_t decode_len = 0;
+		if (decode64(&line[6], strlen(&line[6]), decoded, std::size(decoded), &decode_len) != 0)
+			return X_RUNOFF;
+		auto p = strchr(decoded, ':');
+		if (p == nullptr)
+			return X_RUNOFF;
+		*p++ = '\0';
+		gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
+		gx_strlcpy(ctx.password, p, std::size(ctx.password));
+		return htp_auth(&ctx);
+	}
+	return X_RUNOFF;
+}
+
 static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 {
 	auto tmp_len = pcontext->request.f_request_uri.size();
@@ -909,25 +931,9 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 			return X_LOOP;
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
-
-		char tmp_buff1[1024];
-		size_t decode_len = 0;
-		char *ptoken = nullptr;
-		auto tmp_buff = http_parser_request_head(pcontext->request.f_others, "Authorization");
-		if (tmp_buff != nullptr &&
-		    strncasecmp(tmp_buff, "Basic ", 6) == 0 &&
-		    decode64(tmp_buff + 6, strlen(tmp_buff + 6), tmp_buff1,
-		    arsizeof(tmp_buff1), &decode_len) == 0 &&
-		    (ptoken = strchr(tmp_buff1, ':')) != nullptr) {
-			*ptoken = '\0';
-			ptoken++;
-			gx_strlcpy(pcontext->username, tmp_buff1, GX_ARRAY_SIZE(pcontext->username));
-			gx_strlcpy(pcontext->password, ptoken, GX_ARRAY_SIZE(pcontext->password));
-			auto ret = htp_auth(pcontext);
-			if (ret != X_RUNOFF)
-				return ret;
-		}
-
+		auto ret = htp_auth_1(*pcontext);
+		if (ret != X_RUNOFF)
+			return ret;
 		if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
 		    0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
 			return htp_delegate_rpc(pcontext, stream_1_written);
