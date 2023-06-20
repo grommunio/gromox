@@ -1,19 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
 // This file is part of Gromox.
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
  */ 
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <chrono>
+#include <csignal>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
 #include <mutex>
+#include <poll.h>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -21,8 +26,13 @@
 #include <utility>
 #include <vector>
 #include <fmt/core.h>
+#ifdef HAVE_GSSAPI
+#	include <gssapi/gssapi.h>
+#endif
+#include <sys/wait.h>
 #include <libHX/io.h>
 #include <libHX/misc.h>
+#include <libHX/proc.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
@@ -38,6 +48,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/http.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "hpm_processor.h"
@@ -429,8 +440,16 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 		ctx.b_close ? "close" : "keep-alive");
 	if (!ctx.b_close)
 		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
-	if (code == http_status::unauthorized)
+	if (code == http_status::unauthorized) {
 		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
+		if (ctx.last_gss_output.empty())
+			rsp += "WWW-Authenticate: Negotiate\r\n";
+		else if (ctx.last_gss_b64)
+			rsp += "WWW-Authenticate: Negotiate " + ctx.last_gss_output + "\r\n";
+		else
+			rsp += "WWW-Authenticate: Negotiate " +
+			       base64_encode(ctx.last_gss_output) + "\r\n";
+	}
 	rsp += "\r\n";
 	rsp += msg;
 	rsp += "\r\n";
@@ -730,14 +749,217 @@ static tproc_status htp_auth(http_context *pcontext) try
 	return tproc_status::loop;
 }
 
+static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
+    const char *input, size_t isize, std::string &output)
+{
+	static constexpr size_t NTLMBUFFER = 8192;
+	auto &pinfo = ctx.ntlm_proc;
+
+	if (pinfo.p_pid <= 0) {
+		auto prog = g_config_file->get_value("ntlm_auth");
+		if (prog == nullptr || *prog == '\0')
+			prog = "/usr/bin/ntlm_auth";
+		const char *argv[] = {prog, "-d10", "--helper-protocol=squid-2.5-ntlmssp", nullptr};
+		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
+		auto ret = HXproc_run_async(argv, &pinfo);
+		if (ret < 0) {
+			mlog(LV_ERR, "execv ntlm_auth: %s", strerror(-ret));
+			return -1;
+		}
+		mlog(LV_DEBUG, "ntlm_auth is pid %d", pinfo.p_pid);
+		write(pinfo.p_stdin, "YR ", 3);
+		mlog(LV_DEBUG, "NTLM> YR %s", encinput);
+	} else {
+		write(pinfo.p_stdin, "KK ", 3);
+		mlog(LV_DEBUG, "NTLM> KK %s", encinput);
+	}
+	write(pinfo.p_stdin, encinput, encsize);
+	write(pinfo.p_stdin, "\n", 1);
+
+	auto buffer = std::make_unique<char[]>(NTLMBUFFER);
+	struct pollfd pfd[] = {{pinfo.p_stdout, POLLIN}, {pinfo.p_stderr, POLLIN}};
+ retry:
+	auto ret = poll(pfd, std::size(pfd), 10 * 1000);
+	if (ret < 0) {
+		if (errno == EINTR)
+			goto retry;
+		mlog(LV_INFO, "ntlm_auth poll: %s", strerror(errno));
+		return -1;
+	} else if (ret == 0) {
+		mlog(LV_INFO, "ntlm_auth poll timeout");
+		return -1;
+	}
+
+	if (pfd[1].revents & POLLIN) {
+		auto bytes = read(pinfo.p_stderr, buffer.get(), NTLMBUFFER - 1);
+		if (bytes >= 0) {
+			buffer[bytes] = '\0';
+			HX_chomp(buffer.get());
+			mlog(LV_DEBUG, "ntlm_auth(stderr):%c%s",
+				strchr(buffer.get(), '\n') != nullptr ? '\n' : ' ',
+				buffer.get());
+			goto retry;
+		}
+	}
+
+	auto bytes = read(pinfo.p_stdout, buffer.get(), NTLMBUFFER - 1);
+	if (bytes < 0) {
+		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
+		return -1;
+	} else if (bytes == 0) {
+		mlog(LV_ERR, "ntlm_auth(stdout) EOF");
+		return -1;
+	}
+	if (buffer[bytes-1] == '\n')
+		buffer[--bytes] = '\0';
+	if (bytes < 2) {
+		mlog(LV_ERR, "ntlm_auth(stdout) short read");
+		return -1;
+	}
+
+	if (buffer[0] == 'B' && buffer[1] == 'H') {
+		mlog(LV_ERR, "ntlm_auth(stdout) broken helper: %.*s",
+			static_cast<int>(bytes), buffer.get());
+		return -1;
+	} else if (buffer[0] == 'T' && buffer[1] == 'T') {
+		if (bytes > 3) {
+			output.assign(&buffer[3], bytes - 3);
+			mlog(LV_DEBUG, "NTLM< %s", output.c_str());
+		}
+		return -99; /* MOAR */
+	} else if (buffer[0] == 'A' && buffer[1] == 'F') {
+		if (bytes > 3)
+			output.assign(&buffer[3], bytes - 3);
+		mlog(LV_INFO, "ntlm_auth found actor: %s", output.c_str());
+		// The username is whatever the client sent, which can either be
+		// `DOMAIN\user` or `user@DOMAIN`... and we have no translation
+		gx_strlcpy(ctx.username, output.c_str(), std::size(ctx.username));
+		*ctx.password = '\0';
+		return 1;
+	} else if (buffer[0] == 'N' && buffer[1] == 'A') {
+		mlog(LV_DEBUG, "ntlm_auth(stdout) notauth: %.*s",
+			static_cast<int>(bytes), buffer.get());
+		return 0;
+	} else {
+		mlog(LV_ERR, "ntlm_auth unknown response: %.*s", static_cast<int>(bytes), buffer.get());
+		return -1;
+	}
+	return -1;
+}
+
+#ifdef HAVE_GSSAPI
+const char gss_display_status_fail_message[] = "Call to gss_display_status failed. Reason: ";
+
+static void krblog2(const char *msg, OM_uint32 code, OM_uint32 type)
+{
+	gss_buffer_desc gss_msg = GSS_C_EMPTY_BUFFER;
+	OM_uint32 status = 0, context = 0;
+	do {
+		auto result = gss_display_status(&status, code, type,
+		              GSS_C_NULL_OID, &context, &gss_msg);
+		if (result == GSS_S_COMPLETE)
+			mlog(LV_WARN, "E-9996: %s: %s", msg, static_cast<const char *>(gss_msg.value));
+		else if (result == GSS_S_BAD_MECH)
+			mlog(LV_WARN, "E-9995: %s: %s", gss_display_status_fail_message,
+				"unsupported mechanism type was requested.");
+		else if (result == GSS_S_BAD_STATUS)
+			mlog(LV_WARN, "E-9994: %s: %s", gss_display_status_fail_message,
+				"status value was not recognized, or the status type was neither GSS_C_GSS_CODE nor GSS_C_MECH_CODE.");
+		gss_release_buffer(&status, &gss_msg);
+	} while (context != 0);
+}
+
+static void krblog(const char* msg, OM_uint32 major, OM_uint32 minor)
+{
+	krblog2(msg, major, GSS_C_GSS_CODE);
+	krblog2(msg, minor, GSS_C_MECH_CODE);
+}
+
+/**
+ * returns negative for complete failure, returns 0 for auth-unsuccesful, 1 for
+ * auth-success, 99 for GSS continue.
+ */
+static int auth_krb(http_context &ctx, const char *input, size_t isize,
+    std::string &output)
+{
+	OM_uint32 status{};
+	gss_name_t gss_srv_name{}, gss_username{};
+	gss_buffer_desc gss_input_buf{}, gss_user_buf{}, gss_output_token{};
+	auto cl_0 = make_scope_exit([&]() {
+		if (gss_output_token.length != 0)
+			gss_release_buffer(&status, &gss_output_token);
+		if (gss_user_buf.length != 0)
+			gss_release_buffer(&status, &gss_user_buf);
+		if (gss_username != GSS_C_NO_NAME)
+			gss_release_name(&status, &gss_username);
+		if (gss_srv_name != GSS_C_NO_NAME)
+			gss_release_name(&status, &gss_srv_name);
+	});
+
+	if (ctx.m_gss_srv_creds == GSS_C_NO_CREDENTIAL) {
+		ctx.m_gss_ctx = GSS_C_NO_CONTEXT;
+		auto p = g_config_file->get_value("http_krb_service_principal");
+		std::string principal;
+		if (p != nullptr && *p != '\0')
+			principal = p;
+		else
+			principal = "gromox@"s + p;
+		mlog(LV_DEBUG, "krb service principal = \"%s\"", principal.c_str());
+		gss_input_buf.value  = principal.data();
+		gss_input_buf.length = principal.length() + 1;
+		auto ret = gss_import_name(&status, &gss_input_buf,
+		           GSS_C_NT_HOSTBASED_SERVICE, &gss_srv_name);
+		if (ret != GSS_S_COMPLETE) {
+			krblog("Unable to import server name", ret, status);
+			return 0;
+		}
+		ret = gss_acquire_cred(&status, gss_srv_name, GSS_C_INDEFINITE,
+		      GSS_C_NO_OID_SET, GSS_C_ACCEPT, &ctx.m_gss_srv_creds,
+		      nullptr, nullptr);
+		if (ret != GSS_S_COMPLETE) {
+			krblog("Unable to acquire credentials handle", ret, status);
+			return 0;
+		}
+	}
+
+	gss_input_buf.value  = deconst(input);
+	gss_input_buf.length = isize;
+	auto ret = gss_accept_sec_context(&status, &ctx.m_gss_ctx,
+	           ctx.m_gss_srv_creds, &gss_input_buf, GSS_C_NO_CHANNEL_BINDINGS,
+	           &gss_username, nullptr, &gss_output_token, nullptr, nullptr, nullptr);
+	if (gss_output_token.length != 0)
+		output.assign(static_cast<const char *>(gss_output_token.value), gss_output_token.length);
+	else
+		output.clear();
+
+	if (ret == GSS_S_CONTINUE_NEEDED) {
+		return -99; /* MOAR */
+	} else if (ret != GSS_S_COMPLETE) {
+		krblog("Unable to accept security context", ret, status);
+		return 0;
+	}
+
+	ret = gss_display_name(&status, gss_username, &gss_user_buf, nullptr);
+	if (ret != 0) {
+		krblog("Unable to convert username", ret, status);
+		return 0;
+	}
+
+	mlog(LV_DEBUG, "Kerberos username: %s", static_cast<const char *>(gss_user_buf.value));
+	return 1;
+}
+#endif
+
 static tproc_status htp_auth_1(http_context &ctx)
 {
-	ctx.auth_status = http_status::none;
+	if (ctx.auth_status != http_status::ok)
+		ctx.auth_status = http_status::none;
 	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
 	if (line == nullptr)
 		return tproc_status::runoff;
 	/* http://www.iana.org/assignments/http-authschemes */
-	if (strncasecmp(line, "Basic ", 6) == 0) {
+	if (strncasecmp(line, "Basic ", 6) == 0 &&
+	    g_config_file->get_ll("http_auth_basic")) {
 		char decoded[1024];
 		size_t decode_len = 0;
 		if (decode64(&line[6], strlen(&line[6]), decoded, std::size(decoded), &decode_len) != 0)
@@ -749,6 +971,42 @@ static tproc_status htp_auth_1(http_context &ctx)
 		gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
 		gx_strlcpy(ctx.password, p, std::size(ctx.password));
 		return htp_auth(&ctx);
+	} else if (strncasecmp(line, "Negotiate TlRMTVNT", 18) == 0 &&
+	    g_config_file->get_ll("http_auth_spnego_ntlmssp")) {
+		char decoded[4096];
+		size_t decode_len = 0;
+		if (decode64(&line[10], strlen(&line[10]), decoded, std::size(decoded), &decode_len) != 0)
+			return tproc_status::runoff;
+		auto ret = auth_ntlmssp(ctx, &line[10], strlen(&line[10]),
+		           decoded, decode_len, ctx.last_gss_output);
+		ctx.last_gss_b64 = true;
+		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+		if (ctx.auth_status == http_status::unauthorized) {
+			auto rsp = http_make_err_response(ctx, http_status::unauthorized);
+			ctx.stream_out.write(rsp.c_str(), rsp.size());
+			return tproc_status::runoff;
+		}
+	} else if (strncasecmp(line, "Negotiate ", 10) == 0 &&
+	    g_config_file->get_ll("http_auth_spnego")) {
+#ifdef HAVE_GSSAPI
+		char decoded[4096];
+		size_t decode_len = 0;
+		if (decode64(&line[10], strlen(&line[10]), decoded, std::size(decoded), &decode_len) != 0)
+			return tproc_status::runoff;
+		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
+		ctx.last_gss_b64 = false;
+		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+		if (ctx.auth_status == http_status::unauthorized) {
+			auto rsp = http_make_err_response(ctx, http_status::unauthorized);
+			ctx.stream_out.write(rsp.c_str(), rsp.size());
+			return tproc_status::runoff;
+		}
+#else
+		static bool y = false;
+		if (!y)
+			mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
+		y = true;
+#endif
 	}
 	return tproc_status::runoff;
 }
@@ -1810,6 +2068,10 @@ http_context::http_context() :
 {
 	auto pcontext = this;
 	pcontext->node.pdata = pcontext;
+#ifdef HAVE_GSSAPI
+	m_gss_srv_creds = GSS_C_NO_CREDENTIAL;
+	m_gss_ctx = GSS_C_NO_CONTEXT;
+#endif
 }
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
@@ -1817,6 +2079,20 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
+	auto &ctx = *pcontext;
+	auto &pi = ctx.ntlm_proc;
+	if (pi.p_pid > 0) {
+		if (pi.p_stdin >= 0)
+			close(pi.p_stdin);
+		if (pi.p_stdout >= 0)
+			close(pi.p_stdout);
+		if (pi.p_stderr >= 0)
+			close(pi.p_stderr);
+		mlog(LV_DEBUG, "Stopping ntlm_auth %d", pi.p_pid);
+		kill(pi.p_pid, SIGKILL);
+		waitpid(pi.p_pid, nullptr, 0);
+		pi = {};
+	}
 	pcontext->connection.reset();
 	pcontext->sched_stat = hsched_stat::initssl;
 	pcontext->request.clear();
@@ -1841,6 +2117,13 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 http_context::~http_context()
 {
 	auto pcontext = this;
+#ifdef HAVE_GSSAPI
+	OM_uint32 st;
+	if (m_gss_srv_creds != nullptr)
+		gss_release_cred(&st, &m_gss_srv_creds);
+	if (m_gss_ctx != nullptr)
+		gss_delete_sec_context(&st, &m_gss_ctx, GSS_C_NO_BUFFER);
+#endif
 	if (hpm_processor_is_in_charge(pcontext))
 		hpm_processor_put_context(pcontext);
 	else if (mod_fastcgi_is_in_charge(pcontext))

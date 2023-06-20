@@ -90,6 +90,9 @@ crypt_LIBS=""
 dl_LIBS=""
 libldap_LIBS=""
 resolv_LIBS=""
+AH_TEMPLATE([HAVE_ESEDB], [])
+AH_TEMPLATE([HAVE_GSSAPI], [])
+AH_TEMPLATE([HAVE_XXHASH], [])
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([HX], [libHX >= 4.12])
 PKG_CHECK_MODULES([crypto], [libcrypto])
@@ -98,6 +101,9 @@ PKG_CHECK_MODULES([fmt], [fmt >= 8])
 PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [
 	PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 0.8 jsoncpp < 1])
 ])
+PKG_CHECK_MODULES([gss], [krb5-gssapi], [
+	AC_DEFINE([HAVE_GSSAPI], [1])
+], [:])
 PKG_CHECK_MODULES([libldap], [ldap], [], [
 	AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
 	AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""], [AC_MSG_ERROR([libldap is required])])
@@ -142,8 +148,6 @@ AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_OLECF], [test "$have_olecf" = 1])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
 AM_CONDITIONAL([HAVE_XXHASH], [test "$have_xxhash" = 1])
-AH_TEMPLATE([HAVE_ESEDB], [])
-AH_TEMPLATE([HAVE_XXHASH], [])
 AS_IF([test "$have_esedb" = 1], [AC_DEFINE([HAVE_ESEDB], [1], [])])
 AS_IF([test "$have_xxhash" = 1], [AC_DEFINE([HAVE_XXHASH], [1], [])])
 AC_CHECK_FUNCS([fsetxattr posix_fadvise])

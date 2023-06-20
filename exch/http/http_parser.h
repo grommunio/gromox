@@ -1,9 +1,16 @@
 #pragma once
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <atomic>
 #include <cstdint>
 #include <ctime>
+#include <string>
 #include <vector>
-#include <openssl/ssl.h>
+#ifdef HAVE_GSSAPI
+#	include <gssapi/gssapi.h>
+#endif
+#include <libHX/proc.h>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -67,6 +74,13 @@ struct http_context final : public schedule_context {
 	uint16_t port = 0;
 	hchannel_type channel_type = hchannel_type::none;
 	void *pchannel = nullptr;
+	struct HXproc ntlm_proc{};
+#ifdef HAVE_GSSAPI
+	gss_cred_id_t m_gss_srv_creds{};
+	gss_ctx_id_t m_gss_ctx{};
+#endif
+	std::string last_gss_output;
+	bool last_gss_b64 = false;
 };
 using HTTP_CONTEXT = http_context;
 

@@ -80,6 +80,23 @@ identifier should only use characters allowed for hostnames.
 .br
 Default: (system hostname)
 .TP
+\fBhttp_auth_basic\fP
+Enable HTTP Basic authentication.
+.br
+Default: \fIyes\fP
+.TP
+\fBhttp_auth_spnego\fP
+Enable HTTP Negotiate authentication.
+.br
+Default: \fIno\fP
+.TP
+\fBhttp_auth_spnego_ntlmssp\fP
+When a client uses HTTP Negotiate authentication and the negotation data looks
+like NTLMSSP, pass the data to ntlm_auth rather than GSS-API. (When this option
+disabled, data is always passed to GSS-API.)
+.br
+Default: \fIyes\fP
+.TP
 \fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
 .br
@@ -106,6 +123,10 @@ Default: \fI3 minutes\fP
 If set to \fB1\fP, prints all incoming and outgoing HTTP traffic to stderr.
 .br
 Default: \fI0\fP
+.TP
+\fBhttp_krb_service_principal\fP
+.br
+Default: \fBgromox@\fP\fIhost_id\fP
 .TP
 \fBhttp_listen_addr\fP
 AF_INET6 socket address to bind the HTTP service to.
@@ -173,6 +194,12 @@ fashion to stderr. Level 1 emits RPCs with a failure return code, level 2 emits
 all RPCs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
+.TP
+\fBntlm_auth\fP
+Path to samba-winbind ntlm_auth or equivalent program that accepts the
+arguments `\fB\-d0 \-\-helper\-protocol=squid\-2.5\-ntlmssp\fP`.
+.br
+Default: \fI/usr/bin/ntlm_auth\fP
 .TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
