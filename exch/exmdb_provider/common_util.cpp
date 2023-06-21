@@ -22,8 +22,9 @@
 #include <string_view>
 #include <unistd.h>
 #ifdef HAVE_XXHASH
-#	include <xxhash.h>
+	/* xxh3 must come first in 0.7.0, or everything breaks apart */
 #	include <xxh3.h>
+#	include <xxhash.h>
 #endif
 #include <libHX/defs.h>
 #include <libHX/io.h>
