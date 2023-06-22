@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -3080,13 +3080,58 @@ static bool smime_clearsigned(const char *head_ct, MIME *head, char (&buf)[256])
 	       strcasecmp(buf, "application/x-pkcs7-signature") == 0;
 }
 
+static void select_parts(MIME *part, MIME_ENUM_PARAM &info)
+{
+	for (unsigned int i = 0; i < MAXIMUM_SEARCHING_DEPTH; ++i) {
+		auto child = part->get_child();
+		if (child == nullptr)
+			break;
+		part = child;
+	}
+	auto parent = part->get_parent();
+	bool alt = false;
+	if (parent != nullptr && strcasecmp(parent->content_type,
+	    "multipart/alternative") == 0)
+		alt = true;
+	do {
+		auto cttype = part->content_type;
+		if (strcasecmp(cttype, "text/plain") == 0 &&
+		    info.pplain == nullptr)
+			info.pplain = part;
+		if (strcasecmp(cttype, "text/html") == 0 &&
+		    info.phtml == nullptr)
+			info.phtml = part;
+		if (strcasecmp(cttype, "text/enriched") == 0 &&
+		    info.penriched == nullptr)
+			info.penriched = part;
+		if (strcasecmp(cttype, "text/calendar") == 0 &&
+		    info.pcalendar == nullptr)
+			info.pcalendar = part;
+		if (!alt || part->mime_type != mime_type::multiple)
+			continue;
+		for (auto child = part->get_child(); child != nullptr;
+		     child = child->get_sibling()) {
+			cttype = child->content_type;
+			if (strcasecmp(cttype, "text/plain") == 0 &&
+			    info.pplain == nullptr)
+				info.pplain = child;
+			if (strcasecmp(cttype, "text/html") == 0 &&
+			    info.phtml == nullptr)
+				info.phtml = child;
+			if (strcasecmp(cttype, "text/enriched") == 0 &&
+			    info.penriched == nullptr)
+				info.penriched = child;
+			if (strcasecmp(cttype, "text/calendar") == 0 &&
+			    info.pcalendar == nullptr)
+				info.pcalendar = child;
+		}
+	} while (alt && (part = part->get_sibling()) != nullptr);
+}
+
 MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
     MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
-	int i;
 	ICAL ical;
-	MIME *pmime;
-	MIME *pmime1;
 	uint8_t tmp_byte;
 	TARRAY_SET *prcpts;
 	uint32_t tmp_int32;
@@ -3192,8 +3237,9 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	    strcasecmp("message/disposition-notification", head_ct) == 0)
 		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg.get());
 
-	bool b_alternative = false, b_smime = false;
+	bool b_smime = false;
 	if (strcasecmp(head_ct, "multipart/mixed") == 0) {
+		MIME *pmime = nullptr, *pmime1 = nullptr;
 		if (phead->get_children_num() == 2 &&
 		    (pmime = phead->get_child()) != nullptr &&
 		    (pmime1 = pmime->get_sibling()) != nullptr &&
@@ -3233,52 +3279,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	mime_enum.pmime_pool = pmail->pmime_pool;
 	mime_enum.pmsg = pmsg.get();
 	mime_enum.phash = phash;
-	pmime = phead;
-	for (i=0; i<MAXIMUM_SEARCHING_DEPTH; i++) {
-		pmime1 = pmime->get_child();
-		if (pmime1 == nullptr)
-			break;
-		pmime = pmime1;
-	}
-	pmime1 = pmime->get_parent();
-	if (pmime1 != nullptr &&
-	    strcasecmp(pmime1->content_type, "multipart/alternative") == 0)
-		b_alternative = true;
-	do {
-		auto cttype = pmime->content_type;
-		if (strcasecmp(cttype, "text/plain") == 0 &&
-		    mime_enum.pplain == nullptr)
-			mime_enum.pplain = pmime;
-		if (strcasecmp(cttype, "text/html") == 0 &&
-		    mime_enum.phtml == nullptr)
-			mime_enum.phtml = pmime;
-		if (strcasecmp(cttype, "text/enriched") == 0 &&
-		    mime_enum.penriched == nullptr)
-			mime_enum.penriched = pmime;
-		if (strcasecmp(cttype, "text/calendar") == 0 &&
-		    mime_enum.pcalendar == nullptr)
-			mime_enum.pcalendar = pmime;
-		if (b_alternative && pmime->mime_type == mime_type::multiple) {
-			pmime1 = pmime->get_child();
-			while (NULL != pmime1) {
-				cttype = pmime1->content_type;
-				if (strcasecmp(cttype, "text/plain") == 0 &&
-				    mime_enum.pplain == nullptr)
-					mime_enum.pplain = pmime1;
-				if (strcasecmp(cttype, "text/html") == 0 &&
-				    mime_enum.phtml == nullptr)
-					mime_enum.phtml = pmime1;
-				if (strcasecmp(cttype, "text/enriched") == 0 &&
-				    mime_enum.penriched == nullptr)
-					mime_enum.penriched = pmime1;
-				if (strcasecmp(cttype, "text/calendar") == 0 &&
-				    mime_enum.pcalendar == nullptr)
-					mime_enum.pcalendar = pmime1;
-				pmime1 = pmime1->get_sibling();
-			}
-		}
-	} while (b_alternative && (pmime = pmime->get_sibling()) != nullptr);
-	
+	select_parts(phead, mime_enum);
+
 	if (mime_enum.pplain != nullptr &&
 	    !oxcmail_parse_message_body(default_charset,
 	    mime_enum.pplain, &pmsg->proplist))
