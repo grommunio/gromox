@@ -10,6 +10,7 @@
 #include <resolv.h>
 #include <string>
 #include <arpa/inet.h>
+#include <arpa/nameser.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <gromox/config_file.hpp>
