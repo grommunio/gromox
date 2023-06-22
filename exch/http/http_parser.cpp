@@ -601,7 +601,10 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 		"Transfer-Encoding")) {
 		pcontext->request.f_transfer_encoding = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
-		pcontext->request.f_cookie += std::string_view(ptoken, tmp_len);
+		auto &j = pcontext->request.f_cookie;
+		if (!j.empty())
+			j += ", ";
+		j.append(ptoken, tmp_len);
 	} else {
 		if (0 == strcasecmp(field_name, "Connection") &&
 		    0 == strncasecmp(ptoken, "keep-alive", tmp_len)) {
