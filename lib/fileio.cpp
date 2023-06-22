@@ -101,6 +101,19 @@ unsigned long gx_gettid()
 #endif
 }
 
+std::string base64_encode(const std::string_view &x)
+{
+	std::string out;
+	out.resize((x.size() + 3) / 3 * 4);
+	size_t final_size = 0;
+	int ret = encode64_ex(x.data(), x.size(), out.data(), out.size(), &final_size);
+	if (ret < 0)
+		out.clear();
+	else
+		out.resize(final_size);
+	return out;
+}
+
 std::string base64_decode(const std::string_view &x)
 {
 	std::string out;
