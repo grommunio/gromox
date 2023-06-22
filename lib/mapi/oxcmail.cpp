@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -3327,6 +3328,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			}
 		}
 	}
+	assert((mime_enum.pcalendar != nullptr) == (pmsg1 != nullptr)); /* (pcalendar ^ pmsg1) == 0 */
 	
 	auto pattachments = attachment_list_init();
 	if (pattachments == nullptr)
