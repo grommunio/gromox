@@ -1038,7 +1038,8 @@ void tmpfile::close()
 	m_fd = -1;
 	if (m_path.empty())
 		return;
-	remove(m_path.c_str());
+	if (remove(m_path.c_str()) < 0 && errno != ENOENT)
+		mlog(LV_ERR, "E-2902: remove %s: %s", m_path.c_str(), strerror(errno));
 	m_path.clear();
 }
 
