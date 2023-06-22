@@ -3131,18 +3131,9 @@ static void select_parts(MIME *part, MIME_ENUM_PARAM &info)
 MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
     MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
-	ICAL ical;
-	uint8_t tmp_byte;
-	TARRAY_SET *prcpts;
-	uint32_t tmp_int32;
-	char tmp_buff[256];
-	PROPID_ARRAY propids;
-	char mime_charset[64];
-	char default_charset[64];
 	namemap phash;
 	MIME_ENUM_PARAM mime_enum{phash};
 	FIELD_ENUM_PARAM field_param{phash};
-	ATTACHMENT_LIST *pattachments;
 	
 	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsg(message_content_init());
 	if (pmsg == nullptr)
@@ -3150,10 +3141,12 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	/* set default message class */
 	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note") != 0)
 		return NULL;
-	prcpts = tarray_set_init();
+	auto prcpts = tarray_set_init();
 	if (prcpts == nullptr)
 		return NULL;
 	pmsg->set_rcpts_internal(prcpts);
+
+	char default_charset[64];
 	if (!pmail->get_charset(default_charset))
 		gx_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
 	field_param.alloc = alloc;
@@ -3165,6 +3158,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	const auto phead = pmail->get_head();
 	if (phead == nullptr)
 		return NULL;
+
+	char tmp_buff[256];
 	field_param.b_classified = phead->get_field("X-Microsoft-Classified", tmp_buff, 16);
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param))
 		return NULL;
@@ -3188,12 +3183,12 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			return NULL;
 	}
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
-		tmp_int32 = IMPORTANCE_NORMAL;
+		uint32_t tmp_int32 = IMPORTANCE_NORMAL;
 		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return NULL;
 	}
 	if (!pmsg->proplist.has(PR_SENSITIVITY)) {
-		tmp_int32 = SENSITIVITY_NONE;
+		uint32_t tmp_int32 = SENSITIVITY_NONE;
 		if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 			return NULL;
 	}
@@ -3310,6 +3305,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		if (!mime_enum.pcalendar->read_content(pcontent.get(), &content_len))
 			return NULL;
 		pcontent[content_len] = '\0';
+		char mime_charset[64];
 		if (!oxcmail_get_content_param(mime_enum.pcalendar, "charset",
 		    mime_charset, arsizeof(mime_charset)))
 			gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
@@ -3320,6 +3316,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		} else {
 			if (!utf8_check(&pcontent[content_len+1]))
 				utf8_filter(&pcontent[content_len+1]);
+			ICAL ical;
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
@@ -3331,7 +3328,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		}
 	}
 	
-	pattachments = attachment_list_init();
+	auto pattachments = attachment_list_init();
 	if (pattachments == nullptr)
 		return NULL;
 	pmsg->set_attachments_internal(pattachments);
@@ -3415,11 +3412,12 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				return NULL;
 			phtml_bin->cb = strlen(phtml_bin->pc);
 			pmsg->proplist.set(PR_HTML, phtml_bin);
-			tmp_int32 = CP_UTF8;
+			uint32_t tmp_int32 = CP_UTF8;
 			if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0)
 				return nullptr;
 		}
 	}
+
 	if (atxlist_all_hidden(pmsg->children.pattachments)) {
 		/*
 		 * You know the data model sucks when you cannot determine
@@ -3428,9 +3426,10 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		 */
 		PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidSmartNoAttach};
 		const PROPNAME_ARRAY propnames = {1, &propname};
+		PROPID_ARRAY propids;
 		if (!get_propids(&propnames, &propids))
 			return nullptr;
-		tmp_byte = 1;
+		uint8_t tmp_byte = 1;
 		if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]), &tmp_byte) != 0)
 			return nullptr;
 	}
