@@ -580,26 +580,26 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 	}
 	tmp_len = line_length - static_cast<size_t>(ptoken - line);
 	if (0 == strcasecmp(field_name, "Host")) {
-		pcontext->request.f_host += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_host = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "User-Agent")) {
-		pcontext->request.f_user_agent += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_user_agent = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Accept")) {
-		pcontext->request.f_accept += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_accept = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Accept-Language")) {
-		pcontext->request.f_accept_language += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_accept_language = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Accept-Encoding")) {
-		pcontext->request.f_accept_encoding += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_accept_encoding = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Type")) {
-		pcontext->request.f_content_type += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_content_type = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Length")) {
-		pcontext->request.f_content_length += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_content_length = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Transfer-Encoding")) {
-		pcontext->request.f_transfer_encoding += std::string_view(ptoken, tmp_len);
+		pcontext->request.f_transfer_encoding = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
 		pcontext->request.f_cookie += std::string_view(ptoken, tmp_len);
 	} else {
