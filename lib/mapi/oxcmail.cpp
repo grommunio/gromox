@@ -3177,10 +3177,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				return NULL;
 			if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
 				return NULL;
-			prcpts = pmsg1->children.prcpts;
-			pmsg1->children.prcpts =
-				pmsg->children.prcpts;
-			pmsg->children.prcpts = prcpts;
+			std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 			if (field_param.b_flag_del)
 				oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
 			return pmsg1.release();
@@ -3213,10 +3210,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 					return NULL;
 				if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
 					return NULL;
-				prcpts = pmsg1->children.prcpts;
-				pmsg1->children.prcpts =
-					pmsg->children.prcpts;
-				pmsg->children.prcpts = prcpts;
+				std::swap(pmsg->children.prcpts, pmsg1->children.prcpts);
 				if (field_param.b_flag_del)
 					oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
 				return pmsg1.release();
