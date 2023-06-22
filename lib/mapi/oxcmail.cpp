@@ -3170,9 +3170,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	auto head_ct = phead->content_type;
 	if (strcasecmp(head_ct, "application/ms-tnef") == 0 &&
 	    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
-	std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(phead, alloc, get_propids));
-	if (pmsg1 != nullptr) {
-		if (tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
+		std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(phead, alloc, get_propids));
+		if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
 			if (!oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 				return NULL;
 			if (!oxcmail_copy_message_proplist(pmsg.get(), pmsg1.get()))
@@ -3182,7 +3181,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
 			return pmsg1.release();
 		}
-	}
 	}
 	if (strcasecmp(head_ct, "multipart/report") == 0 &&
 	    oxcmail_get_content_param(phead, "report-type", tmp_buff, 128) &&
@@ -3202,9 +3200,8 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    strcasecmp(pmime->content_type, "text/plain") == 0 &&
 		    strcasecmp(pmime1->content_type, "application/ms-tnef") == 0 &&
 		    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
-		std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(pmime1, alloc, get_propids));
-		if (pmsg1 != nullptr) {
-			if (tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
+			std::unique_ptr<message_content, mc_delete> pmsg1(oxcmail_parse_tnef(pmime1, alloc, get_propids));
+			if (pmsg1 != nullptr && tnef_vfy_check_key(pmsg1.get(), tmp_buff)) {
 				if (!oxcmail_parse_message_body(default_charset, pmime, &pmsg->proplist) ||
 				    !oxcmail_fetch_propname(pmsg.get(), phash, alloc, get_propids))
 					return NULL;
@@ -3215,7 +3212,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 					oxcmail_remove_flag_propties(pmsg1.get(), get_propids);
 				return pmsg1.release();
 			}
-		}
 		}
 	} else if (smime_clearsigned(head_ct, phead, tmp_buff)) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != 0)
