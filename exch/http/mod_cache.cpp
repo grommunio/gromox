@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -520,12 +521,10 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			"request host is too long for mod_cache");
 		return FALSE;
 	}
-	gx_strlcpy(domain, tmp_len == 0 ? phttp->connection.server_ip :
-	           phttp->request.f_host.c_str(), std::size(domain));
-	ptoken = strchr(domain, ':');
-	if (NULL != ptoken) {
-		*ptoken = '\0';
-	}
+	if (tmp_len == 0)
+		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
+	else
+		HX_addrport_split(phttp->request.f_host.c_str(), domain, std::size(domain), nullptr);
 	tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot"
