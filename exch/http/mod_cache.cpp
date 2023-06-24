@@ -265,8 +265,10 @@ static const char *status_text(unsigned int s)
 	case 400: return "400 Bad Request";
 	case 403: return "403 Permission denied";
 	case 404: return "404 Not Found";
+	case 405: return "405 Method Not Allowed";
 	case 416: return "416 Range Not Satisfiable";
 	case 4162: return "416 Too Many Ranges";
+	case 501: return "501 Not Implemented";
 	case 503: return "503 Service Unavailable";
 	default: return "500 Internal Server Error";
 	}
@@ -485,6 +487,16 @@ static int mod_cache_parse_range_value(char *value,
 	return 503;
 }
 
+static bool rqtype_ok(const char *method, unsigned int set)
+{
+	static constexpr const char *names[2][3] =
+		{{"GET", "HEAD", "POST"}, {"PUT", "DELETE", "PATCH"}};
+	for (const auto &i : names[set])
+		if (strcasecmp(method, i) == 0)
+			return true;
+	return false;
+}
+
 bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 {
 	char *ptoken;
@@ -496,17 +508,11 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	char request_uri[8192];
 	CACHE_CONTEXT *pcontext;
 	
-	if (0 != strcasecmp(phttp->request.method, "GET") &&
-		0 != strcasecmp(phttp->request.method, "HEAD")) {
-		return FALSE;
-	}
 	auto tmp_len = phttp->request.f_content_length.size();
 	if (0 != tmp_len) {
 		if (tmp_len >= 32) {
 			return FALSE;
 		}
-		if (strtoll(phttp->request.f_content_length.c_str(), nullptr, 0) != 0)
-			return FALSE;
 	}
 	tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
@@ -564,6 +570,12 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		return mod_cache_exit_response(phttp,
 			errno == ENOENT || errno == ENOTDIR ? 404 :
 			errno == EACCES || errno == EISDIR ? 403 : 503);
+	if (rqtype_ok(phttp->request.method, 0))
+		;
+	else if (rqtype_ok(phttp->request.method, 1))
+		return mod_cache_exit_response(phttp, 403);
+	else
+		return mod_cache_exit_response(phttp, 501);
 	if (fstat(fd.get(), &node_stat) != 0)
 		return mod_cache_exit_response(phttp, 503);
 	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
