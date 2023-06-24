@@ -356,6 +356,11 @@ static int t_cmp_icaltime()
 	return 0;
 }
 
+static int t_wildcard()
+{
+	return wildcard_match("[", "*", true) ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 int main()
 {
 	if (t_utf7() != 0)
@@ -393,5 +398,8 @@ int main()
 	if (ret != 0)
 		return ret;
 	t_convert();
+	ret = t_wildcard();
+	if (ret != 0)
+		return ret;
 	return EXIT_SUCCESS;
 }
