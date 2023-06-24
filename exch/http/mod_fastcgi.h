@@ -28,7 +28,7 @@ using HTTP_CONTEXT = http_context;
 extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, gromox::time_duration exec_timeout);
 extern int mod_fastcgi_run();
 extern void mod_fastcgi_stop();
-extern bool mod_fastcgi_take_request(HTTP_CONTEXT *);
+extern int mod_fastcgi_take_request(http_context *);
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp);
 BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp);
 BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp);

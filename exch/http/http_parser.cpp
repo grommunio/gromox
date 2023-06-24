@@ -384,6 +384,48 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 	return tl;
 }
 
+enum { X_LOOP = -1, X_RUNOFF = -2, };
+
+static const char *status_text(unsigned int s)
+{
+	switch (s) {
+	case 304: return "Not Modified";
+	case 400: return "Bad Request";
+	case 403: return "Permission Denied";
+	case 404: return "Not Found";
+	case 405: return "Method Not Allowed";
+	case 414: return "URI Too Long";
+	case 416: return "Range Not Satisfiable";
+	case 4162: return "Too Many Ranges";
+	case 501: return "Not Implemented";
+	case 503: return "Service Unavailable";
+	default: return "Internal Server Error";
+	}
+}
+
+static int exit_response(http_context &ctx, int status)
+{
+	char ds[128];
+	char rb[256];
+	rfc1123_dstring(ds, std::size(ds));
+	auto msg = status_text(status);
+	if (status >= 1000)
+		status /= 10;
+	auto rl = gx_snprintf(rb, std::size(rb),
+	          "HTTP/1.1 %u %s\r\n"
+	          "Date: %s\r\n"
+	          "Connection: close\r\n"
+	          "Content-Length: %zu\r\n"
+	          "Content-Type: text/plain; charset=utf-8\r\n\r\n%s\r\n",
+	          status, msg, ds, strlen(msg) + 2, msg);
+	ctx.stream_out.write(rb, rl);
+	ctx.total_length = rl;
+	ctx.bytes_rw     = 0;
+	ctx.b_close      = TRUE;
+	ctx.sched_stat   = SCHED_STAT_WRREP;
+	return X_LOOP;
+}
+
 static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
     unsigned int code = 400)
 {
@@ -472,8 +514,6 @@ static int http_end(HTTP_CONTEXT *ctx)
 	http_parser_context_clear(ctx);
 	return PROCESS_CLOSE;
 }
-
-enum { X_LOOP = -1, X_RUNOFF = -2, };
 
 /* 
  * process a context
@@ -941,33 +981,22 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		    0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
 			return htp_delegate_rpc(pcontext, stream_1_written);
 		}
-		if (hpm_processor_take_request(pcontext))
+		auto status = hpm_processor_take_request(pcontext);
+		if (status == 200)
 			return htp_delegate_hpm(pcontext);
-		if (mod_fastcgi_take_request(pcontext))
+		else if (status != 0)
+			return exit_response(*pcontext, status);
+		status = mod_fastcgi_take_request(pcontext);
+		if (status == 200)
 			return htp_delegate_fcgi(pcontext);
-		if (mod_cache_take_request(pcontext))
+		else if (status != 0)
+			return exit_response(*pcontext, status);
+		status = mod_cache_take_request(pcontext);
+		if (status == 200)
 			return htp_delegate_cache(pcontext);
-		/* other http request here if wanted */
-		char dstring[128], response_buff[1024];
-		rfc1123_dstring(dstring, arsizeof(dstring));
-		auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
-					"HTTP/1.1 404 Not Found\r\n"
-					"Date: %s\r\n"
-					"Connection: close\r\n"
-					"Content-Length: 134\r\n\r\n"
-					"<html>\r\n"
-					"<head><title>404 Not Found</title></head>\r\n"
-					"<body bgcolor=\"white\">\r\n"
-					"<center><h1>404 Not Found</h1></center>\r\n"
-					"</body>\r\n"
-					"</html>\r\n",
-					dstring);
-		pcontext->stream_out.write(response_buff, response_len);
-		pcontext->total_length = response_len;
-		pcontext->bytes_rw = 0;
-		pcontext->b_close = TRUE;
-		pcontext->sched_stat = SCHED_STAT_WRREP;
-		return X_LOOP;
+		else if (status != 0)
+			return exit_response(*pcontext, status);
+		return exit_response(*pcontext, 404);
 	}
 	return X_RUNOFF;
 }

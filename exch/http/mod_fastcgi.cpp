@@ -377,7 +377,7 @@ static int mod_fastcgi_connect_backend(const char *path)
 	return sockd;
 }
 
-bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
+int mod_fastcgi_take_request(http_context *phttp)
 {
 	BOOL b_index;
 	char *ptoken;
@@ -392,7 +392,7 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_fastcgi");
-		return FALSE;
+		return 400;
 	}
 	if (tmp_len == 0)
 		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
@@ -402,16 +402,16 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot "
 			"find request uri for mod_fastcgi");
-		return FALSE;
+		return 400;
 	} else if (tmp_len >= 8192) {
 		phttp->log(LV_DEBUG, "length of "
 			"request uri is too long for mod_fastcgi");
-		return FALSE;
+		return 414;
 	}
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
-		return FALSE;
+		return 400;
 	}
 	ptoken = strrchr(request_uri, '?');
 	if (ptoken != nullptr)
@@ -427,7 +427,7 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 		if (tmp_len >= 16) {
 			phttp->log(LV_DEBUG, "suffix in"
 				" request uri error for mod_fastcgi");
-			return FALSE;
+			return 0;
 		}
 		strcpy(suffix, ptoken);
 	} else {
@@ -440,11 +440,11 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 	} else {
 		phttp->log(LV_DEBUG, "request uri format "
 					"error, missing slash for mod_fastcgi");
-		return FALSE;
+		return 400;
 	}
 	auto pfnode = mod_fastcgi_find_backend(domain, request_uri, file_name, suffix, &b_index);
 	if (pfnode == nullptr)
-		return FALSE;
+		return 0;
 	phttp->log(LV_DEBUG, "http request \"%s\" "
 		"to \"%s\" will be relayed to fastcgi back-end %s",
 		phttp->request.f_request_uri.c_str(), domain, pfnode->sock_path.c_str());
@@ -455,14 +455,14 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 		if (tmp_len >= 32) {
 			phttp->log(LV_DEBUG, "length of "
 				"content-length is too long for mod_fastcgi");
-			return FALSE;
+			return 400;
 		}
 		content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
 	}
 	if (content_length > g_max_size) {
 		phttp->log(LV_DEBUG, "content-length"
 			" is too long for mod_fastcgi");
-		return FALSE;
+		return 400;
 	}
 	auto b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 	auto pcontext = &g_context_list[phttp->context_id];
@@ -472,14 +472,14 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 		auto path = LOCAL_DISK_TMPDIR;
 		if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
-			return false;
+			return 500;
 		}
 		auto ret = pcontext->cache_fd.open_anon(path, O_RDWR | O_TRUNC);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-2078: open_anon(%s)[%s]: %s",
 			        path, pcontext->cache_fd.m_path.c_str(),
 			        strerror(-ret));
-			return FALSE;
+			return 500;
 		}
 		pcontext->cache_size = 0;
 	} else {
@@ -496,7 +496,7 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 	pcontext->cli_sockd = -1;
 	pcontext->b_header = FALSE;
 	phttp->pfast_context = pcontext;
-	return true;
+	return 200;
 }
 
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp)

@@ -301,7 +301,7 @@ void hpm_processor_stop()
 	g_context_list.reset();
 }
 
-bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
+int hpm_processor_take_request(http_context *phttp)
 {
 	uint64_t content_length;
 	
@@ -318,28 +318,28 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 			if (tmp_len >= 32) {
 				phttp->log(LV_DEBUG, "length of "
 					"content-length is too long for hpm_processor");
-				return FALSE;
+				return 400;
 			}
 			content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
 		}
 		if (content_length > g_max_size) {
 			phttp->log(LV_DEBUG, "content-length"
 				" is too long for hpm_processor");
-			return FALSE;
+			return 400;
 		}
 		auto b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 		if (b_chunked || content_length > g_cache_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
-				return false;
+				return 500;
 			}
 			auto ret = phpm_ctx->cache_fd.open_anon(path, O_RDWR | O_TRUNC);
 			if (ret < 0) {
 				mlog(LV_ERR, "E-2090: open(%s)[%s]: %s",
 				        path, phpm_ctx->cache_fd.m_path.c_str(),
 				        strerror(-ret));
-				return FALSE;
+				return 500;
 			}
 			phpm_ctx->cache_size = 0;
 		} else {
@@ -354,9 +354,9 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		phpm_ctx->b_end = FALSE;
 		phpm_ctx->b_preproc = TRUE;
 		phpm_ctx->pinterface = &pplugin->interface;
-		return true;
+		return 200;
 	}
-	return FALSE;
+	return 0;
 }
 
 bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)

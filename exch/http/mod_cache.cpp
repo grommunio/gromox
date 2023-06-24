@@ -259,36 +259,6 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 	return TRUE;
 }
 
-static const char *status_text(unsigned int s)
-{
-	switch (s) {
-	case 304: return "304 Not Modified";
-	case 400: return "400 Bad Request";
-	case 403: return "403 Permission denied";
-	case 404: return "404 Not Found";
-	case 405: return "405 Method Not Allowed";
-	case 416: return "416 Range Not Satisfiable";
-	case 4162: return "416 Too Many Ranges";
-	case 501: return "501 Not Implemented";
-	case 503: return "503 Service Unavailable";
-	default: return "500 Internal Server Error";
-	}
-}
-
-static BOOL mod_cache_exit_response(HTTP_CONTEXT *phttp, unsigned int status)
-{
-	char dstring[128];
-	char rb[256];
-	rfc1123_dstring(dstring, std::size(dstring));
-	auto rl = gx_snprintf(rb, std::size(rb),
-	          "HTTP/1.1 %s\r\n"
-	          "Date: %s\r\n"
-	          "Content-Length: 0\r\n"
-	          "Content-Type: text/plain; charset=utf-8\r\n\r\n",
-	          status_text(status), dstring);
-	return phttp->stream_out.write(rb, rl) == STREAM_WRITE_OK ? TRUE : false;
-}
-
 static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 {
 	char etag[128];
@@ -498,7 +468,7 @@ static bool rqtype_ok(const char *method, unsigned int set)
 	return false;
 }
 
-bool mod_cache_take_request(HTTP_CONTEXT *phttp)
+int mod_cache_take_request(http_context *phttp)
 {
 	char *ptoken;
 	char suffix[16];
@@ -512,14 +482,14 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	auto tmp_len = phttp->request.f_content_length.size();
 	if (0 != tmp_len) {
 		if (tmp_len >= 32) {
-			return FALSE;
+			return 400;
 		}
 	}
 	tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_cache");
-		return FALSE;
+		return 400;
 	}
 	if (tmp_len == 0)
 		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
@@ -529,23 +499,23 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot"
 			" find request uri for mod_cache");
-		return FALSE;
+		return 400;
 	} else if (tmp_len >= sizeof(tmp_buff)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request uri is too long for mod_cache");
-		return FALSE;
+		return 414;
 	}
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 				" uri format error for mod_cache");
-		return FALSE;
+		return 400;
 	}
 	suffix[0] = '\0';
 	ptoken = strrchr(request_uri, '/');
 	if (NULL == ptoken) {
 		phttp->log(LV_DEBUG, "request uri "
 			"format error, missing slash for mod_cache");
-		return FALSE;
+		return 400;
 	}
 	ptoken ++;
 	ptoken = strrchr(ptoken, '.');
@@ -561,36 +531,35 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 	                   strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
 	          });
 	if (it == g_directory_list.cend())
-		return FALSE;
+		return 0;
 	snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s%s", it->dir.c_str(),
 	         request_uri + it->path.size());
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0)
-		return mod_cache_exit_response(phttp,
-			errno == ENOENT || errno == ENOTDIR ? 404 :
-			errno == EACCES || errno == EISDIR ? 403 : 503);
+		return errno == ENOENT || errno == ENOTDIR ? 404 :
+		       errno == EACCES || errno == EISDIR ? 403 : 503;
 	if (rqtype_ok(phttp->request.method, 0))
 		;
 	else if (rqtype_ok(phttp->request.method, 1))
-		return mod_cache_exit_response(phttp, 403);
+		return 403;
 	else
-		return mod_cache_exit_response(phttp, 501);
+		return 501;
 	if (fstat(fd.get(), &node_stat) != 0)
-		return mod_cache_exit_response(phttp, 503);
+		return 500;
 	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
-		return mod_cache_exit_response(phttp, 500);
+		return 500;
 	else if (!S_ISREG(node_stat.st_mode))
-		return mod_cache_exit_response(phttp, 403);
+		return 403;
 	static_assert(UINT32_MAX <= SIZE_MAX);
 	struct stat sb;
 	auto val = mod_cache_get_others_field(phttp->request.f_others, "If-None-Match");
 	if (val != nullptr && mod_cache_retrieve_etag(val, sb)) {
 		if (stat4_eq(sb, node_stat))
-			return mod_cache_exit_response(phttp, 304);
+			return 304;
 	} else if ((val = mod_cache_get_others_field(phttp->request.f_others, "If-Modified-Since")) != nullptr &&
 	    mod_cache_parse_rfc1123_dstring(val, &sb.st_mtime)) {
 		if (sb.st_mtime == node_stat.st_mtime)
-			return mod_cache_exit_response(phttp, 304);
+			return 304;
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
@@ -600,7 +569,7 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		auto status = mod_cache_parse_range_value(tmp_buff,
 		              node_stat.st_size, pcontext);
 		if (status != 0)
-			return mod_cache_exit_response(phttp, status);
+			return status;
 	} else {
 		pcontext->offset = 0;
 		pcontext->until = node_stat.st_size;
@@ -616,11 +585,11 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 			              PROT_READ, MAP_SHARED, fd.get(), 0);
 			if (pitem->mblk == MAP_FAILED) {
 				pcontext->range.clear();
-				return false;
+				return 503;
 			}
 			posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 			pcontext->pitem = std::move(pitem);
-			return TRUE;
+			return 200;
 		}
 	}
 	hhold.unlock();
@@ -636,18 +605,18 @@ bool mod_cache_take_request(HTTP_CONTEXT *phttp)
 		              PROT_READ, MAP_SHARED, fd.get(), 0);
 		if (pitem->mblk == MAP_FAILED) {
 			pcontext->range.clear();
-			return false;
+			return 503;
 		}
 		posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 		g_cache_hash.emplace(tmp_path, pitem);
 		pcontext->pitem = std::move(pitem);
-		return TRUE;
+		return 200;
 	}
 	} catch (const std::bad_alloc &) {
 		pcontext->range.clear();
-		return mod_cache_exit_response(phttp, 503);
+		return 503;
 	}
-	return TRUE;
+	return 200;
 }
 
 void mod_cache_put_context(HTTP_CONTEXT *phttp)
