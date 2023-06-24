@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/io.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -393,11 +394,10 @@ bool mod_fastcgi_take_request(HTTP_CONTEXT *phttp)
 			"request host is too long for mod_fastcgi");
 		return FALSE;
 	}
-	gx_strlcpy(domain, tmp_len == 0 ? phttp->connection.server_ip :
-	           phttp->request.f_host.c_str(), std::size(domain));
-	ptoken = strchr(domain, ':');
-	if (ptoken != nullptr)
-		*ptoken = '\0';
+	if (tmp_len == 0)
+		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
+	else
+		HX_addrport_split(phttp->request.f_host.c_str(), domain, std::size(domain), nullptr);
 	tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot "
@@ -535,12 +535,11 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			"request host is too long for mod_fastcgi");
 		return FALSE;
 	}
-	gx_strlcpy(domain, tmp_len == 0 ? phttp->connection.server_ip :
-	           phttp->request.f_host.c_str(), std::size(domain));
+	if (tmp_len == 0)
+		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
+	else
+		HX_addrport_split(phttp->request.f_host.c_str(), domain, std::size(domain), nullptr);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", domain));
-	ptoken = strchr(domain, ':');
-	if (ptoken != nullptr)
-		*ptoken = '\0';
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", domain));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
 	snprintf(tmp_buff, arsizeof(tmp_buff), "%d", phttp->connection.server_port);
