@@ -306,6 +306,7 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 	uint64_t content_length;
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
+	phpm_ctx->b_preproc = false;
 	for (const auto &p : g_plugin_list) {
 		auto pplugin = &p;
 		if (!pplugin->interface.preproc(phttp->context_id))
@@ -315,7 +316,6 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 			content_length = 0;
 		} else {
 			if (tmp_len >= 32) {
-				phpm_ctx->b_preproc = FALSE;
 				phttp->log(LV_DEBUG, "length of "
 					"content-length is too long for hpm_processor");
 				return FALSE;
@@ -323,7 +323,6 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 			content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
 		}
 		if (content_length > g_max_size) {
-			phpm_ctx->b_preproc = FALSE;
 			phttp->log(LV_DEBUG, "content-length"
 				" is too long for hpm_processor");
 			return FALSE;
@@ -340,7 +339,6 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 				mlog(LV_ERR, "E-2090: open(%s)[%s]: %s",
 				        path, phpm_ctx->cache_fd.m_path.c_str(),
 				        strerror(-ret));
-				phpm_ctx->b_preproc = FALSE;
 				return FALSE;
 			}
 			phpm_ctx->cache_size = 0;
@@ -358,7 +356,6 @@ bool hpm_processor_take_request(HTTP_CONTEXT *phttp)
 		phpm_ctx->pinterface = &pplugin->interface;
 		return true;
 	}
-	phpm_ctx->b_preproc = FALSE;
 	return FALSE;
 }
 
