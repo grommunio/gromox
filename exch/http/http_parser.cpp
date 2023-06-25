@@ -426,7 +426,7 @@ static int exit_response(http_context &ctx, int status)
 	return X_LOOP;
 }
 
-static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
+static int http_4xx(http_context *ctx, const char *msg = "Bad Request",
     unsigned int code = 400)
 {
 	if (hpm_processor_is_in_charge(ctx))
@@ -449,9 +449,10 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 	ctx->bytes_rw = 0;
 	ctx->b_close = TRUE;
 	ctx->sched_stat = SCHED_STAT_WRREP;
+	return X_LOOP;
 }
 
-static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error",
+static int http_5xx(http_context *ctx, const char *msg = "Internal Server Error",
     unsigned int code = 500)
 {
 	if (hpm_processor_is_in_charge(ctx))
@@ -474,6 +475,7 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 	ctx->bytes_rw = 0;
 	ctx->b_close = TRUE;
 	ctx->sched_stat = SCHED_STAT_WRREP;
+	return X_LOOP;
 }
 
 static int http_end(HTTP_CONTEXT *ctx)
@@ -533,8 +535,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 		if (NULL == pcontext->connection.ssl) {
 			mlog(LV_ERR, "E-1185: ENOMEM");
-			http_5xx(pcontext, "Resources exhausted", 503);
-			return X_LOOP;
+			return http_5xx(pcontext, "Resources exhausted", 503);
 		}
 		SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 	}
@@ -551,8 +552,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return PROCESS_POLLING_RDONLY;
 	pcontext->log(LV_DEBUG, "I-1920: timeout");
-	http_4xx(pcontext, "Request Timeout", 408);
-	return X_LOOP;
+	return http_4xx(pcontext, "Request Timeout", 408);
 }
 
 static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int line_length)
@@ -560,14 +560,12 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "I-1921: request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	size_t tmp_len = ptoken - line;
 	if (tmp_len >= 32) {
 		pcontext->log(LV_DEBUG, "I-1922: request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 
 	memcpy(pcontext->request.method, line, tmp_len);
@@ -575,16 +573,14 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG, "I-1923: request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	size_t tmp_len1 = ptoken1 - ptoken - 1;
 	tmp_len = line_length - (ptoken1 + 6 - line);
 	if (0 != strncasecmp(ptoken1 + 1,
 	    "HTTP/", 5) || tmp_len >= 8) {
 		pcontext->log(LV_DEBUG, "I-1924: request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	if (!mod_rewrite_process(ptoken + 1,
 	    tmp_len1, pcontext->request.f_request_uri))
@@ -600,8 +596,7 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "I-1925: request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 
 	size_t tmp_len = ptoken - line;
@@ -657,8 +652,7 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 	return X_RUNOFF;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1085: ENOMEM");
-	http_5xx(pcontext, "Resources exhausted", 503);
-	return X_LOOP;
+	return http_5xx(pcontext, "Resources exhausted", 503);
 }
 
 static int htp_auth(HTTP_CONTEXT *pcontext)
@@ -779,8 +773,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	if (0 == tmp_len || tmp_len >= 1024) {
 		pcontext->log(LV_DEBUG,
 			"I-1926: rpcproxy request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	char tmp_buff[2048];
 	gx_strlcpy(tmp_buff, pcontext->request.f_request_uri.c_str(), std::size(tmp_buff));
@@ -793,22 +786,19 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	} else {
 		pcontext->log(LV_DEBUG,
 			"I-1928: rpcproxy request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	auto ptoken1 = strchr(tmp_buff, ':');
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG,
 			"I-1929: rpcproxy request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	*ptoken1 = '\0';
 	if (ptoken1 - ptoken > 128) {
 		pcontext->log(LV_DEBUG,
 			"I-1930: rpcproxy request method error");
-		http_4xx(pcontext);
-		return X_LOOP;
+		return http_4xx(pcontext);
 	}
 	ptoken1++;
 	gx_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
@@ -843,15 +833,13 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			pcontext->channel_type = CHANNEL_TYPE_IN;
 			pcontext->pchannel = g_inchannel_allocator->get();
 			if (NULL == pcontext->pchannel) {
-				http_5xx(pcontext, "Resources exhausted", 503);
-				return X_LOOP;
+				return http_5xx(pcontext, "Resources exhausted", 503);
 			}
 		} else {
 			pcontext->channel_type = CHANNEL_TYPE_OUT;
 			pcontext->pchannel = g_outchannel_allocator->get();
 			if (NULL == pcontext->pchannel) {
-				http_5xx(pcontext, "Resources exhausted", 503);
-				return X_LOOP;
+				return http_5xx(pcontext, "Resources exhausted", 503);
 			}
 		}
 	}
@@ -867,22 +855,19 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 	pcontext->total_length = 0;
 
 	if (!hpm_processor_write_request(pcontext)) {
-		http_5xx(pcontext);
-		return X_LOOP;
+		return http_5xx(pcontext);
 	}
 	if (!hpm_processor_check_end_of_request(pcontext)) {
 		pcontext->sched_stat = SCHED_STAT_RDBODY;
 		return X_LOOP;
 	}
 	if (!hpm_processor_proc(pcontext)) {
-		http_5xx(pcontext);
-		return X_LOOP;
+		return http_5xx(pcontext);
 	}
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1184: ENOMEM");
-		http_5xx(pcontext, "Resources exhausted", 503);
-		return X_LOOP;
+		return http_5xx(pcontext, "Resources exhausted", 503);
 	}
 	if (pcontext->stream_out.get_total_length() == 0)
 		return X_LOOP;
@@ -899,22 +884,19 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 	pcontext->total_length = 0;
 
 	if (!mod_fastcgi_write_request(pcontext)) {
-		http_5xx(pcontext);
-		return X_LOOP;
+		return http_5xx(pcontext);
 	}
 	if (!mod_fastcgi_check_end_of_read(pcontext)) {
 		pcontext->sched_stat = SCHED_STAT_RDBODY;
 		return X_LOOP;
 	}
 	if (!mod_fastcgi_relay_content(pcontext)) {
-		http_5xx(pcontext, "Bad FastCGI Gateway", 502);
-		return X_LOOP;
+		return http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 	}
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1183: ENOMEM");
-		http_5xx(pcontext, "Resources exhausted", 503);
-		return X_LOOP;
+		return http_5xx(pcontext, "Resources exhausted", 503);
 	}
 	return X_LOOP;
 }
@@ -927,8 +909,7 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1182: ENOMEM");
-		http_5xx(pcontext, "Resources exhausted", 503);
-		return X_LOOP;
+		return http_5xx(pcontext, "Resources exhausted", 503);
 	}
 	return X_LOOP;
 }
@@ -941,8 +922,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		case STREAM_LINE_FAIL:
 			pcontext->log(LV_DEBUG,
 				"I-1933: request header line too long");
-			http_4xx(pcontext);
-			return X_LOOP;
+			return http_4xx(pcontext);
 		case STREAM_LINE_UNAVAILABLE:
 			if (actual_read > 0) {
 				return PROCESS_CONTINUE;
@@ -970,8 +950,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		/* met the end of request header */
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			mlog(LV_ERR, "E-1181: ENOMEM");
-			http_5xx(pcontext, "Resources exhausted", 503);
-			return X_LOOP;
+			return http_5xx(pcontext, "Resources exhausted", 503);
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
 		auto ret = htp_auth_1(*pcontext);
@@ -1059,8 +1038,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		mlog(LV_ERR, "E-1180: ENOMEM");
-		http_5xx(pcontext, "Resources exhausted", 503);
-		return X_LOOP;
+		return http_5xx(pcontext, "Resources exhausted", 503);
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOH", pbuff, size);
 	auto current_time = tp_now();
@@ -1080,8 +1058,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return htparse_rdhead_st(pcontext, actual_read);
 	pcontext->log(LV_DEBUG, "I-1934: timeout");
-	http_4xx(pcontext, "Request Timeout", 408);
-	return X_LOOP;
+	return http_4xx(pcontext, "Request Timeout", 408);
 }
 
 static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
@@ -1089,8 +1066,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 	if (hpm_processor_is_in_charge(pcontext)) {
 		switch (hpm_processor_retrieve_response(pcontext)) {
 		case HPM_RETRIEVE_ERROR:
-			http_5xx(pcontext);
-			return X_LOOP;
+			return http_5xx(pcontext);
 		case HPM_RETRIEVE_WRITE:
 			break;
 		case HPM_RETRIEVE_NONE:
@@ -1114,8 +1090,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		case RESPONSE_TIMEOUT:
 			pcontext->log(LV_DEBUG,
 				"fastcgi execution timeout");
-			http_5xx(pcontext, "FastCGI Timeout", 504);
-			return X_LOOP;
+			return http_5xx(pcontext, "FastCGI Timeout", 504);
 		}
 		if (mod_fastcgi_check_responded(pcontext)) {
 			if (!mod_fastcgi_read_response(pcontext) &&
@@ -1128,14 +1103,12 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 				return PROCESS_CONTINUE;
 			}
 		} else if (!mod_fastcgi_read_response(pcontext)) {
-			http_5xx(pcontext, "Bad FastCGI Gateway", 502);
-			return X_LOOP;
+			return http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 		}
 	} else if (mod_cache_is_in_charge(pcontext) &&
 	    !mod_cache_read_response(pcontext)) {
 		if (!mod_cache_check_responded(pcontext)) {
-			http_5xx(pcontext);
-			return X_LOOP;
+			return http_5xx(pcontext);
 		}
 		if (pcontext->stream_out.get_total_length() == 0) {
 			if (pcontext->b_close)
@@ -1350,8 +1323,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		mlog(LV_ERR, "E-1179: ENOMEM");
-		http_5xx(pcontext);
-		return X_LOOP;
+		return http_5xx(pcontext);
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
 	auto current_time = tp_now();
@@ -1363,22 +1335,19 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		if (hpm_processor_is_in_charge(pcontext)) {
 			if (!hpm_processor_write_request(pcontext)) {
-				http_5xx(pcontext);
-				return X_LOOP;
+				return http_5xx(pcontext);
 			}
 			if (!hpm_processor_check_end_of_request(
 			    pcontext)) {
 				return PROCESS_CONTINUE;
 			}
 			if (!hpm_processor_proc(pcontext)) {
-				http_5xx(pcontext);
-				return X_LOOP;
+				return http_5xx(pcontext);
 			}
 			pcontext->sched_stat = SCHED_STAT_WRREP;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1178: ENOMEM");
-				http_5xx(pcontext, "Resources exhausted", 503);
-				return X_LOOP;
+				return http_5xx(pcontext, "Resources exhausted", 503);
 			}
 			if (pcontext->stream_out.get_total_length() != 0) {
 				unsigned int tmp_len = STREAM_BLOCK_SIZE;
@@ -1388,21 +1357,18 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		} else if (NULL != pcontext->pfast_context) {
 			if (!mod_fastcgi_write_request(pcontext)) {
-				http_5xx(pcontext);
-				return X_LOOP;
+				return http_5xx(pcontext);
 			}
 			if (!mod_fastcgi_check_end_of_read(pcontext)) {
 				return PROCESS_CONTINUE;
 			}
 			if (!mod_fastcgi_relay_content(pcontext)) {
-				http_5xx(pcontext, "Bad FastCGI Gateway", 502);
-				return X_LOOP;
+				return http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 			}
 			pcontext->sched_stat = SCHED_STAT_WRREP;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1177: ENOMEM");
-				http_5xx(pcontext, "Resources exhausted", 503);
-				return X_LOOP;
+				return http_5xx(pcontext, "Resources exhausted", 503);
 			}
 			return PROCESS_CONTINUE;
 		}
@@ -1420,8 +1386,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return PROCESS_POLLING_RDONLY;
 	pcontext->log(LV_DEBUG, "I-1935: timeout");
-	http_4xx(pcontext, "Request Timeout", 408);
-	return X_LOOP;
+	return http_4xx(pcontext, "Request Timeout", 408);
 }
 
 static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
@@ -1437,8 +1402,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") != 0) {
 		pcontext->log(LV_DEBUG, "I-1936: unrecognized HTTP method \"%s\"", pcontext->request.method);
 		/* other http request here if wanted */
-		http_4xx(pcontext, "Method Not Allowed", 405);
-		return X_LOOP;
+		return http_4xx(pcontext, "Method Not Allowed", 405);
 	}
 	/* ECHO request */
 	char response_buff[1024];
@@ -1455,8 +1419,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1176: ENOMEM");
-		http_5xx(pcontext, "Resources exhausted", 503);
-		return X_LOOP;
+		return http_5xx(pcontext, "Resources exhausted", 503);
 	}
 	return PROCESS_CONTINUE;
 }
@@ -1479,8 +1442,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		auto pbuff = pcontext->stream_in.get_write_buf(&size);
 		if (NULL == pbuff) {
 			mlog(LV_ERR, "E-1175: ENOMEM");
-			http_5xx(pcontext, "Resources exhausted", 503);
-			return X_LOOP;
+			return http_5xx(pcontext, "Resources exhausted", 503);
 		}
 
 		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
@@ -1506,8 +1468,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			if (current_time - pcontext->connection.last_timestamp < g_timeout)
 				return PROCESS_POLLING_RDONLY;
 			pcontext->log(LV_DEBUG, "I-1937: timeout");
-			http_4xx(pcontext, "Request Timeout", 408);
-			return X_LOOP;
+			return http_4xx(pcontext, "Request Timeout", 408);
 		}
 	}
 
@@ -1598,8 +1559,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	}
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1174: ENOMEM");
-		http_5xx(pcontext, "Resources exhausted", 503);
-		return X_LOOP;
+		return http_5xx(pcontext, "Resources exhausted", 503);
 	}
 
 	switch (result) {
