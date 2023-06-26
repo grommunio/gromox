@@ -9,21 +9,10 @@
 #define RESPONSE_AVAILABLE				1
 
 struct FASTCGI_NODE;
-
-struct FASTCGI_CONTEXT {
-	BOOL b_index = false, b_chunked = false, b_end = false;
-	BOOL b_header = false; /* is response header met */
-	uint32_t chunk_size = 0, chunk_offset = 0;
-	uint64_t content_length = 0;
-	const FASTCGI_NODE *pfnode = nullptr;
-	uint64_t cache_size = 0;
-	gromox::tmpfile cache_fd;
-	gromox::time_point last_time{};
-	int cli_sockd = -1;
-};
-
+struct fastcgi_context;
 struct http_context;
 using HTTP_CONTEXT = http_context;
+using FASTCGI_CONTEXT = fastcgi_context;
 
 extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, gromox::time_duration exec_timeout);
 extern int mod_fastcgi_run();

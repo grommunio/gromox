@@ -12,7 +12,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#include "mod_fastcgi.h"
 #include "pdu_processor.h"
 
 /* enumeration of http_parser */
@@ -46,6 +45,8 @@ enum {
 	CHANNEL_TYPE_OUT
 };
 
+struct fastcgi_context;
+
 struct http_context final : public schedule_context {
 	http_context();
 	~http_context();
@@ -75,7 +76,7 @@ struct http_context final : public schedule_context {
 	uint16_t port = 0;
 	int channel_type = 0;
 	void *pchannel = nullptr;
-	FASTCGI_CONTEXT *pfast_context = nullptr;
+	fastcgi_context *pfast_context = nullptr;
 };
 using HTTP_CONTEXT = http_context;
 

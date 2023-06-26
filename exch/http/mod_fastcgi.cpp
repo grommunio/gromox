@@ -75,6 +75,18 @@ struct FASTCGI_NODE {
 	std::string sock_path;
 };
 
+struct fastcgi_context {
+	BOOL b_index = false, b_chunked = false, b_end = false;
+	BOOL b_header = false; /* is response header met */
+	uint32_t chunk_size = 0, chunk_offset = 0;
+	uint64_t content_length = 0;
+	const FASTCGI_NODE *pfnode = nullptr;
+	uint64_t cache_size = 0;
+	gromox::tmpfile cache_fd;
+	gromox::time_point last_time{};
+	int cli_sockd = -1;
+};
+
 namespace {
 
 struct FCGI_ENDREQUESTBODY {

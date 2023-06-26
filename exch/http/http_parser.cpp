@@ -40,6 +40,7 @@
 #include "hpm_processor.h"
 #include "http_parser.h"
 #include "mod_cache.hpp"
+#include "mod_fastcgi.h"
 #include "mod_rewrite.h"
 #include "pdu_ndr.h"
 #include "resource.h"
