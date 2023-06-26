@@ -536,8 +536,13 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	}
 	size_t tmp_len1 = ptoken1 - ptoken - 1;
 	tmp_len = line_length - (ptoken1 + 6 - line);
-	if (0 != strncasecmp(ptoken1 + 1,
-	    "HTTP/", 5) || tmp_len >= 8) {
+	if (strncasecmp(&ptoken1[1], "HTTP/1.1", 8) == 0 &&
+	    (ptoken1[9] == '\r' || ptoken1[9] == '\n' || ptoken1[9] == '\0')) {
+		pcontext->b_close = false;
+	} else if (strncasecmp(&ptoken1[1], "HTTP/1.0", 8) == 0 &&
+	    (ptoken1[9] == '\r' || ptoken1[9] == '\n' || ptoken1[9] == '\0')) {
+		pcontext->b_close = TRUE;
+	} else {
 		pcontext->log(LV_DEBUG, "I-1924: request method error");
 		return http_done(pcontext, 400);
 	}
