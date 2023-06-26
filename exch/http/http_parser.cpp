@@ -606,6 +606,9 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 				we treat it as "close" */
 			pcontext->b_close = FALSE;
 		}
+		if (strcasecmp(field_name, "Connection") == 0 &&
+		    strncasecmp(ptoken, "close", tmp_len) == 0)
+			pcontext->b_close = TRUE;
 		pcontext->request.f_others[field_name] = std::string_view(ptoken, tmp_len);
 	}
 	return X_RUNOFF;
