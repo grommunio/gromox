@@ -76,7 +76,6 @@ struct http_context final : public schedule_context {
 	uint16_t port = 0;
 	int channel_type = 0;
 	void *pchannel = nullptr;
-	fastcgi_context *pfast_context = nullptr;
 };
 using HTTP_CONTEXT = http_context;
 

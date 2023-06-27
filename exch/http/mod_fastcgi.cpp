@@ -85,6 +85,7 @@ struct fastcgi_context {
 	gromox::tmpfile cache_fd;
 	gromox::time_point last_time{};
 	int cli_sockd = -1;
+	bool b_active = false;
 };
 
 namespace {
@@ -507,18 +508,18 @@ int mod_fastcgi_take_request(http_context *phttp)
 	pcontext->content_length = content_length;
 	pcontext->cli_sockd = -1;
 	pcontext->b_header = FALSE;
-	phttp->pfast_context = pcontext;
+	pcontext->b_active = true;
 	return 200;
 }
 
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp)
 {
-	return phttp->pfast_context->b_end;
+	return g_context_list[phttp->context_id].b_end;
 }
 
 BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp)
 {
-	return phttp->pfast_context->b_header;
+	return g_context_list[phttp->context_id].b_header;
 }
 
 static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
@@ -596,7 +597,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			path_info = ptoken1 + 1;
 		}
 	}
-	auto &fctx = *phttp->pfast_context;
+	auto &fctx = g_context_list[phttp->context_id];
 	auto pfnode = fctx.pfnode;
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->dir.c_str()));
 	if (NULL != path_info) {
@@ -705,7 +706,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 	ndr_length = sizeof(ndr_buff);
 	if (!mod_fastcgi_build_params(phttp, ndr_buff, &ndr_length))
 		return FALSE;	
-	auto &fctx = *phttp->pfast_context;
+	auto &fctx = g_context_list[phttp->context_id];
 	auto sk_path = fctx.pfnode->sock_path.c_str();
 	cli_sockd = mod_fastcgi_connect_backend(sk_path);
 	if (cli_sockd < 0) {
@@ -818,13 +819,13 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 {
-	auto &fctx = *phttp->pfast_context;
+	auto &fctx = g_context_list[phttp->context_id];
 	fctx.cache_fd.close();
 	if (fctx.cli_sockd != -1) {
 		close(fctx.cli_sockd);
 		fctx.cli_sockd = -1;
 	}
-	phttp->pfast_context = NULL;
+	fctx.b_active = false;
 }
 
 BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
@@ -834,7 +835,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	void *pbuff;
 	char *ptoken;
 	char tmp_buff[1024];
-	auto &fctx = *phttp->pfast_context;
+	auto &fctx = g_context_list[phttp->context_id];
 
 	if (fctx.b_end)
 		return TRUE;
@@ -973,7 +974,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 			(g_unavailable_times / context_num);
 	if (tv_msec > 999)
 		tv_msec = 999;
-	auto &fctx = *phttp->pfast_context;
+	auto &fctx = g_context_list[phttp->context_id];
 	pfd_read.fd = fctx.cli_sockd;
 	pfd_read.events = POLLIN|POLLPRI;
 	if (1 == poll(&pfd_read, 1, tv_msec)) {
@@ -997,7 +998,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	uint32_t response_offset;
 	FCGI_STDSTREAM std_stream;
 	FCGI_ENDREQUESTBODY end_request;
-	auto &fctx = *phttp->pfast_context;
+	auto &fctx = g_context_list[phttp->context_id];
 	
 	if (fctx.b_header && strcasecmp(phttp->request.method, "HEAD") == 0) {
 		mod_fastcgi_put_context(phttp);
@@ -1005,7 +1006,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	}
 	response_offset = 0;
 	while (true) {
-		if (!mod_fastcgi_safe_read(phttp->pfast_context,
+		if (!mod_fastcgi_safe_read(&fctx,
 		    header_buff, arsizeof(header_buff))) {
 			phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
@@ -1031,7 +1032,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			tmp_len = header.padding_len + 8;
-			if (!mod_fastcgi_safe_read(phttp->pfast_context,
+			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
 				phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
@@ -1057,7 +1058,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 		case RECORD_TYPE_STDOUT:
 		case RECORD_TYPE_STDERR:
 			tmp_len = header.content_len + header.padding_len;
-			if (!mod_fastcgi_safe_read(phttp->pfast_context,
+			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
 				phttp->log(LV_DEBUG, "failed to read"
 					" record header from fastcgi back-end %s",
@@ -1209,7 +1210,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			return TRUE;
 		default:
 			tmp_len = header.content_len + header.padding_len;
-			if (!mod_fastcgi_safe_read(phttp->pfast_context,
+			if (!mod_fastcgi_safe_read(&fctx,
 			    tmp_buff, tmp_len)) {
 				phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
@@ -1223,4 +1224,9 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			continue;
 		}
 	}
+}
+
+bool mod_fastcgi_is_in_charge(const http_context *hctx)
+{
+	return g_context_list[hctx->context_id].b_active;
 }

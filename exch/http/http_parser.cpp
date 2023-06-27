@@ -407,11 +407,6 @@ static const char *status_text(unsigned int s)
 	}
 }
 
-static inline bool mod_fastcgi_is_in_charge(const http_context *ctx)
-{
-	return ctx->pfast_context != nullptr;
-}
-
 static int http_done(http_context *ctx, unsigned int code, const char *msg = nullptr)
 {
 	if (hpm_processor_is_in_charge(ctx))
