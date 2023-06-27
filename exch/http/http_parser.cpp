@@ -407,11 +407,16 @@ static const char *status_text(unsigned int s)
 	}
 }
 
+static inline bool mod_fastcgi_is_in_charge(const http_context *ctx)
+{
+	return ctx->pfast_context != nullptr;
+}
+
 static int http_done(http_context *ctx, unsigned int code, const char *msg = nullptr)
 {
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
-	else if (ctx->pfast_context != nullptr)
+	else if (mod_fastcgi_is_in_charge(ctx))
 		mod_fastcgi_put_context(ctx);
 	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
@@ -441,7 +446,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 {
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
-	else if (ctx->pfast_context != nullptr)
+	else if (mod_fastcgi_is_in_charge(ctx))
 		mod_fastcgi_put_context(ctx);
 	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
@@ -1039,7 +1044,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
 		}
-	} else if (NULL != pcontext->pfast_context) {
+	} else if (mod_fastcgi_is_in_charge(pcontext)) {
 		switch (mod_fastcgi_check_response(pcontext)) {
 		case RESPONSE_WAITING:
 			return PROCESS_CONTINUE;
@@ -1258,8 +1263,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		/* to wait in channel for completing
 			out channel handshaking */
 		pcontext->sched_stat = SCHED_STAT_WAIT;
-	} else if (NULL != pcontext->pfast_context ||
-	    hpm_processor_is_in_charge(pcontext) ||
+	} else if (hpm_processor_is_in_charge(pcontext) ||
+	    mod_fastcgi_is_in_charge(pcontext) ||
 	    mod_cache_is_in_charge(pcontext)) {
 		pcontext->stream_out.clear();
 		return PROCESS_CONTINUE;
@@ -1311,7 +1316,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 				pcontext->write_length = tmp_len;
 			}
 			return PROCESS_CONTINUE;
-		} else if (NULL != pcontext->pfast_context) {
+		} else if (mod_fastcgi_is_in_charge(pcontext)) {
 			if (!mod_fastcgi_write_request(pcontext)) {
 				return http_done(pcontext, 400);
 			}
@@ -1835,7 +1840,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->lang[0] = '\0';
 	pcontext->channel_type = 0;
 	pcontext->pchannel = NULL;
-	if (pcontext->pfast_context != nullptr)
+	if (mod_fastcgi_is_in_charge(pcontext))
 		mod_fastcgi_put_context(pcontext);
 }
 
@@ -1844,7 +1849,7 @@ http_context::~http_context()
 	auto pcontext = this;
 	if (hpm_processor_is_in_charge(pcontext))
 		hpm_processor_put_context(pcontext);
-	else if (pcontext->pfast_context != nullptr)
+	else if (mod_fastcgi_is_in_charge(pcontext))
 		mod_fastcgi_put_context(pcontext);
 	else if (mod_cache_is_in_charge(pcontext))
 		mod_cache_put_context(pcontext);
