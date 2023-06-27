@@ -1835,7 +1835,8 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->lang[0] = '\0';
 	pcontext->channel_type = 0;
 	pcontext->pchannel = NULL;
-	pcontext->pfast_context = NULL;
+	if (pcontext->pfast_context != nullptr)
+		mod_fastcgi_put_context(pcontext);
 }
 
 http_context::~http_context()
