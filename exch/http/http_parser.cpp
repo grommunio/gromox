@@ -898,6 +898,9 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 			if (ret != X_RUNOFF)
 				return ret;
 			continue;
+		} else if (*pcontext->request.method == '\0') {
+			/* extraneous blank lines before Request-Line */
+			continue;
 		}
 
 		/* met the end of request header */
