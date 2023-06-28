@@ -1209,7 +1209,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	if (pcontext->proto_stat > PROTO_STAT_NOAUTH)
 		return 1801;
-	pcontext->sched_stat = SCHED_STAT_STLS;	
+	pcontext->sched_stat = isched_stat::stls;	
 	return 1704;
 }
 
@@ -1427,7 +1427,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc != 2)
 		return 1800;
 	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
-	pcontext->sched_stat = SCHED_STAT_IDLING;
+	pcontext->sched_stat = isched_stat::idling;
 	size_t len = 0;
 	auto reply = resource_get_imap_code(1602, 1, &len);
 	pcontext->connection.write(reply, len);
@@ -1835,7 +1835,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	return 1915;
@@ -1910,7 +1910,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	return 1915;
@@ -1976,7 +1976,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (pcontext->stream.write(buff, len) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	return 1915;
@@ -2528,7 +2528,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1246: ENOMEM");
@@ -2577,7 +2577,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 }
 
@@ -2689,9 +2689,9 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	if (b_data) {
 		pcontext->write_buff = pcontext->command_buffer;
-		pcontext->sched_stat = SCHED_STAT_WRDAT;
+		pcontext->sched_stat = isched_stat::wrdat;
 	} else {
-		pcontext->sched_stat = SCHED_STAT_WRLST;
+		pcontext->sched_stat = isched_stat::wrlst;
 	}
 	return DISPATCH_BREAK;
 }
@@ -2874,7 +2874,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1245: ENOMEM");
@@ -2909,7 +2909,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 }
 
@@ -2970,9 +2970,9 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	if (b_data) {
 		pcontext->write_buff = pcontext->command_buffer;
-		pcontext->sched_stat = SCHED_STAT_WRDAT;
+		pcontext->sched_stat = isched_stat::wrdat;
 	} else {
-		pcontext->sched_stat = SCHED_STAT_WRLST;
+		pcontext->sched_stat = isched_stat::wrlst;
 	}
 	return DISPATCH_BREAK;
 }
@@ -3132,7 +3132,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1244: ENOMEM");
@@ -3213,7 +3213,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
-	pcontext->sched_stat = SCHED_STAT_WRLST;
+	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1243: ENOMEM");

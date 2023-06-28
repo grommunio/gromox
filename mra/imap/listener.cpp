@@ -230,9 +230,9 @@ static void *imls_thrwork(void *arg)
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
+		pcontext->sched_stat                = use_tls ? isched_stat::stls : isched_stat::rdcmd;
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, arsizeof(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, arsizeof(pcontext->connection.server_ip));
-		pcontext->sched_stat                = use_tls ? SCHED_STAT_STLS : SCHED_STAT_RDCMD;
 		/* 
 		valid the context and wake up one thread if there are some threads
 		block on the condition variable 

@@ -43,18 +43,9 @@ enum {
 	PROTO_STAT_SELECT
 };
 
-enum {
-	SCHED_STAT_NONE = 0,
-	SCHED_STAT_RDCMD,
-	SCHED_STAT_APPENDING,
-	SCHED_STAT_APPENDED,
-	SCHED_STAT_STLS,
-	SCHED_STAT_WRLST,
-	SCHED_STAT_WRDAT,
-	SCHED_STAT_IDLING,
-	SCHED_STAT_NOTIFYING,
-	SCHED_STAT_AUTOLOGOUT,
-	SCHED_STAT_DISCONNECTED,
+enum class isched_stat {
+	none = 0, rdcmd, appending, appended, stls, wrlst, wrdat, idling,
+	notifying, autologout, disconnected,
 };
 
 enum {
@@ -110,7 +101,8 @@ struct imap_context final : public schedule_context {
 
 	GENERIC_CONNECTION connection;
 	std::string mid, file_path;
-	int proto_stat = 0, sched_stat = 0;
+	int proto_stat = 0;
+	isched_stat sched_stat = isched_stat::none;
 	int message_fd = -1;
 	char *write_buff = nullptr;
 	size_t write_length = 0, write_offset = 0;
