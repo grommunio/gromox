@@ -148,7 +148,6 @@ static int mod_rewrite_default()
 
 int mod_rewrite_run(const char *sdlist) try
 {
-	int tmp_len;
 	int line_no;
 	char *ptoken;
 	char line[MAX_LINE];
@@ -166,18 +165,12 @@ int mod_rewrite_run(const char *sdlist) try
 	}
 	while (fgets(line, GX_ARRAY_SIZE(line), file_ptr.get())) {
 		line_no ++;
-		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
+		if (*line == '#' || newline_size(line, 2) > 0)
 			/* skip empty line or comments */
 			continue;
-		}
 		/* prevent line exceed maximum length ---MAX_LEN */
 		line[sizeof(line) - 1] = '\0';
-		tmp_len = strlen(line);
-		if ('\r' == line[tmp_len - 2] && '\n' == line[tmp_len - 1]) {
-			line[tmp_len - 2] = '\0';
-		} else if ('\n' == line[tmp_len - 1] || '\r' == line[tmp_len - 1]) {
-			line[tmp_len - 1] = '\0';
-		}
+		HX_chomp(line);
 		HX_strrtrim(line);
 		HX_strltrim(line);
 		ptoken = strstr(line, "=>");
