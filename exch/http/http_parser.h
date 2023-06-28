@@ -22,12 +22,8 @@ enum {
 	HTTP_SUPPORT_TLS,
 };
 
-enum {
-	SCHED_STAT_INITSSL = 0,
-	SCHED_STAT_RDHEAD,
-	SCHED_STAT_RDBODY,
-	SCHED_STAT_WRREP,
-	SCHED_STAT_WAIT,
+enum class hsched_stat {
+	initssl = 0, rdhead, rdbody, wrrep, wait,
 };
 
 enum {
@@ -63,7 +59,7 @@ struct http_context final : public schedule_context {
 	GENERIC_CONNECTION connection;
 	http_request request;
 	uint64_t total_length = 0, bytes_rw = 0;
-	unsigned int sched_stat = 0;
+	hsched_stat sched_stat = hsched_stat::initssl;
 	STREAM stream_in, stream_out;
 	void *write_buff = nullptr;
 	int write_offset = 0, write_length = 0;

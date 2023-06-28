@@ -126,10 +126,9 @@ static void hpm_processor_set_ep_info(unsigned int context_id,
 static void hpm_processor_wakeup_context(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	if (SCHED_STAT_WAIT != phttp->sched_stat) {
+	if (phttp->sched_stat != hsched_stat::wait)
 		return;
-	}
-	phttp->sched_stat = SCHED_STAT_WRREP;
+	phttp->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(phttp);
 }
 

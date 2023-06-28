@@ -220,9 +220,9 @@ static void *htls_thrwork(void *arg)
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
+		pcontext->sched_stat                = use_tls ? hsched_stat::initssl : hsched_stat::rdhead;
 		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
 		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
-		pcontext->sched_stat                = use_tls ? SCHED_STAT_INITSSL : SCHED_STAT_RDHEAD;
 		/* 
 		valid the context and wake up one thread if there are some threads
 		block on the condition variable 

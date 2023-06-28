@@ -433,7 +433,7 @@ static int http_done(http_context *ctx, unsigned int code, const char *msg = nul
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
 	ctx->b_close = TRUE;
-	ctx->sched_stat = SCHED_STAT_WRREP;
+	ctx->sched_stat = hsched_stat::wrrep;
 	return X_LOOP;
 }
 
@@ -499,7 +499,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 		SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 	}
 	if (SSL_accept(pcontext->connection.ssl) >= 0) {
-		pcontext->sched_stat = SCHED_STAT_RDHEAD;
+		pcontext->sched_stat = hsched_stat::rdhead;
 		return PROCESS_CONTINUE;
 	}
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
@@ -656,7 +656,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
 			pcontext->b_close = TRUE;
-			pcontext->sched_stat = SCHED_STAT_WRREP;
+			pcontext->sched_stat = hsched_stat::wrrep;
 			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s",
 				pcontext->username, mres.errstr.c_str());
 			return X_LOOP;
@@ -694,7 +694,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
 	pcontext->b_close = TRUE;
-	pcontext->sched_stat = SCHED_STAT_WRREP;
+	pcontext->sched_stat = hsched_stat::wrrep;
 	return X_LOOP;
 }
 
@@ -773,7 +773,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
 		pcontext->b_close = TRUE;
-		pcontext->sched_stat = SCHED_STAT_WRREP;
+		pcontext->sched_stat = hsched_stat::wrrep;
 		pcontext->log(LV_DEBUG,
 			"I-1931: authentication needed");
 		return X_LOOP;
@@ -797,7 +797,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		}
 	}
 	pcontext->bytes_rw = stream_1_written;
-	pcontext->sched_stat = SCHED_STAT_RDBODY;
+	pcontext->sched_stat = hsched_stat::rdbody;
 	return X_LOOP;
 }
 
@@ -811,13 +811,13 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 		return http_done(pcontext, 400);
 	}
 	if (!hpm_processor_check_end_of_request(pcontext)) {
-		pcontext->sched_stat = SCHED_STAT_RDBODY;
+		pcontext->sched_stat = hsched_stat::rdbody;
 		return X_LOOP;
 	}
 	if (!hpm_processor_proc(pcontext)) {
 		return http_done(pcontext, 400);
 	}
-	pcontext->sched_stat = SCHED_STAT_WRREP;
+	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1184: ENOMEM");
 		return http_done(pcontext, 5032);
@@ -840,13 +840,13 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 		return http_done(pcontext, 400);
 	}
 	if (!mod_fastcgi_check_end_of_read(pcontext)) {
-		pcontext->sched_stat = SCHED_STAT_RDBODY;
+		pcontext->sched_stat = hsched_stat::rdbody;
 		return X_LOOP;
 	}
 	if (!mod_fastcgi_relay_content(pcontext)) {
 		return http_done(pcontext, 502);
 	}
-	pcontext->sched_stat = SCHED_STAT_WRREP;
+	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1183: ENOMEM");
 		return http_done(pcontext, 5032);
@@ -859,7 +859,7 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 	/* let mod_cache decide the read/write bytes */
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
-	pcontext->sched_stat = SCHED_STAT_WRREP;
+	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1182: ENOMEM");
 		return http_done(pcontext, 5032);
@@ -1028,14 +1028,14 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		case HPM_RETRIEVE_NONE:
 			return PROCESS_CONTINUE;
 		case HPM_RETRIEVE_WAIT:
-			pcontext->sched_stat = SCHED_STAT_WAIT;
+			pcontext->sched_stat = hsched_stat::wait;
 			return PROCESS_IDLE;
 		case HPM_RETRIEVE_DONE:
 			if (pcontext->b_close)
 				return X_RUNOFF;
 			pcontext->request.clear();
 			hpm_processor_put_context(pcontext);
-			pcontext->sched_stat = SCHED_STAT_RDHEAD;
+			pcontext->sched_stat = hsched_stat::rdhead;
 			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
 		}
@@ -1054,7 +1054,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 				if (pcontext->b_close)
 					return X_RUNOFF;
 				pcontext->request.clear();
-				pcontext->sched_stat = SCHED_STAT_RDHEAD;
+				pcontext->sched_stat = hsched_stat::rdhead;
 				pcontext->stream_out.clear();
 				return PROCESS_CONTINUE;
 			}
@@ -1070,7 +1070,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			if (pcontext->b_close)
 				return X_RUNOFF;
 			pcontext->request.clear();
-			pcontext->sched_stat = SCHED_STAT_RDHEAD;
+			pcontext->sched_stat = hsched_stat::rdhead;
 			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
 		}
@@ -1093,7 +1093,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		auto pnode = double_list_get_head(&chan->pdu_list);
 		if (NULL == pnode) {
 			pvconnection.put();
-			pcontext->sched_stat = SCHED_STAT_WAIT;
+			pcontext->sched_stat = hsched_stat::wait;
 			return PROCESS_IDLE;
 		}
 		pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.pb;
@@ -1241,7 +1241,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 				hch->b_obsolete = TRUE;
 			}
 		} else {
-			pcontext->sched_stat = SCHED_STAT_WAIT;
+			pcontext->sched_stat = hsched_stat::wait;
 		}
 		return PROCESS_CONTINUE;
 	}
@@ -1257,7 +1257,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_WAITRECYCLED)) {
 		/* to wait in channel for completing
 			out channel handshaking */
-		pcontext->sched_stat = SCHED_STAT_WAIT;
+		pcontext->sched_stat = hsched_stat::wait;
 	} else if (hpm_processor_is_in_charge(pcontext) ||
 	    mod_fastcgi_is_in_charge(pcontext) ||
 	    mod_cache_is_in_charge(pcontext)) {
@@ -1267,7 +1267,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		if (pcontext->b_close)
 			return X_RUNOFF;
 		pcontext->request.clear();
-		pcontext->sched_stat = SCHED_STAT_RDHEAD;
+		pcontext->sched_stat = hsched_stat::rdhead;
 	}
 	pcontext->stream_out.clear();
 	return PROCESS_CONTINUE;
@@ -1300,7 +1300,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			if (!hpm_processor_proc(pcontext)) {
 				return http_done(pcontext, 400);
 			}
-			pcontext->sched_stat = SCHED_STAT_WRREP;
+			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1178: ENOMEM");
 				return http_done(pcontext, 5032);
@@ -1321,7 +1321,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			if (!mod_fastcgi_relay_content(pcontext)) {
 				return http_done(pcontext, 502);
 			}
-			pcontext->sched_stat = SCHED_STAT_WRREP;
+			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1177: ENOMEM");
 				return http_done(pcontext, 5032);
@@ -1372,7 +1372,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
-	pcontext->sched_stat = SCHED_STAT_WRREP;
+	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1176: ENOMEM");
 		return http_done(pcontext, 5032);
@@ -1499,8 +1499,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 					make the flowcontrol output */
 				if (PDU_PROCESSOR_INPUT == result) {
 					pdu_processor_output_pdu(pcall, &och->pdu_list);
-					pvconnection->pcontext_out->sched_stat =
-						SCHED_STAT_WRREP;
+					pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 					contexts_pool_signal(pvconnection->pcontext_out);
 				}
 			}
@@ -1556,7 +1555,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			/* never free this kind of pcall */
 			pchannel_out->pcall = pcall;
 			pcontext->bytes_rw = 0;
-			pcontext->sched_stat = SCHED_STAT_WRREP;
+			pcontext->sched_stat = hsched_stat::wrrep;
 			if (CHANNEL_STAT_OPENSTART == pchannel_out->channel_stat) {
 				pchannel_out->channel_stat =
 					CHANNEL_STAT_WAITINCHANNEL;
@@ -1594,7 +1593,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 		pdu_processor_output_pdu(pcall, &och->pdu_list);
-		pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
+		pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 		contexts_pool_signal(pvconnection->pcontext_out);
 		pvconnection.put();
 		pdu_processor_free_call(pcall);
@@ -1628,7 +1627,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 			}
 			pdu_processor_output_pdu(
 				pchannel_out->pcall, &pchannel_out->pdu_list);
-			pcontext->sched_stat = SCHED_STAT_WRREP;
+			pcontext->sched_stat = hsched_stat::wrrep;
 			pchannel_out->channel_stat = CHANNEL_STAT_OPENED;
 			return X_LOOP;
 		}
@@ -1659,12 +1658,8 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 			while ((pnode = double_list_pop_front(&pchannel_in->pdu_list)) != nullptr)
 				double_list_append_as_tail(
 					&pchannel_out->pdu_list, pnode);
-			if (0 == double_list_get_nodes_num(
-			    &pchannel_out->pdu_list)) {
-				pcontext->sched_stat = SCHED_STAT_WAIT;
-			} else {
-				pcontext->sched_stat = SCHED_STAT_WRREP;
-			}
+			pcontext->sched_stat = double_list_get_nodes_num(&pchannel_out->pdu_list) == 0 ?
+			                       hsched_stat::wait : hsched_stat::wrrep;
 			return X_LOOP;
 		}
 		pvconnection.put();
@@ -1683,7 +1678,7 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 {
 	if (hpm_processor_is_in_charge(pcontext))
 		return PROCESS_IDLE;
-	/* only hpm_processor or out channel can be set to SCHED_STAT_WAIT */
+	/* only hpm_processor or out channel can be set to hsched_stat::wait */
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	if (CHANNEL_STAT_WAITINCHANNEL == pchannel_out->channel_stat) {
 		return htparse_waitinchannel(pcontext, pchannel_out);
@@ -1713,7 +1708,7 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 	                    pcontext->port, hch->connection_cookie);
 	pdu_processor_output_pdu(
 		pchannel_out->pcall, &pchannel_out->pdu_list);
-	pcontext->sched_stat = SCHED_STAT_WRREP;
+	pcontext->sched_stat = hsched_stat::wrrep;
 	return X_LOOP;
 }
 
@@ -1722,11 +1717,11 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	int ret = X_RUNOFF;
 	do {
 		switch (pcontext->sched_stat) {
-		case SCHED_STAT_INITSSL: ret = htparse_initssl(pcontext); break;
-		case SCHED_STAT_RDHEAD: ret = htparse_rdhead(pcontext); break;
-		case SCHED_STAT_RDBODY: ret = htparse_rdbody(pcontext); break;
-		case SCHED_STAT_WRREP: ret = htparse_wrrep(pcontext); break;
-		case SCHED_STAT_WAIT: ret = htparse_wait(pcontext); break;
+		case hsched_stat::initssl: ret = htparse_initssl(pcontext); break;
+		case hsched_stat::rdhead:  ret = htparse_rdhead(pcontext);  break;
+		case hsched_stat::rdbody:  ret = htparse_rdbody(pcontext);  break;
+		case hsched_stat::wrrep:   ret = htparse_wrrep(pcontext);   break;
+		case hsched_stat::wait:    ret = htparse_wait(pcontext);    break;
 		default: continue;
 		}
 	} while (ret == X_LOOP);
@@ -1764,7 +1759,7 @@ void http_parser_vconnection_async_reply(const char *host,
 	} else {
 		pdu_processor_output_pdu(pcall, &och->pdu_list);
 	}
-	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
+	pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(pvconnection->pcontext_out);
 }
 
@@ -1819,7 +1814,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
         return;
     }
 	pcontext->connection.reset();
-	pcontext->sched_stat = 0;
+	pcontext->sched_stat = hsched_stat::initssl;
 	pcontext->request.clear();
 	pcontext->stream_in.clear();
 	pcontext->stream_out.clear();
@@ -2038,7 +2033,7 @@ BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 	if (!pdu_processor_rts_outr2_a6(pcall))
 		return FALSE;
 	pdu_processor_output_pdu(pcall, &och->pdu_list);
-	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
+	pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(pvconnection->pcontext_out);
 	hch->client_keepalive = och->client_keepalive;
 	hch->available_window = och->window_size;
@@ -2094,7 +2089,7 @@ BOOL http_context::activate_outrecycling(const char *successor_cookie)
 	}
 	pdu_processor_output_pdu(
 		pchannel_out->pcall, &pchannel_out->pdu_list);
-	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
+	pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(pvconnection->pcontext_out);
 	pvconnection->pcontext_out = pvconnection->pcontext_outsucc;
 	pvconnection->pcontext_outsucc = NULL;
