@@ -844,10 +844,45 @@ sTimePoint::sTimePoint(const gromox::time_point& tp, const tSerializableTimeZone
 {}
 
 /**
+ * @brief     Create time point from date-time string
+ *
+ * @throw     DeserializationError   Conversion failed
+ *
+ * @param     Date-time string
+ */
+sTimePoint::sTimePoint(const char* dtstr)
+{
+	if(!dtstr)
+		throw DeserializationError("Missing date string");
+	tm t{};
+	float seconds = 0, unused;
+	int tz_hour = 0, tz_min = 0;
+	if(sscanf(dtstr, "%4d-%02d-%02dT%02d:%02d:%f%03d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min,
+	          &seconds, &tz_hour, &tz_min) < 6) //Timezone info is optional, date and time values mandatory
+		throw DeserializationError("Failed to parse date");
+	t.tm_sec = int(seconds);
+	t.tm_year -= 1900;
+	t.tm_mon -= 1;
+	time_t timestamp = mktime(&t)-timezone;
+	if(timestamp == time_t(-1))
+		throw DeserializationError("Failed to convert timestamp");
+	time = gromox::time_point::clock::from_time_t(timestamp);
+	seconds = std::modf(seconds, &unused);
+	time += std::chrono::microseconds(int(seconds*1000000));
+	offset = std::chrono::minutes(60*tz_hour+(tz_hour < 0? -tz_min : tz_min));
+}
+
+/**
  * @brief      Generate time point from NT timestamp
  */
 sTimePoint sTimePoint::fromNT(uint64_t timestamp)
-{return gromox::time_point::clock::from_time_t(rop_util_nttime_to_unix(timestamp));}
+{return sTimePoint{rop_util_nttime_to_unix2(timestamp)};}
+
+/**
+ * @brief     Convert time point to NT timestamp
+ */
+uint64_t sTimePoint::toNT() const
+{return rop_util_unix_to_nttime(time-offset);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Types implementation
@@ -1395,10 +1430,11 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME:
 		if(xml->QueryUnsigned64Text(static_cast<uint64_t*>(dest)) != XML_SUCCESS)
 			throw DeserializationError(E3106(content? content : "(nil)"));
 		break;
+	case PT_SYSTIME:
+		*static_cast<uint64_t*>(dest) = sTimePoint(xml->GetText()).toNT(); break;
 	case PT_STRING8:
 	case PT_UNICODE: {
 		size_t len = xml->GetText()? strlen(xml->GetText()) : 0;
@@ -1472,8 +1508,9 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 		return xml->SetText(*(reinterpret_cast<const uint32_t*>(data)));
 	case PT_I8:
 	case PT_CURRENCY:
-	case PT_SYSTIME:
 		return xml->SetText(*(reinterpret_cast<const uint64_t*>(data)));
+	case PT_SYSTIME:
+		return sTimePoint::fromNT(*reinterpret_cast<const uint64_t*>(data)).serialize(xml);
 	case PT_FLOAT:
 		return xml->SetText(*(reinterpret_cast<const float*>(data)));
 	case PT_DOUBLE:

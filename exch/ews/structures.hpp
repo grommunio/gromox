@@ -363,12 +363,14 @@ struct sTime
  */
 struct sTimePoint
 {
-	sTimePoint(const gromox::time_point&);
+	explicit sTimePoint(const gromox::time_point&);
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
+	explicit sTimePoint(const char*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
 	static sTimePoint fromNT(uint64_t);
+	uint64_t toNT() const;
 
 	gromox::time_point time;
 	std::chrono::minutes offset = std::chrono::minutes(0);

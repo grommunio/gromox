@@ -243,10 +243,11 @@ void sTimePoint::serialize(XMLElement* xml) const
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
 	long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
 	int off = -int(offset.count());
-	if(offset.count() == 0)
-		xml->SetText(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
-	else
-		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}", t, fsec, off / 60, abs(off) % 60).c_str());
+	std::string dtstr = fmt::format("{:%FT%T}", t);
+	if(fsec)
+		dtstr += fmt::format(".{:06}", fsec);
+	dtstr += off? fmt::format("{:+03}{:02}", off/60, abs(off)%60) : "Z";
+	xml->SetText(dtstr.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
