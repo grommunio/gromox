@@ -127,10 +127,10 @@ static void httpctx_report(const HTTP_CONTEXT &ctx, size_t i)
 	        cn.client_ip, cn.client_port, cn.server_ip, cn.server_port);
 	const char *chtyp = "NONE";
 	switch (ctx.channel_type) {
-	case CHANNEL_TYPE_NONE: chtyp = "NONE"; break;
-	case CHANNEL_TYPE_IN: chtyp = "IN"; break;
-	case CHANNEL_TYPE_OUT: chtyp = "OUT"; break;
-	default: chtyp = "?"; break;
+	case hchannel_type::none: chtyp = "NONE"; break;
+	case hchannel_type::in:   chtyp = "IN";   break;
+	case hchannel_type::out:  chtyp = "OUT";  break;
+	default:                  chtyp = "?";    break;
 	}
 	mlog(LV_INFO, "   %4s  [%s]:%hu  %s",
 		chtyp, ctx.host, ctx.port, ctx.username);
@@ -447,7 +447,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 		mod_cache_put_context(ctx);
 
 	if (ctx->pchannel != nullptr) {
-		if (ctx->channel_type == CHANNEL_TYPE_IN) {
+		if (ctx->channel_type == hchannel_type::in) {
 			auto chan = static_cast<RPC_IN_CHANNEL *>(ctx->pchannel);
 			auto conn = http_parser_get_vconnection(ctx->host,
 			            ctx->port, chan->connection_cookie);
@@ -783,13 +783,13 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	/* ECHO request 0x0 ~ 0x10, MS-RPCH 2.1.2.15 */
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
-			pcontext->channel_type = CHANNEL_TYPE_IN;
+			pcontext->channel_type = hchannel_type::in;
 			pcontext->pchannel = g_inchannel_allocator->get();
 			if (NULL == pcontext->pchannel) {
 				return http_done(pcontext, 5032);
 			}
 		} else {
-			pcontext->channel_type = CHANNEL_TYPE_OUT;
+			pcontext->channel_type = hchannel_type::out;
 			pcontext->pchannel = g_outchannel_allocator->get();
 			if (NULL == pcontext->pchannel) {
 				return http_done(pcontext, 5032);
@@ -1078,7 +1078,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 
 	pcontext->write_offset = 0;
 	unsigned int tmp_len;
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
+	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
@@ -1122,7 +1122,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	ssize_t written_len = pcontext->write_length - pcontext->write_offset; /*int-int*/
 	if (written_len < 0)
 		mlog(LV_WARN, "W-1533: wl=%zd. report me.", written_len);
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
+	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (pchannel_out->available_window < 1024) {
@@ -1193,7 +1193,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	pcontext->connection.last_timestamp = current_time;
 	pcontext->write_offset += written_len;
 	pcontext->bytes_rw += written_len;
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
+	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
@@ -1211,7 +1211,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
+	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
@@ -1252,7 +1252,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	if (pcontext->write_buff != nullptr) {
 		return PROCESS_CONTINUE;
 	}
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
+	if (pcontext->channel_type == hchannel_type::out &&
 	    (static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::waitinchannel ||
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::waitrecycled)) {
 		/* to wait in channel for completing
@@ -1383,14 +1383,16 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 {
 	if (pcontext->pchannel == nullptr ||
-	    (pcontext->channel_type != CHANNEL_TYPE_IN &&
-	    pcontext->channel_type != CHANNEL_TYPE_OUT))
+	    (pcontext->channel_type != hchannel_type::in &&
+	    pcontext->channel_type != hchannel_type::out))
 		return htparse_rdbody_nochan(pcontext);
 
-	auto pchannel_in = pcontext->channel_type == CHANNEL_TYPE_IN ? static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel) : nullptr;
-	auto pchannel_out = pcontext->channel_type == CHANNEL_TYPE_OUT ? static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
-	auto frag_length = pcontext->channel_type == CHANNEL_TYPE_IN ?
-			   pchannel_in->frag_length : pchannel_out->frag_length;
+	auto pchannel_in  = pcontext->channel_type == hchannel_type::in ?
+	                    static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel)  : nullptr;
+	auto pchannel_out = pcontext->channel_type == hchannel_type::out ?
+	                    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
+	auto frag_length  = pcontext->channel_type == hchannel_type::in ?
+	                    pchannel_in->frag_length : pchannel_out->frag_length;
 	auto tmp_len = pcontext->stream_in.get_total_length();
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2 ||
 	    (frag_length > 0 && tmp_len < frag_length)) {
@@ -1445,11 +1447,10 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		auto pfrag = &pbd[DCERPC_FRAG_LEN_OFFSET];
 		frag_length = (pbd[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
 			      le16p_to_cpu(pfrag) : be16p_to_cpu(pfrag);
-		if (CHANNEL_TYPE_IN == pcontext->channel_type) {
+		if (pcontext->channel_type == hchannel_type::in)
 			pchannel_in->frag_length = frag_length;
-		} else {
+		else
 			pchannel_out->frag_length = frag_length;
-		}
 	}
 
 	if (tmp_len < frag_length) {
@@ -1460,7 +1461,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	DCERPC_CALL *pcall = nullptr;
 	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
 		 frag_length, &pcall);
-	if (CHANNEL_TYPE_IN == pcontext->channel_type &&
+	if (pcontext->channel_type == hchannel_type::in &&
 	    pchannel_in->channel_stat == hchannel_stat::opened) {
 		if (PDU_PROCESSOR_ERROR == result) {
 			/* ignore rts processing error under this condition */
@@ -1507,11 +1508,10 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	}
 
 	pcontext->stream_in.fwd_read_ptr(frag_length);
-	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
+	if (pcontext->channel_type == hchannel_type::in)
 		pchannel_in->frag_length = 0;
-	} else {
+	else
 		pchannel_out->frag_length = 0;
-	}
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1174: ENOMEM");
 		return http_done(pcontext, 5032);
@@ -1526,7 +1526,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		/* do nothing */
 		return PROCESS_CONTINUE;
 	case PDU_PROCESSOR_OUTPUT: {
-		if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
+		if (pcontext->channel_type == hchannel_type::out) {
 			/* only under two conditions below, out channel
 			   will produce PDU_PROCESSOR_OUTPUT */
 			if (pchannel_out->channel_stat != hchannel_stat::openstart &&
@@ -1826,7 +1826,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->password[0] = '\0';
 	pcontext->maildir[0] = '\0';
 	pcontext->lang[0] = '\0';
-	pcontext->channel_type = 0;
+	pcontext->channel_type = hchannel_type::none;
 	pcontext->pchannel = NULL;
 	if (mod_fastcgi_is_in_charge(pcontext))
 		mod_fastcgi_put_context(pcontext);
@@ -1902,10 +1902,10 @@ BOOL http_context::try_create_vconnection()
 	auto pcontext = this;
 	const char *conn_cookie;
 	
-	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
+	if (pcontext->channel_type == hchannel_type::in) {
 		auto chan = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 		conn_cookie = chan->connection_cookie;
-	} else if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
+	} else if (pcontext->channel_type == hchannel_type::out) {
 		auto chan = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		conn_cookie = chan->connection_cookie;
 	} else {
@@ -1915,7 +1915,7 @@ BOOL http_context::try_create_vconnection()
 	auto pvconnection = http_parser_get_vconnection(
 		pcontext->host, pcontext->port, conn_cookie);
 	if (pvconnection != nullptr) {
-		if (pcontext->channel_type == CHANNEL_TYPE_OUT) {
+		if (pcontext->channel_type == hchannel_type::out) {
 			pvconnection->pcontext_out = pcontext;
 			return TRUE;
 		}
@@ -1954,11 +1954,10 @@ BOOL http_context::try_create_vconnection()
 			pcontext->host, pcontext->port);
 		return FALSE;
 	}
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
+	if (pcontext->channel_type == hchannel_type::out)
 		nc->pcontext_out = pcontext;
-	} else {
+	else
 		nc->pcontext_in = pcontext;
-	}
 	vc_hold.unlock();
 	return TRUE;
 }
@@ -1967,9 +1966,8 @@ void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
     uint32_t available_window)
 {
 	auto pcontext = this;
-	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
+	if (pcontext->channel_type != hchannel_type::in)
 		return;
-	}
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
@@ -1991,9 +1989,8 @@ void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
 BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 {
 	auto pcontext = this;
-	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
+	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
-	}
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
@@ -2014,9 +2011,8 @@ BOOL http_context::recycle_inchannel(const char *predecessor_cookie)
 BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 {
 	auto pcontext = this;
-	if (CHANNEL_TYPE_OUT != pcontext->channel_type) {
+	if (pcontext->channel_type != hchannel_type::out)
 		return FALSE;
-	}
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
@@ -2043,9 +2039,8 @@ BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 BOOL http_context::activate_inrecycling(const char *successor_cookie)
 {
 	auto pcontext = this;
-	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
+	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
-	}
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
@@ -2066,9 +2061,8 @@ BOOL http_context::activate_inrecycling(const char *successor_cookie)
 BOOL http_context::activate_outrecycling(const char *successor_cookie)
 {
 	auto pcontext = this;
-	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
+	if (pcontext->channel_type != hchannel_type::in)
 		return FALSE;
-	}
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);

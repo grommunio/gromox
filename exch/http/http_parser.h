@@ -30,10 +30,8 @@ enum class hchannel_stat {
 	openstart = 0, waitinchannel, recycling, waitrecycled, opened, recycled,
 };
 
-enum {
-	CHANNEL_TYPE_NONE = 0,
-	CHANNEL_TYPE_IN,
-	CHANNEL_TYPE_OUT
+enum class hchannel_type {
+	none = 0, in, out,
 };
 
 struct fastcgi_context;
@@ -65,7 +63,7 @@ struct http_context final : public schedule_context {
 	DOUBLE_LIST_NODE node{};
 	char host[UDOM_SIZE]{};
 	uint16_t port = 0;
-	int channel_type = 0;
+	hchannel_type channel_type = hchannel_type::none;
 	void *pchannel = nullptr;
 };
 using HTTP_CONTEXT = http_context;

@@ -1626,9 +1626,8 @@ static uint32_t pdu_processor_apply_async_id()
 	if (NULL == pcontext) {
 		return 0;
 	}
-	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
+	if (pcontext->channel_type != hchannel_type::in)
 		return 0;
-	}
 	auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pasync_node = g_async_allocator->get();
 	if (NULL == pasync_node) {
@@ -2594,8 +2593,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	}
 	pcall->pkt_loaded = TRUE;
 	
-	
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
+	if (pcontext->channel_type == hchannel_type::out) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (76 == length) {
 			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
@@ -2666,7 +2664,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			*ppcall = pcall;
 			return PDU_PROCESSOR_OUTPUT;
 		}
-	} else if (CHANNEL_TYPE_IN == pcontext->channel_type) {
+	} else if (pcontext->channel_type == hchannel_type::in) {
 		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 		if (104 == length) {
 			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
