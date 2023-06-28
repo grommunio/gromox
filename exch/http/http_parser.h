@@ -26,13 +26,8 @@ enum class hsched_stat {
 	initssl = 0, rdhead, rdbody, wrrep, wait,
 };
 
-enum {
-	CHANNEL_STAT_OPENSTART = 0,
-	CHANNEL_STAT_WAITINCHANNEL,
-	CHANNEL_STAT_RECYCLING,
-	CHANNEL_STAT_WAITRECYCLED,
-	CHANNEL_STAT_OPENED,
-	CHANNEL_STAT_RECYCLED
+enum class hchannel_stat {
+	openstart = 0, waitinchannel, recycling, waitrecycled, opened, recycled,
 };
 
 enum {
@@ -87,7 +82,7 @@ struct RPC_IN_CHANNEL {
 	uint32_t bytes_received = 0;
 	char assoc_group_id[64]{};
 	DOUBLE_LIST pdu_list{};
-	int channel_stat = 0;
+	hchannel_stat channel_stat = hchannel_stat::openstart;
 };
 
 struct RPC_OUT_CHANNEL {
@@ -104,7 +99,7 @@ struct RPC_OUT_CHANNEL {
 	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
 	DCERPC_CALL *pcall = nullptr; /* first output pcall of PDU by out channel itself */
 	DOUBLE_LIST pdu_list{};
-	int channel_stat = 0;
+	hchannel_stat channel_stat = hchannel_stat::openstart;
 };
 
 extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);

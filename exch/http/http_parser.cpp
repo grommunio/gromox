@@ -1079,7 +1079,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	unsigned int tmp_len;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
 		auto chan = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1123,7 +1123,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	if (written_len < 0)
 		mlog(LV_WARN, "W-1533: wl=%zd. report me.", written_len);
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (pchannel_out->available_window < 1024) {
 			return PROCESS_IDLE;
@@ -1194,7 +1194,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	pcontext->write_offset += written_len;
 	pcontext->bytes_rw += written_len;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 				pcontext->port, pchannel_out->connection_cookie);
@@ -1212,7 +1212,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
 		auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1253,8 +1253,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		return PROCESS_CONTINUE;
 	}
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    (static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_WAITINCHANNEL ||
-	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_WAITRECYCLED)) {
+	    (static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::waitinchannel ||
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::waitrecycled)) {
 		/* to wait in channel for completing
 			out channel handshaking */
 		pcontext->sched_stat = hsched_stat::wait;
@@ -1461,7 +1461,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
 		 frag_length, &pcall);
 	if (CHANNEL_TYPE_IN == pcontext->channel_type &&
-	    CHANNEL_STAT_OPENED == pchannel_in->channel_stat) {
+	    pchannel_in->channel_stat == hchannel_stat::opened) {
 		if (PDU_PROCESSOR_ERROR == result) {
 			/* ignore rts processing error under this condition */
 			result = PDU_PROCESSOR_INPUT;
@@ -1529,8 +1529,8 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
 			/* only under two conditions below, out channel
 			   will produce PDU_PROCESSOR_OUTPUT */
-			if (pchannel_out->channel_stat != CHANNEL_STAT_OPENSTART &&
-			    pchannel_out->channel_stat != CHANNEL_STAT_RECYCLING) {
+			if (pchannel_out->channel_stat != hchannel_stat::openstart &&
+			    pchannel_out->channel_stat != hchannel_stat::recycling) {
 				pcontext->log(LV_DEBUG,
 					"pdu process error! out channel can't output "
 					"itself after virtual connection established");
@@ -1556,13 +1556,8 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			pchannel_out->pcall = pcall;
 			pcontext->bytes_rw = 0;
 			pcontext->sched_stat = hsched_stat::wrrep;
-			if (CHANNEL_STAT_OPENSTART == pchannel_out->channel_stat) {
-				pchannel_out->channel_stat =
-					CHANNEL_STAT_WAITINCHANNEL;
-			} else {
-				pchannel_out->channel_stat =
-					CHANNEL_STAT_WAITRECYCLED;
-			}
+			pchannel_out->channel_stat = pchannel_out->channel_stat == hchannel_stat::openstart ?
+			                             hchannel_stat::waitinchannel : hchannel_stat::waitrecycled;
 			return X_LOOP;
 		}
 		/* in channel here, find the corresponding out channel first! */
@@ -1628,7 +1623,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 			pdu_processor_output_pdu(
 				pchannel_out->pcall, &pchannel_out->pdu_list);
 			pcontext->sched_stat = hsched_stat::wrrep;
-			pchannel_out->channel_stat = CHANNEL_STAT_OPENED;
+			pchannel_out->channel_stat = hchannel_stat::opened;
 			return X_LOOP;
 		}
 		pvconnection.put();
@@ -1653,7 +1648,7 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 			auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
 			pchannel_out->client_keepalive =
 				pchannel_in->client_keepalive;
-			pchannel_out->channel_stat = CHANNEL_STAT_OPENED;
+			pchannel_out->channel_stat = hchannel_stat::opened;
 			DOUBLE_LIST_NODE *pnode;
 			while ((pnode = double_list_pop_front(&pchannel_in->pdu_list)) != nullptr)
 				double_list_append_as_tail(
@@ -1680,12 +1675,15 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 		return PROCESS_IDLE;
 	/* only hpm_processor or out channel can be set to hsched_stat::wait */
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-	if (CHANNEL_STAT_WAITINCHANNEL == pchannel_out->channel_stat) {
+	switch (pchannel_out->channel_stat) {
+	case hchannel_stat::waitinchannel:
 		return htparse_waitinchannel(pcontext, pchannel_out);
-	} else if (CHANNEL_STAT_WAITRECYCLED == pchannel_out->channel_stat) {
+	case hchannel_stat::waitrecycled:
 		return htparse_waitrecycled(pcontext, pchannel_out);
-	} else if (CHANNEL_STAT_RECYCLED == pchannel_out->channel_stat) {
+	case hchannel_stat::recycled:
 		return X_RUNOFF;
+	default:
+		break;
 	}
 
 	char tmp_buff;
@@ -2057,10 +2055,10 @@ BOOL http_context::activate_inrecycling(const char *successor_cookie)
 		return false;
 	if (NULL != pvconnection->pcontext_in) {
 		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
-		pchannel_in->channel_stat = CHANNEL_STAT_RECYCLED;
+		pchannel_in->channel_stat = hchannel_stat::recycled;
 	}
 	pvconnection->pcontext_in = pcontext;
-	hch->channel_stat = CHANNEL_STAT_OPENED;
+	hch->channel_stat = hchannel_stat::opened;
 	pvconnection->pcontext_insucc = NULL;
 	return TRUE;
 }

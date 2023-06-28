@@ -2598,7 +2598,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (76 == length) {
-			if (CHANNEL_STAT_OPENSTART != pchannel_out->channel_stat) {
+			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2625,7 +2625,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			*ppcall = pcall;
 			return PDU_PROCESSOR_OUTPUT;
 		} else if (96 == length) {
-			if (CHANNEL_STAT_OPENSTART != pchannel_out->channel_stat) {
+			if (pchannel_out->channel_stat != hchannel_stat::openstart) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2648,10 +2648,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			pdu_processor_free_call(pcall);
 			if (!pcontext->recycle_outchannel(channel_cookie))
 				return PDU_PROCESSOR_ERROR;
-			pchannel_out->channel_stat = CHANNEL_STAT_RECYCLING;
+			pchannel_out->channel_stat = hchannel_stat::recycling;
 			return PDU_PROCESSOR_INPUT;
 		} else if (24 == length) {
-			if (CHANNEL_STAT_RECYCLING != pchannel_out->channel_stat) {
+			if (pchannel_out->channel_stat != hchannel_stat::recycling) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2669,7 +2669,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	} else if (CHANNEL_TYPE_IN == pcontext->channel_type) {
 		auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 		if (104 == length) {
-			if (CHANNEL_STAT_OPENSTART != pchannel_in->channel_stat) {
+			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2692,10 +2692,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			/* notify out channel to send conn/c2 to client */
 			if (!pcontext->try_create_vconnection())
 				return PDU_PROCESSOR_ERROR;
-			pchannel_in->channel_stat = CHANNEL_STAT_OPENED;
+			pchannel_in->channel_stat = hchannel_stat::opened;
 			return PDU_PROCESSOR_INPUT;
 		} else if (88 == length) {
-			if (CHANNEL_STAT_OPENSTART != pchannel_in->channel_stat) {
+			if (pchannel_in->channel_stat != hchannel_stat::openstart) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2718,13 +2718,13 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			pchannel_in->channel_stat = CHANNEL_STAT_OPENED;
+			pchannel_in->channel_stat = hchannel_stat::opened;
 			pdu_processor_rts_inr2_a4(pcall);
 			*ppcall = pcall;
 			return PDU_PROCESSOR_OUTPUT;
 		} else if (28 == length) {
 			/*
-			if (CHANNEL_STAT_OPENED != pchannel_in->channel_stat) {
+			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2750,7 +2750,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			pdu_processor_free_call(pcall);
 			return PDU_PROCESSOR_INPUT;
 		} else if (40 == length) {
-			if (CHANNEL_STAT_OPENED != pchannel_in->channel_stat) {
+			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2771,7 +2771,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_TERMINATE;
 			return PDU_PROCESSOR_INPUT;
 		} else if (56 == length) {
-			if (CHANNEL_STAT_OPENED != pchannel_in->channel_stat) {
+			if (pchannel_in->channel_stat != hchannel_stat::opened) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
