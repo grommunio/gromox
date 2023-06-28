@@ -70,9 +70,8 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	}
 	gx_strlcpy(original_buf, buf, GX_ARRAY_SIZE(original_buf));
 	gx_strlcpy(original_rp, rp, GX_ARRAY_SIZE(original_rp));
-	for (i=0; i<10; i++) {
+	for (i = 0; i < 10; ++i)
 		rp_offsets[i] = -1;
-	}
 	for (pos=original_rp; '\0'!=*pos; pos++) {
 		if (pos[0] == '\\' && pos[1] > '0' && pos[1] <= '9') {
 			rp_offsets[pos[1]-'0'] = pos + 2 - original_rp;
@@ -83,29 +82,25 @@ static BOOL mod_rewrite_rreplace(char *buf,
 	for (i=1,offset=0; i<=10&&offset<size; i++) {
 		if (i == 10 || pmatch[i].rm_so < 0 || pmatch[i].rm_eo < 0) {
 			len = strlen(original_buf + last_pos);
-			if (offset + len >= size) {
+			if (offset + len >= size)
 				break;
-			}
 			strcpy(buf + offset, original_buf + last_pos);
 			return TRUE;
 		}
 		if (-1 != rp_offsets[i]) {
 			len = pmatch[i].rm_so - last_pos;
-			if (offset + len >= size) {
+			if (offset + len >= size)
 				break;
-			}
 			memcpy(buf + offset, original_buf + last_pos, len);
 			offset += len;
 			len = strlen(original_rp + rp_offsets[i]);
-			if (offset + len >= size) {
+			if (offset + len >= size)
 				break;
-			}
 			strcpy(buf + offset, original_rp + rp_offsets[i]);
 		} else {
 			len = pmatch[i].rm_eo - last_pos;
-			if (offset + len >= size) {
+			if (offset + len >= size)
 				break;
-			}
 			memcpy(buf + offset, original_buf + last_pos, len);
 		}
 		offset += len;
@@ -209,9 +204,8 @@ bool mod_rewrite_process(const char *uri_buff, size_t uri_len,
 {
 	char tmp_buff[8192];
 	
-	if (uri_len >= sizeof(tmp_buff)) {
+	if (uri_len >= sizeof(tmp_buff))
 		return FALSE;
-	}
 	for (auto &node : g_rewrite_list) {
 		memcpy(tmp_buff, uri_buff, uri_len);
 		tmp_buff[uri_len] = '\0';

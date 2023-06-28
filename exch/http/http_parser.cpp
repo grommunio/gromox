@@ -143,9 +143,8 @@ void http_report()
 	mlog(LV_INFO, "Ctx  fd  src->host");
 	mlog(LV_INFO, "   ChTy  RPCEndpoint, Username");
 	mlog(LV_INFO, "-------------------------------------------------------------------------------");
-	for (size_t i = 0; i < g_context_num; ++i) {
+	for (size_t i = 0; i < g_context_num; ++i)
 		httpctx_report(g_context_list[i], i);
-	}
 }
 
 void http_parser_init(size_t context_num, time_duration timeout,
@@ -163,11 +162,10 @@ void http_parser_init(size_t context_num, time_duration timeout,
 	if (!support_tls)
 		return;
 	gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
-	if (NULL != cb_passwd) {
+	if (cb_passwd != nullptr)
 		gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
-	} else {
+	else
 		g_certificate_passwd[0] = '\0';
-	}
 	gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 }
 
@@ -208,10 +206,9 @@ int http_parser_run()
 			mlog(LV_ERR, "http_parser: failed to init TLS context");
 			return -1;
 		}
-		if ('\0' != g_certificate_passwd[0]) {
+		if (*g_certificate_passwd != '\0')
 			SSL_CTX_set_default_passwd_cb_userdata(
 				g_ssl_ctx, g_certificate_passwd);
-		}
 		if (SSL_CTX_use_certificate_chain_file(
 			g_ssl_ctx, g_certificate_path) <= 0) {
 			printf("[http_parser]: fail to use certificate file:");
@@ -370,9 +367,8 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 			size1 = STREAM_BLOCK_SIZE;
 			pstream_dst->fwd_write_ptr(STREAM_BLOCK_SIZE);
 			pbuff1 = pstream_dst->get_write_buf(reinterpret_cast<unsigned int *>(&size1));
-			if (NULL == pbuff1) {
+			if (pbuff1 == nullptr)
 				return -1;
-			}
 			size1_used = size - size_copied;
 			memcpy(pbuff1, static_cast<char *>(pbuff) + size_copied, size1_used);
 		}
@@ -572,9 +568,8 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 
 	ptoken++;
 	while (static_cast<size_t>(ptoken - line) < line_length) {
-		if (' ' != *ptoken && '\t' != *ptoken) {
+		if (*ptoken != ' ' && *ptoken != '\t')
 			break;
-		}
 		ptoken++;
 	}
 	tmp_len = line_length - static_cast<size_t>(ptoken - line);
@@ -605,12 +600,11 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line,
 			j += ", ";
 		j.append(ptoken, tmp_len);
 	} else {
-		if (0 == strcasecmp(field_name, "Connection") &&
-		    0 == strncasecmp(ptoken, "keep-alive", tmp_len)) {
+		if (strcasecmp(field_name, "Connection") == 0 &&
+		    strncasecmp(ptoken, "keep-alive", tmp_len) == 0)
 			/* for "Connection: Upgrade",
 				we treat it as "close" */
 			pcontext->b_close = FALSE;
-		}
 		if (strcasecmp(field_name, "Connection") == 0 &&
 		    strncasecmp(ptoken, "close", tmp_len) == 0)
 			pcontext->b_close = TRUE;
@@ -662,9 +656,8 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			return X_LOOP;
 		}
 
-		if ('\0' == pcontext->lang[0]) {
+		if (*pcontext->lang == '\0')
 			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("user_default_lang")), sizeof(pcontext->lang));
-		}
 		pcontext->b_authed = TRUE;
 		pcontext->log(LV_DEBUG, "htp_auth success");
 		return X_RUNOFF;
@@ -785,15 +778,13 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
 			pcontext->channel_type = hchannel_type::in;
 			pcontext->pchannel = g_inchannel_allocator->get();
-			if (NULL == pcontext->pchannel) {
+			if (pcontext->pchannel == nullptr)
 				return http_done(pcontext, 5032);
-			}
 		} else {
 			pcontext->channel_type = hchannel_type::out;
 			pcontext->pchannel = g_outchannel_allocator->get();
-			if (NULL == pcontext->pchannel) {
+			if (pcontext->pchannel == nullptr)
 				return http_done(pcontext, 5032);
-			}
 		}
 	}
 	pcontext->bytes_rw = stream_1_written;
@@ -807,16 +798,14 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (!hpm_processor_write_request(pcontext)) {
+	if (!hpm_processor_write_request(pcontext))
 		return http_done(pcontext, 400);
-	}
 	if (!hpm_processor_check_end_of_request(pcontext)) {
 		pcontext->sched_stat = hsched_stat::rdbody;
 		return X_LOOP;
 	}
-	if (!hpm_processor_proc(pcontext)) {
+	if (!hpm_processor_proc(pcontext))
 		return http_done(pcontext, 400);
-	}
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1184: ENOMEM");
@@ -836,16 +825,14 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (!mod_fastcgi_write_request(pcontext)) {
+	if (!mod_fastcgi_write_request(pcontext))
 		return http_done(pcontext, 400);
-	}
 	if (!mod_fastcgi_check_end_of_read(pcontext)) {
 		pcontext->sched_stat = hsched_stat::rdbody;
 		return X_LOOP;
 	}
-	if (!mod_fastcgi_relay_content(pcontext)) {
+	if (!mod_fastcgi_relay_content(pcontext))
 		return http_done(pcontext, 502);
-	}
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1183: ENOMEM");
@@ -877,9 +864,8 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 				"I-1933: request header line too long");
 			return http_done(pcontext, 400);
 		case STREAM_LINE_UNAVAILABLE:
-			if (actual_read > 0) {
+			if (actual_read > 0)
 				return PROCESS_CONTINUE;
-			}
 			return PROCESS_POLLING_RDONLY;
 		case STREAM_LINE_AVAILABLE:
 			/* continue to process line below */
@@ -890,11 +876,10 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		auto line_length = pcontext->stream_in.readline(&line);
 		if (0 != line_length) {
 			int ret;
-			if ('\0' == pcontext->request.method[0]) {
+			if (*pcontext->request.method == '\0')
 				ret = htparse_rdhead_no(pcontext, line, line_length);
-			} else {
+			else
 				ret = htparse_rdhead_mt(pcontext, line, line_length);
-			}
 			if (ret != X_RUNOFF)
 				return ret;
 			continue;
@@ -912,10 +897,9 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		auto ret = htp_auth_1(*pcontext);
 		if (ret != X_RUNOFF)
 			return ret;
-		if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
-		    0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
+		if (strcasecmp(pcontext->request.method, "RPC_IN_DATA") == 0 ||
+		    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") == 0)
 			return htp_delegate_rpc(pcontext, stream_1_written);
-		}
 		auto status = hpm_processor_take_request(pcontext);
 		if (status == 200)
 			return htp_delegate_hpm(pcontext);
@@ -1063,9 +1047,8 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		}
 	} else if (mod_cache_is_in_charge(pcontext) &&
 	    !mod_cache_read_response(pcontext)) {
-		if (!mod_cache_check_responded(pcontext)) {
+		if (!mod_cache_check_responded(pcontext))
 			return http_done(pcontext, 400);
-		}
 		if (pcontext->stream_out.get_total_length() == 0) {
 			if (pcontext->b_close)
 				return X_RUNOFF;
@@ -1125,9 +1108,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	if (pcontext->channel_type == hchannel_type::out &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::opened) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
-		if (pchannel_out->available_window < 1024) {
+		if (pchannel_out->available_window < 1024)
 			return PROCESS_IDLE;
-		}
 		if (written_len >= 0 && static_cast<size_t>(written_len) >
 		    pchannel_out->available_window)
 			written_len = pchannel_out->available_window;
@@ -1205,9 +1187,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		}
 	}
 
-	if (pcontext->write_offset < pcontext->write_length) {
+	if (pcontext->write_offset < pcontext->write_length)
 		return PROCESS_CONTINUE;
-	}
 	pcontext->write_offset = 0;
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
@@ -1249,9 +1230,8 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	unsigned int tmp_len = STREAM_BLOCK_SIZE;
 	pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
 	pcontext->write_length = tmp_len;
-	if (pcontext->write_buff != nullptr) {
+	if (pcontext->write_buff != nullptr)
 		return PROCESS_CONTINUE;
-	}
 	if (pcontext->channel_type == hchannel_type::out &&
 	    (static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::waitinchannel ||
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == hchannel_stat::waitrecycled)) {
@@ -1290,16 +1270,13 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		if (hpm_processor_is_in_charge(pcontext)) {
-			if (!hpm_processor_write_request(pcontext)) {
+			if (!hpm_processor_write_request(pcontext))
 				return http_done(pcontext, 400);
-			}
 			if (!hpm_processor_check_end_of_request(
-			    pcontext)) {
+			    pcontext))
 				return PROCESS_CONTINUE;
-			}
-			if (!hpm_processor_proc(pcontext)) {
+			if (!hpm_processor_proc(pcontext))
 				return http_done(pcontext, 400);
-			}
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1178: ENOMEM");
@@ -1312,15 +1289,12 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			}
 			return PROCESS_CONTINUE;
 		} else if (mod_fastcgi_is_in_charge(pcontext)) {
-			if (!mod_fastcgi_write_request(pcontext)) {
+			if (!mod_fastcgi_write_request(pcontext))
 				return http_done(pcontext, 400);
-			}
-			if (!mod_fastcgi_check_end_of_read(pcontext)) {
+			if (!mod_fastcgi_check_end_of_read(pcontext))
 				return PROCESS_CONTINUE;
-			}
-			if (!mod_fastcgi_relay_content(pcontext)) {
+			if (!mod_fastcgi_relay_content(pcontext))
 				return http_done(pcontext, 502);
-			}
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1177: ENOMEM");
@@ -1329,9 +1303,8 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 		pcontext->bytes_rw += actual_read;
-		if (pcontext->bytes_rw < pcontext->total_length) {
+		if (pcontext->bytes_rw < pcontext->total_length)
 			return PROCESS_CONTINUE;
-		}
 		return X_RUNOFF;
 	}
 	if (EAGAIN != errno) {
@@ -1432,14 +1405,12 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 
 	unsigned int tmp_len2 = STREAM_BLOCK_SIZE;
 	auto pbuff = pcontext->stream_in.get_read_buf(&tmp_len2);
-	if (NULL == pbuff) {
+	if (pbuff == nullptr)
 		return PROCESS_POLLING_RDONLY;
-	}
 	tmp_len = tmp_len2;
 	pcontext->stream_in.rewind_read_ptr(tmp_len);
-	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2) {
+	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2)
 		return PROCESS_CONTINUE;
-	}
 
 	if (0 == frag_length) {
 		static_assert(std::is_same_v<decltype(frag_length), uint16_t>, "");
@@ -1453,10 +1424,8 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			pchannel_out->frag_length = frag_length;
 	}
 
-	if (tmp_len < frag_length) {
+	if (tmp_len < frag_length)
 		return PROCESS_CONTINUE;
-	}
-
 	g_context_key = pcontext;
 	DCERPC_CALL *pcall = nullptr;
 	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
@@ -1744,9 +1713,8 @@ void http_parser_vconnection_async_reply(const char *host,
 	auto pvconnection = http_parser_get_vconnection(host, port, connection_cookie);
 	if (pvconnection == nullptr)
 		return;
-	if (NULL == pvconnection->pcontext_out) {
+	if (pvconnection->pcontext_out == nullptr)
 		return;
-	}
 	auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 	if (och->b_obsolete) {
 		if (NULL != pvconnection->pcontext_in) {
@@ -1885,14 +1853,10 @@ bool http_parser_get_password(const char *username, char *password)
 	HTTP_CONTEXT *pcontext;
 	
 	pcontext = http_parser_get_context();
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return false;
-	}
-	
-	if (0 != strcasecmp(username, pcontext->username)) {
+	if (strcasecmp(username, pcontext->username) != 0)
 		return false;
-	}
-	
 	strncpy(password, pcontext->password, 128);
 	return true;
 }
@@ -1973,9 +1937,8 @@ void http_context::set_outchannel_flowcontrol(uint32_t bytes_received,
 	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr)
 		return;
-	if (NULL == pvconnection->pcontext_out) {
+	if (pvconnection->pcontext_out == nullptr)
 		return;
-	}
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 	if (bytes_received + available_window > pchannel_out->bytes_sent) {
 		pchannel_out->available_window = bytes_received

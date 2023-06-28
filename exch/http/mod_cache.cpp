@@ -211,10 +211,7 @@ bool mod_cache_is_in_charge(HTTP_CONTEXT *phttp)
 	CACHE_CONTEXT *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	if (NULL != pcontext->pitem) {
-		return TRUE;
-	}
-	return FALSE;
+	return pcontext->pitem != nullptr;
 }
 
 static bool mod_cache_retrieve_etag(const char *etag, struct stat &sb)
@@ -252,9 +249,8 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 	struct tm tmp_tm;
 	auto cur_time = time(nullptr);
 	gmtime_r(&cur_time, &tmp_tm);
-	if (NULL == strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm)) {
+	if (strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm) == nullptr)
 		return FALSE;	
-	}
 	*pmtime = make_gmtime(&tmp_tm);
 	return TRUE;
 }
@@ -315,9 +311,8 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 	uint32_t content_length;
 	
 	auto pcontent_type = pcontext->pitem->content_type;
-	if (NULL == pcontent_type) {
+	if (pcontent_type == nullptr)
 		pcontent_type = "application/octet-stream";
-	}
 	ctype_len = strlen(pcontent_type);
 	content_length = 0;
 	for (size_t i = 0; i < pcontext->range.size(); ++i) {
@@ -371,61 +366,51 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 static int mod_cache_parse_range_value(char *value,
     uint32_t size, cache_context *pcontext) try
 {
-	int i;
-	int val_len;
 	char *ptoken;
 	char *ptoken1;
 	char *plast_token;
 	
 	HX_strrtrim(value);
 	HX_strltrim(value);
-	if (0 != strncasecmp(value, "bytes", 5)) {
+	if (strncasecmp(value, "bytes", 5) != 0)
 		return 416;
-	}
 	value += 5;
 	HX_strltrim(value);
-	if ('=' != value[0]) {
+	if (*value != '=')
 		return 400;
-	}
 	value ++;
 	HX_strltrim(value);
-	val_len = strlen(value);
+	auto val_len = strlen(value);
 	if (',' != value[val_len - 1]) {
 		value[val_len] = ',';
 		val_len ++;
 	}
 	size_t count = 0;
-	for (i=0; i<val_len; i++) {
-		if (',' == value[i]) {
+	for (size_t i = 0; i < val_len; ++i)
+		if (value[i] == ',')
 			count ++;
-		}
-	}
 	if (count > 1024)
 		return 4162;
 	plast_token = value;
 	pcontext->range.clear();
-	for (i=0; i<val_len; i++) {
-		if (',' != value[i]) {
+	for (size_t i = 0; i < val_len; ++i) {
+		if (value[i] != ',')
 			continue;
-		}
 		ptoken = value + i;
 		*ptoken = '\0';
-		if (plast_token == ptoken) {
+		if (plast_token == ptoken)
 			return 400;
-		}
 		ptoken1 = strchr(plast_token, '-');
-		if (NULL == ptoken1) {
+		if (ptoken1 == nullptr)
 			return 400;
-		}
 		*ptoken1 = '\0';
 		ptoken1 ++;
 		auto first_bpos = strtol(plast_token, nullptr, 0);
 		if (first_bpos >= 0 && static_cast<unsigned long>(first_bpos) >= size)
 			return 416;
 		auto last_bpos = strtol(ptoken1, nullptr, 0);
-		if (0 == last_bpos) {
+		if (last_bpos == 0)
 			last_bpos = size - 1;
-		}
 		if (last_bpos < 0 || static_cast<unsigned long>(last_bpos) >= size)
 			return 416;
 		RANGE r;
@@ -480,11 +465,8 @@ int mod_cache_take_request(http_context *phttp)
 	CACHE_CONTEXT *pcontext;
 	
 	auto tmp_len = phttp->request.f_content_length.size();
-	if (0 != tmp_len) {
-		if (tmp_len >= 32) {
-			return 400;
-		}
-	}
+	if (tmp_len >= 32)
+		return 400;
 	tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
@@ -521,9 +503,8 @@ int mod_cache_take_request(http_context *phttp)
 	ptoken = strrchr(ptoken, '.');
 	if (NULL != ptoken) {
 		ptoken ++;
-		if (strlen(ptoken) < 16) {
+		if (strlen(ptoken) < 16)
 			strcpy(suffix, ptoken);
-		}
 	}
 	auto it = std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
 	          [&](const auto &e) {
@@ -643,9 +624,8 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	CACHE_CONTEXT *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	if (NULL == pcontext->pitem) {
+	if (pcontext->pitem == nullptr)
 		return FALSE;
-	}
 	if (!pcontext->b_header) {
 		if (pcontext->range.size() < 2) {
 			if (!mod_cache_response_single_header(phttp)) {
@@ -664,12 +644,8 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 			return FALSE;
 		}
 	}
-	if (pcontext->until - pcontext->offset >=
-		STREAM_BLOCK_SIZE - 1) {
-		tmp_len = STREAM_BLOCK_SIZE - 1;
-	} else {
-		tmp_len = pcontext->until - pcontext->offset;
-	}
+	tmp_len = pcontext->until - pcontext->offset >= STREAM_BLOCK_SIZE - 1 ?
+	          STREAM_BLOCK_SIZE - 1 : pcontext->until - pcontext->offset;
 	auto &item = *pcontext->pitem;
 	auto rem_to_eof = pcontext->offset < item.sb.st_size ?
 	                    item.sb.st_size - pcontext->offset : 0;
@@ -694,9 +670,8 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 				pcontext->offset = pcontext->range[pcontext->range_pos].begin;
 				pcontext->until = pcontext->range[pcontext->range_pos].end + 1;
 				auto pcontent_type = pcontext->pitem->content_type;
-				if (NULL == pcontent_type) {
+				if (pcontent_type == nullptr)
 					pcontent_type = "application/octet-stream";
-				}
 				tmp_len = sprintf(tmp_buff,
 					"\r\n--%s\r\n"
 					"Content-Type: %s\r\n"

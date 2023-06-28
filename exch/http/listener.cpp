@@ -150,9 +150,8 @@ static void *htls_thrwork(void *arg)
 				close(sockd2);
 			return nullptr;
 		}
-		if (-1 == sockd2) {
+		if (sockd2 < 0)
 			continue;
-		}
 		int ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&client_peer),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          client_txtport, sizeof(client_txtport),

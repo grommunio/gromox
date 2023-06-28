@@ -136,72 +136,57 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 {
 	void *ret_addr;
 
-	if (NULL == g_cur_plugin) {
+	if (g_cur_plugin == nullptr)
 		return NULL;
-	}
-	if (strcmp(service, "register_interface") == 0) {
+	if (strcmp(service, "register_interface") == 0)
 		return reinterpret_cast<void *>(hpm_processor_register_interface);
-	}
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "get_host_ID") == 0) {
+	if (strcmp(service, "get_host_ID") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_config_file->get_value("host_id"); });
-	}
-	if (strcmp(service, "get_config_path") == 0) {
+	if (strcmp(service, "get_config_path") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("config_file_path");
 			return r != nullptr ? r : PKGSYSCONFDIR;
 		});
-	}
-	if (strcmp(service, "get_data_path") == 0) {
+	if (strcmp(service, "get_data_path") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("data_file_path");
 			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
 		});
-	}
 	if (strcmp(service, "get_state_path") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("state_path");
 			return r != nullptr ? r : PKGSTATEDIR;
 		});
-	if (strcmp(service, "get_context_num") == 0) {
+	if (strcmp(service, "get_context_num") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_context_num; });
-	}
-	if (strcmp(service, "get_request") == 0) {
+	if (strcmp(service, "get_request") == 0)
 		return reinterpret_cast<void *>(hpm_processor_get_request);
-	}
-	if (strcmp(service, "get_auth_info") == 0) {
+	if (strcmp(service, "get_auth_info") == 0)
 		return reinterpret_cast<void *>(hpm_processor_get_auth_info);
-	}
-	if (strcmp(service, "get_connection") == 0) {
+	if (strcmp(service, "get_connection") == 0)
 		return reinterpret_cast<void *>(+[](unsigned int id) {
 			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
 			return &h->connection;
 		});
-	}
-	if (strcmp(service, "write_response") == 0) {
+	if (strcmp(service, "write_response") == 0)
 		return reinterpret_cast<void *>(+[](unsigned int id, const void *b, size_t z) -> BOOL {
 			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
 			return h->stream_out.write(b, z) == STREAM_WRITE_OK ? TRUE : false;
 		});
-	}
-	if (strcmp(service, "wakeup_context") == 0) {
+	if (strcmp(service, "wakeup_context") == 0)
 		return reinterpret_cast<void *>(hpm_processor_wakeup_context);
-	}
-	if (strcmp(service, "activate_context") == 0) {
+	if (strcmp(service, "activate_context") == 0)
 		return reinterpret_cast<void *>(+[](unsigned int id) {
 			context_pool_activate_context(http_parser_get_contexts_list()[id]);
 		});
-	}
-	if (strcmp(service, "set_context") == 0) {
+	if (strcmp(service, "set_context") == 0)
 		return reinterpret_cast<void *>(http_parser_set_context);
-	}
-	if (strcmp(service, "set_ep_info") == 0) {
+	if (strcmp(service, "set_ep_info") == 0)
 		return reinterpret_cast<void *>(hpm_processor_set_ep_info);
-	}
-	if (strcmp(service, "ndr_stack_alloc") == 0) {
+	if (strcmp(service, "ndr_stack_alloc") == 0)
 		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
-	}
 	if (strcmp(service, "rpc_new_stack") == 0)
 		return reinterpret_cast<void *>(pdu_processor_rpc_new_stack);
 	if (strcmp(service, "rpc_free_stack") == 0)
@@ -212,9 +197,8 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 			return nd.service_addr;
 	auto fn = g_cur_plugin->file_name.c_str();
 	ret_addr = service_query(service, fn, ti);
-	if (NULL == ret_addr) {
+	if (ret_addr == nullptr)
 		return NULL;
-	}
 	try {
 		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
 	} catch (const std::bad_alloc &) {
@@ -416,9 +400,8 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
  CHUNK_BEGIN:
 	if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
 		size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
-		if (size < 5) {
+		if (size < 5)
 			return TRUE;
-		}
 		if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
 			phttp->stream_in.fwd_read_ptr(5);
 			phpm_ctx->b_end = TRUE;
@@ -474,9 +457,8 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				" length is too long for hpm_processor");
 			return FALSE;
 		}
-		if (phpm_ctx->chunk_offset == phpm_ctx->chunk_size) {
+		if (phpm_ctx->chunk_offset == phpm_ctx->chunk_size)
 			goto CHUNK_BEGIN;
-		}
 	}
 	/*
 	 * This is crap. Breaks processing of the next request if the client
@@ -503,9 +485,8 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			pcontent = NULL;
 		} else {
 			pcontent = malloc(phpm_ctx->content_length);
-			if (NULL == pcontent) {
+			if (pcontent == nullptr)
 				return FALSE;
-			}
 			if (phttp->stream_in.peek_buffer(static_cast<char *>(pcontent),
 			    phpm_ctx->content_length) != phpm_ctx->content_length) {
 				free(pcontent);
@@ -514,13 +495,11 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			phttp->stream_in.fwd_read_ptr(phpm_ctx->content_length);
 		}
 	} else {
-		if (0 != fstat(phpm_ctx->cache_fd, &node_stat)) {
+		if (fstat(phpm_ctx->cache_fd, &node_stat) != 0)
 			return FALSE;
-		}
 		pcontent = malloc(node_stat.st_size);
-		if (NULL == pcontent) {
+		if (pcontent == nullptr)
 			return FALSE;
-		}
 		lseek(phpm_ctx->cache_fd, 0, SEEK_SET);
 		if (node_stat.st_size != read(phpm_ctx->cache_fd,
 			pcontent, node_stat.st_size)) {
@@ -533,9 +512,8 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
 				pcontent, phpm_ctx->content_length);
 	phpm_ctx->content_length = 0;
-	if (NULL != pcontent) {
+	if (pcontent != nullptr)
 		free(pcontent);
-	}
 	return b_result;
 }
 
@@ -562,9 +540,8 @@ int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)
 void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 {
 	auto phpm_ctx = &g_context_list[phttp->context_id];
-	if (NULL != phpm_ctx->pinterface->term) {
+	if (phpm_ctx->pinterface->term != nullptr)
 		phpm_ctx->pinterface->term(phttp->context_id);
-	}
 	phpm_ctx->cache_fd.close();
 	phpm_ctx->content_length = 0;
 	phpm_ctx->b_preproc = FALSE;
