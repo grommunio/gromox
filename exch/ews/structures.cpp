@@ -1519,6 +1519,8 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 	case PT_STRING8:
 	case PT_UNICODE:
 		return xml->SetText((reinterpret_cast<const char*>(data)));
+	case PT_BINARY:
+		return xml->SetText(sBase64Binary(static_cast<const BINARY*>(data)).serialize().c_str());
 	case PT_MV_SHORT:
 		return serializeMV(data, type, xml, &SHORT_ARRAY::ps);
 	case PT_MV_LONG:
