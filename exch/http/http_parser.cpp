@@ -846,6 +846,15 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 	/* let mod_cache decide the read/write bytes */
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
+
+	if (!mod_cache_write_request(pcontext))
+		return http_done(pcontext, 400);
+	if (!mod_cache_check_end_of_read(pcontext)) {
+		pcontext->sched_stat = hsched_stat::rdbody;
+		return X_LOOP;
+	}
+	if (!mod_cache_discard_content(pcontext))
+		return http_done(pcontext, 502);
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1182: ENOMEM");
@@ -1298,6 +1307,17 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1177: ENOMEM");
+				return http_done(pcontext, 5032);
+			}
+			return PROCESS_CONTINUE;
+		} else if (mod_cache_is_in_charge(pcontext)) {
+			if (!mod_cache_write_request(pcontext))
+				return http_done(pcontext, 400);
+			if (!mod_cache_check_end_of_read(pcontext))
+				return PROCESS_CONTINUE;
+			pcontext->sched_stat = hsched_stat::wrrep;
+			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
+				mlog(LV_ERR, "E-2910: ENOMEM");
 				return http_done(pcontext, 5032);
 			}
 			return PROCESS_CONTINUE;

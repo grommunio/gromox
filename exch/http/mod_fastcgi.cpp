@@ -838,6 +838,10 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	if (fctx.b_end)
 		return TRUE;
 	if (fctx.cache_fd < 0) {
+		/*
+		 * Small enough that it will be hold in memory only
+		 * (g_cache_size consideration in take_request).
+		 */
 		if (fctx.content_length <= phttp->stream_in.get_total_length())
 			fctx.b_end = TRUE;
 		return TRUE;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -60,7 +60,10 @@ struct RANGE {
 struct cache_context {
 	std::shared_ptr<cache_item> pitem;
 	BOOL b_header = false;
+	bool b_chunked = false, b_end = false;
 	uint32_t offset = 0, until = 0;
+	uint32_t chunk_size = 0, chunk_offset = 0;
+	uint64_t content_length = 0, posted_size = 0;
 	ssize_t range_pos = -1;
 	std::vector<RANGE> range;
 };
@@ -544,6 +547,18 @@ int mod_cache_take_request(http_context *phttp)
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
+	pcontext->b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
+	pcontext->posted_size = 0;
+	tmp_len = phttp->request.f_content_length.size();
+	if (tmp_len == 0) {
+		pcontext->content_length = 0;
+	} else {
+		if (tmp_len >= 32) {
+			phttp->log(LV_DEBUG, "Content-length too long");
+			return 400;
+		}
+		pcontext->content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
+	}
 	val = mod_cache_get_others_field(phttp->request.f_others, "Range");
 	if (val != nullptr) {
 		gx_strlcpy(tmp_buff, val, std::size(tmp_buff));
@@ -607,6 +622,9 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 	pcontext = mod_cache_get_cache_context(phttp);
 	pcontext->pitem.reset();
 	pcontext->range.clear();
+	pcontext->b_chunked = pcontext->b_end = false;
+	pcontext->chunk_size = pcontext->chunk_offset = 0;
+	pcontext->content_length = pcontext->posted_size = 0;
 }
 
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp)
@@ -698,4 +716,84 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	return TRUE;
+}
+
+bool mod_cache_write_request(http_context *hc)
+{
+	unsigned int size, len;
+	auto &fctx = *mod_cache_get_cache_context(hc);
+
+	if (fctx.b_end)
+		return true;
+	if (!fctx.b_chunked) {
+		if (fctx.content_length <= hc->stream_in.get_total_length())
+			fctx.b_end = true;
+		return true;
+	}
+ chunk_begin:
+	if (fctx.chunk_size == fctx.chunk_offset) {
+		char buf[1024];
+		size = hc->stream_in.peek_buffer(buf, std::size(buf));
+		if (size < 5)
+			return true;
+		if (strncmp("0\r\n\r\n", buf, 5) == 0) {
+			hc->stream_in.fwd_read_ptr(5);
+			fctx.b_end = true;
+			return true;
+		}
+		auto ptoken = static_cast<char *>(memmem(buf, size, "\r\n", 2));
+		if (ptoken == nullptr) {
+			if (size != std::size(buf))
+				return true;
+			hc->log(LV_DEBUG, "mod_cache: failed to parse chunked block");
+			return false;
+		}
+		*ptoken = '\0';
+		fctx.chunk_size = strtol(buf, nullptr, 16);
+		if (fctx.chunk_size == 0) {
+			hc->log(LV_DEBUG, "mod_cache: failed to parse chunked block");
+			return false;
+		}
+		fctx.chunk_offset = 0;
+		len = ptoken + 2 - buf;
+		hc->stream_in.fwd_read_ptr(len);
+	}
+	size = STREAM_BLOCK_SIZE;
+	while (hc->stream_in.get_read_buf(&size) != nullptr) {
+		if (fctx.chunk_size >= size + fctx.chunk_offset) {
+			fctx.chunk_offset += size;
+			fctx.posted_size  += size;
+		} else {
+			len = fctx.chunk_size - fctx.chunk_offset;
+			hc->stream_in.rewind_read_ptr(size - len);
+			fctx.posted_size += len;
+			fctx.chunk_offset = fctx.chunk_size;
+		}
+		if (fctx.chunk_offset == fctx.chunk_size)
+			goto chunk_begin;
+	}
+	hc->stream_in.clear();
+	return true;
+}
+
+bool mod_cache_check_end_of_read(http_context *hc)
+{
+	return mod_cache_get_cache_context(hc)->b_end;
+}
+
+bool mod_cache_discard_content(http_context *hc)
+{
+	auto &fctx = *mod_cache_get_cache_context(hc);
+	char buf[65535];
+	for (unsigned int len = sizeof(buf); fctx.content_length != 0 &&
+	     hc->stream_in.get_read_buf(&len) != nullptr; len = sizeof(buf)) {
+		if (len > fctx.content_length) {
+			hc->stream_in.rewind_read_ptr(len - fctx.content_length);
+			len = fctx.content_length;
+			fctx.content_length = 0;
+		} else {
+			fctx.content_length -= len;
+		}
+	}
+	return true;
 }

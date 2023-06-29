@@ -11,3 +11,6 @@ extern int mod_cache_take_request(http_context *);
 void mod_cache_put_context(HTTP_CONTEXT *phttp);
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp);
 BOOL mod_cache_read_response(HTTP_CONTEXT *phttp);
+extern bool mod_cache_write_request(http_context *);
+extern bool mod_cache_check_end_of_read(http_context *);
+extern bool mod_cache_discard_content(http_context *);
