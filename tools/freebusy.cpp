@@ -108,15 +108,12 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 				return {};
 			snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 			piline->append_value("BYDAY", tmp_buff);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
-			piline->append_value("BYMONTH", tmp_buff);
+			piline->append_value("BYMONTH", std::to_string(ptzstruct->standarddate.month));
 		} else if (1 == ptzstruct->standarddate.year) {
 			piline = &pcomponent->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
-			piline->append_value("BYMONTHDAY", tmp_buff);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
-			piline->append_value("BYMONTH", tmp_buff);
+			piline->append_value("BYMONTHDAY", std::to_string(ptzstruct->standarddate.day));
+			piline->append_value("BYMONTH", std::to_string(ptzstruct->standarddate.month));
 		}
 	}
 	int utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
@@ -165,15 +162,12 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 			return {};
 		snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 		piline->append_value("BYDAY", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
-		piline->append_value("BYMONTH", tmp_buff);
+		piline->append_value("BYMONTH", std::to_string(ptzstruct->daylightdate.month));
 	} else if (1 == ptzstruct->daylightdate.year) {
 		piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
-		piline->append_value("BYMONTHDAY", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
-		piline->append_value("BYMONTH", tmp_buff);
+		piline->append_value("BYMONTHDAY", std::to_string(ptzstruct->daylightdate.day));
+		piline->append_value("BYMONTH", std::to_string(ptzstruct->daylightdate.month));
 	}
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
@@ -196,20 +190,17 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
     ICAL_RRULE *pirrule) try
 {
 	ICAL_TIME itime;
-	char tmp_buff[1024];
 
 	ical_line iline("RRULE");
 	auto piline = &iline;
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		piline->append_value("FREQ", "DAILY");
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/1440);
-		piline->append_value("INTERVAL", tmp_buff);
+		piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 1440));
 		break;
 	case PATTERNTYPE_WEEK: {
 		piline->append_value("FREQ", "WEEKLY");
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-		piline->append_value("INTERVAL", tmp_buff);
+		piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 		auto &pivalue = piline->append_value("BYDAY");
 		for (unsigned int wd = 0; wd < 7; ++wd)
 			if (apr->recur_pat.pts.weekrecur & (1 << wd))
@@ -221,24 +212,19 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 		auto monthly = apr->recur_pat.period % 12 != 0;
 		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
 		if (monthly) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 			if (apr->recur_pat.pts.dayofmonth == 31)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYMONTHDAY", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
-			piline->append_value("BYMONTHDAY", tmp_buff);
+				piline->append_value("BYMONTHDAY", std::to_string(apr->recur_pat.pts.dayofmonth));
 		} else {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/12);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 12));
 			if (apr->recur_pat.pts.dayofmonth == 31)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYMONTHDAY", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
-			piline->append_value("BYMONTHDAY", tmp_buff);
+				piline->append_value("BYMONTHDAY", std::to_string(apr->recur_pat.pts.dayofmonth));
 			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
-			piline->append_value("BYMONTH", tmp_buff);
+			piline->append_value("BYMONTH", std::to_string(itime.month));
 		}
 		break;
 	}
@@ -247,31 +233,26 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 		auto monthly = apr->recur_pat.period % 12 != 0;
 		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
 		if (monthly) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
 					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYSETPOS", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
-			piline->append_value("BYSETPOS", tmp_buff);
+				piline->append_value("BYSETPOS", std::to_string(apr->recur_pat.pts.monthnth.recurnum));
 		} else {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 12));
 			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
 					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYSETPOS", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
-			piline->append_value("BYSETPOS", tmp_buff);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.firstdatetime);
-			piline->append_value("BYMONTH", tmp_buff);
+				piline->append_value("BYSETPOS", std::to_string(apr->recur_pat.pts.monthnth.recurnum));
+			piline->append_value("BYMONTH", std::to_string(apr->recur_pat.firstdatetime));
 		}
 		break;
 	}
@@ -279,9 +260,9 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 		return FALSE;
 	}
 	if (apr->recur_pat.endtype == ENDTYPE_AFTER_N_OCCURRENCES) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.occurrencecount);
-		piline->append_value("COUNT", tmp_buff);
+		piline->append_value("COUNT", std::to_string(apr->recur_pat.occurrencecount));
 	} else if (apr->recur_pat.endtype == ENDTYPE_AFTER_DATE) {
+		char tmp_buff[1024];
 		ical_utc_to_datetime(&tzcom, rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset), &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);

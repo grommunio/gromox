@@ -1019,7 +1019,6 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	char *pbuff;
 	int buff_len;
 	char *ptoken;
-	char temp_buff[64];
 	std::string autoreply_path;
 	
 	try {
@@ -1048,9 +1047,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (pconfig == nullptr)
 			return FALSE;
 		long long t = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(pvalue));
-		snprintf(temp_buff, arsizeof(temp_buff), "%lld", t);
 		pconfig->set_value(proptag == PR_EC_OUTOFOFFICE_FROM ?
-		                      "START_TIME" : "END_TIME", temp_buff);
+			"START_TIME" : "END_TIME", std::to_string(t).c_str());
 		return pconfig->save();
 	}
 	case PR_EC_OUTOFOFFICE_MSG:

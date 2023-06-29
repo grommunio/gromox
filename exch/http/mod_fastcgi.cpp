@@ -555,11 +555,9 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", domain));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", domain));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%d", phttp->connection.server_port);
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", tmp_buff));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", std::to_string(phttp->connection.server_port).c_str()));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_ip));
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%d", phttp->connection.client_port);
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", tmp_buff));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", std::to_string(phttp->connection.client_port).c_str()));
 	snprintf(tmp_buff, arsizeof(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));

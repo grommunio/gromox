@@ -380,11 +380,11 @@ unsigned long long CONFIG_FILE::get_ll(const char *key) const
 	return strtoull(sv, nullptr, 0);
 }
 
-BOOL CONFIG_FILE::set_int(const char *key, int value)
+BOOL CONFIG_FILE::set_int(const char *key, int value) try
 {
-	char buf[HXSIZEOF_Z32];
-	snprintf(buf, arsizeof(buf), "%d", value);
-	return set_value(key, buf);
+	return set_value(key, std::to_string(value).c_str());
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)

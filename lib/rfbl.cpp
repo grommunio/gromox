@@ -760,11 +760,8 @@ errno_t gx_reexec(const char *const *argv) try
 		unsetenv("LISTEN_FDS");
 		return 0;
 	}
-	if (gx_reexec_top_fd >= 0) {
-		char topfd[16];
-		snprintf(topfd, arsizeof(topfd), "%d", gx_reexec_top_fd + 1);
-		setenv("HX_LISTEN_TOP_FD", topfd, true);
-	}
+	if (gx_reexec_top_fd >= 0)
+		setenv("HX_LISTEN_TOP_FD", std::to_string(gx_reexec_top_fd + 1).c_str(), true);
 	setenv("GX_REEXEC_DONE", "1", true);
 
 #if defined(__linux__)

@@ -2630,15 +2630,12 @@ static ical_component *oxcical_export_timezone(ical &pical,
 				return nullptr;
 			snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 			piline->append_value("BYDAY", tmp_buff);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
-			piline->append_value("BYMONTH", tmp_buff);
+			piline->append_value("BYMONTH", std::to_string(ptzstruct->standarddate.month));
 		} else if (1 == ptzstruct->standarddate.year) {
 			auto piline = &pcomponent1->append_line("RRULE");
 			piline->append_value("FREQ", "YEARLY");
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
-			piline->append_value("BYMONTHDAY", tmp_buff);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
-			piline->append_value("BYMONTH", tmp_buff);
+			piline->append_value("BYMONTHDAY", std::to_string(ptzstruct->standarddate.day));
+			piline->append_value("BYMONTH", std::to_string(ptzstruct->standarddate.month));
 		}
 	}
 	int utc_offset = -(ptzstruct->bias + ptzstruct->daylightbias);
@@ -2686,15 +2683,12 @@ static ical_component *oxcical_export_timezone(ical &pical,
 			return nullptr;
 		snprintf(tmp_buff, std::size(tmp_buff), "%d%s", order, dow);
 		piline->append_value("BYDAY", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
-		piline->append_value("BYMONTH", tmp_buff);
+		piline->append_value("BYMONTH", std::to_string(ptzstruct->daylightdate.month));
 	} else if (1 == ptzstruct->daylightdate.year) {
 		auto piline = &pcomponent1->append_line("RRULE");
 		piline->append_value("FREQ", "YEARLY");
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
-		piline->append_value("BYMONTHDAY", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
-		piline->append_value("BYMONTH", tmp_buff);
+		piline->append_value("BYMONTHDAY", std::to_string(ptzstruct->daylightdate.day));
+		piline->append_value("BYMONTH", std::to_string(ptzstruct->daylightdate.month));
 	}
 	utc_offset = -(ptzstruct->bias + ptzstruct->standardbias);
 	tmp_buff[0] = utc_offset >= 0 ? '+' : '-';
@@ -2790,7 +2784,6 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 {
 	ICAL_TIME itime;
 	const char *str_tag;
-	char tmp_buff[1024];
 	
 	str_tag = NULL;
 	switch (apr->recur_pat.calendartype) {
@@ -2836,13 +2829,11 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		piline->append_value("FREQ", "DAILY");
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 1440);
-		piline->append_value("INTERVAL", tmp_buff);
+		piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 1440));
 		break;
 	case PATTERNTYPE_WEEK: {
 		piline->append_value("FREQ", "WEEKLY");
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-		piline->append_value("INTERVAL", tmp_buff);
+		piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 		auto &pivalue = piline->append_value("BYDAY");
 		for (unsigned int wd = 0; wd < 7; ++wd)
 			if (apr->recur_pat.pts.weekrecur & (1 << wd))
@@ -2854,24 +2845,19 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 		auto monthly = apr->recur_pat.period % 12 != 0;
 		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
 		if (monthly) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 			if (apr->recur_pat.pts.dayofmonth == 31)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYMONTHDAY", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
-			piline->append_value("BYMONTHDAY", tmp_buff);
+				piline->append_value("BYMONTHDAY", std::to_string(apr->recur_pat.pts.dayofmonth));
 		} else {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 12));
 			if (apr->recur_pat.pts.dayofmonth == 31)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYMONTHDAY", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
-			piline->append_value("BYMONTHDAY", tmp_buff);
+				piline->append_value("BYMONTHDAY", std::to_string(apr->recur_pat.pts.dayofmonth));
 			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
-			piline->append_value("BYMONTH", tmp_buff);
+			piline->append_value("BYMONTH", std::to_string(itime.month));
 		}
 		break;
 	}
@@ -2880,31 +2866,26 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 		auto monthly = apr->recur_pat.period % 12 != 0;
 		piline->append_value("FREQ", monthly ? "MONTHLY" : "YEARLY");
 		if (monthly) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period));
 			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
 					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYSETPOS", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
-			piline->append_value("BYSETPOS", tmp_buff);
+				piline->append_value("BYSETPOS", std::to_string(apr->recur_pat.pts.monthnth.recurnum));
 		} else {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
-			piline->append_value("INTERVAL", tmp_buff);
+			piline->append_value("INTERVAL", std::to_string(apr->recur_pat.period / 12));
 			auto &pivalue = piline->append_value("BYDAY");
 			for (unsigned int wd = 0; wd < 7; ++wd)
 				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd))
 					pivalue.append_subval(weekday_to_str(wd));
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
-				strcpy(tmp_buff, "-1");
+				piline->append_value("BYSETPOS", "-1");
 			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
-			piline->append_value("BYSETPOS", tmp_buff);
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.firstdatetime);
-			piline->append_value("BYMONTH", tmp_buff);
+				piline->append_value("BYSETPOS", std::to_string(apr->recur_pat.pts.monthnth.recurnum));
+			piline->append_value("BYMONTH", std::to_string(apr->recur_pat.firstdatetime));
 		}
 		break;
 	}
@@ -2913,9 +2894,7 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 	}
 	if (ENDTYPE_AFTER_N_OCCURRENCES ==
 		apr->recur_pat.endtype) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			apr->recur_pat.occurrencecount);
-		piline->append_value("COUNT", tmp_buff);
+		piline->append_value("COUNT", std::to_string(apr->recur_pat.occurrencecount));
 	} else if (ENDTYPE_AFTER_DATE ==
 		apr->recur_pat.endtype) {
 		auto unix_time = rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset);
@@ -2923,6 +2902,7 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 		if (!ical_itime_to_utc(&ptz_component, itime, &unix_time))
 			return FALSE;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
+		char tmp_buff[1024];
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);
 	}
@@ -3251,9 +3231,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 	auto dbl = msg.proplist.get<const double>(PROP_TAG(PT_DOUBLE, propids.ppropid[0]));
 	if (dbl != nullptr) {
 		auto v = std::clamp(static_cast<unsigned int>(100 * *dbl), 0U, 100U);
-		char buf[4];
-		snprintf(buf, sizeof(buf), "%u", v);
-		com.append_line("PERCENT-COMPLETE", buf);
+		com.append_line("PERCENT-COMPLETE", std::to_string(v));
 	}
 
 	propname = {MNID_ID, PSETID_TASK, PidLidTaskDueDate};
@@ -3733,11 +3711,8 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
 	auto psequence = pmsg->proplist.get<uint32_t>(PROP_TAG(PT_LONG, propids.ppropid[0]));
-	if (NULL != psequence) {
-		char tmp_buff[HXSIZEOF_Z32];
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
-		pcomponent->append_line("SEQUENCE", tmp_buff);
-	}
+	if (psequence != nullptr)
+		pcomponent->append_line("SEQUENCE", std::to_string(*psequence));
 	
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation};
 	if (!get_propids(&propnames, &propids))
@@ -3755,19 +3730,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 			piline->append_param("LANGUAGE", planguage);
 	}
 	
-	if (NULL != psequence) {
-		char tmp_buff[HXSIZEOF_Z32];
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
-		pcomponent->append_line("X-MICROSOFT-CDO-APPT-SEQUENCE", tmp_buff);
-	}
-	
+	if (psequence != nullptr)
+		pcomponent->append_line("X-MICROSOFT-CDO-APPT-SEQUENCE", std::to_string(*psequence));
 	auto inum = pmsg->proplist.get<int32_t>(PR_OWNER_APPT_ID);
-	if (inum != nullptr) {
-		char tmp_buff[HXSIZEOF_Z32];
-		snprintf(tmp_buff, std::size(tmp_buff), "%d", *inum);
-		pcomponent->append_line("X-MICROSOFT-CDO-OWNERAPPTID", tmp_buff);
-	}
-	
+	if (inum != nullptr)
+		pcomponent->append_line("X-MICROSOFT-CDO-OWNERAPPTID", std::to_string(*inum));
 	if (pbusystatus != nullptr)
 		busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 			"X-MICROSOFT-CDO-BUSYSTATUS", pcomponent);
