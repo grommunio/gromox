@@ -710,6 +710,23 @@ struct tIndexedFieldURI
 };
 
 /**
+ * Types.xsd:1538
+ */
+struct tInternetMessageHeader : NS_EWS_Types
+{
+	static constexpr char NAME[] = "InternetMessageHeader";
+
+	tInternetMessageHeader(const std::string_view&, const std::string_view&);
+
+	std::string HeaderName;
+	std::string content;
+
+	static std::vector<tInternetMessageHeader> parse(std::string_view);
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:1165
  */
 struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>
@@ -822,7 +839,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<bool> IsFromMe;
 	std::optional<bool> IsResend;
 	std::optional<bool> IsUnmodified;
-	//<xs:element name="InternetMessageHeaders" type="t:NonEmptyArrayOfInternetHeadersType" minOccurs="0" />
+	std::optional<std::vector<tInternetMessageHeader>> InternetMessageHeaders;
 	std::optional<sTimePoint> DateTimeSent;
 	std::optional<sTimePoint> DateTimeCreated;
 	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />

@@ -128,6 +128,21 @@ void fromProp(const TAGGED_PROPVAL* prop, std::optional<sTimePoint>& target)
 		target.emplace(sTimePoint::fromNT(*static_cast<const uint64_t*>(prop->pvalue)));
 }
 
+/**
+ * @brief      Remove leading and trailing whitespaces
+ *
+ * @param      sv      String to trim
+ *
+ * @return     Trimmed version
+ */
+std::string_view trim(const std::string_view& sv)
+{
+	size_t from = 0, to = sv.length();
+	while(from < to && std::isspace(sv[from])) ++from;
+	while(to > from && std::isspace(sv[to-1])) --to;
+	return sv.substr(from, to-from);
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1068,6 +1083,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:HasAttachments", PR_HASATTACH},
 	{"item:Importance", PR_IMPORTANCE},
 	{"item:InReplyTo", PR_IN_REPLY_TO_ID},
+	{"item:InternetMessageHeaders", PR_TRANSPORT_MESSAGE_HEADERS},
 	{"item:IsAssociated", PR_ASSOCIATED},
 	{"item:ItemClass", PR_MESSAGE_CLASS},
 	{"item:LastModifiedName", PR_LAST_MODIFIER_NAME},
@@ -1185,6 +1201,42 @@ std::string tGuid::serialize() const
 void tIndexedFieldURI::tags(sShape&) const
 {}
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+tInternetMessageHeader::tInternetMessageHeader(const std::string_view& hn, const std::string_view& c) :
+	HeaderName(hn),
+	content(c)
+{}
+
+/**
+ * @brief      Parse internet message headers
+ *
+ * @param      content   Content to parse
+ *
+ * @return List of header objects
+ */
+std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_view content)
+{
+	std::vector<tInternetMessageHeader> result;
+	if(content.empty())
+		return result;
+	for(size_t from = 0, to; from != content.npos; from = to == content.npos? to : to+1) {
+		to = content.find('\n', from);
+		std::string_view line = content.substr(from, to-from);
+		if(line.empty() || (std::isspace(line[0]) && content.empty()))
+			continue;
+		size_t sep;
+		if(std::isspace(line[0]))
+			result.back().content.append(" ").append(trim(line));
+		else if((sep = line.find(':')) == std::string_view::npos)
+			continue;
+		else
+			result.emplace_back(line.substr(0, sep), trim(line.substr(sep+1)));
+	}
+	return result;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 tItem::tItem(const sShape& shape)
@@ -1234,6 +1286,8 @@ tItem::tItem(const sShape& shape)
 		              *v32 == SENSITIVITY_COMPANY_CONFIDENTIAL? Enum::Confidential :
 		              *v32 == SENSITIVITY_PERSONAL? Enum::Personal : Enum::Normal;
 	fromProp(shape.get(PR_SUBJECT), Subject);
+	if((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
+		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(static_cast<const char*>(prop->pvalue)));
 	shape.putExtended(ExtendedProperty);
 };
 

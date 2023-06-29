@@ -468,6 +468,12 @@ tIndexedFieldURI::tIndexedFieldURI(const XMLElement* xml) :
 	XMLINITA(FieldIndex)
 {}
 
+void tInternetMessageHeader::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPA(HeaderName);
+	xml->SetText(content.c_str());
+}
+
 void tItem::serialize(XMLElement* xml) const
 {
 	auto mc = XMLDUMPT(MimeContent);
@@ -490,6 +496,7 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(IsFromMe);
 	XMLDUMPT(IsResend);
 	XMLDUMPT(IsUnmodified);
+	XMLDUMPT(InternetMessageHeaders);
 	XMLDUMPT(DateTimeSent);
 	XMLDUMPT(DateTimeCreated);
 	XMLDUMPT(DisplayCc);
