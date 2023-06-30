@@ -379,8 +379,8 @@ uint32_t MhNspContext::getaddressbookurl(char* dest)
 	if (dest == nullptr)
 		dest = std::get<getaddressbookurl_response>(response).server_url;
 	get_id_from_username(auth_info.username, &user_id);
-	memset(username1, 0, arsizeof(username1));
-	gx_strlcpy(username1, auth_info.username, arsizeof(username1));
+	memset(username1, 0, std::size(username1));
+	gx_strlcpy(username1, auth_info.username, std::size(username1));
 	auto token = strchr(username1, '@');
 	HX_strlower(username1);
 	if (token != nullptr)
@@ -408,7 +408,7 @@ uint32_t MhNspContext::getmailboxurl() try
 	token = strrchr(tmp_buff.data(), '/');
 	if (token == nullptr || strncasecmp(token, "/cn=", 4) != 0)
 		return getaddressbookurl(resp.server_url);
-	snprintf(resp.server_url, arsizeof(resp.server_url),
+	snprintf(resp.server_url, std::size(resp.server_url),
 	         "https://%s/mapi/emsmdb/?MailboxId=%s", get_host_ID(), token + 4);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
@@ -420,7 +420,7 @@ static void produce_session(const char *tag, char *session)
 	using gromox::rand;
 	auto cur_time = time(nullptr);
 	char temp_time[16], temp_name[16];
-	snprintf(temp_time, arsizeof(temp_time), "%lx", static_cast<long>(cur_time));
+	snprintf(temp_time, std::size(temp_time), "%lx", static_cast<long>(cur_time));
 	if (strlen(tag) >= 16) {
 		memcpy(temp_name, tag, 16);
 	} else {
@@ -464,9 +464,9 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	}
 	auto pparser = cookie_parser_init(ctx.orig.f_cookie.c_str());
 	auto string = cookie_parser_get(pparser, "sid");
-	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
+	if (string == nullptr || strlen(string) >= std::size(ctx.session_string))
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
-	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
+	gx_strlcpy(ctx.session_string, string, std::size(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {
 		string = cookie_parser_get(pparser, "sequence");

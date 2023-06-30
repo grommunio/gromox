@@ -234,7 +234,7 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 		return ENOMEM;
 	propvals.ppropval[propvals.count++].pvalue = abk_eid;
 	char id_string[UADDR_SIZE+2];
-	auto ret = make_inet_msgid(id_string, arsizeof(id_string), 0x5a54);
+	auto ret = make_inet_msgid(id_string, std::size(id_string), 0x5a54);
 	if (ret != 0)
 		return ret;
 	propvals.ppropval[propvals.count].proptag = PR_INTERNET_MESSAGE_ID;

@@ -217,7 +217,7 @@ static int midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
 	if (result == MIDB_E_NETIO)
 		return MIDB_E_NETIO;
 	char rsp[20];
-	auto len = snprintf(rsp, arsizeof(rsp), "FALSE %d\r\n", result);
+	auto len = snprintf(rsp, std::size(rsp), "FALSE %d\r\n", result);
 	return cmd_write_x(1, conn->sockd, rsp, len) < 0 ? MIDB_E_NETIO : 0;
 }
 

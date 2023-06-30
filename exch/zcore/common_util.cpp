@@ -1565,7 +1565,7 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
 		auto pinfo = zs_get_info();
 		if (!common_util_username_to_essdn(pinfo->get_username(),
-		    tmp_buff, arsizeof(tmp_buff)))
+		    tmp_buff, std::size(tmp_buff)))
 			return NULL;	
 	}
 	store_entryid.pmailbox_dn = tmp_buff;
@@ -1984,7 +1984,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	else
 		strcpy(charset, g_default_charset);
 	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
-	    arsizeof(tmzone)) || tmzone[0] == '\0')
+	    std::size(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, common_util_get_default_timezone());
 	common_util_set_dir(pstore->get_dir());
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
@@ -2010,7 +2010,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 		common_util_entryid_to_username_internal,
 		common_util_essdn_to_username))
 		return FALSE;
-	if (!ical.serialize(tmp_buff, arsizeof(tmp_buff)))
+	if (!ical.serialize(tmp_buff, std::size(tmp_buff)))
 		return FALSE;	
 	pical_bin->cb = strlen(tmp_buff);
 	pical_bin->pc = common_util_dup(tmp_buff);
@@ -2027,7 +2027,7 @@ message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) tr
 	
 	auto pinfo = zs_get_info();
 	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
-	    arsizeof(tmzone)) || tmzone[0] == '\0')
+	    std::size(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, common_util_get_default_timezone());
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (pbuff == nullptr)
@@ -2050,7 +2050,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	auto info = zs_get_info();
 	char tmzone[64];
 	if (!system_services_get_timezone(info->get_username(), tmzone,
-	    arsizeof(tmzone)) || tmzone[0] == '\0')
+	    std::size(tmzone)) || tmzone[0] == '\0')
 		gx_strlcpy(tmzone, common_util_get_default_timezone(), std::size(tmzone));
 
 	ICAL icobj;

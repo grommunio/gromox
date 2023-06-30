@@ -41,7 +41,7 @@ using namespace gromox;
 static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 {
 	char guid[GUIDSTR_SIZE];
-	n.guid.to_str(guid, arsizeof(guid));
+	n.guid.to_str(guid, std::size(guid));
 	if (n.kind == MNID_ID)
 		snprintf(dst, z, "%s:lid:%u", guid, n.lid);
 	else if (n.kind == MNID_STRING)
@@ -56,7 +56,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
     uint16_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
-	if (!propname_to_packed(*ppropname, s, arsizeof(s)))
+	if (!propname_to_packed(*ppropname, s, std::size(s)))
 		return false;
 	pstore->propid_hash.emplace(propid, *ppropname);
 	pstore->propname_hash.emplace(s, propid);
@@ -206,7 +206,7 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 		return TRUE;
 	}
 	char ps[NP_STRBUF_SIZE];
-	if (!propname_to_packed(*ppropname, ps, arsizeof(ps))) {
+	if (!propname_to_packed(*ppropname, ps, std::size(ps))) {
 		*ppropid = 0;
 		return TRUE;
 	}
@@ -255,7 +255,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			continue;
 		}
 		char ps[NP_STRBUF_SIZE];
-		if (!propname_to_packed(ppropnames->ppropname[i], ps, arsizeof(ps))) {
+		if (!propname_to_packed(ppropnames->ppropname[i], ps, std::size(ps))) {
 			ppropids->ppropid[i] = 0;
 			pindex_map[i] = i;
 			continue;
@@ -730,7 +730,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (!pstore->b_private)
 			return FALSE;
 		if (!system_services_get_user_displayname(pstore->account,
-		    temp_buff, arsizeof(temp_buff)))
+		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		if ('\0' == temp_buff[0]) {
 			auto tstr = cu_alloc<char>(strlen(pstore->account) + 1);
@@ -929,7 +929,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (!pstore->b_private)
 			return FALSE;
 		if (!system_services_get_user_lang(pstore->account, temp_buff,
-		    arsizeof(temp_buff)) || temp_buff[0] == '\0')
+		    std::size(temp_buff)) || temp_buff[0] == '\0')
 			return FALSE;	
 		HX_strlcat(temp_buff, ".UTF-8", sizeof(temp_buff));
 		*ppvalue = common_util_dup(temp_buff);
@@ -938,7 +938,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (!pstore->b_private)
 			return FALSE;
 		if (!system_services_get_timezone(pstore->account, temp_buff,
-		    arsizeof(temp_buff)) || temp_buff[0] == '\0') {
+		    std::size(temp_buff)) || temp_buff[0] == '\0') {
 			*ppvalue = deconst(common_util_get_default_timezone());
 			return TRUE;
 		}
@@ -1229,7 +1229,7 @@ static void set_store_lang(store_object *store, const char *locale)
 	}
 
 	char mloc[32];
-	gx_strlcpy(mloc, locale, arsizeof(mloc));
+	gx_strlcpy(mloc, locale, std::size(mloc));
 	auto p = strchr(mloc, '.');
 	if (p != nullptr)
 		*p = '\0';

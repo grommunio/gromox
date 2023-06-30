@@ -121,7 +121,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
-	for (size_t i = 0; i < arsizeof(propname_buff); ++i) {
+	for (size_t i = 0; i < std::size(propname_buff); ++i) {
 		propname_buff[i].guid = PSETID_ADDRESS;
 		propname_buff[i].kind = MNID_ID;
 	}
@@ -544,7 +544,7 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 		PR_CONTAINER_CLASS, PR_FOLDER_PATHNAME,
 		PidTagParentFolderId, PR_ATTR_HIDDEN,
 	};
-	static constexpr PROPTAG_ARRAY proptags = {.count = arsizeof(p), .pproptag = deconst(p)};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(p), deconst(p)};
 	return &proptags;
 }
 
@@ -601,7 +601,7 @@ void container_object_get_container_table_all_proptags(
 		PR_EMS_AB_CONTAINERID, PR_DISPLAY_NAME, PR_EMS_AB_IS_MASTER,
 		PR_EMS_AB_PARENT_ENTRYID, PR_AB_PROVIDER_ID,
 	};
-	pproptags->count = arsizeof(p);
+	pproptags->count = std::size(p);
 	pproptags->pproptag = deconst(p);
 }
 
@@ -854,7 +854,7 @@ void container_object_get_user_table_all_proptags(
 		PR_TEMPLATEID, PR_EMS_AB_OBJECT_GUID, PR_CREATION_TIME,
 		PR_EMS_AB_THUMBNAIL_PHOTO,
 	};
-	pproptags->count = arsizeof(p);
+	pproptags->count = std::size(p);
 	pproptags->pproptag = deconst(p);
 }
 

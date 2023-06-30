@@ -172,7 +172,7 @@ void EWSContext::experimental() const
 std::string EWSContext::get_maildir(const std::string& username) const
 {
 	char temp[256];
-	if(!plugin.mysql.get_maildir(username.c_str(), temp, arsizeof(temp)))
+	if (!plugin.mysql.get_maildir(username.c_str(), temp, std::size(temp)))
 		throw DispatchError(E3007);
 	return temp;
 }
@@ -219,7 +219,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	if(isPublic && at)
 		target = at+1;
 	char targetDir[256];
-	if(!func(target, targetDir, arsizeof(targetDir)))
+	if (!func(target, targetDir, std::size(targetDir)))
 		throw DispatchError(E3007);
 	return targetDir;
 }

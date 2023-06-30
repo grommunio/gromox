@@ -201,7 +201,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		++vc;
 	}
 	if (w_dname && system_services_get_user_displayname(username,
-	    tmp_buff, arsizeof(tmp_buff))) {
+	    tmp_buff, std::size(tmp_buff))) {
 		if (*tmp_buff == '\0')
 			strcpy(tmp_buff, username);
 		vc->proptag = PR_DISPLAY_NAME;

@@ -26,7 +26,7 @@ using namespace gromox;
 static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 {
 	char guid[GUIDSTR_SIZE];
-	n.guid.to_str(guid, arsizeof(guid));
+	n.guid.to_str(guid, std::size(guid));
 	if (n.kind == MNID_ID)
 		snprintf(dst, z, "%s:lid:%u", guid, n.lid);
 	else if (n.kind == MNID_STRING)
@@ -41,7 +41,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
     uint16_t propid, const PROPERTY_NAME *ppropname) try
 {
 	char s[NP_STRBUF_SIZE];
-	if (!propname_to_packed(*ppropname, s, arsizeof(s)))
+	if (!propname_to_packed(*ppropname, s, std::size(s)))
 		return false;
 	plogon->propid_hash.emplace(propid, *ppropname);
 	plogon->propname_hash.emplace(s, propid);
@@ -166,7 +166,7 @@ BOOL logon_object::get_named_propid(BOOL b_create,
 		return TRUE;
 	}
 	char ps[NP_STRBUF_SIZE];
-	if (!propname_to_packed(*ppropname, ps, arsizeof(ps))) {
+	if (!propname_to_packed(*ppropname, ps, std::size(ps))) {
 		*ppropid = 0;
 		return TRUE;
 	}
@@ -220,7 +220,7 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 			continue;
 		}
 		char ps[NP_STRBUF_SIZE];
-		if (!propname_to_packed(ppropnames->ppropname[i], ps, arsizeof(ps))) {
+		if (!propname_to_packed(ppropnames->ppropname[i], ps, std::size(ps))) {
 			ppropids->ppropid[i] = 0;
 			pindex_map[i] = i;
 			continue;
@@ -397,7 +397,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	char temp_buff[1024];
 	static constexpr uint64_t tmp_ll = 0;
 	static constexpr uint8_t test_buff[256]{};
-	static constexpr BINARY test_bin = {arsizeof(test_buff), {deconst(test_buff)}};
+	static constexpr BINARY test_bin = {std::size(test_buff), {deconst(test_buff)}};
 	
 	switch (proptag) {
 	case PR_MESSAGE_SIZE: {
@@ -479,8 +479,8 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A: {
 		bool ok = plogon->is_private() ?
-		          common_util_username_to_essdn(plogon->account, temp_buff, arsizeof(temp_buff)) :
-		          common_util_public_to_essdn(plogon->account, temp_buff, arsizeof(temp_buff));
+		          common_util_username_to_essdn(plogon->account, temp_buff, std::size(temp_buff)) :
+		          common_util_public_to_essdn(plogon->account, temp_buff, std::size(temp_buff));
 		if (!ok)
 			return false;
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
@@ -530,7 +530,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (!plogon->is_private())
 			return FALSE;
 		if (!common_util_get_user_displayname(plogon->account,
-		    temp_buff, arsizeof(temp_buff)))
+		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		if ('\0' == temp_buff[0]) {
 			auto tstr = cu_alloc<char>(strlen(plogon->account) + 1);
@@ -552,7 +552,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (!plogon->is_private())
 			return FALSE;
 		if (!common_util_get_user_displayname(plogon->account,
-		    temp_buff, arsizeof(temp_buff)))
+		    temp_buff, std::size(temp_buff)))
 			return FALSE;	
 		auto temp_len = utf8_to_mb_len(temp_buff);
 		auto tstr = cu_alloc<char>(temp_len);

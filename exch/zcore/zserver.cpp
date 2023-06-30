@@ -308,7 +308,7 @@ static void zs_notification_proc(const char *dir,
 	
 	if (b_table)
 		return;
-	snprintf(tmp_buff, arsizeof(tmp_buff), "%u|%s", notify_id, dir);
+	snprintf(tmp_buff, std::size(tmp_buff), "%u|%s", notify_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
 	auto iter = g_notify_table.find(tmp_buff);
 	if (iter == g_notify_table.end())
@@ -678,7 +678,7 @@ ec_error_t zs_logon(const char *username,
 	}
 	tl_hold.unlock();
 	if (!system_services_get_id_from_username(username, &user_id) ||
-	    !system_services_get_homedir(pdomain, homedir, arsizeof(homedir)) ||
+	    !system_services_get_homedir(pdomain, homedir, std::size(homedir)) ||
 	    !system_services_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecError;
 	assert(!mres.maildir.empty());
@@ -751,9 +751,9 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	EMSAB_ENTRYID tmp_entryid;
 	
 	if (!system_services_get_user_displayname(username,
-	    display_name, arsizeof(display_name)) ||
+	    display_name, std::size(display_name)) ||
 	    !system_services_get_user_privilege_bits(username, pprivilege_bits) ||
-	    !common_util_username_to_essdn(username, x500dn, arsizeof(x500dn)))
+	    !common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
 		return ecNotFound;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
@@ -803,7 +803,7 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		return zs_openentry_emsab(hsession, entryid, flags, essdn,
 		       DT_REMOTE_MAILUSER, pmapi_type, phobject);
 	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
-	    essdn, arsizeof(essdn))) {
+	    essdn, std::size(essdn))) {
 		return zs_openentry_emsab(hsession, entryid, flags, essdn,
 		       address_type, pmapi_type, phobject);
 	} else if (entryid.cb >= 20 && *reinterpret_cast<const FLATUID *>(&entryid.pb[4]) == muidZCSAB) {
@@ -1440,7 +1440,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	}
 	if (!system_services_get_username_from_id(user_id,
 	    username, GX_ARRAY_SIZE(username)) ||
-	    !system_services_get_maildir(username, dir, arsizeof(dir)))
+	    !system_services_get_maildir(username, dir, std::size(dir)))
 		return ecError;
 	uint32_t permission = rightsNone;
 	if (!exmdb_client::get_mbox_perm(dir,
@@ -2510,7 +2510,7 @@ ec_error_t zs_storeadvise(GUID hsession, uint32_t hstore,
 	if (!exmdb_client::subscribe_notification(pstore->get_dir(),
 	    event_mask, TRUE, folder_id, message_id, psub_id))
 		return ecError;
-	gx_strlcpy(dir, pstore->get_dir(), arsizeof(dir));
+	gx_strlcpy(dir, pstore->get_dir(), std::size(dir));
 	pinfo.reset();
 	std::unique_lock nl_hold(g_notify_lock);
 	if (g_notify_table.size() == g_table_size) {
@@ -3209,7 +3209,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				if (!system_services_get_user_displayname(tmp_buff,
-				    tmp_buff, arsizeof(tmp_buff)))
+				    tmp_buff, std::size(tmp_buff)))
 					continue;	
 				tmp_propval.proptag = PR_DISPLAY_NAME;
 				tmp_propval.pvalue = common_util_dup(tmp_buff);
@@ -3267,25 +3267,25 @@ static ec_error_t rectify_message(message_object *pmessage,
 	auto nt_time = rop_util_current_nttime();
 	int32_t tmp_level = -1;
 	char essdn[1024], essdn1[1024];
-	if (!common_util_username_to_essdn(account, essdn, arsizeof(essdn)))
+	if (!common_util_username_to_essdn(account, essdn, std::size(essdn)))
 		return ecError;
 	char dispname[256], dispname1[256], search_buff[1024], search_buff1[1024];
 	if (!system_services_get_user_displayname(account,
-	    dispname, arsizeof(dispname)))
+	    dispname, std::size(dispname)))
 		return ecError;
 	auto entryid = common_util_username_to_addressbook_entryid(account);
 	if (entryid == nullptr)
 		return ecError;
 	auto entryid1 = entryid;
 	BINARY search_bin, search_bin1;
-	search_bin.cb = gx_snprintf(search_buff, arsizeof(search_buff), "EX:%s", essdn) + 1;
+	search_bin.cb = gx_snprintf(search_buff, std::size(search_buff), "EX:%s", essdn) + 1;
 	search_bin.pv = search_buff;
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
-		    essdn1, arsizeof(essdn1)))
+		    essdn1, std::size(essdn1)))
 			return ecError;
 		if (!system_services_get_user_displayname(representing_username,
-		    dispname1, arsizeof(dispname1)))
+		    dispname1, std::size(dispname1)))
 			return ecError;
 		entryid1 = common_util_username_to_addressbook_entryid(representing_username);
 		if (entryid1 == nullptr)
@@ -3294,10 +3294,10 @@ static ec_error_t rectify_message(message_object *pmessage,
 		strcpy(essdn1, essdn);
 		strcpy(dispname1, dispname);
 	}
-	search_bin1.cb = gx_snprintf(search_buff1, arsizeof(search_buff1), "EX:%s", essdn1) + 1;
+	search_bin1.cb = gx_snprintf(search_buff1, std::size(search_buff1), "EX:%s", essdn1) + 1;
 	search_bin1.pv = search_buff1;
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, arsizeof(msgid), 0x5a53);
+	make_inet_msgid(msgid, std::size(msgid), 0x5a53);
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -3317,7 +3317,7 @@ static ec_error_t rectify_message(message_object *pmessage,
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
-	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
+	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals))
 		return ecError;
 	return pmessage->save();
@@ -5092,7 +5092,7 @@ ec_error_t zs_getuseravailability(GUID hsession, BINARY entryid,
 		return ecError;
 	if (!common_util_addressbook_entryid_to_username(entryid,
 	    username, GX_ARRAY_SIZE(username)) ||
-	    !system_services_get_maildir(username, maildir, arsizeof(maildir))) {
+	    !system_services_get_maildir(username, maildir, std::size(maildir))) {
 		*ppresult_string = NULL;
 		return ecSuccess;
 	}
@@ -5213,7 +5213,7 @@ ec_error_t zs_linkmessage(GUID hsession,
 		if (!(permission & frightsCreate))
 			return ecAccessDenied;
 	}
-	gx_strlcpy(maildir, pstore->get_dir(), arsizeof(maildir));
+	gx_strlcpy(maildir, pstore->get_dir(), std::size(maildir));
 	auto cpid = pinfo->cpid;
 	pinfo.reset();
 	return exmdb_client::link_message(maildir, cpid, folder_id, message_id,

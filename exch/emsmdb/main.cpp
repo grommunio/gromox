@@ -141,8 +141,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		}
 		if (!exch_emsmdb_reload(pfile))
 			return false;
-		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), arsizeof(separator));
-		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), arsizeof(org_name));
+		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), std::size(separator));
+		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), std::size(org_name));
 		average_handles = pfile->get_ll("average_handles");
 		average_blocks = pfile->get_ll("average_mem") / 256;
 		max_rcpt = pfile->get_ll("max_rcpt_num");
@@ -154,9 +154,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		ping_interval = pfile->get_ll("mailbox_ping_interval");
 		HX_unit_seconds(ping_int_s, std::size(ping_int_s), ping_interval, 0);
 		HX_unit_size(max_length_s, std::size(max_length_s), max_length, 1024, 0);
-		gx_strlcpy(smtp_ip, pfile->get_value("smtp_server_ip"), arsizeof(smtp_ip));
+		gx_strlcpy(smtp_ip, pfile->get_value("smtp_server_ip"), std::size(smtp_ip));
 		smtp_port = pfile->get_ll("smtp_server_port");
-		gx_strlcpy(submit_command, pfile->get_value("submit_command"), arsizeof(submit_command));
+		gx_strlcpy(submit_command, pfile->get_value("submit_command"), std::size(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
 
 		mlog(LV_INFO, "emsmdb: x500=\"%s\", "
