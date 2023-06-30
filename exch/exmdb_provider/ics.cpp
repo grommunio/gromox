@@ -203,13 +203,13 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	char sql_string[256];
 	if (b_private)
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size,"
 			" read_state, read_cn FROM messages WHERE "
 		         "parent_fid=%llu AND is_deleted=0",
 		         static_cast<unsigned long long>(fid_val));
 	else
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size "
 			"FROM messages WHERE parent_fid=%llu AND "
 			"is_deleted=0", static_cast<unsigned long long>(fid_val));

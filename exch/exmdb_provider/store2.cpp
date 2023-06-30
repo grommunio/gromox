@@ -426,7 +426,7 @@ static uint64_t purg_delete_unused_files(const std::string &cid_dir,
 	if (bytes == UINT64_MAX)
 		return bytes;
 	char buf[32];
-	HX_unit_size(buf, arsizeof(buf), bytes, 0, 0);
+	HX_unit_size(buf, std::size(buf), bytes, 0, 0);
 	mlog(LV_NOTICE, "I-2393: Purged %zu files (%sB) from %s",
 	     filecount, buf, cid_dir.c_str());
 	return bytes;
