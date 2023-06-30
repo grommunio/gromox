@@ -1128,11 +1128,11 @@ static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
 				decode_len = 0;
 				decode64(encode_string.title, tmp_len,
 				         temp_buff + buff_offset,
-				         arsizeof(temp_buff) - buff_offset, &decode_len);
+				         std::size(temp_buff) - buff_offset, &decode_len);
 				buff_offset += decode_len;
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
-				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				auto xl = qp_decode_ex(temp_buff, std::size(temp_buff),
 				          encode_string.title, tmp_len);
 				if (xl < 0)
 					return false;
@@ -1195,7 +1195,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 			if (0 == strcmp(encode_string.encoding, "base64")) {
 				decode_len = 0;
 				decode64(encode_string.title, tmp_len, temp_buff,
-				         arsizeof(temp_buff), &decode_len);
+				         std::size(temp_buff), &decode_len);
 				temp_buff[decode_len] = '\0';
 				if (!string_to_utf8(encode_string.charset, temp_buff,
 				    out_buff + offset, out_len - offset))
@@ -1203,7 +1203,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 					       out_string, out_len);
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
-				auto xl = qp_decode_ex(temp_buff, arsizeof(temp_buff),
+				auto xl = qp_decode_ex(temp_buff, std::size(temp_buff),
 				          encode_string.title, tmp_len, QP_MIME_HEADER);
 				if (xl < 0)
 					return false;

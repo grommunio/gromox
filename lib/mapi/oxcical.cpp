@@ -1122,7 +1122,7 @@ static BOOL oxcical_parse_uid(const ical_component &main_event,
 		return TRUE;
 	auto tmp_len = strlen(pvalue);
 	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0 &&
-	    decode_hex_binary(pvalue, tmp_buff, arsizeof(tmp_buff))) {
+	    decode_hex_binary(pvalue, tmp_buff, std::size(tmp_buff))) {
 		ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
 		if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
 		    ext_pull.m_offset == tmp_len / 2) {
@@ -1796,7 +1796,7 @@ static BOOL oxcical_parse_atx_binary(const ical_line &piline,
 	if (pvalue == nullptr)
 		pvalue = piline.get_first_paramval("FILENAME");
 	if (NULL == pvalue) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "calendar_attachment%d.dat", count);
+		snprintf(tmp_buff, std::size(tmp_buff), "calendar_attachment%d.dat", count);
 		pvalue = tmp_buff;
 	}
 	const char *pvalue1 = strrchr(pvalue, '.'); /* CONST-STRCHR-MARKER */
@@ -2605,13 +2605,13 @@ static ical_component *oxcical_export_timezone(ical &pical,
 		day = ical_get_dayofmonth(year,
 			ptzstruct->standarddate.month, order,
 			ptzstruct->standarddate.dayofweek);
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->standarddate.month,
 			day, (int)ptzstruct->standarddate.hour,
 			(int)ptzstruct->standarddate.minute,
 			(int)ptzstruct->standarddate.second);
 	} else if (1 == ptzstruct->standarddate.year) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->standarddate.month,
 			(int)ptzstruct->standarddate.day,
 			(int)ptzstruct->standarddate.hour,
@@ -2659,13 +2659,13 @@ static ical_component *oxcical_export_timezone(ical &pical,
 		day = ical_get_dayofmonth(year,
 			ptzstruct->daylightdate.month, order,
 			ptzstruct->daylightdate.dayofweek);
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->daylightdate.month,
 			day, (int)ptzstruct->daylightdate.hour,
 			(int)ptzstruct->daylightdate.minute,
 			(int)ptzstruct->daylightdate.second);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->daylightdate.month,
 			(int)ptzstruct->daylightdate.day,
 			(int)ptzstruct->daylightdate.hour,
@@ -3329,7 +3329,7 @@ static const char *oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 	if (num == nullptr || *num == ENDDATE_MISSING_RDELTA)
 		strcpy(tmp_buff, "-PT15M");
 	else
-		snprintf(tmp_buff, arsizeof(tmp_buff), "-PT%uM", *num);
+		snprintf(tmp_buff, std::size(tmp_buff), "-PT%uM", *num);
 	auto line = &com->append_line("TRIGGER", tmp_buff);
 	line->append_param("RELATED", "START");
 	com->append_line("ACTION", "DISPLAY");

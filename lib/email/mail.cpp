@@ -570,7 +570,7 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 		auto m = static_cast<const MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
 			b_tags[TAG_SIGNED] = TRUE;
-		if (m->get_content_param("smime-type", buf, arsizeof(buf)))
+		if (m->get_content_param("smime-type", buf, std::size(buf)))
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
 	if (b_tags[TAG_SIGNED])

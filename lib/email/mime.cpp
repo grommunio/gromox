@@ -410,7 +410,7 @@ bool MIME::set_content_type(const char *newtype)
 			pmime->mime_type = mime_type::single;
 		}
 	}
-	gx_strlcpy(content_type, newtype, arsizeof(content_type));
+	gx_strlcpy(content_type, newtype, std::size(content_type));
 	pmime->head_touched = TRUE;
 	return true;
 }
