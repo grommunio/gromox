@@ -72,7 +72,7 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 }
 
 static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
-	int32_t *pbias, int16_t *pyear,
+	int32_t *pbias, int32_t *pdaylightbias, int16_t *pyear,
 	SYSTEMTIME *pdate)
 {
 	int hour;
@@ -94,6 +94,18 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 	if (!ical_parse_utc_offset(pvalue, &hour, &minute))
 		return FALSE;
 	*pbias = 60*hour + minute;
+	if (strcasecmp(sub.m_name.c_str(), "DAYLIGHT") == 0) {
+		piline = sub.get_line("TZOFFSETFROM");
+		if (piline == nullptr)
+			return FALSE;
+		pvalue = piline->get_first_subvalue();
+		if (pvalue == nullptr)
+			return FALSE;
+		int fromhour, fromminute;
+		if (!ical_parse_utc_offset(pvalue, &fromhour, &fromminute))
+			return FALSE;
+		*pdaylightbias = 60 * hour + minute - (60 * fromhour + fromminute);
+	}
 	piline = sub.get_line("DTSTART");
 	if (piline == nullptr)
 		return FALSE;
@@ -159,7 +171,7 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 {
 	int i;
 	BOOL b_found;
-	int32_t bias;
+	int32_t bias, dstbias;
 	int16_t year;
 	SYSTEMTIME date;
 	BOOL b_daylight;
@@ -184,7 +196,7 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 			b_daylight = TRUE;
 		else
 			continue;
-		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &year, &date))
+		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias, &year, &date))
 			return FALSE;
 		b_found = FALSE;
 		for (i=0; i<ptz_definition->crules; i++) {
@@ -204,7 +216,7 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 			ptz_definition->prules[i].year = year;
 		}
 		if (b_daylight) {
-			ptz_definition->prules[i].daylightbias = bias;
+			ptz_definition->prules[i].daylightbias = dstbias;
 			ptz_definition->prules[i].daylightdate = date;
 		} else {
 			ptz_definition->prules[i].bias = bias;
@@ -238,9 +250,6 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 		    &ptz_definition->prules[i].daylightdate, sizeof(SYSTEMTIME)) == 0)
 			memset(&ptz_definition->prules[i].daylightdate,
 				0, sizeof(SYSTEMTIME));
-		/* calculate the offset from DAYLIGHT to STANDARD */
-		ptz_definition->prules[i].daylightbias -=
-				ptz_definition->prules[i].bias;
 	}
 	if (ptz_definition->crules > 1 &&
 		(0 == ptz_definition->prules[0].standarddate.month ||
