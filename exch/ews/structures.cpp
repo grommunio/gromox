@@ -1013,13 +1013,15 @@ sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& 
 
 tBaseFolderType::tBaseFolderType(const sShape& shape)
 {
+	const TAGGED_PROPVAL* prop;
 	fromProp(shape.get(PR_CHANGE_KEY), defaulted(FolderId).ChangeKey);
 	fromProp(shape.get(PR_CONTAINER_CLASS), FolderClass);
 	fromProp(shape.get(PR_CONTENT_COUNT), TotalCount);
 	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
 	fromProp(shape.get(PR_ENTRYID), defaulted(FolderId).Id);
 	fromProp(shape.get(PR_FOLDER_CHILD_COUNT), ChildFolderCount);
-	fromProp(shape.get(PR_PARENT_ENTRYID), defaulted(ParentFolderId).Id);
+	if((prop = shape.get(PR_PARENT_ENTRYID)))
+		fromProp(prop, defaulted(ParentFolderId).Id);
 	shape.putExtended(ExtendedProperty);
 }
 
