@@ -846,6 +846,16 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	last_square = NULL;
 	last_space = cmdline;
 	is_quoted = FALSE;
+	/*
+	 * XXX: During splitting, both normal arguments and literals get
+	 * converted to strings, and the distinction is lost.
+	 *
+	 * IMAP APPEND requires that the last argument be a message literal,
+	 * but because of the above, normal strings can be passed to the gximap
+	 * APPEND handler too. Moreover, the handler can no longer distinguish
+	 * `* APPEND fld content` from `* APPEND fld datestring` and will
+	 * create a message with datestring as content.
+	 */
 	while (ptr - cmdline < cmdlen && argc < argmax - 1) {
 		/*
 		 * After any memmove, we must immediately reevaluate *ptr,
