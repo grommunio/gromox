@@ -1543,8 +1543,9 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
 	if (NULL != pzrestriction) {
-		if (!php_to_restriction(pzrestriction, &restriction))
-			pthrow(ecError);
+		auto err = php_to_restriction(pzrestriction, &restriction);
+		if (err != ecSuccess)
+			pthrow(err);
 		prestriction = &restriction;
 	}
 	if (NULL != pzproptags) {
@@ -1718,8 +1719,9 @@ static ZEND_FUNCTION(mapi_table_restrict)
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
-	if (!php_to_restriction(pzrestrictarray, &restriction))
-		pthrow(ecError);
+	auto err = php_to_restriction(pzrestrictarray, &restriction);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_restricttable(
 		ptable->hsession, ptable->hobject,
 		&restriction, flags);
@@ -1747,8 +1749,9 @@ static ZEND_FUNCTION(mapi_table_findrow)
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
-	if (!php_to_restriction(pzrestrictarray, &restriction))
-		pthrow(ecError);
+	auto err = php_to_restriction(pzrestrictarray, &restriction);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_findrow(ptable->hsession,
 			ptable->hobject, bookmark, &restriction,
 			flags, &row_idx);
@@ -3012,9 +3015,9 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	if (pfolder->type != zs_objtype::folder)
 		pthrow(ecInvalidObject);
 	if (pzrestriction != nullptr) {
-		if (!php_to_restriction(pzrestriction,
-			&restriction))
-			pthrow(ecError);
+		auto err = php_to_restriction(pzrestriction, &restriction);
+		if (err != ecSuccess)
+			pthrow(err);
 		prestriction = &restriction;
 	}
 	if (pzfolderlist != nullptr) {
@@ -3271,8 +3274,9 @@ static ZEND_FUNCTION(mapi_exportchanges_config)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
 	if (NULL != pzrestrict && Z_TYPE_P(pzrestrict) == IS_ARRAY) {
-		if (!php_to_restriction(pzrestrict, &restriction))
-			pthrow(ecError);
+		auto err = php_to_restriction(pzrestrict, &restriction);
+		if (err != ecSuccess)
+			pthrow(err);
 		prestriction = &restriction;
 	}
 	zval_ptr_dtor(&pctx->pztarget_obj);

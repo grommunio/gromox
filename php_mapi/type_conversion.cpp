@@ -693,13 +693,15 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PT_SRESTRICTION:
+	case PT_SRESTRICTION: {
 		pvalue = emalloc(sizeof(RESTRICTION));
 		if (pvalue == nullptr)
 			return NULL;
-		if (!php_to_restriction(entry, static_cast<RESTRICTION *>(pvalue)))
+		auto err = php_to_restriction(entry, static_cast<RESTRICTION *>(pvalue));
+		if (err != ecSuccess)
 			return NULL;
 		break;
+	}
 	default:
 		return NULL;
 	}
@@ -839,7 +841,7 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
 #define IDX_PROPVALS								9
 #define IDX_RESTRICTION								10
 
-zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
+ec_error_t php_to_restriction(zval *pzval, RESTRICTION *pres)
 {
 	int i;
 	HashTable *pres_hash;
@@ -847,11 +849,11 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	pres_hash = HASH_OF(pzval);
 	if (pres_hash == nullptr || zend_hash_num_elements(pres_hash) != 2)
-		return 0;
+		return ecInvalidParam;
 
 	HashPosition hpos;
 	zend_hash_internal_pointer_reset_ex(pres_hash, &hpos);
@@ -863,24 +865,25 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 	ZVAL_DEREF(value_entry);
 	pdata_hash = HASH_OF(value_entry);
 	if (pdata_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	switch(pres->rt) {
 	case RES_AND:
 	case RES_OR: {
 		pres->pres = emalloc(sizeof(RESTRICTION_AND_OR));
 		auto andor = pres->andor;
 		if (andor == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		andor->count = zend_hash_num_elements(pdata_hash);
 		andor->pres = sta_malloc<RESTRICTION>(andor->count);
 		if (andor->pres == nullptr) {
 			andor->count = 0;
-			return 0;
+			return ecMAPIOOM;
 		}
 		i = 0;
 		ZEND_HASH_FOREACH_VAL(pdata_hash, value_entry) {
-			if (!php_to_restriction(value_entry, &andor->pres[i++]))
-				return 0;
+			auto err = php_to_restriction(value_entry, &andor->pres[i++]);
+			if (err != ecSuccess)
+				return err;
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
@@ -888,28 +891,30 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_NOT));
 		auto rnot = pres->xnot;
 		if (rnot == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		HashPosition hpos2;
 		zend_hash_internal_pointer_reset_ex(pdata_hash, &hpos2);
 		value_entry = zend_hash_get_current_data_ex(pdata_hash, &hpos2);
-		if (!php_to_restriction(value_entry, &rnot->res))
-			return 0;
+		auto err = php_to_restriction(value_entry, &rnot->res);
+		if (err != ecSuccess)
+			return err;
 		break;
 	}
 	case RES_SUBRESTRICTION: {
 		pres->pres = emalloc(sizeof(RESTRICTION_SUBOBJ));
 		auto rsub = pres->sub;
 		if (rsub == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rsub->subobject = phptag_to_proptag(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RESTRICTION);
 		if (value_entry == nullptr)
-			return 0;
-		if (!php_to_restriction(value_entry, &rsub->res))
-			return 0;	
+			return ecInvalidParam;
+		auto err = php_to_restriction(value_entry, &rsub->res);
+		if (err != ecSuccess)
+			return err;
 		break;
 	}
 	case RES_COMMENT:
@@ -917,22 +922,23 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_COMMENT));
 		auto rcom = pres->comment;
 		if (rcom == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		rcom->pres = st_malloc<RESTRICTION>();
 		if (rcom->pres == nullptr)
 			/* memory leak */
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RESTRICTION);
 		if (value_entry == nullptr)
-			return 0;
-		if (!php_to_restriction(value_entry, rcom->pres))
-			return 0;
+			return ecInvalidParam;
+		auto err = php_to_restriction(value_entry, rcom->pres);
+		if (err != ecSuccess)
+			return err;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPVALS);
 		if (value_entry == nullptr)
-			return 0;
-		auto err = php_to_tpropval_array(value_entry, &tmp_propvals);
+			return ecInvalidParam;
+		err = php_to_tpropval_array(value_entry, &tmp_propvals);
 		if (err != ecSuccess)
-			return 0;
+			return err;
 		rcom->count = tmp_propvals.count;
 		rcom->ppropval = tmp_propvals.ppropval;
 		break;
@@ -941,30 +947,30 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_CONTENT));
 		auto rcon = pres->cont;
 		if (rcon == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rcon->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_FUZZYLEVEL);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rcon->fuzzy_level = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_VALUE);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
 			auto err = php_to_tpropval_array(value_entry, &tmp_propvals);
 			if (err != ecSuccess)
-				return 0;
+				return err;
 			if (tmp_propvals.count != 1)
-				return 0;
+				return ecInvalidParam;
 			rcon->propval = *tmp_propvals.ppropval;
 		} else {
 			rcon->propval.proptag = rcon->proptag;
 			rcon->propval.pvalue = php_to_propval(value_entry, PROP_TYPE(rcon->proptag));
 			if (rcon->propval.pvalue == nullptr)
-				return 0;
+				return ecError;
 		}
 		break;
 	}
@@ -972,30 +978,30 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_PROPERTY));
 		auto rprop = pres->prop;
 		if (rprop == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rprop->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rprop->relop = static_cast<enum relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_VALUE);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
 			auto err = php_to_tpropval_array(value_entry, &tmp_propvals);
 			if (err != ecSuccess)
-				return 0;
+				return err;
 			if (tmp_propvals.count != 1)
-				return 0;
+				return ecInvalidParam;
 			rprop->propval = *tmp_propvals.ppropval;
 		} else {
 			rprop->propval.proptag = rprop->proptag;
 			rprop->propval.pvalue = php_to_propval(value_entry, PROP_TYPE(rprop->proptag));
 			if (rprop->propval.pvalue == nullptr)
-				return 0;
+				return ecError;
 		}
 		break;
 	}
@@ -1003,19 +1009,19 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_PROPCOMPARE));
 		auto rprop = pres->pcmp;
 		if (rprop == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
 			/* memory leak */
-			return 0;
+			return ecInvalidParam;
 		rprop->relop = static_cast<enum relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG1);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rprop->proptag1 = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG2);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rprop->proptag2 = zval_get_long(value_entry);
 		break;
 	}
@@ -1023,19 +1029,19 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_BITMASK));
 		auto rbm = pres->bm;
 		if (rbm == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_TYPE);
 		if (value_entry == nullptr)
 			/* memory leak */
-			return 0;
+			return ecInvalidParam;
 		rbm->bitmask_relop = static_cast<enum bm_relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_MASK);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rbm->mask = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rbm->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		break;
 	}
@@ -1043,19 +1049,19 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_SIZE));
 		auto rsize = pres->size;
 		if (rsize == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_SIZE);
 		if (value_entry == nullptr)
 			/* memory leak */
-			return 0;
+			return ecInvalidParam;
 		rsize->size = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rsize->relop = static_cast<enum relop>(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rsize->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		break;
 	}
@@ -1063,17 +1069,17 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		pres->pres = emalloc(sizeof(RESTRICTION_EXIST));
 		auto rex = pres->exist;
 		if (rex == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		rex->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		break;
 	}
 	default:
-		return 0;
+		return ecInvalidParam;
 	}
-	return 1;
+	return ecSuccess;
 }
 
 template<typename V, size_t N> static inline char *itoa(V &&v, char (&buf)[N]) try

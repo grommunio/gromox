@@ -18,7 +18,7 @@ extern ec_error_t php_to_proptag_array(zval *, PROPTAG_ARRAY *);
 extern ec_error_t php_to_tpropval_array(zval *, TPROPVAL_ARRAY *);
 extern ec_error_t php_to_tarray_set(zval *, TARRAY_SET *);
 extern zend_bool php_to_rule_list(zval *, RULE_LIST *);
-extern zend_bool php_to_restriction(zval *pzval, RESTRICTION *);
+extern ec_error_t php_to_restriction(zval *pzval, RESTRICTION *);
 extern zend_bool restriction_to_php(const RESTRICTION *, zval *);
 extern ec_error_t proptag_array_to_php(const PROPTAG_ARRAY *, zval *);
 extern ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *, zval *);
