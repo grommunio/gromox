@@ -659,8 +659,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				}
 				int k = 0;
 				ZEND_HASH_FOREACH_VAL(precipient_hash, data_entry) {
-					if (!php_to_tpropval_array(data_entry,
-					    &tmp_propvals))
+					auto err = php_to_tpropval_array(data_entry, &tmp_propvals);
+					if (err != ecSuccess)
 						return NULL;
 					prcpt_block = &xq->pblock[k];
 					prcpt_block->reserved = 0;
@@ -670,16 +670,18 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				} ZEND_HASH_FOREACH_END();
 				break;
 			}
-			case OP_TAG:
+			case OP_TAG: {
 				data_entry = zend_hash_find(paction_hash, str_proptag.get());
 				if (data_entry == nullptr)
 					return NULL;
-				if (!php_to_tpropval_array(data_entry, &tmp_propvals))
+				auto err = php_to_tpropval_array(data_entry, &tmp_propvals);
+				if (err != ecSuccess)
 					return NULL;
 				if (tmp_propvals.count != 1)
 					return NULL;
 				pblock->pdata = tmp_propvals.ppropval;
 				break;
+			}
 			case OP_DELETE:
 			case OP_MARK_AS_READ:
 				pblock->pdata = NULL;
@@ -704,27 +706,27 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	return pvalue;
 }
 
-zend_bool php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
+ec_error_t php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 {
 	zend_string *pstring;
 	unsigned long idx;
 	HashTable *ptarget_hash;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ppropvals->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == ppropvals->count) {
 	   ppropvals->ppropval = NULL;
-	   return 1;
+		return ecSuccess;
 	}
 	ppropvals->ppropval = sta_malloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (NULL == ppropvals->ppropval) {
 		ppropvals->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 
 	zval *entry;
@@ -734,10 +736,10 @@ zend_bool php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 		ppropvals->ppropval[i].proptag = phptag_to_proptag(idx);
 		ppropvals->ppropval[i].pvalue = php_to_propval(entry, PROP_TYPE(idx));
 		if (ppropvals->ppropval[i].pvalue == nullptr)
-			return 0;
+			return ecError;
 		++i;
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset) 
@@ -771,7 +773,8 @@ zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset)
 		pset->pparray[i] = st_malloc<TPROPVAL_ARRAY>();
 		if (pset->pparray[i] == nullptr)
 			return 0;
-		if (!php_to_tpropval_array(entry, pset->pparray[i]))
+		auto err = php_to_tpropval_array(entry, pset->pparray[i]);
+		if (err != ecSuccess)
 			return 0;
 		++i;
 	} ZEND_HASH_FOREACH_END();
@@ -812,7 +815,8 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
 		auto data = zend_hash_find(HASH_OF(entry), str_properties.get());
 		if (data == nullptr)
 			return 0;	
-		if (!php_to_tpropval_array(data, &plist->prule[i].propvals))
+		auto err = php_to_tpropval_array(data, &plist->prule[i].propvals);
+		if (err != ecSuccess)
 			return 0;
 		data = zend_hash_find(HASH_OF(entry), str_rowflags.get());
 		if (data == nullptr)
@@ -926,7 +930,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPVALS);
 		if (value_entry == nullptr)
 			return 0;
-		if (!php_to_tpropval_array(value_entry, &tmp_propvals))
+		auto err = php_to_tpropval_array(value_entry, &tmp_propvals);
+		if (err != ecSuccess)
 			return 0;
 		rcom->count = tmp_propvals.count;
 		rcom->ppropval = tmp_propvals.ppropval;
@@ -949,7 +954,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		if (value_entry == nullptr)
 			return 0;
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
-			if (!php_to_tpropval_array(value_entry, &tmp_propvals))
+			auto err = php_to_tpropval_array(value_entry, &tmp_propvals);
+			if (err != ecSuccess)
 				return 0;
 			if (tmp_propvals.count != 1)
 				return 0;
@@ -979,7 +985,8 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres)
 		if (value_entry == nullptr)
 			return 0;
 		if (Z_TYPE_P(value_entry) == IS_ARRAY) {
-			if (!php_to_tpropval_array(value_entry, &tmp_propvals))
+			auto err = php_to_tpropval_array(value_entry, &tmp_propvals);
+			if (err != ecSuccess)
 				return 0;
 			if (tmp_propvals.count != 1)
 				return 0;
@@ -1111,7 +1118,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto rcon = pres->cont;
 		tmp_propvals.count = 1;
 		tmp_propvals.ppropval = &rcon->propval;
-		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
+		auto err = tpropval_array_to_php(&tmp_propvals, &pzrops);
+		if (err != ecSuccess)
 			return 0;
 		zarray_init(&pzarray);
 		add_assoc_zval(&pzarray, itoa(IDX_VALUE, key), &pzrops);
@@ -1123,7 +1131,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto rprop = pres->prop;
 		tmp_propvals.count = 1;
 		tmp_propvals.ppropval = &rprop->propval;
-		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
+		auto err = tpropval_array_to_php(&tmp_propvals, &pzrops);
+		if (err != ecSuccess)
 			return 0;
 		zarray_init(&pzarray);
 		add_assoc_zval(&pzarray, itoa(IDX_VALUE, key), &pzrops);
@@ -1175,7 +1184,8 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto rcom = pres->comment;
 		tmp_propvals.count = rcom->count;
 		tmp_propvals.ppropval = rcom->ppropval;
-		if (!tpropval_array_to_php(&tmp_propvals, &pzrops))
+		auto err = tpropval_array_to_php(&tmp_propvals, &pzrops);
+		if (err != ecSuccess)
 			return 0;
 		if (!restriction_to_php(rcom->pres, &pzrestriction))
 			return 0;	
@@ -1201,7 +1211,7 @@ ec_error_t proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
 	return ecSuccess;
 }
 
-zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
+ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 {
 	char key[HXSIZEOF_Z64];
 	zval pzmval, pzalist, pzactval, pzpropval, pzactarray;
@@ -1373,26 +1383,29 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 					for (size_t k = 0; k < xq->count; ++k) {
 						tmp_propvals.count = xq->pblock[k].count;
 						tmp_propvals.ppropval = xq->pblock[k].ppropval;
-						if (!tpropval_array_to_php(&tmp_propvals, &pzpropval))
-							return 0;
+						auto err = tpropval_array_to_php(&tmp_propvals, &pzpropval);
+						if (err != ecSuccess)
+							return err;
 						zend_hash_next_index_insert(HASH_OF(&pzalist),
 									&pzpropval);
 					}
 					add_assoc_zval(&pzactval, "adrlist", &pzalist);
 					break;
 				}
-				case OP_TAG:
+				case OP_TAG: {
 					tmp_propvals.count = 1;
 					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(prule->pblock[j].pdata);
-					if (!tpropval_array_to_php(&tmp_propvals, &pzalist))
-						return 0;
+					auto err = tpropval_array_to_php(&tmp_propvals, &pzalist);
+					if (err != ecSuccess)
+						return err;
 					add_assoc_zval(&pzactval, "proptag", &pzalist);
 					break;
+				}
 				case OP_DELETE:
 				case OP_MARK_AS_READ:
 					break;
 				default:
-					return 0;
+					return ecInvalidParam;
 				};
 				add_assoc_zval(&pzactarray, itoa(j, key), &pzactval);
 			}
@@ -1401,12 +1414,12 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		}
 		case PT_SRESTRICTION:
 			if (!restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval))
-				return 0;
+				return ecError;
 			add_assoc_zval(pzret, proptag_string, &pzactval);
 			break;
 		}
 	}
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
@@ -1415,7 +1428,8 @@ zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 	
 	zarray_init(pret);
 	for (size_t i = 0; i < pset->count; ++i) {
-		if (!tpropval_array_to_php(pset->pparray[i], &pzpropval))
+		auto err = tpropval_array_to_php(pset->pparray[i], &pzpropval);
+		if (err != ecSuccess)
 			return 0;
 		zend_hash_next_index_insert(HASH_OF(pret), &pzpropval);
 	}

@@ -2357,8 +2357,9 @@ static ZEND_FUNCTION(mapi_setprops)
 		pthrow(ecInvalidParam);
 	}
 	}
-	if (!php_to_tpropval_array(pzpropvals, &propvals))
-		pthrow(ecError);
+	auto err = php_to_tpropval_array(pzpropvals, &propvals);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_setpropvals(probject->hsession,
 							probject->hobject, &propvals);
 	if (result != ecSuccess)
@@ -2789,9 +2790,9 @@ static ZEND_FUNCTION(mapi_getprops)
 				probject->hobject, pproptags, &propvals);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (!tpropval_array_to_php(&propvals,
-		&pzpropvals))
-		pthrow(ecError);
+	auto err = tpropval_array_to_php(&propvals, &pzpropvals);
+	if (err != ecSuccess)
+		pthrow(err);
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 }
@@ -3291,8 +3292,8 @@ static zend_bool import_message_change(zval *pztarget_obj,
 	ZVAL_NULL(&pzvalargs[0]);
 	ZVAL_LONG(&pzvalargs[1], flags);
 	ZVAL_NULL(&pzvalargs[2]);
-	if (!tpropval_array_to_php(pproplist,
-	    &pzvalargs[0]))
+	auto err = tpropval_array_to_php(pproplist, &pzvalargs[0]);
+	if (err != ecSuccess)
 		return 0;
 	ZVAL_NULL(&pzvalreturn);
 	ZVAL_STRING(&pzvalfuncname, "ImportMessageChange");
@@ -3371,8 +3372,8 @@ static zend_bool import_folder_change(zval *pztarget_obj,
 
 	ZVAL_NULL(&pzvalfuncname);
 	ZVAL_NULL(&pzvalreturn);
-	if (!tpropval_array_to_php(pproplist,
-		&pzvalargs)) {
+	auto err = tpropval_array_to_php(pproplist, &pzvalargs);
+	if (err != ecSuccess) {
 		zval_ptr_dtor(&pzvalfuncname);
 		zval_ptr_dtor(&pzvalreturn);
 		return 0;
@@ -3622,8 +3623,9 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 		pthrow(ecInvalidParam);
     ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importcontentschanges, le_mapi_importcontentschanges);
-	if (!php_to_tpropval_array(pzresprops, &propvals))
-		pthrow(ecError);
+	auto err = php_to_tpropval_array(pzresprops, &propvals);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_importmessage(pctx->hsession,
 			pctx->hobject, flags, &propvals, &hobject);
 	if (result != ecSuccess)
@@ -3769,8 +3771,9 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 		ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importhierarchychanges,
 		le_mapi_importhierarchychanges);
-	if (!php_to_tpropval_array(pzresprops, &propvals))
-		pthrow(ecError);
+	auto err = php_to_tpropval_array(pzresprops, &propvals);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_importfolder(
 			pctx->hsession, pctx->hobject,
 			&propvals);
