@@ -719,7 +719,9 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	tmp_buff[0] = str_zone[1];
 	tmp_buff[1] = str_zone[2];
 	tmp_buff[2] = '\0';
-	int hour = strtol(tmp_buff, nullptr, 0);
+	// Use base 10 because for base 0 strtol interprets prefix 0
+	// as an octal number, so e.g. '08' will result in 0.
+	int hour = strtol(tmp_buff, nullptr, 10);
 	if (hour < 0 || hour > 23) {
 		return false;
 	}
@@ -727,7 +729,7 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	tmp_buff[0] = str_zone[3];
 	tmp_buff[1] = str_zone[4];
 	tmp_buff[2] = '\0';
-	int minute = strtol(tmp_buff, nullptr, 0);
+	int minute = strtol(tmp_buff, nullptr, 10);
 	if (minute < 0 || minute > 59) {
 		return false;
 	}
