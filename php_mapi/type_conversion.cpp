@@ -742,43 +742,43 @@ ec_error_t php_to_tpropval_array(zval *pzval, TPROPVAL_ARRAY *ppropvals)
 	return ecSuccess;
 }
 
-zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset) 
+ec_error_t php_to_tarray_set(zval *pzval, TARRAY_SET *pset)
 {
 	HashTable *ptarget_hash;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	if (Z_TYPE_P(pzval) != IS_ARRAY)
-		return 0;
+		return ecInvalidParam;
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	pset->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == pset->count) {
 		pset->pparray = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	pset->pparray = sta_malloc<TPROPVAL_ARRAY *>(pset->count);
 	if (NULL == pset->pparray) {
 		pset->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 
 	zval *entry;
 	size_t i = 0;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
 		if (Z_TYPE_P(entry) != IS_ARRAY)
-			return 0;
+			return ecInvalidParam;
 		pset->pparray[i] = st_malloc<TPROPVAL_ARRAY>();
 		if (pset->pparray[i] == nullptr)
-			return 0;
+			return ecMAPIOOM;
 		auto err = php_to_tpropval_array(entry, pset->pparray[i]);
 		if (err != ecSuccess)
-			return 0;
+			return err;
 		++i;
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
@@ -1422,7 +1422,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 	return ecSuccess;
 }
 
-zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
+ec_error_t tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 {
 	zval pzpropval;
 	
@@ -1430,10 +1430,10 @@ zend_bool tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 	for (size_t i = 0; i < pset->count; ++i) {
 		auto err = tpropval_array_to_php(pset->pparray[i], &pzpropval);
 		if (err != ecSuccess)
-			return 0;
+			return err;
 		zend_hash_next_index_insert(HASH_OF(pret), &pzpropval);
 	}
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)

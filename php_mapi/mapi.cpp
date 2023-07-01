@@ -845,15 +845,17 @@ static ZEND_FUNCTION(mapi_ab_resolvename)
 		le_mapi_addressbook);
 	if (psession->type != zs_objtype::addrbook)
 		pthrow(ecInvalidObject);
-	if (!php_to_tarray_set(pzarray, &cond_set))
-		pthrow(ecError);
+	auto err = php_to_tarray_set(pzarray, &cond_set);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_resolvename(
 		psession->hsession, &cond_set,
 		&result_set);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (!tarray_set_to_php(&result_set, &pzrowset))
-		pthrow(ecError);
+	err = tarray_set_to_php(&result_set, &pzrowset);
+	if (err != ecSuccess)
+		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 }
@@ -1555,8 +1557,9 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 	         INT32_MAX, prestriction, pproptags, &rowset);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (!tarray_set_to_php(&rowset, &pzrowset))
-		pthrow(ecError);
+	auto err = tarray_set_to_php(&rowset, &pzrowset);
+	if (err != ecSuccess)
+		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 }
@@ -1590,8 +1593,9 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 			pproptags, &rowset);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (!tarray_set_to_php(&rowset, &pzrowset))
-		pthrow(ecError);
+	auto err = tarray_set_to_php(&rowset, &pzrowset);
+	if (err != ecSuccess)
+		pthrow(err);
 	RETVAL_ZVAL(&pzrowset, 0, 0);
 	MAPI_G(hr) = ecSuccess;
 }
@@ -1852,8 +1856,9 @@ static ZEND_FUNCTION(mapi_message_modifyrecipients)
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (pmessage->type != zs_objtype::message)
 		pthrow(ecInvalidObject);
-	if (!php_to_tarray_set(pzadrlist, &rcpt_list))
-		pthrow(ecError);
+	auto err = php_to_tarray_set(pzadrlist, &rcpt_list);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_modifyrecipients(
 		pmessage->hsession, pmessage->hobject,
 		flags, &rcpt_list);
