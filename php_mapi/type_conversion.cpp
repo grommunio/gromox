@@ -783,29 +783,29 @@ ec_error_t php_to_tarray_set(zval *pzval, TARRAY_SET *pset)
 	return ecSuccess;
 }
 
-zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
+ec_error_t php_to_rule_list(zval *pzval, RULE_LIST *plist)
 {
 	zstrplus str_properties(zend_string_init("properties", sizeof("properties") - 1, 0));
 	zstrplus str_rowflags(zend_string_init("rowflags", sizeof("rowflags") - 1, 0));
 	HashTable *ptarget_hash;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	if (Z_TYPE_P(pzval) != IS_ARRAY)
-		return 0;
+		return ecInvalidParam;
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	plist->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == plist->count) {
 		plist->prule = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	plist->prule = sta_malloc<RULE_DATA>(plist->count);
 	if (NULL == plist->prule) {
 		plist->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 
 	zval *entry;
@@ -813,20 +813,20 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist)
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
 		ZVAL_DEREF(entry);
 		if (Z_TYPE_P(entry) != IS_ARRAY)
-			return 0;
+			return ecInvalidParam;
 		auto data = zend_hash_find(HASH_OF(entry), str_properties.get());
 		if (data == nullptr)
-			return 0;	
+			return ecInvalidParam;
 		auto err = php_to_tpropval_array(data, &plist->prule[i].propvals);
 		if (err != ecSuccess)
-			return 0;
+			return err;
 		data = zend_hash_find(HASH_OF(entry), str_rowflags.get());
 		if (data == nullptr)
-			return 0;	
+			return ecInvalidParam;
 		plist->prule[i].flags = zval_get_long(data);
 		++i;
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
 #define IDX_VALUE									0

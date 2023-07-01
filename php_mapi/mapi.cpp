@@ -3051,8 +3051,9 @@ static ZEND_FUNCTION(mapi_folder_modifyrules)
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (pfolder->type != zs_objtype::folder)
 		pthrow(ecInvalidObject);
-	if (!php_to_rule_list(pzrows, &rule_list))
-		pthrow(ecError);
+	auto err = php_to_rule_list(pzrows, &rule_list);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_modifyrules(pfolder->hsession,
 					pfolder->hobject, flags, &rule_list);
 	if (result != ecSuccess)
