@@ -2309,9 +2309,9 @@ static ZEND_FUNCTION(mapi_getidsfromnames)
 		&pzstore, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (pstore->type != zs_objtype::store)
 		pthrow(ecInvalidObject);
-	if (!php_to_propname_array(pznames,
-		pzguids, &propnames))
-		pthrow(ecError);
+	auto err = php_to_propname_array(pznames, pzguids, &propnames);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_getnamedpropids(
 		pstore->hsession, pstore->hobject,
 		&propnames, &propids);

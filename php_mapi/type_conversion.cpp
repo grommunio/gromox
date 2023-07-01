@@ -1585,7 +1585,7 @@ zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *
 	return 1;
 }
 
-zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
+ec_error_t php_to_propname_array(zval *pzval_names, zval *pzval_guids,
     PROPNAME_ARRAY *ppropnames)
 {
 	int i;
@@ -1599,16 +1599,16 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 	ppropnames->count = zend_hash_num_elements(pnameshash);
 	if (NULL != pguidhash && ppropnames->count !=
 		zend_hash_num_elements(pguidhash)) {
-		return 0;
+		return ecInvalidParam;
 	}
 	if (0 == ppropnames->count) {
 		ppropnames->ppropname = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	ppropnames->ppropname = sta_malloc<PROPERTY_NAME>(ppropnames->count);
 	if (NULL == ppropnames->ppropname) {
 		ppropnames->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 	zend_hash_internal_pointer_reset(pnameshash);
 	if (pguidhash != nullptr)
@@ -1636,7 +1636,7 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 			ppropnames->ppropname[i].lid = 0;
 			ppropnames->ppropname[i].pname = estrdup(Z_STRVAL_P(entry));
 			if (ppropnames->ppropname[i].pname == nullptr)
-				return 0;
+				return ecMAPIOOM;
 			break;
 		case IS_DOUBLE:
 			ppropnames->ppropname[i].kind = MNID_ID;
@@ -1644,11 +1644,11 @@ zend_bool php_to_propname_array(zval *pzval_names, zval *pzval_guids,
 			ppropnames->ppropname[i].pname = NULL;
 			break;
 		default:
-			return 0;
+			return ecInvalidParam;
 		}
 		zend_hash_move_forward_ex(pnameshash, &thpos);
 		if (pguidhash != nullptr)
 			zend_hash_move_forward_ex(pguidhash, &ghpos);
 	}
-	return 1;
+	return ecSuccess;
 }
