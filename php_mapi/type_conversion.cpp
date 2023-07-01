@@ -51,25 +51,25 @@ uint32_t phptag_to_proptag(uint32_t proptag)
 	}
 }
 
-zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
+ec_error_t php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 {
 	HashTable *ptarget_hash;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	pbins->count = zend_hash_num_elements(Z_ARRVAL_P(pzval));
 	if (0 == pbins->count) {
 		pbins->pbin = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	pbins->pbin = sta_malloc<BINARY>(pbins->count);
 	if (NULL == pbins->pbin) {
 		pbins->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 
 	size_t i = 0;
@@ -83,23 +83,23 @@ zend_bool php_to_binary_array(zval *pzval, BINARY_ARRAY *pbins)
 			pbins->pbin[i].pb = sta_malloc<uint8_t>(pbins->pbin[i].cb);
 			if (NULL == pbins->pbin[i].pb) {
 				pbins->pbin[i].cb = 0;
-				return 0;
+				return ecMAPIOOM;
 			}
 			memcpy(pbins->pbin[i].pb, str->val, str->len);
 		}
 		++i;
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
-zend_bool binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
+ec_error_t binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 {
 	zarray_init(pzval);
 	for (size_t i = 0; i < pbins->count; ++i)
 		add_next_index_stringl(
 			pzval, reinterpret_cast<const char *>(pbins->pbin[i].pb),
 			pbins->pbin[i].cb);
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)

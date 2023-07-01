@@ -1112,8 +1112,9 @@ static ZEND_FUNCTION(mapi_folder_deletemessages)
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (pfolder->type != zs_objtype::folder)
 		pthrow(ecInvalidObject);
-	if (!php_to_binary_array(pzarray, &entryid_array))
-		pthrow(ecError);
+	auto err = php_to_binary_array(pzarray, &entryid_array);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_deletemessages(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, flags);
@@ -1143,8 +1144,9 @@ static ZEND_FUNCTION(mapi_folder_copymessages)
 		&pzdstfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (pdstfolder->type != zs_objtype::folder)
 		pthrow(ecInvalidObject);
-	if (!php_to_binary_array(pzarray, &entryid_array))
-		pthrow(ecError);
+	auto err = php_to_binary_array(pzarray, &entryid_array);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_copymessages(
 		psrcfolder->hsession, psrcfolder->hobject,
 		pdstfolder->hobject, &entryid_array, flags);
@@ -1170,8 +1172,9 @@ static ZEND_FUNCTION(mapi_folder_setreadflags)
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (pfolder->type != zs_objtype::folder)
 		pthrow(ecInvalidObject);
-	if (!php_to_binary_array(pzarray, &entryid_array))
-		pthrow(ecError);
+	auto err = php_to_binary_array(pzarray, &entryid_array);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_setreadflags(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, flags);
@@ -1543,8 +1546,9 @@ static ZEND_FUNCTION(mapi_table_queryallrows)
 		prestriction = &restriction;
 	}
 	if (NULL != pzproptags) {
-		if (!php_to_proptag_array(pzproptags, &proptags))
-			pthrow(ecError);
+		auto err = php_to_proptag_array(pzproptags, &proptags);
+		if (err != ecSuccess)
+			pthrow(err);
 		pproptags = &proptags;
 	}
 	auto result = zclient_queryrows(ptable->hsession, ptable->hobject, 0,
@@ -1576,8 +1580,9 @@ static ZEND_FUNCTION(mapi_table_queryrows)
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
 	if (NULL != pzproptags) {
-		if (!php_to_proptag_array(pzproptags, &proptags))
-			pthrow(ecError);
+		auto err = php_to_proptag_array(pzproptags, &proptags);
+		if (err != ecSuccess)
+			pthrow(err);
 		pproptags = &proptags;
 	}
 	auto result = zclient_queryrows(ptable->hsession,
@@ -1607,8 +1612,9 @@ static ZEND_FUNCTION(mapi_table_setcolumns)
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
-	if (!php_to_proptag_array(pzproptags, &proptags))
-		pthrow(ecError);
+	auto err = php_to_proptag_array(pzproptags, &proptags);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_setcolumns(
 		ptable->hsession, ptable->hobject,
 		&proptags, flags);
@@ -2969,11 +2975,10 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		pthrow(result);
 	if (prestriction == nullptr)
 		ZVAL_NULL(&pzrestriction);
-	else if (!restriction_to_php(
-		prestriction, &pzrestriction)
-		|| !binary_array_to_php(&entryid_array,
-		&pzfolderlist))
+	else if (!restriction_to_php(prestriction, &pzrestriction))
 		pthrow(ecError);
+	else if (auto err = binary_array_to_php(&entryid_array, &pzfolderlist); err != ecSuccess)
+		pthrow(err);
 	zarray_init(return_value);
 	add_assoc_zval(return_value, "restriction", &pzrestriction);
 	add_assoc_zval(return_value, "folderlist", &pzfolderlist);
@@ -3005,9 +3010,9 @@ static ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 		prestriction = &restriction;
 	}
 	if (pzfolderlist != nullptr) {
-		if (!php_to_binary_array(pzfolderlist,
-			&entryid_array))
-			pthrow(ecError);
+		auto err = php_to_binary_array(pzfolderlist, &entryid_array);
+		if (err != ecSuccess)
+			pthrow(err);
 		pentryid_array = &entryid_array;
 	}
 	auto result = zclient_setsearchcriteria(
@@ -3311,7 +3316,8 @@ static zend_bool import_message_deletion(zval *pztarget_obj,
 	ZVAL_NULL(&pzvalreturn);
 	ZVAL_LONG(&pzvalargs[0], flags);
 	ZVAL_NULL(&pzvalargs[1]);
-	if (!binary_array_to_php(pbins, &pzvalargs[1])) {
+	auto err = binary_array_to_php(pbins, &pzvalargs[1]);
+	if (err != ecSuccess) {
 		zval_ptr_dtor(&pzvalfuncname);
 		zval_ptr_dtor(&pzvalreturn);
 		zval_ptr_dtor(&pzvalargs[0]);
@@ -3391,8 +3397,8 @@ static zend_bool import_folder_deletion(zval *pztarget_obj,
 	ZVAL_NULL(&pzvalfuncname);
 	ZVAL_NULL(&pzvalreturn);
 	ZVAL_LONG(&pzvalargs[0], 0); /* flags, not used currently */
-	if (!binary_array_to_php(pentryid_array,
-		&pzvalargs[1])) {
+	auto err = binary_array_to_php(pentryid_array, &pzvalargs[1]);
+	if (err != ecSuccess) {
 		zval_ptr_dtor(&pzvalfuncname);
 		zval_ptr_dtor(&pzvalreturn);
 		zval_ptr_dtor(&pzvalargs[0]);
@@ -3648,8 +3654,9 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 		ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importcontentschanges,
 		le_mapi_importcontentschanges);
-	if (!php_to_binary_array(pzresmessages, &message_bins))
-		pthrow(ecError);
+	auto err = php_to_binary_array(pzresmessages, &message_bins);
+	if (err != ecSuccess)
+		pthrow(err);
 	flags = (flags & SYNC_SOFT_DELETE) ? 0 : SYNC_DELETES_FLAG_HARDDELETE;
 	auto result = zclient_importdeletion(
 			pctx->hsession, pctx->hobject,
@@ -3785,8 +3792,9 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 		pthrow(ecInvalidParam);
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importhierarchychanges, le_mapi_importhierarchychanges);
-	if (!php_to_binary_array(pzresfolders, &folder_bins))
-		pthrow(ecError);
+	auto err = php_to_binary_array(pzresfolders, &folder_bins);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_importdeletion(
 			pctx->hsession, pctx->hobject,
 			flags, &folder_bins);
