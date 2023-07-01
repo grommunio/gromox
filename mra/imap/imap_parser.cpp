@@ -609,13 +609,13 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 		}
 
 		char *argv[128];
-		if (PROTO_STAT_USERNAME == pcontext->proto_stat) {
+		if (iproto_stat::username == pcontext->proto_stat) {
 			argv[0] = pcontext->command_buffer;
 			argv[1] = NULL;
 			imap_cmd_parser_username(1, argv, pcontext);
 			pcontext->command_len = 0;
 			return X_LITERAL_PROCESSING;
-		} else if (PROTO_STAT_PASSWORD == pcontext->proto_stat) {
+		} else if (iproto_stat::password == pcontext->proto_stat) {
 			argv[0] = pcontext->command_buffer;
 			argv[1] = NULL;
 			if (DISPATCH_SHOULD_CLOSE == imap_cmd_parser_password(
@@ -960,9 +960,9 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
 		pcontext->connection.write(imap_reply_str, string_length);
 	}
 	pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
+	if (iproto_stat::select == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
-		pcontext->proto_stat = PROTO_STAT_AUTH;
+		pcontext->proto_stat = iproto_stat::auth;
 		pcontext->selected_folder[0] = '\0';
 	}
 	if (-1 != pcontext->message_fd) {
@@ -1479,7 +1479,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
         return;
     }
 	pcontext->connection.reset();
-	pcontext->proto_stat = 0;
+	pcontext->proto_stat = iproto_stat::none;
 	pcontext->sched_stat = isched_stat::none;
 	pcontext->mid[0] = '\0';
 	pcontext->file_path[0] = '\0';

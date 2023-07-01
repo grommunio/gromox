@@ -34,13 +34,8 @@ enum {
 	DISPATCH_ACTMASK = 0xFF000000U,
 };
 
-enum {
-	PROTO_STAT_NONE = 0,
-	PROTO_STAT_NOAUTH,
-	PROTO_STAT_USERNAME,
-	PROTO_STAT_PASSWORD,
-	PROTO_STAT_AUTH,
-	PROTO_STAT_SELECT
+enum class iproto_stat {
+	none = 0, noauth, username, password, auth, select,
 };
 
 enum class isched_stat {
@@ -97,11 +92,11 @@ struct imap_context final : public schedule_context {
 	~imap_context();
 	NOMOVE(imap_context);
 	/* a.k.a. is_login in pop3 */
-	inline bool is_authed() const { return proto_stat >= PROTO_STAT_AUTH; }
+	inline bool is_authed() const { return proto_stat >= iproto_stat::auth; }
 
 	GENERIC_CONNECTION connection;
 	std::string mid, file_path;
-	int proto_stat = 0;
+	iproto_stat proto_stat = iproto_stat::none;
 	isched_stat sched_stat = isched_stat::none;
 	int message_fd = -1;
 	char *write_buff = nullptr;
