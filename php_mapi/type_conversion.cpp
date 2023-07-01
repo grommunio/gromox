@@ -139,32 +139,32 @@ zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 	return 1;
 }
 
-zend_bool php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
+ec_error_t php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)
 {
 	HashTable *ptarget_hash;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	pproptags->count = zend_hash_num_elements(ptarget_hash);
 	if (0 == pproptags->count) {
 		pproptags->pproptag = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	pproptags->pproptag = sta_malloc<uint32_t>(pproptags->count);
 	if (pproptags->pproptag == nullptr) {
 		pproptags->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 	size_t i = 0;
 	zval *entry;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
 		pproptags->pproptag[i++] = phptag_to_proptag(zval_get_long(entry));
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
 static void *php_to_propval(zval *entry, uint16_t proptype)
@@ -1192,13 +1192,13 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 	return 1;
 }
 
-zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
+ec_error_t proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
 {
 	zarray_init(pzret);
 	for (unsigned int i = 0; i < pproptags->count; ++i)
 		add_next_index_long(pzret,
 			proptag_to_phptag(pproptags->pproptag[i]));
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
@@ -1545,7 +1545,8 @@ zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *
 				pobject_notification->pold_parentid->cb);
 			}
 			if (NULL != pobject_notification->pproptags) {
-				if (!proptag_array_to_php(pobject_notification->pproptags, &pzvalprops))
+				auto err = proptag_array_to_php(pobject_notification->pproptags, &pzvalprops);
+				if (err != ecSuccess)
 					return 0;
 				add_assoc_zval(&pzvalnotif, "proptagarray", &pzvalprops);
 			}

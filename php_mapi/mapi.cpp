@@ -2416,9 +2416,9 @@ static ZEND_FUNCTION(mapi_copyto)
 	}
 	}
 	if (pzexcludeprops != nullptr) {
-		if (!php_to_proptag_array(pzexcludeprops,
-			&exclude_proptags))
-			pthrow(ecError);
+		auto err = php_to_proptag_array(pzexcludeprops, &exclude_proptags);
+		if (err != ecSuccess)
+			pthrow(err);
 		pexclude_proptags = &exclude_proptags;
 	}
 	auto result = zclient_copyto(psrcobject->hsession,
@@ -2521,8 +2521,9 @@ static ZEND_FUNCTION(mapi_deleteprops)
 		pthrow(ecInvalidParam);
 	}
 	}
-	if (!php_to_proptag_array(pzproptags, &proptags))
-		pthrow(ecError);
+	auto err = php_to_proptag_array(pzproptags, &proptags);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_deletepropvals(probject->hsession,
 								probject->hobject, &proptags);
 	if (result != ecSuccess)
@@ -2779,9 +2780,9 @@ static ZEND_FUNCTION(mapi_getprops)
 	}
 	}
 	if(NULL != pztagarray) {
-		if (!php_to_proptag_array(pztagarray,
-			&proptags))
-			pthrow(ecError);
+		auto err = php_to_proptag_array(pztagarray, &proptags);
+		if (err != ecSuccess)
+			pthrow(err);
 		pproptags = &proptags;
 	}
 	auto result = zclient_getpropvals(probject->hsession,
@@ -2813,8 +2814,9 @@ static ZEND_FUNCTION(mapi_getnamesfromids)
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (pstore->type != zs_objtype::store)
 			pthrow(ecInvalidObject);
-	if (!php_to_proptag_array(pzarray, &proptags))
-		pthrow(ecError);
+	auto err = php_to_proptag_array(pzarray, &proptags);
+	if (err != ecSuccess)
+		pthrow(err);
 	propids.count = proptags.count;
 	propids.ppropid = sta_malloc<uint16_t>(proptags.count);
 	if (NULL == propids.ppropid)
