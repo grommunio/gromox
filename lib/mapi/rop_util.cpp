@@ -12,6 +12,15 @@
 #include <gromox/util.hpp>
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
+namespace
+{
+/// NT timestamp unit (100 ns)
+using nt_dur = std::chrono::duration<uint64_t, std::ratio<1, 10'000'000>>;
+/// Offset for NT timestamps
+static constexpr nt_dur nt_offset = std::chrono::duration_cast<nt_dur>(std::chrono::seconds(TIME_FIXUP_CONSTANT_INT));
+
+} // anonymous namespace
+
 using namespace gromox;
 
 uint16_t rop_util_get_replid(eid_t eid)
@@ -108,7 +117,7 @@ eid_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
 {
 	eid_t eid;
 	auto e = reinterpret_cast<uint8_t *>(&eid);
-	
+
 #if !GX_BIG_ENDIAN
 	e[0] = 0;
 	e[1] = 0;
@@ -164,23 +173,29 @@ int rop_util_get_domain_id(GUID guid)
 
 uint64_t rop_util_unix_to_nttime(time_t unix_time)
 {
-	uint64_t nt_time; 
-	
+	uint64_t nt_time;
+
 	nt_time = unix_time;
 	nt_time += TIME_FIXUP_CONSTANT_INT;
 	nt_time *= 10000000;
 	return nt_time;
 }
 
+uint64_t rop_util_unix_to_nttime(const gromox::time_point& unix_time)
+{return (std::chrono::duration_cast<nt_dur>(unix_time.time_since_epoch())+nt_offset).count();}
+
 time_t rop_util_nttime_to_unix(uint64_t nt_time)
 {
 	uint64_t unix_time;
-	
+
 	unix_time = nt_time;
 	unix_time /= 10000000;
 	unix_time -= TIME_FIXUP_CONSTANT_INT;
 	return (time_t)unix_time;
 }
+
+gromox::time_point rop_util_nttime_to_unix2(uint64_t nt_time)
+{return gromox::time_point(nt_dur(nt_time)-nt_offset);}
 
 time_t rop_util_rtime_to_unix(uint32_t t)
 {

@@ -14,6 +14,7 @@
 #include <gromox/mapi_types.hpp>
 
 #include "ObjectCache.hpp"
+#include "exceptions.hpp"
 #include "soaputil.hpp"
 
 struct MIME_POOL;
@@ -24,14 +25,17 @@ namespace Structures
 {
 struct sAttachmentId;
 struct sMessageEntryId;
-struct sShape;
+class  sShape;
 struct sFolderSpec;
+struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
+struct tContactsFolderType;
 struct tDistinguishedFolderId;
 struct tFileAttachment;
 struct tFolderId;
 struct tFolderResponseShape;
+struct tFolderType;
 struct tItem;
 struct tItemAttachment;
 struct tItemResponseShape;
@@ -40,8 +44,11 @@ struct tMessage;
 struct tPath;
 struct tReferenceAttachment;
 struct tSerializableTimeZone;
+struct tSearchFolderType;
+struct tTasksFolderType;
 
 using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
+using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
 using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 }
 
@@ -66,12 +73,14 @@ public:
 	struct _mysql {
 		_mysql();
 
+		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_homedir)* get_homedir;
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
-		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
-		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 		decltype(mysql_adaptor_get_user_aliases) *get_user_aliases;
+		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
+		decltype(mysql_adaptor_get_user_ids) *get_user_ids;
 		decltype(mysql_adaptor_get_user_properties) *get_user_properties;
+		decltype(mysql_adaptor_get_username_from_id)* get_username_from_id;
 	} mysql; ///< mysql adaptor function pointers
 
 	struct _exmdb {
@@ -141,8 +150,6 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
-	Structures::sShape collectTags(const Structures::tItemResponseShape&, const std::optional<std::string>& = std::nullopt) const;
-	Structures::sShape collectTags(const Structures::tFolderResponseShape&, const std::optional<std::string>& = std::nullopt) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
@@ -150,15 +157,20 @@ public:
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
+	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
-	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&) const;
+	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
+	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
-	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, const Structures::sShape&) const;
+	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
+	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	void updated(const std::string&, const Structures::sMessageEntryId&) const;
+	std::string username_to_essdn(const std::string&) const;
 
 	void experimental() const;
 
@@ -170,16 +182,67 @@ public:
 	EWSPlugin& plugin;
 
 	static void* alloc(size_t);
+	template<typename T> static T* alloc(size_t=1);
+	template<typename T, typename... Args> static T* construct(Args&&...);
 	static void ext_error(pack_result);
 
 private:
-	void getNamedTags(const std::string&, const std::vector<PROPERTY_NAME>&, const
-	                  std::vector<uint16_t>&, Structures::sShape&) const;
+	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
 
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };
+
+/**
+ * @brief      Get single item property
+ *
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      tag   Tag ID
+ *
+ * @tparam     T     Type to return
+ *
+ * @return     Pointer to property or nullptr if not found.
+ */
+template<typename T>
+const T* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+{return static_cast<const T*>(getItemProp(dir, mid, tag));}
+
+/**
+ * @brief      Throwing convenience wrapper for alloc
+ *
+ * @param      count  Number of elements to allocate memory for
+ *
+ * @tparam     T      Type to allocate memory for
+ *
+ * @return     Pointer to allocated memory
+ */
+template<typename T>
+inline T* EWSContext::alloc(size_t count)
+{
+	T* res = static_cast<T*>(alloc(sizeof(T)*count));
+	if(!res)
+		throw Exceptions::DispatchError("OOM");
+	return res;
+}
+
+/**
+ * @brief      Throwing convenience wrapper for alloc
+ *
+ * @param      count  Number of elements to allocate memory for
+ *
+ * @tparam     T      Type to allocate memory for
+ *
+ * @return     Pointer to allocated memory
+ */
+template<typename T, typename... Args>
+inline T* EWSContext::construct(Args&&... args)
+{
+	static_assert(std::is_trivially_destructible_v<T>, "Can only construct trivially destructible types");
+	return new(alloc<T>()) T(std::forward<Args...>(args...));
+}
 
 }

@@ -989,6 +989,9 @@ struct PROPERTY_NAME {
 	GUID guid;
 	uint32_t lid;
 	char *pname;
+
+	inline bool operator==(const PROPERTY_NAME& o) const
+	{return kind == o.kind && guid == o.guid && (kind == MNID_STRING? !strcmp(pname, o.pname) : lid == o.lid);}
 };
 
 struct PROPERTY_XNAME {
@@ -1353,6 +1356,21 @@ enum { /* for PidLidRecurrenceType */
 	rectypeWeekly,
 	rectypeMonthly,
 	rectypeYearly,
+};
+
+enum { /* for PidLidAppointmentStateFlags */
+	asfMeeting  = 0x1U,
+	asfReceived = 0x2U,
+	asfCanceled = 0x4U,
+};
+
+enum { /* for PidLidResponseStatus */
+	olResponseNone = 0,
+	olResponseOrganized,
+	olResponseTentative,
+	olResponseAccepted,
+	olResponseDeclined,
+	olResponseNotResponded,
 };
 
 /*

@@ -23,7 +23,7 @@ using namespace std::string_literals;
 
 //Shortcuts to call toXML* and fromXML* functions on members
 #define XMLINIT(name) name(fromXMLNode<decltype(name)>(xml, #name)) ///< Init member from XML node
-#define VXMLINIT(name) name(fromXMLNode<decltype(name)>(xml, nullptr)) ///< Init variant from XML node
+#define VXMLINIT(name) name(fromXMLNodeVariantFind<decltype(name)>(xml)) ///< Init variant from XML node
 #define XMLDUMPM(name) toXMLNode(xml, "m:"#name, name) ///< Write member into XML node (Messages namespace)
 #define XMLDUMPT(name) toXMLNode(xml, "t:"#name, name) ///< Write member into XML node (Types namespace)
 #define XMLINITA(name) name(fromXMLAttr<decltype(name)>(xml, #name)) ///< Initialize member from XML attribute
@@ -243,10 +243,11 @@ void sTimePoint::serialize(XMLElement* xml) const
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
 	long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
 	int off = -int(offset.count());
-	if(offset.count() == 0)
-		xml->SetText(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());
-	else
-		xml->SetText(fmt::format("{:%FT%T}.{:06}{:+03}{:02}", t, fsec, off / 60, abs(off) % 60).c_str());
+	std::string dtstr = fmt::format("{:%FT%T}", t);
+	if(fsec)
+		dtstr += fmt::format(".{:06}", fsec);
+	dtstr += off? fmt::format("{:+03}{:02}", off/60, abs(off)%60) : "Z";
+	xml->SetText(dtstr.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -313,10 +314,113 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(CalendarEventDetails);
 }
 
+void tIntervalRecurrencePatternBase::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPT(Interval);}
+
+void tRelativeYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DaysOfWeek);
+	XMLDUMPT(DayOfWeekIndex);
+	XMLDUMPT(Month);
+}
+
+void tAbsoluteYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(DayOfMonth);
+	XMLDUMPT(Month);
+}
+
+void tRelativeMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+
+	XMLDUMPT(DaysOfWeek);
+	XMLDUMPT(DayOfWeekIndex);
+}
+
+void tAbsoluteMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+
+	XMLDUMPT(DayOfMonth);
+}
+
+void tWeeklyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+
+	XMLDUMPT(DaysOfWeek);
+	XMLDUMPT(FirstDayOfWeek);
+}
+
+void tDailyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
+{
+	tIntervalRecurrencePatternBase::serialize(xml);
+}
+
+void tRecurrenceRangeBase::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(StartDate);
+}
+
+void tNoEndRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
+{
+	tRecurrenceRangeBase::serialize(xml);
+}
+
+void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
+{
+	tRecurrenceRangeBase::serialize(xml);
+
+	XMLDUMPT(EndDate);
+}
+
+void tNumberedRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
+{
+	tRecurrenceRangeBase::serialize(xml);
+
+	XMLDUMPT(NumberOfOccurrences);
+}
+
+void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(RecurrencePattern);
+	XMLDUMPT(RecurrenceRange);
+}
+
 void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
+
+	XMLDUMPT(UID);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(IsAllDayEvent);
+	XMLDUMPT(LegacyFreeBusyStatus);
+	XMLDUMPT(Location);
+	XMLDUMPT(IsMeeting);
+	XMLDUMPT(IsCancelled);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(MeetingRequestWasSent);
+	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(MyResponseType);
+	XMLDUMPT(Organizer);
+	XMLDUMPT(RequiredAttendees);
+	XMLDUMPT(OptionalAttendees);
+	XMLDUMPT(Resources);
+	XMLDUMPT(AppointmentReplyTime);
+	XMLDUMPT(AppointmentSequenceNumber);
+	XMLDUMPT(AppointmentState);
+	XMLDUMPT(Recurrence);
+	XMLDUMPT(AllowNewTimeProposal);
 }
+
+tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
+	fieldURI(fromXMLNodeVariantFind<tPath::Base>(xml))
+{}
+
+void tConflictResults::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPT(Count);}
 
 void tContact::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -414,16 +518,30 @@ void tExtendedFieldURI::serialize(XMLElement* xml) const
 	XMLDUMPA(PropertyName);
 }
 
+tExtendedProperty::tExtendedProperty(const XMLElement* xml) :
+	XMLINIT(ExtendedFieldURI)
+{
+	const XMLElement* value = xml->FirstChildElement("Value");
+	const XMLElement* values = xml->FirstChildElement("Values");
+	uint16_t type = ExtendedFieldURI.type();
+	propval.proptag = ExtendedFieldURI.tag()? ExtendedFieldURI.tag() : type;
+	bool ismv = type & MV_FLAG;
+	if(value && values)
+		throw InputError(E3094);
+	if(ismv && !values)
+		throw InputError(E3095);
+	if(!ismv && !value)
+		throw InputError(E3096);
+	deserialize(ismv? values : value, type);
+}
+
 void tExtendedProperty::serialize(XMLElement* xml) const
 {
 	const void* data = propval.pvalue;
 	if(!data)
 		return;
+	XMLDUMPT(ExtendedFieldURI);
 	bool ismv = propval.proptag & MV_FLAG;
-	if(propname.kind == KIND_NONE)
-		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(propval.proptag));
-	else
-		toXMLNode(xml , "t:ExtendedFieldURI", tExtendedFieldURI(PROP_TYPE(propval.proptag), propname));
 	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
 	serialize(data, PROP_TYPE(propval.proptag), value);
 }
@@ -468,6 +586,12 @@ tIndexedFieldURI::tIndexedFieldURI(const XMLElement* xml) :
 	XMLINITA(FieldIndex)
 {}
 
+void tInternetMessageHeader::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPA(HeaderName);
+	xml->SetText(content.c_str());
+}
+
 void tItem::serialize(XMLElement* xml) const
 {
 	auto mc = XMLDUMPT(MimeContent);
@@ -490,6 +614,7 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(IsFromMe);
 	XMLDUMPT(IsResend);
 	XMLDUMPT(IsUnmodified);
+	XMLDUMPT(InternetMessageHeaders);
 	XMLDUMPT(DateTimeSent);
 	XMLDUMPT(DateTimeCreated);
 	XMLDUMPT(DisplayCc);
@@ -504,6 +629,11 @@ void tItem::serialize(XMLElement* xml) const
 	for(const tExtendedProperty& ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
+
+tItemChange::tItemChange(const XMLElement* xml) :
+	XMLINIT(ItemId),
+	XMLINIT(Updates)
+{}
 
 tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
 	XMLINIT(IncludeMimeContent),
@@ -582,8 +712,29 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
 
+tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
+{
+	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
+		if(std::binary_search(itemTypes.begin(), itemTypes.end(), child->Name(),
+		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+			item = child;
+			break;
+		}
+	if(!item)
+		throw InputError(E3097);
+}
+
 void tSingleRecipient::serialize(XMLElement* xml) const
 {XMLDUMPT(Mailbox);}
+
+void tAttendee::serialize(XMLElement* xml) const
+{
+	XMLDUMPT(Mailbox);
+	XMLDUMPT(ResponseType);
+	XMLDUMPT(LastResponseTime);
+	XMLDUMPT(ProposedStart);
+	XMLDUMPT(ProposedEnd);
+}
 
 void tSmtpDomain::serialize(XMLElement* xml) const
 {
@@ -737,7 +888,12 @@ void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 	XMLDUMPM(AllowExternalOof);
 }
 
-//TODO: Verify namespaces
+void mItemInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Items);
+}
+
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPA(ResponseClass);
@@ -836,3 +992,16 @@ void mResolveNamesResponseMessage::serialize(XMLElement* xml) const
 
 void mResolveNamesResponse::serialize(XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
+
+mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :
+	XMLINIT(ItemChanges)
+{}
+
+void mUpdateItemResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mUpdateItemResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mItemInfoResponseMessage::serialize(xml);
+	XMLDUMPM(ConflictResults);
+}

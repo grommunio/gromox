@@ -16,11 +16,12 @@
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/mime_pool.hpp>
 #include <gromox/paths.h>
+#include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 
 #include "exceptions.hpp"
-#include "include/gromox/mime_pool.hpp"
 #include "requests.hpp"
 #include "soaputil.hpp"
 
@@ -137,6 +138,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
+	{"UpdateItem", process<Structures::mUpdateItemRequest>},
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -335,9 +337,11 @@ EWSPlugin::_mysql::_mysql()
 	getService(get_domain_info);
 	getService(get_homedir);
 	getService(get_maildir);
-	getService(get_username_from_id);
 	getService(get_user_aliases);
+	getService(get_user_displayname);
+	getService(get_user_ids);
 	getService(get_user_properties);
+	getService(get_username_from_id);
 #undef getService
 }
 

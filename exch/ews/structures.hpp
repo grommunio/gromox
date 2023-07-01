@@ -28,21 +28,33 @@ namespace gromox::EWS
 namespace gromox::EWS::Structures
 {
 
+struct tAppendToItemField;
 struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
+struct tDeleteItemField;
 struct tDistinguishedFolderId;
+struct tExtendedFieldURI;
+struct tExtendedProperty;
+struct tFieldURI;
 struct tFileAttachment;
 struct tFindResponsePagingAttributes;
 struct tFolderId;
+struct tFolderResponseShape;
 struct tFolderType;
+struct tIndexedFieldURI;
 struct tItem;
 struct tItemAttachment;
+struct tItemChange;
+struct tItemResponseShape;
+struct tPath;
 struct tMessage;
 struct tReferenceAttachment;
 struct tSearchFolderType;
 struct tSerializableTimeZone;
+struct tSetItemField;
+class sShape;
 struct tSyncFolderHierarchyCreate;
 struct tSyncFolderHierarchyUpdate;
 struct tSyncFolderHierarchyDelete;
@@ -91,6 +103,7 @@ struct sBase64Binary : public std::vector<uint8_t>
 {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
+	sBase64Binary(const BINARY*);
 	explicit sBase64Binary(const tinyxml2::XMLElement*);
 	explicit sBase64Binary(const tinyxml2::XMLAttribute*);
 
@@ -169,7 +182,7 @@ struct sFolderSpec
 	sFolderSpec& normalize();
 
 	std::optional<std::string> target;
-	uint64_t folderId;
+	uint64_t folderId=0;
 	enum : uint8_t {AUTO, PRIVATE, PUBLIC} location = AUTO;
 
 private:
@@ -202,26 +215,105 @@ using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderTy
 	*/
 using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 
+/**
+ * c.f. Types.xsd:1502
+ */
+using sItemChangeDescription = std::variant<tAppendToItemField, tSetItemField, tDeleteItemField>;
+
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 
-/**
- * @brief      Utility struct to manage property tags and property name information
- */
-struct sShape
+class sShape
 {
-	std::vector<uint32_t> tags; ///< Properties return from the store
-	sNamedPropertyMap namedTags; ///< Tag -> named property mapping
-	uint64_t special = 0; ///< Fields that are not accessible by properties
+	/**
+	 * @brief     Property metadata
+	 *
+	 * Keep track of how properties were requested and whether they have been
+	 * read.
+	 * Enables distinction between extended properties and named fields that
+	 * may be requested independently from each other.
+	 */
+	struct PropInfo
+	{
+		explicit PropInfo(uint8_t=0, const PROPERTY_NAME* = nullptr);
+		PropInfo(uint8_t, const TAGGED_PROPVAL*);
 
-	static constexpr uint64_t ToRecipients =  1 << 0;
-	static constexpr uint64_t CcRecipients =  1 << 1;
-	static constexpr uint64_t BccRecipients = 1 << 2;
-	static constexpr uint64_t Body =          1 << 3;
-	static constexpr uint64_t MessageFlags =  1 << 4;
-	static constexpr uint64_t MimeContent =   1 << 5;
-	static constexpr uint64_t Attachments =   1 << 6;
+		const TAGGED_PROPVAL* prop = nullptr;
+		const PROPERTY_NAME* name = nullptr;
+		uint8_t flags = 0;
+	};
+
+	std::vector<uint32_t> tags; ///< Tags requested + named tags
+
+	std::vector<uint32_t> namedTags; ///< Named tags (ID and type, ID might be 0 if unknown)
+	std::vector<PROPERTY_NAME> names; ///< Requested named properties
+	std::vector<uint8_t> nameMeta; ///< Flags for named tags
+
+	std::vector<TAGGED_PROPVAL> wProps; ///< List of properties meant to be written
+	std::vector<uint32_t> dTags; ///< List of tags to remove
+
+	std::unordered_map<uint32_t, PropInfo> props; ///< Tag -> Property mapping
+
+	void collectExtendedProperty(const tExtendedFieldURI&);
+	void collectExtendedProperty(const tFieldURI&);
+	void collectExtendedProperty(const tIndexedFieldURI&);
+
+	static constexpr PROPERTY_NAME NONAME{KIND_NONE, {}, 0, nullptr};
+
+public:
+	static constexpr uint8_t FL_ANY =   0;
+	static constexpr uint8_t FL_FIELD = 1 << 0; ///< Tag was requested as field
+	static constexpr uint8_t FL_EXT =   1 << 1; ///< Tag was requested as extended attribute
+	static constexpr uint8_t FL_RM =    1 << 2; ///< Tag was requested for removal
+
+	static constexpr uint64_t ToRecipients =      1 << 0;
+	static constexpr uint64_t CcRecipients =      1 << 1;
+	static constexpr uint64_t BccRecipients =     1 << 2;
+	static constexpr uint64_t Body =              1 << 3;
+	static constexpr uint64_t MessageFlags =      1 << 4;
+	static constexpr uint64_t MimeContent =       1 << 5;
+	static constexpr uint64_t Attachments =       1 << 6;
+	static constexpr uint64_t RequiredAttendees = 1 << 7;
+	static constexpr uint64_t OptionalAttendees = 1 << 8;
+	static constexpr uint64_t Resources =         1 << 9;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
+	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
+
+	sShape() = default;
+	explicit sShape(const TPROPVAL_ARRAY&);
+	explicit sShape(const tFolderResponseShape&);
+	explicit sShape(const tItemResponseShape&);
+	explicit sShape(const tItemChange&);
+
+	sShape(const sShape&) = delete;
+	sShape(sShape&&) = delete;
+
+	sShape& operator=(const sShape&) = delete;
+	sShape& operator=(sShape&&) = delete;
+
+	void clean();
+	bool namedProperties(const PROPID_ARRAY&);
+	PROPNAME_ARRAY namedProperties() const;
+	void properties(const TPROPVAL_ARRAY&);
+	PROPTAG_ARRAY proptags() const;
+
+	sShape& add(uint32_t, uint8_t=0);
+	sShape& add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
+
+	void write(const TAGGED_PROPVAL&);
+	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
+	TPROPVAL_ARRAY write() const;
+
+	PROPTAG_ARRAY remove() const;
+
+	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
+	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
+	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
+	void putExtended(std::vector<tExtendedProperty>&) const;
+
+
+	uint64_t special = 0; ///< Fields that are not directly accessible by properties
+	std::string store; ///< For which store the named properties are valid
 };
 
 /**
@@ -275,20 +367,20 @@ struct sTime
  */
 struct sTimePoint
 {
-	sTimePoint(const gromox::time_point&);
+	explicit sTimePoint(const gromox::time_point&);
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
+	explicit sTimePoint(const char*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
 	static sTimePoint fromNT(uint64_t);
+	uint64_t toNT() const;
 
 	gromox::time_point time;
 	std::chrono::minutes offset = std::chrono::minutes(0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T> using vector_inserter = std::back_insert_iterator<std::vector<T>>;
 
 /**
  * Types.xsd:1611
@@ -511,20 +603,25 @@ struct tExtendedFieldURI
 
 	static constexpr char NAME[] = "ExtendedFieldURI";
 
+	tExtendedFieldURI() = default;
 	explicit tExtendedFieldURI(const tinyxml2::XMLElement*);
 	explicit tExtendedFieldURI(uint32_t);
 	tExtendedFieldURI(uint16_t, const PROPERTY_NAME&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	std::optional<std::string> PropertyTag; //Attribute
+	std::optional<int32_t> PropertyTag; //Attribute
 	Enum::MapiPropertyTypeType PropertyType; //Attribute
 	std::optional<int32_t> PropertyId; // Attribute
 	std::optional<Enum::DistinguishedPropertySetType> DistinguishedPropertySetId; //Attribute
 	std::optional<tGuid> PropertySetId; // Attribute.
 	std::optional<std::string> PropertyName; //Attribute
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&, bool=true) const;
+	uint16_t type() const;
+
+	uint32_t tag() const;
+	PROPERTY_NAME name() const;
 
 	static const char* typeName(uint16_t);
 
@@ -537,17 +634,21 @@ struct tExtendedFieldURI
  */
 struct tExtendedProperty
 {
+	explicit tExtendedProperty(const tinyxml2::XMLElement*);
 	explicit tExtendedProperty(const TAGGED_PROPVAL&, const PROPERTY_NAME& = PROPERTY_NAME{KIND_NONE, {}, 0, nullptr});
 
-	TAGGED_PROPVAL propval;
-	PROPERTY_NAME propname;
+	tExtendedFieldURI ExtendedFieldURI;
+	TAGGED_PROPVAL propval{};
 
 	void serialize(tinyxml2::XMLElement*) const;
 private:
 	void serialize(const void*, uint16_t, tinyxml2::XMLElement*) const;
+	void deserialize(const tinyxml2::XMLElement*, uint16_t, void* = nullptr);
 
 	template<typename C, typename T>
 	void serializeMV(const void*, uint16_t, tinyxml2::XMLElement*, T* C::*) const;
+	template<typename C, typename T>
+	void deserializeMV(const tinyxml2::XMLElement*, uint16_t, T* C::*);
 };
 
 /**
@@ -555,7 +656,7 @@ private:
  */
 struct tBaseFolderType : public NS_EWS_Types
 {
-	explicit tBaseFolderType(const TPROPVAL_ARRAY&);
+	explicit tBaseFolderType(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -573,7 +674,7 @@ struct tBaseFolderType : public NS_EWS_Types
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ReplicaList" type="t:ArrayOfStringsType" minOccurs="0" />
 
-	static sFolder create(const TPROPVAL_ARRAY&);
+	static sFolder create(const sShape&);
 protected:
 	tBaseFolderType(const tBaseFolderType&) = default;
 	tBaseFolderType(tBaseFolderType&&) noexcept = default;
@@ -591,14 +692,14 @@ struct tFieldURI
 
 	tFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&, bool=true) const;
 
 	std::string FieldURI; //Attribute
 
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 10> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 13> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -639,10 +740,27 @@ struct tIndexedFieldURI
 
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&, bool=true) const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
+};
+
+/**
+ * Types.xsd:1538
+ */
+struct tInternetMessageHeader : NS_EWS_Types
+{
+	static constexpr char NAME[] = "InternetMessageHeader";
+
+	tInternetMessageHeader(const std::string_view&, const std::string_view&);
+
+	std::string HeaderName;
+	std::string content;
+
+	static std::vector<tInternetMessageHeader> parse(std::string_view);
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -652,9 +770,12 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 {
 	using Base = std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>;
 
-	tPath(const tinyxml2::XMLElement*);
+	explicit tPath(const tinyxml2::XMLElement*);
+	explicit inline tPath(Base&& b) : Base(b) {}
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&, bool=true) const;
+
+	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
 };
 
 /**
@@ -664,7 +785,7 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
-	explicit tFolderType(const TPROPVAL_ARRAY&);
+	explicit tFolderType(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -688,6 +809,60 @@ struct tCalendarFolderType : public tBaseFolderType
 };
 
 /**
+ * Types.xsd:1386
+ */
+struct tChangeDescription
+{
+	struct Field
+	{
+		using FieldConv = std::function<void(const tinyxml2::XMLElement*, sShape&)>;
+
+		FieldConv conv;
+		const char* type = nullptr;
+	};
+
+	explicit tChangeDescription(const tinyxml2::XMLElement*);
+
+	tPath fieldURI;
+
+	static const Field* find(const char*, const char*);
+	template<typename T>
+	static TAGGED_PROPVAL mkProp(uint32_t, const T&);
+	static void convProp(const char*, const char*, const tinyxml2::XMLElement*, sShape&);
+
+	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	template<typename ET, typename PT=uint32_t>
+	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
+
+	static std::array<const char*, 15> itemTypes;
+	static std::array<Field, 2> fields2;
+	static std::unordered_multimap<std::string, Field> fields;
+};
+
+/**
+ * Types.xsd:1462
+ *
+ * TODO: implement functionality
+ */
+struct tAppendToItemField : public tChangeDescription
+{
+	static constexpr char NAME[] = "AppendToItemField";
+
+	using tChangeDescription::tChangeDescription;
+};
+
+/**
+ * Types.xsd:6939
+ */
+struct tConflictResults
+{
+	int Count;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:2064
  */
 struct tContactsFolderType : public tBaseFolderType
@@ -702,6 +877,16 @@ struct tContactsFolderType : public tBaseFolderType
 	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
 	//<xs:element name="SourceId" type="xs:string" minOccurs="0"/>
 	//<xs:element name="AccountName" type="xs:string" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:1447
+ */
+struct tDeleteItemField : public tChangeDescription
+{
+	static constexpr char NAME[] = "DeleteItemField";
+
+	using tChangeDescription::tChangeDescription;
 };
 
 /**
@@ -730,13 +915,241 @@ struct tItemId : public tBaseItemId
 };
 
 /**
+ * Types.xsd:396
+ */
+struct tSingleRecipient
+{
+	tEmailAddressType Mailbox;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:4419
+ */
+struct tAttendee
+{
+	static constexpr char NAME[] = "Attendee";
+
+	tEmailAddressType Mailbox;
+	std::optional<Enum::ResponseTypeType> ResponseType;
+	std::optional<gromox::time_point> LastResponseTime;
+	std::optional<gromox::time_point> ProposedStart;
+	std::optional<gromox::time_point> ProposedEnd;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tAttendee() = default;
+	explicit tAttendee(const TPROPVAL_ARRAY&);
+};
+
+/**
+ * Types.xsd:4529
+ */
+struct tRecurrencePatternBase {}; // <xs:complexType name="RecurrencePatternBaseType" abstract="true" />
+
+/**
+ * Types.xsd:4531
+ */
+struct tIntervalRecurrencePatternBase : public tRecurrencePatternBase
+{
+	int Interval;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tIntervalRecurrencePatternBase(const int& i) : Interval(i) {}
+};
+
+/**
+ * Types.xsd:4577
+ */
+struct tRelativeYearlyRecurrencePattern : public tRecurrencePatternBase
+{
+	static constexpr char NAME[] = "RelativeYearlyRecurrence";
+
+	std::string DaysOfWeek;
+	Enum::DayOfWeekIndexType DayOfWeekIndex;
+	Enum::MonthNamesType Month;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tRelativeYearlyRecurrencePattern() = default;
+	tRelativeYearlyRecurrencePattern(const std::string& dow,
+		const Enum::DayOfWeekIndexType& dowi, const Enum::MonthNamesType& mnt) :
+		DaysOfWeek(dow), DayOfWeekIndex(dowi), Month(mnt) {};
+};
+
+/**
+ * Types.xsd:4589
+ */
+struct tAbsoluteYearlyRecurrencePattern : public tRecurrencePatternBase
+{
+	static constexpr char NAME[] = "AbsoluteYearlyRecurrence";
+
+	int DayOfMonth;
+	Enum::MonthNamesType Month;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tAbsoluteYearlyRecurrencePattern(const int& dom, const Enum::MonthNamesType& mnt) :
+		DayOfMonth(dom), Month(mnt) {};
+};
+
+/**
+ * Types.xsd:4600
+ */
+struct tRelativeMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "RelativeMonthlyRecurrence";
+
+	std::string DaysOfWeek;
+	Enum::DayOfWeekIndexType DayOfWeekIndex;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tRelativeMonthlyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekIndexType& dowi) :
+		tIntervalRecurrencePatternBase(i), DaysOfWeek(dow), DayOfWeekIndex(dowi) {};
+};
+
+/**
+ * Types.xsd:4611
+ */
+struct tAbsoluteMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "AbsoluteMonthlyRecurrence";
+	int DayOfMonth;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tAbsoluteMonthlyRecurrencePattern(const int& i, const int& dom) :
+		tIntervalRecurrencePatternBase(i), DayOfMonth(dom) {};
+};
+
+/**
+ * Types.xsd:4621
+ */
+struct tWeeklyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "WeeklyRecurrence";
+
+	std::string DaysOfWeek;
+	Enum::DayOfWeekType FirstDayOfWeek;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tWeeklyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekType& fdow) :
+		tIntervalRecurrencePatternBase(i), DaysOfWeek(dow), FirstDayOfWeek(fdow) {};
+};
+
+/**
+ * Types.xsd:4632
+ */
+struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "DailyRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tDailyRecurrencePattern(const int& i) : tIntervalRecurrencePatternBase(i) {};
+};
+
+/**
+ * Types.xsd:4848
+ */
+using tRecurrencePattern = std::variant<
+	tRelativeYearlyRecurrencePattern,
+	tAbsoluteYearlyRecurrencePattern,
+	tRelativeMonthlyRecurrencePattern,
+	tAbsoluteMonthlyRecurrencePattern,
+	tWeeklyRecurrencePattern,
+	tDailyRecurrencePattern
+>;
+
+/**
+ * Types.xsd:4814
+ */
+struct tRecurrenceRangeBase
+{
+	gromox::time_point StartDate;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tRecurrenceRangeBase() = default;
+	tRecurrenceRangeBase(const gromox::time_point& sd) : StartDate(sd) {};
+};
+
+/**
+ * Types.xsd:4820
+ */
+struct tNoEndRecurrenceRange : public tRecurrenceRangeBase
+{
+	static constexpr char NAME[] = "NoEndRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tNoEndRecurrenceRange() = default;
+	tNoEndRecurrenceRange(const gromox::time_point& sd) : tRecurrenceRangeBase(sd) {};
+};
+
+/**
+ * Types.xsd:4826
+ */
+struct tEndDateRecurrenceRange : public tRecurrenceRangeBase
+{
+	static constexpr char NAME[] = "EndDateRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	gromox::time_point EndDate;
+	tEndDateRecurrenceRange() = default;
+	tEndDateRecurrenceRange(const gromox::time_point& sd, const gromox::time_point& ed) :
+		tRecurrenceRangeBase(sd), EndDate(ed) {};
+};
+
+/**
+ * Types.xsd:4836
+ */
+struct tNumberedRecurrenceRange : public tRecurrenceRangeBase
+{
+	static constexpr char NAME[] = "NumberedRecurrence";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	int NumberOfOccurrences;
+
+	tNumberedRecurrenceRange() = default;
+	tNumberedRecurrenceRange(const gromox::time_point& sd, const int& noo) :
+		tRecurrenceRangeBase(sd), NumberOfOccurrences(noo) {};
+};
+
+/**
+ * Types.xsd:4878
+ */
+using tRecurrenceRange = std::variant<
+	tNoEndRecurrenceRange,
+	tEndDateRecurrenceRange,
+	tNumberedRecurrenceRange
+>;
+
+/**
+ * Types.xsd:4888
+ */
+struct tRecurrenceType
+{
+	tRecurrencePattern RecurrencePattern;
+	tRecurrenceRange RecurrenceRange;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:2353
  */
 struct tItem : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Item";
 
-	tItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap&);
+	explicit tItem(const sShape&);
 
 	std::optional<sBase64Binary> MimeContent; ///< exmdb::read_message
 	std::optional<tItemId> ItemId; ///< PR_ENTRYID+PR_CHANGEKEY
@@ -745,10 +1158,9 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> Subject; ///< PR_SUBJECT
 	std::optional<Enum::SensitivityChoicesType> Sensitivity; ///< PR_SENSITIVITY
 	std::optional<tBody> Body; ///< PR_BODY or PR_HTML
-	std::vector<sAttachment> Attachments;
-	//<xs:element name="Attachments" type="t:NonEmptyArrayOfAttachmentsType" minOccurs="0" />
+	std::optional<std::vector<sAttachment>> Attachments;
 	std::optional<sTimePoint> DateTimeReceived; ///< PR_MESSAGE_DELIVERY_TIME
-	std::optional<uint64_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
+	std::optional<int32_t> Size; ///< PR_MESSAGE_SIZE_EXTENDED
 	std::optional<std::vector<sString>> Categories; ///< Named property "PS_PUBLIC_STRINGS:Keywords:PT_MV_UNICODE"
 	std::optional<Enum::ImportanceChoicesType> Importance; ///< PR_IMPORTANCE
 	std::optional<std::string> InReplyTo; ///< PR_IN_REPLY_TO_ID
@@ -757,9 +1169,9 @@ struct tItem : public NS_EWS_Types
 	std::optional<bool> IsFromMe;
 	std::optional<bool> IsResend;
 	std::optional<bool> IsUnmodified;
-	//<xs:element name="InternetMessageHeaders" type="t:NonEmptyArrayOfInternetHeadersType" minOccurs="0" />
+	std::optional<std::vector<tInternetMessageHeader>> InternetMessageHeaders;
 	std::optional<sTimePoint> DateTimeSent;
-	std::optional<gromox::time_point> DateTimeCreated;
+	std::optional<sTimePoint> DateTimeCreated;
 	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
 	//std::optional<gromox::time_point> ReminderDueBy;
 	//std::optional<bool> ReminderIsSet;
@@ -773,7 +1185,7 @@ struct tItem : public NS_EWS_Types
 	std::optional<std::string> Culture;
 	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0" />
 	std::optional<std::string> LastModifiedName;
-	std::optional<gromox::time_point> LastModifiedTime;
+	std::optional<sTimePoint> LastModifiedTime;
 	std::optional<bool> IsAssociated;
 	//<xs:element name="WebClientReadFormQueryString" type="xs:string" minOccurs="0" />
 	//<xs:element name="WebClientEditFormQueryString" type="xs:string" minOccurs="0" />
@@ -813,9 +1225,7 @@ struct tItem : public NS_EWS_Types
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
-
-	static sItem create(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	static sItem create(const sShape&);
 };
 
 /**
@@ -825,9 +1235,76 @@ struct tCalendarItem : public tItem
 {
 	static constexpr char NAME[] = "CalendarItem";
 
-	tCalendarItem(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	explicit tCalendarItem(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
+
+	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
+
+	//<!-- iCalendar properties -->
+	std::optional<std::string> UID; // TODO use std::string? UID is hexed goid
+	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
+
+	// <!-- Single and Occurrence only -->
+	std::optional<gromox::time_point> Start;
+	std::optional<gromox::time_point> End;
+
+	// <!-- Occurrence only -->
+	std::optional<gromox::time_point> OriginalStart;
+	std::optional<bool> IsAllDayEvent;
+	std::optional<Enum::LegacyFreeBusyType> LegacyFreeBusyStatus;
+	std::optional<std::string> Location;
+	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	std::optional<bool> IsMeeting;
+	std::optional<bool> IsCancelled;
+	std::optional<bool> IsRecurring;
+	std::optional<bool> MeetingRequestWasSent;
+	std::optional<bool> IsResponseRequested;
+	// <xs:element name="CalendarItemType" type="t:CalendarItemTypeType" minOccurs="0" />
+	std::optional<Enum::ResponseTypeType> MyResponseType;
+	std::optional<tSingleRecipient> Organizer;
+	std::optional<std::vector<tAttendee>> RequiredAttendees;
+	std::optional<std::vector<tAttendee>> OptionalAttendees;
+	std::optional<std::vector<tAttendee>> Resources;
+	// <xs:element name="InboxReminders" type="t:ArrayOfInboxReminderType" minOccurs="0" />
+
+	// <!-- Conflicting and adjacent meetings -->
+	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
+	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
+	std::optional<gromox::time_point> AppointmentReplyTime;
+	std::optional<int> AppointmentSequenceNumber;
+	std::optional<int> AppointmentState;
+
+	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
+	std::optional<tRecurrenceType> Recurrence;
+	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="DeletedOccurrences" type="t:NonEmptyArrayOfDeletedOccurrencesType" minOccurs="0" />
+	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
+	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
+	std::optional<bool> AllowNewTimeProposal;
+	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="StartTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+	// <xs:element name="JoinOnlineMeetingUrl" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="OnlineMeetingSettings" type="t:OnlineMeetingSettingsType" minOccurs="0" maxOccurs="1"/>
+	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
+	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
 /**
@@ -837,7 +1314,7 @@ struct tContact : public tItem
 {
 	static constexpr char NAME[] = "Contact";
 
-	tContact(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	explicit tContact(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -956,14 +1433,27 @@ struct tItemAttachment : public tAttachment
 	//void serialize(tinyxml2::XMLElement*) const;
 };
 
+struct tItemChange
+{
+	static constexpr char NAME[] = "ItemChange";
+
+	tItemChange(const tinyxml2::XMLElement*);
+
+	tItemId ItemId;
+	//<xs:element name="OccurrenceItemId" type="t:OccurrenceItemIdType"/>
+	//<xs:element name="RecurringMasterItemId" type="t:RecurringMasterItemIdType"/>
+	std::vector<sItemChangeDescription> Updates;
+	//<xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
+};
+
 /**
  * Types.xsd:1287
  */
 struct tItemResponseShape
 {
-	tItemResponseShape(const tinyxml2::XMLElement*);
+	explicit tItemResponseShape(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	//Enum::DefaultShapeNamesType BaseShape;
 	std::optional<bool> IncludeMimeContent;
@@ -977,7 +1467,8 @@ struct tItemResponseShape
 	//std::optional<int32_t> MaximumBodySize;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr std::array<uint32_t, 3> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY, PR_MESSAGE_CLASS};
+	static constexpr std::array<uint32_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
+	static constexpr std::array<uint32_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
 };
 
 /**
@@ -1003,6 +1494,20 @@ struct tSerializableTimeZoneTime
 	int32_t Month;
 	Enum::DayOfWeekType DayOfWeek;
 	std::optional<int32_t> Year;
+};
+
+/**
+ * Types.xsd:1409
+ */
+struct tSetItemField : public tChangeDescription
+{
+	static constexpr char NAME[] = "SetItemField";
+
+	explicit tSetItemField(const tinyxml2::XMLElement*);
+
+	void put(sShape&) const;
+
+	const tinyxml2::XMLElement* item = nullptr;
 };
 
 /**
@@ -1077,23 +1582,13 @@ struct tSyncFolderHierarchyDelete : public NS_EWS_Types
 };
 
 /**
- * Types.xsd:396
- */
-struct tSingleRecipient
-{
-	tEmailAddressType Mailbox;
-
-	void serialize(tinyxml2::XMLElement*) const;
-};
-
-/**
  * Types.xsd:4031
  */
 struct tMessage : public tItem
 {
 	static constexpr char NAME[] = "Message";
 
-	tMessage(const TPROPVAL_ARRAY&, const sNamedPropertyMap& = sNamedPropertyMap());
+	explicit tMessage(const sShape&);
 
 	std::optional<tSingleRecipient> Sender; ///< PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME
 	std::optional<std::vector<tEmailAddressType>> ToRecipients;
@@ -1188,14 +1683,15 @@ struct tSyncFolderItemsReadFlag : public NS_EWS_Types
  */
 struct tFolderResponseShape
 {
-	tFolderResponseShape(const tinyxml2::XMLElement*);
+	explicit tFolderResponseShape(const tinyxml2::XMLElement*);
 
-	void tags(vector_inserter<uint32_t>&, vector_inserter<PROPERTY_NAME>&, vector_inserter<uint16_t>&, uint64_t&) const;
+	void tags(sShape&) const;
 
 	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<std::vector<tPath>> AdditionalProperties;
 
-	static constexpr uint32_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY, PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr uint32_t tagsStructural[] = {PR_CONTAINER_CLASS, PR_FOLDER_TYPE};
+	static constexpr uint32_t tagsIdOnly[] = {PR_ENTRYID, PR_CHANGE_KEY};
 	static constexpr uint32_t tagsDefault[] = {PR_DISPLAY_NAME, PR_CONTENT_COUNT, PR_FOLDER_CHILD_COUNT, PR_CONTENT_UNREAD};
 };
 
@@ -1670,6 +2166,13 @@ struct mGetUserOofSettingsResponse
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+struct mItemInfoResponseMessage : public mResponseMessageType
+{
+	std::vector<sItem> Items;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 /**
  * @brief      Out-of-office settings set request
  *
@@ -1838,6 +2341,40 @@ struct mResolveNamesResponseMessage : mResponseMessageType
 struct mResolveNamesResponse
 {
 	std::vector<mResolveNamesResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:973
+ */
+struct mUpdateItemRequest
+{
+	explicit mUpdateItemRequest(const tinyxml2::XMLElement*);
+
+	//<xs:element name="SavedItemFolderId" type="t:TargetFolderIdType" minOccurs="0"/>
+	std::vector<tItemChange> ItemChanges;
+	//<xs:attribute name="ConflictResolution" type="t:ConflictResolutionType" use="required"/>
+	//<xs:attribute name="MessageDisposition" type="t:MessageDispositionType"  use="optional"/>
+	//<xs:attribute name="SendMeetingInvitationsOrCancellations" type="t:CalendarItemUpdateOperationType"  use="optional"/>
+	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
+};
+
+/**
+ * Messages.xsd:1000
+ */
+struct mUpdateItemResponseMessage : public mItemInfoResponseMessage
+{
+	static constexpr char NAME[] = "UpdateItemResponseMessage";
+
+	tConflictResults ConflictResults;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+struct mUpdateItemResponse
+{
+	std::vector<mUpdateItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

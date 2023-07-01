@@ -36,12 +36,6 @@
 #include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
-enum { /* for PidLidAppointmentStateFlags */
-	asfMeeting = 0x1U,
-	asfReceived = 0x2U,
-	asfCanceled = 0x4U,
-};
-
 namespace {
 
 struct event_node {
@@ -74,7 +68,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	int day;
 	int order;
 	char tmp_buff[1024];
-	
+
 	auto pcomponent = std::make_optional<ical_component>("VTIMEZONE");
 	auto piline = &pcomponent->append_line("TZID", tzid);
 	/* STANDARD component */
@@ -203,7 +197,7 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 {
 	ICAL_TIME itime;
 	char tmp_buff[1024];
-	
+
 	ical_line iline("RRULE");
 	auto piline = &iline;
 	switch (apr->recur_pat.patterntype) {
@@ -316,7 +310,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 
 	if (!recurrencepattern_to_rrule(tzcom, whole_start_time,
 	    apr, &irrule))
-		return FALSE;	
+		return FALSE;
 	plist.clear();
 	do {
 		auto itime = irrule.instance_itime;
@@ -368,7 +362,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 	char tmp_buff[256];
 	char tmp_buff1[256];
 	GLOBALOBJECTID globalobjectid;
-	
+
 	if (NULL != pglobal_obj) {
 		ext_pull.init(pglobal_obj->pb, pglobal_obj->cb, zalloc, 0);
 		if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
@@ -428,7 +422,7 @@ static void output_event(time_t start_time, time_t end_time,
 	size_t tmp_len;
 	ICAL_TIME itime;
 	char tmp_buff[4096];
-	
+
 	if (!g_tz_component.has_value()) {
 		printf("{\"StartTime\":%lld, ", static_cast<long long>(start_time));
 		printf("\"EndTime\":%lld, ", static_cast<long long>(end_time));
@@ -493,7 +487,7 @@ static BOOL get_freebusy(const char *dir)
 	PROPERTY_NAME tmp_propnames[13];
 	PROPNAME_ARRAY propnames;
 	uint32_t tmp_proptags[13];
-	
+
 	auto start_nttime = rop_util_unix_to_nttime(g_start_time);
 	auto end_nttime = rop_util_unix_to_nttime(g_end_time);
 	propnames.count = 13;
@@ -523,7 +517,7 @@ static BOOL get_freebusy(const char *dir)
 	tmp_propnames[11].lid = PidLidGlobalObjectId;
 	tmp_propnames[12].guid = PSETID_APPOINTMENT;
 	tmp_propnames[12].lid = PidLidTimeZoneStruct;
-	
+
 	if (!exmdb_client::get_named_propids(dir, FALSE, &propnames, &propids))
 		return FALSE;
 	if (propids.count != propnames.count)
@@ -541,7 +535,7 @@ static BOOL get_freebusy(const char *dir)
 	uint32_t pidlidreminderset = PROP_TAG(PT_BOOLEAN, propids.ppropid[10]);
 	uint32_t pidlidglobalobjectid = PROP_TAG(PT_BINARY, propids.ppropid[11]);
 	uint32_t pidlidtimezonestruct = PROP_TAG(PT_BINARY, propids.ppropid[12]);
-	
+
 	if (NULL != g_username) {
 		if (!exmdb_client::get_folder_perm(dir,
 		    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
@@ -693,7 +687,7 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.proptag = pidlidappointmentstartwhole;
 	rprop->propval.pvalue = &end_nttime;
 	/* end of OR */
-	
+
 	if (!exmdb_client::load_content_table(dir, CP_ACP,
 	    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
@@ -716,7 +710,7 @@ static BOOL get_freebusy(const char *dir)
 	tmp_proptags[12] = PR_SUBJECT;
 	if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_count, &tmp_set))
-		return FALSE;	
+		return FALSE;
 	printf("{\"dir\":\"%s\", \"permission\":", dir);
 	printf((permission & (frightsFreeBusyDetailed | frightsReadAny)) ?
 	       "\"detailed\", " : "\"simple\", ");
@@ -853,14 +847,14 @@ int main(int argc, const char **argv)
 	const char *pdtldayorder;
 	const char *pstddayofweek;
 	const char *pdtldayofweek;
-	
+
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	exmdb_client_init(1, 0);
 	auto cl_0 = make_scope_exit(exmdb_client_stop);
 	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
 	if (ret != 0)
 		return EXIT_FAILURE;
-	
+
 	line = NULL;
 	if (-1 == getline(&line, &len, stdin)) {
 		fprintf(stderr, "fail to read parameters from stdin\n");
@@ -888,13 +882,13 @@ int main(int argc, const char **argv)
 		&itime_start.year, &itime_start.month, &itime_start.day,
 		&itime_start.hour, &itime_start.minute, &itime_start.second)) {
 		fprintf(stderr, "fail to parse \"starttime\" from stdin\n");
-		exit(4);	
+		exit(4);
 	}
 	if (6 != sscanf(pendtime, "%d-%d-%dT%d:%d:%d",
 		&itime_end.year, &itime_end.month, &itime_end.day,
 		&itime_end.hour, &itime_end.minute, &itime_end.second)) {
 		fprintf(stderr, "fail to parse \"endtime\" from stdin\n");
-		exit(5);	
+		exit(5);
 	}
 	itime_start.leap_second = 0;
 	itime_end.leap_second = 0;

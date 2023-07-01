@@ -96,6 +96,7 @@ struct Enum
 
 	//String constants used in enums
 #define STR(NAME) static constexpr char NAME[] = #NAME
+	STR(Accept);
 	STR(ActiveDirectory);
 	STR(ActiveDirectoryContacts);
 	STR(Address);
@@ -104,7 +105,9 @@ struct Enum
 	STR(ApplicationTime);
 	STR(ApplicationTimeArray);
 	STR(Appointment);
+	STR(April);
 	STR(AssistantPhone);
+	STR(August);
 	STR(Best);
 	STR(Binary);
 	STR(BinaryArray);
@@ -130,6 +133,8 @@ struct Enum
 	STR(CurrencyArray);
 	STR(CustomMailTip);
 	STR(Day);
+	STR(December);
+	STR(Decline);
 	STR(Default);
 	STR(DeliveryRestriction);
 	STR(Detailed);
@@ -145,9 +150,12 @@ struct Enum
 	STR(Excellent); // Smithers
 	STR(ExternalMemberCount);
 	STR(Fair);
+	STR(February);
+	STR(First);
 	STR(Flagged);
 	STR(Float);
 	STR(FloatArray);
+	STR(Fourth);
 	STR(Free);
 	STR(FreeBusy);
 	STR(FreeBusyMerged);
@@ -167,14 +175,20 @@ struct Enum
 	STR(InvalidRecipient);
 	STR(IPPhone);
 	STR(Isdn);
+	STR(January);
+	STR(June);
+	STR(July);
 	STR(Known);
+	STR(Last);
 	STR(Long);
 	STR(LongArray);
 	STR(Low);
 	STR(MailTips);
 	STR(Mailbox);
 	STR(MailboxFullStatus);
+	STR(March);
 	STR(MaxMessageSize);
+	STR(May);
 	STR(Meeting);
 	STR(MergedOnly);
 	STR(Mms);
@@ -183,15 +197,18 @@ struct Enum
 	STR(Monday);
 	STR(Msn);
 	STR(NoData);
+	STR(NoResponseReceived);
 	STR(None);
 	STR(Normal);
 	STR(NormalAndAssociatedItems);
 	STR(NormalItems);
 	STR(NotFlagged);
+	STR(November);
 	STR(Null);
 	STR(OOF);
 	STR(Object);
 	STR(ObjectArray);
+	STR(October);
 	STR(OfficeIntegrationConfiguration);
 	STR(OneOff);
 	STR(Optional);
@@ -220,6 +237,8 @@ struct Enum
 	STR(Saturday);
 	STR(Scheduled);
 	STR(Scope);
+	STR(Second);
+	STR(September);
 	STR(SharePointURLs);
 	STR(Sharing); //=Caring
 	STR(Short);
@@ -234,6 +253,7 @@ struct Enum
 	STR(Telex);
 	STR(Tentative);
 	STR(Text);
+	STR(Third);
 	STR(Thursday);
 	STR(TotalMemberCount);
 	STR(TtyTddPhone);
@@ -324,10 +344,11 @@ struct Enum
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
+	using DayOfWeekIndexType = StrEnum<First, Second, Third, Fourth, Last>; ///<Types.xsd:4500
 	using DefaultShapeNamesType = StrEnum<IdOnly, Default, AllProperties, PcxPeopleSearch>; ///< Types.xsd:1255
 	using DistinguishedFolderIdNameType = StrEnum<calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot, publicfoldersroot, root, junkemail, searchfolders, voicemail, recoverableitemsroot, recoverableitemsdeletions, recoverableitemsversions, recoverableitemspurges, recoverableitemsdiscoveryholds, archiveroot, archivemsgfolderroot, archivedeleteditems, archiveinbox, archiverecoverableitemsroot, archiverecoverableitemsdeletions, archiverecoverableitemsversions, archiverecoverableitemspurges, archiverecoverableitemsdiscoveryholds, syncissues, conflicts, localfailures, serverfailures, recipientcache, quickcontacts, conversationhistory, adminauditlogs, todosearch, mycontacts, directory, imcontactlist, peopleconnect, favorites, mecontact, personmetadata, teamspaceactivity, teamspacemessaging, teamspaceworkitems, scheduled, orionnotes, tagitems, alltaggeditems, allcategorizeditems, externalcontacts, teamchat, teamchathistory, yammerdata, yammerroot, yammerinbound, yammeroutbound, yammerfeeds, kaizaladata, messageingestion, onedriveroot, onedriverecylebin, onedrivesystem, onedrivevolume, important, starred, archiv>; //Types.xsd:1768
 	using DistinguishedPropertySetType = StrEnum<Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task, Sharing>; ///< Types.xsd:1040
-	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd 5205
+	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd:5205
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
 	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333
@@ -337,8 +358,10 @@ struct Enum
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
 	using MeetingAttendeeType = StrEnum<Organizer, Required, Optional, Room, Resource>; ///< Types.xsd:6278
+	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
-	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd: 4255
+	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255
+	using ResponseTypeType = StrEnum<Unknown, Organizer, Tentative, Accept, Decline, NoResponseReceived>; ///< Types.xsd:4372
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
 	using SensitivityChoicesType = StrEnum<Normal, Personal, Private, Confidential>; ///< Types.xsd:1698
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019

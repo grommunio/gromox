@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <ctime>
+#include <gromox/clock.hpp>
 #include <gromox/mapi_types.hpp>
 
 /*
@@ -28,7 +29,9 @@ GUID rop_util_make_domain_guid(int domain_id);
 extern GX_EXPORT int rop_util_get_user_id(GUID);
 extern GX_EXPORT int rop_util_get_domain_id(GUID);
 uint64_t rop_util_unix_to_nttime(time_t unix_time);
+uint64_t rop_util_unix_to_nttime(const gromox::time_point&);
 time_t rop_util_nttime_to_unix(uint64_t nt_time);
+gromox::time_point rop_util_nttime_to_unix2(uint64_t nt_time);
 inline uint32_t rop_util_nttime_to_rtime(uint64_t t) { return t / RTIME_FACTOR; }
 inline uint64_t rop_util_rtime_to_nttime(uint32_t t) { return t * RTIME_FACTOR; }
 extern uint32_t rop_util_unix_to_rtime(time_t);

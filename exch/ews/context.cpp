@@ -9,6 +9,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/oxcmail.hpp>
+#include <gromox/pcl.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -22,6 +23,17 @@ using namespace Structures;
 
 namespace
 {
+
+/**
+ * @brief     Generic deleter struct
+ *
+ * Provides explicit deleters for classes without destructor.
+ */
+struct Cleaner
+{
+	inline void operator()(BINARY* x) {rop_util_free_binary(x);}
+};;
+
 /**
  * @brief      Convert string to lower case
  *
@@ -54,47 +66,39 @@ T& defaulted(std::optional<T>& container, Args&&... args)
  *
  * @param      dir       Home directory of user or domain
  * @param      propNames List of property names to retrieve
+ * @param      create Whether to create requested names if necessary
  *
  * @return     Array of property IDs
  */
-PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames) const
+PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames, bool create) const
 {
 	PROPID_ARRAY namedIds{};
-	if(!plugin.exmdb.get_named_propids(dir.c_str(), FALSE, &propNames, &namedIds))
+	if(!plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds))
 		throw DispatchError(E3069);
 	return namedIds;
 }
 
 /**
- * @brief      Resolve named tags
+ * @brief      Load named tags into shape
  *
- * Resolves the tag names to numeric tags and assembles them to property tags
- * using the types array. names and types must have the same length.
- * Names not resolved are omitted.
+ * Immediatly returns if the shape is already associated with the store.
  *
- * The resolved tags are appended to result.tags and additionally inserted into
- * result.namedTags mapping tags back to their names.
- *
- * @param      Home directory of the user or domain
- * @param      List of property names to resolve
- * @param      List of property types
- * @param      Result to store resolved tags in
+ * @param      dir    Home directory of user or domain
+ * @param      shape  Shape to load tags into
+ * @param      create Whether to create requested names if necessary
  */
-void EWSContext::getNamedTags(const std::string& dir, const std::vector<PROPERTY_NAME>& names,
-                              const std::vector<uint16_t>& types, sShape& result) const
+void EWSContext::getNamedTags(const std::string& dir, sShape& shape, bool create) const
 {
-	PROPNAME_ARRAY propNames{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};
-	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames);
-	if(namedIds.count != types.size())
+	if(shape.store == dir)
 		return;
-	result.namedTags.reserve(namedIds.count);
-	for(size_t i = 0; i < namedIds.count; ++i)
-	{
-		if(namedIds.ppropid[i] == 0) // Failed to retrieve named property
-			continue;
-		if(result.namedTags.try_emplace(PROP_TAG(types[i], namedIds.ppropid[i]), names[i]).second)
-			result.tags.emplace_back(PROP_TAG(types[i], namedIds.ppropid[i]));
-	}
+	PROPNAME_ARRAY propNames = shape.namedProperties();
+	if(propNames.count == 0)
+		return;
+	PROPID_ARRAY namedIds = getNamedPropIds(dir, propNames, create);
+	if(namedIds.count != propNames.count)
+		return;
+	shape.namedProperties(namedIds);
+	shape.store = dir;
 }
 
 /**
@@ -112,50 +116,6 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
 	if(!plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
 		throw DispatchError(E3070);
 	return propnames.ppropname;
-}
-
-/**
- * @brief      Determine tags required for item shape
- *
- * @param      Requested item shape
- * @param      Home directory of the user or domain
- *
- * @return     Tag list and named property map
- */
-sShape EWSContext::collectTags(const tItemResponseShape& shape, const std::optional<std::string>& dir) const
-{
-	sShape result;
-	std::vector<PROPERTY_NAME> names;
-	std::vector<uint16_t> types;
-	auto tagIns = std::back_inserter(result.tags);
-	auto nameIns = std::back_inserter(names);
-	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns, result.special);
-	if(dir && !dir->empty() && !names.empty())
-		getNamedTags(*dir, names, types, result);
-	return result;
-}
-
-/**
- * @brief      Determine tags required for folder shape
- *
- * @param      Requested folder shape
- * @param      Home directory of the user or domain
- *
- * @return     Tag list and named property map
- */
-sShape EWSContext::collectTags(const tFolderResponseShape& shape, const std::optional<std::string>& dir) const
-{
-	sShape result;
-	std::vector<PROPERTY_NAME> names;
-	std::vector<uint16_t> types;
-	auto tagIns = std::back_inserter(result.tags);
-	auto nameIns = std::back_inserter(names);
-	auto typeIns = std::back_inserter(types);
-	shape.tags(tagIns, nameIns, typeIns, result.special);
-	if(dir && !dir->empty() && !names.empty())
-		getNamedTags(*dir, names, types, result);
-	return result;
 }
 
 /**
@@ -243,6 +203,13 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 		throw DispatchError(E3006(RoutingType));
 }
 
+/**
+ * @brief      Get user or domain maildir from folder spec
+ *
+ * @param      folder  Folder specification
+ *
+ * @return     Home directory of user or domain
+ */
 std::string EWSContext::getDir(const sFolderSpec& folder) const
 {
 	const char* target = folder.target? folder.target->c_str() : auth_info.username;
@@ -314,6 +281,24 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
 }
 
 /**
+ * @brief      Get item property value
+ *
+ * @param      dir   Store directory
+ * @param      mid   Message ID
+ * @param      tag   Tag ID
+ *
+ * @return     Pointer to property value or nullptr if not found
+ */
+const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+{
+	PROPTAG_ARRAY proptags{1, &tag};
+	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
+	if(props.count != 1 || props.ppropval->proptag != tag)
+		throw DispatchError(E3024);
+	return props.count == 1 && props.ppropval->proptag == tag? props.ppropval->pvalue : nullptr;
+}
+
+/**
  * @brief     Get properties of a message item
  *
  * @param     dir     User home dir
@@ -351,6 +336,22 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 }
 
 /**
+ * @brief      Load folder properties
+ *
+ * @param      folder  Folder specification
+ * @param      shape   Requested folder shape
+ *
+ * @return     Folder data
+ */
+sFolder EWSContext::loadFolder(const sFolderSpec& folder, Structures::sShape& shape) const
+{
+	shape.clean();
+	getNamedTags(getDir(folder), shape);
+	shape.properties(getFolderProps(folder, shape.proptags()));
+	return tBaseFolderType::create(shape);
+}
+
+/**
  * @brief     Load generic special fields
  *
  * Currently supports
@@ -358,8 +359,8 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
  * - loading of attachment metadata
  *
  * @param     dir     Store to load from
- * @param     mid     Message to load
  * @param     fid     Parent folder ID
+ * @param     mid     Message to load
  * @param     item    Message object to store data in
  * @param     special Bit mask of attributes to load
  */
@@ -404,7 +405,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		if(!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
 			throw DispatchError(E3079);
 		sAttachmentId aid(this->getItemEntryId(dir, mid), 0);
-		item.Attachments.reserve(count);
+		item.Attachments.emplace().reserve(count);
 		for(uint16_t i = 0; i < count; ++i)
 		{
 			auto aInst = plugin.loadAttachmentInstance(dir, fid, mid, i);
@@ -413,7 +414,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			if(!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 				throw DispatchError(E3080);
 			aid.attachment_num = i;
-			item.Attachments.emplace_back(tAttachment::create(aid, props));
+			item.Attachments->emplace_back(tAttachment::create(aid, props));
 		}
 	}
 }
@@ -422,8 +423,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
  * @brief     Load message attributes not contained in tags
  *
  * @param     dir     Store to load from
- * @param     mid     Message to load
  * @param     fid     Parent folder ID
+ * @param     mid     Message to load
  * @param     message Message object to store data in
  * @param     special Bit mask of attributes to load
  */
@@ -463,20 +464,65 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 }
 
 /**
- * @brief     Load (message) item from store
+ * @brief     Load message attributes not contained in tags
  *
- * @param     dir     Store to load item from
+ * @param     dir     Store to load from
  * @param     fid     Parent folder ID
- * @param     mid     ID of the message to laod
- * @param     shape   Item shape
- *
- * @return    Loaded item
+ * @param     mid     Message to load
+ * @param     calItem Calendar object to store data in
+ * @param     special Bit mask of attributes to load
  */
-sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, const sShape& shape) const
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tCalendarItem& calItem, uint64_t special) const
 {
-	PROPTAG_ARRAY requestedTags{uint16_t(shape.tags.size()), const_cast<uint32_t*>(shape.tags.data())};
-	TPROPVAL_ARRAY itemProps = getItemProps(dir, mid, requestedTags);
-	sItem item = tItem::create(itemProps, shape.namedTags);
+	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
+	if(special & sShape::Attendees)
+	{
+		TARRAY_SET rcpts;
+		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		{
+			mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%lu)", dir.c_str(), mid);
+			return;
+		}
+		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
+		{
+			uint32_t* recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+			if(!recipientType)
+				continue;
+			switch(*recipientType)
+			{
+			case 1: //Required attendee
+				if(special & sShape::RequiredAttendees)
+					defaulted(calItem.RequiredAttendees).emplace_back(**tps);
+				break;
+			case 2: //Optional attendee
+				if(special & sShape::OptionalAttendees)
+					defaulted(calItem.OptionalAttendees).emplace_back(**tps);
+				break;
+			case 3: //Resource
+				if(special & sShape::Resources)
+					defaulted(calItem.Resources).emplace_back(**tps);
+				break;
+			}
+		}
+	}
+}
+
+/**
+ * @brief      Load item
+ *
+ * @param      dir    Store directory
+ * @param      fid    Parent folder ID
+ * @param      mid    Message ID
+ * @param      shape  Requested item shape
+ *
+ * @return     The s item.
+ */
+sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sShape& shape) const
+{
+	shape.clean();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
+	sItem item = tItem::create(shape);
 	if(shape.special)
 		std::visit([&](auto&& item){loadSpecial(dir, fid, mid, item, shape.special);}, item);
 	return item;
@@ -600,6 +646,96 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
+}
+
+/**
+ * @brief      Mark message as updated
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      username  Account name of the user updating the message
+ * @param      mid       Message ID
+ *
+ * @todo Perhaps this should work on an instance
+ */
+void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) const
+{
+	uint64_t changeNum;
+	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
+		throw DispatchError(E3084);
+	TAGGED_PROPVAL _props[8];
+	TPROPVAL_ARRAY props{0, _props};
+	uint64_t localCommitTime = rop_util_current_nttime();
+	_props[props.count].proptag = PR_LOCAL_COMMIT_TIME;
+	_props[props.count++].pvalue = &localCommitTime;
+	_props[props.count].proptag = PR_LAST_MODIFICATION_TIME;
+	_props[props.count++].pvalue = &localCommitTime;
+
+	char displayName[1024];
+	_props[props.count].proptag = PR_LAST_MODIFIER_NAME;
+	if(!plugin.mysql.get_user_displayname(auth_info.username, displayName, std::size(displayName)) || !*displayName)
+		_props[props.count++].pvalue = displayName;
+	else
+		_props[props.count++].pvalue = const_cast<char*>(auth_info.username);
+
+	uint8_t abEidBuff[1280];
+	EXT_PUSH wAbEid;
+	std::string essdn = username_to_essdn(auth_info.username);
+	EMSAB_ENTRYID abEid{0, 1, DT_MAILUSER, essdn.data()};
+	if(!wAbEid.init(abEidBuff, std::size(abEidBuff), EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
+		throw DispatchError(E3085);
+	BINARY abEidContainer{wAbEid.m_offset, {abEidBuff}};
+	_props[props.count].proptag = PR_LAST_MODIFIER_ENTRYID;
+	_props[props.count++].pvalue = &abEidContainer;
+
+	XID changeKey{(mid.isPrivate()? rop_util_make_user_guid : rop_util_make_domain_guid)(mid.accountId()), changeNum};
+	uint8_t ckeyBuff[24];
+	EXT_PUSH wCkey;
+	if(!wCkey.init(ckeyBuff, std::size(ckeyBuff), 0) || wCkey.p_xid(changeKey) != EXT_ERR_SUCCESS)
+		throw DispatchError(E3086);
+	BINARY changeKeyContainer{wCkey.m_offset, {ckeyBuff}};
+	_props[props.count].proptag = PR_CHANGE_KEY;
+	_props[props.count++].pvalue = &changeKeyContainer;
+
+	const BINARY* currentPclContainer = getItemProp<BINARY>(dir, mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
+	PCL pcl;
+	if(!currentPclContainer || !pcl.deserialize(currentPclContainer))
+		throw DispatchError(E3087);
+	pcl.append(changeKey);
+	std::unique_ptr<BINARY, Cleaner> serializedPcl(pcl.serialize());
+	if(!serializedPcl)
+		throw DispatchError(E3088);
+	_props[props.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
+	_props[props.count++].pvalue = serializedPcl.get();
+
+	_props[props.count].proptag = PidTagChangeNumber;
+	_props[props.count++].pvalue = &changeNum;
+
+	PROBLEM_ARRAY problems;
+	if(!plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+		throw DispatchError(E3089);
+
+}
+
+/**
+ * @brief      Convert username to ESSDN
+ *
+ * @param      essdn   Username to convert
+ *
+ * @throw      DispatchError   Conversion failed
+ *
+ * @return     ESSDN
+ */
+std::string EWSContext::username_to_essdn(const std::string& username) const
+{
+	uint32_t userId, domainId;
+	size_t at = username.find('@');
+	if(at == username.npos)
+		throw DispatchError(E3090(username));
+	std::string_view userpart = std::string_view(username).substr(0, at);
+	if(!plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
+		throw DispatchError(E3091(username));
+	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
+	                   plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
 
 /**

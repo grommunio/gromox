@@ -17,8 +17,6 @@
 #include "ews.hpp"
 #include "structures.hpp"
 
-static constexpr unsigned int asfMeeting = 1, asfReceived = 2, asfCanceled = 4;
-
 using namespace gromox;
 using EWSContext = gromox::EWS::EWSContext;
 
