@@ -23,8 +23,8 @@ extern ec_error_t restriction_to_php(const RESTRICTION *, zval *);
 extern ec_error_t proptag_array_to_php(const PROPTAG_ARRAY *, zval *);
 extern ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *, zval *);
 extern ec_error_t tarray_set_to_php(const TARRAY_SET *, zval *);
-extern zend_bool state_array_to_php(const STATE_ARRAY *, zval *);
-extern zend_bool php_to_state_array(zval *, STATE_ARRAY *);
+extern ec_error_t state_array_to_php(const STATE_ARRAY *, zval *);
+extern ec_error_t php_to_state_array(zval *, STATE_ARRAY *);
 extern zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *, zval *);
 extern zend_bool php_to_propname_array(zval *names, zval *guids, PROPNAME_ARRAY *);
 

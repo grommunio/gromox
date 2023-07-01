@@ -1448,7 +1448,7 @@ ec_error_t tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 	return ecSuccess;
 }
 
-zend_bool state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)
+ec_error_t state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)
 {
 	zval pzval;
 	
@@ -1462,10 +1462,10 @@ zend_bool state_array_to_php(const STATE_ARRAY *pstates, zval *pzret)
 			pstates->pstate[i].message_flags);
 		add_next_index_zval(pzret, &pzval);
 	}
-	return 1;
+	return ecSuccess;
 }
 
-zend_bool php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
+ec_error_t php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 {
 	int i; 
 	zval *pentry;
@@ -1474,41 +1474,41 @@ zend_bool php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 	zstrplus str_flags(zend_string_init("flags", sizeof("flags") - 1, 0));
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	pstates->count = zend_hash_num_elements(Z_ARRVAL_P(pzval));
 	if (0 == pstates->count) {
 		pstates->pstate = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	pstates->pstate = sta_malloc<MESSAGE_STATE>(pstates->count);
 	if (NULL == pstates->pstate) {
 		pstates->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 	i = 0;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, pentry) {
 		ZVAL_DEREF(pentry);
 		auto value_entry = zend_hash_find(HASH_OF(pentry), str_sourcekey.get());
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		zstrplus str(zval_get_string(value_entry));
 		pstates->pstate[i].source_key.cb = str->len;
 		pstates->pstate[i].source_key.pb = sta_malloc<uint8_t>(str->len);
 		if (NULL == pstates->pstate[i].source_key.pb) {
 			pstates->pstate[i].source_key.cb = 0;
-			return 0;
+			return ecMAPIOOM;
 		}
 		memcpy(pstates->pstate[i].source_key.pb, str->val, str->len);
 		value_entry = zend_hash_find(HASH_OF(pentry), str_flags.get());
 		if (value_entry == nullptr)
-			return 0;
+			return ecInvalidParam;
 		pstates->pstate[i++].message_flags = zval_get_long(value_entry);
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
 zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *pzret)

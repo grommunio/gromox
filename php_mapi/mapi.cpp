@@ -3358,7 +3358,8 @@ static zend_bool import_readstate_change(
     
 	ZVAL_NULL(&pzvalfuncname);
 	ZVAL_NULL(&pzvalreturn);
-	if (!state_array_to_php(pstates, &pzvalargs))
+	auto err = state_array_to_php(pstates, &pzvalargs);
+	if (err != ecSuccess)
 		return 0;
 	ZVAL_STRING(&pzvalfuncname, "ImportPerUserReadStateChange");
 	if (call_user_function(nullptr, pztarget_obj, &pzvalfuncname,
@@ -3693,8 +3694,9 @@ static ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 		pthrow(ecInvalidParam);
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importcontentschanges, le_mapi_importcontentschanges);
-	if (!php_to_state_array(pzresreadstates, &message_states))
-		pthrow(ecError);
+	auto err = php_to_state_array(pzresreadstates, &message_states);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_importreadstates(
 				pctx->hsession, pctx->hobject,
 				&message_states);
