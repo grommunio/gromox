@@ -13,7 +13,7 @@ uint32_t proptag_to_phptag(uint32_t proptag);
 uint32_t phptag_to_proptag(uint32_t proptag);
 extern ec_error_t php_to_binary_array(zval *, BINARY_ARRAY *);
 extern ec_error_t binary_array_to_php(const BINARY_ARRAY *, zval *);
-extern zend_bool php_to_sortorder_set(zval *, SORTORDER_SET *);
+extern ec_error_t php_to_sortorder_set(zval *, SORTORDER_SET *);
 extern ec_error_t php_to_proptag_array(zval *, PROPTAG_ARRAY *);
 extern ec_error_t php_to_tpropval_array(zval *, TPROPVAL_ARRAY *);
 extern ec_error_t php_to_tarray_set(zval *, TARRAY_SET *);

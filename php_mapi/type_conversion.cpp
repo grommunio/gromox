@@ -102,28 +102,28 @@ ec_error_t binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 	return ecSuccess;
 }
 
-zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
+ec_error_t php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 {
 	unsigned long idx;
 	HashTable *ptarget_hash;
 	
 	if (pzval == nullptr)
-		return 0;
+		return ecInvalidParam;
 	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (ptarget_hash == nullptr)
-		return 0;
+		return ecInvalidParam;
 	pset->count = zend_hash_num_elements(Z_ARRVAL_P(pzval));
 	pset->ccategories = 0;
 	pset->cexpanded = 0;
 	if (0 == pset->count) {
 		pset->psort = NULL;
-		return 1;
+		return ecSuccess;
 	}
 	pset->psort = sta_malloc<SORT_ORDER>(pset->count);
 	if (NULL == pset->psort) {
 		pset->count = 0;
-		return 0;
+		return ecMAPIOOM;
 	}
 
 	zend_string *key;
@@ -136,7 +136,7 @@ zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 		pset->psort[i].table_sort = zval_get_long(entry);
 		++i;
 	} ZEND_HASH_FOREACH_END();
-	return 1;
+	return ecSuccess;
 }
 
 ec_error_t php_to_proptag_array(zval *pzval, PROPTAG_ARRAY *pproptags)

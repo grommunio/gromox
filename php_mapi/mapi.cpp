@@ -1669,8 +1669,9 @@ static ZEND_FUNCTION(mapi_table_sort)
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (ptable->type != zs_objtype::table)
 		pthrow(ecInvalidObject);
-	if (!php_to_sortorder_set(pzsortarray, &sortcriteria))
-		pthrow(ecError);
+	auto err = php_to_sortorder_set(pzsortarray, &sortcriteria);
+	if (err != ecSuccess)
+		pthrow(err);
 	auto result = zclient_sorttable(ptable->hsession,
 					ptable->hobject, &sortcriteria);
 	if (result != ecSuccess)
