@@ -1093,7 +1093,7 @@ template<typename V, size_t N> static inline char *itoa(V &&v, char (&buf)[N]) t
 	return buf;
 }
 
-zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
+ec_error_t restriction_to_php(const RESTRICTION *pres, zval *pzret)
 {
 	char key[HXSIZEOF_Z64];
 	zval pzrops, pzentry, pzarray, pzrestriction;
@@ -1106,8 +1106,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		auto andor = pres->andor;
 		zarray_init(&pzarray);
 		for (size_t i = 0; i < andor->count; ++i) {
-			if (!restriction_to_php(&andor->pres[i], &pzentry))
-				return 0;
+			auto err = restriction_to_php(&andor->pres[i], &pzentry);
+			if (err != ecSuccess)
+				return err;
 			add_assoc_zval(&pzarray, itoa(i, key), &pzentry);
 		}
 		break;
@@ -1115,8 +1116,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 	case RES_NOT: {
 		auto rnot = pres->xnot;
 		zarray_init(&pzarray);
-		if (!restriction_to_php(&rnot->res, &pzentry))
-			return 0;	
+		auto err = restriction_to_php(&rnot->res, &pzentry);
+		if (err != ecSuccess)
+			return err;	
 		add_assoc_zval(&pzarray, "0", &pzentry);
 		break;
 	}
@@ -1126,7 +1128,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		tmp_propvals.ppropval = &rcon->propval;
 		auto err = tpropval_array_to_php(&tmp_propvals, &pzrops);
 		if (err != ecSuccess)
-			return 0;
+			return err;
 		zarray_init(&pzarray);
 		add_assoc_zval(&pzarray, itoa(IDX_VALUE, key), &pzrops);
 		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rcon->proptag));
@@ -1139,7 +1141,7 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		tmp_propvals.ppropval = &rprop->propval;
 		auto err = tpropval_array_to_php(&tmp_propvals, &pzrops);
 		if (err != ecSuccess)
-			return 0;
+			return err;
 		zarray_init(&pzarray);
 		add_assoc_zval(&pzarray, itoa(IDX_VALUE, key), &pzrops);
 		add_assoc_long(&pzarray, itoa(IDX_RELOP, key), static_cast<uint8_t>(rprop->relop));
@@ -1178,8 +1180,9 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 	}
 	case RES_SUBRESTRICTION: {
 		auto rsub = pres->sub;
-		if (!restriction_to_php(&rsub->res, &pzrestriction))
-			return 0;	
+		auto err = restriction_to_php(&rsub->res, &pzrestriction);
+		if (err != ecSuccess)
+			return err;	
 		zarray_init(&pzarray);
 		add_assoc_long(&pzarray, itoa(IDX_PROPTAG, key), proptag_to_phptag(rsub->subobject));
 		add_assoc_zval(&pzarray, itoa(IDX_RESTRICTION, key), &pzrestriction);
@@ -1192,20 +1195,21 @@ zend_bool restriction_to_php(const RESTRICTION *pres, zval *pzret)
 		tmp_propvals.ppropval = rcom->ppropval;
 		auto err = tpropval_array_to_php(&tmp_propvals, &pzrops);
 		if (err != ecSuccess)
-			return 0;
-		if (!restriction_to_php(rcom->pres, &pzrestriction))
-			return 0;	
+			return err;
+		err = restriction_to_php(rcom->pres, &pzrestriction);
+		if (err != ecSuccess)
+			return err;	
 		zarray_init(&pzarray);
 		add_assoc_zval(&pzarray, itoa(IDX_PROPVALS, key), &pzrops);
 		add_assoc_zval(&pzarray, itoa(IDX_RESTRICTION, key), &pzrestriction);
 		break;
 	}
 	default:
-		return 0;
+		return ecInvalidParam;
 	}
 	add_assoc_long(pzret, "0", static_cast<uint8_t>(pres->rt));
 	add_assoc_zval(pzret, "1", &pzarray);
-	return 1;
+	return ecSuccess;
 }
 
 ec_error_t proptag_array_to_php(const PROPTAG_ARRAY *pproptags, zval *pzret)
@@ -1418,11 +1422,13 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 			add_assoc_zval(pzret, proptag_string, &pzactarray);
 			break;
 		}
-		case PT_SRESTRICTION:
-			if (!restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval))
-				return ecError;
+		case PT_SRESTRICTION: {
+			auto err = restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval);
+			if (err != ecSuccess)
+				return err;
 			add_assoc_zval(pzret, proptag_string, &pzactval);
 			break;
+		}
 		}
 	}
 	return ecSuccess;

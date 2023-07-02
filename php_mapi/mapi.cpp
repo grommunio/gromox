@@ -2986,8 +2986,8 @@ static ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		pthrow(result);
 	if (prestriction == nullptr)
 		ZVAL_NULL(&pzrestriction);
-	else if (!restriction_to_php(prestriction, &pzrestriction))
-		pthrow(ecError);
+	else if (auto err = restriction_to_php(prestriction, &pzrestriction); err != ecSuccess)
+		pthrow(err);
 	else if (auto err = binary_array_to_php(&entryid_array, &pzfolderlist); err != ecSuccess)
 		pthrow(err);
 	zarray_init(return_value);
