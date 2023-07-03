@@ -402,10 +402,8 @@ static ec_error_t html_write_header(RTF_WRITER*pwriter)
 	char tmp_string[256];
 	size_t i = 0;
 	
-	length = sprintf(tmp_string,
-		"{\\rtf1\\ansi\\fbidis\\ansicpg1252\\deff0");
-	QRF(pwriter->ext_push.p_bytes(tmp_string, length));
-	QRF(pwriter->ext_push.p_bytes("{\\fonttbl", 9));
+	static constexpr char head[] = "{\\rtf1\\ansi\\fbidis\\ansicpg1252\\deff0{\\fonttbl";
+	QRF(pwriter->ext_push.p_bytes(head, strlen(head)));
 	for (const auto &font : pwriter->fonts_ordered) {
 		length = snprintf(tmp_string, GX_ARRAY_SIZE(tmp_string),
 		         "{\\f%zu\\fswiss\\fcharset%d ", i++,
@@ -421,15 +419,15 @@ static ec_error_t html_write_header(RTF_WRITER*pwriter)
 		         color & 0xFF);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
 	}
-	length = sprintf(tmp_string,
+	static constexpr char foot[] =
 		"}\n{\\*\\generator gromox-rtf;}"
 		"\n{\\*\\formatConverter converted from html;}"
-		"\\viewkind5\\viewscale100\n{\\*\\bkmkstart BM_BEGIN}");
-	QRF(pwriter->ext_push.p_bytes(tmp_string, length));
+		"\\viewkind5\\viewscale100\n{\\*\\bkmkstart BM_BEGIN}";
+	QRF(pwriter->ext_push.p_bytes(foot, strlen(foot)));
 	return ecSuccess;
 }
 
-static ec_error_t html_write_tail(RTF_WRITER *pwriter)
+static ec_error_t html_write_close_brace(RTF_WRITER *pwriter)
 {
 	QRF(pwriter->ext_push.p_uint8('}'));
 	return ecSuccess;
@@ -688,213 +686,74 @@ static ec_error_t html_write_a_end(RTF_WRITER *pwriter)
 
 static ec_error_t html_write_b_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\b ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_b_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+	QRF(pwriter->ext_push.p_bytes("{\\b ", 4));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_i_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\i ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_i_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+	QRF(pwriter->ext_push.p_bytes("{\\i ", 4));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_div_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("{\\pard ", 7));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_div_end(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_h_begin(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_h_end(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_p_begin(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_p_end(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\sb70\\par}");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("\\sb70\\par}", 10));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_s_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\strike ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_s_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_em_begin(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\b ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_em_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+	QRF(pwriter->ext_push.p_bytes("{\\strike ", 9));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_ol_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = sprintf(tmp_buff,
+	static constexpr char x[] =
 		"{{\\*\\pn\\pnlvlbody\\pnf0\\pnindent0\\pnstart1\\pndec"
-		"{\\pntxta.}}\\fi-360\\li720\\sa200\\sl276\\slmult1 ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_ol_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+		"{\\pntxta.}}\\fi-360\\li720\\sa200\\sl276\\slmult1 ";
+	QRF(pwriter->ext_push.p_bytes(x, strlen(x)));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_ul_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = sprintf(tmp_buff,
+	static constexpr char x[] =
 		"{{\\*\\pn\\pnlvlblt\\pnf1\\pnindent0{\\pntxtb\\"
-		"\'B7}}\\fi-360\\li720\\sa200\\sl276\\slmult1 ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_ul_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+		"\'B7}}\\fi-360\\li720\\sa200\\sl276\\slmult1 ";
+	QRF(pwriter->ext_push.p_bytes(x, strlen(x)));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_li_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pntext\\tab\\f3 \\'b7}");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	static constexpr char x[] = "{\\pntext\\tab\\f3 \\'b7}";
+	QRF(pwriter->ext_push.p_bytes(x, strlen(x)));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_li_end(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\par\n");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("\\par\n", 5));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_center_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\qr ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("{\\pard\\qr ", 10));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_center_end(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\par}");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_table_begin(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('{'));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_table_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+	QRF(pwriter->ext_push.p_bytes("\\par}", 5));
 	return ecSuccess;
 }
 
@@ -904,23 +763,26 @@ static ec_error_t html_write_span_begin(RTF_WRITER *pwriter)
 	return ecSuccess;
 }
 
-static ec_error_t html_write_span_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_font_begin(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('{'));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_font_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
-	return ecSuccess;
-}
+#define html_write_tail html_write_close_brace
+#define html_write_b_end html_write_close_brace
+#define html_write_i_end html_write_close_brace
+#define html_write_s_end html_write_close_brace
+#define html_write_ol_end html_write_close_brace
+#define html_write_ul_end html_write_close_brace
+#define html_write_h_begin html_write_div_begin
+#define html_write_h_end html_write_div_end
+#define html_write_p_begin html_write_div_begin
+#define html_write_p_end html_write_div_end
+#define html_write_em_begin html_write_b_begin
+#define html_write_em_end html_write_b_end
+#define html_write_table_begin html_write_span_begin
+#define html_write_table_end html_write_span_end
+#define html_write_font_begin html_write_span_begin
+#define html_write_font_end html_write_span_end
+#define html_write_span_end html_write_close_brace
+#define html_write_mark_end html_write_close_brace
+#define html_write_sub_end html_write_close_brace
+#define html_write_sup_end html_write_close_brace
 
 static ec_error_t html_write_mark_begin(RTF_WRITER *pwriter)
 {
@@ -937,49 +799,27 @@ static ec_error_t html_write_mark_begin(RTF_WRITER *pwriter)
 	return ecSuccess;
 }
 
-static ec_error_t html_write_mark_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
-	return ecSuccess;
-}
-
 static ec_error_t html_write_td_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\intbl\\qc ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("{\\pard\\intbl\\qc ", 16));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_td_end(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cell}\n");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("\\cell}\n", 7));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_th_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\pard\\intbl\\qc ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("{\\pard\\intbl\\qc ", 16));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_th_end(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\cell}\n");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("\\cell}\n", 7));
 	return ecSuccess;
 }
 
@@ -989,8 +829,7 @@ static ec_error_t html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 	int length;
 	char tmp_buff[256];
 	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\trowd\\trgaph10 ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("{\\trowd\\trgaph10 ", 16));
 	if (0 == cell_num) {
 		return ecSuccess;
 	}
@@ -1007,65 +846,34 @@ static ec_error_t html_write_tr_begin(RTF_WRITER *pwriter, int cell_num)
 
 static ec_error_t html_write_tr_end(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\row}\n");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("\\row}\n", 6));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_sub_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\sub ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("{\\sub ", 6));
 	return ecSuccess;
 }
-
-static ec_error_t html_write_sub_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
-	return ecSuccess;
-}
-
 
 static ec_error_t html_write_sup_begin(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "{\\super ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
-	return ecSuccess;
-}
-
-static ec_error_t html_write_sup_end(RTF_WRITER *pwriter)
-{
-	QRF(pwriter->ext_push.p_uint8('}'));
+	QRF(pwriter->ext_push.p_bytes("{\\super ", 8));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_br(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\line ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	QRF(pwriter->ext_push.p_bytes("\\line ", 6));
 	return ecSuccess;
 }
 
 static ec_error_t html_write_hr(RTF_WRITER *pwriter)
 {
-	int length;
-	char tmp_buff[256];
-	
-	length = snprintf(tmp_buff, arsizeof(tmp_buff), "\\pard\\brdrb\\brdrs"
-			"\\brdrw10\\brsp20{\\fs4\\~}\\par\\pard ");
-	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));
+	static constexpr char x[] =
+			"\\pard\\brdrb\\brdrs"
+			"\\brdrw10\\brsp20{\\fs4\\~}\\par\\pard ";
+	QRF(pwriter->ext_push.p_bytes(x, strlen(x)));
 	return ecSuccess;
 }
 
