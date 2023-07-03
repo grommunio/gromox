@@ -1483,6 +1483,7 @@ static ZEND_FUNCTION(mapi_sink_create)
 
 static ZEND_FUNCTION(mapi_sink_timedwait)
 {
+	{
 	ZCL_MEMORY;
 	zend_long tmp_time;
 	NOTIF_SINK *psink;
@@ -1512,14 +1513,13 @@ static ZEND_FUNCTION(mapi_sink_timedwait)
 			goto RETURN_EXCEPTION;
 		}
 	}
-	if (!znotification_array_to_php(&notifications,
-		&pznotifications)) {
-		MAPI_G(hr) = ecError;
+	auto err = znotification_array_to_php(&notifications, &pznotifications);
+	MAPI_G(hr) = err;
+	if (err != ecSuccess)
 		goto RETURN_EXCEPTION;
-	}
 	RETVAL_ZVAL(&pznotifications, 0, 0);
-	MAPI_G(hr) = ecSuccess;
 	return;
+	}
  RETURN_EXCEPTION:
 	sleep(1);
 }

@@ -1511,7 +1511,7 @@ ec_error_t php_to_state_array(zval *pzval, STATE_ARRAY *pstates)
 	return ecSuccess;
 }
 
-zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *pzret)
+ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *pzret)
 {
 	int i;
 	zval pzvalprops, pzvalnotif;
@@ -1573,7 +1573,7 @@ zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *
 			if (NULL != pobject_notification->pproptags) {
 				auto err = proptag_array_to_php(pobject_notification->pproptags, &pzvalprops);
 				if (err != ecSuccess)
-					return 0;
+					return err;
 				add_assoc_zval(&pzvalnotif, "proptagarray", &pzvalprops);
 			}
 			break;
@@ -1582,7 +1582,7 @@ zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *pnotifications, zval *
 		}
 		add_next_index_zval(pzret, &pzvalnotif);
 	}
-	return 1;
+	return ecSuccess;
 }
 
 ec_error_t php_to_propname_array(zval *pzval_names, zval *pzval_guids,
