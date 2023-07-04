@@ -1781,12 +1781,12 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	len = 0;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
 		if (filter_special) {
-			len += gx_snprintf(&buff[len], std::size(buff),
+			len += gx_snprintf(&buff[len], std::size(buff) - len,
 			       "* LIST (\\Inbox) \"/\" \"INBOX\"\r\n");
 		} else {
 			auto pdir = temp_tree.match("INBOX");
 			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-			len = gx_snprintf(buff + len, arsizeof(buff),
+			len = gx_snprintf(&buff[len], std::size(buff) - len,
 			      "* LIST (%s\\Has%sChildren) \"/\" \"INBOX\"\r\n",
 			      return_special ? "\\Inbox " : "", have ? "" : "No");
 		}
@@ -1873,7 +1873,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		 * RFC 6154 does not document \Inbox, but Thunderbird
 		 * evaluates it.
 		 */
-		len = gx_snprintf(buff + len, arsizeof(buff),
+		len = gx_snprintf(&buff[len], std::size(buff) - len,
 		      "* XLIST (\\Inbox \\Has%sChildren) \"/\" \"INBOX\"\r\n",
 		      have ? "" : "No");
 	}
