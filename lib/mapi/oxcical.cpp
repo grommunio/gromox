@@ -269,10 +269,12 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 static void oxcical_convert_to_tzstruct(
 	TIMEZONEDEFINITION *ptz_definition, TIMEZONESTRUCT *ptz_struct)
 {
+	memset(ptz_struct, 0, sizeof(TIMEZONESTRUCT));
+	if (ptz_definition->crules == 0)
+		return;
 	int index;
 	
 	index = ptz_definition->crules - 1;
-	memset(ptz_struct, 0, sizeof(TIMEZONESTRUCT));
 	ptz_struct->bias = ptz_definition->prules[index].bias;
 	ptz_struct->daylightbias = ptz_definition->prules[index].daylightbias;
 	ptz_struct->standarddate = ptz_definition->prules[index].standarddate;
