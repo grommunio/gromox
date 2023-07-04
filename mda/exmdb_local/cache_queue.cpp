@@ -366,9 +366,9 @@ static void *mdl_thrwork(void *arg)
 			auto zlen = strnlen(ptr, size);
 			if (zlen > INT32_MAX)
 				zlen = INT32_MAX;
-			snprintf(pcontext->ctrl.from, arsizeof(pcontext->ctrl.from),
+			snprintf(pcontext->ctrl.from, std::size(pcontext->ctrl.from),
 			         "%.*s", static_cast<int>(zlen), ptr);
-			snprintf(temp_from, arsizeof(temp_from),
+			snprintf(temp_from, std::size(temp_from),
 			         "%.*s", static_cast<int>(zlen), ptr);
 			ptr += zlen;
 			size -= zlen;
@@ -388,7 +388,7 @@ static void *mdl_thrwork(void *arg)
 			} else {
 				pcontext->ctrl.rcpt.clear();
 				pcontext->ctrl.rcpt.emplace_back(ptr);
-				gx_strlcpy(temp_rcpt, ptr, arsizeof(temp_rcpt));
+				gx_strlcpy(temp_rcpt, ptr, std::size(temp_rcpt));
 
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
 					need_bounce = TRUE;

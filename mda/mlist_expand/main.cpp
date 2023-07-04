@@ -215,7 +215,7 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 		for (auto &&recip : temp_file1) {
 			for (i = 0; i < num; ++i)
 				if (phead->search_field("Delivered-To", i,
-				    delivered_to, arsizeof(delivered_to)) &&
+				    delivered_to, std::size(delivered_to)) &&
 				    strcasecmp(delivered_to, recip.c_str()) == 0)
 					break;
 			if (i == num) {
@@ -232,7 +232,7 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 	for (auto &&recip : temp_file1) {
 		for (i = 0; i < num; ++i)
 			if (phead->search_field("Delivered-To", i,
-			    delivered_to, arsizeof(delivered_to)) &&
+			    delivered_to, std::size(delivered_to)) &&
 			    strcasecmp(delivered_to, recip.c_str()) == 0)
 				break;
 		if (i == num) {

@@ -197,14 +197,14 @@ static errno_t rd_hello(const rd_connection &conn, const MESSAGE_CONTEXT *ctx,
     std::string &response)
 {
 	char cmd[1024];
-	auto len = gx_snprintf(cmd, arsizeof(cmd), "EHLO %s\r\n", get_host_ID());
+	auto len = gx_snprintf(cmd, std::size(cmd), "EHLO %s\r\n", get_host_ID());
 	if (!rd_send_cmd(conn, cmd, len))
 		return ETIMEDOUT;
 	auto ret = rd_get_response(conn, response);
 	if (ret == 0 || ret == ETIMEDOUT)
 		return ret;
 	/* retry with HELO */
-	len = gx_snprintf(cmd, arsizeof(cmd), "HELO %s\r\n", get_host_ID());
+	len = gx_snprintf(cmd, std::size(cmd), "HELO %s\r\n", get_host_ID());
 	if (!rd_send_cmd(conn, cmd, len))
 		return ETIMEDOUT;
 	ret = rd_get_response(conn, response);
@@ -219,7 +219,7 @@ static errno_t rd_mailfrom(rd_connection &conn, const MESSAGE_CONTEXT *ctx,
 {
 	char cmd[UADDR_SIZE+24];
 	auto f = strcmp(ctx->ctrl.from, ENVELOPE_FROM_NULL) != 0 ? ctx->ctrl.from : "";
-	auto len = gx_snprintf(cmd, arsizeof(cmd), "MAIL FROM: <%s>\r\n", f);
+	auto len = gx_snprintf(cmd, std::size(cmd), "MAIL FROM: <%s>\r\n", f);
 	if (!rd_send_cmd(conn, cmd, len))
 		return ETIMEDOUT;
 	auto ret = rd_get_response(conn, response);
@@ -235,7 +235,7 @@ static errno_t rd_rcptto(rd_connection &conn, const MESSAGE_CONTEXT *ctx,
 	bool any_success = false;
 	for (const auto &rcpt : ctx->ctrl.rcpt) {
 		char cmd[1024];
-		auto len = gx_snprintf(cmd, arsizeof(cmd), "RCPT TO: <%s>\r\n", rcpt.c_str());
+		auto len = gx_snprintf(cmd, std::size(cmd), "RCPT TO: <%s>\r\n", rcpt.c_str());
 		if (!rd_send_cmd(conn, cmd, len))
 			return ETIMEDOUT;
 		auto ret = rd_get_response(conn, response);
