@@ -150,7 +150,7 @@ static bool list_file_read_midb(const char *filename) try
 		auto &svr = g_server_list.emplace_back();
 		auto pserver = &svr;
 		svr.prefix = pitem[i].prefix;
-		gx_strlcpy(pserver->ip_addr, pitem[i].ip_addr, arsizeof(pserver->ip_addr));
+		gx_strlcpy(pserver->ip_addr, pitem[i].ip_addr, std::size(pserver->ip_addr));
 		pserver->port = pitem[i].port;
 		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j)
 			g_lost_list.emplace_back(BACK_CONN{-1, 0, pserver});
@@ -391,7 +391,7 @@ static int list_mail(const char *path, const char *folder,
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
 	auto EH = make_scope_exit([&]() { parray.clear(); });
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s 1 -1\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "P-SIMU %s %s 1 -1\r\n", path, folder);
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 
@@ -513,7 +513,7 @@ static int delete_mail(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
 	for (auto pmsg : plist) {
@@ -529,7 +529,7 @@ static int delete_mail(const char *path, const char *folder,
 		if (ret != 0)
 			return ret;
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+			length = gx_snprintf(buff, std::size(buff), "M-DELE %s %s", path, folder);
 			continue;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
 			pback.reset();
@@ -687,7 +687,7 @@ static int get_mail_uid(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNID %s %s %s\r\n",
+	auto length = gx_snprintf(buff, std::size(buff), "P-UNID %s %s %s\r\n",
 	              path, folder, mid_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -756,7 +756,7 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-MAKF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "M-MAKF %s %s\r\n", path, folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -778,7 +778,7 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-REMF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "M-REMF %s %s\r\n", path, folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -800,7 +800,7 @@ static int ping_mailbox(const char *path, int *perrno)
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-PING %s\r\n", path);
+	auto length = gx_snprintf(buff, std::size(buff), "M-PING %s\r\n", path);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -823,7 +823,7 @@ static int rename_folder(const char *path, const char *src_name,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-RENF %s %s %s\r\n", path,
+	auto length = gx_snprintf(buff, std::size(buff), "M-RENF %s %s %s\r\n", path,
 				src_name, dst_name);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -846,7 +846,7 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "P-SUBF %s %s\r\n", path, folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -868,7 +868,7 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNSF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "P-UNSF %s %s\r\n", path, folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
@@ -901,7 +901,7 @@ static int enum_folders(const char *path, std::vector<std::string> &pfile,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-ENUM %s\r\n", path);
+	auto length = gx_snprintf(buff, std::size(buff), "M-ENUM %s\r\n", path);
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 	
@@ -999,7 +999,7 @@ static int enum_subscriptions(const char *path, std::vector<std::string> &pfile,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBL %s\r\n", path);
+	auto length = gx_snprintf(buff, std::size(buff), "P-SUBL %s\r\n", path);
 	if (write(pback->sockd, buff, length) != length)
 		return MIDB_RDWR_ERROR;
 
@@ -1088,7 +1088,7 @@ static int insert_mail(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-INST %s %s %s %s %ld\r\n",
+	auto length = gx_snprintf(buff, std::size(buff), "M-INST %s %s %s %s %ld\r\n",
 				path, folder, file_name, flags_string, time_stamp);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -1115,7 +1115,7 @@ static int remove_mail(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+	auto length = gx_snprintf(buff, std::size(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
 	for (auto pitem : plist) {
@@ -1131,7 +1131,7 @@ static int remove_mail(const char *path, const char *folder,
 		if (ret != 0)
 			return ret;
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+			length = gx_snprintf(buff, std::size(buff), "M-DELE %s %s", path, folder);
 			continue;
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
 			pback.reset();
@@ -1632,7 +1632,7 @@ static int set_mail_flags(const char *path, const char *folder,
 		flags_string[length++] = 'R';
 	flags_string[length++] = ')';
 	flags_string[length] = '\0';
-	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
+	length = gx_snprintf(buff, std::size(buff), "P-SFLG %s %s %s %s\r\n",
 	         path, folder, mid_string.c_str(), flags_string);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -1674,7 +1674,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 		flags_string[length++] = 'R';
 	flags_string[length++] = ')';
 	flags_string[length] = '\0';
-	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
+	length = gx_snprintf(buff, std::size(buff), "P-RFLG %s %s %s %s\r\n",
 	         path, folder, mid_string.c_str(), flags_string);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -1698,7 +1698,7 @@ static int get_mail_flags(const char *path, const char *folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "P-GFLG %s %s %s\r\n",
+	auto length = gx_snprintf(buff, std::size(buff), "P-GFLG %s %s %s\r\n",
 	              path, folder, mid_string.c_str());
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -1726,7 +1726,7 @@ static int copy_mail(const char *path, const char *src_folder,
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-COPY %s %s %s %s\r\n",
+	auto length = gx_snprintf(buff, std::size(buff), "M-COPY %s %s %s %s\r\n",
 	              path, src_folder, mid_string.c_str(), dst_folder);
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
@@ -1787,7 +1787,7 @@ static BOOL check_full(const char *path)
 	auto pback = get_connection(path);
 	if (pback == nullptr)
 		return TRUE;
-	auto length = gx_snprintf(buff, arsizeof(buff), "M-CKFL %s\r\n", path);
+	auto length = gx_snprintf(buff, std::size(buff), "M-CKFL %s\r\n", path);
 	if (write(pback->sockd, buff, length) != length)
 		return TRUE;
 

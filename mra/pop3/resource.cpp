@@ -57,7 +57,7 @@ static std::unordered_map<unsigned int, std::string> g_def_code_table;
 
 int resource_run()
 {
-	for (size_t i = 0; i < arsizeof(g_default_code_table); ++i)
+	for (size_t i = 0; i < std::size(g_default_code_table); ++i)
 		g_def_code_table.emplace(g_default_code_table[i].first,
 			resource_parse_stcode_line(g_default_code_table[i].second));
     return 0;

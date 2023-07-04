@@ -80,7 +80,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 
 		str_value = pfile->get_value("EVENT_HOST");
 		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
-		           arsizeof(g_event_ip));
+		           std::size(g_event_ip));
 		str_value = pfile->get_value("EVENT_PORT");
 		if (NULL == str_value) {
 			g_event_port = 33333;
@@ -232,7 +232,7 @@ static void broadcast_event(const char *event)
 	hold.splice(hold.end(), g_back_list, g_back_list.begin());
 	bl_hold.unlock();
 	auto pback = &hold.front();
-	auto len = gx_snprintf(temp_buff, arsizeof(temp_buff), "%s\r\n", event);
+	auto len = gx_snprintf(temp_buff, std::size(temp_buff), "%s\r\n", event);
 	write(pback->sockd, temp_buff, len);
 	if (0 != read_line(pback->sockd, temp_buff, 1024)) {
 		close(pback->sockd);
@@ -297,7 +297,7 @@ static int connect_event()
 		close(sockd);
 		return -1;
 	}
-	auto temp_len = gx_snprintf(temp_buff, arsizeof(temp_buff), "ID %s:%d\r\n",
+	auto temp_len = gx_snprintf(temp_buff, std::size(temp_buff), "ID %s:%d\r\n",
 				get_host_ID(), getpid());
 	if (temp_len != write(sockd, temp_buff, temp_len)) {
 		close(sockd);

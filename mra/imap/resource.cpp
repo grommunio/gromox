@@ -168,7 +168,7 @@ int resource_run()
 		mlog(LV_ERR, "resource: cannot find default lang (%s) in <built-in list>\n", dfl_lang);
 		return -1;
 	}
-	for (size_t i = 0; i < arsizeof(g_default_code_table); ++i) {
+	for (size_t i = 0; i < std::size(g_default_code_table); ++i) {
 		g_def_code_table.emplace(g_default_code_table[i].first,
 			resource_parse_stcode_line(g_default_code_table[i].second));
     }
@@ -188,7 +188,7 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 	thread_local char reason[40];
 	auto it = g_def_code_table.find(code_type);
 	if (it == g_def_code_table.end()) {
-		*len = snprintf(reason, arsizeof(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		*len = snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
 		return reason;
 	}
 	int ret_len = it->second[0];

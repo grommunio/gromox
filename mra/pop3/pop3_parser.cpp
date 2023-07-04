@@ -61,13 +61,13 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	g_ssl_mutex_buf         = NULL;
 	if (support_tls) {
 		g_force_tls = force_tls;
-		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
+		gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
 		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, arsizeof(g_certificate_passwd));
+			gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		gx_strlcpy(g_private_key_path, key_path, arsizeof(g_private_key_path));
+		gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
 	}
 }
 
@@ -493,7 +493,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 			}
 			if (STREAM_COPY_OK == copy_result) {
 				gx_strlcpy(&line_buff[line_length], "\r\n",
-					arsizeof(line_buff) - line_length);
+					std::size(line_buff) - line_length);
 				line_length += 2;
 			}
 			pcontext->stream.write(line_buff, line_length);
@@ -619,7 +619,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->delmsg_list.clear();
 	pcontext->msg_array.clear();
 	pcontext->stream.clear();
-	memset(pcontext->read_buffer, 0, arsizeof(pcontext->read_buffer));
+	memset(pcontext->read_buffer, '\0', std::size(pcontext->read_buffer));
 	pcontext->read_offset = 0;
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
@@ -633,8 +633,8 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->is_login = 0;
 	pcontext->is_stls = 0;
 	pcontext->auth_times = 0;
-	memset(pcontext->username, 0, arsizeof(pcontext->username));
-	memset(pcontext->maildir, 0, arsizeof(pcontext->maildir));
+	memset(pcontext->username, '\0', std::size(pcontext->username));
+	memset(pcontext->maildir, '\0', std::size(pcontext->maildir));
 }
 
 pop3_context::~pop3_context()

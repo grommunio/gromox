@@ -162,9 +162,9 @@ int main(int argc, const char **argv) try
 	uint16_t listen_tls_port = g_config_file->get_ll("imap_listen_tls_port");
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		gethostname(temp_buff, arsizeof(temp_buff));
-		temp_buff[arsizeof(temp_buff)-1] = '\0';
+		memset(temp_buff, 0, std::size(temp_buff));
+		gethostname(temp_buff, std::size(temp_buff));
+		temp_buff[std::size(temp_buff)-1] = '\0';
 		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 	}
@@ -172,8 +172,8 @@ int main(int argc, const char **argv) try
 	
 	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		getdomainname(temp_buff, arsizeof(temp_buff));
+		memset(temp_buff, 0, std::size(temp_buff));
+		getdomainname(temp_buff, std::size(temp_buff));
 		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "
@@ -205,28 +205,28 @@ int main(int argc, const char **argv) try
 		thread_init_num);
 
 	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
-	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	printf("[imap]: context average memory is %s\n", temp_buff);
  
 	unsigned int context_max_mem = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
-		HX_unit_size(temp_buff, arsizeof(temp_buff), context_max_mem * 64 * 1024, 1024, 0);
+		HX_unit_size(temp_buff, std::size(temp_buff), context_max_mem * 64 * 1024, 1024, 0);
 		g_config_file->set_value("context_max_mem", temp_buff);
 	} 
 	context_max_mem *= 64*1024;
-	HX_unit_size(temp_buff, arsizeof(temp_buff), context_max_mem, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), context_max_mem, 1024, 0);
 	printf("[imap]: context maximum memory is %s\n", temp_buff);
  
 	unsigned int context_aver_mitem = g_config_file->get_ll("context_average_mitem");
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
 	std::chrono::seconds imap_conn_timeout(g_config_file->get_ll("imap_conn_timeout"));
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), imap_conn_timeout.count(), 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), imap_conn_timeout.count(), 0);
 	printf("[imap]: imap socket read write timeout is %s\n", temp_buff);
  
 	std::chrono::seconds autologout_time(g_config_file->get_ll("imap_autologout_time"));
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), autologout_time.count(), 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), autologout_time.count(), 0);
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	int imap_auth_times = g_config_file->get_ll("imap_auth_times");
@@ -234,7 +234,7 @@ int main(int argc, const char **argv) try
 			imap_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), block_interval_auth, 0);
 	printf("[imap]: block client %s when authentication failure count "
 			"is exceeded\n", temp_buff);
 
