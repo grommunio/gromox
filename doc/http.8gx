@@ -68,9 +68,9 @@ files.
 Default: \fI/usr/share/gromox/http\fP
 .TP
 \fBfastcgi_cache_size\fP
-If the HTTP request to a CGI endpoint uses Chunked Transfer Encoding and the
-Content-Length field contains a larger value than this limit, the data is
-buffered in a file.
+If the HTTP request to a CGI endpoint has a HTTP body larger than the limit
+given here, the data is buffered in a file rather than kept in memory. If the
+request uses Chunked Transfer Encoding, a file is used unconditionally.
 .br
 Default: \fI256K\fP
 .TP
