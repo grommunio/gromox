@@ -165,10 +165,10 @@ struct ExplicitConvert<gromox::time_point>
 /**
  * @brief      Conversion specialization for StrEnum
  */
-template<const char* C0, const char*... Cs>
-struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
+template<const char*... Cs>
+struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>>
 {
-	using T = gromox::EWS::Structures::StrEnum<C0, Cs...>;
+	using T = gromox::EWS::Structures::StrEnum<Cs...>;
 
 	static constexpr uint8_t value = EC_IN | EC_OUT;
 
@@ -192,10 +192,7 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<C0, Cs...>>
 	}
 
 	static void serialize(const T &value, SetterFunc setter)
-	{
-		if(value.length())
-			setter(value.c_str());
-	}
+	{setter(value);}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

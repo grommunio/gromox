@@ -245,13 +245,12 @@ constexpr size_t typeWidth(uint16_t type)
  */
 void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 {
-	for (size_t wd = 0; wd < 7; ++wd)
+	for (uint8_t wd = 0; wd < 7; ++wd)
 		if (weekrecur & (1 << wd))
-			daysofweek.append(Enum::DayOfWeekType(wd)).append(" ");
+			daysofweek.append(Enum::DayOfWeekType::Choices[wd]).append(" ");
 	// remove trailing space
-	daysofweek.erase(
-		std::find_if(daysofweek.rbegin(), daysofweek.rend(), [](int ch) {return !std::isspace(ch);}).base(),
-		daysofweek.end());
+	if(!daysofweek.empty() && std::isspace(daysofweek.back()))
+		daysofweek.pop_back();
 }
 
 /**
@@ -283,7 +282,7 @@ void process_recurrence(const BINARY* recurData,
 	case PATTERNTYPE_WEEK:
 	{
 		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		rp = tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, Enum::DayOfWeekType(size_t(apprecurr.recur_pat.firstdow)));
+		rp = tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, Enum::DayOfWeekType(uint8_t(apprecurr.recur_pat.firstdow)));
 		break;
 	}
 	case PATTERNTYPE_MONTH:
@@ -296,7 +295,7 @@ void process_recurrence(const BINARY* recurData,
 		if (monthly)
 			rp = tAbsoluteMonthlyRecurrencePattern(apprecurr.recur_pat.period, apprecurr.recur_pat.pts.dayofmonth);
 		else
-			rp = tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth, Enum::MonthNamesType(size_t(itime.month - 1)));
+			rp = tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth, Enum::MonthNamesType(uint8_t(itime.month - 1)));
 		break;
 	}
 	case PATTERNTYPE_MONTHNTH:
@@ -305,11 +304,11 @@ void process_recurrence(const BINARY* recurData,
 		auto monthly = apprecurr.recur_pat.period % 12 != 0;
 		ical_get_itime_from_yearday(1601, apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
 		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		std::string dayofweekindex = Enum::DayOfWeekIndexType(size_t(apprecurr.recur_pat.pts.monthnth.recurnum - 1));
+		Enum::DayOfWeekIndexType dayofweekindex(uint8_t(apprecurr.recur_pat.pts.monthnth.recurnum - 1));
 		if (monthly)
 			rp = tRelativeMonthlyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, dayofweekindex);
 		else
-			rp = tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex, Enum::MonthNamesType(size_t(itime.month - 1)));
+			rp = tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex, Enum::MonthNamesType(uint8_t(itime.month - 1)));
 		break;
 	}
 	default:

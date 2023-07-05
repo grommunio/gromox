@@ -392,19 +392,13 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	tUserOofSettings& OofSettings = request.UserOofSettings;
 	int oof_state, allow_external_oof, external_audience;
 
-	if(tolower(OofSettings.OofState) == "disabled")
-		oof_state = 0;
-	else if(OofSettings.OofState == "enabled")
-		oof_state = 1;
-	else if(OofSettings.OofState == "scheduled")
-		oof_state = 2;
-	else
-		throw DispatchError(E3008(OofSettings.OofState));
+	oof_state = OofSettings.OofState;
 
-	allow_external_oof = !(tolower(OofSettings.ExternalAudience) == "none");
+	std::string externalAudience = OofSettings.ExternalAudience;
+	allow_external_oof = !(tolower(externalAudience) == "none");
 	//Note: counterintuitive but intentional: known -> 1, all -> 0
-	external_audience = OofSettings.ExternalAudience == "known";
-	if(allow_external_oof && !external_audience && OofSettings.ExternalAudience != "all")
+	external_audience = externalAudience == "known";
+	if(allow_external_oof && !external_audience && externalAudience != "all")
 		throw DispatchError(E3009(OofSettings.ExternalAudience));
 
 	std::string filename = maildir+"/config/autoreply.cfg";
@@ -692,7 +686,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	if (aliases.size() > 0) {
 		aliases.resize(min(aliases.size(), size_t(3)));
 		cnt.EmailAddresses.emplace().reserve(aliases.size());
-		size_t index = 0;
+		uint8_t index = 0;
 		for (auto& alias : aliases)
 			cnt.EmailAddresses->emplace_back(tEmailAddressDictionaryEntry(std::move(alias),
 			                                                              Enum::EmailAddressKeyType(index++)));
