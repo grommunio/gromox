@@ -423,12 +423,12 @@ static int http_done(http_context *ctx, unsigned int code, const char *msg = nul
 		"Date: %s\r\n"
 		"Content-Length: %zu\r\n"
 	        "Content-Type: text/plain; charset=utf-8\r\n"
-		"Connection: close\r\n"
-		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2, msg);
+		"Connection: %s\r\n"
+		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2,
+		ctx->b_close ? "close" : "keep-alive", msg);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
-	ctx->b_close = TRUE;
 	ctx->sched_stat = hsched_stat::wrrep;
 	return X_LOOP;
 }
@@ -649,7 +649,6 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
-			pcontext->b_close = TRUE;
 			pcontext->sched_stat = hsched_stat::wrrep;
 			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s",
 				pcontext->username, mres.errstr.c_str());
@@ -686,7 +685,6 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
-	pcontext->b_close = TRUE;
 	pcontext->sched_stat = hsched_stat::wrrep;
 	return X_LOOP;
 }
@@ -765,7 +763,6 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
-		pcontext->b_close = TRUE;
 		pcontext->sched_stat = hsched_stat::wrrep;
 		pcontext->log(LV_DEBUG,
 			"I-1931: authentication needed");

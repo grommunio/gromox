@@ -15,7 +15,7 @@ my $body_2 = "Content-Length: 2\r\n\r\nbc\r\n";
 my $body_3 = "Transfer-Encoding: chunked\r\n\r\n3\r\nd\r\n0\r\n\r\n";
 my $body_4 = "Transfer-Encoding: chunked\r\n\r\n4\r\nef\r\n0\r\n\r\n";
 my @req = (
-#	"GET /x HTTP/1.1\r\n\r\nGET /web/version.txt HTTP/1.1\r\n\r\n",
+	"GET /x HTTP/1.1\r\n\r\nGET /web/version.txt HTTP/1.1\r\n\r\n",
 	"$cgiuri$body_1$cgiuri$body_2",
 	"$cgiuri$body_3$cgiuri$body_4",
 	"$txturi$body_1$txturi$body_2",
