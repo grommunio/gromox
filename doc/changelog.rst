@@ -1,9 +1,15 @@
-Development 2.10.6
-==================
+Development 2.10.78
+===================
 
 Enhancements:
 
 * exmdb: attachment storage with hash-based filenames
+* http: better HTTP/1.1 Keep-Alive support (close fewer connections)
+
+Fixes:
+
+* oxcical: resolved another case of recurring appointments shifting due to
+  timezone/daylightbias
 
 
 Gromox 2.10 (2023-06-15)
