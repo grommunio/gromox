@@ -38,7 +38,7 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 	void *pvalue;
 	char sql_string[256];
 	
-	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
+	snprintf(sql_string, std::size(sql_string), "SELECT attachment_id FROM "
 	        "attachments WHERE message_id=%llu", static_cast<unsigned long long>(message_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -72,9 +72,9 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	if (common_util_get_user_lang(from, lang, arsizeof(lang))) {
+	if (common_util_get_user_lang(from, lang, std::size(lang))) {
 		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-		common_util_get_timezone(from, time_zone, arsizeof(time_zone));
+		common_util_get_timezone(from, time_zone, std::size(time_zone));
 	}
 	if('\0' != time_zone[0]) {
 		auto sp = tz::tzalloc(time_zone);
@@ -100,7 +100,7 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 			strcpy(charset, "ascii");
 		} else {
 			auto pcharset = cpid_to_cset(static_cast<cpid_t>(*static_cast<uint32_t *>(pvalue)));
-			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
+			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", std::size(charset));
 		}
 	}
 

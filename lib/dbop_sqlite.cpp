@@ -612,9 +612,9 @@ int dbop_sqlite_create(sqlite3 *db, sqlite_kind k, unsigned int flags)
 int dbop_sqlite_recentversion(sqlite_kind k)
 {
 	switch (k) {
-	case sqlite_kind::pvt: return tbl_pvt_upgrade_list[arsizeof(tbl_pvt_upgrade_list)-2].v;
-	case sqlite_kind::pub: return tbl_pub_upgrade_list[arsizeof(tbl_pub_upgrade_list)-2].v;
-	case sqlite_kind::midb: return tbl_midb_upgrade_list[arsizeof(tbl_midb_upgrade_list)-2].v;
+	case sqlite_kind::pvt: return tbl_pvt_upgrade_list[std::size(tbl_pvt_upgrade_list)-2].v;
+	case sqlite_kind::pub: return tbl_pub_upgrade_list[std::size(tbl_pub_upgrade_list)-2].v;
+	case sqlite_kind::midb: return tbl_midb_upgrade_list[std::size(tbl_midb_upgrade_list)-2].v;
 	default: return 0;
 	}
 }

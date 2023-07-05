@@ -166,6 +166,6 @@ static constexpr const char *rop_names[256] = {
 
 const char *rop_idtoname(unsigned int i)
 {
-	const char *s = i < arsizeof(rop_names) ? rop_names[i] : nullptr;
+	auto s = i < std::size(rop_names) ? rop_names[i] : nullptr;
 	return znul(s);
 }

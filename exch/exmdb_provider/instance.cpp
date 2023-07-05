@@ -92,7 +92,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 {
 	char sql_string[124];
 	
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
+	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -201,7 +201,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (prcpts == nullptr)
 		return FALSE;
 	pmsgctnt->set_rcpts_internal(prcpts);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
+	snprintf(sql_string, std::size(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -229,7 +229,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pattachments == nullptr)
 		return FALSE;
 	pmsgctnt->set_attachments_internal(pattachments);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM "
+	snprintf(sql_string, std::size(sql_string), "SELECT attachment_id FROM "
 	          "attachments WHERE message_id=%llu", LLU{message_id});
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)

@@ -1024,7 +1024,7 @@ static bool transporter_register_remote(HOOK_FUNCTION func)
 		return false;
 	}
 	g_remote_hook = func;
-	gx_strlcpy(g_remote_path, g_cur_lib->file_name, arsizeof(g_remote_path));
+	gx_strlcpy(g_remote_path, g_cur_lib->file_name, std::size(g_remote_path));
 	return true;
 }
 

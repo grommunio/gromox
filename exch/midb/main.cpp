@@ -162,7 +162,7 @@ int main(int argc, const char **argv) try
 	mlog(LV_INFO, "system: hash table size is %zu", table_size);
 
 	int cache_interval = pconfig->get_ll("midb_cache_interval");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
 	int mime_num = pconfig->get_ll("midb_mime_number");
@@ -173,7 +173,7 @@ int main(int argc, const char **argv) try
 	if (0 == mmap_size) {
 		mlog(LV_INFO, "system: sqlite mmap_size is disabled");
 	} else {
-		HX_unit_size(temp_buff, arsizeof(temp_buff), mmap_size, 1024, 0);
+		HX_unit_size(temp_buff, std::size(temp_buff), mmap_size, 1024, 0);
 		mlog(LV_INFO, "system: sqlite mmap_size is %s", temp_buff);
 	}
 	

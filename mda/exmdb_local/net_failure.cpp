@@ -175,7 +175,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
 		          "failed %d times within ", get_host_ID(),
 		          g_times);
-		HX_unit_seconds(tmp_buff + offset, arsizeof(tmp_buff) - offset, g_interval, 0);
+		HX_unit_seconds(&tmp_buff[offset], std::size(tmp_buff) - offset, g_interval, 0);
 		offset += strlen(tmp_buff + offset);
 		strcpy(tmp_buff + offset, "\r\n<P></P><BR><P></P><BR><P></P><BR>Alarm time: ");
 		offset += strlen(tmp_buff + offset);
@@ -194,7 +194,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 	         localtime_r(&current_time, &time_buff));
 	pmime->set_field("Date", tmp_buff);
-	snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
+	snprintf(tmp_buff, std::size(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
 	pmime->set_field("Subject", tmp_buff);
 	enqueue_context(pcontext);
 } catch (const std::bad_alloc &) {

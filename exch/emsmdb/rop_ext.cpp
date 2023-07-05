@@ -155,7 +155,7 @@ static pack_result rop_ext_push(EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *
 	static constexpr uint32_t proptags[] =
 		{PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	
-	columns.count = arsizeof(proptags);
+	columns.count = std::size(proptags);
 	columns.pproptag = deconst(proptags);
 	TRY(pext->p_uint32(r->rows.count));
 	for (size_t i = 0; i < r->rows.count; ++i)

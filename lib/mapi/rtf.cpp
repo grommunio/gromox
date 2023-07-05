@@ -627,7 +627,7 @@ static bool rtf_express_begin_fontsize(RTF_READER *preader, int size)
 		QRF(preader->ext_push.p_bytes(TAG_FONTSIZE24_BEGIN, sizeof(TAG_FONTSIZE24_BEGIN) - 1));
 		return true;
 	}
-	tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), TAG_FONTSIZE_BEGIN, size);
+	tmp_len = snprintf(tmp_buff, std::size(tmp_buff), TAG_FONTSIZE_BEGIN, size);
 	QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
 	return true;
 }
@@ -1566,7 +1566,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				                   fcharsetcp != CP_UNSET ? fcharsetcp :
 				                   static_cast<cpid_t>(1252);
 				if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
-				    tmp_name, name, arsizeof(name))) {
+				    tmp_name, name, std::size(name))) {
 					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
 				} else {
@@ -1672,7 +1672,7 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			}
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
-	tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%04d-%02d-%02d ", year, month, day);
+	tmp_len = snprintf(tmp_buff, std::size(tmp_buff), "%04d-%02d-%02d ", year, month, day);
 	if (hour >= 0 && minute >= 0) {
 		tmp_len += sprintf(tmp_buff + tmp_len, "%02d:%02d ", hour, minute);
 	}

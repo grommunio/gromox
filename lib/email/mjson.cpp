@@ -1255,7 +1255,7 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 	while (NULL != (pdot = strrchr(mjson_id, '.'))) {
 		*pdot = '\0';
 		char dgt_path[256];
-		snprintf(dgt_path, arsizeof(dgt_path), "%s/%s/%s.dgt", storage_path,
+		snprintf(dgt_path, std::size(dgt_path), "%s/%s/%s.dgt", storage_path,
 		         pjson_base->get_mail_filename(), mjson_id);
 		size_t slurp_size = 0;
 		std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(dgt_path, &slurp_size));

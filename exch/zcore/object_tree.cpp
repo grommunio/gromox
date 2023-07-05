@@ -92,7 +92,7 @@ object_tree_init_root(const char *maildir) try
 	char tmp_path[256];
 	struct stat node_stat;
 
-	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat", maildir);
+	snprintf(tmp_path, std::size(tmp_path), "%s/config/zarafa.dat", maildir);
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 		prootobj->pprivate_proplist = tpropval_array_init();
@@ -398,18 +398,18 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	auto pinfo = zs_get_info();
 	if (b_private) {
 		if (account_id == pinfo->user_id) {
-			gx_strlcpy(dir, pinfo->get_maildir(), arsizeof(dir));
-			gx_strlcpy(account, pinfo->get_username(), arsizeof(account));
+			gx_strlcpy(dir, pinfo->get_maildir(), std::size(dir));
+			gx_strlcpy(account, pinfo->get_username(), std::size(account));
 		} else {
 			if (!system_services_get_username_from_id(account_id,
 			    account, GX_ARRAY_SIZE(account)) ||
-			    !system_services_get_maildir(account, dir, arsizeof(dir)))
+			    !system_services_get_maildir(account, dir, std::size(dir)))
 				return INVALID_HANDLE;	
 		}
 	} else {
 		if (account_id != pinfo->domain_id)
 			return INVALID_HANDLE;
-		gx_strlcpy(dir, pinfo->get_homedir(), arsizeof(dir));
+		gx_strlcpy(dir, pinfo->get_homedir(), std::size(dir));
 		auto pdomain = strchr(pinfo->get_username(), '@');
 		if (pdomain == nullptr)
 			return INVALID_HANDLE;

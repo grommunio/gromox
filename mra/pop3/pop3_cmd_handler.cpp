@@ -89,7 +89,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	} else {
 		if (pcontext->is_login)
 			return 1720;
-		auto umx = std::min(static_cast<size_t>(line_length - 5), arsizeof(pcontext->username) - 1);
+		auto umx = std::min(static_cast<size_t>(line_length - 5), std::size(pcontext->username) - 1);
 		memcpy(pcontext->username, cmd_line + 5, umx);
 		pcontext->username[umx] = '\0';
 		HX_strltrim(pcontext->username);
@@ -288,7 +288,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
 		auto punit = sa_get_item(pcontext->msg_array, n - 1);
-		auto z = gx_snprintf(temp_buff, arsizeof(temp_buff),
+		auto z = gx_snprintf(temp_buff, std::size(temp_buff),
 		         "+OK %d %s\r\n", n, punit->file_name.c_str());
 		pcontext->connection.write(temp_buff, z);
 		return DISPATCH_CONTINUE;
@@ -459,7 +459,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	if (!pcontext->is_login)
 		return 1708;
 	
-	gx_strlcpy(temp_buff, temp_command + 4, arsizeof(temp_buff));
+	gx_strlcpy(temp_buff, &temp_command[4], std::size(temp_buff));
 	HX_strltrim(temp_buff);
 	ptoken = strchr(temp_buff, ' ');
 	if (NULL == ptoken) {
@@ -522,7 +522,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 		default:
 			return 1727 | DISPATCH_SHOULD_CLOSE;
 		}
-		string_length = gx_snprintf(temp_buff, arsizeof(temp_buff),
+		string_length = gx_snprintf(temp_buff, std::size(temp_buff),
 			"FOLDER-TOUCH %s inbox", pcontext->username);
 		system_services_broadcast_event(temp_buff);
 

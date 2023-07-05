@@ -417,7 +417,7 @@ static int http_done(http_context *ctx, unsigned int code, const char *msg = nul
 		code /= 10;
 
 	char dstring[128], response_buff[1024];
-	rfc1123_dstring(dstring, arsizeof(dstring));
+	rfc1123_dstring(dstring, std::size(dstring));
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
@@ -636,7 +636,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		if ('\0' == pcontext->maildir[0]) {
 			/* But... */
 			char dstring[128], response_buff[1024];
-			rfc1123_dstring(dstring, arsizeof(dstring));
+			rfc1123_dstring(dstring, std::size(dstring));
 			auto response_len = gx_snprintf(
 				response_buff, GX_ARRAY_SIZE(response_buff),
 				"HTTP/1.1 401 Unauthorized\r\n"
@@ -671,7 +671,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
 	char dstring[128], response_buff[1024];
-	rfc1123_dstring(dstring, arsizeof(dstring));
+	rfc1123_dstring(dstring, std::size(dstring));
 	auto response_len = gx_snprintf(
 		response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
@@ -750,7 +750,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 
 	if (!pcontext->b_authed) {
 		char dstring[128], response_buff[1024];
-		rfc1123_dstring(dstring, arsizeof(dstring));
+		rfc1123_dstring(dstring, std::size(dstring));
 		auto response_len = gx_snprintf(
 			response_buff, GX_ARRAY_SIZE(response_buff),
 			"HTTP/1.1 401 Unauthorized\r\n"
@@ -1524,7 +1524,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			}
 			/* first send http response head */
 			char dstring[128], response_buff[1024];
-			rfc1123_dstring(dstring, arsizeof(dstring));
+			rfc1123_dstring(dstring, std::size(dstring));
 			auto response_len = gx_snprintf(
 				response_buff, GX_ARRAY_SIZE(response_buff),
 				"HTTP/1.1 200 Success\r\n"

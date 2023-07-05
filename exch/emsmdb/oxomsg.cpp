@@ -63,7 +63,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	if (!common_util_username_to_essdn(account, essdn_sender.get(), essdn_buff_size))
 		return ecRpcFailed;
 	if (!common_util_get_user_displayname(account,
-	    dispname_sender, arsizeof(dispname_sender)))
+	    dispname_sender, std::size(dispname_sender)))
 		return ecRpcFailed;
 	auto eid_sender = common_util_username_to_addressbook_entryid(account);
 	if (eid_sender == nullptr)
@@ -79,7 +79,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	} else if (common_util_username_to_essdn(representing_username,
 	    essdn_repr.get(), essdn_buff_size)) {
 		if (!common_util_get_user_displayname(representing_username,
-		    dispname_repr, arsizeof(dispname_repr)))
+		    dispname_repr, std::size(dispname_repr)))
 			return ecRpcFailed;
 		eid_repr = common_util_username_to_addressbook_entryid(
 										representing_username);
@@ -98,7 +98,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	search_repr.cb = sk_repr.size() + 1;
 	search_repr.pv = deconst(sk_repr.c_str());
 	char msgid[UADDR_SIZE+2];
-	make_inet_msgid(msgid, arsizeof(msgid), 0x4553);
+	make_inet_msgid(msgid, std::size(msgid), 0x4553);
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -118,7 +118,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_repr},
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
-	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
+	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
 		return ecRpcFailed;
 	return pmessage->save();

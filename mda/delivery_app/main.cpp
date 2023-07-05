@@ -97,9 +97,9 @@ int main(int argc, const char **argv) try
 	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		gethostname(temp_buff, arsizeof(temp_buff));
-		temp_buff[arsizeof(temp_buff)-1] = '\0';
+		memset(temp_buff, '\0', std::size(temp_buff));
+		gethostname(temp_buff, std::size(temp_buff));
+		temp_buff[std::size(temp_buff)-1] = '\0';
 		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 	}
@@ -107,8 +107,8 @@ int main(int argc, const char **argv) try
 
 	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		getdomainname(temp_buff, arsizeof(temp_buff));
+		memset(temp_buff, '\0', std::size(temp_buff));
+		getdomainname(temp_buff, std::size(temp_buff));
 		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
@@ -137,7 +137,7 @@ int main(int argc, const char **argv) try
 		mime_ratio);
 
 	size_t max_mem = g_config_file->get_ll("dequeue_maximum_mem");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), max_mem, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), max_mem, 1024, 0);
 	mlog(LV_INFO, "message_dequeue: maximum allocated memory is %s", temp_buff);
     
 	service_init({g_config_file->get_value("config_file_path"),

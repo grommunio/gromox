@@ -405,7 +405,7 @@ static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 		if (d.max != nullptr)
 			nv = std::min(nv, HX_strtoull_sec(d.max, nullptr));
 		char out[HXSIZEOF_Z64];
-		snprintf(out, arsizeof(out), "%llu", nv);
+		snprintf(out, std::size(out), "%llu", nv);
 		cfg.set_value(d.key, out);
 		return;
 	}
@@ -416,7 +416,7 @@ static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 		if (d.max != nullptr)
 			nv = std::min(nv, HX_strtoull_unit(d.max, nullptr, 1024));
 		char out[HXSIZEOF_Z64];
-		snprintf(out, arsizeof(out), "%llu", static_cast<unsigned long long>(nv));
+		snprintf(out, std::size(out), "%llu", static_cast<unsigned long long>(nv));
 		cfg.set_value(d.key, out);
 		return;
 	}

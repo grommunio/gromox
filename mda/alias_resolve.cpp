@@ -112,7 +112,7 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		auto repl = xa_alias_lookup(ctrl->from);
 		if (repl.size() > 0) {
 			mlog(LV_DEBUG, "alias_resolve: subst FROM %s -> %s", ctrl->from, repl.c_str());
-			gx_strlcpy(ctrl->from, repl.c_str(), arsizeof(ctrl->from));
+			gx_strlcpy(ctrl->from, repl.c_str(), std::size(ctrl->from));
 		}
 	}
 	/*

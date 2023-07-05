@@ -278,14 +278,14 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 			tmp_len = strlen(pstring);
 			char tmp_buff[VCARD_MAX_BUFFER_LEN];
 			if (decode64(pstring, tmp_len, tmp_buff,
-			    arsizeof(tmp_buff), &decode_len) != 0)
+			    std::size(tmp_buff), &decode_len) != 0)
 				throw unrecog(line);
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0 ||
 			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != 0)
 				return nullptr;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "ContactPhoto.%s", photo_type);
+			snprintf(tmp_buff, std::size(tmp_buff), "ContactPhoto.%s", photo_type);
 			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0)
 				return nullptr;
 			tmp_byte = 1;
@@ -503,7 +503,7 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 			tmp_len = strlen(pstring);
 			char tmp_buff[VCARD_MAX_BUFFER_LEN];
 			if (decode64(pstring, tmp_len, tmp_buff,
-			    arsizeof(tmp_buff), &decode_len) != 0)
+			    std::size(tmp_buff), &decode_len) != 0)
 				throw unrecog(line);
 			bin_array.count = 1;
 			bin_array.pbin = &tmp_bin;

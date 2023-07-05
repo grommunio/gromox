@@ -62,7 +62,7 @@ std::string render_content(time_point now, time_point start)
 		"X-ElapsedTime: {}\r\n"
 		"X-StartTime: {}\r\n\r\n";
 	char dstring[128];
-	rfc1123_dstring(dstring, arsizeof(dstring), time_point::clock::to_time_t(start));
+	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start));
 	long long elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
 	return fmt::format(templ, elapsed, dstring);
 }
@@ -93,7 +93,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
         "Date: {}\r\n";
 	using namespace std::chrono;
 	char dstring[128];
-	rfc1123_dstring(dstring, arsizeof(dstring), gromox::time_point::clock::to_time_t(date));
+	rfc1123_dstring(dstring, std::size(dstring), gromox::time_point::clock::to_time_t(date));
 	return fmt::format(templ, requestType, requestId, clientInfo,
 	                static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
 	                static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
@@ -107,7 +107,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
 BOOL MhContext::unauthed() const
 {
 	char dstring[128], tmp_buff[1024];
-	rfc1123_dstring(dstring, arsizeof(dstring), time_point::clock::to_time_t(start_time));
+	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start_time));
 	auto tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
 		"Date: %s\r\n"
@@ -130,7 +130,7 @@ BOOL MhContext::error_responsecode(resp_code response_code) const
 		"<h1>Diagnostic Information</h1>\r\n"
 		"<p>%s</p>\r\n"
 		"</body></html>\r\n", g_error_text[static_cast<unsigned int>(response_code)]);
-	rfc1123_dstring(dstring, arsizeof(dstring), time_point::clock::to_time_t(start_time));
+	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start_time));
 	auto response_len = snprintf(response_buff,
 		sizeof(response_buff),
 		"HTTP/1.1 200 OK\r\n"
@@ -162,7 +162,7 @@ BOOL MhContext::failure_response(uint32_t status) const try
 	char stbuf[8], seq_string[GUIDSTR_SIZE];
 	auto current_time = tp_now();
 	auto ct = render_content(current_time, start_time);
-	sequence_guid.to_str(seq_string, arsizeof(seq_string));
+	sequence_guid.to_str(seq_string, std::size(seq_string));
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, current_time) +
 	          fmt::format("Content-Length: {}\r\n", ct.size()) +
@@ -179,7 +179,7 @@ BOOL MhContext::normal_response() const try
 	char seq_string[GUIDSTR_SIZE], chunk_string[32];
 	auto current_time = tp_now();
 
-	sequence_guid.to_str(seq_string, arsizeof(seq_string));
+	sequence_guid.to_str(seq_string, std::size(seq_string));
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, current_time) +
 	          "Transfer-Encoding: chunked\r\n" +

@@ -48,7 +48,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE) {
 			return ecLoginPerm;
 		}
-		if (!common_util_get_maildir(username, maildir, arsizeof(maildir)))
+		if (!common_util_get_maildir(username, maildir, std::size(maildir)))
 			return ecError;
 		if (!exmdb_client::get_mbox_perm(maildir,
 		    rpc_info.username, &permission))
@@ -173,7 +173,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 			pdomain = pdomain1;
 		}
 	}
-	if (!common_util_get_homedir_by_id(domain_id, homedir, arsizeof(homedir)))
+	if (!common_util_get_homedir_by_id(domain_id, homedir, std::size(homedir)))
 		return ecError;
 	/* like EXCHANGE 2013 or later, we only
 		return four folder_ids to client */
@@ -288,7 +288,7 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 	TARRAY_SET class_table;
 	uint32_t proptags[] = {PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	
-	columns.count = arsizeof(proptags);
+	columns.count = std::size(proptags);
 	columns.pproptag = proptags;
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)

@@ -219,8 +219,8 @@ static void *p3ls_thrwork(void *arg)
 		pcontext->is_stls                   = use_tls;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
-		gx_strlcpy(pcontext->connection.client_ip, client_hostip, arsizeof(pcontext->connection.client_ip));
-		gx_strlcpy(pcontext->connection.server_ip, server_hostip, arsizeof(pcontext->connection.server_ip));
+		gx_strlcpy(pcontext->connection.client_ip, client_hostip, std::size(pcontext->connection.client_ip));
+		gx_strlcpy(pcontext->connection.server_ip, server_hostip, std::size(pcontext->connection.server_ip));
 		/* 
 		valid the context and wake up one thread if there are some threads
 		block on the condition variable 

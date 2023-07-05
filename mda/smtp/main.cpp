@@ -120,9 +120,9 @@ int main(int argc, const char **argv) try
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		gethostname(temp_buff, arsizeof(temp_buff));
-		temp_buff[arsizeof(temp_buff)-1] = '\0';
+		memset(temp_buff, '\0', std::size(temp_buff));
+		gethostname(temp_buff, std::size(temp_buff));
+		temp_buff[std::size(temp_buff)-1] = '\0';
 		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 	}
@@ -130,8 +130,8 @@ int main(int argc, const char **argv) try
 	
 	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		getdomainname(temp_buff, arsizeof(temp_buff));
+		memset(temp_buff, '\0', std::size(temp_buff));
+		getdomainname(temp_buff, std::size(temp_buff));
 		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
 		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
@@ -163,21 +163,21 @@ int main(int argc, const char **argv) try
 		thread_init_num);
 
 	size_t context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
-	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	mlog(LV_INFO, "dq: context average memory is %s", temp_buff);
  
 	scfg.flushing_size = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (scfg.flushing_size < context_aver_mem) {
 		scfg.flushing_size = context_aver_mem;
-		HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size * 64 * 1024, 1024, 0);
+		HX_unit_size(temp_buff, std::size(temp_buff), scfg.flushing_size * 64 * 1024, 1024, 0);
 		g_config_file->set_value("context_max_mem", temp_buff);
 	} 
 	scfg.flushing_size *= 64 * 1024;
-	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.flushing_size, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), scfg.flushing_size, 1024, 0);
 	mlog(LV_INFO, "dq: context maximum memory is %s", temp_buff);
  
 	scfg.timeout = std::chrono::seconds(g_config_file->get_ll("smtp_conn_timeout"));
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(scfg.timeout).count(), 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), std::chrono::duration_cast<std::chrono::seconds>(scfg.timeout).count(), 0);
 	mlog(LV_INFO, "dq: SMTP socket read write timeout is %s", temp_buff);
 
 	scfg.support_pipeline = parse_bool(g_config_file->get_value("smtp_support_pipeline"));
@@ -214,7 +214,7 @@ int main(int argc, const char **argv) try
 		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 
 	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), scfg.max_mail_length, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), scfg.max_mail_length, 1024, 0);
 	mlog(LV_NOTICE, "dq: maximum mail length is %s", temp_buff);
 
 	str_val = g_config_file->get_value("command_protocol");

@@ -38,7 +38,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT "
+	snprintf(sql_string, std::size(sql_string), "SELECT "
 			"count(*) FROM named_properties");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
@@ -53,7 +53,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	ppropids->ppropid = cu_alloc<uint16_t>(total_count);
 	if (ppropids->ppropid == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT"
+	snprintf(sql_string, std::size(sql_string), "SELECT"
 		" propid FROM named_properties");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -114,8 +114,8 @@ BOOL exmdb_server::get_mapping_replid(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	char guid_string[GUIDSTR_SIZE], sql_string[128];
-	guid.to_str(guid_string, arsizeof(guid_string));
-	snprintf(sql_string, arsizeof(sql_string), "SELECT replid FROM "
+	guid.to_str(guid_string, std::size(guid_string));
+	snprintf(sql_string, std::size(sql_string), "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -229,7 +229,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	pstmt.finalize();
 
 	/* add in mlist permissions(?) */
-	snprintf(sql_string, arsizeof(sql_string), "SELECT "
+	snprintf(sql_string, std::size(sql_string), "SELECT "
 		"username, permission FROM permissions");
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -289,7 +289,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT "
+	snprintf(sql_string, std::size(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
@@ -306,7 +306,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 		return TRUE;
 	}
 	pstmt.finalize();
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids "
+	snprintf(sql_string, std::size(sql_string), "INSERT INTO allocated_eids "
 	          "VALUES (%llu, %llu, %lld, 0)",
 	          static_cast<unsigned long long>(tmp_eid),
 	          static_cast<unsigned long long>(tmp_eid + count),
@@ -441,7 +441,7 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 		return FALSE;
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
-	for (size_t i = 0; i < arsizeof(propname_buff); ++i) {
+	for (size_t i = 0; i < std::size(propname_buff); ++i) {
 		propname_buff[i].guid = PSETID_ADDRESS;
 		propname_buff[i].kind = MNID_ID;
 	}

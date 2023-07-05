@@ -170,9 +170,9 @@ int main(int argc, const char **argv) try
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		gethostname(temp_buff, arsizeof(temp_buff));
-		temp_buff[arsizeof(temp_buff)-1] = '\0';
+		memset(temp_buff, 0, std::size(temp_buff));
+		gethostname(temp_buff, std::size(temp_buff));
+		temp_buff[std::size(temp_buff)-1] = '\0';
 		g_config_file->set_value("host_id", temp_buff);
 		str_val = temp_buff;
 		if (strchr(str_val, '.') == nullptr)
@@ -184,8 +184,8 @@ int main(int argc, const char **argv) try
 	
 	str_val = g_config_file->get_value("default_domain");
 	if (str_val == NULL) {
-		memset(temp_buff, 0, arsizeof(temp_buff));
-		if (getdomainname(temp_buff, arsizeof(temp_buff)) < 0)
+		memset(temp_buff, 0, std::size(temp_buff));
+		if (getdomainname(temp_buff, std::size(temp_buff)) < 0)
 			*temp_buff = '\0';
 		g_config_file->set_value("default_domain", temp_buff);
 		str_val = temp_buff;
@@ -227,11 +227,11 @@ int main(int argc, const char **argv) try
 		thread_init_num);
 
 	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
-	HX_unit_size(temp_buff, arsizeof(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), context_aver_mem * 64 * 1024, 1024, 0);
 	mlog(LV_INFO, "http: context average memory is %s", temp_buff);
 	
 	std::chrono::seconds http_conn_timeout{g_config_file->get_ll("http_conn_timeout")};
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), http_conn_timeout.count(), 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), http_conn_timeout.count(), 0);
 	mlog(LV_INFO, "http: http socket read write timeout is %s", temp_buff);
  
 	int http_auth_times = g_config_file->get_ll("http_auth_times");
@@ -239,7 +239,7 @@ int main(int argc, const char **argv) try
 			http_auth_times);
 
 	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), block_interval_auth, 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), block_interval_auth, 0);
 	mlog(LV_INFO, "http: blocking clients for %s when authentication "
 		"failure count is exceeded", temp_buff);
 	
@@ -266,27 +266,27 @@ int main(int argc, const char **argv) try
 		mlog(LV_NOTICE, "system: system TLS listening port %hu", listen_tls_port);
 	
 	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), max_request_mem, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), max_request_mem, 1024, 0);
 	mlog(LV_INFO, "pdu_processor: maximum request memory is %s", temp_buff);
 
 	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_cache_size, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), hpm_cache_size, 1024, 0);
 	mlog(LV_INFO, "hpm_processor: fastcgi cache size is %s", temp_buff);
 	
 	uint64_t hpm_max_size = g_config_file->get_ll("hpm_max_size");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), hpm_max_size, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), hpm_max_size, 1024, 0);
 	mlog(LV_INFO, "hpm_processor: HPM maximum size is %s", temp_buff);
 
 	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_cache_size, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), fastcgi_cache_size, 1024, 0);
 	mlog(LV_INFO, "mod_fastcgi: fastcgi cache size is %s", temp_buff);
 	
 	uint64_t fastcgi_max_size = g_config_file->get_ll("fastcgi_max_size");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), fastcgi_max_size, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), fastcgi_max_size, 1024, 0);
 	mlog(LV_INFO, "mod_fastcgi: fastcgi maximum size is %s", temp_buff);
 	
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), fastcgi_exec_timeout.count(), 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), fastcgi_exec_timeout.count(), 0);
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("http_listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");

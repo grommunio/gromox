@@ -232,7 +232,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	if (encrypt_passwd[0] != '\0' &&
 	    strcmp(crypt_estar(password, encrypt_passwd), encrypt_passwd) != 0)
 		return FALSE;
-	gx_strlcpy(encrypt_passwd, crypt_wrapper(new_password), arsizeof(encrypt_passwd));
+	gx_strlcpy(encrypt_passwd, crypt_wrapper(new_password), std::size(encrypt_passwd));
 	cr_hold.unlock();
 	qstr = "UPDATE users SET password='"s + encrypt_passwd +
 	       "' WHERE username='" + temp_name + "'";

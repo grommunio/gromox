@@ -78,9 +78,9 @@ void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
 	mdcl_notify_stop = true;
 	mdcl_conn_max = conn_max;
 	mdcl_threads_max = notify_threads_max;
-	snprintf(mdcl_remote_id, arsizeof(mdcl_remote_id), "%u.", static_cast<unsigned int>(getpid()));
+	snprintf(mdcl_remote_id, std::size(mdcl_remote_id), "%u.", static_cast<unsigned int>(getpid()));
 	auto z = strlen(mdcl_remote_id);
-	GUID::machine_id().to_str(mdcl_remote_id + z, arsizeof(mdcl_remote_id) - z, 32);
+	GUID::machine_id().to_str(mdcl_remote_id + z, std::size(mdcl_remote_id) - z, 32);
 }
 
 void exmdb_client_stop()

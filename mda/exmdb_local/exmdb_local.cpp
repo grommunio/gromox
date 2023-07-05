@@ -297,8 +297,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	BOOL b_bounce_delivered = false;
 	MESSAGE_CONTEXT *pcontext1;
 
-	if (!exmdb_local_get_user_info(address, home_dir, arsizeof(home_dir),
-	    lang, arsizeof(lang), tmzone, arsizeof(tmzone))) {
+	if (!exmdb_local_get_user_info(address, home_dir, std::size(home_dir),
+	    lang, std::size(lang), tmzone, arsizeof(tmzone))) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
@@ -331,12 +331,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	}
 	
 	sequence_ID = exmdb_local_sequence_ID();
-	gx_strlcpy(hostname, get_host_ID(), arsizeof(hostname));
+	gx_strlcpy(hostname, get_host_ID(), std::size(hostname));
 	if ('\0' == hostname[0]) {
-		if (gethostname(hostname, arsizeof(hostname)) < 0)
+		if (gethostname(hostname, std::size(hostname)) < 0)
 			strcpy(hostname, "localhost");
 		else
-			hostname[arsizeof(hostname)-1] = '\0';
+			hostname[std::size(hostname)-1] = '\0';
 	}
 	auto mid_string = std::to_string(time(nullptr)) + "." +
 	                  std::to_string(sequence_ID) + "." + hostname;
@@ -533,11 +533,11 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		sprintf(cache_path, "%s/cache", get_queue_path());
 
 		str_value = pfile->get_value("X500_ORG_NAME");
-		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", arsizeof(org_name));
+		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", std::size(org_name));
 		mlog(LV_INFO, "exmdb_local: x500 org name is \"%s\"", org_name);
 
 		str_value = pfile->get_value("DEFAULT_CHARSET");
-		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", arsizeof(charset));
+		gx_strlcpy(charset, str_value != nullptr ? str_value : "windows-1252", std::size(charset));
 		mlog(LV_INFO, "exmdb_local: default charset is \"%s\"", charset);
 
 		str_value = pfile->get_value("EXMDB_CONNECTION_NUM");
@@ -554,7 +554,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (cache_interval <= 0)
 				cache_interval = 180;
 		}
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
+		HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 		mlog(LV_INFO, "exmdb_local: cache scanning interval is %s", temp_buff);
 
 		str_value = pfile->get_value("RETRYING_TIMES");
@@ -578,7 +578,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (interval <= 0)
 				interval = 3600;
 		}
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), interval, 0);
+		HX_unit_seconds(temp_buff, std::size(temp_buff), interval, 0);
 		mlog(LV_INFO, "exmdb_local: interval for failure alarm is %s", temp_buff);
 
 		str_value = pfile->get_value("ALARM_INTERVAL");
@@ -589,7 +589,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (alarm_interval <= 0)
 				alarm_interval = 1800;
 		}
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), alarm_interval, 0);
+		HX_unit_seconds(temp_buff, std::size(temp_buff), alarm_interval, 0);
 		mlog(LV_INFO, "exmdb_local: alarms interval is %s", temp_buff);
 
 		str_value = pfile->get_value("RESPONSE_AUDIT_CAPACITY");
@@ -607,7 +607,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			if (response_interval <= 0)
 				response_interval = 180;
 		}
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), response_interval, 0);
+		HX_unit_seconds(temp_buff, std::size(temp_buff), response_interval, 0);
 		mlog(LV_INFO, "exmdb_local: auto response interval is %s", temp_buff);
 
 		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));

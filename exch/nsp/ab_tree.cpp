@@ -167,7 +167,7 @@ const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 
 void ab_tree_init(const char *org_name, size_t base_size, int cache_interval)
 {
-	gx_strlcpy(g_nsp_org_name, org_name, arsizeof(g_nsp_org_name));
+	gx_strlcpy(g_nsp_org_name, org_name, std::size(g_nsp_org_name));
 	g_base_size = base_size;
 	g_ab_cache_interval = cache_interval;
 	g_notify_stop = true;
@@ -371,7 +371,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 			char temp_buff[1024];
 			ab_tree_get_display_name(&pabnode->stree, CP_ACP,
-				temp_buff, arsizeof(temp_buff));
+				temp_buff, std::size(temp_buff));
 			try {
 				parray.push_back(sort_item{&pabnode->stree, temp_buff});
 			} catch (const std::bad_alloc &) {
@@ -416,7 +416,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		char temp_buff[1024];
 		ab_tree_get_display_name(&pabnode->stree, CP_ACP,
-			temp_buff, arsizeof(temp_buff));
+			temp_buff, std::size(temp_buff));
 		try {
 			parray.push_back(sort_item{&pabnode->stree, temp_buff});
 		} catch (const std::bad_alloc &) {
@@ -717,7 +717,7 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 		pguid->time_mid = pabnode->id & 0xFFFF;
 	}
 	memset(temp_path, 0, sizeof(temp_path));
-	ab_tree_node_to_path(&pabnode->stree, temp_path, arsizeof(temp_path));
+	ab_tree_node_to_path(&pabnode->stree, temp_path, std::size(temp_path));
 	if (!ab_tree_md5_path(temp_path, &dgt))
 		return false;
 	pguid->node[0] = dgt & 0xFF;

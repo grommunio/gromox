@@ -1730,7 +1730,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *submit_command)
 {
-	gx_strlcpy(g_emsmdb_org_name, org_name, arsizeof(g_emsmdb_org_name));
+	gx_strlcpy(g_emsmdb_org_name, org_name, std::size(g_emsmdb_org_name));
 	g_average_blocks = average_blocks;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;

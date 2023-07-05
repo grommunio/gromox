@@ -135,7 +135,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type != abnode_type::user)
 			return ecNotFound;
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
-		HX_strlcat(dn, "/cn=Microsoft Private MDB", arsizeof(dn));
+		HX_strlcat(dn, "/cn=Microsoft Private MDB", std::size(dn));
 		if (NULL == pbuff) {
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
@@ -269,7 +269,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
-		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
+		ab_tree_get_display_name(pnode, codepage, dn, std::size(dn));
 		if (*dn == '\0')
 			return ecNotFound;
 		if (NULL == pbuff) {
@@ -289,7 +289,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_DISPLAY_NAME_A:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 		/* @codepage is used to select a translation; it's not for charsets */
-		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
+		ab_tree_get_display_name(pnode, codepage, dn, std::size(dn));
 		if (*dn == '\0')
 			return ecNotFound;
 		if (NULL == pbuff) {
@@ -481,7 +481,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		/* Old access for monohost installations */
 		gx_strlcpy(dn, path, sizeof(dn));
-		HX_strlcat(dn, "/config/portrait.jpg", arsizeof(dn));
+		HX_strlcat(dn, "/config/portrait.jpg", std::size(dn));
 		if (!common_util_load_file(dn, &pprop->value.bin))
 			return ecNotFound;
 		return ecSuccess;
@@ -1061,7 +1061,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			auto pnode1 = ab_tree_minid_to_node(pbase.get(), ptable->pproptag[i]);
 			if (pnode1 == nullptr)
 				continue;
-			ab_tree_get_display_name(pnode1, pstat->codepage, temp_name, arsizeof(temp_name));
+			ab_tree_get_display_name(pnode1, pstat->codepage, temp_name, std::size(temp_name));
 			if (strcasecmp(temp_name, ptarget->value.pstr) < 0)
 				continue;
 			if (0 == tmp_minid) {
@@ -1124,7 +1124,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		for (row = start_pos; row < pbase->gal_list.size(); ++row) {
 			auto ptr = pbase->gal_list[row];
 			ab_tree_get_display_name(ptr,
-				pstat->codepage, temp_name, arsizeof(temp_name));
+				pstat->codepage, temp_name, std::size(temp_name));
 			if (strcasecmp(temp_name, ptarget->value.pstr) < 0)
 				continue;
 			prow = common_util_proprowset_enlarge(*pprows);
@@ -1156,7 +1156,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				continue;
 			}
 			ab_tree_get_display_name(pnode1, pstat->codepage,
-				temp_name, arsizeof(temp_name));
+				temp_name, std::size(temp_name));
 			if (strcasecmp(temp_name, ptarget->value.pstr) < 0) {
 				++row;
 				continue;
@@ -1430,7 +1430,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		char maildir[256];
 		auto temp_buff = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
 		if (temp_buff == nullptr ||
-		    !get_maildir(temp_buff, maildir, arsizeof(maildir))) {
+		    !get_maildir(temp_buff, maildir, std::size(maildir))) {
 			*ppoutmids = nullptr;
 			*pprows = nullptr;
 			return ecError;
@@ -1609,7 +1609,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		parray[count].minid = pinmids->pproptag[i];
 		if (pstat->cur_rec == pinmids->pproptag[i])
 			b_found = TRUE;
-		ab_tree_get_display_name(pnode, pstat->codepage, temp_buff, arsizeof(temp_buff));
+		ab_tree_get_display_name(pnode, pstat->codepage, temp_buff, std::size(temp_buff));
 		parray[count].strv = ndr_stack_alloc(
 			NDR_STACK_IN, strlen(temp_buff) + 1);
 		if (NULL == parray[count].string) {
@@ -2138,7 +2138,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	container_id = ab_tree_get_node_minid(pnode);
 	if (container_id == 0)
 		return ecError;
-	ab_tree_get_display_name(pnode, codepage, str_dname, arsizeof(str_dname));
+	ab_tree_get_display_name(pnode, codepage, str_dname, std::size(str_dname));
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
 	    pnode->get_depth(), container_id,
 	    str_dname, ppermeid_parent, ppermeid))
@@ -2262,7 +2262,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	auto username = ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS);
 	if (username == nullptr || strcasecmp(username, rpc_info.username) != 0)
 		return ecAccessDenied;
-	if (!get_maildir(username, maildir, arsizeof(maildir)))
+	if (!get_maildir(username, maildir, std::size(maildir)))
 		return ecError;
 
 	auto tmp_list = delegates_for(maildir);
@@ -2391,7 +2391,7 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 {
 	char dn[1024];
 	
-	ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
+	ab_tree_get_display_name(pnode, codepage, dn, std::size(dn));
 	if (strcasestr(dn, pstr) != nullptr)
 		return TRUE;
 	if (ab_tree_node_to_dn(pnode, dn, sizeof(dn)) && strcasecmp(dn, pstr) == 0)

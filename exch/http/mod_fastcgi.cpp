@@ -558,7 +558,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", std::to_string(phttp->connection.server_port).c_str()));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_ip));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_PORT", std::to_string(phttp->connection.client_port).c_str()));
-	snprintf(tmp_buff, arsizeof(tmp_buff), "HTTP/%s", phttp->request.version);
+	snprintf(tmp_buff, std::size(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
 	tmp_len = phttp->request.f_request_uri.size();
@@ -1009,8 +1009,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	}
 	response_offset = 0;
 	while (true) {
-		if (!mod_fastcgi_safe_read(&fctx,
-		    header_buff, arsizeof(header_buff))) {
+		if (!mod_fastcgi_safe_read(&fctx, header_buff, std::size(header_buff))) {
 			phttp->log(LV_DEBUG, "failed to read"
 				" record header from fastcgi back-end %s",
 				fctx.pfnode->sock_path.c_str());
@@ -1094,7 +1093,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					return FALSE;
 				}
 				if (fctx.b_chunked) {
-					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", std_stream.length);
+					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					          "%x\r\n", std_stream.length);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(std_stream.buffer, std_stream.length) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
@@ -1192,7 +1192,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
 				if (fctx.b_chunked) {
-					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", response_offset);
+					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					          "%x\r\n", response_offset);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {

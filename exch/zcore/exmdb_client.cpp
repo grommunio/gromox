@@ -162,7 +162,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		return TRUE;
 	}
 	if (!common_util_essdn_to_username(ab_entryid.px500dn,
-	    tmp_name, arsizeof(tmp_name))) {
+	    tmp_name, std::size(tmp_name))) {
 		*pb_owner = false;
 		return TRUE;
 	}

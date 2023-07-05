@@ -248,7 +248,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 			goto REMOVE_MESS;
 		auto max = flh_get_extra_num(pentity->context_ID);
 		for (int j = 0; j < max; ++j) {
-			tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%s: %s\r\n",
+			tmp_len = snprintf(tmp_buff, std::size(tmp_buff), "%s: %s\r\n",
 			          flh_get_extra_tag(pentity->context_ID, j),
 			          flh_get_extra_value(pentity->context_ID, j));
 			write_len = fwrite(tmp_buff, 1, tmp_len, fp);

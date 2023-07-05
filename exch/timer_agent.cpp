@@ -77,7 +77,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		size_t conn_num = pfile->get_ll("connection_num");
 		mlog(LV_INFO, "timer_agent: timer connection number is %zu", conn_num);
 
-		gx_strlcpy(g_timer_ip, pfile->get_value("timer_host"), arsizeof(g_timer_ip));
+		gx_strlcpy(g_timer_ip, pfile->get_value("timer_host"), std::size(g_timer_ip));
 		g_timer_port = pfile->get_ll("timer_port");
 		mlog(LV_NOTICE, "timer_agent: timer address is [%s]:%hu",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);

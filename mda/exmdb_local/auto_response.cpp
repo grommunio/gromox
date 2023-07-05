@@ -97,7 +97,7 @@ void auto_response_reply(const char *user_home,
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);
 	}
-	snprintf(audit_buff, arsizeof(audit_buff), "%s:%s", from, rcpt);
+	snprintf(audit_buff, std::size(audit_buff), "%s:%s", from, rcpt);
 	if (!bounce_audit_check(audit_buff))
 		return;
 	fd = open(template_path, O_RDONLY);

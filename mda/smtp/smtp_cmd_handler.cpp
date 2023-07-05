@@ -111,7 +111,7 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	if (!g_param.support_starttls)
 		return 506;
 	pcontext->last_cmd = T_STARTTLS_CMD;
-	memset(pcontext->menv.hello_domain, 0, arsizeof(pcontext->menv.hello_domain));
+	memset(pcontext->menv.hello_domain, '\0', std::size(pcontext->menv.hello_domain));
 	pcontext->menv.clear();
 	return 210;
 }
@@ -170,7 +170,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
             T_MAIL_CMD == pcontext->last_cmd ||
             T_END_MAIL == pcontext->last_cmd) {
             pcontext->last_cmd = T_MAIL_CMD;
-			snprintf(pcontext->menv.from, arsizeof(pcontext->menv.from), "%s@%s",
+			snprintf(pcontext->menv.from, std::size(pcontext->menv.from), "%s@%s",
                 email_addr.local_part, email_addr.domain);
             /* 250 OK */
 			return 205;
@@ -212,9 +212,9 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 	if (pcontext->last_cmd != T_MAIL_CMD && pcontext->last_cmd != T_RCPT_CMD)
 		return 507; /* bad sequence */
 	if (system_services_check_user != nullptr) {
-		snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
+		snprintf(buff, std::size(buff), "%s@%s", email_addr.local_part,
 				email_addr.domain);
-		if (!system_services_check_user(buff, path, arsizeof(path))) {
+		if (!system_services_check_user(buff, path, std::size(path))) {
 			/* 550 invalid user - <email_addr> */
 			smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
@@ -228,7 +228,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 			return DISPATCH_CONTINUE;
 		}
 	}
-	snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
+	snprintf(buff, std::size(buff), "%s@%s", email_addr.local_part,
 		email_addr.domain);
 	pcontext->menv.rcpt_to.push_back(buff);
 	pcontext->last_cmd = T_RCPT_CMD;

@@ -169,7 +169,7 @@ int main(int argc, const char **argv) try
 	mlog(LV_INFO, "system: address table size is %d", table_size);
 
 	int cache_interval = pconfig->get_ll("address_cache_interval");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: address book tree item"
 		" cache interval is %s", temp_buff);
 
@@ -186,11 +186,11 @@ int main(int argc, const char **argv) try
 	mlog(LV_INFO, "system: maximum mail number is %lld", max_mail);
 	
 	auto max_length = pconfig->get_ll("mail_max_length");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), max_length, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), max_length, 1024, 0);
 	mlog(LV_INFO, "system: maximum mail length is %s", temp_buff);
 	
 	auto max_rule_len = pconfig->get_ll("max_ext_rule_length");
-	HX_unit_size(temp_buff, arsizeof(temp_buff), max_rule_len, 1024, 0);
+	HX_unit_size(temp_buff, std::size(temp_buff), max_rule_len, 1024, 0);
 	mlog(LV_INFO, "system: maximum extended rule length is %s", temp_buff);
 	
 	uint16_t smtp_port = pconfig->get_ll("smtp_server_port");
@@ -216,11 +216,11 @@ int main(int argc, const char **argv) try
 	mlog(LV_INFO, "system: hash table size is %d", table_size);
 
 	cache_interval = pconfig->get_ll("user_cache_interval");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
 	int ping_interval = pconfig->get_ll("mailbox_ping_interval");
-	HX_unit_seconds(temp_buff, arsizeof(temp_buff), ping_interval, 0);
+	HX_unit_seconds(temp_buff, std::size(temp_buff), ping_interval, 0);
 	mlog(LV_INFO, "system: mailbox ping interval is %s", temp_buff);
 	
 	zserver_init(table_size, cache_interval, ping_interval);

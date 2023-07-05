@@ -528,9 +528,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	}
 	auto pparser = cookie_parser_init(ctx.orig.f_cookie.c_str());
 	auto string = cookie_parser_get(pparser, "sid");
-	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
+	if (string == nullptr || strlen(string) >= std::size(ctx.session_string))
 		return ctx.error_responsecode(resp_code::invalid_ctx_cookie);
-	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
+	gx_strlcpy(ctx.session_string, string, std::size(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
 		string = cookie_parser_get(pparser, "sequence");

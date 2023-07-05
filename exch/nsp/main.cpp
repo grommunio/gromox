@@ -82,7 +82,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata) try
 		table_size = pfile->get_ll("hash_table_size");
 		mlog(LV_INFO, "nsp: hash table size is %d", table_size);
 		cache_interval = pfile->get_ll("cache_interval");
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), cache_interval, 0);
+		HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 		mlog(LV_INFO, "nsp: address book tree item"
 				" cache interval is %s", temp_buff);
 		b_check = pfile->get_ll("session_check");

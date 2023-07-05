@@ -1675,7 +1675,7 @@ pack_result EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 		return EXT_ERR_FORMAT;
 	memset(tmp_buff, 0, sizeof(tmp_buff));
 	TRY(g_bytes(tmp_buff, cbheader - 6));
-	if (!utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, arsizeof(tmp_buff1)))
+	if (!utf16le_to_utf8(tmp_buff, cbheader - 4, tmp_buff1, std::size(tmp_buff1)))
 		return EXT_ERR_CHARCNV;
 	r->keyname = anew<char>(strlen(tmp_buff1) + 1);
 	if (r->keyname == nullptr)
@@ -2526,7 +2526,7 @@ pack_result EXT_PUSH::p_store_eid(const STORE_ENTRYID &r)
 	TRY(p_uint8(r.version));
 	TRY(p_uint8(r.flag));
 	constexpr char dll[14] = "emsmdb.dll";
-	TRY(p_bytes(dll, arsizeof(dll)));
+	TRY(p_bytes(dll, std::size(dll)));
 	TRY(p_uint32(r.wrapped_flags));
 	TRY(p_guid(r.wrapped_provider_uid));
 	TRY(p_uint32(r.wrapped_type));

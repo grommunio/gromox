@@ -87,9 +87,9 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 			return false;
 		}
 		if (lcldom > 0) {
-			if (bounce_producer_get_lang(from, lang, arsizeof(lang)))
+			if (bounce_producer_get_lang(from, lang, std::size(lang)))
 				gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-			bounce_producer_get_timezone(from, time_zone, arsizeof(time_zone));
+			bounce_producer_get_timezone(from, time_zone, std::size(time_zone));
 		}
 	}
 	

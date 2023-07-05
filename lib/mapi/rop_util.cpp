@@ -286,7 +286,7 @@ errno_t make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
 	id[3] = lcid >> 8;
 	id[4] = lcid;
 	EXT_PUSH ep;
-	if (!ep.init(pack, arsizeof(pack), 0) ||
+	if (!ep.init(pack, std::size(pack), 0) ||
 	    ep.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
 		return ENOMEM;
 	unsigned int ofs = 6;

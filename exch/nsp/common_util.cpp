@@ -164,7 +164,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 		if (NULL == pobj_guid) {
 			ppermeid->pdn = deconst("/");
 		} else {
-			len = gx_snprintf(buff, arsizeof(buff),
+			len = gx_snprintf(buff, std::size(buff),
 				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
 				pobj_guid->time_low, pobj_guid->time_mid,
 				pobj_guid->time_hi_and_version,

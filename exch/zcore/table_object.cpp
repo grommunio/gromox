@@ -220,7 +220,7 @@ static BOOL table_object_get_store_table_all_proptags(
 			continue;	
 		pproptags->pproptag[pproptags->count++] = tmp_proptags2.pproptag[i];
 	}
-	for (size_t i = 0; i < arsizeof(proptag_buff); ++i) {
+	for (size_t i = 0; i < std::size(proptag_buff); ++i) {
 		if (tmp_proptags1.has(proptag_buff[i]) ||
 		    tmp_proptags2.has(proptag_buff[i]))
 			continue;	

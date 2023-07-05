@@ -935,7 +935,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
-		uuid.to_str(uuid_str, arsizeof(uuid_str));
+		uuid.to_str(uuid_str, std::size(uuid_str));
 		mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when binding",
 			uuid_str, if_version);
 		/* we don't know about that interface */
@@ -1233,7 +1233,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 						&uuid, if_version);
 		if (NULL == pinterface) {
 			char uuid_str[GUIDSTR_SIZE];
-			uuid.to_str(uuid_str, arsizeof(uuid_str));
+			uuid.to_str(uuid_str, std::size(uuid_str));
 			mlog(LV_DEBUG, "pdu_processor: interface %s/%d unknown when altering",
 				uuid_str, if_version);
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
@@ -1637,7 +1637,7 @@ static uint32_t pdu_processor_apply_async_id()
 	pasync_node->b_cancelled = FALSE;
 	pasync_node->pcall = pcall;
 	pasync_node->pstack_root = pstack_root;
-	gx_strlcpy(pasync_node->vconn_host, pcontext->host, arsizeof(pasync_node->vconn_host));
+	gx_strlcpy(pasync_node->vconn_host, pcontext->host, std::size(pasync_node->vconn_host));
 	pasync_node->vconn_port = pcontext->port;
 	strcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie);
 	
@@ -2605,8 +2605,8 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			if (!pdu_processor_retrieve_conn_a1(pcall,
-			    pchannel_out->connection_cookie, arsizeof(pchannel_out->connection_cookie),
-			    pchannel_out->channel_cookie, arsizeof(pchannel_out->channel_cookie),
+			    pchannel_out->connection_cookie, std::size(pchannel_out->connection_cookie),
+			    pchannel_out->channel_cookie, std::size(pchannel_out->channel_cookie),
 			    &pchannel_out->window_size)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
@@ -2635,9 +2635,9 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			/* process outr2/a3 rts pdu and do recycling */
 			char channel_cookie[GUIDSTR_SIZE];
 			if (!pdu_processor_retrieve_outr2_a3(pcall,
-			    pchannel_out->connection_cookie, arsizeof(pchannel_out->connection_cookie),
-			    channel_cookie, arsizeof(channel_cookie),
-			    pchannel_out->channel_cookie, arsizeof(pchannel_out->channel_cookie),
+			    pchannel_out->connection_cookie, std::size(pchannel_out->connection_cookie),
+			    channel_cookie, std::size(channel_cookie),
+			    pchannel_out->channel_cookie, std::size(pchannel_out->channel_cookie),
 			    &pchannel_out->window_size)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
@@ -2679,10 +2679,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			
 			/* process conn/b1 rts pdu and do connection to out channel */ 
 			if (!pdu_processor_retrieve_conn_b1(pcall,
-			    pchannel_in->connection_cookie, arsizeof(pchannel_in->connection_cookie),
-			    pchannel_in->channel_cookie, arsizeof(pchannel_in->channel_cookie),
+			    pchannel_in->connection_cookie, std::size(pchannel_in->connection_cookie),
+			    pchannel_in->channel_cookie, std::size(pchannel_in->channel_cookie),
 			    &pchannel_in->life_time, &pchannel_in->client_keepalive,
-			    pchannel_in->assoc_group_id, arsizeof(pchannel_in->assoc_group_id))) {
+			    pchannel_in->assoc_group_id, std::size(pchannel_in->assoc_group_id))) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2706,9 +2706,9 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			/* process inr2/a1 rts pdu and do recycling */
 			char channel_cookie[GUIDSTR_SIZE];
 			if (!pdu_processor_retrieve_inr2_a1(pcall,
-			    pchannel_in->connection_cookie, arsizeof(pchannel_in->connection_cookie),
-			    channel_cookie, arsizeof(channel_cookie),
-			    pchannel_in->channel_cookie, arsizeof(pchannel_in->channel_cookie))) {
+			    pchannel_in->connection_cookie, std::size(pchannel_in->connection_cookie),
+			    channel_cookie, std::size(channel_cookie),
+			    pchannel_in->channel_cookie, std::size(pchannel_in->channel_cookie))) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2760,7 +2760,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			
 			char channel_cookie[GUIDSTR_SIZE];
 			if (!pdu_processor_retrieve_inr2_a5(pcall,
-			    channel_cookie, arsizeof(channel_cookie))) {
+			    channel_cookie, std::size(channel_cookie))) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2787,7 +2787,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			} else if (RTS_FLAG_OUT_CHANNEL == pcall->pkt.payload.rts.flags) {
 				char channel_cookie[GUIDSTR_SIZE];
 				if (!pdu_processor_retrieve_outr2_a7(pcall,
-				    channel_cookie, arsizeof(channel_cookie))) {
+				    channel_cookie, std::size(channel_cookie))) {
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
@@ -3092,7 +3092,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		return false;
 	}
 	char uuid_string[GUIDSTR_SIZE];
-	pinterface->uuid.to_str(uuid_string, arsizeof(uuid_string));
+	pinterface->uuid.to_str(uuid_string, std::size(uuid_string));
 	mlog(LV_INFO, "pdu_processor: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)",
 	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
 	       uuid_string, pinterface->version & 0xFFFF,

@@ -49,7 +49,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			if (audit_interval <= 0)
 				audit_interval = 60;
 		}
-		HX_unit_seconds(temp_buff, arsizeof(temp_buff), audit_interval, 0);
+		HX_unit_seconds(temp_buff, std::size(temp_buff), audit_interval, 0);
 		str_value = pfile->get_value("AUDIT_TIMES");
 		audit_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
 		if (audit_times <= 0)

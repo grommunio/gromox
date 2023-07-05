@@ -270,20 +270,20 @@ int mysql_adaptor_get_domain_users(unsigned int domain_id,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
 		return false;
-	gx_snprintf(query, arsizeof(query),
+	gx_snprintf(query, std::size(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
 	         "INNER JOIN aliases AS a ON u.domain_id=%d AND u.username=a.mainname", domain_id);
 	aliasmap_t amap;
 	aliasmap_load(*conn, query, amap);
 
-	gx_snprintf(query, arsizeof(query),
+	gx_snprintf(query, std::size(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.domain_id=%d AND u.id=p.user_id "
 	         "ORDER BY p.user_id, p.proptag, p.order_id", domain_id);
 	propmap_t pmap;
 	propmap_load(*conn, query, pmap);
 
-	gx_snprintf(query, arsizeof(query),
+	gx_snprintf(query, std::size(query),
 	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
@@ -374,7 +374,7 @@ static int mysql_adaptor_domain_list_query(const char *domain) try
 	char qdom[UDOM_SIZE*2];
 	mysql_adaptor_encode_squote(domain, qdom);
 	char query[576];
-	snprintf(query, arsizeof(query), "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='%s'", qdom);
+	snprintf(query, std::size(query), "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='%s'", qdom);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr || !conn->query(query))
 		return -EIO;
