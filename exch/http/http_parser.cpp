@@ -402,8 +402,7 @@ static const char *status_text(unsigned int s)
 	}
 }
 
-static tproc_status http_done(http_context *ctx, unsigned int code,
-    const char *msg = nullptr)
+static tproc_status http_done(http_context *ctx, unsigned int code)
 {
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
@@ -411,8 +410,7 @@ static tproc_status http_done(http_context *ctx, unsigned int code,
 		mod_fastcgi_put_context(ctx);
 	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
-	if (msg == nullptr)
-		msg = status_text(code);
+	auto msg = status_text(code);
 	if (code >= 1000)
 		code /= 10;
 
@@ -644,7 +642,7 @@ static tproc_status htp_auth(http_context *pcontext)
 		pcontext->log(LV_DEBUG,
 			"user %s is denied by user filter",
 			pcontext->username);
-		return http_done(pcontext, 503, "L-689 Service Unavailable");
+		return http_done(pcontext, 503);
 	}
 
 	sql_meta_result mres;
