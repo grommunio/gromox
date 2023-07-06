@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-#include <map>
+#include <unordered_map>
 
 namespace gromox::EWS
 {
@@ -54,7 +54,7 @@ private:
 	};
 
 	std::mutex objectLock; ///< Mutext to protect object map
-	std::map<Key, Container> objects; ///< Stored objects
+	std::unordered_map<Key, Container> objects; ///< Stored objects
 
 	std::condition_variable notify; ///< CV to signal stopping
 	std::thread scanThread; ///< Thread used for periodic scanning

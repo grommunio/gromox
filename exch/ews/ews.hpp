@@ -17,6 +17,32 @@
 #include "exceptions.hpp"
 #include "soaputil.hpp"
 
+namespace gromox::EWS::detail
+{
+struct AttachmentInstanceKey {
+	std::string dir;
+	uint64_t mid;
+	uint32_t aid;
+
+	inline bool operator==(const AttachmentInstanceKey& o) const
+	{return mid == o.mid && aid == o.aid && dir == o.dir;}
+};
+
+struct MessageInstanceKey {
+	std::string dir;
+	uint64_t mid;
+
+	inline bool operator==(const MessageInstanceKey& o) const
+	{return mid == o.mid && dir == o.dir;}
+};
+} // namespace gromox::EWS::detail
+
+template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey>
+{size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey&) const noexcept;};
+
+template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey>
+{size_t operator()(const gromox::EWS::detail::MessageInstanceKey&) const noexcept;};
+
 struct MIME_POOL;
 
 namespace gromox::EWS {
@@ -119,10 +145,7 @@ public:
 
 	std::shared_ptr<MIME_POOL> mimePool;
 private:
-	struct AttachmentInstanceKey;
-	struct MessageInstanceKey;
-
-	using CacheKey = std::variant<AttachmentInstanceKey, MessageInstanceKey>;
+	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey>;
 	using CacheObj = std::variant<std::shared_ptr<ExmdbInstance>>;
 	struct DebugCtx;
 	static const std::unordered_map<std::string, Handler> requestMap;

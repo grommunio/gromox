@@ -22,6 +22,7 @@
 #include <gromox/scope.hpp>
 
 #include "exceptions.hpp"
+#include "hash.hpp"
 #include "requests.hpp"
 #include "soaputil.hpp"
 
@@ -473,22 +474,6 @@ HPM_ENTRY(ews_main);
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //Cache
 
-struct EWSPlugin::AttachmentInstanceKey {
-	std::string dir;
-	uint64_t mid;
-	uint32_t aid;
-
-	inline bool operator<(const AttachmentInstanceKey& o) const
-	{return std::tie(mid, aid, dir) < std::tie(o.mid, o.aid, o.dir);}
-};
-
-struct EWSPlugin::MessageInstanceKey {
-	std::string dir;
-	uint64_t mid;
-
-	inline bool operator<(const MessageInstanceKey& o) const
-	{return std::tie(mid, dir) < std::tie(o.mid, o.dir);}
-};
 
 EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
 	plugin(p), dir(d), instanceId(i)
@@ -499,7 +484,6 @@ EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d
  */
 EWSPlugin::ExmdbInstance::~ExmdbInstance()
 {plugin.exmdb.unload_instance(dir.c_str(), instanceId);}
-
 
 /**
  * @brief      Load message instance
@@ -513,7 +497,7 @@ EWSPlugin::ExmdbInstance::~ExmdbInstance()
 std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const std::string& dir, uint64_t fid,
                                                                          uint64_t mid) const
 {
-	MessageInstanceKey mkey{dir, mid};
+	detail::MessageInstanceKey mkey{dir, mid};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(mkey, cache_message_instance_lifetime));
 	} catch(const std::out_of_range&) {
@@ -539,7 +523,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(const std::string& dir, uint64_t fid,
                                                                             uint64_t mid, uint32_t aid) const
 {
-	AttachmentInstanceKey akey{dir, mid, aid};
+	detail::AttachmentInstanceKey akey{dir, mid, aid};
 	try {
 		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(akey, cache_attachment_instance_lifetime));
 	} catch(const std::out_of_range&) {
@@ -552,3 +536,16 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 	cache.emplace(cache_message_instance_lifetime, akey, instance);
 	return instance;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Hashing
+
+template<>
+inline uint64_t FNV::operator()(const std::string& str) noexcept
+{return operator()(str.data(), str.size());}
+
+size_t std::hash<detail::AttachmentInstanceKey>::operator()(const detail::AttachmentInstanceKey& key) const noexcept
+{return FNV(key.dir, key.mid, key.aid).value;}
+
+size_t std::hash<detail::MessageInstanceKey>::operator()(const detail::MessageInstanceKey& key) const noexcept
+{return FNV(key.dir, key.mid).value;}
