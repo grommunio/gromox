@@ -434,6 +434,8 @@ static tproc_status http_done(http_context *ctx, int code) try
 		ctx->b_close ? "close" : "keep-alive");
 	if (!ctx->b_close)
 		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
+	if (code == 401)
+		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
 	rsp += "\r\n";
 	rsp += msg;
 	rsp += "\r\n";
@@ -686,25 +688,9 @@ static tproc_status htp_auth(http_context *pcontext)
 		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 		gx_strlcpy(pcontext->lang, mres.lang.c_str(), std::size(pcontext->lang));
 		if ('\0' == pcontext->maildir[0]) {
-			/* But... */
-			char dstring[128], response_buff[1024];
-			rfc1123_dstring(dstring, std::size(dstring));
-			auto response_len = gx_snprintf(
-				response_buff, std::size(response_buff),
-				"HTTP/1.1 401 Unauthorized\r\n"
-				"Date: %s\r\n"
-				"Content-Length: 0\r\n"
-				"Keep-Alive: timeout=%ld\r\n"
-				"Connection: close\r\n"
-				"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-				"\r\n", dstring, TOSEC(g_timeout));
-			pcontext->stream_out.write(response_buff, response_len);
-			pcontext->total_length = response_len;
-			pcontext->bytes_rw = 0;
-			pcontext->sched_stat = hsched_stat::wrrep;
 			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s",
 				pcontext->username, mres.errstr.c_str());
-			return tproc_status::loop;
+			return http_done(pcontext, 401);
 		}
 
 		if (*pcontext->lang == '\0')
@@ -722,23 +708,7 @@ static tproc_status htp_auth(http_context *pcontext)
 	    pcontext->auth_times >= g_max_auth_times)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
-	char dstring[128], response_buff[1024];
-	rfc1123_dstring(dstring, std::size(dstring));
-	auto response_len = gx_snprintf(
-		response_buff, std::size(response_buff),
-		"HTTP/1.1 401 Unauthorized\r\n"
-		"Date: %s\r\n"
-		"Keep-Alive: timeout=%ld\r\n"
-		"Connection: close\r\n"
-		"Content-Type: text/plain; charset=ascii\r\n"
-		"Content-Length: 2\r\n"
-		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n\r\n", dstring, TOSEC(g_timeout));
-	pcontext->stream_out.write(response_buff, response_len);
-	pcontext->total_length = response_len;
-	pcontext->bytes_rw = 0;
-	pcontext->sched_stat = hsched_stat::wrrep;
-	return tproc_status::loop;
+	return http_done(pcontext, 401);
 }
 
 static tproc_status htp_auth_1(http_context &ctx)
@@ -802,24 +772,9 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	pcontext->port = strtol(ptoken1, nullptr, 0);
 
 	if (!pcontext->b_authed) {
-		char dstring[128], response_buff[1024];
-		rfc1123_dstring(dstring, std::size(dstring));
-		auto response_len = gx_snprintf(
-			response_buff, std::size(response_buff),
-			"HTTP/1.1 401 Unauthorized\r\n"
-			"Date: %s\r\n"
-			"Content-Length: 0\r\n"
-			"Keep-Alive: timeout=%ld\r\n"
-			"Connection: close\r\n"
-			"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-			"\r\n", dstring, TOSEC(g_timeout));
-		pcontext->stream_out.write(response_buff, response_len);
-		pcontext->total_length = response_len;
-		pcontext->bytes_rw = 0;
-		pcontext->sched_stat = hsched_stat::wrrep;
 		pcontext->log(LV_DEBUG,
 			"I-1931: authentication needed");
-		return tproc_status::loop;
+		return http_done(pcontext, 401);
 	}
 
 	pcontext->total_length = pcontext->request.content_len;
