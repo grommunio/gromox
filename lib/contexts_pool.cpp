@@ -423,15 +423,17 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 				pcontext->b_waiting = TRUE;
 			}
 		} else if (g_poll_ctx.mod(pcontext, false) != 0) {
+			int se = errno;
 			if (errno == ENOENT && g_poll_ctx.mod(pcontext, true) != 0) {
 				/* sometimes, fd will be removed by scanning
 				thread because of timeout, add it back
 				into epoll queue again */
 				pcontext->b_waiting = TRUE;
 			} else {
+				mlog(LV_DEBUG, "contexts_pool: failed to modify event in epoll: %s (T1), %s (T2)",
+					strerror(se), strerror(errno));
 				shutdown(contexts_pool_get_context_socket(
 				         pcontext), SHUT_RDWR);
-				mlog(LV_DEBUG, "contexts_pool: failed to modify event in epoll");
 			}
 		}
 	} else if (type == CONTEXT_FREE && original_type == CONTEXT_TURNING) {
