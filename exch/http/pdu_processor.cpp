@@ -205,9 +205,9 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 	g_connection_ratio = connection_ratio;
 	g_connection_num = connection_num;
 	g_max_request_mem = max_request_mem;
-	gx_strlcpy(g_netbios_name, netbios_name, GX_ARRAY_SIZE(g_netbios_name));
-	gx_strlcpy(g_dns_name, dns_name, GX_ARRAY_SIZE(g_dns_name));
-	gx_strlcpy(g_dns_domain, dns_domain, GX_ARRAY_SIZE(g_dns_domain));
+	gx_strlcpy(g_netbios_name, netbios_name, std::size(g_netbios_name));
+	gx_strlcpy(g_dns_name, dns_name, std::size(g_dns_name));
+	gx_strlcpy(g_dns_domain, dns_domain, std::size(g_dns_domain));
 	g_header_signing = header_signing;
 	g_plugin_names = std::move(names);
 }
@@ -3048,7 +3048,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 		return &*ei;
 	auto &ep = g_endpoint_list.emplace_back();
 	auto pendpoint = &ep;
-	gx_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
+	gx_strlcpy(pendpoint->host, host, std::size(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
 	mlog(LV_INFO, "pdu_processor: registered endpoint [%s]:%hu",

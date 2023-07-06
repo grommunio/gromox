@@ -222,7 +222,7 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul, buff_t gutz,
 	}
 	if (*mime_from != '\0')
 		dsn.append_field(pdsn_fields, "X-Display-Name", mime_from);
-	if (dsn.serialize(content_buff, GX_ARRAY_SIZE(content_buff))) {
+	if (dsn.serialize(content_buff, std::size(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/disposition-notification");

@@ -2351,7 +2351,7 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 		if (spfid_to_name(sqlite3_column_int64(pstmt, 0)) != nullptr)
 			continue;
 		temp_len += gx_snprintf(temp_buff + temp_len,
-		            GX_ARRAY_SIZE(temp_buff) - temp_len, "%s\r\n",
+		            std::size(temp_buff) - temp_len, "%s\r\n",
 					sqlite3_column_text(pstmt, 1));
 		count ++;
 	}
@@ -3168,7 +3168,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	temp_len = 32;
 	for (; pstmt.step() == SQLITE_ROW; ++count)
 		temp_len += gx_snprintf(temp_buff + temp_len,
-		            GX_ARRAY_SIZE(temp_buff) - temp_len,  "%s\r\n",
+		            std::size(temp_buff) - temp_len,  "%s\r\n",
 					sqlite3_column_text(pstmt, 0));
 	pstmt.finalize();
 	pidb.reset();
@@ -3365,7 +3365,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 		idx = sqlite3_column_int64(pstmt, 0);
 		auto mid_string = pstmt.col_text(1);
 		uid = sqlite3_column_int64(pstmt, 2);
-		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
+		buff_len = gx_snprintf(temp_line, std::size(temp_line),
 			"%u %s %u\r\n", idx - 1, mid_string, uid);
 		if (256*1024 - temp_len < buff_len) {
 			auto ret = cmd_write(sockd, temp_buff, temp_len);
@@ -3777,7 +3777,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	strcpy(list_buff, "TRUE");
 	for (auto result : *presult) {
 		tmp_len += gx_snprintf(list_buff + tmp_len,
-		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
+		           std::size(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
 			ret = cmd_write(sockd, list_buff, tmp_len);
 			if (ret != 0)
@@ -3856,7 +3856,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	strcpy(list_buff, "TRUE");
 	for (auto result : *presult) {
 		tmp_len += gx_snprintf(list_buff + tmp_len,
-		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
+		           std::size(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
 			ret = cmd_write(sockd, list_buff, tmp_len);
 			if (ret != 0)
@@ -4446,8 +4446,8 @@ void mail_engine_init(const char *default_charset, const char *org_name,
     uint64_t mmap_size, int mime_num)
 {
 	g_sequence_id = 0;
-	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
+	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	g_async = b_async;
 	g_wal = b_wal;
 	g_mmap_size = mmap_size;

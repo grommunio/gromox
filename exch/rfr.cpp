@@ -111,7 +111,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	unsigned int user_id = 0;
 	get_id_from_username(rpc_info.username, &user_id);
 	memset(username, 0, sizeof(username));
-	gx_strlcpy(username, rpc_info.username, GX_ARRAY_SIZE(username));
+	gx_strlcpy(username, rpc_info.username, std::size(username));
 	ptoken = strchr(username, '@');
 	HX_strlower(username);
 	if (ptoken != nullptr)
@@ -134,7 +134,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
 	char tmp_unused[16];
 	char tmp_buff[1024];
 	
-	gx_strlcpy(tmp_buff, mbserverdn, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, mbserverdn, std::size(tmp_buff));
 	ptoken = strrchr(tmp_buff, '/');
 	if (ptoken == nullptr || strncasecmp(ptoken, "/cn=", 4) != 0)
 		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
@@ -243,7 +243,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 			return DISPATCH_FAIL;
 		prfr_out->result = rfr_get_newdsa(prfr_in->flags, prfr_in->puserdn,
 		                   prfr_in->punused, prfr_in->pserver,
-		                   GX_ARRAY_SIZE(prfr_in->pserver));
+		                   std::size(prfr_in->pserver));
 		strcpy(prfr_out->punused, prfr_in->punused);
 		strcpy(prfr_out->pserver, prfr_in->pserver);
 		*ppout = prfr_out;
@@ -257,7 +257,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
 		                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
 		                      prfr_dn_out->serverfqdn,
-		                      GX_ARRAY_SIZE(prfr_dn_out->serverfqdn));
+		                      std::size(prfr_dn_out->serverfqdn));
 		*ppout = prfr_dn_out;
 		return DISPATCH_SUCCESS;
 	}

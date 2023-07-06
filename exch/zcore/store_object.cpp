@@ -92,8 +92,8 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	}
 	pstore->b_private = b_private;
 	pstore->account_id = account_id;
-	gx_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
-	gx_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
+	gx_strlcpy(pstore->account, account, std::size(pstore->account));
+	gx_strlcpy(pstore->dir, dir, std::size(pstore->dir));
 	pstore->mailbox_guid = rop_util_binary_to_guid(bin);
 	return pstore;
 }
@@ -696,11 +696,11 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_EMAIL_ADDRESS: {
 		if (pstore->b_private) {
 			if (!common_util_username_to_essdn(pstore->account,
-			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
+			    temp_buff, std::size(temp_buff)))
 				return FALSE;	
 		} else {
 			if (!common_util_public_to_essdn(pstore->account,
-			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
+			    temp_buff, std::size(temp_buff)))
 				return FALSE;	
 		}
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);

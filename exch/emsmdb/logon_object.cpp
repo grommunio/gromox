@@ -65,8 +65,8 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	plogon->open_flags = open_flags;
 	plogon->logon_mode = logon_mode;
 	plogon->account_id = account_id;
-	gx_strlcpy(plogon->account, account, GX_ARRAY_SIZE(plogon->account));
-	gx_strlcpy(plogon->dir, dir, GX_ARRAY_SIZE(plogon->dir));
+	gx_strlcpy(plogon->account, account, std::size(plogon->account));
+	gx_strlcpy(plogon->dir, dir, std::size(plogon->dir));
 	plogon->mailbox_guid = mailbox_guid;
 	return plogon;
 }

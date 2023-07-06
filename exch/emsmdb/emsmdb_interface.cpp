@@ -317,7 +317,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.lcid_sort = lcid_sort;
 	memcpy(temp_handle.info.client_version, client_version, sizeof(temp_handle.info.client_version));
 	temp_handle.info.client_mode = client_mode;
-	gx_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
+	gx_strlcpy(temp_handle.username, username, std::size(temp_handle.username));
 	HX_strlower(temp_handle.username);
 	std::unique_lock gl_hold(g_lock);
 	if (ems_max_active_sessions > 0 &&
@@ -591,7 +591,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
 		return ecAccessDenied;
 	}
 	if (!common_util_essdn_to_username(puser_dn,
-	    username, GX_ARRAY_SIZE(username))) {
+	    username, std::size(username))) {
 		return ecRpcFailed;
 	}
 	if (*username == '\0') {
@@ -704,7 +704,7 @@ int emsmdb_interface_rpc_ext2(CXH &cxh, uint32_t *pflags,
 	else
 		input_flags |= GROMOX_READSTREAM_NOCHAIN;
 	result = rop_processor_proc(input_flags, pin, cb_in, pout, pcb_out);
-	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
+	gx_strlcpy(username, phandle->username, std::size(username));
 	cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
@@ -867,7 +867,7 @@ void emsmdb_interface_add_table_notify(const char *dir,
 	tmp_notify.handle = handle;
 	tmp_notify.logon_id = logon_id;
 	tmp_notify.guid = *pguid;
-	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
+	snprintf(tag_buff, std::size(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	if (ems_max_active_notifh > 0 &&
 	    g_notify_hash.size() >= ems_max_active_notifh) {
@@ -885,7 +885,7 @@ static BOOL emsmdb_interface_get_table_notify(const char *dir,
 	uint32_t table_id, uint32_t *phandle, uint8_t *plogon_id, GUID *pguid)
 {
 	char tag_buff[TAG_SIZE];
-	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
+	snprintf(tag_buff, std::size(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	const auto &nh = g_notify_hash;
 	auto iter = nh.find(tag_buff);
@@ -903,7 +903,7 @@ void emsmdb_interface_remove_table_notify(
 {
 	char tag_buff[TAG_SIZE];
 	
-	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
+	snprintf(tag_buff, std::size(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	g_notify_hash.erase(tag_buff);
 }
@@ -919,7 +919,7 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 	tmp_notify.logon_id = logon_id;
 	tmp_notify.guid = *pguid;
 	
-	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
+	snprintf(tag_buff, std::size(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	if (ems_max_active_notifh > 0 &&
 	    g_notify_hash.size() >= ems_max_active_notifh) {
@@ -938,7 +938,7 @@ static BOOL emsmdb_interface_get_subscription_notify(
 	uint8_t *plogon_id, GUID *pguid)
 {
 	char tag_buff[TAG_SIZE];
-	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
+	snprintf(tag_buff, std::size(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	const auto &nh = g_notify_hash;
 	auto iter = nh.find(tag_buff);
@@ -956,7 +956,7 @@ void emsmdb_interface_remove_subscription_notify(
 {
 	char tag_buff[TAG_SIZE];
 	
-	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
+	snprintf(tag_buff, std::size(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
 	g_notify_hash.erase(tag_buff);
 }
@@ -1132,7 +1132,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 			b_processing = phandle->b_processing;
 			if (!b_processing) {
 				cxr = phandle->cxr;
-				gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
+				gx_strlcpy(username, phandle->username, std::size(username));
 			}
 			emsmdb_interface_put_handle_notify_list(phandle);
 			if (!b_processing)
@@ -1168,7 +1168,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 	ems_high_pending_sesnotif = std::max(ems_high_pending_sesnotif, notifnum);
 	cxr = phandle->cxr;
-	gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
+	gx_strlcpy(username, phandle->username, std::size(username));
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		emsmdb_interface_put_handle_notify_list(phandle);

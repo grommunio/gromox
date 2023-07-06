@@ -169,7 +169,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A:
-		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return ecInvalidObject;
 		if (NULL == pbuff) {
 			pprop->value.pv = ndr_stack_alloc(
@@ -208,7 +208,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PR_TEMPLATEID:
 		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
-		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return ecNotFound;
 		if (!common_util_set_permanententryid(display_type, nullptr, dn, &permeid) ||
 		    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
@@ -219,7 +219,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_ORIGINAL_ENTRYID:
 		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!b_ephid) {
-			if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+			if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 				return ecNotFound;
 			if (!common_util_set_permanententryid(display_type,
 			    nullptr, dn, &permeid) ||
@@ -234,7 +234,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		return ecSuccess;
 	case PR_SEARCH_KEY:
-		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return ecNotFound;
 		pprop->value.bin.cb = strlen(dn) + 4;
 		if (NULL == pbuff) {
@@ -1219,7 +1219,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		if (pfilter->res.res_property.proptag == PR_ANR) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    std::size(temp_buff)) == ecSuccess &&
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
 			ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
@@ -1232,14 +1232,14 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			}
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_DISPLAY_NAME, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    std::size(temp_buff)) == ecSuccess &&
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
 		} else if (pfilter->res.res_property.proptag == PR_ANR_A) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT_A, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    std::size(temp_buff)) == ecSuccess &&
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
 			/* =SMTP:user@company.com */
@@ -1252,14 +1252,14 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			}
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_DISPLAY_NAME_A, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    std::size(temp_buff)) == ecSuccess &&
 			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
 		if (nsp_interface_fetch_property(pnode, false, codepage,
 		    pfilter->res.res_property.proptag, &prop_val,
-		    temp_buff, GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
+		    temp_buff, std::size(temp_buff)) != ecSuccess)
 			return FALSE;
 		// XXX: convert to RESTRICTION_PROPERTY::eval
 		int cmp;
@@ -1294,7 +1294,7 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		if (nsp_interface_fetch_property(pnode, false, codepage,
 		    pfilter->res.res_exist.proptag, &prop_val, temp_buff,
-		    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
+		    std::size(temp_buff)) != ecSuccess)
 			return FALSE;
 		return TRUE;
 	}
@@ -1464,7 +1464,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
 		    TRUE, pstat->codepage, pstat->container_id, &prop_val,
-		    temp_buff, GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
+		    temp_buff, std::size(temp_buff)) == ecSuccess) {
 			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				*ppoutmids = nullptr;

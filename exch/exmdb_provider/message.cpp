@@ -1497,7 +1497,7 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 	char tmp_string[256];
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
 	
-	gx_strlcpy(tmp_string, string, GX_ARRAY_SIZE(tmp_string));
+	gx_strlcpy(tmp_string, string, std::size(tmp_string));
 	HX_strupper(tmp_string);
 	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
 	if (ctx == nullptr ||
@@ -2711,11 +2711,11 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		offset = 0;
 		for (const auto &eaddr : rcpt_list) {
 			if (offset == 0)
-				offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				offset = gx_snprintf(tmp_buff, std::size(tmp_buff),
 				         "<%s>", eaddr.c_str());
 			else
 				offset += gx_snprintf(tmp_buff + offset,
-				          GX_ARRAY_SIZE(tmp_buff) - offset, ", <%s>",
+				          std::size(tmp_buff) - offset, ", <%s>",
 				          eaddr.c_str());
 			pmime->append_field("Delivered-To", eaddr.c_str());
 		}
@@ -3061,7 +3061,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(rp.ev_to,
-		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
+		    &essdn_buff[3], std::size(essdn_buff) - 3))
 			return ecError;
 		HX_strupper(essdn_buff);
 		auto pvalue = common_util_username_to_addressbook_entryid(rp.ev_to);
@@ -3386,7 +3386,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(rp.ev_to,
-		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
+		    &essdn_buff[3], std::size(essdn_buff) - 3))
 			return ecError;
 		auto pvalue = common_util_username_to_addressbook_entryid(rp.ev_to);
 		if (pvalue == nullptr)
@@ -3682,7 +3682,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			return FALSE;	
 		strcpy(essdn_buff, "EX:");
 		if (!common_util_username_to_essdn(account,
-		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
+		    &essdn_buff[3], std::size(essdn_buff) - 3))
 			return FALSE;
 		HX_strupper(essdn_buff);
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);

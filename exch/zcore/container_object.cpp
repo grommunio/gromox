@@ -274,10 +274,10 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				continue;
 			if (0 == strcasecmp(paddress_type, "EX")) {
 				if (!common_util_essdn_to_username(paddress,
-				    username, GX_ARRAY_SIZE(username)))
+				    username, std::size(username)))
 					continue;
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
-				gx_strlcpy(username, paddress, GX_ARRAY_SIZE(username));
+				gx_strlcpy(username, paddress, std::size(username));
 			} else {
 				continue;
 			}
@@ -295,7 +295,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != 0)
 					return FALSE;
 			}
-			for (size_t k = 0; k < GX_ARRAY_SIZE(tmp_proptags); ++k) {
+			for (size_t k = 0; k < std::size(tmp_proptags); ++k) {
 				uint32_t tag = tmp_proptags[k];
 				auto newval = tmp_set.pparray[i]->getval(tag);
 				if (newval == nullptr)

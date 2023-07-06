@@ -1438,20 +1438,20 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
 			if (common_util_parse_addressbook_entryid(pbin,
-			    address_type, GX_ARRAY_SIZE(address_type),
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
+			    address_type, std::size(address_type),
+			    tmp_buff, std::size(tmp_buff))) {
 				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, address_type) != 0 ||
 				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    tmp_buff, std::size(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    tmp_buff, std::size(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
 		}
@@ -1461,20 +1461,20 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 		auto sr_addrtype = pmsgctnt->proplist.get<const char>(PR_SENDER_ADDRTYPE);
 		if (sr_addrtype == nullptr) {
 			if (common_util_parse_addressbook_entryid(pbin,
-			    address_type, GX_ARRAY_SIZE(address_type),
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
+			    address_type, std::size(address_type),
+			    tmp_buff, std::size(tmp_buff))) {
 				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, address_type) != 0 ||
 				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    tmp_buff, std::size(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    tmp_buff, std::size(tmp_buff)) &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
 		}

@@ -207,7 +207,7 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn.append_field(pdsn_fields, "Remote-MTA", tmp_buff);
 	
-	if (dsn.serialize(content_buff, GX_ARRAY_SIZE(content_buff))) {
+	if (dsn.serialize(content_buff, std::size(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/delivery-status");

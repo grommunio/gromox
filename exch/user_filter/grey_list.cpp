@@ -47,7 +47,7 @@ static int g_hash_cap;
 void grey_list_init(BOOL case_sensitive, const char *path, int growing_num)
 {
 	g_case_sensitive = case_sensitive;
-	gx_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
+	gx_strlcpy(g_list_path, path, std::size(g_list_path));
 	g_growing_num = growing_num;
 	g_hash_cap = 0;
 }

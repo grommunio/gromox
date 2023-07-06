@@ -615,7 +615,7 @@ static pack_result pdu_ndr_pull_ipv6address(NDR_PULL *pndr,
     char *address, size_t asz)
 {
 	struct in6_addr in6;
-	TRY(pndr->g_uint8_a(in6.s6_addr, GX_ARRAY_SIZE(in6.s6_addr)));
+	TRY(pndr->g_uint8_a(in6.s6_addr, std::size(in6.s6_addr)));
 	inet_ntop(AF_INET6, &in6, address, asz);
 	return NDR_ERR_SUCCESS;
 }
@@ -630,10 +630,10 @@ static pack_result pdu_ndr_pull_rts_clientaddress(NDR_PULL *pndr,
 	TRY(pndr->union_align(4));
 	switch (r->address_type) {
 	case RTS_IPV4:
-		TRY(pdu_ndr_pull_ipv4address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address)));
+		TRY(pdu_ndr_pull_ipv4address(pndr, r->client_address, std::size(r->client_address)));
 		break;
 	case RTS_IPV6:
-		TRY(pdu_ndr_pull_ipv6address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address)));
+		TRY(pdu_ndr_pull_ipv6address(pndr, r->client_address, std::size(r->client_address)));
 		break;
 	default:
 		return NDR_ERR_BAD_SWITCH;
@@ -1199,7 +1199,7 @@ static pack_result pdu_ndr_push_ipv6address(NDR_PUSH *pndr, const char *address)
 	if (ret <= 0) {
 		return NDR_ERR_IPV6ADDRESS;
 	}
-	TRY(pndr->p_uint8_a(in6.s6_addr, GX_ARRAY_SIZE(in6.s6_addr)));
+	TRY(pndr->p_uint8_a(in6.s6_addr, std::size(in6.s6_addr)));
 	return pndr->trailer_align(4);
 }
 

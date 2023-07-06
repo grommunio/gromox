@@ -818,14 +818,14 @@ static BOOL folder_object_flush_delegates(int fd,
 		address_buff[0] = '\0';
 		if (NULL != ptype && NULL != paddress) {
 			if (strcasecmp(ptype, "SMTP") == 0)
-				gx_strlcpy(address_buff, paddress, GX_ARRAY_SIZE(address_buff));
+				gx_strlcpy(address_buff, paddress, std::size(address_buff));
 			else if (strcasecmp(ptype, "EX") == 0)
 				common_util_essdn_to_username(paddress,
-					address_buff, GX_ARRAY_SIZE(address_buff));
+					address_buff, std::size(address_buff));
 		}
 		if (address_buff[0] == '\0' && pentryid != nullptr &&
 		    !common_util_entryid_to_username(pentryid,
-		    address_buff, GX_ARRAY_SIZE(address_buff)))
+		    address_buff, std::size(address_buff)))
 			return FALSE;	
 		if ('\0' != address_buff[0]) {
 			tmp_len = strlen(address_buff);

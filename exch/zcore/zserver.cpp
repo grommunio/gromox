@@ -660,7 +660,7 @@ ec_error_t zs_logon(const char *username,
 	if (pdomain == nullptr)
 		return ecUnknownUser;
 	pdomain ++;
-	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);
 	unsigned int user_id = 0, domain_id = 0, org_id = 0;
@@ -946,7 +946,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
 			gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
 		} else if (common_util_parse_addressbook_entryid(entryid,
-		     &address_type, essdn, GX_ARRAY_SIZE(essdn)) &&
+		     &address_type, essdn, std::size(essdn)) &&
 		     strncmp(essdn, "/exmdb=", 7) == 0 &&
 		     address_type == DT_REMOTE_MAILUSER) {
 			/* do nothing */	
@@ -1439,7 +1439,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 	}
 	if (!system_services_get_username_from_id(user_id,
-	    username, GX_ARRAY_SIZE(username)) ||
+	    username, std::size(username)) ||
 	    !system_services_get_maildir(username, dir, std::size(dir)))
 		return ecError;
 	uint32_t permission = rightsNone;
@@ -2366,12 +2366,12 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
 		if (!common_util_essdn_to_username(mailbox_dn,
-		    username, GX_ARRAY_SIZE(username)))
+		    username, std::size(username)))
 			return ecNotFound;
 	} else {
-		gx_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
+		gx_strlcpy(username, mailbox_dn, std::size(username));
 		if (!common_util_username_to_essdn(username,
-		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
+		    tmp_buff, std::size(tmp_buff)))
 			return ecNotFound;
 		mailbox_dn = tmp_buff;
 	}
@@ -3202,7 +3202,7 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_SMTP_ADDRESS;
 				if (!common_util_essdn_to_username(ab_entryid.px500dn,
-				    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
+				    tmp_buff, std::size(tmp_buff)))
 					continue;
 				tmp_propval.pvalue = common_util_dup(tmp_buff);
 				if (tmp_propval.pvalue == nullptr)
@@ -3377,7 +3377,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	auto account = pstore->get_account();
 	repr_grant repr_grant;
 	if ('\0' == username[0]) {
-		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
+		gx_strlcpy(username, account, std::size(username));
 		repr_grant = repr_grant::send_as;
 	} else {
 		repr_grant = cu_get_delegate_perm_AA(account, username);
@@ -5091,17 +5091,17 @@ ec_error_t zs_getuseravailability(GUID hsession, BINARY entryid,
 	if (pinfo == nullptr)
 		return ecError;
 	if (!common_util_addressbook_entryid_to_username(entryid,
-	    username, GX_ARRAY_SIZE(username)) ||
+	    username, std::size(username)) ||
 	    !system_services_get_maildir(username, maildir, std::size(maildir))) {
 		*ppresult_string = NULL;
 		return ecSuccess;
 	}
 	if (strcasecmp(pinfo->get_username(), username) == 0)
-		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
+		tmp_len = gx_snprintf(cookie_buff, std::size(cookie_buff),
 		          "starttime=%llu;endtime=%llu;dirs=1;dir0=%s",
 		          LLU{starttime}, LLU{endtime}, maildir);
 	else
-		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
+		tmp_len = gx_snprintf(cookie_buff, std::size(cookie_buff),
 		          "username=%s;starttime=%llu;endtime=%llu;dirs=1;dir0=%s",
 		          pinfo->get_username(),
 		          LLU{starttime}, LLU{endtime}, maildir);

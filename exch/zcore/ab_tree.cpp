@@ -1262,7 +1262,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_EMAIL_ADDRESS:
 		if (node_type >= abnode_type::containers)
 			return TRUE;
-		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return FALSE;
 		pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
@@ -1330,7 +1330,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			ab_entryid.type = DT_DISTLIST;
 		else
 			ab_entryid.type = DT_MAILUSER;
-		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return FALSE;
 		ab_entryid.px500dn = dn;
 		bv->pv = common_util_alloc(1280);
@@ -1348,7 +1348,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (pvalue == nullptr)
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
-		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
+		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return FALSE;
 		bv->cb = strlen(dn) + 4;
 		bv->pv = common_util_alloc(bv->cb);

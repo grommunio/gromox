@@ -402,7 +402,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 			gx_strlcpy(account, pinfo->get_username(), std::size(account));
 		} else {
 			if (!system_services_get_username_from_id(account_id,
-			    account, GX_ARRAY_SIZE(account)) ||
+			    account, std::size(account)) ||
 			    !system_services_get_maildir(account, dir, std::size(dir)))
 				return INVALID_HANDLE;	
 		}
@@ -414,7 +414,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 		if (pdomain == nullptr)
 			return INVALID_HANDLE;
 		pdomain ++;
-		gx_strlcpy(account, pdomain, GX_ARRAY_SIZE(account));
+		gx_strlcpy(account, pdomain, std::size(account));
 	}
 	auto pstore = store_object::create(b_private, account_id, account, dir);
 	if (pstore == nullptr)

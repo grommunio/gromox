@@ -306,7 +306,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (*conn == nullptr)
 		return false;
-	snprintf(query, GX_ARRAY_SIZE(query),
+	snprintf(query, std::size(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
 	         "INNER JOIN aliases AS a ON u.username=a.mainname "
 	         "WHERE u.group_id=%d",
@@ -314,7 +314,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	aliasmap_t amap;
 	aliasmap_load(*conn, query, amap);
 
-	snprintf(query, GX_ARRAY_SIZE(query),
+	snprintf(query, std::size(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.group_id=%d AND u.id=p.user_id "
 	         "ORDER BY p.user_id, p.proptag, p.order_id",
@@ -322,7 +322,7 @@ int mysql_adaptor_get_group_users(unsigned int group_id,
 	propmap_t pmap;
 	propmap_load(*conn, query, pmap);
 
-	snprintf(query, GX_ARRAY_SIZE(query),
+	snprintf(query, std::size(query),
 	         "SELECT u.id, u.username, dt.propval_str AS dtypx, u.address_status, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "

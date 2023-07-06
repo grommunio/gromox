@@ -348,15 +348,15 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			}
 		}
 		if (multi_index != -1)
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 			          "SELECT message_id, read_state, inst_num, v%x"
 			          " FROM stbl %s", tmp_proptag, where_clause);
 		else if (psorts->ccategories > 0)
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 			          "SELECT message_id, read_state FROM stbl %s",
 			          where_clause);
 		else
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 			          "SELECT message_id FROM stbl %s", where_clause);
 		b_orderby = FALSE;
 		for (i=psorts->ccategories; i<psorts->count; i++) {
@@ -369,12 +369,12 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			}
 			if (!b_orderby) {
 				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len,
+				           std::size(sql_string) - sql_len,
 							" ORDER BY v%x ", tmp_proptag);
 				b_orderby = TRUE;
 			} else {
 				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len,
+				           std::size(sql_string) - sql_len,
 							", v%x ", tmp_proptag);
 			}
 			sql_len += gx_snprintf(sql_string + sql_len,
@@ -448,13 +448,13 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psorts->psort[depth + 1].table_sort) {
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 					"SELECT v%x, count(*), max(v%x) AS max_field "
 					"FROM stbl %s GROUP BY v%x ORDER BY max_field",
 					tmp_proptag, tmp_proptag1, where_clause,
 					tmp_proptag);
 		} else {
-			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 					"SELECT v%x, count(*), min(v%x) AS max_field "
 					"FROM stbl %s GROUP BY v%x ORDER BY max_field",
 					tmp_proptag, tmp_proptag1, where_clause,
@@ -462,7 +462,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		}
 	} else {
 		b_extremum = FALSE;
-		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		sql_len = gx_snprintf(sql_string, std::size(sql_string),
 				"SELECT v%x, count(*) FROM stbl %s GROUP"
 				" BY v%x ORDER BY v%x", tmp_proptag,
 				where_clause, tmp_proptag, tmp_proptag);
@@ -571,7 +571,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
 	} else {
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT is_search FROM"
+		snprintf(sql_string, std::size(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
@@ -700,14 +700,14 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			case PT_STRING8:
 			case PT_UNICODE:
 				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len,
+				           std::size(sql_string) - sql_len,
 							", v%x TEXT COLLATE NOCASE", tmp_proptag);
 				break;
 			case PT_FLOAT:
 			case PT_DOUBLE:
 			case PT_APPTIME:
 				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len,
+				           std::size(sql_string) - sql_len,
 							", v%x REAL", tmp_proptag);
 				break;
 			case PT_CURRENCY:
@@ -717,7 +717,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			case PT_LONG:
 			case PT_BOOLEAN:
 				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len,
+				           std::size(sql_string) - sql_len,
 							", v%x INTEGER", tmp_proptag);
 				break;
 			case PT_CLSID:
@@ -725,7 +725,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			case PT_OBJECT:
 			case PT_BINARY:
 				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len,
+				           std::size(sql_string) - sql_len,
 							", v%x BLOB", tmp_proptag);
 				break;
 			default:
@@ -734,11 +734,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		}
 		if (psorts->ccategories > 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len,
+			           std::size(sql_string) - sql_len,
 						", read_state INTEGER");
 		if (ptnode->instance_tag != 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len,
+			           std::size(sql_string) - sql_len,
 						", inst_num INTEGER");
 		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
@@ -746,7 +746,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			return false;
 		for (size_t i = 0; i < tag_count; ++i) {
 			auto tmp_proptag = tmp_proptags[i];
-			snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+			snprintf(sql_string, std::size(sql_string),
 			         "CREATE INDEX stbl_%zu ON stbl (v%x)",
 			         i, tmp_proptag);
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
@@ -763,13 +763,13 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		sql_len = snprintf(sql_string, std::size(sql_string), "INSERT INTO stbl VALUES (?");
 		for (size_t i = 0; i < tag_count; ++i)
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
+			           std::size(sql_string) - sql_len, ", ?");
 		if (psorts->ccategories > 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
+			           std::size(sql_string) - sql_len, ", ?");
 		if (ptnode->instance_tag != 0)
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
+			           std::size(sql_string) - sql_len, ", ?");
 		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
@@ -833,7 +833,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			         LLU{fid_val}, b_deleted);
 		}
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
-		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		gx_snprintf(sql_string, std::size(sql_string),
 		            "SELECT message_id "
 		            "FROM messages WHERE parent_fid=%llu "
 		            " AND is_deleted=%u AND is_associated=%u",
@@ -843,7 +843,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	} else if (conv_id != nullptr) {
 		char tmp_string[128];
 		encode_hex_binary(conv_id->pb, 16, tmp_string, sizeof(tmp_string));
-		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		gx_snprintf(sql_string, std::size(sql_string),
 		            "SELECT message_properties.message_id "
 		            "FROM message_properties JOIN messages ON "
 		            "messages.message_id=message_properties.message_id"
@@ -852,7 +852,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		            "messages.is_deleted=%u", PR_CONVERSATION_ID,
 		            tmp_string, !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	} else {
-		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		gx_snprintf(sql_string, std::size(sql_string),
 		            "SELECT message_id"
 		            " FROM messages WHERE parent_fid IS NOT NULL"
 		            " AND is_associated=0 AND is_deleted=%u",
@@ -3235,14 +3235,14 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		case PT_STRING8:
 		case PT_UNICODE:
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len,
+			           std::size(sql_string) - sql_len,
 						", v%x TEXT", tmp_proptag);
 			break;
 		case PT_FLOAT:
 		case PT_DOUBLE:
 		case PT_APPTIME:
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len,
+			           std::size(sql_string) - sql_len,
 						", v%x REAL", tmp_proptag);
 			break;
 		case PT_CURRENCY:
@@ -3252,7 +3252,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		case PT_LONG:
 		case PT_BOOLEAN:
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len,
+			           std::size(sql_string) - sql_len,
 						", v%x INTEGER", tmp_proptag);
 			break;
 		case PT_CLSID:
@@ -3260,7 +3260,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		case PT_OBJECT:
 		case PT_BINARY:
 			sql_len += gx_snprintf(sql_string + sql_len,
-			           GX_ARRAY_SIZE(sql_string) - sql_len,
+			           std::size(sql_string) - sql_len,
 						", v%x BLOB", tmp_proptag);
 			break;
 		default:
@@ -3272,7 +3272,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 
-	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT row_id, inst_id,"
+	snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id,"
 			" row_stat, depth FROM t%u", ptnode->table_id);
 	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -3281,18 +3281,18 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		" INTO s%u VALUES (?", *pstate_id);
 	for (unsigned int i = 0; i < ptnode->psorts->ccategories; ++i)
 		sql_len += gx_snprintf(sql_string + sql_len,
-		           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
+		           std::size(sql_string) - sql_len, ", ?");
 	sql_string[sql_len++] = ')';
 	sql_string[sql_len] = '\0';
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
-	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT parent_id FROM"
+	snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
 	auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt2 == nullptr)
 		return FALSE;
-	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT value FROM"
+	snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
 	auto stm_sel_vtx = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (stm_sel_vtx == nullptr)

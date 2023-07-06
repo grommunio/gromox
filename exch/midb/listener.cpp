@@ -40,7 +40,7 @@ static void *midls_thrwork(void *);
 void listener_init(const char *ip, uint16_t port)
 {
 	if ('\0' != ip[0]) {
-		gx_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
+		gx_strlcpy(g_listen_ip, ip, std::size(g_listen_ip));
 	} else {
 		g_listen_ip[0] = '\0';
 	}
