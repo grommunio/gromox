@@ -143,7 +143,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		return;
 	}
 	if (0 == strcasecmp(pdomain, get_default_domain())) {
-		gx_strlcpy(pcontext->ctrl.from, "local-alarm@system.mail", GX_ARRAY_SIZE(pcontext->ctrl.from));
+		gx_strlcpy(pcontext->ctrl.from, "local-alarm@system.mail", std::size(pcontext->ctrl.from));
 	} else {
 		sprintf(pcontext->ctrl.from, "local-alarm@%s",
 		        get_default_domain());

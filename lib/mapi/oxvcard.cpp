@@ -523,7 +523,7 @@ MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) tr
 			auto pstring = pvline->get_first_subval();
 			if (pstring == nullptr)
 				continue;
-			if (child_strings.count >= GX_ARRAY_SIZE(child_buff))
+			if (child_strings.count >= std::size(child_buff))
 				throw unrecog(line);
 			child_strings.ppstr[child_strings.count++] = deconst(pstring);
 		} else if (strcasecmp(pvline_name, "X-MS-TEXT") == 0) {

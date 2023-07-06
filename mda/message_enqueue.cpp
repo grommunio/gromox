@@ -75,7 +75,7 @@ static int			g_last_pos;
  */
 static void message_enqueue_init(const char *path)
 {
-	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, std::size(g_path));
     g_last_flush_ID = 0;
 	g_last_pos = 0;
 }
@@ -92,7 +92,7 @@ static int message_enqueue_run()
 
 	if (!message_enqueue_check())
 		return -1;
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
+	snprintf(name, std::size(name), "%s/token.ipc", g_path);
 	int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd >= 0)
 		close(fd);

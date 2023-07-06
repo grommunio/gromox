@@ -149,7 +149,7 @@ void auto_response_reply(const char *user_home,
 					++ptoken2;
 					ptoken2 = strcasestr(ptoken2, "charset=");
 					if (ptoken2 != nullptr) {
-						gx_strlcpy(charset, ptoken2 + 8, GX_ARRAY_SIZE(charset));
+						gx_strlcpy(charset, &ptoken2[8], std::size(charset));
 						ptoken2 = strchr(charset, ';');
 						if (ptoken2 != nullptr)
 							*ptoken2 = '\0';

@@ -4191,7 +4191,7 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	default: break;
 	}
 	thread_local char xbuf[32];
-	snprintf(xbuf, GX_ARRAY_SIZE(xbuf), "Unknown error %u", static_cast<unsigned int>(v));
+	snprintf(xbuf, std::size(xbuf), "Unknown error %u", static_cast<unsigned int>(v));
 	return xbuf;
 }
 
