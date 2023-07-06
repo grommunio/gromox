@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/socket.h>
@@ -404,7 +405,7 @@ static const char *status_text(unsigned int s)
 	}
 }
 
-static tproc_status http_done(http_context *ctx, int code)
+static tproc_status http_done(http_context *ctx, int code) try
 {
 	ctx->b_close = TRUE; /* rdbody not consumed yet */
 	if (code < 0) {
@@ -420,18 +421,29 @@ static tproc_status http_done(http_context *ctx, int code)
 	if (code >= 1000)
 		code /= 10;
 
-	char dstring[128], response_buff[1024];
+	char dstring[128];
 	rfc1123_dstring(dstring, std::size(dstring));
-	auto response_len = gx_snprintf(response_buff, std::size(response_buff),
-		"HTTP/1.1 %u %s\r\n"
-		"Date: %s\r\n"
-		"Content-Length: %zu\r\n"
+	auto rsp = fmt::format(
+		"HTTP/1.1 {} {}\r\n"
+		"Date: {}\r\n"
+		"Content-Length: {}\r\n"
 	        "Content-Type: text/plain; charset=utf-8\r\n"
-		"Connection: %s\r\n"
-		"\r\n%s\r\n", code, msg, dstring, strlen(msg) + 2,
-		ctx->b_close ? "close" : "keep-alive", msg);
-	ctx->stream_out.write(response_buff, response_len);
-	ctx->total_length = response_len;
+		"Connection: {}\r\n",
+		code, msg, dstring, strlen(msg) + 2,
+		ctx->b_close ? "close" : "keep-alive");
+	if (!ctx->b_close)
+		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
+	rsp += "\r\n";
+	rsp += msg;
+	rsp += "\r\n";
+	ctx->stream_out.write(rsp.c_str(), rsp.size());
+	ctx->total_length = rsp.size();
+	ctx->bytes_rw = 0;
+	ctx->sched_stat = hsched_stat::wrrep;
+	return tproc_status::loop;
+} catch (const std::bad_alloc &) {
+	ctx->b_close = TRUE;
+	ctx->total_length = 0;
 	ctx->bytes_rw = 0;
 	ctx->sched_stat = hsched_stat::wrrep;
 	return tproc_status::loop;
@@ -1376,8 +1388,9 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	auto response_len = gx_snprintf(response_buff, std::size(response_buff),
 		"HTTP/1.1 200 Success\r\n"
 		"Connection: Keep-Alive\r\n"
+		"Keep-Alive: timeout=%ld\r\n"
 		"Content-Length: 20\r\n"
-		"Content-Type: application/rpc\r\n\r\n");
+		"Content-Type: application/rpc\r\n\r\n", TOSEC(g_timeout));
 	pdu_processor_rts_echo(response_buff + response_len);
 	response_len += 20;
 	pcontext->stream_out.write(response_buff, response_len);
