@@ -80,13 +80,13 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 			ptzstruct->standarddate.month,
 			ptzstruct->standarddate.day,
 			ptzstruct->standarddate.dayofweek);
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->standarddate.month,
 			day, (int)ptzstruct->standarddate.hour,
 			(int)ptzstruct->standarddate.minute,
 			(int)ptzstruct->standarddate.second);
 	} else if (1 == ptzstruct->standarddate.year) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->standarddate.month,
 			(int)ptzstruct->standarddate.day,
 			(int)ptzstruct->standarddate.hour,
@@ -135,13 +135,13 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 			ptzstruct->daylightdate.month,
 			ptzstruct->daylightdate.day,
 			ptzstruct->daylightdate.dayofweek);
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->daylightdate.month,
 			day, (int)ptzstruct->daylightdate.hour,
 			(int)ptzstruct->daylightdate.minute,
 			(int)ptzstruct->daylightdate.second);
 	} else if (1 == ptzstruct->daylightdate.year) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), fmt_datetimelcl,
+		snprintf(tmp_buff, std::size(tmp_buff), fmt_datetimelcl,
 			year, (int)ptzstruct->daylightdate.month,
 			(int)ptzstruct->daylightdate.day,
 			(int)ptzstruct->daylightdate.hour,
@@ -473,7 +473,7 @@ static BOOL get_freebusy(const char *dir)
 	auto end_nttime = rop_util_unix_to_nttime(g_end_time);
 	propnames.count = 13;
 	propnames.ppropname = tmp_propnames;
-	for (size_t i = 0; i < arsizeof(tmp_propnames); ++i)
+	for (size_t i = 0; i < std::size(tmp_propnames); ++i)
 		tmp_propnames[i].kind = MNID_ID;
 	for (size_t i = 0; i < 5; ++i)
 		tmp_propnames[i].guid = PSETID_APPOINTMENT;
@@ -951,7 +951,7 @@ int main(int argc, const char **argv)
 	else if (strcasecmp(pstddayofweek, "Saturday") == 0)
 		tzstruct.standarddate.dayofweek = 6;
 	tzstruct.standarddate.day = strtol(pstddayorder, nullptr, 0);
-	gx_strlcpy(tmp_buff, pstdtime, arsizeof(tmp_buff));
+	gx_strlcpy(tmp_buff, pstdtime, std::size(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"stdtime\" format error\n");
@@ -987,7 +987,7 @@ int main(int argc, const char **argv)
 	else if (strcasecmp(pdtldayofweek, "Saturday") == 0)
 		tzstruct.daylightdate.dayofweek = 6;
 	tzstruct.daylightdate.day = strtol(pdtldayorder, nullptr, 0);
-	gx_strlcpy(tmp_buff, pdtltime, arsizeof(tmp_buff));
+	gx_strlcpy(tmp_buff, pdtltime, std::size(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"dtltime\" format error\n");
@@ -1021,7 +1021,7 @@ int main(int argc, const char **argv)
 	}
 	int dir_num = strtol(pdirs, nullptr, 0);
 	for (decltype(dir_num) i = 0; i < dir_num; ++i) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "dir%d", i);
+		snprintf(tmp_buff, std::size(tmp_buff), "dir%d", i);
 		pdir = cookie_parser_get(pparser, tmp_buff);
 		if (pdir != nullptr)
 			get_freebusy(pdir);

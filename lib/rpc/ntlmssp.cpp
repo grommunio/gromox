@@ -383,7 +383,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'U': {
 			s = va_arg(ap, char*);
 			head_size += 8;
-			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
+			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0) {
 				va_end(ap);
 				return false;
@@ -404,7 +404,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			j = va_arg(ap, int);
 			intargs[i] = j;
 			s = va_arg(ap, char*);
-			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
+			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0) {
 				va_end(ap);
 				return false;

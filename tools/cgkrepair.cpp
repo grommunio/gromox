@@ -44,8 +44,8 @@ static inline bool change_key_gc_ok(const BINARY &b)
 	 */
 	if (b.cb != 22)
 		return true;
-	if (memcmp(b.pb + 4, gx_pvt_mbox, arsizeof(gx_pvt_mbox)) != 0 &&
-	    memcmp(b.pb + 4, gx_pub_mbox, arsizeof(gx_pub_mbox)) != 0)
+	if (memcmp(&b.pb[4], gx_pvt_mbox, std::size(gx_pvt_mbox)) != 0 &&
+	    memcmp(&b.pb[4], gx_pub_mbox, std::size(gx_pub_mbox)) != 0)
 		return true;
 	/*
 	 * Someone once decided to declare CHANGE_NUMBER_BEGIN to be 1<<47.

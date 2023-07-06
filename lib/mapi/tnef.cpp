@@ -980,7 +980,7 @@ static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
 {
 	char tmp_guid[GUIDSTR_SIZE];
 	
-	ppropname->guid.to_str(tmp_guid, arsizeof(tmp_guid));
+	ppropname->guid.to_str(tmp_guid, std::size(tmp_guid));
 	if (ppropname->kind == MNID_ID)
 		snprintf(tag_string, tag_size, "%s:lid:%u", tmp_guid, ppropname->lid);
 	else
@@ -1152,7 +1152,7 @@ static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *t
 	if (tnef_pv->ppropname == nullptr)
 		return true;
 	char ts[NP_STRBUF_SIZE];
-	tnef_convert_from_propname(tnef_pv->ppropname, ts, arsizeof(ts));
+	tnef_convert_from_propname(tnef_pv->ppropname, ts, std::size(ts));
 	auto iter = map.find(ts);
 	if (iter != map.end()) {
 		tnef_pv->propid = iter->second;
@@ -2221,7 +2221,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_MESSAGEID */
 	auto bv = pmsg->proplist.get<const BINARY>(PR_SEARCH_KEY);
 	if (bv != nullptr) {
-		if (!encode_hex_binary(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff)))
+		if (!encode_hex_binary(bv->pb, bv->cb, tmp_buff, std::size(tmp_buff)))
 			return FALSE;
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGEID,
 		    tmp_buff) != EXT_ERR_SUCCESS)

@@ -156,7 +156,7 @@ static YError az_error(const char *prefix, const libpff_error_ptr &err)
 {
 	char buf[160];
 	buf[0] = '\0';
-	libpff_error_sprint(err.get(), buf, arsizeof(buf));
+	libpff_error_sprint(err.get(), buf, std::size(buf));
 	return YError(std::string(prefix) + ": " + buf);
 }
 
@@ -1059,7 +1059,7 @@ static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
 		return 0;
 	char eid[24];
 	if (libpff_record_entry_get_data(rent.get(),
-	    reinterpret_cast<uint8_t *>(eid), arsizeof(eid), nullptr) < 1)
+	    reinterpret_cast<uint8_t *>(eid), std::size(eid), nullptr) < 1)
 		return 0;
 	return le32p_to_cpu(&eid[20]);
 }
@@ -1069,7 +1069,7 @@ static void az_fmap_standard(libpff_file_t *file, const char *filename)
 	char timebuf[64];
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
-	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
+	strftime(timebuf, std::size(timebuf), " @%FT%T", tm);
 	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
 		"Import of "s + HX_basename(filename) + timebuf});
 }

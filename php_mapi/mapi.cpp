@@ -4162,7 +4162,7 @@ static ZEND_FUNCTION(mapi_feature)
 		NULL == szfeature || 0 == cbfeature) {
 		return;
 	}
-	for (size_t i = 0; i < arsizeof(features); ++i) {
+	for (size_t i = 0; i < std::size(features); ++i) {
 		if (0 == strcasecmp(features[i], szfeature)) {
 			RETVAL_TRUE;
 			return;

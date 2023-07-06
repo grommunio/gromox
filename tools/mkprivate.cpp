@@ -309,11 +309,11 @@ int main(int argc, const char **argv) try
 		printf("fail to create \"spooler queue\" folder\n");
 		return EXIT_FAILURE;
 	}
-	snprintf(tmp_sql, arsizeof(tmp_sql), "INSERT INTO permissions (folder_id, "
+	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
 	gx_sql_exec(psqlite, tmp_sql);
-	snprintf(tmp_sql, arsizeof(tmp_sql), "INSERT INTO permissions (folder_id, "
+	snprintf(tmp_sql, std::size(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
 	gx_sql_exec(psqlite, tmp_sql);
@@ -321,7 +321,7 @@ int main(int argc, const char **argv) try
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
 	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, arsizeof(tmp_bguid));
+	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
 	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
 	if (pstmt.step() != SQLITE_DONE) {

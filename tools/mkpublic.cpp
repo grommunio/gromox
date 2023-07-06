@@ -110,7 +110,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	
-	snprintf(mysql_string, arsizeof(mysql_string), "SELECT 0, homedir, 0, "
+	snprintf(mysql_string, std::size(mysql_string), "SELECT 0, homedir, 0, "
 		"domain_status, id FROM domains WHERE domainname='%s'", argv[1]);
 	
 	if (0 != mysql_query(pmysql, mysql_string) ||
@@ -220,7 +220,7 @@ int main(int argc, const char **argv) try
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
 	char tmp_bguid[GUIDSTR_SIZE];
-	GUID::random_new().to_str(tmp_bguid, arsizeof(tmp_bguid));
+	GUID::random_new().to_str(tmp_bguid, std::size(tmp_bguid));
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
 	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
 	if (pstmt.step() != SQLITE_DONE) {

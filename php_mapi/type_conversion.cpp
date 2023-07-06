@@ -1299,7 +1299,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			zarray_init(&pzmval);
 			auto xl = static_cast<FLOAT_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xl->count; ++j) {
-				snprintf(key, arsizeof(key), "%zu", j);
+				snprintf(key, std::size(key), "%zu", j);
 				add_assoc_double(&pzmval, key, xl->mval[j]);
 			}
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);
@@ -1310,7 +1310,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			zarray_init(&pzmval);
 			auto xl = static_cast<DOUBLE_ARRAY *>(ppropval->pvalue);
 			for (size_t j = 0; j < xl->count; ++j) {
-				snprintf(key, arsizeof(key), "%zu", j);
+				snprintf(key, std::size(key), "%zu", j);
 				add_assoc_double(&pzmval, key, xl->mval[j]);
 			}
 			add_assoc_zval(pzret, pts.c_str(), &pzmval);

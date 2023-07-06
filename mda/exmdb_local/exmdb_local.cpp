@@ -298,7 +298,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	MESSAGE_CONTEXT *pcontext1;
 
 	if (!exmdb_local_get_user_info(address, home_dir, std::size(home_dir),
-	    lang, std::size(lang), tmzone, arsizeof(tmzone))) {
+	    lang, std::size(lang), tmzone, std::size(tmzone))) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;

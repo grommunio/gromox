@@ -11,8 +11,7 @@
 #include <gromox/mapierr.hpp>
 #define SOCKET_TIMEOUT 60
 namespace gromox {
-#define arsizeof std::size
-#define GX_ARRAY_SIZE arsizeof
+#define GX_ARRAY_SIZE std::size
 }
 #define GX_EXPORT __attribute__((visibility("default")))
 #define NOMOVE(K) \
