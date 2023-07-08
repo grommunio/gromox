@@ -150,7 +150,7 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     unsigned int mime_ratio, bool ignerr)
 {
-	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, std::size(g_path));
 	g_plugin_names = std::move(names);
 	g_local_path[0] = '\0';
 	*g_remote_path = '\0';

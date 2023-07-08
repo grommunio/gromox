@@ -116,7 +116,7 @@ bool user_object::valid()
 		return true;
 	if (ab_tree_get_minid_type(puser->minid) != minid_type::address ||
 	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
-	    username, GX_ARRAY_SIZE(username)))
+	    username, std::size(username)))
 		return FALSE;
 	return true;
 }
@@ -173,7 +173,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (!wx_name ||
 	    ab_tree_get_minid_type(puser->minid) != minid_type::address ||
 	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
-	    username, GX_ARRAY_SIZE(username)))
+	    username, std::size(username)))
 		return TRUE;
 	if (w_smtp) {
 		vc->proptag = PR_SMTP_ADDRESS;

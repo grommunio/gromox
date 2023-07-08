@@ -807,7 +807,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	int domain_id;
 	char prefix_string[1024];
 	
-	temp_len = gx_snprintf(prefix_string, GX_ARRAY_SIZE(prefix_string), "/o=%s/ou=Exchange "
+	temp_len = gx_snprintf(prefix_string, std::size(prefix_string), "/o=%s/ou=Exchange "
 			"Administrative Group (FYDIBOHF23SPDLT)", g_nsp_org_name);
 	if (temp_len < 0 || strncasecmp(pdn, prefix_string, temp_len) != 0)
 		return NULL;

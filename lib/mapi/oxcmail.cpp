@@ -208,7 +208,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	char hex_string[16];
 	char hex_string2[16];
 	
-	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -235,7 +235,7 @@ BOOL oxcmail_essdn_to_username(const char *pessdn,
 {
 	char tmp_buff[1024];
 	
-	auto tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 	               "/o=%s/ou=Exchange Administrative"
 		" Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", g_oxcmail_org_name);
 	if (0 != strncasecmp(pessdn, tmp_buff, tmp_len)) {
@@ -472,7 +472,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	}
 	if (paddr->has_addr() && oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
-		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
+		snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
 		auto dtypx = DT_MAILUSER;
 		if (!oxcmail_username_to_essdn(username, essdn, &dtypx)) {
 			essdn[0] = '\0';
@@ -568,7 +568,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		if (pproplist->set(pr_name, paddr->display_name) != 0)
 			return false;
 	} else if (paddr->has_addr()) {
-		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
+		snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
 		if (pproplist->set(pr_name, username) != 0)
 			return FALSE;
 	}
@@ -576,7 +576,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 	          oxcmail_check_ascii(paddr->domain);
 	if (!ok)
 		return TRUE;
-	snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
+	snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
 	if (pproplist->set(pr_addrtype, "SMTP") != 0 ||
 	    pproplist->set(pr_emaddr, username) != 0 ||
 	    pproplist->set(pr_smtpaddr, username) != 0)
@@ -815,7 +815,7 @@ static BOOL oxcmail_parse_keywords(const char *charset, const char *field,
 	
 	if (!mime_string_to_utf8(charset, field, tmp_buff, std::size(tmp_buff))) {
 		tag = PROP_TAG(PT_MV_STRING8, propid);
-		gx_strlcpy(tmp_buff, field, GX_ARRAY_SIZE(tmp_buff));
+		gx_strlcpy(tmp_buff, field, std::size(tmp_buff));
 	} else {
 		tag = PROP_TAG(PT_MV_UNICODE, propid);
 	}
@@ -1575,9 +1575,9 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	if (!pmime->read_content(pcontent.get(), &length))
 		return TRUE;
 	if (oxcmail_get_content_param(pmime, "charset", temp_charset, 32))
-		gx_strlcpy(best_charset, temp_charset, GX_ARRAY_SIZE(best_charset));
+		gx_strlcpy(best_charset, temp_charset, std::size(best_charset));
 	else
-		gx_strlcpy(best_charset, charset, GX_ARRAY_SIZE(best_charset));
+		gx_strlcpy(best_charset, charset, std::size(best_charset));
 	content_type = pmime->content_type;
 	if (0 == strcasecmp(content_type, "text/html")) {
 		uint32_t tmp_int32 = cset_to_cpid(best_charset);
@@ -2229,7 +2229,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			if (!oxcmail_get_content_param(pmime, "charset",
 			    mime_charset, std::size(mime_charset)))
 				gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
-					pmime_enum->charset : "utf-8", GX_ARRAY_SIZE(mime_charset));
+					pmime_enum->charset : "utf-8", std::size(mime_charset));
 			if (string_to_utf8(mime_charset, pcontent.get(),
 			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
 				if (!utf8_check(pcontent.get() + content_len + 1))
@@ -2305,7 +2305,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			strcpy(mode_buff, ";type=a");
 		else if (strcasecmp(mode_buff, "image") == 0)
 			strcpy(mode_buff, ";type=i");
-		tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "[InternetShortcut]\r\n"
+		tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff), "[InternetShortcut]\r\n"
 					"URL=ftp://%s/%s/%s%s", site_buff, dir_buff,
 					file_name, mode_buff);
 		tmp_bin.pc = mode_buff;
@@ -2531,7 +2531,7 @@ static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
 	auto pinfo = static_cast<DSN_FILEDS_INFO *>(pparam);
 	if (0 == strcasecmp(tag, "Final-Recipient") &&
 		0 == strncasecmp(value, "rfc822;", 7)) {
-		gx_strlcpy(pinfo->final_recipient, value + 7, GX_ARRAY_SIZE(pinfo->final_recipient));
+		gx_strlcpy(pinfo->final_recipient, &value[7], std::size(pinfo->final_recipient));
 		HX_strrtrim(pinfo->final_recipient);
 		HX_strltrim(pinfo->final_recipient);
 	} else if (0 == strcasecmp(tag, "Action")) {
@@ -2550,7 +2550,7 @@ static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
 	} else if (0 == strcasecmp(tag, "Diagnostic-Code")) {
 		pinfo->diagnostic_code = value;
 	} else if (0 == strcasecmp(tag, "Remote-MTA")) {
-		gx_strlcpy(pinfo->remote_mta, value, GX_ARRAY_SIZE(pinfo->remote_mta));
+		gx_strlcpy(pinfo->remote_mta, value, std::size(pinfo->remote_mta));
 	} else if (0 == strcasecmp(tag, "X-Supplementary-Info")) {
 		pinfo->x_supplementary_info = value;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
@@ -2706,7 +2706,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields, 
 		    pproplist->set(PR_EMAIL_ADDRESS, f_info.final_recipient) != 0)
 			return false;
 	} else {
-		tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "EX:%s", essdn) + 1;
+		tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff), "EX:%s", essdn) + 1;
 		if (pproplist->set(PR_ADDRTYPE, "EX") != 0 ||
 		    pproplist->set(PR_EMAIL_ADDRESS, essdn) != 0)
 			return false;
@@ -2870,7 +2870,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		if (ptoken2 == nullptr)
 			return true;
 		++ptoken2;
-		gx_strlcpy(tmp_buff, ptoken2, GX_ARRAY_SIZE(tmp_buff));
+		gx_strlcpy(tmp_buff, ptoken2, std::size(tmp_buff));
 		HX_strltrim(tmp_buff);
 		ptoken = strchr(tmp_buff, '/');
 		if (ptoken != nullptr)
@@ -3149,7 +3149,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 
 	char default_charset[64];
 	if (!pmail->get_charset(default_charset))
-		gx_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
+		gx_strlcpy(default_charset, charset, std::size(default_charset));
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
 	field_param.pmsg = pmsg.get();
@@ -3681,7 +3681,7 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	offset = 0;
 	auto pvalue = pmsg->proplist.get<char>(tags.pr_name);
 	if (pvalue != nullptr && *pvalue != '\0') {
-		if (strlen(pvalue) >= GX_ARRAY_SIZE(address))
+		if (strlen(pvalue) >= std::size(address))
 			goto EXPORT_ADDRESS;
 		field[offset] = '"';
 		offset ++;

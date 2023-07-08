@@ -46,7 +46,7 @@ static void *mdl_thrwork(void *);
  */
 void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 {
-	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	gx_strlcpy(g_path, path, std::size(g_path));
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
 	g_notify_stop = true;

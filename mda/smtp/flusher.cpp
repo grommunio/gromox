@@ -52,10 +52,10 @@ void flusher_init(size_t queue_len) try
 	static constexpr char path[] = "libgxf_message_enqueue.so";
 	g_flusher_plug = std::make_unique<FLH_PLUG_ENTITY>();
 	g_flusher_plug->flush_cancel = NULL;
-	gx_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
+	gx_strlcpy(g_flusher_plug->path, path, std::size(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
 	gx_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
-		GX_ARRAY_SIZE(g_flusher_plug->file_name));
+		std::size(g_flusher_plug->file_name));
 	g_max_queue_len = queue_len;
 } catch (const std::bad_alloc &) {
 }

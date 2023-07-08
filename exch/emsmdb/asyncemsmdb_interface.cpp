@@ -166,7 +166,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pwait->out_payload.context_id = pout->flags_out;
 	else
 		pwait->out_payload.pout = pout;
-	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
+	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", pwait->username,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);
@@ -208,7 +208,7 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	if (iter == g_async_hash.end())
 		return;
 	auto pwait = iter->second;
-	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
+	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", pwait->username,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);
 	g_tag_hash.erase(tmp_tag);
@@ -226,7 +226,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 
 	if (!emsmdb_interface_check_acxh(pacxh, username, &cxr, false))
 		return;
-	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", username, cxr);
+	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d", username, cxr);
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);
 	auto iter = g_tag_hash.find(tmp_tag);
@@ -258,7 +258,7 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 {
 	char tmp_tag[TAG_SIZE];
 	
-	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d",
+	snprintf(tmp_tag, std::size(tmp_tag), "%s:%d",
 	         username, static_cast<int>(cxr));
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);

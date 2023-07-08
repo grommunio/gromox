@@ -315,9 +315,9 @@ static int t_base64()
 	    outlen != 0)
 		return printf("TB-17 failed\n");
 
-	if (decode64_ex(cpool, arsizeof(cpool) - 1, out, arsizeof(out), &outlen) < 0)
+	if (decode64_ex(cpool, std::size(cpool) - 1, out, std::size(out), &outlen) < 0)
 		return printf("TB-8 failed\n");
-	if (decode64_ex("MTIz\nMTIz\nMTIz\n", 15, out, arsizeof(out), &outlen) < 0)
+	if (decode64_ex("MTIz\nMTIz\nMTIz\n", 15, out, std::size(out), &outlen) < 0)
 		return printf("TB-9 failed\n");
 	else if (memcmp(out, "123123123", 9) != 0)
 		return printf("TB-10 failed\n");

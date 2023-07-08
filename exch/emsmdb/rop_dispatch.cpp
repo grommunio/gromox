@@ -48,7 +48,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 		if (rdr == nullptr)
 			return ecServerOOM;
 		if (rq->pessdn != nullptr)
-			gx_strlcpy(rdr->pserver_name, rq->pessdn, GX_ARRAY_SIZE(rdr->pserver_name));
+			gx_strlcpy(rdr->pserver_name, rq->pessdn, std::size(rdr->pserver_name));
 		else
 			rdr->pserver_name[0] = '\0';
 		if (rq->logon_flags & LOGON_FLAG_PRIVATE) {
@@ -59,7 +59,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			pmb->logon_flags = rq->logon_flags;
 			(*ppresponse)->result = rop_logon_pmb(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
-				rdr->pserver_name, GX_ARRAY_SIZE(rdr->pserver_name), pmb->folder_ids,
+				rdr->pserver_name, std::size(rdr->pserver_name), pmb->folder_ids,
 				&pmb->response_flags, &pmb->mailbox_guid,
 				&pmb->replid, &pmb->replguid,
 				&pmb->logon_time, &pmb->gwart_time,

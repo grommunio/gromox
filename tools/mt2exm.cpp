@@ -96,10 +96,10 @@ static void exm_read_base_maps()
 {
 	errno = 0;
 	char magic[8];
-	auto ret = HXio_fullread(STDIN_FILENO, magic, arsizeof(magic));
+	auto ret = HXio_fullread(STDIN_FILENO, magic, std::size(magic));
 	if (ret == 0)
 		throw YError("PG-1009: EOF on input");
-	else if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
+	else if (ret < 0 || static_cast<size_t>(ret) != std::size(magic))
 		throw YError("PG-1126: %s", strerror(errno));
 	if (memcmp(magic, "GXMT0003", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");

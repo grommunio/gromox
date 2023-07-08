@@ -39,7 +39,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		common_util_domain_to_essdn(pdomain, pessdn, dnmax);
 		return ecWrongServer;
 	}
-	if (!common_util_essdn_to_username(pessdn, username, GX_ARRAY_SIZE(username)))
+	if (!common_util_essdn_to_username(pessdn, username, std::size(username)))
 		return ecUnknownUser;
 	unsigned int user_id = 0;
 	if (!common_util_get_id_from_username(username, &user_id))
@@ -72,7 +72,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		*presponse_flags = RESPONSE_FLAG_RESERVED |
 							RESPONSE_FLAG_OWNERRIGHT |
 							RESPONSE_FLAG_SENDASRIGHT;
-		gx_strlcpy(maildir, rpc_info.maildir, GX_ARRAY_SIZE(maildir));
+		gx_strlcpy(maildir, rpc_info.maildir, std::size(maildir));
 		logon_mode = logon_mode::owner;
 	}
 	proptags.count = 2;

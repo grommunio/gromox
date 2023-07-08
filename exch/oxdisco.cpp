@@ -1001,7 +1001,7 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
 	char hex_string[16];
 	char hex_string2[16];
 
-	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	auto pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;

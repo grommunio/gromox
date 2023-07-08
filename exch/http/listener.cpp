@@ -186,7 +186,7 @@ static void *htls_thrwork(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
+			len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
@@ -200,7 +200,7 @@ static void *htls_thrwork(void *arg)
 		std::string reason;
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip, reason)) {
-			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
+			len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
@@ -220,8 +220,8 @@ static void *htls_thrwork(void *arg)
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
 		pcontext->sched_stat                = use_tls ? hsched_stat::initssl : hsched_stat::rdhead;
-		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
+		gx_strlcpy(pcontext->connection.client_ip, client_hostip, std::size(pcontext->connection.client_ip));
+		gx_strlcpy(pcontext->connection.server_ip, server_hostip, std::size(pcontext->connection.server_ip));
 		/* 
 		valid the context and wake up one thread if there are some threads
 		block on the condition variable 

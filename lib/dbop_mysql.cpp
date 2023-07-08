@@ -762,7 +762,7 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 
 int dbop_mysql_recentversion()
 {
-	return tbl_upgrade_list[GX_ARRAY_SIZE(tbl_upgrade_list)-2].v;
+	return tbl_upgrade_list[std::size(tbl_upgrade_list)-2].v;
 }
 
 int dbop_mysql_upgrade(MYSQL *conn)

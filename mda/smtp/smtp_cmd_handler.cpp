@@ -218,7 +218,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 			/* 550 invalid user - <email_addr> */
 			smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);
-			string_length = gx_snprintf(reason, GX_ARRAY_SIZE(reason),
+			string_length = gx_snprintf(reason, std::size(reason),
 			                "%s<%s>%s", smtp_reply_str, buff,
 			                smtp_reply_str2);
 			pcontext->connection.write(reason, string_length);

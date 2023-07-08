@@ -65,8 +65,8 @@ static int exmdb_local_sequence_ID()
 
 void exmdb_local_init(const char *org_name, const char *default_charset)
 {
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
-	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
+	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 }
 
 int exmdb_local_run() try
@@ -298,7 +298,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	MESSAGE_CONTEXT *pcontext1;
 
 	if (!exmdb_local_get_user_info(address, home_dir, std::size(home_dir),
-	    lang, std::size(lang), tmzone, arsizeof(tmzone))) {
+	    lang, std::size(lang), tmzone, std::size(tmzone))) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
@@ -528,8 +528,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		}
 
 		auto str_value = pfile->get_value("SEPARATOR_FOR_BOUNCE");
-		gx_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
-
+		gx_strlcpy(separator, str_value == nullptr ? " " : str_value, std::size(separator));
 		sprintf(cache_path, "%s/cache", get_queue_path());
 
 		str_value = pfile->get_value("X500_ORG_NAME");

@@ -280,7 +280,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
 	response_len = strlen(response_buff);
 	response_len += gx_snprintf(response_buff + response_len,
-	                GX_ARRAY_SIZE(response_buff) - response_len,
+	                std::size(response_buff) - response_len,
 					"Date: %s\r\n"
 					"Content-Length: %u\r\n"
 					"Accept-Ranges: bytes\r\n"
@@ -295,7 +295,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 				"Content-Type: %s\r\n", pcontent_type);
 	if (emit_206) {
 		response_len += gx_snprintf(response_buff + response_len,
-		                GX_ARRAY_SIZE(response_buff) - response_len,
+		                std::size(response_buff) - response_len,
 					"Content-Range: bytes %u-%u/%llu\r\n\r\n",
 					pcontext->offset, pcontext->until - 1,
 		                static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
@@ -353,7 +353,7 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	content_length =  mod_cache_calculate_content_length(pcontext);	
-	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
+	response_len = gx_snprintf(response_buff, std::size(response_buff),
 					"HTTP/1.1 206 Partial Content\r\n"
 					"Date: %s\r\n"
 					"Content-Type: multipart/byteranges;"
@@ -516,7 +516,7 @@ int mod_cache_take_request(http_context *phttp)
 	          });
 	if (it == g_directory_list.cend())
 		return 0;
-	snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s%s", it->dir.c_str(),
+	snprintf(tmp_path, std::size(tmp_path), "%s%s", it->dir.c_str(),
 	         request_uri + it->path.size());
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0)

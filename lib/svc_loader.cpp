@@ -308,7 +308,7 @@ void *service_query(const char *service_name, const char *module, const std::typ
 	if (node == g_list_service.end()) {
 		static constexpr const char *excl[] =
 			{"ndr_stack_alloc"};
-		if (std::none_of(excl, &excl[GX_ARRAY_SIZE(excl)],
+		if (std::none_of(excl, &excl[std::size(excl)],
 		    [&](const char *s) { return strcmp(service_name, s) == 0; }))
 			mlog(LV_ERR, "service: dlname \"%s\" not found", service_name);
 		return NULL;

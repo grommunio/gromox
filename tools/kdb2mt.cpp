@@ -515,11 +515,11 @@ static tpropval_array_ptr hid_to_propval_a(driver &drv, uint32_t hid)
 	if (props == nullptr)
 		throw std::bad_alloc();
 	char qstr[256];
-	snprintf(qstr, arsizeof(qstr),
+	snprintf(qstr, std::size(qstr),
 		"SELECT tag, type, val_ulong, val_string, val_binary, val_double, val_longint, val_hi, val_lo "
 		"FROM properties WHERE hierarchyid=%u", hid);
 	hid_to_tpropval_1(drv, qstr, props.get());
-	snprintf(qstr, arsizeof(qstr),
+	snprintf(qstr, std::size(qstr),
 		"SELECT tag, type, val_ulong, val_string, val_binary, val_double, val_longint, val_hi, val_lo "
 		"FROM mvproperties WHERE hierarchyid=%u ORDER BY tag, type, orderid", hid);
 	hid_to_tpropval_mv(drv, qstr, props.get());
@@ -536,7 +536,9 @@ static const char *kp_item_type_to_str(enum mapi_object_type t)
 	case MAPI_MAILUSER: return "mailuser";
 	case MAPI_ATTACH: return "attach";
 	case MAPI_DISTLIST: return "distlist";
-	default: snprintf(buf, arsizeof(buf), "other-%u", static_cast<unsigned int>(t)); return buf;
+	default:
+		snprintf(buf, std::size(buf), "other-%u", static_cast<unsigned int>(t));
+		return buf;
 	}
 }
 
@@ -748,7 +750,7 @@ uint32_t driver::hid_from_eid(const BINARY &eid)
 	if (eid.cb == 0)
 		return 0;
 	char qstr[184];
-	snprintf(qstr, arsizeof(qstr), "SELECT hierarchyid FROM indexedproperties "
+	snprintf(qstr, std::size(qstr), "SELECT hierarchyid FROM indexedproperties "
 		"WHERE tag=0x0FFF AND val_binary=0x%.96s LIMIT 1", bin2hex(eid.pv, eid.cb).c_str());
 	auto res = query(qstr);
 	auto row = res.fetch_row();
@@ -843,7 +845,8 @@ void driver::fmap_setup_splice()
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JUNK, "FID_JUNK"});
 
 	char qstr[71];
-	snprintf(qstr, arsizeof(qstr), "SELECT objid, messageclass FROM receivefolder WHERE storeid=%u", m_store_hid);
+	snprintf(qstr, std::size(qstr), "SELECT objid, messageclass "
+	         "FROM receivefolder WHERE storeid=%u", m_store_hid);
 	auto res = query(qstr);
 	DB_ROW row;
 	unsigned int goodmatch = 0;
@@ -887,7 +890,7 @@ void driver::fmap_setup_standard(const char *title)
 	char timebuf[64];
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
-	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
+	strftime(timebuf, std::size(timebuf), " @%FT%T", tm);
 	m_folder_map.clear();
 	auto root = get_root_folder();
 	m_folder_map.emplace(root->m_hid, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
@@ -903,7 +906,8 @@ std::unique_ptr<kdb_item> driver::get_root_folder()
 {
 	if (m_root_hid == 0) {
 		char qstr[80];
-		snprintf(qstr, arsizeof(qstr), "SELECT id FROM hierarchy WHERE parent=%u AND type=3 LIMIT 1", m_store_hid);
+		snprintf(qstr, std::size(qstr), "SELECT id FROM hierarchy "
+		         "WHERE parent=%u AND type=3 LIMIT 1", m_store_hid);
 		auto res = query(qstr);
 		auto row = res.fetch_row();
 		if (row == nullptr || row[0] == nullptr)
@@ -1230,7 +1234,7 @@ static std::string slurp_file_gz(const char *file)
 	auto cl_0 = make_scope_exit([&]() { gzclose(fp); });
 	char buf[4096];
 	while (!gzeof(fp)) {
-		auto rd = gzread(fp, buf, arsizeof(buf));
+		auto rd = gzread(fp, buf, std::size(buf));
 		/* save errno because gzread might just fail save-restoring it */
 		int saved_errno = errno, zerror;
 		const char *zerrstr = gzerror(fp, &zerror);
@@ -1252,7 +1256,7 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
     TPROPVAL_ARRAY *props, bool is_optional)
 {
 	char qstr[96];
-	snprintf(qstr, arsizeof(qstr), drv.schema_vers >= 71 ?
+	snprintf(qstr, std::size(qstr), drv.schema_vers >= 71 ?
 	         "SELECT instanceid, filename FROM singleinstances WHERE hierarchyid=%u LIMIT 1" :
 	         "SELECT instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", hid);
 	auto res = drv.query(qstr);

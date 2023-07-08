@@ -173,7 +173,7 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			if (pitem[i].exectime == 0)
 				continue;
 			char temp_line[2048];
-			auto temp_len = gx_snprintf(temp_line, arsizeof(temp_line), "%d\t%ld\t",
+			auto temp_len = gx_snprintf(temp_line, std::size(temp_line), "%d\t%ld\t",
 				   pitem[i].tid, pitem[i].exectime);
 			encode_line(pitem[i].command, temp_line + temp_len);
 			temp_len = strlen(temp_line);

@@ -537,7 +537,7 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	outbuf = std::string();
 	ssize_t ret;
 	char fbuf[4096];
-	while ((ret = read(fout, fbuf, GX_ARRAY_SIZE(fbuf))) > 0)
+	while ((ret = read(fout, fbuf, std::size(fbuf))) > 0)
 		outbuf.append(fbuf, ret);
 	return WIFEXITED(status) ? outbuf.size() : -1;
 } catch (...) {

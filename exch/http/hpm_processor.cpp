@@ -119,7 +119,7 @@ static void hpm_processor_set_ep_info(unsigned int context_id,
     const char *host, int port)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	gx_strlcpy(phttp->host, host, GX_ARRAY_SIZE(phttp->host));
+	gx_strlcpy(phttp->host, host, std::size(phttp->host));
 	phttp->port = port;
 }
 

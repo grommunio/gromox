@@ -68,8 +68,8 @@ static BOOL mod_rewrite_rreplace(char *buf,
 		gx_strlcpy(buf, rp + 2, size);
 		return TRUE;
 	}
-	gx_strlcpy(original_buf, buf, GX_ARRAY_SIZE(original_buf));
-	gx_strlcpy(original_rp, rp, GX_ARRAY_SIZE(original_rp));
+	gx_strlcpy(original_buf, buf, std::size(original_buf));
+	gx_strlcpy(original_rp, rp, std::size(original_rp));
 	for (i = 0; i < 10; ++i)
 		rp_offsets[i] = -1;
 	for (pos=original_rp; '\0'!=*pos; pos++) {
@@ -158,7 +158,7 @@ int mod_rewrite_run(const char *sdlist) try
 		mlog(LV_ERR, "mod_rewrite: fopen_sd rewrite.txt: %s", strerror(errno));
 		return -(errno = se);
 	}
-	while (fgets(line, GX_ARRAY_SIZE(line), file_ptr.get())) {
+	while (fgets(line, std::size(line), file_ptr.get())) {
 		line_no ++;
 		if (*line == '#' || newline_size(line, 2) > 0)
 			/* skip empty line or comments */

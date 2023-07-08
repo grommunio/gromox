@@ -109,7 +109,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		char buf[80]{};
 		auto tm = localtime(&ut);
 		if (tm != nullptr)
-			strftime(buf, arsizeof(buf), "~%F %T", tm);
+			strftime(buf, std::size(buf), "~%F %T", tm);
 		tlog("%s (raw %f), ", buf, *static_cast<double *>(tp.pvalue));
 		break;
 	}
@@ -143,13 +143,13 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		char buf[80]{};
 		auto tm = localtime(&ut);
 		if (tm != nullptr)
-			strftime(buf, arsizeof(buf), "%FT%T", tm);
+			strftime(buf, std::size(buf), "%FT%T", tm);
 		tlog("%s (raw %llxh)", buf, v);
 		break;
 	}
 	case PT_CLSID: {
 		char guidstr[GUIDSTR_SIZE];
-		static_cast<GUID *>(tp.pvalue)->to_str(guidstr, arsizeof(guidstr));
+		static_cast<GUID *>(tp.pvalue)->to_str(guidstr, std::size(guidstr));
 		tlog("{%s}", guidstr);
 		break;
 	}
@@ -232,7 +232,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 			char buf[80]{};
 			auto tm = localtime(&ut);
 			if (tm != nullptr)
-				strftime(buf, arsizeof(buf), "~%F %T", tm);
+				strftime(buf, std::size(buf), "~%F %T", tm);
 			tlog("%s (raw %f), ", buf, xa.mval[i]);
 		}
 		tlog("}");
@@ -273,7 +273,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 			char buf[80]{};
 			auto tm = localtime(&ut);
 			if (tm != nullptr)
-				strftime(buf, arsizeof(buf), "%FT%T", tm);
+				strftime(buf, std::size(buf), "%FT%T", tm);
 			tlog("%s (raw %llxh), ", buf, static_cast<unsigned long long>(sl.pll[i]));
 		}
 		tlog("}");
@@ -310,7 +310,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("={");
 		for (size_t i = 0; i < ga.count; ++i) {
 			char guidstr[GUIDSTR_SIZE];
-			ga.pguid[i].to_str(guidstr, arsizeof(guidstr));
+			ga.pguid[i].to_str(guidstr, std::size(guidstr));
 			tlog("{%s},", guidstr);
 		}
 		tlog("}");
@@ -537,7 +537,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 	char tmp_buff[22];
 	BINARY bxid;
 	EXT_PUSH ep;
-	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
+	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
 	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
@@ -688,7 +688,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	char tmp_buff[22];
 	BINARY bxid;
 	EXT_PUSH ep;
-	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
+	if (!ep.init(tmp_buff, std::size(tmp_buff), 0) ||
 	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;

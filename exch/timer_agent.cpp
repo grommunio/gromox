@@ -212,7 +212,7 @@ static int add_timer(const char *command, int interval)
 	hold.splice(hold.end(), g_back_list, g_back_list.begin());
 	bk_hold.unlock();
 	auto pback = &hold.front();
-	len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), "ADD %d %s\r\n",
+	len = gx_snprintf(temp_buff, std::size(temp_buff), "ADD %d %s\r\n",
 			interval, command);
 	if (len != write(pback->sockd, temp_buff, len)) {
 		close(pback->sockd);
@@ -250,7 +250,7 @@ static BOOL cancel_timer(int timer_id)
 	hold.splice(hold.end(), g_back_list, g_back_list.begin());
 	bk_hold.unlock();
 	auto pback = &hold.front();
-	len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), "CANCEL %d\r\n", timer_id);
+	len = gx_snprintf(temp_buff, std::size(temp_buff), "CANCEL %d\r\n", timer_id);
 	if (len != write(pback->sockd, temp_buff, len)) {
 		close(pback->sockd);
 		pback->sockd = -1;

@@ -380,7 +380,7 @@ static int mod_fastcgi_connect_backend(const char *path)
 	/* fill socket address structure with server's address */
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
-	gx_strlcpy(un.sun_path, path, GX_ARRAY_SIZE(un.sun_path));
+	gx_strlcpy(un.sun_path, path, std::size(un.sun_path));
 	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr *)&un, len) < 0) {
 		auto se = errno;
@@ -449,7 +449,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 	ptoken = strrchr(request_uri, '/');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
-		gx_strlcpy(file_name, ptoken + 1, GX_ARRAY_SIZE(file_name));
+		gx_strlcpy(file_name, &ptoken[1], std::size(file_name));
 	} else {
 		phttp->log(LV_DEBUG, "request uri format "
 					"error, missing slash for mod_fastcgi");
@@ -599,19 +599,19 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	auto pfnode = fctx.pfnode;
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "DOCUMENT_ROOT", pfnode->dir.c_str()));
 	if (NULL != path_info) {
-		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s/%s", pfnode->dir.c_str(), path_info);
+		snprintf(tmp_buff, std::size(tmp_buff), "%s/%s", pfnode->dir.c_str(), path_info);
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", tmp_buff));
 	}
 	tmp_len = pfnode->path.size();
 	if (fctx.b_index) {
-		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s", uri_path, pfnode->index.c_str());
+		snprintf(tmp_buff, std::size(tmp_buff), "%s%s", uri_path, pfnode->index.c_str());
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", tmp_buff));
-		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s%s", pfnode->dir.c_str(),
+		snprintf(tmp_buff, std::size(tmp_buff), "%s%s%s", pfnode->dir.c_str(),
 		         uri_path + tmp_len, pfnode->index.c_str());
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	} else {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", uri_path));
-		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s", pfnode->dir.c_str(), uri_path + tmp_len);
+		snprintf(tmp_buff, std::size(tmp_buff), "%s%s", pfnode->dir.c_str(), uri_path + tmp_len);
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_FILENAME", tmp_buff));
 	}
 	tmp_len = phttp->request.f_accept.size();
@@ -1162,20 +1162,20 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				TRUE : false;
 			rfc1123_dstring(dstring, std::size(dstring));
 			if (strcasecmp(phttp->request.method, "HEAD") == 0)
-				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 								"HTTP/1.1 %s\r\n"
 								"Date: %s\r\n"
 								"%s\r\n", status_line,
 								dstring, response_buff);
 			else if (fctx.b_chunked)
-				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 				          "HTTP/1.1 %s\r\n"
 				          "Date: %s\r\n"
 				          "Transfer-Encoding: chunked\r\n"
 				          "%s\r\n", status_line,
 				          dstring, response_buff);
 			else
-				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 				          "HTTP/1.1 %s\r\n"
 				          "Date: %s\r\n"
 				          "%s\r\n", status_line,

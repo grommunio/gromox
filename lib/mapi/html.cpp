@@ -405,7 +405,7 @@ static ec_error_t html_write_header(RTF_WRITER*pwriter)
 	static constexpr char head[] = "{\\rtf1\\ansi\\fbidis\\ansicpg1252\\deff0{\\fonttbl";
 	QRF(pwriter->ext_push.p_bytes(head, strlen(head)));
 	for (const auto &font : pwriter->fonts_ordered) {
-		length = snprintf(tmp_string, GX_ARRAY_SIZE(tmp_string),
+		length = snprintf(tmp_string, std::size(tmp_string),
 		         "{\\f%zu\\fswiss\\fcharset%d ", i++,
 		         strcasecmp(font.c_str(), "symbol") == 0 ? 2 : 0);
 		QRF(pwriter->ext_push.p_bytes(tmp_string, length));
@@ -579,7 +579,7 @@ static int html_convert_color(const char *value)
 		color |= tmp_val;
 		return color;
 	}
-	gx_strlcpy(color_string, value, GX_ARRAY_SIZE(color_string));
+	gx_strlcpy(color_string, value, std::size(color_string));
 	HX_strlower(color_string);
 	auto it = std::lower_bound(std::begin(color_map), std::end(color_map), color_string,
 	          [](const std::pair<const char *, rgb_t> &pair, const char *k) {
@@ -671,7 +671,7 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 static ec_error_t html_write_a_begin(RTF_WRITER *pwriter, const char *link)
 {
 	char tmp_buff[1024];
-	int length = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+	auto length = gx_snprintf(tmp_buff, std::size(tmp_buff),
 			"{\\field{\\*\\fldinst{HYPERLINK %s}}"
 			"{\\fldrslt\\cf0 ", link);
 	QRF(pwriter->ext_push.p_bytes(tmp_buff, length));

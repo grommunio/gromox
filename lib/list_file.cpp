@@ -145,7 +145,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 				ptr ++;
 				auto temp_ptr = strchr(ptr, '%');
 				if (NULL == temp_ptr) {
-					gx_strlcpy(temp_buf, ptr, GX_ARRAY_SIZE(temp_buf));
+					gx_strlcpy(temp_buf, ptr, std::size(temp_buf));
 					/* make the while loop exit */
 					ptr = (char*)format + strlen(format) - 1;
 				} else {

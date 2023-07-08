@@ -331,7 +331,7 @@ static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 		mlog(LV_ERR, "E-2114: iconv_open %s: %s", cs, strerror(errno));
 		return false;
 	}
-	gx_strlcpy(preader->current_encoding, fromcode, GX_ARRAY_SIZE(preader->current_encoding));
+	gx_strlcpy(preader->current_encoding, fromcode, std::size(preader->current_encoding));
 	return true;
 }
 
@@ -692,11 +692,11 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 		if (NULL == pentry) {
 			encoding = preader->default_encoding;
 			mlog(LV_DEBUG, "rtf: invalid font number %d", param);
-			tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+			tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 				TAG_FONT_BEGIN, DEFAULT_FONT_STR);
 		} else {
 			encoding = pentry->encoding;
-			tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+			tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 				TAG_FONT_BEGIN, pentry->name);
 		}
 		if (!preader->have_fromhtml) {
@@ -706,12 +706,12 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 			return false;
 		return true;
 	case ATTR_FOREGROUND:
-		tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+		tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 			TAG_FOREGROUND_BEGIN, param);
 		QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
 		return true;
 	case ATTR_BACKGROUND: 
-		tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+		tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 			TAG_BACKGROUND_BEGIN, param);
 		QRF(preader->ext_push.p_bytes(tmp_buff, tmp_len));
 		return true;
@@ -1268,7 +1268,7 @@ static bool rtf_optimize_element(DOUBLE_LIST *pcollection_list,
 	const char *text;
 	static constexpr char opt_tags[][4] = {"\\fs", "\\f"};
 	
-	for (size_t i = 0; i < GX_ARRAY_SIZE(opt_tags); ++i) {
+	for (size_t i = 0; i < std::size(opt_tags); ++i) {
 		auto len = strlen(opt_tags[i]);
 		if (0 == strncmp(opt_tags[i], str_word, len) &&
 		    (HX_isdigit(str_word[len]) || str_word[len] == '-')) {
@@ -1609,7 +1609,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 		}
-		gx_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
+		gx_strlcpy(tmp_entry.name, name, std::size(tmp_entry.name));
 		try {
 			if (preader->pfont_hash.size() < MAX_FONTS)
 				preader->pfont_hash.emplace(num, std::move(tmp_entry));
@@ -1886,7 +1886,8 @@ static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 					if (!rtf_attrstack_push_express(preader,
 					    ATTR_FONTFACE, -7))
 						return CMD_RESULT_ERROR;
-					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), TAG_UNISYMBOL_PRINT, ch);
+					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+					          TAG_UNISYMBOL_PRINT, ch);
 					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
 						return CMD_RESULT_ERROR;
 				}
@@ -1914,7 +1915,7 @@ static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 				    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
 					pword4 = pword4->get_sibling();
 				if (NULL != pword4 && NULL != pword4->pdata) {
-					tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 						  TAG_HYPERLINK_BEGIN, static_cast<const char *>(pword4->pdata));
 					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
 						return CMD_RESULT_ERROR;
@@ -3061,7 +3062,8 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	if (!reader.have_fromhtml) {
 		QRF(reader.ext_push.p_bytes(TAG_DOCUMENT_BEGIN, sizeof(TAG_DOCUMENT_BEGIN) - 1));
 		QRF(reader.ext_push.p_bytes(TAG_HEADER_BEGIN, sizeof(TAG_HEADER_BEGIN) - 1));
-		tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), TAG_HTML_CHARSET, charset);
+		tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
+		          TAG_HTML_CHARSET, charset);
 		QRF(reader.ext_push.p_bytes(tmp_buff, tmp_len));
 	}
 	auto ret = rtf_convert_group_node(&reader, proot);

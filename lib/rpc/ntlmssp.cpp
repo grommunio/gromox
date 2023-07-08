@@ -383,7 +383,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'U': {
 			s = va_arg(ap, char*);
 			head_size += 8;
-			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
+			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0) {
 				va_end(ap);
 				return false;
@@ -404,7 +404,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			j = va_arg(ap, int);
 			intargs[i] = j;
 			s = va_arg(ap, char*);
-			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
+			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0) {
 				va_end(ap);
 				return false;
@@ -703,9 +703,9 @@ NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name,
 	auto pntlmssp = new NTLMSSP_CTX;
 	pntlmssp->allow_lm_key = allow_lm_key;
 	pntlmssp->neg_flags |= neg_flags;
-	gx_strlcpy(pntlmssp->netbios_name, netbios_name, GX_ARRAY_SIZE(pntlmssp->netbios_name));
-	gx_strlcpy(pntlmssp->dns_name, dns_name, GX_ARRAY_SIZE(pntlmssp->dns_name));
-	gx_strlcpy(pntlmssp->dns_domain, dns_domain, GX_ARRAY_SIZE(pntlmssp->dns_domain));
+	gx_strlcpy(pntlmssp->netbios_name, netbios_name, std::size(pntlmssp->netbios_name));
+	gx_strlcpy(pntlmssp->dns_name, dns_name, std::size(pntlmssp->dns_name));
+	gx_strlcpy(pntlmssp->dns_domain, dns_domain, std::size(pntlmssp->dns_domain));
 	pntlmssp->get_password = get_password;
 	return pntlmssp;
 } catch (const std::bad_alloc &) {
@@ -1034,7 +1034,7 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 
 	client_key.pb = &pntv2_response->pb[16];
 	client_key.cb = pntv2_response->cb - 16;
-	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
+	gx_strlcpy(tmp_user, user, std::size(tmp_user));
 	HX_strupper(tmp_user);
 	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
 	auto domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
@@ -1092,7 +1092,7 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	
 	client_key.pb = &pntv2_response->pb[16];
 	client_key.cb = pntv2_response->cb - 16;
-	gx_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
+	gx_strlcpy(tmp_user, user, std::size(tmp_user));
 	HX_strupper(tmp_user);
 	auto user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, std::size(user_in));
 	auto domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, std::size(domain_in));
@@ -1138,7 +1138,7 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	plm_response = &pntlmssp->lm_resp;
 	pnt_response = &pntlmssp->nt_resp;
 	
-	gx_strlcpy(upper_domain, pntlmssp->domain, GX_ARRAY_SIZE(upper_domain));
+	gx_strlcpy(upper_domain, pntlmssp->domain, std::size(upper_domain));
 	HX_strupper(upper_domain);
 	uint8_t nt_p16[16]{}, p16[16]{};
 	if (!ntlmssp_md4hash(plain_passwd, nt_p16) ||
@@ -1467,10 +1467,10 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	auth_state.lm_session_key.cb = 0;
 	
 	if (NULL == strchr(pntlmssp->user, '@')) {
-			snprintf(username, GX_ARRAY_SIZE(username), "%s@%s",
+			snprintf(username, std::size(username), "%s@%s",
 			         pntlmssp->user, pntlmssp->domain);
 		} else {
-			gx_strlcpy(username, pntlmssp->user, GX_ARRAY_SIZE(username));
+			gx_strlcpy(username, pntlmssp->user, std::size(username));
 		}
 		if (!pntlmssp->get_password(username, plain_passwd))
 			return false;
@@ -1742,10 +1742,10 @@ static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)
 bool ntlmssp_session_info(NTLMSSP_CTX *pntlmssp, NTLMSSP_SESSION_INFO *psession)
 {
 	if (NULL == strchr(pntlmssp->user, '@')) {
-		snprintf(psession->username, GX_ARRAY_SIZE(psession->username),
+		snprintf(psession->username, std::size(psession->username),
 		         "%s@%s", pntlmssp->user, pntlmssp->domain);
 	} else {
-		gx_strlcpy(psession->username, pntlmssp->user, GX_ARRAY_SIZE(psession->username));
+		gx_strlcpy(psession->username, pntlmssp->user, std::size(psession->username));
 	}
 	psession->session_key.pb = psession->session_key_buff;
 	return ntlmssp_session_key(pntlmssp, &psession->session_key);

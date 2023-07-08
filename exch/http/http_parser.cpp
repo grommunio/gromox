@@ -161,12 +161,12 @@ void http_parser_init(size_t context_num, time_duration timeout,
 	
 	if (!support_tls)
 		return;
-	gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
 	if (cb_passwd != nullptr)
-		gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
 	else
 		g_certificate_passwd[0] = '\0';
-	gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
 }
 
 #ifdef OLD_SSL
@@ -300,7 +300,7 @@ static VCONN_REF http_parser_get_vconnection(const char *host,
 	char tmp_buff[384];
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	
-	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s:%d:%s", conn_cookie, port, host);
+	snprintf(tmp_buff, std::size(tmp_buff), "%s:%d:%s", conn_cookie, port, host);
 	HX_strlower(tmp_buff);
 	std::unique_lock vhold(g_vconnection_lock);
 	auto it = g_vconnection_hash.find(tmp_buff);
@@ -418,7 +418,7 @@ static int http_done(http_context *ctx, unsigned int code, const char *msg = nul
 
 	char dstring[128], response_buff[1024];
 	rfc1123_dstring(dstring, std::size(dstring));
-	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
+	auto response_len = gx_snprintf(response_buff, std::size(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
 		"Content-Length: %zu\r\n"
@@ -638,7 +638,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			char dstring[128], response_buff[1024];
 			rfc1123_dstring(dstring, std::size(dstring));
 			auto response_len = gx_snprintf(
-				response_buff, GX_ARRAY_SIZE(response_buff),
+				response_buff, std::size(response_buff),
 				"HTTP/1.1 401 Unauthorized\r\n"
 				"Date: %s\r\n"
 				"Content-Length: 0\r\n"
@@ -673,7 +673,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	char dstring[128], response_buff[1024];
 	rfc1123_dstring(dstring, std::size(dstring));
 	auto response_len = gx_snprintf(
-		response_buff, GX_ARRAY_SIZE(response_buff),
+		response_buff, std::size(response_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
 		"Date: %s\r\n"
 		"Keep-Alive: timeout=%ld\r\n"
@@ -745,14 +745,14 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		return http_done(pcontext, 400);
 	}
 	ptoken1++;
-	gx_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
+	gx_strlcpy(pcontext->host, ptoken, std::size(pcontext->host));
 	pcontext->port = strtol(ptoken1, nullptr, 0);
 
 	if (!pcontext->b_authed) {
 		char dstring[128], response_buff[1024];
 		rfc1123_dstring(dstring, std::size(dstring));
 		auto response_len = gx_snprintf(
-			response_buff, GX_ARRAY_SIZE(response_buff),
+			response_buff, std::size(response_buff),
 			"HTTP/1.1 401 Unauthorized\r\n"
 			"Date: %s\r\n"
 			"Content-Length: 0\r\n"
@@ -1352,7 +1352,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	}
 	/* ECHO request */
 	char response_buff[1024];
-	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
+	auto response_len = gx_snprintf(response_buff, std::size(response_buff),
 		"HTTP/1.1 200 Success\r\n"
 		"Connection: Keep-Alive\r\n"
 		"Content-Length: 20\r\n"
@@ -1526,7 +1526,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			char dstring[128], response_buff[1024];
 			rfc1123_dstring(dstring, std::size(dstring));
 			auto response_len = gx_snprintf(
-				response_buff, GX_ARRAY_SIZE(response_buff),
+				response_buff, std::size(response_buff),
 				"HTTP/1.1 200 Success\r\n"
 				"Date: %s\r\n"
 				"Cache-Control: private\r\n"

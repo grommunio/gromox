@@ -177,7 +177,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	const char *plocal;
 	char tmp_essdn[1024];
 	
-	auto tmp_len = gx_snprintf(tmp_essdn, GX_ARRAY_SIZE(tmp_essdn),
+	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 	               g_emsmdb_org_name);
@@ -204,7 +204,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	char hex_string[16];
 	char hex_string2[16];
 	
-	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (pdomain == nullptr)
 		return FALSE;
@@ -311,7 +311,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
+	if (!common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
@@ -335,7 +335,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_public_to_essdn(domainname, x500dn, GX_ARRAY_SIZE(x500dn)))
+	if (!common_util_public_to_essdn(domainname, x500dn, std::size(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
@@ -1623,7 +1623,7 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 			}
 			char username[UADDR_SIZE];
 			if (!common_util_entryid_to_username(entryid,
-			    username, GX_ARRAY_SIZE(username))) {
+			    username, std::size(username))) {
 				mlog2(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
 				        LLU{rop_util_get_gc_value(message_id)});
 				return ecInvalidRecips;
@@ -1643,7 +1643,7 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 				goto CONVERT_ENTRYID;
 			char username[UADDR_SIZE];
 			if (!common_util_essdn_to_username(emaddr,
-			    username, GX_ARRAY_SIZE(username)))
+			    username, std::size(username)))
 				goto CONVERT_ENTRYID;
 			rcpt_list.emplace_back(username);
 		} else {
@@ -1736,9 +1736,9 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
-	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
+	gx_strlcpy(g_smtp_ip, smtp_ip, std::size(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
+	gx_strlcpy(g_submit_command, submit_command, std::size(g_submit_command));
 }
 
 int common_util_run()

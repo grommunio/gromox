@@ -47,7 +47,7 @@ BOOL common_util_build_environment(const char *maildir) try
 		return TRUE;
 	}
 	auto pctx = std::make_unique<cmd_context>();
-	gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
+	gx_strlcpy(pctx->maildir, maildir, std::size(pctx->maildir));
 	g_ctx_key = std::move(pctx);
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -97,7 +97,7 @@ void common_util_set_maildir(const char *maildir)
 	if (pctx == nullptr)
 		mlog(LV_ERR, "E-1905: T%lu: g_ctx_key is unset, cannot set maildir", gx_gettid());
 	else
-		gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
+		gx_strlcpy(pctx->maildir, maildir, std::size(pctx->maildir));
 }
 
 const char* common_util_get_maildir()

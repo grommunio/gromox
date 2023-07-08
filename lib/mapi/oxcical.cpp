@@ -1699,7 +1699,7 @@ static BOOL oxcical_parse_atx_value(const ical_line &piline,
 		attachment_content_free(pattachment);
 		return FALSE;
 	}
-	tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+	tmp_bin.cb = gx_snprintf(tmp_buff, std::size(tmp_buff),
 		"[InternetShortcut]\r\nURL=%s", pvalue);
 	tmp_bin.pc = tmp_buff;
 	if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)

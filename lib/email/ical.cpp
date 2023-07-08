@@ -703,7 +703,7 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	char tmp_buff[8];
 	char str_zone[16];
 	
-	gx_strlcpy(str_zone, str_offset, GX_ARRAY_SIZE(str_zone));
+	gx_strlcpy(str_zone, str_offset, std::size(str_zone));
 	HX_strrtrim(str_zone);
 	HX_strltrim(str_zone);
 	if ('-' == str_zone[0]) {
@@ -742,7 +742,7 @@ bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday)
 {
 	char tmp_buff[128];
 	
-	gx_strlcpy(tmp_buff, str_date, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	if (sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) < 3) {
@@ -757,7 +757,7 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 	char tsep;
 	char tmp_buff[128];
 	
-	gx_strlcpy(tmp_buff, str_datetime, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, str_datetime, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
@@ -1170,7 +1170,7 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	char tmp_num[3];
 	char tmp_buff[16];
 	
-	gx_strlcpy(tmp_buff, str_byday, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, str_byday, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	if ('-' == tmp_buff[0]) {
@@ -1222,7 +1222,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 	char *ptoken1;
 	char tmp_buff[128];
 	
-	gx_strlcpy(tmp_buff, str_duration, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, str_duration, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	ptoken = tmp_buff;

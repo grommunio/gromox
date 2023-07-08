@@ -100,7 +100,7 @@ static void *mdpls_thrwork(void *param)
 void exmdb_listener_init(const char *ip, uint16_t port)
 {
 	if (ip[0] != '\0')
-		gx_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
+		gx_strlcpy(g_listen_ip, ip, std::size(g_listen_ip));
 	g_listen_port = port;
 	g_listen_sockd = -1;
 	g_notify_stop = true;

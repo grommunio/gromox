@@ -119,7 +119,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 	}
 
 	fclose(fin);
-	gx_strlcpy(cfg->file_name, filename, GX_ARRAY_SIZE(cfg->file_name));
+	gx_strlcpy(cfg->file_name, filename, std::size(cfg->file_name));
 	if (key_desc != nullptr)
 		for (; key_desc->key != nullptr; ++key_desc)
 			config_file_apply_1(*cfg, *key_desc);
@@ -258,7 +258,7 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
 		return;
 	}
 #endif
-	gx_strlcpy(temp_buf, line, GX_ARRAY_SIZE(temp_buf));
+	gx_strlcpy(temp_buf, line, std::size(temp_buf));
 	cr_ptr = strchr(temp_buf, '\r');
 	if (NULL != cr_ptr) {
 		*cr_ptr = '\0';
@@ -315,7 +315,7 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 	for (i=0; i<cfg_file->num_entries; i++) {
 		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
 			if (cfg_file->config_table[i].value != value) {
-				gx_strlcpy(cfg_file->config_table[i].value, value, GX_ARRAY_SIZE(cfg_file->config_table[i].value));
+				gx_strlcpy(cfg_file->config_table[i].value, value, std::size(cfg_file->config_table[i].value));
 				cfg_file->config_table[i].is_touched = TRUE;
 			}
 			return TRUE;
@@ -328,9 +328,9 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 	index = cfg_file->num_entries;
 	cfg_file->num_entries ++;
 	cfg_file->config_table[index].is_touched = TRUE;
-	gx_strlcpy(cfg_file->config_table[index].keyname, key, GX_ARRAY_SIZE(cfg_file->config_table[index].keyname));
+	gx_strlcpy(cfg_file->config_table[index].keyname, key, std::size(cfg_file->config_table[index].keyname));
 	HX_strlower(cfg_file->config_table[index].keyname);
-	gx_strlcpy(cfg_file->config_table[index].value, value, GX_ARRAY_SIZE(cfg_file->config_table[index].value));
+	gx_strlcpy(cfg_file->config_table[index].value, value, std::size(cfg_file->config_table[index].value));
 	return TRUE;
 }
 

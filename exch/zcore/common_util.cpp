@@ -328,7 +328,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	char hex_string[16];
 	char hex_string2[16];
 	
-	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (pdomain == nullptr)
 		return FALSE;
@@ -394,17 +394,17 @@ void common_util_init(const char *org_name, const char *default_charset, int mim
     unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *freebusy_path, const char *submit_command)
 {
-	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
-	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
+	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	g_mime_num = mime_num;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
-	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
+	gx_strlcpy(g_smtp_ip, smtp_ip, std::size(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	gx_strlcpy(g_freebusy_path, freebusy_path, GX_ARRAY_SIZE(g_freebusy_path));
-	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
+	gx_strlcpy(g_freebusy_path, freebusy_path, std::size(g_freebusy_path));
+	gx_strlcpy(g_submit_command, submit_command, std::size(g_submit_command));
 }
 
 int common_util_run(const char *data_path)
@@ -757,7 +757,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
+	if (!common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
@@ -808,7 +808,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	auto dtypx = DT_MAILUSER;
 	
 	if (system_services_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
-		gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+		gx_strlcpy(tmp_name, username, std::size(tmp_name));
 		pdomain = strchr(tmp_name, '@');
 		if (pdomain == nullptr)
 			return FALSE;
@@ -1558,7 +1558,7 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
 		if (!common_util_username_to_essdn(pstore->get_account(),
-		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
+		    tmp_buff, std::size(tmp_buff)))
 			return NULL;	
 	} else {
 		store_entryid.wrapped_provider_uid = g_muidStorePublic;

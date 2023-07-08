@@ -179,7 +179,7 @@ int main(int argc, const char **argv) try
 			mlog(LV_NOTICE, "System hostname \"%s\" has no dot, which may point to a misconfiguration", str_val);
 	}
 	mlog(LV_INFO, "system: host ID is \"%s\"", str_val);
-	gx_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
+	gx_strlcpy(host_name, str_val, std::size(host_name));
 	dns_name = str_val;
 	
 	str_val = g_config_file->get_value("default_domain");

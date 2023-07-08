@@ -145,7 +145,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	const char *plocal;
 	char tmp_essdn[1024];
 	
-	auto tmp_len = gx_snprintf(tmp_essdn, GX_ARRAY_SIZE(tmp_essdn),
+	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 	               g_exmdb_org_name);
@@ -172,7 +172,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	char hex_string[16];
 	char hex_string2[16];
 	
-	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
+	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (pdomain == nullptr)
 		return FALSE;
@@ -4008,7 +4008,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
+	if (!common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
@@ -4546,7 +4546,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		return TRUE;
 	}
 	if (!common_util_essdn_to_username(ab_entryid.px500dn,
-	    tmp_name, GX_ARRAY_SIZE(tmp_name))) {
+	    tmp_name, std::size(tmp_name))) {
 		*pb_owner = false;
 		return TRUE;
 	}

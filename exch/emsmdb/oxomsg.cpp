@@ -318,13 +318,13 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		        static_cast<unsigned long long>(pmessage->get_id()));
 		return ecAccessDenied;
 	}
-	if (!oxomsg_extract_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
+	if (!oxomsg_extract_delegate(pmessage, username, std::size(username)))
 		return ecError;
 	auto account = plogon->get_account();
 	repr_grant repr_grant;
 	if (*username == '\0') {
 		/* "No impersonation requested" is modeled as {impersonate yourself}. */
-		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
+		gx_strlcpy(username, account, std::size(username));
 		repr_grant = repr_grant::send_as;
 	} else {
 		repr_grant = oxomsg_get_perm(account, username);
@@ -632,7 +632,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	auto account = plogon->get_account();
 	repr_grant repr_grant;
 	if (*username == '\0') {
-		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
+		gx_strlcpy(username, account, std::size(username));
 		repr_grant = repr_grant::send_as;
 	} else {
 		repr_grant = oxomsg_get_perm(account, username);
