@@ -31,7 +31,7 @@
 
 namespace gromox {
 
-static int mdcl_socket_timeout = 60, mdcl_rpc_timeout = 60;
+static int mdcl_socket_timeout = 60, mdcl_rpc_timeout = -1;
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
@@ -74,7 +74,7 @@ void remote_conn_ref::reset(bool lost)
 }
 
 static constexpr cfg_directive exmdb_client_dflt[] = {
-	{"exmdb_client_rpc_timeout", "60s", CFG_TIME, "4"},
+	{"exmdb_client_rpc_timeout", "0", CFG_TIME, "4"},
 	{"exmdb_client_socket_timeout", "60s", CFG_TIME, "4"},
 	CFG_TABLE_END,
 };
