@@ -15,6 +15,7 @@
 #include <vector>
 #include <libHX/socket.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -30,7 +31,7 @@
 
 namespace gromox {
 
-static constexpr int mdcl_socket_timeout = 60;
+static int mdcl_socket_timeout = 60, mdcl_rpc_timeout = 60;
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
@@ -72,8 +73,28 @@ void remote_conn_ref::reset(bool lost)
 	}
 }
 
+static constexpr cfg_directive exmdb_client_dflt[] = {
+	{"exmdb_client_rpc_timeout", "60s", CFG_TIME, "4"},
+	{"exmdb_client_socket_timeout", "60s", CFG_TIME, "4"},
+	CFG_TABLE_END,
+};
+
 void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
 {
+	auto cfg = config_file_initd("gromox.cfg", nullptr, exmdb_client_dflt);
+	if (cfg == nullptr) {
+		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",
+			strerror(errno));
+	} else {
+		mdcl_rpc_timeout = cfg->get_ll("exmdb_client_rpc_timeout");
+		if (mdcl_rpc_timeout <= 0)
+			mdcl_rpc_timeout = -1;
+		else if (mdcl_rpc_timeout < 4)
+			mdcl_rpc_timeout = 4;
+		mdcl_socket_timeout = cfg->get_ll("exmdb_client_socket_timeout");
+		if (mdcl_socket_timeout < 4)
+			mdcl_socket_timeout = 4;
+	}
 	setup_sigalrm();
 	mdcl_notify_stop = true;
 	mdcl_conn_max = conn_max;
@@ -146,7 +167,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 		if (exmdb_ext_push_request(&rqc, &bin) != EXT_ERR_SUCCESS)
 			return -1;
 	}
-	if (!exmdb_client_write_socket(sockd, bin, mdcl_socket_timeout * 1000)) {
+	if (!exmdb_client_write_socket(sockd, bin, mdcl_rpc_timeout * 1000)) {
 		free(bin.pb);
 		return -1;
 	}
@@ -155,7 +176,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	if (mdcl_build_env != nullptr)
 		mdcl_build_env(srv);
 	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
-	if (!exmdb_client_read_socket(sockd, bin, mdcl_socket_timeout * 1000) ||
+	if (!exmdb_client_read_socket(sockd, bin, mdcl_rpc_timeout * 1000) ||
 	    bin.pb == nullptr)
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
@@ -470,13 +491,13 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 		return false;
 	auto conn = exmdb_client_get_connection(rq->dir);
 	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
-	    bin, mdcl_socket_timeout * 1000)) {
+	    bin, mdcl_rpc_timeout * 1000)) {
 		free(bin.pb);
 		return false;
 	}
 	free(bin.pb);
 	bin.pb = nullptr;
-	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_socket_timeout * 1000))
+	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_rpc_timeout * 1000))
 		return false;
 	conn->last_time = time(nullptr);
 	conn.reset();
