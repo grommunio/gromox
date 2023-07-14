@@ -23,6 +23,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #ifndef AI_V4MAPPED
@@ -81,7 +82,7 @@ static constexpr cfg_directive exmdb_client_dflt[] = {
 
 void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
 {
-	auto cfg = config_file_initd("gromox.cfg", nullptr, exmdb_client_dflt);
+	auto cfg = config_file_initd("gromox.cfg", PKGSYSCONFDIR, exmdb_client_dflt);
 	if (cfg == nullptr) {
 		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",
 			strerror(errno));
