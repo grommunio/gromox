@@ -180,7 +180,7 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 }
 
 static constexpr cfg_directive delivery_cfg_defaults[] = {
-	{"context_average_mime", "8", CFG_SIZE, "1"},
+	{"context_average_mime", "500", CFG_SIZE, "1"},
 	CFG_TABLE_END,
 };
 

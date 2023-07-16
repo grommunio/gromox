@@ -28,6 +28,12 @@ especially those used by plugin instances, will be searched.
 .br
 Default: \fI/etc/gromox/delivery:/etc/gromox\fP
 .TP
+\fBcontext_average_mime\fP
+Expected average number of MIME parts per mail. This plays a factor in sizing
+the MIME pool that is shared between all threads.
+.br
+Default: \fI500\fP
+.TP
 \fBdata_file_path\fP
 Colon-separated list of directories in which static data files will be
 searched.
