@@ -303,11 +303,11 @@ static BOOL ab_tree_load_tree(int domain_id,
 	pabnode->node_type = abnode_type::domain;
 	pabnode->id = domain_id;
 	pabnode->minid = ab_tree_make_minid(minid_type::domain, domain_id);
-	if (!utf8_check(dinfo.name.c_str()))
+	if (!utf8_valid(dinfo.name.c_str()))
 		utf8_filter(dinfo.name.data());
-	if (!utf8_check(dinfo.title.c_str()))
+	if (!utf8_valid(dinfo.title.c_str()))
 		utf8_filter(dinfo.title.data());
-	if (!utf8_check(dinfo.address.c_str()))
+	if (!utf8_valid(dinfo.address.c_str()))
 		utf8_filter(dinfo.address.data());
 	pabnode->d_info = new(std::nothrow) sql_domain(std::move(dinfo));
 	if (pabnode->d_info == nullptr) {

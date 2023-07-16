@@ -90,7 +90,7 @@ struct GX_EXPORT alloc_context {
 };
 using ALLOC_CONTEXT = alloc_context;
 
-BOOL utf8_check(const char *str);
+extern bool utf8_valid(const char *str);
 BOOL utf8_truncate(char *str, int length);
 void utf8_filter(char *string);
 extern void wchar_to_utf8(uint32_t wchar, char *string);

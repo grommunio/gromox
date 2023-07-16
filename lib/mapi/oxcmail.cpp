@@ -1597,7 +1597,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 			auto s = &pcontent[length+1];
 			propval.proptag = PR_BODY;
 			propval.pvalue = s;
-			if (!utf8_check(s))
+			if (!utf8_valid(s))
 				utf8_filter(s);
 		} else {
 			propval.proptag = PR_BODY_A;
@@ -2228,11 +2228,11 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			pcontent[content_len] = '\0';
 			if (!oxcmail_get_content_param(pmime, "charset",
 			    mime_charset, std::size(mime_charset)))
-				gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
+				gx_strlcpy(mime_charset, !utf8_valid(pcontent.get()) ?
 					pmime_enum->charset : "utf-8", std::size(mime_charset));
 			if (string_to_utf8(mime_charset, pcontent.get(),
 			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
-				if (!utf8_check(pcontent.get() + content_len + 1))
+				if (!utf8_valid(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
 				vcard vcard;
 				auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
@@ -3309,13 +3309,13 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		char mime_charset[64];
 		if (!oxcmail_get_content_param(mime_enum.pcalendar, "charset",
 		    mime_charset, std::size(mime_charset)))
-			gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
+			gx_strlcpy(mime_charset, !utf8_valid(pcontent.get()) ?
 				default_charset : "utf-8", std::size(mime_charset));
 		if (!string_to_utf8(mime_charset, pcontent.get(),
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
 		} else {
-			if (!utf8_check(&pcontent[content_len+1]))
+			if (!utf8_valid(&pcontent[content_len+1]))
 				utf8_filter(&pcontent[content_len+1]);
 			ICAL ical;
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
@@ -3398,7 +3398,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 				if (encoding == nullptr)
 					encoding = "windows-1252";
 				if (string_to_utf8(encoding, plainbuf.c_str(),
-				    s, z) && utf8_check(s))
+				    s, z) && utf8_valid(s))
 					pmsg->proplist.set(PR_BODY_W, s);
 			}
 		}

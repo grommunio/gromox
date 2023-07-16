@@ -50,7 +50,7 @@ const uint8_t utf8_byte_num[256] = {
 }
 
 /* check for invalid UTF-8 */
-BOOL utf8_check(const char *str)
+bool utf8_valid(const char *str)
 {
 	int byte_num = 0;
 	unsigned char ch;

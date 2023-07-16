@@ -1153,7 +1153,7 @@ static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
 	temp_buff[buff_offset] = '\0';
 	if (!string_to_utf8(last_charset, temp_buff, out_string, out_len))
 		return FALSE;	
-	return utf8_check(out_string);
+	return utf8_valid(out_string);
 }
 
 BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
@@ -1235,7 +1235,7 @@ BOOL mime_string_to_utf8(const char *charset, const char *mime_string,
 		offset += strlen(out_buff + offset);
 	} 
 	out_buff[offset] = '\0';
-	return utf8_check(out_buff);
+	return utf8_valid(out_buff);
 }
 
 void enriched_to_html(const char *enriched_txt,
