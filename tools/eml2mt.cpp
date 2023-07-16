@@ -179,6 +179,11 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 	return 0;
 }
 
+static constexpr cfg_directive delivery_cfg_defaults[] = {
+	{"context_average_mime", "8", CFG_SIZE, "1"},
+	CFG_TABLE_END,
+};
+
 int main(int argc, const char **argv) try
 {
 	auto bn = HX_basename(argv[0]);
@@ -242,7 +247,9 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	auto mime_pool = MIME_POOL::create(4096, 8, "mime_pool");
+	auto cfg = config_file_prg(nullptr, "delivery.cfg", delivery_cfg_defaults);
+	unsigned int mime_ratio = cfg->get_ll("context_average_mime");
+	auto mime_pool = MIME_POOL::create(mime_ratio, 8, "mime_pool");
 	std::vector<message_ptr> msgs;
 
 	for (int i = 1; i < argc; ++i) {
