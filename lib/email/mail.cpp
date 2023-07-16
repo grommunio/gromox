@@ -66,7 +66,7 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 	clear();
 	auto pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
-		mlog(LV_DEBUG, "mail: failed to get mime from pool");
+		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
 	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
@@ -91,7 +91,7 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 	/* retrieve as single mail object */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
-		mlog(LV_DEBUG, "mail: failed to get mime from pool");
+		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
 	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
@@ -133,7 +133,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			continue;
 		pmime = pmail->pmime_pool->get_mime();
 		if (NULL == pmime) {
-			mlog(LV_DEBUG, "mail: failed to get mime from pool");
+			mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 			return false;
 		}
 		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last)) {
@@ -180,7 +180,7 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	/* some illegal multiple mimes haven't --boundary string-- */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
-		mlog(LV_DEBUG, "mail: failed to get mime from pool");
+		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
 	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last)) {
