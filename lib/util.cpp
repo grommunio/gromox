@@ -1108,7 +1108,7 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 	for (i = 0; i < length; i++) {
 		char c = input[i];
 		switch (c) {
-		case '=':
+		case '=': {
 			/* quoted char, process it */
 			if (i < length - 2 && HX_isxdigit(input[i+1]) &&
 			    HX_isxdigit(input[i+2])) { /* OK, this is =HEX */
@@ -1120,15 +1120,16 @@ static size_t qp_decode(void *voutput, const char *input, size_t length,
 			/* indicates 'soft-line break', implying ignore 
 			   it & the following CR 
 			*/
-			if (i < length - 2 && input[i+1] == '\r' && 
-				input[i+2] == '\n') {
-					i +=2;
-					break;
+			auto nl = newline_size(&input[i+1], length - i);
+			if (nl > 0) {
+				i += nl;
+				break;
 			}
 			/* just ignore it, it doesn't seem to be correctly quoting
 			   anything (report an error/add a fussy mode?) 
 			*/
 			break;
+		}
 		case '_':
 			if (mime_mode) {
 				output[cnt++] = ' ';
@@ -1156,7 +1157,7 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 		c = input[i];
 
 		switch (c) {
-		case '=':
+		case '=': {
 			/* quoted char, process it */
 			if (i < length - 2 && HX_isxdigit(input[i+1]) &&
 			    HX_isxdigit(input[i+2])) { /* OK, this is =HEX */
@@ -1167,15 +1168,16 @@ ssize_t qp_decode_ex(void *voutput, size_t out_len, const char *input,
 			/* indicates 'soft-line break', implying ignore 
 			   it & the following CR 
 			*/
-			if (i < length - 2 && input[i+1] == '\r' && 
-				input[i+2] == '\n') {
-					i +=2;
-					break;
+			auto nl = newline_size(&input[i+1], length - i);
+			if (nl > 0) {
+				i += nl;
+				break;
 			}
 			/* just ignore it, it doesn't seem to be correctly quoting
 			   anything (report an error/add a fussy mode?) 
 			*/
 			break;
+		}
 		default:
 			/* pass other characters through unmolested */
 			cnt++;
