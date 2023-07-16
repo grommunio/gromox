@@ -1,0 +1,7 @@
+/usr/libexec/gromox(/.*)?	gen_context(system_u:object_r:gromox_exec_t,s0)
+
+/var/lib/gromox(/.*)?		gen_context(system_u:object_r:gromox_var_lib_t,s0)
+
+/var/log/gromox(/.*)?		gen_context(system_u:object_r:gromox_log_t,s0)
+
+/var/run/gromox(/.*)?		gen_context(system_u:object_r:gromox_var_run_t,s0)

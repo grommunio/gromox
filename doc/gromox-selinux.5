@@ -1,0 +1,231 @@
+.TH "gromox_selinux" "5" "2023-07-16" "gromox" "SELinux policy for gromox"
+.SH "NAME"
+gromox_selinux \- Security Enhanced Linux Policy for the gromox processes
+.SH "DESCRIPTION"
+
+Security-Enhanced Linux secures the gromox processes via flexible mandatory access control.
+
+The gromox processes execute with the gromox_t SELinux type. You can check if you have these processes running by executing the \fBps\fP command with the \fB\-Z\fP qualifier.
+
+For example:
+
+.B ps -eZ | grep gromox_t
+
+
+.SH "ENTRYPOINTS"
+
+The gromox_t SELinux type can be entered via the \fBgromox_exec_t\fP file type.
+
+The default entrypoint paths for the gromox_t domain are the following:
+
+/usr/libexec/gromox(/.*)?
+.SH PROCESS TYPES
+SELinux defines process types (domains) for each process running on the system
+.PP
+You can see the context of a process using the \fB\-Z\fP option to \fBps\bP
+.PP
+Policy governs the access confined processes have to files.
+SELinux gromox policy is very flexible allowing users to setup their gromox processes in as secure a method as possible.
+.PP
+The following process types are defined for gromox:
+
+.EX
+.B gromox_t
+.EE
+.PP
+Note:
+.B semanage permissive -a gromox_t
+can be used to make the process type gromox_t permissive. SELinux does not deny access to permissive process types, but the AVC (SELinux denials) messages are still generated.
+
+.SH BOOLEANS
+SELinux policy is customizable based on least access required.  gromox policy is extremely flexible and has several booleans that allow you to manipulate the policy and run gromox with the tightest access possible.
+
+
+.PP
+If you want to dontaudit all daemons scheduling requests (setsched, sys_nice), you must turn on the daemons_dontaudit_scheduling boolean. Enabled by default.
+
+.EX
+.B setsebool -P daemons_dontaudit_scheduling 1
+
+.EE
+
+.PP
+If you want to allow all domains to execute in fips_mode, you must turn on the fips_mode boolean. Enabled by default.
+
+.EX
+.B setsebool -P fips_mode 1
+
+.EE
+
+.SH "MANAGED FILES"
+
+The SELinux process type gromox_t can manage files labeled with the following file types.  The paths listed are the default paths for these file types.  Note the processes UID still need to have DAC permissions.
+
+.br
+.B cluster_conf_t
+
+	/etc/cluster(/.*)?
+.br
+
+.br
+.B cluster_var_lib_t
+
+	/var/lib/pcsd(/.*)?
+.br
+	/var/lib/cluster(/.*)?
+.br
+	/var/lib/openais(/.*)?
+.br
+	/var/lib/pengine(/.*)?
+.br
+	/var/lib/corosync(/.*)?
+.br
+	/usr/lib/heartbeat(/.*)?
+.br
+	/var/lib/heartbeat(/.*)?
+.br
+	/var/lib/pacemaker(/.*)?
+.br
+
+.br
+.B cluster_var_run_t
+
+	/var/run/crm(/.*)?
+.br
+	/var/run/cman_.*
+.br
+	/var/run/rsctmp(/.*)?
+.br
+	/var/run/aisexec.*
+.br
+	/var/run/heartbeat(/.*)?
+.br
+	/var/run/pcsd-ruby.socket
+.br
+	/var/run/corosync-qnetd(/.*)?
+.br
+	/var/run/corosync-qdevice(/.*)?
+.br
+	/var/run/corosync\.pid
+.br
+	/var/run/cpglockd\.pid
+.br
+	/var/run/rgmanager\.pid
+.br
+	/var/run/cluster/rgmanager\.sk
+.br
+
+.br
+.B gromox_log_t
+
+	/var/log/gromox(/.*)?
+.br
+
+.br
+.B gromox_var_lib_t
+
+	/var/lib/gromox(/.*)?
+.br
+
+.br
+.B gromox_var_run_t
+
+	/var/run/gromox(/.*)?
+.br
+
+.br
+.B root_t
+
+	/sysroot/ostree/deploy/.*-atomic/deploy(/.*)?
+.br
+	/
+.br
+	/initrd
+.br
+
+.SH FILE CONTEXTS
+SELinux requires files to have an extended attribute to define the file type.
+.PP
+You can see the context of a file using the \fB\-Z\fP option to \fBls\bP
+.PP
+Policy governs the access confined processes have to these files.
+SELinux gromox policy is very flexible allowing users to setup their gromox processes in as secure a method as possible.
+.PP
+
+.PP
+.B STANDARD FILE CONTEXT
+
+SELinux defines the file context types for the gromox, if you wanted to
+store files with these types in a different paths, you need to execute the semanage command to specify alternate labeling and then use restorecon to put the labels on disk.
+
+.B semanage fcontext -a -t gromox_var_run_t '/srv/mygromox_content(/.*)?'
+.br
+.B restorecon -R -v /srv/mygromox_content
+
+Note: SELinux often uses regular expressions to specify labels that match multiple files.
+
+.I The following file types are defined for gromox:
+
+
+.EX
+.PP
+.B gromox_exec_t
+.EE
+
+- Set files with the gromox_exec_t type, if you want to transition an executable to the gromox_t domain.
+
+
+.EX
+.PP
+.B gromox_log_t
+.EE
+
+- Set files with the gromox_log_t type, if you want to treat the data as gromox log data, usually stored under the /var/log directory.
+
+
+.EX
+.PP
+.B gromox_var_lib_t
+.EE
+
+- Set files with the gromox_var_lib_t type, if you want to store the gromox files under the /var/lib directory.
+
+
+.EX
+.PP
+.B gromox_var_run_t
+.EE
+
+- Set files with the gromox_var_run_t type, if you want to store the gromox files under the /run or /var/run directory.
+
+
+.PP
+Note: File context can be temporarily modified with the chcon command.  If you want to permanently change the file context you need to use the
+.B semanage fcontext
+command.  This will modify the SELinux labeling database.  You will need to use
+.B restorecon
+to apply the labels.
+
+.SH "COMMANDS"
+.B semanage fcontext
+can also be used to manipulate default file context mappings.
+.PP
+.B semanage permissive
+can also be used to manipulate whether or not a process type is permissive.
+.PP
+.B semanage module
+can also be used to enable/disable/install/remove policy modules.
+
+.B semanage boolean
+can also be used to manipulate the booleans
+
+.PP
+.B system-config-selinux
+is a GUI tool available to customize SELinux policy settings.
+
+.SH AUTHOR
+This manual page was auto-generated using
+.B "sepolicy manpage".
+
+.SH "SEE ALSO"
+selinux(8), gromox(8), semanage(8), restorecon(8), chcon(1), sepolicy(8), setsebool(8)

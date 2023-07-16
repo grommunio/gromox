@@ -1,0 +1,115 @@
+policy_module(gromox, 1.0.0)
+
+########################################
+#
+# Declarations
+#
+
+type gromox_t;
+type gromox_exec_t;
+init_daemon_domain(gromox_t, gromox_exec_t)
+
+permissive gromox_t;
+
+type gromox_log_t;
+logging_log_file(gromox_log_t)
+
+type gromox_var_lib_t;
+files_type(gromox_var_lib_t)
+
+type gromox_var_run_t;
+files_pid_file(gromox_var_run_t)
+
+########################################
+#
+# gromox local policy
+#
+allow gromox_t self:fifo_file rw_fifo_file_perms;
+allow gromox_t self:unix_stream_socket create_stream_socket_perms;
+
+manage_dirs_pattern(gromox_t, gromox_log_t, gromox_log_t)
+manage_files_pattern(gromox_t, gromox_log_t, gromox_log_t)
+manage_lnk_files_pattern(gromox_t, gromox_log_t, gromox_log_t)
+logging_log_filetrans(gromox_t, gromox_log_t, { dir file lnk_file })
+
+manage_dirs_pattern(gromox_t, gromox_var_lib_t, gromox_var_lib_t)
+manage_files_pattern(gromox_t, gromox_var_lib_t, gromox_var_lib_t)
+manage_lnk_files_pattern(gromox_t, gromox_var_lib_t, gromox_var_lib_t)
+files_var_lib_filetrans(gromox_t, gromox_var_lib_t, { dir file lnk_file })
+
+manage_dirs_pattern(gromox_t, gromox_var_run_t, gromox_var_run_t)
+manage_files_pattern(gromox_t, gromox_var_run_t, gromox_var_run_t)
+manage_lnk_files_pattern(gromox_t, gromox_var_run_t, gromox_var_run_t)
+files_pid_filetrans(gromox_t, gromox_var_run_t, { dir file lnk_file })
+
+domain_use_interactive_fds(gromox_t)
+
+files_read_etc_files(gromox_t)
+
+miscfiles_read_localization(gromox_t)
+
+# manually added by dfi
+require {
+	type cert_t;
+	type commplex_main_port_t;
+	type devlog_t;
+	type ephemeral_port_t;
+	type http_port_t;
+	type httpd_t;
+	type httpd_var_run_t;
+	type kernel_t;
+	type mysqld_db_t;
+	type mysqld_t;
+	type mysqld_var_run_t;
+	type net_conf_t;
+	type node_t;
+	type passwd_file_t;
+	type pop_port_t;
+	type spamd_port_t;
+	type sssd_public_t;
+	type sssd_var_lib_t;
+	type syslogd_var_run_t;
+	type systemd_userdbd_runtime_t;
+	type unreserved_port_t;
+};
+#============= gromox_t ==============
+allow gromox_t cert_t:dir search;
+allow gromox_t cert_t:file { getattr open read };
+allow gromox_t commplex_main_port_t:tcp_socket { name_bind name_connect };
+allow gromox_t devlog_t:lnk_file read;
+allow gromox_t devlog_t:sock_file write;
+allow gromox_t ephemeral_port_t:tcp_socket name_connect;
+allow gromox_t gromox_exec_t:dir search;
+allow gromox_t gromox_exec_t:file execute_no_trans;
+allow gromox_t gromox_var_lib_t:file map;
+allow gromox_t gromox_var_run_t:sock_file { create getattr setattr unlink write };
+allow gromox_t http_port_t:tcp_socket name_bind;
+allow gromox_t httpd_t:unix_stream_socket connectto;
+allow gromox_t httpd_var_run_t:dir search;
+allow gromox_t httpd_var_run_t:sock_file write;
+allow gromox_t kernel_t:unix_dgram_socket sendto;
+allow gromox_t kernel_t:unix_stream_socket connectto;
+allow gromox_t mysqld_db_t:dir search;
+allow gromox_t mysqld_t:unix_stream_socket connectto;
+allow gromox_t mysqld_var_run_t:sock_file write;
+allow gromox_t net_conf_t:file { getattr open read };
+allow gromox_t node_t:tcp_socket node_bind;
+allow gromox_t passwd_file_t:file { getattr open read };
+allow gromox_t pop_port_t:tcp_socket name_bind;
+allow gromox_t self:capability { setgid setuid net_bind_service };
+allow gromox_t self:netlink_route_socket { bind create getattr nlmsg_read };
+allow gromox_t self:process setrlimit;
+allow gromox_t self:tcp_socket { accept bind connect create getattr getopt listen setopt shutdown };
+allow gromox_t self:udp_socket { connect create getattr setopt };
+allow gromox_t self:unix_dgram_socket { connect create getopt };
+allow gromox_t spamd_port_t:tcp_socket name_bind;
+allow gromox_t sssd_public_t:dir search;
+allow gromox_t sssd_var_lib_t:dir search;
+allow gromox_t syslogd_var_run_t:dir search;
+allow gromox_t systemd_userdbd_runtime_t:dir { getattr open read search };
+allow gromox_t systemd_userdbd_runtime_t:sock_file write;
+allow gromox_t unreserved_port_t:tcp_socket { name_bind name_connect };
+#============= httpd_t ==============
+allow httpd_t gromox_var_run_t:sock_file write;
+allow httpd_t gromox_t:unix_stream_socket connectto;
+
