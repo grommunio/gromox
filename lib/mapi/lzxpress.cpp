@@ -153,9 +153,7 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 			coding_pos += length;
 			byte_left -= length;
 		} else {
-			compressed[compressed_pos] = uncompressed[coding_pos];
-			compressed_pos ++;
-			coding_pos ++;
+			compressed[compressed_pos++] = uncompressed[coding_pos++];
 			byte_left --;
 		}
 		indic_bit ++;
@@ -168,10 +166,8 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 	} while (byte_left > 3);
 	
 	do {
-		compressed[compressed_pos] = uncompressed[coding_pos];
+		compressed[compressed_pos++] = uncompressed[coding_pos++];
 		indic_bit ++;
-		coding_pos ++;
-		compressed_pos ++;
 		if ((indic_bit - 1) % 32 > (indic_bit % 32)) {
 			cpu_to_le32p(ptr_indic, indic);
 			indic = 0;

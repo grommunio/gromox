@@ -430,9 +430,7 @@ static int rtf_parse_control(const char *string,
 	}
 	len = 0;
 	while (HX_isalpha(*string) && len < maxlen) {
-        *name = *string;
-		name ++;
-		string ++;
+		*name++ = *string++;
         len ++;
     }
     if (len == maxlen) {
@@ -1236,8 +1234,7 @@ static char* rtf_read_element(RTF_READER *preader)
 			}
 		}
 		
-		input_str[ix] = ch;
-		ix ++;
+		input_str[ix++] = ch;
 		if (ix == current_max_length) {
 			current_max_length *= 2;
 			auto input_new = re_alloc<char>(input_str, current_max_length);
@@ -1547,8 +1544,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
 				}
-				tmp_buff[tmp_offset] = rtf_decode_hex_char(string + 2);
-				tmp_offset ++;
+				tmp_buff[tmp_offset++] = rtf_decode_hex_char(string + 2);
 				continue;
 			}
 			ret = rtf_parse_control(string + 1,
@@ -1794,9 +1790,8 @@ static void rtf_process_color_table(
 			}
 		} else {
 			if (strcmp(static_cast<char *>(pword->pdata), ";") == 0) {
-				preader->color_table[preader->total_colors] =
+				preader->color_table[preader->total_colors++] =
 									(r << 16) | (g << 8) | b;
-				preader->total_colors ++;
 				if (preader->total_colors >= MAX_COLORS) {
 					return;
 				}
@@ -2893,8 +2888,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 						sprintf(picture_name, "picture%04d.%s",
 							preader->picture_file_number, pext);
 						sprintf(cid_name, "\"cid:picture%04d@rtf\"", 
-								preader->picture_file_number);
-						preader->picture_file_number ++;
+							preader->picture_file_number++);
 						if (!picture_push.init(nullptr, 0, 0))
 							return -ENOMEM;
 						b_picture_push = true;

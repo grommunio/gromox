@@ -326,8 +326,7 @@ static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t
 	bytes_stack.reserve(6);
 	
 	while (offset < pbin->cb) {
-		uint8_t command = pbin->pb[offset];
-		offset ++;
+		uint8_t command = pbin->pb[offset++];
 		switch (command) {
 		case 0x0: /* end */
 			return offset;

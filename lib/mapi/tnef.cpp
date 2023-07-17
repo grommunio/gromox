@@ -969,8 +969,7 @@ static BOOL tnef_set_attribute_address(TPROPVAL_ARRAY *pproplist,
 	if (NULL == ptr) {
 		return FALSE;
 	}
-	*ptr = '\0';
-	ptr ++;
+	*ptr++ = '\0';
 	return pproplist->set(proptag2, paddr->address) == 0 &&
 	       pproplist->set(proptag3, ptr) == 0 ? TRUE : false;
 }

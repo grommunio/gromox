@@ -114,8 +114,7 @@ uint8_t DECOMPRESSION_STATE::get_next_byte()
 	if (pstate->in_pos > pstate->in_size) {
 		return 0;
 	}  
-	next_byte = pstate->compressed_data[pstate->in_pos];
-	pstate->in_pos ++;
+	next_byte = pstate->compressed_data[pstate->in_pos++];
 	return next_byte;
 }
 
@@ -143,8 +142,7 @@ void DECOMPRESSION_STATE::append_to_dict(char c)
 void OUTPUT_STATE::append(char c)
 {
 	auto poutput = this;
-	poutput->pbuff_out[poutput->out_pos] = c;
-	poutput->out_pos ++;
+	poutput->pbuff_out[poutput->out_pos++] = c;
 }
 
 bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)

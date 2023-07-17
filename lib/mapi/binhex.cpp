@@ -108,8 +108,7 @@ static uint16_t binhex_crc(const uint8_t *ptr,
 	uint32_t count, uint16_t crc)
 {
 	while (count --) {
-		crc = ((crc << 8) | *ptr) ^ g_magic[crc >> 8];
-		ptr ++;
+		crc = ((crc << 8) | *ptr++) ^ g_magic[crc >> 8];
 	}
 	return crc;
 }
@@ -160,8 +159,7 @@ static bool binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
 	uint8_t c = '\0';
 	
 	while (pstat->offset < pstat->length) {
-		c = pstat->pbuff[pstat->offset];
-		pstat->offset ++;
+		c = pstat->pbuff[pstat->offset++];
 		if ('\r' != c && '\n' != c && '\t' != c && ' ' != c) {
 			break;
 		}
@@ -213,8 +211,7 @@ static bool binhex_read_buffer(READ_STAT *pstat, void *pbuff, uint32_t len)
 	auto ptr = static_cast<uint8_t *>(pbuff);
 	for (i=0; i<len; i++) {
 		if (0 != pstat->runlen) {
-			*ptr = pstat->lastch;
-			ptr ++;
+			*ptr++ = pstat->lastch;
 			pstat->runlen --;
 			continue;
 		}
@@ -233,8 +230,7 @@ static bool binhex_read_buffer(READ_STAT *pstat, void *pbuff, uint32_t len)
 			}
 		}
 		pstat->lastch = c;
-		*ptr = c;
-		ptr ++;
+		*ptr++ = c;
 	}
 	pstat->crc = binhex_crc(static_cast<uint8_t *>(pbuff), len, pstat->crc);
 	return true;
