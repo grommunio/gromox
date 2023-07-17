@@ -828,9 +828,7 @@ unsigned int ical_get_dayofyear(unsigned int year, unsigned int month,
 	static const int days[2][12] = {
 		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
 		{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}};
-	if (ical_check_leap_year(year))
-		return days[1][month - 1] + day;
-	return days[0][month - 1] + day;
+	return days[ical_check_leap_year(year)][month-1] + day;
 }
 
 unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
@@ -842,9 +840,7 @@ unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
 		mlog(LV_ERR, "E-2051: invalid parameter given to ical_get_monthdays (%u)", month);
 		return 0;
 	}
-	if (ical_check_leap_year(year))
-		return days[1][month - 1];
-	return days[0][month - 1];
+	return days[ical_check_leap_year(year)][month-1];
 }
 
 int ical_get_monthweekorder(int day)
