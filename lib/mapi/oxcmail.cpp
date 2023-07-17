@@ -1566,14 +1566,17 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		mlog(LV_ERR, "%s:MIME::get_length: unsuccessful", __func__);
 		return false;
 	}
-	size_t length = rdlength;
-	auto content_size = 3 * length + 2;
-	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_size));
-	if (NULL == pcontent) {
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(rdlength + 1));
+	if (pcontent == nullptr)
 		return FALSE;
-	}
+	size_t length = rdlength;
 	if (!pmime->read_content(pcontent.get(), &length))
 		return TRUE;
+	pcontent[length] = '\0';
+	auto content_size = mb_to_utf8_len(pcontent.get());
+	std::unique_ptr<char[], stdlib_delete> cutf(me_alloc<char>(content_size + 1));
+	if (cutf == nullptr)
+		return false;
 	if (oxcmail_get_content_param(pmime, "charset", temp_charset, 32))
 		gx_strlcpy(best_charset, temp_charset, std::size(best_charset));
 	else
@@ -1590,31 +1593,29 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 			return false;
 		}
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
-		pcontent[length] = '\0';
 		TAGGED_PROPVAL propval;
-		if (string_to_utf8(best_charset, &pcontent[0], &pcontent[length+1],
-		    content_size - length - 1)) {
-			auto s = &pcontent[length+1];
+		if (string_to_utf8(best_charset, pcontent.get(), cutf.get(), content_size)) {
 			propval.proptag = PR_BODY;
-			propval.pvalue = s;
-			if (!utf8_valid(s))
-				utf8_filter(s);
+			propval.pvalue  = cutf.get();
+			if (!utf8_valid(cutf.get())) {
+				mlog(LV_NOTICE, "utf8_valid failed for a text/plain MIME part");
+				utf8_filter(cutf.get());
+			}
 		} else {
 			propval.proptag = PR_BODY_A;
-			propval.pvalue = pcontent.get();
+			propval.pvalue  = pcontent.get();
 		}
 		if (pproplist->set(propval) != 0) {
 			return false;
 		}
 	} else if (0 == strcasecmp(content_type, "text/enriched")) {
-		pcontent[length] = '\0';
-		enriched_to_html(&pcontent[0], &pcontent[length+1], 2 * length);
+		enriched_to_html(pcontent.get(), cutf.get(), content_size);
 		uint32_t tmp_int32 = cset_to_cpid(best_charset);
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0) {
 			return FALSE;
 		}
-		tmp_bin.cb = strlen(&pcontent[length+1]);
-		tmp_bin.pc = &pcontent[length+1];
+		tmp_bin.cb = strlen(cutf.get());
+		tmp_bin.pc = cutf.get();
 		if (pproplist->set(PR_HTML, &tmp_bin) != 0) {
 			return false;
 		}
