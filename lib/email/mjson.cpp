@@ -476,7 +476,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	return -1;
 }
 
-static bool mjson_check_ascii_printable(const char *s)
+static bool mjson_is_asciipr(const char *s)
 {
 	return std::all_of(s, s + strlen(s),
 	       [](unsigned char c) { return isascii(c) && isprint(c); });
@@ -535,7 +535,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				if (b_space) {
 					buff[offset++] = ' ';
 				}
-				if (mjson_check_ascii_printable(pmime->get_filename())) {
+				if (mjson_is_asciipr(pmime->get_filename())) {
 					mjson_add_backslash(pmime->get_filename(), temp_buff);
 					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"%s\"", temp_buff);
@@ -559,7 +559,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		}
 		
 		if (pmime->cid.size() > 0 &&
-		    mjson_check_ascii_printable(pmime->cid.c_str())) {
+		    mjson_is_asciipr(pmime->cid.c_str())) {
 			mjson_add_backslash(pmime->cid.c_str(), temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
@@ -686,7 +686,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			memcpy(buff + offset, " NIL", 4);
 			offset += 4;
 			if (pmime->cntl.size() > 0 &&
-			    mjson_check_ascii_printable(pmime->cntl.c_str())) {
+			    mjson_is_asciipr(pmime->cntl.c_str())) {
 				mjson_add_backslash(pmime->cntl.c_str(), temp_buff);
 				offset += gx_snprintf(buff + offset, length - offset,
 							" \"%s\"", temp_buff);
@@ -746,7 +746,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 	if (*email_addr.display_name == '\0') {
 		memcpy(buff + offset, "(NIL", 4);
 		offset += 4;
-	} else if (mjson_check_ascii_printable(email_addr.display_name)) {
+	} else if (mjson_is_asciipr(email_addr.display_name)) {
 		mjson_add_backslash(email_addr.display_name, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\"", temp_buff);
@@ -771,7 +771,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 	offset += 4;
 	
 	if ('\0' != email_addr.local_part[0] &&
-	    mjson_check_ascii_printable(email_addr.local_part)) {
+	    mjson_is_asciipr(email_addr.local_part)) {
 		mjson_add_backslash(email_addr.local_part, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
@@ -781,7 +781,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 	}
 
 	if ('\0' != email_addr.domain[0] &&
-	    mjson_check_ascii_printable(email_addr.domain)) {
+	    mjson_is_asciipr(email_addr.domain)) {
 		mjson_add_backslash(email_addr.domain, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\")", temp_buff);
@@ -813,7 +813,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	buff[0] = '(';
 	offset = 1;
 	if (pjson->date.size() > 0 &&
-	    mjson_check_ascii_printable(pjson->date.c_str())) {
+	    mjson_is_asciipr(pjson->date.c_str())) {
 		mjson_add_backslash(pjson->date.c_str(), temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					"\"%s\"", temp_buff);
@@ -823,7 +823,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	}
 	
 	if (pjson->subject.size() > 0) {
-		if (mjson_check_ascii_printable(pjson->subject.c_str())) {
+		if (mjson_is_asciipr(pjson->subject.c_str())) {
 			mjson_add_backslash(pjson->subject.c_str(), temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
@@ -948,7 +948,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	memcpy(buff + offset, " NIL", 4);
 	offset += 4;
 	if (pjson->inreply.size() > 0 &&
-	    mjson_check_ascii_printable(pjson->inreply.c_str())) {
+	    mjson_is_asciipr(pjson->inreply.c_str())) {
 		mjson_add_backslash(pjson->inreply.c_str(), temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
@@ -958,7 +958,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	}
 	
 	if (*pjson->get_mail_messageid() != '\0' &&
-	    mjson_check_ascii_printable(pjson->get_mail_messageid())) {
+	    mjson_is_asciipr(pjson->get_mail_messageid())) {
 		mjson_add_backslash(pjson->get_mail_messageid(), temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);

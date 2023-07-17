@@ -793,7 +793,7 @@ int ICAL_TIME::twcompare(const ICAL_TIME &o) const
 	return 0;
 }
 
-static bool ical_check_leap_year(unsigned int year)
+static bool ical_is_leap_year(unsigned int year)
 {
 	return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 }
@@ -811,7 +811,7 @@ unsigned int ical_get_dayofyear(unsigned int year, unsigned int month,
 	static const int days[2][12] = {
 		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334},
 		{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}};
-	return days[ical_check_leap_year(year)][month-1] + day;
+	return days[ical_is_leap_year(year)][month-1] + day;
 }
 
 unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
@@ -823,7 +823,7 @@ unsigned int ical_get_monthdays(unsigned int year, unsigned int month)
 		mlog(LV_ERR, "E-2051: invalid parameter given to ical_get_monthdays (%u)", month);
 		return 0;
 	}
-	return days[ical_check_leap_year(year)][month-1];
+	return days[ical_is_leap_year(year)][month-1];
 }
 
 int ical_get_monthweekorder(int day)
@@ -846,7 +846,7 @@ int ical_get_negative_yearweekorder(
 	int year, int month, int day)
 {
 	int yearday;
-	auto yeardays = 365 + ical_check_leap_year(year);
+	auto yeardays = 365 + ical_is_leap_year(year);
 	yearday = ical_get_dayofyear(year, month, day);
 	return (yearday - yeardays)/7 - 1;
 }
@@ -883,7 +883,7 @@ void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime)
 		{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}};
 	
 	pitime->year = year;
-	if (ical_check_leap_year(year)) {
+	if (ical_is_leap_year(year)) {
 		for (pitime->month=1; pitime->month<=12; pitime->month++) {
 			if (yearday <= days[1][pitime->month]) {
 				pitime->day = yearday - days[1][pitime->month - 1];
@@ -921,7 +921,7 @@ static unsigned int ical_get_yearweeks(unsigned int year)
 	 * su     00     regular (2006)  su     52     52
 	 * su     00     leap    (2012)  mo     53/01  52
 	 */
-	return dayofweek == 4 || (dayofweek == 3 && ical_check_leap_year(year)) ? 53 : 52;
+	return dayofweek == 4 || (dayofweek == 3 && ical_is_leap_year(year)) ? 53 : 52;
 }
 
 static int ical_get_weekofyear(int year, int month,
@@ -1004,7 +1004,7 @@ void ICAL_TIME::add_day(int days)
 				pitime->month, pitime->day);
 	yearday += days;
 	while (true) {
-		auto z = 365 + ical_check_leap_year(pitime->year);
+		auto z = 365 + ical_is_leap_year(pitime->year);
 		if (yearday <= z)
 			break;
 		pitime->year++;
@@ -1027,7 +1027,7 @@ void ICAL_TIME::subtract_day(int days)
 		pitime->year --;
 		pitime->month = 12;
 		pitime->day = 31;
-		yearday = 365 + ical_check_leap_year(pitime->year);
+		yearday = 365 + ical_is_leap_year(pitime->year);
 	}
 	yearday -= days;
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
@@ -1049,7 +1049,7 @@ int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 	delta_days = 0;
 	while (itime2.year < itime1.year) {
 		yearday = ical_get_dayofyear(itime2.year, itime2.month, itime2.day); 
-		delta_days += 365 + ical_check_leap_year(itime2.year) + 1 - yearday;
+		delta_days += 365 + ical_is_leap_year(itime2.year) + 1 - yearday;
 		itime2.year ++;
 		itime2.month = 1;
 		itime2.day = 1;
@@ -1685,7 +1685,7 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 			return RRULE_BY_WEEKNO;
 	}
 	if (pirrule->by_mask[RRULE_BY_YEARDAY]) {
-		yeardays = 365 + ical_check_leap_year(itime.year);
+		yeardays = 365 + ical_is_leap_year(itime.year);
 		yearday = ical_get_dayofyear(itime.year, itime.month, itime.day);
 		if (!ical_hint_bitmap(pirrule->yday_bitmap, yearday - 1) &&
 		    !ical_hint_bitmap(pirrule->nyday_bitmap, yeardays - yearday))

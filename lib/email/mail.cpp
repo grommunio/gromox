@@ -25,7 +25,7 @@ enum {
 
 static bool mail_retrieve_to_mime(MAIL *, MIME *parent, char *begin, char *end);
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode);
-static bool mail_check_ascii_printable(const char *astring);
+static bool mail_is_asciipr(const char *astring);
 static void mail_enum_text_mime_charset(const MIME *, void *);
 static void mail_enum_html_charset(const MIME *, void *);
 
@@ -349,7 +349,7 @@ MIME *MAIL::get_head()
 
 const MIME *MAIL::get_head() const { return deconst(this)->get_head(); }
 
-static bool mail_check_ascii_printable(const char *s)
+static bool mail_is_asciipr(const char *s)
 {
 	return std::all_of(s, s + strlen(s),
 	       [](unsigned char c) { return isascii(c) && isprint(c); });
@@ -537,7 +537,7 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 	digest["subject"]   = mime_subject;
 	digest["received"]  = mime_received;
 	digest["date"]      = mime_date;
-	if (email_charset[0] != '\0' && mail_check_ascii_printable(email_charset)) {
+	if (email_charset[0] != '\0' && mail_is_asciipr(email_charset)) {
 		replace_qb(email_charset);
 		digest["charset"] = email_charset;
 	}
