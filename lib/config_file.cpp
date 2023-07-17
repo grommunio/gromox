@@ -273,8 +273,7 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
 	if (NULL == equal_ptr) {
 		return;
 	}
-	*equal_ptr = '\0';
-	equal_ptr ++;
+	*equal_ptr++ = '\0';
 	HX_strrtrim(temp_buf);
 	HX_strltrim(equal_ptr);
 	if (strlen(temp_buf) == 0)
@@ -325,8 +324,7 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 	if (cfg_file->num_entries == cfg_file->total_entries) {
 		return FALSE;
 	}
-	index = cfg_file->num_entries;
-	cfg_file->num_entries ++;
+	index = cfg_file->num_entries++;
 	cfg_file->config_table[index].is_touched = TRUE;
 	gx_strlcpy(cfg_file->config_table[index].keyname, key, std::size(cfg_file->config_table[index].keyname));
 	HX_strlower(cfg_file->config_table[index].keyname);

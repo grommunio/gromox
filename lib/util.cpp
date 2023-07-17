@@ -1374,8 +1374,7 @@ int uuencode(int mode, const char *file_name, const char *in,
 			n = 45;
 		else
 			n = in + inlen - ptr;
-		out[offset] = ENC(n);
-		offset ++;
+		out[offset++] = ENC(n);
 		if (offset >= outmax)
 			return -1;
 		for (i=0; i<n; i+=3) {

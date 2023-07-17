@@ -53,8 +53,7 @@ cookie_jar cookie_parser_init(const char *cookie_string)
 	}
 	
 	if (len > 0) {
-		decoded_string[len] = ';';
-		len ++;
+		decoded_string[len++] = ';';
 		decoded_string[len] = '\0';
 	}
 	
@@ -73,8 +72,7 @@ cookie_jar cookie_parser_init(const char *cookie_string)
 			*ptr = '\0';
 			ptoken = strchr(last_ptr, '=');
 			if (NULL != ptoken) {
-				*ptoken = '\0';
-				ptoken ++;
+				*ptoken++ = '\0';
 				try {
 					std::string pparam = ptoken;
 					while (' ' == *last_ptr && '\0' != *last_ptr) {

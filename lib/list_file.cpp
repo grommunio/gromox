@@ -125,14 +125,12 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 			switch(*ptr) {
 			case 'l':
 				list_file->format[num]	  = 'l';
-				list_file->type_size[num] = sizeof(long);
-				num ++;
+				list_file->type_size[num++] = sizeof(long);
 				ptr ++;
 				break;
 			case 'd':
 				list_file->format[num]	  = 'd';
-				list_file->type_size[num] = sizeof(int);
-				num ++;
+				list_file->type_size[num++] = sizeof(int);
 				ptr ++;
 				break;
 			case 's':
@@ -257,8 +255,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 			j = 0;
 			while ('\t' != *ptr && ' ' != *ptr && '\r' != *ptr &&
 				   '\0' != *ptr && '#' != *ptr && '\n' != *ptr) {
-				temp_buf[j] = *ptr;
-				j ++;
+				temp_buf[j++] = *ptr;
 				ptr ++;
 			}
 			temp_buf[j] = '\0';
@@ -283,8 +280,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 			j = 0;
 			while ('\t' != *ptr && ' ' != *ptr && '\r' != *ptr &&
 				   '\0' != *ptr && '#' != *ptr && '\n' != *ptr) {
-				temp_buf[j] = *ptr;
-				j ++;
+				temp_buf[j++] = *ptr;
 				ptr ++;
 			}
 			temp_buf[j] = '\0';
@@ -316,8 +312,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 						return FALSE;
 					}
 				}
-				temp_buf[j] = *ptr;
-				j ++;
+				temp_buf[j++] = *ptr;
 				ptr ++;
 			}
 			if (j > list_file->type_size[i] - 1) {

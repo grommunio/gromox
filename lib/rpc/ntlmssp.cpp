@@ -1561,13 +1561,11 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	HMACMD5_CTX hmac_ctx;
 	switch (direction) {
 	case NTLMSSP_DIRECTION_SEND:
-		cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.sending.seq_num);
-		pntlmssp->crypt.ntlm2.sending.seq_num ++;
+		cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.sending.seq_num++);
 		hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.sending.sign_key, 16);
 		break;
 	case NTLMSSP_DIRECTION_RECEIVE:
-		cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.receiving.seq_num);
-		pntlmssp->crypt.ntlm2.receiving.seq_num ++;
+		cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.receiving.seq_num++);
 		hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.receiving.sign_key, 16);
 		break;
 	}

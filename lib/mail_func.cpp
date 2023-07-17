@@ -333,9 +333,8 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 			if (tmp_ptr[0] == '\\' && (tmp_ptr[1] == '\r' || tmp_ptr[1] == '\n')) {
 				meet_slash = TRUE;
 			} else {
-				*dest_ptr = *tmp_ptr;
+				*dest_ptr++ = *tmp_ptr;
 				value_length ++;
-				dest_ptr ++;
 			}
 			tmp_ptr ++;
 			i ++;
@@ -376,8 +375,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 			}
 			if (i == buff_len)
 				return 0;
-			*dest_ptr = ' ';
-			dest_ptr ++;
+			*dest_ptr++ = ' ';
 			value_length ++;
 		}
 	}
@@ -837,8 +835,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	char *last_brace;
 	char *last_bracket;
 
-	cmdline[cmdlen] = ' ';
-	cmdlen ++;
+	cmdline[cmdlen++] = ' ';
 	ptr = cmdline;
 	/* Build the argv list */
 	argc = 0;
@@ -1279,8 +1276,7 @@ void enriched_to_html(const char *enriched_txt,
 				}
 				if (0 == strcmp(token, "/param")) {
 					paramct --;
-					html[offset] = '>';
-					offset ++;
+					html[offset++] = '>';
 					i += 6;
 				} else if (paramct > 0) {
 					len1 = strlen(token);
@@ -1294,8 +1290,7 @@ void enriched_to_html(const char *enriched_txt,
 					memcpy(html + offset, "&gt;", 4);
 					offset += 4;
 				} else {
-					html[offset] = '<';
-					offset ++;
+					html[offset++] = '<';
 					if (0 == strcmp(token, "nofill")) {
 						nofill ++;
 						if (offset + 3 >= max_len - 2) {
@@ -1313,16 +1308,14 @@ void enriched_to_html(const char *enriched_txt,
 						offset += 4;
 						i += 7;
 					} else if (strcmp(token, "bold") == 0) {
-					   html[offset] = 'b';
-					   offset ++;
+					   html[offset++] = 'b';
 					   i += 4;
 					} else if (strcmp(token, "/bold") == 0) {
 						memcpy(html + offset, "/b", 2);
 						offset += 2;
 						i += 5;
 					} else if(strcmp(token, "italic") == 0) {
-						html[offset] = 'i';
-						offset ++;
+						html[offset++] = 'i';
 						i += 6;
 					} else if (strcmp(token, "/italic") == 0) {
 						memcpy(html + offset, "/i", 2);
@@ -1363,13 +1356,11 @@ void enriched_to_html(const char *enriched_txt,
 						i += len1;
 						if(0 == strcmp(token, "param")) {
 							paramct ++;
-							html[offset] = ' ';
-							offset ++;
+							html[offset++] = ' ';
 							continue;
 						}
 					}
-					html[offset] = '>';
-					offset ++;
+					html[offset++] = '>';
 				}
 			}
 		} else if('>' == c) {
@@ -1400,12 +1391,10 @@ void enriched_to_html(const char *enriched_txt,
 				}
 				i = j - 1;
 			}
-			html[offset] = c;
-			offset ++;
+			html[offset++] = c;
 		}
 	}
-	html[offset] = '\n';
-	offset ++;
+	html[offset++] = '\n';
 	html[offset] = '\0';
 }
 
