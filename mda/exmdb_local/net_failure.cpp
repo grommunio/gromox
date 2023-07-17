@@ -182,10 +182,8 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	}
 	datetime = localtime_r(&current_time, &time_buff);
 	offset += strftime(tmp_buff + offset, 255, "%x %X", datetime);
-	tmp_buff[offset] = '\r';
-	offset++;
-	tmp_buff[offset] = '\n';
-	offset++;
+	tmp_buff[offset++] = '\r';
+	tmp_buff[offset++] = '\n';
 	memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
 	offset += sizeof(HTML_02) - 1;
 	pmime_child->write_content(tmp_buff, offset, mime_encoding::none);

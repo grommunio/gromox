@@ -1326,40 +1326,35 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		}
 		if (flag_bits & FLAG_ANSWERED) {
 			if (b_first) {
-				buff[tmp_len] = ' ';
-				tmp_len++;
+				buff[tmp_len++] = ' ';
 			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Answered");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_FLAGGED) {
 			if (b_first) {
-				buff[tmp_len] = ' ';
-				tmp_len++;
+				buff[tmp_len++] = ' ';
 			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Flagged");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DELETED) {
 			if (b_first) {
-				buff[tmp_len] = ' ';
-				tmp_len++;
+				buff[tmp_len++] = ' ';
 			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Deleted");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_SEEN) {
 			if (b_first) {
-				buff[tmp_len] = ' ';
-				tmp_len++;
+				buff[tmp_len++] = ' ';
 			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Seen");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DRAFT) {
 			if (b_first) {
-				buff[tmp_len] = ' ';
-				tmp_len++;
+				buff[tmp_len++] = ' ';
 			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Draft");
 		}

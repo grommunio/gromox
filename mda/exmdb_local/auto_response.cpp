@@ -124,8 +124,7 @@ void auto_response_reply(const char *user_home,
 	}
 	for (; i<node_stat.st_size; i++, j++) {
 		if ('\n' == buff[i] && '\r' != buff[i - 1]) {
-			new_buff[j] = '\r';
-			j ++;
+			new_buff[j++] = '\r';
 		}
 		new_buff[j] = buff[i];
 	}

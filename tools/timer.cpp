@@ -536,8 +536,7 @@ static void *tmr_thrwork(void *param)
 				pconnection->sk_write("FALSE 1\r\n");
 				continue;
 			}
-			*pspace = '\0';
-			pspace ++;
+			*pspace++ = '\0';
 
 			int exec_interval = strtol(pconnection->line + 4, nullptr, 0);
 			if (exec_interval <= 0 || strlen(pspace) >= COMMAND_LENGTH) {
@@ -562,8 +561,7 @@ static void *tmr_thrwork(void *param)
 			           static_cast<long long>(ptimer->exec_time));
 			encode_line(ptimer->command.c_str(), temp_line + temp_len);
 			temp_len = strlen(temp_line);
-			temp_line[temp_len] = '\n';
-			temp_len ++;
+			temp_line[temp_len++] = '\n';
 			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) != temp_len)
 				fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 			li_hold.unlock();
@@ -630,8 +628,7 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 
 	string_len = strlen(cmdline);
 	memcpy(pbuff, cmdline, string_len);
-	pbuff[string_len] = ' ';
-	string_len ++;
+	pbuff[string_len++] = ' ';
 	pbuff[string_len] = '\0';
 	ptr = pbuff;
     /* Build the argv list */
@@ -692,8 +689,7 @@ static void encode_line(const char *in, char *out)
 	len = strlen(in);
 	for (i=0, j=0; i<len; i++, j++) {
 		if (' ' == in[i] || '\\' == in[i] || '\t' == in[i] || '#' == in[i]) {
-			out[j] = '\\';
-			j ++;
+			out[j++] = '\\';
 		}
 		out[j] = in[i];
 	}

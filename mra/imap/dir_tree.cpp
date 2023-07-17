@@ -37,8 +37,7 @@ void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
 		auto len = strlen(temp_path);
 		pnode = proot;
 		if (len == 0 || temp_path[len-1] != '/') {
-			temp_path[len] = '/';
-			len ++;
+			temp_path[len++] = '/';
 			temp_path[len] = '\0';
 		}
 		ptr1 = temp_path;
@@ -103,8 +102,7 @@ DIR_NODE *dir_tree::match(const char *path)
 	}
 	memcpy(temp_path, path, len);
 	if ('/' != temp_path[len - 1]) {
-		temp_path[len] = '/';
-		len ++;
+		temp_path[len++] = '/';
 	}
 	temp_path[len] = '\0';
 	

@@ -268,10 +268,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 			break;
 		}
 		if (STREAM_COPY_OK == copy_result) {
-			tmp_buff[size] = '\r';
-			size ++;
-			tmp_buff[size] = '\n';
-			size ++;
+			tmp_buff[size++] = '\r';
+			tmp_buff[size++] = '\n';
 		}
 		write_len = fwrite(tmp_buff, 1, size, fp);
 		if (write_len != size) {

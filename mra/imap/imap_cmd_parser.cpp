@@ -305,8 +305,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 	}
 	if (flag_bits & FLAG_ANSWERED) {
 		if (b_first) {
-			flags_string[len] = ' ';
-			len ++;
+			flags_string[len++] = ' ';
 		} else {
 			b_first = TRUE;
 		}
@@ -314,8 +313,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 	}
 	if (flag_bits & FLAG_FLAGGED) {
 		if (b_first) {
-			flags_string[len] = ' ';
-			len ++;
+			flags_string[len++] = ' ';
 		} else {
 			b_first = TRUE;
 		}
@@ -323,8 +321,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 	}
 	if (flag_bits & FLAG_DELETED) {
 		if (b_first) {
-			flags_string[len] = ' ';
-			len ++;
+			flags_string[len++] = ' ';
 		} else {
 			b_first = TRUE;
 		}
@@ -332,8 +329,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 	}
 	if (flag_bits & FLAG_SEEN) {
 		if (b_first) {
-			flags_string[len] = ' ';
-			len ++;
+			flags_string[len++] = ' ';
 		} else {
 			b_first = TRUE;
 		}
@@ -341,8 +337,7 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 	}
 	if (flag_bits & FLAG_DRAFT) {
 		if (b_first) {
-			flags_string[len] = ' ';
-			len ++;
+			flags_string[len++] = ' ';
 		} else {
 			b_first = TRUE;
 		}
@@ -616,8 +611,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		if (!b_first) {
 			b_first = TRUE;
 		} else {
-			buff[buff_len] = ' ';
-			buff_len ++;
+			buff[buff_len++] = ' ';
 		}
 		auto kw = kwss.data();
 		if (strcasecmp(kw, "BODY") == 0) {
@@ -2021,8 +2015,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
 		if (!b_first) {
-			buff[string_length] = ' ';
-			string_length ++;
+			buff[string_length++] = ' ';
 		} else {
 			b_first = FALSE;
 		}
@@ -2254,16 +2247,13 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 		return 1909 | DISPATCH_BREAK;
 	len = sizeof(uint32_t);
 	len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", temp_name);
-	buff[len] = '\0';
-	len ++;
+	buff[len++] = '\0';
 	if (flags_string != nullptr)
 		len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", str_flags);
-	buff[len] = '\0';
-	len ++;
+	buff[len++] = '\0';
 	if (str_received != nullptr)
 		len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", str_received);
-	buff[len] = '\0';
-	len ++;
+	buff[len++] = '\0';
 	cpu_to_le32p(buff, len);
 	write(fd, buff, len);
 	pcontext->message_fd = fd;
@@ -2825,10 +2815,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 				continue;
 			}
 			if (b_first) {
-				uid_string[string_length] = ',';
-				string_length++;
-				uid_string1[string_length1] = ',';
-				string_length1++;
+				uid_string[string_length++] = ',';
+				uid_string1[string_length1++] = ',';
 			} else {
 				b_first =  TRUE;
 			}
@@ -3088,8 +3076,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 				continue;
 			}
 			if (b_first) {
-				uid_string[string_length] = ',';
-				string_length ++;
+				uid_string[string_length++] = ',';
 			} else {
 				b_first =  TRUE;
 			}

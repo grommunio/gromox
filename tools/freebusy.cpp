@@ -957,15 +957,13 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "\"stdtime\" format error\n");
 		exit(12);
 	}
-	*ptoken = '\0';
-	ptoken ++;
+	*ptoken++ = '\0';
 	ptoken1 = strchr(ptoken, ':');
 	if (NULL == ptoken1) {
 		fprintf(stderr, "\"stdtime\" format error\n");
 		exit(12);
 	}
-	*ptoken1 = '\0';
-	ptoken1 ++;
+	*ptoken1++ = '\0';
 	tzstruct.standarddate.hour = strtol(tmp_buff, nullptr, 0);
 	tzstruct.standarddate.minute = strtol(ptoken, nullptr, 0);
 	tzstruct.standarddate.second = strtol(ptoken1, nullptr, 0);
@@ -993,15 +991,13 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "\"dtltime\" format error\n");
 		exit(13);
 	}
-	*ptoken = '\0';
-	ptoken ++;
+	*ptoken++ = '\0';
 	ptoken1 = strchr(ptoken, ':');
 	if (NULL == ptoken1) {
 		fprintf(stderr, "\"dtltime\" format error\n");
 		exit(13);
 	}
-	*ptoken1 = '\0';
-	ptoken1 ++;
+	*ptoken1++ = '\0';
 	tzstruct.daylightdate.hour = strtol(tmp_buff, nullptr, 0);
 	tzstruct.daylightdate.minute = strtol(ptoken, nullptr, 0);
 	tzstruct.daylightdate.second = strtol(ptoken1, nullptr, 0);

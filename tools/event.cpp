@@ -500,8 +500,7 @@ static void q_select(eq_iter_t eq_node)
 	}
 	char temp_string[256];
 	memcpy(temp_string, penqueue->line + 7, temp_len);
-	temp_string[temp_len] = ':';
-	temp_len++;
+	temp_string[temp_len++] = ':';
 	temp_string[temp_len] = '\0';
 	HX_strlower(temp_string);
 	strcat(temp_string, pspace + 1);
@@ -538,8 +537,7 @@ static void q_unselect(eq_iter_t eq_node)
 	}
 	char temp_string[256];
 	memcpy(temp_string, penqueue->line + 9, temp_len);
-	temp_string[temp_len] = ':';
-	temp_len++;
+	temp_string[temp_len++] = ':';
 	temp_string[temp_len] = '\0';
 	HX_strlower(temp_string);
 	strcat(temp_string, pspace + 1);
@@ -591,8 +589,7 @@ static void q_else(eq_iter_t eq_node)
 	auto temp_len = pspace1 - (pspace + 1);
 	char temp_string[256];
 	memcpy(temp_string, pspace + 1, temp_len);
-	temp_string[temp_len] = ':';
-	temp_len++;
+	temp_string[temp_len++] = ':';
 	temp_string[temp_len] = '\0';
 	HX_strlower(temp_string);
 	memcpy(temp_string + temp_len, pspace1 + 1, pspace2 - pspace1 - 1);
