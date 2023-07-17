@@ -32,9 +32,8 @@ bool DSN::load_from_str_move(char *in_buff, size_t length)
 		auto parsed_length = parse_mime_field(in_buff + current_offset,
 		                     length - current_offset, &mime_field);
 		current_offset += parsed_length;
-		if (0 == parsed_length) {
+		if (parsed_length == 0)
 			break;
-		}
 		if (!DSN::append_field(pfields, mime_field.name.c_str(),
 		    mime_field.value.c_str())) {
 			clear();
@@ -89,9 +88,8 @@ bool DSN::serialize(char *out_buff, size_t max_length) const
 	for (const auto &f : message_fields)
 		offset += gx_snprintf(out_buff + offset, max_length - offset,
 		          "%s: %s\r\n", f.tag.c_str(), f.value.c_str());
-	if (offset + 2 >= max_length - 1) {
+	if (offset + 2 >= max_length - 1)
 		return false;
-	}
 	out_buff[offset++] = '\r';
 	out_buff[offset++] = '\n';
 	out_buff[offset] = '\0';
@@ -99,9 +97,8 @@ bool DSN::serialize(char *out_buff, size_t max_length) const
 		for (const auto &f : r.fields)
 			offset += gx_snprintf(out_buff + offset, max_length - offset,
 			          "%s: %s\r\n", f.tag.c_str(), f.value.c_str());
-		if (offset + 2 >= max_length - 1) {
+		if (offset + 2 >= max_length - 1)
 			return false;
-		}
 		out_buff[offset++] = '\r';
 		out_buff[offset++] = '\n';
 		out_buff[offset] = '\0';

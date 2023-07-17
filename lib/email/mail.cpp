@@ -36,9 +36,8 @@ void MAIL::clear()
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
-	if (NULL != pnode) {
+	if (pnode != nullptr)
 		pmail->tree.destroy_node(pnode, mail_enum_delete);
-	}
 	if (NULL != pmail->buffer) {
 		free(pmail->buffer);
 		pmail->buffer = NULL;
@@ -147,13 +146,12 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			pmail->pmime_pool->put_mime(pmime);
 			return false;
 		}
-		if (NULL == pmime_last) {
+		if (pmime_last == nullptr)
 			pmail->tree.add_child(&pmime_parent->node,
 				&pmime->node, SIMPLE_TREE_ADD_LAST);
-		} else {
+		else
 			pmail->tree.insert_sibling(&pmime_last->node,
 				&pmime->node, SIMPLE_TREE_INSERT_AFTER);
-		}
 		pmime_last = pmime;
 		if (pmime->mime_type == mime_type::multiple) {
 			auto fss = pmime->first_boundary == nullptr ? nullptr : &pmime->first_boundary[pmime->boundary_len+2];
@@ -162,23 +160,19 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			    &fss[nl_len], pmime->last_boundary))
 				return false;
 		}
-		if ('-' == ptr[2 + pmime_parent->boundary_len] &&
-		    '-' == ptr[3 + pmime_parent->boundary_len]) {
+		if (ptr[2+pmime_parent->boundary_len] == '-' &&
+		    ptr[3+pmime_parent->boundary_len] == '-')
 			return true;
-		}
 		ptr += pmime_parent->boundary_len + 2;
 		auto nl_len = newline_size(ptr, 2);
 		ptr += nl_len;
 		ptr_last = ptr;
 	}
-	for (ptr=ptr_last; ptr<ptr_end; ptr++) {
-		if ('\t' != *ptr && ' ' != *ptr && '\r' != *ptr && '\n' != *ptr) {
+	for (ptr = ptr_last; ptr < ptr_end; ++ptr)
+		if (*ptr != '\t' && *ptr != ' ' && *ptr != '\r' && *ptr != '\n')
 			break;
-		}
-	}
-	if (ptr >= ptr_end) {
+	if (ptr >= ptr_end)
 		return true;
-	}
 	/* some illegal multiple mimes haven't --boundary string-- */
 	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
@@ -194,13 +188,12 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		pmail->pmime_pool->put_mime(pmime);
 		return false;
 	}
-	if (NULL == pmime_last) {
+	if (pmime_last == nullptr)
 		pmail->tree.add_child(&pmime_parent->node,
 			&pmime->node,SIMPLE_TREE_ADD_LAST);
-    } else {
+	else
 		pmail->tree.insert_sibling(&pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
-	}
 	if (pmime->mime_type != mime_type::multiple)
 		return true;
 	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
@@ -332,9 +325,8 @@ MIME *MAIL::add_head()
 	if (pmail->tree.get_root() != nullptr)
 		return NULL;
 	auto pmime = pmail->pmime_pool->get_mime();
-	if (NULL == pmime) {
+	if (pmime == nullptr)
 		return NULL;
-	}
 	pmime->clear();
 	pmail->tree.set_root(&pmime->node);
 	return pmime;
@@ -369,9 +361,8 @@ bool MAIL::get_charset(char *charset) const
 #endif
 	charset[0] = '\0';
 	auto pnode = pmail->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return false;
-	}
 	auto pmime = static_cast<const MIME *>(pnode->pdata);
 	if (pmime->get_field("Subject", temp_buff, 512)) {
 		parse_mime_encode_string(temp_buff, strlen(temp_buff),
@@ -390,14 +381,10 @@ bool MAIL::get_charset(char *charset) const
 		}
 	}
 	pmail->enum_mime(mail_enum_text_mime_charset, charset);
-	if ('\0' != charset[0]) {
+	if (*charset != '\0')
 		return true;
-	}
 	pmail->enum_mime(mail_enum_html_charset, charset);
-	if ('\0' != charset[0]) {
-		return true;
-	}
-	return false;
+	return *charset != '\0';
 }
 
 static void replace_qb(char *s)
@@ -445,9 +432,8 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 	}
 #endif
 	auto pnode = pmail->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return -1;
-	}
 
 	auto pmime = static_cast<const MIME *>(pnode->pdata);
 	if (!pmime->get_field("Message-ID", temp_buff, 128))
@@ -494,9 +480,8 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 		priority = 3;
 	} else {
 		priority = strtol(mime_priority, nullptr, 0);
-		if (priority <= 0 || priority > 5) {
+		if (priority <= 0 || priority > 5)
 			priority = 3;
-		}
 	}
 
 	if (!pmime->get_field("Subject", temp_buff, 512))
@@ -512,9 +497,8 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 			strcpy(mime_received, mime_date);
 		} else {
 			ptr ++;
-			while (' ' == *ptr || '\t' == *ptr) {
+			while (*ptr == ' ' || *ptr == '\t')
 				ptr ++;
-			}
 			encode64(ptr, strlen(ptr), mime_received, 256, NULL);
 		}
 	}
@@ -594,9 +578,8 @@ static void mail_enum_text_mime_charset(const MIME *pmime, void *param)
 {
 	auto email_charset = static_cast<char *>(param);
 	
-	if ('\0' != email_charset[0]) {
+	if (*email_charset != '\0')
 		return;
-	}
 	if (0 == strncasecmp(pmime->content_type, "text/", 5) &&
 	    pmime->get_content_param("charset", email_charset, 32)) {
 		replace_qb(email_charset);
@@ -613,25 +596,21 @@ static void mail_enum_html_charset(const MIME *pmime, void *param)
 	size_t length;
 	char buff[128*1024];
 	
-	if ('\0' != email_charset[0]) {
+	if (*email_charset == '\0')
 		return;
-	}
-	if (0 != strcasecmp(pmime->content_type, "text/html")) {
+	if (strcasecmp(pmime->content_type, "text/html") != 0)
 		return;
-	}
 	length = 128*1024;
 	if (!pmime->read_content(buff, &length))
 		return;
-	if (length > 4096) {
+	if (length > 4096)
 		length = 4096;
-	}
 	ptr = search_string(buff, "charset=", length);
 	if (ptr == nullptr)
 		return;
 	ptr += 8;
-	if ('"' == *ptr || '\'' == *ptr) {
+	if (*ptr == '"' || *ptr == '\'')
 		ptr ++;
-	}
 	for (i=0; i<32; i++) {
 		if ('"' == ptr[i] || '\'' == ptr[i] || ' ' == ptr[i] ||
 			',' == ptr[i] || ';' == ptr[i] || '>' == ptr[i]) {
@@ -641,9 +620,8 @@ static void mail_enum_html_charset(const MIME *pmime, void *param)
 			email_charset[i] = ptr[i];
 		}
 	}
-	if (32 == i) {
+	if (i == 32)
 		email_charset[0] = '\0';
-	}
 }
 
 /*
@@ -733,9 +711,8 @@ bool MAIL::dup(MAIL *pmail_dst)
 	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
 		"mail::dup");
 	STREAM tmp_stream(&pallocator);
-	if (!pmail_src->serialize(&tmp_stream)) {
+	if (!pmail_src->serialize(&tmp_stream))
 		return false;
-	}
 	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));
 	if (NULL == pbuff) {
 		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
@@ -784,9 +761,8 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
 		"mail_transfer_dot");
 	STREAM tmp_stream(&pallocator);
-	if (!pmail_src->serialize(&tmp_stream)) {
+	if (!pmail_src->serialize(&tmp_stream))
 		return false;
-	}
 	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
 		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
