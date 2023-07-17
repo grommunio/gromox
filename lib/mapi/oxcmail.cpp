@@ -6,6 +6,7 @@
 #endif
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cerrno>
 #include <climits>
 #include <cstdint>

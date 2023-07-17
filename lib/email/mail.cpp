@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -347,18 +349,10 @@ MIME *MAIL::get_head()
 
 const MIME *MAIL::get_head() const { return deconst(this)->get_head(); }
 
-static bool mail_check_ascii_printable(const char *astring)
+static bool mail_check_ascii_printable(const char *s)
 {
-	int i, len;
-	
-	len = strlen(astring);
-	
-	for (i=0; i<len; i++) {
-		if (astring[i] < 0x20 || astring[i] > 0x7E) {
-			return false;
-		}
-	}
-	return true;
+	return std::all_of(s, s + strlen(s),
+	       [](unsigned char c) { return isascii(c) && isprint(c); });
 }
 
 bool MAIL::get_charset(char *charset) const

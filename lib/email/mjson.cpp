@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -475,11 +476,10 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	return -1;
 }
 
-static bool mjson_check_ascii_printable(const char *astring)
+static bool mjson_check_ascii_printable(const char *s)
 {
-	/* copy of mime_check_ascii_printable */
-	return std::all_of(astring, astring + strlen(astring),
-	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
+	return std::all_of(s, s + strlen(s),
+	       [](unsigned char c) { return isascii(c) && isprint(c); });
 }
 
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,

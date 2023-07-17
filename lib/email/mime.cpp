@@ -6,6 +6,7 @@
  * will then maintain its own buffer.
  */
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -2036,10 +2037,10 @@ static void mime_produce_boundary(MIME *pmime)
 	pmime->set_content_param("boundary", temp_boundary);
 }
 
-static bool mime_check_ascii_printable(const char *astring)
+static bool mime_check_ascii_printable(const char *s)
 {
-	return std::all_of(astring, astring + strlen(astring),
-	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
+	return std::all_of(s, s + strlen(s),
+	       [](unsigned char c) { return isascii(c) && isprint(c); });
 }
 
 MIME *MIME::get_child()
