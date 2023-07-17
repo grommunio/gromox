@@ -520,8 +520,7 @@ static BOOL container_object_fetch_folder_properties(
 			auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 			if (pvalue == nullptr)
 				return FALSE;
-			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
-			pout_propvals->count ++;
+			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
 		case PR_EMS_AB_IS_MASTER: {

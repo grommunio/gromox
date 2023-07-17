@@ -1804,8 +1804,7 @@ static BOOL mail_engine_get_encoded_name(xstmt &pstmt,
 		if (length >= 256)
 			return FALSE;
 		if (0 != offset) {
-			temp_name[offset] = '/';
-			offset ++;
+			temp_name[offset++] = '/';
 		}
 		if (offset + length >= 512)
 			return FALSE;
@@ -3785,10 +3784,8 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 			tmp_len = 0;
 		}
     }
-    list_buff[tmp_len] = '\r';
-	tmp_len ++;
-    list_buff[tmp_len] = '\n';
-	tmp_len ++;
+	list_buff[tmp_len++] = '\r';
+	list_buff[tmp_len++] = '\n';
 	return cmd_write(sockd, list_buff, tmp_len);
 }
 
@@ -3864,10 +3861,8 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 			tmp_len = 0;
 		}
     }
-    list_buff[tmp_len] = '\r';
-	tmp_len ++;
-    list_buff[tmp_len] = '\n';
-	tmp_len ++;
+	list_buff[tmp_len++] = '\r';
+	list_buff[tmp_len++] = '\n';
 	return cmd_write(sockd, list_buff, tmp_len);
 }
 

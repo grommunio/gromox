@@ -332,8 +332,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	pdomain = strchr(tmp_name, '@');
 	if (pdomain == nullptr)
 		return FALSE;
-	*pdomain = '\0';
-	pdomain ++;
+	*pdomain++ = '\0';
 	unsigned int user_id = 0, domain_id = 0;
 	if (!system_services_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;

@@ -248,8 +248,7 @@ BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 			*pb_found = FALSE;
 			return TRUE;
 		}
-		message_id = pctx->pchg_eids->pids[pctx->eid_pos];
-		pctx->eid_pos ++;
+		message_id = pctx->pchg_eids->pids[pctx->eid_pos++];
 		if (!exmdb_client_get_message_property(pctx->pstore->get_dir(),
 		    nullptr, CP_ACP, message_id, PidTagChangeNumber, &pvalue))
 			return FALSE;	

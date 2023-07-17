@@ -385,8 +385,7 @@ static int mod_cache_parse_range_value(char *value,
 	HX_strltrim(value);
 	auto val_len = strlen(value);
 	if (',' != value[val_len - 1]) {
-		value[val_len] = ',';
-		val_len ++;
+		value[val_len++] = ',';
 	}
 	size_t count = 0;
 	for (size_t i = 0; i < val_len; ++i)
@@ -406,8 +405,7 @@ static int mod_cache_parse_range_value(char *value,
 		ptoken1 = strchr(plast_token, '-');
 		if (ptoken1 == nullptr)
 			return 400;
-		*ptoken1 = '\0';
-		ptoken1 ++;
+		*ptoken1++ = '\0';
 		auto first_bpos = strtol(plast_token, nullptr, 0);
 		if (first_bpos >= 0 && static_cast<unsigned long>(first_bpos) >= size)
 			return 416;

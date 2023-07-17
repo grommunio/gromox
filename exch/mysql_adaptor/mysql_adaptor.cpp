@@ -838,8 +838,7 @@ void mysql_adaptor_encode_squote(const char *in, char *out)
 	len = strlen(in);
 	for (i=0, j=0; i<len; i++, j++) {
 		if ('\'' == in[i] || '\\' == in[i]) {
-			out[j] = '\\';
-			j ++;
+			out[j++] = '\\';
 	}
 		out[j] = in[i];
 	}

@@ -431,8 +431,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 		*ptoken = '\0';
 	ptoken = strrchr(request_uri, '.');
 	if (ptoken != nullptr) {
-		*ptoken = '\0';
-		ptoken ++;
+		*ptoken++ = '\0';
 		ptoken1 = strchr(ptoken, '/');
 		if (ptoken1 != nullptr)
 			*ptoken1 = '\0';
