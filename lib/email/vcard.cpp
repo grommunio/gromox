@@ -410,8 +410,7 @@ static size_t vcard_serialize_string(char *pbuff,
 			if (offset + 1 >= max_length) {
 				return max_length;
 			}
-			pbuff[offset] = '\\';
-			offset ++;
+			pbuff[offset++] = '\\';
 			if (line_offset >= 0) {
 				line_offset ++;
 			}
@@ -419,18 +418,15 @@ static size_t vcard_serialize_string(char *pbuff,
 			if (offset + 1 >= max_length) {
 				return max_length;
 			}
-			pbuff[offset] = '\\';
-			offset ++;
-			pbuff[offset] = 'n';
-			offset ++;
+			pbuff[offset++] = '\\';
+			pbuff[offset++] = 'n';
 			i ++;
 			if (line_offset >= 0) {
 				line_offset += 2;
 			}
 			continue;
 		}
-		pbuff[offset] = string[i];
-		offset ++;
+		pbuff[offset++] = string[i];
 		if (line_offset >= 0) {
 			line_offset ++;
 		}
@@ -463,8 +459,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 			if (offset + 1 >= max_length) {
 				return FALSE;
 			}
-			out_buff[offset] = ';';
-			offset ++;
+			out_buff[offset++] = ';';
 			if (vparam.m_paramvals.size() == 0) {
 				offset += gx_snprintf(out_buff + offset,
 				          max_length - offset, "%s", pvparam->name());
@@ -486,8 +481,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 					if (offset + 1 >= max_length) {
 						return FALSE;
 					}
-					out_buff[offset] = ',';
-					offset ++;
+					out_buff[offset++] = ',';
 				}
 				offset += vcard_serialize_string(out_buff + offset,
 				          max_length - offset, -1, pv.c_str());
@@ -496,8 +490,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 				}
 			}
 		}
-		out_buff[offset] = ':';
-		offset ++;
+		out_buff[offset++] = ':';
 		if (offset >= max_length) {
 			return FALSE;
 		}
@@ -510,8 +503,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 				if (offset + 1 >= max_length) {
 					return FALSE;
 				}
-				out_buff[offset] = ';';
-				offset ++;
+				out_buff[offset++] = ';';
 			}
 			need_comma = FALSE;
 			for (const auto &sv : pvvalue->m_subvals) {
@@ -521,8 +513,7 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 					if (offset + 1 >= max_length) {
 						return FALSE;
 					}
-					out_buff[offset] = ',';
-					offset ++;
+					out_buff[offset++] = ',';
 				}
 				if (!sv.empty()) {
 					offset += vcard_serialize_string(out_buff + offset,
@@ -537,10 +528,8 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 		if (offset + 2 >= max_length) {
 			return FALSE;
 		}
-		out_buff[offset] = '\r';
-		offset ++;
-		out_buff[offset] = '\n';
-		offset ++;
+		out_buff[offset++] = '\r';
+		out_buff[offset++] = '\n';
 	}
 	if (offset + 12 > max_length) {
 		return FALSE;

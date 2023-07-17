@@ -143,8 +143,7 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 			continue;
 		}
 		if (NULL == pitem->ptag) {
-			pitem->ptag = pline;
-			pline ++;
+			pitem->ptag = pline++;
 			continue;
 		}
 		if (!b_value) {
@@ -496,8 +495,7 @@ static size_t ical_serialize_value_string(char *pbuff,
 			if (offset + 1 >= max_length) {
 				return max_length;
 			}
-			pbuff[offset] = '\\';
-			offset ++;
+			pbuff[offset++] = '\\';
 			if (line_offset >= 0) {
 				line_offset ++;
 			}
@@ -506,10 +504,8 @@ static size_t ical_serialize_value_string(char *pbuff,
 			if (offset + 1 >= max_length) {
 				return max_length;
 			}
-			pbuff[offset] = '\\';
-			offset ++;
-			pbuff[offset] = 'n';
-			offset ++;
+			pbuff[offset++] = '\\';
+			pbuff[offset++] = 'n';
 			if ('\r' == string[i]) {
 				i ++;
 			}
@@ -518,8 +514,7 @@ static size_t ical_serialize_value_string(char *pbuff,
 			}
 			continue;
 		}
-		pbuff[offset] = string[i];
-		offset ++;
+		pbuff[offset++] = string[i];
 		if (line_offset >= 0) {
 			line_offset ++;
 		}
@@ -553,8 +548,7 @@ static size_t ical_serialize_component(const ical_component &com,
 			if (offset + 1 >= max_length) {
 				return 0;
 			}
-			out_buff[offset] = ';';
-			offset ++;
+			out_buff[offset++] = ';';
 			offset += gx_snprintf(out_buff + offset,
 			          max_length - offset, "%s=", piparam.name.c_str());
 			if (offset >= max_length) {
@@ -568,8 +562,7 @@ static size_t ical_serialize_component(const ical_component &com,
 					if (offset + 1 >= max_length) {
 						return 0;
 					}
-					out_buff[offset] = ',';
-					offset ++;
+					out_buff[offset++] = ',';
 				}
 				offset += ical_serialize_tag_string(out_buff + offset,
 				          max_length - offset, pdata2.c_str());
@@ -578,8 +571,7 @@ static size_t ical_serialize_component(const ical_component &com,
 				}
 			}
 		}
-		out_buff[offset] = ':';
-		offset ++;
+		out_buff[offset++] = ':';
 		if (offset >= max_length) {
 			return 0;
 		}
@@ -591,8 +583,7 @@ static size_t ical_serialize_component(const ical_component &com,
 				if (offset + 1 >= max_length) {
 					return 0;
 				}
-				out_buff[offset] = ';';
-				offset ++;
+				out_buff[offset++] = ';';
 			}
 			if (pivalue.name[0] != '\0') {
 				offset += gx_snprintf(out_buff + offset,
@@ -609,8 +600,7 @@ static size_t ical_serialize_component(const ical_component &com,
 					if (offset + 1 >= max_length) {
 						return 0;
 					}
-					out_buff[offset] = ',';
-					offset ++;
+					out_buff[offset++] = ',';
 				}
 				if (pnv2.empty())
 					continue;
@@ -625,10 +615,8 @@ static size_t ical_serialize_component(const ical_component &com,
 		if (offset + 2 >= max_length) {
 			return 0;
 		}
-		out_buff[offset] = '\r';
-		offset ++;
-		out_buff[offset] = '\n';
-		offset ++;
+		out_buff[offset++] = '\r';
+		out_buff[offset++] = '\n';
 	}
 	for (const auto &comp : pcomponent->component_list) {
 		offset1 = ical_serialize_component(comp, &out_buff[offset], max_length - offset);
@@ -1187,12 +1175,10 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 		*pweekorder = 0;
 		goto PARSE_WEEKDAY;
 	}
-	tmp_num[0] = *pbegin;
-	pbegin ++;
+	tmp_num[0] = *pbegin++;
 	tmp_num[1] = '\0';
 	if (HX_isdigit(*pbegin)) {
-		tmp_num[1] = *pbegin;
-		pbegin ++;
+		tmp_num[1] = *pbegin++;
 		tmp_num[2] = '\0';
 	}
 	*pweekorder = strtol(tmp_num, nullptr, 0);

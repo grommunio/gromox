@@ -807,10 +807,8 @@ bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
 	size_t offset = 0;
 	size = STREAM_BLOCK_SIZE - 3;
 	while (tmp_stream.copyline(pbuff + offset, &size) != STREAM_COPY_END) {
-		pbuff[offset + size] = '\r';
-		size ++;
-		pbuff[offset + size] = '\n';
-		size ++;
+		pbuff[offset + size++] = '\r';
+		pbuff[offset + size++] = '\n';
 		if (add_dot) {
 			if (pbuff[offset] == '.') {
 				memmove(&pbuff[offset+1], &pbuff[offset], size);

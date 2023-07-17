@@ -92,10 +92,8 @@ bool DSN::serialize(char *out_buff, size_t max_length) const
 	if (offset + 2 >= max_length - 1) {
 		return false;
 	}
-	out_buff[offset] = '\r';
-	offset ++;
-	out_buff[offset] = '\n';
-	offset ++;
+	out_buff[offset++] = '\r';
+	out_buff[offset++] = '\n';
 	out_buff[offset] = '\0';
 	for (const auto &r : rcpts_fields) {
 		for (const auto &f : r.fields)
@@ -104,10 +102,8 @@ bool DSN::serialize(char *out_buff, size_t max_length) const
 		if (offset + 2 >= max_length - 1) {
 			return false;
 		}
-		out_buff[offset] = '\r';
-		offset ++;
-		out_buff[offset] = '\n';
-		offset ++;
+		out_buff[offset++] = '\r';
+		out_buff[offset++] = '\n';
 		out_buff[offset] = '\0';
 	}
 	return true;

@@ -507,8 +507,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	if (NULL == psubtype) {
 		psubtype = deconst("NIL");
 	} else {
-		*psubtype = '\0';
-		psubtype ++;
+		*psubtype++ = '\0';
 	}
 	
 	if (pmime->get_mtype() == mime_type::single ||
@@ -516,11 +515,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		offset += gx_snprintf(buff + offset, length - offset,
 		          "(\"%s\" \"%s\"", ctype.c_str(), psubtype);
 		if (*pmime->get_charset() != '\0' || *pmime->get_filename() != '\0') {
-			buff[offset] = ' ';
-			offset ++;
-			buff[offset] = '(';
-			offset ++;
-			
+			buff[offset++] = ' ';
+			buff[offset++] = '(';
 			b_space = FALSE;
 			if (*pmime->get_charset() != '\0') {
 				offset += gx_snprintf(buff + offset, length - offset,
@@ -537,8 +533,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			if (*pmime->get_filename() != '\0') {
 				if (b_space) {
-					buff[offset] = ' ';
-					offset ++;
+					buff[offset++] = ' ';
 				}
 				if (mjson_check_ascii_printable(pmime->get_filename())) {
 					mjson_add_backslash(pmime->get_filename(), temp_buff);
@@ -557,8 +552,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				}
 			}
 			
-			buff[offset] = ')';
-			offset ++;
+			buff[offset++] = ')';
 		} else {
 			memcpy(buff + offset, " NIL", 4);
 			offset += 4;
@@ -703,11 +697,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		}
 		
  RFC822_SUCCESS:
-		buff[offset] = ')';
-		offset ++;
+		buff[offset++] = ')';
 	} else if (pmime->get_mtype() == mime_type::multiple) {
-		buff[offset] = '(';
-		offset ++;
+		buff[offset++] = '(';
 		auto pnode = pmime->node.get_child();
 		if (NULL == pnode) {
 			return -1;
@@ -725,8 +717,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			memcpy(buff + offset, " NIL NIL NIL", 12);
 			offset += 12;
 		}
-		buff[offset] = ')';
-		offset ++;
+		buff[offset++] = ')';
 	} else {
 		return -1;
 	}
@@ -861,23 +852,17 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		offset += 4;
 	}
 	
-	buff[offset] = ' ';
-	offset ++;
-	buff[offset] = '(';
-	offset ++;
+	buff[offset++] = ' ';
+	buff[offset++] = '(';
 	auto ret_len = mjson_convert_address(pjson->from.c_str(), charset.c_str(),
 	               &buff[offset], length - offset);
 	if (-1 == ret_len) {
 		return -1;
 	}
 	offset += ret_len;
-	buff[offset] = ')';
-	offset ++;
-	
-	buff[offset] = ' ';
-	offset ++;
-	buff[offset] = '(';
-	offset ++;
+	buff[offset++] = ')';
+	buff[offset++] = ' ';
+	buff[offset++] = '(';
 	ret_len = mjson_convert_address(pjson->sender.size() > 0 ?
 	          pjson->sender.c_str() : pjson->from.c_str(), charset.c_str(),
 	          &buff[offset], length - offset);
@@ -885,13 +870,9 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		return -1;
 	}
 	offset += ret_len;
-	buff[offset] = ')';
-	offset ++;
-	
-	buff[offset] = ' ';
-	offset ++;
-	buff[offset] = '(';
-	offset ++;
+	buff[offset++] = ')';
+	buff[offset++] = ' ';
+	buff[offset++] = '(';
 	ret_len = mjson_convert_address(pjson->reply.size() > 0 ?
 	          pjson->reply.c_str() : pjson->from.c_str(), charset.c_str(),
 	          &buff[offset], length - offset);
@@ -899,8 +880,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		return -1;
 	}
 	offset += ret_len;
-	buff[offset] = ')';
-	offset ++;
+	buff[offset++] = ')';
 	
 	auto len = pjson->to.size();
 	last_pos = 0;
@@ -913,11 +893,9 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 			'\0' == pjson->to[i]) {
 			tmp_len = i - last_pos;
 			if (!b_quoted && tmp_len < 1024 && tmp_len > 0) {
-				buff[offset] = ' ';
-				offset ++;
+				buff[offset++] = ' ';
 				if (!b_bracket) {
-					buff[offset] = '(';
-					offset ++;
+					buff[offset++] = '(';
 					b_bracket = TRUE;
 				}
 				memcpy(temp_buff, &pjson->to[last_pos], tmp_len);
@@ -937,8 +915,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
 	} else {
-		buff[offset] = ')';
-		offset ++;
+		buff[offset++] = ')';
 	}
 	
 	len = pjson->cc.size();
@@ -952,11 +929,9 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 			'\0' == pjson->cc[i]) {
 			tmp_len = i - last_pos;
 			if (!b_quoted && tmp_len < 1024 && tmp_len > 0) {
-				buff[offset] = ' ';
-				offset ++;
+				buff[offset++] = ' ';
 				if (!b_bracket) {
-					buff[offset] = '(';
-					offset ++;
+					buff[offset++] = '(';
 					b_bracket = TRUE;
 				}
 				memcpy(temp_buff, &pjson->cc[last_pos], tmp_len);
@@ -976,8 +951,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
 	} else {
-		buff[offset] = ')';
-		offset ++;
+		buff[offset++] = ')';
 	}
 	
 	/* bcc */
@@ -1003,8 +977,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		offset += 4;
 	}
 	
-	buff[offset] = ')';
-	offset ++;
+	buff[offset++] = ')';
 	buff[offset] = '\0';
 	
 	if (offset >= length) {
@@ -1022,8 +995,7 @@ static void mjson_add_backslash(const char *astring, char *out_string)
 	
 	for (i=0,j=0; i<len; i++,j++) {
 		if ('"' == astring[i] || '\\' == astring[i]) {
-			out_string[j] = '\\';
-			j ++;
+			out_string[j++] = '\\';
 		}
 		out_string[j] = astring[i];
 	}

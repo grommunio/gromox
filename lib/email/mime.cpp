@@ -274,11 +274,9 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		for (i=0,j=0; i<length; i++,j++) {
 			if ('.' == pcontent[i]) {
 				if (0 == i) {
-					pmime->content_begin[j] = '.';
-					j ++;
+					pmime->content_begin[j++] = '.';
 				} else if (i > 2 && pcontent[i-1] == '\n' && pcontent[i-2] == '\r') {
-					pmime->content_begin[j] = '.';
-					j++;
+					pmime->content_begin[j++] = '.';
 				}
 			}
 			pmime->content_begin[j] = pcontent[i];
@@ -311,13 +309,11 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		for (i=0,j=0; i<length; i++,j++) {
 			if ('.' == pbuff[i]) {
 				if (0 == i) {
-					pmime->content_begin[j] = '.';
-					j ++;
+					pmime->content_begin[j++] = '.';
 				} else {
 					if (i > 2 && '\n' == pbuff[i - 1] &&
 						'\r' == pbuff[i - 2]) {
-						pmime->content_begin[j] = '.';
-						j ++;
+						pmime->content_begin[j++] = '.';
 					}
 				}
 			}
@@ -455,8 +451,7 @@ static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t l
 		if (!v.empty()) {
 			if (offset + v.size() + 1 >= length)
 				return false;
-			value[offset] = '=';
-			offset ++;
+			value[offset++] = '=';
 			memcpy(&value[offset], v.c_str(), v.size());
 			offset += v.size();
 		}
@@ -1116,8 +1111,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 				}
 			}
 		}
-		pbuff[size] = pmime->content_begin[i];
-		size ++;
+		pbuff[size++] = pmime->content_begin[i];
 	}
 	
 	switch (encoding_type) {
