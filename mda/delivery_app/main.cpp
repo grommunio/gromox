@@ -65,6 +65,19 @@ static constexpr cfg_directive delivery_cfg_defaults[] = {
 
 static void term_handler(int signo);
 
+static bool delivery_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+{
+	if (cfg == nullptr)
+		cfg = config_file_prg(opt_config_file, "delivery.cfg",
+		      delivery_cfg_defaults);
+	if (opt_config_file != nullptr && cfg == nullptr) {
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
+		return false;
+	}
+	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
+	return true;
+}
+
 int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
@@ -91,10 +104,9 @@ int main(int argc, const char **argv) try
 	                delivery_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		mlog(LV_ERR, "resource: config_file_init %s: %s", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
+	if (g_config_file == nullptr || !delivery_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
-	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, '\0', std::size(temp_buff));
@@ -189,8 +201,10 @@ int main(int argc, const char **argv) try
 	mlog(LV_NOTICE, "system: LDA is now running");
 	while (!g_notify_stop) {
         sleep(3);
-		if (g_hup_signalled.exchange(false))
+		if (g_hup_signalled.exchange(false)) {
+			delivery_reload_config(nullptr);
 			service_trigger_all(PLUGIN_RELOAD);
+		}
     }
 	return retcode;
 } catch (const cfg_error &) {
