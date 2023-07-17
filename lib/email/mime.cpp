@@ -1449,11 +1449,8 @@ ssize_t MIME::get_length() const
 		}
 		return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 	}
-	if (NULL == pmime->first_boundary) {
-		mime_len += 48;
-	} else {
-		mime_len += pmime->first_boundary - pmime->content_begin;
-	}
+	mime_len += pmime->first_boundary == nullptr ? 48 :
+	            pmime->first_boundary - pmime->content_begin;
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
@@ -1518,10 +1515,7 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 		file_name[tmp_len - 1] = '\0';
 		memmove(file_name, file_name + 1, tmp_len - 1);
 	}
-	if ('\0' == file_name[0]) {
-		return false;
-	}
-	return true;
+	return *file_name != '\0';
 }
 
 static int mime_get_digest_single(const MIME *, const char *id, size_t *ofs, size_t head_ofs, Json::Value &);
@@ -1696,11 +1690,8 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	BOOL has_submime;
 	char temp_id[64];
 
-	if (NULL == pmime->first_boundary) {
-		*poffset += 48;
-	} else {
-		*poffset += pmime->first_boundary - pmime->content_begin;
-	}
+	*poffset += pmime->first_boundary == nullptr ? 48 :
+	            pmime->first_boundary - pmime->content_begin;
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	count = 1;
@@ -1727,11 +1718,7 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	}
 	tmp_len = pmime->content_length - (pmime->last_boundary -
 	          pmime->content_begin);
-	if (tmp_len > 0) {
-		*poffset += tmp_len;
-	} else if (0 == tmp_len) {
-		*poffset += 2;
-	}
+	*poffset += tmp_len > 0 ? tmp_len : 2;
 	return 0;
 }
 
@@ -1831,11 +1818,8 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	digest["begin"]  = Json::Value::UInt64(*poffset);
 	digest["length"] = Json::Value::UInt64(head_offset + mgl - *poffset);
 	dsarray.append(std::move(digest));
-	if (NULL == pmime->first_boundary) {
-		*poffset += 48;
-	} else {
-		*poffset += pmime->first_boundary - pmime->content_begin;
-	}
+	*poffset += pmime->first_boundary == nullptr ? 48 :
+	            pmime->first_boundary - pmime->content_begin;
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	count = 1;
@@ -1862,11 +1846,7 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	}
 	tmp_len = pmime->content_length - (pmime->last_boundary -
 	          pmime->content_begin);
-	if (tmp_len > 0) {
-		*poffset += tmp_len;
-	} else if (0 == tmp_len) {
-		*poffset += 2;
-	}
+	*poffset += tmp_len > 0 ? tmp_len : 2;
 	return 0;
 }
 

@@ -727,12 +727,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		goto FETCH_STRUCTURE_LOOP;
 	}
-	
-	if (offset >= length) {
-		return -1;
-	}
-	
-	return offset;
+	return offset >= length ? -1 : offset;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1322: ENOMEM");
 	return -1;
@@ -794,12 +789,7 @@ static int mjson_convert_address(const char *address, const char *charset,
 		memcpy(buff + offset, " NIL)", 5);
 		offset += 5;
 	}
-
-	if (offset >= length) {
-		return -1;
-	}
-	
-	return offset;
+	return offset >= length ? -1 : offset;
 }
 
 int MJSON::fetch_envelope(const char *cset, char *buff, int length)
@@ -979,12 +969,7 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	
 	buff[offset++] = ')';
 	buff[offset] = '\0';
-	
-	if (offset >= length) {
-		return -1;
-	}
-	
-	return offset;
+	return offset >= length ? -1 : offset;
 }
 
 static void mjson_add_backslash(const char *astring, char *out_string)

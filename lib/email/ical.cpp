@@ -166,10 +166,7 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 		}
 		pline ++;
 	}
-	if (NULL == pitem->ptag) {
-		return false;
-	}
-	return true;
+	return pitem->ptag != nullptr;
 }
 
 static char* ical_get_string_line(char *pbuff, size_t max_length)
@@ -627,10 +624,7 @@ static size_t ical_serialize_component(const ical_component &com,
 	}
 	offset += gx_snprintf(out_buff + offset, max_length - offset,
 	          "END:%s\r\n", pcomponent->m_name.c_str());
-	if (offset >= max_length) {
-		return 0;
-	}
-	return offset;
+	return offset >= max_length ? 0 : offset;
 }
 
 bool ical::serialize(char *out_buff, size_t max_length) const
@@ -660,9 +654,7 @@ static const char *ical_get_first_subvalue_by_name_internal(
 	if (NULL == plist) {
 		return NULL;
 	}
-	if (plist->size() != 1)
-		return NULL;
-	return plist->front().c_str();
+	return plist->size() == 1 ? plist->front().c_str() : nullptr;
 }
 
 const char *ICAL_LINE::get_first_subvalue_by_name(const char *name) const
@@ -733,10 +725,7 @@ bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday)
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
-	if (sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) < 3) {
-		return false;
-	}
-	return true;
+	return sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) >= 3;
 }
 
 bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitime)
@@ -774,10 +763,7 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 		mlog(LV_DEBUG, "W-1200: Unparsable date: \"%s\"", tmp_buff);
 		return false;
 	}
-	if ('T' != tsep) {
-		return false;
-	}
-	return true;
+	return tsep == 'T';
 }
 
 int ICAL_TIME::twcompare(const ICAL_TIME &o) const
@@ -809,10 +795,7 @@ int ICAL_TIME::twcompare(const ICAL_TIME &o) const
 
 static bool ical_check_leap_year(unsigned int year)
 {
-	if ((0 == year%4 && 0 != year%100) || (0 == year%400)) {
-		return true;
-	}
-	return false;
+	return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 }
 
 unsigned int ical_get_dayofweek(unsigned int year, unsigned int month,
@@ -2348,11 +2331,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 			return false;
 		pirrule->weekstart = dow;
 	} else {
-		if (NULL != pbywnum_list) {
-			pirrule->weekstart = 1;
-		} else {
-			pirrule->weekstart = 0;
-		}
+		pirrule->weekstart = pbywnum_list != nullptr;
 	}
 	itime = pirrule->instance_itime;
 	switch (pirrule->frequency) {
