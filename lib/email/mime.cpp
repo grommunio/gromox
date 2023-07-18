@@ -134,9 +134,8 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length) 
 			}
 			if (pmime->mime_type == mime_type::multiple) {
 				if (!pmime->get_content_param("boundary",
-				    pmime->boundary_string, VALUE_LEN - 1)) {
+				    pmime->boundary_string, VALUE_LEN - 1))
 					pmime->mime_type = mime_type::single;
-				}
 				if (!mime_parse_multiple(pmime))
 					pmime->mime_type = mime_type::single;
 			} else if (pmime->mime_type == mime_type::none) {
@@ -177,9 +176,8 @@ bool MIME::load_from_str_move(MIME *pmime_parent, char *in_buff, size_t length) 
 		}
 		if (pmime->mime_type == mime_type::multiple) {
 			if (!pmime->get_content_param("boundary",
-			    pmime->boundary_string, VALUE_LEN - 1)) {
+			    pmime->boundary_string, VALUE_LEN - 1))
 				pmime->mime_type = mime_type::single;
-			}
 			if (!mime_parse_multiple(pmime))
 				pmime->mime_type = mime_type::single;
 		} else if (pmime->mime_type == mime_type::none) {
@@ -269,16 +267,14 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		content_buf.reset(me_alloc<char>(buff_length));
 		content_begin = content_buf.get();
-		if (NULL == pmime->content_begin) {
+		if (pmime->content_begin == nullptr)
 			return false;
-		}
 		for (i=0,j=0; i<length; i++,j++) {
 			if ('.' == pcontent[i]) {
-				if (0 == i) {
+				if (i == 0)
 					pmime->content_begin[j++] = '.';
-				} else if (i > 2 && pcontent[i-1] == '\n' && pcontent[i-2] == '\r') {
+				else if (i > 2 && pcontent[i-1] == '\n' && pcontent[i-2] == '\r')
 					pmime->content_begin[j++] = '.';
-				}
 			}
 			pmime->content_begin[j] = pcontent[i];
 		}
@@ -295,13 +291,11 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		auto pbuff = std::make_unique<char[]>(buff_length);
 		content_buf.reset(me_alloc<char>(buff_length));
 		content_begin = content_buf.get();
-		if (NULL == pmime->content_begin) {
+		if (pmime->content_begin == nullptr)
 			return false;
-		}
 		auto qdlen = qp_encode_ex(pbuff.get(), buff_length, pcontent, length);
-		if (qdlen < 0) {
+		if (qdlen < 0)
 			return false;
-		}
 		length = qdlen;
 		if (length > 0 && pbuff[length-1] != '\n') {
 			memcpy(&pbuff[length], "\r\n", 2);
@@ -309,14 +303,10 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		}
 		for (i=0,j=0; i<length; i++,j++) {
 			if ('.' == pbuff[i]) {
-				if (0 == i) {
+				if (i == 0)
 					pmime->content_begin[j++] = '.';
-				} else {
-					if (i > 2 && '\n' == pbuff[i - 1] &&
-						'\r' == pbuff[i - 2]) {
-						pmime->content_begin[j++] = '.';
-					}
-				}
+				else if (i > 2 && pbuff[i-1] == '\n' && pbuff[i-2] == '\r')
+					pmime->content_begin[j++] = '.';
 			}
 			pmime->content_begin[j] = pbuff[i];
 		}
@@ -328,9 +318,8 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		content_buf.reset(me_alloc<char>(buff_length));
 		content_begin = content_buf.get();
-		if (NULL == pmime->content_begin) {
+		if (pmime->content_begin == nullptr)
 			return false;
-		}
 		encode64_ex(pcontent, length, pmime->content_begin, buff_length,
 				&pmime->content_length);
 		pmime->set_field("Content-Transfer-Encoding", "base64");
@@ -436,9 +425,8 @@ bool MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam) const
 static bool mime_get_content_type_field(const MIME *pmime, char *value, size_t length)
 {
 	auto offset = strlen(pmime->content_type);
-	if (offset >= length) {
+	if (offset >= length)
 		return false;
-	}
 	memcpy(value, pmime->content_type, offset);
 	for (const auto &[k, v] : pmime->f_type_params) {
 		/* content-type: xxxxx"; "yyyyy */
@@ -481,9 +469,8 @@ bool MIME::get_field(const char *tag, char *value, size_t length) const
 		return false;
 	}
 #endif
-	if (0 == strcasecmp(tag, "Content-Type")) {
+	if (strcasecmp(tag, "Content-Type") == 0)
 		return mime_get_content_type_field(pmime, value, length);
-	}
 	for (const auto &[k, v] : f_other_fields) {
 		if (strcasecmp(tag, k.c_str()) == 0) {
 			gx_strlcpy(value, v.c_str(), length);
@@ -509,9 +496,8 @@ int MIME::get_field_num(const char *tag) const
 		return 0;
 	}
 #endif
-	if (0 == strcasecmp(tag, "Content-Type")) {
+	if (strcasecmp(tag, "Content-Type") == 0)
 		return 1;
-	}
 	size_t i = 0;
 	for (const auto &[k, v] : f_other_fields)
 		if (strcasecmp(tag, k.c_str()) == 0)
@@ -543,9 +529,8 @@ bool MIME::search_field(const char *tag, int order, char *value, size_t length) 
 		return false;
 	}
 #endif
-	if (order < 0) {
+	if (order < 0)
 		return false;
-	}
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		if (order != 0)
 			return false;
@@ -632,9 +617,8 @@ bool MIME::append_field(const char *tag, const char *value) try
 		return false;
 	}
 #endif
-	if (0 == strcasecmp(tag, "Content-Type")) {
+	if (strcasecmp(tag, "Content-Type") == 0)
 		return false;
-	}
 	f_other_fields.emplace_back(MIME_FIELD{tag, value});
 	pmime->head_touched = TRUE;
 	return true;
@@ -654,9 +638,8 @@ bool MIME::append_field(const char *tag, const char *value) try
  */
 bool MIME::remove_field(const char *tag)
 {
-	if (0 == strcasecmp(tag, "Content-Type")) {
+	if (strcasecmp(tag, "Content-Type") == 0)
 		return false;
-	}
 	auto mid = std::remove_if(f_other_fields.begin(), f_other_fields.end(),
 	           [&](const MIME_FIELD &mf) { return strcasecmp(tag, mf.name.c_str()) == 0; });
 	auto found = mid != f_other_fields.end();
@@ -807,11 +790,10 @@ bool MIME::serialize(STREAM *pstream) const
 			return false;
 		return true;
 	}
-	if (NULL == pmime->first_boundary) {
+	if (pmime->first_boundary == nullptr)
 		pstream->write("This is a multi-part message in MIME format.\r\n\r\n", 48);
-	} else {
+	else
 		pstream->write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
-	}
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
@@ -837,13 +819,12 @@ bool MIME::serialize(STREAM *pstream) const
 	}
 	tmp_len = pmime->content_length -
 	          (pmime->last_boundary - pmime->content_begin);
-	if (tmp_len > 0) {
+	if (tmp_len > 0)
 		pstream->write(pmime->last_boundary, tmp_len);
-	} else if (0 == tmp_len) {
+	else if (tmp_len == 0)
 		pstream->write("\r\n", 2);
-	} else {
+	else
 		mlog(LV_DEBUG, "Unspecific error in %s", __PRETTY_FUNCTION__);
-	}
 	return true;
 }
 
@@ -863,11 +844,10 @@ static bool mime_read_multipart_content(const MIME *pmime,
 	alloc_limiter<stream_block> pallocator(tmp_size / STREAM_BLOCK_SIZE + 1,
 		"mime_read_multipart");
 	STREAM tmp_stream(&pallocator);
-	if (NULL == pmime->first_boundary) {
+	if (pmime->first_boundary == nullptr)
 		tmp_stream.write("This is a multi-part message in MIME format.\r\n\r\n", 48);
-	} else {
+	else
 		tmp_stream.write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
-	}
 	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
@@ -892,11 +872,10 @@ static bool mime_read_multipart_content(const MIME *pmime,
 	} else {
 		tmp_len = pmime->content_length -
 				(pmime->last_boundary - pmime->content_begin);
-		if (tmp_len > 0) {
+		if (tmp_len > 0)
 			tmp_stream.write(pmime->last_boundary, tmp_len);
-		} else if (0 == tmp_len) {
+		else if (tmp_len == 0)
 			tmp_stream.write("\r\n", 2);
-		}
 	}
 	offset = 0;
 	buff_size = STREAM_BLOCK_SIZE;
@@ -978,9 +957,8 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 		memcpy(&tmp_buff[len], v.c_str(), v.size());
 		len += v.size();
 	}
-	if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
+	if (len > MIME_FIELD_LEN + MIME_NAME_LEN)
 		return false;
-	}
 	/* \r\n for separate head and content */
 	memcpy(tmp_buff + len, "\r\n\r\n", 4);
 	len += 4;
@@ -1085,24 +1063,21 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	 * (the mention is hidden somewhere in RFC 2046,2049)
 	 */
 	size_t tmp_len = pmime->content_length;
-	if (tmp_len >= 2 && newline_size(&pmime->content_begin[tmp_len-2], 2) == 2) {
+	if (tmp_len >= 2 && newline_size(&pmime->content_begin[tmp_len-2], 2) == 2)
 		tmp_len -= 2;
-	} else if (tmp_len >= 1 && newline_size(&pmime->content_begin[tmp_len-1], 1) == 1) {
+	else if (tmp_len >= 1 && newline_size(&pmime->content_begin[tmp_len-1], 1) == 1)
 		tmp_len -= 1;
-	}
 	size_t size = 0;
 	for (i=0; i<tmp_len; i++) {
 		if ('.' == pmime->content_begin[i]) {
 			if (0 == i) {
-				if ('.' == pmime->content_begin[1]) {
+				if (pmime->content_begin[1] == '.')
 					i ++;
-				}
 			} else {
-				if (i > 2 && '\n' == pmime->content_begin[i - 1] &&
-					'\r' == pmime->content_begin[i - 2] &&
-					'.' == pmime->content_begin[i + 1]) {
+				if (i > 2 && pmime->content_begin[i-1] == '\n' &&
+				    pmime->content_begin[i-2] == '\r' &&
+				    pmime->content_begin[i+1] == '.')
 					i ++;
-				}
 			}
 		}
 		pbuff[size++] = pmime->content_begin[i];
@@ -1112,9 +1087,8 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	case mime_encoding::base64:
 		if (decode64_ex(pbuff.get(), size, out_buff, max_length, plength) != 0) {
 			mlog(LV_DEBUG, "mime: failed to decode base64 mime content");
-			if (0 == *plength) {
+			if (*plength == 0)
 				return false;
-			}
 		}
 		return true;
 	case mime_encoding::qp: {
@@ -1164,9 +1138,8 @@ bool MIME::emit(write_func write, void *fd) const
 			auto wrlen = write(fd, pmime->head_begin, pmime->head_length);
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->head_length)
 				return false;
-			if (2 != write(fd, "\r\n", 2)) {
+			if (write(fd, "\r\n", 2) != 2)
 				return false;
-			}
 		}
 	} else {	
 		for (const auto &[k, v] : f_other_fields) {
@@ -1210,9 +1183,8 @@ bool MIME::emit(write_func write, void *fd) const
 			memcpy(&tmp_buff[len], v.c_str(), v.size());
 			len += v.size();
 		}
-		if (len > MIME_FIELD_LEN + MIME_NAME_LEN) {
+		if (len > MIME_FIELD_LEN + MIME_NAME_LEN)
 			return false;
-		}
 		/* \r\n for separate head and content */
 		memcpy(tmp_buff + len, "\r\n\r\n", 4);
 		len += 4;
@@ -1227,9 +1199,8 @@ bool MIME::emit(write_func write, void *fd) const
 				return false;
 		} else {
 			/* if there's nothing, just append an empty line */
-			if (2 != write(fd, "\r\n", 2)) {
+			if (write(fd, "\r\n", 2) != 2)
 				return false;
-			}
 		}
 		return true;
 	} else if (pmime->mime_type == mime_type::single_obj) {
@@ -1244,10 +1215,9 @@ bool MIME::emit(write_func write, void *fd) const
 		return true;
 	}
 	if (NULL == pmime->first_boundary) {
-		if (48 != write(fd, "This is a multi-part message "
-		    "in MIME format.\r\n\r\n", 48)) {
+		if (write(fd, "This is a multi-part message "
+		    "in MIME format.\r\n\r\n", 48) != 48)
 			return false;
-		}
 	} else if (write(fd, pmime->content_begin, pmime->first_boundary - pmime->content_begin) !=
 	    pmime->first_boundary - pmime->content_begin) {
 		return false;
@@ -1331,11 +1301,10 @@ bool MIME::check_dot() const
 		return false;
 	}
 	if (!pmime->head_touched) {
-		if (pmime->head_length >= 2 && (('.' == pmime->head_begin[0] &&
-			'.' == pmime->head_begin[1]) || NULL != memmem(
-			pmime->head_begin, pmime->head_length, "\r\n..", 4))) {
+		if (pmime->head_length >= 2 &&
+		    ((pmime->head_begin[0] == '.' && pmime->head_begin[1] == '.') ||
+		    memmem(pmime->head_begin, pmime->head_length, "\r\n..", 4) != nullptr))
 			return true;
-		}
 	} else {	
 		for (const auto &[k, v] : f_other_fields)
 			/* xxxxx: yyyyy */
@@ -1347,12 +1316,9 @@ bool MIME::check_dot() const
 			return true;
 		if (0 != pmime->content_length) {
 			if (pmime->content_length >= 2 &&
-				(('.' == pmime->content_begin[0] &&
-				'.' == pmime->content_begin[1]) ||
-				NULL != memmem(pmime->content_begin,
-				pmime->content_length, "\r\n..", 4))) {
+			    ((pmime->content_begin[0] == '.' && pmime->content_begin[1] == '.') ||
+			    memmem(pmime->content_begin, pmime->content_length, "\r\n..", 4) != nullptr))
 				return true;
-			}
 		} else if (reinterpret_cast<MAIL *>(pmime->content_begin)->check_dot()) {
 			return true;
 		} 
@@ -1363,11 +1329,10 @@ bool MIME::check_dot() const
 	}
 	if (NULL != pmime->first_boundary) {
 		tmp_len = pmime->first_boundary - pmime->content_begin;
-		if (tmp_len >= 2 && (('.' == pmime->first_boundary[0] &&
-		    '.' == pmime->first_boundary[1]) ||
-		    NULL != memmem(pmime->first_boundary, tmp_len, "\r\n..", 4))) {
+		if (tmp_len >= 2 &&
+		    ((pmime->first_boundary[0] == '.' && pmime->first_boundary[1] == '.') ||
+		    memmem(pmime->first_boundary, tmp_len, "\r\n..", 4) != nullptr))
 			return true;
-		}
 	}
 	auto pnode = pmime->node.get_child();
 	while (NULL != pnode) {
@@ -1378,11 +1343,10 @@ bool MIME::check_dot() const
 	if (NULL != pmime->last_boundary) {
 		tmp_len = pmime->content_length -
 		          (pmime->last_boundary - pmime->content_begin);
-		if (tmp_len >= 2 && (('.' == pmime->last_boundary[0] &&
-		    '.' == pmime->last_boundary[1]) ||
-		    NULL != memmem(pmime->last_boundary, tmp_len, "\r\n..", 4))) {
+		if (tmp_len >= 2 &&
+		    ((pmime->last_boundary[0] == '.' && pmime->last_boundary[1] == '.') ||
+		    memmem(pmime->last_boundary, tmp_len, "\r\n..", 4) != nullptr))
 			return true;
-		}
 	}
 	return false;
 }
@@ -1425,12 +1389,11 @@ ssize_t MIME::get_length() const
 		mime_len += 4;
 	}
 	if (pmime->mime_type == mime_type::single) {
-		if (NULL != pmime->content_begin) {
+		if (pmime->content_begin != nullptr)
 			mime_len += pmime->content_length;
-		} else {
+		else
 			/* if there's nothing, just append an empty line */
 			mime_len += 2;
-		}
 		return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 	} else if (pmime->mime_type == mime_type::single_obj) {
 		if (NULL != pmime->content_begin) {
@@ -1465,11 +1428,10 @@ ssize_t MIME::get_length() const
 	} else {
 		auto tmp_len = pmime->content_length - (pmime->last_boundary -
 		               pmime->content_begin);
-		if (tmp_len > 0) {
+		if (tmp_len > 0)
 			mime_len += tmp_len;
-		} else if (0 == tmp_len) {
+		else if (tmp_len == 0)
 			mime_len += 2;
-		}
 	}
 	return std::min(mime_len, static_cast<size_t>(SSIZE_MAX));
 }
@@ -1489,9 +1451,8 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 		if (NULL != pbegin) {
 			pbegin += 9;
 			pend = strchr(pbegin, ';');
-			if (NULL == pend) {
+			if (pend == nullptr)
 				pend = file_name + tmp_len;
-			}
 			tmp_len = pend - pbegin;
 			memmove(file_name, pbegin, tmp_len);
 			file_name[tmp_len] = '\0';
@@ -1639,9 +1600,8 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	}
 	if (pmime->get_field("Content-Disposition", content_disposition, 256)) {
 		ptoken = strchr(content_disposition, ';');
-		if (NULL != ptoken) {
+		if (ptoken != nullptr)
 			*ptoken = '\0';
-		}
 		HX_strrtrim(content_disposition);
 		HX_strltrim(content_disposition);
 		if ('\0' != content_disposition[0] &&
@@ -1680,11 +1640,10 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 	while (NULL != pnode) {
 		has_submime = TRUE;
 		*poffset += pmime->boundary_len + 4;
-		if ('\0' == id_string[0]) {
+		if (*id_string == '\0')
 			snprintf(temp_id, 64, "%d", count);
-		} else {
+		else
 			snprintf(temp_id, 64, "%s.%d", id_string, count);
-		}
 		auto mime = static_cast<const MIME *>(pnode->pdata);
 		if (mime->get_mimes_digest(temp_id, poffset, dsarray) < 0)
 			return -1;
@@ -1803,11 +1762,10 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	while (NULL != pnode) {
 		has_submime = TRUE;
 		*poffset += pmime->boundary_len + 4;
-		if ('\0' == id_string[0]) {
+		if (*id_string == '\0')
 			snprintf(temp_id, 64, "%zu", count);
-		} else {
+		else
 			snprintf(temp_id, 64, "%s.%zu", id_string, count);
-		}
 		if (static_cast<const MIME *>(pnode->pdata)->get_structure_digest(temp_id,
 		    poffset, dsarray) < 0)
 			return -1;
@@ -1838,19 +1796,16 @@ static bool mime_parse_multiple(MIME *pmime)
 		return false;
 	}
 #endif
-	if (NULL == pmime->content_begin) {
+	if (pmime->content_begin == nullptr)
 		return false;
-	}
 	boundary_len = strlen(pmime->boundary_string);
-	if (boundary_len <= 2) {
+	if (boundary_len <= 2)
 		return false;
-	}
 	begin = strchr(pmime->boundary_string, '"');
 	if (NULL != begin) {
 		end = strchr(begin + 1, '"');
-		if (NULL == end) {
+		if (end == nullptr)
 			return false;
-		}
 		boundary_len = end - begin - 1;
 		memmove(pmime->boundary_string, begin + 1, boundary_len);
 		pmime->boundary_string[boundary_len] = '\0';
@@ -1867,9 +1822,8 @@ static bool mime_parse_multiple(MIME *pmime)
 		if (nl_len > 0)
 			break;
 	}
-	if (ptr == end) {
+	if (ptr == end)
 		return false;
-	}	
 	pmime->first_boundary = ptr;
 
 	begin = pmime->content_begin + boundary_len;
