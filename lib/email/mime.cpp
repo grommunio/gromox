@@ -995,6 +995,14 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	return true;
 }
 
+static bool encoding_is_uu(const char *e)
+{
+	for (const auto v : {"uuencode", "x-uuencode", "uue", "x-uue"})
+		if (strcasecmp(e, v) == 0)
+			return true;
+	return false;
+}
+
 /*
  *	write MIME content into buffer
  *	@param
@@ -1073,16 +1081,13 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	} else {
 		HX_strrtrim(encoding);
 		HX_strltrim(encoding);
-		if (0 == strcasecmp(encoding, "base64")) {
+
+		if (strcasecmp(encoding, "base64") == 0)
 			encoding_type = mime_encoding::base64;
-		} else if (0 == strcasecmp(encoding, "quoted-printable")) {
+		else if (strcasecmp(encoding, "quoted-printable") == 0)
 			encoding_type = mime_encoding::qp;
-		} else if (0 == strcasecmp(encoding, "uue") ||
-			0 == strcasecmp(encoding, "x-uue") ||
-			0 == strcasecmp(encoding, "uuencode") ||
-			0 == strcasecmp(encoding, "x-uuencode")) {
+		else if (encoding_is_uu(encoding))
 			encoding_type = mime_encoding::uuencode;
-		}
 	}
 	
 	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
@@ -1522,10 +1527,7 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 		return false;
 	} else if (pmime->get_field("Content-Transfer-Encoding",
 	    encoding, std::size(encoding))) {
-		if (0 == strcasecmp(encoding, "uue") ||
-			0 == strcasecmp(encoding, "x-uue") ||
-			0 == strcasecmp(encoding, "uuencode") ||
-			0 == strcasecmp(encoding, "x-uuencode")) {
+		if (encoding_is_uu(encoding)) {
 			if (0 == pmime->content_length) {
 				return false;
 			}
