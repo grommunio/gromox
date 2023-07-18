@@ -47,12 +47,12 @@ MIME::~MIME()
 {
 	auto pmime = this;
 
-	if (pmime->mime_type == mime_type::multiple) {
-		auto pnode = pmime->node.get_child();
-        while (NULL != pnode) {
-			delete static_cast<MIME *>(pnode->pdata);
-			pnode = pnode->get_sibling();
-        }
+	if (pmime->mime_type != mime_type::multiple)
+		return;
+	auto pnode = pmime->node.get_child();
+	while (NULL != pnode) {
+		delete static_cast<MIME *>(pnode->pdata);
+		pnode = pnode->get_sibling();
 	}
 }
 
@@ -547,22 +547,20 @@ bool MIME::search_field(const char *tag, int order, char *value, size_t length) 
 		return false;
 	}
 	if (0 == strcasecmp(tag, "Content-Type")) {
-		if (0 == order) {
-			strncpy(value, pmime->content_type, length - 1);
-			value[length - 1] = '\0';
-		} else {
+		if (order != 0)
 			return false;
-		}
+		strncpy(value, pmime->content_type, length - 1);
+		value[length-1] = '\0';
 	}
 	i = -1;
 	for (const auto &[k, v] : f_other_fields) {
-		if (strcasecmp(tag, k.c_str()) == 0) {
-			i ++;
-			if (i == order) {
-				gx_strlcpy(value, v.c_str(), length);
-				return true;
-			}
-		} 
+		if (strcasecmp(tag, k.c_str()) != 0)
+			continue;
+		i ++;
+		if (i == order) {
+			gx_strlcpy(value, v.c_str(), length);
+			return true;
+		}
 	}
 	return false;
 }
@@ -1121,12 +1119,10 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 		return true;
 	case mime_encoding::qp: {
 		auto qdlen = qp_decode_ex(out_buff, max_length, pbuff.get(), size);
-		if (qdlen < 0) {
+		if (qdlen < 0)
 			goto COPY_RAW_DATA;
-		} else {
-			*plength = qdlen;
-			return true;
-		}
+		*plength = qdlen;
+		return true;
 	}
 	default:
  COPY_RAW_DATA:
@@ -1134,10 +1130,9 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 			memcpy(out_buff, pbuff.get(), size);
 			*plength = size;
 			return true;
-		} else {
-			*plength = 0;
-			return false;
 		}
+		*plength = 0;
+		return false;
 	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1973: Failed to allocate memory");
