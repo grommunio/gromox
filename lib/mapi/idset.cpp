@@ -172,9 +172,8 @@ static BOOL idset_encoding_pop_command(BINARY *pbin)
 static BOOL idset_encode_range_command(BINARY *pbin, uint8_t length,
     const uint8_t *plow_bytes, const uint8_t *phigh_bytes)
 {
-	if (length > 6 || 0 == length) {
+	if (length > 6 || 0 == length)
 		return FALSE;
-	}
 	uint8_t command = 0x52;
 	return idset_write_to_binary(pbin, &command, sizeof(uint8_t)) &&
 	       idset_write_to_binary(pbin, plow_bytes, length) &&

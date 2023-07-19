@@ -96,9 +96,8 @@ static bool rtfcp_verify_header(uint8_t *header_data,
 	pheader->rawsize = le32p_to_cpu(&header_data[4]);
 	pheader->magic = le32p_to_cpu(&header_data[8]);
 	pheader->crc = le32p_to_cpu(&header_data[12]);
-	if (pheader->size != in_size - 4) {
+	if (pheader->size != in_size - 4)
 		return false;
-	}
 	return pheader->magic == RTF_COMPRESSED ||
 	       pheader->magic == RTF_UNCOMPRESSED;
 }
@@ -108,9 +107,8 @@ uint8_t DECOMPRESSION_STATE::get_next_byte()
 	auto pstate = this;
 	uint8_t next_byte;
 	
-	if (pstate->in_pos > pstate->in_size) {
+	if (pstate->in_pos > pstate->in_size)
 		return 0;
-	}  
 	next_byte = pstate->compressed_data[pstate->in_pos++];
 	return next_byte;
 }
@@ -153,16 +151,14 @@ bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 	COMPRESS_HEADER header;
 	DECOMPRESSION_STATE	state;
 
-	if (prtf_bin->cb < 4*sizeof(uint32_t)) {
+	if (prtf_bin->cb < 4*sizeof(uint32_t))
 		return false;
-	}
 	rtfcp_init_decompress_state(prtf_bin->pb, prtf_bin->cb, &state);
 	if (!rtfcp_verify_header(prtf_bin->pb, state.in_size, &header))
 		return false;
 	if (RTF_UNCOMPRESSED == header.magic) {
-		if (*plength < prtf_bin->cb - 4*sizeof(uint32_t)) {
+		if (*plength < prtf_bin->cb - 4 * sizeof(uint32_t))
 			return false;
-		}
 		memcpy(pbuff_out, prtf_bin->pb + 4*sizeof(uint32_t),
 			prtf_bin->cb - 4*sizeof(uint32_t));
 		return true;
@@ -211,9 +207,8 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	    ext_push.p_bytes(pin_buff, in_length) != EXT_ERR_SUCCESS)
 		return nullptr;
 	auto pbin = gromox::me_alloc<BINARY>();
-	if (pbin == nullptr) {
+	if (pbin == nullptr)
 		return nullptr;
-	}
 	pbin->cb = ext_push.m_offset;
 	pbin->pb = ext_push.release();
 	return pbin;

@@ -54,9 +54,8 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 	auto uncompressed = static_cast<const uint8_t *>(uncompressedv);
 	auto compressed   = static_cast<uint8_t *>(compressedv);
 	
-	if (0 == uncompressed_size) {
+	if (uncompressed_size == 0)
 		return 0;
-	}
 	
 	uint32_t indic = 0, indic_bit = 0, length = 0;
 	uint32_t coding_pos = 0, compressed_pos = sizeof(uint32_t);
@@ -70,9 +69,8 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 		bool b_found = false;
 		uint32_t match_offset = 0;
 		uint32_t offset = coding_pos - MIN(WINDOWS_SIZE, coding_pos);
-		if (0 == offset) {
+		if (offset == 0)
 			offset ++;
-		}
 		while (offset < coding_pos) {
 			for (length = 0;
 				uncompressed[coding_pos + length]
@@ -143,11 +141,10 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 			}
 			indic |= 1U << (32 - (indic_bit % 32 + 1));
 			if (length > CLASSIC_MATCH_LENGTH) {
-				if (nibble_index == 0) {
+				if (nibble_index == 0)
 					nibble_index = compressed_pos + sizeof(uint16_t);
-				} else {
+				else
 					nibble_index = 0;
-				}
 			}
 			compressed_pos += metadata_size;
 			coding_pos += length;
@@ -255,10 +252,9 @@ uint32_t lzxpress_decompress(const void *inputv, uint32_t input_size,
 		}
 		length += 3;
 		do {
-			if ((output_index >= max_output_size) ||
-				((offset + 1) > output_index)) {
+			if (output_index >= max_output_size ||
+			    offset + 1 > output_index)
 				break;
-			}
 			output[output_index] = output[output_index - offset - 1];
 			output_index += sizeof(uint8_t);
 			length -= sizeof(uint8_t);
