@@ -996,14 +996,6 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	return true;
 }
 
-static bool encoding_is_uu(const char *e)
-{
-	for (const auto v : {"uuencode", "x-uuencode", "uue", "x-uue"})
-		if (strcasecmp(e, v) == 0)
-			return true;
-	return false;
-}
-
 /*
  *	write MIME content into buffer
  *	@param
@@ -1087,8 +1079,6 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 			encoding_type = mime_encoding::base64;
 		else if (strcasecmp(encoding, "quoted-printable") == 0)
 			encoding_type = mime_encoding::qp;
-		else if (encoding_is_uu(encoding))
-			encoding_type = mime_encoding::uuencode;
 	}
 	
 	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
@@ -1138,13 +1128,6 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 			return true;
 		}
 	}
-	case mime_encoding::uuencode:
-		if (uudecode(pbuff.get(), size, nullptr, nullptr, 0, out_buff,
-		    max_length, plength) != 0) {
-			mlog(LV_DEBUG, "mime: failed to decode uuencode mime content");
-			goto COPY_RAW_DATA;
-		}
-		return true;
 	default:
  COPY_RAW_DATA:
 		if (max_length >= size) {
@@ -1502,12 +1485,9 @@ ssize_t MIME::get_length() const
 bool MIME::get_filename(char *file_name, size_t fnsize) const
 {
 	auto pmime = this;
-	int mode;
-	char *ptr;
 	char *pend;
 	int tmp_len;
 	char *pbegin;
-	char encoding[256];
 	
 	if (pmime->get_content_param("name", file_name, fnsize)) {
 		goto FIND_FILENAME;
@@ -1526,40 +1506,6 @@ bool MIME::get_filename(char *file_name, size_t fnsize) const
 			goto FIND_FILENAME;
 		}
 		return false;
-	} else if (pmime->get_field("Content-Transfer-Encoding",
-	    encoding, std::size(encoding))) {
-		if (encoding_is_uu(encoding)) {
-			if (0 == pmime->content_length) {
-				return false;
-			}
-			if (pmime->content_length > 128) {
-				tmp_len = 128;
-			} else {
-				tmp_len = pmime->content_length;
-			}
-			if (pmime->content_begin == nullptr)
-				return false;
-			ptr = search_string(pmime->content_begin, "begin ", tmp_len);
-			if (NULL == ptr) {
-				return false;
-			}
-			ptr += 6;
-			if (' ' != ptr[3]) {
-				return false;
-			}
-			if (1 != sscanf(ptr, "%o ", &mode)) {
-				return false;
-			}
-			ptr += 4;
-			for (size_t i = 0; i < fnsize; ++i, ++ptr) {
-				if ('\r' == *ptr || '\n' == *ptr) {
-					ptr ++;
-					file_name[i] = '\0';
-					goto FIND_FILENAME;
-				}
-				file_name[i] = *ptr;
-			}
-		}
 	}
 	return false;
 	

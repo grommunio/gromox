@@ -322,19 +322,6 @@ static int t_base64()
 	else if (memcmp(out, "123123123", 9) != 0)
 		return printf("TB-10 failed\n");
 
-	if (uuencode(0666, "file", cpool, 60, out, 89, &outlen) >= 0)
-		return printf("TU-1 failed\n");
-	if (uuencode(0666, nullptr, cpool, 60, out, 90, &outlen) < 0)
-		return printf("TU-2 failed\n");
-	if (uuencode(0666, nullptr, cpool, 1, out, 90, &outlen) < 0)
-		return printf("TU-3 failed\n");
-	else if (strcmp(out, "!,3(S\r\n`\r\n") != 0)
-		return printf("TU-4 failed\n");
-	if (uudecode("!,3(S\n`\n", 8, nullptr, nullptr, 0, out, 1, &outlen) >= 0)
-		return printf("TU-5 failed\n");
-	if (uudecode("!,3(S\n`\n", 8, nullptr, nullptr, 0, out, 2, &outlen) < 0)
-		return printf("TU-6 failed\n");
-
 	if (qp_encode_ex(out, 3, "\x01", 1) >= 0)
 		return printf("TQ-1 failed\n");
 	if (qp_encode_ex(out, 4, "\x01", 1) < 0)
