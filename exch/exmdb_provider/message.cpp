@@ -257,7 +257,6 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	uint32_t del_count;
 	uint64_t change_num, parent_fid = 0;
 	uint32_t permission;
-	xstmt pstmt1;
 	char sql_string[256];
 	uint32_t folder_type;
 	uint64_t normal_size;
@@ -296,11 +295,12 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT parent_fid, "
+	auto stm_find = gx_sql_prep(pdb->psqlite, "SELECT parent_fid, "
 	             "is_associated FROM messages WHERE message_id=?");
-	if (pstmt == nullptr)
+	if (stm_find == nullptr)
 		return FALSE;
 	b_update = TRUE;
+	xstmt stm_del;
 	if (!b_copy) {
 		if (exmdb_server::is_private()) {
 			strcpy(sql_string, "DELETE FROM messages WHERE message_id=?");
@@ -308,8 +308,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		} else {
 			strcpy(sql_string, "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 		}
-		pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt1 == nullptr)
+		stm_del = gx_sql_prep(pdb->psqlite, sql_string);
+		if (stm_del == nullptr)
 			return FALSE;
 	}
 	fai_size = 0;
@@ -317,14 +317,14 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	normal_size = 0;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
-		sqlite3_bind_int64(pstmt, 1, tmp_val);
-		if (pstmt.step() != SQLITE_ROW) {
+		stm_find.bind_int64(1, tmp_val);
+		if (stm_find.step() != SQLITE_ROW) {
 			*pb_partial = TRUE;
 			continue;
 		}
-		parent_fid = sqlite3_column_int64(pstmt, 0);
-		is_associated = sqlite3_column_int64(pstmt, 1);
-		sqlite3_reset(pstmt);
+		parent_fid = stm_find.col_uint64(0);
+		is_associated = stm_find.col_uint64(1);
+		stm_find.reset();
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
 				if (!cu_get_folder_permission(pdb->psqlite,
@@ -377,10 +377,10 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 				dst_val, tmp_val1, src_val, tmp_val);
 		if (!b_copy) {
 			del_count ++;
-			sqlite3_bind_int64(pstmt1, 1, tmp_val);
-			if (pstmt1.step() != SQLITE_DONE)
+			stm_del.bind_int64(1, tmp_val);
+			if (stm_del.step() != SQLITE_DONE)
 				return false;
-			sqlite3_reset(pstmt1);
+			stm_del.reset();
 			if (!exmdb_server::is_private()) {
 				snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU{tmp_val});
@@ -389,9 +389,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			}
 		}
 	}
-	pstmt.finalize();
-	if (!b_copy)
-		pstmt1.finalize();
+	stm_find.finalize();
+	stm_del.finalize();
 	if (b_update && normal_size + fai_size > 0 &&
 	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
 		return FALSE;
