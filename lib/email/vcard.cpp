@@ -53,11 +53,9 @@ static char* vcard_get_semicolon(char *pstring)
 			}
 		} else if (';' == pstring[i]) {
 			pstring[i] = '\0';
-			for (i+=1; i<tmp_len; i++) {
-				if (' ' != pstring[i] && '\t' != pstring[i]) {
+			for (i += 1; i < tmp_len; ++i)
+				if (pstring[i] != ' ' && pstring[i] != '\t')
 					break;
-				}
-			}
 			return pstring + i;
 		}
 	}
@@ -136,9 +134,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				}
 				if (' ' == *pnext || '\t' == *pnext) {
 					for (; pnext<pbuff+max_length; pnext++) {
-						if (' ' == *pnext || '\t' == *pnext) {
+						if (*pnext == ' ' || *pnext == '\t')
 							continue;
-						}
 						break;
 					}
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
@@ -158,9 +155,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				}
 				if (' ' == *pnext || '\t' == *pnext) {
 					for (; pnext<pbuff+max_length; pnext++) {
-						if (' ' == *pnext || '\t' == *pnext) {
+						if (*pnext == ' ' || *pnext == '\t')
 							continue;
-						}
 						break;
 					}
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
@@ -197,9 +193,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			}
 			if (' ' == *pnext || '\t' == *pnext) {
 				for (; pnext<pbuff+max_length; pnext++) {
-					if (' ' == *pnext || '\t' == *pnext) {
+					if (*pnext == ' ' || *pnext == '\t')
 						continue;
-					}
 					break;
 				}
 				memmove(pbuff + i, pnext, pbuff + max_length - pnext);
@@ -217,9 +212,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 static bool empty_line(const char *pline)
 {	
 	for (; *pline != '\0'; ++pline)
-		if (' ' != *pline && '\t' != *pline) {
+		if (*pline != ' ' && *pline != '\t')
 			return false;
-		}
 	return true;
 }
 
@@ -229,9 +223,8 @@ static vcard_param vcard_retrieve_param(char *ptag)
 	char *pnext;
 	
 	ptr = strchr(ptag, '=');
-	if (NULL != ptr) {
+	if (ptr != nullptr)
 		*ptr = '\0';
-	}
 	vcard_param pvparam(ptag);
 	if (ptr == nullptr)
 		return pvparam;
@@ -249,9 +242,8 @@ static vcard_line vcard_retrieve_tag(char *ptag)
 	char *pnext;
 	
 	ptr = strchr(ptag, ';');
-	if (NULL != ptr) {
+	if (ptr != nullptr)
 		*ptr = '\0';
-	}
 	vcard_line pvline(ptag);
 	if (ptr == nullptr)
 		return pvline;
@@ -338,9 +330,8 @@ ec_error_t vcard_load_multi_from_str_move(char *in_buff,
 		if (!b_begin) {
 			if (strcasecmp(tmp_item.ptag, "BEGIN") != 0 ||
 			    tmp_item.pvalue == nullptr ||
-			    strcasecmp(tmp_item.pvalue, "VCARD") != 0) {
+			    strcasecmp(tmp_item.pvalue, "VCARD") != 0)
 				break;
-			}
 			b_begin = TRUE;
 			pvcard = &cardvec.emplace_back();
 			continue;
@@ -389,47 +380,39 @@ static size_t vcard_serialize_string(char *pbuff,
 	size_t offset;
 	size_t tmp_len;
 	
-	if (line_offset >= MAX_LINE) {
+	if (line_offset >= MAX_LINE)
 		line_offset %= MAX_LINE;
-	}
 	offset = 0;
 	tmp_len = strlen(string);
 	for (i=0; i<tmp_len; i++) {
-		if (offset >= max_length) {
+		if (offset >= max_length)
 			return offset;
-		}
 		if (line_offset >= MAX_LINE) {
-			if (offset + 3 >= max_length) {
+			if (offset + 3 >= max_length)
 				return max_length;
-			}
 			memcpy(pbuff + offset, "\r\n ", 3);
 			offset += 3;
 			line_offset = 0;
 		}
 		if ('\\' == string[i] || ';' == string[i] || ',' == string[i]) {
-			if (offset + 1 >= max_length) {
+			if (offset + 1 >= max_length)
 				return max_length;
-			}
 			pbuff[offset++] = '\\';
-			if (line_offset >= 0) {
+			if (line_offset >= 0)
 				line_offset ++;
-			}
 		} else if ('\r' == string[i] && '\n' == string[i + 1]) {
-			if (offset + 1 >= max_length) {
+			if (offset + 1 >= max_length)
 				return max_length;
-			}
 			pbuff[offset++] = '\\';
 			pbuff[offset++] = 'n';
 			i ++;
-			if (line_offset >= 0) {
+			if (line_offset >= 0)
 				line_offset += 2;
-			}
 			continue;
 		}
 		pbuff[offset++] = string[i];
-		if (line_offset >= 0) {
+		if (line_offset >= 0)
 			line_offset ++;
-		}
 	}
 	return offset;
 }
@@ -441,9 +424,8 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 	size_t line_begin;
 	BOOL need_semicolon;
 	
-	if (max_length <= 13) {
+	if (max_length <= 13)
 		return FALSE;
-	}
 	memcpy(out_buff, "BEGIN:VCARD\r\n", 13);
 	offset = 13;
 	for (const auto &line : m_lines) {
@@ -451,58 +433,50 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 		auto pvline = &line;
 		offset += gx_snprintf(out_buff + offset,
 		          max_length - offset, "%s", pvline->name());
-		if (offset >= max_length) {
+		if (offset >= max_length)
 			return FALSE;
-		}
 		for (const auto &vparam : pvline->m_params) {
 			auto pvparam = &vparam;
-			if (offset + 1 >= max_length) {
+			if (offset + 1 >= max_length)
 				return FALSE;
-			}
 			out_buff[offset++] = ';';
 			if (vparam.m_paramvals.size() == 0) {
 				offset += gx_snprintf(out_buff + offset,
 				          max_length - offset, "%s", pvparam->name());
-				if (offset >= max_length) {
+				if (offset >= max_length)
 					return FALSE;
-				}
 				continue;
 			}
 			offset += gx_snprintf(out_buff + offset,
 			          max_length - offset, "%s=", pvparam->name());
-			if (offset >= max_length) {
+			if (offset >= max_length)
 				return FALSE;
-			}
 			need_comma = FALSE;
 			for (const auto &pv : vparam.m_paramvals) {
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
-					if (offset + 1 >= max_length) {
+					if (offset + 1 >= max_length)
 						return FALSE;
-					}
 					out_buff[offset++] = ',';
 				}
 				offset += vcard_serialize_string(out_buff + offset,
 				          max_length - offset, -1, pv.c_str());
-				if (offset >= max_length) {
+				if (offset >= max_length)
 					return FALSE;
-				}
 			}
 		}
 		out_buff[offset++] = ':';
-		if (offset >= max_length) {
+		if (offset >= max_length)
 			return FALSE;
-		}
 		need_semicolon = FALSE;
 		for (const auto &vvalue : pvline->m_values) {
 			auto pvvalue = &vvalue;
 			if (!need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
-				if (offset + 1 >= max_length) {
+				if (offset + 1 >= max_length)
 					return FALSE;
-				}
 				out_buff[offset++] = ';';
 			}
 			need_comma = FALSE;
@@ -510,30 +484,26 @@ BOOL vcard::serialize(char *out_buff, size_t max_length) const
 				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
-					if (offset + 1 >= max_length) {
+					if (offset + 1 >= max_length)
 						return FALSE;
-					}
 					out_buff[offset++] = ',';
 				}
 				if (!sv.empty()) {
 					offset += vcard_serialize_string(out_buff + offset,
 					          max_length - offset, offset - line_begin,
 					          sv.c_str());
-					if (offset >= max_length) {
+					if (offset >= max_length)
 						return FALSE;
-					}
 				}
 			}
 		}
-		if (offset + 2 >= max_length) {
+		if (offset + 2 >= max_length)
 			return FALSE;
-		}
 		out_buff[offset++] = '\r';
 		out_buff[offset++] = '\n';
 	}
-	if (offset + 12 > max_length) {
+	if (offset + 12 > max_length)
 		return FALSE;
-	}
 	memcpy(out_buff + offset, "END:VCARD\r\n", 12);
 	return TRUE;
 }
