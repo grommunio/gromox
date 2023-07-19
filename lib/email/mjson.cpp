@@ -95,10 +95,8 @@ void MJSON::clear()
 {
 	auto pjson = this;
 	auto pnode = pjson->tree.get_root();
-	if (NULL != pnode) {
+	if (pnode != nullptr)
 		pjson->tree.destroy_node(pnode, mjson_enum_delete);
-	}
-	
 	if (-1 != pjson->message_fd) {
 		close(pjson->message_fd);
 		pjson->message_fd = -1;
@@ -198,9 +196,8 @@ BOOL MJSON::load_from_json(const Json::Value &root, const char *inpath) try
 		pjson->size         = root["size"].asUInt();
 	}
 	auto pnode = pjson->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return FALSE;
-	}
 	/* check for NONE mime in tree */
 	b_none = FALSE;
 	simple_tree_enum_from_node(pnode, [&](const tree_node *nd, unsigned int) {
@@ -276,13 +273,11 @@ int MJSON::seek_fd(const char *id, int whence)
 	auto pjson = this;
 	if (pjson->path.empty())
 		return -1;
-	if (MJSON_MIME_HEAD != whence && MJSON_MIME_CONTENT != whence) {
+	if (whence != MJSON_MIME_HEAD && whence != MJSON_MIME_CONTENT)
 		return -1;
-	}
 	auto pmime = pjson->get_mime(id);
-	if (NULL == pmime) {
+	if (pmime == nullptr)
 		return -1;
-	}
 	
 	if (-1 == pjson->message_fd) {
 		try {
@@ -291,9 +286,8 @@ int MJSON::seek_fd(const char *id, int whence)
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1476: ENOMEM");
 		}
-		if (-1 == pjson->message_fd) {
+		if (pjson->message_fd == -1)
 			return -1;
-		}
 	}
 	
 	switch (whence) {
@@ -365,9 +359,8 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 		pjson->tree.set_root(&pmime->node);
 	}
 	pnode = pjson->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return FALSE;
-	}
 	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	if (temp_mime.id.empty()) {
 		if (pmime->get_mtype() != mime_type::none)
@@ -461,9 +454,8 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
 	}
 #endif
 	auto pnode = pjson->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return -1;
-	}
 	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, nullptr, nullptr, cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
@@ -504,11 +496,10 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	auto ctype = pmime->ctype;
 	HX_strupper(ctype.data());
 	auto psubtype = strchr(ctype.data(), '/');
-	if (NULL == psubtype) {
+	if (psubtype == nullptr)
 		psubtype = deconst("NIL");
-	} else {
+	else
 		*psubtype++ = '\0';
-	}
 	
 	if (pmime->get_mtype() == mime_type::single ||
 	    pmime->get_mtype() == mime_type::single_obj) {
@@ -530,9 +521,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			}
 			
 			if (*pmime->get_filename() != '\0') {
-				if (b_space) {
+				if (b_space)
 					buff[offset++] = ' ';
-				}
 				if (mjson_is_asciipr(pmime->get_filename())) {
 					mjson_add_backslash(pmime->get_filename(), temp_buff);
 					offset += gx_snprintf(buff + offset, length - offset,
@@ -626,13 +616,12 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			int body_len;
 			char temp_path[256];
 			
-			if ('\0' == msg_filename[0]) {
+			if (*msg_filename == '\0')
 				snprintf(temp_path, 256, "%s/%s.dgt", storage_path,
 				         pmime->get_id());
-			} else {
+			else
 				snprintf(temp_path, 256, "%s/%s.%s.dgt", storage_path,
 				         msg_filename, pmime->get_id());
-			}
 			size_t slurp_size = 0;
 			std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_file(temp_path, &slurp_size));
 			if (slurp_data == nullptr)
@@ -646,18 +635,16 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			buff[offset] = ' ';
 			envl_len = temp_mjson.fetch_envelope(charset,
 						buff + offset + 1, length - offset - 1);
-			if (-1 == envl_len) {
+			if (envl_len == -1)
 				goto RFC822_FAILURE;
-			}
 			
 			buff[offset + 1 + envl_len] = ' ';
 			
 			body_len = mjson_rfc822_fetch_internal(&temp_mjson, storage_path,
 						charset, b_ext, buff + offset + envl_len + 2,
 						length - offset - envl_len - 2);
-			if (-1 == body_len) {
+			if (body_len == -1)
 				goto RFC822_FAILURE;
-			}
 			offset += envl_len + body_len + 2;
 			goto RFC822_SUCCESS;
 		}
@@ -697,15 +684,13 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	} else if (pmime->get_mtype() == mime_type::multiple) {
 		buff[offset++] = '(';
 		auto pnode = pmime->node.get_child();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			return -1;
-		}
 		auto ret_len = mjson_fetch_mime_structure(static_cast<MJSON_MIME *>(pnode->pdata),
 					storage_path, msg_filename, charset, email_charset,
 					b_ext, buff + offset, length - offset);
-		if (-1 == ret_len) {
+		if (ret_len == -1)
 			return -1;
-		}
 		offset += ret_len;
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", psubtype);
@@ -752,11 +737,10 @@ static int mjson_convert_address(const char *address, const char *charset,
 		 * encoded-words, so just pick base64
 		 */
 		offset += gx_snprintf(buff + offset, length - offset, "(\"=?utf-8?b?");
-		if (0 != encode64(email_addr.display_name,
+		if (encode64(email_addr.display_name,
 		    strlen(email_addr.display_name), buff + offset,
-		    length - offset, &ecode_len)) {
+		    length - offset, &ecode_len) != 0)
 			return -1;
-		}
 		offset += ecode_len;
 		memcpy(buff + offset, "?=\"", 3);
 		offset += 3;
@@ -840,9 +824,8 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	buff[offset++] = '(';
 	auto ret_len = mjson_convert_address(pjson->from.c_str(), charset.c_str(),
 	               &buff[offset], length - offset);
-	if (-1 == ret_len) {
+	if (ret_len == -1)
 		return -1;
-	}
 	offset += ret_len;
 	buff[offset++] = ')';
 	buff[offset++] = ' ';
@@ -850,9 +833,8 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	ret_len = mjson_convert_address(pjson->sender.size() > 0 ?
 	          pjson->sender.c_str() : pjson->from.c_str(), charset.c_str(),
 	          &buff[offset], length - offset);
-	if (-1 == ret_len) {
+	if (ret_len == -1)
 		return -1;
-	}
 	offset += ret_len;
 	buff[offset++] = ')';
 	buff[offset++] = ' ';
@@ -860,9 +842,8 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 	ret_len = mjson_convert_address(pjson->reply.size() > 0 ?
 	          pjson->reply.c_str() : pjson->from.c_str(), charset.c_str(),
 	          &buff[offset], length - offset);
-	if (-1 == ret_len) {
+	if (ret_len == -1)
 		return -1;
-	}
 	offset += ret_len;
 	buff[offset++] = ')';
 	
@@ -886,9 +867,8 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 				temp_buff[tmp_len] = '\0';
 				ret_len = mjson_convert_address(temp_buff, charset.c_str(),
 				          &buff[offset], length - offset);
-				if (-1 == ret_len) {
+				if (ret_len == -1)
 					return -1;
-				}
 				offset += ret_len;
 				last_pos = i + 1;
 			}
@@ -922,9 +902,8 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 				temp_buff[tmp_len] = '\0';
 				ret_len = mjson_convert_address(temp_buff, charset.c_str(),
 				          &buff[offset], length - offset);
-				if (-1 == ret_len) {
+				if (ret_len == -1)
 					return -1;
-				}
 				offset += ret_len;
 				last_pos = i + 1;
 			}
@@ -973,12 +952,10 @@ static void mjson_add_backslash(const char *astring, char *out_string)
 	len = strlen(astring) + 1;
 	
 	for (i=0,j=0; i<len; i++,j++) {
-		if ('"' == astring[i] || '\\' == astring[i]) {
+		if (astring[i] == '"' || astring[i] == '\\')
 			out_string[j++] = '\\';
-		}
 		out_string[j] = astring[i];
 	}
-
 }
 
 static void mjson_emum_rfc822(MJSON_MIME *pmime, void *param)
@@ -1198,9 +1175,8 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 		return FALSE;
 	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
 	         pjson_base->get_mail_filename());
-	if (0 != stat(temp_path, &node_stat) || 0 == S_ISDIR(node_stat.st_mode)) {
+	if (stat(temp_path, &node_stat) != 0 || !S_ISDIR(node_stat.st_mode))
 		return FALSE;
-	}
 	
 	snprintf(mjson_id, 64, "%s.", id);
 	while (NULL != (pdot = strrchr(mjson_id, '.'))) {
@@ -1246,14 +1222,11 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 		return FALSE;
 	snprintf(temp_path, std::size(temp_path), "%s/%s", storage_path,
 	         pjson->get_mail_filename());
-	if (0 != stat(temp_path, &node_stat) ||
-		0 == S_ISDIR(node_stat.st_mode)) {
+	if (stat(temp_path, &node_stat) != 0 || !S_ISDIR(node_stat.st_mode))
 		return FALSE;
-	}
 	auto pnode = pjson->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return -1;
-	}
 	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", cset,
 	               pjson->charset.c_str(), b_ext, buff, length);
@@ -1273,9 +1246,8 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	}
 #endif
 	auto pnode = pjson->tree.get_root();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return -1;
-	}
 	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	auto ret_len = mjson_fetch_mime_structure(pmime, storage_path,
 	               pjson->get_mail_filename(), charset,
@@ -1285,4 +1257,3 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	buff[ret_len] = '\0';
 	return ret_len;
 }
-
