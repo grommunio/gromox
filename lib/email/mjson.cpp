@@ -522,13 +522,11 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				offset += gx_snprintf(buff + offset, length - offset,
 				          "\"CHARSET\" \"%s\"", pmime->get_charset());
 				b_space = TRUE;
-			} else {
-				if (strcasecmp(ctype.c_str(), "text") == 0 &&
-					'\0' != email_charset[0]) {
-					offset += gx_snprintf(buff + offset, length - offset,
-							"\"CHARSET\" \"%s\"", email_charset);
-					b_space = TRUE;
-				}
+			} else if (strcasecmp(ctype.c_str(), "text") == 0 &&
+			    *email_charset != '\0') {
+				offset += gx_snprintf(buff + offset, length - offset,
+						"\"CHARSET\" \"%s\"", email_charset);
+				b_space = TRUE;
 			}
 			
 			if (*pmime->get_filename() != '\0') {
@@ -572,24 +570,22 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
 		
-		if (*pmime->get_encoding() != '\0') {
-			if (NULL != storage_path && NULL != msg_filename &&
-			    pmime->ctype_is_rfc822()) {
-				/* revision for APPLE device */
-				if (pmime->encoding_is_b() ||
-				    pmime->encoding_is_q())
-					offset += gx_snprintf(buff + offset, length - offset,
-								" \"7bit\"");
-				else
-					offset += gx_snprintf(buff + offset, length - offset,
-					          " \"%s\"", pmime->get_encoding());
-			} else {
-				offset += gx_snprintf(buff + offset, length - offset,
-				          " \"%s\"", pmime->get_encoding());
-			}
-		} else {
+		if (*pmime->get_encoding() == '\0') {
 			memcpy(buff + offset, " NIL", 4);
 			offset += 4;
+		} else if (storage_path != nullptr && msg_filename != nullptr &&
+		    pmime->ctype_is_rfc822()) {
+			/* revision for APPLE device */
+			if (pmime->encoding_is_b() ||
+			    pmime->encoding_is_q())
+				offset += gx_snprintf(buff + offset, length - offset,
+				          " \"7bit\"");
+			else
+				offset += gx_snprintf(buff + offset, length - offset,
+				          " \"%s\"", pmime->get_encoding());
+		} else {
+			offset += gx_snprintf(buff + offset, length - offset,
+			          " \"%s\"", pmime->get_encoding());
 		}
 		
 		if (NULL != storage_path && NULL != msg_filename &&
@@ -822,24 +818,22 @@ int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 		offset += 3;
 	}
 	
-	if (pjson->subject.size() > 0) {
-		if (mjson_is_asciipr(pjson->subject.c_str())) {
-			mjson_add_backslash(pjson->subject.c_str(), temp_buff);
-			offset += gx_snprintf(buff + offset, length - offset,
-						" \"%s\"", temp_buff);
-		} else {
-			offset += gx_snprintf(buff + offset, length - offset, " \"=?%s?b?",
-			          pjson->charset.size() > 0 ? pjson->charset.c_str() : cset);
-			if (encode64(pjson->subject.c_str(), pjson->subject.size(),
-			    &buff[offset], length - offset, &ecode_len) != 0)
-				return -1;
-			offset += ecode_len;
-			memcpy(buff + offset, "?=\"", 3);
-			offset += 3;
-		}
-	} else {
+	if (pjson->subject.size() == 0) {
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
+	} else if (mjson_is_asciipr(pjson->subject.c_str())) {
+		mjson_add_backslash(pjson->subject.c_str(), temp_buff);
+		offset += gx_snprintf(buff + offset, length - offset,
+		          " \"%s\"", temp_buff);
+	} else {
+		offset += gx_snprintf(buff + offset, length - offset, " \"=?%s?b?",
+		          pjson->charset.size() > 0 ? pjson->charset.c_str() : cset);
+		if (encode64(pjson->subject.c_str(), pjson->subject.size(),
+		    &buff[offset], length - offset, &ecode_len) != 0)
+			return -1;
+		offset += ecode_len;
+		memcpy(buff + offset, "?=\"", 3);
+		offset += 3;
 	}
 	
 	buff[offset++] = ' ';
