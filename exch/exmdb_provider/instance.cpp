@@ -614,6 +614,8 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, uint32_t tag) t
 		/* v3 */
 		errno = gx_decompress_file(cu_cid_path(nullptr, cid, 0).c_str(), dxbin,
 			common_util_alloc, [](void *, size_t z) { return common_util_alloc(z); });
+		if (errno == ENOENT && g_dbg_synth_content)
+			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 		if (errno != 0)
 			return nullptr;
 		if (plen != nullptr)
