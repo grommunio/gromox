@@ -9,6 +9,7 @@
 #include <list>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <unistd.h>
 #include <utility>
@@ -255,7 +256,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	int is_associated;
 	uint64_t fai_size;
 	uint32_t del_count;
-	uint64_t change_num, parent_fid = 0;
+	uint64_t change_num;
 	uint32_t permission;
 	char sql_string[256];
 	uint32_t folder_type;
@@ -315,6 +316,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	fai_size = 0;
 	del_count = 0;
 	normal_size = 0;
+	std::set<uint64_t> touched_folders;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
 		stm_find.bind_int64(1, tmp_val);
@@ -322,7 +324,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			*pb_partial = TRUE;
 			continue;
 		}
-		parent_fid = stm_find.col_uint64(0);
+		/*
+		 * src_val may be a search folder (MS-OXCFOLD v23.2 §2.2.1.6),
+		 * so re-lookup the real source parent.
+		 */
+		uint64_t parent_fid = stm_find.col_uint64(0);
 		is_associated = stm_find.col_uint64(1);
 		stm_find.reset();
 		if (folder_type == FOLDER_SEARCH) {
@@ -389,6 +395,14 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return false;
 		}
+
+		try {
+			/* dst folders' change keys are already updated by common_util_copy_message */
+			touched_folders.emplace(parent_fid);
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2232: ENOMEM");
+			return false;
+		}
 	}
 	stm_find.finalize();
 	stm_del.finalize();
@@ -396,7 +410,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
 		return FALSE;
 	nt_time = rop_util_current_nttime();
-	if (!b_copy) {
+	if (!b_copy) for (auto parent_fid : touched_folders) {
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
 		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
