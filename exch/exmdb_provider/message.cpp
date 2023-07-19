@@ -375,18 +375,19 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			dst_val, tmp_val1, 0);
 		db_engine_notify_message_movecopy(pdb, b_copy,
 				dst_val, tmp_val1, src_val, tmp_val);
-		if (!b_copy) {
-			del_count ++;
-			stm_del.bind_int64(1, tmp_val);
-			if (stm_del.step() != SQLITE_DONE)
+		if (b_copy)
+			continue;
+
+		del_count ++;
+		stm_del.bind_int64(1, tmp_val);
+		if (stm_del.step() != SQLITE_DONE)
+			return false;
+		stm_del.reset();
+		if (!exmdb_server::is_private()) {
+			snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
+			         " WHERE message_id=%llu", LLU{tmp_val});
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return false;
-			stm_del.reset();
-			if (!exmdb_server::is_private()) {
-				snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
-				        " WHERE message_id=%llu", LLU{tmp_val});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-					return false;
-			}
 		}
 	}
 	stm_find.finalize();
