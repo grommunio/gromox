@@ -1140,18 +1140,12 @@ static BOOL oxcmail_parse_classified(const char *field, uint16_t *plast_propid,
 static BOOL oxcmail_parse_classkeep(const char *field, uint16_t *plast_propid,
     namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
-	uint8_t tmp_byte;
-	
 	if (strcasecmp(field, "true") != 0 && strcasecmp(field, "false") != 0)
 		return TRUE;
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidClassificationKeep};
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	if (0 == strcasecmp(field, "true")) {
-		tmp_byte = 1;
-	} else if (0 == strcasecmp(field, "false")) {
-		tmp_byte = 0;
-	}
+	uint8_t tmp_byte = strcasecmp(field, "true") == 0;
 	if (pproplist->set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
 		return FALSE;
 	(*plast_propid)++;
