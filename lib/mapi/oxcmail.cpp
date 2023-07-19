@@ -397,39 +397,39 @@ static BOOL oxcmail_get_field_param(char *field,
 	return *value == '\0' ? TRUE : false;
 }
 
+static void replace_reserved_chars(char *s)
+{
+	for (; *s != '\0'; ++s)
+		if (*s == '"' || *s == '/' || *s == ':' ||
+		    *s == '<' || *s == '>' || *s == '|' ||
+		    *s == '\\' || (*s >= 0x00 && *s <= 0x1F))
+			*s = '_';
+}
+
+static void replace_leading_dots(char *str)
+{
+	char *p;
+	for (p = str; *p == '.'; ++p)
+		;
+	if (p != str)
+		memmove(str, p, strlen(str) + 1);
+}
+
+static void replace_trailing_dots(char *s)
+{
+	size_t z = strlen(s);
+	while (z-- > 0 && s[z] == '.')
+		;
+	s[++z] = '\0';
+}
+
 static void oxcmail_split_filename(char *file_name, char *extension)
 {
-	int i;
-	int tmp_len;
 	char *ptoken;
 	
-	tmp_len = strlen(file_name);
-	for (i=0; i<tmp_len; i++) {
-		if ('"' == file_name[i] || '/' == file_name[i] ||
-			':' == file_name[i] || '<' == file_name[i] ||
-			'>' == file_name[i] || '|' == file_name[i] ||
-			'\\' == file_name[i] || (file_name[i] >= 0 &&
-			file_name[i] <= 0x1F)) {
-			file_name[i] = '_';
-		}
-	}
-	for (i=0; i<tmp_len; i++) {
-		if ('.' == file_name[i]) {
-			file_name[i] = ' ';
-			continue;
-		}
-		break;
-	}
-	HX_strltrim(file_name);
-	tmp_len = strlen(file_name);
-	for (i=tmp_len-1; i>=0; i--) {
-		if ('.' == file_name[i]) {
-			file_name[i] = ' ';
-			continue;
-		}
-		break;
-	}
-	HX_strrtrim(file_name);
+	replace_reserved_chars(file_name);
+	replace_trailing_dots(file_name);
+	replace_leading_dots(file_name);
 	ptoken = strrchr(file_name, '.');
 	if (NULL == ptoken || strlen(ptoken) >= 16) {
 		extension[0] = '\0';

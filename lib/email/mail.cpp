@@ -400,6 +400,13 @@ bool MAIL::get_charset(char *charset) const
 	return false;
 }
 
+static void replace_qb(char *s)
+{
+	for (; *s != '\0'; ++s)
+		if (*s == '"' || *s == '\\')
+			*s = ' ';
+}
+
 /*
  *	get the digest string of mail
  *	@param
@@ -531,12 +538,7 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 	digest["received"]  = mime_received;
 	digest["date"]      = mime_date;
 	if (email_charset[0] != '\0' && mail_check_ascii_printable(email_charset)) {
-		auto tmp_len = strlen(email_charset);
-		for (size_t i = 0; i < tmp_len; ++i) {
-			if ('"' == email_charset[i] || '\\' == email_charset[i]) {
-				email_charset[i] = ' ';
-			}
-		}
+		replace_qb(email_charset);
 		digest["charset"] = email_charset;
 	}
 	if (*mime_sender != '\0')
@@ -591,20 +593,13 @@ int MAIL::get_digest(size_t *poffset, Json::Value &digest) const try
 static void mail_enum_text_mime_charset(const MIME *pmime, void *param)
 {
 	auto email_charset = static_cast<char *>(param);
-	int i, tmp_len;
 	
 	if ('\0' != email_charset[0]) {
 		return;
 	}
 	if (0 == strncasecmp(pmime->content_type, "text/", 5) &&
 	    pmime->get_content_param("charset", email_charset, 32)) {
-		tmp_len = strlen(email_charset);
-		for (i=0; i<tmp_len; i++) {
-			if ('"' == email_charset[i] || '\'' == email_charset[i] ||
-				'\\' == email_charset[i]) {
-				email_charset[i] = ' ';
-			}
-		}
+		replace_qb(email_charset);
 		HX_strrtrim(email_charset);
 		HX_strltrim(email_charset);
 	}

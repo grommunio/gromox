@@ -1574,10 +1574,17 @@ int MIME::get_mimes_digest(const char *id_string, size_t *poffset,
 	return -1;
 }
 
+static void replace_qb(char *s)
+{
+	for (; *s != '\0'; ++s)
+		if (*s == '"' || *s == '\\')
+			*s = ' ';
+}
+
 static int mime_get_digest_single(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
-	size_t i, content_len = 0, tmp_len;
+	size_t content_len = 0;
 	char charset_buff[32], content_type[256], encoding_buff[128];
 	char file_name[256], temp_buff[512], content_ID[128];
 	char content_location[256], content_disposition[256], *ptoken;
@@ -1585,12 +1592,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	strcpy(content_type, pmime->content_type);
 	if (!mime_check_ascii_printable(content_type))
 		strcpy(content_type, "application/octet-stream");
-	tmp_len = strlen(content_type);
-	for (i = 0; i < tmp_len; i++) {
-		if ('"' == content_type[i] || '\\' == content_type[i]) {
-			content_type[i] = ' ';
-		}
-	}
+	replace_qb(content_type);
 	HX_strrtrim(content_type);
 	HX_strltrim(content_type);
 
@@ -1603,12 +1605,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	    !mime_check_ascii_printable(encoding_buff)) {
 		digest["encoding"] = "8bit";
 	} else {
-		tmp_len = strlen(encoding_buff);
-		for (i = 0; i < tmp_len; i++) {
-			if ('"' == encoding_buff[i] || '\\' == encoding_buff[i]) {
-				encoding_buff[i] = ' ';
-			}
-		}
+		replace_qb(encoding_buff);
 		HX_strrtrim(encoding_buff);
 		HX_strltrim(encoding_buff);
 		digest["encoding"] = encoding_buff;
@@ -1634,18 +1631,14 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	digest["length"] = Json::Value::UInt64(content_len);
 	if (pmime->get_content_param("charset", charset_buff, 32) &&
 	    mime_check_ascii_printable(charset_buff)) {
-		tmp_len = strlen(charset_buff);
-		for (i = 0; i < tmp_len; i++) {
-			if ('"' == charset_buff[i] || '\\' == charset_buff[i]) {
-				charset_buff[i] = ' ';
-			}
-		}
+		replace_qb(charset_buff);
 		HX_strrtrim(charset_buff);
 		HX_strltrim(charset_buff);
 		digest["charset"] = charset_buff;
 	}
 
 	if (pmime->get_filename(file_name, std::size(file_name))) {
+		size_t tmp_len = sizeof(temp_buff);
 		encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
 		digest["filename"] = temp_buff;
 	}
@@ -1658,23 +1651,17 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 		HX_strltrim(content_disposition);
 		if ('\0' != content_disposition[0] &&
 		    mime_check_ascii_printable(content_disposition)) {
-			tmp_len = strlen(content_disposition);
-			for (i = 0; i < tmp_len; i++) {
-				if ('"' == content_disposition[i] ||
-				    '\\' == content_disposition[i]) {
-					content_disposition[i] = ' ';
-				}
-			}
+			replace_qb(content_disposition);
 			digest["cntdspn"] = content_disposition;
 		}
 	}
 	if (pmime->get_field("Content-ID", content_ID, 128)) {
-		tmp_len = strlen(content_ID);
+		auto tmp_len = strlen(content_ID);
 		encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
 		digest["cid"] = temp_buff;
 	}
 	if (pmime->get_field("Content-Location", content_location, 256)) {
-		tmp_len = strlen(content_location);
+		auto tmp_len = strlen(content_location);
 		encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
 		digest["cntl"] = temp_buff;
 	}
@@ -1793,19 +1780,14 @@ int MIME::get_structure_digest(const char *id_string, size_t *poffset,
 static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
     size_t *poffset, size_t head_offset, Json::Value &dsarray)
 {
-	size_t count = 0, i, tmp_len;
+	size_t count = 0;
 	BOOL	has_submime;
 	char temp_id[64], content_type[256];
 
 	strcpy(content_type, pmime->content_type);
 	if (!mime_check_ascii_printable(content_type))
 		strcpy(content_type, "multipart/mixed");
-	tmp_len = strlen(content_type);
-	for (i = 0; i < tmp_len; i++) {
-		if ('"' == content_type[i] || '\\' == content_type[i]) {
-			content_type[i] = ' ';
-		}
-	}
+	replace_qb(content_type);
 	HX_strrtrim(content_type);
 	HX_strltrim(content_type);
 	auto mgl = pmime->get_length();
@@ -1844,8 +1826,7 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 		*poffset += 4;
 		return 0;
 	}
-	tmp_len = pmime->content_length - (pmime->last_boundary -
-	          pmime->content_begin);
+	size_t tmp_len = pmime->content_length - (pmime->last_boundary - pmime->content_begin);
 	*poffset += tmp_len > 0 ? tmp_len : 2;
 	return 0;
 }
