@@ -107,23 +107,6 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	uint64_t dst_fid, uint64_t dst_id, BOOL b_move,
 	BOOL *pb_result)
 {
-	void *pvalue;
-	BOOL b_result;
-	BOOL b_update;
-	uint64_t tmp_cn;
-	uint64_t nt_time;
-	uint64_t mid_val;
-	uint64_t dst_val;
-	uint64_t fid_val;
-	int is_associated;
-	uint64_t change_num;
-	uint64_t parent_fid;
-	char sql_string[256];
-	uint32_t message_size;
-	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
-	TAGGED_PROPVAL tmp_propvals[5];
-	
 	*pb_result = false;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -134,13 +117,15 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite))
 		return TRUE;		
-	mid_val = rop_util_get_gc_value(message_id);
-	fid_val = rop_util_get_gc_value(dst_fid);
-	dst_val = rop_util_get_gc_value(dst_id);
+	auto mid_val = rop_util_get_gc_value(message_id);
+	auto fid_val = rop_util_get_gc_value(dst_fid);
+	auto dst_val = rop_util_get_gc_value(dst_id);
+	BOOL b_result = false;
 	if (!common_util_check_allocated_eid(pdb->psqlite, dst_val, &b_result))
 		return FALSE;
 	if (!b_result)
 		return TRUE;
+	char sql_string[256];
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id "
 	          "FROM messages WHERE message_id=%llu", LLU{dst_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -159,12 +144,13 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW)
 		return TRUE;
-	parent_fid = sqlite3_column_int64(pstmt, 0);
-	is_associated = sqlite3_column_int64(pstmt, 1);
+	uint64_t parent_fid = sqlite3_column_int64(pstmt, 0);
+	bool is_associated = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 	if (b_move)
 		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::del_msg,
 			parent_fid, mid_val, 0);
+	uint32_t message_size = 0;
 	if (!common_util_copy_message(pdb->psqlite, account_id, mid_val,
 	    fid_val, &dst_val, &b_result, &message_size))
 		return FALSE;
@@ -174,7 +160,7 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 		dynamic_event::new_msg, fid_val, dst_val, 0);
 	db_engine_notify_message_movecopy(pdb, !b_move ? TRUE : false,
 		fid_val, dst_val, parent_fid, mid_val);
-	b_update = TRUE;
+	BOOL b_update = TRUE;
 	if (b_move) {
 		if (exmdb_server::is_private()) {
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM messages"
@@ -196,13 +182,17 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	if (b_update && !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
 	    is_associated ? 0 : message_size, is_associated ? message_size : 0))
 		return FALSE;
-	nt_time = rop_util_current_nttime();
+	auto nt_time = rop_util_current_nttime();
 	if (b_move) {
+		TAGGED_PROPVAL tmp_propvals[5];
+		TPROPVAL_ARRAY propvals;
+		uint64_t change_num = 0;
+
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
 		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
 			return FALSE;
-		tmp_cn = rop_util_make_eid_ex(1, change_num);
+		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
@@ -211,6 +201,8 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
 			change_num});
+
+		void *pvalue = nullptr;
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !cu_get_property(MAPI_FOLDER, parent_fid, CP_ACP,
 		    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
@@ -225,6 +217,8 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 		tmp_propvals[3].pvalue = &nt_time;
 		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
+
+		PROBLEM_ARRAY problems;
 		cu_set_properties(MAPI_FOLDER, parent_fid, CP_ACP, pdb->psqlite,
 			&propvals, &problems);
 		common_util_increase_deleted_count(pdb->psqlite, parent_fid, 1);
@@ -242,29 +236,9 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	const char *username, uint64_t src_fid, uint64_t dst_fid,
 	BOOL b_copy, const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
 {
-	void *pvalue;
-	BOOL b_check;
-	BOOL b_owner;
-	BOOL b_result;
-	BOOL b_update;
-	uint64_t tmp_cn;
-	uint64_t nt_time;
-	uint64_t src_val;
-	uint64_t dst_val;
-	uint64_t tmp_val;
-	uint64_t tmp_val1;
-	int is_associated;
-	uint64_t fai_size;
-	uint32_t del_count;
-	uint64_t change_num;
-	uint32_t permission;
+	BOOL b_check, b_owner, b_result;
+	uint32_t permission, folder_type;
 	char sql_string[256];
-	uint32_t folder_type;
-	uint64_t normal_size;
-	uint32_t message_size;
-	PROBLEM_ARRAY problems;
-	TPROPVAL_ARRAY propvals;
-	TAGGED_PROPVAL tmp_propvals[5];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -272,8 +246,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	if (account_id == 0)
 		account_id = get_account_id();
 	*pb_partial = FALSE;
-	src_val = rop_util_get_gc_value(src_fid);
-	dst_val = rop_util_get_gc_value(dst_fid);
+	auto src_val = rop_util_get_gc_value(src_fid);
+	auto dst_val = rop_util_get_gc_value(dst_fid);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type, dir))
 		return FALSE;
 	if (!b_guest) {
@@ -300,7 +274,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	             "is_associated FROM messages WHERE message_id=?");
 	if (stm_find == nullptr)
 		return FALSE;
-	b_update = TRUE;
+	BOOL b_update = TRUE;
 	xstmt stm_del;
 	if (!b_copy) {
 		if (exmdb_server::is_private()) {
@@ -313,12 +287,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		if (stm_del == nullptr)
 			return FALSE;
 	}
-	fai_size = 0;
-	del_count = 0;
-	normal_size = 0;
+	uint64_t fai_size = 0, normal_size = 0;
+	uint32_t del_count = 0, message_size = 0;
 	std::set<uint64_t> touched_folders;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
+		auto tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
 		stm_find.bind_int64(1, tmp_val);
 		if (stm_find.step() != SQLITE_ROW) {
 			*pb_partial = TRUE;
@@ -329,7 +302,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		 * so re-lookup the real source parent.
 		 */
 		uint64_t parent_fid = stm_find.col_uint64(0);
-		is_associated = stm_find.col_uint64(1);
+		bool is_associated = stm_find.col_uint64(1);
 		stm_find.reset();
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
@@ -365,7 +338,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 			db_engine_proc_dynamic_event(pdb, cpid,
 				dynamic_event::del_msg,
 				parent_fid, tmp_val, 0);
-		tmp_val1 = 0;
+		uint64_t tmp_val1 = 0;
 		if (!common_util_copy_message(pdb->psqlite, account_id, tmp_val,
 		    dst_val, &tmp_val1, &b_result, &message_size))
 			return FALSE;
@@ -409,13 +382,19 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	if (b_update && normal_size + fai_size > 0 &&
 	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
 		return FALSE;
-	nt_time = rop_util_current_nttime();
+	auto nt_time = rop_util_current_nttime();
 	if (!b_copy) for (auto parent_fid : touched_folders) {
+		TAGGED_PROPVAL tmp_propvals[5];
+		TPROPVAL_ARRAY propvals;
+		PROBLEM_ARRAY problems;
+		void *pvalue = nullptr;
+		uint64_t change_num = 0;
+
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
 		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
 			return FALSE;
-		tmp_cn = rop_util_make_eid_ex(1, change_num);
+		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
@@ -433,7 +412,6 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 		if (tmp_propvals[2].pvalue == nullptr)
 			return FALSE;
-		nt_time = rop_util_current_nttime();
 		tmp_propvals[3].proptag = PR_LOCAL_COMMIT_TIME_MAX;
 		tmp_propvals[3].pvalue = &nt_time;
 		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;

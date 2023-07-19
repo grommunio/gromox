@@ -10,6 +10,7 @@ Fixes:
 
 * oxcical: resolved another case of recurring appointments shifting due to
   timezone/daylightbias
+* exmdb_provider: resolve constraint failure on movecopy_messages
 
 
 Gromox 2.10 (2023-06-15)
