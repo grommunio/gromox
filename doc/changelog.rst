@@ -1,5 +1,5 @@
-Development 2.10.78
-===================
+Development 2.10.117
+====================
 
 Enhancements:
 
@@ -11,6 +11,11 @@ Fixes:
 * oxcical: resolved another case of recurring appointments shifting due to
   timezone/daylightbias
 * exmdb_provider: resolve constraint failure on movecopy_messages
+
+Changes:
+
+* exmdb_client: disable timeout during active calls
+* delivery: raise context_average_mime limit from 8 to 500
 
 
 Gromox 2.10 (2023-06-15)
