@@ -278,10 +278,9 @@ static ssize_t ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 	if (iconv(conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return -1;
-	} else {
-		iconv_close(conv_id);
-		return out_len - len;
 	}
+	iconv_close(conv_id);
+	return out_len - len;
 }
 
 static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
@@ -301,10 +300,9 @@ static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 	if (iconv(conv_id, &pin, &src_len, &pout, &len) == static_cast<size_t>(-1)) {
 		iconv_close(conv_id);
 		return false;
-	} else {
-		iconv_close(conv_id);
-		return true;
 	}
+	iconv_close(conv_id);
+	return true;
 }
 
 static bool ntlmssp_md4hash(const char *passwd, void *p16v)
@@ -611,20 +609,19 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			pblob = (DATA_BLOB*)va_arg(ap, void*);
 			if (0 == len1 && 0 == len2) {
 				pblob->cb = 0;
-			} else {
-				/* make sure its in the right format - be strict */
-				if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
-				    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
-					return false;
-				}
-
-				if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
-				    &blob.pb[ptr_ofs] < blob.pb || pblob->cb < len1) {
-					return false;
-				}
-				memcpy(pblob->pb, &blob.pb[ptr_ofs], len1);
-				pblob->cb = len1;
+				break;
 			}
+			/* make sure its in the right format - be strict */
+			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
+			    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
+				return false;
+			}
+			if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
+			    &blob.pb[ptr_ofs] < blob.pb || pblob->cb < len1) {
+				return false;
+			}
+			memcpy(pblob->pb, &blob.pb[ptr_ofs], len1);
+			pblob->cb = len1;
 			break;
 		case 'b':
 			pblob = (DATA_BLOB *)va_arg(ap, void*);
@@ -736,14 +733,12 @@ static void ntlmssp_handle_neg_flags(NTLMSSP_CTX *pntlmssp, uint32_t neg_flags)
 static const char *ntlmssp_target_name(NTLMSSP_CTX *pntlmssp,
 	uint32_t neg_flags, uint32_t *chal_flags)
 {
-	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
-		*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
-		*chal_flags |= NTLMSSP_REQUEST_TARGET;
-		*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
-		return pntlmssp->dns_name;
-	} else {
+	if (!(neg_flags & NTLMSSP_REQUEST_TARGET))
 		return "";
-	}
+	*chal_flags |= NTLMSSP_NEGOTIATE_TARGET_INFO;
+	*chal_flags |= NTLMSSP_REQUEST_TARGET;
+	*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
+	return pntlmssp->dns_name;
 }
 
 static pack_result ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
@@ -1159,9 +1154,8 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 				plm_key->cb = puser_key->cb;
 			}
 			return true;
-		} else {
-			return false;
 		}
+		return false;
 	} 
 	
 	if (plm_response->cb == 0) {
@@ -1191,18 +1185,14 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	    pntlmssp->user, pntlmssp->domain, &tmp_key)) {
 		b_result = true;
 		pdomain = pntlmssp->domain;
-	} else {
-		if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
-		    pntlmssp->user, upper_domain, &tmp_key)) {
-			b_result = true;
-			pdomain = upper_domain;
-		} else {
-			if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
-			    pntlmssp->user, "", &tmp_key)) {
-				b_result = true;
-				pdomain = "";
-			}
-		}
+	} else if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
+	    pntlmssp->user, upper_domain, &tmp_key)) {
+		b_result = true;
+		pdomain = upper_domain;
+	} else if (ntlmssp_check_ntlm2(plm_response, nt_p16, pchallenge,
+	    pntlmssp->user, "", &tmp_key)) {
+		b_result = true;
+		pdomain = "";
 	}
 	
 	if (b_result) {
