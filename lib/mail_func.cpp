@@ -176,9 +176,8 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 				state = SW_SLASH;
 				u -= 5;
 				for ( ;; ) {
-					if (u < parsed_uri) {
+					if (u < parsed_uri)
 						return FALSE;
-					}
 					if ('/' == *u) {
 						u ++;
 						break;
@@ -225,7 +224,6 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 					*u ++ = ch;
 					ch = *p ++;
 					break;
-
 				} else if ('\0' == ch) {
 					return FALSE;
 				}
@@ -250,10 +248,9 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
 		}
 	}
  PARSE_ARGS:
-    while (p < uri_end) {
-        if (*p ++ != '#') {
-            continue;
-        }
+	while (p < uri_end) {
+		if (*p ++ != '#')
+			continue;
 		tmp_len = p - args_start;
 		memcpy(u, args_start, tmp_len);
 		u += tmp_len;
@@ -298,9 +295,8 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 {
 	BOOL meet_slash;
 	
-	if (buff_len > MIME_FIELD_LEN) {
+	if (buff_len > MIME_FIELD_LEN)
 		buff_len = MIME_FIELD_LEN;
-	}
 	/* parse the first line the get the field name and part of value*/
 	auto tmp_ptr = in_buff;
 
@@ -311,10 +307,9 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 		tmp_ptr ++; 
 		i ++;
 	}
-	if (i == buff_len || MIME_NAME_LEN + 1 == i ||
-		'\r' == *tmp_ptr || '\n' == *tmp_ptr) {
+	if (i == buff_len || i == MIME_NAME_LEN + 1 ||
+	    *tmp_ptr == '\r' || *tmp_ptr == '\n')
 		return 0;
-	}
 	pmime_field->name.assign(in_buff, tmp_ptr - in_buff);
 	tmp_ptr ++;	   /* skip ':' */
 	i ++;
@@ -322,9 +317,8 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 		tmp_ptr ++;	/* skip WSP */
 		i ++;
 	}
-	if (i == buff_len) {
+	if (i == buff_len)
 		return 0;
-	}
 	char field_value[MIME_FIELD_LEN];
 	auto dest_ptr = field_value;
 	while (true) {
@@ -392,11 +386,9 @@ void parse_mime_encode_string(char *in_buff, long ibuff_len,
 	
 	memset(pencode_string, 0, sizeof(ENCODE_STRING));
 	/* first ignore the ' ' in the buffer */
-	for (i=0; i<buff_len; i++) {
-		if (in_buff[i] != ' ') {
+	for (i = 0; i < buff_len; ++i)
+		if (in_buff[i] != ' ')
 			break;
-		}
-	}
 	if (i >= buff_len - 2) {
 		strcpy(pencode_string->charset, "default");
 		strcpy(pencode_string->encoding, "none");
@@ -414,19 +406,15 @@ void parse_mime_encode_string(char *in_buff, long ibuff_len,
 	}
 	auto charset_begin = i + 2;
 	auto tmp_begin = charset_begin;
-	for (i=tmp_begin; i<buff_len; i++) {
-		if (in_buff[i] == '?') {
+	for (i = tmp_begin; i<buff_len; ++i)
+		if (in_buff[i] == '?')
 			break;
-		}
-	}
-	if (i >= buff_len - 1) {
+	if (i >= buff_len - 1)
 		return;
-	}
 	/* copy charset to parsed structure */
 	auto charset_len = i - charset_begin;
-	if (charset_len > sizeof(pencode_string->charset) - 1) {
+	if (charset_len > sizeof(pencode_string->charset) - 1)
 		return;
-	}
 	if (0 == charset_len) {
 		strcpy(pencode_string->charset, "default");
 	} else {	
@@ -443,23 +431,18 @@ void parse_mime_encode_string(char *in_buff, long ibuff_len,
 		strcpy(pencode_string->encoding, "none");
 		tmp_begin = i + 1;
 	}
-	if (tmp_begin >= buff_len) {
+	if (tmp_begin >= buff_len)
 		return;
-	}
 	/* ignore the ? */
-	if (in_buff[tmp_begin] == '?') {
+	if (in_buff[tmp_begin] == '?')
 		tmp_begin ++;
-	}
 	auto title_begin = tmp_begin;
-	for (i=tmp_begin; i<buff_len; i++) {
-		if (in_buff[i] == '?' && in_buff[i+1] == '=') {
+	for (i = tmp_begin; i < buff_len; ++i)
+		if (in_buff[i] == '?' && in_buff[i+1] == '=')
 			break;
-		}
-	}
 	auto title_len = i - title_begin;
-	if (title_len > sizeof(pencode_string->title) - 1) {
+	if (title_len > sizeof(pencode_string->title) - 1)
 		title_len = sizeof(pencode_string->title) - 1;
-	}
 	memcpy(pencode_string->title, in_buff + title_begin, title_len);
 	pencode_string->title[title_len] = '\0';
 }
@@ -513,9 +496,8 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 			HX_strltrim(param_tag);
 			HX_strrtrim(param_value);
 			HX_strltrim(param_value);
-			if (0 != paratag_len || 0 != paraval_len) {
+			if (paratag_len != 0 || paraval_len != 0)
 				pfile.emplace_back(MIME_FIELD{param_tag, param_value});
-			}
 		}
 		ptr ++;
 		prev_section = ptr;
@@ -548,9 +530,8 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 	HX_strltrim(param_tag);
 	HX_strrtrim(param_value);
 	HX_strltrim(param_value);
-	if (0 != paratag_len || 0 != paraval_len) {
+	if (paratag_len != 0 || paraval_len != 0)
 		pfile.emplace_back(MIME_FIELD{param_tag, param_value});
-	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1095: ENOMEM");
 	return;
@@ -573,32 +554,28 @@ char* find_url(char *buf, size_t howmuch, int *count)
 		switch (*s1) {
 		case 'h':
 		case 'H':
-			if (0 != strncasecmp(s1 + 1, "ttp", 3)) {
+			if (strncasecmp(&s1[1], "ttp", 3) != 0)
 				goto CONTINUE_LOOP;
-			}
-			if (':' != s1[4] && (('s' != s1[4] && 'S' != s1[4])
-				|| ':' != s1[5])) {
+			if (s1[4] != ':' && ((s1[4] != 's' && s1[4] != 'S') || s1[5] != ':'))
 				goto CONTINUE_LOOP;
-			}
 			break;
 		case 'w':
 		case 'W':
-			if (0 != strncasecmp(s1 + 1, "ww.", 3)) {
+			if (strncasecmp(&s1[1], "ww.", 3) != 0)
 				goto CONTINUE_LOOP;
-			}
 			break;
 		default:
 			goto CONTINUE_LOOP;
 		}
 		for (s2=s1, *count=0; howmuch>0; s2++, (*count)++, howmuch--) {
 			tmp = *s2;
-			if (tmp < 32 || tmp >= 127 || tmp == ' ' || 
-				tmp == '!' || tmp == '"' || tmp == '\'' || tmp == '#'
-				|| tmp == '(' || tmp == ')' || tmp == ',' ||
-				tmp == '`' || tmp == '{' || tmp == '}' || tmp == '|'
-				|| tmp == '<' || tmp == '>') {
+			if (tmp < 32 || tmp >= 127 || tmp == ' ' ||
+			    tmp == '!' || tmp == '"' || tmp == '\'' ||
+			    tmp == '#' || tmp == '(' || tmp == ')' ||
+			    tmp == ',' || tmp == '`' || tmp == '{' ||
+			    tmp == '}' || tmp == '|' || tmp == '<' ||
+			    tmp == '>')
 				break;
-			}
 		}
 		return s1;
  CONTINUE_LOOP:
@@ -892,11 +869,10 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 			}
 		}
 		if (']' == *ptr && NULL != last_square) {
-			if (0 == s_count) {
+			if (s_count == 0)
 				last_square = NULL;
-			} else {
+			else
 				s_count --;
-			}
 		}
 		if (*ptr == '(' && last_quote == nullptr) {
 			if (NULL == last_bracket) {
@@ -907,11 +883,10 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 			}
 		}
 		if (')' == *ptr && NULL != last_bracket) {
-			if (0 == b_count) {
+			if (b_count == 0)
 				last_bracket = NULL;
-			} else {
+			else
 				b_count --;
-			}
 		}
 		if (*ptr == ' ' && last_quote == nullptr &&
 			NULL == last_bracket && NULL == last_square) {
@@ -945,9 +920,8 @@ time_t make_gmtime(struct tm *ptm)
 	
 	if (NULL == sp) {
 		sp = tz::tzalloc("UTC");
-		if (NULL == sp) {
+		if (sp == nullptr)
 			return 0;
-		}
 	}
 	return tz::mktime_z(sp, ptm);
 }
@@ -958,9 +932,8 @@ void make_gmtm(time_t gm_time, struct tm *ptm)
 	
 	if (NULL == sp) {
 		sp = tz::tzalloc("UTC");
-		if (NULL == sp) {
+		if (sp == nullptr)
 			return;
-		}
 	}
 	tz::localtime_rz(sp, &gm_time, ptm);
 }
@@ -983,19 +956,17 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 	if (str_zone == nullptr)
 		/* DOW is optional */
 		str_zone = strptime(str_time, "%d %b %Y %H:%M:%S ", &tmp_tm);
-	if (NULL == str_zone) {
+	if (str_zone == nullptr)
 		return FALSE;
-	}
 	
 	zone_len = strlen(str_zone);
 	if (zone_len >= 5) {
-		if ('-' == str_zone[0]) {
+		if (*str_zone == '-')
 			factor = 1;
-		} else if ('+' == str_zone[0]) {
+		else if (*str_zone == '+')
 			factor = -1;
-		} else {
+		else
 			return FALSE;
-		}
 		if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
 		    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
 			return FALSE;
@@ -1004,17 +975,15 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		tmp_buff[1] = str_zone[2];
 		tmp_buff[2] = '\0';
 		hour = strtol(tmp_buff, nullptr, 0);
-		if (hour < 0 || hour > 23) {
+		if (hour < 0 || hour > 23)
 			return FALSE;
-		}
 
 		tmp_buff[0] = str_zone[3];
 		tmp_buff[1] = str_zone[4];
 		tmp_buff[2] = '\0';
 		minute = strtol(tmp_buff, nullptr, 0);
-		if (minute < 0 || minute > 59) {
+		if (minute < 0 || minute > 59)
 			return FALSE;
-		}
 	} else if (1 == zone_len) {
 		if ('A' <= str_zone[0] && 'J' > str_zone[0]) {
 			factor = 1;
@@ -1098,9 +1067,9 @@ static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
 		if (-1 == begin_pos && '=' == in_buff[i] && '?' == in_buff[i + 1]) {
 			begin_pos = i;
 			if (i > last_pos) {
-				if (1 != begin_pos - last_pos || ' ' != in_buff[last_pos]) {
+				if (begin_pos - last_pos != -1 ||
+				    in_buff[last_pos] != ' ')
 					return FALSE;
-				}
 				last_pos = i;
 			}
 		}
@@ -1142,9 +1111,8 @@ static BOOL encode_strings_to_utf8(const char *mime_string, char *out_string,
 			continue;
 		}
 	}
-	if (i > last_pos) {
+	if (i > last_pos)
 		return FALSE;
-	} 
 	temp_buff[buff_offset] = '\0';
 	if (!string_to_utf8(last_charset, temp_buff, out_string, out_len))
 		return FALSE;	
@@ -1251,36 +1219,30 @@ void enriched_to_html(const char *enriched_txt,
 		c = enriched_txt[i];
 		if('<' == c) {
 			i ++;
-			if (i >= len) {
+			if (i >= len)
 				break;
-			}
 			c = enriched_txt[i];
 			if('<' == c) {
-				if (offset + 4 >= max_len - 2) {
+				if (offset + 4 >= max_len - 2)
 					break;
-				}
 				memcpy(html + offset, "&lt;", 4);
 				offset += 4;
 			} else {
 				size_t j;
-				for (j=0, p=token; (c=enriched_txt[i+j])!='\0'&&c!='>'; j++) {
-					if (j < sizeof(token)-1) {
+				for (j = 0, p = token; (c = enriched_txt[i+j]) != '\0' && c != '>'; ++j)
+					if (j < sizeof(token) - 1)
 						*p++ = HX_isupper(c) ? HX_tolower(c) : c;
-					}
-				}
 				*p = '\0';
-				if('\0' == c) {
+				if (c == '\0')
 					break;
-				}
 				if (0 == strcmp(token, "/param")) {
 					paramct --;
 					html[offset++] = '>';
 					i += 6;
 				} else if (paramct > 0) {
 					len1 = strlen(token);
-					if (offset + 8 + len1 >= max_len - 2) {
+					if (offset + 8 + len1 >= max_len - 2)
 						break;
-					}
 					memcpy(html + offset, "&lt;", 4);
 					offset += 4;
 					memcpy(html + offset, token, len1);
@@ -1291,17 +1253,15 @@ void enriched_to_html(const char *enriched_txt,
 					html[offset++] = '<';
 					if (0 == strcmp(token, "nofill")) {
 						nofill ++;
-						if (offset + 3 >= max_len - 2) {
+						if (offset + 3 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, "pre", 3);
 						offset += 3;
 						i += 6;
 					} else if (strcmp(token, "/nofill") == 0) {
 						nofill --;
-						if (offset + 4 >= max_len - 2) {
+						if (offset + 4 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, "/pre", 4);
 						offset += 4;
 						i += 7;
@@ -1324,31 +1284,27 @@ void enriched_to_html(const char *enriched_txt,
 						offset += 2;
 						i += 5;
 					} else if (strcmp(token, "/fixed") == 0) {
-						if (offset + 3 >= max_len - 2) {
+						if (offset + 3 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, "/tt", 3);
 						offset += 3;
 						i += 6;
 					} else if (strcmp(token, "excerpt") == 0) {
-						if (offset + 10 >= max_len - 2) {
+						if (offset + 10 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, "blockquote", 10);
 						offset += 10;
 						i += 7;
 					} else if (strcmp(token, "/excerpt") == 0) {
-						if (offset + 11 >= max_len - 2) {
+						if (offset + 11 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, "/blockquote", 11);
 						offset += 11;
 						i += 8;
 					} else {
 						len1 = strlen(token);
-						if (offset + len1 >= max_len - 2) {
+						if (offset + len1 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, token, len1);
 						offset += len1;
 						i += len1;
@@ -1362,15 +1318,13 @@ void enriched_to_html(const char *enriched_txt,
 				}
 			}
 		} else if('>' == c) {
-			if (offset + 4 >= max_len - 2) {
+			if (offset + 4 >= max_len - 2)
 				break;
-			}
 			memcpy(html + offset, "&gt;", 4);
 			offset += 4;
 		} else if ('&' == c) {
-			if (offset + 5 >= max_len - 2) {
+			if (offset + 5 >= max_len - 2)
 				break;
-			}
 			memcpy(html + offset, "&amp;", 5);
 			offset += 5;
 		} else {
@@ -1378,9 +1332,8 @@ void enriched_to_html(const char *enriched_txt,
 				size_t j;
 				for (j=i+1; j<len; j++) {
 					if ('\n' == enriched_txt[j]) {
-						if (offset + 4 >= max_len - 2) {
+						if (offset + 4 >= max_len - 2)
 							break;
-						}
 						memcpy(html + offset, "<br>", 4);
 						offset += 4;
 					} else {
@@ -1424,9 +1377,8 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		case '\0':
 			break;
 		case '<':
-			if (in_q) {
+			if (in_q)
 				break;
-			}
 			if (HX_isspace(p[1]))
 				goto REG_CHAR;
 			if (state == st::NONE) {
@@ -1502,14 +1454,12 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				depth --;
 				break;
 			}
-			if (in_q) {
+			if (in_q)
 				break;
-			}
 			switch (state) {
 			case st::TAG:
-				if (is_xml && '-' == *(p - 1)) {
+				if (is_xml && p[-1] == '-')
 					break;
-				}
 				state = st::NONE;
 				in_q = is_xml = 0;
 				break;
@@ -1541,9 +1491,8 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 				linebegin = false;
 			}
 			if (state != st::NONE && p != buf.get() &&
-			    (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q)) {
+			    (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q))
 				in_q = in_q ? 0 : *p;
-			}
 			break;
 		case '!':
 			/* JavaScript & Other HTML scripting languages */
@@ -1583,9 +1532,8 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 		}
 		c = *(++ p);
 	}
-	if (rp < rbuf.get() + len) {
+	if (rp < rbuf.get() + len)
 		*rp = '\0';
-	}
 	outbuf = rbuf.get();
 	return 1;
 } catch (...) {

@@ -94,11 +94,9 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 	if (fin == NULL) {
 		return NULL;
 	}
-	for (table_size = 0; fgets(line, MAX_LINE_LEN, fin); table_size++) {
-		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
+	for (table_size = 0; fgets(line, MAX_LINE_LEN, fin); ++table_size)
+		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#')
 			table_size--;
-		}
-	}
 	auto cfg = config_file_alloc(table_size + EXT_ENTRY_NUM);
 	if (cfg == NULL) {
 		mlog(LV_DEBUG, "config_file: config_file_init: %s, alloc fail", filename);
@@ -223,11 +221,9 @@ const char *CONFIG_FILE::get_value(const char *key) const
 		}
 		return NULL;
 	}
-	for (i = 0; i < cfg_file->num_entries; i++) {
-		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
+	for (i = 0; i < cfg_file->num_entries; ++i)
+		if (strcasecmp(key, cfg_file->config_table[i].keyname) == 0)
 			return cfg_file->config_table[i].value;
-		}
-	}
 	return NULL;
 }
 
@@ -256,19 +252,16 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg,
 #endif
 	gx_strlcpy(temp_buf, line, std::size(temp_buf));
 	cr_ptr = strchr(temp_buf, '\r');
-	if (NULL != cr_ptr) {
+	if (cr_ptr != nullptr)
 		*cr_ptr = '\0';
-	}
 	lf_ptr = strchr(temp_buf, '\n');
-	if (NULL != lf_ptr) {
+	if (lf_ptr != nullptr)
 		*lf_ptr = '\0';
-	}
 	HX_strrtrim(temp_buf);
 	HX_strltrim(temp_buf);
 	equal_ptr = strchr(temp_buf, '=');
-	if (NULL == equal_ptr) {
+	if (equal_ptr == nullptr)
 		return;
-	}
 	*equal_ptr++ = '\0';
 	HX_strrtrim(temp_buf);
 	HX_strltrim(equal_ptr);
@@ -316,9 +309,8 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 		return TRUE;
 	}
 	
-	if (cfg_file->num_entries == cfg_file->total_entries) {
+	if (cfg_file->num_entries == cfg_file->total_entries)
 		return FALSE;
-	}
 	index = cfg_file->num_entries++;
 	cfg_file->config_table[index].is_touched = TRUE;
 	gx_strlcpy(cfg_file->config_table[index].keyname, key, std::size(cfg_file->config_table[index].keyname));

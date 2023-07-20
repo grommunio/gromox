@@ -18,9 +18,8 @@ static void cookie_parser_unencode(const char *src, char *dest)
 		if (*src == '+') {
 			*dest = ' ';
 		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1) {
+			if (sscanf(src+1, "%2x", &code) != 1)
 				code = '?';
-			}
 			*dest = code;
 			src +=2;
 		} else {
@@ -42,9 +41,8 @@ cookie_jar cookie_parser_init(const char *cookie_string)
 	
 	len = strlen(cookie_string);
 	decoded_string = (char*)malloc(len + 2);
-	if (NULL == decoded_string) {
+	if (decoded_string == nullptr)
 		return jar;
-	}
 	cookie_parser_unencode(cookie_string, decoded_string);
 	len = strlen(decoded_string);
 	if (len > 0 && '\n' == decoded_string[len - 1]) {
@@ -75,12 +73,10 @@ cookie_jar cookie_parser_init(const char *cookie_string)
 				*ptoken++ = '\0';
 				try {
 					std::string pparam = ptoken;
-					while (' ' == *last_ptr && '\0' != *last_ptr) {
+					while (*last_ptr == ' ' && *last_ptr != '\0')
 						last_ptr ++;
-					}
-					if ('\0' != *last_ptr) {
+					if (*last_ptr != '\0')
 						jar.emplace(last_ptr, std::move(pparam));
-					}
 				} catch (...) {
 				}
 			}
