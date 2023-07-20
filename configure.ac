@@ -181,28 +181,22 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([
 ])
 AC_SUBST([iconv_CPPFLAGS])
 AC_SUBST([iconv_LIBS])
-AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
-	AC_PATH_PROGS([MYSQL_CONFIG], [mysql_config mariadb_config])
-	AC_ARG_WITH([mysql-config], AS_HELP_STRING([--with-mysql-config=PATH], [path to the mysql-config script of mysql]),
-		[MYSQL_CONFIG="$withval"])
-	AS_IF([test -z "$MYSQL_CONFIG"], [AC_MSG_ERROR([mysql config program not found])])
-	mysql_CFLAGS=$($MYSQL_CONFIG --include)
-	mysql_LIBS=$($MYSQL_CONFIG --libs)
-	mysql_VERSION=$($MYSQL_CONFIG --version) # see if it's there
 
-	if test -z "$mysql_VERSION"; then
-		AC_MSG_ERROR([Cannot find a mysql installation. Please use --with-mysql-config=PATH or install libmysqlclient-dev.])
-	fi
-
-	AC_SUBST([mysql_CFLAGS])
-	AC_SUBST([mysql_LIBS])
-	AC_SUBST([mysql_VERSION])
-	AC_MSG_CHECKING([for MySQL includes])
-	AC_MSG_RESULT([$mysql_CFLAGS])
-	AC_MSG_CHECKING([for MySQL libs])
-	AC_MSG_RESULT([$mysql_LIBS])
-])
-MYSQL_WITH_MYSQL_CONFIG
+AC_PATH_PROGS([MYSQL_CONFIG], [mysql_config mariadb_config])
+AC_ARG_WITH([mysql-config], AS_HELP_STRING([--with-mysql-config=PATH], [Path to the mysql_config/mariadb_config script]),
+	[MYSQL_CONFIG="$withval"])
+AS_IF([test -z "$MYSQL_CONFIG"], [AC_MSG_ERROR([mysql_config/mariadb_config program not found])])
+mysql_VERSION=$($MYSQL_CONFIG --version) # see if it exists at all
+AS_IF([test -z "$mysql_VERSION"], [AC_MSG_ERROR([Cannot find a MySQL/MariaDB client installation.])])
+mysql_CFLAGS=$($MYSQL_CONFIG --include)
+mysql_LIBS=$($MYSQL_CONFIG --libs)
+AC_SUBST([mysql_CFLAGS])
+AC_SUBST([mysql_LIBS])
+AC_SUBST([mysql_VERSION])
+AC_MSG_CHECKING([for MySQL includes])
+AC_MSG_RESULT([$mysql_CFLAGS])
+AC_MSG_CHECKING([for MySQL libs])
+AC_MSG_RESULT([$mysql_LIBS])
 
 unitdir=$("$PKG_CONFIG" systemd --variable systemd_system_unit_dir 2>/dev/null)
 sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
