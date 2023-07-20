@@ -19,6 +19,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #include <gromox/ntlmssp.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
 #define MSVAVEOL					0
@@ -378,6 +379,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	data_size = 0;
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
+	auto cl_0 = make_scope_exit([&]() { va_end(ap); });
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U': {
@@ -385,7 +387,6 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_size += 8;
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0) {
-				va_end(ap);
 				return false;
 			}
 			blobs[i].cb = ret;
@@ -406,7 +407,6 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			s = va_arg(ap, char*);
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
 			if (ret < 0) {
-				va_end(ap);
 				return false;
 			}
 			blobs[i].cb = ret;
@@ -439,11 +439,9 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_size += blobs[i].cb;
 			break;
 		default:
-			va_end(ap);
 			return false;
 		}
 	}
-	va_end(ap);
 
 	if (head_size + data_size == 0) {
 		return false;
@@ -452,6 +450,7 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	head_ofs = 0;
 	data_ofs = head_size;
 
+	va_end(ap);
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
@@ -496,11 +495,9 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			head_ofs += length;
 			break;
 		default:
-			va_end(ap);
 			return false;
 		}
 	}
-	va_end(ap);
 	pblob->cb = head_size + data_size;
 	return true;
 }
@@ -527,11 +524,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 	uint16_t len1, len2;
 	
 	va_start(ap, format);
+	auto cl_0 = make_scope_exit([&]() { va_end(ap); });
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
 			if (head_ofs + 8 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			len1 = le16p_to_cpu(&blob.pb[head_ofs]);
@@ -549,23 +546,19 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			/* make sure its in the right format - be strict */
 			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
 			    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			if (len1 & 1) {
 				/* if odd length and unicode */
-				va_end(ap);
 				return false;
 			}
 			if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
 			    &blob.pb[ptr_ofs] < blob.pb) {
-				va_end(ap);
 				return false;
 			}
 			if (len1 > 0) {
 				if (!ntlmssp_utf16le_to_utf8(&blob.pb[ptr_ofs],
 				    len1, ps, le32p_to_cpu(ps))) {
-					va_end(ap);
 					return false;
 				}
 			} else {
@@ -574,7 +567,6 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			break;
 		case 'A':
 			if (head_ofs + 8 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			len1 = le16p_to_cpu(&blob.pb[head_ofs]);
@@ -592,12 +584,10 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			}
 			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
 			    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
 			    &blob.pb[ptr_ofs] < blob.pb) {
-				va_end(ap);
 				return false;
 			}
 			if (len1 > 0) {
@@ -609,7 +599,6 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			break;
 		case 'B':
 			if (head_ofs + 8 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			len1 = le16p_to_cpu(&blob.pb[head_ofs]);
@@ -626,13 +615,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				/* make sure its in the right format - be strict */
 				if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
 				    ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.cb) {
-					va_end(ap);
 					return false;
 				}
 
 				if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
 				    &blob.pb[ptr_ofs] < blob.pb || pblob->cb < len1) {
-					va_end(ap);
 					return false;
 				}
 				memcpy(pblob->pb, &blob.pb[ptr_ofs], len1);
@@ -644,12 +631,10 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			len1 = va_arg(ap, unsigned int);
 			/* make sure its in the right format - be strict */
 			if (head_ofs + len1 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			if (&blob.pb[head_ofs] < reinterpret_cast<uint8_t *>(head_ofs) ||
 			    &blob.pb[head_ofs] < blob.pb || pblob->cb < len1) {
-				va_end(ap);
 				return false;
 			}
 			memcpy(pblob->pb, &blob.pb[head_ofs], len1);
@@ -659,7 +644,6 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 		case 'd':
 			v = va_arg(ap, uint32_t*);
 			if (head_ofs + 4 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 			*v = le32p_to_cpu(&blob.pb[head_ofs]);
@@ -671,20 +655,16 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			if (&blob.pb[head_ofs] < reinterpret_cast<uint8_t *>(head_ofs) ||
 			    &blob.pb[head_ofs] < blob.pb ||
 			    head_ofs + strlen(ps) + 1 > blob.cb) {
-				va_end(ap);
 				return false;
 			}
 
 			if (memcmp(&blob.pb[head_ofs], ps, strlen(ps) + 1) != 0) {
-				va_end(ap);
 				return false;
 			}
 			head_ofs += strlen(ps) + 1;
 			break;
 		}
 	}
-	
-	va_end(ap);
 	return true;
 }
 
