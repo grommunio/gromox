@@ -220,9 +220,8 @@ const char *CONFIG_FILE::get_value(const char *key) const
 			(key[i] >= 'A' && key[i] <= 'Z') ||
 			'-' == key[i] || '_' == key[i]) {
 			continue;
-		} else {
-			return NULL;
 		}
+		return NULL;
 	}
 	for (i = 0; i < cfg_file->num_entries; i++) {
 		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
@@ -303,19 +302,18 @@ BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 			(key[i] >= 'A' && key[i] <= 'Z') ||
 			'-' == key[i] || '_' == key[i]) {
 			continue;
-		} else {
-			return FALSE;
 		}
+		return FALSE;
 	}
 	len = strlen(value);
 	for (i=0; i<cfg_file->num_entries; i++) {
-		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
-			if (cfg_file->config_table[i].value != value) {
-				gx_strlcpy(cfg_file->config_table[i].value, value, std::size(cfg_file->config_table[i].value));
-				cfg_file->config_table[i].is_touched = TRUE;
-			}
+		if (strcasecmp(key, cfg_file->config_table[i].keyname) != 0)
+			continue;
+		if (cfg_file->config_table[i].value == value)
 			return TRUE;
-		}
+		gx_strlcpy(cfg_file->config_table[i].value, value, std::size(cfg_file->config_table[i].value));
+		cfg_file->config_table[i].is_touched = TRUE;
+		return TRUE;
 	}
 	
 	if (cfg_file->num_entries == cfg_file->total_entries) {

@@ -343,9 +343,8 @@ size_t parse_mime_field(char *in_buff, size_t buff_len,
 			if ('\r' == *tmp_ptr || '\n' == *tmp_ptr) {
 				pmime_field->value.assign(field_value, value_length);
 				return buff_len;
-			} else {
-				return 0;
 			}
+			return 0;
 		}
 		if (*tmp_ptr == '\r') {
 			++tmp_ptr;
@@ -881,9 +880,8 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 				last_quote = ptr;
 				/* continue the lookp for the empty "" because of memmove */
 				continue;
-			} else {
-				last_quote = nullptr;
 			}
+			last_quote = nullptr;
 		}
 		if (*ptr == '[' && last_quote == nullptr) {
 			if (NULL == last_square) {
