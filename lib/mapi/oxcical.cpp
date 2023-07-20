@@ -3309,7 +3309,7 @@ static void importance_to_lines(mapi_importance n, ical_component *c)
 
 #define E_2201 "E-2201: get_propids failed for an unspecified reason"
 
-static const char *oxcical_export_valarm(const MESSAGE_CONTENT &msg,
+static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
     ical_component &pical, GET_PROPIDS get_propids)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
@@ -3320,7 +3320,7 @@ static const char *oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 		return E_2201;
 	auto flag = msg.proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag == nullptr || *flag == 0)
-		return nullptr;
+		return {};
 	auto com = &pical.append_comp("VALARM");
 	com->append_line("DESCRIPTION", "REMINDER");
 	propname = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
@@ -3335,10 +3335,10 @@ static const char *oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 	auto line = &com->append_line("TRIGGER", tmp_buff);
 	line->append_param("RELATED", "START");
 	com->append_line("ACTION", "DISPLAY");
-	return nullptr;
+	return {};
 }
 
-static const char *oxcical_export_internal(const char *method, const char *tzid,
+static std::string oxcical_export_internal(const char *method, const char *tzid,
     const MESSAGE_CONTENT *pmsg, ical &pical, ENTRYID_TO_USERNAME entryid_to_username,
     ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
@@ -3774,11 +3774,11 @@ static const char *oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
-			err = oxcical_export_internal(method, tzid,
+			auto estr = oxcical_export_internal(method, tzid,
 			      pembedded, pical, entryid_to_username,
 			      essdn_to_username, alloc, get_propids);
-			if (err != nullptr)
-				return err;
+			if (estr.size() > 0)
+				return estr;
 		}
 	}
 
@@ -3795,8 +3795,8 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 {
 	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
 	           entryid_to_username, essdn_to_username, alloc, std::move(get_propids));
-	if (err != nullptr) {
-		mlog(LV_ERR, "%s", err);
+	if (err.size() > 0) {
+		mlog(LV_ERR, "%s", err.c_str());
 		return false;
 	}
 	return TRUE;
