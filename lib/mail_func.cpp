@@ -1544,11 +1544,7 @@ static int html_to_plain_boring(const void *inbuf, size_t len,
 			}
 			if (state != st::NONE && p != buf.get() &&
 			    (state == st::TAG || p[-1] != '\\') && (!in_q || *p == in_q)) {
-				if (in_q) {
-					in_q = 0;
-				} else {
-					in_q = *p;
-				}
+				in_q = in_q ? 0 : *p;
 			}
 			break;
 		case '!':

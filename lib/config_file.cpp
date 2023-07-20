@@ -61,10 +61,7 @@ static std::shared_ptr<CONFIG_FILE> config_file_alloc(size_t z)
 	}
 	cfg->total_entries = z;
 	cfg->config_table = static_cast<CONFIG_ENTRY *>(calloc(z, sizeof(CONFIG_ENTRY)));
-	if (cfg->config_table == NULL) {
-		return NULL;
-	}
-	return cfg;
+	return cfg->config_table == nullptr ? nullptr : cfg;
 }
 
 /*
