@@ -1277,11 +1277,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (ATTRIBUTE_ID_ATTACHRENDDATA == attribute.attr_id) {
 				cur_lvl = LVL_ATTACHMENT;
 				break;
-			} else {
-				mlog(LV_DEBUG, "tnef: attachment should "
-					"begin with attAttachRendData");
-				return NULL;
 			}
+			mlog(LV_DEBUG, "tnef: attachment should "
+				"begin with attAttachRendData");
+			return NULL;
 		}
 		if (b_props) {
 			mlog(LV_DEBUG, "tnef: attMsgProps should be "
@@ -1367,16 +1366,16 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		case ATTRIBUTE_ID_MESSAGESTATUS: {
 			auto bv = static_cast<BINARY *>(attribute.pvalue);
-			if (b_embedded && bv->cb != 0) {
-				tmp_int32 = 0;
-				if (*bv->pb & FMS_LOCAL)
-					tmp_int32 |= MSGFLAG_UNSENT;
-				if (*bv->pb & FMS_SUBMITTED)
-					tmp_int32 |= MSGFLAG_SUBMITTED;
-				if (tmp_int32 != 0 &&
-				    pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != 0)
-					return NULL;
-			}
+			if (!b_embedded || bv->cb == 0)
+				break;
+			tmp_int32 = 0;
+			if (*bv->pb & FMS_LOCAL)
+				tmp_int32 |= MSGFLAG_UNSENT;
+			if (*bv->pb & FMS_SUBMITTED)
+				tmp_int32 |= MSGFLAG_SUBMITTED;
+			if (tmp_int32 != 0 &&
+			    pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != 0)
+				return NULL;
 			break;
 		}
 		case ATTRIBUTE_ID_MESSAGECLASS:
@@ -1386,14 +1385,14 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		case ATTRIBUTE_ID_MESSAGEID:
 			tmp_bin.cb = strlen(static_cast<char *>(attribute.pvalue)) / 2;
-			if (tmp_bin.cb > 0) { 
-				tmp_bin.pv = alloc(tmp_bin.cb);
-				if (tmp_bin.pv == nullptr ||
-				    !decode_hex_binary(static_cast<char *>(attribute.pvalue),
-				    tmp_bin.pv, tmp_bin.cb) ||
-				    pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != 0)
-					return NULL;
-			}
+			if (tmp_bin.cb == 0)
+				break;
+			tmp_bin.pv = alloc(tmp_bin.cb);
+			if (tmp_bin.pv == nullptr ||
+			    !decode_hex_binary(static_cast<char *>(attribute.pvalue),
+			    tmp_bin.pv, tmp_bin.cb) ||
+			    pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != 0)
+				return NULL;
 			break;
 		case ATTRIBUTE_ID_BODY:
 			if (pmsg->proplist.set(PR_BODY_A, attribute.pvalue) != 0)
