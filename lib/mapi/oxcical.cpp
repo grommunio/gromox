@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fmt/format.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -3394,7 +3395,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			icaltype = nullptr;
 			pical.m_name = "VJOURNAL";
 		} else {
-			return "E-2202: don't know how to transform message class to iCal";
+			return fmt::format("E-2202: don't know how to transform message class {} to iCal", str);
 		}
 	}
 	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, b_proposal ?
