@@ -1067,18 +1067,17 @@ static pack_result rtf_getchar(RTF_READER *preader, int *pch)
 			return status;
 		}
 		ch = tmp_char;
-		if ('\n' == ch) {
-			/* Convert \(newline) into \par here */
-			if ('\\' == preader->last_returned_ch) {
-				rtf_ungetchar(preader, ' ');
-				rtf_ungetchar(preader, 'r');
-				rtf_ungetchar(preader, 'a');
-				ch = 'p';
-				break;
-			}
+		if (ch != '\n')
+			continue;
+		/* Convert \(newline) into \par here */
+		if ('\\' == preader->last_returned_ch) {
+			rtf_ungetchar(preader, ' ');
+			rtf_ungetchar(preader, 'r');
+			rtf_ungetchar(preader, 'a');
+			ch = 'p';
+			break;
 		}
-	} 
-	while ('\r' == ch);
+	} while (ch == '\r');
 	if ('\t' == ch) {
 		ch = ' ';
 	}
@@ -1260,17 +1259,18 @@ static bool rtf_optimize_element(DOUBLE_LIST *pcollection_list,
 	
 	for (size_t i = 0; i < std::size(opt_tags); ++i) {
 		auto len = strlen(opt_tags[i]);
-		if (0 == strncmp(opt_tags[i], str_word, len) &&
-		    (HX_isdigit(str_word[len]) || str_word[len] == '-')) {
-			text = rtf_get_from_collection(pcollection_list, i);
-			if (NULL == text) {
-				continue;
-			}
-			if (strcmp(text, str_word) == 0)
-				return true;
-			rtf_add_to_collection(pcollection_list, i, str_word);
-			break;
+		if (strncmp(opt_tags[i], str_word, len) != 0)
+			continue;
+		if (!HX_isdigit(str_word[len]) && str_word[len] != '-')
+			continue;
+		text = rtf_get_from_collection(pcollection_list, i);
+		if (NULL == text) {
+			continue;
 		}
+		if (strcmp(text, str_word) == 0)
+			return true;
+		rtf_add_to_collection(pcollection_list, i, str_word);
+		break;
 	}
 	return false;
 }
@@ -1308,6 +1308,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			}
 			plast_group = pgroup;
 			plast_node = NULL;
+			continue;
 		} else if (input_word[0] == '}') {
 			free(input_word);
 			if (NULL == plast_group) {
@@ -1320,33 +1321,34 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			if (NULL == plast_group) {
 				return true;
 			}
-		} else {
-			if (NULL == plast_group) {
-				free(input_word);
-				mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
-				return false;
-			}
-			if (rtf_optimize_element(&plast_group->collection_list, input_word)) {
-				free(input_word);
-				return true;
-			}
-			pword = me_alloc<SIMPLE_TREE_NODE>();
-			if (NULL == pword) {
-				free(input_word);
-				mlog(LV_DEBUG, "rtf: out of memory");
-				return false;
-			}
-			pword->pdata = input_word;
-			if (NULL == plast_node) {
-				preader->element_tree.add_child(
-					&plast_group->node, pword,
-					SIMPLE_TREE_ADD_LAST);
-			} else {
-				preader->element_tree.insert_sibling(plast_node,
-					pword, SIMPLE_TREE_INSERT_AFTER);
-			}
-			plast_node = pword;
+			continue;
 		}
+
+		if (NULL == plast_group) {
+			free(input_word);
+			mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
+			return false;
+		}
+		if (rtf_optimize_element(&plast_group->collection_list, input_word)) {
+			free(input_word);
+			return true;
+		}
+		pword = me_alloc<SIMPLE_TREE_NODE>();
+		if (NULL == pword) {
+			free(input_word);
+			mlog(LV_DEBUG, "rtf: out of memory");
+			return false;
+		}
+		pword->pdata = input_word;
+		if (NULL == plast_node) {
+			preader->element_tree.add_child(
+				&plast_group->node, pword,
+				SIMPLE_TREE_ADD_LAST);
+		} else {
+			preader->element_tree.insert_sibling(plast_node,
+				pword, SIMPLE_TREE_INSERT_AFTER);
+		}
+		plast_node = pword;
 	}
 	/* incomplete RTF... pretend it's ok */
 	return true;
@@ -1387,10 +1389,9 @@ static bool rtf_starting_text(RTF_READER *preader)
 
 static bool rtf_starting_paragraph_align(RTF_READER *preader, int align)
 {
-	if (preader->is_within_header && align != ALIGN_LEFT) {
-		if (!rtf_starting_body(preader))
-			return false;
-	}
+	if (preader->is_within_header && align != ALIGN_LEFT &&
+	    !rtf_starting_body(preader))
+		return false;
 	switch (align) {
 	case ALIGN_CENTER:
 		QRF(preader->ext_push.p_bytes(TAG_CENTER_BEGIN, sizeof(TAG_CENTER_BEGIN) - 1));
@@ -1470,11 +1471,9 @@ static bool rtf_check_for_table(RTF_READER *preader)
 
 static bool rtf_put_iconv_cache(RTF_READER *preader, int ch)
 {
-	if (preader->b_ubytes_switch) {
-		if (preader->ubytes_left > 0) {
-			preader->ubytes_left --;
-			return true;
-		}
+	if (preader->b_ubytes_switch && preader->ubytes_left > 0) {
+		preader->ubytes_left --;
+		return true;
 	}
 	QRF(preader->iconv_push.p_uint8(ch));
 	return true;
@@ -1527,10 +1526,9 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				if (tmp_len + tmp_offset > sizeof(tmp_buff) - 1) {
 					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
-				} else {
-					memcpy(tmp_buff + tmp_offset, string, tmp_len);
-					tmp_offset += tmp_len;
 				}
+				memcpy(tmp_buff + tmp_offset, string, tmp_len);
+				tmp_offset += tmp_len;
 				continue;
 			} else if (string[1] == '\'' && string[2] != '\0' && string[3] != '\0') {
 				if (tmp_offset + 1 > sizeof(tmp_buff) - 1) {
@@ -1558,16 +1556,15 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				    tmp_name, name, std::size(name))) {
 					mlog(LV_DEBUG, "rtf: invalid font name");
 					return false;
-				} else {
-					auto tmp_len = strlen(name);
-					if (tmp_len + tmp_offset >
-					    sizeof(tmp_buff) - 1) {
-						mlog(LV_DEBUG, "rtf: invalid font name");
-						return false;
-					}
-					memcpy(tmp_buff + tmp_offset, name, tmp_len);
-					tmp_offset += tmp_len;
 				}
+				auto tmp_len = strlen(name);
+				if (tmp_len + tmp_offset >
+				    sizeof(tmp_buff) - 1) {
+					mlog(LV_DEBUG, "rtf: invalid font name");
+					return false;
+				}
+				memcpy(tmp_buff + tmp_offset, name, tmp_len);
+				tmp_offset += tmp_len;
 			} else if (0 == strcmp(tmp_name, "fcharset")) {
 				fcharsetcp = static_cast<cpid_t>(rtf_fcharset_to_cpid(param));
 			} else if (0 == strcmp(tmp_name, "cpg")) {
@@ -1777,17 +1774,15 @@ static void rtf_process_color_table(
 			while (b > 255) {
 				b >>= 8;
 			}
-		} else {
-			if (strcmp(static_cast<char *>(pword->pdata), ";") == 0) {
-				preader->color_table[preader->total_colors++] =
-									(r << 16) | (g << 8) | b;
-				if (preader->total_colors >= MAX_COLORS) {
-					return;
-				}
-				r = 0;
-				g = 0;
-				b = 0;
+		} else if (strcmp(static_cast<char *>(pword->pdata), ";") == 0) {
+			preader->color_table[preader->total_colors++] =
+				(r << 16) | (g << 8) | b;
+			if (preader->total_colors >= MAX_COLORS) {
+				return;
 			}
+			r = 0;
+			g = 0;
+			b = 0;
 		}
 	} while ((pword = pword->get_sibling()) != nullptr);
 }
@@ -1800,26 +1795,22 @@ static int rtf_cmd_continue(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int)
 static int rtf_cmd_cf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (!have_param || num < 0 || num >= preader->total_colors) {
+	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font color change to %xh is invalid", num);
-	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_FOREGROUND,
-		    preader->color_table[num]))
-			return CMD_RESULT_ERROR;
-	}
+	else if (!rtf_attrstack_push_express(preader, ATTR_FOREGROUND,
+	    preader->color_table[num]))
+		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
 static int rtf_cmd_cb(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
-	if (!have_param || num < 0 || num >= preader->total_colors) {
+	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font color change attempted is invalid");
-	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
-		    preader->color_table[num]))
+	else if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
+	    preader->color_table[num]))
 			return CMD_RESULT_ERROR;
-	}
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -1935,14 +1926,12 @@ static int rtf_cmd_deff(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 static int rtf_cmd_highlight(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (!have_param || num < 0 || num >= preader->total_colors) {
+	if (!have_param || num < 0 || num >= preader->total_colors)
 		mlog(LV_DEBUG, "rtf: font background "
 			"color change attempted is invalid");
-	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
-		    preader->color_table[num]))
-			return CMD_RESULT_ERROR;
-	}
+	else if (!rtf_attrstack_push_express(preader, ATTR_BACKGROUND,
+	    preader->color_table[num]))
+		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 
@@ -2035,14 +2024,14 @@ static int rtf_cmd_ftech(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 static int rtf_cmd_expand(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	if (have_param) {
-		if (0 == num) {
-			if (!rtf_attrstack_pop_express(preader, ATTR_EXPAND))
-				return CMD_RESULT_ERROR;
-		} else {
-			if (!rtf_attrstack_push_express(preader, ATTR_EXPAND, num / 4))
-				return CMD_RESULT_ERROR;
-		}
+	if (!have_param)
+		return CMD_RESULT_CONTINUE;
+	if (0 == num) {
+		if (!rtf_attrstack_pop_express(preader, ATTR_EXPAND))
+			return CMD_RESULT_ERROR;
+	} else {
+		if (!rtf_attrstack_push_express(preader, ATTR_EXPAND, num / 4))
+			return CMD_RESULT_ERROR;
 	}
 	return CMD_RESULT_CONTINUE;
 }
@@ -2669,37 +2658,37 @@ static int rtf_cmd_wmetafile(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
 	preader->picture_type = PICT_WM;
-	if (preader->is_within_picture && have_param) {
-		preader->picture_wmf_type = num;
-		switch (num) {
-		case 1:
-			preader->picture_wmf_str = "MM_TEXT";
-			break;
-		case 2:
-			preader->picture_wmf_str = "MM_LOMETRIC";
-			break;
-		case 3:
-			preader->picture_wmf_str = "MM_HIMETRIC";
-			break;
-		case 4:
-			preader->picture_wmf_str = "MM_LOENGLISH";
-			break;
-		case 5:
-			preader->picture_wmf_str = "MM_HIENGLISH";
-			break;
-		case 6:
-			preader->picture_wmf_str = "MM_TWIPS";
-			break;
-		case 7:
-			preader->picture_wmf_str = "MM_ISOTROPIC";
-			break;
-		case 8:
-			preader->picture_wmf_str = "MM_ANISOTROPIC";
-			break;
-		default:
-			preader->picture_wmf_str = "default:MM_TEXT";
-			break;
-		}
+	if (!preader->is_within_picture || !have_param)
+		return CMD_RESULT_CONTINUE;
+	preader->picture_wmf_type = num;
+	switch (num) {
+	case 1:
+		preader->picture_wmf_str = "MM_TEXT";
+		break;
+	case 2:
+		preader->picture_wmf_str = "MM_LOMETRIC";
+		break;
+	case 3:
+		preader->picture_wmf_str = "MM_HIMETRIC";
+		break;
+	case 4:
+		preader->picture_wmf_str = "MM_LOENGLISH";
+		break;
+	case 5:
+		preader->picture_wmf_str = "MM_HIENGLISH";
+		break;
+	case 6:
+		preader->picture_wmf_str = "MM_TWIPS";
+		break;
+	case 7:
+		preader->picture_wmf_str = "MM_ISOTROPIC";
+		break;
+	case 8:
+		preader->picture_wmf_str = "MM_ANISOTROPIC";
+		break;
+	default:
+		preader->picture_wmf_str = "default:MM_TEXT";
+		break;
 	}
 	return CMD_RESULT_CONTINUE;
 }
@@ -2853,10 +2842,9 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					continue;
 				}
 			}
-			if (strncmp(static_cast<char *>(pnode->pdata), "\\'", 2) != 0) {
-				if (!rtf_flush_iconv_cache(preader))
-					return -EINVAL;
-			}
+			if (strncmp(static_cast<char *>(pnode->pdata), "\\'", 2) != 0 &&
+			    !rtf_flush_iconv_cache(preader))
+				return -EINVAL;
 			string = static_cast<char *>(pnode->pdata);
 			if (*string == ' ' && preader->is_within_header) {
 				/* do nothing  */
