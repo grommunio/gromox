@@ -165,7 +165,7 @@ Default: \fI0\fP (no limit)
 If there are more than this many threads waiting to use a mailbox, emit a
 warning log message. Use 0 to disable.
 .br
-Default: \fI5\fP
+Default: \fI10\fP
 .TP
 \fBmbox_contention_reject\fP
 If there are more than this many threads waiting to use a mailbox, refuse the
