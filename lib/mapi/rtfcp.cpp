@@ -99,11 +99,8 @@ static bool rtfcp_verify_header(uint8_t *header_data,
 	if (pheader->size != in_size - 4) {
 		return false;
 	}
-	if (pheader->magic != RTF_COMPRESSED &&
-		pheader->magic != RTF_UNCOMPRESSED) {
-		return false;
-	}
-	return true;
+	return pheader->magic == RTF_COMPRESSED ||
+	       pheader->magic == RTF_UNCOMPRESSED;
 }
 
 uint8_t DECOMPRESSION_STATE::get_next_byte()

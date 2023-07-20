@@ -177,11 +177,7 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
-	if (NULL != pdisplay_name) {
-		tmp_entry.pdisplay_name = deconst(pdisplay_name);
-	} else {
-		tmp_entry.pdisplay_name = deconst("");
-	}
+	tmp_entry.pdisplay_name = deconst(znul(pdisplay_name));
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||

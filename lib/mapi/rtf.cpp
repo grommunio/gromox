@@ -825,11 +825,7 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 			encoding = preader->default_encoding;
 		} else {
 			const FONTENTRY *pentry = rtf_lookup_font(preader, *pparam);
-			if (NULL == pentry) {
-				encoding = preader->default_encoding;
-			} else {
-				encoding = pentry->encoding;
-			}
+			encoding = pentry != nullptr ? pentry->encoding : preader->default_encoding;
 		}
 		if (!rtf_iconv_open(preader, encoding))
 			return false;
@@ -967,10 +963,7 @@ static int rtf_attrstack_peek(const RTF_READER *preader)
 		return ATTR_NONE;
 	}
 	auto pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
-	if(pattrstack->tos >= 0) {
-		return pattrstack->attr_stack[pattrstack->tos];
-	}
-	return ATTR_NONE;
+	return pattrstack->tos >= 0 ? pattrstack->attr_stack[pattrstack->tos] : ATTR_NONE;
 }
 
 static void rtf_stack_list_free_node(RTF_READER *preader) 
@@ -1618,11 +1611,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	}
 	if (!preader->have_ansicpg) {
 		const FONTENTRY *pentry = rtf_lookup_font(preader, preader->default_font_number);
-		if (NULL != pentry) {
-			strcpy(preader->default_encoding, pentry->encoding);
-		} else {
-			strcpy(preader->default_encoding, "windows-1252");
-		}
+		strcpy(preader->default_encoding, pentry != nullptr ? pentry->encoding : "windows-1252");
 	}
 	return true;
 }
