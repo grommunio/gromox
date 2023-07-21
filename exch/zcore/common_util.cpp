@@ -2007,8 +2007,12 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	if (!oxcical_export(pmsgctnt, ical,
 		common_util_alloc, common_util_get_propids,
 		common_util_entryid_to_username_internal,
-		common_util_essdn_to_username))
+		common_util_essdn_to_username)) {
+		using LLU = unsigned long long;
+		mlog(LV_DEBUG, "D-2202: oxcical_export %s:%llxh failed",
+			pstore->get_dir(), LLU{message_id});
 		return FALSE;
+	}
 	if (!ical.serialize(tmp_buff, std::size(tmp_buff)))
 		return FALSE;	
 	pical_bin->cb = strlen(tmp_buff);
