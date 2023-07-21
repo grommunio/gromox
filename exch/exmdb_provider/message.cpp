@@ -97,9 +97,11 @@ static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
 	read stat is "unread", the item of this user should be
 	removed from read_states */
 
+#if defined(FMT_VERSION) && FMT_VERSION >= 90000
 namespace {
 unsigned int format_as(proptag_t x) { return x; }
 }
+#endif
 
 /* can be used when submitting message */
 BOOL exmdb_server::movecopy_message(const char *dir,

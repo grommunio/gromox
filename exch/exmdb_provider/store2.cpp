@@ -322,9 +322,11 @@ static bool purg_discover_ids(sqlite3 *db, const std::string &query,
 	return true;
 }
 
+#if defined(FMT_VERSION) && FMT_VERSION >= 90000
 namespace {
 unsigned int format_as(proptag_t x) { return x; }
 }
+#endif
 
 static bool purg_discover_cids(sqlite3 *db, const char *dir,
     std::vector<std::string> &used)
