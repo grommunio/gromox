@@ -32,7 +32,7 @@
 
 namespace gromox {
 
-static int mdcl_socket_timeout = 60, mdcl_rpc_timeout = -1;
+static int mdcl_rpc_timeout = -1;
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
@@ -76,7 +76,6 @@ void remote_conn_ref::reset(bool lost)
 
 static constexpr cfg_directive exmdb_client_dflt[] = {
 	{"exmdb_client_rpc_timeout", "0", CFG_TIME, "4"},
-	{"exmdb_client_socket_timeout", "60s", CFG_TIME, "4"},
 	CFG_TABLE_END,
 };
 
@@ -94,9 +93,6 @@ void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
 			mdcl_rpc_timeout = 4;
 		if (mdcl_rpc_timeout > 0)
 			mdcl_rpc_timeout *= 1000;
-		mdcl_socket_timeout = cfg->get_ll("exmdb_client_socket_timeout");
-		if (mdcl_socket_timeout < 4)
-			mdcl_socket_timeout = 4;
 	}
 	setup_sigalrm();
 	mdcl_notify_stop = true;
@@ -211,7 +207,7 @@ static void cl_pinger2()
 		auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
 		while (srv.conn_list.size() > 0) {
 			auto conn = &srv.conn_list.front();
-			if (now_time - conn->last_time >= mdcl_socket_timeout - 3)
+			if (now_time - conn->last_time >= SOCKET_TIMEOUT - 3)
 				temp_list.splice(temp_list.end(), srv.conn_list, srv.conn_list.begin());
 			else
 				srv.conn_list.splice(srv.conn_list.end(), srv.conn_list, srv.conn_list.begin());
@@ -241,7 +237,7 @@ static void cl_pinger2()
 		}
 		struct pollfd pfd_read{conn->sockd, POLLIN | POLLPRI};
 		auto resp_buff = exmdb_response::invalid;
-		if (poll(&pfd_read, 1, mdcl_socket_timeout * 1000) != 1 ||
+		if (poll(&pfd_read, 1, SOCKET_TIMEOUT * 1000) != 1 ||
 		    read(conn->sockd, &resp_buff, 1) != 1 ||
 		    resp_buff != exmdb_response::success) {
 			close(conn->sockd);
@@ -269,7 +265,7 @@ static void *cl_pinger(void *)
 static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
     uint8_t (&buff)[0x8000], uint32_t &buff_len, uint32_t &offset)
 {
-	if (poll(&pfd, 1, mdcl_socket_timeout * 1000) != 1)
+	if (poll(&pfd, 1, SOCKET_TIMEOUT * 1000) != 1)
 		return -1;
 	if (buff_len == 0) {
 		if (read(agent.sockd, &buff_len, sizeof(uint32_t)) != sizeof(uint32_t))

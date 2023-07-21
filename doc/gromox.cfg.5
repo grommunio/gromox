@@ -30,13 +30,5 @@ will sever the connection and return an error to the calling program. The value
 cannot be lower than 4s. The special value 0 disabled RPC timeout checking.
 .br
 Default: \fI60s\fP
-.TP
-\fBexmdb_client_socket_timeout\fP
-Nonresponse timeout value for idle states and notification channels to exmdb
-servers. The value cannot be lower than 4s. (There is generally a ping emitted
-a few seconds before the timer elapses, and if the server does not respond in
-time, the connection is severed.)
-.br
-Default: \fI60s\fP
 .SH See also
 \fBgromox\fP(7)
