@@ -46,8 +46,12 @@ static char mdcl_remote_id[128];
 
 remote_conn::~remote_conn()
 {
-	if (sockd >= 0)
+	if (sockd >= 0) {
 		close(sockd);
+		sockd = -1;
+		if (psvr != nullptr)
+			--psvr->active_handles;
+	}
 }
 
 remote_conn_ref::remote_conn_ref(remote_conn_ref &&o)
@@ -61,17 +65,12 @@ void remote_conn_ref::reset(bool lost)
 	if (tmplist.size() == 0)
 		return;
 	auto pconn = &tmplist.front();
-	if (pconn->sockd < 0) {
+	if (pconn->sockd < 0 || lost) {
 		tmplist.clear();
-	} else if (!lost) {
-		std::lock_guard sv_hold(mdcl_server_lock);
-		pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
-	} else {
-		close(pconn->sockd);
-		pconn->sockd = -1;
-		--pconn->psvr->active_handles;
-		tmplist.clear();
+		return;
 	}
+	std::lock_guard sv_hold(mdcl_server_lock);
+	pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 }
 
 static constexpr cfg_directive exmdb_client_dflt[] = {
@@ -219,17 +218,11 @@ static void cl_pinger2()
 	while (temp_list.size() > 0) {
 		auto conn = &temp_list.front();
 		if (mdcl_notify_stop) {
-			close(conn->sockd);
-			conn->sockd = -1;
-			--conn->psvr->active_handles;
 			temp_list.pop_front();
 			continue;
 		}
 		auto ping_buff = cpu_to_le32(0);
 		if (write(conn->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t)) {
-			close(conn->sockd);
-			conn->sockd = -1;
-			--conn->psvr->active_handles;
 			temp_list.pop_front();
 			continue;
 		}
@@ -238,16 +231,13 @@ static void cl_pinger2()
 		if (poll(&pfd_read, 1, SOCKET_TIMEOUT * 1000) != 1 ||
 		    read(conn->sockd, &resp_buff, 1) != 1 ||
 		    resp_buff != exmdb_response::success) {
-			close(conn->sockd);
-			conn->sockd = -1;
-			--conn->psvr->active_handles;
 			temp_list.pop_front();
-		} else {
-			conn->last_time = time(nullptr);
-			sv_hold.lock();
-			conn->psvr->conn_list.splice(conn->psvr->conn_list.end(), temp_list, temp_list.begin());
-			sv_hold.unlock();
+			continue;
 		}
+		conn->last_time = time(nullptr);
+		sv_hold.lock();
+		conn->psvr->conn_list.splice(conn->psvr->conn_list.end(), temp_list, temp_list.begin());
+		sv_hold.unlock();
 	}
 }
 
