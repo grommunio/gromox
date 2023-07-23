@@ -75,7 +75,7 @@ void remote_conn_ref::reset(bool lost)
 }
 
 static constexpr cfg_directive exmdb_client_dflt[] = {
-	{"exmdb_client_rpc_timeout", "0", CFG_TIME, "4"},
+	{"exmdb_client_rpc_timeout", "0", CFG_TIME, "0"},
 	CFG_TABLE_END,
 };
 
@@ -89,8 +89,6 @@ void exmdb_client_init(unsigned int conn_max, unsigned int notify_threads_max)
 		mdcl_rpc_timeout = cfg->get_ll("exmdb_client_rpc_timeout");
 		if (mdcl_rpc_timeout <= 0)
 			mdcl_rpc_timeout = -1;
-		else if (mdcl_rpc_timeout < 4)
-			mdcl_rpc_timeout = 4;
 		if (mdcl_rpc_timeout > 0)
 			mdcl_rpc_timeout *= 1000;
 	}
