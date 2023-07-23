@@ -168,7 +168,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 		if (exmdb_ext_push_request(&rqc, &bin) != EXT_ERR_SUCCESS)
 			return -1;
 	}
-	if (!exmdb_client_write_socket(sockd, bin, mdcl_rpc_timeout * 1000)) {
+	if (!exmdb_client_write_socket(sockd, bin, SOCKET_TIMEOUT * 1000)) {
 		free(bin.pb);
 		return -1;
 	}
@@ -492,7 +492,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 		return false;
 	auto conn = exmdb_client_get_connection(rq->dir);
 	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
-	    bin, mdcl_rpc_timeout * 1000)) {
+	    bin, SOCKET_TIMEOUT * 1000)) {
 		free(bin.pb);
 		return false;
 	}
