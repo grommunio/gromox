@@ -33,6 +33,8 @@
 namespace gromox {
 
 static int mdcl_rpc_timeout = -1;
+static constexpr unsigned int mdcl_ping_timeout = 2;
+static_assert(SOCKET_TIMEOUT >= mdcl_ping_timeout);
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
@@ -214,21 +216,28 @@ static void cl_pinger2()
 	}
 	sv_hold.unlock();
 
-	/* Ping and reinsert (or discard) */
+	if (mdcl_notify_stop)
+		temp_list.clear();
+	auto conn = temp_list.begin();
+	auto ping_buff = cpu_to_le32(0);
+	while (conn != temp_list.end()) {
+		struct pollfd pfd = {conn->sockd, POLLOUT};
+		if (poll(&pfd, 1, 0) != 1 ||
+		    write(conn->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t))
+			conn = temp_list.erase(conn);
+		else
+			++conn;
+	}
+
 	while (temp_list.size() > 0) {
-		auto conn = &temp_list.front();
 		if (mdcl_notify_stop) {
-			temp_list.pop_front();
-			continue;
+			temp_list.clear();
+			break;
 		}
-		auto ping_buff = cpu_to_le32(0);
-		if (write(conn->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t)) {
-			temp_list.pop_front();
-			continue;
-		}
+		auto conn = &temp_list.front();
 		struct pollfd pfd_read{conn->sockd, POLLIN | POLLPRI};
 		auto resp_buff = exmdb_response::invalid;
-		if (poll(&pfd_read, 1, SOCKET_TIMEOUT * 1000) != 1 ||
+		if (poll(&pfd_read, 1, mdcl_ping_timeout * 1000) != 1 ||
 		    read(conn->sockd, &resp_buff, 1) != 1 ||
 		    resp_buff != exmdb_response::success) {
 			temp_list.pop_front();
