@@ -542,7 +542,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	auto &ctx = *pcontext;
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
-		pcontext->log(LV_DEBUG, "I-1921: request method error");
+		pcontext->log(LV_DEBUG, "D-1921: request line missing a URI");
 		return http_done(pcontext, -400);
 	}
 	size_t tmp_len = ptoken - line;
@@ -555,7 +555,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	pcontext->request.method[tmp_len] = '\0';
 	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 	if (NULL == ptoken1) {
-		pcontext->log(LV_DEBUG, "I-1923: request method error");
+		pcontext->log(LV_DEBUG, "D-1923: request line without HTTP version");
 		return http_done(pcontext, -400);
 	}
 	size_t tmp_len1 = ptoken1 - ptoken - 1;
@@ -567,7 +567,8 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	    (ptoken1[9] == '\r' || ptoken1[9] == '\n' || ptoken1[9] == '\0')) {
 		pcontext->b_close = TRUE;
 	} else {
-		pcontext->log(LV_DEBUG, "I-1924: request method error");
+		pcontext->log(LV_DEBUG, "I-1924: unrecognized HTTP protocol %.*s",
+			static_cast<int>(tmp_len), &ptoken1[1]);
 		return http_done(pcontext, -400);
 	}
 	if (tmp_len1 == 0)
@@ -596,7 +597,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	auto &ctx = *pcontext;
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
-		pcontext->log(LV_DEBUG, "I-1925: request method error");
+		pcontext->log(LV_DEBUG, "D-1925: request header has no colon");
 		return http_done(pcontext, -400);
 	}
 
