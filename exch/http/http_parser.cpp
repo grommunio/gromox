@@ -341,6 +341,11 @@ http_parser_request_head(const http_request::other_map &m, const char *k)
 	return i != m.end() ? i->second.c_str() : nullptr;
 }
 
+/**
+ * Trim data to the left of the current stream position. Semantically like {
+ * memmove(&data[0], &data[current_pos], total_size - current_pos);
+ * total_size -= current_pos; current_pos = 0; }
+ */
 static int http_parser_reconstruct_stream(STREAM &stream_src)
 {
 	int size1;
