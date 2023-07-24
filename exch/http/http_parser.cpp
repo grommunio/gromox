@@ -389,6 +389,7 @@ static const char *status_text(unsigned int s)
 	switch (s) {
 	case 304: return "Not Modified";
 	case 400: return "Bad Request";
+	case 401: return "Unauthorized";
 	case 403: return "Permission Denied";
 	case 404: return "Not Found";
 	case 405: return "Method Not Allowed";
