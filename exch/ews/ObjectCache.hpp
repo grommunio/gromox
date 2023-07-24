@@ -41,7 +41,7 @@ public:
 	bool emplace(std::chrono::milliseconds, KeyArg&&, Args&&...);
 	Object get(const Key&) const;
 	Object get(const Key&, std::chrono::milliseconds);
-
+	void evict(const Key&);
 
 private:
 	struct Container
@@ -151,7 +151,7 @@ Object ObjectCache<Key, Object>::get(const Key& key) const
 }
 
 /**
- * @brief      @brief      Get cached object and bump lifespan
+ * @brief      Get cached object and bump lifespan
  *
  * Throws std::out_of_range if object does not exist.
  *
@@ -167,6 +167,18 @@ Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds l
 	Container& cont = objects.at(key);
 	cont.expires = clock_t::now()+lifespan;
 	return cont.object;
+}
+
+/**
+ * @brief      Remove object from cache
+ * *
+ * @param      key       Object key
+ */
+template<class Key, class Object>
+void ObjectCache<Key, Object>::evict(const Key& key)
+{
+	auto guard = std::lock_guard(objectLock);
+	objects.erase(key);
 }
 
 /**
