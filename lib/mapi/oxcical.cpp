@@ -2370,7 +2370,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 			return FALSE;
 		auto err = oxcical_import_internal(str_zone, "PUBLISH", false,
-		           calendartype, pical, event_list, alloc, std::move(get_propids),
+		           calendartype, pical, event_list, alloc, get_propids,
 		           username_to_entryid, pembedded, nullptr, nullptr,
 		           nullptr, nullptr);
 		if (err != nullptr) {
