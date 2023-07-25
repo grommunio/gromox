@@ -464,36 +464,33 @@ static int ps_literal_checking(IMAP_CONTEXT *pcontext)
 static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 {
 	auto &ctx = *pcontext;
-	/*
-	 * Minus 2 is just a mundane microoptimization to short-circuit to the
-	 * exit if we don't even have a chance of finding an opening brace and
-	 * the mandatory newline (which the line breaker in ps_cmd_processing
-	 * has left us with).
-	 */
-	for (ssize_t i = 0; i < pcontext->read_offset - 2; ++i) {
-		if (pcontext->read_buffer[i] != '{' /* } */)
+	auto tail = &ctx.read_buffer[ctx.read_offset];
+	for (ssize_t i = 0; i < pcontext->read_offset - 1; ++i) {
+		auto openbr = &ctx.read_buffer[i];
+		if (*openbr != '{' /* } */)
 			continue;
-		auto ptr = static_cast<char *>(memchr(&pcontext->read_buffer[i],
-		           /* { */ '}', pcontext->read_offset - 1 - i));
-		if (ptr == nullptr)
-			continue;
-		auto nl_len = newline_size(&ptr[1], pcontext->read_offset - 1 - i);
+		auto endbr = static_cast<char *>(memchr(&openbr[1], /* { */ '}', tail - &openbr[1]));
+		if (endbr == nullptr)
+			break;
+		auto nl_len = newline_size(&endbr[1], tail - &endbr[1]);
 		if (nl_len == 0)
 			continue;
-		if (ptr - pcontext->read_buffer - i > 16) {
+		if (endbr - openbr <= 1 || endbr - openbr > 16) {
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
 
-		ctx.literal_ptr = &ptr[1]; /* skip over brace */
-		auto temp_len = ptr - &ctx.read_buffer[i+1];
-		char temp_buff[4096];
-		memcpy(temp_buff, &ctx.read_buffer[i+1], temp_len);
-		temp_buff[temp_len] = '\0';
-		pcontext->literal_len = strtol(temp_buff, nullptr, 0);
-		temp_len = 64 * 1024 - (&ctx.literal_ptr[nl_len] - ctx.read_buffer) -
+		ctx.literal_ptr = &endbr[1]; /* skip over brace */
+		char *end = nullptr;
+		pcontext->literal_len = strtoul(&openbr[1], &end, 10);
+		if (end != endbr) {
+			size_t len = 0;
+			auto msg = resource_get_imap_code(1817, 1, &len);
+			return ps_end_processing(pcontext, msg, len);
+		}
+		auto temp_len = 64 * 1024 - (&ctx.literal_ptr[nl_len] - ctx.read_buffer) -
 		           pcontext->command_len - nl_len;
 		if (temp_len <= 0 || temp_len >= 64 * 1024) {
 			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
@@ -504,10 +501,9 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		}
 		if (pcontext->literal_len < temp_len) {
 			pcontext->read_offset -= nl_len;
-			temp_len = ctx.read_offset - (ctx.literal_ptr - ctx.read_buffer);
-			if (temp_len > 0 && temp_len < 64 * 1024) {
-				memmove(ctx.literal_ptr, &ctx.literal_ptr[nl_len], temp_len);
-			}
+			auto chunk_len = tail - ctx.literal_ptr;
+			if (chunk_len > 0 && chunk_len < 64 * 1024)
+				memmove(ctx.literal_ptr, &ctx.literal_ptr[nl_len], chunk_len);
 			/* IMAP_CODE_2160003: + ready for additional command text */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
