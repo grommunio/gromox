@@ -431,10 +431,11 @@ struct tAttachment : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
-class tBaseItemId
+/**
+ * Types.xsd:2117
+ */
+struct tBaseItemId
 {
-public:
-
 	sBase64Binary Id; //Attribute
 	std::optional<sBase64Binary> ChangeKey; //Attribute
 
@@ -568,7 +569,7 @@ struct tEmailAddressDictionaryEntry
  */
 struct tPhoneNumberDictionaryEntry
 {
-	static constexpr char NAME[] = "t:Entry";
+	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
 
