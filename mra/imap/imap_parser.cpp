@@ -389,6 +389,12 @@ static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
 	return PROCESS_SLEEPING;
 }
 
+/**
+ * Read something from the network and add it to read_buffer. Other functions
+ * will trim the read buffer and make room again if(!) and when there is a
+ * newline. As a result, ps_stat_rdcmd may be unable to append the network data
+ * into read_context and if so, terminates the request.
+ */
 static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 {
 	ssize_t read_len;
@@ -461,6 +467,17 @@ static int ps_literal_checking(IMAP_CONTEXT *pcontext)
 	return X_LITERAL_PROCESSING;
 }
 
+/**
+ * This function analyzes ctx.read_buffer (and always does so from the start).
+ *
+ * If ctx.read_buffer does not contain a "complete command" (in the sense of
+ * RFC 9051 §2.1.1), for example because a newline is missing or because a
+ * literal is incomplete, the function returns early, so that e.g.
+ * ps_stat_rdcmd() can append more bytes to read_buffer.
+ *
+ * The loop looks for, and validates, "{octet}" substrings. It is possible
+ * there is more than one literal in read_buffer.
+ */
 static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 {
 	auto &ctx = *pcontext;
@@ -503,7 +520,13 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			pcontext->read_offset -= nl_len;
 			auto chunk_len = tail - ctx.literal_ptr;
 			if (chunk_len > 0 && chunk_len < 64 * 1024)
+				/*
+				 * Remove the newline between "{n}" and the
+				 * literal data, we don't need it for
+				 * processing.
+				 */
 				memmove(ctx.literal_ptr, &ctx.literal_ptr[nl_len], chunk_len);
+
 			/* IMAP_CODE_2160003: + ready for additional command text */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
@@ -517,6 +540,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
 			    argv, std::size(argv));
 		if (argc >= 4 && 0 == strcasecmp(argv[1], "APPEND")) {
+			/* Special handling for APPEND with potentially huge literals */
 			switch (imap_cmd_parser_append_begin(argc, argv, pcontext)) {
 			case DISPATCH_CONTINUE: {
 				ctx.current_len = &ctx.read_buffer[ctx.read_offset] - &ctx.literal_ptr[nl_len];
@@ -573,11 +597,14 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 	return X_CMD_PROCESSING;
 }
 
-/*
+/**
  * This function tries to mark off a whole line (i.e. find the newline). If
  * none is there yet, ps_cmd_processing will soon be invoked again, with a
  * read_buffer that has been _appended_ to -- so we will see the same leading
  * string in pcontext->read_buffer.
+ *
+ * The maximum line length is sizeof(read_buffer), i.e. 64K.
+ * The octet counts for synchronizing literals "{256}" must fit in there.
  */
 static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 {
