@@ -87,7 +87,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1814, "BAD internal error, failed to init SSL object"},
 	{1815, "BAD Service not available"},
 	{1816, "BAD access is denied from your IP address <remote_ip>"},
-	{1817, "BAD literal size too large"},
+	{1817, "BAD command too long or unacceptable size for literal"},
 	{1818, "BAD expected DONE"},
 	{1819, "BAD decode username error"},
 	{1820, "BAD decode password error"},
