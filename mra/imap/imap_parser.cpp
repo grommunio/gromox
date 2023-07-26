@@ -539,7 +539,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		char *argv[128];
 		auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
 			    argv, std::size(argv));
-		if (argc >= 4 && 0 == strcasecmp(argv[1], "APPEND")) {
+		if (argc >= 3 && 0 == strcasecmp(argv[1], "APPEND")) {
 			/* Special handling for APPEND with potentially huge literals */
 			switch (imap_cmd_parser_append_begin(argc, argv, pcontext)) {
 			case DISPATCH_CONTINUE: {
