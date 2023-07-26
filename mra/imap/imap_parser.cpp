@@ -502,6 +502,8 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		ctx.literal_ptr = &endbr[1]; /* skip over brace */
 		char *end = nullptr;
 		pcontext->literal_len = strtoul(&openbr[1], &end, 10);
+		if (*end == '+' || (*end == '-' && pcontext->literal_len <= 4096))
+			++end;
 		if (end != endbr) {
 			size_t len = 0;
 			auto msg = resource_get_imap_code(1817, 1, &len);
