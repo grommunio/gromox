@@ -158,6 +158,8 @@ enum class exmdb_callid : uint8_t {
 	empty_folder = 0x84,
 	purge_softdelete = 0x85,
 	purge_datafiles = 0x86,
+	autoreply_tsquery = 0x87,
+	autoreply_tsupdate = 0x88,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -843,6 +845,15 @@ struct exreq_purge_softdelete : public exreq {
 	mapitime_t cutoff = 0;
 };
 
+struct exreq_autoreply_tsquery : public exreq {
+	char *peer = nullptr;
+	uint64_t window = 0;
+};
+
+struct exreq_autoreply_tsupdate : public exreq {
+	char *peer = nullptr;
+};
+
 struct exresp {
 	exmdb_callid call_id;
 };
@@ -1279,6 +1290,10 @@ struct exresp_store_eid_to_user : public exresp {
 	unsigned int user_id = 0, domain_id = 0;
 };
 
+struct exresp_autoreply_tsquery : public exresp {
+	uint64_t tdiff = 0;
+};
+
 using exreq_ping_store = exreq;
 using exreq_get_all_named_propids = exreq;
 using exreq_get_store_all_proptags = exreq;
@@ -1317,6 +1332,7 @@ using exresp_ping_store = exresp;
 using exresp_notify_new_mail = exresp;
 using exresp_purge_softdelete = exresp;
 using exresp_purge_datafiles = exresp;
+using exresp_autoreply_tsupdate = exresp;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;

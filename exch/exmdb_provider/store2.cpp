@@ -4,6 +4,7 @@
 #define _GNU_SOURCE 1 /* AT_* */
 #include <algorithm>
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstring>
 #include <dirent.h>
@@ -472,4 +473,49 @@ BOOL exmdb_server::purge_datafiles(const char *dir)
 	auto upper_bound_ts = time(nullptr) - 60;
 	return purg_clean_cid(db->psqlite, dir, upper_bound_ts) &&
 	       purg_clean_mid(dir, upper_bound_ts) ? TRUE : false;
+}
+
+BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
+    uint64_t window, uint64_t *status) try
+{
+	if (window == 0)
+		window = INT64_MAX;
+	auto db = db_engine_get_db(dir);
+	if (db == nullptr || db->psqlite == nullptr)
+		return false;
+	auto adb = db->psqlite;
+	auto stm = gx_sql_prep(adb, "SELECT `ts` FROM `autoreply_ts` WHERE `peer`=?");
+	if (stm == nullptr)
+		return false;
+	stm.bind_text(1, peer);
+	auto now = time(nullptr);
+	if (stm.step() == SQLITE_ROW) {
+		auto last_sent = stm.col_int64(0);
+		*status = now - last_sent;
+		if (*status < window)
+			return TRUE;
+	} else {
+		*status = now;
+	}
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2225: ENOMEM");
+	return false;
+}
+
+BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
+{
+	auto db = db_engine_get_db(dir);
+	if (db == nullptr || db->psqlite == nullptr)
+		return false;
+	auto adb = db->psqlite;
+	auto stm = gx_sql_prep(adb, "REPLACE INTO `autoreply_ts` (`peer`,`ts`) VALUES (?,?)");
+	if (stm == nullptr)
+		return false;
+	stm.bind_text(1, peer);
+	stm.bind_int64(2, time(nullptr));
+	return stm.step() == SQLITE_OK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2226: ENOMEM");
+	return false;
 }

@@ -126,3 +126,5 @@ EXMIDL(notify_new_mail, (const char *dir, uint64_t folder_id, uint64_t message_i
 EXMIDL(store_eid_to_user, (const char *dir, const STORE_ENTRYID *store_eid, IDLOUT char **maildir, unsigned int *user_id, unsigned int *domain_id))
 EXMIDL(purge_softdelete, (const char *dir, const char *username, uint64_t folder_id, uint32_t del_flags, mapitime_t cutoff))
 EXMIDL(purge_datafiles, (const char *dir))
+EXMIDL(autoreply_tsquery, (const char *dir, const char *peer, uint64_t window, IDLOUT uint64_t *tdiff))
+EXMIDL(autoreply_tsupdate, (const char *dir, const char *peer))

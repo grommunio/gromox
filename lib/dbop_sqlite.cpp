@@ -25,6 +25,10 @@ struct tbl_init {
 	const char *name, *command;
 };
 
+/**
+ * @command and {@tbl_name, @q_create, @q_move} are mutually exclusive,
+ * one must be nullptr then the other must be a valid string.
+ */
 struct tblite_upgradefn {
 	unsigned int v;
 	const char *command, *tbl_name, *q_create, *q_move;
@@ -309,6 +313,11 @@ static constexpr char tbl_pvt_searchresult_0[] =
 "CREATE INDEX mid_result_index ON search_result(message_id);"
 "CREATE UNIQUE INDEX search_message_index ON search_result(folder_id, message_id);";
 
+static constexpr char tbl_pvt_autoreply_ts_11[] =
+"CREATE TABLE `autoreply_ts` ("
+"	`peer` VARCHAR(320) PRIMARY KEY,"
+"	`ts` INTEGER)";
+
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
 "  folder_id INTEGER PRIMARY KEY,"
@@ -400,6 +409,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"receive_table", tbl_pvt_recvfld_0},
 	{"search_scopes", tbl_pvt_searchscopes_0},
 	{"search_result", tbl_pvt_searchresult_0},
+	{"autoreply_ts", tbl_pvt_autoreply_ts_11},
 	TABLE_END,
 };
 
@@ -536,6 +546,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	 */
 	{8, nullptr, "messages", tbl_pvt_msgs_8, tbl_pvt_msgs_move8},
 	{10, nullptr, "folders", tbl_pvt_folders_10, tbl_pvt_folders_move10},
+	{11, tbl_pvt_autoreply_ts_11},
 	TABLE_END,
 };
 
