@@ -38,9 +38,17 @@ or autoreply.
 Default: \fI0\fP
 .TP
 \fBresponse_audit_capacity\fP
+Keep track of at most this many {From address, To address} pairs for bounce
+reports in memory.
+.br
 Default: \fI1000\fP
 .TP
 \fBresponse_interval\fP
+If a bounce report message for a delivery failure or operational failure is to
+be generated, that return message will be suppressed if another report for the
+given {From, To} address pair was produced within the given time period
+previously.
+.br
 Default: \fI3min\fP
 .TP
 \fBretrying_times\fP
