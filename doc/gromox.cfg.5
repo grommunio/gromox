@@ -10,6 +10,15 @@ needed explicit configuration were reduced over time to the point that there
 were too many distinct files for little value, and so, gromox.cfg came to be.
 .SH Configuration directives
 .TP
+\fBautoreply_silence_window\fP
+If an autoreply message (other than a bounce report, e.g. out-of-office) is to
+be generated, that return message will be suppressed if another autoreply for
+the given {From, To} address pair was produced within the given time period
+previously. (Unlike the response_audit_capacity directive, autoreply pairs are
+stored persistently, in the message database.)
+.br
+Default: \fI1day\fP
+.TP
 \fBbounce_postmaster\fP
 This directive defines the Envelope-From and From addresses for
 system-generated bounce messages such as Non-Delivery-Reports (autoresponse

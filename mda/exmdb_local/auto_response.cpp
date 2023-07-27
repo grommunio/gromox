@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
@@ -18,6 +19,8 @@
 #include "exmdb_local.hpp"
 
 using namespace gromox;
+namespace exmdb_client = exmdb_client_remote;
+unsigned int autoreply_silence_window;
 
 void auto_response_reply(const char *user_home,
     const char *from, const char *rcpt) try
@@ -32,7 +35,6 @@ void auto_response_reply(const char *user_home,
 	char buff[64*1024];
 	char date_buff[128];
 	char temp_path[256];
-	char audit_buff[UADDR_SIZE+2];
 	MIME_FIELD mime_field;
 	struct stat node_stat;
 	char content_type[256];
@@ -97,8 +99,11 @@ void auto_response_reply(const char *user_home,
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);
 	}
-	snprintf(audit_buff, std::size(audit_buff), "%s:%s", from, rcpt);
-	if (!bounce_audit_check(audit_buff))
+
+	uint64_t tdiff;
+	if (exmdb_client::autoreply_tsquery(user_home, rcpt,
+	    autoreply_silence_window, &tdiff) && tdiff < autoreply_silence_window)
+		/* Autoreply already sent */
 		return;
 	fd = open(template_path, O_RDONLY);
 	if (-1 == fd) {
@@ -208,6 +213,7 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 	enqueue_context(pcontext);
+	exmdb_client::autoreply_tsupdate(user_home, rcpt);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1081: ENOMEM");
 }

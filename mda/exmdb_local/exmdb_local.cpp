@@ -506,6 +506,11 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 	}
 }
 
+static constexpr cfg_directive mdlgx_cfg_defaults[] = {
+	{"autoreply_silence_window", "1day", CFG_TIME, "0"},
+	CFG_TABLE_END,
+};
+
 DECLARE_HOOK_API();
 
 static BOOL hook_exmdb_local(int reason, void **ppdata)
@@ -519,6 +524,10 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_HOOK_API(ppdata);
 		textmaps_init();
+		auto cfg = config_file_initd("gromox.cfg", get_config_path(), mdlgx_cfg_defaults);
+		if (cfg != nullptr)
+			autoreply_silence_window = cfg->get_ll("autoreply_silence_window");
+
 		auto pfile = config_file_initd("exmdb_local.cfg",
 		             get_config_path(), nullptr);
 		if (pfile == nullptr) {

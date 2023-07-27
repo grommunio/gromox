@@ -13,6 +13,9 @@ The usual config file location is /etc/gromox/exmdb_local.cfg.
 \fBalarm_interval\fP
 Default: \fI30min\fP
 .TP
+\fBautoreply_silence_window\fP
+-> See gromox.cfg(5) manpage instead!
+.TP
 \fBcache_scan_interval\fP
 Interval in which to scan /var/lib/gromox/queue/cache.
 .br
