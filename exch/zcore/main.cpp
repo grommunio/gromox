@@ -64,6 +64,11 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_timer_agent.so",
 };
 
+static constexpr cfg_directive zcore_gxcfg_dflt[] = {
+	{"backfill_transport_headers", "0", CFG_BOOL},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"address_cache_interval", "5min", CFG_TIME, "1min", "1day"},
 	{"address_item_num", "100000", CFG_SIZE, "1"},
@@ -104,8 +109,17 @@ static void term_handler(int signo)
 	g_notify_stop = true;
 }
 
-static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
+static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
+    std::shared_ptr<CONFIG_FILE> pconfig)
 {
+	if (gxcfg == nullptr)
+		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", zcore_gxcfg_dflt);
+	if (opt_config_file != nullptr && gxcfg == nullptr) {
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
+		return false;
+	}
+	zcore_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
+
 	if (pconfig == nullptr)
 		pconfig = config_file_prg(opt_config_file, "zcore.cfg",
 		          zcore_cfg_defaults);
@@ -150,7 +164,7 @@ int main(int argc, const char **argv) try
 			opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	if (!zcore_reload_config(pconfig))
+	if (!zcore_reload_config(nullptr, pconfig))
 		return EXIT_FAILURE;
 
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
@@ -290,7 +304,7 @@ int main(int argc, const char **argv) try
 	while (!g_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
-			zcore_reload_config(nullptr);
+			zcore_reload_config(nullptr, nullptr);
 			service_trigger_all(PLUGIN_RELOAD);
 			ab_tree_invalidate_cache();
 		}

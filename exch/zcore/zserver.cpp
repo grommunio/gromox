@@ -3462,7 +3462,7 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 			return ecSuccess;
 		}
 	}
-	if (!common_util_send_message(pstore, pmessage->get_id(), TRUE)) {
+	if (!cu_send_message(pstore, pmessage, TRUE)) {
 		exmdb_client::clear_submit(pstore->get_dir(),
 			pmessage->get_id(), b_unsent);
 		return ecRpcFailed;

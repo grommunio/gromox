@@ -78,7 +78,7 @@ struct LANGMAP_ITEM {
 }
 
 unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
-unsigned int g_max_rule_len, g_max_extrule_len;
+unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
 static int g_mime_num;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40];
@@ -1284,9 +1284,9 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
-BOOL common_util_send_message(store_object *pstore,
-	uint64_t message_id, BOOL b_submit)
+BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 {
+	uint64_t message_id = msg->get_id();
 	void *pvalue;
 	BOOL b_result;
 	EID_ARRAY ids;
@@ -1387,7 +1387,27 @@ BOOL common_util_send_message(store_object *pstore,
 		    &imail, common_util_alloc, common_util_get_propids,
 		    common_util_get_propname))
 			return FALSE;	
+
 		imail.set_header("X-Mailer", ZCORE_UA);
+		if (zcore_backfill_transporthdr) {
+			std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import("utf-8",
+				"UTC", &imail, common_util_alloc, common_util_get_propids));
+			if (rmsg != nullptr) {
+				for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
+					auto th = rmsg->proplist.get<const char>(tag);
+					if (th == nullptr)
+						continue;
+					TAGGED_PROPVAL tp  = {tag, deconst(th)};
+					TPROPVAL_ARRAY tpa = {1, &tp};
+					if (!msg->set_properties(&tpa))
+						break;
+					/* Unclear if permitted to save (specs say nothing) */
+					msg->save();
+					break;
+				}
+			}
+		}
+
 		auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
 		           pstore->get_account(), rcpt_list);
 		if (ret != ecSuccess) {
