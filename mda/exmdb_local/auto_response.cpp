@@ -46,9 +46,8 @@ void auto_response_reply(const char *user_home,
 		return;
 	auto ptoken = strchr(from, '@');
 	auto ptoken1 = strchr(rcpt, '@');
-	if (NULL == ptoken || NULL == ptoken1) {
+	if (ptoken == nullptr || ptoken1 == nullptr)
 		return;
-	}
 
 	if (0 == strcasecmp(ptoken, ptoken1)) {
 		b_internal = TRUE;
@@ -65,17 +64,14 @@ void auto_response_reply(const char *user_home,
 	
 	snprintf(temp_path, 256, "%s/config/autoreply.cfg", user_home);
 	auto pconfig = config_file_init(temp_path, nullptr);
-	if (NULL == pconfig) {
+	if (pconfig == nullptr)
 		return;
-	}
 	auto str_value = pconfig->get_value("OOF_STATE");
-	if (NULL == str_value) {
+	if (str_value == nullptr)
 		return;
-	}
 	uint8_t reply_state = strtol(str_value, nullptr, 0);
-	if (1 != reply_state && 2 != reply_state) {
+	if (reply_state != 1 && reply_state != 2)
 		return;
-	}
 	auto cur_time = time(nullptr);
 	if (2 == reply_state) {
 		str_value = pconfig->get_value("START_TIME");
@@ -106,9 +102,8 @@ void auto_response_reply(const char *user_home,
 		/* Autoreply already sent */
 		return;
 	fd = open(template_path, O_RDONLY);
-	if (-1 == fd) {
+	if (fd < 0)
 		return;
-	}
 	if (fstat(fd, &node_stat) != 0 || node_stat.st_size == 0 ||
 	    static_cast<unsigned long long>(node_stat.st_size) > sizeof(buff) - 1 ||
 	    read(fd, buff, node_stat.st_size) != node_stat.st_size) {
@@ -128,9 +123,8 @@ void auto_response_reply(const char *user_home,
 		j = 1;
 	}
 	for (; i<node_stat.st_size; i++, j++) {
-		if ('\n' == buff[i] && '\r' != buff[i - 1]) {
+		if (buff[i] == '\n' && buff[i-1] != '\r')
 			new_buff[j++] = '\r';
-		}
 		new_buff[j] = buff[i];
 	}
 	new_buff[j] = '\0';
@@ -165,9 +159,8 @@ void auto_response_reply(const char *user_home,
 						len --;
 						charset[len] = '\0';
 					}
-					if ('"' == charset[0]) {
+					if (*charset == '"')
 						memmove(charset, charset + 1, len);
-					}
 				}
 			}
 		} else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0) {
@@ -178,13 +171,11 @@ void auto_response_reply(const char *user_home,
 			break;
 		}
 	}
-	if (NULL == pcontent) {
+	if (pcontent == nullptr)
 		return;
-	}
 	pcontext = get_context();
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return;
-	}
 	auto pdomain = strchr(from, '@') + 1;
 	snprintf(pcontext->ctrl.from, std::size(pcontext->ctrl.from), "auto-reply@%s", pdomain);
 	pcontext->ctrl.rcpt.emplace_back(rcpt);
@@ -194,9 +185,8 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 	pmime->set_content_type(content_type);
-	if ('\0' != charset[0]) {
+	if (*charset != '\0')
 		pmime->set_content_param("charset", charset);
-	}
 	pmime->set_field("From", from);
 	pmime->set_field("To", rcpt);
 	pmime->set_field("MIME-Version", "1.0");

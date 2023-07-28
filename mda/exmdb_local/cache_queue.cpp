@@ -476,11 +476,10 @@ static void *mdl_thrwork(void *arg)
 			free(pbuff);
 		}
 		auto scan_end = time(nullptr);
-		if (scan_end - scan_begin >= g_scan_interval) {
+		if (scan_end - scan_begin >= g_scan_interval)
 			scan_interval = 0;
-		} else {
+		else
 			scan_interval = g_scan_interval - (scan_end - scan_begin);
-		}
 		i = 0;
 	}
 	return NULL;
