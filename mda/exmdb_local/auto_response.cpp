@@ -143,41 +143,39 @@ void auto_response_reply(const char *user_home,
 	while (i < j) {
 		auto parsed_length = parse_mime_field(new_buff + i, j - i, &mime_field);
 		i += parsed_length;
-		if (0 != parsed_length) {
-			if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0) {
-				gx_strlcpy(content_type, mime_field.value.c_str(), std::size(content_type));
-				charset[0] = '\0';
-				auto ptoken2 = strchr(content_type, ';');
+		if (parsed_length == 0)
+			return;
+		if (strcasecmp(mime_field.name.c_str(), "Content-Type") == 0) {
+			gx_strlcpy(content_type, mime_field.value.c_str(), std::size(content_type));
+			charset[0] = '\0';
+			auto ptoken2 = strchr(content_type, ';');
+			if (ptoken2 != nullptr) {
+				*ptoken2 = '\0';
+				++ptoken2;
+				ptoken2 = strcasestr(ptoken2, "charset=");
 				if (ptoken2 != nullptr) {
-					*ptoken2 = '\0';
-					++ptoken2;
-					ptoken2 = strcasestr(ptoken2, "charset=");
-					if (ptoken2 != nullptr) {
-						gx_strlcpy(charset, &ptoken2[8], std::size(charset));
-						ptoken2 = strchr(charset, ';');
-						if (ptoken2 != nullptr)
-							*ptoken2 = '\0';
-						HX_strrtrim(charset);
-						HX_strltrim(charset);
-						len = strlen(charset);
-						if ('"' == charset[len - 1]) {
-							len --;
-							charset[len] = '\0';
-						}
-						if ('"' == charset[0]) {
-							memmove(charset, charset + 1, len);
-						}
+					gx_strlcpy(charset, &ptoken2[8], std::size(charset));
+					ptoken2 = strchr(charset, ';');
+					if (ptoken2 != nullptr)
+						*ptoken2 = '\0';
+					HX_strrtrim(charset);
+					HX_strltrim(charset);
+					len = strlen(charset);
+					if ('"' == charset[len - 1]) {
+						len --;
+						charset[len] = '\0';
+					}
+					if ('"' == charset[0]) {
+						memmove(charset, charset + 1, len);
 					}
 				}
-			} else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0) {
-				gx_strlcpy(subject, mime_field.value.c_str(), std::size(subject));
 			}
-			if ('\r' == new_buff[i] && '\n' == new_buff[i + 1]) {
-				pcontent = new_buff + i + 2;
-				break;
-			}
-		} else {
-			return;
+		} else if (strcasecmp(mime_field.name.c_str(), "Subject") == 0) {
+			gx_strlcpy(subject, mime_field.value.c_str(), std::size(subject));
+		}
+		if ('\r' == new_buff[i] && '\n' == new_buff[i + 1]) {
+			pcontent = new_buff + i + 2;
+			break;
 		}
 	}
 	if (NULL == pcontent) {
