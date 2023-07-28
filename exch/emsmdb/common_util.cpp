@@ -41,6 +41,7 @@
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
+#include "message_object.h"
 #include "../bounce_exch.cpp"
 
 using namespace gromox;
@@ -57,6 +58,7 @@ enum {
 
 unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len;
+unsigned int emsmdb_backfill_transporthdr;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_average_blocks;
@@ -1538,8 +1540,9 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
-ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_submit)
+ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_submit)
 {
+	uint64_t message_id = msg->get_id();
 	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
@@ -1664,6 +1667,28 @@ ec_error_t cu_send_message(logon_object *plogon, uint64_t message_id, bool b_sub
 		        LLU{rop_util_get_gc_value(message_id)});
 		return ecError;	
 	}
+
+	imail.set_header("X-Mailer", EMSMDB_UA);
+	if (emsmdb_backfill_transporthdr) {
+		std::unique_ptr<MESSAGE_CONTENT, mc_delete> rmsg(oxcmail_import("utf-8",
+			"UTC", &imail, common_util_alloc, common_util_get_propids));
+		if (rmsg != nullptr) {
+			for (auto tag : {PR_TRANSPORT_MESSAGE_HEADERS, PR_TRANSPORT_MESSAGE_HEADERS_A}) {
+				auto th = rmsg->proplist.get<const char>(tag);
+				if (th == nullptr)
+					continue;
+				TAGGED_PROPVAL tp  = {tag, deconst(th)};
+				TPROPVAL_ARRAY tpa = {1, &tp};
+				PROBLEM_ARRAY pa{};
+				if (!msg->set_properties(&tpa, &pa))
+					break;
+				/* Unclear if permitted to save (specs say nothing) */
+				msg->save();
+				break;
+			}
+		}
+	}
+
 	auto ret = ems_send_mail(&imail, plogon->get_account(), rcpt_list);
 	if (ret != ecSuccess) {
 		mlog2(LV_ERR, "E-1280: Failed to send mid:%llu via SMTP: %s",

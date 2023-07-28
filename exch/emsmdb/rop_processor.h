@@ -60,5 +60,6 @@ extern ec_error_t aoh_to_error(int);
 
 extern unsigned int emsmdb_rop_chaining, emsmdb_max_cxh_per_user;
 extern unsigned int emsmdb_max_obh_per_session, emsmdb_pvt_folder_softdel;
+extern unsigned int emsmdb_backfill_transporthdr;
 extern size_t ems_max_active_sessions, ems_max_active_users;
 extern size_t ems_max_active_notifh, ems_max_pending_sesnotif;

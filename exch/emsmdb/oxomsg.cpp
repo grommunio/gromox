@@ -428,7 +428,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecSuccess;
 	}
 	
-	ret = cu_send_message(plogon, pmessage->get_id(), true);
+	ret = cu_send_message(plogon, pmessage, true);
 	if (ret != ecSuccess && ret != ecWarnWithErrors)
 		exmdb_client::clear_submit(dir, pmessage->get_id(), b_unsent);
 	else if (!b_delete)
@@ -671,7 +671,7 @@ ec_error_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 			}
 		}
 	}
-	return cu_send_message(plogon, pmessage->get_id(), false);
+	return cu_send_message(plogon, pmessage, false);
 }
 
 ec_error_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,

@@ -38,6 +38,11 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001;
 
+static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
+	{"backfill_transport_headers", "0", CFG_BOOL},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"async_threads_num", "4", CFG_SIZE, "1", "20"},
 	{"average_handles", "1000", CFG_SIZE, "100"},
@@ -64,8 +69,18 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
+static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
+    std::shared_ptr<CONFIG_FILE> pconfig) try
 {
+	if (gxcfg == nullptr)
+		gxcfg = config_file_initd("gromox.cfg", get_config_path(), emsmdb_gxcfg_dflt);
+	if (gxcfg == nullptr) {
+		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",
+		       strerror(errno));
+		return false;
+	}
+	emsmdb_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
+
 	if (pconfig == nullptr)
 		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path(),
 		          emsmdb_cfg_defaults);
@@ -124,7 +139,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_RELOAD:
-		exch_emsmdb_reload(nullptr);
+		exch_emsmdb_reload(nullptr, nullptr);
 		return TRUE;
 	case PLUGIN_REPORT:
 		emsmdb_report();
@@ -139,7 +154,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			       strerror(errno));
 			return FALSE;
 		}
-		if (!exch_emsmdb_reload(pfile))
+		if (!exch_emsmdb_reload(nullptr, pfile))
 			return false;
 		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), std::size(separator));
 		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), std::size(org_name));

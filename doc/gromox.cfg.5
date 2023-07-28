@@ -19,6 +19,16 @@ stored persistently, in the message database.)
 .br
 Default: \fI1day\fP
 .TP
+\fBbackfill_transport_headers\fP
+Try to fill the PR_TRANSPORT_HEADERS property when messages are submitted.
+Turning this option on requires extra storage (usually between 0.5KB and 1KB
+per sent message). Transport headers for sent messages can be generated on the
+fly from the regular MAPI message data structures e.g. via gromox-exm2eml(8)
+for analysis, so unless there is a need to retain the results from older
+generator versions, you should leave this off.
+.br
+Default: \fIoff\fP
+.TP
 \fBbounce_postmaster\fP
 This directive defines the Envelope-From and From addresses for
 system-generated bounce messages such as Non-Delivery-Reports (autoresponse
