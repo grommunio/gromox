@@ -281,7 +281,7 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue) try
 		pnext = ical_get_value_sep(ptr, ';');
 		if (!b_base64) {
 			ptr1 = strchr(ptr, '=');
-			if (ptr != nullptr)
+			if (ptr1 != nullptr)
 				*ptr1 = '\0';
 		} else {
 			ptr1 = NULL;
