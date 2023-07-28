@@ -396,13 +396,8 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 	case STARTRECIP:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGECONTENT:
-			switch (last_marker) {
-			case 0:
-			case STARTEMBED:
-				break;
-			default:
+			if (last_marker != 0 && last_marker != STARTEMBED)
 				return ecRpcFailed;
-			}
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
 			if (STARTEMBED != last_marker) {
@@ -457,13 +452,8 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 	case NEWATTACH:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGECONTENT:
-			switch (last_marker) {
-			case 0:
-			case STARTEMBED:
-				break;
-			default:
+			if (last_marker != 0 && last_marker != STARTEMBED)
 				return ecRpcFailed;
-			}
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
 			if (STARTEMBED != last_marker) {
