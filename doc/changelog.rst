@@ -1,10 +1,13 @@
-Development 2.10.117
+Development 2.10.173
 ====================
 
 Enhancements:
 
 * exmdb: attachment storage with hash-based filenames
 * http: better HTTP/1.1 Keep-Alive support (close fewer connections)
+* exmdb_local: persistent (on-disk) last-autoreply time tracking
+* imap: allow large literals with APPEND
+* imap: add RFC 7888 support
 
 Fixes:
 
