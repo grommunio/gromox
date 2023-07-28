@@ -684,36 +684,27 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			(STARTSUBFLD != last_marker && 0 != last_marker)) {
 			return FALSE;	
 		}
-		if (0 == last_marker) {
-			if (!fastupctx_object_empty_folder(pctx,
-			    static_cast<folder_object *>(pctx->pobject)->folder_id,
-			    DEL_MESSAGES))
-				return FALSE;	
-		}
+		if (last_marker == 0 && !fastupctx_object_empty_folder(pctx,
+		    static_cast<folder_object *>(pctx->pobject)->folder_id, DEL_MESSAGES))
+			return FALSE;
 		break;
 	case PR_FOLDER_ASSOCIATED_CONTENTS:
 		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
 			(STARTSUBFLD != last_marker && 0 != last_marker)) {
 			return FALSE;	
 		}
-		if (0 == last_marker) {
-			if (fastupctx_object_empty_folder(pctx,
-			    static_cast<folder_object *>(pctx->pobject)->folder_id,
-			    DEL_ASSOCIATED))
-				return FALSE;	
-		}
+		if (last_marker == 0 && fastupctx_object_empty_folder(pctx,
+		    static_cast<folder_object *>(pctx->pobject)->folder_id, DEL_ASSOCIATED))
+			return FALSE;
 		break;
 	case PR_CONTAINER_HIERARCHY:
 		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
 			(STARTSUBFLD != last_marker && 0 != last_marker)) {
 			return FALSE;	
 		}
-		if (0 == last_marker) {
-			if (!fastupctx_object_empty_folder(pctx,
-			    static_cast<folder_object *>(pctx->pobject)->folder_id,
-			    DEL_FOLDERS))
-				return FALSE;	
-		}
+		if (last_marker == 0 && !fastupctx_object_empty_folder(pctx,
+		    static_cast<folder_object *>(pctx->pobject)->folder_id, DEL_FOLDERS))
+			return FALSE;
 		break;
 	}
 	return TRUE;

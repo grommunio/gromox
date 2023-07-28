@@ -385,7 +385,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	g_storedir = nullptr;
-	if (pcontext1 != nllptr)
+	if (pcontext1 != nullptr)
 		put_context(pcontext1);
 	if (NULL == pmsg) {
 		g_alloc_key = nullptr;
