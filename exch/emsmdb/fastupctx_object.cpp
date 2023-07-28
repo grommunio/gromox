@@ -130,9 +130,8 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
 		return FALSE;
 	auto pbin = cu_xid_to_bin({pctx->pstream->plogon->guid(), change_num});
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return FALSE;
-	}
 	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
 		return FALSE;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
@@ -213,9 +212,8 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	if (pproplist->set(PidTagChangeNumber, &change_num) != 0)
 		return ecRpcFailed;
 	auto pbin = cu_xid_to_bin({plogon->guid(), change_num});
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return ecRpcFailed;
-	}
 	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
 		return ecRpcFailed;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
@@ -300,10 +298,9 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 	auto dir = pstream->plogon->get_dir();
 	switch (marker) {
 	case STARTTOPFLD:
-		if (ROOT_ELEMENT_TOPFOLDER !=
-			pctx->root_element || 0 != last_marker) {
+		if (pctx->root_element != ROOT_ELEMENT_TOPFOLDER ||
+		    last_marker != 0)
 			return ecRpcFailed;
-		}
 		if (m_props != nullptr)
 			return ecRpcFailed;
 		m_props = tpropval_array_init();
@@ -313,10 +310,9 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		pmarker->folder_id = static_cast<folder_object *>(pctx->pobject)->folder_id;
 		break;
 	case STARTSUBFLD:
-		if (ROOT_ELEMENT_TOPFOLDER != pctx->root_element &&
-			ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element) {
+		if (pctx->root_element != ROOT_ELEMENT_TOPFOLDER &&
+		    pctx->root_element != ROOT_ELEMENT_FOLDERCONTENT)
 			return ecRpcFailed;
-		}
 		if (m_props != nullptr)
 			return ecRpcFailed;
 		m_props = tpropval_array_init();
@@ -325,29 +321,23 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		pmarker->marker = marker;
 		break;
 	case ENDFOLDER:
-		if (STARTTOPFLD != last_marker &&
-			STARTSUBFLD != last_marker) {
+		if (last_marker != STARTTOPFLD && last_marker != STARTSUBFLD)
 			return ecRpcFailed;
-		}
 		pctx->marker_stack.erase(pnode);
-		if (STARTTOPFLD == last_marker) {
+		if (last_marker == STARTTOPFLD)
 			/* mark fast stream ended */
 			pctx->b_ended = TRUE;
-		}
 		return ecSuccess;
 	case STARTFAIMSG:
 	case STARTMESSAGE: {
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGELIST:
-			if (0 != last_marker) {
+			if (last_marker != 0)
 				return ecRpcFailed;
-			}
 			break;
 		case ROOT_ELEMENT_TOPFOLDER:
-			if (STARTTOPFLD != last_marker &&
-				STARTSUBFLD != last_marker) {
+			if (last_marker != STARTTOPFLD && last_marker != STARTSUBFLD)
 				return ecRpcFailed;
-			}
 			break;
 		case ROOT_ELEMENT_FOLDERCONTENT:
 			break;
@@ -360,14 +350,12 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (m_content == nullptr)
 			return ecServerOOM;
 		prcpts = tarray_set_init();
-		if (NULL == prcpts) {
+		if (prcpts == nullptr)
 			return ecServerOOM;
-		}
 		m_content->set_rcpts_internal(prcpts);
 		pattachments = attachment_list_init();
-		if (NULL == pattachments) {
+		if (pattachments == nullptr)
 			return ecServerOOM;
-		}
 		m_content->set_attachments_internal(pattachments);
 		pproplist = m_content->get_proplist();
 		uint8_t tmp_byte = marker == STARTFAIMSG;
@@ -378,10 +366,8 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		break;
 	}
 	case ENDMESSAGE: {
-		if (STARTMESSAGE != last_marker &&
-			STARTFAIMSG != last_marker) {
+		if (last_marker != STARTMESSAGE && last_marker != STARTFAIMSG)
 			return ecRpcFailed;
-		}
 		if (m_content == nullptr || m_content != pnode->msg)
 			return ecRpcFailed;
 		pctx->marker_stack.erase(pnode);
@@ -400,16 +386,14 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				return ecRpcFailed;
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
-			if (STARTEMBED != last_marker) {
+			if (last_marker != STARTEMBED)
 				return ecRpcFailed;
-			}
 			break;
 		default:
-			if (STARTMESSAGE != last_marker &&
-				STARTFAIMSG != last_marker &&
-				STARTEMBED != last_marker) {
+			if (last_marker != STARTMESSAGE &&
+			    last_marker != STARTFAIMSG &&
+			    last_marker != STARTEMBED)
 				return ecRpcFailed;
-			}
 			break;
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
@@ -426,17 +410,15 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				return ecServerOOM;
 		}
 		pmarker->marker = marker;
-		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
-			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
+		if (pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT ||
+		    pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT)
 			pmarker->instance_id = fastupctx_object_get_last_message_instance(pctx);
-		} else {
+		else
 			pmarker->props = prcpt;
-		}
 		break;
 	case ENDTORECIP:
-		if (STARTRECIP != last_marker) {
+		if (last_marker != STARTRECIP)
 			return ecRpcFailed;
-		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			tmp_rcpts.count = 1;
@@ -456,16 +438,14 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				return ecRpcFailed;
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
-			if (STARTEMBED != last_marker) {
+			if (last_marker != STARTEMBED)
 				return ecRpcFailed;
-			}
 			break;
 		default:
-			if (STARTMESSAGE != last_marker &&
-				STARTFAIMSG != last_marker &&
-				STARTEMBED != last_marker) {
+			if (last_marker != STARTMESSAGE &&
+			    last_marker != STARTFAIMSG &&
+			    last_marker != STARTEMBED)
 				return ecRpcFailed;
-			}
 			break;
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
@@ -476,9 +456,8 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 				return ecRpcFailed;
 		} else {
 			pattachment = attachment_content_init();
-			if (NULL == pattachment) {
+			if (pattachment == nullptr)
 				return ecServerOOM;
-			}
 			pmsgctnt = pnode->msg;
 			if (!pmsgctnt->children.pattachments->append_internal(pattachment)) {
 				attachment_content_free(pattachment);
@@ -486,17 +465,15 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 			}
 		}
 		pmarker->marker = marker;
-		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
-			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
+		if (pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT ||
+		    pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT)
 			pmarker->instance_id = tmp_id;
-		} else {
+		else
 			pmarker->atx = pattachment;
-		}
 		break;
 	case ENDATTACH:
-		if (NEWATTACH != last_marker) {
+		if (last_marker != NEWATTACH)
 			return ecRpcFailed;
-		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			ec_error_t e_result = ecRpcFailed;
@@ -512,13 +489,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
-				if (NEWATTACH != last_marker) {
+				if (last_marker != NEWATTACH)
 					return ecRpcFailed;
-				}
 			} else {
-				if (0 != last_marker && NEWATTACH != last_marker) {
+				if (last_marker != 0 && last_marker != NEWATTACH)
 					return ecRpcFailed;
-				}
 			}
 			instance_id = fastupctx_object_get_last_attachment_instance(pctx);
 			if (!exmdb_client::load_embedded_instance(dir,
@@ -534,13 +509,11 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 					return ecRpcFailed;
 			}
 		} else {
-			if (NEWATTACH != last_marker) {
+			if (last_marker != NEWATTACH)
 				return ecRpcFailed;
-			}
 			pmsgctnt = message_content_init();
-			if (NULL == pmsgctnt) {
+			if (pmsgctnt == nullptr)
 				return ecServerOOM;
-			}
 			prcpts = tarray_set_init();
 			if (NULL == prcpts) {
 				message_content_free(pmsgctnt);
@@ -556,17 +529,15 @@ ec_error_t fastupctx_object::record_marker(uint32_t marker)
 			pnode->atx->set_embedded_internal(pmsgctnt);
 		}
 		pmarker->marker = marker;
-		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
-			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
+		if (pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT ||
+		    pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT)
 			pmarker->instance_id = tmp_id;
-		} else {
+		else
 			pmarker->msg = pmsgctnt;
-		}
 		break;
 	case ENDEMBED:
-		if (STARTEMBED != last_marker) {
+		if (last_marker != STARTEMBED)
 			return ecRpcFailed;
-		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			ec_error_t e_result = ecRpcFailed;
@@ -618,20 +589,17 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			}
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
-			if (STARTEMBED != last_marker) {
+			if (last_marker != STARTEMBED)
 				return FALSE;
-			}
 			break;
 		default:
-			if (STARTMESSAGE != last_marker &&
-				STARTFAIMSG != last_marker &&
-				STARTEMBED != last_marker) {
+			if (last_marker != STARTMESSAGE &&
+			    last_marker != STARTFAIMSG &&
+			    last_marker != STARTEMBED)
 				return FALSE;	
-			}
 			auto pmsgctnt = pnode->msg;
-			if (0 != pmsgctnt->children.prcpts->count) {
+			if (pmsgctnt->children.prcpts->count != 0)
 				return FALSE;
-			}
 			break;
 		}
 		break;
@@ -641,9 +609,8 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			switch (last_marker) {
 			case 0:
 				if (!exmdb_client::empty_message_instance_attachments(dir,
-					fastupctx_object_get_last_message_instance(pctx))) {
+				    fastupctx_object_get_last_message_instance(pctx)))
 					return FALSE;
-				}
 				break;
 			case STARTEMBED:
 				break;
@@ -652,46 +619,40 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 			}
 			break;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
-			if (STARTEMBED != last_marker) {
+			if (last_marker != STARTEMBED)
 				return FALSE;
-			}
 			break;
 		default:
-			if (STARTMESSAGE != last_marker &&
-				STARTFAIMSG != last_marker &&
-				STARTEMBED != last_marker) {
+			if (last_marker != STARTMESSAGE &&
+			    last_marker != STARTFAIMSG &&
+			    last_marker != STARTEMBED)
 				return FALSE;	
-			}
 			auto pmsgctnt = pnode->msg;
-			if (0 != pmsgctnt->children.pattachments->count) {
+			if (pmsgctnt->children.pattachments->count != 0)
 				return FALSE;
-			}
 			break;
 		}
 		break;
 	case PR_CONTAINER_CONTENTS:
-		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
-			(STARTSUBFLD != last_marker && 0 != last_marker)) {
+		if (pctx->root_element != ROOT_ELEMENT_FOLDERCONTENT ||
+		    (last_marker != STARTSUBFLD && last_marker != 0))
 			return FALSE;	
-		}
 		if (last_marker == 0 && !fastupctx_object_empty_folder(pctx,
 		    static_cast<folder_object *>(pctx->pobject)->folder_id, DEL_MESSAGES))
 			return FALSE;
 		break;
 	case PR_FOLDER_ASSOCIATED_CONTENTS:
-		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
-			(STARTSUBFLD != last_marker && 0 != last_marker)) {
+		if (pctx->root_element != ROOT_ELEMENT_FOLDERCONTENT ||
+		    (last_marker != STARTSUBFLD && last_marker != 0))
 			return FALSE;	
-		}
 		if (last_marker == 0 && fastupctx_object_empty_folder(pctx,
 		    static_cast<folder_object *>(pctx->pobject)->folder_id, DEL_ASSOCIATED))
 			return FALSE;
 		break;
 	case PR_CONTAINER_HIERARCHY:
-		if (ROOT_ELEMENT_FOLDERCONTENT != pctx->root_element ||
-			(STARTSUBFLD != last_marker && 0 != last_marker)) {
+		if (pctx->root_element != ROOT_ELEMENT_FOLDERCONTENT ||
+		    (last_marker != STARTSUBFLD && last_marker != 0))
 			return FALSE;	
-		}
 		if (last_marker == 0 && !fastupctx_object_empty_folder(pctx,
 		    static_cast<folder_object *>(pctx->pobject)->folder_id, DEL_FOLDERS))
 			return FALSE;
@@ -783,19 +744,17 @@ ec_error_t fastupctx_object::record_propval(const TAGGED_PROPVAL *ppropval)
 		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	case STARTEMBED:
 	case NEWATTACH:
-		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
-			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
+		if (pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT ||
+		    pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT)
 			return exmdb_client::set_instance_property(pctx->pstream->plogon->get_dir(),
 			       pnode->instance_id, ppropval, &b_result) == TRUE ?
 			       ecSuccess : ecRpcFailed;
-		}
 		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	case STARTRECIP:
-		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
-			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
+		if (pctx->root_element == ROOT_ELEMENT_ATTACHMENTCONTENT ||
+		    pctx->root_element == ROOT_ELEMENT_MESSAGECONTENT)
 			return m_props->set(*ppropval) == 0 ?
 			       ecSuccess : ecRpcFailed;
-		}
 		return pnode->props->set(*ppropval) == 0 ? ecSuccess : ecRpcFailed;
 	default:
 		return ecRpcFailed;
