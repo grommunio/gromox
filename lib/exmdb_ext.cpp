@@ -14,6 +14,7 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;
@@ -2399,7 +2400,11 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 	char *dir = nullptr;
 	TRY(ext_pull.g_str(&dir));
 	pack_result xret;
+	xret = pack_result::bad_callid;
 	switch (call_id) {
+	case exmdb_callid::connect:
+	case exmdb_callid::listen_notification:
+		break;
 	case exmdb_callid::ping_store:
 	case exmdb_callid::get_all_named_propids:
 	case exmdb_callid::get_store_all_proptags:
@@ -2424,8 +2429,6 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 	}
 	RQ_WITH_ARGS
 #undef E
-	default:
-		return EXT_ERR_BAD_SWITCH;
 	}
 	prequest->call_id = call_id;
 	prequest->dir = dir;
@@ -2452,7 +2455,11 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 	status = ext_push.p_str(prequest->dir);
 	if (status != EXT_ERR_SUCCESS)
 		return status;
+	status = pack_result::bad_callid;
 	switch (prequest->call_id) {
+	case exmdb_callid::connect:
+	case exmdb_callid::listen_notification:
+		break;
 	case exmdb_callid::ping_store:
 	case exmdb_callid::get_all_named_propids:
 	case exmdb_callid::get_store_all_proptags:
@@ -2466,8 +2473,6 @@ pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
 #define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exreq_ ## t *>(prequest)); break;
 	RQ_WITH_ARGS
 #undef E
-	default:
-		return EXT_ERR_BAD_SWITCH;
 	}
 	}
 	if (status != EXT_ERR_SUCCESS)
@@ -3786,6 +3791,9 @@ pack_result exmdb_ext_pull_response(const BINARY *pbin_in, exresp *presponse)
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	switch (presponse->call_id) {
+	case exmdb_callid::connect:
+	case exmdb_callid::listen_notification:
+		break;
 #define E(t) case exmdb_callid::t:
 	RSP_WITHOUT_ARGS
 		return EXT_ERR_SUCCESS;
@@ -3793,9 +3801,8 @@ pack_result exmdb_ext_pull_response(const BINARY *pbin_in, exresp *presponse)
 #define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, *static_cast<exresp_ ## t *>(presponse));
 	RSP_WITH_ARGS
 #undef E
-	default:
-		return EXT_ERR_BAD_SWITCH;
 	}
+	return pack_result::bad_callid;
 }
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
@@ -3812,7 +3819,11 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 
+	status = pack_result::bad_callid;
 	switch (presponse->call_id) {
+	case exmdb_callid::connect:
+	case exmdb_callid::listen_notification:
+		break;
 #define E(t) case exmdb_callid::t:
 	RSP_WITHOUT_ARGS
 		status = EXT_ERR_SUCCESS;
@@ -3821,8 +3832,6 @@ pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *pbin_out)
 #define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, *static_cast<const exresp_ ## t *>(presponse)); break;
 	RSP_WITH_ARGS
 #undef E
-	default:
-		return EXT_ERR_BAD_SWITCH;
 	}
 	if (status != EXT_ERR_SUCCESS)
 		return status;
@@ -3849,6 +3858,11 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	TRY(ext_pull.g_uint8(&tmp_byte));
 	pnotify->db_notify.type = static_cast<db_notify_type>(tmp_byte);
 	switch (pnotify->db_notify.type) {
+	case db_notify_type::search_table_changed:
+	case db_notify_type::search_table_row_added:
+	case db_notify_type::search_table_row_deleted:
+	case db_notify_type::search_table_row_modified:
+		break;
 	case db_notify_type::new_mail: {
 		auto n = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 		if (n == nullptr)
@@ -4035,9 +4049,8 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		TRY(ext_pull.g_uint64(&n->after_row_id));
 		return ext_pull.g_uint64(&n->after_instance);
 	}
-	default:
-		return EXT_ERR_BAD_SWITCH;
 	}
+	return pack_result::bad_callid;
 }
 
 static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
@@ -4048,7 +4061,13 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	TRY(ext_push.p_bool(pnotify->b_table));
 	TRY(ext_push.p_uint32_a(pnotify->id_array));
 	TRY(ext_push.p_uint8(static_cast<uint8_t>(pnotify->db_notify.type)));
+	auto ret = pack_result::bad_callid;
 	switch (pnotify->db_notify.type) {
+	case db_notify_type::search_table_changed:
+	case db_notify_type::search_table_row_added:
+	case db_notify_type::search_table_row_modified:
+	case db_notify_type::search_table_row_deleted:
+		break;
 	case db_notify_type::new_mail: {
 		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->folder_id));
@@ -4193,9 +4212,9 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 		TRY(ext_push.p_uint64(n->after_instance));
 		break;
 	}
-	default:
-		return EXT_ERR_BAD_SWITCH;
 	}
+	if (ret != pack_result::success)
+		return ret;
 	pbin_out->cb = ext_push.m_offset;
 	ext_push.m_offset = 0;
 	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
