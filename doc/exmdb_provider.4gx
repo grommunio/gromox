@@ -106,6 +106,13 @@ clients a chance to perform an action.
 .br
 Default: \fI250\fP
 .TP
+\fBexmdb_search_pacing_time\fP
+When initially populating a search folder (static or dynamic), yield the lock
+on the sqlite database (file descriptor) after this much time has passed to
+give other clients a chance to perform an action.
+.br
+Default: \fI2s\fP
+.TP
 \fBexmdb_search_nice\fP
 Run the search folder population thread with adjusted niceness, which affects
 process scheduling. This is not an absolute priority as the nice(1) command
