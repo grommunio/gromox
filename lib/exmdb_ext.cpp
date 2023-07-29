@@ -2221,6 +2221,28 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_store_eid_to_user &d)
 	return x.p_store_eid(*d.store_eid);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_autoreply_tsquery &d)
+{
+	TRY(x.g_str(&d.peer));
+	return x.g_uint64(&d.window);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_autoreply_tsquery &d)
+{
+	TRY(x.p_str(d.peer));
+	return x.p_uint64(d.window);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exreq_autoreply_tsupdate &d)
+{
+	return x.g_str(&d.peer);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_autoreply_tsupdate &d)
+{
+	return x.p_str(d.peer);
+}
+
 #define RQ_WITH_ARGS \
 	E(get_named_propids) \
 	E(get_named_propnames) \
@@ -2340,7 +2362,9 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_store_eid_to_user &d)
 	E(get_public_folder_unread_count) \
 	E(notify_new_mail) \
 	E(store_eid_to_user) \
-	E(purge_softdelete)
+	E(purge_softdelete) \
+	E(autoreply_tsquery) \
+	E(autoreply_tsupdate)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3609,6 +3633,16 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
 	return x.p_uint32(d.domain_id);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exresp_autoreply_tsquery &d)
+{
+	return x.g_uint64(&d.tdiff);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
+{
+	return x.p_uint64(d.tdiff);
+}
+
 #define RSP_WITHOUT_ARGS \
 	E(ping_store) \
 	E(remove_store_properties) \
@@ -3639,7 +3673,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
 	E(unload_store) \
 	E(notify_new_mail) \
 	E(purge_softdelete) \
-	E(purge_datafiles)
+	E(purge_datafiles) \
+	E(autoreply_tsupdate)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \
@@ -3737,7 +3772,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_store_eid_to_user &d)
 	E(subscribe_notification) \
 	E(check_contact_address) \
 	E(get_public_folder_unread_count) \
-	E(store_eid_to_user)
+	E(store_eid_to_user) \
+	E(autoreply_tsquery)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*
