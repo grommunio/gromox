@@ -911,7 +911,6 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
     char *str_dname, size_t dn_size)
 {
 	char *ptoken;
-	char lang_string[256];
 	
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	if (dn_size > 0)
@@ -932,7 +931,8 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		gx_strlcpy(str_dname, obj->name.c_str(), dn_size);
 		break;
 	}
-	case abnode_type::user: {
+	case abnode_type::user:
+	case abnode_type::mlist: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
@@ -943,38 +943,6 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 			if (NULL != ptoken) {
 				*ptoken = '\0';
 			}
-		}
-		break;
-	}
-	case abnode_type::mlist: {
-		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		auto it = obj->propvals.find(PR_DISPLAY_NAME);
-		switch (obj->list_type) {
-		case mlist_type::normal:
-			if (cpl_get_string(codepage, "mlist0", lang_string,
-			    std::size(lang_string)) != 0)
-				strcpy(lang_string, "custom address list");
-			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
-			break;
-		case mlist_type::group:
-			if (cpl_get_string(codepage, "mlist1", lang_string,
-			    std::size(lang_string)) != 0)
-				strcpy(lang_string, "all users in department of %s");
-			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
-			break;
-		case mlist_type::domain:
-			if (cpl_get_string(codepage, "mlist2", str_dname, dn_size) != 0)
-				gx_strlcpy(str_dname, "all users in domain", dn_size);
-			break;
-		case mlist_type::dyngroup:
-			if (cpl_get_string(codepage, "mlist3", lang_string,
-			    std::size(lang_string)) != 0)
-				strcpy(lang_string, "all users in group of %s");
-			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
-			break;
-		default:
-			snprintf(str_dname, dn_size, "unknown address list type %u",
-			         static_cast<unsigned int>(obj->list_type));
 		}
 		break;
 	}
@@ -1038,12 +1006,6 @@ void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 		*create_day = '\0';
 	if (plist_privilege != nullptr)
 		*plist_privilege = obj->list_priv;
-}
-
-void ab_tree_get_mlist_title(cpid_t codepage, char *str_title)
-{
-	if (cpl_get_string(codepage, "mlist", str_title, 256) != 0)
-		strcpy(str_title, "Address List");
 }
 
 void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode, char *dn, int length)

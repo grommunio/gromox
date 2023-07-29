@@ -119,7 +119,6 @@ extern void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, cpid_t, char *str
 extern const std::vector<std::string> &ab_tree_get_object_aliases(const tree_node *);
 extern const char *ab_tree_get_user_info(const tree_node *, unsigned int type);
 extern void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *, char *mail_address, char *create_day, int *list_priv);
-extern void ab_tree_get_mlist_title(cpid_t, char *title);
 extern void ab_tree_get_company_info(const SIMPLE_TREE_NODE *, char *name, char *address);
 extern void ab_tree_get_department_name(const SIMPLE_TREE_NODE *, char *name);
 extern void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *, char *dn, int len);
