@@ -514,7 +514,7 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 		return false;
 	stm.bind_text(1, peer);
 	stm.bind_int64(2, time(nullptr));
-	return stm.step() == SQLITE_OK;
+	return stm.step() == SQLITE_DONE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2226: ENOMEM");
 	return false;
