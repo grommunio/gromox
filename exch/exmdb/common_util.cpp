@@ -719,6 +719,7 @@ static BOOL common_util_check_subfolders(
 static ec_error_t cu_calc_folder_path(uint32_t folder_id,
     sqlite3 *psqlite, std::string &path)
 {
+	static constexpr char delim[] = "\xEF\xBF\xBE";
 	uint64_t tmp_fid;
 	char sql_string[128];
 	path.clear();
@@ -726,6 +727,17 @@ static ec_error_t cu_calc_folder_path(uint32_t folder_id,
 	tmp_fid = folder_id;
 	auto b_private = exmdb_server::is_private();
 	while (true) {
+		auto is_root = (b_private && tmp_fid == PRIVATE_FID_ROOT) ||
+		               (!b_private && tmp_fid == PUBLIC_FID_ROOT);
+		if (is_root) {
+			if (path.empty())
+				path = delim;
+			break;
+		}
+		auto is_ipmsub = (b_private && tmp_fid == PRIVATE_FID_IPMSUBTREE) ||
+		                 (!b_private && tmp_fid == PUBLIC_FID_IPMSUBTREE);
+		if (is_ipmsub && !path.empty())
+			break;
 		snprintf(sql_string, std::size(sql_string), "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
 		        "folder_id=%llu", PR_DISPLAY_NAME, LLU{tmp_fid});
@@ -746,9 +758,8 @@ static ec_error_t cu_calc_folder_path(uint32_t folder_id,
 		if (dispname == nullptr)
 			return ecNotFound;
 		path.insert(0, dispname);
-		path.insert(0, "\\");
-		if ((b_private && tmp_fid == PRIVATE_FID_ROOT) ||
-		    (!b_private && tmp_fid == PUBLIC_FID_ROOT))
+		path.insert(0, delim);
+		if (is_ipmsub)
 			break;
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM "
 		          "folders WHERE folder_id=%llu", LLU{tmp_fid});
