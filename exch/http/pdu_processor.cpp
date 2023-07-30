@@ -3051,7 +3051,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	gx_strlcpy(pendpoint->host, host, std::size(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
-	mlog(LV_INFO, "pdu_processor: registered endpoint [%s]:%hu",
+	mlog(LV_DEBUG, "pdu_processor: registered endpoint [%s]:%hu",
 	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
 } catch (const std::bad_alloc &) {
@@ -3093,7 +3093,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	}
 	char uuid_string[GUIDSTR_SIZE];
 	pinterface->uuid.to_str(uuid_string, std::size(uuid_string));
-	mlog(LV_INFO, "pdu_processor: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)",
+	mlog(LV_DEBUG, "pdu_processor: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)",
 	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
 	       uuid_string, pinterface->version & 0xFFFF,
 	       (pinterface->version >> 16) & 0xFFFF);
