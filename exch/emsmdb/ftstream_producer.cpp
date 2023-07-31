@@ -529,11 +529,10 @@ BOOL ftstream_producer::write_attachmentcontent(BOOL b_delprop,
 	auto pstream = this;
 	if (!write_proplist(&pattachment->proplist))
 		return FALSE;	
-	if (NULL != pattachment->pembedded) {
-		if (!ftstream_producer_write_embeddedmessage(pstream,
-		    b_delprop, pattachment->pembedded))
-			return FALSE;	
-	}
+	if (pattachment->pembedded != nullptr &&
+	    !ftstream_producer_write_embeddedmessage(pstream,
+	    b_delprop, pattachment->pembedded))
+		return FALSE;
 	return TRUE;
 }
 

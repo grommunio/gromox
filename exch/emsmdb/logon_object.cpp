@@ -451,13 +451,13 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
-			if (!isascii(dispname[i])) {
-				strcpy(dispname, plogon->account);
-				auto p = strchr(dispname, '@');
-				if (p != nullptr)
-					*p = '\0';
-				break;
-			}
+			if (isascii(dispname[i]))
+				continue;
+			strcpy(dispname, plogon->account);
+			auto p = strchr(dispname, '@');
+			if (p != nullptr)
+				*p = '\0';
+			break;
 		}
 		return TRUE;
 	}

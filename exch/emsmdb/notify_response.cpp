@@ -53,11 +53,9 @@ NOTIFY_RESPONSE* notify_response_init(uint32_t handle, uint8_t logon_id)
 
 void notify_response_free(NOTIFY_RESPONSE *pnotify)
 {
-	if (NULL != pnotify->notification_data.pproptags) {
-		if (NULL != pnotify->notification_data.pproptags->pproptag) {
-			free(pnotify->notification_data.pproptags->pproptag);
-		}
-	}
+	if (pnotify->notification_data.pproptags != nullptr &&
+	    pnotify->notification_data.pproptags->pproptag != nullptr)
+		free(pnotify->notification_data.pproptags->pproptag);
 	if (NULL != pnotify->notification_data.pstr_class) {
 		free(pnotify->notification_data.pstr_class);
 	}

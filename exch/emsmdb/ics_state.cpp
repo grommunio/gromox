@@ -107,31 +107,28 @@ BOOL ics_state::append_idset(uint32_t state_property, std::unique_ptr<idset> &&p
 		pstate->pgiven = std::move(pset);
 		return TRUE;
 	case MetaTagCnsetSeen:
-		if (NULL != pstate->pseen) {
-			if ((ICS_STATE_CONTENTS_UP == pstate->type ||
-				ICS_STATE_HIERARCHY_UP == pstate->type) &&
-			    !pstate->pseen->empty() &&
-			    !pset->concatenate(pstate->pseen.get()))
-				return FALSE;
-		}
+		if (pstate->pseen != nullptr &&
+		    (pstate->type == ICS_STATE_CONTENTS_UP ||
+		    pstate->type == ICS_STATE_HIERARCHY_UP) &&
+		    !pstate->pseen->empty() &&
+		    !pset->concatenate(pstate->pseen.get()))
+			return FALSE;
 		pstate->pseen = std::move(pset);
 		return TRUE;
 	case MetaTagCnsetSeenFAI:
-		if (NULL != pstate->pseen_fai) {
-			if (ICS_STATE_CONTENTS_UP == pstate->type &&
-			    !pstate->pseen_fai->empty() &&
-			    !pset->concatenate(pstate->pseen_fai.get()))
-				return FALSE;
-		}
+		if (pstate->pseen_fai != nullptr &&
+		    pstate->type == ICS_STATE_CONTENTS_UP &&
+		    !pstate->pseen_fai->empty() &&
+		    !pset->concatenate(pstate->pseen_fai.get()))
+			return FALSE;
 		pstate->pseen_fai = std::move(pset);
 		return TRUE;
 	case MetaTagCnsetRead:
-		if (NULL != pstate->pread) {
-			if (ICS_STATE_CONTENTS_UP == pstate->type &&
-			    !pstate->pread->empty() &&
-			    !pset->concatenate(pstate->pread.get()))
-				return FALSE;
-		}
+		if (pstate->pread != nullptr &&
+		    pstate->type == ICS_STATE_CONTENTS_UP &&
+		    !pstate->pread->empty() &&
+		    !pset->concatenate(pstate->pread.get()))
+			return FALSE;
 		pstate->pread = std::move(pset);
 		return TRUE;
 	}

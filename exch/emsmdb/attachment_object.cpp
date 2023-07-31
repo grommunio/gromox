@@ -167,15 +167,15 @@ BOOL attachment_object::commit_stream_object(stream_object *pstream)
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (pnode->pdata == pstream) {
-			double_list_remove(&pattachment->stream_list, pnode);
-			tmp_propval.proptag = pstream->get_proptag();
-			tmp_propval.pvalue = pstream->get_content();
-			if (!exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
-			    pattachment->instance_id, &tmp_propval, &result))
-				return FALSE;
-			return TRUE;
-		}
+		if (pnode->pdata != pstream)
+			continue;
+		double_list_remove(&pattachment->stream_list, pnode);
+		tmp_propval.proptag = pstream->get_proptag();
+		tmp_propval.pvalue = pstream->get_content();
+		if (!exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
+		    pattachment->instance_id, &tmp_propval, &result))
+			return FALSE;
+		return TRUE;
 	}
 	return TRUE;
 }

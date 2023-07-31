@@ -403,12 +403,10 @@ static void emsmdb_interface_remove_handle(const CXH &cxh)
 			   in emsmdb_interface_rpc_ext2 by another
 			   rpc connection, can not be released! */
 			return;
-		if (phandle->b_occupied) {
-			gl_hold.unlock();
-			usleep(100000);
-		} else {
+		if (!phandle->b_occupied)
 			break;
-		}
+		gl_hold.unlock();
+		usleep(100000);
 	}
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter != g_user_hash.end()) {
@@ -1119,43 +1117,38 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 	switch (pdb_notify->type) {
 	case db_notify_type::content_table_row_deleted:
-		if (emsmdb_interface_merge_content_row_deleted(
-			obj_handle, logon_id, &phandle->notify_list)) {
-			emsmdb_interface_put_handle_notify_list(phandle);
-			return;
-		}
-		break;
+		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, &phandle->notify_list))
+			break;
+		emsmdb_interface_put_handle_notify_list(phandle);
+		return;
 	case db_notify_type::hierarchy_table_row_modified:
-		if (emsmdb_interface_merge_hierarchy_row_modified(
+		if (!emsmdb_interface_merge_hierarchy_row_modified(
 		    static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
-		    obj_handle, logon_id, &phandle->notify_list)) {
-			b_processing = phandle->b_processing;
-			if (!b_processing) {
-				cxr = phandle->cxr;
-				gx_strlcpy(username, phandle->username, std::size(username));
-			}
-			emsmdb_interface_put_handle_notify_list(phandle);
-			if (!b_processing)
-				asyncemsmdb_interface_wakeup(username, cxr);
-			return;
+		    obj_handle, logon_id, &phandle->notify_list))
+			break;
+		b_processing = phandle->b_processing;
+		if (!b_processing) {
+			cxr = phandle->cxr;
+			gx_strlcpy(username, phandle->username, std::size(username));
 		}
-		break;
+		emsmdb_interface_put_handle_notify_list(phandle);
+		if (!b_processing)
+			asyncemsmdb_interface_wakeup(username, cxr);
+		return;
 	case db_notify_type::message_modified:
-		if (emsmdb_interface_merge_message_modified(
+		if (!emsmdb_interface_merge_message_modified(
 		    static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata),
-		    obj_handle, logon_id, &phandle->notify_list)) {
-			emsmdb_interface_put_handle_notify_list(phandle);
-			return;
-		}
-		break;
+		    obj_handle, logon_id, &phandle->notify_list))
+			break;
+		emsmdb_interface_put_handle_notify_list(phandle);
+		return;
 	case db_notify_type::folder_modified:
-		if (emsmdb_interface_merge_folder_modified(
+		if (!emsmdb_interface_merge_folder_modified(
 		    static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata),
-		    obj_handle, logon_id, &phandle->notify_list)) {
-			emsmdb_interface_put_handle_notify_list(phandle);
-			return;
-		}
-		break;
+		    obj_handle, logon_id, &phandle->notify_list))
+			break;
+		emsmdb_interface_put_handle_notify_list(phandle);
+		return;
 	default:
 		break;
 	}
