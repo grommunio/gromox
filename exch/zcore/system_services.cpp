@@ -9,6 +9,7 @@
 using namespace gromox;
 
 decltype(system_services_auth_login) system_services_auth_login;
+decltype(system_services_auth_login_token) system_services_auth_login_token;
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(check_same_org)
 E(get_domain_groups)
@@ -57,6 +58,7 @@ int system_services_run()
 	E(system_services_get_domain_ids, "get_domain_ids");
 	E(system_services_get_user_ids, "get_user_ids");
 	E(system_services_auth_login, "auth_login_gen");
+	E(system_services_auth_login_token, "auth_login_token");
 	E(system_services_get_user_displayname, "get_user_displayname");
 	E(system_services_get_org_domains, "get_org_domains");
 	E(system_services_get_domain_info, "get_domain_info");
@@ -87,7 +89,8 @@ void system_services_stop()
 	E("get_id_from_username");
 	E("get_domain_ids");
 	E("get_user_ids");
-	E("auth_login_gen");
+	E("auth_login_gen");	
+	E("auth_login_token");
 	E("get_user_displayname");
 	E("get_org_domains");
 	E("get_domain_info");

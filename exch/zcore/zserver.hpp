@@ -50,6 +50,7 @@ extern void zserver_init(size_t table_size, int cache_interval, int ping_interva
 extern int zserver_run();
 extern void zserver_stop();
 extern USER_INFO *zs_get_info();
+extern ec_error_t zs_logon_token(const char *token, GUID *ses);
 extern ec_error_t zs_logon(const char *username, const char *password, uint32_t flags, GUID *ses);
 extern ec_error_t zs_checksession(GUID ses);
 extern ec_error_t zs_uinfo(const char *username, BINARY *entryid, char **dispname, char **x500dn, uint32_t *priv_bits);

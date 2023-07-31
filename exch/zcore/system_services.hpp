@@ -10,6 +10,7 @@ extern void system_services_stop();
 
 extern BOOL (*system_services_lang_to_charset)(const char*, char*);
 extern authmgr_login_t system_services_auth_login;
+extern authmgr_login_t2 system_services_auth_login_token;
 #define E(s) extern decltype(mysql_adaptor_ ## s) *system_services_ ## s;
 E(check_same_org)
 E(get_domain_groups)

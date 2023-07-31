@@ -643,19 +643,11 @@ void zserver_stop()
 	g_notify_table.clear();
 }
 
-ec_error_t zs_logon(const char *username,
-	const char *password, uint32_t flags, GUID *phsession)
+static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 {
 	char homedir[256];
 	char tmp_name[UADDR_SIZE];
-	
-	sql_meta_result mres;
-	if (!system_services_auth_login(username, znul(password),
-	    USER_PRIVILEGE_EXCH, mres)) {
-		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, mres.errstr.c_str());
-		return ecLoginFailure;
-	}
-	username = mres.username.c_str();
+	auto username = mres.username.c_str();
 	auto pdomain = strchr(username, '@');
 	if (pdomain == nullptr)
 		return ecUnknownUser;
@@ -731,6 +723,26 @@ ec_error_t zs_logon(const char *username,
 	}
 	*phsession = st_iter->second.hsession;
 	return ecSuccess;
+}
+
+ec_error_t zs_logon(const char *username, const char *password,
+    uint32_t flags, GUID *phsession)
+{
+	sql_meta_result mres;
+	if (!system_services_auth_login(username, znul(password),
+	    USER_PRIVILEGE_EXCH, mres)) {
+		mlog(LV_ERR, "Auth rejected for \"%s\": %s", username, mres.errstr.c_str());
+		return ecLoginFailure;
+	}
+	return zs_logon_phase2(std::move(mres), phsession);
+}
+
+ec_error_t zs_logon_token(const char *token, GUID *phsession)
+{
+	sql_meta_result mres;
+	if (!system_services_auth_login_token(token, USER_PRIVILEGE_EXCH, mres))
+		return ecLoginFailure;
+	return zs_logon_phase2(std::move(mres), phsession);
 }
 
 ec_error_t zs_checksession(GUID hsession)

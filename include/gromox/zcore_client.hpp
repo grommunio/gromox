@@ -104,5 +104,6 @@ ZCIDL(linkmessage, (GUID hsession, BINARY search_entryid, BINARY message_entryid
 ZCIDL(checksession, (GUID hsession))
 ZCIDL(imtomessage2, (GUID session, uint32_t folder, uint32_t data_type, const char *im_data, IDLOUT LONG_ARRAY *msg_handles))
 ZCIDL(essdn_to_username, (const char *essdn, IDLOUT char **username))
+ZCIDL(logon_token, (const char *token, IDLOUT GUID *hsession))
 #undef ZCIDL
 #undef IDLOUT

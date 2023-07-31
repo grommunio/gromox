@@ -374,6 +374,16 @@ static pack_result rpc_ext_push_znotification_array(
 	return pack_result::ok;
 }
 
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_logon_token &d)
+{
+	return x.g_str(&d.token);
+}
+
+static pack_result zrpc_push(EXT_PUSH &x, const zcresp_logon_token &d)
+{
+	return x.p_guid(d.hsession);
+}
+
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_logon &d)
 {
 	uint8_t tmp_byte;
@@ -1681,6 +1691,7 @@ pack_result rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
 	E(linkmessage)
 	E(imtomessage2)
 	E(essdn_to_username)
+	E(logon_token)
 #undef E
 	default:
 		return pack_result::bad_switch;
@@ -1743,7 +1754,7 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 		b_result = pack_result::ok;
 		break;
 #define E(t) case zcore_callid::t: b_result = zrpc_push(ext_push, *static_cast<const zcresp_ ## t *>(presponse)); break;
-	E(logon)
+	E(logon)	
 	E(uinfo)
 	E(openentry)
 	E(openstoreentry)
@@ -1796,6 +1807,7 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	E(getuseravailability)
 	E(imtomessage2)
 	E(essdn_to_username)
+	E(logon_token)
 #undef E
 	default:
 		return pack_result::bad_switch;

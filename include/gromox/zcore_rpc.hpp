@@ -99,11 +99,16 @@ enum class zcore_callid : uint8_t {
 	// icaltomessage2 = 0x57,
 	imtomessage2 = 0x58,
 	essdn_to_username = 0x59,
+	logon_token = 0x5a,
 	/* update exch/zcore/names.cpp! */
 };
 
 struct zcreq {
 	zcore_callid call_id;
+};
+
+struct zcreq_logon_token : public zcreq {
+	char *token;
 };
 
 struct zcreq_logon : public zcreq {
@@ -636,6 +641,10 @@ struct zcresp {
 };
 
 struct zcresp_logon : public zcresp {
+	GUID hsession;
+};
+
+struct zcresp_logon_token : public zcresp {
 	GUID hsession;
 };
 
