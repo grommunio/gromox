@@ -146,9 +146,8 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		return ecNullObject;
 	BOOL b_unicode = want_unicode == 0 ? false : TRUE;
 	ptmp_proptags = common_util_trim_proptags(pproptags);
-	if (NULL == ptmp_proptags) {
+	if (ptmp_proptags == nullptr)
 		return ecServerOOM;
-	}
 	switch (object_type) {
 	case ems_objtype::logon: {
 		if (!static_cast<logon_object *>(pobject)->get_properties(ptmp_proptags, &propvals))
@@ -195,9 +194,8 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		}
 		propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 		propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
-		if (NULL == propvals.ppropval[i].pvalue) {
+		if (propvals.ppropval[i].pvalue == nullptr)
 			return ecServerOOM;
-		}
 		*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
 	}
 	if (total_size >= 0x7000) {
@@ -212,9 +210,8 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 					break;
 				propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 				propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
-				if (NULL == propvals.ppropval[i].pvalue) {
+				if (propvals.ppropval[i].pvalue == nullptr)
 					return ecServerOOM;
-				}
 				*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
 				break;
 			}
@@ -245,9 +242,8 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		if (!xlog->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
-		if (NULL == ptmp_proptags) {
+		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		}
 		if (!xlog->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
@@ -256,9 +252,8 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 				continue;
 			ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
 			ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
-			if (NULL == ppropvals->ppropval[i].pvalue) {
+			if (ppropvals->ppropval[i].pvalue == nullptr)
 				return ecServerOOM;
-			}
 			*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -272,9 +267,8 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		if (!fld->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
-		if (NULL == ptmp_proptags) {
+		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		}
 		if (!fld->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
@@ -283,9 +277,8 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 				continue;
 			ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
 			ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
-			if (NULL == ppropvals->ppropval[i].pvalue) {
+			if (ppropvals->ppropval[i].pvalue == nullptr)
 				return ecServerOOM;
-			}
 			*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -299,9 +292,8 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		if (!msg->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
-		if (NULL == ptmp_proptags) {
+		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		}
 		if (!msg->get_properties(size_limit, ptmp_proptags, ppropvals))
 			return ecError;
 		cpid = msg->get_cpid();
@@ -312,9 +304,8 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		if (!atx->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
-		if (NULL == ptmp_proptags) {
+		if (ptmp_proptags == nullptr)
 			return ecServerOOM;
-		}
 		if (!atx->get_properties(size_limit, ptmp_proptags, ppropvals))
 			return ecError;
 		cpid = atx->get_cpid();
@@ -534,9 +525,8 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	}
 	propids.count = 0;
 	propids.ppropid = cu_alloc<uint16_t>(proptags.count);
-	if (NULL == propids.ppropid) {
+	if (propids.ppropid == nullptr)
 		return ecServerOOM;
-	}
 	for (i=0; i<proptags.count; i++) {
 		propid = PROP_ID(proptags.pproptag[i]);
 		if (!is_nameprop_id(propid))
@@ -551,19 +541,16 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	}
 	ppropidnames->count = 0;
 	ppropidnames->ppropid = cu_alloc<uint16_t>(propids.count);
-	if (NULL == ppropidnames->ppropid) {
+	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
-	}
 	ppropidnames->ppropname = cu_alloc<PROPERTY_NAME>(propids.count);
-	if (NULL == ppropidnames->ppropid) {
+	if (ppropidnames->ppropid == nullptr)
 		return ecServerOOM;
-	}
 	if (!plogon->get_named_propnames(&propids, &propnames))
 		return ecError;
 	for (i=0; i<propids.count; i++) {
-		if (KIND_NONE == propnames.ppropname[i].kind) {
+		if (propnames.ppropname[i].kind == KIND_NONE)
 			continue;
-		}
 		if (pguid != nullptr && *pguid != propnames.ppropname[i].guid)
 			continue;
 		if ((query_flags & QUERY_FLAG_NOSTRINGS) &&
@@ -583,7 +570,6 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
     const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
-	int i;
 	BOOL b_force;
 	BOOL b_result;
 	ems_objtype object_type, dst_type;
@@ -611,18 +597,15 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		return ecNotSupported;
 	proptags.count = 0;
 	proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
-	if (NULL == proptags.pproptag) {
+	if (proptags.pproptag == nullptr)
 		return ecServerOOM;
-	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return ecServerOOM;
-	}
 	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
-	if (NULL == poriginal_indices) {
+	if (poriginal_indices == nullptr)
 		return ecError;
-	}
 	switch (object_type) {
 	case ems_objtype::folder: {
 		auto fldsrc = static_cast<folder_object *>(pobject);
@@ -638,7 +621,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (copy_flags & MAPI_NOREPLACE &&
 		    !flddst->get_all_proptags(&proptags1))
 			return ecError;
-		for (i=0; i<pproptags->count; i++) {
+		for (size_t i = 0; i < pproptags->count; ++i) {
 			if (flddst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
@@ -655,7 +638,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		}
 		if (!fldsrc->get_properties(&proptags, &propvals))
 			return ecError;
-		for (i=0; i<proptags.count; i++) {
+		for (size_t i = 0; i < proptags.count; ++i) {
 			if (propvals.has(proptags.pproptag[i]))
 				continue;
 			pproblems->pproblem[pproblems->count].index =
@@ -666,9 +649,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		}
 		if (!flddst->set_properties(&propvals, &tmp_problems))
 			return ecError;
-		for (i=0; i<tmp_problems.count; i++) {
+		for (size_t i = 0; i < tmp_problems.count; ++i)
 			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
-		}
 		*pproblems += std::move(tmp_problems);
 		return ecSuccess;
 	}
@@ -684,7 +666,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			if (!msgdst->get_all_proptags(&proptags1))
 				return ecError;
 		}
-		for (i=0; i<pproptags->count; i++) {
+		for (size_t i = 0; i < pproptags->count; ++i) {
 			if (pproptags->pproptag[i] == PR_MESSAGE_ATTACHMENTS) {
 				if (!msgdst->copy_attachments(msgsrc, b_force, &b_result))
 					return ecError;
@@ -720,7 +702,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		}
 		if (!msgsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
-		for (i=0; i<proptags.count; i++) {
+		for (size_t i = 0; i < proptags.count; ++i) {
 			if (propvals.has(proptags.pproptag[i]))
 				continue;
 			pproblems->pproblem[pproblems->count].index =
@@ -731,9 +713,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		}
 		if (!msgdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
-		for (i=0; i<tmp_problems.count; i++) {
+		for (size_t i = 0; i < tmp_problems.count; ++i)
 			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
-		}
 		*pproblems += std::move(tmp_problems);
 		return ecSuccess;
 	}
@@ -746,7 +727,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (copy_flags & MAPI_NOREPLACE &&
 		    !atdst->get_all_proptags(&proptags1))
 			return ecError;
-		for (i=0; i<pproptags->count; i++) {
+		for (size_t i = 0; i < pproptags->count; ++i) {
 			if (atdst->is_readonly_prop(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
@@ -763,7 +744,7 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		}
 		if (!atsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
-		for (i=0; i<proptags.count; i++) {
+		for (size_t i = 0; i < proptags.count; ++i) {
 			if (propvals.has(proptags.pproptag[i]))
 				continue;
 			pproblems->pproblem[pproblems->count].index =
@@ -774,9 +755,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		}
 		if (!atdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
-		for (i=0; i<tmp_problems.count; i++) {
+		for (size_t i = 0; i < tmp_problems.count; ++i)
 			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
-		}
 		*pproblems += std::move(tmp_problems);
 		return ecSuccess;
 	}
@@ -790,7 +770,6 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
     PROBLEM_ARRAY *pproblems, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hsrc, uint32_t hdst)
 {
-	int i;
 	BOOL b_sub;
 	BOOL b_cycle;
 	BOOL b_collid;
@@ -864,12 +843,11 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);
 		tmp_proptags.count = 0;
 		tmp_proptags.pproptag = cu_alloc<uint32_t>(proptags.count);
-		if (NULL == tmp_proptags.pproptag) {
+		if (tmp_proptags.pproptag == nullptr)
 			return ecServerOOM;
-		}
 		if (!b_force && !flddst->get_all_proptags(&proptags1))
 			return ecError;
-		for (i=0; i<proptags.count; i++) {
+		for (size_t i = 0; i < proptags.count; ++i) {
 			if (flddst->is_readonly_prop(proptags.pproptag[i]))
 				continue;
 			if (!b_force && proptags1.has(proptags.pproptag[i]))
@@ -1036,9 +1014,8 @@ ec_error_t rop_readstream(uint16_t byte_count, uint32_t max_byte_count,
 		max_rop -= 16;
 	else
 		max_rop = 0;
-	if (buffer_size > max_rop) {
+	if (buffer_size > max_rop)
 		buffer_size = max_rop;
-	}
 	if (0 == buffer_size) {
 		pdata_bin->cb = 0;
 		pdata_bin->pb = NULL;
@@ -1076,9 +1053,8 @@ ec_error_t rop_writestream(const BINARY *pdata_bin, uint16_t *pwritten_size,
 		return result.second;
 	}
 	*pwritten_size = result.first;
-	if (*pwritten_size < pdata_bin->cb) {
+	if (*pwritten_size < pdata_bin->cb)
 		return ecTooBig;
-	}
 	return ecSuccess;
 }
 

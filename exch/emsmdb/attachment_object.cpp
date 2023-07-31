@@ -35,10 +35,9 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 		    pparent->instance_id, &pattachment->instance_id,
 		    &pattachment->attachment_num))
 			return NULL;
-		if (0 == pattachment->instance_id &&
-			ATTACHMENT_NUM_INVALID != pattachment->attachment_num) {
+		if (pattachment->instance_id == 0 &&
+		    pattachment->attachment_num != ATTACHMENT_NUM_INVALID)
 			return NULL;	
-		}
 		pattachment->b_new = TRUE;
 	} else {
 		if (!exmdb_client::load_attachment_instance(dir,
@@ -60,18 +59,16 @@ BOOL attachment_object::init_attachment()
 		return FALSE;
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5);
-	if (NULL == propvals.ppropval) {
+	if (propvals.ppropval == nullptr)
 		return FALSE;
-	}
 	
 	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
 	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
 	propvals.ppropval[propvals.count].proptag = PR_RENDERING_POSITION;
 	auto rendpos = cu_alloc<uint32_t>();
 	propvals.ppropval[propvals.count].pvalue = rendpos;
-	if (NULL == propvals.ppropval[propvals.count].pvalue) {
+	if (propvals.ppropval[propvals.count].pvalue == nullptr)
 		return FALSE;
-	}
 	*rendpos = indet_rendering_pos;
 	++propvals.count;
 	
@@ -92,10 +89,9 @@ attachment_object::~attachment_object()
 	auto pattachment = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (0 != pattachment->instance_id) {
+	if (pattachment->instance_id != 0)
 		exmdb_client::unload_instance(pattachment->pparent->plogon->get_dir(),
 			pattachment->instance_id);
-	}
 	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr)
 		free(pnode);
 	double_list_free(&pattachment->stream_list);
@@ -142,15 +138,12 @@ BOOL attachment_object::append_stream_object(stream_object *pstream)
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (pnode->pdata == pstream) {
+	     pnode = double_list_get_after(&pattachment->stream_list, pnode))
+		if (pnode->pdata == pstream)
 			return TRUE;
-		}
-	}
 	pnode = gromox::me_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return FALSE;
-	}
 	pnode->pdata = pstream;
 	double_list_append_as_tail(&pattachment->stream_list, pnode);
 	pattachment->b_touched = TRUE;
@@ -213,9 +206,8 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	nodes_num = double_list_get_nodes_num(&pattachment->stream_list) + 1;
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
@@ -261,9 +253,8 @@ static BOOL attachment_object_get_calculated_property(
 	case PR_ACCESS_LEVEL: {
 		auto v = cu_alloc<uint32_t>();
 		*ppvalue = v;
-		if (NULL == *ppvalue) {
+		if (*ppvalue == nullptr)
 			return FALSE;
-		}
 		*v = (pattachment->open_flags & MAPI_MODIFY) ?
 		     ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
@@ -308,14 +299,12 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	static const uint32_t err_code = ecError;
 	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
-	if (NULL == tmp_proptags.pproptag) {
+	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
@@ -341,15 +330,13 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 		}
 		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
-	if (0 == tmp_proptags.count) {
+	if (tmp_proptags.count == 0)
 		return TRUE;
-	}
 	if (!exmdb_client::get_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    size_limit, pattachment->instance_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	if (0 == tmp_propvals.count) {
+	if (tmp_propvals.count == 0)
 		return TRUE;
-	}
 	memcpy(ppropvals->ppropval + ppropvals->count,
 		tmp_propvals.ppropval,
 		sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
@@ -363,10 +350,9 @@ static BOOL attachment_object_check_stream_property(
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
+	     pnode = double_list_get_after(&pattachment->stream_list, pnode))
 		if (static_cast<stream_object *>(pnode->pdata)->get_proptag() == proptag)
 			return TRUE;
-	}
 	return FALSE;
 }
 
@@ -380,18 +366,15 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
-	if (NULL == tmp_propvals.ppropval) {
+	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
-	}
 	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
-	if (NULL == poriginal_indices) {
+	if (poriginal_indices == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<ppropvals->count; i++) {
 		if (is_readonly_prop(ppropvals->ppropval[i].proptag) ||
 		    attachment_object_check_stream_property(
@@ -406,9 +389,8 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 								ppropvals->ppropval[i];
 		poriginal_indices[tmp_propvals.count++] = i;
 	}
-	if (0 == tmp_propvals.count) {
+	if (tmp_propvals.count == 0)
 		return TRUE;
-	}
 	if (!exmdb_client::set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
@@ -419,11 +401,9 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	for (i=0; i<ppropvals->count; i++) {
-		for (j=0; j<pproblems->count; j++) {
-			if (i == pproblems->pproblem[j].index) {
+		for (j = 0; j < pproblems->count; ++j)
+			if (i == pproblems->pproblem[j].index)
 				break;
-			}
-		}
 		if (j >= pproblems->count) {
 			pattachment->b_touched = TRUE;
 			break;
@@ -442,18 +422,15 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
-	if (NULL == tmp_proptags.pproptag) {
+	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
-	if (NULL == poriginal_indices) {
+	if (poriginal_indices == nullptr)
 		return FALSE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		if (is_readonly_prop(pproptags->pproptag[i]) ||
 		    attachment_object_check_stream_property(
@@ -468,9 +445,8 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 								pproptags->pproptag[i];
 		poriginal_indices[tmp_proptags.count++] = i;
 	}
-	if (0 == tmp_proptags.count) {
+	if (tmp_proptags.count == 0)
 		return TRUE;
-	}
 	if (!exmdb_client::remove_instance_properties(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
@@ -481,11 +457,9 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	for (i=0; i<pproptags->count; i++) {
-		for (j=0; j<pproblems->count; j++) {
-			if (i == pproblems->pproblem[j].index) {
+		for (j = 0; j < pproblems->count; ++j)
+			if (i == pproblems->pproblem[j].index)
 				break;
-			}
-		}
 		if (j >= pproblems->count) {
 			pattachment->b_touched = TRUE;
 			break;

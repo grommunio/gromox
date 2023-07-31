@@ -49,9 +49,8 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	    pfolder->folder_id, &tmp_proptags))
 		return FALSE;		
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	}
 	auto eop = std::copy_if(&tmp_proptags.pproptag[0],
 	           &tmp_proptags.pproptag[tmp_proptags.count],
 	           pproptags->pproptag, [](uint32_t x) { return x < 0x80000000; });
@@ -304,33 +303,28 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		}
 		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		ba->pbin[0] = *pbin;
 		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		ba->pbin[1] = *pbin;
 		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		ba->pbin[2] = *pbin;
 		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		ba->pbin[3] = *pbin;
 		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		ba->pbin[4] = *pbin;
 		return TRUE;
 	}
@@ -351,13 +345,11 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			return FALSE;
 		persistdatas.count = 3;
 		persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
-		if (NULL == persistdatas.ppitems) {
+		if (persistdatas.ppitems == nullptr)
 			return FALSE;
-		}
 		auto ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
-		if (NULL == ppersistdata) {
+		if (ppersistdata == nullptr)
 			return FALSE;
-		}
 		persistdatas.ppitems[0] = ppersistdata;
 		persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
 		persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
@@ -415,9 +407,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		ba->pbin[2].pb = nullptr;
 		pbin = cu_fid_to_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		ba->pbin[3] = *pbin;
 		return TRUE;
 	}
@@ -438,14 +429,12 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (pinfo == nullptr)
 		return FALSE;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	if (NULL == ppropvals->ppropval) {
+	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	}
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
-	if (NULL == tmp_proptags.pproptag) {
+	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	ppropvals->count = 0;
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
@@ -463,9 +452,8 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		}
 		ppropvals->count++;
 	}
-	if (0 == tmp_proptags.count) {
+	if (tmp_proptags.count == 0)
 		return TRUE;
-	}
 	if (!exmdb_client::get_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
@@ -502,19 +490,16 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		return FALSE;
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	tmp_propvals.count = 0;
 	count = ppropvals->count + 4;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(count);
-	if (NULL == tmp_propvals.ppropval) {
+	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
-	}
 	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
-	if (NULL == poriginal_indices) {
+	if (poriginal_indices == nullptr)
 		return FALSE;
-	}
 	auto pfolder = this;
 	for (i=0; i<ppropvals->count; i++) {
 		if (pfolder->is_readonly_prop(ppropvals->ppropval[i].proptag)) {
@@ -528,9 +513,8 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			poriginal_indices[tmp_propvals.count++] = i;
 		}
 	}
-	if (0 == tmp_propvals.count) {
+	if (tmp_propvals.count == 0)
 		return TRUE;
-	}
 	auto dir = plogon->get_dir();
 	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;
@@ -543,13 +527,11 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	    pbin_pcl == nullptr)
 		return FALSE;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->plogon->guid(), change_num});
-	if (NULL == pbin_changekey) {
+	if (pbin_changekey == nullptr)
 		return FALSE;
-	}
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
-	if (NULL == pbin_pcl) {
+	if (pbin_pcl == nullptr)
 		return FALSE;
-	}
 	last_time = rop_util_current_nttime();
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
@@ -561,9 +543,8 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (!exmdb_client::set_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
-	if (0 == tmp_problems.count) {
+	if (tmp_problems.count == 0)
 		return TRUE;
-	}
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	return TRUE;
@@ -583,14 +564,12 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
-	if (NULL == pproblems->pproblem) {
+	if (pproblems->pproblem == nullptr)
 		return FALSE;
-	}
 	tmp_proptags.count = 0;
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
-	if (NULL == tmp_proptags.pproptag) {
+	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
 		if (pfolder->is_readonly_prop(pproptags->pproptag[i])) {
@@ -602,9 +581,8 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
-	if (0 == tmp_proptags.count) {
+	if (tmp_proptags.count == 0)
 		return TRUE;
-	}
 	auto dir = plogon->get_dir();
 	if (!exmdb_client::remove_folder_properties(dir,
 	    pfolder->folder_id, &tmp_proptags))
@@ -621,13 +599,11 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->plogon->guid(), change_num});
-	if (NULL == pbin_changekey) {
+	if (pbin_changekey == nullptr)
 		return FALSE;
-	}
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
-	if (NULL == pbin_pcl) {
+	if (pbin_pcl == nullptr)
 		return FALSE;
-	}
 	last_time = rop_util_current_nttime();
 	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin_changekey;
