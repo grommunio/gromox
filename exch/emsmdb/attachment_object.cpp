@@ -172,10 +172,8 @@ BOOL attachment_object::commit_stream_object(stream_object *pstream)
 		double_list_remove(&pattachment->stream_list, pnode);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
-		if (!exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
-		    pattachment->instance_id, &tmp_propval, &result))
-			return FALSE;
-		return TRUE;
+		return exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
+		       pattachment->instance_id, &tmp_propval, &result) ? TRUE : false;
 	}
 	return TRUE;
 }

@@ -975,14 +975,9 @@ bool message_object::is_readonly_prop(uint32_t proptag) const
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_SOURCE_KEY:
-		if (pmessage->b_new || pmessage->pstate != nullptr)
-			return FALSE;
-		return true;
+		return !pmessage->b_new && pmessage->pstate == nullptr;
 	case PR_READ:
-		if (NULL == pmessage->pembedding) {
-			return FALSE;
-		}
-		return true;
+		return pmessage->pembedding != nullptr;
 	}
 	return FALSE;
 }

@@ -738,19 +738,13 @@ const char *emsmdb_interface_get_username()
 const GUID* emsmdb_interface_get_handle()
 {
 	auto phandle = g_handle_key;
-	if (NULL == phandle) {
-		return NULL;
-	}
-	return &phandle->guid;
+	return phandle != nullptr ? &phandle->guid : nullptr;
 }
 
 EMSMDB_INFO* emsmdb_interface_get_emsmdb_info()
 {
 	auto phandle = g_handle_key;
-	if (NULL == phandle) {
-		return NULL;
-	}
-	return &phandle->info;
+	return phandle != nullptr ? &phandle->info : nullptr;
 }
 
 DOUBLE_LIST* emsmdb_interface_get_notify_list()
@@ -818,12 +812,8 @@ BOOL emsmdb_interface_get_cxh(CXH *pcxh)
 BOOL emsmdb_interface_get_rop_left(uint16_t *psize)
 {
 	auto phandle = g_handle_key;
-	if (NULL == phandle) {
-		*psize = 0;
-		return FALSE;
-	}
-	*psize = phandle->rop_left;
-	return TRUE;
+	*psize = phandle != nullptr ? phandle->rop_left : 0;
+	return phandle != nullptr;
 }
 
 BOOL emsmdb_interface_set_rop_left(uint16_t size)

@@ -564,15 +564,9 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		strcpy(new_name, pnew_name);
 	}
 	auto rpc_info = get_rpc_info();
-	if (plogon->is_private()) {
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
-			return ecAccessDenied;
-		}
-	} else {
-		if (rop_util_get_gc_value(folder_id) < PUBLIC_FID_CUSTOM) {
-			return ecAccessDenied;
-		}
-	}
+	if (rop_util_get_gc_value(folder_id) <
+	    (plogon->is_private() ? PRIVATE_FID_CUSTOM : PUBLIC_FID_CUSTOM))
+		return ecAccessDenied;
 	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
 		if (!exmdb_client::get_folder_perm(dir,
@@ -674,15 +668,9 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 		strcpy(new_name, pnew_name);
 	}
 	auto rpc_info = get_rpc_info();
-	if (plogon->is_private()) {
-		if (PRIVATE_FID_ROOT == rop_util_get_gc_value(folder_id)) {
-			return ecAccessDenied;
-		}
-	} else {
-		if (PUBLIC_FID_ROOT == rop_util_get_gc_value(folder_id)) {
-			return ecAccessDenied;
-		}
-	}
+	if (rop_util_get_gc_value(folder_id) ==
+	    (plogon->is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT))
+		return ecAccessDenied;
 	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
 		if (!exmdb_client::get_folder_perm(dir,
