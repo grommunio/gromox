@@ -69,7 +69,7 @@ struct FIELD_ENUM_PARAM {
 	uint16_t last_propid = 0;
 	const char *charset = nullptr;
 	bool b_classified = false, b_flag_del = false;
-	MAIL *pmail = nullptr;
+	const MAIL *pmail = nullptr;
 };
 
 struct MIME_ENUM_PARAM {
@@ -86,8 +86,8 @@ struct MIME_ENUM_PARAM {
 	namemap phash;
 	uint16_t last_propid = 0;
 	uint64_t nttime_stamp = 0;
-	MIME *pplain = nullptr, *phtml = nullptr, *penriched = nullptr;
-	MIME *pcalendar = nullptr, *preport = nullptr;
+	const MIME *pplain = nullptr, *phtml = nullptr, *penriched = nullptr;
+	const MIME *pcalendar = nullptr, *preport = nullptr;
 };
 
 struct DSN_ENUM_INFO {
@@ -950,7 +950,7 @@ static inline unsigned int om_parse_senderidresult(const char *s)
 	return 0;
 }
 
-static BOOL oxcmail_parse_content_class(const char *field, MAIL *pmail,
+static BOOL oxcmail_parse_content_class(const char *field, const MAIL *pmail,
     uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
 	GUID tmp_guid;
@@ -1501,8 +1501,8 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_transport_message_header(
-	MIME *pmime, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_transport_message_header(const MIME *pmime,
+    TPROPVAL_ARRAY *pproplist)
 {
 	size_t tmp_len;
 	char tmp_buff[1024*1024];
@@ -1519,8 +1519,8 @@ static BOOL oxcmail_parse_transport_message_header(
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_message_body(const char *charset,
-	MIME *pmime, TPROPVAL_ARRAY *pproplist)
+static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
+    TPROPVAL_ARRAY *pproplist)
 {
 	BINARY tmp_bin;
 	char best_charset[32];
@@ -1877,7 +1877,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 	pmime_enum->b_result = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) == 0;
 }
 
-static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
+static MESSAGE_CONTENT* oxcmail_parse_tnef(const MIME *pmime,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
 	void *pcontent;
@@ -2307,7 +2307,7 @@ static inline const char *om_actsev_to_mclass(unsigned int s)
 	return nullptr;
 }
 
-static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
+static const MIME *oxcmail_parse_dsn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
 	size_t content_len;
 	DSN_ENUM_INFO dsn_info;
@@ -2422,7 +2422,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 	return true;
 }
 
-static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
+static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
 	size_t content_len;
 	char tmp_buff[256*1024];
@@ -2461,7 +2461,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	return pmime;
 }
 
-static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
+static BOOL oxcmail_parse_encrypted(const MIME *phead, uint16_t *plast_propid,
     namemap &phash, MESSAGE_CONTENT *pmsg)
 {
 	char tmp_buff[1024];
@@ -2476,7 +2476,7 @@ static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_smime_message(MAIL *pmail, MESSAGE_CONTENT *pmsg) try
+static BOOL oxcmail_parse_smime_message(const MAIL *pmail, MESSAGE_CONTENT *pmsg) try
 {
 	size_t offset;
 	BINARY tmp_bin;
@@ -2567,7 +2567,7 @@ static bool atxlist_all_hidden(const ATTACHMENT_LIST *atl)
 	return true;
 }
 
-static inline bool tnef_vfy_get_field(MIME *head, char *buf, size_t z)
+static inline bool tnef_vfy_get_field(const MIME *head, char *buf, size_t z)
 {
 #ifdef VERIFY_TNEF_CORRELATOR
 	return head->get_field("X-MS-TNEF-Correlator", buf, z);
@@ -2586,7 +2586,7 @@ static inline bool tnef_vfy_check_key(MESSAGE_CONTENT *msg, const char *xtnefcor
 #endif
 }
 
-static bool smime_clearsigned(const char *head_ct, MIME *head, char (&buf)[256])
+static bool smime_clearsigned(const char *head_ct, const MIME *head, char (&buf)[256])
 {
 	if (strcasecmp(head_ct, "multipart/signed") != 0)
 		return false;
@@ -2596,7 +2596,7 @@ static bool smime_clearsigned(const char *head_ct, MIME *head, char (&buf)[256])
 	       strcasecmp(buf, "application/x-pkcs7-signature") == 0;
 }
 
-static void select_parts(MIME *part, MIME_ENUM_PARAM &info)
+static void select_parts(const MIME *part, MIME_ENUM_PARAM &info)
 {
 	for (unsigned int i = 0; i < MAXIMUM_SEARCHING_DEPTH; ++i) {
 		auto child = part->get_child();
@@ -2645,7 +2645,7 @@ static void select_parts(MIME *part, MIME_ENUM_PARAM &info)
 }
 
 MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
-    MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
+    const MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	namemap phash;
 	MIME_ENUM_PARAM mime_enum{phash};
@@ -2750,7 +2750,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 
 	bool b_smime = false;
 	if (strcasecmp(head_ct, "multipart/mixed") == 0) {
-		MIME *pmime = nullptr, *pmime1 = nullptr;
+		const MIME *pmime = nullptr, *pmime1 = nullptr;
 		if (phead->get_children_num() == 2 &&
 		    (pmime = phead->get_child()) != nullptr &&
 		    (pmime1 = pmime->get_sibling()) != nullptr &&
