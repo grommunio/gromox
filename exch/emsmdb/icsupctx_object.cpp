@@ -36,9 +36,8 @@ BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
 	auto pctx = this;
 	if (pctx->b_started)
 		return FALSE;
-	if (0 != pctx->state_property) {
+	if (pctx->state_property != 0)
 		return FALSE;
-	}
 	switch (new_state_prop) {
 	case MetaTagIdsetGiven:
 	case MetaTagIdsetGiven1:
@@ -46,9 +45,8 @@ BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
 		break;
 	case MetaTagCnsetSeenFAI:
 	case MetaTagCnsetRead:
-		if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
+		if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 			return FALSE;
-		}
 		break;
 	default:
 		return FALSE;
@@ -63,9 +61,8 @@ BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data) try
 	auto pctx = this;
 	if (pctx->b_started)
 		return FALSE;
-	if (0 == pctx->state_property) {
+	if (pctx->state_property == 0)
 		return FALSE;
-	}
 	if (pctx->state_property == MetaTagIdsetGiven ||
 	    pctx->state_property == MetaTagIdsetGiven1)
 		return TRUE;
@@ -83,18 +80,16 @@ BOOL icsupctx_object::end_state_stream()
 	
 	if (pctx->b_started)
 		return FALSE;
-	if (0 == pctx->state_property) {
+	if (pctx->state_property == 0)
 		return FALSE;
-	}
 	if (pctx->state_property == MetaTagIdsetGiven ||
 	    pctx->state_property == MetaTagIdsetGiven1) {
 		pctx->state_property = 0;
 		return TRUE;
 	}
 	auto pset = idset::create(false, REPL_TYPE_GUID);
-	if (NULL == pset) {
+	if (pset == nullptr)
 		return FALSE;
-	}
 	tmp_bin.pv = f_state_stream.data();
 	tmp_bin.cb = f_state_stream.size();
 	auto saved_state_prop = pctx->state_property;
@@ -103,9 +98,8 @@ BOOL icsupctx_object::end_state_stream()
 		return FALSE;
 	if (!pset->register_mapping(pctx->plogon, common_util_mapping_replica))
 		return FALSE;
-	if (!pset->convert()) {
+	if (!pset->convert())
 		return FALSE;
-	}
 	if (!pctx->pstate->append_idset(saved_state_prop, std::move(pset)))
 		return FALSE;
 	return TRUE;

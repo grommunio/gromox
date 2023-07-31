@@ -274,9 +274,8 @@ static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
 	}
 	case ecDummyRpc:
 		*ppout = ndr_stack_anew<int32_t>(NDR_STACK_OUT);
-		if (NULL == *ppout) {
+		if (*ppout == nullptr)
 			return DISPATCH_FAIL;
-		}
 		*static_cast<int32_t *>(*ppout) = emsmdb_interface_dummy_rpc(handle);
 		return DISPATCH_SUCCESS;
 	case ecDoConnectEx: {
@@ -346,19 +345,16 @@ static int exchange_async_emsmdb_dispatch(unsigned int opnum, const GUID *pobjec
 	case ecDoAsyncWaitEx: {
 		auto pout = ndr_stack_anew<ECDOASYNCWAITEX_OUT>(NDR_STACK_OUT);
 		*ppout = pout;
-		if (NULL == *ppout) {
+		if (*ppout == nullptr)
 			return DISPATCH_FAIL;
-		}
 		async_id = apply_async_id();
-		if (0 == async_id) {
+		if (async_id == 0)
 			return DISPATCH_FAIL;
-		}
 		result = asyncemsmdb_interface_async_wait(async_id, static_cast<ECDOASYNCWAITEX_IN *>(pin), pout);
-		if (DISPATCH_PENDING == result) {
+		if (result == DISPATCH_PENDING)
 			activate_async_id(async_id);
-		} else {
+		else
 			cancel_async_id(async_id);
-		}
 		*ecode = pout->result;
 		return result;
 	}

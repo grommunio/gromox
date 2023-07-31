@@ -10,63 +10,55 @@
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {
 	pstate->pseen = idset::create(true, REPL_TYPE_GUID);
-	if (NULL == pstate->pseen) {
+	if (pstate->pseen == nullptr)
 		return NULL;
-	}
 	if (!pstate->pseen->register_mapping(plogon, common_util_mapping_replica))
 		return NULL;
 	switch (type) {
 	case ICS_STATE_CONTENTS_DOWN:
 		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pgiven) {
+		if (pstate->pgiven == nullptr)
 			return NULL;
-		}
 		if (!pstate->pgiven->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
 		pstate->pseen_fai = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pseen_fai) {
+		if (pstate->pseen_fai == nullptr)
 			return NULL;
-		}
 		if (!pstate->pseen_fai->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
 		pstate->pread = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pread) {
+		if (pstate->pread == nullptr)
 			return NULL;
-		}
 		if (!pstate->pread->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
 		break;
 	case ICS_STATE_HIERARCHY_DOWN:
 		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pgiven) {
+		if (pstate->pgiven == nullptr)
 			return NULL;
-		}
 		if (!pstate->pgiven->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
 		break;
 	case ICS_STATE_CONTENTS_UP:
 		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pgiven) {
+		if (pstate->pgiven == nullptr)
 			return NULL;
-		}
 		if (!pstate->pgiven->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
 		pstate->pseen_fai = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pseen_fai) {
+		if (pstate->pseen_fai == nullptr)
 			return NULL;
-		}
 		if (!pstate->pseen_fai->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
 		pstate->pread = idset::create(true, REPL_TYPE_GUID);
-		if (NULL == pstate->pread) {
+		if (pstate->pread == nullptr)
 			return NULL;
-		}
 		if (!pstate->pread->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
@@ -143,18 +135,16 @@ TPROPVAL_ARRAY *ics_state::serialize()
 	};
 	auto pstate = this;
 	std::unique_ptr<TPROPVAL_ARRAY, mdel> pproplist(tpropval_array_init());
-	if (NULL == pproplist) {
+	if (pproplist == nullptr)
 		return NULL;
-	}
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		ICS_STATE_HIERARCHY_DOWN == pstate->type ||
 		(ICS_STATE_CONTENTS_UP == pstate->type &&
 	    !pstate->pgiven->empty())) {
 		auto pbin = pstate->pgiven->serialize();
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return NULL;
-		}
 		if (pproplist->set(MetaTagIdsetGiven1, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			return NULL;
