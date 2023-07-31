@@ -148,9 +148,8 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	*prow_count = rcpts.count;
 	if (rcpts.count > 0) {
 		*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
-		if (NULL == *pprecipient_row) {
+		if (*pprecipient_row == nullptr)
 			return ecServerOOM;
-		}
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
 		if (!common_util_propvals_to_openrecipient(cpid,
@@ -231,9 +230,8 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
 	*ppmessage_id = cu_alloc<uint64_t>();
-	if (NULL == *ppmessage_id) {
+	if (*ppmessage_id == nullptr)
 		return ecServerOOM;
-	}
 	if (!exmdb_client::allocate_message_id(plogon->get_dir(),
 	    folder_id, *ppmessage_id))
 		return ecError;
@@ -286,9 +284,8 @@ ec_error_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto pvalue = propvals.get<uint64_t>(PidTagMid);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return ecError;
-	}
 	*pmessage_id = *pvalue;
 	auto err = pmessage->save();
 	if (err != ecSuccess)
@@ -325,9 +322,8 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 	TARRAY_SET tmp_set;
 	TPROPVAL_ARRAY *ppropvals;
 	
-	if (pproptags->count >= 0x7FEF || count >= 0x7FEF) {
+	if (pproptags->count >= 0x7FEF || count >= 0x7FEF)
 		return ecInvalidParam;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		switch (pproptags->pproptag[i]) {
 		case PR_ADDRTYPE:
@@ -352,20 +348,17 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 		return ecError;
 	tmp_set.count = count;
 	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
-	if (NULL == tmp_set.pparray) {
+	if (tmp_set.pparray == nullptr)
 		return ecServerOOM;
-	}
 	for (i=0; i<count; i++) {
 		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
-		if (NULL == ppropvals) {
+		if (ppropvals == nullptr)
 			return ecServerOOM;
-		}
 		if (NULL == prow[i].precipient_row) {
 			ppropvals->count = 1;
 			ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>();
-			if (NULL == ppropvals->ppropval) {
+			if (ppropvals->ppropval == nullptr)
 				return ecServerOOM;
-			}
 			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
@@ -396,9 +389,8 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 		return ecNotSupported;
 	if (!pmessage->read_recipients(row_id, 0xFE, &tmp_set))
 		return ecError;
-	if (0 == tmp_set.count) {
+	if (tmp_set.count == 0)
 		return ecNotFound;
-	}
 	for (i = 0; i < tmp_set.count; ++i) {
 		if (!common_util_propvals_to_readrecipient(pmessage->get_cpid(),
 		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
@@ -410,9 +402,8 @@ ec_error_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcoun
 			break;
 		}
 	}
-	if (0 == i) {
+	if (i == 0)
 		return ecBufferTooSmall;
-	}
 	*pcount = i;
 	return ecSuccess;
 }
@@ -468,14 +459,12 @@ ec_error_t rop_reloadcachedinformation(uint16_t reserved,
 		return ecError;
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
-	if (NULL == *pprecipient_row) {
+	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
-	}
-	for (size_t i = 0; i < rcpts.count; ++i) {
+	for (size_t i = 0; i < rcpts.count; ++i)
 		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
 		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
 			return ecServerOOM;
-	}
 	return ecSuccess;
 }
 
@@ -502,9 +491,8 @@ ec_error_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	if (!exmdb_client::get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return ecNotFound;
-	}
 	auto original_status = *static_cast<uint32_t *>(pvalue);
 	new_status = message_status & status_mask;
 	if (new_status & MSGSTATUS_IN_CONFLICT)
@@ -535,9 +523,8 @@ ec_error_t rop_getmessagestatus(uint64_t message_id, uint32_t *pmessage_status,
 	if (!exmdb_client::get_message_property(plogon->get_dir(), nullptr,
 	    CP_ACP, message_id, PR_MSG_STATUS, &pvalue))
 		return ecError;
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return ecNotFound;
-	}
 	*pmessage_status = *static_cast<uint32_t *>(pvalue);
 	return ecSuccess;
 }
@@ -631,10 +618,9 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 		return TRUE;
 	if (!exmdb_client::get_message_brief(dir, pinfo->cpid, message_id, &pbrief))
 		return FALSE;	
-	if (NULL != pbrief) {
+	if (pbrief != nullptr)
 		common_util_notify_receipt(plogon->get_account(),
 			NOTIFY_RECEIPT_READ, pbrief);
-	}
 	propvals.count = 2;
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
@@ -661,10 +647,9 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	b_partial = FALSE;
-	for (size_t i = 0; i < pmessage_ids->count; ++i) {
+	for (size_t i = 0; i < pmessage_ids->count; ++i)
 		if (!oxcmsg_setreadflag(plogon, pmessage_ids->pll[i], read_flags))
 			b_partial = TRUE;	
-	}
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;
 }
@@ -748,9 +733,8 @@ ec_error_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	if (pattachment == nullptr)
 		return ecError;
 	*pattachment_id = pattachment->get_attachment_num();
-	if (ATTACHMENT_NUM_INVALID == *pattachment_id) {
+	if (*pattachment_id == ATTACHMENT_NUM_INVALID)
 		return ecMaxAttachmentExceeded;
-	}
 	if (!pattachment->init_attachment())
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
@@ -930,14 +914,12 @@ ec_error_t rop_openembeddedmessage(uint16_t cpraw, uint8_t open_embedded_flags,
 		return ecError;
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
-	if (NULL == *pprecipient_row) {
+	if (*pprecipient_row == nullptr)
 		return ecServerOOM;
-	}
-	for (size_t i = 0; i < rcpts.count; ++i) {
+	for (size_t i = 0; i < rcpts.count; ++i)
 		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
 		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
 			return ecServerOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, {ems_objtype::message, std::move(pmessage)});
 	if (hnd < 0)

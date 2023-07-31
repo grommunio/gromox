@@ -56,9 +56,8 @@ void notify_response_free(NOTIFY_RESPONSE *pnotify)
 	if (pnotify->notification_data.pproptags != nullptr &&
 	    pnotify->notification_data.pproptags->pproptag != nullptr)
 		free(pnotify->notification_data.pproptags->pproptag);
-	if (NULL != pnotify->notification_data.pstr_class) {
+	if (pnotify->notification_data.pstr_class != nullptr)
 		free(pnotify->notification_data.pstr_class);
-	}
 	free(pnotify);
 }
 
@@ -78,9 +77,8 @@ static BOOL notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 	pnotify->notification_data.punicode_flag = &pmemory->unicode_flag;
 	pmemory->unicode_flag = !!b_unicode;
 	pnotify->notification_data.pstr_class = strdup(pmessage_class);
-	if (NULL == pnotify->notification_data.pstr_class) {
+	if (pnotify->notification_data.pstr_class == nullptr)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -101,9 +99,8 @@ static BOOL notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
 		return TRUE;
 	}
 	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (NULL == pmemory->proptags.pproptag) {
+	if (pmemory->proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
 		sizeof(uint32_t)*pproptags->count);
 	return TRUE;
@@ -126,9 +123,8 @@ static BOOL notify_response_specify_message_created(NOTIFY_RESPONSE *pnotify,
 		return TRUE;
 	}
 	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (NULL == pmemory->proptags.pproptag) {
+	if (pmemory->proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
 		sizeof(uint32_t)*pproptags->count);
 	return TRUE;
@@ -156,9 +152,8 @@ static BOOL notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
 		return TRUE;
 	}
 	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (NULL == pmemory->proptags.pproptag) {
+	if (pmemory->proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
 		sizeof(uint32_t)*pproptags->count);
 	return TRUE;
@@ -236,9 +231,8 @@ static BOOL notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnotify,
 		return TRUE;
 	}
 	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (NULL == pmemory->proptags.pproptag) {
+	if (pmemory->proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
 		sizeof(uint32_t)*pproptags->count);
 	return TRUE;
@@ -261,9 +255,8 @@ static BOOL notify_response_specify_message_modified(NOTIFY_RESPONSE *pnotify,
 		return TRUE;
 	}
 	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (NULL == pmemory->proptags.pproptag) {
+	if (pmemory->proptags.pproptag == nullptr)
 		return FALSE;
-	}
 	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
 		sizeof(uint32_t)*pproptags->count);
 	return TRUE;

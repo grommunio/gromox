@@ -39,9 +39,8 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecNotSupported;
 	replid = rop_util_get_replid(folder_id);
 	if (plogon->is_private()) {
-		if (1 != replid) {
+		if (replid != 1)
 			return ecInvalidParam;
-		}
 	} else {
 		if (1 != replid) {
 			*phas_rules = 0;
@@ -77,14 +76,12 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		if (permission == rightsNone) {
 			fid_val = rop_util_get_gc_value(folder_id);
 			if (plogon->is_private()) {
-				if (PRIVATE_FID_ROOT == fid_val ||
-					PRIVATE_FID_IPMSUBTREE == fid_val) {
+				if (fid_val == PRIVATE_FID_ROOT ||
+				    fid_val == PRIVATE_FID_IPMSUBTREE)
 					permission = frightsVisible;
-				}
 			} else {
-				if (PUBLIC_FID_ROOT == fid_val) {
+				if (fid_val == PUBLIC_FID_ROOT)
 					permission = frightsVisible;
-				}
 			}
 		}
 		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
@@ -162,17 +159,14 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		return ecNotSupported;
 	if (0 == use_unicode) {
 		if (common_util_convert_string(true, pfolder_name,
-			folder_name, sizeof(folder_name)) < 0) {
+		    folder_name, sizeof(folder_name)) < 0)
 			return ecInvalidParam;
-		}
 		if (common_util_convert_string(true, pfolder_comment,
-			folder_comment, sizeof(folder_comment)) < 0) {
+		    folder_comment, sizeof(folder_comment)) < 0)
 			return ecInvalidParam;
-		}
 	} else {
-		if (strlen(pfolder_name) >= sizeof(folder_name)) {
+		if (strlen(pfolder_name) >= sizeof(folder_name))
 			return ecInvalidParam;
-		}
 		strcpy(folder_name, pfolder_name);
 		gx_strlcpy(folder_comment, pfolder_comment, std::size(folder_comment));
 	}
@@ -218,28 +212,24 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		propval_buff[6].pvalue = &change_num;
 		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
-		if (NULL == propval_buff[7].pvalue) {
+		if (propval_buff[7].pvalue == nullptr)
 			return ecServerOOM;
-		}
 		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		propval_buff[8].pvalue = common_util_pcl_append(
 		                         NULL, static_cast<BINARY *>(propval_buff[7].pvalue));
-		if (NULL == propval_buff[8].pvalue) {
+		if (propval_buff[8].pvalue == nullptr)
 			return ecServerOOM;
-		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (!exmdb_client::create_folder_by_properties(plogon->get_dir(),
 		    pinfo->cpid, &tmp_propvals, &folder_id))
 			return ecError;
-		if (0 == folder_id) {
+		if (folder_id == 0)
 			return ecError;
-		}
 		if (plogon->logon_mode != logon_mode::owner) {
 			pentryid = common_util_username_to_addressbook_entryid(
 												rpc_info.username);
-			if (NULL == pentryid) {
+			if (pentryid == nullptr)
 				return ecServerOOM;
-			}
 			tmp_id = 1;
 			permission = rightsGromox7;
 			permission_row.flags = ROW_ADD;
@@ -294,14 +284,12 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	if (plogon == nullptr)
 		return ecError;
 	 if (plogon->is_private()) {
-		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
+		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM)
 			return ecAccessDenied;
-		}
 	} else {
-		if (1 == rop_util_get_replid(folder_id) &&
-			rop_util_get_gc_value(folder_id) < PUBLIC_FID_CUSTOM) {
+		if (rop_util_get_replid(folder_id) == 1 &&
+		    rop_util_get_gc_value(folder_id) < PUBLIC_FID_CUSTOM)
 			return ecAccessDenied;
-		}
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto rpc_info = get_rpc_info();
@@ -398,9 +386,8 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 		if (!exmdb_client::get_search_criteria(plogon->get_dir(),
 		    pfolder->folder_id, &search_status, nullptr, nullptr))
 			return ecError;
-		if (SEARCH_STATUS_NOT_INITIALIZED == search_status) {
+		if (search_status == SEARCH_STATUS_NOT_INITIALIZED)
 			return ecNotInitialized;
-		}
 		if (!(search_flags & RESTART_SEARCH) && pres == nullptr &&
 		    pfolder_ids->count == 0)
 			/* stop static search folder has no meaning,
@@ -409,9 +396,8 @@ ec_error_t rop_setsearchcriteria(RESTRICTION *pres,
 			return ecSuccess;
 	}
 	for (size_t i = 0; i < pfolder_ids->count; ++i) {
-		if (1 != rop_util_get_replid(pfolder_ids->pll[i])) {
+		if (rop_util_get_replid(pfolder_ids->pll[i]) != 1)
 			return ecSearchFolderScopeViolation;
-		}
 		if (plogon->logon_mode != logon_mode::owner) {
 			if (!exmdb_client::get_folder_perm(plogon->get_dir(),
 			    pfolder_ids->pll[i], rpc_info.username, &permission))
@@ -554,13 +540,11 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		return ecError;
 	if (0 == use_unicode) {
 		if (common_util_convert_string(true, pnew_name,
-			new_name, sizeof(new_name)) < 0) {
+		    new_name, sizeof(new_name)) < 0)
 			return ecInvalidParam;
-		}
 	} else {
-		if (strlen(pnew_name) >= sizeof(new_name)) {
+		if (strlen(pnew_name) >= sizeof(new_name))
 			return ecInvalidParam;
-		}
 		strcpy(new_name, pnew_name);
 	}
 	auto rpc_info = get_rpc_info();
@@ -596,13 +580,11 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	    pbin_pcl == nullptr)
 		return ecError;
 	auto pbin_changekey = cu_xid_to_bin({plogon->guid(), change_num});
-	if (NULL == pbin_changekey) {
+	if (pbin_changekey == nullptr)
 		return ecError;
-	}
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
-	if (NULL == pbin_pcl) {
+	if (pbin_pcl == nullptr)
 		return ecError;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::movecopy_folder(dir,
 	    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
@@ -658,13 +640,11 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 		return ecError;
 	if (0 == use_unicode) {
 		if (common_util_convert_string(true, pnew_name,
-			new_name, sizeof(new_name)) < 0) {
+		    new_name, sizeof(new_name)) < 0)
 			return ecInvalidParam;
-		}
 	} else {
-		if (strlen(pnew_name) >= sizeof(new_name)) {
+		if (strlen(pnew_name) >= sizeof(new_name))
 			return ecInvalidParam;
-		}
 		strcpy(new_name, pnew_name);
 	}
 	auto rpc_info = get_rpc_info();
@@ -726,10 +706,9 @@ static ec_error_t oxcfold_emptyfolder(unsigned int flags,
 		/* just like Exchange 2013 or later */
 		return ecNotSupported;
 	auto fid_val = rop_util_get_gc_value(pfolder->folder_id);
-	if (PRIVATE_FID_ROOT == fid_val ||
-		PRIVATE_FID_IPMSUBTREE == fid_val) {
+	if (fid_val == PRIVATE_FID_ROOT ||
+	    fid_val == PRIVATE_FID_IPMSUBTREE)
 		return ecAccessDenied;
-	}
 	username = NULL;
 	auto dir = plogon->get_dir();
 	if (plogon->logon_mode != logon_mode::owner) {
@@ -816,9 +795,8 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	b_partial = FALSE;
 	ids.count = 0;
 	ids.pids = cu_alloc<uint64_t>(pmessage_ids->count);
-	if (NULL == ids.pids) {
+	if (ids.pids == nullptr)
 		return ecError;
-	}
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (NULL != username) {
 			if (!exmdb_client::check_message_owner(dir,
@@ -846,10 +824,9 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 				return ecError;
 		}
 		ids.pids[ids.count++] = pmessage_ids->pll[i];
-		if (NULL != pbrief) {
+		if (pbrief != nullptr)
 			common_util_notify_receipt(dir,
 				NOTIFY_RECEIPT_NON_READ, pbrief);
-		}
 	}
 	if (!exmdb_client::delete_messages(dir, plogon->account_id,
 	    pinfo->cpid, username, pfolder->folder_id, &ids, b_hard, &b_partial1))
@@ -882,10 +859,9 @@ ec_error_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 	ems_objtype object_type;
 	
 	if (table_flags & (~(TABLE_FLAG_DEPTH | MAPI_DEFERRED_ERRORS |
-		TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
-		TABLE_FLAG_USEUNICODE | TABLE_FLAG_SUPPRESSNOTIFICATIONS))) {
+	    TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
+	    TABLE_FLAG_USEUNICODE | TABLE_FLAG_SUPPRESSNOTIFICATIONS)))
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -936,16 +912,14 @@ ec_error_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 		    (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS))
 			b_conversation = TRUE;
 	} else {
-		if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
+		if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)
 			b_conversation = TRUE;
-		}
 	}
 	if (!b_conversation && (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS))
 		return ecInvalidParam;
 	if (table_flags & TABLE_FLAG_ASSOCIATED) {
-		if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
+		if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)
 			return ecInvalidParam;
-		}
 		b_fai = TRUE;
 	} else {
 		b_fai = FALSE;

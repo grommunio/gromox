@@ -83,9 +83,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 			pstream->content_bin.cb = 0;
 			pstream->content_bin.pv =
 				malloc(STREAM_INIT_BUFFER_LENGTH);
-			if (pstream->content_bin.pv == nullptr) {
+			if (pstream->content_bin.pv == nullptr)
 				return NULL;
-			}
 			return pstream;
 		}
 	}
@@ -95,27 +94,24 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		auto bv = static_cast<BINARY *>(pvalue);
 		pstream->content_bin.cb = bv->cb;
 		pstream->content_bin.pv = malloc(bv->cb);
-		if (pstream->content_bin.pv == nullptr) {
+		if (pstream->content_bin.pv == nullptr)
 			return NULL;
-		}
 		memcpy(pstream->content_bin.pv, bv->pv, bv->cb);
 		return pstream;
 	}
 	case PT_STRING8:
 		pstream->content_bin.cb = strlen(static_cast<char *>(pvalue)) + 1;
 		pstream->content_bin.pv = malloc(pstream->content_bin.cb);
-		if (pstream->content_bin.pv == nullptr) {
+		if (pstream->content_bin.pv == nullptr)
 			return NULL;
-		}
 		memcpy(pstream->content_bin.pv, static_cast<BINARY *>(pvalue)->pv,
 		       pstream->content_bin.cb);
 		return pstream;
 	case PT_UNICODE: {
 		auto buff_len = utf8_to_utf16_len(static_cast<char *>(pvalue));
 		pstream->content_bin.pv = malloc(buff_len);
-		if (pstream->content_bin.pv == nullptr) {
+		if (pstream->content_bin.pv == nullptr)
 			return NULL;
-		}
 		auto utf16_len = utf8_to_utf16le(static_cast<char *>(pvalue),
 			pstream->content_bin.pb, buff_len);
 		if (utf16_len < 2) {
@@ -134,9 +130,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 uint32_t stream_object::read(void *pbuff, uint32_t buf_len)
 {
 	auto pstream = this;
-	if (pstream->content_bin.cb <= pstream->seek_ptr) {
+	if (pstream->content_bin.cb <= pstream->seek_ptr)
 		return 0;
-	}
 	auto length = std::min(buf_len, pstream->content_bin.cb - pstream->seek_ptr);
 	memcpy(pbuff, pstream->content_bin.pb + pstream->seek_ptr, length);
 	pstream->seek_ptr += length;
@@ -149,9 +144,8 @@ std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_l
 	if (pstream->open_flags == MAPI_READONLY)
 		return {0, STG_E_ACCESSDENIED};
 	if (pstream->content_bin.cb >= pstream->max_length &&
-		pstream->seek_ptr >= pstream->content_bin.cb) {
+	    pstream->seek_ptr >= pstream->content_bin.cb)
 		return {0, ecTooBig};
-	}
 	int8_t clamped = 0;
 	auto newpos = safe_add_s(pstream->seek_ptr, buf_len, &clamped);
 	if (clamped >= 1)
@@ -189,9 +183,8 @@ void *stream_object::get_content()
 	case PT_UNICODE:
 		length = 2*pstream->content_bin.cb;
 		pcontent = common_util_alloc(length);
-		if (NULL == pcontent) {
+		if (pcontent == nullptr)
 			return NULL;
-		}
 		if (!utf16le_to_utf8(pstream->content_bin.pb,
 		    pstream->content_bin.cb, static_cast<char *>(pcontent), length))
 			return NULL;
@@ -207,20 +200,17 @@ ec_error_t stream_object::set_length(uint32_t length)
 	if (pstream->open_flags == MAPI_READONLY)
 		return STG_E_ACCESSDENIED;
 	if (length > pstream->content_bin.cb) {
-		if (length > pstream->max_length) {
+		if (length > pstream->max_length)
 			return ecStreamSizeError;
-		}
 		auto pdata = gromox::re_alloc<uint8_t>(pstream->content_bin.pb, length);
-		if (NULL == pdata) {
+		if (pdata == nullptr)
 			return ecServerOOM;
-		}
 		pstream->content_bin.pb = pdata;
 		memset(pstream->content_bin.pb + pstream->content_bin.cb,
 							0, length - pstream->content_bin.cb);
 	} else {
-		if (pstream->seek_ptr > length) {
+		if (pstream->seek_ptr > length)
 			pstream->seek_ptr = length;
-		}
 	}
 	pstream->content_bin.cb = length;
 	pstream->b_touched = TRUE;
@@ -263,16 +253,12 @@ BOOL stream_object::copy(stream_object *pstream_src, uint32_t *plength)
 		*plength = 0;
 		return TRUE;
 	}
-	if (pstream_src->seek_ptr + *plength >
-		pstream_src->content_bin.cb) {
+	if (pstream_src->seek_ptr + *plength > pstream_src->content_bin.cb)
 		*plength = pstream_src->content_bin.cb -
 							pstream_src->seek_ptr;
-	}
-	if (pstream_dst->seek_ptr + *plength >
-		pstream_dst->max_length) {
+	if (pstream_dst->seek_ptr + *plength > pstream_dst->max_length)
 		*plength = pstream_dst->max_length -
 						pstream_dst->seek_ptr;
-	}
 	if (pstream_dst->seek_ptr + *plength > pstream_dst->content_bin.cb &&
 	    !pstream_dst->set_length(pstream_dst->seek_ptr + *plength))
 		return FALSE;
@@ -302,9 +288,8 @@ BOOL stream_object::commit()
 	propvals.ppropval = &propval;
 	propval.proptag = pstream->proptag;
 	propval.pvalue = get_content();
-	if (NULL == propval.pvalue) {
+	if (propval.pvalue == nullptr)
 		return FALSE;
-	}
 	if (!static_cast<folder_object *>(pstream->pparent)->set_properties(&propvals, &problems) ||
 	    problems.count > 0)
 		return FALSE;
@@ -315,9 +300,8 @@ BOOL stream_object::commit()
 stream_object::~stream_object()
 {
 	auto pstream = this;
-	if (NULL == pstream->content_bin.pb) {
+	if (pstream->content_bin.pb == nullptr)
 		return;
-	}
 	switch (pstream->object_type) {
 	case ems_objtype::folder:
 		if (pstream->b_touched)

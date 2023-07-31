@@ -32,9 +32,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	auto rpc_info = get_rpc_info();
 	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
 		auto pdomain = strchr(rpc_info.username, '@');
-		if (NULL == pdomain) {
+		if (pdomain == nullptr)
 			return ecUnknownUser;
-		}
 		pdomain ++;
 		common_util_domain_to_essdn(pdomain, pessdn, dnmax);
 		return ecWrongServer;
@@ -45,9 +44,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (!common_util_get_id_from_username(username, &user_id))
 		return ecUnknownUser;
 	if (0 != strcasecmp(username, rpc_info.username)) {
-		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE) {
+		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)
 			return ecLoginPerm;
-		}
 		if (!common_util_get_maildir(username, maildir, std::size(maildir)))
 			return ecError;
 		if (!exmdb_client::get_mbox_perm(maildir,
@@ -150,9 +148,8 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecLoginFailure;
 	auto rpc_info = get_rpc_info();
 	pdomain = strchr(rpc_info.username, '@');
-	if (NULL == pdomain) {
+	if (pdomain == nullptr)
 		return ecUnknownUser;
-	}
 	pdomain ++;
 	unsigned int domain_id = 0, org_id = 0;
 	if (!common_util_get_domain_ids(pdomain, &domain_id, &org_id))
@@ -160,15 +157,13 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	if (NULL != pessdn) {
 		pdomain1 = common_util_essdn_to_domain(pessdn);
 		if (NULL != pdomain1 && 0 != strcasecmp(pdomain, pdomain1)) {
-			if (0 == org_id) {
+			if (org_id == 0)
 				return ecLoginFailure;
-			}
 			unsigned int domain_id1 = 0, org_id1 = 0;
 			if (!common_util_get_domain_ids(pdomain1, &domain_id1, &org_id1))
 				return ecError;
-			if (org_id != org_id1) {
+			if (org_id != org_id1)
 				return ecLoginFailure;
-			}
 			domain_id = domain_id1;
 			pdomain = pdomain1;
 		}
@@ -199,9 +194,8 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	if (!exmdb_client::get_store_property(homedir, CP_ACP,
 	    PR_STORE_RECORD_KEY, &pvalue))
 		return ecError;
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return ecError;
-	}
 	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	auto plogon = logon_object::create(logon_flags, open_flags,
 	              logon_mode::guest, domain_id, pdomain, homedir, mailbox_guid);
@@ -246,13 +240,11 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	auto ret = cu_validate_msgclass(pstr_class);
 	if (ret != ecSuccess)
 		return ret;
-	if ('\0' == pstr_class[0] && 0 == folder_id) {
+	if (*pstr_class == '\0' && folder_id == 0)
 		return ecError;
-	}
-	if (0 == strcasecmp(pstr_class, "IPM") ||
-		0 == strcasecmp(pstr_class, "REPORT.IPM")) {
+	if (strcasecmp(pstr_class, "IPM") == 0 ||
+	    strcasecmp(pstr_class, "REPORT.IPM") == 0)
 		return ecAccessDenied;
-	}
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
@@ -264,9 +256,8 @@ ec_error_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 		if (!exmdb_client::get_folder_property(plogon->get_dir(),
 		    CP_ACP, folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return ecNotFound;
-		}
 		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			return ecNotSupported;
 	}
@@ -299,19 +290,16 @@ ec_error_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 		return ecNotSupported;
 	if (!exmdb_client::get_folder_class_table(plogon->get_dir(), &class_table))
 		return ecError;
-	if (0 == class_table.count) {
+	if (class_table.count == 0)
 		return ecNoReceiveFolder;
-	}
 	prows->count = class_table.count;
 	prows->prows = cu_alloc<PROPERTY_ROW>(class_table.count);
-	if (NULL == prows->prows) {
+	if (prows->prows == nullptr)
 		return ecServerOOM;
-	}
-	for (size_t i = 0; i < class_table.count; ++i) {
+	for (size_t i = 0; i < class_table.count; ++i)
 		if (!common_util_propvals_to_row(class_table.pparray[i],
 		    &columns, &prows->prows[i]))
 			return ecServerOOM;
-	}
 	return ecSuccess;
 }
 
@@ -341,9 +329,8 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	pghost->server_count = 1;
 	pghost->cheap_server_count = 1;
 	pghost->ppservers = cu_alloc<char *>();
-	if (NULL == pghost->ppservers) {
+	if (pghost->ppservers == nullptr)
 		return ecServerOOM;
-	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {
 		if (!exmdb_client::get_mapping_guid(plogon->get_dir(), replid,
@@ -352,9 +339,8 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 		if (!b_found)
 			return ecNotFound;
 		auto domain_id = rop_util_get_domain_id(guid);
-		if (-1 == domain_id) {
+		if (domain_id == -1)
 			return ecNotFound;
-		}
 		if (domain_id != plogon->account_id &&
 		    !common_util_check_same_org(domain_id, plogon->account_id))
 			return ecNotFound;
@@ -363,9 +349,8 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	}
 	static constexpr size_t dnmax = 256;
 	pghost->ppservers[0] = cu_alloc<char>(dnmax);
-	if (NULL == pghost->ppservers[0]) {
+	if (pghost->ppservers[0] == nullptr)
 		return ecServerOOM;
-	}
 	common_util_domain_to_essdn(plogon->get_account(), pghost->ppservers[0], dnmax);
 	return ecSuccess;
 }
@@ -391,9 +376,8 @@ ec_error_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
 		return ecSuccess;
 	}
 	*ppghost = cu_alloc<GHOST_SERVER>();
-	if (NULL == *ppghost) {
+	if (*ppghost == nullptr)
 		return ecServerOOM;
-	}
 	return rop_getowningservers(folder_id,
 			*ppghost, plogmap, logon_id, hin);
 }
@@ -418,9 +402,8 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 		 * check, and that "table" has an implicit entry with
 		 * replid{1} <=> replguid{user_guid}.
 		 */
-		if (1 != rop_util_get_replid(id)) {
+		if (rop_util_get_replid(id) != 1)
 			return ecInvalidParam;
-		}
 		plong_term_id->guid = rop_util_make_user_guid(plogon->account_id);
 	} else {
 		replid = rop_util_get_replid(id);
@@ -465,9 +448,8 @@ ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid
 		return ecSuccess;
 	}
 	auto domain_id = rop_util_get_domain_id(plong_term_id->guid);
-	if (-1 == domain_id) {
+	if (domain_id == -1)
 		return ecInvalidParam;
-	}
 	if (domain_id == plogon->account_id) {
 		replid = 1;
 	} else {

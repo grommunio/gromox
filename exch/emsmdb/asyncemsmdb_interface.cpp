@@ -233,9 +233,8 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 	if (iter == g_tag_hash.cend())
 		return;
 	auto pwait = iter->second;
-	if (0 != pwait->async_id) {
+	if (pwait->async_id != 0)
 		g_async_hash.erase(pwait->async_id);
-	}
 	g_tag_hash.erase(iter);
 	as_hold.unlock();
 	g_wait_allocator.put(pwait);
@@ -267,9 +266,8 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 		return;
 	auto pwait = iter->second;
 	g_tag_hash.erase(iter);
-	if (0 != pwait->async_id) {
+	if (pwait->async_id != 0)
 		g_async_hash.erase(pwait->async_id);
-	}
 	as_hold.unlock();
 	std::unique_lock ll_hold(g_list_lock);
 	double_list_append_as_tail(&g_wakeup_list, &pwait->node);
@@ -292,9 +290,8 @@ static void *aemsi_thrwork(void *param)
 		std::unique_lock ll_hold(g_list_lock);
 		pnode = double_list_pop_front(&g_wakeup_list);
 		ll_hold.unlock();
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			continue;
-		}
 		asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), TRUE);
 		goto NEXT_WAKEUP;
 	}

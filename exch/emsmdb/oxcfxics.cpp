@@ -430,9 +430,8 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 		}
 	}
 	pmids = eid_array_init();
-	if (NULL == pmids) {
+	if (pmids == nullptr)
 		return ecServerOOM;
-	}
 	if (!eid_array_batch_append(pmids, pmessage_ids->count,
 	    pmessage_ids->pll)) {
 		eid_array_free(pmids);
