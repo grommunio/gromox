@@ -10,6 +10,7 @@ function mapi_createoneoff(?string $displayname, string $type, string $address, 
 function mapi_parseoneoff(string $entryid) : array|false {}
 function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null) : resource|false {}
 function mapi_logon_ex(string $username, string $password, int $flags) : resource|false {}
+function mapi_logon_token(string $token) : resource|false {}
 function mapi_getmsgstorestable(resource $session) : resource|false {}
 function mapi_openmsgstore(resource $ses, string $entryid) : resource|false {}
 function mapi_openprofilesection(resource $ses, string $uid) : resource|false {}

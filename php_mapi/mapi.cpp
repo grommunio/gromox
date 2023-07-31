@@ -710,6 +710,27 @@ static ZEND_FUNCTION(mapi_logon_ex)
 	MAPI_G(hr) = ecSuccess;
 }
 
+static ZEND_FUNCTION(mapi_logon_token)
+{
+	ZCL_MEMORY;
+	char *token = nullptr;
+	size_t token_len = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &token, &token_len) == FAILURE ||
+	    token == nullptr)
+		pthrow(ecInvalidParam);
+	auto rsrc = st_malloc<MAPI_RESOURCE>();
+	if (rsrc == nullptr)
+		pthrow(ecMAPIOOM);
+	auto result = zclient_logon_token(token, &rsrc->hsession);
+	if (result != ecSuccess)
+		pthrow(result);
+	rsrc->type = zs_objtype::session;
+	rsrc->hobject = 0;
+	RETVAL_RG(rsrc, le_mapi_session);
+	MAPI_G(hr) = ecSuccess;
+}
+
 static ZEND_FUNCTION(mapi_openentry)
 {
 	ZCL_MEMORY;
@@ -4383,6 +4404,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_prop_tag)
 	F(mapi_createoneoff)
 	F(mapi_parseoneoff)
+	F(mapi_logon_token)
 	F(mapi_logon_zarafa)
 	F(mapi_logon_ex)
 	F(mapi_getmsgstorestable)

@@ -5,6 +5,16 @@
 #include "ext.hpp"
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon_token &d)
+{
+	return x.p_str(d.token);
+}
+
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_logon_token &d)
+{
+	return x.g_guid(&d.hsession);
+}
+
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon &d)
 {
 	TRY(x.p_str(d.username));
@@ -23,7 +33,6 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_logon &d)
 	TRY(x.g_guid(&d.hsession));
 	return pack_result::ok;
 }
-
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_checksession &d)
 {
 	TRY(x.p_guid(d.hsession));
@@ -1202,6 +1211,7 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	E(linkmessage)
 	E(imtomessage2)
 	E(essdn_to_username)
+	E(logon_token)
 #undef E
 	default:
 		return pack_result::bad_switch;
@@ -1314,6 +1324,7 @@ pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	E(getuseravailability)
 	E(imtomessage2)
 	E(essdn_to_username)
+	E(logon_token)
 #undef E
 	default:
 		return pack_result::bad_switch;
