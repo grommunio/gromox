@@ -189,16 +189,16 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	for (i=0; i<propvals.count; i++) {
 		auto tmp_size = propval_size_xfer(PROP_TYPE(propvals.ppropval[i].proptag),
 		                propvals.ppropval[i].pvalue);
-		if (tmp_size >= 0x8000) {
-			propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
-			propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
-			if (NULL == propvals.ppropval[i].pvalue) {
-				return ecServerOOM;
-			}
-			*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
+		if (tmp_size < 0x8000) {
+			total_size += tmp_size;
 			continue;
 		}
-		total_size += tmp_size;
+		propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
+		propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
+		if (NULL == propvals.ppropval[i].pvalue) {
+			return ecServerOOM;
+		}
+		*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
 	}
 	if (total_size >= 0x7000) {
 		for (i=0; i<propvals.count; i++) {
@@ -208,14 +208,14 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 			case PT_OBJECT:
 			case PT_STRING8:
 			case PT_UNICODE:
-				if (propval_size_xfer(proptype, propvals.ppropval[i].pvalue) >= 0x1000) {
-					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
-					propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
-					if (NULL == propvals.ppropval[i].pvalue) {
-						return ecServerOOM;
-					}
-					*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
+				if (propval_size_xfer(proptype, propvals.ppropval[i].pvalue) < 0x1000)
+					break;
+				propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
+				propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
+				if (NULL == propvals.ppropval[i].pvalue) {
+					return ecServerOOM;
 				}
+				*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
 				break;
 			}
 		}
@@ -252,14 +252,14 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
-				ppropvals->ppropval[i].pvalue) > size_limit) {
-				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
-				ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[i].pvalue) {
-					return ecServerOOM;
-				}
-				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
+			    ppropvals->ppropval[i].pvalue) <= size_limit)
+				continue;
+			ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
+			ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
+			if (NULL == ppropvals->ppropval[i].pvalue) {
+				return ecServerOOM;
 			}
+			*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
@@ -279,14 +279,14 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
-				ppropvals->ppropval[i].pvalue) > size_limit) {
-				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
-				ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
-				if (NULL == ppropvals->ppropval[i].pvalue) {
-					return ecServerOOM;
-				}
-				*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
+			    ppropvals->ppropval[i].pvalue) <= size_limit)
+				continue;
+			ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
+			ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
+			if (NULL == ppropvals->ppropval[i].pvalue) {
+				return ecServerOOM;
 			}
+			*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
@@ -656,13 +656,13 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!fldsrc->get_properties(&proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (!propvals.has(proptags.pproptag[i])) {
-				pproblems->pproblem[pproblems->count].index =
-										poriginal_indices[i];
-				pproblems->pproblem[pproblems->count].proptag = 
-										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count++].err = ecNotFound;
-			}
+			if (propvals.has(proptags.pproptag[i]))
+				continue;
+			pproblems->pproblem[pproblems->count].index =
+				poriginal_indices[i];
+			pproblems->pproblem[pproblems->count].proptag =
+				pproptags->pproptag[i];
+			pproblems->pproblem[pproblems->count++].err = ecNotFound;
 		}
 		if (!flddst->set_properties(&propvals, &tmp_problems))
 			return ecError;
@@ -721,13 +721,13 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!msgsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (!propvals.has(proptags.pproptag[i])) {
-				pproblems->pproblem[pproblems->count].index =
-										poriginal_indices[i];
-				pproblems->pproblem[pproblems->count].proptag = 
-										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count++].err = ecNotFound;
-			}
+			if (propvals.has(proptags.pproptag[i]))
+				continue;
+			pproblems->pproblem[pproblems->count].index =
+				poriginal_indices[i];
+			pproblems->pproblem[pproblems->count].proptag =
+				pproptags->pproptag[i];
+			pproblems->pproblem[pproblems->count++].err = ecNotFound;
 		}
 		if (!msgdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
@@ -764,13 +764,13 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!atsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (!propvals.has(proptags.pproptag[i])) {
-				pproblems->pproblem[pproblems->count].index =
-										poriginal_indices[i];
-				pproblems->pproblem[pproblems->count].proptag = 
-										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count++].err = ecNotFound;
-			}
+			if (propvals.has(proptags.pproptag[i]))
+				continue;
+			pproblems->pproblem[pproblems->count].index =
+				poriginal_indices[i];
+			pproblems->pproblem[pproblems->count].proptag =
+				pproptags->pproptag[i];
+			pproblems->pproblem[pproblems->count++].err = ecNotFound;
 		}
 		if (!atdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
