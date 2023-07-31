@@ -217,6 +217,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			hhold.lock();
 			--pdb->reference;
 			hhold.unlock();
+			mlog(LV_DEBUG, "D-2207: rejecting access to %s because of DB contention", path);
 			return NULL;
 		}
 		return db_item_ptr(pdb);

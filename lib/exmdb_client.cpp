@@ -497,8 +497,16 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 		return false;
 	conn->last_time = time(nullptr);
 	conn.reset();
-	if (bin.cb < 5 || bin.pb == nullptr ||
-	    static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success) {
+	if (bin.pb == nullptr)
+		return false;
+	if (bin.cb == 1) {
+		fprintf(stderr, "%s: %s\n", __func__,
+			exmdb_rpc_strerror(static_cast<exmdb_response>(bin.pb[0])));
+		exmdb_rpc_free(bin.pb);
+		return false;
+	}
+	if (bin.cb < 5) {
+		/* Malformed packet? */
 		exmdb_rpc_free(bin.pb);
 		return false;
 	}
