@@ -1017,9 +1017,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC_A:
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag = proptag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, proptag, ecAccessDenied);
 			continue;
 		default:
 			break;
@@ -1240,9 +1238,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 		proptag = pattctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
 		case PR_RECORD_KEY:
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag = proptag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, proptag, ecAccessDenied);
 			continue;
 		}
 		if (!b_force) {
@@ -2246,9 +2242,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC_A:
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag = tag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		case PR_READ: {
 			if (*static_cast<uint8_t *>(pproperties->ppropval[i].pvalue) == 0)
@@ -2264,9 +2258,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			continue;
 		case PR_MESSAGE_FLAGS: {
 			if (!pinstance->b_new) {
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag = tag;
-				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+				pproblems->emplace_back(i, tag, ecAccessDenied);
 				continue;
 			}
 			auto message_flags = *static_cast<uint32_t *>(pproperties->ppropval[i].pvalue);
@@ -2388,9 +2380,7 @@ static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
 		case ID_TAG_ATTACHDATAOBJECT:
 		case PR_ATTACH_NUM:
 		case PR_RECORD_KEY:
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag = tag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		case PR_ATTACH_DATA_BIN:
 			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);

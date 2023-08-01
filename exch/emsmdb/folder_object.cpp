@@ -503,10 +503,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	auto pfolder = this;
 	for (i=0; i<ppropvals->count; i++) {
 		if (pfolder->is_readonly_prop(ppropvals->ppropval[i].proptag)) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-								ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count] =
 								ppropvals->ppropval[i];
@@ -572,14 +569,10 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (pfolder->is_readonly_prop(pproptags->pproptag[i])) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
-		} else {
+		if (pfolder->is_readonly_prop(pproptags->pproptag[i]))
+			pproblems->emplace_back(i, pproptags->pproptag[i], ecAccessDenied);
+		else
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
-		}
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

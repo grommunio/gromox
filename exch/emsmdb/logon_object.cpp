@@ -655,10 +655,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	auto plogon = this;
 	for (i=0; i<ppropvals->count; i++) {
 		if (lo_is_readonly_prop(plogon, ppropvals->ppropval[i].proptag)) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count] =
 									ppropvals->ppropval[i];
@@ -693,14 +690,10 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (lo_is_readonly_prop(plogon, pproptags->pproptag[i])) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
-		} else {
+		if (lo_is_readonly_prop(plogon, pproptags->pproptag[i]))
+			pproblems->emplace_back(i, pproptags->pproptag[i], ecAccessDenied);
+		else
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
-		}
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

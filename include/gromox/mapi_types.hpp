@@ -235,6 +235,9 @@ struct PROBLEM_ARRAY {
 	PROPERTY_PROBLEM *pproblem;
 
 	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
+	void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
+		pproblem[count++] = PROPERTY_PROBLEM(i, tag, err);
+	}
 	void transform(const uint16_t *);
 };
 

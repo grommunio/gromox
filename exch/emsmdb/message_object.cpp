@@ -1164,28 +1164,19 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		if (b_check) {
 			if (pmessage->is_readonly_prop(ppropvals->ppropval[i].proptag) ||
 			    message_object_check_stream_property(pmessage, ppropvals->ppropval[i].proptag)) {
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 				continue;
 			} else if (ppropvals->ppropval[i].proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
 				if (!exmdb_client::get_instance_property(dir,
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
 				if (pvb_disabled(pvalue)) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 					continue;
 				}
 				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb >
 				    g_max_extrule_len) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecMAPIOOM;
+					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecMAPIOOM);
 					continue;
 				}
 			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
@@ -1273,10 +1264,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	for (i=0; i<pproptags->count; i++) {
 		if (is_readonly_prop(pproptags->pproptag[i]) ||
 		    message_object_check_stream_property(pmessage, pproptags->pproptag[i])) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, pproptags->pproptag[i], ecAccessDenied);
 			continue;
 		}
 		tmp_proptags.pproptag[tmp_proptags.count] =

@@ -2980,20 +2980,14 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		return FALSE;
 	for (size_t i = 0; i < ppropvals->count; ++i) {
 		if (PROP_ID(ppropvals->ppropval[i].proptag) == PROP_ID(PR_NULL)) {
-			auto &e = pproblems->pproblem[pproblems->count++];
-			e.index = i;
-			e.proptag = ppropvals->ppropval[i].proptag;
-			e.err = ecInvalidParam;
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecInvalidParam);
 			mlog(LV_DEBUG, "D-1220: cu_set_properties called with PR_NULL");
 			continue;
 		}
 		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PT_OBJECT &&
 		    (table_type != MAPI_ATTACH ||
 		    ppropvals->ppropval[i].proptag != PR_ATTACH_DATA_OBJ)) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count++].err = ecError;
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 			continue;
 		}
 		switch (table_type) {
@@ -3010,10 +3004,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_ASSOC_CONTENT_COUNT:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 			case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 				continue;
 			}
 			break;
@@ -3035,10 +3026,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 			case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 				continue;
 			case PidTagChangeNumber:
 				common_util_set_folder_changenum(psqlite, id,
@@ -3062,10 +3050,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 					break;
 				if (tmp_id == 0 || tmp_id == id)
 					break;
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecDuplicateName;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecDuplicateName);
 				continue;
 			}
 			break;
@@ -3088,10 +3073,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_DISPLAY_CC_A:
 			case PR_DISPLAY_BCC_A:
 			case PidTagMidString: /* self-defined proptag */
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 				continue;
 			case PidTagChangeNumber:
 				common_util_set_message_changenum(psqlite, id,
@@ -3147,10 +3129,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			case PR_TRANSPORT_MESSAGE_HEADERS_A:
 				if (common_util_set_message_body(psqlite, cpid, id, &ppropvals->ppropval[i]))
 					continue;
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-					ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecError;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case ID_TAG_HTML: {
 				if (!g_inside_flush_instance)
@@ -3175,10 +3154,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				if (cu_set_object_cid_value(psqlite,
 				    table_type, id, &ppropvals->ppropval[i]))
 					continue;
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-					ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecError;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS: {
 				if (!g_inside_flush_instance)
@@ -3232,10 +3208,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 				if (cu_set_object_cid_value(psqlite,
 				    table_type, id, &ppropvals->ppropval[i]))
 					continue;
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-					ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecError;
+				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 				continue;
 			}
 			break;
@@ -3446,20 +3419,13 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 			break;
 		}
 		default:
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count++].err = ecNotSupported;
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecNotSupported);
 			sqlite3_reset(pstmt);
 			continue;
 		}
 		sqlite3_reset(pstmt);
-		if (SQLITE_DONE != s_result) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count++].err = ecError;
-		}
+		if (s_result != SQLITE_DONE)
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecError);
 	}
 	return TRUE;
 }

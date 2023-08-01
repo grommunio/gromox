@@ -379,10 +379,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		if (is_readonly_prop(ppropvals->ppropval[i].proptag) ||
 		    attachment_object_check_stream_property(
 			pattachment, ppropvals->ppropval[i].proptag)) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
 			continue;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
@@ -435,10 +432,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		if (is_readonly_prop(pproptags->pproptag[i]) ||
 		    attachment_object_check_stream_property(
 			pattachment, pproptags->pproptag[i])) {
-			pproblems->pproblem[pproblems->count].index = i;
-			pproblems->pproblem[pproblems->count].proptag =
-									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			pproblems->emplace_back(i, pproptags->pproptag[i], ecAccessDenied);
 			continue;
 		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
