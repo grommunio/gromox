@@ -627,8 +627,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			}
 			if (copy_flags & MAPI_NOREPLACE && proptags1.has(tag))
 				continue;
-			proptags.pproptag[proptags.count] = tag;
-			poriginal_indices[proptags.count++] = i;
+			poriginal_indices[proptags.count] = i;
+			proptags.emplace_back(tag);
 		}
 		if (!fldsrc->get_properties(&proptags, &propvals))
 			return ecError;
@@ -677,8 +677,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			}
 			if (copy_flags & MAPI_NOREPLACE && proptags1.has(tag))
 				continue;
-			proptags.pproptag[proptags.count] = tag;
-			poriginal_indices[proptags.count++] = i;
+			poriginal_indices[proptags.count] = i;
+			proptags.emplace_back(tag);
 		}
 		if (!msgsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
@@ -711,8 +711,8 @@ ec_error_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			}
 			if (copy_flags & MAPI_NOREPLACE && proptags1.has(tag))
 				continue;
-			proptags.pproptag[proptags.count] = tag;
-			poriginal_indices[proptags.count++] = i;
+			poriginal_indices[proptags.count] = i;
+			proptags.emplace_back(tag);
 		}
 		if (!atsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
@@ -820,7 +820,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 				continue;
 			if (!b_force && proptags1.has(proptags.pproptag[i]))
 				continue;
-			tmp_proptags.pproptag[tmp_proptags.count++] = proptags.pproptag[i];
+			tmp_proptags.emplace_back(proptags.pproptag[i]);
 		}
 		if (!fldsrc->get_properties(&tmp_proptags, &propvals))
 			return ecError;

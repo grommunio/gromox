@@ -55,34 +55,23 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	           &tmp_proptags.pproptag[tmp_proptags.count],
 	           pproptags->pproptag, [](uint32_t x) { return x < 0x80000000; });
 	pproptags->count = eop - pproptags->pproptag;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
+	for (auto t : {PR_ACCESS, PR_RIGHTS, PR_PARENT_ENTRYID, PR_PARENT_SOURCE_KEY})
+		pproptags->emplace_back(t);
 	if (!tmp_proptags.has(PR_SOURCE_KEY))
-		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
+		pproptags->emplace_back(PR_SOURCE_KEY);
 	if (!pfolder->plogon->is_private())
 		return TRUE;
 	if (!toplevel(pfolder->folder_id))
 		return TRUE;
-	if (!tmp_proptags.has(PR_IPM_DRAFTS_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_CONTACT_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_APPOINTMENT_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_JOURNAL_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_NOTE_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-	if (!tmp_proptags.has(PR_IPM_TASK_ENTRYID))
-		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-	if (!tmp_proptags.has(PR_FREEBUSY_ENTRYIDS))
-		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS))
-		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS_EX))
-		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
+	static constexpr uint32_t tags2[] = {
+		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
+		PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_JOURNAL_ENTRYID,
+		PR_IPM_NOTE_ENTRYID, PR_IPM_TASK_ENTRYID, PR_FREEBUSY_ENTRYIDS,
+		PR_ADDITIONAL_REN_ENTRYIDS, PR_ADDITIONAL_REN_ENTRYIDS_EX,
+	};
+	for (auto t : tags2)
+		if (!tmp_proptags.has(t))
+			pproptags->emplace_back(t);
 	return TRUE;
 }
 
@@ -439,7 +428,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
 		else
@@ -560,7 +549,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		if (pfolder->is_readonly_prop(tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 		else
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

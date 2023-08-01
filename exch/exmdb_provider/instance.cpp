@@ -1072,7 +1072,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 		case PR_PREDECESSOR_CHANGE_LIST:
 			continue;
 		}
-		pproptags->pproptag[pproptags->count++] = proptag;
+		pproptags->emplace_back(proptag);
 	}
 	if (pmsgctnt->children.prcpts != nullptr &&
 	    (b_force || ict->children.prcpts == nullptr)) {
@@ -1084,7 +1084,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 			return FALSE;
 		}
 		ict->set_rcpts_internal(prcpts);
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
+		pproptags->emplace_back(PR_MESSAGE_RECIPIENTS);
 	}
 	if (pmsgctnt->children.pattachments != nullptr &&
 	    (b_force || ict->children.pattachments == nullptr)) {
@@ -1096,7 +1096,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 			return FALSE;
 		}
 		ict->set_attachments_internal(pattachments);
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
+		pproptags->emplace_back(PR_MESSAGE_ATTACHMENTS);
 	}
 	return TRUE;
 }
@@ -1539,12 +1539,9 @@ static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ++i)
 		pproptags->pproptag[i] = msg_idtopr(pmsgctnt->proplist.ppropval[i].proptag);
 	pproptags->count = pmsgctnt->proplist.count;
-	pproptags->pproptag[pproptags->count++] = PR_CODE_PAGE_ID;
-	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_HASATTACH;
-	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
-	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_CC;
-	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_BCC;
+	for (auto t : {PR_CODE_PAGE_ID, PR_MESSAGE_SIZE, PR_HASATTACH,
+	     PR_DISPLAY_TO, PR_DISPLAY_CC, PR_DISPLAY_BCC})
+		pproptags->emplace_back(t);
 	return TRUE;
 }
 
@@ -1561,7 +1558,7 @@ static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *ppro
 	for (unsigned int i = 0; i < pattachment->proplist.count; ++i)
 		pproptags->pproptag[i] = atx_idtopr(pattachment->proplist.ppropval[i].proptag);
 	pproptags->count = pattachment->proplist.count;
-	pproptags->pproptag[pproptags->count++] = PR_ATTACH_SIZE;
+	pproptags->emplace_back(PR_ATTACH_SIZE);
 	return TRUE;
 }
 

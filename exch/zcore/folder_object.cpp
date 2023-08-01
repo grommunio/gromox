@@ -508,7 +508,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
 		else

@@ -58,7 +58,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 		case PR_TRANSMITABLE_DISPLAY_NAME_A:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
+			pproptags->emplace_back(tmp_proptags.pproptag[i]);
 			break;
 		}
 	}
@@ -843,7 +843,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		case PR_NORMALIZED_SUBJECT:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
+			pproptags->emplace_back(tmp_proptags.pproptag[i]);
 			break;
 		}
 	}
@@ -851,18 +851,15 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
 		auto proptag = static_cast<stream_object *>(pnode->pdata)->get_proptag();
 		if (!pproptags->has(proptag))
-			pproptags->pproptag[pproptags->count++] = proptag;
+			pproptags->emplace_back(proptag);
 	}
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count++] = PidTagFolderId;
-	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
+	for (auto t : {PR_ACCESS, PR_ACCESS_LEVEL, PidTagFolderId, PR_PARENT_SOURCE_KEY})
+		pproptags->emplace_back(t);
 	if (pmessage->pembedding == nullptr && !pproptags->has(PR_SOURCE_KEY))
-		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pproptags->has(PR_MESSAGE_LOCALE_ID))
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
-	if (!pproptags->has(PR_MESSAGE_CODEPAGE))
-		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
+		pproptags->emplace_back(PR_SOURCE_KEY);
+	for (auto t : {PR_MESSAGE_LOCALE_ID, PR_MESSAGE_CODEPAGE})
+		if (!pproptags->has(t))
+			pproptags->emplace_back(t);
 	return TRUE;
 }
 
@@ -1026,7 +1023,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 			ppropvals->emplace_back(tag, pvalue);
 			continue;
 		}	
-		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
@@ -1217,8 +1214,8 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] = tag;
 		poriginal_indices[tmp_proptags.count++] = i;
+		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

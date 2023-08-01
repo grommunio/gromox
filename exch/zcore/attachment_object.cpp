@@ -125,11 +125,9 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
+	for (auto t : {PR_ACCESS, PR_ACCESS_LEVEL, PR_OBJECT_TYPE,
+	     PR_STORE_RECORD_KEY, PR_STORE_ENTRYID})
+		pproptags->emplace_back(t);
 	return TRUE;
 }
 
@@ -211,7 +209,7 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!attachment_object_get_calculated_property(pattachment, tag, &pvalue))
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
 		else

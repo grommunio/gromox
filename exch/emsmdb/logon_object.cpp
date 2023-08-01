@@ -290,33 +290,33 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
+
+	static constexpr uint32_t pvt_tags[] = {
+		PR_MAILBOX_OWNER_NAME, PR_MAILBOX_OWNER_ENTRYID,
+		PR_MAX_SUBMIT_MESSAGE_SIZE, PR_EMAIL_ADDRESS,
+		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
+	};
+	static constexpr uint32_t tags[] = {
+		PR_DELETED_ASSOC_MESSAGE_SIZE,
+		PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED,
+		PR_DELETED_ASSOC_MSG_COUNT, PR_DELETED_MESSAGE_SIZE,
+		PR_DELETED_MESSAGE_SIZE_EXTENDED, PR_DELETED_MSG_COUNT,
+		PR_DELETED_NORMAL_MESSAGE_SIZE,
+		PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED,
+		PR_EXTENDED_RULE_SIZE_LIMIT, PR_ASSOC_MESSAGE_SIZE,
+		PR_MESSAGE_SIZE, PR_NORMAL_MESSAGE_SIZE, PR_USER_ENTRYID,
+		PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_TEST_LINE_SPEED,
+	};
 	if (plogon->is_private()) {
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
-		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
-		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
+		for (auto t : pvt_tags)
+			pproptags->emplace_back(t);
 	} else {
-		pproptags->pproptag[pproptags->count++] = PR_HIERARCHY_SERVER;
+		pproptags->emplace_back(PR_HIERARCHY_SERVER);
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if mail address of public folder exists. */
 	}
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_ASSOC_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_ASSOC_MSG_COUNT;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_MESSAGE_SIZE_EXTENDED;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_MSG_COUNT;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED;
-	pproptags->pproptag[pproptags->count++] = PR_EXTENDED_RULE_SIZE_LIMIT;
-	pproptags->pproptag[pproptags->count++] = PR_ASSOC_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_NORMAL_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
-	pproptags->pproptag[pproptags->count++] = PR_ASSOC_CONTENT_COUNT;
-	pproptags->pproptag[pproptags->count++] = PR_TEST_LINE_SPEED;
+	for (auto t : tags)
+		pproptags->emplace_back(t);
 	return TRUE;
 }
 
@@ -603,7 +603,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!logon_object_get_calculated_property(plogon, tag, &pvalue))
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
 		else
@@ -684,7 +684,7 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		if (lo_is_readonly_prop(plogon, tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 		else
-			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+			tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
