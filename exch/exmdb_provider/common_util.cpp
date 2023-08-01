@@ -2761,7 +2761,7 @@ fhash::fhash(const std::string_view data)
 #ifdef HAVE_XXHASH
 		XXH128_canonical_t canon;
 		XXH128_canonicalFromHash(&canon, XXH3_128bits(data.data(), data.size()));
-		cid = "X-00/0000000000000000000000000000000000";
+		cid = "Y-00/000000000000000000000000000000";
 		hexify(reinterpret_cast<const unsigned char *>(canon.digest), 16);
 		return;
 #endif
@@ -2783,7 +2783,7 @@ void fhash::hexify(const unsigned char *digest, unsigned int bytes)
 	cid[z++] = digits[(digest[0] & 0xF0) >> 4];
 	cid[z++] = digits[digest[0] & 0x0F];
 	cid[z++] = '/';
-	for (unsigned int i = 1; z < bytes; ++i) {
+	for (unsigned int i = 1; i < bytes && z < cid.size(); ++i) {
 		cid[z++] = digits[(digest[i] & 0xF0) >> 4];
 		cid[z++] = digits[digest[i] & 0x0F];
 	}
