@@ -4061,12 +4061,13 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	TRY(ext_push.p_bool(pnotify->b_table));
 	TRY(ext_push.p_uint32_a(pnotify->id_array));
 	TRY(ext_push.p_uint8(static_cast<uint8_t>(pnotify->db_notify.type)));
-	auto ret = pack_result::bad_callid;
+	auto ret = pack_result::success;
 	switch (pnotify->db_notify.type) {
 	case db_notify_type::search_table_changed:
 	case db_notify_type::search_table_row_added:
 	case db_notify_type::search_table_row_modified:
 	case db_notify_type::search_table_row_deleted:
+		ret = pack_result::bad_callid;
 		break;
 	case db_notify_type::new_mail: {
 		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pnotify->db_notify.pdata);
