@@ -424,10 +424,7 @@ void exmdb_parser_stop()
 	for (i=0; i<num; i++) {
 		pthread_join(pthr_ids[i], NULL);
 	}
-	if (NULL != pthr_ids) {
 		free(pthr_ids);
-		pthr_ids = NULL;
-	}
 	}
 	std::unique_lock rhold(g_router_lock);
 	num = g_router_list.size();
@@ -450,9 +447,6 @@ void exmdb_parser_stop()
 	for (i=0; i<num; i++) {
 		pthread_join(pthr_ids[i], NULL);
 	}
-	if (NULL != pthr_ids) {
 		free(pthr_ids);
-		pthr_ids = NULL;
-	}
 	}
 }
