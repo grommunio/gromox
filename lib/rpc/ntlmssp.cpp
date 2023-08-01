@@ -352,13 +352,12 @@ static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
   d = word (4 bytes)
   C = constant ascii string
  */
-static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
+static bool ntlmssp_gen_packetv(DATA_BLOB *pblob, const char *format,
+    va_list ap)
 {
-	
 	char *s;
 	int i, j;
 	uint8_t *b;
-	va_list ap;
 	uint32_t length;
 	int intargs[64]{};
 	uint8_t buffs[64][1024]{};
@@ -372,17 +371,14 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	head_size = 0;
 	data_size = 0;
 	/* first scan the format to work out the header and body size */
-	va_start(ap, format);
-	auto cl_0 = make_scope_exit([&]() { va_end(ap); });
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U': {
 			s = va_arg(ap, char*);
 			head_size += 8;
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
-			if (ret < 0) {
+			if (ret < 0)
 				return false;
-			}
 			blobs[i].cb = ret;
 			blobs[i].pb = buffs[i];
 			data_size += blobs[i].cb;
@@ -400,9 +396,8 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			intargs[i] = j;
 			s = va_arg(ap, char*);
 			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], std::size(buffs[i]));
-			if (ret < 0) {
+			if (ret < 0)
 				return false;
-			}
 			blobs[i].cb = ret;
 			blobs[i].pb = buffs[i];
 			data_size += blobs[i].cb + 4;
@@ -442,8 +437,6 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	head_ofs = 0;
 	data_ofs = head_size;
 
-	va_end(ap);
-	va_start(ap, format);
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
@@ -494,6 +487,14 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	return true;
 }
 
+static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	auto ret = ntlmssp_gen_packetv(pblob, format, ap);
+	va_end(ap);
+	return ret;
+}
 
 /*
   format specifiers are:
@@ -505,18 +506,16 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
   d = word (4 bytes)
   C = constant ascii string
  */
-static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
+static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
+    va_list ap)
 {
 	int i;
 	char *ps;
-	va_list ap;
 	uint32_t *v;
 	uintptr_t head_ofs = 0, ptr_ofs = 0;
 	DATA_BLOB *pblob;
 	uint16_t len1, len2;
 	
-	va_start(ap, format);
-	auto cl_0 = make_scope_exit([&]() { va_end(ap); });
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
@@ -642,6 +641,14 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 	return true;
 }
 
+static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	auto ret = ntlmssp_parse_packetv(blob, format, ap);
+	va_end(ap);
+	return ret;
+}
 
 /* neg_flags can be one or more following
 	NTLMSSP_NEGOTIATE_128
