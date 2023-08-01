@@ -800,7 +800,7 @@ static ZEND_FUNCTION(mapi_ab_openentry)
 	if (psession->type != zs_objtype::addrbook)
 		pthrow(ecInvalidObject);
 	auto result = zclient_openabentry(psession->hsession,
-							entryid, &mapi_type, &hobject);
+	              entryid, &mapi_type, &hobject);
 	if (result != ecSuccess)
 		pthrow(result);
 	presource = st_malloc<MAPI_RESOURCE>();
@@ -1459,7 +1459,7 @@ static ZEND_FUNCTION(mapi_msgstore_unadvise)
 	if (pstore->type != zs_objtype::store)
 		pthrow(ecInvalidObject);
 	auto result = zclient_unadvise(pstore->hsession,
-							pstore->hobject, sub_id);
+	              pstore->hobject, sub_id);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
@@ -2370,7 +2370,7 @@ static ZEND_FUNCTION(mapi_setprops)
 	if (err != ecSuccess)
 		pthrow(err);
 	auto result = zclient_setpropvals(probject->hsession,
-							probject->hobject, &propvals);
+	              probject->hobject, &propvals);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
@@ -2535,7 +2535,7 @@ static ZEND_FUNCTION(mapi_deleteprops)
 	if (err != ecSuccess)
 		pthrow(err);
 	auto result = zclient_deletepropvals(probject->hsession,
-								probject->hobject, &proptags);
+	              probject->hobject, &proptags);
 	if (result != ecSuccess)
 		pthrow(result);
 	RETVAL_TRUE;
@@ -2635,7 +2635,7 @@ static ZEND_FUNCTION(mapi_openproperty)
 		if (type != le_mapi_attachment || proptag != PR_ATTACH_DATA_OBJ)
 			pthrow(ecNotSupported);
 		auto result = zclient_openembedded(probject->hsession,
-							probject->hobject, flags, &hobject);
+		              probject->hobject, flags, &hobject);
 		if (result != ecSuccess)
 			pthrow(result);
 		presource = st_malloc<MAPI_RESOURCE>();
@@ -2650,12 +2650,12 @@ static ZEND_FUNCTION(mapi_openproperty)
 			pthrow(ecNotSupported);
 		if (PR_CONTENTS_SYNCHRONIZER == proptag) {
 			auto result = zclient_contentsync(probject->hsession,
-									probject->hobject, &hobject);
+			              probject->hobject, &hobject);
 			if (result != ecSuccess)
 				pthrow(result);
 		} else if (PR_HIERARCHY_SYNCHRONIZER == proptag) {
 			auto result = zclient_hierarchysync(probject->hsession,
-										probject->hobject, &hobject);
+			              probject->hobject, &hobject);
 			if (result != ecSuccess)
 				pthrow(result);
 		} else {
@@ -3609,7 +3609,7 @@ static ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
 	auto result = zclient_stateimport(pctx->hsession,
-							pctx->hobject, &state_bin);
+	              pctx->hobject, &state_bin);
 	if (result != ecSuccess)
 		pthrow(result);
 	stream_object_reset(pstream);
@@ -3760,7 +3760,7 @@ static ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresstream, -1, name_stream, le_stream);
 	auto result = zclient_stateimport(pctx->hsession,
-							pctx->hobject, &state_bin);
+	              pctx->hobject, &state_bin);
 	if (result != ecSuccess)
 		pthrow(result);
 	stream_object_reset(pstream);

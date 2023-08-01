@@ -67,9 +67,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 			logon_mode = logon_mode::owner;
 		}
 	} else {
-		*presponse_flags = RESPONSE_FLAG_RESERVED |
-							RESPONSE_FLAG_OWNERRIGHT |
-							RESPONSE_FLAG_SENDASRIGHT;
+		*presponse_flags = RESPONSE_FLAG_RESERVED | RESPONSE_FLAG_OWNERRIGHT |
+		                   RESPONSE_FLAG_SENDASRIGHT;
 		gx_strlcpy(maildir, rpc_info.maildir, std::size(maildir));
 		logon_mode = logon_mode::owner;
 	}

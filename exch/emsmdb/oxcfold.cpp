@@ -226,8 +226,7 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		if (folder_id == 0)
 			return ecError;
 		if (plogon->logon_mode != logon_mode::owner) {
-			pentryid = common_util_username_to_addressbook_entryid(
-												rpc_info.username);
+			pentryid = common_util_username_to_addressbook_entryid(rpc_info.username);
 			if (pentryid == nullptr)
 				return ecServerOOM;
 			tmp_id = 1;

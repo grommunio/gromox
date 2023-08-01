@@ -1609,8 +1609,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	pdb.reset();
 	if (pfolder_ids != nullptr)
 		for (size_t i = 0; i < pfolder_ids->count; ++i)
-			pfolder_ids->pll[i] = rop_util_make_eid_ex(
-								1, pfolder_ids->pll[i]);
+			pfolder_ids->pll[i] = rop_util_make_eid_ex(1, pfolder_ids->pll[i]);
 	*psearch_status = 0;
 	if (db_engine_check_populating(dir, fid_val))
 		*psearch_status |= SEARCH_REBUILD;

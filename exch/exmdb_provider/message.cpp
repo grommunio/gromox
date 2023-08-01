@@ -2297,8 +2297,7 @@ static BOOL message_make_dem(const char *username,
 	if (newval == nullptr ||
 	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, newval) != 0)
 		return FALSE;
-	newval = common_util_to_private_folder_entryid(
-							psqlite, username, folder_id);
+	newval = common_util_to_private_folder_entryid(psqlite, username, folder_id);
 	if (newval == nullptr ||
 	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, newval) != 0 ||
 	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0)

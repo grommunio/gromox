@@ -772,8 +772,7 @@ static void icsdownctx_object_trim_report_recipients(
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		pattachment = pmsgctnt->children.pattachments->pplist[i];
 		if (pattachment->pembedded != nullptr)
-			icsdownctx_object_trim_report_recipients(
-							pattachment->pembedded);
+			icsdownctx_object_trim_report_recipients(pattachment->pembedded);
 	}
 }
 

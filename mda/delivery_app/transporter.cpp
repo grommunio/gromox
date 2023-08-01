@@ -435,8 +435,7 @@ static void *dxp_thrwork(void *arg)
 							NULL!=pnode;
 							pnode=double_list_get_after(&g_lib_list, pnode)) {
 							auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
-							((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_DESTROY,
-														  NULL);
+							plib->lib_main(PLUGIN_THREAD_DESTROY, nullptr);
 						}
 						std::unique_lock ft_hold(g_free_threads_mutex);
 						double_list_append_as_tail(&g_free_threads,

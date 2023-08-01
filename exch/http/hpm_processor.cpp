@@ -375,8 +375,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phpm_ctx->cache_size + size >
 				phpm_ctx->content_length) {
-				tmp_len = phpm_ctx->content_length
-							- phpm_ctx->cache_size;
+				tmp_len = phpm_ctx->content_length - phpm_ctx->cache_size;
 				phttp->stream_in.rewind_read_ptr(size - tmp_len);
 				phpm_ctx->cache_size = phpm_ctx->content_length;
 			} else {

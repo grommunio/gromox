@@ -104,7 +104,7 @@ uint32_t lzxpress_compress(const void *uncompressedv,
 					/* shared byte */
 					if (0 == nibble_index) {
 						compressed[compressed_pos + metadata_size] =
-											(length - (3 + 7)) & 0xF;
+							(length - (3 + 7)) & 0xF;
 						metadata_size += sizeof(uint8_t);
 					} else {
 						compressed[nibble_index] &= 0xF;

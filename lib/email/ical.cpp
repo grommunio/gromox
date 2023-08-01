@@ -1930,8 +1930,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	else
 		return false;
 	pirrule->real_frequency = pirrule->frequency;
-	pvalue = ical_get_first_subvalue_by_name_internal(
-							pvalue_list, "INTERVAL");
+	pvalue = ical_get_first_subvalue_by_name_internal(pvalue_list, "INTERVAL");
 	if (NULL == pvalue) {
 		pirrule->interval = 1;
 	} else {

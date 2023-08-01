@@ -727,8 +727,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 				if (pperm_data[count].propvals.ppropval == nullptr)
 					return FALSE;
 				pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
-				pperm_data[count].propvals.ppropval[0].pvalue =
-													pmember_id;
+				pperm_data[count].propvals.ppropval[0].pvalue = pmember_id;
 				pperm_data[count].propvals.ppropval[1].proptag = PR_MEMBER_RIGHTS;
 				pperm_data[count].propvals.ppropval[1].pvalue =
 							&pperm_set->prows[i].member_rights;
@@ -770,8 +769,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			if (pperm_data[count].propvals.ppropval == nullptr)
 				return FALSE;
 			pperm_data[count].propvals.ppropval[0].proptag = PR_MEMBER_ID;
-			pperm_data[count].propvals.ppropval[0].pvalue =
-												pmember_id;
+			pperm_data[count].propvals.ppropval[0].pvalue = pmember_id;
 		} else {
 			continue;
 		}

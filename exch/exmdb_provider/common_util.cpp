@@ -5349,8 +5349,7 @@ uint32_t common_util_calculate_message_size(
 				}
 			}
 			if (pattachment->pembedded != nullptr)
-				message_size += common_util_calculate_message_size(
-											pattachment->pembedded);
+				message_size += common_util_calculate_message_size(pattachment->pembedded);
 		}
 	}
 	return message_size;
@@ -5380,7 +5379,6 @@ uint32_t common_util_calculate_attachment_size(
 		}
 	}
 	if (pattachment->pembedded != nullptr)
-		attachment_size += common_util_calculate_message_size(
-										pattachment->pembedded);
+		attachment_size += common_util_calculate_message_size(pattachment->pembedded);
 	return attachment_size;
 }

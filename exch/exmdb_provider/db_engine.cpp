@@ -2457,8 +2457,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			type = ptable->psorts->psort[
 				ptable->psorts->ccategories].type;
 			parent_id = sqlite3_column_int64(pstmt, 6);
-			pvalue = common_util_column_sqlite_statement(
-										pstmt, 12, type);
+			pvalue = common_util_column_sqlite_statement(pstmt, 12, type);
 			sqlite3_reset(pstmt);
 			table_sort = ptable->psorts->psort[
 				ptable->psorts->ccategories].table_sort;
@@ -2488,8 +2487,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				row_id1 = stm_sel_ex.col_int64(0);
 				if (row_id1 != row_id) {
 					pvalue = common_util_column_sqlite_statement(stm_sel_ex, 2, type);
-					result = db_engine_compare_propval(
-								type, pvalue, pvalue1);
+					result = db_engine_compare_propval(type, pvalue, pvalue1);
 					auto asc = table_sort == TABLE_SORT_ASCEND;
 					if ((asc && result > 0) || (!asc && result < 0)) {
 						b_break = TRUE;

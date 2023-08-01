@@ -638,8 +638,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 	if (pdomain == pbase->domain_list.end())
 		return NULL;
 	tmp_enum.node_type = static_cast<abnode_type>((guid.time_low >> 24) & 0xff);
-	tmp_enum.item_id = (((int)guid.time_hi_and_version) << 16)
-											| guid.time_mid;
+	tmp_enum.item_id = (((int)guid.time_hi_and_version) << 16) | guid.time_mid;
 	tmp_enum.dgt = guid.node[0] |
 		(((uint64_t)guid.node[1]) << 8) |
 		(((uint64_t)guid.node[2]) << 16) |

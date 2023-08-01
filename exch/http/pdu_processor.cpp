@@ -2301,7 +2301,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	
 	pkt.payload.rts.commands[0].command_type = RTS_CMD_CONNECTION_TIMEOUT;
 	pkt.payload.rts.commands[0].command.connectiontimeout =
-							http_parser_get_param(HTTP_SESSION_TIMEOUT)*1000;
+		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
@@ -2343,7 +2343,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.payload.rts.commands[1].command.receivewindowsize = in_window_size;
 	pkt.payload.rts.commands[2].command_type = RTS_CMD_CONNECTION_TIMEOUT;
 	pkt.payload.rts.commands[2].command.connectiontimeout =
-							http_parser_get_param(HTTP_SESSION_TIMEOUT)*1000;
+		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);

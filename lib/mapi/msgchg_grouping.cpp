@@ -116,7 +116,7 @@ static BOOL msgchg_grouping_append_group_list(INFO_NODE *pinfo_node, msg_group_n
 			return FALSE;
 		} else if (pgp_node->index < static_cast<msg_group_node *>(pnode->pdata)->index) {
 			double_list_insert_before(&pinfo_node->group_list,
-									pnode, &pgp_node->node);
+				pnode, &pgp_node->node);
 			return TRUE;
 		}
 	}

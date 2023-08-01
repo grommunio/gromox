@@ -81,8 +81,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		if (!common_util_get_user_displayname(representing_username,
 		    dispname_repr, std::size(dispname_repr)))
 			return ecRpcFailed;
-		eid_repr = common_util_username_to_addressbook_entryid(
-										representing_username);
+		eid_repr = common_util_username_to_addressbook_entryid(representing_username);
 		if (eid_repr == nullptr)
 			return ecRpcFailed;
 	} else {

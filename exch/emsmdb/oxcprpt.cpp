@@ -557,8 +557,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		if ((query_flags & QUERY_FLAG_NOIDS) &&
 		    ppropidnames->ppropname[i].kind == MNID_ID)
 			continue;
-		ppropidnames->ppropid[ppropidnames->count] =
-										propids.ppropid[i];
+		ppropidnames->ppropid[ppropidnames->count] = propids.ppropid[i];
 		ppropidnames->ppropname[ppropidnames->count++] = ppropidnames->ppropname[i];
 	}
 	return ecSuccess;

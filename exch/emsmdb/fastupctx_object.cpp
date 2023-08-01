@@ -147,8 +147,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (pctx->pstream->plogon->logon_mode == logon_mode::owner)
 		return TRUE;
 	auto rpc_info = get_rpc_info();
-	pentryid = common_util_username_to_addressbook_entryid(
-										rpc_info.username);
+	pentryid = common_util_username_to_addressbook_entryid(rpc_info.username);
 	if (pentryid == nullptr)
 		return TRUE;
 	tmp_id = 1;

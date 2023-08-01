@@ -1072,8 +1072,7 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		if (b_unicode) {
 			pvalue = prow->ptransmittable_name;
 		} else {
-			pvalue = common_util_dup_mb_to_utf8(cpid,
-								prow->ptransmittable_name);
+			pvalue = common_util_dup_mb_to_utf8(cpid, prow->ptransmittable_name);
 			if (pvalue == nullptr)
 				return FALSE;
 		}
@@ -1090,8 +1089,7 @@ static BOOL common_util_recipient_to_propvals(cpid_t cpid,
 		if (b_unicode) {
 			pvalue = prow->pmail_address;
 		} else {
-			pvalue = common_util_dup_mb_to_utf8(
-								cpid, prow->pmail_address);
+			pvalue = common_util_dup_mb_to_utf8(cpid, prow->pmail_address);
 			if (pvalue == nullptr)
 				return FALSE;
 		}

@@ -1182,8 +1182,7 @@ static std::unique_ptr<CONDITION_TREE> mail_engine_ct_build_internal(
 			i ++;
 			if (i + 1 > argc)
 				return {};
-			tmp_argc = mail_engine_ct_compile_criteria(
-								argc, argv, i, tmp_argv);
+			tmp_argc = mail_engine_ct_compile_criteria(argc, argv, i, tmp_argv);
 			if (tmp_argc == -1)
 				return {};
 			i += tmp_argc;

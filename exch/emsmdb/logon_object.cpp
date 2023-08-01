@@ -500,8 +500,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	case PR_MAILBOX_OWNER_ENTRYID:
 		if (!plogon->is_private())
 			return FALSE;
-		*ppvalue = common_util_username_to_addressbook_entryid(
-												plogon->account);
+		*ppvalue = common_util_username_to_addressbook_entryid(plogon->account);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
@@ -561,8 +560,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		return TRUE;
 	case PR_USER_ENTRYID: {
 		auto rpc_info = get_rpc_info();
-		*ppvalue = common_util_username_to_addressbook_entryid(
-											rpc_info.username);
+		*ppvalue = common_util_username_to_addressbook_entryid(rpc_info.username);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;

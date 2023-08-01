@@ -207,7 +207,7 @@ ec_error_t stream_object::set_length(uint32_t length)
 			return ecServerOOM;
 		pstream->content_bin.pb = pdata;
 		memset(pstream->content_bin.pb + pstream->content_bin.cb,
-							0, length - pstream->content_bin.cb);
+			0, length - pstream->content_bin.cb);
 	} else {
 		if (pstream->seek_ptr > length)
 			pstream->seek_ptr = length;
@@ -254,11 +254,9 @@ BOOL stream_object::copy(stream_object *pstream_src, uint32_t *plength)
 		return TRUE;
 	}
 	if (pstream_src->seek_ptr + *plength > pstream_src->content_bin.cb)
-		*plength = pstream_src->content_bin.cb -
-							pstream_src->seek_ptr;
+		*plength = pstream_src->content_bin.cb - pstream_src->seek_ptr;
 	if (pstream_dst->seek_ptr + *plength > pstream_dst->max_length)
-		*plength = pstream_dst->max_length -
-						pstream_dst->seek_ptr;
+		*plength = pstream_dst->max_length - pstream_dst->seek_ptr;
 	if (pstream_dst->seek_ptr + *plength > pstream_dst->content_bin.cb &&
 	    !pstream_dst->set_length(pstream_dst->seek_ptr + *plength))
 		return FALSE;

@@ -353,11 +353,9 @@ unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 	if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
 	if (offset > pstream->wr_block_pos) {
-		pstream->pnode_wr = double_list_get_before(&pstream->list,
-												   pstream->pnode_wr);
+		pstream->pnode_wr = double_list_get_before(&pstream->list, pstream->pnode_wr);
 		assert(pstream->pnode_wr != nullptr);
-		pstream->wr_block_pos = STREAM_BLOCK_SIZE - 
-								(offset - pstream->wr_block_pos);
+		pstream->wr_block_pos = STREAM_BLOCK_SIZE - (offset - pstream->wr_block_pos);
 	} else {
 		pstream->wr_block_pos -= offset;
 	}
@@ -391,11 +389,9 @@ unsigned int STREAM::rewind_read_ptr(unsigned int offset)
 	if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
 	if (offset > pstream->rd_block_pos) {
-		pstream->pnode_rd = double_list_get_before(&pstream->list,
-												   pstream->pnode_rd);
+		pstream->pnode_rd = double_list_get_before(&pstream->list, pstream->pnode_rd);
 		assert(pstream->pnode_rd != nullptr);
-		pstream->rd_block_pos = STREAM_BLOCK_SIZE - 
-								(offset - pstream->rd_block_pos);
+		pstream->rd_block_pos = STREAM_BLOCK_SIZE - (offset - pstream->rd_block_pos);
 	} else {
 		pstream->rd_block_pos -= offset;
 	}

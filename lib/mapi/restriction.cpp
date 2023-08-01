@@ -73,8 +73,7 @@ static RESTRICTION_NOT* restriction_dup_not(
 static void restriction_free_not(
 	RESTRICTION_NOT *prestriction)
 {
-	restriction_free_by_type(prestriction->res.rt,
-							prestriction->res.pres);
+	restriction_free_by_type(prestriction->res.rt, prestriction->res.pres);
 	free(prestriction);
 }
 
@@ -99,8 +98,7 @@ static RESTRICTION_CONTENT* restriction_dup_content(
 
 static void restriction_free_content(RESTRICTION_CONTENT *prestriction)
 {
-	propval_free(PROP_TYPE(prestriction->propval.proptag),
-							prestriction->propval.pvalue);
+	propval_free(PROP_TYPE(prestriction->propval.proptag), prestriction->propval.pvalue);
 	free(prestriction);
 }
 
@@ -127,7 +125,7 @@ static void restriction_free_property(
 	RESTRICTION_PROPERTY *prestriction)
 {
 	propval_free(PROP_TYPE(prestriction->propval.proptag),
-							prestriction->propval.pvalue);
+		prestriction->propval.pvalue);
 	free(prestriction);
 }
 
@@ -225,8 +223,7 @@ static RESTRICTION_SUBOBJ* restriction_dup_subobj(
 static void restriction_free_subobj(
 	RESTRICTION_SUBOBJ *prestriction)
 {
-	restriction_free_by_type(prestriction->res.rt,
-							prestriction->res.pres);
+	restriction_free_by_type(prestriction->res.rt, prestriction->res.pres);
 	free(prestriction);
 }
 
@@ -309,11 +306,9 @@ static RESTRICTION_COUNT* restriction_dup_count(
 	return pres;
 }
 
-static void restriction_free_count(
-	RESTRICTION_COUNT *prestriction)
+static void restriction_free_count(RESTRICTION_COUNT *prestriction)
 {
-	restriction_free_by_type(prestriction->sub_res.rt,
-							prestriction->sub_res.pres);
+	restriction_free_by_type(prestriction->sub_res.rt, prestriction->sub_res.pres);
 	free(prestriction);
 }
 
@@ -389,8 +384,7 @@ RESTRICTION* restriction_dup(const RESTRICTION *prestriction)
 		return NULL;
 	}
 	pres->rt = prestriction->rt;
-	pres->pres = restriction_dup_by_type(prestriction->rt,
-										prestriction->pres);
+	pres->pres = restriction_dup_by_type(prestriction->rt, prestriction->pres);
 	if (NULL == pres->pres) {
 		free(pres);
 		return NULL;

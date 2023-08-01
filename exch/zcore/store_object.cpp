@@ -721,8 +721,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_MAILBOX_OWNER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = common_util_username_to_addressbook_entryid(
-												pstore->account);
+		*ppvalue = common_util_username_to_addressbook_entryid(pstore->account);
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;

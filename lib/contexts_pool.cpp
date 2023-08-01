@@ -442,8 +442,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 				no need to call epoll_ctl with EPOLL_CTL_DEL */
 			pcontext->b_waiting = FALSE;
 	}
-	double_list_append_as_tail(&g_context_lists[type], 
-									&pcontext->node);
+	double_list_append_as_tail(&g_context_lists[type], &pcontext->node);
 }
 
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)

@@ -122,7 +122,7 @@ static BOOL recipient_block_dup_internal(
 		if (NULL == precipient->ppropval[i].pvalue) {
 			for (i-=1; i>=0; i--) {
 				propval_free(PROP_TYPE(precipient->ppropval[i].proptag),
-										precipient->ppropval[i].pvalue);
+					precipient->ppropval[i].pvalue);
 			}
 			free(precipient->ppropval);
 			return FALSE;
