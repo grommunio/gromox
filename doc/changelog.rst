@@ -15,6 +15,7 @@ Fixes:
   timezone/daylightbias
 * exmdb_provider: resolve constraint failure on movecopy_messages
 * email_lib: add back CRLF when MIME::read_head is reconstructing headers
+* mapi_lib: resolve an infinite loop during html_to_rtf
 * exmdb_provider: ignore absent directories during `gromox-mbop
   purge-datafiles`
 

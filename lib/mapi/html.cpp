@@ -363,6 +363,10 @@ static ec_error_t html_write_string(RTF_WRITER *pwriter, const char *string)
 	while ('\0' != *ptr) {
 		static_assert(UCHAR_MAX <= std::size(utf8_byte_num));
 		auto len = utf8_byte_num[static_cast<unsigned char>(*ptr)];
+		if (len == 0) {
+			++ptr;
+			continue;
+		}
 		if (ptr + len > pend) {
 			return ecError;
 		}
