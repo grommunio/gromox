@@ -511,9 +511,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			pfolder, pproptags->pproptag[i], &pvalue)) {
 			if (pvalue == nullptr)
 				return FALSE;
-			ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
+			ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
 		} else {
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}

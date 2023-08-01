@@ -972,9 +972,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		    pproptags->pproptag[i], &pvalue)) {
 			if (pvalue == nullptr)
 				return FALSE;
-			ppropvals->ppropval[ppropvals->count].proptag =
-										pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
+			ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
 		} else {
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
@@ -987,9 +985,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			auto pvalue = pinfo->ptree->get_zstore_propval(tmp_proptags.pproptag[i]);
 			if (pvalue == nullptr)
 				continue;
-			ppropvals->ppropval[ppropvals->count].proptag =
-				tmp_proptags.pproptag[i];
-			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
+			ppropvals->emplace_back(tmp_proptags.pproptag[i], pvalue);
 			tmp_proptags.count--;
 			if (i < tmp_proptags.count) {
 				memmove(tmp_proptags.pproptag + i,

@@ -62,12 +62,10 @@ BOOL attachment_object::init_attachment()
 	if (propvals.ppropval == nullptr)
 		return FALSE;
 	
-	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
-	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
-	propvals.ppropval[propvals.count].proptag = PR_RENDERING_POSITION;
+	propvals.emplace_back(PR_ATTACH_NUM, &pattachment->attachment_num);
 	auto rendpos = cu_alloc<uint32_t>();
-	propvals.ppropval[propvals.count].pvalue = rendpos;
-	if (propvals.ppropval[propvals.count].pvalue == nullptr)
+	propvals.emplace_back(PR_RENDERING_POSITION, rendpos);
+	if (rendpos == nullptr)
 		return FALSE;
 	*rendpos = indet_rendering_pos;
 	++propvals.count;
@@ -76,10 +74,8 @@ BOOL attachment_object::init_attachment()
 	if (modtime == nullptr)
 		return FALSE;
 	*modtime = rop_util_current_nttime();
-	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
-	propvals.ppropval[propvals.count++].pvalue = modtime;
-	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	propvals.ppropval[propvals.count++].pvalue = modtime;
+	propvals.emplace_back(PR_CREATION_TIME, modtime);
+	propvals.emplace_back(PR_LAST_MODIFICATION_TIME, modtime);
 	return exmdb_client::set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }

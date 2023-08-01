@@ -515,8 +515,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	auto dir = plogon->get_dir();
 	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
+	tmp_propvals.emplace_back(PidTagChangeNumber, &change_num);
 	
 	if (!exmdb_client::get_folder_property(dir,
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
@@ -530,12 +529,9 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (pbin_pcl == nullptr)
 		return FALSE;
 	last_time = rop_util_current_nttime();
-	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &last_time;
+	tmp_propvals.emplace_back(PR_CHANGE_KEY, pbin_changekey);
+	tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, pbin_pcl);
+	tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, &last_time);
 	
 	if (!exmdb_client::set_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))

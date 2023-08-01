@@ -1092,6 +1092,9 @@ struct TPROPVAL_ARRAY {
 	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
 	int set(uint32_t tag, const void *d);
 	inline int set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
+	void emplace_back(uint32_t tag, const void *d) {
+		ppropval[count++] = TAGGED_PROPVAL{tag, deconst(d)};
+	}
 	void erase(uint32_t tag);
 	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
 	TPROPVAL_ARRAY *dup() const;

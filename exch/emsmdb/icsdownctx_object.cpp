@@ -542,43 +542,37 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	auto bin = pmsgctnt->proplist.get<const BINARY>(PR_SOURCE_KEY);
 	if (bin == nullptr)
 		return FALSE;
-	pchgheader->ppropval[pchgheader->count].proptag = PR_SOURCE_KEY;
-	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(bin);
+	pchgheader->emplace_back(PR_SOURCE_KEY, bin);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
 	auto ts = pmsgctnt->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (ts == nullptr)
 		return FALSE;
-	pchgheader->ppropval[pchgheader->count].proptag = PR_LAST_MODIFICATION_TIME;
-	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(ts);
+	pchgheader->emplace_back(PR_LAST_MODIFICATION_TIME, ts);
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
 	if (bin == nullptr)
 		return FALSE;
-	pchgheader->ppropval[pchgheader->count].proptag = PR_CHANGE_KEY;
-	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(bin);
+	pchgheader->emplace_back(PR_CHANGE_KEY, bin);
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	if (bin == nullptr)
 		return FALSE;
-	pchgheader->ppropval[pchgheader->count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(bin);
+	pchgheader->emplace_back(PR_PREDECESSOR_CHANGE_LIST, bin);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
 	if (flag == nullptr)
 		return FALSE;
 	pprogmsg->b_fai = flag != nullptr && *flag != 0 ? TRUE : false;
-	pchgheader->ppropval[pchgheader->count].proptag = PR_ASSOCIATED;
-	pchgheader->ppropval[pchgheader->count++].pvalue = deconst(flag);
+	pchgheader->emplace_back(PR_ASSOCIATED, flag);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	
 	if (SYNC_EXTRA_FLAG_EID & extra_flags) {
 		auto lnum = pmsgctnt->proplist.get<const uint64_t>(PidTagMid);
 		if (lnum == nullptr)
 			return FALSE;
-		pchgheader->ppropval[pchgheader->count].proptag = PidTagMid;
-		pchgheader->ppropval[pchgheader->count++].pvalue = deconst(lnum);
+		pchgheader->emplace_back(PidTagMid, lnum);
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 	
@@ -586,18 +580,15 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	if (num == nullptr)
 		return FALSE;
 	pprogmsg->message_size = *num;
-	if (SYNC_EXTRA_FLAG_MESSAGESIZE & extra_flags) {
-		pchgheader->ppropval[pchgheader->count].proptag = PR_MESSAGE_SIZE;
-		pchgheader->ppropval[pchgheader->count++].pvalue = deconst(num);
-	}
+	if (extra_flags & SYNC_EXTRA_FLAG_MESSAGESIZE)
+		pchgheader->emplace_back(PR_MESSAGE_SIZE, num);
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	
 	if (SYNC_EXTRA_FLAG_CN & extra_flags) {
 		auto cn = pmsgctnt->proplist.get<const eid_t>(PidTagChangeNumber);
 		if (cn == nullptr)
 			return FALSE;
-		pchgheader->ppropval[pchgheader->count].proptag = PidTagChangeNumber;
-		pchgheader->ppropval[pchgheader->count++].pvalue = deconst(cn);
+		pchgheader->emplace_back(PidTagChangeNumber, cn);
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PidTagChangeNumber);
 	return TRUE;

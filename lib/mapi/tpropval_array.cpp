@@ -27,12 +27,10 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 		}
 		parray->ppropval = ppropvals;
 	}
-	parray->ppropval[parray->count].proptag = proptag;
-	parray->ppropval[parray->count].pvalue = propval_dup(PROP_TYPE(proptag), xpropval);
-	if (NULL == parray->ppropval[parray->count].pvalue) {
+	auto v = propval_dup(PROP_TYPE(proptag), xpropval);
+	if (v == nullptr)
 		return false;
-	}
-	parray->count ++;
+	parray->emplace_back(proptag, v);
 	return true;
 }
 

@@ -422,9 +422,7 @@ static BOOL container_object_fetch_special_properties(
 			return FALSE;	
 		if (pvalue == nullptr)
 			continue;
-		ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-		ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
+		ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
 	}
 	return TRUE;
 }
@@ -445,14 +443,13 @@ static BOOL container_object_fetch_folder_properties(
 	if (pout_propvals->ppropval == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
-		pout_propvals->ppropval[pout_propvals->count].proptag =
-										pproptags->pproptag[i];
-		switch (pproptags->pproptag[i]) {
+		uint32_t tag = pproptags->pproptag[i];
+		switch (tag) {
 		case PR_AB_PROVIDER_ID: {
 			auto bv = cu_alloc<BINARY>();
 			if (bv == nullptr)
 				return FALSE;
-			pout_propvals->ppropval[pout_propvals->count++].pvalue = bv;
+			pout_propvals->emplace_back(tag, bv);
 			bv->cb = sizeof(muidZCSAB);
 			bv->pv = deconst(&muidZCSAB);
 			break;
@@ -466,7 +463,7 @@ static BOOL container_object_fetch_folder_properties(
 			if (store == nullptr || mapi_type != zs_objtype::store)
 				return false;
 			void *pvalue = nullptr;
-			if (pproptags->pproptag[i] != PR_PARENT_ENTRYID) {
+			if (tag != PR_PARENT_ENTRYID) {
 				pvalue = zcsab_prepend(cu_fid_to_entryid(store, folder_id),
 				         MAPI_ABCONT, UINT32_MAX);
 			} else if (folder_id == rop_util_make_eid_ex(
@@ -483,7 +480,7 @@ static BOOL container_object_fetch_folder_properties(
 			}
 			if (pvalue == nullptr)
 				return FALSE;
-			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
+			pout_propvals->emplace_back(tag, pvalue);
 			break;
 		}
 		case PR_CONTAINER_FLAGS: {
@@ -495,7 +492,7 @@ static BOOL container_object_fetch_folder_properties(
 			*pvalue = b_sub ?
 				AB_RECIPIENTS | AB_UNMODIFIABLE :
 				AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
+			pout_propvals->emplace_back(tag, pvalue);
 			break;
 		}
 		case PR_DEPTH: {
@@ -513,14 +510,14 @@ static BOOL container_object_fetch_folder_properties(
 			if (pvalue == nullptr)
 				return FALSE;
 			*pvalue = count;
-			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
+			pout_propvals->emplace_back(tag, pvalue);
 			break;
 		}
 		case PR_DISPLAY_NAME: {
 			auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 			if (pvalue == nullptr)
 				return FALSE;
-			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
+			pout_propvals->emplace_back(tag, pvalue);
 			break;
 		}
 		case PR_EMS_AB_IS_MASTER: {
@@ -528,7 +525,7 @@ static BOOL container_object_fetch_folder_properties(
 			if (pvalue == nullptr)
 				return FALSE;
 			*pvalue = 0;
-			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
+			pout_propvals->emplace_back(tag, pvalue);
 			break;
 		}
 		}

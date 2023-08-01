@@ -295,17 +295,15 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (pproplist->ppropval == nullptr)
 		return FALSE;
-	pproplist->ppropval[pproplist->count].proptag = PR_SOURCE_KEY;
 	void *pvalue = cu_fid_to_sk(pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
-	pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+	pproplist->emplace_back(PR_SOURCE_KEY, pvalue);
 
-	pproplist->ppropval[pproplist->count].proptag = PR_ENTRYID;
 	pvalue = cu_fid_to_entryid(pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
-	pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+	pproplist->emplace_back(PR_ENTRYID, pvalue);
 	proptags.count = 6;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PidTagParentFolderId;
@@ -326,35 +324,29 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	lnum = tmp_propvals.get<uint64_t>(PidTagParentFolderId);
 	if (lnum != nullptr) {
 		auto parent_fid = *lnum;
-		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_SOURCE_KEY;
 		pvalue = cu_fid_to_sk(pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
-		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+		pproplist->emplace_back(PR_PARENT_SOURCE_KEY, pvalue);
 
-		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_ENTRYID;
 		pvalue = cu_fid_to_entryid(pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
-		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+		pproplist->emplace_back(PR_PARENT_ENTRYID, pvalue);
 	}
-	pproplist->ppropval[pproplist->count].proptag = PR_DISPLAY_NAME;
 	pvalue = tmp_propvals.getval(PR_DISPLAY_NAME);
 	if (pvalue != nullptr)
-		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
-	pproplist->ppropval[pproplist->count].proptag = PR_CONTAINER_CLASS;
+		pproplist->emplace_back(PR_DISPLAY_NAME, pvalue);
 	pvalue = tmp_propvals.getval(PR_CONTAINER_CLASS);
 	if (pvalue != nullptr)
-		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
-	pproplist->ppropval[pproplist->count].proptag = PR_ATTR_HIDDEN;
+		pproplist->emplace_back(PR_CONTAINER_CLASS, pvalue);
 	pvalue = tmp_propvals.getval(PR_ATTR_HIDDEN);
-	pproplist->ppropval[pproplist->count++].pvalue =
-		pvalue != nullptr ? pvalue : deconst(&fake_false);
+	pproplist->emplace_back(PR_ATTR_HIDDEN,
+		pvalue != nullptr ? pvalue : deconst(&fake_false));
 
-	pproplist->ppropval[pproplist->count].proptag = PR_EXTENDED_FOLDER_FLAGS;
 	pvalue = tmp_propvals.getval(PR_EXTENDED_FOLDER_FLAGS);
 	if (pvalue != nullptr)
-		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+		pproplist->emplace_back(PR_EXTENDED_FOLDER_FLAGS, pvalue);
 	*pb_found = TRUE;
 	if (!pctx->pstate->pgiven->append(fid) ||
 	    !pctx->pstate->pseen->append(change_num))

@@ -118,8 +118,7 @@ void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
 		parray->ppropval[i].pvalue = deconst(data);
 		return;
 	}
-	parray->ppropval[parray->count].proptag = tag;
-	parray->ppropval[parray->count++].pvalue = deconst(data);
+	parray->emplace_back(tag, data);
 }
 
 void common_util_remove_propvals(

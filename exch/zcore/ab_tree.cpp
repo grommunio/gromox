@@ -1490,9 +1490,7 @@ BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;	
 		if (pvalue == nullptr)
 			continue;
-		ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-		ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
+		ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
 	}
 	return TRUE;
 }
