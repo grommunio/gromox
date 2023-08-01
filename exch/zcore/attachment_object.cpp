@@ -210,13 +210,12 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
-			if (pvalue == nullptr)
-				return FALSE;
+		if (!attachment_object_get_calculated_property(pattachment, tag, &pvalue))
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
-			continue;
-		}
-		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+		else
+			return false;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

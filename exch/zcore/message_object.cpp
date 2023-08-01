@@ -166,9 +166,8 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 		return ENOMEM;
 	*sens = SENSITIVITY_NONE;
 	propvals.emplace_back(PR_SENSITIVITY, sens);
-	propvals.emplace_back(PR_ORIGINAL_DISPLAY_BCC, "");
-	propvals.emplace_back(PR_ORIGINAL_DISPLAY_CC, "");
-	propvals.emplace_back(PR_ORIGINAL_DISPLAY_TO, "");
+	for (auto t : {PR_ORIGINAL_DISPLAY_TO, PR_ORIGINAL_DISPLAY_CC, PR_ORIGINAL_DISPLAY_BCC})
+		propvals.emplace_back(t, "");
 
 	auto msgflags = cu_alloc<uint32_t>();
 	if (msgflags == nullptr)
@@ -786,13 +785,12 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
-			if (pvalue == nullptr)
-				return FALSE;
+		if (!message_object_get_calculated_property(pmessage, tag, &pvalue))
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
-			continue;
-		}
-		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
+		else
+			return false;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

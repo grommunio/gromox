@@ -213,79 +213,61 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	if (propvals.ppropval == nullptr)
 		return ENOMEM;
 	
-	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CODEPAGE;
 	auto msgcpid = cu_alloc<uint32_t>();
 	if (msgcpid == nullptr)
 		return ENOMEM;
 	*msgcpid = static_cast<uint32_t>(new_cpid);
-	propvals.ppropval[propvals.count++].pvalue = msgcpid;
+	propvals.emplace_back(PR_MESSAGE_CODEPAGE, msgcpid);
 	
-	propvals.ppropval[propvals.count].proptag = PR_IMPORTANCE;
 	auto importance = cu_alloc<uint32_t>();
 	if (importance == nullptr)
 		return ENOMEM;
 	*importance = IMPORTANCE_NORMAL;
-	propvals.ppropval[propvals.count++].pvalue = importance;
+	propvals.emplace_back(PR_IMPORTANCE, importance);
+	propvals.emplace_back(PR_DEF_POST_MSGCLASS, "IPM.Note");
 	
-	propvals.ppropval[propvals.count].proptag = PR_DEF_POST_MSGCLASS;
-	propvals.ppropval[propvals.count++].pvalue  = deconst("IPM.Note");
-	
-	propvals.ppropval[propvals.count].proptag = PR_SENSITIVITY;
 	auto sens = cu_alloc<uint32_t>();
 	if (sens == nullptr)
 		return ENOMEM;
 	*sens = SENSITIVITY_NONE;
-	propvals.ppropval[propvals.count++].pvalue = sens;
+	propvals.emplace_back(PR_SENSITIVITY, sens);
+	for (auto t : {PR_ORIGINAL_DISPLAY_TO, PR_ORIGINAL_DISPLAY_CC, PR_ORIGINAL_DISPLAY_BCC})
+		propvals.emplace_back(t, "");
 	
-	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_BCC;
-	propvals.ppropval[propvals.count++].pvalue  = deconst("");
-	
-	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_CC;
-	propvals.ppropval[propvals.count++].pvalue  = deconst("");
-	
-	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_TO;
-	propvals.ppropval[propvals.count++].pvalue  = deconst("");
-	
-	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
 	auto msgflags = cu_alloc<uint32_t>();
 	if (msgflags == nullptr)
 		return ENOMEM;
 	*msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
-	propvals.ppropval[propvals.count++].pvalue = msgflags;
+	propvals.emplace_back(PR_MESSAGE_FLAGS, msgflags);
 	
-	propvals.ppropval[propvals.count].proptag = PR_READ;
 	auto readflag = cu_alloc<uint8_t>();
 	if (readflag == nullptr)
 		return ENOMEM;
 	*readflag = 0;
-	propvals.ppropval[propvals.count++].pvalue = readflag;
+	propvals.emplace_back(PR_READ, readflag);
 	
-	propvals.ppropval[propvals.count].proptag = PR_ASSOCIATED;
 	auto assocflag = cu_alloc<uint8_t>();
 	if (assocflag == nullptr)
 		return ENOMEM;
 	*assocflag = fai;
-	propvals.ppropval[propvals.count++].pvalue = assocflag;
+	propvals.emplace_back(PR_ASSOCIATED, assocflag);
 	
-	propvals.ppropval[propvals.count].proptag = PR_TRUST_SENDER;
 	auto trustsender = cu_alloc<uint32_t>();
 	if (trustsender == nullptr)
 		return ENOMEM;
 	*trustsender = 1;
-	propvals.ppropval[propvals.count++].pvalue = trustsender;
+	propvals.emplace_back(PR_TRUST_SENDER, trustsender);
 	
-	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	auto modtime = cu_alloc<uint64_t>();
 	if (modtime == nullptr)
 		return ENOMEM;
 	*modtime = rop_util_current_nttime();
-	propvals.ppropval[propvals.count++].pvalue = modtime;
+	propvals.emplace_back(PR_CREATION_TIME, modtime);
 	
-	propvals.ppropval[propvals.count].proptag = PR_SEARCH_KEY;
 	auto search_key = common_util_guid_to_binary(GUID::random_new());
 	if (search_key == nullptr)
 		return ENOMEM;
-	propvals.ppropval[propvals.count++].pvalue = search_key;
+	propvals.emplace_back(PR_SEARCH_KEY, search_key);
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
 	auto msglcid = cu_alloc<uint32_t>();
@@ -294,11 +276,9 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	*msglcid = pinfo->lcid_string;
 	if (*msglcid == 0)
 		*msglcid = 0x0409;
-	propvals.ppropval[propvals.count++].pvalue = msglcid;
-	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
-	propvals.ppropval[propvals.count++].pvalue = msglcid;
+	propvals.emplace_back(PR_MESSAGE_LOCALE_ID, msglcid);
+	propvals.emplace_back(PR_LOCALE_ID, msglcid);
 	
-	propvals.ppropval[propvals.count].proptag = PR_CREATOR_NAME;
 	static constexpr size_t dispnamesize = 1024;
 	auto dispname = cu_alloc<char>(1024);
 	if (dispname == nullptr)
@@ -306,19 +286,18 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 	if (!common_util_get_user_displayname(rpc_info.username,
 	    dispname, dispnamesize) || *dispname == '\0')
 		gx_strlcpy(dispname, rpc_info.username, dispnamesize);
-	propvals.ppropval[propvals.count++].pvalue = dispname;
+	propvals.emplace_back(PR_CREATOR_NAME, dispname);
 	
-	propvals.ppropval[propvals.count].proptag = PR_CREATOR_ENTRYID;
 	auto abk_eid = common_util_username_to_addressbook_entryid(rpc_info.username);
 	if (abk_eid == nullptr)
 		return ENOMEM;
-	propvals.ppropval[propvals.count++].pvalue = abk_eid;
+	propvals.emplace_back(PR_CREATOR_ENTRYID, abk_eid);
+
 	char id_string[UADDR_SIZE+2];
 	auto ret = make_inet_msgid(id_string, std::size(id_string), 0x4554);
 	if (ret != 0)
 		return ret;
-	propvals.ppropval[propvals.count].proptag = PR_INTERNET_MESSAGE_ID;
-	propvals.ppropval[propvals.count++].pvalue = id_string;
+	propvals.emplace_back(PR_INTERNET_MESSAGE_ID, id_string);
 	
 	if (!exmdb_client::set_instance_properties(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &propvals, &problems))
@@ -454,20 +433,15 @@ ec_error_t message_object::save()
 	if (tmp_propvals.ppropval == nullptr)
 		return ecServerOOM;
 	
-	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LOCAL_COMMIT_TIME;
 	auto modtime = cu_alloc<uint64_t>();
 	if (modtime == nullptr)
 		return ecServerOOM;
 	*modtime = rop_util_current_nttime();
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = modtime;
-	
-	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFICATION_TIME)) {
-		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = modtime;
-	}
+	tmp_propvals.emplace_back(PR_LOCAL_COMMIT_TIME, modtime);
+	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFICATION_TIME))
+		tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, modtime);
 	
 	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFIER_NAME)) {
-		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_NAME;
 		static constexpr size_t dsize = 1024;
 		auto dispname = cu_alloc<char>(1024);
 		if (dispname == nullptr)
@@ -475,27 +449,24 @@ ec_error_t message_object::save()
 		if (!common_util_get_user_displayname(rpc_info.username,
 		    dispname, dsize) || *dispname == '\0')
 			gx_strlcpy(dispname, rpc_info.username, dsize);
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = dispname;
+		tmp_propvals.emplace_back(PR_LAST_MODIFIER_NAME, dispname);
 	}
 	
-	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_ENTRYID;
 	auto abk_eid = common_util_username_to_addressbook_entryid(rpc_info.username);
 	if (abk_eid == nullptr)
 		return ecRpcFailed;
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = abk_eid;
+	tmp_propvals.emplace_back(PR_LAST_MODIFIER_ENTRYID, abk_eid);
 	
 	if (0 != pmessage->message_id && NULL == pmessage->pstate) {
-		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
 		auto pbin_changekey = cu_xid_to_bin({pmessage->plogon->guid(), pmessage->change_num});
 		if (pbin_changekey == nullptr)
 			return ecRpcFailed;
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
+		tmp_propvals.emplace_back(PR_CHANGE_KEY, pbin_changekey);
 		
 		pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 		if (pbin_pcl == nullptr)
 			return ecRpcFailed;
-		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
+		tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, pbin_pcl);
 	}
 	
 	PROBLEM_ARRAY tmp_problems;
@@ -1043,23 +1014,16 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
-			if (NULL != pvalue) {
-				pv.proptag = tag;
-				pv.pvalue = pvalue;
-			} else {
-				pv.proptag = CHANGE_PROP_TYPE(tag, PT_ERROR);
-				pv.pvalue = deconst(&err_code);
-			}
-			ppropvals->count ++;
+			if (pvalue != nullptr)
+				ppropvals->emplace_back(tag, pvalue);
+			else
+				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
 			continue;
 		}
 		pvalue = message_object_get_stream_property_value(pmessage, tag);
 		if (NULL != pvalue) {
-			pv.proptag = tag;
-			pv.pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->emplace_back(tag, pvalue);
 			continue;
 		}	
 		tmp_proptags.pproptag[tmp_proptags.count++] = tag;

@@ -303,23 +303,16 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
-			if (NULL != pvalue) {
-				pv.proptag = tag;
-				pv.pvalue = pvalue;
-			} else {
-				pv.proptag = CHANGE_PROP_TYPE(tag, PT_ERROR);
-				pv.pvalue = deconst(&err_code);
-			}
-			ppropvals->count ++;
+			if (pvalue != nullptr)
+				ppropvals->emplace_back(tag, pvalue);
+			else
+				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
 			continue;
 		}
 		pvalue = attachment_object_get_stream_property_value(pattachment, tag);
 		if (NULL != pvalue) {
-			pv.proptag = tag;
-			pv.pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->emplace_back(tag, pvalue);
 			continue;
 		}
 		tmp_proptags.pproptag[tmp_proptags.count++] = tag;

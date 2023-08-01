@@ -991,8 +991,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
 			return FALSE;
-		proplist.ppropval[proplist.count].proptag = MetaTagIdsetDeleted;
-		proplist.ppropval[proplist.count++].pvalue = pbin1;
+		proplist.emplace_back(MetaTagIdsetDeleted, pbin1);
 	}
 	if (!(pctx->sync_flags & SYNC_NO_SOFT_DELETIONS) &&
 	    pctx->pnolonger_messages->count > 0) {
@@ -1010,8 +1009,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 				rop_util_free_binary(pbin1);
 			return FALSE;
 		}
-		proplist.ppropval[proplist.count].proptag = MetaTagIdsetNoLongerInScope;
-		proplist.ppropval[proplist.count++].pvalue = pbin2;
+		proplist.emplace_back(MetaTagIdsetNoLongerInScope, pbin2);
 	}
 	if (proplist.count == 0)
 		return TRUE;
@@ -1052,8 +1050,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
 			return FALSE;
-		proplist.ppropval[proplist.count].proptag = MetaTagIdsetRead;
-		proplist.ppropval[proplist.count++].pvalue = pbin1;
+		proplist.emplace_back(MetaTagIdsetRead, pbin1);
 	}
 	if (pctx->punread_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
@@ -1063,8 +1060,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		pbin2 = xset.serialize();
 		if (pbin2 == nullptr)
 			return FALSE;
-		proplist.ppropval[proplist.count].proptag = MetaTagIdsetUnread;
-		proplist.ppropval[proplist.count++].pvalue = pbin2;
+		proplist.emplace_back(MetaTagIdsetUnread, pbin2);
 	}
 	if (proplist.count == 0)
 		return TRUE;

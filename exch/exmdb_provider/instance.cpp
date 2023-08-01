@@ -710,10 +710,8 @@ static BOOL instance_read_attachment(
 			pbin->pv = instance_read_cid_content(cidstr, &pbin->cb, 0);
 			if (pbin->pv == nullptr)
 				return FALSE;
-			pattachment->proplist.ppropval[pattachment->proplist.count].proptag =
-				tag == ID_TAG_ATTACHDATABINARY ?
-				PR_ATTACH_DATA_BIN : PR_ATTACH_DATA_OBJ;
-			pattachment->proplist.ppropval[pattachment->proplist.count++].pvalue = pbin;
+			pattachment->proplist.emplace_back(tag == ID_TAG_ATTACHDATABINARY ?
+				PR_ATTACH_DATA_BIN : PR_ATTACH_DATA_OBJ, pbin);
 			break;
 		}
 		default:
@@ -1712,13 +1710,11 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		auto pvalue = pattachment->proplist.getval(tag);
-		auto &vc = ppropvals->ppropval[ppropvals->count];
 		if (NULL != pvalue) {
-			vc.proptag = tag;
-			vc.pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->emplace_back(tag, pvalue);
 			continue;
 		}
+		auto &vc = ppropvals->ppropval[ppropvals->count];
 		vc.pvalue = NULL;
 		if (PROP_TYPE(tag) == PT_STRING8) {
 			auto u_tag = CHANGE_PROP_TYPE(tag, PT_UNICODE);
@@ -1791,14 +1787,12 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			continue;
 		}
 		case PR_ATTACH_SIZE: {
-			vc.proptag = tag;
 			length = common_util_calculate_attachment_size(pattachment);
 			auto uv = cu_alloc<uint32_t>();
 			if (uv == nullptr)
 				return FALSE;
 			*uv = length;
-			vc.pvalue = uv;
-			ppropvals->count ++;
+			ppropvals->emplace_back(tag, uv);
 			continue;
 		}
 		case PR_ATTACH_DATA_BIN_U: {
@@ -1836,14 +1830,12 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			}
 			if (pbin == nullptr)
 				break;
-			vc.proptag = tag;
 			auto tp = cu_alloc<TYPED_PROPVAL>();
-			vc.pvalue = tp;
 			if (tp == nullptr)
 				return FALSE;
 			tp->type = proptype;
 			tp->pvalue = pbin;
-			ppropvals->count ++;
+			ppropvals->emplace_back(tag, tp);
 			continue;
 		}
 		case PR_ATTACH_DATA_BIN:
@@ -1861,9 +1853,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 				return FALSE;
 			pbin->cb = length;
 			pbin->pv = pvalue;
-			vc.proptag = tag;
-			vc.pvalue = pbin;
-			ppropvals->count++;
+			ppropvals->emplace_back(tag, pbin);
 			continue;
 		}
 		}
@@ -2678,26 +2668,14 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 
 		auto &srecip = *prcpts->pparray[begin_pos+i];
 		auto drecip = *pset->pparray[i];
-		if (!srecip.has(PR_RECIPIENT_TYPE)) {
-			auto &p = drecip.ppropval[drecip.count++];
-			p.proptag = PR_RECIPIENT_TYPE;
-			p.pvalue = deconst(&dummy_rcpttype);
-		}
-		if (!srecip.has(PR_DISPLAY_NAME)) {
-			auto &p = drecip.ppropval[drecip.count++];
-			p.proptag = PR_DISPLAY_NAME;
-			p.pvalue = deconst(dummy_string);
-		}
-		if (!srecip.has(PR_ADDRTYPE)) {
-			auto &p = drecip.ppropval[drecip.count++];
-			p.proptag = PR_ADDRTYPE;
-			p.pvalue = deconst(&dummy_addrtype);
-		}
-		if (!srecip.has(PR_EMAIL_ADDRESS)) {
-			auto &p = drecip.ppropval[drecip.count++];
-			p.proptag = PR_EMAIL_ADDRESS;
-			p.pvalue = deconst(dummy_string);
-		}
+		if (!srecip.has(PR_RECIPIENT_TYPE))
+			drecip.emplace_back(PR_RECIPIENT_TYPE, &dummy_rcpttype);
+		if (!srecip.has(PR_DISPLAY_NAME))
+			drecip.emplace_back(PR_DISPLAY_NAME, dummy_string);
+		if (!srecip.has(PR_ADDRTYPE))
+			drecip.emplace_back(PR_ADDRTYPE, &dummy_addrtype);
+		if (!srecip.has(PR_EMAIL_ADDRESS))
+			drecip.emplace_back(PR_EMAIL_ADDRESS, dummy_string);
 	}
 	return TRUE;
 }

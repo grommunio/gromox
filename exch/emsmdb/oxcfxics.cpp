@@ -1164,27 +1164,18 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (tmp_propvals.ppropval == nullptr)
 			return ecServerOOM;
-		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
-		tmp_propvals.ppropval[0].pvalue = &folder_id;
-		tmp_propvals.ppropval[1].proptag = PidTagParentFolderId;
-		tmp_propvals.ppropval[1].pvalue = &parent_id1;
-		tmp_propvals.ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
-		tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[2].pvalue;
-		tmp_propvals.ppropval[3].proptag = PR_CHANGE_KEY;
-		tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[3].pvalue;
-		tmp_propvals.ppropval[4].proptag = PR_PREDECESSOR_CHANGE_LIST;
-		tmp_propvals.ppropval[4].pvalue = phichyvals->ppropval[4].pvalue;
-		tmp_propvals.ppropval[5].proptag = PR_DISPLAY_NAME;
-		tmp_propvals.ppropval[5].pvalue = phichyvals->ppropval[5].pvalue;
-		tmp_propvals.ppropval[6].proptag = PidTagChangeNumber;
-		tmp_propvals.ppropval[6].pvalue = &change_num;
-		tmp_propvals.count = 7;
+		tmp_propvals.emplace_back(PidTagFolderId, &folder_id);
+		tmp_propvals.emplace_back(PidTagParentFolderId, &parent_id1);
+		tmp_propvals.emplace_back(PR_LAST_MODIFICATION_TIME, phichyvals->ppropval[2].pvalue);
+		tmp_propvals.emplace_back(PR_CHANGE_KEY, phichyvals->ppropval[3].pvalue);
+		tmp_propvals.emplace_back(PR_PREDECESSOR_CHANGE_LIST, phichyvals->ppropval[4].pvalue);
+		tmp_propvals.emplace_back(PR_DISPLAY_NAME, phichyvals->ppropval[5].pvalue);
+		tmp_propvals.emplace_back(PidTagChangeNumber, &change_num);
 		for (unsigned int i = 0; i < ppropvals->count; ++i)
 			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
-			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
-			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;
+			tmp_propvals.emplace_back(PR_FOLDER_TYPE, &tmp_type);
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (!exmdb_client::create_folder_by_properties(dir,

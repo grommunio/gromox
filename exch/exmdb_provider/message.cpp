@@ -660,30 +660,15 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite, uint64_t message_id,
 			return FALSE;
 		*uv = row_id++;
 		auto &drcpt = *pset->pparray[pset->count];
-		auto ptr = drcpt.find(PR_RECIPIENT_TYPE);
-		if (ptr == nullptr) {
-			ptr = &drcpt.ppropval[drcpt.count++];
-			ptr->proptag = PR_RECIPIENT_TYPE;
-			ptr->pvalue = deconst(&dummy_rcpttype);
-		}
-		ptr = drcpt.find(PR_DISPLAY_NAME);
-		if (ptr == nullptr && drcpt.find(PR_DISPLAY_NAME_A) == nullptr) {
-			ptr = &drcpt.ppropval[drcpt.count++];
-			ptr->proptag = PR_DISPLAY_NAME;
-			ptr->pvalue = deconst(dummy_string);
-		}
-		ptr = drcpt.find(PR_ADDRTYPE);
-		if (ptr == nullptr) {
-			ptr = &drcpt.ppropval[drcpt.count++];
-			ptr->proptag = PR_ADDRTYPE;
-			ptr->pvalue = deconst(dummy_addrtype);
-		}
-		ptr = drcpt.find(PR_EMAIL_ADDRESS);
-		if (ptr == nullptr) {
-			ptr = &drcpt.ppropval[drcpt.count++];
-			ptr->proptag = PR_EMAIL_ADDRESS;
-			ptr->pvalue = deconst(dummy_string);
-		}
+		if (drcpt.find(PR_RECIPIENT_TYPE) == nullptr)
+			drcpt.emplace_back(PR_RECIPIENT_TYPE, &dummy_rcpttype);
+		if (drcpt.find(PR_DISPLAY_NAME) == nullptr &&
+		    drcpt.find(PR_DISPLAY_NAME_A) == nullptr)
+			drcpt.emplace_back(PR_DISPLAY_NAME, dummy_string);
+		if (drcpt.find(PR_ADDRTYPE) == nullptr)
+			drcpt.emplace_back(PR_ADDRTYPE, dummy_addrtype);
+		if (drcpt.find(PR_EMAIL_ADDRESS) == nullptr)
+			drcpt.emplace_back(PR_EMAIL_ADDRESS, dummy_string);
 		pset->count ++;
 	}
 	return TRUE;
@@ -1811,13 +1796,11 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			auto pvalue = cu_xid_to_bin(std::move(tmp_xid));
 			if (pvalue == nullptr)
 				return FALSE;
-			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag = PR_CHANGE_KEY;
-			msgctnt.proplist.ppropval[msgctnt.proplist.count++].pvalue = pvalue;
+			msgctnt.proplist.emplace_back(PR_CHANGE_KEY, pvalue);
 			pvalue = common_util_pcl_append(nullptr, pvalue);
 			if (pvalue == nullptr)
 				return FALSE;
-			msgctnt.proplist.ppropval[msgctnt.proplist.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-			msgctnt.proplist.ppropval[msgctnt.proplist.count++].pvalue = pvalue;
+			msgctnt.proplist.emplace_back(PR_PREDECESSOR_CHANGE_LIST, pvalue);
 		}
 		pmsgctnt = &msgctnt;
 	}

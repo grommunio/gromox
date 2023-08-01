@@ -155,61 +155,45 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	}
 	ppropvals->count = 0;
-	auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(6);
+	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(6);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	if (w_otype) {
-		vc->proptag = PR_OBJECT_TYPE;
-		vc->pvalue = deconst(&fake_type);
-		ppropvals->count++;
-		++vc;
-	}
-	if (w_atype) {
-		vc->proptag = PR_ADDRTYPE;
-		vc->pvalue = deconst("EX");
-		ppropvals->count++;
-		++vc;
-	}
+	if (w_otype)
+		ppropvals->emplace_back(PR_OBJECT_TYPE, &fake_type);
+	if (w_atype)
+		ppropvals->emplace_back(PR_ADDRTYPE, "EX");
 	if (!wx_name ||
 	    ab_tree_get_minid_type(puser->minid) != minid_type::address ||
 	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 	    username, std::size(username)))
 		return TRUE;
 	if (w_smtp) {
-		vc->proptag = PR_SMTP_ADDRESS;
-		vc->pvalue = common_util_dup(username);
-		if (vc->pvalue == nullptr)
+		auto s = common_util_dup(username);
+		if (s == nullptr)
 			return FALSE;
-		ppropvals->count++;
-		++vc;
+		ppropvals->emplace_back(PR_SMTP_ADDRESS, s);
 	}
 	if (w_acct) {
-		vc->proptag = PR_ACCOUNT;
-		vc->pvalue = common_util_dup(username);
-		if (vc->pvalue == nullptr)
+		auto s = common_util_dup(username);
+		if (s == nullptr)
 			return FALSE;
-		ppropvals->count++;
-		++vc;
+		ppropvals->emplace_back(PR_ACCOUNT, s);
 	}
 	if (w_email && common_util_username_to_essdn(username,
 	    tmp_buff, std::size(tmp_buff))) {
-		vc->proptag = PR_EMAIL_ADDRESS;
-		vc->pvalue = common_util_dup(tmp_buff);
-		if (vc->pvalue == nullptr)
+		auto s = common_util_dup(tmp_buff);
+		if (s == nullptr)
 			return FALSE;
-		ppropvals->count++;
-		++vc;
+		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
 	if (w_dname && system_services_get_user_displayname(username,
 	    tmp_buff, std::size(tmp_buff))) {
 		if (*tmp_buff == '\0')
 			strcpy(tmp_buff, username);
-		vc->proptag = PR_DISPLAY_NAME;
-		vc->pvalue = common_util_dup(tmp_buff);
-		if (vc->pvalue == nullptr)
+		auto s = common_util_dup(tmp_buff);
+		if (s == nullptr)
 			return FALSE;
-		ppropvals->count++;
-		++vc;
+		ppropvals->emplace_back(PR_DISPLAY_NAME, s);
 	}
 	return TRUE;
 }

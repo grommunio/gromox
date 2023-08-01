@@ -968,13 +968,12 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		if (store_object_get_calculated_property(this, tag, &pvalue)) {
-			if (pvalue == nullptr)
-				return FALSE;
-			ppropvals->emplace_back(tag, pvalue);
-		} else {
+		if (!store_object_get_calculated_property(this, tag, &pvalue))
 			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
-		}
+		else if (pvalue != nullptr)
+			ppropvals->emplace_back(tag, pvalue);
+		else
+			return false;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

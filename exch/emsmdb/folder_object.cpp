@@ -438,19 +438,12 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue)) {
+		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue))
 			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
-			continue;
-		}
-		if (NULL != pvalue) {
-			pv.proptag = tag;
-			pv.pvalue = pvalue;
-		} else {
-			pv.proptag = CHANGE_PROP_TYPE(tag, PT_ERROR);
-			pv.pvalue = deconst(&err_code);
-		}
-		ppropvals->count++;
+		else if (pvalue != nullptr)
+			ppropvals->emplace_back(tag, pvalue);
+		else
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

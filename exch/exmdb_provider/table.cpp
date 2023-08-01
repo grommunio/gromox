@@ -1719,7 +1719,6 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
 			const auto tag = pproptags->pproptag[i];
@@ -1748,10 +1747,8 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 					break;
 				}
 			}
-			mrow->ppropval[count].proptag = tag;
-			mrow->ppropval[count++].pvalue = pvalue;
+			mrow->emplace_back(tag, pvalue);
 		}
-		pset->pparray[pset->count]->count = count;
 		++pset->count;
 	}
 	if (sql_transact.commit() != 0)
@@ -1818,7 +1815,6 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
 			const auto tag = pproptags->pproptag[i];
@@ -1846,10 +1842,8 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 					static_cast<BINARY *>(pvalue)->cb = 510;
 				break;
 			}
-			mrow->ppropval[count].proptag = tag;
-			mrow->ppropval[count++].pvalue = pvalue;
+			mrow->emplace_back(tag, pvalue);
 		}
-		mrow->count = count;
 		++pset->count;
 	}
 	common_util_end_message_optimize();
@@ -1895,7 +1889,6 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
 			const auto tag = pproptags->pproptag[i];
@@ -1913,14 +1906,11 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 				*static_cast<uint32_t *>(pvalue) &= rightsMaxROP;
 			if (pvalue == nullptr)
 				continue;
-			mrow->ppropval[count].proptag = tag;
 			if (tag == PR_MEMBER_NAME_A)
-				mrow->ppropval[count++].pvalue =
-					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
+				mrow->emplace_back(tag, common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue)));
 			else
-				mrow->ppropval[count++].pvalue = pvalue;
+				mrow->emplace_back(tag, pvalue);
 		}
-		mrow->count = count;
 		++pset->count;
 	}
 	return TRUE;
@@ -1962,7 +1952,6 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (mrow->ppropval == nullptr)
 			return FALSE;
-		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
 			const auto tag = pproptags->pproptag[i];
@@ -1976,14 +1965,11 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
-			mrow->ppropval[count].proptag = tag;
 			if (tag == PR_RULE_NAME_A || tag == PR_RULE_PROVIDER_A)
-				mrow->ppropval[count++].pvalue =
-					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
+				mrow->emplace_back(tag, common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue)));
 			else
-				mrow->ppropval[count++].pvalue = pvalue;
+				mrow->emplace_back(tag, pvalue);
 		}
-		mrow->count = count;
 		++pset->count;
 	}
 	return TRUE;
@@ -2178,7 +2164,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
 	char sql_string[1024];
-	int count, idx = 0;
+	int idx = 0;
 
 	if (b_forward)
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
@@ -2207,7 +2193,6 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    &hierarchy_param, table_get_hierarchy_row_property))
 			continue;
 		idx = sqlite3_column_int64(pstmt, 1);
-		count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
@@ -2239,10 +2224,8 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 					break;
 				}
 			}
-			ppropvals->ppropval[count].proptag = tag;
-			ppropvals->ppropval[count++].pvalue = pvalue;
+			ppropvals->emplace_back(tag, pvalue);
 		}
-		ppropvals->count = count;
 		break;
 	}
 	if (sql_transact.commit() != 0)
@@ -2257,7 +2240,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     const TABLE_NODE *ptnode)
 {
 	char sql_string[1024];
-	int count, row_type, idx = 0;
+	int row_type, idx = 0;
 	uint64_t inst_id;
 
 	if (b_forward)
@@ -2313,7 +2296,6 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		    &content_param, table_get_content_row_property))
 			continue;
 		idx = sqlite3_column_int64(pstmt, 1);
-		count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
@@ -2344,10 +2326,8 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 					static_cast<BINARY *>(pvalue)->cb = 510;
 				break;
 			}
-			ppropvals->ppropval[count].proptag = tag;
-			ppropvals->ppropval[count++].pvalue = pvalue;
+			ppropvals->emplace_back(tag, pvalue);
 		}
-		ppropvals->count = count;
 		break;
 	}
 	common_util_end_message_optimize();
@@ -2386,7 +2366,6 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue;
 			const auto tag = pproptags->pproptag[i];
@@ -2400,15 +2379,12 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
-			ppropvals->ppropval[count].proptag = tag;
 			if (tag == PR_RULE_NAME_A ||
 			    tag == PR_RULE_PROVIDER_A)
-				ppropvals->ppropval[count++].pvalue =
-					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
+				ppropvals->emplace_back(tag, common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue)));
 			else
-				ppropvals->ppropval[count++].pvalue = pvalue;
+				ppropvals->emplace_back(tag, pvalue);
 		}
-		ppropvals->count = count;
 		break;
 	}
 	*pposition = idx - 1;
@@ -2511,7 +2487,6 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
-	int count;
 	uint32_t depth;
 	uint64_t folder_id;
 	char sql_string[1024];
@@ -2537,7 +2512,6 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
@@ -2569,10 +2543,8 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 				break;
 			}
 		}
-		ppropvals->ppropval[count].proptag = tag;
-		ppropvals->ppropval[count++].pvalue = pvalue;
+		ppropvals->emplace_back(tag, pvalue);
 	}
-	ppropvals->count = count;
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 
@@ -2580,7 +2552,7 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const TABLE_NODE *ptnode)
 {
-	int count, row_type;
+	int row_type;
 	char sql_string[1024];
 
 	inst_id = rop_util_get_replid(inst_id) == 1 ?
@@ -2616,7 +2588,6 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
@@ -2647,10 +2618,8 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 				static_cast<BINARY *>(pvalue)->cb = 510;
 			break;
 		}
-		ppropvals->ppropval[count].proptag = tag;
-		ppropvals->ppropval[count++].pvalue = pvalue;
+		ppropvals->emplace_back(tag, pvalue);
 	}
-	ppropvals->count = count;
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 

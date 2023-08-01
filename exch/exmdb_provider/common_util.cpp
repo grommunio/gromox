@@ -2099,9 +2099,7 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid);
 		if (pvalue == nullptr)
 			return false;
-		pv.proptag = tag;
-		pv.pvalue = pvalue;
-		ppropvals->count ++;
+		ppropvals->emplace_back(tag, pvalue);
 	}
 	return TRUE;
 }
