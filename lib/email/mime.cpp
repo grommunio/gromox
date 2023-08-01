@@ -923,7 +923,7 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 	offset = 0;
 	for (const auto &[k, v] : f_other_fields) {
 		/* xxxxx: yyyyy */
-		auto res = fmt::format_to_n(tmp_buff, std::size(tmp_buff), "{}: {}", k, v);
+		auto res = fmt::format_to_n(tmp_buff, std::size(tmp_buff), "{}: {}\r\n", k, v);
 		len = res.size;
 		if (offset + len > *plength) {
 			*plength = 0;
