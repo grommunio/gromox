@@ -771,7 +771,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	using Base = std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldURI>;
 
 	explicit tPath(const tinyxml2::XMLElement*);
-	explicit inline tPath(Base&& b) : Base(b) {}
+	explicit inline tPath(Base &&b) : Base(std::move(b)) {}
 
 	void tags(sShape&, bool=true) const;
 
