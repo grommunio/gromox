@@ -370,6 +370,8 @@ purg_delete_unused_files4(const std::string &cid_dir, const std::string &subdir,
 {
 	std::unique_ptr<DIR, file_deleter> dh(opendir((cid_dir + "/" + subdir).c_str()));
 	if (dh == nullptr) {
+		if (errno == ENOENT)
+			return {0, 0};
 		mlog(LV_ERR, "E-2387: cannot open %s/%s: %s",
 			cid_dir.c_str(), subdir.c_str(), strerror(errno));
 		return {UINT64_MAX, 0};
