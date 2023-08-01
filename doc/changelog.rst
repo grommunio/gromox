@@ -1,4 +1,4 @@
-Development 2.10.173
+Development 2.10.198
 ====================
 
 Enhancements:
@@ -14,11 +14,15 @@ Fixes:
 * oxcical: resolved another case of recurring appointments shifting due to
   timezone/daylightbias
 * exmdb_provider: resolve constraint failure on movecopy_messages
+* email_lib: add back CRLF when MIME::read_head is reconstructing headers
+* exmdb_provider: ignore absent directories during `gromox-mbop
+  purge-datafiles`
 
 Changes:
 
 * exmdb_client: disable timeout during active calls
 * delivery: raise context_average_mime limit from 8 to 500
+* nsp: drop "custom address list" name suffix from mlists
 
 
 Gromox 2.10 (2023-06-15)
