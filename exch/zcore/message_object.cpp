@@ -691,7 +691,6 @@ static BOOL msgo_is_readonly_prop(const message_object *pmessage,
 	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
 	case PR_MSG_STATUS:
-	case PR_TRANSPORT_MESSAGE_HEADERS:
 		return TRUE;
 	case PR_CHANGE_KEY:
 	case PR_CREATION_TIME:

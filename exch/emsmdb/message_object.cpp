@@ -936,8 +936,6 @@ bool message_object::is_readonly_prop(uint32_t proptag) const
 	case PR_RECORD_KEY:
 	case PR_MESSAGE_SIZE:
 	case PR_MSG_STATUS:
-	case PR_TRANSPORT_MESSAGE_HEADERS:
-	case PR_TRANSPORT_MESSAGE_HEADERS_A:
 		return true;
 	case PR_CHANGE_KEY:
 	case PR_CREATION_TIME:

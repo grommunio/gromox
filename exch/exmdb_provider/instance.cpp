@@ -2246,8 +2246,6 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC_A:
-		case PR_TRANSPORT_MESSAGE_HEADERS:
-		case PR_TRANSPORT_MESSAGE_HEADERS_A:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = tag;
 			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
