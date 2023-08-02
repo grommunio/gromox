@@ -1697,7 +1697,8 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	switch (ptnode->type) {
-	case table_type::hierarchy: {
+	case table_type::hierarchy:
+		return [](db_item_ptr &pdb, cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset) -> BOOL {
 		char sql_string[1024];
 		int32_t end_pos;
 
@@ -1771,9 +1772,10 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		}
 		if (sql_transact.commit() != 0)
 			return false;
-		break;
-	}
-	case table_type::content: {
+		return TRUE;
+		}(pdb, cpid, table_id, pproptags, start_pos, row_needed, pset);
+	case table_type::content:
+		return [](db_item_ptr &pdb, cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed, const table_node *ptnode, TARRAY_SET *pset) -> BOOL {
 		char sql_string[1024];
 		int32_t end_pos;
 
@@ -1866,9 +1868,10 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		cl_1.release();
 		if (sql_transact.commit() != 0)
 			return false;
-		break;
-	}
-	case table_type::permission: {
+		return TRUE;
+		}(pdb, cpid, table_id, pproptags, start_pos, row_needed, ptnode, pset);
+	case table_type::permission:
+		return [](db_item_ptr &pdb, cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed, const table_node *ptnode, TARRAY_SET *pset) -> BOOL {
 		char sql_string[1024];
 		int32_t end_pos;
 
@@ -1928,9 +1931,10 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			}
 			pset->pparray[pset->count++]->count = count;
 		}
-		break;
-	}
-	case table_type::rule: {
+		return TRUE;
+		}(pdb, cpid, table_id, pproptags, start_pos, row_needed, ptnode, pset);
+	case table_type::rule:
+		return [](db_item_ptr &pdb, cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset) -> BOOL {
 		char sql_string[1024];
 		int32_t end_pos;
 
@@ -1987,8 +1991,8 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			}
 			pset->pparray[pset->count++]->count = count;
 		}
-		break;
-	}
+		return TRUE;
+		}(pdb, cpid, table_id, pproptags, start_pos, row_needed, pset);
 	}
 	return TRUE;
 }
