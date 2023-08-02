@@ -129,12 +129,13 @@ BOOL ics_state::deserialize(const BINARY &bin)
 	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return FALSE;	
 	for (i=0; i<propvals.count; i++) {
-		switch (propvals.ppropval[i].proptag) {
+		const auto &pv = propvals.ppropval[i];
+		switch (pv.proptag) {
 		case MetaTagIdsetGiven1: {
 			auto pset = idset::create(false, REPL_TYPE_ID);
 			if (pset == nullptr)
 				return FALSE;
-			if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
+			if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
 			    !pset->convert())
 				return FALSE;
 			pstate->pgiven = std::move(pset);
@@ -144,7 +145,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 			auto pset = idset::create(false, REPL_TYPE_ID);
 			if (pset == nullptr)
 				return FALSE;
-			if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
+			if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
 			    !pset->convert())
 				return FALSE;
 			pstate->pseen = std::move(pset);
@@ -155,7 +156,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 				auto pset = idset::create(false, REPL_TYPE_ID);
 				if (pset == nullptr)
 					return FALSE;
-				if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
+				if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
 				    !pset->convert())
 					return FALSE;
 				pstate->pseen_fai = std::move(pset);
@@ -166,7 +167,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 				auto pset = idset::create(false, REPL_TYPE_ID);
 				if (pset == nullptr)
 					return FALSE;
-				if (!pset->deserialize(*static_cast<const BINARY *>(propvals.ppropval[i].pvalue)) ||
+				if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
 				    !pset->convert())
 					return FALSE;
 				pstate->pread = std::move(pset);

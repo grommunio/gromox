@@ -385,9 +385,9 @@ ec_error_t message_object::save()
 	    PR_MESSAGE_FLAGS))
 		return ecError;
 	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
-		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
-			if (!proptag_array_append(pungroup_proptags.get(),
-			    pmessage->pchanged_proptags->pproptag[i]))
+		const auto tag = pmessage->pchanged_proptags->pproptag[i];
+		if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
+			if (!proptag_array_append(pungroup_proptags.get(), tag))
 				return ecError;
 		} else {
 			if (!proptag_array_append(pindices.get(), tmp_index))
@@ -395,7 +395,8 @@ ec_error_t message_object::save()
 		}
 	}
 	for (i=0; i<pmessage->premoved_proptags->count; i++) {
-		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index))
+		const auto tag = pmessage->premoved_proptags->pproptag[i];
+		if (!pgpinfo->get_partial_index(tag, &tmp_index))
 			goto SAVE_FULL_CHANGE;
 		else if (!proptag_array_append(pindices.get(), tmp_index))
 			return ecError;
@@ -620,13 +621,14 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	for (i=0; i<tmp_proptags.count; i++) {
-		switch (tmp_proptags.pproptag[i]) {
+		const auto tag = tmp_proptags.pproptag[i];
+		switch (tag) {
 		case PidTagMid:
 		case PR_ASSOCIATED:
 		case PidTagChangeNumber:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
+			pproptags->pproptag[pproptags->count++] = tag;
 			break;
 		}
 	}
@@ -842,11 +844,12 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	for (i=0; i<ppropvals->count; i++) {
+		const auto &pv = ppropvals->ppropval[i];
 		if (b_check) {
-			if (msgo_is_readonly_prop(pmessage, ppropvals->ppropval[i].proptag)) {
+			if (msgo_is_readonly_prop(pmessage, pv.proptag)) {
 				problems.pproblem[problems.count++].index = i;
 				continue;
-			} else if (ppropvals->ppropval[i].proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
+			} else if (pv.proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
 				if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
@@ -854,11 +857,11 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 					problems.pproblem[problems.count++].index = i;
 					continue;
 				}
-				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb > g_max_extrule_len) {
+				if (static_cast<BINARY *>(pv.pvalue)->cb > g_max_extrule_len) {
 					problems.pproblem[problems.count++].index = i;
 					continue;
 				}
-			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
+			} else if (pv.proptag == PR_MESSAGE_FLAGS) {
 				tmp_propvals1.count = 3;
 				tmp_propvals1.ppropval = propval_buff;
 				propval_buff[0].proptag = PR_READ;
@@ -867,16 +870,15 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				propval_buff[1].pvalue = &tmp_bytes[1];
 				propval_buff[2].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 				propval_buff[2].pvalue = &tmp_bytes[2];
-				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
-				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
-				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_NRN_PENDING);
+				tmp_bytes[0] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_READ);
+				tmp_bytes[1] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_RN_PENDING);
+				tmp_bytes[2] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_NRN_PENDING);
 				if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),
 				    pmessage->instance_id, &tmp_propvals1, &tmp_problems))
 					return FALSE;	
 			}
 		}
-		tmp_propvals.ppropval[tmp_propvals.count] =
-							ppropvals->ppropval[i];
+		tmp_propvals.ppropval[tmp_propvals.count] = pv;
 		poriginal_indices[tmp_propvals.count++] = i;
 	}
 	if (tmp_propvals.count == 0)

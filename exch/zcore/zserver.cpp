@@ -3959,11 +3959,12 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!b_force && !fdst->get_all_proptags(&proptags1))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (fdst->is_readonly_prop(proptags.pproptag[i]))
+			const auto tag = proptags.pproptag[i];
+			if (fdst->is_readonly_prop(tag))
 				continue;
-			if (!b_force && proptags1.has(proptags.pproptag[i]))
+			if (!b_force && proptags1.has(tag))
 				continue;
-			tmp_proptags.pproptag[tmp_proptags.count++] = proptags.pproptag[i];
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 		}
 		if (!folder->get_properties(&tmp_proptags, &propvals))
 			return ecError;

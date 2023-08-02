@@ -1241,10 +1241,10 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	auto pinfo = zs_get_info();
 	auto pstore = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (store_object_is_readonly_prop(
-		    pstore, ppropvals->ppropval[i].proptag))
+		const auto &pv = ppropvals->ppropval[i];
+		if (store_object_is_readonly_prop(pstore, pv.proptag))
 			continue;
-		switch (ppropvals->ppropval[i].proptag) {
+		switch (pv.proptag) {
 		case PR_EC_OUTOFOFFICE:
 		case PR_EC_OUTOFOFFICE_FROM:
 		case PR_EC_OUTOFOFFICE_UNTIL:
@@ -1255,28 +1255,27 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		case PR_EC_EXTERNAL_SUBJECT:
 		case PR_EC_EXTERNAL_REPLY:
 			if (!store_object_set_oof_property(pstore->get_dir(),
-			    ppropvals->ppropval[i].proptag,
-			    ppropvals->ppropval[i].pvalue))
+			    pv.proptag, pv.pvalue))
 				return FALSE;	
 			break;
 		case PR_EC_USER_LANGUAGE:
-			set_store_lang(pstore, static_cast<char *>(ppropvals->ppropval[i].pvalue));
+			set_store_lang(pstore, static_cast<char *>(pv.pvalue));
 			break;
 		case PR_EC_USER_TIMEZONE:
 			if (pstore->b_private)
 				system_services_set_timezone(pstore->account,
-					static_cast<char *>(ppropvals->ppropval[i].pvalue));
+					static_cast<char *>(pv.pvalue));
 			break;
 		case PR_EMS_AB_THUMBNAIL_PHOTO: {
 			if (!pstore->b_private)
 				break;
-			auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
+			auto bv = static_cast<BINARY *>(pv.pvalue);
 			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
 				"photo", PT_BINARY, bv->pb, bv->cb);
 			break;
 		}
 		default:
-			if (!pinfo->ptree->set_zstore_propval(&ppropvals->ppropval[i]))
+			if (!pinfo->ptree->set_zstore_propval(&pv))
 				return FALSE;	
 			break;
 		}

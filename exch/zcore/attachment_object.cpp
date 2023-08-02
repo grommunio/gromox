@@ -245,10 +245,10 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
 	for (i=0; i<ppropvals->count; i++) {
-		if (aobj_is_readonly_prop(pattachment,
-		    ppropvals->ppropval[i].proptag))
+		const auto &pv = ppropvals->ppropval[i];
+		if (aobj_is_readonly_prop(pattachment, pv.proptag))
 			continue;
-		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
+		tmp_propvals.ppropval[tmp_propvals.count++] = pv;
 	}
 	if (tmp_propvals.count == 0)
 		return TRUE;
