@@ -17,7 +17,6 @@
 ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i, j;
 	BOOL b_exceed;
 	ems_objtype object_type;
 	uint32_t permission;
@@ -44,20 +43,17 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 			return ecAccessDenied;
 	}
 	if (MODIFY_RULES_FLAG_REPLACE & flags) {
-		for (i=0; i<count; i++) {
+		for (unsigned int i = 0; i < count; ++i)
 			if (prow[i].flags != ROW_ADD)
 				return ecInvalidParam;
-		}
 		if (!exmdb_client::empty_folder_rule(dir, pfolder->folder_id))
 			return ecError;
 	}
-	for (i=0; i<count; i++) {
-		for (j=0; j<prow[i].propvals.count; j++) {
+	for (unsigned int i = 0; i < count; ++i)
+		for (unsigned int j = 0; j < prow[i].propvals.count; ++j)
 			if (!common_util_convert_tagged_propval(TRUE,
 			    &prow[i].propvals.ppropval[j]))
 				return ecError;
-		}
-	}
 	if (!exmdb_client::update_folder_rule(dir,
 	    pfolder->folder_id, count, prow, &b_exceed))
 		return ecError;

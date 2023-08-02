@@ -288,8 +288,6 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
@@ -302,7 +300,8 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
@@ -355,7 +354,6 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pattachment = this;
-	int i, j;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -370,7 +368,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (poriginal_indices == nullptr)
 		return FALSE;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (is_readonly_prop(pv.proptag) ||
 		    attachment_object_check_stream_property(pattachment, pv.proptag)) {
@@ -391,7 +389,8 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
+		unsigned int j;
 		for (j = 0; j < pproblems->count; ++j)
 			if (i == pproblems->pproblem[j].index)
 				break;
@@ -407,7 +406,6 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pattachment = this;
-	int i, j;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
@@ -422,7 +420,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (poriginal_indices == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (is_readonly_prop(tag) ||
 		    attachment_object_check_stream_property(pattachment, tag)) {
@@ -443,7 +441,8 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		unsigned int j;
 		for (j = 0; j < pproblems->count; ++j)
 			if (i == pproblems->pproblem[j].index)
 				break;

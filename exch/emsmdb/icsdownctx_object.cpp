@@ -597,10 +597,8 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
     const PROPTAG_ARRAY *pproptags, bool b_exclude)
 {
-	int i;
-	
 	if (b_exclude) {
-		for (i=0; i<pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			const auto tag = pproptags->pproptag[i];
 			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:
@@ -616,8 +614,7 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		}
 		return;
 	}
-	i = 0;
-	while (i < pmsgctnt->proplist.count) {
+	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ) {
 		if (!pproptags->has(pmsgctnt->proplist.ppropval[i].proptag))
 			common_util_remove_propvals(&pmsgctnt->proplist,
 				pmsgctnt->proplist.ppropval[i].proptag);
@@ -636,10 +633,8 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
     MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
 {
-	int i, j;
-	uint16_t count;
+	int i;
 	uint32_t index;
-	uint32_t proptag;
 	PROPTAG_ARRAY *pchangetags;
 	static constexpr BINARY fake_bin{};
 	
@@ -674,9 +669,9 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		pchangetags = pgpinfo->pgroups + index;
 		auto &pl = pmsg->pchanges[i].proplist;
 		pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
-		count = 0;
-		for (j=0; j<pchangetags->count; j++) {
-			proptag = pchangetags->pproptag[j];
+		unsigned int count = 0;
+		for (unsigned int j = 0; j < pchangetags->count; ++j) {
+			const auto proptag = pchangetags->pproptag[j];
 			switch (proptag) {
 			case PR_MESSAGE_RECIPIENTS:
 				pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
@@ -706,9 +701,9 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	auto &pl = pmsg->pchanges[i].proplist;
 	pmsg->pchanges[i].index = UINT32_MAX;
 	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-	count = 0;
-	for (j=0; j<pproptags->count; j++) {
-		proptag = pproptags->pproptag[j];
+	unsigned int count = 0;
+	for (unsigned int j = 0; j < pproptags->count; ++j) {
+		const auto proptag = pproptags->pproptag[j];
 		switch (proptag) {
 		case PR_MESSAGE_RECIPIENTS:
 			pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;

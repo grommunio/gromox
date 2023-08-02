@@ -583,8 +583,6 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
@@ -601,7 +599,8 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	auto plogon = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (logon_object_get_calculated_property(plogon, tag, &pvalue)) {
@@ -634,7 +633,6 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
-	int i;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -653,7 +651,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	auto plogon = this;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (lo_is_readonly_prop(plogon, pv.proptag)) {
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
@@ -677,7 +675,6 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
-	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	pproblems->count = 0;
@@ -689,7 +686,7 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto plogon = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (lo_is_readonly_prop(plogon, tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);

@@ -31,7 +31,6 @@ static BOOL message_object_set_properties_internal(message_object *, BOOL check,
 static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
     PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_message_instance_rcpts_all_proptags(pmessage->plogon->get_dir(),
@@ -41,7 +40,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (i=0; i<tmp_proptags.count; i++) {
+	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
 		switch (tmp_proptags.pproptag[i]) {
 		case PR_RESPONSIBILITY:
 		case PR_ADDRTYPE:
@@ -850,7 +849,6 @@ BOOL message_object::clear_unsent()
 BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
-	int i;
 	int nodes_num;
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_proptags;
@@ -864,7 +862,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (i=0; i<tmp_proptags.count; i++) {
+	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
 		switch (tmp_proptags.pproptag[i]) {
 		case PidTagMid:
 		case PR_SUBJECT:
@@ -1029,8 +1027,6 @@ BOOL message_object::get_properties(uint32_t size_limit,
     const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
@@ -1044,7 +1040,8 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
@@ -1091,6 +1088,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	}
 	if (pproptags->has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
+		void *pvalue = nullptr;
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -1127,8 +1125,6 @@ static BOOL message_object_check_stream_property(message_object *pmessage,
 static BOOL message_object_set_properties_internal(message_object *pmessage,
 	BOOL b_check, const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
-	int i, j;
-	void *pvalue;
 	uint8_t tmp_bytes[3];
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1150,7 +1146,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		return FALSE;
 	
 	auto dir = pmessage->plogon->get_dir();
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		/* if property is being open as stream object, can not be modified */
 		const auto &pv = ppropvals->ppropval[i];
 		if (b_check) {
@@ -1159,6 +1155,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 				continue;
 			} else if (pv.proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
+				void *pvalue = nullptr;
 				if (!exmdb_client::get_instance_property(dir,
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
@@ -1204,7 +1201,8 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
+		unsigned int j;
 		for (j=0; j<pproblems->count; ++j)
 			if (i == pproblems->pproblem[j].index)
 				break;
@@ -1231,7 +1229,6 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pmessage = this;
-	int i, j;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
@@ -1249,7 +1246,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	/* if property is being open as stream object, can not be removed */
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (is_readonly_prop(tag) ||
 		    message_object_check_stream_property(pmessage, tag)) {
@@ -1272,7 +1269,8 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		unsigned int j;
 		for (j = 0; j < pproblems->count; ++j)
 			if (i == pproblems->pproblem[j].index)
 				break;
@@ -1292,7 +1290,6 @@ BOOL message_object::copy_to(message_object *pmessage_src,
      PROBLEM_ARRAY *pproblems)
 {
 	auto pmessage = this;
-	int i;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY *pcolumns;
 	MESSAGE_CONTENT msgctnt;
@@ -1317,8 +1314,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
-	i = 0;
-	while (i < msgctnt.proplist.count) {
+	for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
 		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
 					msgctnt.proplist.ppropval[i].proptag);
@@ -1340,7 +1336,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (i=0; i<proptags.count; i++) {
+	for (unsigned int i = 0; i < proptags.count; ++i) {
 		auto u_tag = message_object_rectify_proptag(proptags.pproptag[i]);
 		proptag_array_append(pmessage->pchanged_proptags, u_tag);
 	}

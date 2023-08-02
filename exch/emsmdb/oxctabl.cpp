@@ -78,8 +78,6 @@ static inline bool table_acceptable_type(uint16_t type)
 ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
-	uint16_t type;
 	ems_objtype object_type;
 	
 	if (pproptags->count == 0)
@@ -89,8 +87,8 @@ ec_error_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 		return ecNullObject;
 	if (object_type != ems_objtype::table)
 		return ecNotSupported;
-	for (i=0; i<pproptags->count; i++) {
-		type = PROP_TYPE(pproptags->pproptag[i]);
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		uint16_t type = PROP_TYPE(pproptags->pproptag[i]);
 		if ((type & MVI_FLAG) == MVI_FLAG) {
 				if (ropGetContentsTable != ptable->rop_id)
 					return ecNotSupported;

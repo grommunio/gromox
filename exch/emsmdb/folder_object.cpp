@@ -419,8 +419,6 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
@@ -437,7 +435,8 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	auto pfolder = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		if (!folder_object_get_calculated_property(pfolder, tag, &pvalue)) {
@@ -478,7 +477,6 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
-	int i;
 	uint16_t count;
 	BINARY *pbin_pcl;
 	uint64_t last_time;
@@ -502,7 +500,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (pfolder->is_readonly_prop(pv.proptag)) {
 			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
@@ -547,7 +545,6 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
-	int i;
 	BINARY *pbin_pcl;
 	uint64_t last_time;
 	uint64_t change_num;
@@ -565,7 +562,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (pfolder->is_readonly_prop(tag))
 			pproblems->emplace_back(i, tag, ecAccessDenied);

@@ -131,7 +131,6 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
     const PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	cpid_t cpid;
 	ems_objtype object_type;
 	uint16_t proptype;
@@ -185,7 +184,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		return ecNotSupported;
 	}
 	total_size = 0;
-	for (i=0; i<propvals.count; i++) {
+	for (unsigned int i = 0; i < propvals.count; ++i) {
 		auto &pv = propvals.ppropval[i];
 		auto tmp_size = propval_size_xfer(PROP_TYPE(pv.proptag), pv.pvalue);
 		if (tmp_size < 0x8000) {
@@ -199,7 +198,7 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 		*static_cast<uint32_t *>(pv.pvalue) = ecMAPIOOM;
 	}
 	if (total_size >= 0x7000) {
-		for (i=0; i<propvals.count; i++) {
+		for (unsigned int i = 0; i < propvals.count; ++i) {
 			auto &pv = propvals.ppropval[i];
 			proptype = PROP_TYPE(pv.proptag);
 			switch (proptype) {
@@ -227,7 +226,6 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
     TPROPVAL_ARRAY *ppropvals, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	cpid_t cpid;
 	BOOL b_unicode = false;
 	ems_objtype object_type;
@@ -247,7 +245,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 			return ecServerOOM;
 		if (!xlog->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
-		for (i=0; i<ppropvals->count; i++) {
+		for (unsigned int i = 0; i < ppropvals->count; ++i) {
 			auto &pv = ppropvals->ppropval[i];
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
@@ -272,7 +270,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 			return ecServerOOM;
 		if (!fld->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
-		for (i=0; i<ppropvals->count; i++) {
+		for (unsigned int i = 0; i < ppropvals->count; ++i) {
 			auto &pv = ppropvals->ppropval[i];
 			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
@@ -315,7 +313,7 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 	default:
 		return ecNotSupported;
 	}
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (PROP_TYPE(pv.proptag) != PT_UNSPECIFIED)
 			continue;	
@@ -485,9 +483,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
     PROPIDNAME_ARRAY *ppropidnames, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	ems_objtype object_type;
-	uint16_t propid;
 	PROPID_ARRAY propids;
 	PROPTAG_ARRAY proptags;
 	PROPNAME_ARRAY propnames;
@@ -529,8 +525,8 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 	propids.ppropid = cu_alloc<uint16_t>(proptags.count);
 	if (propids.ppropid == nullptr)
 		return ecServerOOM;
-	for (i=0; i<proptags.count; i++) {
-		propid = PROP_ID(proptags.pproptag[i]);
+	for (unsigned int i = 0; i < proptags.count; ++i) {
+		uint16_t propid = PROP_ID(proptags.pproptag[i]);
 		if (!is_nameprop_id(propid))
 			continue;
 		propids.ppropid[propids.count++] = propid;
@@ -550,7 +546,7 @@ ec_error_t rop_querynamedproperties(uint8_t query_flags, const GUID *pguid,
 		return ecServerOOM;
 	if (!plogon->get_named_propnames(&propids, &propnames))
 		return ecError;
-	for (i=0; i<propids.count; i++) {
+	for (unsigned int i = 0; i < propids.count; ++i) {
 		if (propnames.ppropname[i].kind == KIND_NONE)
 			continue;
 		if (pguid != nullptr && *pguid != propnames.ppropname[i].guid)

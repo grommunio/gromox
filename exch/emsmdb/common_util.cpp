@@ -818,10 +818,8 @@ BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor)
 {
-	int i, j;
-	
-	for (j=0; j<pproptags_subtractor->count; j++) {
-		for (i=0; i<pproptags_minuend->count; i++) {
+	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
 			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
@@ -837,8 +835,6 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 
 PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 {
-	int i;
-	
 	auto ptmp_proptags = cu_alloc<PROPTAG_ARRAY>();
 	if (ptmp_proptags == nullptr)
 		return NULL;
@@ -846,7 +842,7 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	if (ptmp_proptags->pproptag == nullptr)
 		return NULL;
 	ptmp_proptags->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (PROP_TYPE(tag) == PT_OBJECT)
 			continue;
@@ -1439,7 +1435,6 @@ void common_util_notify_receipt(const char *username, int type,
 BOOL common_util_save_message_ics(logon_object *plogon,
 	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
 {
-	int i;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	uint64_t change_num;
@@ -1491,7 +1486,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 			return FALSE;
 	}
 	if (NULL != pchanged_proptags) {
-		for (i=0; i<pchanged_proptags->count; i++) {
+		for (unsigned int i = 0; i < pchanged_proptags->count; ++i) {
 			const auto tag = pchanged_proptags->pproptag[i];
 			if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
 				if (!proptag_array_append(pungroup_proptags.get(), tag))

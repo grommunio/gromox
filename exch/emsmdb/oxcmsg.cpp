@@ -317,14 +317,12 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
     const MODIFYRECIPIENT_ROW *prow, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hin)
 {
-	int i;
 	ems_objtype object_type;
 	TARRAY_SET tmp_set;
-	TPROPVAL_ARRAY *ppropvals;
 	
 	if (pproptags->count >= 0x7FEF || count >= 0x7FEF)
 		return ecInvalidParam;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		switch (pproptags->pproptag[i]) {
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
@@ -350,8 +348,8 @@ ec_error_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 	tmp_set.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 	if (tmp_set.pparray == nullptr)
 		return ecServerOOM;
-	for (i=0; i<count; i++) {
-		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
+	for (unsigned int i = 0; i < count; ++i) {
+		auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (ppropvals == nullptr)
 			return ecServerOOM;
 		if (NULL == prow[i].precipient_row) {
