@@ -1685,19 +1685,6 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
-	int i;
-	int count;
-	void *pvalue;
-	int row_type;
-	int32_t end_pos;
-	uint32_t proptag;
-	uint64_t rule_id;
-	uint64_t inst_id;
-	uint64_t member_id;
-	uint64_t folder_id;
-	xstmt pstmt1, pstmt2;
-	char sql_string[1024];
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -1711,6 +1698,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	switch (ptnode->type) {
 	case table_type::hierarchy: {
+		char sql_string[1024];
+		int32_t end_pos;
+
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, std::size(sql_string), "SELECT folder_id, depth FROM"
@@ -1737,7 +1727,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		if (!sql_transact)
 			return false;
 		while (pstmt.step() == SQLITE_ROW) {
-			folder_id = sqlite3_column_int64(pstmt, 0);
+			auto folder_id = pstmt.col_uint64(0);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
@@ -1745,8 +1735,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (pset->pparray[pset->count]->ppropval == nullptr)
 				return FALSE;
-			count = 0;
-			for (i=0; i<pproptags->count; i++) {
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < pproptags->count; ++i) {
+				void *pvalue = nullptr;
 				if (pproptags->pproptag[i] == PR_DEPTH) {
 					auto v = cu_alloc<uint32_t>();
 					pvalue = v;
@@ -1783,6 +1774,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		break;
 	}
 	case table_type::content: {
+		char sql_string[1024];
+		int32_t end_pos;
+
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
@@ -1803,6 +1797,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
+		xstmt pstmt1, pstmt2;
 		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 			snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
@@ -1825,8 +1820,8 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			return FALSE;
 		auto cl_1 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 		while (pstmt.step() == SQLITE_ROW) {
-			inst_id = sqlite3_column_int64(pstmt, 3);
-			row_type = sqlite3_column_int64(pstmt, 4);
+			auto inst_id = pstmt.col_uint64(3);
+			uint32_t row_type = pstmt.col_uint64(4);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
@@ -1834,8 +1829,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (pset->pparray[pset->count]->ppropval == nullptr)
 				return FALSE;
-			count = 0;
-			for (i=0; i<pproptags->count; i++) {
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < pproptags->count; ++i) {
+				void *pvalue = nullptr;
 				if (!table_column_content_tmptbl(pstmt, pstmt1,
 				    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 				    pproptags->pproptag[i], ptnode->instance_tag,
@@ -1873,6 +1869,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		break;
 	}
 	case table_type::permission: {
+		char sql_string[1024];
+		int32_t end_pos;
+
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, std::size(sql_string), "SELECT member_id FROM t%u "
@@ -1894,7 +1893,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		if (pstmt == nullptr)
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW) {
-			member_id = sqlite3_column_int64(pstmt, 0);
+			auto member_id = pstmt.col_uint64(0);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
@@ -1902,9 +1901,10 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (pset->pparray[pset->count]->ppropval == nullptr)
 				return FALSE;
-			count = 0;
-			for (i=0; i<pproptags->count; i++) {
-				proptag = pproptags->pproptag[i];
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < pproptags->count; ++i) {
+				void *pvalue = nullptr;
+				auto proptag = pproptags->pproptag[i];
 				if (proptag == PR_MEMBER_NAME_A)
 					proptag = PR_MEMBER_NAME;
 				if (!common_util_get_permission_property(member_id,
@@ -1931,6 +1931,9 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		break;
 	}
 	case table_type::rule: {
+		char sql_string[1024];
+		int32_t end_pos;
+
 		if (row_needed > 0) {
 			end_pos = start_pos + row_needed;
 			snprintf(sql_string, std::size(sql_string), "SELECT rule_id FROM t%u "
@@ -1952,7 +1955,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 		if (pstmt == nullptr)
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW) {
-			rule_id = sqlite3_column_int64(pstmt, 0);
+			auto rule_id = pstmt.col_uint64(0);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 			if (pset->pparray[pset->count] == nullptr)
 				return FALSE;
@@ -1960,9 +1963,10 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
 			pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 			if (pset->pparray[pset->count]->ppropval == nullptr)
 				return FALSE;
-			count = 0;
-			for (i=0; i<pproptags->count; i++) {
-				proptag = pproptags->pproptag[i];
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < pproptags->count; ++i) {
+				void *pvalue = nullptr;
+				auto proptag = pproptags->pproptag[i];
 				if (proptag == PR_RULE_NAME_A)
 					proptag = PR_RULE_NAME;
 				else if (proptag == PR_RULE_PROVIDER_A)
