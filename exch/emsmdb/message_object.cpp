@@ -69,17 +69,11 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 static uint32_t message_object_rectify_proptag(uint32_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
-	case PT_STRING8:
-		proptag = CHANGE_PROP_TYPE(proptag, PT_UNICODE);
-		break;
-	case PT_MV_STRING8:
-		proptag = CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE);
-		break;
-	case PT_UNSPECIFIED:
-		proptag = CHANGE_PROP_TYPE(proptag, PT_UNICODE);
-		break;
+	case PT_STRING8:     return CHANGE_PROP_TYPE(proptag, PT_UNICODE);
+	case PT_MV_STRING8:  return CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE);
+	case PT_UNSPECIFIED: return CHANGE_PROP_TYPE(proptag, PT_UNICODE);
+	default:             return proptag;
 	}
-	return proptag;
 }
 
 message_object::message_object()

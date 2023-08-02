@@ -1504,6 +1504,28 @@ BOOL exmdb_server::unload_instance(const char *dir, uint32_t instance_id)
 	return TRUE;
 }
 
+static uint32_t msg_idtopr(uint32_t t)
+{
+	switch (t) {
+	case ID_TAG_BODY: return PR_BODY;
+	case ID_TAG_BODY_STRING8: return PR_BODY_A;
+	case ID_TAG_HTML: return PR_HTML;
+	case ID_TAG_RTFCOMPRESSED: return PR_RTF_COMPRESSED;
+	case ID_TAG_TRANSPORTMESSAGEHEADERS: return PR_TRANSPORT_MESSAGE_HEADERS;
+	case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: return PR_TRANSPORT_MESSAGE_HEADERS_A;
+	default: return t;
+	}
+}
+
+static uint32_t atx_idtopr(uint32_t t)
+{
+	switch (t) {
+	case ID_TAG_ATTACHDATABINARY: return PR_ATTACH_DATA_BIN;
+	case ID_TAG_ATTACHDATAOBJECT: return PR_ATTACH_DATA_OBJ;
+	default: return t;
+	}
+}
+
 static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 {
 	pproptags->count = pmsgctnt->proplist.count + 6;
@@ -1516,32 +1538,8 @@ static BOOL giat_message(MESSAGE_CONTENT *pmsgctnt, PROPTAG_ARRAY *pproptags)
 		pproptags->count = 0;
 		return FALSE;
 	}
-	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ++i) {
-		auto tag = pmsgctnt->proplist.ppropval[i].proptag;
-		switch (tag) {
-		case ID_TAG_BODY:
-			pproptags->pproptag[i] = PR_BODY;
-			break;
-		case ID_TAG_BODY_STRING8:
-			pproptags->pproptag[i] = PR_BODY_A;
-			break;
-		case ID_TAG_HTML:
-			pproptags->pproptag[i] = PR_HTML;
-			break;
-		case ID_TAG_RTFCOMPRESSED:
-			pproptags->pproptag[i] = PR_RTF_COMPRESSED;
-			break;
-		case ID_TAG_TRANSPORTMESSAGEHEADERS:
-			pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS;
-			break;
-		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-			pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS_A;
-			break;
-		default:
-			pproptags->pproptag[i] = tag;
-			break;
-		}
-	}
+	for (unsigned int i = 0; i < pmsgctnt->proplist.count; ++i)
+		pproptags->pproptag[i] = msg_idtopr(pmsgctnt->proplist.ppropval[i].proptag);
 	pproptags->count = pmsgctnt->proplist.count;
 	pproptags->pproptag[pproptags->count++] = PR_CODE_PAGE_ID;
 	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
@@ -1562,20 +1560,8 @@ static BOOL giat_attachment(ATTACHMENT_CONTENT *pattachment, PROPTAG_ARRAY *ppro
 		pproptags->count = 0;
 		return FALSE;
 	}
-	for (unsigned int i = 0; i < pattachment->proplist.count; ++i) {
-		auto tag = pattachment->proplist.ppropval[i].proptag;
-		switch (tag) {
-		case ID_TAG_ATTACHDATABINARY:
-			pproptags->pproptag[i] = PR_ATTACH_DATA_BIN;
-			break;
-		case ID_TAG_ATTACHDATAOBJECT:
-			pproptags->pproptag[i] = PR_ATTACH_DATA_OBJ;
-			break;
-		default:
-			pproptags->pproptag[i] = tag;
-			break;
-		}
-	}
+	for (unsigned int i = 0; i < pattachment->proplist.count; ++i)
+		pproptags->pproptag[i] = atx_idtopr(pattachment->proplist.ppropval[i].proptag);
 	pproptags->count = pattachment->proplist.count;
 	pproptags->pproptag[pproptags->count++] = PR_ATTACH_SIZE;
 	return TRUE;
