@@ -3444,7 +3444,6 @@ BOOL cu_remove_property(mapi_object_type table_type,
 BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	char sql_string[128];
 	
 	switch (table_type) {
@@ -3478,7 +3477,7 @@ BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		switch (table_type) {
 		case MAPI_STORE:

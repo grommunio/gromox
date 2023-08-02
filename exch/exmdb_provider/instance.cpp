@@ -1702,7 +1702,6 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 	const uint64_t *pmessage_id, ATTACHMENT_CONTENT *pattachment,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	uint32_t length;
 	uint16_t proptype;
 	
@@ -1710,7 +1709,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		auto pvalue = pattachment->proplist.getval(tag);
 		auto &vc = ppropvals->ppropval[ppropvals->count];
@@ -1876,7 +1875,6 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
     uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i, j;
 	uint16_t propid;
 	uint32_t length;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -1903,7 +1901,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		auto &vc = ppropvals->ppropval[ppropvals->count];
 		const auto tag = pproptags->pproptag[i];
 		if (tag == PR_MESSAGE_FLAGS) {
@@ -1958,7 +1956,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			}	
 		} else if (PROP_TYPE(tag) == PT_UNSPECIFIED) {
 			propid = PROP_ID(tag);
-			for (j=0; j<pmsgctnt->proplist.count; j++) {
+			for (unsigned int j = 0; j < pmsgctnt->proplist.count; ++j) {
 				if (propid != PROP_ID(pmsgctnt->proplist.ppropval[j].proptag))
 					continue;
 				vc.proptag = tag;

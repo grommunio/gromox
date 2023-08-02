@@ -2178,7 +2178,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
 	char sql_string[1024];
-	int i, count, idx = 0;
+	int count, idx = 0;
 
 	if (b_forward)
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
@@ -2211,7 +2211,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (i = 0; i < pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue;
 			const auto tag = pproptags->pproptag[i];
 			if (tag == PR_DEPTH) {
@@ -2257,7 +2257,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     const TABLE_NODE *ptnode)
 {
 	char sql_string[1024];
-	int i, count, row_type, idx = 0;
+	int count, row_type, idx = 0;
 	uint64_t inst_id;
 
 	if (b_forward)
@@ -2317,7 +2317,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		for (i = 0; i < pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue;
 			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
@@ -2363,7 +2363,7 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
 	char sql_string[1024];
-	int i, count, idx = 0;
+	int idx = 0;
 	uint64_t rule_id;
 
 	if (b_forward)
@@ -2386,8 +2386,8 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return FALSE;
-		count = 0;
-		for (i = 0; i < pproptags->count; i++) {
+		unsigned int count = 0;
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue;
 			const auto tag = pproptags->pproptag[i];
 			auto u_tag = tag;
@@ -2511,8 +2511,7 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
 {
-	int i, count;
-	void *pvalue;
+	int count;
 	uint32_t depth;
 	uint64_t folder_id;
 	char sql_string[1024];
@@ -2542,7 +2541,8 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (i = 0; i < pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (tag == PR_DEPTH) {
 			auto v = cu_alloc<uint32_t>();
@@ -2580,8 +2580,7 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
     TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const TABLE_NODE *ptnode)
 {
-	int i, count, row_type;
-	void *pvalue;
+	int count, row_type;
 	char sql_string[1024];
 
 	inst_id = rop_util_get_replid(inst_id) == 1 ?
@@ -2621,7 +2620,8 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
-	for (i = 0; i < pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!table_column_content_tmptbl(pstmt, pstmt1,
 		    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
