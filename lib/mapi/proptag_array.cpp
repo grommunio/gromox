@@ -64,9 +64,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 
 void proptag_array_remove(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 {
-	int i;
-	
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		if (proptag == pproptags->pproptag[i]) {
 			pproptags->count --;
 			if (i < pproptags->count) {
