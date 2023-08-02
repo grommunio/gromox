@@ -1704,7 +1704,6 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 {
 	int i;
 	uint32_t length;
-	uint32_t proptag;
 	uint16_t proptype;
 	
 	ppropvals->count = 0;
@@ -1722,36 +1721,36 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 		}
 		vc.pvalue = NULL;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
-			auto str = pattachment->proplist.get<const char>(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
+			auto str = pattachment->proplist.get<const char>(u_tag);
 			if (str != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy(false, cpid, str);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
-			auto str = pattachment->proplist.get<const char>(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
+			auto str = pattachment->proplist.get<const char>(u_tag);
 			if (str != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy(TRUE, cpid, str);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
-			auto sa = pattachment->proplist.get<const STRING_ARRAY>(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
+			auto sa = pattachment->proplist.get<const STRING_ARRAY>(u_tag);
 			if (sa != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy_string_array(false, cpid, sa);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
-			auto sa = pattachment->proplist.get<const STRING_ARRAY>(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
+			auto sa = pattachment->proplist.get<const STRING_ARRAY>(u_tag);
 			if (sa != nullptr) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy_string_array(TRUE, cpid, sa);
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
-			pvalue = pattachment->proplist.getval(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
+			pvalue = pattachment->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = pproptags->pproptag[i];
 				auto tp = cu_alloc<TYPED_PROPVAL>();
@@ -1761,8 +1760,8 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 				tp->type = PT_UNICODE;
 				tp->pvalue = pvalue;
 			} else {
-				proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
-				pvalue = pattachment->proplist.getval(proptag);
+				u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
+				pvalue = pattachment->proplist.getval(u_tag);
 				if (NULL != pvalue) {
 					vc.proptag = pproptags->pproptag[i];
 					auto tp = cu_alloc<TYPED_PROPVAL>();
@@ -1879,7 +1878,6 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	int i, j;
 	uint16_t propid;
 	uint32_t length;
-	uint32_t proptag;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -1925,32 +1923,32 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 		}
 		vc.pvalue = nullptr;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
-			pvalue = pmsgctnt->proplist.getval(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
+			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy(false,
 				            pinstance->cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
-			pvalue = pmsgctnt->proplist.getval(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
+			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy(TRUE,
 				            pinstance->cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
-			pvalue = pmsgctnt->proplist.getval(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
+			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy_string_array(false,
 				            pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
-			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
-			pvalue = pmsgctnt->proplist.getval(proptag);
+			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
+			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
 				vc.proptag = pproptags->pproptag[i];
 				vc.pvalue = common_util_convert_copy_string_array(TRUE,

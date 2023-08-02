@@ -766,11 +766,10 @@ BOOL message_object::append_stream_object(stream_object *pstream)
 		if (pnode->pdata == pstream)
 			return TRUE;
 	if (!pmessage->b_new && pmessage->message_id != 0) {
-		auto proptag = message_object_rectify_proptag(pstream->get_proptag());
-		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
+		auto u_tag = message_object_rectify_proptag(pstream->get_proptag());
+		if (!proptag_array_append(pmessage->pchanged_proptags, u_tag))
 			return FALSE;
-		proptag_array_remove(
-			pmessage->premoved_proptags, proptag);
+		proptag_array_remove(pmessage->premoved_proptags, u_tag);
 	}
 	pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (pnode == nullptr)
@@ -1131,7 +1130,6 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 {
 	int i, j;
 	void *pvalue;
-	uint32_t proptag;
 	uint8_t tmp_bytes[3];
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1215,10 +1213,9 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		if (j < pproblems->count)
 			continue;
 		pmessage->b_touched = TRUE;
-		proptag = message_object_rectify_proptag(
-				ppropvals->ppropval[i].proptag);
-		proptag_array_remove(pmessage->premoved_proptags, proptag);
-		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
+		auto u_tag = message_object_rectify_proptag(ppropvals->ppropval[i].proptag);
+		proptag_array_remove(pmessage->premoved_proptags, u_tag);
+		if (!proptag_array_append(pmessage->pchanged_proptags, u_tag))
 			return FALSE;	
 	}
 	return TRUE;
@@ -1237,7 +1234,6 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 {
 	auto pmessage = this;
 	int i, j;
-	uint32_t proptag;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
@@ -1285,10 +1281,9 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		if (j < pproblems->count)
 			continue;
 		pmessage->b_touched = TRUE;
-		proptag = message_object_rectify_proptag(
-						pproptags->pproptag[i]);
-		proptag_array_remove(pmessage->pchanged_proptags, proptag);
-		if (!proptag_array_append(pmessage->premoved_proptags, proptag))
+		auto u_tag = message_object_rectify_proptag(pproptags->pproptag[i]);
+		proptag_array_remove(pmessage->pchanged_proptags, u_tag);
+		if (!proptag_array_append(pmessage->premoved_proptags, u_tag))
 			return FALSE;	
 	}
 	return TRUE;
@@ -1300,7 +1295,6 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 {
 	auto pmessage = this;
 	int i;
-	uint32_t proptag;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY *pcolumns;
 	MESSAGE_CONTENT msgctnt;
@@ -1349,8 +1343,8 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
 	for (i=0; i<proptags.count; i++) {
-		proptag = message_object_rectify_proptag(proptags.pproptag[i]);
-		proptag_array_append(pmessage->pchanged_proptags, proptag);
+		auto u_tag = message_object_rectify_proptag(proptags.pproptag[i]);
+		proptag_array_append(pmessage->pchanged_proptags, u_tag);
 	}
 	return TRUE;
 }

@@ -1896,11 +1896,11 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
-			auto proptag = pproptags->pproptag[i];
-			if (proptag == PR_MEMBER_NAME_A)
-				proptag = PR_MEMBER_NAME;
+			auto u_tag = pproptags->pproptag[i];
+			if (u_tag == PR_MEMBER_NAME_A)
+				u_tag = PR_MEMBER_NAME;
 			if (!common_util_get_permission_property(member_id,
-			    pdb->psqlite, proptag, &pvalue))
+			    pdb->psqlite, u_tag, &pvalue))
 				return FALSE;
 			if (pproptags->pproptag[i] == PR_MEMBER_RIGHTS &&
 			    !(ptnode->table_flags & PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY))
@@ -1962,13 +1962,13 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
-			auto proptag = pproptags->pproptag[i];
-			if (proptag == PR_RULE_NAME_A)
-				proptag = PR_RULE_NAME;
-			else if (proptag == PR_RULE_PROVIDER_A)
-				proptag = PR_RULE_PROVIDER;
+			auto u_tag = pproptags->pproptag[i];
+			if (u_tag == PR_RULE_NAME_A)
+				u_tag = PR_RULE_NAME;
+			else if (u_tag == PR_RULE_PROVIDER_A)
+				u_tag = PR_RULE_PROVIDER;
 			if (!common_util_get_rule_property(rule_id,
-			    pdb->psqlite, proptag, &pvalue))
+			    pdb->psqlite, u_tag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
@@ -2384,14 +2384,13 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		count = 0;
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
-			uint32_t proptag;
-			proptag = pproptags->pproptag[i];
-			if (proptag == PR_RULE_NAME_A)
-				proptag = PR_RULE_NAME;
-			else if (proptag == PR_RULE_PROVIDER_A)
-				proptag = PR_RULE_PROVIDER;
+			auto u_tag = pproptags->pproptag[i];
+			if (u_tag == PR_RULE_NAME_A)
+				u_tag = PR_RULE_NAME;
+			else if (u_tag == PR_RULE_PROVIDER_A)
+				u_tag = PR_RULE_PROVIDER;
 			if (!common_util_get_rule_property(rule_id,
-			    pdb->psqlite, proptag, &pvalue))
+			    pdb->psqlite, u_tag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
