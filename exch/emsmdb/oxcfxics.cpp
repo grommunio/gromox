@@ -514,7 +514,8 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		    static_cast<message_object *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			switch (pproptags->pproptag[i]) {
+			const auto tag = pproptags->pproptag[i];
+			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:	
 				msgctnt.children.prcpts = NULL;
 				break;
@@ -522,8 +523,7 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 				msgctnt.children.pattachments = NULL;
 				break;
 			default:
-				common_util_remove_propvals(&msgctnt.proplist,
-										pproptags->pproptag[i]);
+				common_util_remove_propvals(&msgctnt.proplist, tag);
 				break;
 			}
 		}
@@ -541,13 +541,13 @@ ec_error_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		    static_cast<attachment_object *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
-			switch (pproptags->pproptag[i]) {
+			const auto tag = pproptags->pproptag[i];
+			switch (tag) {
 			case PR_ATTACH_DATA_OBJ:
 				attctnt.pembedded = NULL;
 				break;
 			default:
-				common_util_remove_propvals(&attctnt.proplist,
-										pproptags->pproptag[i]);
+				common_util_remove_propvals(&attctnt.proplist, tag);
 				break;
 			}
 		}

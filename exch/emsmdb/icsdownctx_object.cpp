@@ -601,7 +601,8 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 	
 	if (b_exclude) {
 		for (i=0; i<pproptags->count; i++) {
-			switch (pproptags->pproptag[i]) {
+			const auto tag = pproptags->pproptag[i];
+			switch (tag) {
 			case PR_MESSAGE_RECIPIENTS:
 				pmsgctnt->children.prcpts = NULL;
 				break;
@@ -609,8 +610,7 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 				pmsgctnt->children.pattachments = NULL;
 				break;
 			default:
-				common_util_remove_propvals(&pmsgctnt->proplist,
-										pproptags->pproptag[i]);
+				common_util_remove_propvals(&pmsgctnt->proplist, tag);
 				break;
 			}
 		}

@@ -847,9 +847,10 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 		return NULL;
 	ptmp_proptags->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT)
+		const auto tag = pproptags->pproptag[i];
+		if (PROP_TYPE(tag) == PT_OBJECT)
 			continue;
-		ptmp_proptags->pproptag[ptmp_proptags->count++] = pproptags->pproptag[i];
+		ptmp_proptags->pproptag[ptmp_proptags->count++] = tag;
 	}
 	return ptmp_proptags;
 }

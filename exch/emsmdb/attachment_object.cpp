@@ -303,28 +303,27 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 		return FALSE;
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
+		const auto tag = pproptags->pproptag[i];
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (attachment_object_get_calculated_property(
-			pattachment, pproptags->pproptag[i], &pvalue)) {
+		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
 			if (NULL != pvalue) {
-				pv.proptag = pproptags->pproptag[i];
+				pv.proptag = tag;
 				pv.pvalue = pvalue;
 			} else {
-				pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+				pv.proptag = CHANGE_PROP_TYPE(tag, PT_ERROR);
 				pv.pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 			continue;
 		}
-		pvalue = attachment_object_get_stream_property_value(
-						pattachment, pproptags->pproptag[i]);
+		pvalue = attachment_object_get_stream_property_value(pattachment, tag);
 		if (NULL != pvalue) {
-			pv.proptag = pproptags->pproptag[i];
+			pv.proptag = tag;
 			pv.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
@@ -425,14 +424,13 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
-		if (is_readonly_prop(pproptags->pproptag[i]) ||
-		    attachment_object_check_stream_property(
-			pattachment, pproptags->pproptag[i])) {
-			pproblems->emplace_back(i, pproptags->pproptag[i], ecAccessDenied);
+		const auto tag = pproptags->pproptag[i];
+		if (is_readonly_prop(tag) ||
+		    attachment_object_check_stream_property(pattachment, tag)) {
+			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-								pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count] = tag;
 		poriginal_indices[tmp_proptags.count++] = i;
 	}
 	if (tmp_proptags.count == 0)

@@ -602,19 +602,19 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->count = 0;
 	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
+		const auto tag = pproptags->pproptag[i];
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (logon_object_get_calculated_property(
-			plogon, pproptags->pproptag[i], &pvalue)) {
+		if (logon_object_get_calculated_property(plogon, tag, &pvalue)) {
 			if (NULL != pvalue) {
-				pv.proptag = pproptags->pproptag[i];
+				pv.proptag = tag;
 				pv.pvalue = pvalue;
 			} else {
-				pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+				pv.proptag = CHANGE_PROP_TYPE(tag, PT_ERROR);
 				pv.pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 		}
 	}
 	if (tmp_proptags.count == 0)
@@ -690,10 +690,11 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (lo_is_readonly_prop(plogon, pproptags->pproptag[i]))
-			pproblems->emplace_back(i, pproptags->pproptag[i], ecAccessDenied);
+		const auto tag = pproptags->pproptag[i];
+		if (lo_is_readonly_prop(plogon, tag))
+			pproblems->emplace_back(i, tag, ecAccessDenied);
 		else
-			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
