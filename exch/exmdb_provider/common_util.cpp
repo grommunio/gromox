@@ -2053,13 +2053,13 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < pproptags->count; ++i) {
-		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT &&
-		    (table_type != MAPI_ATTACH ||
-		    pproptags->pproptag[i] != PR_ATTACH_DATA_OBJ))
+		const auto tag = pproptags->pproptag[i];
+		if (PROP_TYPE(tag) == PT_OBJECT &&
+		    (table_type != MAPI_ATTACH || tag != PR_ATTACH_DATA_OBJ))
 			continue;
 		/* begin of special properties */
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		auto ret = gp_spectableprop(table_type, pproptags->pproptag[i],
+		auto ret = gp_spectableprop(table_type, tag,
 		           pv, psqlite, id, cpid);
 		if (ret == GP_ERR)
 			return false;
@@ -2071,23 +2071,23 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		}
 		/* end of special properties */
 		xstmt own_stmt;
-		uint16_t proptype = PROP_TYPE(pproptags->pproptag[i]);
+		uint16_t proptype = PROP_TYPE(tag);
 		if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
 		    proptype == PT_UNICODE) {
-			auto bret = gp_prepare_anystr(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
+			auto bret = gp_prepare_anystr(psqlite, table_type, id, tag, own_stmt, pstmt);
 			if (!bret)
 				return false;
 		} else if (proptype == PT_MV_STRING8) {
-			auto bret = gp_prepare_mvstr(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
+			auto bret = gp_prepare_mvstr(psqlite, table_type, id, tag, own_stmt, pstmt);
 			if (!bret)
 				return false;
 		} else {
-			auto bret = gp_prepare_default(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
+			auto bret = gp_prepare_default(psqlite, table_type, id, tag, own_stmt, pstmt);
 			if (!bret)
 				return false;
 		}
 		if (gx_sql_step(pstmt) != SQLITE_ROW) {
-			ret = gp_fallbackprop(table_type, pproptags->pproptag[i], pv);
+			ret = gp_fallbackprop(table_type, tag, pv);
 			if (ret == GP_ERR)
 				return false;
 			if (ret == GP_ADV) {
@@ -2099,7 +2099,7 @@ BOOL cu_get_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid);
 		if (pvalue == nullptr)
 			return false;
-		pv.proptag = pproptags->pproptag[i];
+		pv.proptag = tag;
 		pv.pvalue = pvalue;
 		ppropvals->count ++;
 	}
@@ -3445,7 +3445,6 @@ BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags)
 {
 	int i;
-	uint32_t proptag;
 	char sql_string[128];
 	
 	switch (table_type) {
@@ -3480,9 +3479,10 @@ BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 	if (pstmt == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
+		const auto tag = pproptags->pproptag[i];
 		switch (table_type) {
 		case MAPI_STORE:
-			switch (pproptags->pproptag[i]) {
+			switch (tag) {
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_CONTENT_COUNT:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
@@ -3491,14 +3491,14 @@ BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 			}
 			break;
 		case MAPI_FOLDER:
-			switch (pproptags->pproptag[i]) {
+			switch (tag) {
 			case PR_DISPLAY_NAME:
 			case PR_PREDECESSOR_CHANGE_LIST:
 				continue;
 			}
 			break;
 		case MAPI_MESSAGE:
-			switch (pproptags->pproptag[i]) {
+			switch (tag) {
 			case PR_MSG_STATUS:
 			case PR_PREDECESSOR_CHANGE_LIST:
 				continue;
@@ -3507,33 +3507,32 @@ BOOL cu_remove_properties(mapi_object_type table_type, uint64_t id,
 		default:
 			break;
 		}
-		proptag = pproptags->pproptag[i];
-		switch (PROP_TYPE(proptag)) {
+		switch (PROP_TYPE(tag)) {
 		case PT_STRING8:
 		case PT_UNICODE:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PT_UNICODE));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_UNICODE));
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PT_STRING8));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_STRING8));
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			break;
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PT_MV_STRING8));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_MV_STRING8));
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			break;
 		default:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, proptag);
+			sqlite3_bind_int64(pstmt, 1, tag);
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			break;

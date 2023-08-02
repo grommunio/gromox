@@ -1711,48 +1711,49 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
-		auto pvalue = pattachment->proplist.getval(pproptags->pproptag[i]);
+		const auto tag = pproptags->pproptag[i];
+		auto pvalue = pattachment->proplist.getval(tag);
 		auto &vc = ppropvals->ppropval[ppropvals->count];
 		if (NULL != pvalue) {
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}
 		vc.pvalue = NULL;
-		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
+		if (PROP_TYPE(tag) == PT_STRING8) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_UNICODE);
 			auto str = pattachment->proplist.get<const char>(u_tag);
 			if (str != nullptr) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy(false, cpid, str);
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
+		} else if (PROP_TYPE(tag) == PT_UNICODE) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_STRING8);
 			auto str = pattachment->proplist.get<const char>(u_tag);
 			if (str != nullptr) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy(TRUE, cpid, str);
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
+		} else if (PROP_TYPE(tag) == PT_MV_STRING8) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_MV_UNICODE);
 			auto sa = pattachment->proplist.get<const STRING_ARRAY>(u_tag);
 			if (sa != nullptr) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy_string_array(false, cpid, sa);
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
+		} else if (PROP_TYPE(tag) == PT_MV_UNICODE) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_MV_STRING8);
 			auto sa = pattachment->proplist.get<const STRING_ARRAY>(u_tag);
 			if (sa != nullptr) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy_string_array(TRUE, cpid, sa);
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
+		} else if (PROP_TYPE(tag) == PT_UNSPECIFIED) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_UNICODE);
 			pvalue = pattachment->proplist.getval(u_tag);
 			if (NULL != pvalue) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				auto tp = cu_alloc<TYPED_PROPVAL>();
 				vc.pvalue = tp;
 				if (tp == nullptr)
@@ -1760,10 +1761,10 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 				tp->type = PT_UNICODE;
 				tp->pvalue = pvalue;
 			} else {
-				u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
+				u_tag = CHANGE_PROP_TYPE(tag, PT_STRING8);
 				pvalue = pattachment->proplist.getval(u_tag);
 				if (NULL != pvalue) {
-					vc.proptag = pproptags->pproptag[i];
+					vc.proptag = tag;
 					auto tp = cu_alloc<TYPED_PROPVAL>();
 					vc.pvalue = tp;
 					if (tp == nullptr)
@@ -1777,7 +1778,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			ppropvals->count ++;
 			continue;
 		}
-		switch (pproptags->pproptag[i]) {
+		switch (tag) {
 		case PidTagMid: {
 			if (pmessage_id == nullptr)
 				break;
@@ -1786,12 +1787,12 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			if (pv == nullptr)
 				return FALSE;
 			*pv = rop_util_make_eid_ex(1, *pmessage_id);
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			ppropvals->count ++;
 			continue;
 		}
 		case PR_ATTACH_SIZE: {
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			length = common_util_calculate_attachment_size(pattachment);
 			auto uv = cu_alloc<uint32_t>();
 			if (uv == nullptr)
@@ -1836,7 +1837,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 			}
 			if (pbin == nullptr)
 				break;
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			auto tp = cu_alloc<TYPED_PROPVAL>();
 			vc.pvalue = tp;
 			if (tp == nullptr)
@@ -1849,7 +1850,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 		case PR_ATTACH_DATA_BIN:
 		case PR_ATTACH_DATA_OBJ: {
 			auto cidstr = pattachment->proplist.get<const char>(
-			              pproptags->pproptag[i] == PR_ATTACH_DATA_BIN ?
+			              tag == PR_ATTACH_DATA_BIN ?
 			              ID_TAG_ATTACHDATABINARY : ID_TAG_ATTACHDATAOBJECT);
 			if (cidstr == nullptr)
 				break;
@@ -1861,7 +1862,7 @@ static BOOL instance_get_attachment_properties(cpid_t cpid,
 				return FALSE;
 			pbin->cb = length;
 			pbin->pv = pvalue;
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			vc.pvalue = pbin;
 			ppropvals->count++;
 			continue;
@@ -1904,8 +1905,9 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
 		auto &vc = ppropvals->ppropval[ppropvals->count];
-		if (pproptags->pproptag[i] == PR_MESSAGE_FLAGS) {
-			vc.proptag = pproptags->pproptag[i];
+		const auto tag = pproptags->pproptag[i];
+		if (tag == PR_MESSAGE_FLAGS) {
+			vc.proptag = tag;
 			auto uv = cu_alloc<uint32_t>();
 			vc.pvalue = uv;
 			if (vc.pvalue == nullptr)
@@ -1914,52 +1916,52 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			ppropvals->count ++;
 			continue;
 		}
-		auto pvalue = pmsgctnt->proplist.getval(pproptags->pproptag[i]);
+		auto pvalue = pmsgctnt->proplist.getval(tag);
 		if (NULL != pvalue) {
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
 		}
 		vc.pvalue = nullptr;
-		if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE);
+		if (PROP_TYPE(tag) == PT_STRING8) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_UNICODE);
 			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy(false,
 				            pinstance->cpid, static_cast<char *>(pvalue));
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNICODE) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8);
+		} else if (PROP_TYPE(tag) == PT_UNICODE) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_STRING8);
 			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy(TRUE,
 				            pinstance->cpid, static_cast<char *>(pvalue));
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_STRING8) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE);
+		} else if (PROP_TYPE(tag) == PT_MV_STRING8) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_MV_UNICODE);
 			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy_string_array(false,
 				            pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_MV_UNICODE) {
-			auto u_tag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8);
+		} else if (PROP_TYPE(tag) == PT_MV_UNICODE) {
+			auto u_tag = CHANGE_PROP_TYPE(tag, PT_MV_STRING8);
 			pvalue = pmsgctnt->proplist.getval(u_tag);
 			if (NULL != pvalue) {
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				vc.pvalue = common_util_convert_copy_string_array(TRUE,
 				            pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}	
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
-			propid = PROP_ID(pproptags->pproptag[i]);
+		} else if (PROP_TYPE(tag) == PT_UNSPECIFIED) {
+			propid = PROP_ID(tag);
 			for (j=0; j<pmsgctnt->proplist.count; j++) {
 				if (propid != PROP_ID(pmsgctnt->proplist.ppropval[j].proptag))
 					continue;
-				vc.proptag = pproptags->pproptag[i];
+				vc.proptag = tag;
 				auto tp = cu_alloc<TYPED_PROPVAL>();
 				vc.pvalue = tp;
 				if (vc.pvalue == nullptr)
@@ -1973,14 +1975,14 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			ppropvals->count ++;
 			continue;
 		}
-		switch (pproptags->pproptag[i]) {
+		switch (tag) {
 		case PR_BODY_A:
 		case PR_BODY_W:
 		case PR_BODY_U:
 		case PR_HTML:
 		case PR_HTML_U:
 		case PR_RTF_COMPRESSED: {
-			auto ret = instance_get_message_body(pmsgctnt, pproptags->pproptag[i], pinstance->cpid, ppropvals);
+			auto ret = instance_get_message_body(pmsgctnt, tag, pinstance->cpid, ppropvals);
 			if (ret < 0)
 				return false;
 			break;
@@ -2020,11 +2022,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
 			if (!instance_get_message_subject(&pmsgctnt->proplist,
-			    pinstance->cpid, pproptags->pproptag[i], &pvalue))
+			    pinstance->cpid, tag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				break;
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			vc.pvalue = pvalue;
 			ppropvals->count++;
 			continue;
@@ -2083,7 +2085,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 		case PidTagFolderId: {
 			if (pinstance->parent_id != 0)
 				break;
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			auto uv = cu_alloc<uint64_t>();
 			vc.pvalue = uv;
 			if (vc.pvalue == nullptr)
@@ -2093,15 +2095,15 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			continue;
 		}
 		case PR_CODE_PAGE_ID:
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			vc.pvalue = deconst(&pinstance->cpid);
 			ppropvals->count ++;
 			continue;
 		case PR_MESSAGE_SIZE:
 		case PR_MESSAGE_SIZE_EXTENDED:
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			length = common_util_calculate_message_size(pmsgctnt);
-			if (pproptags->pproptag[i] == PR_MESSAGE_SIZE) {
+			if (tag == PR_MESSAGE_SIZE) {
 				auto uv = cu_alloc<uint32_t>();
 				if (uv == nullptr)
 					return FALSE;
@@ -2117,7 +2119,7 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			ppropvals->count ++;
 			continue;
 		case PR_HASATTACH: {
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			auto uv = cu_alloc<uint8_t>();
 			if (uv == nullptr)
 				return FALSE;
@@ -2136,9 +2138,9 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 			if (pmsgctnt->children.prcpts == nullptr)
 				break;
 			if (!instance_get_message_display_recipients(pmsgctnt->children.prcpts,
-			    pinstance->cpid, pproptags->pproptag[i], &pvalue))
+			    pinstance->cpid, tag, &pvalue))
 				return FALSE;
-			vc.proptag = pproptags->pproptag[i];
+			vc.proptag = tag;
 			vc.pvalue = pvalue;
 			ppropvals->count++;
 			continue;
@@ -2431,7 +2433,8 @@ static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
     const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
 {
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		switch (pproptags->pproptag[i]) {
+		const auto tag = pproptags->pproptag[i];
+		switch (tag) {
 		case PR_BODY:
 		case PR_BODY_A:
 		case PR_BODY_U: {
@@ -2462,19 +2465,19 @@ static BOOL rip_message(MESSAGE_CONTENT *pmsgctnt,
 			break;
 		}
 		}
-		pmsgctnt->proplist.erase(pproptags->pproptag[i]);
-		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		pmsgctnt->proplist.erase(tag);
+		switch (PROP_TYPE(tag)) {
 		case PT_STRING8:
-			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(tag, PT_UNICODE));
 			break;
 		case PT_UNICODE:
-			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(tag, PT_STRING8));
 			break;
 		case PT_MV_STRING8:
-			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
 			break;
 		case PT_MV_UNICODE:
-			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(tag, PT_MV_STRING8));
 			break;
 		}
 	}
@@ -2485,7 +2488,8 @@ static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
     const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
 {
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		switch (pproptags->pproptag[i]) {
+		const auto tag = pproptags->pproptag[i];
+		switch (tag) {
 		case PR_ATTACH_DATA_BIN:
 			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
 			break;
@@ -2493,19 +2497,19 @@ static BOOL rip_attachment(ATTACHMENT_CONTENT *pattachment,
 			pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
 			break;
 		}
-		pattachment->proplist.erase(pproptags->pproptag[i]);
-		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		pattachment->proplist.erase(tag);
+		switch (PROP_TYPE(tag)) {
 		case PT_STRING8:
-			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(tag, PT_UNICODE));
 			break;
 		case PT_UNICODE:
-			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(tag, PT_STRING8));
 			break;
 		case PT_MV_STRING8:
-			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
 			break;
 		case PT_MV_UNICODE:
-			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(tag, PT_MV_STRING8));
 			break;
 		}
 	}

@@ -1722,7 +1722,8 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
-			if (pproptags->pproptag[i] == PR_DEPTH) {
+			const auto tag = pproptags->pproptag[i];
+			if (tag == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
 				if (pvalue == nullptr)
@@ -1730,11 +1731,11 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 				*v = sqlite3_column_int64(pstmt, 1);
 			} else {
 				if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
-				    pdb->psqlite, pproptags->pproptag[i], &pvalue))
+				    pdb->psqlite, tag, &pvalue))
 					return FALSE;
 				if (pvalue == nullptr)
 					continue;
-				switch (PROP_TYPE(pproptags->pproptag[i])) {
+				switch (PROP_TYPE(tag)) {
 				case PT_UNICODE:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
@@ -1747,8 +1748,7 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 					break;
 				}
 			}
-			pset->pparray[pset->count]->ppropval[count].proptag =
-				pproptags->pproptag[i];
+			pset->pparray[pset->count]->ppropval[count].proptag = tag;
 			pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
 		}
 		pset->pparray[pset->count++]->count = count;
@@ -1820,19 +1820,20 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
+			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
 			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
-			    pproptags->pproptag[i], ptnode->instance_tag,
+			    tag, ptnode->instance_tag,
 			    ptnode->extremum_tag, &pvalue)) {
 				if (row_type == CONTENT_ROW_HEADER)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-				    pdb->psqlite, pproptags->pproptag[i], &pvalue))
+				    pdb->psqlite, tag, &pvalue))
 					return FALSE;
 			}
 			if (pvalue == nullptr)
 				continue;
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
+			switch (PROP_TYPE(tag)) {
 			case PT_UNICODE:
 				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;
@@ -1844,8 +1845,7 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 					static_cast<BINARY *>(pvalue)->cb = 510;
 				break;
 			}
-			pset->pparray[pset->count]->ppropval[count].proptag =
-				pproptags->pproptag[i];
+			pset->pparray[pset->count]->ppropval[count].proptag = tag;
 			pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
 		}
 		pset->pparray[pset->count++]->count = count;
@@ -1896,23 +1896,23 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
-			auto u_tag = pproptags->pproptag[i];
+			const auto tag = pproptags->pproptag[i];
+			auto u_tag = tag;
 			if (u_tag == PR_MEMBER_NAME_A)
 				u_tag = PR_MEMBER_NAME;
 			if (!common_util_get_permission_property(member_id,
 			    pdb->psqlite, u_tag, &pvalue))
 				return FALSE;
-			if (pproptags->pproptag[i] == PR_MEMBER_RIGHTS &&
+			if (tag == PR_MEMBER_RIGHTS &&
 			    !(ptnode->table_flags & PERMISSIONS_TABLE_FLAG_INCLUDEFREEBUSY))
 				*static_cast<uint32_t *>(pvalue) &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
-			if (pproptags->pproptag[i] == PR_MEMBER_RIGHTS &&
+			if (tag == PR_MEMBER_RIGHTS &&
 			    (ptnode->table_flags & PERMISSIONS_TABLE_FLAG_ROPFILTER))
 				*static_cast<uint32_t *>(pvalue) &= rightsMaxROP;
 			if (pvalue == nullptr)
 				continue;
-			pset->pparray[pset->count]->ppropval[count].proptag =
-				pproptags->pproptag[i];
-			if (pproptags->pproptag[i] == PR_MEMBER_NAME_A)
+			pset->pparray[pset->count]->ppropval[count].proptag = tag;
+			if (tag == PR_MEMBER_NAME_A)
 				pset->pparray[pset->count]->ppropval[count++].pvalue =
 					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 			else
@@ -1962,7 +1962,8 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			void *pvalue = nullptr;
-			auto u_tag = pproptags->pproptag[i];
+			const auto tag = pproptags->pproptag[i];
+			auto u_tag = tag;
 			if (u_tag == PR_RULE_NAME_A)
 				u_tag = PR_RULE_NAME;
 			else if (u_tag == PR_RULE_PROVIDER_A)
@@ -1972,10 +1973,8 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
-			pset->pparray[pset->count]->ppropval[count].proptag =
-				pproptags->pproptag[i];
-			if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
-			    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
+			pset->pparray[pset->count]->ppropval[count].proptag = tag;
+			if (tag == PR_RULE_NAME_A || tag == PR_RULE_PROVIDER_A)
 				pset->pparray[pset->count]->ppropval[count++].pvalue =
 					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 			else
@@ -2210,7 +2209,8 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 			return FALSE;
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
-			if (pproptags->pproptag[i] == PR_DEPTH) {
+			const auto tag = pproptags->pproptag[i];
+			if (tag == PR_DEPTH) {
 				auto v = cu_alloc<uint32_t>();
 				pvalue = v;
 				if (pvalue == nullptr)
@@ -2218,11 +2218,11 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				*v = sqlite3_column_int64(pstmt, 2);
 			} else {
 				if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
-				    pdb->psqlite, pproptags->pproptag[i], &pvalue))
+				    pdb->psqlite, tag, &pvalue))
 					return FALSE;
 				if (pvalue == nullptr)
 					continue;
-				switch (PROP_TYPE(pproptags->pproptag[i])) {
+				switch (PROP_TYPE(tag)) {
 				case PT_UNICODE:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
@@ -2235,7 +2235,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 					break;
 				}
 			}
-			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+			ppropvals->ppropval[count].proptag = tag;
 			ppropvals->ppropval[count++].pvalue = pvalue;
 		}
 		ppropvals->count = count;
@@ -2315,19 +2315,20 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 			return FALSE;
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
+			const auto tag = pproptags->pproptag[i];
 			if (!table_column_content_tmptbl(pstmt, pstmt1,
 			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
-			    pproptags->pproptag[i], ptnode->instance_tag,
+			    tag, ptnode->instance_tag,
 			    ptnode->extremum_tag, &pvalue)) {
 				if (row_type == CONTENT_ROW_HEADER)
 					continue;
 				if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-				    pdb->psqlite, pproptags->pproptag[i], &pvalue))
+				    pdb->psqlite, tag, &pvalue))
 					return FALSE;
 			}
 			if (pvalue == nullptr)
 				continue;
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
+			switch (PROP_TYPE(tag)) {
 			case PT_UNICODE:
 				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;
@@ -2339,7 +2340,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 					static_cast<BINARY *>(pvalue)->cb = 510;
 				break;
 			}
-			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+			ppropvals->ppropval[count].proptag = tag;
 			ppropvals->ppropval[count++].pvalue = pvalue;
 		}
 		ppropvals->count = count;
@@ -2384,7 +2385,8 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		count = 0;
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
-			auto u_tag = pproptags->pproptag[i];
+			const auto tag = pproptags->pproptag[i];
+			auto u_tag = tag;
 			if (u_tag == PR_RULE_NAME_A)
 				u_tag = PR_RULE_NAME;
 			else if (u_tag == PR_RULE_PROVIDER_A)
@@ -2394,9 +2396,9 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
-			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-			if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
-			    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
+			ppropvals->ppropval[count].proptag = tag;
+			if (tag == PR_RULE_NAME_A ||
+			    tag == PR_RULE_PROVIDER_A)
 				ppropvals->ppropval[count++].pvalue =
 					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 			else
@@ -2537,7 +2539,8 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	for (i = 0; i < pproptags->count; i++) {
-		if (pproptags->pproptag[i] == PR_DEPTH) {
+		const auto tag = pproptags->pproptag[i];
+		if (tag == PR_DEPTH) {
 			auto v = cu_alloc<uint32_t>();
 			pvalue = v;
 			if (pvalue == nullptr)
@@ -2545,11 +2548,11 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 			*v = depth;
 		} else {
 			if (!cu_get_property(MAPI_FOLDER, folder_id, cpid,
-			    pdb->psqlite, pproptags->pproptag[i], &pvalue))
+			    pdb->psqlite, tag, &pvalue))
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
-			switch (PROP_TYPE(pproptags->pproptag[i])) {
+			switch (PROP_TYPE(tag)) {
 			case PT_UNICODE:
 				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;
@@ -2562,7 +2565,7 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 				break;
 			}
 		}
-		ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+		ppropvals->ppropval[count].proptag = tag;
 		ppropvals->ppropval[count++].pvalue = pvalue;
 	}
 	ppropvals->count = count;
@@ -2615,19 +2618,20 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	for (i = 0; i < pproptags->count; i++) {
+		const auto tag = pproptags->pproptag[i];
 		if (!table_column_content_tmptbl(pstmt, pstmt1,
 		    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
-		    pproptags->pproptag[i], ptnode->instance_tag,
+		    tag, ptnode->instance_tag,
 		    ptnode->extremum_tag, &pvalue)) {
 			if (row_type == CONTENT_ROW_HEADER)
 				continue;
 			if (!cu_get_property(MAPI_MESSAGE, inst_id, cpid,
-			    pdb->psqlite, pproptags->pproptag[i], &pvalue))
+			    pdb->psqlite, tag, &pvalue))
 				return FALSE;
 		}
 		if (pvalue == nullptr)
 			continue;
-		switch (PROP_TYPE(pproptags->pproptag[i])) {
+		switch (PROP_TYPE(tag)) {
 		case PT_UNICODE:
 			utf8_truncate(static_cast<char *>(pvalue), 255);
 			break;
@@ -2639,7 +2643,7 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 				static_cast<BINARY *>(pvalue)->cb = 510;
 			break;
 		}
-		ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+		ppropvals->ppropval[count].proptag = tag;
 		ppropvals->ppropval[count++].pvalue = pvalue;
 	}
 	ppropvals->count = count;
