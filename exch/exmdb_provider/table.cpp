@@ -1712,12 +1712,12 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		return false;
 	while (pstmt.step() == SQLITE_ROW) {
 		auto folder_id = pstmt.col_uint64(0);
-		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (pset->pparray[pset->count] == nullptr)
+		auto mrow = pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+		if (mrow == nullptr)
 			return FALSE;
-		pset->pparray[pset->count]->count = 0;
-		pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-		if (pset->pparray[pset->count]->ppropval == nullptr)
+		mrow->count = 0;
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (mrow->ppropval == nullptr)
 			return FALSE;
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
@@ -1748,10 +1748,11 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 					break;
 				}
 			}
-			pset->pparray[pset->count]->ppropval[count].proptag = tag;
-			pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
+			mrow->ppropval[count].proptag = tag;
+			mrow->ppropval[count++].pvalue = pvalue;
 		}
-		pset->pparray[pset->count++]->count = count;
+		pset->pparray[pset->count]->count = count;
+		++pset->count;
 	}
 	if (sql_transact.commit() != 0)
 		return false;
@@ -1810,12 +1811,12 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	while (pstmt.step() == SQLITE_ROW) {
 		auto inst_id = pstmt.col_uint64(3);
 		uint32_t row_type = pstmt.col_uint64(4);
-		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (pset->pparray[pset->count] == nullptr)
+		auto mrow = pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+		if (mrow == nullptr)
 			return FALSE;
-		pset->pparray[pset->count]->count = 0;
-		pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-		if (pset->pparray[pset->count]->ppropval == nullptr)
+		mrow->count = 0;
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (mrow->ppropval == nullptr)
 			return FALSE;
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
@@ -1845,10 +1846,11 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 					static_cast<BINARY *>(pvalue)->cb = 510;
 				break;
 			}
-			pset->pparray[pset->count]->ppropval[count].proptag = tag;
-			pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
+			mrow->ppropval[count].proptag = tag;
+			mrow->ppropval[count++].pvalue = pvalue;
 		}
-		pset->pparray[pset->count++]->count = count;
+		mrow->count = count;
+		++pset->count;
 	}
 	common_util_end_message_optimize();
 	cl_1.release();
@@ -1886,12 +1888,12 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
 		auto member_id = pstmt.col_uint64(0);
-		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (pset->pparray[pset->count] == nullptr)
+		auto mrow = pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+		if (mrow == nullptr)
 			return FALSE;
-		pset->pparray[pset->count]->count = 0;
-		pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-		if (pset->pparray[pset->count]->ppropval == nullptr)
+		mrow->count = 0;
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (mrow->ppropval == nullptr)
 			return FALSE;
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
@@ -1911,14 +1913,15 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 				*static_cast<uint32_t *>(pvalue) &= rightsMaxROP;
 			if (pvalue == nullptr)
 				continue;
-			pset->pparray[pset->count]->ppropval[count].proptag = tag;
+			mrow->ppropval[count].proptag = tag;
 			if (tag == PR_MEMBER_NAME_A)
-				pset->pparray[pset->count]->ppropval[count++].pvalue =
+				mrow->ppropval[count++].pvalue =
 					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 			else
-				pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
+				mrow->ppropval[count++].pvalue = pvalue;
 		}
-		pset->pparray[pset->count++]->count = count;
+		mrow->count = count;
+		++pset->count;
 	}
 	return TRUE;
 }
@@ -1952,12 +1955,12 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
 		auto rule_id = pstmt.col_uint64(0);
-		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
-		if (pset->pparray[pset->count] == nullptr)
+		auto mrow = pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
+		if (mrow == nullptr)
 			return FALSE;
-		pset->pparray[pset->count]->count = 0;
-		pset->pparray[pset->count]->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-		if (pset->pparray[pset->count]->ppropval == nullptr)
+		mrow->count = 0;
+		mrow->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (mrow->ppropval == nullptr)
 			return FALSE;
 		unsigned int count = 0;
 		for (unsigned int i = 0; i < pproptags->count; ++i) {
@@ -1973,14 +1976,15 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 				return FALSE;
 			if (pvalue == nullptr)
 				continue;
-			pset->pparray[pset->count]->ppropval[count].proptag = tag;
+			mrow->ppropval[count].proptag = tag;
 			if (tag == PR_RULE_NAME_A || tag == PR_RULE_PROVIDER_A)
-				pset->pparray[pset->count]->ppropval[count++].pvalue =
+				mrow->ppropval[count++].pvalue =
 					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 			else
-				pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
+				mrow->ppropval[count++].pvalue = pvalue;
 		}
-		pset->pparray[pset->count++]->count = count;
+		mrow->count = count;
+		++pset->count;
 	}
 	return TRUE;
 }
