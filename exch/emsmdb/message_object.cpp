@@ -1152,25 +1152,25 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	auto dir = pmessage->plogon->get_dir();
 	for (i=0; i<ppropvals->count; i++) {
 		/* if property is being open as stream object, can not be modified */
+		const auto &pv = ppropvals->ppropval[i];
 		if (b_check) {
-			if (pmessage->is_readonly_prop(ppropvals->ppropval[i].proptag) ||
-			    message_object_check_stream_property(pmessage, ppropvals->ppropval[i].proptag)) {
-				pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
+			if (pmessage->is_readonly_prop(pv.proptag) ||
+			    message_object_check_stream_property(pmessage, pv.proptag)) {
+				pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 				continue;
-			} else if (ppropvals->ppropval[i].proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
+			} else if (pv.proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
 				if (!exmdb_client::get_instance_property(dir,
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
 				if (pvb_disabled(pvalue)) {
-					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
+					pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 					continue;
 				}
-				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb >
-				    g_max_extrule_len) {
-					pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecMAPIOOM);
+				if (static_cast<BINARY *>(pv.pvalue)->cb > g_max_extrule_len) {
+					pproblems->emplace_back(i, pv.proptag, ecMAPIOOM);
 					continue;
 				}
-			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
+			} else if (pv.proptag == PR_MESSAGE_FLAGS) {
 				tmp_propvals1.count = 3;
 				tmp_propvals1.ppropval = propval_buff;
 				propval_buff[0].proptag = PR_READ;
@@ -1179,17 +1179,16 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				propval_buff[1].pvalue = &tmp_bytes[1];
 				propval_buff[2].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 				propval_buff[2].pvalue = &tmp_bytes[2];
-				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
-				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
-				tmp_bytes[2] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_NRN_PENDING);
+				tmp_bytes[0] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_READ);
+				tmp_bytes[1] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_RN_PENDING);
+				tmp_bytes[2] = !!(*static_cast<uint32_t *>(pv.pvalue) & MSGFLAG_NRN_PENDING);
 				if (!exmdb_client::set_instance_properties(dir,
 				    pmessage->instance_id, &tmp_propvals1,
 				    &tmp_problems))
 					return FALSE;	
 			}
 		}
-		tmp_propvals.ppropval[tmp_propvals.count] =
-							ppropvals->ppropval[i];
+		tmp_propvals.ppropval[tmp_propvals.count] = pv;
 		poriginal_indices[tmp_propvals.count++] = i;
 	}
 	if (tmp_propvals.count == 0)

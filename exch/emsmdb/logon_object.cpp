@@ -654,11 +654,11 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		return FALSE;
 	auto plogon = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (lo_is_readonly_prop(plogon, ppropvals->ppropval[i].proptag)) {
-			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
+		const auto &pv = ppropvals->ppropval[i];
+		if (lo_is_readonly_prop(plogon, pv.proptag)) {
+			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
-			tmp_propvals.ppropval[tmp_propvals.count] =
-									ppropvals->ppropval[i];
+			tmp_propvals.ppropval[tmp_propvals.count] = pv;
 			poriginal_indices[tmp_propvals.count++] = i;
 		}
 	}

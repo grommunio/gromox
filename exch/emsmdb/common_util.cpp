@@ -1492,9 +1492,9 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	}
 	if (NULL != pchanged_proptags) {
 		for (i=0; i<pchanged_proptags->count; i++) {
-			if (!pgpinfo->get_partial_index(pchanged_proptags->pproptag[i], &tmp_index)) {
-				if (!proptag_array_append(pungroup_proptags.get(),
-				    pchanged_proptags->pproptag[i]))
+			const auto tag = pchanged_proptags->pproptag[i];
+			if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
+				if (!proptag_array_append(pungroup_proptags.get(), tag))
 					return FALSE;
 			} else {
 				if (!proptag_array_append(pindices.get(), tmp_index))

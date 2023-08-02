@@ -186,33 +186,34 @@ ec_error_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 	}
 	total_size = 0;
 	for (i=0; i<propvals.count; i++) {
-		auto tmp_size = propval_size_xfer(PROP_TYPE(propvals.ppropval[i].proptag),
-		                propvals.ppropval[i].pvalue);
+		auto &pv = propvals.ppropval[i];
+		auto tmp_size = propval_size_xfer(PROP_TYPE(pv.proptag), pv.pvalue);
 		if (tmp_size < 0x8000) {
 			total_size += tmp_size;
 			continue;
 		}
-		propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
-		propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
-		if (propvals.ppropval[i].pvalue == nullptr)
+		pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_ERROR);
+		pv.pvalue = cu_alloc<uint32_t>();
+		if (pv.pvalue == nullptr)
 			return ecServerOOM;
-		*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
+		*static_cast<uint32_t *>(pv.pvalue) = ecMAPIOOM;
 	}
 	if (total_size >= 0x7000) {
 		for (i=0; i<propvals.count; i++) {
-			proptype = PROP_TYPE(propvals.ppropval[i].proptag);
+			auto &pv = propvals.ppropval[i];
+			proptype = PROP_TYPE(pv.proptag);
 			switch (proptype) {
 			case PT_BINARY:
 			case PT_OBJECT:
 			case PT_STRING8:
 			case PT_UNICODE:
-				if (propval_size_xfer(proptype, propvals.ppropval[i].pvalue) < 0x1000)
+				if (propval_size_xfer(proptype, pv.pvalue) < 0x1000)
 					break;
-				propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
-				propvals.ppropval[i].pvalue = cu_alloc<uint32_t>();
-				if (propvals.ppropval[i].pvalue == nullptr)
+				pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_ERROR);
+				pv.pvalue = cu_alloc<uint32_t>();
+				if (pv.pvalue == nullptr)
 					return ecServerOOM;
-				*static_cast<uint32_t *>(propvals.ppropval[i].pvalue) = ecMAPIOOM;
+				*static_cast<uint32_t *>(pv.pvalue) = ecMAPIOOM;
 				break;
 			}
 		}
@@ -247,14 +248,14 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		if (!xlog->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
-			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
-			    ppropvals->ppropval[i].pvalue) <= size_limit)
+			auto &pv = ppropvals->ppropval[i];
+			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
-			ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
-			ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
-			if (ppropvals->ppropval[i].pvalue == nullptr)
+			pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_ERROR);
+			pv.pvalue = cu_alloc<uint32_t>();
+			if (pv.pvalue == nullptr)
 				return ecServerOOM;
-			*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
+			*static_cast<uint32_t *>(pv.pvalue) = ecMAPIOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
@@ -272,14 +273,14 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		if (!fld->get_properties(ptmp_proptags, ppropvals))
 			return ecError;
 		for (i=0; i<ppropvals->count; i++) {
-			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
-			    ppropvals->ppropval[i].pvalue) <= size_limit)
+			auto &pv = ppropvals->ppropval[i];
+			if (propval_size(PROP_TYPE(pv.proptag), pv.pvalue) <= size_limit)
 				continue;
-			ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
-			ppropvals->ppropval[i].pvalue = cu_alloc<uint32_t>();
-			if (ppropvals->ppropval[i].pvalue == nullptr)
+			pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_ERROR);
+			pv.pvalue = cu_alloc<uint32_t>();
+			if (pv.pvalue == nullptr)
 				return ecServerOOM;
-			*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
+			*static_cast<uint32_t *>(pv.pvalue) = ecMAPIOOM;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
@@ -315,10 +316,11 @@ ec_error_t rop_getpropertiesall(uint16_t size_limit, uint16_t want_unicode,
 		return ecNotSupported;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (PROP_TYPE(ppropvals->ppropval[i].proptag) != PT_UNSPECIFIED)
+		const auto &pv = ppropvals->ppropval[i];
+		if (PROP_TYPE(pv.proptag) != PT_UNSPECIFIED)
 			continue;	
 		if (!common_util_convert_unspecified(cpid, b_unicode,
-		    static_cast<TYPED_PROPVAL *>(ppropvals->ppropval[i].pvalue)))
+		    static_cast<TYPED_PROPVAL *>(pv.pvalue)))
 			return ecServerOOM;
 	}
 	return ecSuccess;

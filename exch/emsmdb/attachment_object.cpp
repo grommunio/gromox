@@ -371,14 +371,13 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	for (i=0; i<ppropvals->count; i++) {
-		if (is_readonly_prop(ppropvals->ppropval[i].proptag) ||
-		    attachment_object_check_stream_property(
-			pattachment, ppropvals->ppropval[i].proptag)) {
-			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
+		const auto &pv = ppropvals->ppropval[i];
+		if (is_readonly_prop(pv.proptag) ||
+		    attachment_object_check_stream_property(pattachment, pv.proptag)) {
+			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 			continue;
 		}
-		tmp_propvals.ppropval[tmp_propvals.count] =
-								ppropvals->ppropval[i];
+		tmp_propvals.ppropval[tmp_propvals.count] = pv;
 		poriginal_indices[tmp_propvals.count++] = i;
 	}
 	if (tmp_propvals.count == 0)

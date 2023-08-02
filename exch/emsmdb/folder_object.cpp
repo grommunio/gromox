@@ -503,11 +503,11 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		return FALSE;
 	auto pfolder = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (pfolder->is_readonly_prop(ppropvals->ppropval[i].proptag)) {
-			pproblems->emplace_back(i, ppropvals->ppropval[i].proptag, ecAccessDenied);
+		const auto &pv = ppropvals->ppropval[i];
+		if (pfolder->is_readonly_prop(pv.proptag)) {
+			pproblems->emplace_back(i, pv.proptag, ecAccessDenied);
 		} else {
-			tmp_propvals.ppropval[tmp_propvals.count] =
-								ppropvals->ppropval[i];
+			tmp_propvals.ppropval[tmp_propvals.count] = pv;
 			poriginal_indices[tmp_propvals.count++] = i;
 		}
 	}
