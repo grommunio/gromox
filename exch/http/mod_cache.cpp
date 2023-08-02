@@ -465,10 +465,7 @@ int mod_cache_take_request(http_context *phttp)
 	char request_uri[8192];
 	CACHE_CONTEXT *pcontext;
 	
-	auto tmp_len = phttp->request.f_content_length.size();
-	if (tmp_len >= 32)
-		return 400;
-	tmp_len = phttp->request.f_host.size();
+	auto tmp_len = phttp->request.f_host.size();
 	if (tmp_len >= sizeof(domain)) {
 		phttp->log(LV_DEBUG, "length of "
 			"request host is too long for mod_cache");
