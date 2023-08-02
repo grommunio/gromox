@@ -116,6 +116,7 @@ struct Enum
 	STR(CarPhone);
 	STR(CLSID);
 	STR(CLSIDArray);
+	STR(Closed);
 	STR(CompanyMainPhone);
 	STR(Complete);
 	STR(Common);
@@ -213,6 +214,7 @@ struct Enum
 	STR(ObjectArray);
 	STR(October);
 	STR(OfficeIntegrationConfiguration);
+	STR(OK);
 	STR(OneOff);
 	STR(Optional);
 	STR(Organizer);
@@ -353,6 +355,7 @@ struct Enum
 	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
 	using CalendarItemCreateOrDeleteOperationType = StrEnum<SendToNone, SendOnlyToAll, SendToAllAndSaveCopy>; ///<< Types.xsd:4005
+	using ConnectionStatusType = StrEnum<OK, Closed>; ///< Types.xsd:6182
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
 	using DayOfWeekIndexType = StrEnum<First, Second, Third, Fourth, Last>; ///<Types.xsd:4500

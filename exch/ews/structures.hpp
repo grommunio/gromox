@@ -142,7 +142,7 @@ struct sFolderEntryId : public FOLDER_ENTRYID
 	explicit sFolderEntryId(const tinyxml2::XMLAttribute*);
 	sFolderEntryId(const void*, uint64_t);
 
-	std::string serialize() const;
+	sBase64Binary serialize() const;
 
 	uint32_t accountId() const;
 	uint64_t folderId() const;
@@ -168,6 +168,8 @@ struct sMessageEntryId : public MESSAGE_ENTRYID
 	uint64_t folderId() const;
 	eid_t messageId() const;
 	bool isPrivate() const;
+
+	sBase64Binary serialize() const;
 private:
 	void init(const void*, uint64_t);
 };
@@ -258,7 +260,7 @@ struct sMailboxInfo
 
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 
-using sNotificationEvent = std::variant<aCreatedEvent, aDeletedEvent, tModifiedEvent, aMovedEvent, aNewMailEvent, aStatusEvent/*, aFreeBusyEvent*/>;
+using sNotificationEvent = std::variant<aCreatedEvent, aDeletedEvent, tModifiedEvent, aMovedEvent, aCopiedEvent, aNewMailEvent, aStatusEvent/*, aFreeBusyEvent*/>;
 
 class sShape
 {
@@ -1032,6 +1034,8 @@ ALIAS(tItemId, OldItemId);
  */
 struct tBaseObjectChangedEvent : public NS_EWS_Types
 {
+	tBaseObjectChangedEvent(const sTimePoint&, std::variant<tFolderId, tItemId>&&, tFolderId&&);
+
 	sTimePoint TimeStamp;
 	std::variant<tFolderId, tItemId> objectId;
 	tFolderId ParentFolderId;
@@ -1051,6 +1055,8 @@ struct tModifiedEvent : public tBaseObjectChangedEvent
 {
 	static constexpr char NAME[] = "ModifiedEvent";
 
+	using tBaseObjectChangedEvent::tBaseObjectChangedEvent;
+
 	std::optional<int32_t> UnreadCount;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1061,6 +1067,8 @@ struct tModifiedEvent : public tBaseObjectChangedEvent
  */
 struct tMovedCopiedEvent : public tBaseObjectChangedEvent
 {
+	tMovedCopiedEvent(const sTimePoint&, std::variant<tFolderId, tItemId>&&, tFolderId&&, std::variant<aOldFolderId, aOldItemId>&&, tFolderId&&);
+
 	std::variant<aOldFolderId, aOldItemId> oldObjectId;
 	tFolderId OldParentFolderId;
 
@@ -2057,6 +2065,8 @@ struct tSubscriptionId
 
 	void serialize(tinyxml2::XMLElement*) const;
 
+	inline bool operator==(const tSubscriptionId& other) {return ID == other.ID;}
+
 private:
 	static std::atomic<uint32_t> globcnt;
 
@@ -2080,10 +2090,12 @@ private:
  */
 struct tNotification
 {
+	static constexpr char NAME[] = "Notification";
+
 	tSubscriptionId SubscriptionId;
 	//<xs:element name="PreviousWatermark" type="t:WatermarkType" minOccurs="0" />
 	std::optional<bool> MoreEvents;
-	std::vector<sNotificationEvent> events;
+	std::list<sNotificationEvent> events;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -2194,6 +2206,7 @@ struct mResponseMessageType : public NS_EWS_Messages
 	std::optional<int32_t> DescriptiveLinkKey;
 
 	mResponseMessageType& success();
+	mResponseMessageType& error(const std::string&, const std::string&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -2497,6 +2510,39 @@ struct mGetAttachmentResponse
 };
 
 /**
+ * Messages.xsd:2002
+ */
+struct mGetEventsRequest
+{
+	mGetEventsRequest(const tinyxml2::XMLElement*);
+
+	tSubscriptionId SubscriptionId;
+	//<xs:element name="Watermark" type="t:WatermarkType"/>
+};
+
+/**
+ * Messages.xsd:2016
+ */
+struct mGetEventsResponseMessage : public mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tNotification> Notification; // Only optional in case of error message
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2025
+ */
+struct mGetEventsResponse
+{
+	std::vector<mGetEventsResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:692
  */
 struct mGetFolderRequest
@@ -2611,6 +2657,43 @@ struct mGetServiceConfigurationResponse : mResponseMessageType
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::vector<mGetServiceConfigurationResponseMessageType> ResponseMessages;
+};
+
+/**
+ * Messages.xsd:2033
+ */
+struct mGetStreamingEventsRequest
+{
+	explicit mGetStreamingEventsRequest(const tinyxml2::XMLElement*);
+
+	std::vector<tSubscriptionId> SubscriptionIds;
+	int ConnectionTimeout; //Minutes
+};
+
+/**
+ * Messages.xsd:2048
+ */
+struct mGetStreamingEventsResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "GetStreamingEvents";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::vector<tNotification> Notifications;
+	std::vector<tSubscriptionId> ErrorSubscriptionIds;
+	std::optional<Enum::ConnectionStatusType> ConnectionStatus;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2063
+ */
+struct mGetStreamingEventsResponse
+{
+	std::vector<mGetStreamingEventsResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**

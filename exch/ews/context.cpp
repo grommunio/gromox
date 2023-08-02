@@ -161,6 +161,27 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 }
 
 /**
+ * @brief      Schedule notification stream for closing
+ */
+void EWSContext::disableEventStream()
+{
+	if(m_notify)
+		m_notify->state = NotificationContext::S_CLOSING;
+}
+
+/**
+ * @brief      Initialize notification context
+ *
+ * @param      timeout   Stream timeout (minutes)
+ */
+void EWSContext::enableEventStream(int timeout)
+{
+	m_state = S_STREAM_NOTIFY;
+	gromox::time_point expire = tp_now()+std::chrono::minutes(timeout);
+	m_notify = std::make_unique<NotificationContext>(expire);
+}
+
+/**
  * @brief     Get user or domain ID by name
  *
  * @param     name       Name to resolve
@@ -344,6 +365,35 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	if (!func(target, targetDir, std::size(targetDir)))
 		throw EWSError::CannotFindUser(E3126);
 	return targetDir;
+}
+
+/**
+ * @brief      Get cached events from all subscriptions
+ *
+ * Loads up to 50 cached events as specified in
+ * https://learn.microsoft.com/en-us/exchange/client-developer/web-service-reference/getevents-operation#remarks.
+ *
+ * @param subscription   Subscription ID
+ *
+ * @return List of events and indicator whether there are more events
+ */
+std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubscriptionId& subscriptionId) const
+{
+	auto subscription = m_plugin.subscription(subscriptionId.ID, subscriptionId.timeout);
+	if(!subscription)
+		throw EWSError::InvalidSubscription("Invalid subscription");
+	if(subscription->username != m_auth_info.username)
+		throw EWSError::AccessDenied("Only the subscription owner may access the subscription.");
+	std::pair<std::list<sNotificationEvent>, bool> result{{}, subscription->events.size() > 50};
+	auto& evt = subscription->events;
+	if(result.second) {
+		auto it = evt.begin();
+		std::advance(it, 50);
+		result.first.splice(result.first.end(), evt, evt.begin(), it);
+	}
+	else
+		result.first.splice(result.first.end(), evt);
+	return result;
 }
 
 /**
@@ -1007,6 +1057,20 @@ BINARY EWSContext::serialize(const XID& xid) const
 	if(!ext_push.init(buff, xid.size, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
 		throw DispatchError(E3120);
 	return BINARY{ext_push.m_offset, {buff}};
+}
+
+/**
+ * @brief      Add subscription to notification context
+ *
+ * @param      subscriptionId  Subscription to add
+ *
+ * @return     true if subscription was added, false on error (not found or no access)
+ */
+bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
+{
+	if(m_notify)
+		m_notify->subscriptions.emplace_back(subscriptionId);
+	return m_plugin.linkSubscription(subscriptionId, *this);
 }
 
 /**

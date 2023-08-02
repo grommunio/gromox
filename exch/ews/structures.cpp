@@ -1114,6 +1114,10 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
     Id(fEntryID), ChangeKey(chKey)
 {}
 
+tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::variant<tFolderId, tItemId>&& oid, tFolderId&& fid) :
+    TimeStamp(ts), objectId(std::move(oid)), ParentFolderId(std::move(fid))
+{}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -2253,6 +2257,15 @@ tMessage::tMessage(const sShape& shape) : tItem(shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tMovedCopiedEvent::tMovedCopiedEvent(const sTimePoint& ts, std::variant<tFolderId, tItemId>&& oid, tFolderId&& fid,
+                                     std::variant<aOldFolderId, aOldItemId>&& ooid, tFolderId&& ofid) :
+    tBaseObjectChangedEvent(ts, std::move(oid), std::move(fid)),
+    oldObjectId(std::move(ooid)),
+    OldParentFolderId(std::move(ofid))
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief     Collect property tags and names for path specification
 
@@ -2439,5 +2452,21 @@ mResponseMessageType& mResponseMessageType::success()
 {
 	ResponseClass = "Success";
 	ResponseCode = "NoError";
+	return *this;
+}
+
+/**
+ * @brief      Set response message to error state
+ *
+ * @param      rcode   EWS Error code
+ * @param      mt      Error message text
+ *
+ * @return     *this
+ */
+mResponseMessageType& mResponseMessageType::error(const std::string& rcode, const std::string& mt)
+{
+	ResponseClass = "Error";
+	MessageText = mt;
+	ResponseCode = rcode;
 	return *this;
 }

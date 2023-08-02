@@ -168,15 +168,33 @@ sFolderEntryId::sFolderEntryId(const XMLAttribute* xml)
 /**
  * @brief     Generate entry ID object
  *
- * @return    String containing base64 encoded entry ID
+ * @return    Base64 binary containing entry ID
  */
-std::string sFolderEntryId::serialize() const
+sBase64Binary sFolderEntryId::serialize() const
 {
-	char buff[64];
+	sBase64Binary bin;
+	bin.resize(46);
 	EXT_PUSH ext_push;
-	ext_push.init(buff, 64, 0, nullptr);
+	ext_push.init(bin.data(), 46, 0, nullptr);
 	EXT_TRY(ext_push.p_folder_eid(*this));
-	return b64encode(buff, ext_push.m_offset);
+	bin.resize(ext_push.m_offset);
+	return bin;
+}
+
+/**
+ * @brief     Generate entry ID object
+ *
+ * @return    Base64 binary containing entry ID
+ */
+sBase64Binary sMessageEntryId::serialize() const
+{
+	sBase64Binary bin;
+	bin.resize(70);
+	EXT_PUSH ext_push;
+	ext_push.init(bin.data(), 70, 0, nullptr);
+	EXT_TRY(ext_push.p_msg_eid(*this));
+	bin.resize(ext_push.m_offset);
+	return bin;
 }
 
 /**
@@ -945,7 +963,7 @@ tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement* xml)
 	const char* data = xml->GetText();
 	size_t len;
 	if(!data || (len = strlen(data)) != 12)
-		throw DeserializationError(E3111);
+		throw DeserializationError(E3201);
 	const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
 	ID = decode(d);
 	timeout = decode(d);
@@ -1106,6 +1124,19 @@ void mGetAttachmentResponseMessage::serialize(XMLElement* xml) const
 	XMLDUMPM(Attachments);
 }
 
+mGetEventsRequest::mGetEventsRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SubscriptionId)
+{}
+
+void mGetEventsResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mGetEventsResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Notification);
+}
+
 void mGetAttachmentResponse::serialize(XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
@@ -1159,6 +1190,21 @@ void mGetServiceConfigurationResponseMessageType::serialize(XMLElement* xml) con
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(MailTipsConfiguration);
+}
+
+mGetStreamingEventsRequest::mGetStreamingEventsRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SubscriptionIds),
+	XMLINIT(ConnectionTimeout)
+{}
+
+void mGetStreamingEventsResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mGetStreamingEventsResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPM(Notifications);
+	XMLDUMPM(ErrorSubscriptionIds);
+	XMLDUMPM(ConnectionStatus);
 }
 
 mGetUserAvailabilityRequest::mGetUserAvailabilityRequest(const XMLElement* xml) :

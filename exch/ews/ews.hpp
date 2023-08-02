@@ -50,6 +50,7 @@ struct MessageInstanceKey {
 
 using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
 using SubscriptionKey = uint32_t;
+using ContextWakeupKey = int;
 
 } // namespace gromox::EWS::detail
 
@@ -79,6 +80,7 @@ public:
 	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, EWSContext &);
 
 	EWSPlugin();
+	~EWSPlugin();
 	http_status proc(int, const void*, uint64_t);
 	static BOOL preproc(int);
 
@@ -109,6 +111,7 @@ public:
 	#undef EXMIDL
 	#undef IDLOUT
 		bool get_message_property(const char*, const char*, cpid_t, uint64_t, uint32_t, void **ppval) const;
+		void (*register_proc)(void*);
 	} exmdb;
 
 	struct ExmdbInstance {
@@ -139,11 +142,14 @@ public:
 		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
 		std::mutex lock; ///< I/O mutex
 		std::vector<detail::ExmdbSubscriptionKey> subscriptions; ///< Exmdb subscription keys
+		std::list<Structures::sNotificationEvent> events; ///< Events that occured since last check
+		std::optional<int> waitingContext; ///< ID of context waiting for events
 
 		~Subscription();
 	};
 
-	std::list<Structures::sNotificationEvent> events(const detail::ExmdbSubscriptionKey&, size_t, bool&) const;
+	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
+	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
@@ -151,8 +157,10 @@ public:
 	std::shared_ptr<Subscription> mksub(const Structures::tSubscriptionId&, const char*) const;
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
 	std::shared_ptr<Subscription> subscription(detail::SubscriptionKey, uint32_t) const;
+	void unlinkSubscription(int) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
+	void wakeContext(int, std::chrono::milliseconds) const;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
@@ -162,8 +170,9 @@ public:
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
 	int experimental = 0; ///< Enable experimental requests, 0 = disabled
 	std::chrono::milliseconds cache_interval{10'000}; ///< Interval for cache cleanup
-	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; /// Lifetime of attachment instances
-	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; /// Lifetime of message instances
+	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
+	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
+	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
 
 	int retr(int);
 	void term(int);
@@ -173,17 +182,22 @@ private:
 
 	struct DebugCtx;
 
-	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey>;
-	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<Subscription>>;
+	struct WakeupNotify
+	{
+		inline explicit WakeupNotify(int id) : ID(id) {}
+		int ID;
+		~WakeupNotify();
+	};
+
+	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextWakeupKey>;
+	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<Subscription>, sptr<WakeupNotify>>;
 
 	static const std::unordered_map<std::string, Handler> requestMap;
 
-	static void writecontent(int, const std::string_view&, bool, gx_loglevel);
-	static void writeheader(int, http_status, size_t);
 	static http_status fault(int, http_status, const std::string_view&);
 
-	mutable ObjectCache<CacheKey, CacheObj> cache;
 	std::vector<std::unique_ptr<EWSContext>> contexts;
+	mutable ObjectCache<CacheKey, CacheObj> cache;
 
 	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
 	mutable std::mutex subscriptionLock;
@@ -191,6 +205,7 @@ private:
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
 	bool invertFilter = true;
+	bool teardown = false;
 
 	http_status dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
 	void loadConfig();
@@ -202,7 +217,7 @@ private:
 class EWSContext
 {
 public:
-	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE};
+	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
 	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
 		m_ID(id), m_orig(*get_request(id)), m_auth_info(ai), m_request(data, length), m_plugin(p)
@@ -213,6 +228,8 @@ public:
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
+	void disableEventStream();
+	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
@@ -239,6 +256,7 @@ public:
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
+	int notify();
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
@@ -246,6 +264,7 @@ public:
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	void send(const std::string&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
+	bool streamEvents(const Structures::tSubscriptionId&) const;
 	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
@@ -280,6 +299,23 @@ private:
 	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
 
+	struct NotificationContext
+	{
+		enum State : uint8_t {
+			S_INIT, ///< Just initalized, flush data and wait
+			S_SLEEP, ///< Waiting for next wakeup
+			S_WRITE, ///< Just wrote data, proceed with sleeping
+			S_CLOSING, ///< All subscriptions died so we might as well
+			S_CLOSED ///< isded
+		};
+
+		inline explicit NotificationContext(gromox::time_point e) : state(S_INIT), expire(e) {}
+
+		State state;
+		std::vector<Structures::tSubscriptionId> subscriptions;
+		gromox::time_point expire;
+	};
+
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
@@ -302,6 +338,7 @@ private:
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;
 	bool m_log = false;
+	std::unique_ptr<NotificationContext> m_notify;
 };
 
 /**

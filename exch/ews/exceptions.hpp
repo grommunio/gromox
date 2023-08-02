@@ -78,6 +78,7 @@ public:
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
+	ERR(InvalidSubscription) ///< Subscription expired
 	ERR(InvalidSubscriptionRequest) ///< Inconsistent subscription request
 	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
@@ -93,12 +94,6 @@ public:
 	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
 #undef ERR
 };
-
-/**
- * @brief      Error if none of the subscription keys is valid
- */
-class SubscriptionNotFoundError : public DispatchError
-{using DispatchError::DispatchError;};
 
 /**
  * @brief      Generic error to signal missing functionality
@@ -320,6 +315,7 @@ E(3197, "invalid subscription id");
 E(3198, "SubscribeToAllFolders cannot be combined with FolderIds");
 E(3199, "SubscribeToAllFolders cannot be combined with FolderIds");
 E(3200, "cannot subscribe to different mailboxes");
+E(3201, "invalid subscription ID");
 
 #undef E
 }

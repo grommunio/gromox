@@ -372,6 +372,37 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
 }
 
 /**
+ * @brief      Process GetEvents
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetEventsResponse");
+
+	mGetEventsResponse data;
+	try {
+		auto [events, more] = ctx.getEvents(request.SubscriptionId);
+		mGetEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
+		tNotification& notification = msg.Notification.emplace();
+		notification.SubscriptionId = std::move(request.SubscriptionId);
+		notification.events = std::move(events);
+		notification.MoreEvents = more;
+		if(notification.events.empty())
+			notification.events.emplace_back(aStatusEvent());
+		msg.success();
+	} catch(EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetFolder
  *
  * Return properties of a list of folders.
@@ -514,6 +545,35 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
 		fbr.ResponseMessage.emplace(err);
 	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetDtreamingEventsRequest
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetStreamingEventsResponse");
+
+	mGetStreamingEventsResponse data;
+	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
+
+	ctx.enableEventStream(request.ConnectionTimeout);
+	for(const tSubscriptionId& subscription : request.SubscriptionIds)
+		if(!ctx.streamEvents(subscription))
+			msg.ErrorSubscriptionIds.emplace_back(subscription);
+	if(msg.ErrorSubscriptionIds.empty())
+		msg.success();
+	else
+		msg.error("ErrorInvalidSubscription", "Subscription is invalid.");
+	msg.ConnectionStatus = Enum::OK;
 
 	data.serialize(response);
 }
