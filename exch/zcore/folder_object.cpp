@@ -507,13 +507,13 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->count = 0;
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (folder_object_get_calculated_property(
-			pfolder, pproptags->pproptag[i], &pvalue)) {
+		const auto tag = pproptags->pproptag[i];
+		if (folder_object_get_calculated_property(pfolder, tag, &pvalue)) {
 			if (pvalue == nullptr)
 				return FALSE;
-			ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
+			ppropvals->emplace_back(tag, pvalue);
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 		}
 	}
 	if (tmp_proptags.count == 0)
@@ -596,9 +596,10 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (pfolder->is_readonly_prop(pproptags->pproptag[i]))
+		const auto tag = pproptags->pproptag[i];
+		if (pfolder->is_readonly_prop(tag))
 			continue;
-		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

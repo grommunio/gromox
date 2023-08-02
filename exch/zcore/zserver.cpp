@@ -3649,9 +3649,10 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		if (ppropvals->ppropval == nullptr)
 			return ecError;
 		for (i = 0; i < pproptags->count; i++) {
-			auto v = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(pproptags->pproptag[i]);
+			const auto tag = pproptags->pproptag[i];
+			auto v = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(tag);
 			if (v != nullptr)
-				ppropvals->emplace_back(pproptags->pproptag[i], v);
+				ppropvals->emplace_back(tag, v);
 		}
 		return ecSuccess;
 	case zs_objtype::store: {

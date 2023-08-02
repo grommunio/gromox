@@ -210,14 +210,14 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (attachment_object_get_calculated_property(
-			pattachment, pproptags->pproptag[i], &pvalue)) {
+		const auto tag = pproptags->pproptag[i];
+		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
 			if (pvalue == nullptr)
 				return FALSE;
-			ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
+			ppropvals->emplace_back(tag, pvalue);
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
@@ -272,10 +272,10 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
-		if (aobj_is_readonly_prop(pattachment,
-		    pproptags->pproptag[i]))
+		const auto tag = pproptags->pproptag[i];
+		if (aobj_is_readonly_prop(pattachment, tag))
 			continue;
-		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;

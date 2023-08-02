@@ -1495,12 +1495,13 @@ BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *pnode,
 	auto pinfo = zs_get_info();
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
+		const auto tag = pproptags->pproptag[i];
 		if (!ab_tree_fetch_node_property(pnode,
-		    pinfo->cpid, pproptags->pproptag[i], &pvalue))
+		    pinfo->cpid, tag, &pvalue))
 			return FALSE;	
 		if (pvalue == nullptr)
 			continue;
-		ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
+		ppropvals->emplace_back(tag, pvalue);
 	}
 	return TRUE;
 }

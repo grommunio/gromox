@@ -968,13 +968,13 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto pstore = this;
 	for (i=0; i<pproptags->count; i++) {
 		void *pvalue = nullptr;
-		if (store_object_get_calculated_property(this,
-		    pproptags->pproptag[i], &pvalue)) {
+		const auto tag = pproptags->pproptag[i];
+		if (store_object_get_calculated_property(this, tag, &pvalue)) {
 			if (pvalue == nullptr)
 				return FALSE;
-			ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
+			ppropvals->emplace_back(tag, pvalue);
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+			tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 		}
 	}
 	if (tmp_proptags.count == 0)
@@ -1290,9 +1290,10 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	int i;
 	auto pinfo = zs_get_info();
 	for (i=0; i<pproptags->count; i++) {
-		if (store_object_is_readonly_prop(pstore, pproptags->pproptag[i]))
+		const auto tag = pproptags->pproptag[i];
+		if (store_object_is_readonly_prop(pstore, tag))
 			continue;
-		pinfo->ptree->remove_zstore_propval(pproptags->pproptag[i]);
+		pinfo->ptree->remove_zstore_propval(tag);
 	}
 	return TRUE;
 }

@@ -785,14 +785,14 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (message_object_get_calculated_property(
-			pmessage, pproptags->pproptag[i], &pvalue)) {
+		const auto tag = pproptags->pproptag[i];
+		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
 			if (pvalue == nullptr)
 				return FALSE;
-			ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
+			ppropvals->emplace_back(tag, pvalue);
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count++] = tag;
 	}
 	if (tmp_proptags.count == 0)
 		return TRUE;
@@ -937,12 +937,12 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	if (poriginal_indices == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
-		if (msgo_is_readonly_prop(pmessage, pproptags->pproptag[i])) {
+		const auto tag = pproptags->pproptag[i];
+		if (msgo_is_readonly_prop(pmessage, tag)) {
 			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-							pproptags->pproptag[i];
+		tmp_proptags.pproptag[tmp_proptags.count] = tag;
 		poriginal_indices[tmp_proptags.count++] = i;
 	}
 	if (tmp_proptags.count == 0)

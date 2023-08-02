@@ -417,12 +417,12 @@ static BOOL container_object_fetch_special_properties(
 		return FALSE;
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (!container_object_fetch_special_property(
-		    special_type, pproptags->pproptag[i], &pvalue))
+		const auto tag = pproptags->pproptag[i];
+		if (!container_object_fetch_special_property(special_type, tag, &pvalue))
 			return FALSE;	
 		if (pvalue == nullptr)
 			continue;
-		ppropvals->emplace_back(pproptags->pproptag[i], pvalue);
+		ppropvals->emplace_back(tag, pvalue);
 	}
 	return TRUE;
 }
@@ -443,7 +443,7 @@ static BOOL container_object_fetch_folder_properties(
 	if (pout_propvals->ppropval == nullptr)
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
-		uint32_t tag = pproptags->pproptag[i];
+		const auto tag = pproptags->pproptag[i];
 		switch (tag) {
 		case PR_AB_PROVIDER_ID: {
 			auto bv = cu_alloc<BINARY>();
