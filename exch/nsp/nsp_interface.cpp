@@ -2287,12 +2287,12 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		if (ptnode == nullptr)
 			continue;
-		auto username = ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS);
-		if (username != nullptr) {
+		auto un = ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS);
+		if (un != nullptr) {
 			if (flags & MOD_FLAG_DELETE)
-				tmp_list.erase(username);
+				tmp_list.erase(un);
 			else
-				tmp_list.emplace(username);
+				tmp_list.emplace(un);
 		}
 	}
 	if (tmp_list.size() == item_num)

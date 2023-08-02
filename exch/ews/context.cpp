@@ -524,7 +524,7 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	sItem item = tItem::create(shape);
 	if(shape.special)
-		std::visit([&](auto&& item){loadSpecial(dir, fid, mid, item, shape.special);}, item);
+		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
 	return item;
 }
 

@@ -1142,7 +1142,6 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
     cpid_t codepage, uint32_t proptag, void **ppvalue)
 {
 	int minid;
-	void *pvalue;
 	char dn[1280]{};
 	GUID temp_guid;
 	EXT_PUSH ext_push;
@@ -1161,10 +1160,10 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		bv->pv = deconst(&muidECSAB);
 		return TRUE;
 	}
-	case PR_CONTAINER_FLAGS:
+	case PR_CONTAINER_FLAGS: {
 		if (node_type < abnode_type::containers)
 			return TRUE;
-		pvalue = cu_alloc<uint32_t>();
+		auto pvalue = cu_alloc<uint32_t>();
 		if (pvalue == nullptr)
 			return FALSE;
 		*static_cast<uint32_t *>(pvalue) = !ab_tree_has_child(pnode) ?
@@ -1172,6 +1171,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PR_DEPTH: {
 		if (node_type < abnode_type::containers)
 			return TRUE;
@@ -1182,35 +1182,38 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = v;
 		return TRUE;
 	}
-	case PR_EMS_AB_IS_MASTER:
+	case PR_EMS_AB_IS_MASTER: {
 		if (node_type < abnode_type::containers)
 			return TRUE;
-		pvalue = cu_alloc<uint8_t>();
+		auto pvalue = cu_alloc<uint8_t>();
 		if (pvalue == nullptr)
 			return FALSE;
 		*static_cast<uint8_t *>(pvalue) = 0;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_EMS_AB_HOME_MDB:
+	}
+	case PR_EMS_AB_HOME_MDB: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
 		HX_strlcat(dn, "/cn=Microsoft Private MDB", std::size(dn));
-		pvalue = common_util_dup(dn);
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_EMS_AB_OBJECT_GUID:
+	}
+	case PR_EMS_AB_OBJECT_GUID: {
 		if (!ab_tree_node_to_guid(pnode, &temp_guid))
 			return false;
-		pvalue = common_util_guid_to_binary(temp_guid);
+		auto pvalue = common_util_guid_to_binary(temp_guid);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_EMS_AB_CONTAINERID:
-		pvalue = cu_alloc<uint32_t>();
+	}
+	case PR_EMS_AB_CONTAINERID: {
+		auto pvalue = cu_alloc<uint32_t>();
 		if (pvalue == nullptr)
 			return FALSE;
 		if (node_type >= abnode_type::containers) {
@@ -1222,21 +1225,23 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PR_ADDRTYPE:
 		if (node_type >= abnode_type::containers)
 			return TRUE;
 		*ppvalue = deconst("EX");
 		return TRUE;
-	case PR_EMAIL_ADDRESS:
+	case PR_EMAIL_ADDRESS: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
 		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return FALSE;
-		pvalue = common_util_dup(dn);
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PR_OBJECT_TYPE: {
 		auto v = cu_alloc<uint32_t>();
 		if (v == nullptr)
@@ -1286,7 +1291,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_RECORD_KEY:
 	case PR_TEMPLATEID:
 	case PR_ORIGINAL_ENTRYID: {
-		pvalue = cu_alloc<BINARY>();
+		auto pvalue = cu_alloc<BINARY>();
 		if (pvalue == nullptr)
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
@@ -1312,7 +1317,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_SEARCH_KEY: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
-		pvalue = cu_alloc<BINARY>();
+		auto pvalue = cu_alloc<BINARY>();
 		if (pvalue == nullptr)
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
@@ -1328,7 +1333,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PR_INSTANCE_KEY: {
-		pvalue = cu_alloc<BINARY>();
+		auto pvalue = cu_alloc<BINARY>();
 		if (pvalue == nullptr)
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
@@ -1349,39 +1354,42 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
-	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE: {
 		ab_tree_get_display_name(pnode, codepage, dn, std::size(dn));
 		if (*dn == '\0')
 			return TRUE;
-		pvalue = common_util_dup(dn);
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_COMPANY_NAME:
+	}
+	case PR_COMPANY_NAME: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
 		ab_tree_get_company_info(pnode, dn, NULL);
 		if (*dn == '\0')
 			return TRUE;
-		pvalue = common_util_dup(dn);
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return TRUE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_DEPARTMENT_NAME:
+	}
+	case PR_DEPARTMENT_NAME: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
 		ab_tree_get_department_name(pnode, dn);
 		if (*dn == '\0')
 			return TRUE;
-		pvalue = common_util_dup(dn);
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return TRUE;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PR_ACCOUNT:
-	case PR_SMTP_ADDRESS:
+	case PR_SMTP_ADDRESS: {
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		else if (node_type == abnode_type::user)
@@ -1390,11 +1398,12 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		if (*dn == '\0')
 			return TRUE;
-		pvalue = common_util_dup(dn);
+		auto pvalue = common_util_dup(dn);
 		if (pvalue == nullptr)
 			return TRUE;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PR_EMS_AB_PROXY_ADDRESSES: {
 		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
@@ -1460,15 +1469,16 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	 * (in case e.g. a user has not explicitly set SENDRICHINFO=0)
 	 */
 	switch (proptag) {
-	case PR_SEND_RICH_INFO:
+	case PR_SEND_RICH_INFO: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
-		pvalue = cu_alloc<uint8_t>();
+		auto pvalue = cu_alloc<uint8_t>();
 		if (pvalue == nullptr)
 			return FALSE;
 		*static_cast<uint8_t *>(pvalue) = 1;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	}
 	return TRUE;
 }

@@ -218,15 +218,15 @@ static void cl_pinger2()
 
 	if (mdcl_notify_stop)
 		temp_list.clear();
-	auto conn = temp_list.begin();
+	auto conn1 = temp_list.begin();
 	auto ping_buff = cpu_to_le32(0);
-	while (conn != temp_list.end()) {
-		struct pollfd pfd = {conn->sockd, POLLOUT};
+	while (conn1 != temp_list.end()) {
+		struct pollfd pfd = {conn1->sockd, POLLOUT};
 		if (poll(&pfd, 1, 0) != 1 ||
-		    write(conn->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t))
-			conn = temp_list.erase(conn);
+		    write(conn1->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t))
+			conn1 = temp_list.erase(conn1);
 		else
-			++conn;
+			++conn1;
 	}
 
 	while (temp_list.size() > 0) {
