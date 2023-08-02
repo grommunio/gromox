@@ -244,10 +244,8 @@ void common_util_remove_propvals(
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor)
 {
-	int i, j;
-	
-	for (j=0; j<pproptags_subtractor->count; j++) {
-		for (i=0; i<pproptags_minuend->count; i++) {
+	for (unsigned int j = 0; j < pproptags_subtractor->count; ++j) {
+		for (unsigned int i = 0; i < pproptags_minuend->count; ++i) {
 			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;

@@ -243,10 +243,8 @@ errno_t message_object::init_message(bool fai, cpid_t new_cpid)
 ec_error_t message_object::save()
 {
 	auto pmessage = this;
-	int i;
 	uint32_t result;
 	BINARY *pbin_pcl;
-	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	INDEX_ARRAY tmp_indices;
 	TAGGED_PROPVAL tmp_propval;
@@ -384,8 +382,9 @@ ec_error_t message_object::save()
 	if (!proptag_array_append(pmessage->pchanged_proptags,
 	    PR_MESSAGE_FLAGS))
 		return ecError;
-	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
+	for (unsigned int i = 0; i < pmessage->pchanged_proptags->count; ++i) {
 		const auto tag = pmessage->pchanged_proptags->pproptag[i];
+		uint32_t tmp_index = 0;
 		if (!pgpinfo->get_partial_index(tag, &tmp_index)) {
 			if (!proptag_array_append(pungroup_proptags.get(), tag))
 				return ecError;
@@ -394,8 +393,9 @@ ec_error_t message_object::save()
 				return ecError;
 		}
 	}
-	for (i=0; i<pmessage->premoved_proptags->count; i++) {
+	for (unsigned int i = 0; i < pmessage->premoved_proptags->count; ++i) {
 		const auto tag = pmessage->premoved_proptags->pproptag[i];
+		uint32_t tmp_index = 0;
 		if (!pgpinfo->get_partial_index(tag, &tmp_index))
 			goto SAVE_FULL_CHANGE;
 		else if (!proptag_array_append(pindices.get(), tmp_index))
@@ -610,7 +610,6 @@ BOOL message_object::clear_unsent()
 BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
-	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_instance_all_proptags(pmessage->pstore->get_dir(),
@@ -620,7 +619,7 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + 15);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
-	for (i=0; i<tmp_proptags.count; i++) {
+	for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
 		const auto tag = tmp_proptags.pproptag[i];
 		switch (tag) {
 		case PidTagMid:
@@ -772,8 +771,6 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t lcid_default = 0x0409;
@@ -786,7 +783,8 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (message_object_get_calculated_property(pmessage, tag, &pvalue)) {
 			if (pvalue == nullptr)
@@ -819,9 +817,6 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 static BOOL message_object_set_properties_internal(message_object *pmessage,
     BOOL b_check, const TPROPVAL_ARRAY *ppropvals)
 {
-	int i, j;
-	void *pvalue;
-	uint32_t proptag;
 	uint8_t tmp_bytes[3];
 	PROBLEM_ARRAY problems;
 	PROBLEM_ARRAY tmp_problems;
@@ -843,13 +838,14 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (poriginal_indices == nullptr)
 		return FALSE;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (b_check) {
 			if (msgo_is_readonly_prop(pmessage, pv.proptag)) {
 				problems.pproblem[problems.count++].index = i;
 				continue;
 			} else if (pv.proptag == PR_EXTENDED_RULE_MSG_CONDITION) {
+				void *pvalue = nullptr;
 				if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
@@ -892,14 +888,15 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
+		unsigned int j;
 		for (j = 0; j < problems.count; j++)
 			if (i == problems.pproblem[j].index)
 				break;
 		if (j < problems.count)
 			continue;
 		pmessage->b_touched = TRUE;
-		proptag = ppropvals->ppropval[i].proptag;
+		const auto proptag = ppropvals->ppropval[i].proptag;
 		proptag_array_remove(
 			pmessage->premoved_proptags, proptag);
 		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
@@ -918,8 +915,6 @@ BOOL message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
 BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
-	int i, j;
-	uint32_t proptag;
 	PROBLEM_ARRAY problems;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
@@ -938,7 +933,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (poriginal_indices == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (msgo_is_readonly_prop(pmessage, tag)) {
 			problems.pproblem[problems.count++].index = i;
@@ -958,14 +953,15 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		unsigned int j;
 		for (j = 0; j < problems.count; j++)
 			if (i == problems.pproblem[j].index)
 				break;
 		if (j < problems.count)
 			continue;
 		pmessage->b_touched = TRUE;
-		proptag = pproptags->pproptag[i];
+		const auto proptag = pproptags->pproptag[i];
 		proptag_array_remove(
 			pmessage->pchanged_proptags, proptag);
 		if (!proptag_array_append(pmessage->premoved_proptags, proptag))
@@ -992,8 +988,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		return FALSE;
 	for (auto t : trimtags)
 		common_util_remove_propvals(&msgctnt.proplist, t);
-	size_t i = 0;
-	while (i < msgctnt.proplist.count) {
+	for (unsigned int i = 0; i < msgctnt.proplist.count; ) {
 		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
 					msgctnt.proplist.ppropval[i].proptag);
@@ -1010,7 +1005,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		return FALSE;	
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	for (i = 0; i < proptags.count; ++i)
+	for (unsigned int i = 0; i < proptags.count; ++i)
 		proptag_array_append(pmessage->pchanged_proptags,
 			proptags.pproptag[i]);
 	return TRUE;

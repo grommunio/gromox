@@ -1486,15 +1486,13 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *pnode,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	void *pvalue;
-	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	auto pinfo = zs_get_info();
 	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!ab_tree_fetch_node_property(pnode,
 		    pinfo->cpid, tag, &pvalue))

@@ -196,8 +196,6 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -209,7 +207,8 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (attachment_object_get_calculated_property(pattachment, tag, &pvalue)) {
 			if (pvalue == nullptr)
@@ -236,7 +235,6 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
-	int i;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -244,7 +242,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(ppropvals->count);
 	if (tmp_propvals.ppropval == nullptr)
 		return FALSE;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (aobj_is_readonly_prop(pattachment, pv.proptag))
 			continue;
@@ -263,7 +261,6 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
-	int i;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	
@@ -271,7 +268,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	tmp_proptags.pproptag = cu_alloc<uint32_t>(pproptags->count);
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (aobj_is_readonly_prop(pattachment, tag))
 			continue;

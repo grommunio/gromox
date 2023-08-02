@@ -409,14 +409,12 @@ static BOOL container_object_fetch_special_properties(
 	uint8_t special_type, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	void *pvalue;
-	
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (ppropvals->ppropval == nullptr)
 		return FALSE;
 	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (!container_object_fetch_special_property(special_type, tag, &pvalue))
 			return FALSE;	
@@ -431,9 +429,6 @@ static BOOL container_object_fetch_folder_properties(
 	const TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *pout_propvals)
 {
-	int i;
-	int count;
-	
 	auto pvfid = ppropvals->get<uint64_t>(PidTagFolderId);
 	if (pvfid == nullptr)
 		return FALSE;
@@ -442,7 +437,7 @@ static BOOL container_object_fetch_folder_properties(
 	pout_propvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (pout_propvals->ppropval == nullptr)
 		return FALSE;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		switch (tag) {
 		case PR_AB_PROVIDER_ID: {
@@ -499,7 +494,7 @@ static BOOL container_object_fetch_folder_properties(
 			auto pc = ppropvals->get<const char>(PR_FOLDER_PATHNAME);
 			if (pc == nullptr)
 				return FALSE;
-			count = 0;
+			unsigned int count = 0;
 			for (; *pc != '\0'; ++pc)
 				if (*pc == '\\')
 					count ++;

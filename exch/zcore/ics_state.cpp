@@ -117,7 +117,6 @@ BOOL ics_state::deserialize(const BINARY &bin)
 {
 	auto pbin = &bin;
 	auto pstate = this;
-	int i;
 	EXT_PULL ext_pull;
 	TPROPVAL_ARRAY propvals;
 	
@@ -128,7 +127,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	for (i=0; i<propvals.count; i++) {
+	for (unsigned int i = 0; i < propvals.count; ++i) {
 		const auto &pv = propvals.ppropval[i];
 		switch (pv.proptag) {
 		case MetaTagIdsetGiven1: {

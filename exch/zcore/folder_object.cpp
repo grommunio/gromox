@@ -492,8 +492,6 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -506,7 +504,8 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	auto pfolder = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
+		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (folder_object_get_calculated_property(pfolder, tag, &pvalue)) {
 			if (pvalue == nullptr)
@@ -581,7 +580,6 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 
 BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	BINARY *pbin_pcl;
 	uint64_t last_time;
 	uint64_t change_num;
@@ -595,7 +593,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	if (tmp_proptags.pproptag == nullptr)
 		return FALSE;
 	auto pfolder = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (pfolder->is_readonly_prop(tag))
 			continue;

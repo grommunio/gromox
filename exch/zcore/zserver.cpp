@@ -3628,7 +3628,6 @@ ec_error_t zs_setpropvals(GUID hsession, uint32_t hobject,
 ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
     const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	zs_objtype mapi_type;
 	PROPTAG_ARRAY proptags;
 	
@@ -3648,7 +3647,7 @@ ec_error_t zs_getpropvals(GUID hsession, uint32_t hobject,
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 		if (ppropvals->ppropval == nullptr)
 			return ecError;
-		for (i = 0; i < pproptags->count; i++) {
+		for (unsigned int i = 0; i < pproptags->count; ++i) {
 			const auto tag = pproptags->pproptag[i];
 			auto v = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(tag);
 			if (v != nullptr)
@@ -3884,7 +3883,6 @@ ec_error_t zs_getpropnames(GUID hsession, uint32_t hstore,
 ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
     const PROPTAG_ARRAY *pexclude_proptags, uint32_t hdstobject, uint32_t flags)
 {
-	int i;
 	BOOL b_cycle;
 	BOOL b_collid;
 	BOOL b_partial;
@@ -3958,7 +3956,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 			return ecError;
 		if (!b_force && !fdst->get_all_proptags(&proptags1))
 			return ecError;
-		for (i=0; i<proptags.count; i++) {
+		for (unsigned int i = 0; i < proptags.count; ++i) {
 			const auto tag = proptags.pproptag[i];
 			if (fdst->is_readonly_prop(tag))
 				continue;

@@ -953,7 +953,6 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -966,7 +965,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return FALSE;
 	ppropvals->count = 0;
 	auto pstore = this;
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
 		if (store_object_get_calculated_property(this, tag, &pvalue)) {
@@ -981,7 +980,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	auto pinfo = zs_get_info();
 	if (pstore->b_private && pinfo->user_id == pstore->account_id) {
-		for (i=0; i<tmp_proptags.count; i++) {
+		for (unsigned int i = 0; i < tmp_proptags.count; ++i) {
 			auto pvalue = pinfo->ptree->get_zstore_propval(tmp_proptags.pproptag[i]);
 			if (pvalue == nullptr)
 				continue;
@@ -1237,10 +1236,9 @@ static void set_store_lang(store_object *store, const char *locale)
 
 BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	auto pinfo = zs_get_info();
 	auto pstore = this;
-	for (i=0; i<ppropvals->count; i++) {
+	for (unsigned int i = 0; i < ppropvals->count; ++i) {
 		const auto &pv = ppropvals->ppropval[i];
 		if (store_object_is_readonly_prop(pstore, pv.proptag))
 			continue;
@@ -1286,9 +1284,8 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	auto pstore = this;
-	int i;
 	auto pinfo = zs_get_info();
-	for (i=0; i<pproptags->count; i++) {
+	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		const auto tag = pproptags->pproptag[i];
 		if (store_object_is_readonly_prop(pstore, tag))
 			continue;
