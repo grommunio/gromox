@@ -460,19 +460,9 @@ int mod_cache_take_request(http_context *phttp)
 	char tmp_path[512];
 	char tmp_buff[8192];
 	struct stat node_stat;
-	char request_uri[8192];
+	char request_uri[http_request::uri_limit];
 	CACHE_CONTEXT *pcontext;
 	
-	auto tmp_len = phttp->request.f_request_uri.size();
-	if (0 == tmp_len) {
-		phttp->log(LV_DEBUG, "cannot"
-			" find request uri for mod_cache");
-		return 400;
-	} else if (tmp_len >= sizeof(tmp_buff)) {
-		phttp->log(LV_DEBUG, "length of "
-			"request uri is too long for mod_cache");
-		return 414;
-	}
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 				" uri format error for mod_cache");
@@ -532,7 +522,7 @@ int mod_cache_take_request(http_context *phttp)
 	*pcontext = {};
 	pcontext->b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 	pcontext->posted_size = 0;
-	tmp_len = phttp->request.f_content_length.size();
+	auto tmp_len = phttp->request.f_content_length.size();
 	if (tmp_len == 0) {
 		pcontext->content_length = 0;
 	} else {

@@ -202,7 +202,7 @@ int mod_rewrite_run(const char *sdlist) try
 bool mod_rewrite_process(const char *uri_buff, size_t uri_len,
     std::string &f_request_uri) try
 {
-	char tmp_buff[8192];
+	char tmp_buff[http_request::uri_limit];
 	
 	if (uri_len >= sizeof(tmp_buff))
 		return FALSE;

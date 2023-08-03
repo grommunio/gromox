@@ -396,19 +396,9 @@ int mod_fastcgi_take_request(http_context *phttp)
 	char *ptoken1;
 	char suffix[16];
 	char file_name[256];
-	char request_uri[8192];
+	char request_uri[http_request::uri_limit];
 	uint64_t content_length;
 	
-	auto tmp_len = phttp->request.f_request_uri.size();
-	if (0 == tmp_len) {
-		phttp->log(LV_DEBUG, "cannot "
-			"find request uri for mod_fastcgi");
-		return 400;
-	} else if (tmp_len >= 8192) {
-		phttp->log(LV_DEBUG, "length of "
-			"request uri is too long for mod_fastcgi");
-		return 414;
-	}
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
@@ -423,7 +413,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 		ptoken1 = strchr(ptoken, '/');
 		if (ptoken1 != nullptr)
 			*ptoken1 = '\0';
-		tmp_len = strlen(ptoken);
+		auto tmp_len = strlen(ptoken);
 		if (tmp_len >= 16) {
 			phttp->log(LV_DEBUG, "suffix in"
 				" request uri error for mod_fastcgi");
@@ -450,7 +440,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 		"to \"%s\" will be relayed to fastcgi back-end %s",
 		phttp->request.f_request_uri.c_str(),
 		phttp->request.f_host.c_str(), pfnode->sock_path.c_str());
-	tmp_len = phttp->request.f_content_length.size();
+	auto tmp_len = phttp->request.f_content_length.size();
 	if (0 == tmp_len) {
 		content_length = 0;
 	} else {
@@ -539,16 +529,6 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	snprintf(tmp_buff, std::size(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
-	auto tmp_len = phttp->request.f_request_uri.size();
-	if (0 == tmp_len) {
-		phttp->log(LV_DEBUG, "cannot "
-			"find request uri for mod_fastcgi");
-		return FALSE;
-	} else if (tmp_len >= 8192) {
-		phttp->log(LV_DEBUG, "length of "
-			"request uri is too long for mod_fastcgi");
-		return FALSE;
-	}
 	auto furi = phttp->request.f_request_uri.c_str();
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", furi));
 	auto qmark = strchr(furi, '?');
@@ -580,7 +560,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		snprintf(tmp_buff, std::size(tmp_buff), "%s/%s", pfnode->dir.c_str(), path_info);
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", tmp_buff));
 	}
-	tmp_len = pfnode->path.size();
+	auto tmp_len = pfnode->path.size();
 	if (fctx.b_index) {
 		snprintf(tmp_buff, std::size(tmp_buff), "%s%s", uri_path, pfnode->index.c_str());
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", tmp_buff));

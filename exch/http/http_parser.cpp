@@ -510,6 +510,7 @@ static tproc_status htparse_initssl(http_context *pcontext)
 static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
     unsigned int line_length)
 {
+	auto &ctx = *pcontext;
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "I-1921: request method error");
@@ -540,9 +541,21 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 		pcontext->log(LV_DEBUG, "I-1924: request method error");
 		return http_done(pcontext, 400);
 	}
+	if (tmp_len1 == 0)
+		return http_done(pcontext, 400);
+	if (tmp_len1 >= http_request::uri_limit)
+		return http_done(pcontext, 414);
 	if (!mod_rewrite_process(ptoken + 1,
-	    tmp_len1, pcontext->request.f_request_uri))
+	    tmp_len1, pcontext->request.f_request_uri)) {
 		pcontext->request.f_request_uri = std::string_view(&ptoken[1], tmp_len1);
+	} else if (ctx.request.f_request_uri.size() == 0) {
+		ctx.log(LV_ERR, "mod_rewrite left a zero-length URI");
+		return http_done(pcontext, 400);
+		/*
+		 * Since mod_rewrite_process uses a uri_limit-long buffer, size
+		 * won't be exceeded anymore.
+		 */
+	}
 	memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 	pcontext->request.version[tmp_len] = '\0';
 	return tproc_status::runoff;
