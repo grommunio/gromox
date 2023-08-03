@@ -22,6 +22,7 @@
 #include <vector>
 #include <libHX/io.h>
 #include <libHX/misc.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <sys/socket.h>
@@ -550,6 +551,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
     unsigned int line_length) try
 {
+	auto &ctx = *pcontext;
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "I-1925: request method error");
@@ -571,7 +573,16 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	}
 	tmp_len = line_length - static_cast<size_t>(ptoken - line);
 	if (0 == strcasecmp(field_name, "Host")) {
-		pcontext->request.f_host = std::string_view(ptoken, tmp_len);
+		char input[264]{}; /* [255long.name]:12345 */
+		if (tmp_len >= sizeof(input)) {
+			ctx.log(LV_DEBUG, "Host field of HTTP request too long");
+			return http_done(pcontext, 400);
+		}
+		strncpy(input, ptoken, tmp_len);
+		char domain[256];
+		*domain = '\0';
+		if (HX_addrport_split(input, domain, std::size(domain), nullptr) > 0)
+			ctx.request.f_host = domain;
 	} else if (0 == strcasecmp(field_name, "User-Agent")) {
 		pcontext->request.f_user_agent = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Accept")) {

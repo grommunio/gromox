@@ -19,7 +19,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -458,24 +457,13 @@ int mod_cache_take_request(http_context *phttp)
 {
 	char *ptoken;
 	char suffix[16];
-	char domain[256];
 	char tmp_path[512];
 	char tmp_buff[8192];
 	struct stat node_stat;
 	char request_uri[8192];
 	CACHE_CONTEXT *pcontext;
 	
-	auto tmp_len = phttp->request.f_host.size();
-	if (tmp_len >= sizeof(domain)) {
-		phttp->log(LV_DEBUG, "length of "
-			"request host is too long for mod_cache");
-		return 400;
-	}
-	if (tmp_len == 0)
-		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
-	else
-		HX_addrport_split(phttp->request.f_host.c_str(), domain, std::size(domain), nullptr);
-	tmp_len = phttp->request.f_request_uri.size();
+	auto tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot"
 			" find request uri for mod_cache");
@@ -506,7 +494,7 @@ int mod_cache_take_request(http_context *phttp)
 	}
 	auto it = std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
 	          [&](const auto &e) {
-	            return wildcard_match(domain, e.domain.c_str(), TRUE) != 0 &&
+	            return wildcard_match(phttp->request.f_host.c_str(), e.domain.c_str(), TRUE) != 0 &&
 	                   strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
 	          });
 	if (it == g_directory_list.cend())

@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 #include <libHX/io.h>
-#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -396,22 +395,11 @@ int mod_fastcgi_take_request(http_context *phttp)
 	char *ptoken;
 	char *ptoken1;
 	char suffix[16];
-	char domain[256];
 	char file_name[256];
 	char request_uri[8192];
 	uint64_t content_length;
 	
-	auto tmp_len = phttp->request.f_host.size();
-	if (tmp_len >= sizeof(domain)) {
-		phttp->log(LV_DEBUG, "length of "
-			"request host is too long for mod_fastcgi");
-		return 400;
-	}
-	if (tmp_len == 0)
-		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
-	else
-		HX_addrport_split(phttp->request.f_host.c_str(), domain, std::size(domain), nullptr);
-	tmp_len = phttp->request.f_request_uri.size();
+	auto tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot "
 			"find request uri for mod_fastcgi");
@@ -454,12 +442,14 @@ int mod_fastcgi_take_request(http_context *phttp)
 					"error, missing slash for mod_fastcgi");
 		return 400;
 	}
-	auto pfnode = mod_fastcgi_find_backend(domain, request_uri, file_name, suffix, &b_index);
+	auto pfnode = mod_fastcgi_find_backend(phttp->request.f_host.c_str(),
+	              request_uri, file_name, suffix, &b_index);
 	if (pfnode == nullptr)
 		return 0;
 	phttp->log(LV_DEBUG, "http request \"%s\" "
 		"to \"%s\" will be relayed to fastcgi back-end %s",
-		phttp->request.f_request_uri.c_str(), domain, pfnode->sock_path.c_str());
+		phttp->request.f_request_uri.c_str(),
+		phttp->request.f_host.c_str(), pfnode->sock_path.c_str());
 	tmp_len = phttp->request.f_content_length.size();
 	if (0 == tmp_len) {
 		content_length = 0;
@@ -527,7 +517,6 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	char *ptoken;
 	char *ptoken1;
 	char *path_info;
-	char domain[256];
 	NDR_PUSH ndr_push;
 	char uri_path[8192];
 	char tmp_buff[8192];
@@ -541,18 +530,8 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));
 	}
-	auto tmp_len = phttp->request.f_host.size();
-	if (tmp_len >= sizeof(domain)) {
-		phttp->log(LV_DEBUG, "length of "
-			"request host is too long for mod_fastcgi");
-		return FALSE;
-	}
-	if (tmp_len == 0)
-		gx_strlcpy(domain, phttp->connection.server_ip, std::size(domain));
-	else
-		HX_addrport_split(phttp->request.f_host.c_str(), domain, std::size(domain), nullptr);
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", domain));
-	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", domain));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_HOST", phttp->request.f_host.c_str()));
+	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_NAME", phttp->request.f_host.c_str()));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_ADDR", phttp->connection.server_ip));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PORT", std::to_string(phttp->connection.server_port).c_str()));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_ADDR", phttp->connection.client_ip));
@@ -560,7 +539,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	snprintf(tmp_buff, std::size(tmp_buff), "HTTP/%s", phttp->request.version);
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_PROTOCOL", tmp_buff));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_METHOD", phttp->request.method));
-	tmp_len = phttp->request.f_request_uri.size();
+	auto tmp_len = phttp->request.f_request_uri.size();
 	if (0 == tmp_len) {
 		phttp->log(LV_DEBUG, "cannot "
 			"find request uri for mod_fastcgi");
