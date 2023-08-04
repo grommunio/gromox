@@ -333,7 +333,7 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_16 = make_scope_exit(contexts_pool_stop);
 
-	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(pop3_parser_process));
+	threads_pool_init(thread_init_num, pop3_parser_process);
 	threads_pool_register_event_proc(pop3_parser_threads_event_proc);
 	if (threads_pool_run("pop3.cfg:pop3_thread_init_num") != 0) {
 		printf("[system]: failed to run threads pool\n");

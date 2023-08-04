@@ -403,7 +403,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
  
-	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
+	threads_pool_init(thread_init_num, http_parser_process);
 	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (threads_pool_run("http.cfg:http_thread_init_num") != 0) {

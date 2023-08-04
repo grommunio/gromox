@@ -6,6 +6,7 @@
 #include <gromox/flusher_common.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #define MAX_BLOCK_MIME_LEN                  4096
 #define MAX_EXTRA_DATA_INDEX                8
@@ -89,7 +90,7 @@ struct smtp_param {
 
 extern void smtp_parser_init(const smtp_param &);
 extern int smtp_parser_run();
-int smtp_parser_process(SMTP_CONTEXT *pcontext);
+extern tproc_status smtp_parser_process(schedule_context *);
 extern void smtp_parser_stop();
 extern int smtp_parser_get_context_socket(const schedule_context *);
 extern gromox::time_point smtp_parser_get_context_timestamp(const schedule_context *);

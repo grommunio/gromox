@@ -7,13 +7,23 @@ enum{
 };
 
 /* enumeration for indicating the thread the result of context and what to do */
-enum{
-	PROCESS_IDLE = 0,		/* wait for checking user-defined condition */
-	PROCESS_CONTINUE,
-	PROCESS_POLLING_RDONLY,
-	PROCESS_POLLING_WRONLY,
-	PROCESS_SLEEPING,		/* context need to be pended */
-	PROCESS_CLOSE			/* put the context into free queue */
+enum class tproc_status {
+	idle = 0, /* wait for checking user-defined condition */
+	cont,
+	polling_rdonly,
+	polling_wronly,
+	sleeping, /* context needs to be pended */
+	close, /* put the context into free queue */
+
+	/* special codes for http; not used by tpool itself */
+	runoff,
+	loop,
+
+	/* special codes for imap; not used by tpool itself */
+	context_processing,
+	cmd_processing,
+	literal_checking,
+	literal_processing,
 };
 
 /* enumeration for indicating events of threads e.g. thread create or destroy */
@@ -25,7 +35,7 @@ enum{
 using THREADS_EVENT_PROC = int (*)(int);
 struct schedule_context;
 
-extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, int (*process_func)(schedule_context *));
+extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, tproc_status (*process_func)(schedule_context *));
 extern int threads_pool_run(const char *hint = nullptr);
 extern void threads_pool_stop();
 int threads_pool_get_param(int type);

@@ -337,7 +337,7 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_14 = make_scope_exit(contexts_pool_stop);
 
-	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(imap_parser_process));
+	threads_pool_init(thread_init_num, imap_parser_process);
 	threads_pool_register_event_proc(imap_parser_threads_event_proc);
 	if (threads_pool_run("imap.cfg:imap_thread_init_num") != 0) {
 		printf("[system]: failed to run threads pool\n");

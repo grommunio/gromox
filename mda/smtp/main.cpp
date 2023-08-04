@@ -301,7 +301,7 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_20 = make_scope_exit(flusher_stop);
 
-	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
+	threads_pool_init(thread_init_num, smtp_parser_process);
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
 	if (threads_pool_run("smtp.cfg:lda_thread_init_num")) {
 		mlog(LV_ERR, "system: failed to run thread pool");

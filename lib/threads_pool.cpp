@@ -44,9 +44,10 @@ static std::condition_variable g_threads_pool_waken_cond;
 static void *tpol_thrwork(void *);
 static void *tpol_scanwork(void *);
 
-static int (*threads_pool_process_func)(SCHEDULE_CONTEXT*);
+static tproc_status (*threads_pool_process_func)(schedule_context *);
 
-void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_CONTEXT *))
+void threads_pool_init(unsigned int init_pool_num,
+    tproc_status (*process_func)(schedule_context *))
 {
 	unsigned int contexts_max_num, contexts_per_thr;
 
@@ -201,25 +202,27 @@ static void *tpol_thrwork(void *pparam)
 		}
 		cannot_served_times = 0;
 		switch (threads_pool_process_func(pcontext)) {
-		case PROCESS_CONTINUE:
+		case tproc_status::cont:
 			contexts_pool_put_context(pcontext, CONTEXT_TURNING);
 			break;
-		case PROCESS_IDLE:
+		case tproc_status::idle:
 			contexts_pool_put_context(pcontext, CONTEXT_IDLING);
 			break;
-		case PROCESS_POLLING_RDONLY:
+		case tproc_status::polling_rdonly:
 			pcontext->polling_mask = POLLING_READ;
 			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
 			break;
-		case PROCESS_POLLING_WRONLY:
+		case tproc_status::polling_wronly:
 			pcontext->polling_mask = POLLING_WRITE;
 			contexts_pool_put_context(pcontext, CONTEXT_POLLING);
 			break;
-		case PROCESS_SLEEPING:
+		case tproc_status::sleeping:
 			contexts_pool_put_context(pcontext, CONTEXT_SLEEPING);
 			break;
-		case PROCESS_CLOSE:
+		case tproc_status::close:
 			contexts_pool_put_context(pcontext, CONTEXT_FREE);
+			break;
+		default:
 			break;
 		}
 	}

@@ -308,16 +308,9 @@ int imap_parser_threads_event_proc(int action)
     return 0;
 }
 
-enum {
-	X_CONTEXT_PROCESSING = -1,
-	X_CMD_PROCESSING = -2,
-	X_LITERAL_CHECKING = -3,
-	X_LITERAL_PROCESSING = -4,
-};
+static tproc_status ps_end_processing(imap_context *, const char * = nullptr, ssize_t = 0);
 
-static int ps_end_processing(IMAP_CONTEXT *, const char * = nullptr, ssize_t = 0);
-
-static int ps_stat_autologout(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_autologout(imap_context *pcontext)
 {
 	imap_parser_log_info(pcontext, LV_DEBUG, "auto logout");
 	/* IMAP_CODE_2160004: BYE Disconnected by autologout */
@@ -326,13 +319,13 @@ static int ps_stat_autologout(IMAP_CONTEXT *pcontext)
 	return ps_end_processing(pcontext, imap_reply_str, string_length);
 }
 
-static int ps_stat_disconnected(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_disconnected(imap_context *pcontext)
 {
 	imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 	return ps_end_processing(pcontext);
 }
 
-static int ps_stat_stls(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_stls(imap_context *pcontext)
 {
 	if (NULL == pcontext->connection.ssl) {
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
@@ -344,7 +337,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 			imap_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			imap_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;
+			return tproc_status::close;
 		}
 		SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 	}
@@ -358,14 +351,14 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 			SSL_write(pcontext->connection.ssl, caps, strlen(caps));
 			SSL_write(pcontext->connection.ssl, "] Service ready\r\n", 17);
 		}
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 	if (SSL_ERROR_WANT_READ == ssl_errno ||
 	    SSL_ERROR_WANT_WRITE == ssl_errno) {
 		auto current_time = tp_now();
 		if (current_time - pcontext->connection.last_timestamp < g_timeout)
-			return PROCESS_POLLING_RDONLY;
+			return tproc_status::polling_rdonly;
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
@@ -377,16 +370,16 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		pcontext->connection.reset();
 	}
 	imap_parser_context_clear(pcontext);
-	return PROCESS_CLOSE;
+	return tproc_status::close;
 }
 
-static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_notifying(imap_context *pcontext)
 {
 	imap_parser_echo_modify(pcontext, nullptr);
 	std::unique_lock ll_hold(g_list_lock);
 	g_sleeping_list.push_back(pcontext);
 	pcontext->sched_stat = isched_stat::idling;
-	return PROCESS_SLEEPING;
+	return tproc_status::sleeping;
 }
 
 /**
@@ -395,7 +388,7 @@ static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
  * newline. As a result, ps_stat_rdcmd may be unable to append the network data
  * into read_context and if so, terminates the request.
  */
-static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_rdcmd(imap_context *pcontext)
 {
 	ssize_t read_len;
 	if (NULL != pcontext->connection.ssl) {
@@ -416,11 +409,11 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 		}
 		/* check if context is timed out */
 		if (current_time - pcontext->connection.last_timestamp < g_timeout)
-			return PROCESS_POLLING_RDONLY;
+			return tproc_status::polling_rdonly;
 		if (pcontext->is_authed()) {
 			std::unique_lock ll_hold(g_list_lock);
 			g_sleeping_list.push_back(pcontext);
-			return PROCESS_SLEEPING;
+			return tproc_status::sleeping;
 		}
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
@@ -432,17 +425,17 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 	pcontext->read_offset += read_len;
 	return pcontext->sched_stat == isched_stat::appended ||
 	       pcontext->sched_stat == isched_stat::idling ?
-	       X_CMD_PROCESSING : X_LITERAL_CHECKING;
+	       tproc_status::cmd_processing : tproc_status::literal_checking;
 }
 
-static int ps_literal_checking(IMAP_CONTEXT *pcontext)
+static tproc_status ps_literal_checking(imap_context *pcontext)
 {
 	if (pcontext->literal_ptr == nullptr) {
-		return X_LITERAL_PROCESSING;
+		return tproc_status::literal_processing;
 	}
 	if (pcontext->read_buffer + pcontext->read_offset - pcontext->literal_ptr <
 	    pcontext->literal_len) {
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 	auto temp_len = pcontext->literal_ptr + pcontext->literal_len - pcontext->read_buffer;
 	if (temp_len <= 0 || temp_len >= 64 * 1024 ||
@@ -464,7 +457,7 @@ static int ps_literal_checking(IMAP_CONTEXT *pcontext)
 	}
 	pcontext->literal_ptr = NULL;
 	pcontext->literal_len = 0;
-	return X_LITERAL_PROCESSING;
+	return tproc_status::literal_processing;
 }
 
 /**
@@ -478,7 +471,7 @@ static int ps_literal_checking(IMAP_CONTEXT *pcontext)
  * The loop looks for, and validates, "{octet}" substrings. It is possible
  * there is more than one literal in read_buffer.
  */
-static int ps_literal_processing(IMAP_CONTEXT *pcontext)
+static tproc_status ps_literal_processing(imap_context *pcontext)
 {
 	auto &ctx = *pcontext;
 	auto tail = &ctx.read_buffer[ctx.read_offset];
@@ -533,7 +526,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
 			pcontext->connection.write(imap_reply_str, string_length);
-			return X_LITERAL_CHECKING;
+			return tproc_status::literal_checking;
 		}
 		memcpy(&ctx.command_buffer[ctx.command_len],
 		       pcontext->read_buffer, i);
@@ -565,7 +558,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
 				pcontext->connection.write(imap_reply_str, string_length);
-				return PROCESS_CONTINUE;
+				return tproc_status::cont;
 			}
 			case DISPATCH_SHOULD_CLOSE:
 				return ps_end_processing(pcontext);
@@ -579,7 +572,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 				pcontext->literal_ptr = NULL;
 				pcontext->literal_len = 0;
 				pcontext->command_len = 0;
-				return X_LITERAL_PROCESSING;
+				return tproc_status::literal_processing;
 			}
 		}
 
@@ -597,9 +590,9 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		pcontext->literal_ptr = NULL;
 		pcontext->literal_len = 0;
 		pcontext->command_len = 0;
-		return X_LITERAL_PROCESSING;
+		return tproc_status::literal_processing;
 	}
-	return X_CMD_PROCESSING;
+	return tproc_status::cmd_processing;
 }
 
 /**
@@ -611,7 +604,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
  * The maximum line length is sizeof(read_buffer), i.e. 64K.
  * The octet counts for synchronizing literals "{256}" must fit in there.
  */
-static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
+static tproc_status ps_cmd_processing(imap_context *pcontext)
 {
 	for (ssize_t i = 0; i < pcontext->read_offset; ++i) {
 		auto nl_len = newline_size(&pcontext->read_buffer[i], pcontext->read_offset - i);
@@ -642,7 +635,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			argv[1] = NULL;
 			imap_cmd_parser_username(1, argv, pcontext);
 			pcontext->command_len = 0;
-			return X_LITERAL_PROCESSING;
+			return tproc_status::literal_processing;
 		} else if (iproto_stat::password == pcontext->proto_stat) {
 			argv[0] = pcontext->command_buffer;
 			argv[1] = NULL;
@@ -652,7 +645,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			}
 			pcontext->command_len = 0;
 			safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
-			return X_LITERAL_PROCESSING;
+			return tproc_status::literal_processing;
 		}
 
 		auto argc = parse_imap_args(pcontext->command_buffer,
@@ -681,7 +674,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			pcontext->literal_ptr = NULL;
 			pcontext->literal_len = 0;
 			pcontext->command_len = 0;
-			return X_LITERAL_PROCESSING;
+			return tproc_status::literal_processing;
 		}
 
 		if (pcontext->sched_stat == isched_stat::idling) {
@@ -701,7 +694,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			pcontext->connection.write(" ", 1);
 			pcontext->connection.write(imap_reply_str, string_length);
 			pcontext->command_len = 0;
-			return X_LITERAL_PROCESSING;
+			return tproc_status::literal_processing;
 		}
 
 		if (argc < 2 || strlen(argv[0]) >= 32) {
@@ -716,16 +709,16 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 				pcontext->connection.write(imap_reply_str, string_length);
 			}
 			pcontext->command_len = 0;
-			return X_LITERAL_CHECKING;
+			return tproc_status::literal_checking;
 		}
 
 		switch (imap_parser_dispatch_cmd(argc, argv, pcontext)) {
 		case DISPATCH_CONTINUE:
 			pcontext->command_len = 0;
-			return X_LITERAL_PROCESSING;
+			return tproc_status::literal_processing;
 		case DISPATCH_BREAK:
 			pcontext->command_len = 0;
-			return X_CONTEXT_PROCESSING;
+			return tproc_status::context_processing;
 		case DISPATCH_SHOULD_CLOSE:
 			return ps_end_processing(pcontext);
 		}
@@ -742,13 +735,13 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 	}
 
 	if (pcontext->sched_stat != isched_stat::idling)
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	std::unique_lock ll_hold(g_list_lock);
 	g_sleeping_list.push_back(pcontext);
-	return PROCESS_SLEEPING;
+	return tproc_status::sleeping;
 }
 
-static int ps_stat_appending(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_appending(imap_context *pcontext)
 {
 	unsigned int len = STREAM_BLOCK_SIZE;
 	auto pbuff = static_cast<char *>(pcontext->stream.get_write_buf(&len));
@@ -776,7 +769,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		}
 		/* check if context is timed out */
 		if (current_time - pcontext->connection.last_timestamp < g_timeout)
-			return PROCESS_POLLING_RDONLY;
+			return tproc_status::polling_rdonly;
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
@@ -808,13 +801,13 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		pcontext->stream.clear();
 	}
 	if (pcontext->sched_stat != isched_stat::appended)
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	pcontext->literal_ptr = NULL;
 	pcontext->literal_len = 0;
-	return X_CMD_PROCESSING;
+	return tproc_status::cmd_processing;
 }
 
-static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_wrdat(imap_context *pcontext)
 {
 	if (0 == pcontext->write_length) {
 		imap_parser_wrdat_retrieve(pcontext);
@@ -832,7 +825,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		}
 		/* check if context is timed out */
 		if (current_time - pcontext->connection.last_timestamp < g_timeout)
-			return PROCESS_POLLING_WRONLY;
+			return tproc_status::polling_wronly;
 		imap_parser_log_info(pcontext, LV_DEBUG, "timeout");
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
@@ -841,9 +834,8 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	}
 	pcontext->connection.last_timestamp = current_time;
 	pcontext->write_offset += written_len;
-
 	if (pcontext->write_offset < pcontext->write_length) {
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 
 	if (pcontext->message_fd == -1) {
@@ -854,7 +846,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 			pcontext->stream.clear();
 			if (0 == pcontext->write_length) {
 				pcontext->sched_stat = isched_stat::rdcmd;
-				return X_LITERAL_CHECKING;
+				return tproc_status::literal_checking;
 			}
 			break;
 		case IMAP_RETRIEVE_OK:
@@ -865,7 +857,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 			auto imap_reply_str = resource_get_imap_code(1808, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 	auto len = pcontext->literal_len - pcontext->current_len;
 	if (len > 64 * 1024) {
@@ -883,14 +875,14 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	pcontext->write_length = len;
 	pcontext->write_offset = 0;
 	if (pcontext->literal_len != pcontext->current_len) {
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 	close(pcontext->message_fd);
 	pcontext->message_fd = -1;
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
 	if (imap_parser_wrdat_retrieve(pcontext) != IMAP_RETRIEVE_ERROR) {
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 	/* IMAP_CODE_2180008: internal error, fail to retrieve from stream object */
 	size_t string_length = 0;
@@ -898,7 +890,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	return ps_end_processing(pcontext, imap_reply_str, string_length);
 }
 
-static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
+static tproc_status ps_stat_wrlst(imap_context *pcontext)
 {
 	if (0 == pcontext->write_length) {
 		unsigned int temp_len = MAX_LINE_LENGTH;
@@ -918,7 +910,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 		}
 		/* check if context is timed out */
 		if (current_time - pcontext->connection.last_timestamp < g_timeout)
-			return PROCESS_POLLING_WRONLY;
+			return tproc_status::polling_wronly;
 		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
@@ -929,32 +921,32 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 	pcontext->write_offset += written_len;
 
 	if (pcontext->write_offset < pcontext->write_length) {
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
-
 	pcontext->write_offset = 0;
 	unsigned int temp_len = MAX_LINE_LENGTH;
 	pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&temp_len));
 	pcontext->write_length = temp_len;
 	if (pcontext->write_buff != nullptr) {
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = isched_stat::rdcmd;
-	return X_LITERAL_CHECKING;
+	return tproc_status::literal_checking;
 }
 
-int imap_parser_process(IMAP_CONTEXT *ctx)
+tproc_status imap_parser_process(schedule_context *vctx)
 {
-	int ret = X_CONTEXT_PROCESSING;
-	while (ret < 0) {
-		if (ret == X_CMD_PROCESSING)
+	auto ctx = static_cast<imap_context *>(vctx);
+	auto ret = tproc_status::context_processing;
+	while (static_cast<int>(ret) < 0) {
+		if (ret == tproc_status::cmd_processing)
 			ret = ps_cmd_processing(ctx);
-		else if (ret == X_LITERAL_CHECKING)
+		else if (ret == tproc_status::literal_checking)
 			ret = ps_literal_checking(ctx);
-		else if (ret == X_LITERAL_PROCESSING)
+		else if (ret == tproc_status::literal_processing)
 			ret = ps_literal_processing(ctx);
 		else if (ctx->sched_stat == isched_stat::autologout)
 			ret = ps_stat_autologout(ctx);
@@ -980,7 +972,7 @@ int imap_parser_process(IMAP_CONTEXT *ctx)
 	return ret;
 }
 
-static int ps_end_processing(IMAP_CONTEXT *pcontext,
+static tproc_status ps_end_processing(imap_context *pcontext,
     const char *imap_reply_str, ssize_t string_length)
 {
 	if (NULL != imap_reply_str) {
@@ -1004,7 +996,7 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
 		pcontext->file_path.clear();
 	}
 	imap_parser_context_clear(pcontext);
-	return PROCESS_CLOSE;
+	return tproc_status::close;
 }
 
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)

@@ -11,6 +11,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/mapidefs.h>
 #include <gromox/stream.hpp>
+#include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include "pdu_processor.h"
 
@@ -102,7 +103,7 @@ struct RPC_OUT_CHANNEL {
 
 extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int http_parser_run();
-int http_parser_process(HTTP_CONTEXT *pcontext);
+extern tproc_status http_parser_process(schedule_context *);
 extern void http_parser_stop();
 extern int http_parser_get_context_socket(const schedule_context *);
 void http_parser_set_context(int context_id);

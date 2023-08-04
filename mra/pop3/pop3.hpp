@@ -12,6 +12,7 @@
 #include <gromox/generic_connection.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #define MAX_LINE_LENGTH (64 * 1024)
 
@@ -89,7 +90,7 @@ extern int pop3_cmd_handler_else(const char *cmd_line, int line_length, POP3_CON
 
 extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int pop3_parser_run();
-extern int pop3_parser_process(POP3_CONTEXT *);
+extern tproc_status pop3_parser_process(schedule_context *);
 extern void pop3_parser_stop();
 extern int pop3_parser_get_context_socket(const schedule_context *);
 extern gromox::time_point pop3_parser_get_context_timestamp(const schedule_context *);

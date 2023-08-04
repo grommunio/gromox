@@ -16,6 +16,7 @@
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include <gromox/xarray2.hpp>
 #define MAX_LINE_LENGTH (64 * 1024)
@@ -123,7 +124,7 @@ using IMAP_CONTEXT = imap_context;
 
 extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
-extern int imap_parser_process(IMAP_CONTEXT *);
+extern tproc_status imap_parser_process(schedule_context *);
 extern void imap_parser_stop();
 extern int imap_parser_get_context_socket(const schedule_context *);
 extern gromox::time_point imap_parser_get_context_timestamp(const schedule_context *);

@@ -53,8 +53,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length,
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext);
 
 static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext);
-
-static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole);
+static tproc_status smtp_parser_try_flush_mail(smtp_context *, BOOL is_whole);
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
 static std::unique_ptr<SMTP_CONTEXT[]> g_context_list;
@@ -207,10 +206,10 @@ int smtp_parser_threads_event_proc(int action)
 	return 0;
 }
 
-static int smtp_parser_size_check(SMTP_CONTEXT &ctx)
+static tproc_status smtp_parser_size_check(smtp_context &ctx)
 {
 	if (ctx.total_length < g_param.max_mail_length)
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	/* 552 message exceeds fixed maximum message size */
 	size_t len = 0;
 	auto reply = resource_get_smtp_code(521, 1, &len);
@@ -220,11 +219,12 @@ static int smtp_parser_size_check(SMTP_CONTEXT &ctx)
 		flusher_cancel(&ctx);
 	ctx.connection.reset(SLEEP_BEFORE_CLOSE);
 	smtp_parser_context_clear(&ctx);
-	return PROCESS_CLOSE;
+	return tproc_status::close;
 }
 
-int smtp_parser_process(SMTP_CONTEXT *pcontext)
+tproc_status smtp_parser_process(schedule_context *vcontext)
 {
+	auto pcontext = static_cast<smtp_context *>(vcontext);
 	char *line, reply_buf[1024];
 	int actual_read, ssl_errno;
 	int size = READ_BUFFER_SIZE, len;
@@ -259,7 +259,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				pcontext->stream_second.reset();
 				goto CMD_PROCESS;
 			}
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		}
 
 		pcontext->stream.clear();
@@ -284,7 +284,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		pcontext->connection.write(smtp_reply_str, string_length);
 		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue temporary fail");
 		smtp_parser_reset_context_session(pcontext);
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	} else if (FLUSH_PERMANENT_FAIL == pcontext->flusher.flush_result) {
 		/* 554 Message is infected by virus */
 		auto smtp_reply_str = resource_get_smtp_code(536, 1, &string_length);
@@ -292,7 +292,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue permanent failure");
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		smtp_parser_context_clear(pcontext);
-		return PROCESS_CLOSE;
+		return tproc_status::close;
 	}
 	
 	if (T_STARTTLS_CMD == pcontext->last_cmd) {
@@ -305,7 +305,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				smtp_parser_log_info(pcontext, LV_ERR, "out of SSL object");
 				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		        smtp_parser_context_clear(pcontext);
-			    return PROCESS_CLOSE;        
+			    return tproc_status::close;
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 		}
@@ -317,7 +317,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
 				current_time = tp_now();
 				if (current_time - pcontext->connection.last_timestamp < g_param.timeout)
-					return PROCESS_POLLING_RDONLY;
+					return tproc_status::polling_rdonly;
 				/* 451 Timeout */
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
@@ -327,7 +327,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				pcontext->connection.reset();
 			}
 			smtp_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;
+			return tproc_status::close;
 		} else {
 			pcontext->last_cmd = T_NONE_CMD;
 			if (pcontext->connection.server_port == g_listener_ssl_port) {
@@ -353,7 +353,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		smtp_parser_context_clear(pcontext);
-		return PROCESS_CLOSE;
+		return tproc_status::close;
 	}
 	if (NULL != pcontext->connection.ssl) {
 		actual_read = SSL_read(pcontext->connection.ssl, pbuff, size);
@@ -369,7 +369,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		smtp_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		pcontext->connection.reset();
 		smtp_parser_context_clear(pcontext);
-		return PROCESS_CLOSE;
+		return tproc_status::close;
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream.fwd_write_ptr(actual_read);
@@ -388,9 +388,9 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			}
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			smtp_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;
+			return tproc_status::close;
 		} else {
-			return PROCESS_POLLING_RDONLY;
+			return tproc_status::polling_rdonly;
 		}
 	}
 	/* envelope command is met */
@@ -404,10 +404,10 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			smtp_parser_log_info(pcontext, LV_DEBUG, "envelope line too long");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			smtp_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;        
+			return tproc_status::close;
 		}
 		case STREAM_LINE_UNAVAILABLE:
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		case STREAM_LINE_AVAILABLE:
 			do{
 				auto line_length = pcontext->stream.readline(&line);
@@ -417,7 +417,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 					case DISPATCH_SHOULD_CLOSE:
 						pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 						smtp_parser_context_clear(pcontext);
-						return PROCESS_CLOSE;
+						return tproc_status::close;
 					case DISPATCH_CONTINUE:
 						break;
 					case DISPATCH_BREAK:
@@ -435,12 +435,12 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						mlog(LV_DEBUG, "smtp_parser :error occurs in smtp_dispatch_cmd");
 						pcontext->connection.reset();
 						smtp_parser_context_clear(pcontext);
-						return PROCESS_CLOSE;
+						return tproc_status::close;
 					}
 				}
 				pcontext->stream.try_mark_line();
 			} while (pcontext->stream.has_newline() == STREAM_LINE_AVAILABLE);
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		}
 	} else {
 	/* data command is met */
@@ -472,14 +472,15 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	}
 	pcontext->connection.reset();
 	smtp_parser_context_clear(pcontext);
-	return PROCESS_CLOSE;
+	return tproc_status::close;
 }
 
-static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
+static tproc_status
+smtp_parser_try_flush_mail(smtp_context *pcontext, BOOL is_whole)
 {
 	pcontext->total_length += pcontext->stream.get_total_length() - pcontext->pre_rstlen;
 	auto ret = smtp_parser_size_check(*pcontext);
-	if (ret != PROCESS_CONTINUE)
+	if (ret != tproc_status::cont)
 		return ret;
 	smtp_parser_reset_stream_reading(pcontext);
 	pcontext->flusher.flush_action = is_whole ? FLUSH_WHOLE_MAIL : FLUSH_PART_MAIL;
@@ -495,7 +496,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 			pcontext->stream.rewind_write_ptr(4);
 	}    
 	flusher_put_to_queue(pcontext);
-	return PROCESS_CONTINUE;
+	return tproc_status::cont;
 }
 
 /* 

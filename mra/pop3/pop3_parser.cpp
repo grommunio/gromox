@@ -195,8 +195,9 @@ time_point pop3_parser_get_context_timestamp(const schedule_context *ctx)
 	return static_cast<const pop3_context *>(ctx)->connection.last_timestamp;
 }
 
-int pop3_parser_process(POP3_CONTEXT *pcontext)
+tproc_status pop3_parser_process(schedule_context *vcontext)
 {
+	auto pcontext = static_cast<pop3_context *>(vcontext);
 	int len;
 	unsigned int tmp_len;
 	int read_len;
@@ -216,7 +217,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
 				pop3_parser_context_clear(pcontext);
-				return PROCESS_CLOSE;
+				return tproc_status::close;
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 		}
@@ -227,7 +228,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
 				auto current_time = tp_now();
 				if (current_time - pcontext->connection.last_timestamp < g_timeout)
-					return PROCESS_POLLING_RDONLY;
+					return tproc_status::polling_rdonly;
 				auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
 				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
@@ -237,7 +238,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			pcontext->connection.ssl = NULL;
 			close(pcontext->connection.sockd);
 			pop3_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;
+			return tproc_status::close;
 		} else {
 			pcontext->is_stls = FALSE;
 			if (pcontext->connection.server_port == g_listener_ssl_port) {
@@ -271,14 +272,13 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				goto END_TRANSPORT;
 			} else {
-				return PROCESS_POLLING_WRONLY;
+				return tproc_status::polling_wronly;
 			}
 		}
 		pcontext->connection.last_timestamp = current_time;	
 		pcontext->write_offset += written_len;
-
 		if (pcontext->write_offset < pcontext->write_length) {
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		}
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
@@ -289,12 +289,12 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			switch (pop3_parser_retrieve(pcontext)) {
 			case POP3_RETRIEVE_TERM:
 				pcontext->data_stat = FALSE;
-				return PROCESS_CONTINUE;
+				return tproc_status::cont;
 			case POP3_RETRIEVE_ERROR:
 				goto ERROR_TRANSPROT;
 			}
 		}
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 
 	if (pcontext->list_stat) {
@@ -314,16 +314,14 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				goto END_TRANSPORT;
 			} else {
-				return PROCESS_POLLING_WRONLY;
+				return tproc_status::polling_wronly;
 			}
 		}
 		pcontext->connection.last_timestamp = current_time;	
 		pcontext->write_offset += written_len;
-
 		if (pcontext->write_offset < pcontext->write_length) {
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		}
-
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
 		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
@@ -334,7 +332,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			pcontext->write_offset = 0;
 			pcontext->list_stat = FALSE;
 		}
-		return PROCESS_CONTINUE;
+		return tproc_status::cont;
 	}
 
 	if (NULL != pcontext->connection.ssl) {
@@ -350,7 +348,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		pcontext->connection.reset();
 		pop3_parser_context_clear(pcontext);
-		return PROCESS_CLOSE;
+		return tproc_status::close;
 	} else if (read_len < 0) {
 		if (EAGAIN != errno) {
 			goto LOST_READ;
@@ -362,9 +360,9 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			pop3_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;
+			return tproc_status::close;
 		} else {
-			return PROCESS_POLLING_RDONLY;
+			return tproc_status::polling_rdonly;
 		}
 	}
 	
@@ -389,13 +387,13 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		case DISPATCH_SHOULD_CLOSE:
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			pop3_parser_context_clear(pcontext);
-			return PROCESS_CLOSE;
+			return tproc_status::close;
 		case DISPATCH_DATA:
 			pcontext->data_stat = TRUE;
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		case DISPATCH_LIST:
 			pcontext->list_stat = TRUE;
-			return PROCESS_CONTINUE;
+			return tproc_status::cont;
 		}
 	}
 	if (1024 == pcontext->read_offset) {
@@ -403,7 +401,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		auto pop3_reply_str = resource_get_pop3_code(1702, 1, &string_length);
 		pcontext->connection.write(pop3_reply_str, string_length);
 	}
-	return PROCESS_CONTINUE;
+	return tproc_status::cont;
 	
  ERROR_TRANSPROT:
 	pcontext->connection.write("\r\n.\r\n", 5);
@@ -415,7 +413,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
 	pcontext->data_stat = FALSE;
-	return PROCESS_CONTINUE;
+	return tproc_status::cont;
 
  END_TRANSPORT:
 	if (pcontext->message_fd != -1) {
@@ -424,7 +422,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	}
 	pcontext->connection.reset();
 	pop3_parser_context_clear(pcontext);
-	return PROCESS_CLOSE;
+	return tproc_status::close;
 
 }
 
