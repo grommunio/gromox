@@ -553,8 +553,11 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 					auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 					return ps_end_processing(pcontext, imap_reply_str, string_length);
 				}
-				if (pcontext->stream.write(&ctx.literal_ptr[nl_len], ctx.current_len) != STREAM_WRITE_OK)
-					return 1922;
+				if (pcontext->stream.write(&ctx.literal_ptr[nl_len], ctx.current_len) != STREAM_WRITE_OK) {
+					size_t sl = 0;
+					auto str = resource_get_imap_code(1922, 1, &sl);
+					return ps_end_processing(pcontext, str, sl);
+				}
 				pcontext->sched_stat = isched_stat::appending;
 				pcontext->read_offset = 0;
 				pcontext->command_len = 0;
