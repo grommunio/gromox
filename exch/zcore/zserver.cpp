@@ -92,7 +92,7 @@ USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	hsession(o.hsession), user_id(o.user_id), domain_id(o.domain_id),
 	org_id(o.org_id), username(std::move(o.username)),
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),
-	homedir(std::move(o.homedir)), cpid(o.cpid), flags(o.flags),
+	homedir(std::move(o.homedir)), cpid(o.cpid),
 	last_time(o.last_time), reload_time(o.reload_time),
 	ptree(std::move(o.ptree)), sink_list(std::move(o.sink_list))
 {}
@@ -700,7 +700,6 @@ ec_error_t zs_logon(const char *username,
 	}
 	auto c = lang_to_charset(tmp_info.lang.c_str());
 	tmp_info.cpid = c != nullptr ? cset_to_cpid(c) : CP_UTF8;
-	tmp_info.flags = flags;
 	tmp_info.last_time = time(nullptr);
 	tmp_info.reload_time = tmp_info.last_time;
 	tmp_info.ptree = object_tree_create(tmp_info.maildir.c_str());
