@@ -5,14 +5,30 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <string>
+#include <string_view>
 #include <unistd.h>
+#include <utility>
+#include <libHX/io.h>
 #include <libHX/string.h>
+#include <openssl/bio.h>
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+#	include <openssl/decoder.h>
+#endif
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
 #include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/cryptoutil.hpp>
+#include <gromox/fileio.h>
+#include <gromox/json.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/paths.h>
 #include <gromox/svc_common.h>
+#include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "ldap_adaptor.hpp"
 
@@ -20,10 +36,122 @@ using namespace std::string_literals;
 using namespace gromox;
 enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID };
 
+namespace {
+struct sslfree2 : public sslfree {
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+	inline void operator()(OSSL_DECODER_CTX *x) const { OSSL_DECODER_CTX_free(x); }
+#else
+	inline void operator()(BIO *x) const { BIO_free(x); }
+#endif
+	inline void operator()(EVP_PKEY *x) const { EVP_PKEY_free(x); }
+};
+}
+
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login;
 static decltype(ldap_adaptor_login3) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID;
+
+static std::unique_ptr<EVP_PKEY, sslfree2>
+read_pkey(const unsigned char *pk_str, size_t pk_size)
+{
+#if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+	std::unique_ptr<EVP_PKEY, sslfree2> pk_obj;
+	std::unique_ptr<OSSL_DECODER_CTX, sslfree2> dec(OSSL_DECODER_CTX_new_for_pkey(&unique_tie(pk_obj),
+		"PEM", nullptr, "RSA", OSSL_KEYMGMT_SELECT_KEYPAIR, nullptr, nullptr));
+	if (dec == nullptr)
+		return nullptr;
+	if (OSSL_DECODER_from_data(dec.get(), &pk_str, &pk_size) <= 0)
+		return nullptr;
+#else
+	std::unique_ptr<EVP_PKEY, sslfree2> pk_obj(EVP_PKEY_new());
+	if (pk_obj == nullptr)
+		return nullptr;
+	std::unique_ptr<BIO, sslfree2> bio(BIO_new_mem_buf(pk_str, pk_size));
+	if (bio == nullptr)
+		return nullptr;
+	auto rsa(PEM_read_bio_RSA_PUBKEY(bio.get(), nullptr, nullptr, nullptr));
+	if (rsa == nullptr)
+		return nullptr;
+	EVP_PKEY_assign_RSA(pk_obj.get(), std::move(rsa));
+#endif
+	return pk_obj;
+}
+
+static bool verify_sig(std::unique_ptr<EVP_PKEY, sslfree2> &&pk_obj,
+    const std::string_view &plain, std::string &&sig_raw)
+{
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_create());
+
+	if (EVP_DigestVerifyInit(ctx.get(), nullptr, EVP_sha256(),
+	    nullptr, pk_obj.get()) <= 0)
+		return false;
+	if (EVP_DigestVerifyUpdate(ctx.get(), plain.data(), plain.size()) <= 0)
+		return false;
+	return EVP_DigestVerifyFinal(ctx.get(), reinterpret_cast<unsigned char *>(sig_raw.data()),
+	       sig_raw.size()) > 0;
+}
+
+static bool verify_token(const char *token, std::string &ex_user)
+{
+	/*
+	 * signed_msg := header_b64 "." payload_b64
+	 * token := signed_msg "." signature_b64
+	 */
+	auto beg = token;
+	auto end = strchr(beg, '.');
+	if (end == nullptr)
+		return false;
+	beg = end + 1;
+	end = strchr(beg, '.');
+	if (end == nullptr)
+		return false;
+	std::string_view signed_msg(token, end - token), payload(beg, end - beg);
+	beg = end + 1; /* now points to signature */
+
+	/* Grab username */
+	Json::Value root;
+	if (!json_from_str(base64_decode(payload), root))
+		return false;
+	ex_user = root["email"].asString();
+
+	/* Load pubkey */
+	static constexpr char pk_file[] = PKGSYSCONFDIR "/bearer_pubkey";
+	size_t pk_size = 0;
+	std::unique_ptr<char[], stdlib_delete> pk_str(HX_slurp_file(pk_file, &pk_size));
+	if (pk_str == nullptr) {
+		mlog(LV_ERR, "Could not read %s: %s", pk_file, strerror(errno));
+		return false;
+	}
+	auto pkey = read_pkey(reinterpret_cast<const unsigned char *>(pk_str.get()), pk_size);
+	if (pkey == nullptr) {
+		mlog(LV_ERR, "%s: this does not look like a PEM-encoded RSA key", pk_file);
+		return false;
+	}
+	return time(nullptr) <= root["exp"].asInt64() &&
+	       verify_sig(std::move(pkey), signed_msg, base64_decode(beg));
+}
+
+static bool login_token(const char *token,
+    unsigned int wantpriv, sql_meta_result &mres) try
+{
+	std::string ex_user;
+	if (!verify_token(token, ex_user)) {
+		mres.errstr = "Authentication rejected";
+		return false;
+	}
+	bool auth = true;
+	auto err = fptr_mysql_meta(ex_user.c_str(), wantpriv, mres);
+	auth = auth && err == 0;
+	if (!auth && mres.errstr.empty()) {
+		mres.errstr = "Authentication rejected";
+		return false;
+	}
+	return auth;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1701: ENOMEM");
+	return false;
+}
 
 static bool login_gen(const char *username, const char *password,
     unsigned int wantpriv, sql_meta_result &mres) try
@@ -97,6 +225,10 @@ static bool authmgr_init()
 		return false;
 	}
 	if (!register_service("auth_login_gen", login_gen)) {
+		mlog(LV_ERR, "authmgr: failed to register auth services");
+		return false;
+	}
+	if (!register_service("auth_login_token", login_token)) {
 		mlog(LV_ERR, "authmgr: failed to register auth services");
 		return false;
 	}

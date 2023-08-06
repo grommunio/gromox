@@ -47,3 +47,4 @@ struct sql_meta_result {
 };
 
 using authmgr_login_t = bool (*)(const char *username, const char *password, unsigned int wantprivs, sql_meta_result &);
+using authmgr_login_t2 = bool (*)(const char *token, unsigned int wantprivs, sql_meta_result &);
