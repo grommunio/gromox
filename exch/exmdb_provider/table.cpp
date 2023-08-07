@@ -2638,12 +2638,12 @@ BOOL exmdb_server::read_table_row(const char *dir, const char *username,
 	if (!exmdb_server::is_private())
 		exmdb_server::set_public_username(username);
 	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
+	ppropvals->count = 0;
+	ppropvals->ppropval = nullptr;
 	if (ptnode->type == table_type::hierarchy)
 		return read_tblrow_hier(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb);
 	else if (ptnode->type == table_type::content)
 		return read_tblrow_ctnt(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb, ptnode);
-	else
-		ppropvals->count = 0;
 	return TRUE;
 }
 	
