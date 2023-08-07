@@ -185,7 +185,7 @@ static std::optional<ical_component> tzstruct_to_vtimezone(int year,
 	return {};
 }
 
-static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
+static BOOL recurrencepattern_to_rrule(const ical_component *tzcom,
     time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
     ICAL_RRULE *pirrule) try
 {
@@ -263,7 +263,7 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 		piline->append_value("COUNT", std::to_string(apr->recur_pat.occurrencecount));
 	} else if (apr->recur_pat.endtype == ENDTYPE_AFTER_DATE) {
 		char tmp_buff[1024];
-		ical_utc_to_datetime(&tzcom, rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset), &itime);
+		ical_utc_to_datetime(tzcom, rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset), &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		piline->append_value("UNTIL", tmp_buff);
 	}
@@ -273,14 +273,14 @@ static BOOL recurrencepattern_to_rrule(const ical_component &tzcom,
 			return FALSE;
 		piline->append_value("WKST", wd);
 	}
-	return ical_parse_rrule(&tzcom, whole_start_time,
+	return ical_parse_rrule(tzcom, whole_start_time,
 		&piline->value_list, pirrule) ? TRUE : false;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2093: ENOMEM\n");
 	return false;
 }
 
-static BOOL find_recurrence_times(ical_component &tzcom,
+static BOOL find_recurrence_times(const ical_component *tzcom,
     time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
 	time_t start_time, time_t end_time, std::list<event_node> &plist)
 {
@@ -295,7 +295,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 	plist.clear();
 	do {
 		auto itime = irrule.instance_itime;
-		ical_itime_to_utc(&tzcom, itime, &tmp_time);
+		ical_itime_to_utc(tzcom, itime, &tmp_time);
 		if (tmp_time < start_time)
 			continue;
 		ical_itime_to_utc(NULL, itime, &tmp_time1);
@@ -318,7 +318,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 		tmp_time = rop_util_rtime_to_unix(apr->pexceptioninfo[i].startdatetime);
 		ICAL_TIME itime;
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
-		ical_itime_to_utc(&tzcom, itime, &tmp_time);
+		ical_itime_to_utc(tzcom, itime, &tmp_time);
 		if (tmp_time < start_time || tmp_time > end_time)
 			continue;
 		plist.emplace_back();
@@ -326,7 +326,7 @@ static BOOL find_recurrence_times(ical_component &tzcom,
 		pevnode->start_time = tmp_time;
 		tmp_time = rop_util_rtime_to_unix(apr->pexceptioninfo[i].enddatetime);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
-		ical_itime_to_utc(&tzcom, itime, &tmp_time);
+		ical_itime_to_utc(tzcom, itime, &tmp_time);
 		pevnode->end_time = tmp_time;
 		pevnode->pexception = apr->pexceptioninfo + i;
 		pevnode->pex_exception = apr->pextendedexception + i;
@@ -756,7 +756,8 @@ static BOOL get_freebusy(const char *dir)
 		if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 			continue;
 		std::list<event_node> event_list;
-		if (!find_recurrence_times(*ptz_component, whole_start_time,
+		if (!find_recurrence_times(ptz_component.has_value() ?
+		    &ptz_component.value() : nullptr, whole_start_time,
 		    &apprecurr, g_start_time, g_end_time, event_list))
 			continue;
 		while (event_list.size() > 0) {
