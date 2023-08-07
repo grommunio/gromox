@@ -58,17 +58,16 @@ BOOL attachment_object::init_attachment()
 	if (!pattachment->b_new)
 		return FALSE;
 	propvals.count = 0;
-	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(5);
+	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(4);
 	if (propvals.ppropval == nullptr)
 		return FALSE;
 	
 	propvals.emplace_back(PR_ATTACH_NUM, &pattachment->attachment_num);
 	auto rendpos = cu_alloc<uint32_t>();
-	propvals.emplace_back(PR_RENDERING_POSITION, rendpos);
 	if (rendpos == nullptr)
 		return FALSE;
 	*rendpos = indet_rendering_pos;
-	++propvals.count;
+	propvals.emplace_back(PR_RENDERING_POSITION, rendpos);
 	
 	auto modtime = cu_alloc<uint64_t>();
 	if (modtime == nullptr)
