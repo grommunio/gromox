@@ -1214,7 +1214,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->emplace_back(i, tag, ecAccessDenied);
 			continue;
 		}
-		poriginal_indices[tmp_proptags.count++] = i;
+		poriginal_indices[tmp_proptags.count] = i;
 		tmp_proptags.emplace_back(tag);
 	}
 	if (tmp_proptags.count == 0)
