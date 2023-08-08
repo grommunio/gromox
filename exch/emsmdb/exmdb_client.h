@@ -22,7 +22,7 @@ extern BOOL remove_instance_property(const char *dir, uint32_t instance_id, uint
 extern BOOL get_message_property(const char *dir, const char *username, cpid_t, uint64_t msg_id, uint32_t proptag, void **ppval);
 extern BOOL set_message_property(const char *dir, const char *username, cpid_t, uint64_t msg_id, TAGGED_PROPVAL *, uint32_t *presult);
 extern BOOL remove_message_property(const char *dir, cpid_t, uint64_t msg_id, uint32_t proptag);
-#define EXMIDL(n, p) extern BOOL (*n) p;
+#define EXMIDL(n, p) extern EXMIDL_RETTYPE (*n) p;
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL

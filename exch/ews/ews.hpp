@@ -86,7 +86,7 @@ public:
 	struct _exmdb {
 		_exmdb();
 
-	#define EXMIDL(n, p) BOOL (*n) p;
+	#define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
 	#define IDLOUT
 	#include <gromox/exmdb_idef.hpp>
 	#undef EXMIDL

@@ -1357,7 +1357,7 @@ extern GX_EXPORT void (*exmdb_rpc_free)(void *);
 
 namespace exmdb_client_remote {
 #define IDLOUT
-#define EXMIDL(n, p) extern GX_EXPORT BOOL n p;
+#define EXMIDL(n, p) extern GX_EXPORT EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT

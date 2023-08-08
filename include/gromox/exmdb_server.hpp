@@ -31,7 +31,7 @@ extern const GUID *get_handle();
 extern void register_proc(void *);
 
 #define IDLOUT
-#define EXMIDL(n, p) extern BOOL n p;
+#define EXMIDL(n, p) extern EXMIDL_RETTYPE n p;
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL
 #undef IDLOUT
