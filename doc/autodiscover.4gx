@@ -70,7 +70,7 @@ When OL opens a non-default store (store of another user) or a public store, it
 may also make an AutoDiscover inquiry for the extra store. This setting
 controls whether the server-side AutoDiscover module should perform a
 permission check on non-default stores and possibly reject returning connection
-details. (Inquiry Public stores are always permitted.)
+details. (Inquiry of public stores are always permitted.)
 .br
 Default: \fIyes\fP
 .TP

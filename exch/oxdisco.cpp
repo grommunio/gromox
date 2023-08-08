@@ -19,6 +19,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
+#include <gromox/element_data.hpp> /* MESSAGE_CONTENT alias */
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
 #include <gromox/mapi_types.hpp>
@@ -51,7 +52,17 @@ class OxdiscoPlugin {
 		decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 		decltype(mysql_adaptor_scndstore_hints) *scndstore_hints;
 		decltype(mysql_adaptor_get_homeserver) *get_homeserver;
+		decltype(mysql_adaptor_meta) *meta;
 	} mysql; // mysql adaptor function pointers
+
+	struct _exmdb {
+		_exmdb();
+		#define EXMIDL(n, p) EXMIDL_RETTYPE (*n) p;
+		#define IDLOUT
+		#include <gromox/exmdb_idef.hpp>
+		#undef EXMIDL
+		#undef IDLOUT
+	} exmdb;
 
 	private:
 	std::string x500_org_name = "Gromox default";
@@ -103,7 +114,7 @@ static constexpr char
 	server_base_dn[] = "/o={}/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn={}@{}",
 	public_folder[] = "Public Folder",
-	public_folder_email[] = "public.folder.root@",
+	public_folder_email[] = "public.folder.root@", /* EXC: PUBS@thedomain */
 	bad_address_code[] = "501",
 	bad_address_msg[] = "Bad Address",
 	invalid_request_code[] = "600",
@@ -244,6 +255,11 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 	return ret;
 }
 
+/**
+ * Is it ok to give out metadata, such as their PR_DISPLAY_NAME?
+ * If @actor has _any_ kind of permission (or a scndstore hint entry),
+ * then allow it.
+ */
 BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
 {
 	if (m_validate_scndrequest == 0 || strcasecmp(target, actor) == 0 ||
@@ -260,7 +276,19 @@ BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
 	if (std::any_of(hints.begin(), hints.end(),
 	    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), target) == 0; }))
 		return true;
-	/* authuser has no scndstore matching email */
+	sql_meta_result mres;
+	err = mysql.meta(target, WANTPRIV_METAONLY, mres);
+	if (err != 0) {
+		mlog(LV_ERR, "oxdisco: cannot retrieve usermeta for %s", strerror(err));
+		return die(ctx_id, server_error_code, server_error_msg);
+	}
+	uint32_t perm = 0;
+	if (!exmdb.get_mbox_perm(mres.maildir.c_str(), actor, &perm)) {
+		mlog(LV_ERR, "oxdisco: cannot access mailbox of %s to test for permissions", target);
+		return die(ctx_id, server_error_code, server_error_msg);
+	}
+	if (perm != 0)
+		return true;
 	return die(ctx_id, bad_address_code, (bad_address_msg +
 	       " (403 Permission Denied)"s).c_str());
 }
@@ -1067,13 +1095,29 @@ OxdiscoPlugin::_mysql::_mysql()
 {
 #define getService(f) \
 	if (query_service2(# f, f) == nullptr) \
-		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
+		throw std::runtime_error("oxdisco: failed to get the \""# f"\" service")
 	getService(get_user_displayname);
 	getService(get_user_ids);
 	getService(get_domain_ids);
 	getService(scndstore_hints);
 	getService(get_homeserver);
+	query_service2("mysql_auth_meta", meta);
+	if (meta == nullptr)
+		throw std::runtime_error("oxdisco: failed to get the \"meta\" symbol");
 #undef getService
+}
+
+OxdiscoPlugin::_exmdb::_exmdb()
+{
+#define EXMIDL(n, p) do { \
+	query_service2("exmdb_client_" #n, n); \
+	if ((n) == nullptr) \
+		throw std::runtime_error("oxdisco: failed to get the \"exmdb_client_"# n"\" service\n"); \
+} while (false);
+#define IDLOUT
+#include <gromox/exmdb_idef.hpp>
+#undef EXMIDL
+#undef IDLOUT
 }
 
 ///////////////////////////////////////////////////////////////////////////////

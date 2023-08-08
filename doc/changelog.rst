@@ -8,6 +8,8 @@ Enhancements:
 * exmdb_local: persistent (on-disk) last-autoreply time tracking
 * imap: allow large literals with APPEND
 * imap: add RFC 7888 support
+* oxdisco: allow AutoDiscover information retrieval from secondary
+  mailboxes even if the scndstore_hints table does not have an entry.
 
 Fixes:
 
