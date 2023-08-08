@@ -40,6 +40,7 @@ class OxdiscoPlugin {
 	OxdiscoPlugin();
 
 	BOOL proc(int, const void*, uint64_t);
+	BOOL access_ok(int, const char *, const char *);
 	static BOOL preproc(int);
 
 	struct _mysql {
@@ -243,6 +244,27 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
 	return ret;
 }
 
+BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
+{
+	if (m_validate_scndrequest == 0 || strcasecmp(target, actor) == 0 ||
+	    strncasecmp(target, public_folder_email, 19) == 0)
+		return true;
+	unsigned int auth_user_id = 0, auth_domain_id = 0;
+	mysql.get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
+	std::vector<sql_user> hints;
+	auto err = mysql.scndstore_hints(auth_user_id, hints);
+	if (err != 0) {
+		mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
+		return die(ctx_id, server_error_code, server_error_msg);
+	}
+	if (std::any_of(hints.begin(), hints.end(),
+	    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), target) == 0; }))
+		return true;
+	/* authuser has no scndstore matching email */
+	return die(ctx_id, bad_address_code, (bad_address_msg +
+	       " (403 Permission Denied)"s).c_str());
+}
+
 /**
  * @brief      Proccess request
  *
@@ -302,24 +324,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	auto ars = gtx(*req_node, "AcceptableResponseSchema");
 	if (ars == nullptr)
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
-
-	if (m_validate_scndrequest && strcasecmp(email, auth_info.username) != 0 &&
-	    strncasecmp(email, public_folder_email, 19) != 0) {
-		unsigned int auth_user_id = 0, auth_domain_id = 0;
-		mysql.get_user_ids(auth_info.username, &auth_user_id, &auth_domain_id, nullptr);
-		std::vector<sql_user> hints;
-		auto err = mysql.scndstore_hints(auth_user_id, hints);
-		if (err != 0) {
-			mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
-			return -1;
-		}
-		if (std::none_of(hints.begin(), hints.end(),
-		    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), email) == 0; }))
-			/* authuser has no scndstore matching email */
-			return die(ctx_id, bad_address_code, (bad_address_msg +
-			       " (403 Permission Denied)"s).c_str());
-	}
-
+	if (!access_ok(ctx_id, email, auth_info.username))
+		return false;
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
 	}
