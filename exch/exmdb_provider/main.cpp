@@ -234,7 +234,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			return FALSE;
 		}
 
-#define EXMIDL(n, p) register_service("exmdb_client_" #n, exmdb_client::n);
+#define EXMIDL(n, p) register_service("exmdb_client_" #n, exmdb_client_local::n);
 #define IDLOUT
 #include <gromox/exmdb_idef.hpp>
 #undef EXMIDL

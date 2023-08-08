@@ -15,5 +15,3 @@ namespace exmdb_client_local {
 #undef EXMIDL
 #undef IDLOUT
 }
-
-namespace exmdb_client = exmdb_client_local;
