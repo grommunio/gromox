@@ -51,7 +51,7 @@ static time_duration g_time_out;
 static unsigned int g_context_num, g_contexts_per_thr;
 static evqueue g_poll_ctx;
 static pthread_t g_scan_id;
-static SCHEDULE_CONTEXT **g_context_list;
+static SCHEDULE_CONTEXT **g_context_ptr;
 static pthread_t g_thread_id;
 static gromox::atomic_bool g_notify_stop{true};
 static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
@@ -300,7 +300,7 @@ void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
     unsigned int contexts_per_thr, time_duration timeout)
 {
 	setup_sigalrm();
-	g_context_list = pcontexts;
+	g_context_ptr = pcontexts;
 	g_context_num = context_num;
 	contexts_pool_get_context_socket = get_socket;
 	contexts_pool_get_context_timestamp = get_timestamp;
@@ -309,7 +309,7 @@ void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
 	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_init(&g_context_lists[i]);
 	for (size_t i = 0; i < g_context_num; ++i) {
-		auto pcontext = g_context_list[i];
+		auto pcontext = g_context_ptr[i];
 		context_init(pcontext);
 		double_list_append_as_tail(
 			&g_context_lists[CONTEXT_FREE], &pcontext->node);
@@ -358,11 +358,10 @@ void contexts_pool_stop()
 		pthread_join(g_scan_id, NULL);
 	g_poll_ctx.reset();
 	for (size_t i = 0; i < g_context_num; ++i)
-		context_free(g_context_list[i]);
+		context_free(g_context_ptr[i]);
 	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)
 		double_list_free(&g_context_lists[i]);
-	g_context_list = NULL;
-	
+	g_context_ptr = nullptr;
 	g_context_num = 0;
 	g_contexts_per_thr = 0;
 }
