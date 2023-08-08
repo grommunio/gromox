@@ -17,6 +17,7 @@ enum class tproc_status {
 
 	/* special codes for http; not used by tpool itself */
 	runoff,
+	app_specific_codes = runoff,
 	loop,
 
 	/* special codes for imap; not used by tpool itself */

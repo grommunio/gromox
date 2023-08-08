@@ -941,7 +941,7 @@ tproc_status imap_parser_process(schedule_context *vctx)
 {
 	auto ctx = static_cast<imap_context *>(vctx);
 	auto ret = tproc_status::context_processing;
-	while (static_cast<int>(ret) < 0) {
+	while (ret >= tproc_status::app_specific_codes) {
 		if (ret == tproc_status::cmd_processing)
 			ret = ps_cmd_processing(ctx);
 		else if (ret == tproc_status::literal_checking)
