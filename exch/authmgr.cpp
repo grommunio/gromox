@@ -40,9 +40,8 @@ namespace {
 struct sslfree2 : public sslfree {
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 	inline void operator()(OSSL_DECODER_CTX *x) const { OSSL_DECODER_CTX_free(x); }
-#else
-	inline void operator()(BIO *x) const { BIO_free(x); }
 #endif
+	inline void operator()(BIO *x) const { BIO_free(x); }
 	inline void operator()(EVP_PKEY *x) const { EVP_PKEY_free(x); }
 };
 }
@@ -58,7 +57,7 @@ read_pkey(const unsigned char *pk_str, size_t pk_size)
 #if defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x30000000L
 	std::unique_ptr<EVP_PKEY, sslfree2> pk_obj;
 	std::unique_ptr<OSSL_DECODER_CTX, sslfree2> dec(OSSL_DECODER_CTX_new_for_pkey(&unique_tie(pk_obj),
-		"PEM", nullptr, "RSA", OSSL_KEYMGMT_SELECT_KEYPAIR, nullptr, nullptr));
+		"PEM", nullptr, nullptr, OSSL_KEYMGMT_SELECT_PUBLIC_KEY, nullptr, nullptr));
 	if (dec == nullptr)
 		return nullptr;
 	if (OSSL_DECODER_from_data(dec.get(), &pk_str, &pk_size) <= 0)
@@ -70,7 +69,7 @@ read_pkey(const unsigned char *pk_str, size_t pk_size)
 	std::unique_ptr<BIO, sslfree2> bio(BIO_new_mem_buf(pk_str, pk_size));
 	if (bio == nullptr)
 		return nullptr;
-	auto rsa(PEM_read_bio_RSA_PUBKEY(bio.get(), nullptr, nullptr, nullptr));
+	auto rsa = PEM_read_bio_RSA_PUBKEY(bio.get(), nullptr, nullptr, nullptr);
 	if (rsa == nullptr)
 		return nullptr;
 	EVP_PKEY_assign_RSA(pk_obj.get(), std::move(rsa));
