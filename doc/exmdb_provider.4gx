@@ -73,10 +73,12 @@ Default: \fI1\fP
 When set to 0, messages in public stores/folders will always be shown as read
 and the folder summary will reflect that.
 .br
-When set to 1, messages will have new/read markings but the folder summary will
+When set to 1, messages will have new/read markings but PR_CONTENT_UNREAD will
 indicate 0 new messages at all times.
 .br
-When set to 2, folder summaries will indicate the number of new messages.
+When set to 2, PR_CONTENT_UNREAD indicates the number of new messages for the
+particular user. (Outlook does not show this number; in Folder Properties, the
+radiobox is even greyed out.)
 .br
 Default: \fI2\fP
 .TP

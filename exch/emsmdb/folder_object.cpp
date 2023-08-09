@@ -150,6 +150,11 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	case PR_CONTENT_UNREAD: {
 		if (pfolder->plogon->is_private())
 			return false;
+		/*
+		 * N.B.: msmapi32 suppresses PR_CONTENT_UNREAD from being
+		 * passed to rop_gethierarchytable/setcolumns, which means we
+		 * won't deliver even if we could.
+		 */
 		auto v = cu_alloc<uint32_t>();
 		*outvalue = v;
 		if (*outvalue == nullptr)

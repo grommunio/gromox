@@ -2269,7 +2269,7 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 {
 	if (exmdb_server::is_private())
 		return FALSE;
-	if (exmdb_pf_read_states == 0) {
+	if (exmdb_pf_read_states <= 1) {
 		*pcount = 0;
 		return TRUE;
 	}
