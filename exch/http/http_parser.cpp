@@ -402,8 +402,12 @@ static const char *status_text(unsigned int s)
 	}
 }
 
-static tproc_status http_done(http_context *ctx, unsigned int code)
+static tproc_status http_done(http_context *ctx, int code)
 {
+	if (code < 0) {
+		ctx->b_close = TRUE;
+		code = -code;
+	}
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
 	else if (mod_fastcgi_is_in_charge(ctx))
@@ -485,7 +489,7 @@ static tproc_status htparse_initssl(http_context *pcontext)
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 		if (NULL == pcontext->connection.ssl) {
 			mlog(LV_ERR, "E-1185: ENOMEM");
-			return http_done(pcontext, 5032);
+			return http_done(pcontext, -5032);
 		}
 		SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 	}
@@ -502,7 +506,7 @@ static tproc_status htparse_initssl(http_context *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return tproc_status::polling_rdonly;
 	pcontext->log(LV_DEBUG, "I-1920: timeout");
-	return http_done(pcontext, 408);
+	return http_done(pcontext, -408);
 }
 
 static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
@@ -512,12 +516,12 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "I-1921: request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 	}
 	size_t tmp_len = ptoken - line;
 	if (tmp_len >= 32) {
 		pcontext->log(LV_DEBUG, "I-1922: request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 	}
 
 	memcpy(pcontext->request.method, line, tmp_len);
@@ -525,7 +529,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG, "I-1923: request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 	}
 	size_t tmp_len1 = ptoken1 - ptoken - 1;
 	tmp_len = line_length - (ptoken1 + 6 - line);
@@ -537,18 +541,18 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 		pcontext->b_close = TRUE;
 	} else {
 		pcontext->log(LV_DEBUG, "I-1924: request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 	}
 	if (tmp_len1 == 0)
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 	if (tmp_len1 >= http_request::uri_limit)
-		return http_done(pcontext, 414);
+		return http_done(pcontext, -414);
 	if (!mod_rewrite_process(ptoken + 1,
 	    tmp_len1, pcontext->request.f_request_uri)) {
 		pcontext->request.f_request_uri = std::string_view(&ptoken[1], tmp_len1);
 	} else if (ctx.request.f_request_uri.size() == 0) {
 		ctx.log(LV_ERR, "mod_rewrite left a zero-length URI");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 		/*
 		 * Since mod_rewrite_process uses a uri_limit-long buffer, size
 		 * won't be exceeded anymore.
@@ -566,7 +570,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "I-1925: request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, -400);
 	}
 
 	size_t tmp_len = ptoken - line;
@@ -587,7 +591,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 		char input[264]{}; /* [255long.name]:12345 */
 		if (tmp_len >= sizeof(input)) {
 			ctx.log(LV_DEBUG, "Host field of HTTP request too long");
-			return http_done(pcontext, 400);
+			return http_done(pcontext, -400);
 		}
 		strncpy(input, ptoken, tmp_len);
 		char domain[256];
@@ -632,7 +636,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return tproc_status::runoff;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1085: ENOMEM");
-	return http_done(pcontext, 5032);
+	return http_done(pcontext, -5032);
 }
 
 static tproc_status htp_auth(http_context *pcontext)
@@ -826,7 +830,7 @@ static tproc_status htp_delegate_hpm(http_context *pcontext)
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1184: ENOMEM");
-		return http_done(pcontext, 5032);
+		return http_done(pcontext, -5032);
 	}
 	if (pcontext->stream_out.get_total_length() == 0)
 		return tproc_status::loop;
@@ -853,7 +857,7 @@ static tproc_status htp_delegate_fcgi(http_context *pcontext)
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1183: ENOMEM");
-		return http_done(pcontext, 5032);
+		return http_done(pcontext, -5032);
 	}
 	return tproc_status::loop;
 }
@@ -875,7 +879,7 @@ static tproc_status htp_delegate_cache(http_context *pcontext)
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1182: ENOMEM");
-		return http_done(pcontext, 5032);
+		return http_done(pcontext, -5032);
 	}
 	return tproc_status::loop;
 }
@@ -888,7 +892,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		case STREAM_LINE_FAIL:
 			pcontext->log(LV_DEBUG,
 				"I-1933: request header line too long");
-			return http_done(pcontext, 400);
+			return http_done(pcontext, -400);
 		case STREAM_LINE_UNAVAILABLE:
 			if (actual_read > 0)
 				return tproc_status::cont;
@@ -915,7 +919,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		/* met the end of request header */
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			mlog(LV_ERR, "E-1181: ENOMEM");
-			return http_done(pcontext, 5032);
+			return http_done(pcontext, -5032);
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
 		auto ret = htp_auth_1(*pcontext);
@@ -1304,7 +1308,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1178: ENOMEM");
-				return http_done(pcontext, 5032);
+				return http_done(pcontext, -5032);
 			}
 			if (pcontext->stream_out.get_total_length() != 0) {
 				unsigned int tmp_len = STREAM_BLOCK_SIZE;
@@ -1322,7 +1326,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-1177: ENOMEM");
-				return http_done(pcontext, 5032);
+				return http_done(pcontext, -5032);
 			}
 			return tproc_status::cont;
 		} else if (mod_cache_is_in_charge(pcontext)) {
@@ -1333,7 +1337,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				mlog(LV_ERR, "E-2910: ENOMEM");
-				return http_done(pcontext, 5032);
+				return http_done(pcontext, -5032);
 			}
 			return tproc_status::cont;
 		}
@@ -1383,7 +1387,7 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1176: ENOMEM");
-		return http_done(pcontext, 5032);
+		return http_done(pcontext, -5032);
 	}
 	return tproc_status::cont;
 }
@@ -1518,7 +1522,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		pchannel_out->frag_length = 0;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1174: ENOMEM");
-		return http_done(pcontext, 5032);
+		return http_done(pcontext, -5032);
 	}
 
 	switch (result) {
