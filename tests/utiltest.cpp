@@ -292,17 +292,6 @@ static int t_base64()
 	if (encode64_ex(cpool, 60, out, 85, &outlen) < 0)
 		return printf("TB-4 failed\n");
 
-	if (decode64("MTIz", 4, out, 3, &outlen) >= 0)
-		return printf("TB-11 failed\n");
-	if (decode64("", 0, out, 0, &outlen) >= 0)
-		return printf("TB-12 failed\n");
-	if (decode64("", 0, out, 1, &outlen) < 0)
-		return printf("TB-13 failed\n");
-	if (decode64("MTIz", 4, out, 4, &outlen) < 0)
-		return printf("TB-5 failed\n");
-	if (decode64("MTIz", 1, out, 4, &outlen) >= 0 &&
-	    outlen != 0)
-		return printf("TB-16 failed\n");
 	if (decode64_ex("MTIz", 4, out, 3, &outlen) >= 0)
 		return printf("TB-6 failed\n");
 	if (decode64_ex("MTIz", 4, out, 4, &outlen) < 0)
@@ -321,6 +310,15 @@ static int t_base64()
 		return printf("TB-9 failed\n");
 	else if (memcmp(out, "123123123", 9) != 0)
 		return printf("TB-10 failed\n");
+
+	if (decode64_ex("\xff\xff\xff\xff", 4, out, std::size(out), &outlen) >= 0)
+		return printf("TB-18 failed\n");
+	if (decode64_ex("====", 4, out, std::size(out), &outlen) >= 0)
+		return printf("TB-19 failed\n");
+	if (decode64_ex("A===", 4, out, std::size(out), &outlen) >= 0)
+		return printf("TB-20 failed\n");
+	if (decode64_ex("AA==", 4, out, std::size(out), &outlen) >= 0)
+		return printf("TB-21 failed\n");
 
 	if (qp_encode_ex(out, 3, "\x01", 1) >= 0)
 		return printf("TQ-1 failed\n");

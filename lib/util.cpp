@@ -561,13 +561,9 @@ void randstring(char *buff, size_t length, const char *string)
 #define FAIL	(-1)
 #define BUFOVER (-2)
 
-
-#define CHAR64(c)  (((c) < 0 || (c) > 127) ? -1 : index_64[(c)])
-
-static char basis_64[] =
-   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????";
-
-static int8_t index_64[128] = {
+static constexpr char base64tab[] =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static constexpr int8_t base64idx[] = {
 	-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
 	-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
 	-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,62, -1,-1,-1,63,
@@ -577,6 +573,7 @@ static int8_t index_64[128] = {
 	-1,26,27,28, 29,30,31,32, 33,34,35,36, 37,38,39,40,
 	41,42,43,44, 45,46,47,48, 49,50,51,-1, -1,-1,-1,-1
 };
+#define basis_64 base64tab
 
 /*
  * On success, 0 is returned and @out is NUL-terminated (@outlen does not count NUL).
@@ -618,85 +615,9 @@ int encode64(const void *vin, size_t inlen, char *out,
 	return OK;
 }
 
-/*
- * @vout needs to have sufficient space, namely inlen*3/4+1.
- * On success, @vout is NUL-terminated (@outlen count is without NUL).
- */
-int decode64(const char *in, size_t inlen, void *vout, size_t outmax, size_t *outlen)
-{
-	auto out = static_cast<uint8_t *>(vout);
-	size_t len = 0,lup;
-	int c1, c2, c3, c4;
-
-	/* check parameters */
-	if (out==NULL) return FAIL;
-	if (inlen / 4 * 3 >= outmax)
-		return BUFOVER;
-
-	/* xxx these necessary? */
-	if (in[0] == '+' && in[1] == ' ') in += 2;
-	if (*in == '\r') return FAIL;
-
-	for (lup=0;lup<inlen/4;lup++)
-	{
-		c1 = in[0];
-		if (CHAR64(c1) == -1) return FAIL;
-		c2 = in[1];
-		if (CHAR64(c2) == -1) return FAIL;
-		c3 = in[2];
-		if (c3 != '=' && CHAR64(c3) == -1) return FAIL; 
-		c4 = in[3];
-		if (c4 != '=' && CHAR64(c4) == -1) return FAIL;
-		in += 4;
-		*out++ = (CHAR64(c1) << 2) | (CHAR64(c2) >> 4);
-		++len;
-		if (c3 != '=') {
-			*out++ = ((CHAR64(c2) << 4) & 0xf0) | (CHAR64(c3) >> 2);
-			++len;
-			if (c4 != '=') {
-				*out++ = ((CHAR64(c3) << 6) & 0xc0) | CHAR64(c4);
-				++len;
-			}
-		}
-	}
-
-	*out=0; /* terminate string */
-	*outlen=len;
-	return OK;
-}
-
-
 #define DW_EOL "\r\n"
 #define MAXLINE	76
-static char base64tab[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"abcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static char base64idx[128] = {
-	'\377','\377','\377','\377','\377','\377','\377','\377',
-	'\377','\377','\377','\377','\377','\377','\377','\377',
-	'\377','\377','\377','\377','\377','\377','\377','\377',
-	'\377','\377','\377','\377','\377','\377','\377','\377',
-	'\377','\377','\377','\377','\377','\377','\377','\377',
-	'\377','\377','\377',	 62,'\377','\377','\377',	 63,
-		52,	   53,	  54,	 55,	56,	   57,	  58,	 59,
-		60,	   61,'\377','\377','\377','\377','\377','\377',
-	'\377',		0,	   1,	  2,	 3,		4,	   5,	  6,
-		 7,		8,	   9,	 10,	11,	   12,	  13,	 14,
-		15,	   16,	  17,	 18,	19,	   20,	  21,	 22,
-		23,	   24,	  25,'\377','\377','\377','\377','\377',
-	'\377',	   26,	  27,	 28,	29,	   30,	  31,	 32,
-		33,	   34,	  35,	 36,	37,	   38,	  39,	 40,
-		41,	   42,	  43,	 44,	45,	   46,	  47,	 48,
-		49,	   50,	  51,'\377','\377','\377','\377','\377'
-};
-
 static char hextab[] = "0123456789ABCDEF";
-
-
-#define isbase64(a) (  ('A' <= (a) && (a) <= 'Z') \
-					|| ('a' <= (a) && (a) <= 'z') \
-					|| ('0' <= (a) && (a) <= '9') \
-					||	(a) == '+' || (a) == '/'  )
 
 /*
  * BASE64-encode with newlines.
@@ -774,6 +695,11 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 	out[outPos] = 0;
 	*outlen = outPos;
 	return 0;
+}
+
+static inline bool isbase64(unsigned char c)
+{
+	return c < std::size(base64idx) && base64idx[c] != -1;
 }
 
 /*
