@@ -10,6 +10,7 @@ Enhancements:
 * imap: add RFC 7888 support
 * oxdisco: allow AutoDiscover information retrieval from secondary
   mailboxes even if the scndstore_hints table does not have an entry.
+* emsmdb: "Mark all as read" in OL (Online mode) now works
 
 Fixes:
 

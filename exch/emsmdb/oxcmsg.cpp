@@ -11,6 +11,7 @@
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
+#include "folder_object.h"
 #include "logon_object.h"
 #include "message_object.h"
 #include "processor_types.h"
@@ -640,11 +641,53 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
-	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
+	auto fld = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
+	if (fld == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
 	b_partial = FALSE;
+
+	LONGLONG_ARRAY alt_msgs{};
+	if (pmessage_ids->count == 0) {
+		/* OXCMSG is missing documentation */
+		static constexpr uint8_t fake_false = false;
+		RESTRICTION_PROPERTY res_prop;
+		RESTRICTION res_top;
+		res_prop.relop = read_flags & rfClearReadFlag ? RELOP_NE : RELOP_EQ;
+		res_prop.proptag = PR_READ;
+		res_prop.propval.proptag = PR_READ;
+		res_prop.propval.pvalue = deconst(&fake_false);
+		res_top.rt = RES_PROPERTY;
+		res_top.pres = &res_prop;
+		uint32_t table_id = 0, row_count = 0;
+		auto rpc_info = get_rpc_info();
+		auto username = plogon->is_private() ? nullptr : rpc_info.username;
+		if (!exmdb_client::load_content_table(plogon->dir, CP_ACP,
+		    fld->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
+		    &res_top, nullptr, &table_id, &row_count))
+			return ecError;
+		static constexpr uint32_t one_proptag = PidTagMid;
+		static constexpr PROPTAG_ARRAY proptags = {1, deconst(&one_proptag)};
+		TARRAY_SET result_set;
+		if (!exmdb_client::query_table(plogon->dir, username,
+		    CP_ACP, table_id, &proptags, 0, row_count, &result_set)) {
+			exmdb_client::unload_table(plogon->dir, table_id);
+			return ecError;
+		}
+		exmdb_client::unload_table(plogon->dir, table_id);
+		if (result_set.count > 0) {
+			alt_msgs.pll = cu_alloc<uint64_t>(result_set.count);
+			if (alt_msgs.pll == nullptr)
+				return ecServerOOM;
+			for (unsigned int i = 0; i < result_set.count; ++i) {
+				if (result_set.pparray[i]->count != 1)
+					continue;
+				alt_msgs.pll[alt_msgs.count++] = *static_cast<uint64_t *>(result_set.pparray[i]->ppropval[0].pvalue);
+			}
+			pmessage_ids = &alt_msgs;
+		}
+	}
 	for (size_t i = 0; i < pmessage_ids->count; ++i)
 		if (!oxcmsg_setreadflag(plogon, pmessage_ids->pll[i], read_flags))
 			b_partial = TRUE;	
