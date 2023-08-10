@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
+#include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
@@ -104,10 +105,8 @@ static int create_search_folder(sqlite3 *sdb, uint64_t fid, uint64_t parent,
 
 int main(int argc, const char **argv) try
 {
-	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
-	MYSQL_RES *pmyres;
 	char tmp_sql[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -133,23 +132,21 @@ int main(int argc, const char **argv) try
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
 	textmaps_init(datadir);
-	auto pmysql = mysql_init(nullptr);
-	if (pmysql == nullptr) {
+	std::unique_ptr<MYSQL, mysql_delete> conn(mysql_init(nullptr));
+	if (conn == nullptr) {
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;
 	}
 
-	if (mysql_real_connect(pmysql, mysql_host.c_str(), mysql_user.c_str(),
+	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
 	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
-		mysql_close(pmysql);
 		printf("Failed to connect to the database %s@%s/%s\n",
 		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;
 	}
-	if (mysql_set_character_set(pmysql, "utf8mb4") != 0) {
-		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(pmysql));
-		mysql_close(pmysql);
+	if (mysql_set_character_set(conn.get(), "utf8mb4") != 0) {
+		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(conn.get()));
 		return EXIT_FAILURE;
 	}
 	
@@ -157,30 +154,27 @@ int main(int argc, const char **argv) try
 	            "FROM users AS u "
 	            "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 	            "WHERE u.username='"s + argv[1] + "'";
-	if (mysql_query(pmysql, qstr.c_str()) != 0 ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		printf("Query failed: %s: %s\n", qstr.c_str(), mysql_error(pmysql));
-		mysql_close(pmysql);
+	if (mysql_query(conn.get(), qstr.c_str()) != 0) {
+		fprintf(stderr, "%s: %s\n", qstr.c_str(), mysql_error(conn.get()));
 		return EXIT_FAILURE;
 	}
-		
-	if (1 != mysql_num_rows(pmyres)) {
+	DB_RESULT myres = mysql_store_result(conn.get());
+	if (myres == nullptr) {
+		fprintf(stderr, "result: %s\n", mysql_error(conn.get()));
+		return EXIT_FAILURE;
+	}
+	auto myrow = myres.fetch_row();
+	if (myrow == nullptr || myres.num_rows() > 1) {
 		printf("cannot find information from database "
 				"for username %s\n", argv[1]);
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
 		return EXIT_FAILURE;
 	}
-
-	myrow = mysql_fetch_row(pmyres);
 	auto dtypx = DT_MAILUSER;
 	if (myrow[3] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[3], nullptr, 0));
 	if (dtypx != DT_MAILUSER && dtypx != DT_ROOM && dtypx != DT_EQUIPMENT) {
 		printf("Refusing to create a private store for mailing lists, groups and aliases. "
 		       "(PR_DISPLAY_TYPE=%xh)\n", dtypx);
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
 		return EXIT_FAILURE;
 	}
 	
@@ -193,8 +187,8 @@ int main(int argc, const char **argv) try
 	if (g_lang == nullptr)
 		g_lang = "en";
 	int user_id = strtol(myrow[5], nullptr, 0);
-	mysql_free_result(pmyres);
-	mysql_close(pmysql);
+	myres.clear();
+	conn.reset();
 	
 	make_mailbox_hierarchy(dir);
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";

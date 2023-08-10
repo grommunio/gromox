@@ -741,7 +741,7 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 	return out;
 }
 
-static MYSQL *sql_login()
+static std::unique_ptr<MYSQL, mysql_delete> sql_login()
 {
 	auto cfg = config_file_initd("mysql_adaptor.cfg", PKGSYSCONFDIR, nullptr);
 	if (cfg == nullptr) {
@@ -758,22 +758,20 @@ static MYSQL *sql_login()
 	auto sql_dbname = cfg->get_value("mysql_dbname");
 	if (sql_dbname == nullptr)
 		sql_dbname = "email";
-	auto conn = mysql_init(nullptr);
+	std::unique_ptr<MYSQL, mysql_delete> conn(mysql_init(nullptr));
 	if (conn == nullptr) {
 		fprintf(stderr, "exm: mysql_init failed\n");
 		return nullptr;
 	}
-	if (mysql_real_connect(conn, sql_host, sql_user, sql_pass, sql_dbname,
-	    sql_port, nullptr, 0) == nullptr) {
+	if (mysql_real_connect(conn.get(), sql_host, sql_user, sql_pass,
+	    sql_dbname, sql_port, nullptr, 0) == nullptr) {
 		fprintf(stderr, "exm: Failed to connect to SQL %s@%s: %s\n",
-		        sql_user, sql_host, mysql_error(conn));
-		mysql_close(conn);
+		        sql_user, sql_host, mysql_error(conn.get()));
 		return nullptr;
 	}
-	if (mysql_set_character_set(conn, "utf8mb4") != 0) {
+	if (mysql_set_character_set(conn.get(), "utf8mb4") != 0) {
 		fprintf(stderr, "mysql: \"utf8mb4\" not available: %s\n",
-		        mysql_error(conn));
-		mysql_close(conn);
+		        mysql_error(conn.get()));
 		return nullptr;
 	}
 	return conn;
@@ -841,8 +839,7 @@ int gi_setup_from_dir()
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
-	auto cl_0 = make_scope_exit([&]() { mysql_close(sqh); });
-	auto ret = sql_dir_to_user(sqh, g_storedir, g_user_id, g_dstuser);
+	auto ret = sql_dir_to_user(sqh.get(), g_storedir, g_user_id, g_dstuser);
 	if (ret == -ENOENT) {
 		fprintf(stderr, "exm: No user with homedir \"%s\"\n", g_storedir);
 		fprintf(stderr, "exm: (No attempt was made to locate a domain mailbox)\n");
@@ -861,9 +858,9 @@ int gi_setup()
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
-	auto ret = sql_meta(sqh, g_dstuser.c_str(), g_public_folder,
+	auto ret = sql_meta(sqh.get(), g_dstuser.c_str(), g_public_folder,
 	           &g_user_id, g_storedir_s);
-	mysql_close(sqh);
+	sqh.reset();
 	if (ret == -ENOENT) {
 		fprintf(stderr, "exm: No such %s \"%s\"\n",
 		        g_public_folder ? "domain" : "username", g_dstuser.c_str());

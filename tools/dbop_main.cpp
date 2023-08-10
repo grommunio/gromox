@@ -9,6 +9,7 @@
 #include <string>
 #include <libHX/option.h>
 #include <gromox/config_file.hpp>
+#include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/paths.h>
 
@@ -20,14 +21,6 @@ enum {
 	OP_CREATE_RECENT,
 	OP_UPGRADE,
 };
-
-namespace {
-
-struct db_deleter {
-	void operator()(MYSQL *m) const { mysql_close(m); }
-};
-
-}
 
 static char *opt_config_file;
 static unsigned int g_action;
@@ -67,7 +60,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	std::unique_ptr<MYSQL, db_deleter> pmysql(mysql_init(nullptr));
+	std::unique_ptr<MYSQL, mysql_delete> pmysql(mysql_init(nullptr));
 	if (pmysql == nullptr)
 		abort();
 	auto mysql_host = pconfig->get_value("mysql_host");

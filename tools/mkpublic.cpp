@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
+#include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
@@ -63,9 +64,7 @@ static constexpr unsigned int rightsGromoxPubDefault = /* (0x41b/1051) */
 
 int main(int argc, const char **argv) try
 {
-	MYSQL_ROW myrow;
 	sqlite3 *psqlite;
-	MYSQL_RES *pmyres;
 	char mysql_string[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -90,53 +89,52 @@ int main(int argc, const char **argv) try
 	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir : PKGDATADIR;
-	auto pmysql = mysql_init(nullptr);
-	if (pmysql == nullptr) {
+	std::unique_ptr<MYSQL, mysql_delete> conn(mysql_init(nullptr));
+	if (conn == nullptr) {
 		printf("Failed to init mysql object\n");
 		return EXIT_FAILURE;
 	}
 
-	if (mysql_real_connect(pmysql, mysql_host.c_str(), mysql_user.c_str(),
+	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
 	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
-		mysql_close(pmysql);
 		printf("Failed to connect to the database %s@%s/%s\n",
 		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;
 	}
-	if (mysql_set_character_set(pmysql, "utf8mb4") != 0) {
-		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(pmysql));
-		mysql_close(pmysql);
+	if (mysql_set_character_set(conn.get(), "utf8mb4") != 0) {
+		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(conn.get()));
 		return EXIT_FAILURE;
 	}
 	
 	snprintf(mysql_string, std::size(mysql_string), "SELECT 0, homedir, 0, "
 		"domain_status, id FROM domains WHERE domainname='%s'", argv[1]);
-	
-	if (0 != mysql_query(pmysql, mysql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		printf("fail to query database\n");
-		mysql_close(pmysql);
+	if (mysql_query(conn.get(), mysql_string) != 0) {
+		fprintf(stderr, "%s: %s\n", mysql_string, mysql_error(conn.get()));
 		return EXIT_FAILURE;
 	}
-		
-	if (1 != mysql_num_rows(pmyres)) {
+	DB_RESULT myres = mysql_store_result(conn.get());
+	if (myres == nullptr) {
+		fprintf(stderr, "result: %s\n", mysql_error(conn.get()));
+		return EXIT_FAILURE;
+	}
+	auto myrow = myres.fetch_row();
+	if (myrow == nullptr || myres.num_rows() > 1) {
 		printf("cannot find information from database "
 				"for username %s\n", argv[1]);
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
+		return EXIT_FAILURE;
+	} else if (myres.num_rows() > 1) {
+		fprintf(stderr, "Ambiguous result from database\n");
 		return EXIT_FAILURE;
 	}
-
-	myrow = mysql_fetch_row(pmyres);
 	auto domain_status = strtoul(myrow[3], nullptr, 0);
 	if (domain_status != AF_DOMAIN_NORMAL)
 		printf("Warning: Domain status is not \"alive\"(0) but %lu\n", domain_status);
 	
 	std::string dir = znul(myrow[1]);
 	int domain_id = strtol(myrow[4], nullptr, 0);
-	mysql_free_result(pmyres);
-	mysql_close(pmysql);
+	myres.clear();
+	conn.reset();
 	
 	if (!make_mailbox_hierarchy(dir))
 		return EXIT_FAILURE;
