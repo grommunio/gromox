@@ -569,6 +569,12 @@ int driver::open_by_guid_1(const char *guid)
 
 static int setup_charset(MYSQL *m)
 {
+	/*
+	 * Only in kdb2mt will we attempt to fallback to utf8mb3, in
+	 * case there is a very old MySQL server around on the
+	 * Zarafa/KGWC side. Everything else in Gromox will just
+	 * hard-require a modern one with utf8mb4.
+	 */
 	auto ret = mysql_set_character_set(m, "utf8mb4");
 	if (ret == 0)
 		return 0;

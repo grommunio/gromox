@@ -80,6 +80,10 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "mysql_connect: %s\n", mysql_error(pmysql.get()));
 		return EXIT_FAILURE;
 	}
+	if (mysql_set_character_set(pmysql.get(), "utf8mb4") != 0) {
+		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(pmysql.get()));
+		return EXIT_FAILURE;
+	}
 	int ret = EXIT_FAILURE;
 	if (g_action == OP_CREATE_ZERO)
 		ret = dbop_mysql_create_0(pmysql.get());
