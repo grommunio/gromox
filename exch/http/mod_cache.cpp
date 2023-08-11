@@ -445,7 +445,7 @@ static int mod_cache_parse_range_value(char *value,
 
 static bool rqtype_ok(const char *method, unsigned int set)
 {
-	static constexpr const char *names[2][3] =
+	static constexpr char names[2][3][8] =
 		{{"GET", "HEAD", "POST"}, {"PUT", "DELETE", "PATCH"}};
 	for (const auto &i : names[set])
 		if (strcasecmp(method, i) == 0)

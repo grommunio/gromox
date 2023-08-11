@@ -32,7 +32,7 @@ struct HPM_INTERFACE {
 struct http_request {
 	void clear();
 
-	char method[32]{}, version[8]{};
+	char method[16]{}, version[8]{};
 	std::string f_request_uri, f_host, f_user_agent, f_accept;
 	std::string f_accept_language, f_accept_encoding, f_content_type;
 	std::string f_content_length, f_transfer_encoding;
