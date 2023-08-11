@@ -140,7 +140,7 @@ static bool verify_token(std::string token, std::string &ex_user)
 		mlog(LV_ERR, "%s: this does not look like a PEM-encoded RSA key", pk_file);
 		return false;
 	}
-	return time(nullptr) <= root["exp"].asInt64() &&
+	return time(nullptr) < root["exp"].asInt64() &&
 	       verify_sig(std::move(pkey), signed_msg,
 	       base64_decode(std::move(signature)));
 }
