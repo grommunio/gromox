@@ -62,6 +62,12 @@ static constexpr char tbl_namedprops_0[] =
 "  propid INTEGER PRIMARY KEY AUTOINCREMENT,"
 "  name_string TEXT COLLATE NOCASE NOT NULL)";
 
+static constexpr char tbl_namedprops_12[] =
+"CREATE TABLE named_properties ("
+"  propid INTEGER PRIMARY KEY AUTOINCREMENT,"
+"  name_string TEXT COLLATE NOCASE NOT NULL);"
+"CREATE UNIQUE INDEX namedprop_unique ON named_properties(name_string);";
+
 static constexpr char tbl_storeprops_0[] =
 "CREATE TABLE store_properties ("
 "  proptag INTEGER UNIQUE NOT NULL,"
@@ -393,7 +399,7 @@ static constexpr tbl_init tbl_pvt_init_0[] = {
 static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"configurations", tbl_config_1},
 	{"allocated_eids", tbl_alloc_eids_0},
-	{"named_properties", tbl_namedprops_0},
+	{"named_properties", tbl_namedprops_12},
 	{"store_properties", tbl_storeprops_2},
 	{"folder_properties", tbl_fldprops_3},
 	{"permissions", tbl_perms_0},
@@ -547,6 +553,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{8, nullptr, "messages", tbl_pvt_msgs_8, tbl_pvt_msgs_move8},
 	{10, nullptr, "folders", tbl_pvt_folders_10, tbl_pvt_folders_move10},
 	{11, tbl_pvt_autoreply_ts_11},
+	{12, "CREATE UNIQUE INDEX namedprop_unique ON named_properties(name_string)"},
 	TABLE_END,
 };
 
