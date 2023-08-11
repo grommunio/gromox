@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #define DECLARE_SVC_API_STATIC
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -94,13 +95,19 @@ static bool verify_sig(std::unique_ptr<EVP_PKEY, sslfree2> &&pk_obj,
 	       sig_raw.size()) > 0;
 }
 
-static bool verify_token(const char *token, std::string &ex_user)
+static bool verify_token(std::string token, std::string &ex_user)
 {
+	/*
+	 * JWTs use unpadded base64url (and they are the only thing to do so in
+	 * the scope of Gromox), so just fix it up here rather than decode64_ex.
+	 */
+	std::replace(token.begin(), token.end(), '-', '+');
+	std::replace(token.begin(), token.end(), '_', '/');
 	/*
 	 * signed_msg := header_b64 "." payload_b64
 	 * token := signed_msg "." signature_b64
 	 */
-	auto beg = token;
+	auto beg = token.c_str();
 	auto end = strchr(beg, '.');
 	if (end == nullptr)
 		return false;
@@ -108,13 +115,16 @@ static bool verify_token(const char *token, std::string &ex_user)
 	end = strchr(beg, '.');
 	if (end == nullptr)
 		return false;
-	std::string_view signed_msg(token, end - token), payload(beg, end - beg);
-	beg = end + 1; /* now points to signature */
+	std::string_view signed_msg(token.c_str(), end - token.c_str());
+	std::string payload(beg, end - beg), signature(end + 1);
+	payload.insert(payload.size(), (4 - payload.size() % 4) % 4, '=');
+	signature.insert(signature.size(), (4 - signature.size() % 4) % 4, '=');
 
 	/* Grab username */
 	Json::Value root;
-	if (!json_from_str(base64_decode(payload), root))
+	if (!json_from_str(base64_decode(std::move(payload)), root))
 		return false;
+	payload.clear();
 	ex_user = root["email"].asString();
 
 	/* Load pubkey */
@@ -131,7 +141,8 @@ static bool verify_token(const char *token, std::string &ex_user)
 		return false;
 	}
 	return time(nullptr) <= root["exp"].asInt64() &&
-	       verify_sig(std::move(pkey), signed_msg, base64_decode(beg));
+	       verify_sig(std::move(pkey), signed_msg,
+	       base64_decode(std::move(signature)));
 }
 
 static bool login_token(const char *token,
