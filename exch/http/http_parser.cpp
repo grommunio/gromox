@@ -923,6 +923,8 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		}
 
 		/* met the end of request header */
+		if (pcontext->request.f_host.empty())
+			pcontext->request.f_host = pcontext->connection.server_ip;
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			mlog(LV_ERR, "E-1181: ENOMEM");
 			return http_done(pcontext, -5032);
