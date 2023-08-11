@@ -59,7 +59,7 @@ struct RANGE {
 struct cache_context {
 	std::shared_ptr<cache_item> pitem;
 	BOOL b_header = false;
-	bool b_chunked = false, b_end = false;
+	bool b_end = false;
 	uint32_t offset = 0, until = 0;
 	uint32_t chunk_size = 0, chunk_offset = 0;
 	uint64_t posted_size = 0;
@@ -520,7 +520,6 @@ int mod_cache_take_request(http_context *phttp)
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
-	pcontext->b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 	pcontext->posted_size = 0;
 	val = mod_cache_get_others_field(phttp->request.f_others, "Range");
 	if (val != nullptr) {
@@ -586,7 +585,7 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 	pcontext = mod_cache_get_cache_context(phttp);
 	pcontext->pitem.reset();
 	pcontext->range.clear();
-	pcontext->b_chunked = pcontext->b_end = false;
+	pcontext->b_end = false;
 	pcontext->chunk_size = pcontext->chunk_offset = 0;
 	rq.content_len = pcontext->posted_size = 0;
 }
@@ -689,7 +688,7 @@ bool mod_cache_write_request(http_context *hc)
 
 	if (fctx.b_end)
 		return true;
-	if (!fctx.b_chunked) {
+	if (!rq.b_chunked) {
 		if (rq.content_len <= hc->stream_in.get_total_length())
 			fctx.b_end = true;
 		return true;

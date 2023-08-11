@@ -44,7 +44,7 @@ namespace {
  */
 struct HPM_CONTEXT {
 	const HPM_INTERFACE *pinterface = nullptr;
-	BOOL b_preproc = false, b_chunked = false, b_end = false;
+	BOOL b_preproc = false, b_end = false;
 	gromox::tmpfile cache_fd;
 	uint32_t chunk_size = 0, chunk_offset = 0;
 	uint64_t cache_size = 0;
@@ -298,8 +298,7 @@ int hpm_processor_take_request(http_context *phttp)
 				" is too long for hpm_processor");
 			return 400;
 		}
-		auto b_chunked = strcasecmp(rq.f_transfer_encoding.c_str(), "chunked") == 0;
-		if (b_chunked || rq.content_len > g_cache_size) {
+		if (rq.b_chunked || rq.content_len > g_cache_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
@@ -316,8 +315,7 @@ int hpm_processor_take_request(http_context *phttp)
 		} else {
 			phpm_ctx->cache_fd.close();
 		}
-		phpm_ctx->b_chunked = b_chunked;
-		if (b_chunked) {
+		if (rq.b_chunked) {
 			phpm_ctx->chunk_size = 0;
 			phpm_ctx->chunk_offset = 0;
 		}
@@ -355,7 +353,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			phpm_ctx->b_end = TRUE;	
 		return TRUE;
 	}
-	if (!phpm_ctx->b_chunked) {
+	if (!rq.b_chunked) {
 		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < rq.content_len &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	

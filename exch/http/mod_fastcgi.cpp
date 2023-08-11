@@ -75,7 +75,7 @@ struct FASTCGI_NODE {
 };
 
 struct fastcgi_context {
-	BOOL b_index = false, b_chunked = false, b_end = false;
+	BOOL b_index = false, b_end = false;
 	BOOL b_header = false; /* is response header met */
 	uint32_t chunk_size = 0, chunk_offset = 0;
 	const FASTCGI_NODE *pfnode = nullptr;
@@ -444,11 +444,10 @@ int mod_fastcgi_take_request(http_context *phttp)
 			" is too long for mod_fastcgi");
 		return 400;
 	}
-	auto b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 	auto pcontext = &g_context_list[phttp->context_id];
 	pcontext->last_time = tp_now();
 	pcontext->pfnode = pfnode;
-	if (b_chunked || rq.content_len > g_cache_size) {
+	if (rq.b_chunked || rq.content_len > g_cache_size) {
 		auto path = LOCAL_DISK_TMPDIR;
 		if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
@@ -466,8 +465,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 		pcontext->cache_fd.close();
 	}
 	pcontext->b_index = b_index;
-	pcontext->b_chunked = b_chunked;
-	if (b_chunked) {
+	if (rq.b_chunked) {
 		pcontext->chunk_size = 0;
 		pcontext->chunk_offset = 0;
 	}
@@ -618,7 +616,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			QRF(mod_fastcgi_push_name_value(&ndr_push,
 			    hdr.c_str(), val));
 	}
-	if (!fctx.b_chunked) {
+	if (!rq.b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(rq.content_len));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
@@ -794,7 +792,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			fctx.b_end = TRUE;
 		return TRUE;
 	}
-	if (!fctx.b_chunked) {
+	if (!rq.b_chunked) {
 		if (fctx.cache_size + phttp->stream_in.get_total_length() < rq.content_len &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
@@ -940,6 +938,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 {
+	auto &rq = phttp->request;
 	unsigned int tmp_len;
 	NDR_PULL ndr_pull;
 	char dstring[128], tmp_buff[80000], response_buff[65536];
@@ -1001,7 +1000,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 						" %s", end_request.app_status,
 						(int)end_request.protocol_status,
 						fctx.pfnode->sock_path.c_str());
-			if (fctx.b_header && fctx.b_chunked)
+			if (fctx.b_header && rq.b_chunked)
 				phttp->stream_out.write("0\r\n\r\n", 5);
 			mod_fastcgi_put_context(phttp);
 			return FALSE;
@@ -1040,7 +1039,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					mod_fastcgi_put_context(phttp);
 					return FALSE;
 				}
-				if (fctx.b_chunked) {
+				if (rq.b_chunked) {
 					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 					          "%x\r\n", std_stream.length);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
@@ -1103,11 +1102,16 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			}
 			pbody[2] = '\0';
 			pbody += 4;
+			/*
+			 * mod_fastcgi first collects the entire request
+			 * (function mod_fastcgi_write_request) before passing
+			 * it on (function mod_fastcgi_relay_content). This
+			 * allows re-assigning b_chunked now for other purposes.
+			 */
 			/* Content-Length */
-			fctx.b_chunked =
+			rq.b_chunked =
 				strncasecmp(response_buff, "Content-Length:", 15) != 0 &&
-				strcasestr(response_buff, "\r\nContent-Length:") == nullptr ?
-				TRUE : false;
+				strcasestr(response_buff, "\r\nContent-Length:") == nullptr;
 			rfc1123_dstring(dstring, std::size(dstring));
 			if (strcasecmp(phttp->request.method, "HEAD") == 0)
 				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
@@ -1115,7 +1119,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								"Date: %s\r\n"
 								"%s\r\n", status_line,
 								dstring, response_buff);
-			else if (fctx.b_chunked)
+			else if (rq.b_chunked)
 				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 				          "HTTP/1.1 %s\r\n"
 				          "Date: %s\r\n"
@@ -1139,7 +1143,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return TRUE;
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
-				if (fctx.b_chunked) {
+				if (rq.b_chunked) {
 					tmp_len = snprintf(tmp_buff, std::size(tmp_buff),
 					          "%x\r\n", response_offset);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||

@@ -32,11 +32,12 @@ struct HPM_INTERFACE {
 struct http_request {
 	void clear();
 
-	char method[16]{}, version[8]{};
+	char method[15]{};
+	bool b_chunked = false;
+	char version[8]{};
 	uint64_t content_len = 0;
 	std::string f_request_uri, f_host, f_user_agent, f_accept;
 	std::string f_accept_language, f_accept_encoding, f_content_type;
-	std::string f_transfer_encoding;
 	std::string f_cookie;
 	using other_map = std::unordered_map<std::string, std::string, gromox::icasehash, gromox::icasecmp>;
 	other_map f_others;

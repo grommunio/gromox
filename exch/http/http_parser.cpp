@@ -630,7 +630,8 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 			return http_done(pcontext, -400);
 	} else if (0 == strcasecmp(field_name,
 		"Transfer-Encoding")) {
-		pcontext->request.f_transfer_encoding = std::string_view(ptoken, tmp_len);
+		std::string s(ptoken, tmp_len);
+		ctx.request.b_chunked = strcasecmp(s.c_str(), "chunked") == 0;
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
 		auto &j = pcontext->request.f_cookie;
 		if (!j.empty())
@@ -1810,6 +1811,7 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 void http_request::clear()
 {
 	method[0] = '\0';
+	b_chunked = false;
 	version[0] = '\0';
 	content_len = 0;
 	f_request_uri.clear();
@@ -1819,7 +1821,6 @@ void http_request::clear()
 	f_accept_language.clear();
 	f_accept_encoding.clear();
 	f_content_type.clear();
-	f_transfer_encoding.clear();
 	f_cookie.clear();
 	f_others.clear();
 }
