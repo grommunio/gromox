@@ -619,7 +619,15 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 		pcontext->request.f_content_type = std::string_view(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Length")) {
-		pcontext->request.f_content_length = std::string_view(ptoken, tmp_len);
+		if (tmp_len >= 32) {
+			ctx.log(LV_DEBUG, "Content-Length too long");
+			return http_done(&ctx, -400);
+		}
+		std::string s(ptoken, tmp_len);
+		char *end = nullptr;
+		ctx.request.content_len = strtoull(s.c_str(), &end, 10);
+		if (end == nullptr || *end != '\0')
+			return http_done(pcontext, -400);
 	} else if (0 == strcasecmp(field_name,
 		"Transfer-Encoding")) {
 		pcontext->request.f_transfer_encoding = std::string_view(ptoken, tmp_len);
@@ -799,7 +807,7 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 		return tproc_status::loop;
 	}
 
-	pcontext->total_length = strtoull(pcontext->request.f_content_length.c_str(), nullptr, 0);
+	pcontext->total_length = pcontext->request.content_len;
 	/* ECHO request 0x0 ~ 0x10, MS-RPCH 2.1.2.15 */
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
@@ -821,7 +829,6 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 
 static tproc_status htp_delegate_hpm(http_context *pcontext)
 {
-	/* let HPMs decide the read/write bytes */
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
@@ -848,7 +855,6 @@ static tproc_status htp_delegate_hpm(http_context *pcontext)
 
 static tproc_status htp_delegate_fcgi(http_context *pcontext)
 {
-	/* let mod_fastcgi decide the read/write bytes */
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
@@ -870,7 +876,6 @@ static tproc_status htp_delegate_fcgi(http_context *pcontext)
 
 static tproc_status htp_delegate_cache(http_context *pcontext)
 {
-	/* let mod_cache decide the read/write bytes */
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
@@ -1806,6 +1811,7 @@ void http_request::clear()
 {
 	method[0] = '\0';
 	version[0] = '\0';
+	content_len = 0;
 	f_request_uri.clear();
 	f_host.clear();
 	f_user_agent.clear();
@@ -1813,7 +1819,6 @@ void http_request::clear()
 	f_accept_language.clear();
 	f_accept_encoding.clear();
 	f_content_type.clear();
-	f_content_length.clear();
 	f_transfer_encoding.clear();
 	f_cookie.clear();
 	f_others.clear();

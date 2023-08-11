@@ -62,7 +62,7 @@ struct cache_context {
 	bool b_chunked = false, b_end = false;
 	uint32_t offset = 0, until = 0;
 	uint32_t chunk_size = 0, chunk_offset = 0;
-	uint64_t content_length = 0, posted_size = 0;
+	uint64_t posted_size = 0;
 	ssize_t range_pos = -1;
 	std::vector<RANGE> range;
 };
@@ -522,16 +522,6 @@ int mod_cache_take_request(http_context *phttp)
 	*pcontext = {};
 	pcontext->b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
 	pcontext->posted_size = 0;
-	auto tmp_len = phttp->request.f_content_length.size();
-	if (tmp_len == 0) {
-		pcontext->content_length = 0;
-	} else {
-		if (tmp_len >= 32) {
-			phttp->log(LV_DEBUG, "Content-length too long");
-			return 400;
-		}
-		pcontext->content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
-	}
 	val = mod_cache_get_others_field(phttp->request.f_others, "Range");
 	if (val != nullptr) {
 		gx_strlcpy(tmp_buff, val, std::size(tmp_buff));
@@ -590,6 +580,7 @@ int mod_cache_take_request(http_context *phttp)
 
 void mod_cache_put_context(HTTP_CONTEXT *phttp)
 {
+	auto &rq = phttp->request;
 	CACHE_CONTEXT *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
@@ -597,7 +588,7 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 	pcontext->range.clear();
 	pcontext->b_chunked = pcontext->b_end = false;
 	pcontext->chunk_size = pcontext->chunk_offset = 0;
-	pcontext->content_length = pcontext->posted_size = 0;
+	rq.content_len = pcontext->posted_size = 0;
 }
 
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp)
@@ -693,12 +684,13 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 bool mod_cache_write_request(http_context *hc)
 {
 	unsigned int size, len;
+	auto &rq = hc->request;
 	auto &fctx = *mod_cache_get_cache_context(hc);
 
 	if (fctx.b_end)
 		return true;
 	if (!fctx.b_chunked) {
-		if (fctx.content_length <= hc->stream_in.get_total_length())
+		if (rq.content_len <= hc->stream_in.get_total_length())
 			fctx.b_end = true;
 		return true;
 	}
@@ -755,16 +747,16 @@ bool mod_cache_check_end_of_read(http_context *hc)
 
 bool mod_cache_discard_content(http_context *hc)
 {
-	auto &fctx = *mod_cache_get_cache_context(hc);
+	auto &rq = hc->request;
 	char buf[65535];
-	for (unsigned int len = sizeof(buf); fctx.content_length != 0 &&
+	for (unsigned int len = sizeof(buf); rq.content_len != 0 &&
 	     hc->stream_in.get_read_buf(&len) != nullptr; len = sizeof(buf)) {
-		if (len > fctx.content_length) {
-			hc->stream_in.rewind_read_ptr(len - fctx.content_length);
-			len = fctx.content_length;
-			fctx.content_length = 0;
+		if (len > rq.content_len) {
+			hc->stream_in.rewind_read_ptr(len - rq.content_len);
+			len = rq.content_len;
+			rq.content_len = 0;
 		} else {
-			fctx.content_length -= len;
+			rq.content_len -= len;
 		}
 	}
 	return true;

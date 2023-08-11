@@ -47,7 +47,7 @@ struct HPM_CONTEXT {
 	BOOL b_preproc = false, b_chunked = false, b_end = false;
 	gromox::tmpfile cache_fd;
 	uint32_t chunk_size = 0, chunk_offset = 0;
-	uint64_t content_length = 0, cache_size = 0;
+	uint64_t cache_size = 0;
 };
 
 }
@@ -286,32 +286,20 @@ void hpm_processor_stop()
 
 int hpm_processor_take_request(http_context *phttp)
 {
-	uint64_t content_length;
-	
+	auto &rq = phttp->request;
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	phpm_ctx->b_preproc = false;
 	for (const auto &p : g_plugin_list) {
 		auto pplugin = &p;
 		if (!pplugin->interface.preproc(phttp->context_id))
 			continue;
-		auto tmp_len = phttp->request.f_content_length.size();
-		if (0 == tmp_len) {
-			content_length = 0;
-		} else {
-			if (tmp_len >= 32) {
-				phttp->log(LV_DEBUG, "length of "
-					"content-length is too long for hpm_processor");
-				return 400;
-			}
-			content_length = strtoull(phttp->request.f_content_length.c_str(), nullptr, 0);
-		}
-		if (content_length > g_max_size) {
+		if (rq.content_len > g_max_size) {
 			phttp->log(LV_DEBUG, "content-length"
 				" is too long for hpm_processor");
 			return 400;
 		}
-		auto b_chunked = strcasecmp(phttp->request.f_transfer_encoding.c_str(), "chunked") == 0;
-		if (b_chunked || content_length > g_cache_size) {
+		auto b_chunked = strcasecmp(rq.f_transfer_encoding.c_str(), "chunked") == 0;
+		if (b_chunked || rq.content_len > g_cache_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
@@ -333,7 +321,6 @@ int hpm_processor_take_request(http_context *phttp)
 			phpm_ctx->chunk_size = 0;
 			phpm_ctx->chunk_offset = 0;
 		}
-		phpm_ctx->content_length = content_length;
 		phpm_ctx->b_end = FALSE;
 		phpm_ctx->b_preproc = TRUE;
 		phpm_ctx->pinterface = &pplugin->interface;
@@ -353,6 +340,7 @@ bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)
  */
 BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 {
+	auto &rq = phttp->request;
 	int size;
 	int tmp_len;
 	void *pbuff;
@@ -363,21 +351,20 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	if (phpm_ctx->b_end)
 		return TRUE;
 	if (phpm_ctx->cache_fd < 0) {
-		if (phpm_ctx->content_length <= phttp->stream_in.get_total_length())
+		if (rq.content_len <= phttp->stream_in.get_total_length())
 			phpm_ctx->b_end = TRUE;	
 		return TRUE;
 	}
 	if (!phpm_ctx->b_chunked) {
-		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < phpm_ctx->content_length &&
+		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < rq.content_len &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-			if (phpm_ctx->cache_size + size >
-				phpm_ctx->content_length) {
-				tmp_len = phpm_ctx->content_length - phpm_ctx->cache_size;
+			if (phpm_ctx->cache_size + size > rq.content_len) {
+				tmp_len = rq.content_len - phpm_ctx->cache_size;
 				phttp->stream_in.rewind_read_ptr(size - tmp_len);
-				phpm_ctx->cache_size = phpm_ctx->content_length;
+				phpm_ctx->cache_size = rq.content_len;
 			} else {
 				phpm_ctx->cache_size += size;
 				tmp_len = size;
@@ -387,7 +374,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 					" write cache file for hpm_processor");
 				return FALSE;
 			}
-			if (phpm_ctx->cache_size == phpm_ctx->content_length) {
+			if (phpm_ctx->cache_size == rq.content_len) {
 				phpm_ctx->b_end = TRUE;
 				return TRUE;
 			}
@@ -474,24 +461,25 @@ BOOL hpm_processor_check_end_of_request(HTTP_CONTEXT *phttp)
 
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 {
+	auto &rq = phttp->request;
 	BOOL b_result;
 	void *pcontent;
 	struct stat node_stat;
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (phpm_ctx->cache_fd < 0) {
-		if (0 == phpm_ctx->content_length) {
+		if (rq.content_len == 0) {
 			pcontent = NULL;
 		} else {
-			pcontent = malloc(phpm_ctx->content_length);
+			pcontent = malloc(rq.content_len);
 			if (pcontent == nullptr)
 				return FALSE;
 			if (phttp->stream_in.peek_buffer(static_cast<char *>(pcontent),
-			    phpm_ctx->content_length) != phpm_ctx->content_length) {
+			    rq.content_len) != rq.content_len) {
 				free(pcontent);
 				return FALSE;
 			}
-			phttp->stream_in.fwd_read_ptr(phpm_ctx->content_length);
+			phttp->stream_in.fwd_read_ptr(rq.content_len);
 		}
 	} else {
 		if (fstat(phpm_ctx->cache_fd, &node_stat) != 0)
@@ -506,11 +494,11 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			return FALSE;
 		}
 		phpm_ctx->cache_fd.close();
-		phpm_ctx->content_length = node_stat.st_size;
+		rq.content_len = node_stat.st_size;
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
-				pcontent, phpm_ctx->content_length);
-	phpm_ctx->content_length = 0;
+	           pcontent, rq.content_len);
+	rq.content_len = 0;
 	if (pcontent != nullptr)
 		free(pcontent);
 	return b_result;
@@ -538,11 +526,12 @@ int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)
 
 void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 {
+	auto &rq = phttp->request;
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (phpm_ctx->pinterface->term != nullptr)
 		phpm_ctx->pinterface->term(phttp->context_id);
 	phpm_ctx->cache_fd.close();
-	phpm_ctx->content_length = 0;
+	rq.content_len = 0;
 	phpm_ctx->b_preproc = FALSE;
 	phpm_ctx->pinterface = NULL;
 }
