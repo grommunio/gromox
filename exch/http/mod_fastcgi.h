@@ -18,7 +18,6 @@ extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_
 extern int mod_fastcgi_run();
 extern void mod_fastcgi_stop();
 extern int mod_fastcgi_take_request(http_context *);
-BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp);
 BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp);
 BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp);
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp);

@@ -40,14 +40,11 @@ namespace {
 
 /**
  * @b_preproc:	one module has signalled interest (has completed preprocessing)
- * @b_end:	the end of the request body has been seen
  */
 struct HPM_CONTEXT {
 	const HPM_INTERFACE *pinterface = nullptr;
-	BOOL b_preproc = false, b_end = false;
+	BOOL b_preproc = false;
 	gromox::tmpfile cache_fd;
-	uint32_t chunk_size = 0, chunk_offset = 0;
-	uint64_t cache_size = 0;
 };
 
 }
@@ -311,15 +308,15 @@ int hpm_processor_take_request(http_context *phttp)
 				        strerror(-ret));
 				return 500;
 			}
-			phpm_ctx->cache_size = 0;
+			rq.posted_size = 0;
 		} else {
 			phpm_ctx->cache_fd.close();
 		}
 		if (rq.b_chunked) {
-			phpm_ctx->chunk_size = 0;
-			phpm_ctx->chunk_offset = 0;
+			rq.chunk_size = 0;
+			rq.chunk_offset = 0;
 		}
-		phpm_ctx->b_end = FALSE;
+		rq.b_end = false;
 		phpm_ctx->b_preproc = TRUE;
 		phpm_ctx->pinterface = &pplugin->interface;
 		return 200;
@@ -346,25 +343,25 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	char tmp_buff[1024];
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
-	if (phpm_ctx->b_end)
+	if (rq.b_end)
 		return TRUE;
 	if (phpm_ctx->cache_fd < 0) {
 		if (rq.content_len <= phttp->stream_in.get_total_length())
-			phpm_ctx->b_end = TRUE;	
+			rq.b_end = true;
 		return TRUE;
 	}
 	if (!rq.b_chunked) {
-		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < rq.content_len &&
+		if (rq.posted_size + phttp->stream_in.get_total_length() < rq.content_len &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-			if (phpm_ctx->cache_size + size > rq.content_len) {
-				tmp_len = rq.content_len - phpm_ctx->cache_size;
+			if (rq.posted_size + size > rq.content_len) {
+				tmp_len = rq.content_len - rq.posted_size;
 				phttp->stream_in.rewind_read_ptr(size - tmp_len);
-				phpm_ctx->cache_size = rq.content_len;
+				rq.posted_size = rq.content_len;
 			} else {
-				phpm_ctx->cache_size += size;
+				rq.posted_size += size;
 				tmp_len = size;
 			}
 			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
@@ -372,8 +369,8 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 					" write cache file for hpm_processor");
 				return FALSE;
 			}
-			if (phpm_ctx->cache_size == rq.content_len) {
-				phpm_ctx->b_end = TRUE;
+			if (rq.posted_size == rq.content_len) {
+				rq.b_end = true;
 				return TRUE;
 			}
 			size = STREAM_BLOCK_SIZE;
@@ -382,13 +379,13 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		return TRUE;
 	}
  CHUNK_BEGIN:
-	if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
+	if (rq.chunk_size == rq.chunk_offset) {
 		size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
 		if (size < 5)
 			return TRUE;
 		if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
 			phttp->stream_in.fwd_read_ptr(5);
-			phpm_ctx->b_end = TRUE;
+			rq.b_end = true;
 			return TRUE;
 		}
 		/*
@@ -405,43 +402,43 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			return TRUE;
 		}
 		*ptoken = '\0';
-		phpm_ctx->chunk_size = strtol(tmp_buff, NULL, 16);
-		if (0 == phpm_ctx->chunk_size) {
+		rq.chunk_size = strtol(tmp_buff, nullptr, 16);
+		if (rq.chunk_size == 0) {
 			phttp->log(LV_DEBUG, "failed to "
 				"parse chunked block for hpm_processor");
 			return FALSE;
 		}
-		phpm_ctx->chunk_offset = 0;
+		rq.chunk_offset = 0;
 		tmp_len = ptoken + 2 - tmp_buff;
 		phttp->stream_in.fwd_read_ptr(tmp_len);
 	}
 	size = STREAM_BLOCK_SIZE;
 	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-		if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
+		if (rq.chunk_size >= size + rq.chunk_offset) {
 			if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
 				phttp->log(LV_DEBUG, "failed to "
 					"write cache file for hpm_processor");
 				return FALSE;
 			}
-			phpm_ctx->chunk_offset += size;
-			phpm_ctx->cache_size += size;
+			rq.chunk_offset += size;
+			rq.posted_size += size;
 		} else {
-			tmp_len = phpm_ctx->chunk_size - phpm_ctx->chunk_offset;
+			tmp_len = rq.chunk_size - rq.chunk_offset;
 			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for hpm_processor");
 				return FALSE;
 			}
 			phttp->stream_in.rewind_read_ptr(size - tmp_len);
-			phpm_ctx->cache_size += tmp_len;
-			phpm_ctx->chunk_offset = phpm_ctx->chunk_size;
+			rq.posted_size += tmp_len;
+			rq.chunk_offset = rq.chunk_size;
 		}
-		if (phpm_ctx->cache_size > g_max_size) {
+		if (rq.posted_size > g_max_size) {
 			phttp->log(LV_DEBUG, "chunked content"
 				" length is too long for hpm_processor");
 			return FALSE;
 		}
-		if (phpm_ctx->chunk_offset == phpm_ctx->chunk_size)
+		if (rq.chunk_offset == rq.chunk_size)
 			goto CHUNK_BEGIN;
 	}
 	/*
@@ -450,11 +447,6 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	 */
 	phttp->stream_in.clear();
 	return TRUE;
-}
-
-BOOL hpm_processor_check_end_of_request(HTTP_CONTEXT *phttp)
-{
-	return g_context_list[phttp->context_id].b_end;
 }
 
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)

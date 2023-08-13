@@ -75,11 +75,9 @@ struct FASTCGI_NODE {
 };
 
 struct fastcgi_context {
-	BOOL b_index = false, b_end = false;
+	BOOL b_index = false;
 	BOOL b_header = false; /* is response header met */
-	uint32_t chunk_size = 0, chunk_offset = 0;
 	const FASTCGI_NODE *pfnode = nullptr;
-	uint64_t cache_size = 0;
 	gromox::tmpfile cache_fd;
 	gromox::time_point last_time{};
 	int cli_sockd = -1;
@@ -460,25 +458,20 @@ int mod_fastcgi_take_request(http_context *phttp)
 			        strerror(-ret));
 			return 500;
 		}
-		pcontext->cache_size = 0;
+		rq.posted_size = 0;
 	} else {
 		pcontext->cache_fd.close();
 	}
 	pcontext->b_index = b_index;
 	if (rq.b_chunked) {
-		pcontext->chunk_size = 0;
-		pcontext->chunk_offset = 0;
+		rq.chunk_size = 0;
+		rq.chunk_offset = 0;
 	}
-	pcontext->b_end = FALSE;
+	rq.b_end = false;
 	pcontext->cli_sockd = -1;
 	pcontext->b_header = FALSE;
 	pcontext->b_active = true;
 	return 200;
-}
-
-BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp)
-{
-	return g_context_list[phttp->context_id].b_end;
 }
 
 BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp)
@@ -781,7 +774,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	char tmp_buff[1024];
 	auto &fctx = g_context_list[phttp->context_id];
 
-	if (fctx.b_end)
+	if (rq.b_end)
 		return TRUE;
 	if (fctx.cache_fd < 0) {
 		/*
@@ -789,21 +782,21 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 		 * (g_cache_size consideration in take_request).
 		 */
 		if (rq.content_len <= phttp->stream_in.get_total_length())
-			fctx.b_end = TRUE;
+			rq.b_end = true;
 		return TRUE;
 	}
 	if (!rq.b_chunked) {
-		if (fctx.cache_size + phttp->stream_in.get_total_length() < rq.content_len &&
+		if (rq.posted_size + phttp->stream_in.get_total_length() < rq.content_len &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-			if (fctx.cache_size + size > rq.content_len) {
-				tmp_len = rq.content_len - fctx.cache_size;
+			if (rq.posted_size + size > rq.content_len) {
+				tmp_len = rq.content_len - rq.posted_size;
 				phttp->stream_in.rewind_read_ptr(size - tmp_len);
-				fctx.cache_size = rq.content_len;
+				rq.posted_size = rq.content_len;
 			} else {
-				fctx.cache_size += size;
+				rq.posted_size += size;
 				tmp_len = size;
 			}
 			if (write(fctx.cache_fd, pbuff, tmp_len) != tmp_len) {
@@ -811,8 +804,8 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 					" write cache file for mod_fastcgi");
 				return FALSE;
 			}
-			if (fctx.cache_size == rq.content_len) {
-				fctx.b_end = TRUE;
+			if (rq.posted_size == rq.content_len) {
+				rq.b_end = true;
 				return TRUE;
 			}
 			size = STREAM_BLOCK_SIZE;
@@ -821,13 +814,13 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 		return TRUE;
 	}
  CHUNK_BEGIN:
-	if (fctx.chunk_size == fctx.chunk_offset) {
+	if (rq.chunk_size == rq.chunk_offset) {
 		size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
 		if (size < 5)
 			return TRUE;
 		if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
 			phttp->stream_in.fwd_read_ptr(5);
-			fctx.b_end = TRUE;
+			rq.b_end = true;
 			return TRUE;
 		}
 		ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
@@ -840,43 +833,43 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			return TRUE;
 		}
 		*ptoken = '\0';
-		fctx.chunk_size = strtol(tmp_buff, nullptr, 16);
-		if (fctx.chunk_size == 0) {
+		rq.chunk_size = strtol(tmp_buff, nullptr, 16);
+		if (rq.chunk_size == 0) {
 			phttp->log(LV_DEBUG, "failed to "
 				"parse chunked block for mod_fastcgi");
 			return FALSE;
 		}
-		fctx.chunk_offset = 0;
+		rq.chunk_offset = 0;
 		tmp_len = ptoken + 2 - tmp_buff;
 		phttp->stream_in.fwd_read_ptr(tmp_len);
 	}
 	size = STREAM_BLOCK_SIZE;
 	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-		if (fctx.chunk_size >= size + fctx.chunk_offset) {
+		if (rq.chunk_size >= size + rq.chunk_offset) {
 			if (write(fctx.cache_fd, pbuff, size) != size) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for mod_fastcgi");
 				return FALSE;
 			}
-			fctx.chunk_offset += size;
-			fctx.cache_size += size;
+			rq.chunk_offset += size;
+			rq.posted_size  += size;
 		} else {
-			tmp_len = fctx.chunk_size - fctx.chunk_offset;
+			tmp_len = rq.chunk_size - rq.chunk_offset;
 			if (write(fctx.cache_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for mod_fastcgi");
 				return FALSE;
 			}
 			phttp->stream_in.rewind_read_ptr(size - tmp_len);
-			fctx.cache_size += tmp_len;
-			fctx.chunk_offset = fctx.chunk_size;
+			rq.posted_size += tmp_len;
+			rq.chunk_offset = rq.chunk_size;
 		}
-		if (fctx.cache_size > g_max_size) {
+		if (rq.posted_size > g_max_size) {
 			phttp->log(LV_DEBUG, "chunked content"
 				" length is too long for mod_fastcgi");
 			return FALSE;
 		}
-		if (fctx.chunk_offset == fctx.chunk_size)
+		if (rq.chunk_offset == rq.chunk_size)
 			goto CHUNK_BEGIN;
 	}
 	phttp->stream_in.clear();

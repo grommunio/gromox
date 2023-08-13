@@ -59,10 +59,7 @@ struct RANGE {
 struct cache_context {
 	std::shared_ptr<cache_item> pitem;
 	BOOL b_header = false;
-	bool b_end = false;
 	uint32_t offset = 0, until = 0;
-	uint32_t chunk_size = 0, chunk_offset = 0;
-	uint64_t posted_size = 0;
 	ssize_t range_pos = -1;
 	std::vector<RANGE> range;
 };
@@ -520,7 +517,7 @@ int mod_cache_take_request(http_context *phttp)
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
-	pcontext->posted_size = 0;
+	phttp->request.posted_size = 0;
 	val = mod_cache_get_others_field(phttp->request.f_others, "Range");
 	if (val != nullptr) {
 		gx_strlcpy(tmp_buff, val, std::size(tmp_buff));
@@ -585,9 +582,9 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 	pcontext = mod_cache_get_cache_context(phttp);
 	pcontext->pitem.reset();
 	pcontext->range.clear();
-	pcontext->b_end = false;
-	pcontext->chunk_size = pcontext->chunk_offset = 0;
-	rq.content_len = pcontext->posted_size = 0;
+	rq.b_end = false;
+	rq.chunk_size = rq.chunk_offset = 0;
+	rq.content_len = rq.posted_size = 0;
 }
 
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp)
@@ -684,24 +681,23 @@ bool mod_cache_write_request(http_context *hc)
 {
 	unsigned int size, len;
 	auto &rq = hc->request;
-	auto &fctx = *mod_cache_get_cache_context(hc);
 
-	if (fctx.b_end)
+	if (rq.b_end)
 		return true;
 	if (!rq.b_chunked) {
 		if (rq.content_len <= hc->stream_in.get_total_length())
-			fctx.b_end = true;
+			rq.b_end = true;
 		return true;
 	}
  chunk_begin:
-	if (fctx.chunk_size == fctx.chunk_offset) {
+	if (rq.chunk_size == rq.chunk_offset) {
 		char buf[1024];
 		size = hc->stream_in.peek_buffer(buf, std::size(buf));
 		if (size < 5)
 			return true;
 		if (strncmp("0\r\n\r\n", buf, 5) == 0) {
 			hc->stream_in.fwd_read_ptr(5);
-			fctx.b_end = true;
+			rq.b_end = true;
 			return true;
 		}
 		auto ptoken = static_cast<char *>(memmem(buf, size, "\r\n", 2));
@@ -712,36 +708,31 @@ bool mod_cache_write_request(http_context *hc)
 			return false;
 		}
 		*ptoken = '\0';
-		fctx.chunk_size = strtol(buf, nullptr, 16);
-		if (fctx.chunk_size == 0) {
+		rq.chunk_size = strtol(buf, nullptr, 16);
+		if (rq.chunk_size == 0) {
 			hc->log(LV_DEBUG, "mod_cache: failed to parse chunked block");
 			return false;
 		}
-		fctx.chunk_offset = 0;
+		rq.chunk_offset = 0;
 		len = ptoken + 2 - buf;
 		hc->stream_in.fwd_read_ptr(len);
 	}
 	size = STREAM_BLOCK_SIZE;
 	while (hc->stream_in.get_read_buf(&size) != nullptr) {
-		if (fctx.chunk_size >= size + fctx.chunk_offset) {
-			fctx.chunk_offset += size;
-			fctx.posted_size  += size;
+		if (rq.chunk_size >= size + rq.chunk_offset) {
+			rq.chunk_offset += size;
+			rq.posted_size  += size;
 		} else {
-			len = fctx.chunk_size - fctx.chunk_offset;
+			len = rq.chunk_size - rq.chunk_offset;
 			hc->stream_in.rewind_read_ptr(size - len);
-			fctx.posted_size += len;
-			fctx.chunk_offset = fctx.chunk_size;
+			rq.posted_size += len;
+			rq.chunk_offset = rq.chunk_size;
 		}
-		if (fctx.chunk_offset == fctx.chunk_size)
+		if (rq.chunk_offset == rq.chunk_size)
 			goto chunk_begin;
 	}
 	hc->stream_in.clear();
 	return true;
-}
-
-bool mod_cache_check_end_of_read(http_context *hc)
-{
-	return mod_cache_get_cache_context(hc)->b_end;
 }
 
 bool mod_cache_discard_content(http_context *hc)

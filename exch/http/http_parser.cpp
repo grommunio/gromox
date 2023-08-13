@@ -835,7 +835,7 @@ static tproc_status htp_delegate_hpm(http_context *pcontext)
 
 	if (!hpm_processor_write_request(pcontext))
 		return http_done(pcontext, 400);
-	if (!hpm_processor_check_end_of_request(pcontext)) {
+	if (!pcontext->request.b_end) {
 		pcontext->sched_stat = hsched_stat::rdbody;
 		return tproc_status::loop;
 	}
@@ -861,7 +861,7 @@ static tproc_status htp_delegate_fcgi(http_context *pcontext)
 
 	if (!mod_fastcgi_write_request(pcontext))
 		return http_done(pcontext, 400);
-	if (!mod_fastcgi_check_end_of_read(pcontext)) {
+	if (!pcontext->request.b_end) {
 		pcontext->sched_stat = hsched_stat::rdbody;
 		return tproc_status::loop;
 	}
@@ -882,7 +882,7 @@ static tproc_status htp_delegate_cache(http_context *pcontext)
 
 	if (!mod_cache_write_request(pcontext))
 		return http_done(pcontext, 400);
-	if (!mod_cache_check_end_of_read(pcontext)) {
+	if (!pcontext->request.b_end) {
 		pcontext->sched_stat = hsched_stat::rdbody;
 		return tproc_status::loop;
 	}
@@ -1314,8 +1314,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		if (hpm_processor_is_in_charge(pcontext)) {
 			if (!hpm_processor_write_request(pcontext))
 				return http_done(pcontext, 400);
-			if (!hpm_processor_check_end_of_request(
-			    pcontext))
+			if (!pcontext->request.b_end)
 				return tproc_status::cont;
 			if (!hpm_processor_proc(pcontext))
 				return http_done(pcontext, 400);
@@ -1333,7 +1332,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		} else if (mod_fastcgi_is_in_charge(pcontext)) {
 			if (!mod_fastcgi_write_request(pcontext))
 				return http_done(pcontext, 400);
-			if (!mod_fastcgi_check_end_of_read(pcontext))
+			if (!pcontext->request.b_end)
 				return tproc_status::cont;
 			if (!mod_fastcgi_relay_content(pcontext))
 				return http_done(pcontext, 502);
@@ -1346,7 +1345,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		} else if (mod_cache_is_in_charge(pcontext)) {
 			if (!mod_cache_write_request(pcontext))
 				return http_done(pcontext, 400);
-			if (!mod_cache_check_end_of_read(pcontext))
+			if (!pcontext->request.b_end)
 				return tproc_status::cont;
 			pcontext->sched_stat = hsched_stat::wrrep;
 			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
