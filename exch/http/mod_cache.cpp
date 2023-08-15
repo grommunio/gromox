@@ -681,17 +681,8 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 
 bool mod_cache_discard_content(http_context *hc)
 {
-	auto &rq = hc->request;
-	char buf[65535];
-	for (unsigned int len = sizeof(buf); rq.content_len != 0 &&
-	     hc->stream_in.get_read_buf(&len) != nullptr; len = sizeof(buf)) {
-		if (len > rq.content_len) {
-			hc->stream_in.rewind_read_ptr(len - rq.content_len);
-			len = rq.content_len;
-			rq.content_len = 0;
-		} else {
-			rq.content_len -= len;
-		}
-	}
+	if (hc->request.body_fd < 0)
+		/* write_request made sure to loop until stream_in has enough bytes */
+		hc->stream_in.fwd_read_ptr(hc->request.content_len);
 	return true;
 }

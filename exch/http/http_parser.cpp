@@ -681,7 +681,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return http_done(pcontext, http_status::enomem_CL);
 }
 
-static tproc_status htp_auth(http_context *pcontext)
+static tproc_status htp_auth(http_context *pcontext) try
 {
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
@@ -719,7 +719,15 @@ static tproc_status htp_auth(http_context *pcontext)
 	    pcontext->auth_times >= g_max_auth_times)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
-	return http_done(pcontext, http_status::unauthorized);
+	auto rsp = http_make_err_response(*pcontext, http_status::unauthorized);
+	pcontext->stream_out.write(rsp.c_str(), rsp.size());
+	return tproc_status::runoff;
+} catch (const std::bad_alloc &) {
+	pcontext->b_close = TRUE;
+	pcontext->total_length = 0;
+	pcontext->bytes_rw = 0;
+	pcontext->sched_stat = hsched_stat::wrrep;
+	return tproc_status::loop;
 }
 
 static tproc_status htp_auth_1(http_context &ctx)
@@ -916,6 +924,8 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		auto ret = htp_auth_1(*pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
+		if (pcontext->auth_status == http_status::unauthorized)
+			return htp_delegate_cache(pcontext);
 		if (strcasecmp(pcontext->request.method, "RPC_IN_DATA") == 0 ||
 		    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") == 0)
 			return htp_delegate_rpc(pcontext, stream_1_written);
@@ -1058,6 +1068,15 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 	    !mod_cache_read_response(pcontext)) {
 		if (!mod_cache_check_responded(pcontext))
 			return http_done(pcontext, http_status::bad_request);
+		if (pcontext->stream_out.get_total_length() == 0) {
+			if (pcontext->b_close)
+				return tproc_status::runoff;
+			pcontext->request.clear();
+			pcontext->sched_stat = hsched_stat::rdhead;
+			pcontext->stream_out.clear();
+			return tproc_status::cont;
+		}
+	} else {
 		if (pcontext->stream_out.get_total_length() == 0) {
 			if (pcontext->b_close)
 				return tproc_status::runoff;
@@ -1287,6 +1306,10 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		} else if (mod_fastcgi_is_in_charge(pcontext)) {
 			if (!mod_fastcgi_relay_content(pcontext))
 				return http_done(pcontext, http_status::bad_gateway);
+		} else if (mod_cache_is_in_charge(pcontext) ||
+		    pcontext->auth_status >= http_status::bad_request /*unwinder_in_charge*/) {
+			if (!mod_cache_discard_content(pcontext))
+				return http_done(pcontext, http_status::bad_gateway);
 		}
 		pcontext->sched_stat = hsched_stat::wrrep;
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
@@ -1304,7 +1327,10 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			return tproc_status::cont;
 		} else if (mod_cache_is_in_charge(pcontext)) {
 			return tproc_status::cont;
+		} else if (pcontext->auth_status >= http_status::bad_request /*unwinder_in_charge*/) {
+			return tproc_status::cont;
 		}
+		/* rpc_is_in_charge */
 		pcontext->bytes_rw += actual_read;
 		if (pcontext->bytes_rw < pcontext->total_length)
 			return tproc_status::cont;
