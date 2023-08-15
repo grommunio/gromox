@@ -44,7 +44,6 @@ namespace {
 struct HPM_CONTEXT {
 	const HPM_INTERFACE *pinterface = nullptr;
 	BOOL b_preproc = false;
-	gromox::tmpfile cache_fd;
 };
 
 }
@@ -301,16 +300,16 @@ int hpm_processor_take_request(http_context *phttp)
 				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
 				return 500;
 			}
-			auto ret = phpm_ctx->cache_fd.open_anon(path, O_RDWR | O_TRUNC);
+			auto ret = rq.body_fd.open_anon(path, O_RDWR | O_TRUNC);
 			if (ret < 0) {
 				mlog(LV_ERR, "E-2090: open(%s)[%s]: %s",
-				        path, phpm_ctx->cache_fd.m_path.c_str(),
+				        path, rq.body_fd.m_path.c_str(),
 				        strerror(-ret));
 				return 500;
 			}
 			rq.posted_size = 0;
 		} else {
-			phpm_ctx->cache_fd.close();
+			rq.body_fd.close();
 		}
 		if (rq.b_chunked) {
 			rq.chunk_size = 0;
@@ -342,10 +341,9 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	char *ptoken;
 	char tmp_buff[1024];
 	
-	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (rq.b_end)
 		return TRUE;
-	if (phpm_ctx->cache_fd < 0) {
+	if (!rq.b_chunked && rq.body_fd < 0) {
 		if (rq.content_len <= phttp->stream_in.get_total_length())
 			rq.b_end = true;
 		return TRUE;
@@ -364,7 +362,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				rq.posted_size += size;
 				tmp_len = size;
 			}
-			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
+			if (write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for hpm_processor");
 				return FALSE;
@@ -415,7 +413,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	size = STREAM_BLOCK_SIZE;
 	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 		if (rq.chunk_size >= size + rq.chunk_offset) {
-			if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
+			if (write(rq.body_fd, pbuff, size) != size) {
 				phttp->log(LV_DEBUG, "failed to "
 					"write cache file for hpm_processor");
 				return FALSE;
@@ -424,7 +422,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			rq.posted_size += size;
 		} else {
 			tmp_len = rq.chunk_size - rq.chunk_offset;
-			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
+			if (write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for hpm_processor");
 				return FALSE;
@@ -457,7 +455,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 	struct stat node_stat;
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
-	if (phpm_ctx->cache_fd < 0) {
+	if (rq.body_fd < 0) {
 		if (rq.content_len == 0) {
 			pcontent = NULL;
 		} else {
@@ -472,18 +470,17 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			phttp->stream_in.fwd_read_ptr(rq.content_len);
 		}
 	} else {
-		if (fstat(phpm_ctx->cache_fd, &node_stat) != 0)
+		if (fstat(rq.body_fd, &node_stat) != 0)
 			return FALSE;
 		pcontent = malloc(node_stat.st_size);
 		if (pcontent == nullptr)
 			return FALSE;
-		lseek(phpm_ctx->cache_fd, 0, SEEK_SET);
-		if (node_stat.st_size != read(phpm_ctx->cache_fd,
-			pcontent, node_stat.st_size)) {
+		lseek(rq.body_fd, 0, SEEK_SET);
+		if (read(rq.body_fd, pcontent, node_stat.st_size) != node_stat.st_size) {
 			free(pcontent);
 			return FALSE;
 		}
-		phpm_ctx->cache_fd.close();
+		rq.body_fd.close();
 		rq.content_len = node_stat.st_size;
 	}
 	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
@@ -520,7 +517,7 @@ void hpm_processor_put_context(HTTP_CONTEXT *phttp)
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	if (phpm_ctx->pinterface->term != nullptr)
 		phpm_ctx->pinterface->term(phttp->context_id);
-	phpm_ctx->cache_fd.close();
+	rq.body_fd.close();
 	rq.content_len = 0;
 	phpm_ctx->b_preproc = FALSE;
 	phpm_ctx->pinterface = NULL;

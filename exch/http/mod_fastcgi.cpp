@@ -78,7 +78,6 @@ struct fastcgi_context {
 	BOOL b_index = false;
 	BOOL b_header = false; /* is response header met */
 	const FASTCGI_NODE *pfnode = nullptr;
-	gromox::tmpfile cache_fd;
 	gromox::time_point last_time{};
 	int cli_sockd = -1;
 	bool b_active = false;
@@ -451,16 +450,16 @@ int mod_fastcgi_take_request(http_context *phttp)
 			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
 			return 500;
 		}
-		auto ret = pcontext->cache_fd.open_anon(path, O_RDWR | O_TRUNC);
+		auto ret = rq.body_fd.open_anon(path, O_RDWR | O_TRUNC);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-2078: open_anon(%s)[%s]: %s",
-			        path, pcontext->cache_fd.m_path.c_str(),
+			        path, rq.body_fd.m_path.c_str(),
 			        strerror(-ret));
 			return 500;
 		}
 		rq.posted_size = 0;
 	} else {
-		pcontext->cache_fd.close();
+		rq.body_fd.close();
 	}
 	pcontext->b_index = b_index;
 	if (rq.b_chunked) {
@@ -614,7 +613,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		         static_cast<unsigned long long>(rq.content_len));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
 	} else {
-		if (fstat(fctx.cache_fd, &node_stat) != 0)
+		if (fstat(rq.body_fd, &node_stat) != 0)
 			return FALSE;
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(node_stat.st_size));
@@ -666,7 +665,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		phttp->log(LV_ERR, "Failed to write record to fastcgi back-end %s", sk_path);
 		return FALSE;
 	}
-	if (fctx.cache_fd < 0) {
+	if (rq.body_fd < 0) {
 		if (rq.content_len == 0)
 			goto END_OF_STDIN;
 		unsigned int tmp_len = sizeof(tmp_buff);
@@ -700,16 +699,16 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			tmp_len = sizeof(tmp_buff);
 		}
 	} else {
-		lseek(fctx.cache_fd, 0, SEEK_SET);
+		lseek(rq.body_fd, 0, SEEK_SET);
 		while (true) {
-			auto tmp_len = read(fctx.cache_fd, tmp_buff, sizeof(tmp_buff));
+			auto tmp_len = read(rq.body_fd, tmp_buff, sizeof(tmp_buff));
 			if (tmp_len < 0) {
 				close(cli_sockd);
 				phttp->log(LV_DEBUG, "failed to"
 					" read cache file for mod_fastcgi");
 				return FALSE;
 			} else if (0 == tmp_len) {
-				fctx.cache_fd.close();
+				rq.body_fd.close();
 				break;
 			}
 			ndr_push.init(ndr_buff, sizeof(ndr_buff), NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
@@ -756,7 +755,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp)
 {
 	auto &fctx = g_context_list[phttp->context_id];
-	fctx.cache_fd.close();
+	phttp->request.body_fd.close();
 	if (fctx.cli_sockd != -1) {
 		close(fctx.cli_sockd);
 		fctx.cli_sockd = -1;
@@ -772,11 +771,10 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	void *pbuff;
 	char *ptoken;
 	char tmp_buff[1024];
-	auto &fctx = g_context_list[phttp->context_id];
 
 	if (rq.b_end)
 		return TRUE;
-	if (fctx.cache_fd < 0) {
+	if (!rq.b_chunked && rq.body_fd < 0) {
 		/*
 		 * Small enough that it will be hold in memory only
 		 * (g_cache_size consideration in take_request).
@@ -799,7 +797,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 				rq.posted_size += size;
 				tmp_len = size;
 			}
-			if (write(fctx.cache_fd, pbuff, tmp_len) != tmp_len) {
+			if (write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for mod_fastcgi");
 				return FALSE;
@@ -846,7 +844,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	size = STREAM_BLOCK_SIZE;
 	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 		if (rq.chunk_size >= size + rq.chunk_offset) {
-			if (write(fctx.cache_fd, pbuff, size) != size) {
+			if (write(rq.body_fd, pbuff, size) != size) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for mod_fastcgi");
 				return FALSE;
@@ -855,7 +853,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			rq.posted_size  += size;
 		} else {
 			tmp_len = rq.chunk_size - rq.chunk_offset;
-			if (write(fctx.cache_fd, pbuff, tmp_len) != tmp_len) {
+			if (write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file for mod_fastcgi");
 				return FALSE;

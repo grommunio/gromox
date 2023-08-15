@@ -5,6 +5,7 @@
 #include <typeinfo>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/icase.hpp>
 #include <gromox/plugin.hpp>
@@ -41,6 +42,7 @@ struct http_request {
 	std::string f_cookie;
 	using other_map = std::unordered_map<std::string, std::string, gromox::icasehash, gromox::icasecmp>;
 	other_map f_others;
+	gromox::tmpfile body_fd;
 	static constexpr size_t uri_limit = 8000; /* RFC 7230 */
 };
 using HTTP_REQUEST = http_request;
