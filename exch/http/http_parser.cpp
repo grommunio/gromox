@@ -825,7 +825,6 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 		}
 	}
 	pcontext->bytes_rw = stream_1_written;
-	pcontext->sched_stat = hsched_stat::rdbody;
 	return tproc_status::loop;
 }
 
@@ -837,10 +836,8 @@ static tproc_status htp_delegate_hpm(http_context *pcontext)
 	auto ret = http_write_request(pcontext);
 	if (ret != 200)
 		return http_done(pcontext, ret);
-	if (!pcontext->request.b_end) {
-		pcontext->sched_stat = hsched_stat::rdbody;
+	if (!pcontext->request.b_end)
 		return tproc_status::loop;
-	}
 	if (!hpm_processor_proc(pcontext))
 		return http_done(pcontext, 400);
 	pcontext->sched_stat = hsched_stat::wrrep;
@@ -864,10 +861,8 @@ static tproc_status htp_delegate_fcgi(http_context *pcontext)
 	auto ret = http_write_request(pcontext);
 	if (ret != 200)
 		return http_done(pcontext, ret);
-	if (!pcontext->request.b_end) {
-		pcontext->sched_stat = hsched_stat::rdbody;
+	if (!pcontext->request.b_end)
 		return tproc_status::loop;
-	}
 	if (!mod_fastcgi_relay_content(pcontext))
 		return http_done(pcontext, 502);
 	pcontext->sched_stat = hsched_stat::wrrep;
@@ -886,10 +881,8 @@ static tproc_status htp_delegate_cache(http_context *pcontext)
 	auto ret = http_write_request(pcontext);
 	if (ret != 200)
 		return http_done(pcontext, ret);
-	if (!pcontext->request.b_end) {
-		pcontext->sched_stat = hsched_stat::rdbody;
+	if (!pcontext->request.b_end)
 		return tproc_status::loop;
-	}
 	if (!mod_cache_discard_content(pcontext))
 		return http_done(pcontext, 502);
 	pcontext->sched_stat = hsched_stat::wrrep;
@@ -933,6 +926,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		}
 
 		/* met the end of request header */
+		pcontext->sched_stat = hsched_stat::rdbody;
 		if (pcontext->request.f_host.empty())
 			pcontext->request.f_host = pcontext->connection.server_ip;
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
