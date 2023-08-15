@@ -1309,19 +1309,24 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
+		auto ret = http_write_request(pcontext);
+		if (ret != 200)
+			return http_done(pcontext, ret);
+		if (!pcontext->request.b_end)
+			return tproc_status::cont;
 		if (hpm_processor_is_in_charge(pcontext)) {
-			auto ret = http_write_request(pcontext);
-			if (ret != 200)
-				return http_done(pcontext, ret);
-			if (!pcontext->request.b_end)
-				return tproc_status::cont;
 			if (!hpm_processor_proc(pcontext))
 				return http_done(pcontext, 400);
-			pcontext->sched_stat = hsched_stat::wrrep;
-			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-				mlog(LV_ERR, "E-1178: ENOMEM");
-				return http_done(pcontext, -5032);
-			}
+		} else if (mod_fastcgi_is_in_charge(pcontext)) {
+			if (!mod_fastcgi_relay_content(pcontext))
+				return http_done(pcontext, 502);
+		}
+		pcontext->sched_stat = hsched_stat::wrrep;
+		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
+			mlog(LV_ERR, "E-1178: ENOMEM");
+			return http_done(pcontext, -5032);
+		}
+		if (hpm_processor_is_in_charge(pcontext)) {
 			if (pcontext->stream_out.get_total_length() != 0) {
 				unsigned int tmp_len = STREAM_BLOCK_SIZE;
 				pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
@@ -1329,30 +1334,8 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			}
 			return tproc_status::cont;
 		} else if (mod_fastcgi_is_in_charge(pcontext)) {
-			auto ret = http_write_request(pcontext);
-			if (ret != 200)
-				return http_done(pcontext, ret);
-			if (!pcontext->request.b_end)
-				return tproc_status::cont;
-			if (!mod_fastcgi_relay_content(pcontext))
-				return http_done(pcontext, 502);
-			pcontext->sched_stat = hsched_stat::wrrep;
-			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-				mlog(LV_ERR, "E-1177: ENOMEM");
-				return http_done(pcontext, -5032);
-			}
 			return tproc_status::cont;
 		} else if (mod_cache_is_in_charge(pcontext)) {
-			auto ret = http_write_request(pcontext);
-			if (ret != 200)
-				return http_done(pcontext, ret);
-			if (!pcontext->request.b_end)
-				return tproc_status::cont;
-			pcontext->sched_stat = hsched_stat::wrrep;
-			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
-				mlog(LV_ERR, "E-2910: ENOMEM");
-				return http_done(pcontext, -5032);
-			}
 			return tproc_status::cont;
 		}
 		pcontext->bytes_rw += actual_read;
