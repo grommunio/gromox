@@ -326,7 +326,7 @@ bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)
 /**
  * Move the HTTP request body to cache_fd, depending on size.
  */
-BOOL http_write_request(HTTP_CONTEXT *phttp)
+int http_write_request(HTTP_CONTEXT *phttp)
 {
 	auto &rq = phttp->request;
 	int size;
@@ -336,16 +336,16 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 	char tmp_buff[1024];
 	
 	if (rq.b_end)
-		return TRUE;
+		return 200;
 	if (!rq.b_chunked && rq.body_fd < 0) {
 		if (rq.content_len <= phttp->stream_in.get_total_length())
 			rq.b_end = true;
-		return TRUE;
+		return 200;
 	}
 	if (!rq.b_chunked) {
 		if (rq.posted_size + phttp->stream_in.get_total_length() < rq.content_len &&
 		    phttp->stream_in.get_total_length() < g_rqbody_flush_size)
-			return TRUE;	
+			return 200;
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (rq.posted_size + size > rq.content_len) {
@@ -360,26 +360,26 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 			    write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file: %s", strerror(errno));
-				return FALSE;
+				return 503;
 			}
 			if (rq.posted_size == rq.content_len) {
 				rq.b_end = true;
-				return TRUE;
+				return 200;
 			}
 			size = STREAM_BLOCK_SIZE;
 		}
 		phttp->stream_in.clear();
-		return TRUE;
+		return 200;
 	}
  CHUNK_BEGIN:
 	if (rq.chunk_size == rq.chunk_offset) {
 		size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
 		if (size < 5)
-			return TRUE;
+			return 200;
 		if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
 			phttp->stream_in.fwd_read_ptr(5);
 			rq.b_end = true;
-			return TRUE;
+			return 200;
 		}
 		/*
 		 * This is crap. It fails if the client sends the chunk length
@@ -390,16 +390,16 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 			if (1024 == size) {
 				phttp->log(LV_DEBUG, "failed to "
 					"parse chunked block for hpm_processor");
-				return FALSE;
+				return 400;
 			}
-			return TRUE;
+			return 200;
 		}
 		*ptoken = '\0';
 		rq.chunk_size = strtol(tmp_buff, nullptr, 16);
 		if (rq.chunk_size == 0) {
 			phttp->log(LV_DEBUG, "failed to "
 				"parse chunked block for hpm_processor");
-			return FALSE;
+			return 400;
 		}
 		rq.chunk_offset = 0;
 		tmp_len = ptoken + 2 - tmp_buff;
@@ -411,7 +411,7 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 			if (rq.body_fd >= 0 && write(rq.body_fd, pbuff, size) != size) {
 				phttp->log(LV_DEBUG, "failed to "
 					"write cache file: %s", strerror(errno));
-				return FALSE;
+				return 503;
 			}
 			rq.chunk_offset += size;
 			rq.posted_size += size;
@@ -420,7 +420,7 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 			if (rq.body_fd >= 0 && write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
 					" write cache file: %s", strerror(errno));
-				return FALSE;
+				return 503;
 			}
 			phttp->stream_in.rewind_read_ptr(size - tmp_len);
 			rq.posted_size += tmp_len;
@@ -429,7 +429,7 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 		if (rq.posted_size > g_rqbody_max_size) {
 			phttp->log(LV_DEBUG, "chunked content"
 				" length is too long for hpm_processor");
-			return FALSE;
+			return 400;
 		}
 		if (rq.chunk_offset == rq.chunk_size)
 			goto CHUNK_BEGIN;
@@ -439,7 +439,7 @@ BOOL http_write_request(HTTP_CONTEXT *phttp)
 	 * sent two requests with one network packet.
 	 */
 	phttp->stream_in.clear();
-	return TRUE;
+	return 200;
 }
 
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
