@@ -21,7 +21,6 @@ extern int mod_fastcgi_take_request(http_context *);
 BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp);
 BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp);
 void mod_fastcgi_put_context(HTTP_CONTEXT *phttp);
-BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp);
 int mod_fastcgi_check_response(HTTP_CONTEXT *phttp);
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp);
 extern bool mod_fastcgi_is_in_charge(const http_context *);

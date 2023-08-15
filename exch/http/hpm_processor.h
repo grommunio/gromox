@@ -25,7 +25,7 @@ extern void hpm_processor_stop();
 extern int hpm_processor_take_request(http_context *);
 void hpm_processor_put_context(HTTP_CONTEXT *phttp);
 extern bool hpm_processor_is_in_charge(HTTP_CONTEXT *);
-BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp);
+extern BOOL http_write_request(http_context *);
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);
 int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp);
 BOOL hpm_processor_send(HTTP_CONTEXT *phttp,

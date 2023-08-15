@@ -326,7 +326,7 @@ bool hpm_processor_is_in_charge(HTTP_CONTEXT *phttp)
 /**
  * Move the HTTP request body to cache_fd, depending on size.
  */
-BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
+BOOL http_write_request(HTTP_CONTEXT *phttp)
 {
 	auto &rq = phttp->request;
 	int size;
@@ -356,9 +356,10 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				rq.posted_size += size;
 				tmp_len = size;
 			}
-			if (write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
+			if (rq.body_fd >= 0 &&
+			    write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
-					" write cache file for hpm_processor");
+					" write cache file: %s", strerror(errno));
 				return FALSE;
 			}
 			if (rq.posted_size == rq.content_len) {
@@ -407,18 +408,18 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	size = STREAM_BLOCK_SIZE;
 	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 		if (rq.chunk_size >= size + rq.chunk_offset) {
-			if (write(rq.body_fd, pbuff, size) != size) {
+			if (rq.body_fd >= 0 && write(rq.body_fd, pbuff, size) != size) {
 				phttp->log(LV_DEBUG, "failed to "
-					"write cache file for hpm_processor");
+					"write cache file: %s", strerror(errno));
 				return FALSE;
 			}
 			rq.chunk_offset += size;
 			rq.posted_size += size;
 		} else {
 			tmp_len = rq.chunk_size - rq.chunk_offset;
-			if (write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
+			if (rq.body_fd >= 0 && write(rq.body_fd, pbuff, tmp_len) != tmp_len) {
 				phttp->log(LV_DEBUG, "failed to"
-					" write cache file for hpm_processor");
+					" write cache file: %s", strerror(errno));
 				return FALSE;
 			}
 			phttp->stream_in.rewind_read_ptr(size - tmp_len);

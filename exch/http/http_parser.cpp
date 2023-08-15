@@ -834,7 +834,7 @@ static tproc_status htp_delegate_hpm(http_context *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (!hpm_processor_write_request(pcontext))
+	if (!http_write_request(pcontext))
 		return http_done(pcontext, 400);
 	if (!pcontext->request.b_end) {
 		pcontext->sched_stat = hsched_stat::rdbody;
@@ -860,7 +860,7 @@ static tproc_status htp_delegate_fcgi(http_context *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (!mod_fastcgi_write_request(pcontext))
+	if (!http_write_request(pcontext))
 		return http_done(pcontext, 400);
 	if (!pcontext->request.b_end) {
 		pcontext->sched_stat = hsched_stat::rdbody;
@@ -881,7 +881,7 @@ static tproc_status htp_delegate_cache(http_context *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (!mod_cache_write_request(pcontext))
+	if (!http_write_request(pcontext))
 		return http_done(pcontext, 400);
 	if (!pcontext->request.b_end) {
 		pcontext->sched_stat = hsched_stat::rdbody;
@@ -1313,7 +1313,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		if (hpm_processor_is_in_charge(pcontext)) {
-			if (!hpm_processor_write_request(pcontext))
+			if (!http_write_request(pcontext))
 				return http_done(pcontext, 400);
 			if (!pcontext->request.b_end)
 				return tproc_status::cont;
@@ -1331,7 +1331,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			}
 			return tproc_status::cont;
 		} else if (mod_fastcgi_is_in_charge(pcontext)) {
-			if (!mod_fastcgi_write_request(pcontext))
+			if (!http_write_request(pcontext))
 				return http_done(pcontext, 400);
 			if (!pcontext->request.b_end)
 				return tproc_status::cont;
@@ -1344,7 +1344,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 			}
 			return tproc_status::cont;
 		} else if (mod_cache_is_in_charge(pcontext)) {
-			if (!mod_cache_write_request(pcontext))
+			if (!http_write_request(pcontext))
 				return http_done(pcontext, 400);
 			if (!pcontext->request.b_end)
 				return tproc_status::cont;

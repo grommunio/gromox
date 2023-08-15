@@ -677,64 +677,6 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	return TRUE;
 }
 
-bool mod_cache_write_request(http_context *hc)
-{
-	unsigned int size, len;
-	auto &rq = hc->request;
-
-	if (rq.b_end)
-		return true;
-	if (!rq.b_chunked) {
-		if (rq.content_len <= hc->stream_in.get_total_length())
-			rq.b_end = true;
-		return true;
-	}
- chunk_begin:
-	if (rq.chunk_size == rq.chunk_offset) {
-		char buf[1024];
-		size = hc->stream_in.peek_buffer(buf, std::size(buf));
-		if (size < 5)
-			return true;
-		if (strncmp("0\r\n\r\n", buf, 5) == 0) {
-			hc->stream_in.fwd_read_ptr(5);
-			rq.b_end = true;
-			return true;
-		}
-		auto ptoken = static_cast<char *>(memmem(buf, size, "\r\n", 2));
-		if (ptoken == nullptr) {
-			if (size != std::size(buf))
-				return true;
-			hc->log(LV_DEBUG, "mod_cache: failed to parse chunked block");
-			return false;
-		}
-		*ptoken = '\0';
-		rq.chunk_size = strtol(buf, nullptr, 16);
-		if (rq.chunk_size == 0) {
-			hc->log(LV_DEBUG, "mod_cache: failed to parse chunked block");
-			return false;
-		}
-		rq.chunk_offset = 0;
-		len = ptoken + 2 - buf;
-		hc->stream_in.fwd_read_ptr(len);
-	}
-	size = STREAM_BLOCK_SIZE;
-	while (hc->stream_in.get_read_buf(&size) != nullptr) {
-		if (rq.chunk_size >= size + rq.chunk_offset) {
-			rq.chunk_offset += size;
-			rq.posted_size  += size;
-		} else {
-			len = rq.chunk_size - rq.chunk_offset;
-			hc->stream_in.rewind_read_ptr(size - len);
-			rq.posted_size += len;
-			rq.chunk_offset = rq.chunk_size;
-		}
-		if (rq.chunk_offset == rq.chunk_size)
-			goto chunk_begin;
-	}
-	hc->stream_in.clear();
-	return true;
-}
-
 bool mod_cache_discard_content(http_context *hc)
 {
 	auto &rq = hc->request;
