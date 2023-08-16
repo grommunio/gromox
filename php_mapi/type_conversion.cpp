@@ -300,7 +300,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			return NULL;
 		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			xs->ps[j++] = zval_get_long(entry);
+			xs->ps[j++] = zval_get_long(data_entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
@@ -324,7 +324,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			return NULL;
 		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			xl->pl[j++] = zval_get_long(entry);
+			xl->pl[j++] = zval_get_long(data_entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
