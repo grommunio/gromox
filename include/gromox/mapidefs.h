@@ -893,6 +893,11 @@ struct FLOAT_ARRAY {
 	float *mval;
 };
 
+struct GEN_ARRAY {
+	uint32_t count;
+	void *mval;
+};
+
 struct GLOBCNT {
 	uint8_t ab[6];
 };

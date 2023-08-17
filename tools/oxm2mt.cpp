@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -27,6 +27,9 @@ using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace {
 
+/**
+ * "proptag entry" - Same size as the structure on-disk, but in host-byte order.
+ */
 struct pte {
 	uint32_t proptag, flags;
 	union {
@@ -128,6 +131,10 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 		return ret;
 	auto pos = ep.m_offset;
 	switch (PROP_TYPE(pte.proptag)) {
+	/*
+	 * MS-OXMSG §2.1.2: Small fixed-size types are represented as immediates (and
+	 * will stay the same way with our struct pte).
+	 */
 	case PT_SHORT: ret = ep.g_uint16(&pte.v_ui2); break;
 	case PT_LONG: ret = ep.g_uint32(&pte.v_ui4); break;
 	case PT_FLOAT: ret = ep.g_float(&pte.v_flt); break;
@@ -137,6 +144,7 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 	case PT_SYSTIME:
 	case PT_I8: ret = ep.g_uint64(&pte.v_ui8); break;
 	case PT_BOOLEAN: ret = ep.g_uint32(&pte.v_ui4); break;
+	/* For almost everything else, it indicates the size of the indirect block. */
 	default: ret = ep.g_uint32(&pte.v_ui4); break;
 	}
 	if (ret == EXT_ERR_SUCCESS)
@@ -144,6 +152,7 @@ static pack_result read_pte(EXT_PULL &ep, struct pte &pte)
 	return ret;
 }
 
+/* PTE simple-value to property conversion */
 static int ptesv_to_prop(const struct pte &pte, const char *cset,
     libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
 {
@@ -167,7 +176,6 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 		if (blob->cb < sizeof(GUID))
 			return -EIO;
 		return proplist.set(pte.proptag, blob->pv);
-
 	default:
 		if (pte.v_ui4 != blob->cb)
 			return -EIO;
@@ -176,70 +184,52 @@ static int ptesv_to_prop(const struct pte &pte, const char *cset,
 	return 0;
 }
 
+/* PTE multi-value [array of X, X!=string] to property conversion */
 static int ptemv_to_prop(const struct pte &pte, const char *cset,
     libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
 {
-	uint8_t unitsize = 0;
+	uint8_t unitsize;
 	switch (PROP_TYPE(pte.proptag)) {
 	case PT_MV_SHORT: unitsize = 2; break;
-	case PT_MV_FLOAT:
-	case PT_MV_LONG: unitsize = 4; break;
+	case PT_MV_LONG:
+	case PT_MV_FLOAT: unitsize = 4; break;
 	case PT_MV_APPTIME:
 	case PT_MV_DOUBLE:
 	case PT_MV_CURRENCY:
 	case PT_MV_SYSTIME:
 	case PT_MV_I8: unitsize = 8; break;
 	case PT_MV_CLSID: unitsize = 16; break;
+	case PT_MV_BINARY: unitsize = 0; break;
 	default: throw YError(fmt::format("PO-1008: ptemv_to_prop does not implement proptag {:08x}", pte.proptag));
 	}
-	bin_ptr bin(me_alloc<BINARY>());
-	if (bin == nullptr)
-		return -ENOMEM;
-	bin->cb = 0;
-	bin->pb = me_alloc<uint8_t>(pte.v_ui4);
-	if (bin->pb == nullptr)
-		return -ENOMEM;
-
-	uint32_t count = pte.v_ui4 / unitsize;
-	for (uint32_t i = 0; i < count; ++i) {
-		auto file = fmt::format("__substg1.0_{:08X}-{:08X}", pte.proptag, i);
-		oxm_error_ptr err;
-		oxm_item_ptr strm;
-
-		if (libolecf_item_get_sub_item_by_utf8_path(dir,
-		    reinterpret_cast<const uint8_t *>(file.c_str()),
-		    file.size(), &unique_tie(strm), &unique_tie(err)) < 1)
-			throw az_error("PO-1011", err);
-		auto ret = libolecf_stream_read_buffer(strm.get(),
-		           &bin->pb[unitsize*i], unitsize, &~unique_tie(err));
-		if (ret < 0)
-			throw az_error("PO-1012", err);
-		else if (ret != unitsize)
-			throw YError("PO-1013");
+	auto file = fmt::format("__substg1.0_{:08X}", pte.proptag);
+	auto blob = slurp_stream(dir, file.c_str());
+	if (blob == nullptr) {
+		fprintf(stderr, "Storage object \"%s\" not found in file. Ask a developer to use olecfexport for further analysis.\n", file.c_str());
+		return -EIO;
 	}
-
-#define E(st, mb) do { \
-		st xa; \
-		xa.count = count; \
-		xa.mb = static_cast<decltype(xa.mb)>(bin->pv); \
-		return proplist.set(pte.proptag, &xa); \
-	} while (false)
-
-	switch (PROP_TYPE(pte.proptag)) {
-	case PT_MV_SHORT: E(SHORT_ARRAY, ps);
-	case PT_MV_LONG: E(LONG_ARRAY, pl);
-	case PT_MV_FLOAT: E(FLOAT_ARRAY, mval);
-	case PT_MV_APPTIME:
-	case PT_MV_DOUBLE: E(DOUBLE_ARRAY, mval);
-	case PT_MV_CURRENCY:
-	case PT_MV_SYSTIME:
-	case PT_MV_I8: E(LONGLONG_ARRAY, pll);
-	case PT_MV_CLSID: E(GUID_ARRAY, pguid);
-	default: return 0;
-#undef E
+	if (unitsize != 0) {
+		GEN_ARRAY mv{pte.v_ui4 / unitsize, blob->pv};
+		return proplist.set(pte.proptag, &mv);
 	}
+	if (pte.v_ui4 != blob->cb)
+		return -EIO;
+	std::vector<bin_ptr> bdata(pte.v_ui4 / 8);
+	std::vector<BINARY> bvec(bdata.size());
+	for (uint32_t i = 0; i < bvec.size(); ++i) {
+		file = fmt::format("__substg1.0_{:08X}-{:08X}", pte.proptag, i);
+		bdata[i] = slurp_stream(dir, file.c_str());
+		if (bdata[i] == nullptr) {
+			fprintf(stderr, "Storage object \"%s\" not found in file. Ask a developer to use olecfexport for further analysis.\n", file.c_str());
+			return -EIO;
+		}
+		bvec[i] = *bdata[i];
+	}
+	GEN_ARRAY mv{static_cast<uint32_t>(bvec.size()), bvec.data()};
+	return proplist.set(pte.proptag, &mv);
 }
 
+/* PTE multi-value string [array of strings] to property conversion */
 static int ptemvs_to_prop(const struct pte &pte, const char *cset,
     libolecf_item_t *dir, TPROPVAL_ARRAY &proplist)
 {
@@ -298,6 +288,7 @@ static int pte_to_prop(const struct pte &pte, const char *cset,
 	case PT_CURRENCY:
 	case PT_SYSTIME:
 	case PT_I8:
+		/* Because of the union, the pointer for v_ui2, v_ui4, v_ui8 is the same. */
 		return proplist.set(pte.proptag, &pte.v_ui8);
 	case PT_BOOLEAN: {
 		BOOL w = !!pte.v_ui4;
@@ -307,7 +298,6 @@ static int pte_to_prop(const struct pte &pte, const char *cset,
 	case PT_MV_UNICODE:
 		return ptemvs_to_prop(pte, cset, dir, proplist);
 	}
-
 	if (pte.proptag & MV_FLAG)
 		return ptemv_to_prop(pte, cset, dir, proplist);
 	return ptesv_to_prop(pte, cset, dir, proplist);

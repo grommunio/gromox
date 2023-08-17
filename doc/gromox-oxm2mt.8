@@ -24,5 +24,16 @@ gromox\-oxm2mt saved.msg | gromox\-mt2exm \-u target@mailbox.de \-B drafts
 MS-CFB: Compound File Binary Format (CFBF)
 .IP \(bu 4
 MS-OXMSG: Outlook Item (.msg) File Format
+.PP
+Outlook message files use the "Object Linking and Embedding (OLE) / Component
+Object Model (COM) structured storage compound file implementation binary file
+format", or just CFB/CFBF for short. It resembles something of a FAT
+filesystem. The file(1) utility identifies those as "CDFV2 Microsoft Outlook
+Message" (Compound Document Format). A proposed MIME type is
+"application/vnd.ms-outlook".
+.PP
+oxm2mt uses the libolecf C library to read the CDF structure of .msg files
+per [MS-CFB], and then applies own code to make sense of the files as per
+[MS-OXMSG].
 .SH See also
-\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
+\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx), \fBolecfexport(1)\fP
