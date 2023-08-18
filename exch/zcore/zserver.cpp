@@ -22,6 +22,7 @@
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
@@ -5078,6 +5079,34 @@ ec_error_t zs_vcftomessage(GUID hsession,
 	if (pmsgctnt == nullptr)
 		return ecError;
 	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
+}
+
+ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
+    uint64_t starttime, uint64_t endtime, FB_ARRAY *fb_events)
+{
+	char maildir[256];
+	char username[UADDR_SIZE];
+
+	auto pinfo = zs_query_session(hsession);
+	if (pinfo == nullptr)
+		return ecError;
+	if (!common_util_addressbook_entryid_to_username(entryid,
+	    username, std::size(username)) ||
+	    !system_services_get_maildir(username, maildir, std::size(maildir)))
+		return ecSuccess;
+
+	std::vector<freebusy_event> fb_data;
+	get_freebusy(pinfo->get_username(), maildir, starttime, endtime, fb_data);
+	pinfo.reset();
+
+	fb_events->count = 0;
+	fb_events->fb_events = cu_alloc<freebusy_event>(fb_data.size());
+	for (const auto &fb_event: fb_data) {
+		fb_events->fb_events[fb_events->count++] = fb_event;
+	}
+	fb_data.clear();
+
+	return ecSuccess;
 }
 
 ec_error_t zs_getuseravailability(GUID hsession, BINARY entryid,
