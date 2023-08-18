@@ -183,6 +183,8 @@ struct EXT_PULL {
 	pack_result g_apptrecpat(APPOINTMENT_RECUR_PAT *);
 	pack_result g_goid(GLOBALOBJECTID *);
 	pack_result g_msgctnt(MESSAGE_CONTENT *);
+	pack_result g_fb(freebusy_event *);
+	pack_result g_fb_a(FB_ARRAY *);
 
 	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
 	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }
@@ -275,6 +277,7 @@ struct EXT_PUSH {
 	pack_result p_goid(const GLOBALOBJECTID &);
 	pack_result p_msgctnt(const MESSAGE_CONTENT &);
 	pack_result p_rpchdr(const RPC_HEADER_EXT &);
+	pack_result p_fbevent(const freebusy_event &);
 
 	BOOL b_alloc = false;
 	union {
