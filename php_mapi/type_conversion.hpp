@@ -27,6 +27,7 @@ extern ec_error_t state_array_to_php(const STATE_ARRAY *, zval *);
 extern ec_error_t php_to_state_array(zval *, STATE_ARRAY *);
 extern ec_error_t znotification_array_to_php(ZNOTIFICATION_ARRAY *, zval *);
 extern ec_error_t php_to_propname_array(zval *names, zval *guids, PROPNAME_ARRAY *);
+extern ec_error_t fb_array_to_php(const FB_ARRAY *, zval *);
 
 /* Wrap this so cov-scan only complains once (hopefully) */
 static inline void zarray_init(zval *x)
