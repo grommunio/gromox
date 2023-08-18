@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <string>
 #include <gromox/defs.h>
 
@@ -865,6 +866,27 @@ struct BINARY_ARRAY {
 struct DOUBLE_ARRAY {
 	uint32_t count;
 	double *mval;
+};
+
+struct freebusy_event_details {
+	freebusy_event_details(char *, char *, char *, bool, bool, bool, bool, bool);
+
+	char *id, *subject, *location;
+	bool is_meeting, is_recurring, is_exception, is_reminderset, is_private;
+};
+
+struct freebusy_event {
+	freebusy_event(time_t, time_t, uint32_t, char *, char *, char *,
+		bool, bool, bool, bool, bool, bool);
+
+	time_t start_time, end_time;
+	uint32_t busy_status;
+	std::optional<freebusy_event_details> details;
+};
+
+struct FB_ARRAY {
+	uint32_t count;
+	freebusy_event *fb_events;
 };
 
 /**
