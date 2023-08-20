@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>
@@ -901,8 +903,6 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			}
 			/* inssert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
-				uint16_t type = PROP_TYPE(ptnode->instance_tag);
-				type &= ~MV_INSTANCE;
 				if (!cu_get_property(MAPI_MESSAGE,
 				    mid_val, cpid, pdb->psqlite,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
@@ -916,139 +916,38 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 					sqlite3_reset(pstmt1);
 					continue;
 				}
+				uint16_t type = PROP_TYPE(ptnode->instance_tag) & ~MV_INSTANCE;
 				switch (type) {
-				case PT_MV_SHORT: {
-					auto sa = static_cast<SHORT_ARRAY *>(pvalue);
-					if (sa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < sa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_SHORT, &sa->ps[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_LONG: {
-					auto la = static_cast<LONG_ARRAY *>(pvalue);
-					if (la->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < la->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_LONG, &la->pl[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+#define H(ctyp, memb) { \
+		auto sa = static_cast<ctyp *>(pvalue); \
+		if (sa->count == 0) \
+			goto BIND_NULL_INSTANCE; \
+		for (size_t i = 0; i < sa->count; ++i) { \
+			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MV_FLAG, &sa->memb[i])) \
+				return false; \
+			pstmt1.bind_int64(tag_count + 3, i + 1); \
+			if (pstmt1.step() != SQLITE_DONE) \
+				return false; \
+			pstmt1.reset(); \
+		} \
+		break; \
+	}
+
+				case PT_MV_SHORT: H(SHORT_ARRAY, ps)
+				case PT_MV_LONG: H(LONG_ARRAY, pl)
 				case PT_MV_CURRENCY:
 				case PT_MV_I8:
-				case PT_MV_SYSTIME: {
-					auto la = static_cast<LONGLONG_ARRAY *>(pvalue);
-					if (la->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < la->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, type & ~MV_FLAG, &la->pll[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_FLOAT: {
-					auto fa = static_cast<FLOAT_ARRAY *>(pvalue);
-					if (fa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < fa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_FLOAT, &fa->mval[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+				case PT_MV_SYSTIME: H(LONGLONG_ARRAY, pll)
+				case PT_MV_FLOAT: H(FLOAT_ARRAY, mval)
 				case PT_MV_DOUBLE:
-				case PT_MV_APPTIME: {
-					auto fa = static_cast<DOUBLE_ARRAY *>(pvalue);
-					if (fa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < fa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_DOUBLE, &fa->mval[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+				case PT_MV_APPTIME: H(DOUBLE_ARRAY, mval)
 				case PT_MV_STRING8:
-				case PT_MV_UNICODE: {
-					auto sa = static_cast<STRING_ARRAY *>(pvalue);
-					if (sa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < sa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_STRING8, &sa->ppstr[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_CLSID: {
-					auto ga = static_cast<GUID_ARRAY *>(pvalue);
-					if (ga->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < ga->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_CLSID, &ga->pguid[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_BINARY: {
-					auto ba = static_cast<BINARY_ARRAY *>(pvalue);
-					if (ba->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < ba->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_BINARY, ba->pbin + i))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+				case PT_MV_UNICODE: H(STRING_ARRAY, ppstr)
+				case PT_MV_CLSID: H(GUID_ARRAY, pguid)
+				case PT_MV_BINARY: H(BINARY_ARRAY, pbin)
 				default:
 					return false;
+#undef H
 				}
 				continue;
 			}
