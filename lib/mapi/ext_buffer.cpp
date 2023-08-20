@@ -2871,8 +2871,9 @@ pack_result EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID &r)
 	return p_bytes(r.pad2, 2);
 }
 
-pack_result EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL &r)
+pack_result EXT_PUSH::p_flagged_pv(uint32_t tag, const FLAGGED_PROPVAL &r)
 {
+	uint16_t type = PROP_TYPE(tag);
 	void *pvalue = nullptr;
 	
 	if (type == PT_UNSPECIFIED && !(m_flags & EXT_FLAG_ABK)) {
@@ -2911,7 +2912,7 @@ pack_result EXT_PUSH::p_proprow(const PROPTAG_ARRAY &cols, const PROPERTY_ROW &r
 		return EXT_ERR_SUCCESS;
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r.flag) {
 		for (size_t i = 0; i < cols.count; ++i)
-			TRY(p_flagged_pv(PROP_TYPE(cols.pproptag[i]),
+			TRY(p_flagged_pv(cols.pproptag[i],
 			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
 		return EXT_ERR_SUCCESS;
 	}
@@ -2927,7 +2928,7 @@ pack_result EXT_PUSH::p_proprow(const LPROPTAG_ARRAY &cols, const PROPERTY_ROW &
 		return EXT_ERR_SUCCESS;
 	} else if (r.flag == PROPERTY_ROW_FLAG_FLAGGED) {
 		for (size_t i = 0; i < cols.cvalues; ++i)
-			TRY(p_flagged_pv(PROP_TYPE(cols.pproptag[i]),
+			TRY(p_flagged_pv(cols.pproptag[i],
 			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
 		return EXT_ERR_SUCCESS;
 	}
