@@ -856,7 +856,7 @@ BOOL common_util_propvals_to_row(
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
 	int i;
-	static const uint32_t errcode = ecNotFound;
+	static constexpr uint32_t errcode = ecNotFound, enotsup = ecNotSupported;
 	
 	for (i = 0; i < pcolumns->count; ++i)
 		if (!ppropvals->has(pcolumns->pproptag[i]))
@@ -891,7 +891,22 @@ BOOL common_util_propvals_to_row(
 		pflagged_val->pvalue = val = ppropvals->getval(CHANGE_PROP_TYPE(tag, PT_ERROR));
 		if (val != nullptr)
 			continue;
-		pflagged_val->pvalue = deconst(&errcode);
+		/*
+		 * OXCTABL v21 specifies no requirement on the number of
+		 * MVI_FLAG properties in the column set. Nor does it specify
+		 * that the sortorder shall contain those MVI_FLAG properties.
+		 *
+		 * EXC2019 however will reject ropQueryRows when the sortorder
+		 * is lacking an MVI_FLAG property that *is* in the column set.
+		 * EXC2019 also rejects ropSortTable if the sortorder contains
+		 * more than one MVI_FLAG property.
+		 *
+		 * Gromox will allow ropQueryRows, and db_engine simply won't
+		 * yield data for that column (@ppropvals). This gives us the
+		 * opportunity to signal ecNotSupported for only the affected
+		 * columns and still return other data.
+		 */
+		pflagged_val->pvalue = deconst((tag & MVI_FLAG) == MVI_FLAG ? &enotsup : &errcode);
 	}
 	return TRUE;
 }
