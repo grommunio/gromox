@@ -872,6 +872,14 @@ BOOL common_util_propvals_to_row(
 		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
 		if (pflagged_val == nullptr)
 			return FALSE;
+		/*
+		 * The table protocol has two different ways to report empty
+		 * cells. OXCDATA §2.11.5 has a hint. Unavailable is defined as
+		 * "The PropertyValue field is not present." Error on the other
+		 * hand is defined as "[...] why the property value is not
+		 * present". Since one can always make up a reason, this is why
+		 * only the Error variant is only ever seen/used in practice.
+		 */
 		if (NULL == prow->pppropval[i]) {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
