@@ -298,16 +298,12 @@ static BOOL cu_nsp_proprow_to_proprow(const LPROPTAG_ARRAY &cols,
 			if (ap == nullptr)
 				return false;
 			abrow.pppropval[i] = ap;
-			if (nsprop.value.err == ecNotFound) {
-				ap->flag   = FLAGGED_PROPVAL_FLAG_UNAVAILABLE;
-				ap->pvalue = nullptr;
-			} else {
-				ap->flag   = FLAGGED_PROPVAL_FLAG_ERROR;
-				ap->pvalue = cu_alloc<uint32_t>();
-				if (ap->pvalue == nullptr)
-					return false;
-				*static_cast<uint32_t *>(ap->pvalue) = nsprop.value.err;
-			}
+			/* See emsmdb/common_util.cpp:common_util_propvals_to_row for remarks. */
+			ap->flag   = FLAGGED_PROPVAL_FLAG_ERROR;
+			ap->pvalue = cu_alloc<uint32_t>();
+			if (ap->pvalue == nullptr)
+				return false;
+			*static_cast<uint32_t *>(ap->pvalue) = nsprop.value.err;
 		} else if (abrow.flag == PROPERTY_ROW_FLAG_NONE) {
 			if (i < cols.cvalues && PROP_TYPE(cols.pproptag[i]) == PT_UNSPECIFIED) {
 				auto ap = cu_alloc<TYPED_PROPVAL>();
