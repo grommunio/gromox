@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
+// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// This file is part of Gromox.
 #include <sstream>
 #include <string>
 #include <utility>
@@ -9,6 +11,11 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
+
+/*
+ * We should emit hexnumbers with 0x%x rather than %xh notation.
+ * This makes copy-paste to source code easier.
+ */
 
 using namespace gromox;
 
@@ -398,6 +405,22 @@ std::string RULE_ACTIONS::repr() const
 	auto s = "RULE_ACTIONS{" + std::to_string(count);
 	for (size_t i = 0; i < count; ++i)
 		s += "," + pblock[i].repr();
+	s += "}";
+	return s;
+}
+
+std::string SORT_ORDER::repr() const
+{
+	return fmt::format("SORT_ORDER{{0x{:x},{:d}}}", PROP_TAG(type, propid), table_sort);
+}
+
+std::string SORTORDER_SET::repr() const
+{
+	auto s = "SORTORDER_SET{" + std::to_string(count) + "," +
+	         std::to_string(ccategories) + "," +
+	         std::to_string(cexpanded);
+	for (unsigned int i = 0; i < count; ++i)
+		s += "," + psort[i].repr();
 	s += "}";
 	return s;
 }

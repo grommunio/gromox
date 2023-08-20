@@ -1039,6 +1039,8 @@ struct SORT_ORDER {
 	uint16_t type; /* pay attention to the 0x2000 bit */
 	uint16_t propid;
 	uint8_t table_sort;
+
+	std::string repr() const;
 };
 
 struct SORTORDER_SET {
@@ -1046,6 +1048,8 @@ struct SORTORDER_SET {
 	uint16_t ccategories;
 	uint16_t cexpanded;
 	SORT_ORDER *psort;
+
+	std::string repr() const;
 };
 
 struct STATE_ARRAY {
