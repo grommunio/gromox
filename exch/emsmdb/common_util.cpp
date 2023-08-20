@@ -866,12 +866,19 @@ BOOL common_util_propvals_to_row(
 	if (prow->pppropval == nullptr)
 		return FALSE;
 	for (i=0; i<pcolumns->count; i++) {
-		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
+		const auto tag = pcolumns->pproptag[i];
+		auto val = prow->pppropval[i] = ppropvals->getval(tag);
 		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
 			continue;
 		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
 		if (pflagged_val == nullptr)
 			return FALSE;
+		prow->pppropval[i] = pflagged_val;
+		if (val != nullptr) {
+			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
+			pflagged_val->pvalue = val;
+			continue;
+		}
 		/*
 		 * The table protocol has two different ways to report empty
 		 * cells. OXCDATA §2.11.5 has a hint. Unavailable is defined as
@@ -880,16 +887,11 @@ BOOL common_util_propvals_to_row(
 		 * present". Since one can always make up a reason, this is why
 		 * only the Error variant is only ever seen/used in practice.
 		 */
-		if (NULL == prow->pppropval[i]) {
-			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
-			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
-			if (pflagged_val->pvalue == nullptr)
-				pflagged_val->pvalue = deconst(&errcode);
-		} else {
-			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
-			pflagged_val->pvalue = prow->pppropval[i];
-		}
-		prow->pppropval[i] = pflagged_val;
+		pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
+		pflagged_val->pvalue = val = ppropvals->getval(CHANGE_PROP_TYPE(tag, PT_ERROR));
+		if (val != nullptr)
+			continue;
+		pflagged_val->pvalue = deconst(&errcode);
 	}
 	return TRUE;
 }
