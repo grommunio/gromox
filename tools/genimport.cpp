@@ -286,7 +286,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 			break;
 		tlog("={");
 		for (size_t i = 0; i < sb.count; ++i)
-			tlog("%s,", bin2hex(sb.pbin[i].pv, sb.pbin[i].cb).c_str());
+			tlog("(%u)=%s,", sb.pbin[i].cb, bin2hex(sb.pbin[i].pv, sb.pbin[i].cb).c_str());
 		tlog("}");
 		break;
 	}
