@@ -1,10 +1,9 @@
-Development 2.10.198
-====================
+Gromox 2.11 (2023-08-21)
+========================
 
 Enhancements:
 
 * exmdb: attachment storage with hash-based filenames
-* http: better HTTP/1.1 Keep-Alive support (close fewer connections)
 * exmdb_local: persistent (on-disk) last-autoreply time tracking
 * imap: allow large literals with APPEND
 * imap: add RFC 7888 support
@@ -21,6 +20,9 @@ Fixes:
 * mapi_lib: resolve an infinite loop during html_to_rtf
 * exmdb_provider: ignore absent directories during `gromox-mbop
   purge-datafiles`
+* exmdb_provider: make exmdb_pf_read_states=1 hide folder sumamry counts
+  as advertised by manpage
+* zcore: delegation dialog had erroneously set too many permission bits
 
 Changes:
 

@@ -404,8 +404,8 @@ static const char *status_text(unsigned int s)
 
 static tproc_status http_done(http_context *ctx, int code)
 {
+	ctx->b_close = TRUE; /* rdbody not consumed yet */
 	if (code < 0) {
-		ctx->b_close = TRUE;
 		code = -code;
 	}
 	if (hpm_processor_is_in_charge(ctx))
