@@ -559,7 +559,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
    uint32_t *ptable_id, uint32_t *prow_count) try
 {
-	int multi_index = 0;
+	unsigned int multi_index = 0; /* stbl column number (1-based) for MV propval */
+	unsigned int col_read = 0; /* stbl column number for read_state */
+	unsigned int col_inum = 0; /* stbl column number for inst_num */
 	size_t tag_count = 0;
 	void *pvalue;
 	char sql_string[1024];
@@ -672,7 +674,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (!psort_transact)
 			return false;
 		auto sql_len = snprintf(sql_string, std::size(sql_string), "CREATE"
-			" TABLE stbl (message_id INTEGER");
+			" TABLE stbl (message_id INTEGER NOT NULL");
 		for (size_t i = 0; i < psorts->count; ++i) {
 			auto tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (psorts->psort[i].table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
@@ -731,16 +733,12 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				return false;
 			}
 		}
-		if (psorts->ccategories > 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", read_state INTEGER");
-		if (ptnode->instance_tag != 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", inst_num INTEGER");
-		sql_string[sql_len++] = ')';
-		sql_string[sql_len] = '\0';
+		col_read = tag_count + 2;
+		col_inum = tag_count + 3;
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           std::size(sql_string) - sql_len,
+		           ", read_state INTEGER DEFAULT 0"
+		           ", inst_num INTEGER DEFAULT 0)");
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return false;
 		for (size_t i = 0; i < tag_count; ++i) {
@@ -763,14 +761,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		for (size_t i = 0; i < tag_count; ++i)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           std::size(sql_string) - sql_len, ", ?");
-		if (psorts->ccategories > 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len, ", ?");
-		if (ptnode->instance_tag != 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len, ", ?");
-		sql_string[sql_len++] = ')';
-		sql_string[sql_len] = '\0';
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           std::size(sql_string) - sql_len, ", ?, ?)");
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
@@ -895,10 +887,10 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				if (!cu_get_property(MAPI_MESSAGE, mid_val,
 				    CP_ACP, pdb->psqlite, PR_READ, &pvalue))
 					return false;
-				sqlite3_bind_int64(pstmt1, tag_count + 2,
+				sqlite3_bind_int64(pstmt1, col_read,
 					pvb_disabled(pvalue) ? 0 : 1);
 			}
-			/* inssert all instances into stbl */
+			/* insert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
 				if (!cu_get_property(MAPI_MESSAGE,
 				    mid_val, cpid, pdb->psqlite,
@@ -907,7 +899,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				if (NULL == pvalue) {
  BIND_NULL_INSTANCE:
 					sqlite3_bind_null(pstmt1, multi_index);
-					sqlite3_bind_int64(pstmt1, tag_count + 3, 0);
+					sqlite3_bind_int64(pstmt1, col_inum, 0);
 					if (pstmt1.step() != SQLITE_DONE)
 						return false;
 					sqlite3_reset(pstmt1);
@@ -922,7 +914,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		for (size_t i = 0; i < sa->count; ++i) { \
 			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MV_FLAG, &sa->memb[i])) \
 				return false; \
-			pstmt1.bind_int64(tag_count + 3, i + 1); \
+			pstmt1.bind_int64(col_inum, i + 1); \
 			if (pstmt1.step() != SQLITE_DONE) \
 				return false; \
 			pstmt1.reset(); \
