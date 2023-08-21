@@ -1024,6 +1024,7 @@ struct PROPTAG_ARRAY {
 	size_t indexof(uint32_t tag) const;
 	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
 	void emplace_back(uint32_t tag) { pproptag[count++] = tag; }
+	std::string repr() const;
 
 	uint16_t count;
 	uint32_t *pproptag;

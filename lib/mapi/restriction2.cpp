@@ -424,3 +424,12 @@ std::string SORTORDER_SET::repr() const
 	s += "}";
 	return s;
 }
+
+std::string PROPTAG_ARRAY::repr() const
+{
+	std::string s = "PROPTAG_ARRAY{";
+	for (unsigned int i = 0; i < count; ++i)
+		s += fmt::format("0x{:x},", pproptag[i]);
+	s += "}";
+	return s;
+}
