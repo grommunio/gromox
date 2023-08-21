@@ -1065,6 +1065,14 @@ BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
+	if (psorts != nullptr)
+		/*
+		 * Sorting is only implemented for scalars, so MV is rejected
+		 * if it is not MVI.
+		 */
+		for (unsigned int i = 0; i < psorts->count; ++i)
+			if ((psorts->psort[i].type & MVI_FLAG) == MV_FLAG)
+				return false; // ecTooComplex
 	uint64_t fid_val;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)

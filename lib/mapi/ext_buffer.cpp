@@ -1404,9 +1404,6 @@ pack_result EXT_PULL::g_proprow(const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *r)
 pack_result EXT_PULL::g_sortorder(SORT_ORDER *r)
 {
 	TRY(g_uint16(&r->type));
-	if ((r->type & MVI_FLAG) == MV_FLAG)
-		/* MV_FLAG set without MV_INSTANCE */
-		return EXT_ERR_FORMAT;
 	TRY(g_uint16(&r->propid));
 	return g_uint8(&r->table_sort);
 }
@@ -2937,9 +2934,6 @@ pack_result EXT_PUSH::p_proprow(const LPROPTAG_ARRAY &cols, const PROPERTY_ROW &
 
 pack_result EXT_PUSH::p_sortorder(const SORT_ORDER &r)
 {
-	if ((r.type & MVI_FLAG) == MV_FLAG)
-		/* MV_FLAG set without MV_INSTANCE */
-		return EXT_ERR_FORMAT;
 	TRY(p_uint16(r.type));
 	TRY(p_uint16(r.propid));
 	return p_uint8(r.table_sort);
