@@ -632,10 +632,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	sqlite3 *psqlite = nullptr;
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
-	bool all_ok = false;
 	auto cl_0 = make_scope_exit([&]() {
-		if (all_ok)
-			return;
 		pstmt.finalize();
 		pstmt1.finalize();
 		if (psqlite != nullptr) {
@@ -1041,7 +1038,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				return false;
 		}
 	}
-	all_ok = true;
+	cl_0.release();
 	if (table_transact.commit() != 0)
 		return false;
 	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
