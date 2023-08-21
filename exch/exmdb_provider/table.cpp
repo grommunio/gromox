@@ -342,7 +342,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 					where_clause, sizeof(where_clause));
 	if (depth == psorts->ccategories) {
 		multi_index = -1;
-		for (i=0; i<psorts->ccategories; i++) {
+		for (i = 0; i < psorts->count; ++i) {
 			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
 				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 				multi_index = i;
@@ -353,13 +353,10 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 			          "SELECT message_id, read_state, inst_num, v%x"
 			          " FROM stbl %s", tmp_proptag, where_clause);
-		else if (psorts->ccategories > 0)
-			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-			          "SELECT message_id, read_state FROM stbl %s",
-			          where_clause);
 		else
 			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-			          "SELECT message_id FROM stbl %s", where_clause);
+			          "SELECT message_id, read_state, inst_num"
+			          " FROM stbl %s", where_clause);
 		b_orderby = FALSE;
 		for (i=psorts->ccategories; i<psorts->count; i++) {
 			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
@@ -912,7 +909,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (sa->count == 0) \
 			goto BIND_NULL_INSTANCE; \
 		for (size_t i = 0; i < sa->count; ++i) { \
-			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MV_FLAG, &sa->memb[i])) \
+			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MVI_FLAG, &sa->memb[i])) \
 				return false; \
 			pstmt1.bind_int64(col_inum, i + 1); \
 			if (pstmt1.step() != SQLITE_DONE) \
@@ -1686,14 +1683,13 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
+	}
+	if (ptnode->psorts != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
 		pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt2 == nullptr)
 			return FALSE;
-	} else {
-		pstmt1 = NULL;
-		pstmt2 = NULL;
 	}
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
