@@ -1560,7 +1560,9 @@ int main(int argc, const char **argv)
 				"You probably wanted to redirect output into a file or pipe.\n");
 			return EXIT_FAILURE;
 		}
-		ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid : g_srcmbox);
+		ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid :
+		      g_srcmro != nullptr ? g_srcmro :
+		      g_srcmbox != nullptr ? g_srcmbox : "Strange Mailbox");
 	} catch (const char *e) {
 		fprintf(stderr, "kdb2mt: Exception: %s\n", e);
 		return -ECANCELED;
