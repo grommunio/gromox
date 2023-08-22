@@ -1064,6 +1064,21 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_vcftomessage &d)
 	return pack_result::ok;
 }
 
+static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getuserfreebusy &d)
+{
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.entryid));
+	TRY(x.p_uint64(d.starttime));
+	TRY(x.p_uint64(d.endtime));
+	return pack_result::ok;
+}
+
+static pack_result zrpc_pull(PULL_CTX &x, zcresp_getuserfreebusy &d)
+{
+	TRY(x.g_fb_a(&d.fb_events));
+	return pack_result::ok;
+}
+
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getuseravailability &d)
 {
 	TRY(x.p_guid(d.hsession));
@@ -1212,6 +1227,7 @@ pack_result rpc_ext_push_request(const zcreq *prequest, BINARY *pbin_out)
 	E(imtomessage2)
 	E(essdn_to_username)
 	E(logon_token)
+	E(getuserfreebusy)
 #undef E
 	default:
 		return pack_result::bad_switch;
@@ -1325,6 +1341,7 @@ pack_result rpc_ext_pull_response(const BINARY *pbin_in, zcresp *presponse)
 	E(imtomessage2)
 	E(essdn_to_username)
 	E(logon_token)
+	E(getuserfreebusy)
 #undef E
 	default:
 		return pack_result::bad_switch;

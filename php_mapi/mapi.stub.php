@@ -81,6 +81,7 @@ function mapi_getidsfromnames(resource $store, array $names, ?array $guids = nul
 function mapi_decompressrtf(string $data) : string|false {}
 function mapi_zarafa_getpermissionrules(resource $any, int $type) : array|false {}
 function mapi_zarafa_setpermissionrules(resource $any, array $perms) : bool {}
+function mapi_getuserfreebusy(resource $ses, string $entryid, int $start, int $end) : array|false {}
 function mapi_getuseravailability(resource $ses, string $entryid, int $start, int $end) : string|false {}
 function mapi_exportchanges_config(resource $e, resource $stream, int $flags, mixed $i, mixed $restrict, mixed $inclprop, mixed $exclprop, int $bufsize) : bool {}
 function mapi_exportchanges_synchronize(resource $x) : mixed {}

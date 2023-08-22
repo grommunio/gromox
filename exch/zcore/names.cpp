@@ -100,7 +100,8 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(icaltomessage2),
 	E(imtomessage2),
 	E(essdn_to_username),	
-	E(logon_token)
+	E(logon_token),
+	E(getuserfreebusy),
 };
 #undef E
 #undef EXP
@@ -108,7 +109,7 @@ static constexpr const char *zcore_rpc_names[] = {
 const char *zcore_rpc_idtoname(zcore_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::logon_token) + 1);
+	static_assert(std::size(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::getuserfreebusy) + 1);
 	auto s = j < std::size(zcore_rpc_names) ? zcore_rpc_names[j] : nullptr;
 	return znul(s);
 }

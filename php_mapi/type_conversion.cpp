@@ -103,6 +103,31 @@ ec_error_t binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 	return ecSuccess;
 }
 
+ec_error_t fb_array_to_php(const FB_ARRAY *pfbs, zval *pzval)
+{
+	zval pzvalfbevent;
+	zarray_init(pzval);
+	for (size_t i = 0; i < pfbs->count; ++i) {
+		zarray_init(&pzvalfbevent);
+		add_assoc_long(&pzvalfbevent, "start", pfbs->fb_events[i].start_time);
+		add_assoc_long(&pzvalfbevent, "end", pfbs->fb_events[i].end_time);
+		add_assoc_long(&pzvalfbevent, "busystatus", pfbs->fb_events[i].busy_status);
+		if (pfbs->fb_events[i].details->id != nullptr)
+			add_assoc_string(&pzvalfbevent, "id", pfbs->fb_events[i].details->id);
+		if (pfbs->fb_events[i].details->subject != nullptr)
+			add_assoc_string(&pzvalfbevent, "subject", pfbs->fb_events[i].details->subject);
+		if (pfbs->fb_events[i].details->location != nullptr)
+			add_assoc_string(&pzvalfbevent, "location", pfbs->fb_events[i].details->location);
+		add_assoc_bool(&pzvalfbevent, "meeting", pfbs->fb_events[i].details->is_meeting);
+		add_assoc_bool(&pzvalfbevent, "recurring", pfbs->fb_events[i].details->is_recurring);
+		add_assoc_bool(&pzvalfbevent, "exception", pfbs->fb_events[i].details->is_exception);
+		add_assoc_bool(&pzvalfbevent, "reminderset", pfbs->fb_events[i].details->is_reminderset);
+		add_assoc_bool(&pzvalfbevent, "private", pfbs->fb_events[i].details->is_private);
+		add_next_index_zval(pzval, &pzvalfbevent);
+	}
+	return ecSuccess;
+}
+
 ec_error_t php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 {
 	unsigned long idx;
@@ -300,7 +325,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			return NULL;
 		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			xs->ps[j++] = zval_get_long(data_entry);
+			xs->ps[j++] = zval_get_long(entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
@@ -324,7 +349,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			return NULL;
 		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			xl->pl[j++] = zval_get_long(data_entry);
+			xl->pl[j++] = zval_get_long(entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}

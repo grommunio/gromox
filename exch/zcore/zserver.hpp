@@ -137,3 +137,4 @@ extern ec_error_t zs_getuseravailability(GUID ses, BINARY entryid, uint64_t star
 extern ec_error_t zs_setpasswd(const char *username, const char *passwd, const char *new_passwd);
 extern ec_error_t zs_linkmessage(GUID ses, BINARY search_eid, BINARY msg_eid);
 extern ec_error_t zs_essdn_to_username(const char *essdn, char **username);
+extern ec_error_t zs_getuserfreebusy(GUID ses, BINARY entryid, uint64_t starttime, uint64_t endtime, FB_ARRAY *fb_events);

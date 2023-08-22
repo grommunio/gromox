@@ -100,6 +100,7 @@ enum class zcore_callid : uint8_t {
 	imtomessage2 = 0x58,
 	essdn_to_username = 0x59,
 	logon_token = 0x5a,
+	getuserfreebusy = 0x5b,
 	/* update exch/zcore/names.cpp! */
 };
 
@@ -635,6 +636,13 @@ struct zcreq_essdn_to_username : public zcreq {
 	char *essdn;
 };
 
+struct zcreq_getuserfreebusy : public zcreq {
+	GUID hsession;
+	BINARY entryid;
+	uint64_t starttime;
+	uint64_t endtime;
+};
+
 struct zcresp {
 	zcore_callid call_id;
 	ec_error_t result;
@@ -871,6 +879,10 @@ struct zcresp_imtomessage2 : public zcresp {
 
 struct zcresp_essdn_to_username : public zcresp {
 	char *username;
+};
+
+struct zcresp_getuserfreebusy : public zcresp {
+	FB_ARRAY fb_events;
 };
 
 using zcresp_checksession = zcresp;
