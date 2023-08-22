@@ -6,9 +6,9 @@
 #include <string>
 #include <gromox/defs.h>
 
-#define PROP_ID(x) ((x) >> 16)
-#define PROP_TYPE(x) ((x) & 0xFFFF)
-#define CHANGE_PROP_TYPE(tag, newtype) (((tag) & ~0xFFFF) | (newtype))
+#define PROP_ID(x) static_cast<uint16_t>((x) >> 16)
+#define PROP_TYPE(x) static_cast<uint16_t>((x) & 0xFFFF)
+#define CHANGE_PROP_TYPE(tag, newtype) static_cast<uint32_t>(((tag) & ~0xFFFF) | (newtype))
 
 /*
  * x|y yields an unsigned result if either x or y are unsigned.
@@ -16,7 +16,7 @@
  * All the while | and << only make *sense* in an unsigned _context_ anyway
  * (i.e. the operator should have returned unsigned all the time)
  */
-#define PROP_TAG(type, tag) ((((unsigned int)tag) << 16) | (type))
+#define PROP_TAG(type, tag) static_cast<uint32_t>((static_cast<uint32_t>(tag) << 16) | (type))
 namespace {
 enum {
 	/*
