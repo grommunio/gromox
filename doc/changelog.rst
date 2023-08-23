@@ -1,3 +1,17 @@
+Development 2.11.26
+===================
+
+Enhancements:
+
+* oxm2mt: support multi-valued properties
+
+Fixes:
+
+* kdb2mt: do not abort when --src-mbox is used
+* exmdb_provider: opening the detail view of Personal Addressbook entries now
+  works in Outlook, as does selecting them as message recipients
+
+
 Gromox 2.11 (2023-08-21)
 ========================
 
