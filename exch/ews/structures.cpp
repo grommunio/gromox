@@ -12,6 +12,7 @@
 #include <utility>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/ical.hpp>
@@ -1157,6 +1158,60 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 			encode_hex_binary(goid->pb, goid->cb, uid.data(), int(uid.size()));
 			UID.emplace(std::move(uid));
 		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tCalendarEvent::tCalendarEvent(const freebusy_event fb_event) :
+	StartTime(time_point::clock::from_time_t(fb_event.start_time)),
+	EndTime(time_point::clock::from_time_t(fb_event.end_time))
+{
+	switch(fb_event.busy_status)
+	{
+		case olFree:             BusyType = "Free"; break;
+		case olTentative:        BusyType = "Tentative"; break;
+		case olBusy:             BusyType = "Busy"; break;
+		case olOutOfOffice:      BusyType = "OOF"; break;
+		case olWorkingElsewhere: BusyType = "WorkingElsewhere"; break;
+		default:                 BusyType = "NoData"; break;
+	}
+
+	if (!fb_event.details.has_value())
+		return;
+
+	auto &details = CalendarEventDetails.emplace();
+	if (fb_event.details->id != nullptr)
+		details.ID = fb_event.details->id;
+	if (fb_event.details->subject != nullptr)
+		details.Subject = fb_event.details->subject;
+	if (fb_event.details->location != nullptr)
+		details.Location = fb_event.details->location;
+	details.IsMeeting     = fb_event.details->is_meeting;
+	details.IsRecurring   = fb_event.details->is_recurring;
+	details.IsException   = fb_event.details->is_exception;
+	details.IsReminderSet = fb_event.details->is_reminderset;
+	details.IsPrivate     = fb_event.details->is_private;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
+    time_t start_time, time_t end_time)
+{
+	std::vector<freebusy_event> fb_data;
+	if (!get_freebusy(username, dir, start_time, end_time, fb_data))
+		throw DispatchError(E3111);
+
+	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
+		[](freebusy_event fb_event) { return fb_event.details.has_value(); }) ?
+		"Detailed" : "FreeBusy";
+
+	auto &cal_events = CalendarEventArray.emplace();
+	cal_events.reserve(fb_data.size());
+
+	for (auto &fb_event : fb_data) {
+		cal_events.emplace_back(fb_event);
 	}
 }
 
