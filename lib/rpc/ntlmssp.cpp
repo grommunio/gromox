@@ -543,13 +543,9 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 			if (&blob.pb[ptr_ofs] < reinterpret_cast<uint8_t *>(ptr_ofs) ||
 			    &blob.pb[ptr_ofs] < blob.pb)
 				return false;
-			if (len1 > 0) {
-				if (!ntlmssp_utf16le_to_utf8(&blob.pb[ptr_ofs],
-				    len1, ps, le32p_to_cpu(ps)))
-					return false;
-			} else {
-				ps[0] = '\0';
-			}
+			if (!ntlmssp_utf16le_to_utf8(&blob.pb[ptr_ofs],
+			    len1, ps, le32p_to_cpu(ps)))
+				return false;
 			break;
 		case 'A':
 			if (head_ofs + 8 > blob.cb)
