@@ -65,7 +65,6 @@ read_pkey(const unsigned char *pk_str, size_t pk_size)
 	std::unique_ptr<EVP_PKEY, sslfree2> pk_obj(std::move(pk_raw));
 	if (ret <= 0)
 		return nullptr;
-	return pk_obj;
 #else
 	std::unique_ptr<EVP_PKEY, sslfree2> pk_obj(EVP_PKEY_new());
 	if (pk_obj == nullptr)
