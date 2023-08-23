@@ -37,6 +37,7 @@ Makefile.in
 /gromox-dbop
 /gromox-dscli
 /gromox-e2ghelper
+/gromox-edb2mt
 /gromox-eml2mbox
 /gromox-eml2mt
 /gromox-exm2eml

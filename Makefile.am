@@ -53,6 +53,9 @@ exchange_plugins = \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
 sbin_PROGRAMS = gromox-abktconv gromox-compress gromox-dbop gromox-dscli gromox-e2ghelper gromox-eml2mbox gromox-eml2mt gromox-exm2eml gromox-mailq gromox-mbop gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm
+if HAVE_ESEDB
+sbin_PROGRAMS += gromox-edb2mt
+endif
 if HAVE_OLECF
 sbin_PROGRAMS += gromox-oxm2mt
 endif
@@ -214,6 +217,8 @@ gromox_dscli_SOURCES = tools/dscli.cpp
 gromox_dscli_LDADD = ${curl_LIBS} ${HX_LIBS} ${resolv_LIBS} ${tinyxml_LIBS}
 gromox_e2ghelper_SOURCES = tools/e2ghelper.cpp
 gromox_e2ghelper_LDADD = ${HX_LIBS}
+gromox_edb2mt_SOURCES = tools/genimport.cpp tools/genimport.hpp tools/edb2mt.cpp tools/edb_pack.cpp
+gromox_edb2mt_LDADD = ${HX_LIBS} ${esedb_LIBS} ${iconv_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_eml2mbox_SOURCES = tools/eml2mbox.cpp
 gromox_eml2mbox_LDADD = ${HX_LIBS}
 gromox_eml2mt_SOURCES = lib/svc_loader.cpp tools/eml2mt.cpp tools/genimport.cpp tools/genimport.hpp
@@ -312,6 +317,9 @@ dist_man_MANS = \
 	doc/pam_gromox.4gx doc/pop3.8gx doc/rtf2html.1gx \
 	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
+if HAVE_ESEDB
+dist_man_MANS += doc/gromox-edb2mt.8
+endif
 if HAVE_OLECF
 dist_man_MANS += doc/gromox-oxm2mt.8
 endif

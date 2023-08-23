@@ -464,6 +464,7 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 			filter = true;
 		} else if (proc.active) {
 			/* e.g. EPV_FAR not implemented yet, so strip */
+			/* Data is in "SeparatedProperty01" etc. */
 			r->ppropval[i].proptag = CHANGE_PROP_TYPE(r->ppropval[i].proptag, PT_NULL);
 			filter = true;
 		}

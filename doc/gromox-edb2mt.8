@@ -1,0 +1,33 @@
+.TH gromox\-edb2mt 8 "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-edb2mt \(em Utility for analysis of Exchange .edb files
+.SH Synopsis
+\fBgromox\-edb2mt\fP \fB\-l\fP \fImdb01.edb\fP
+.PP
+\fBgromox\-edb2mt\fP [\fB\-pt\fP] \fImdb01.edb\fP \fB\-x\fP \fImbid\fP
+.SH Description
+gromox\-edb2mt reads one mailbox from an Exchange .edb file, and dumps the
+structure to stderr with \-t/\-p.
+.PP
+edb2mt is not currently suitable for import of mailbox data, see also
+<https://github.com/libyal/libesedb/issues/68>.
+.SH Options
+.TP
+\fB\-l\fP
+Show the mailbox table from the .edb file.
+.TP
+\fB\-p\fP
+Show properties in detail (enhances \fB\-t\fP).
+.TP
+\fB\-t\fP
+Show a diagnostic tree view of the source data as it is being read.
+.TP
+\fB\-x\fP \fImbid\fP
+Extract the given mailbox from the .edb file.
+.SH Obtaining edb files
+On the Exchange server, stop the service known as "Microsoft Exchange
+Information Store" (as reported in services.msc) or
+"Microsoft.Exchange.Store.exe" (as reported in Task Manager). This will release
+file locks on edb files so that they can be copied elsewhere.
+.SH See also
+\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
