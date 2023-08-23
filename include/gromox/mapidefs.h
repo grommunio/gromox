@@ -7,9 +7,9 @@
 #include <string>
 #include <gromox/defs.h>
 
-#define PROP_ID(x) ((x) >> 16)
-#define PROP_TYPE(x) ((x) & 0xFFFF)
-#define CHANGE_PROP_TYPE(tag, newtype) (((tag) & ~0xFFFF) | (newtype))
+#define PROP_ID(x) static_cast<uint16_t>((x) >> 16)
+#define PROP_TYPE(x) static_cast<uint16_t>((x) & 0xFFFF)
+#define CHANGE_PROP_TYPE(tag, newtype) static_cast<uint32_t>(((tag) & ~0xFFFF) | (newtype))
 
 /*
  * x|y yields an unsigned result if either x or y are unsigned.
@@ -17,7 +17,7 @@
  * All the while | and << only make *sense* in an unsigned _context_ anyway
  * (i.e. the operator should have returned unsigned all the time)
  */
-#define PROP_TAG(type, tag) ((((unsigned int)tag) << 16) | (type))
+#define PROP_TAG(type, tag) static_cast<uint32_t>((static_cast<uint32_t>(tag) << 16) | (type))
 namespace {
 enum {
 	/*
@@ -1046,6 +1046,7 @@ struct PROPTAG_ARRAY {
 	size_t indexof(uint32_t tag) const;
 	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
 	void emplace_back(uint32_t tag) { pproptag[count++] = tag; }
+	std::string repr() const;
 
 	uint16_t count;
 	uint32_t *pproptag;
@@ -1061,6 +1062,8 @@ struct SORT_ORDER {
 	uint16_t type; /* pay attention to the 0x2000 bit */
 	uint16_t propid;
 	uint8_t table_sort;
+
+	std::string repr() const;
 };
 
 struct SORTORDER_SET {
@@ -1068,6 +1071,8 @@ struct SORTORDER_SET {
 	uint16_t ccategories;
 	uint16_t cexpanded;
 	SORT_ORDER *psort;
+
+	std::string repr() const;
 };
 
 struct STATE_ARRAY {
@@ -1468,12 +1473,12 @@ extern const FLATUID
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
 extern const GUID
-	PSETID_ADDRESS, PSETID_AIRSYNC, PSETID_APPOINTMENT, PSETID_ATTACHMENT,
+	PSETID_ADDRESS, PSETID_APPOINTMENT,
 	PSETID_BUSINESSCARDVIEW, PSETID_CALENDARASSISTANT, PSETID_COMMON,
 	PSETID_GROMOX, PSETID_KC, PSETID_KCARCHIVE, PSETID_LOG, PSETID_MEETING,
-	PSETID_MESSAGING, PSETID_NOTE, PSETID_POSTRSS, PSETID_REMOTE,
+	PSETID_NOTE, PSETID_REMOTE,
 	PSETID_REPORT, PSETID_SHARING, PSETID_TASK, PSETID_UNIFIEDMESSAGING,
-	PSETID_XMLEXTRACTEDENTITIES, PS_INTERNET_HEADERS, PS_MAPI,
+	PS_INTERNET_HEADERS, PS_MAPI,
 	PS_PUBLIC_STRINGS,
 	gx_dbguid_store_private, gx_dbguid_store_public,
 	gx_replguid_store_private, gx_replguid_store_public;

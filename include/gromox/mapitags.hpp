@@ -1112,6 +1112,9 @@ enum {
 	PidLidOwnerCriticalChange = 0x001A,
 	PidLidCleanGlobalObjectId = 0x0023,
 	PidLidCategories = 0x2328,
+
+	/* PSETID_Address */
+	dispidEmailList = 0x8027,
 	PidLidBusinessCardDisplayDefinition = 0x8040,
 	PidLidWorkAddressStreet = 0x8045,
 	PidLidWorkAddressCity = 0x8046,
@@ -1134,12 +1137,16 @@ enum {
 	PidLidEmail3AddressType = 0x80A2,
 	PidLidEmail3EmailAddress = 0x80A3,
 	PidLidFreeBusyLocation = 0x80D8,
+
+	/* PSETID_Task */
 	PidLidTaskStatus = 0x8101,
 	PidLidPercentComplete = 0x8102,
 	PidLidTaskStartDate = 0x8104,
 	PidLidTaskDueDate = 0x8105,
 	PidLidTaskDateCompleted = 0x810F,
 	PidLidTaskComplete = 0x811C,
+
+	/* PSETID_Appointment */
 	PidLidAppointmentSequence = 0x8201,
 	PidLidBusyStatus = 0x8205,
 	PidLidLocation = 0x8208,
@@ -1168,6 +1175,8 @@ enum {
 	PidLidAppointmentTimeZoneDefinitionStartDisplay = 0x825E,
 	PidLidAppointmentTimeZoneDefinitionEndDisplay = 0x825F,
 	PidLidAppointmentTimeZoneDefinitionRecur = 0x8260,
+
+	/* PSETID_Common */
 	PidLidReminderDelta = 0x8501,
 	PidLidReminderTime = 0x8502,
 	PidLidReminderSet = 0x8503,

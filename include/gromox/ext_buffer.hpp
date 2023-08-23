@@ -245,7 +245,7 @@ struct EXT_PUSH {
 	pack_result p_propval(uint16_t, const void *);
 	pack_result p_tagged_pv(const TAGGED_PROPVAL &);
 	pack_result p_typed_pv(const TYPED_PROPVAL &);
-	pack_result p_flagged_pv(uint16_t, const FLAGGED_PROPVAL &);
+	pack_result p_flagged_pv(uint32_t, const FLAGGED_PROPVAL &);
 	pack_result p_proprow(const PROPTAG_ARRAY &, const PROPERTY_ROW &);
 	pack_result p_proprow(const LPROPTAG_ARRAY &, const PROPERTY_ROW &);
 	pack_result p_propname(const PROPERTY_NAME &);

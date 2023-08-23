@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>
@@ -340,7 +342,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 					where_clause, sizeof(where_clause));
 	if (depth == psorts->ccategories) {
 		multi_index = -1;
-		for (i=0; i<psorts->ccategories; i++) {
+		for (i = 0; i < psorts->count; ++i) {
 			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
 				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 				multi_index = i;
@@ -351,13 +353,10 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			sql_len = gx_snprintf(sql_string, std::size(sql_string),
 			          "SELECT message_id, read_state, inst_num, v%x"
 			          " FROM stbl %s", tmp_proptag, where_clause);
-		else if (psorts->ccategories > 0)
-			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-			          "SELECT message_id, read_state FROM stbl %s",
-			          where_clause);
 		else
 			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-			          "SELECT message_id FROM stbl %s", where_clause);
+			          "SELECT message_id, read_state, inst_num"
+			          " FROM stbl %s", where_clause);
 		b_orderby = FALSE;
 		for (i=psorts->ccategories; i<psorts->count; i++) {
 			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
@@ -557,7 +556,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
    uint32_t *ptable_id, uint32_t *prow_count) try
 {
-	int multi_index = 0;
+	unsigned int multi_index = 0; /* stbl column number (1-based) for MV propval */
+	unsigned int col_read = 0; /* stbl column number for read_state */
+	unsigned int col_inum = 0; /* stbl column number for inst_num */
 	size_t tag_count = 0;
 	void *pvalue;
 	char sql_string[1024];
@@ -630,10 +631,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	sqlite3 *psqlite = nullptr;
 	ptnode->table_id = table_id;
 	auto remote_id = exmdb_server::get_remote_id();
-	bool all_ok = false;
 	auto cl_0 = make_scope_exit([&]() {
-		if (all_ok)
-			return;
 		pstmt.finalize();
 		pstmt1.finalize();
 		if (psqlite != nullptr) {
@@ -673,7 +671,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (!psort_transact)
 			return false;
 		auto sql_len = snprintf(sql_string, std::size(sql_string), "CREATE"
-			" TABLE stbl (message_id INTEGER");
+			" TABLE stbl (message_id INTEGER NOT NULL");
 		for (size_t i = 0; i < psorts->count; ++i) {
 			auto tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (psorts->psort[i].table_sort == TABLE_SORT_MAXIMUM_CATEGORY ||
@@ -732,16 +730,12 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				return false;
 			}
 		}
-		if (psorts->ccategories > 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", read_state INTEGER");
-		if (ptnode->instance_tag != 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-						", inst_num INTEGER");
-		sql_string[sql_len++] = ')';
-		sql_string[sql_len] = '\0';
+		col_read = tag_count + 2;
+		col_inum = tag_count + 3;
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           std::size(sql_string) - sql_len,
+		           ", read_state INTEGER DEFAULT 0"
+		           ", inst_num INTEGER DEFAULT 0)");
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return false;
 		for (size_t i = 0; i < tag_count; ++i) {
@@ -764,14 +758,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		for (size_t i = 0; i < tag_count; ++i)
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           std::size(sql_string) - sql_len, ", ?");
-		if (psorts->ccategories > 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len, ", ?");
-		if (ptnode->instance_tag != 0)
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len, ", ?");
-		sql_string[sql_len++] = ')';
-		sql_string[sql_len] = '\0';
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           std::size(sql_string) - sql_len, ", ?, ?)");
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
@@ -896,13 +884,11 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				if (!cu_get_property(MAPI_MESSAGE, mid_val,
 				    CP_ACP, pdb->psqlite, PR_READ, &pvalue))
 					return false;
-				sqlite3_bind_int64(pstmt1, tag_count + 2,
+				sqlite3_bind_int64(pstmt1, col_read,
 					pvb_disabled(pvalue) ? 0 : 1);
 			}
-			/* inssert all instances into stbl */
+			/* insert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
-				uint16_t type = PROP_TYPE(ptnode->instance_tag);
-				type &= ~MV_INSTANCE;
 				if (!cu_get_property(MAPI_MESSAGE,
 				    mid_val, cpid, pdb->psqlite,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
@@ -910,145 +896,44 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				if (NULL == pvalue) {
  BIND_NULL_INSTANCE:
 					sqlite3_bind_null(pstmt1, multi_index);
-					sqlite3_bind_int64(pstmt1, tag_count + 3, 0);
+					sqlite3_bind_int64(pstmt1, col_inum, 0);
 					if (pstmt1.step() != SQLITE_DONE)
 						return false;
 					sqlite3_reset(pstmt1);
 					continue;
 				}
+				uint16_t type = PROP_TYPE(ptnode->instance_tag) & ~MV_INSTANCE;
 				switch (type) {
-				case PT_MV_SHORT: {
-					auto sa = static_cast<SHORT_ARRAY *>(pvalue);
-					if (sa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < sa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_SHORT, &sa->ps[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_LONG: {
-					auto la = static_cast<LONG_ARRAY *>(pvalue);
-					if (la->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < la->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_LONG, &la->pl[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+#define H(ctyp, memb) { \
+		auto sa = static_cast<ctyp *>(pvalue); \
+		if (sa->count == 0) \
+			goto BIND_NULL_INSTANCE; \
+		for (size_t i = 0; i < sa->count; ++i) { \
+			if (!common_util_bind_sqlite_statement(pstmt1, multi_index, type & ~MVI_FLAG, &sa->memb[i])) \
+				return false; \
+			pstmt1.bind_int64(col_inum, i + 1); \
+			if (pstmt1.step() != SQLITE_DONE) \
+				return false; \
+			pstmt1.reset(); \
+		} \
+		break; \
+	}
+
+				case PT_MV_SHORT: H(SHORT_ARRAY, ps)
+				case PT_MV_LONG: H(LONG_ARRAY, pl)
 				case PT_MV_CURRENCY:
 				case PT_MV_I8:
-				case PT_MV_SYSTIME: {
-					auto la = static_cast<LONGLONG_ARRAY *>(pvalue);
-					if (la->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < la->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, type & ~MV_FLAG, &la->pll[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_FLOAT: {
-					auto fa = static_cast<FLOAT_ARRAY *>(pvalue);
-					if (fa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < fa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_FLOAT, &fa->mval[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+				case PT_MV_SYSTIME: H(LONGLONG_ARRAY, pll)
+				case PT_MV_FLOAT: H(FLOAT_ARRAY, mval)
 				case PT_MV_DOUBLE:
-				case PT_MV_APPTIME: {
-					auto fa = static_cast<DOUBLE_ARRAY *>(pvalue);
-					if (fa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < fa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_DOUBLE, &fa->mval[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+				case PT_MV_APPTIME: H(DOUBLE_ARRAY, mval)
 				case PT_MV_STRING8:
-				case PT_MV_UNICODE: {
-					auto sa = static_cast<STRING_ARRAY *>(pvalue);
-					if (sa->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < sa->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_STRING8, &sa->ppstr[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_CLSID: {
-					auto ga = static_cast<GUID_ARRAY *>(pvalue);
-					if (ga->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < ga->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_CLSID, &ga->pguid[i]))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
-				case PT_MV_BINARY: {
-					auto ba = static_cast<BINARY_ARRAY *>(pvalue);
-					if (ba->count == 0)
-						goto BIND_NULL_INSTANCE;
-					for (size_t i = 0; i < ba->count; ++i) {
-						if (!common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_BINARY, ba->pbin + i))
-							return false;
-						sqlite3_bind_int64(pstmt1,
-							tag_count + 3, i + 1);
-						if (pstmt1.step() != SQLITE_DONE)
-							return false;
-						sqlite3_reset(pstmt1);
-					}
-					break;
-				}
+				case PT_MV_UNICODE: H(STRING_ARRAY, ppstr)
+				case PT_MV_CLSID: H(GUID_ARRAY, pguid)
+				case PT_MV_BINARY: H(BINARY_ARRAY, pbin)
 				default:
 					return false;
+#undef H
 				}
 				continue;
 			}
@@ -1142,7 +1027,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 				return false;
 		}
 	}
-	all_ok = true;
+	cl_0.release();
 	if (table_transact.commit() != 0)
 		return false;
 	pdb->tables.table_list.splice(pdb->tables.table_list.end(), std::move(holder));
@@ -1166,6 +1051,14 @@ BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
 	uint32_t *ptable_id, uint32_t *prow_count)
 {
+	if (psorts != nullptr)
+		/*
+		 * Sorting is only implemented for scalars, so MV is rejected
+		 * if it is not MVI.
+		 */
+		for (unsigned int i = 0; i < psorts->count; ++i)
+			if ((psorts->psort[i].type & MVI_FLAG) == MV_FLAG)
+				return false; // ecTooComplex
 	uint64_t fid_val;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -1790,14 +1683,13 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
+	}
+	if (ptnode->psorts != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
 		pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt2 == nullptr)
 			return FALSE;
-	} else {
-		pstmt1 = NULL;
-		pstmt2 = NULL;
 	}
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
