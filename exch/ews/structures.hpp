@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <gromox/clock.hpp>
+#include <gromox/freebusy.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 
@@ -467,7 +468,7 @@ struct tCalendarEvent : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "CalendarEvent";
 
-	tCalendarEvent(time_t start, time_t end, uint32_t btype, const std::string &uid, const char *subj, const char *loc, bool meet, bool recur, bool exc, bool remind, bool pvt, bool detailed);
+	tCalendarEvent(const freebusy_event);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -1701,7 +1702,7 @@ struct tFolderResponseShape
 struct tFreeBusyView
 {
 	tFreeBusyView() = default;
-	tFreeBusyView(const char*, const char*, time_t, time_t, const EWSContext&);
+	tFreeBusyView(const char*, const char*, time_t, time_t);
 
 	void serialize(tinyxml2::XMLElement*) const;
 

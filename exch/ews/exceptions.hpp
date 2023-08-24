@@ -175,6 +175,7 @@ inline std::string E3107(const std::string_view& val) {return fmt::format("annot
 E(3108, "missing child node in SetItemField object");
 E(3109, "PidLidAppointmentRecur contents not recognized");
 E(3110, "Invalid recurrence type");
+E(3111, "failed to load freebusy information");
 
 #undef E
 }
