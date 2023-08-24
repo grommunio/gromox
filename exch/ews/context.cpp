@@ -688,6 +688,16 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 }
 
 /**
+ * @brief      Get folder specification form any folder specification
+ *
+ * @param      fId    Folder Id
+ *
+ * @return     Folder specification
+ */
+sFolderSpec EWSContext::resolveFolder(const std::variant<tFolderId, tDistinguishedFolderId>& fId) const
+{return std::visit([this](const auto& f){return resolveFolder(f);}, fId);}
+
+/**
  * @brief      Get specification of folder containing the message
  *
  * @param      eid    Message entry ID

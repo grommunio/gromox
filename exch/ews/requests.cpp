@@ -123,7 +123,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 	bool hasAccess = true;
 	std::optional<sFolderSpec> targetFolder;
 	if(request.SavedItemFolderId)
-		targetFolder = std::visit([&](auto& f){return ctx.resolveFolder(f);}, request.SavedItemFolderId->folderId);
+		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->folderId);
 	if(!targetFolder)
 		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
 	else
@@ -211,7 +211,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 	{
 		sFolderSpec folderSpec;
 		try {
-			folderSpec = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, folderId);
+			folderSpec = ctx.resolveFolder(folderId);
 		} catch (DeserializationError& err) {
 			data.ResponseMessages.emplace_back("Error", "ErrorFolderNotFound", err.what());
 			continue;
@@ -498,7 +498,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		syncState.init(*request.SyncState);
 	syncState.convert();
 
-	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId->folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->folderId);
 	if(!folder.target)
 		folder.target = ctx.auth_info.username;
 	std::string dir = ctx.getDir(folder.normalize());
@@ -566,7 +566,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 
 	response->SetName("m:SyncFolderItemsResponse");
 
-	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId.folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId.folderId);
 
 	sSyncState syncState;
 	if(request.SyncState && !request.SyncState->empty())
