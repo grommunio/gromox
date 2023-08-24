@@ -12,6 +12,7 @@
 #include <string>
 #include <typeinfo>
 #include <unistd.h>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
@@ -19,7 +20,6 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
-#include <gromox/int_hash.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -113,7 +113,7 @@ static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
-static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
+static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
 static alloc_limiter<DCERPC_CALL> g_call_allocator{"g_call_allocator.d"};
 static alloc_limiter<DCERPC_AUTH_CONTEXT> g_auth_allocator{"g_auth_allocator.d"};
@@ -229,10 +229,6 @@ int pdu_processor_run()
 	                    "pdu_async_allocator", "http.cfg:context_num");
 	g_stack_allocator = alloc_limiter<NDR_STACK_ROOT>(4 * context_num,
 	                    "pdu_stack_allocator", "http.cfg:context_num");
-	g_async_hash = INT_HASH_TABLE::create(context_num * 2, sizeof(ASYNC_NODE *));
-	if (NULL == g_async_hash) {
-		return -8;
-	}
 	for (const auto &i : g_plugin_names) {
 		int ret = pdu_processor_load_library(i.c_str());
 		if (ret != PLUGIN_LOAD_OK)
@@ -269,7 +265,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 			break;
 		}
 		auto pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
-		g_async_hash->remove(pasync_node->async_id);
+		g_async_hash.erase(pasync_node->async_id);
 		as_hold.unlock();
 		if (NULL != pcontext->pinterface->reclaim) {
 			pcontext->pinterface->reclaim(pasync_node->async_id);
@@ -294,7 +290,7 @@ void pdu_processor_stop()
 	while (!g_plugin_list.empty())
 		g_plugin_list.pop_back();
 	g_endpoint_list.clear();
-	g_async_hash.reset();
+	g_async_hash.clear();
 }
 
 static uint16_t pdu_processor_find_secondary(const char *host,
@@ -1608,7 +1604,6 @@ static uint32_t pdu_processor_apply_async_id()
 	int async_id;
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
-	ASYNC_NODE *pfake_async;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
@@ -1646,10 +1641,19 @@ static uint32_t pdu_processor_apply_async_id()
 	async_id = g_last_async_id;
 	if (g_last_async_id >= INT32_MAX)
 		g_last_async_id = 0;
-	pfake_async = NULL;
-	if (g_async_hash->add(async_id, &pfake_async) != 1) {
+	auto ctx_num = g_connection_num * g_connection_ratio;
+	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
 		g_async_allocator->put(pasync_node);
+		fprintf(stderr, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)\n");
+		return 0;
+	}
+	try {
+		g_async_hash.emplace(async_id, nullptr);
+	} catch (const std::bad_alloc &) {
+		as_hold.unlock();
+		g_async_allocator->put(pasync_node);
+		fprintf(stderr, "E-2044: ENOMEM\n");
 		return 0;
 	}
 	pasync_node->async_id = async_id;
@@ -1668,15 +1672,14 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 		return;
 	}
 	std::lock_guard as_hold(g_async_lock);
-	auto ppasync_node = g_async_hash->query<ASYNC_NODE *>(async_id);
-	if (NULL == ppasync_node || NULL != *ppasync_node) {
+	auto iter = g_async_hash.find(async_id);
+	if (iter == g_async_hash.end() || iter->second != nullptr)
 		return;
-	}
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
 		auto pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		if (pasync_node->async_id == async_id) {
-			*ppasync_node = pasync_node;
+			iter->second = pasync_node;
 			break;
 		}
 	}
@@ -1693,15 +1696,14 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 		return;
 	}
 	std::unique_lock as_hold(g_async_lock);
-	auto ppasync_node = g_async_hash->query<ASYNC_NODE *>(async_id);
-	if (NULL == ppasync_node || NULL != *ppasync_node) {
+	auto iter = g_async_hash.find(async_id);
+	if (iter == g_async_hash.end() || iter->second != nullptr)
 		return;
-	}
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
 		pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		if (pasync_node->async_id == async_id) {
-			g_async_hash->remove(async_id);
+			g_async_hash.erase(iter);
 			double_list_remove(&pcall->pcontext->async_list, pnode);
 			break;
 		}
@@ -1716,22 +1718,22 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
    then lock the async_id in async hash table */
 static BOOL pdu_processor_rpc_build_environment(int async_id)
 {
-	ASYNC_NODE *pasync_node;
-	
  BUILD_BEGIN:
 	std::unique_lock as_hold(g_async_lock);
-	auto ppasync_node = g_async_hash->query<ASYNC_NODE *>(async_id);
-	if (NULL == ppasync_node) {
+	auto iter = g_async_hash.find(async_id);
+	if (iter == g_async_hash.end()) {
 		return FALSE;
-	} else if (NULL == *ppasync_node) {
+	} else if (iter->second == nullptr) {
 		as_hold.unlock();
 		usleep(10000);
 		goto BUILD_BEGIN;
 	}
-	pasync_node = *ppasync_node;
-	/* remove from async hash table to forbidden
-		cancel pdu while async replying */
-	g_async_hash->remove(async_id);
+	auto pasync_node = iter->second;
+	/*
+	 * Remove from async hash table to forbid cancelling the PDU while
+	 * asynchronously replying.
+	 */
+	g_async_hash.erase(iter);
 	as_hold.unlock();
 	g_call_key = pasync_node->pcall;
 	g_stack_key = pasync_node->pstack_root;
@@ -1932,10 +1934,10 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 		}
 	}
 	if (0 != async_id) {
-		auto ppasync_node = g_async_hash->query<ASYNC_NODE *>(async_id);
-		if (NULL != ppasync_node && NULL != *ppasync_node) {
+		auto iter = g_async_hash.find(async_id);
+		if (iter != g_async_hash.end() && iter->second != nullptr) {
 			b_cancel = TRUE;
-			g_async_hash->remove(async_id);
+			g_async_hash.erase(iter);
 			double_list_remove(&pcontext->async_list, pnode1);
 		}
 	}
