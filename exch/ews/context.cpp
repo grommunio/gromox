@@ -654,7 +654,11 @@ uint32_t EWSContext::permissions(const char* username, const sFolderSpec& folder
  * @return    Folder specification
  */
 sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
-{return sFolderSpec(fId);}
+{
+	sFolderSpec folder = sFolderSpec(fId);
+	folder.target = auth_info.username;
+	return folder;
+}
 
 
 /**

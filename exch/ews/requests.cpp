@@ -750,6 +750,61 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 }
 
 /**
+ * @brief      Process SendItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mSendItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:SendItemResponse");
+
+	mSendItemResponse data;
+
+	// Specified as explicit error in the documentation
+	if(!request.SaveItemToFolder && request.SavedItemFolderId) {
+		data.Responses.emplace_back("Error", "ErrorInvalidSendItemSaveSettings", "Save folder ID specified when not saving");
+		data.serialize(response);
+		return;
+	}
+	sFolderSpec saveFolder = request.SavedItemFolderId? ctx.resolveFolder(request.SavedItemFolderId->folderId) :
+	                                                    sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
+	if(request.SavedItemFolderId && !(ctx.permissions(ctx.auth_info.username, saveFolder) & frightsCreate)) {
+		data.Responses.emplace_back("Error", "InvalidAccessLevel", "No write access to save folder");
+		data.serialize(response);
+		return;
+	}
+
+	data.Responses.reserve(request.ItemIds.size());
+	for(tItemId& itemId : request.ItemIds) {
+		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec folder = ctx.resolveFolder(meid);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny)) {
+			data.Responses.emplace_back("Error", "InvalidAccessLevel", "No write access to save folder");
+			continue;
+		}
+
+		MESSAGE_CONTENT* content;
+		if(!ctx.plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content)) {
+			data.Responses.emplace_back("Error", "ErrorItemNotFound", "Failed to load message");
+			continue;
+		}
+		ctx.send(dir, *content);
+
+		if(request.SaveItemToFolder)
+			ctx.create(dir, folder, *content);
+
+		data.Responses.emplace_back().success();
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process UpdateItem
  *
  * @param      request   Request data

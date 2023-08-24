@@ -2393,6 +2393,40 @@ struct mResolveNamesResponse
 };
 
 /**
+ * Messages.xsd:1121
+ */
+struct mSendItemRequest
+{
+	explicit mSendItemRequest(const tinyxml2::XMLElement*);
+
+	bool SaveItemToFolder;  // Attribute
+
+	std::vector<tItemId> ItemIds;
+	std::optional<tTargetFolderIdType> SavedItemFolderId;
+};
+
+/**
+ * Messages.xsd:572
+ */
+struct mSendItemResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "SendItemResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:1136
+ */
+struct mSendItemResponse
+{
+	std::vector<mSendItemResponseMessage> Responses;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+
+/**
  * Messages.xsd:973
  */
 struct mUpdateItemRequest

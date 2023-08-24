@@ -1018,6 +1018,15 @@ void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPM(DescriptiveLinkKey);
 }
 
+mSendItemRequest::mSendItemRequest(const tinyxml2::XMLElement* xml) :
+	XMLINITA(SaveItemToFolder),
+	XMLINIT(ItemIds),
+	XMLINIT(SavedItemFolderId)
+{}
+
+void mSendItemResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(Responses);}
+
 mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
 	XMLINIT(Mailbox), XMLINIT(UserOofSettings)
 {}
