@@ -106,6 +106,58 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 //Request implementations
 
 /**
+ * @brief      Process CreateItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mCreateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:CreateItemResponse");
+
+	mCreateItemResponse data;
+
+	bool hasAccess = true;
+	std::optional<sFolderSpec> targetFolder;
+	if(request.SavedItemFolderId)
+		targetFolder = std::visit([&](auto& f){return ctx.resolveFolder(f);}, request.SavedItemFolderId->folderId);
+	if(!targetFolder)
+		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
+	else
+		hasAccess = ctx.permissions(ctx.auth_info.username, *targetFolder) & (frightsOwner | frightsCreate);
+	std::string dir = ctx.getDir(*targetFolder);
+
+	if(!request.MessageDisposition)
+		request.MessageDisposition = Enum::SaveOnly;
+	if(!request.SendMeetingInvitations)
+		request.SendMeetingInvitations = Enum::SendToNone;
+	bool sendMessages = request.MessageDisposition == Enum::SendOnly || request.MessageDisposition == Enum::SendAndSaveCopy;
+
+	data.ResponseMessages.reserve(request.Items.size());
+	for(sItem& item : request.Items)
+	{
+		if(!hasAccess) {
+			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot write to target folder");
+			continue;
+		}
+
+		auto& msg = data.ResponseMessages.emplace_back();
+		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
+		bool send = std::holds_alternative<tMessage>(item) &&	sendMessages;
+		MESSAGE_CONTENT content = ctx.toContent(dir, *targetFolder, item, persist);
+		if(persist)
+			msg.Items.emplace_back(ctx.create(dir, *targetFolder, content));
+		if(send)
+			ctx.send(dir, content);
+		msg.success();
+	}
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data

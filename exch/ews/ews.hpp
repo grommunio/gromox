@@ -58,6 +58,7 @@ struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
 struct tDistinguishedFolderId;
+struct tEmailAddressType;
 struct tFileAttachment;
 struct tFolderId;
 struct tFolderResponseShape;
@@ -99,6 +100,7 @@ public:
 	struct _mysql {
 		_mysql();
 
+		decltype(mysql_adaptor_get_domain_ids)* get_domain_ids;
 		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_homedir)* get_homedir;
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
@@ -135,6 +137,8 @@ public:
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
+	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
+	uint16_t smtp_server_port = 25; ///< Port to send mail to, default `"25"`
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
@@ -173,9 +177,11 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
+	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
+	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
 	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
 	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
@@ -187,11 +193,14 @@ public:
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
+	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
+	void send(const std::string&, const MESSAGE_CONTENT&) const;
+	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&) const;
 	std::string username_to_essdn(const std::string&) const;
 
@@ -215,6 +224,11 @@ private:
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
+
+	void toContent(const std::string&, Structures::tCalendarItem&, Structures::sShape&, MESSAGE_CONTENT&) const;
+	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MESSAGE_CONTENT&) const;
+	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MESSAGE_CONTENT&) const;
+	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MESSAGE_CONTENT&) const;
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };

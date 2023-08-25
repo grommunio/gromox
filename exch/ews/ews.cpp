@@ -128,6 +128,7 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
+	{"CreateItem", process<Structures::mCreateItemRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetItem", process<Structures::mGetItemRequest>},
@@ -335,6 +336,7 @@ EWSPlugin::_mysql::_mysql()
 	if (query_service2(# f, f) == nullptr) \
 		throw std::runtime_error("[ews]: failed to get the \""# f"\" service")
 
+	getService(get_domain_ids);
 	getService(get_domain_info);
 	getService(get_homedir);
 	getService(get_maildir);
@@ -371,6 +373,8 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
+	{"smtp_server_ip", "::1"},
+	{"smtp_server_port", "25"},
 	CFG_TABLE_END,
 };
 
@@ -402,6 +406,9 @@ void EWSPlugin::loadConfig()
 	if(cfg->get_int("ews_cache_message_instance_lifetime", &temp))
 		cache_message_instance_lifetime = std::chrono::milliseconds(temp);
 
+	smtp_server_ip = cfg->get_value("smtp_server_ip");
+	if(cfg->get_int("smtp_server_port", &temp))
+		smtp_server_port = uint16_t(temp);
 
 	const char* logFilter = cfg->get_value("ews_log_filter");
 	if(logFilter && strlen(logFilter))

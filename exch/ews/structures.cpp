@@ -679,7 +679,11 @@ void sShape::write(const TAGGED_PROPVAL& tp)
     TAGGED_PROPVAL* prop = EWSContext::alloc<TAGGED_PROPVAL>();
 	*prop = tp;
 	props[tp.proptag].prop = prop; */
-	wProps.emplace_back(tp);
+	auto it = std::find_if(wProps.begin(), wProps.end(), [&](const TAGGED_PROPVAL& t){return t.proptag == tp.proptag;});
+	if(it == wProps.end())
+		wProps.emplace_back(tp);
+	else
+		*it = tp;
 }
 
 /**
@@ -708,6 +712,10 @@ void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
  */
 TPROPVAL_ARRAY sShape::write() const
 {return mkArray<TPROPVAL_ARRAY>(wProps);}
+
+bool sShape::writes(uint32_t tag) const
+{return std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;}) != wProps.end();}
+
 
 /**
  * @brief      Reset all properties to unloaded
