@@ -493,14 +493,10 @@ void gi_name_map_write(const gi_name_map &map)
 		throw std::bad_alloc();
 	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
 		throw YError("PG-1110");
-	for (const auto &[propid, xn] : map) {
-		PROPERTY_NAME propname =
-			{xn.kind, xn.guid, xn.lid,
-			deconst(xn.kind == MNID_STRING ? xn.name.c_str() : nullptr)};
+	for (const auto &[propid, xn] : map)
 		if (ep.p_uint32(propid) != EXT_ERR_SUCCESS ||
-		    ep.p_propname(propname) != EXT_ERR_SUCCESS)
+		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != EXT_ERR_SUCCESS)
 			throw YError("PG-1111");
-	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0)
@@ -512,11 +508,7 @@ void gi_name_map_write(const gi_name_map &map)
 
 uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 {
-	PROPERTY_NAME pn_req;
-	pn_req.kind  = xpn_req.kind;
-	pn_req.lid   = xpn_req.lid;
-	pn_req.guid  = xpn_req.guid;
-	pn_req.pname = deconst(xpn_req.kind == MNID_STRING ? xpn_req.name.c_str() : nullptr);
+	PROPERTY_NAME pn_req(xpn_req);
 	PROPNAME_ARRAY pna_req;
 	pna_req.count = 1;
 	pna_req.ppropname = &pn_req;
