@@ -184,7 +184,6 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
  * @brief      Process GetMailTipsRequest
  *
  * Provides the functionality of GetMailTips
- * (../php/ews/exchange.php:398).
  *
  * In its current state it does nothing more than echoing back the recipient list.
  *
@@ -218,7 +217,6 @@ void process(mGetMailTipsRequest&& request, XMLElement* response, const EWSConte
  * @brief      Process GetServiceConfigurationRequest
  *
  * Provides the functionality of GetServiceConfiguration
- * (../php/ews/exchange.php:450).
  *
  * Current implementation is basically a stub and only delivers static data;
  *
@@ -245,7 +243,6 @@ void process(mGetServiceConfigurationRequest&&, XMLElement* response, const EWSC
  * @brief      Process GetUserAvailabilityRequest
  *
  * Provides the functionality of GetUserAvailabilityRequest
- * (../php/ews/exchange.php:225).
  *
  * @todo       Implement timezone transformations
  * @todo       Check if error handling can be improved
@@ -300,7 +297,6 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
  * @brief      Process GetUserOofSettingsRequest
  *
  * Provides the functionality of GetUserOofSettingsRequest
- * (../php/ews/exchange.php:16).
  *
  * @todo       Check if error handling can be improved
  *             (using the response message instead of SOAP faults)
@@ -371,7 +367,6 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
  * @brief      Process SetUserOofSettingsRequest
  *
  * Provides functionality of SetUserOofSettingsRequest
- * (../php/ews/exchange.php:134).
  *
  * @todo       Check if error handling can be improved
  *             (using the response message instead of SOAP faults)
