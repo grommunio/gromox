@@ -86,7 +86,7 @@ struct FNV
 
 private:
 	/**
-	 * @brief      Updat hash
+	 * @brief      Update hash
 	 *
 	 * @param      data   Data to hash
 	 * @param      count  Data element count

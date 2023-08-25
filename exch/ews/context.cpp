@@ -85,7 +85,7 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 }
 
 /**
- * @brief     Get user ro domain ID by name
+ * @brief     Get user or domain ID by name
  *
  * @param     name       Name to resolve
  * @param     isDomain   Whether target is a domain
