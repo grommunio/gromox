@@ -248,6 +248,7 @@ class sShape
 	std::vector<uint32_t> namedTags; ///< Named tags (ID and type, ID might be 0 if unknown)
 	std::vector<PROPERTY_NAME> names; ///< Requested named properties
 	std::vector<uint8_t> nameMeta; ///< Flags for named tags
+	std::vector<TAGGED_PROPVAL> namedCache; ///< Properties that were written written before resolving names
 
 	std::vector<TAGGED_PROPVAL> wProps; ///< List of properties meant to be written
 	std::vector<uint32_t> dTags; ///< List of tags to remove

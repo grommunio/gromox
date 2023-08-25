@@ -651,6 +651,7 @@ sShape& sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
 	names.emplace_back(name);
 	namedTags.emplace_back(type);
 	nameMeta.emplace_back(flags);
+	namedCache.emplace_back(TAGGED_PROPVAL{});
 	return *this;
 }
 
@@ -698,8 +699,13 @@ void sShape::write(const TAGGED_PROPVAL& tp)
 void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
 {
 	auto it = std::find(names.begin(), names.end(), name);
-	if(it == names.end())
+	if(it == names.end()) {
+		namedTags.emplace_back(tp.proptag);
+		nameMeta.emplace_back(0);
+		names.emplace_back(name);
+		namedCache.emplace_back(tp);
 		return;
+	}
 	auto index = std::distance(names.begin(), it);
 	TAGGED_PROPVAL augmented{namedTags[index], tp.pvalue};
 	write(augmented);
@@ -804,8 +810,10 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 		++((it->second.flags & FL_RM)? namedRm : namedAdd);
 		props.erase(it);
 	}
-	tags.resize(tags.size()-namedAdd);
-	dTags.resize(dTags.size()-namedRm);//Truncate named IDs
+	if(tags.size() >= namedAdd)
+		tags.resize(tags.size()-namedAdd);
+	if(dTags.size() >=namedRm)
+		dTags.resize(dTags.size()-namedRm);//Truncate named IDs
 	for(size_t index = 0; index < names.size(); ++index) { //Add named IDs
 		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids.ppropid[index]);
 		namedTags[index] = tag;
@@ -817,6 +825,12 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 			props.emplace(tag, PropInfo(nameMeta[index], &names[index]));
 			tags.emplace_back(tag);
 		}
+	}
+	if(namedCache.size() == namedTags.size()) {
+		for(size_t index = 0; index < namedTags.size(); ++index)
+			if(namedCache[index].proptag)
+				write(names[index], TAGGED_PROPVAL{namedTags[index], namedCache[index].pvalue});
+		namedCache.clear();
 	}
 	return true;
 }
