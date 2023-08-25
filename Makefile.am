@@ -8,7 +8,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event freebusy gromox-snapshot http imap midb pop3 rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -198,8 +198,6 @@ EXTRA_libgxs_user_filter_la_DEPENDENCIES = ${default_sym}
 
 cgkrepair_SOURCES = tools/cgkrepair.cpp tools/genimport.cpp tools/genimport.hpp
 cgkrepair_LDADD = ${gromox_mt2exm_LDADD}
-freebusy_SOURCES = tools/freebusy.cpp
-freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp lib/svc_loader.cpp
 pam_gromox_la_LIBADD = -lpam ${dl_LIBS} ${HX_LIBS} libgromox_common.la
@@ -296,7 +294,7 @@ man_MANS = \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
-	doc/freebusy.8gx doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
+	doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
 	doc/gromox-abktpull.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \

@@ -32,7 +32,6 @@ Makefile.in
 /dldcheck.stamp
 /digest
 /event
-/freebusy
 /gromox-abktconv
 /gromox-compress
 /gromox-dbop
