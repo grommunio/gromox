@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b8949d8476451d814c3004ef32bac93811a441ca */
+ * Stub hash: 964c5e8a0f4b5c96831a3c1cd3a7eba2ab8e685e */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_load_mapidefs, 0, 1, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, level, IS_LONG, 1)
@@ -417,13 +417,6 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_zarafa_setpermissionrules, 
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getuserfreebusy, 0, 4, MAY_BE_ARRAY|MAY_BE_FALSE)
-	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
-	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getuseravailability, 0, 4, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
 	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)

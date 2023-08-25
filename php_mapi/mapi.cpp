@@ -3254,53 +3254,6 @@ static ZEND_FUNCTION(mapi_getuserfreebusy)
 	MAPI_G(hr) = ecSuccess;
 }
 
-/*
-	This function will get user's freebusy data
-	
-	param session[in]	session object
-	param entryid[in]	user's entryid
-	param starttime		unix time stamp
-	param endtime 		unix time stamp
-	return				json string of user's freebusy data,
-						json string, empty string means not
-						found. fields:
-						starttime, endtime, busytype, subject(base64),
-						location(base64), rests are all bool(absence
-						means false). ismeeting, isrecurring,
-						isexception, isreminderset, isprivate
-*/
-static ZEND_FUNCTION(mapi_getuseravailability)
-{
-	ZCL_MEMORY;
-	zend_long starttime, endtime;
-	BINARY entryid;
-	size_t eid_size = 0;
-	zval *pzresource;
-	char *presult_string;
-	MAPI_RESOURCE *psession;
-	
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsll",
-	    &pzresource, &entryid.pb, &eid_size, &starttime, &endtime) == FAILURE ||
-	    pzresource == nullptr || entryid.pb == nullptr || eid_size == 0)
-		pthrow(ecInvalidParam);
-	entryid.cb = eid_size;
-	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
-		&pzresource, -1, name_mapi_session, le_mapi_session);
-	if (psession->type != zs_objtype::session)
-		pthrow(ecInvalidObject);
-	auto result = zclient_getuseravailability(
-		psession->hsession, entryid, starttime,
-		endtime, &presult_string);
-	if (result != ecSuccess)
-		pthrow(result);
-	if (NULL == presult_string) {
-		RETVAL_NULL();
-		return;
-	}
-	RETVAL_STRING(presult_string);
-	MAPI_G(hr) = ecSuccess;
-}
-
 static ZEND_FUNCTION(mapi_exportchanges_config)
 {
 	ZCL_MEMORY;
@@ -4523,7 +4476,6 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_zarafa_getpermissionrules)
 	F(mapi_zarafa_setpermissionrules)
 	F(mapi_getuserfreebusy)
-	F(mapi_getuseravailability)
 	F(mapi_exportchanges_config)
 	F(mapi_exportchanges_synchronize)
 	F(mapi_exportchanges_updatestate)
