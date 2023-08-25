@@ -1263,6 +1263,7 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
+	{"Categories", {tChangeDescription::convCategories}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
@@ -1327,7 +1328,7 @@ void tChangeDescription::convProp(const char* type, const char* name, const tiny
 {
 	const Field* field = find(type, name);
 	if(!field) {
-		mlog(LV_WARN, "No conversion for %s::%s", type, name);
+		mlog(LV_WARN, "ews: no conversion for %s::%s", type, name);
 		return;
 	}
 	field->conv(value, shape);
@@ -1375,6 +1376,18 @@ void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& sha
 {
 	const char* text = v->GetText();
 	shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(text? text : "")});
+}
+
+void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
+{
+	uint32_t count = 0;
+	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
+		++count;
+	STRING_ARRAY* categories = EWSContext::construct<STRING_ARRAY>(STRING_ARRAY{count, EWSContext::alloc<char*>(count)});
+	char** dest = categories->ppstr;
+	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
+		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText())+1), s->GetText());
+	shape.write(NtCategories, TAGGED_PROPVAL{PT_MV_UNICODE, categories});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1893,7 +1906,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Recurrence", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
 	{"calendar:Start", {{MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")}, PT_SYSTIME}},
 	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
-	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_UNICODE}},
+	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -2071,6 +2084,13 @@ tItem::tItem(const sShape& shape)
 	fromProp(shape.get(PR_SUBJECT), Subject);
 	if((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
 		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(static_cast<const char*>(prop->pvalue)));
+	if((prop = shape.get(NtCategories)) && PROP_TYPE(prop->proptag) == PT_MV_UNICODE) {
+		const STRING_ARRAY* categories = static_cast<const STRING_ARRAY*>(prop->pvalue);
+		Categories.emplace(categories->count);
+		char** src = categories->ppstr;
+		for(std::string& dest : *Categories)
+			dest = *src++;
+	}
 	shape.putExtended(ExtendedProperty);
 };
 

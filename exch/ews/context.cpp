@@ -5,6 +5,8 @@
 #include <cctype>
 #include <fmt/core.h>
 
+#include <libHX/string.h>
+
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
@@ -13,6 +15,7 @@
 
 #include "exceptions.hpp"
 #include "ews.hpp"
+#include "namedtags.hpp"
 #include "structures.hpp"
 
 namespace gromox::EWS
@@ -660,7 +663,6 @@ sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
 	return folder;
 }
 
-
 /**
  * @brief      Get folder specification from entry ID
  *
@@ -898,6 +900,16 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>(item.ItemClass->c_str())});
 	if(item.Sensitivity)
 		shape.write(TAGGED_PROPVAL{PR_SENSITIVITY, construct<uint32_t>(item.Sensitivity->index())});
+	if(item.Categories && item.Categories->size() && item.Categories->size() <= std::numeric_limits<uint32_t>::max()) {
+		uint32_t count = uint32_t(item.Categories->size());
+		STRING_ARRAY* categories = construct<STRING_ARRAY>(STRING_ARRAY{count, alloc<char*>(count)});
+		char** dest = categories->ppstr;
+		for(const std::string& category : *item.Categories) {
+			*dest = alloc<char>(category.size()+1);
+			HX_strlcpy(*dest++, category.c_str(), category.size()+1);
+		}
+		shape.write(NtCategories, TAGGED_PROPVAL{PT_MV_UNICODE, categories});
+	}
 	if(item.Importance)
 		shape.write(TAGGED_PROPVAL{PR_IMPORTANCE, construct<uint32_t>(item.Importance->index())});
 
