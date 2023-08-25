@@ -76,7 +76,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
 	{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
 	{"default_charset", "utf-8"},
-	{"freebusy_tool_path", PKGLIBEXECDIR "/freebusy"},
 	{"mail_max_length", "64M", CFG_SIZE, "1"},
 	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
 	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
@@ -215,7 +214,6 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("default_charset"), mime_num,
 		max_rcpt, max_mail, max_length, max_rule_len,
 		g_config_file->get_value("smtp_server_ip"), smtp_port,
-		g_config_file->get_value("freebusy_tool_path"),
 		g_config_file->get_value("submit_command"));
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");

@@ -92,7 +92,7 @@ enum class zcore_callid : uint8_t {
 	vcftomessage = 0x50,
 	uinfo = 0x51,
 	checksession = 0x52,
-	getuseravailability = 0x53,
+	// getuseravailability = 0x53,
 	setpasswd = 0x54,
 	linkmessage = 0x55,
 	rfc822tomessage = 0x56,
@@ -605,13 +605,6 @@ struct zcreq_vcftomessage : public zcreq {
 	BINARY *pvcf_bin;
 };
 
-struct zcreq_getuseravailability : public zcreq {
-	GUID hsession;
-	BINARY entryid;
-	uint64_t starttime;
-	uint64_t endtime;
-};
-
 struct zcreq_setpasswd : public zcreq {
 	char *username;
 	char *passwd;
@@ -867,10 +860,6 @@ struct zcresp_messagetoical : public zcresp {
 
 struct zcresp_messagetovcf : public zcresp {
 	BINARY vcf_bin;
-};
-
-struct zcresp_getuseravailability : public zcresp {
-	char *result_string;
 };
 
 struct zcresp_imtomessage2 : public zcresp {

@@ -87,7 +87,6 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
-static char g_freebusy_path[256];
 static char g_default_charset[32];
 static char g_submit_command[1024];
 static constexpr char ZCORE_UA[] = PACKAGE_NAME "-zcore " PACKAGE_VERSION;
@@ -389,7 +388,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 void common_util_init(const char *org_name, const char *default_charset, int mime_num,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
     unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
-	const char *freebusy_path, const char *submit_command)
+    const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
@@ -400,7 +399,6 @@ void common_util_init(const char *org_name, const char *default_charset, int mim
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	gx_strlcpy(g_smtp_ip, smtp_ip, std::size(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	gx_strlcpy(g_freebusy_path, freebusy_path, std::size(g_freebusy_path));
 	gx_strlcpy(g_submit_command, submit_command, std::size(g_submit_command));
 }
 
@@ -418,11 +416,6 @@ int common_util_run(const char *data_path)
 		return -2;
 	}
 	return 0;
-}
-
-const char* common_util_get_freebusy_path()
-{
-	return g_freebusy_path;
 }
 
 BOOL common_util_build_environment() try

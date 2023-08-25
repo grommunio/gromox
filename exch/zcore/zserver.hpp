@@ -133,7 +133,6 @@ extern ec_error_t zs_icaltomessage(GUID ses, uint32_t msg_handle, const BINARY *
 extern ec_error_t zs_imtomessage2(GUID session, uint32_t folder_handle, uint32_t data_type, char *im_data, LONG_ARRAY *outhandles);
 extern ec_error_t zs_messagetovcf(GUID ses, uint32_t msg_handle, BINARY *vcf);
 extern ec_error_t zs_vcftomessage(GUID ses, uint32_t msg_handle, const BINARY *vcf);
-extern ec_error_t zs_getuseravailability(GUID ses, BINARY entryid, uint64_t starttime, uint64_t endtime, char **result);
 extern ec_error_t zs_setpasswd(const char *username, const char *passwd, const char *new_passwd);
 extern ec_error_t zs_linkmessage(GUID ses, BINARY search_eid, BINARY msg_eid);
 extern ec_error_t zs_essdn_to_username(const char *essdn, char **username);

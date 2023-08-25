@@ -1542,26 +1542,6 @@ static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getuserfreebusy &d)
 	return pack_result::ok;
 }
 
-static pack_result zrpc_pull(EXT_PULL &x, zcreq_getuseravailability &d)
-{
-	QRF(x.g_guid(&d.hsession));
-	QRF(x.g_bin(&d.entryid));
-	QRF(x.g_uint64(&d.starttime));
-	QRF(x.g_uint64(&d.endtime));
-	return pack_result::ok;
-}
-
-static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getuseravailability &d)
-{
-	if (d.result_string == nullptr) {
-		QRF(x.p_uint8(0));
-		return pack_result::ok;
-	}
-	QRF(x.p_uint8(1));
-	QRF(x.p_str(d.result_string));
-	return pack_result::ok;
-}
-
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_imtomessage2 &d)
 {
 	QRF(x.p_uint32_a(d.msg_handles));
@@ -1703,7 +1683,6 @@ pack_result rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
 	E(icaltomessage)
 	E(messagetovcf)
 	E(vcftomessage)
-	E(getuseravailability)
 	E(setpasswd)
 	E(linkmessage)
 	E(imtomessage2)
@@ -1822,7 +1801,6 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	E(messagetorfc822)
 	E(messagetoical)
 	E(messagetovcf)
-	E(getuseravailability)
 	E(imtomessage2)
 	E(essdn_to_username)
 	E(logon_token)

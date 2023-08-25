@@ -93,7 +93,7 @@ static constexpr const char *zcore_rpc_names[] = {
 	E(vcftomessage),
 	E(uinfo),
 	E(checksession),
-	E(getuseravailability),
+	"getuseravailability",
 	E(setpasswd),
 	E(linkmessage),
 	E(rfc822tomessage),
