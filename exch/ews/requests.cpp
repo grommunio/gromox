@@ -106,6 +106,58 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 //Request implementations
 
 /**
+ * @brief      Process CreateItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mCreateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:CreateItemResponse");
+
+	mCreateItemResponse data;
+
+	bool hasAccess = true;
+	std::optional<sFolderSpec> targetFolder;
+	if(request.SavedItemFolderId)
+		targetFolder = ctx.resolveFolder(request.SavedItemFolderId->folderId);
+	if(!targetFolder)
+		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
+	else
+		hasAccess = ctx.permissions(ctx.auth_info.username, *targetFolder) & (frightsOwner | frightsCreate);
+	std::string dir = ctx.getDir(*targetFolder);
+
+	if(!request.MessageDisposition)
+		request.MessageDisposition = Enum::SaveOnly;
+	if(!request.SendMeetingInvitations)
+		request.SendMeetingInvitations = Enum::SendToNone;
+	bool sendMessages = request.MessageDisposition == Enum::SendOnly || request.MessageDisposition == Enum::SendAndSaveCopy;
+
+	data.ResponseMessages.reserve(request.Items.size());
+	for(sItem& item : request.Items)
+	{
+		if(!hasAccess) {
+			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot write to target folder");
+			continue;
+		}
+
+		auto& msg = data.ResponseMessages.emplace_back();
+		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
+		bool send = std::holds_alternative<tMessage>(item) &&	sendMessages;
+		MESSAGE_CONTENT content = ctx.toContent(dir, *targetFolder, item, persist);
+		if(persist)
+			msg.Items.emplace_back(ctx.create(dir, *targetFolder, content));
+		if(send)
+			ctx.send(dir, content);
+		msg.success();
+	}
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data
@@ -159,7 +211,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 	{
 		sFolderSpec folderSpec;
 		try {
-			folderSpec = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, folderId);
+			folderSpec = ctx.resolveFolder(folderId);
 		} catch (DeserializationError& err) {
 			data.ResponseMessages.emplace_back("Error", "ErrorFolderNotFound", err.what());
 			continue;
@@ -387,19 +439,13 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	tUserOofSettings& OofSettings = request.UserOofSettings;
 	int oof_state, allow_external_oof, external_audience;
 
-	if(tolower(OofSettings.OofState) == "disabled")
-		oof_state = 0;
-	else if(OofSettings.OofState == "enabled")
-		oof_state = 1;
-	else if(OofSettings.OofState == "scheduled")
-		oof_state = 2;
-	else
-		throw DispatchError(E3008(OofSettings.OofState));
+	oof_state = OofSettings.OofState;
 
-	allow_external_oof = !(tolower(OofSettings.ExternalAudience) == "none");
+	std::string externalAudience = OofSettings.ExternalAudience;
+	allow_external_oof = !(tolower(externalAudience) == "none");
 	//Note: counterintuitive but intentional: known -> 1, all -> 0
-	external_audience = OofSettings.ExternalAudience == "known";
-	if(allow_external_oof && !external_audience && OofSettings.ExternalAudience != "all")
+	external_audience = externalAudience == "known";
+	if(allow_external_oof && !external_audience && externalAudience != "all")
 		throw DispatchError(E3009(OofSettings.ExternalAudience));
 
 	std::string filename = maildir+"/config/autoreply.cfg";
@@ -447,7 +493,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		syncState.init(*request.SyncState);
 	syncState.convert();
 
-	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId->folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->folderId);
 	if(!folder.target)
 		folder.target = ctx.auth_info.username;
 	std::string dir = ctx.getDir(folder.normalize());
@@ -515,7 +561,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 
 	response->SetName("m:SyncFolderItemsResponse");
 
-	sFolderSpec folder = std::visit([&ctx](auto&& v){return ctx.resolveFolder(v);}, request.SyncFolderId.folderId);
+	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId.folderId);
 
 	sSyncState syncState;
 	if(request.SyncState && !request.SyncState->empty())
@@ -687,13 +733,68 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	if (aliases.size() > 0) {
 		aliases.resize(min(aliases.size(), size_t(3)));
 		cnt.EmailAddresses.emplace().reserve(aliases.size());
-		size_t index = 0;
+		uint8_t index = 0;
 		for (auto& alias : aliases)
 			cnt.EmailAddresses->emplace_back(tEmailAddressDictionaryEntry(std::move(alias),
 			                                                              Enum::EmailAddressKeyType(index++)));
 	}
 
 	msg.success();
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process SendItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mSendItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:SendItemResponse");
+
+	mSendItemResponse data;
+
+	// Specified as explicit error in the documentation
+	if(!request.SaveItemToFolder && request.SavedItemFolderId) {
+		data.Responses.emplace_back("Error", "ErrorInvalidSendItemSaveSettings", "Save folder ID specified when not saving");
+		data.serialize(response);
+		return;
+	}
+	sFolderSpec saveFolder = request.SavedItemFolderId? ctx.resolveFolder(request.SavedItemFolderId->folderId) :
+	                                                    sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
+	if(request.SavedItemFolderId && !(ctx.permissions(ctx.auth_info.username, saveFolder) & frightsCreate)) {
+		data.Responses.emplace_back("Error", "InvalidAccessLevel", "No write access to save folder");
+		data.serialize(response);
+		return;
+	}
+
+	data.Responses.reserve(request.ItemIds.size());
+	for(tItemId& itemId : request.ItemIds) {
+		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec folder = ctx.resolveFolder(meid);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny)) {
+			data.Responses.emplace_back("Error", "InvalidAccessLevel", "No write access to save folder");
+			continue;
+		}
+
+		MESSAGE_CONTENT* content;
+		if(!ctx.plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content)) {
+			data.Responses.emplace_back("Error", "ErrorItemNotFound", "Failed to load message");
+			continue;
+		}
+		ctx.send(dir, *content);
+
+		if(request.SaveItemToFolder)
+			ctx.create(dir, folder, *content);
+
+		data.Responses.emplace_back().success();
+	}
 
 	data.serialize(response);
 }

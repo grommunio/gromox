@@ -14,71 +14,65 @@ namespace gromox::EWS::Structures
 /**
  * @brief     String enum
  *
- * Throws when a non-template value is assigned or used for construction.
+ * Throws when a non-template value or invalid index is assigned or used for
+ * construction.
  */
-template<const char* C0, const char*... Cs>
-struct StrEnum : public std::string
+template<const char*... Cs>
+class StrEnum
 {
-	static constexpr std::array<const char*, 1+sizeof...(Cs)> Choices{C0, Cs...};
+public:
+	using index_t = uint8_t; ///< Index type. Might be expanded if necessary, for now 255 values should be sufficient.
+
+	static_assert(sizeof...(Cs) > 0, "StrEnum must have at least on option");
+	static_assert(sizeof...(Cs) < std::numeric_limits<index_t>::max(), "Too many options for StrEnum");
+
+	static constexpr std::array<const char*, sizeof...(Cs)> Choices{Cs...};
 
 	StrEnum() = default;
+	constexpr StrEnum(const std::string_view& v) : idx(check(v)) {}
+	constexpr StrEnum(const char* v) : idx(check(v)) {}
+	constexpr explicit StrEnum(index_t index) : idx(check(index)) {}
 
-	template<typename... Args>
-	StrEnum(Args&&... args) : std::string(std::forward<Args...>(args...))
-	{check(*this);}
+	constexpr operator std::string() const {return s();}
+	constexpr operator std::string_view() const {return sv();}
+	constexpr operator const char*() const {return c_str();}
+	constexpr operator index_t() const {return index();}
 
-	StrEnum(size_t index, size_t def=Choices.size())
+	constexpr std::string s() const {return Choices[idx];}
+	constexpr std::string_view sv() const {return Choices[idx];}
+	constexpr const char* c_str() const {return Choices[idx];}
+	constexpr index_t index() const {return idx;}
+
+	constexpr bool operator==(const char* v) const {return strcmp(v, Choices[idx]) == 0;}
+	constexpr bool operator==(const StrEnum& o) const {return idx == o.idx;}
+
+	static constexpr index_t check(const std::string_view& v)
 	{
-		if(index >= Choices.size() && def >= Choices.size())
-		{
-			std::string msg = "Invalid index ";
-			msg += std::to_string(index);
-			msg += " for enum ";
-			printChoices(msg);
-			throw gromox::EWS::Exceptions::EnumError(msg);
-		}
-		assign(Choices[index >= Choices.size()? def : index]);
-	}
-
-	template<typename Arg>
-	StrEnum& operator=(Arg&& arg)
-	{
-		check(arg);
-		assign(std::forward<Arg>(arg));
-		return *this;
-	}
-
-	static void check(const std::string& v)
-	{
-		for(const char* choice : Choices)
-			if(choice == v)
-				return;
-		std::string msg = "\"";
-		msg += v;
-		msg += "\" is not one of ";
+		for(index_t i = 0; i < Choices.size(); ++i)
+			if(v == Choices[i])
+				return i;
+		std::string msg = fmt::format("\"{}\" is not one of ", v);
 		printChoices(msg);
 		throw gromox::EWS::Exceptions::EnumError(msg);
 	}
 
-	ssize_t index() const
+	static constexpr index_t check(index_t value)
 	{
-		ssize_t i = 0;
-		for(const char* choice : Choices)
-		{
-			if(choice == *this)
-				return i;
-			++i;
-		}
-		return -1;
+		if(value < sizeof...(Cs))
+			return value;
+		std::string msg = fmt::format("Invalid index {} for enum ", value);
+		printChoices(msg);
+		throw gromox::EWS::Exceptions::EnumError(msg);
 	}
 
 private:
+	index_t idx = 0;
+
 	static void printChoices(std::string& dest)
 	{
-		dest += '[';
+		dest += "[\"";
 		dest += Choices[0];
-		for(auto it = Choices.begin()+1; it != Choices.end(); ++it)
-		{
+		for(auto it = Choices.begin()+1; it != Choices.end(); ++it) {
 			dest += "\", \"";
 			dest += *it;
 		}
@@ -235,9 +229,15 @@ struct Enum
 	STR(Resource);
 	STR(Room);
 	STR(Saturday);
+	STR(SaveOnly);
 	STR(Scheduled);
 	STR(Scope);
 	STR(Second);
+	STR(SendAndSaveCopy);
+	STR(SendOnly);
+	STR(SendOnlyToAll);
+	STR(SendToAllAndSaveCopy);
+	STR(SendToNone);
 	STR(September);
 	STR(SharePointURLs);
 	STR(Sharing); //=Caring
@@ -342,6 +342,7 @@ struct Enum
 	//Enum types
 	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
+	using CalendarItemCreateOrDeleteOperationType = StrEnum<SendToNone, SendOnlyToAll, SendToAllAndSaveCopy>; ///<< Types.xsd:4005
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
 	using DayOfWeekIndexType = StrEnum<First, Second, Third, Fourth, Last>; ///<Types.xsd:4500
@@ -358,6 +359,7 @@ struct Enum
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
 	using MeetingAttendeeType = StrEnum<Organizer, Required, Optional, Room, Resource>; ///< Types.xsd:6278
+	using MessageDispositionType = StrEnum<SaveOnly, SendOnly, SendAndSaveCopy>; ///< Types.xsd:3997
 	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
 	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255

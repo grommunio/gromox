@@ -248,6 +248,7 @@ class sShape
 	std::vector<uint32_t> namedTags; ///< Named tags (ID and type, ID might be 0 if unknown)
 	std::vector<PROPERTY_NAME> names; ///< Requested named properties
 	std::vector<uint8_t> nameMeta; ///< Flags for named tags
+	std::vector<TAGGED_PROPVAL> namedCache; ///< Properties that were written written before resolving names
 
 	std::vector<TAGGED_PROPVAL> wProps; ///< List of properties meant to be written
 	std::vector<uint32_t> dTags; ///< List of tags to remove
@@ -304,6 +305,7 @@ public:
 	void write(const TAGGED_PROPVAL&);
 	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
 	TPROPVAL_ARRAY write() const;
+	bool writes(uint32_t) const;
 
 	PROPTAG_ARRAY remove() const;
 
@@ -835,9 +837,9 @@ struct tChangeDescription
 	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
+	static void convCategories(const tinyxml2::XMLElement*, sShape&);
 
 	static std::array<const char*, 15> itemTypes;
-	static std::array<Field, 2> fields2;
 	static std::unordered_multimap<std::string, Field> fields;
 };
 
@@ -920,6 +922,9 @@ struct tItemId : public tBaseItemId
  */
 struct tSingleRecipient
 {
+	tSingleRecipient() = default;
+	explicit tSingleRecipient(const tinyxml2::XMLElement*);
+
 	tEmailAddressType Mailbox;
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1151,6 +1156,7 @@ struct tItem : public NS_EWS_Types
 	static constexpr char NAME[] = "Item";
 
 	explicit tItem(const sShape&);
+	explicit tItem(const tinyxml2::XMLElement*);
 
 	std::optional<sBase64Binary> MimeContent; ///< exmdb::read_message
 	std::optional<tItemId> ItemId; ///< PR_ENTRYID+PR_CHANGEKEY
@@ -1237,6 +1243,7 @@ struct tCalendarItem : public tItem
 	static constexpr char NAME[] = "CalendarItem";
 
 	explicit tCalendarItem(const sShape&);
+	explicit tCalendarItem(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -1316,6 +1323,7 @@ struct tContact : public tItem
 	static constexpr char NAME[] = "Contact";
 
 	explicit tContact(const sShape&);
+	explicit tContact(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -1452,6 +1460,7 @@ struct tItemChange
  */
 struct tItemResponseShape
 {
+	tItemResponseShape() = default;
 	explicit tItemResponseShape(const tinyxml2::XMLElement*);
 
 	void tags(sShape&) const;
@@ -1590,6 +1599,7 @@ struct tMessage : public tItem
 	static constexpr char NAME[] = "Message";
 
 	explicit tMessage(const sShape&);
+	explicit tMessage(const tinyxml2::XMLElement*);
 
 	std::optional<tSingleRecipient> Sender; ///< PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME
 	std::optional<std::vector<tEmailAddressType>> ToRecipients;
@@ -1600,7 +1610,7 @@ struct tMessage : public tItem
 	std::optional<sBase64Binary> ConversationIndex; ///< PR_CONVERSATION_INDEX
 	std::optional<std::string> ConversationTopic; ///< PR_CONVERSATION_TOPIC
 	//<xs:element name="ConversationTopic" type="xs:string" minOccurs="0" />
-	std::optional<tSingleRecipient> From;
+	std::optional<tSingleRecipient> From; ///< PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME
 	std::optional<std::string> InternetMessageId; ///< PR_INTERNET_MESSAGE_ID
 	std::optional<bool> IsRead;
 	std::optional<bool> IsResponseRequested;
@@ -1949,6 +1959,50 @@ struct mResponseMessageType : public NS_EWS_Messages
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Messages.xsd:990
+ */
+struct mItemInfoResponseMessage : public mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	std::vector<sItem> Items;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:959
+ */
+struct mCreateItemRequest
+{
+	explicit mCreateItemRequest(const tinyxml2::XMLElement*);
+
+	std::optional<Enum::MessageDispositionType> MessageDisposition; // Attribute
+	std::optional<Enum::CalendarItemCreateOrDeleteOperationType> SendMeetingInvitations; //Attribute
+
+	std::optional<tTargetFolderIdType> SavedItemFolderId;
+	std::vector<sItem> Items;
+};
+
+struct mCreateItemResponseMessage : public mItemInfoResponseMessage
+{
+	static constexpr char NAME[] = "CreateItemResponseMessage";
+
+	using mItemInfoResponseMessage::mItemInfoResponseMessage;
+};
+
+
+/**
+ * Messages.xsd:990
+ */
+struct mCreateItemResponse
+{
+	std::vector<mCreateItemResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:1482
  */
 struct mGetAttachmentRequest
@@ -2167,13 +2221,6 @@ struct mGetUserOofSettingsResponse
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
-struct mItemInfoResponseMessage : public mResponseMessageType
-{
-	std::vector<sItem> Items;
-
-	void serialize(tinyxml2::XMLElement*) const;
-};
-
 /**
  * @brief      Out-of-office settings set request
  *
@@ -2345,6 +2392,40 @@ struct mResolveNamesResponse
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
+
+/**
+ * Messages.xsd:1121
+ */
+struct mSendItemRequest
+{
+	explicit mSendItemRequest(const tinyxml2::XMLElement*);
+
+	bool SaveItemToFolder;  // Attribute
+
+	std::vector<tItemId> ItemIds;
+	std::optional<tTargetFolderIdType> SavedItemFolderId;
+};
+
+/**
+ * Messages.xsd:572
+ */
+struct mSendItemResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "SendItemResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:1136
+ */
+struct mSendItemResponse
+{
+	std::vector<mSendItemResponseMessage> Responses;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 
 /**
  * Messages.xsd:973

@@ -15,6 +15,7 @@ namespace gromox::EWS::Requests
 
 #define EWSFUNC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&)
 
+EWSFUNC(mCreateItemRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetFolderRequest);
 EWSFUNC(mGetItemRequest);
@@ -24,6 +25,7 @@ EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
 EWSFUNC(mResolveNamesRequest);
+EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);

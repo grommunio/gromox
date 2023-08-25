@@ -5,6 +5,8 @@
 #include <cctype>
 #include <fmt/core.h>
 
+#include <libHX/string.h>
+
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
@@ -13,6 +15,7 @@
 
 #include "exceptions.hpp"
 #include "ews.hpp"
+#include "namedtags.hpp"
 #include "structures.hpp"
 
 namespace gromox::EWS
@@ -60,6 +63,48 @@ T& defaulted(std::optional<T>& container, Args&&... args)
 {return container? *container : container.emplace(std::forward<Args...>(args)...);}
 
 } // Anonymous namespace
+
+/**
+ * @brief      Create new item
+ *
+ * @param      parent    Parent folder to create item in
+ * @param      item      Item object to store
+ *
+ * @return     Item object containing ItemId
+ */
+sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, const MESSAGE_CONTENT& content) const
+{
+	ec_error_t error;
+	uint64_t* messageId = content.proplist.get<uint64_t>(PidTagMid);
+	if(!messageId)
+		throw DispatchError(E3112);
+	plugin.exmdb.write_message(dir.c_str(), auth_info.username, CP_ACP, parent.folderId, &content, &error);
+
+	sShape retshape = sShape(tItemResponseShape());
+	return loadItem(dir, parent.folderId, *messageId, retshape);
+}
+
+/**
+ * @brief     Get user ro domain ID by name
+ *
+ * @param     name       Name to resolve
+ * @param     isDomain   Whether target is a domain
+ *
+ * @return Account ID
+ */
+uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
+{
+	uint32_t accountId, unused1;
+	display_type unused2;
+	BOOL res;
+	if(isDomain)
+		res = plugin.mysql.get_domain_ids(name.c_str(), &accountId, &unused1);
+	else
+		res = plugin.mysql.get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
+	if(!res)
+		throw DispatchError(E3113(isDomain? "domain" : "user", name));
+	return accountId;
+}
 
 /**
  * @brief      Get named property IDs
@@ -531,6 +576,32 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 /**
  * @brief    Normalize mailbox specification
  *
+ * If EmailAddress is empty, nothing happens.
+ *
+ * Ensures that `RoutingType` equals "smtp", performing essdn resolution if
+ * necessary.
+ *
+ * @throw      DispatchError   Unsupported RoutingType
+ *
+ * @param Mailbox
+ */
+void EWSContext::normalize(tEmailAddressType& Mailbox) const
+{
+	if(!Mailbox.EmailAddress)
+		return;
+	if(!Mailbox.RoutingType)
+		Mailbox.RoutingType = "smtp";
+	if(tolower(*Mailbox.RoutingType) == "smtp")
+		return;
+	if(Mailbox.RoutingType != "ex")
+		throw  DispatchError(E3114(*Mailbox.RoutingType));
+	Mailbox.EmailAddress = essdn_to_username(*Mailbox.EmailAddress);
+	Mailbox.RoutingType = "smtp";
+}
+
+/**
+ * @brief    Normalize mailbox specification
+ *
  * Ensures that `RoutingType` equals "smtp", performing essdn resolution if
  * necessary.
  *
@@ -586,8 +657,11 @@ uint32_t EWSContext::permissions(const char* username, const sFolderSpec& folder
  * @return    Folder specification
  */
 sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
-{return sFolderSpec(fId);}
-
+{
+	sFolderSpec folder = sFolderSpec(fId);
+	folder.target = auth_info.username;
+	return folder;
+}
 
 /**
  * @brief      Get folder specification from entry ID
@@ -620,6 +694,16 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 }
 
 /**
+ * @brief      Get folder specification form any folder specification
+ *
+ * @param      fId    Folder Id
+ *
+ * @return     Folder specification
+ */
+sFolderSpec EWSContext::resolveFolder(const std::variant<tFolderId, tDistinguishedFolderId>& fId) const
+{return std::visit([this](const auto& f){return resolveFolder(f);}, fId);}
+
+/**
  * @brief      Get specification of folder containing the message
  *
  * @param      eid    Message entry ID
@@ -646,6 +730,222 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
+}
+
+/**
+ * @brief     Send message
+ *
+ * @param     dir      Home directory the message is associtated with
+ * @param     content  Message content
+ */
+void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) const
+{
+	if(!content.children.prcpts)
+		throw DispatchError(E3115);
+	MAIL mail;
+	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
+		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
+	auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
+					   {*name = getPropertyName(dir, id); return TRUE;};
+	if(!oxcmail_export(&content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail, alloc, getPropIds,getPropName))
+		throw DispatchError(E3116);
+	std::vector<std::string> rcpts;
+	rcpts.reserve(content.children.prcpts->count);
+	const auto& prcpts = content.children.prcpts;
+	for(TPROPVAL_ARRAY** rcpt = prcpts->pparray; rcpt != prcpts->pparray+prcpts->count; ++rcpt) {
+		tEmailAddressType addr(**rcpt);
+		if(!addr.EmailAddress)
+			continue;
+		normalize(addr);
+		rcpts.emplace_back(*addr.EmailAddress);
+	}
+	ec_error_t err = cu_send_mail(mail, "smtp", plugin.smtp_server_ip.c_str(), plugin.smtp_server_port, auth_info.username,
+	                              rcpts);
+	if(err != ecSuccess)
+		throw DispatchError(E3117(err));
+}
+
+/**
+ * @brief     Convert item to MESSAGE_CONTENT
+ *
+ * @param     dir      Home directory of the associated store
+ * @param     parent   Parent folder to store the message in
+ * @param     item     Item to convert
+ * @param     persist  Whether the message is to be stored
+ *
+ * @return MESSAGE_CONTENT structure
+ */
+MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sItem& item, bool persist) const
+{
+	const auto& exmdb = plugin.exmdb;
+
+	uint64_t messageId, changeNumber;
+	BINARY *ckey, *pclbin;
+	if(persist) {
+		if(!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &messageId))
+			throw DispatchError(E3118);
+		if(!exmdb.allocate_cn(dir.c_str(), &changeNumber))
+			throw DispatchError(E3119);
+
+		bool isPublic = parent.location == parent.PUBLIC;
+		uint32_t accountId = getAccountId(*parent.target, isPublic);
+		XID xid((parent.location == parent.PRIVATE? rop_util_make_user_guid : rop_util_make_domain_guid)(accountId), changeNumber);
+
+		uint8_t* buff = alloc<uint8_t>(22);
+		EXT_PUSH ext_push;
+		if(!ext_push.init(buff, 22, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+			throw DispatchError(E3120);
+		ckey = construct<BINARY>(BINARY{ext_push.m_offset, {buff}});
+
+		PCL pcl;
+		if(!pcl.append(xid))
+			throw DispatchError(E3121);
+		pcl.serialize();
+		std::unique_ptr<BINARY, Cleaner> pcltemp(pcl.serialize());
+		if(!pcltemp)
+			throw DispatchError(E3122);
+
+		uint8_t* pcldata = alloc<uint8_t>(pcltemp->cb);
+		memcpy(pcldata, pcltemp->pv, pcltemp->cb);
+		pclbin = construct<BINARY>(BINARY{pcltemp->cb, {pcldata}});
+	}
+
+	sShape shape;
+	MESSAGE_CONTENT content;
+	std::visit([&](auto& i){toContent(dir, i, shape, content);}, item);
+
+	if(!shape.writes(PR_LAST_MODIFICATION_TIME))
+		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, EWSContext::construct<uint64_t>(rop_util_current_nttime())});
+
+	if(persist) {
+		shape.write(TAGGED_PROPVAL{PidTagMid, construct<uint64_t>(messageId)});
+		shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNumber)});
+		shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, ckey});
+		shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, pclbin});
+	}
+	getNamedTags(dir, shape, true);
+
+	TPROPVAL_ARRAY proptemp = shape.write();
+	content.proplist = TPROPVAL_ARRAY{proptemp.count, alloc<TAGGED_PROPVAL>(proptemp.count)};
+	memcpy(content.proplist.ppropval, proptemp.ppropval, sizeof(TAGGED_PROPVAL)*proptemp.count);
+	return content;
+}
+
+/**
+ * @brief      Write calendar item properties to shape
+ *
+ * Must forward the call to tItem overload.
+ *
+ * Currently a stub.
+ *
+ * @param      dir       Home directory of the target store
+ * @param      item      Calendar item to create
+ * @param      shape     Shape to store properties in
+ * @param      content   Message content struct
+ *
+ * @todo Map remaining fields
+ */
+void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MESSAGE_CONTENT& content) const
+{toContent(dir, static_cast<tItem&>(item), shape, content);}
+
+/**
+ * @brief      Write contact item properties to shape
+ *
+ * Must forward call to tItem overload.
+ *
+ * Currently a stub.
+ *
+ * @param      dir       Home directory of the target store
+ * @param      item      Contact item to create
+ * @param      shape     Shape to store properties in
+ * @param      content   Message content struct
+ *
+ * @todo Map remaining fields
+ */
+void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape, MESSAGE_CONTENT& content) const
+{toContent(dir, static_cast<tItem&>(item), shape, content);}
+
+/**
+ * @brief      Write item properties to shape
+ *
+ * Provides base for all derived classes and should be called before further
+ * processing.
+ *
+ * @param      dir       Home directory of the target store
+ * @param      item      Item to create
+ * @param      shape     Shape to store properties in
+ * @param      content   Message content struct
+ *
+ * @todo Map remaining fields
+ */
+void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MESSAGE_CONTENT& content) const
+{
+	if(item.MimeContent) {
+		// Convert MimeContent to MESSAGE_CONTENT
+		MAIL mail(plugin.mimePool);
+		if(!mail.load_from_str_move(reinterpret_cast<char*>(item.MimeContent->data()), item.MimeContent->size()))
+			throw DispatchError(E3123);
+		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
+		{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
+		MESSAGE_CONTENT* cnt = oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc, getPropIds);
+		if(!cnt)
+			throw DispatchError(E3124);
+		content = *cnt;
+		// Register tags loaded by importer to the shape
+		const TAGGED_PROPVAL *end = content.proplist.ppropval+content.proplist.count;
+		for(const TAGGED_PROPVAL* prop = content.proplist.ppropval; prop != end; ++prop)
+			shape.write(*prop);
+	}
+	if(item.ItemClass)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>(item.ItemClass->c_str())});
+	if(item.Sensitivity)
+		shape.write(TAGGED_PROPVAL{PR_SENSITIVITY, construct<uint32_t>(item.Sensitivity->index())});
+	if(item.Categories && item.Categories->size() && item.Categories->size() <= std::numeric_limits<uint32_t>::max()) {
+		uint32_t count = uint32_t(item.Categories->size());
+		STRING_ARRAY* categories = construct<STRING_ARRAY>(STRING_ARRAY{count, alloc<char*>(count)});
+		char** dest = categories->ppstr;
+		for(const std::string& category : *item.Categories) {
+			*dest = alloc<char>(category.size()+1);
+			HX_strlcpy(*dest++, category.c_str(), category.size()+1);
+		}
+		shape.write(NtCategories, TAGGED_PROPVAL{PT_MV_UNICODE, categories});
+	}
+	if(item.Importance)
+		shape.write(TAGGED_PROPVAL{PR_IMPORTANCE, construct<uint32_t>(item.Importance->index())});
+
+	for(const tExtendedProperty& prop : item.ExtendedProperty)
+		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+}
+
+/**
+ * @brief      Write message properties to shape
+ *
+ * Must forward call to tItem overload.
+ *
+ * @param      dir       Home directory of the target store
+ * @param      item      Message to create
+ * @param      shape     Shape to store properties in
+ * @param      content   Message content struct
+ *
+ * @todo Map remaining fields
+ */
+void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MESSAGE_CONTENT& content) const
+{
+	toContent(dir, static_cast<tItem&>(item), shape, content);
+	size_t recipients = (item.ToRecipients? item.ToRecipients->size() : 0)
+	                    + (item.CcRecipients? item.CcRecipients->size() : 0)
+	                    + (item.BccRecipients? item.BccRecipients->size() : 0);
+	if(recipients && !content.children.prcpts) {
+		//TODO: Add recipients
+	}
+	if(item.From) {
+		if(item.From->Mailbox.RoutingType)
+			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_ADDRTYPE, item.From->Mailbox.RoutingType->data()});
+		if(item.From->Mailbox.EmailAddress)
+			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_EMAIL_ADDRESS, item.From->Mailbox.EmailAddress->data()});
+		if(item.From->Mailbox.Name)
+			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, item.From->Mailbox.Name->data()});
+	}
 }
 
 /**

@@ -245,13 +245,12 @@ constexpr size_t typeWidth(uint16_t type)
  */
 void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 {
-	for (size_t wd = 0; wd < 7; ++wd)
+	for (uint8_t wd = 0; wd < 7; ++wd)
 		if (weekrecur & (1 << wd))
-			daysofweek.append(Enum::DayOfWeekType(wd)).append(" ");
+			daysofweek.append(Enum::DayOfWeekType::Choices[wd]).append(" ");
 	// remove trailing space
-	daysofweek.erase(
-		std::find_if(daysofweek.rbegin(), daysofweek.rend(), [](int ch) {return !std::isspace(ch);}).base(),
-		daysofweek.end());
+	if(!daysofweek.empty() && std::isspace(daysofweek.back()))
+		daysofweek.pop_back();
 }
 
 /**
@@ -283,7 +282,7 @@ void process_recurrence(const BINARY* recurData,
 	case PATTERNTYPE_WEEK:
 	{
 		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		rp = tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, Enum::DayOfWeekType(size_t(apprecurr.recur_pat.firstdow)));
+		rp = tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, Enum::DayOfWeekType(uint8_t(apprecurr.recur_pat.firstdow)));
 		break;
 	}
 	case PATTERNTYPE_MONTH:
@@ -296,7 +295,7 @@ void process_recurrence(const BINARY* recurData,
 		if (monthly)
 			rp = tAbsoluteMonthlyRecurrencePattern(apprecurr.recur_pat.period, apprecurr.recur_pat.pts.dayofmonth);
 		else
-			rp = tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth, Enum::MonthNamesType(size_t(itime.month - 1)));
+			rp = tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth, Enum::MonthNamesType(uint8_t(itime.month - 1)));
 		break;
 	}
 	case PATTERNTYPE_MONTHNTH:
@@ -305,11 +304,11 @@ void process_recurrence(const BINARY* recurData,
 		auto monthly = apprecurr.recur_pat.period % 12 != 0;
 		ical_get_itime_from_yearday(1601, apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
 		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		std::string dayofweekindex = Enum::DayOfWeekIndexType(size_t(apprecurr.recur_pat.pts.monthnth.recurnum - 1));
+		Enum::DayOfWeekIndexType dayofweekindex(uint8_t(apprecurr.recur_pat.pts.monthnth.recurnum - 1));
 		if (monthly)
 			rp = tRelativeMonthlyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, dayofweekindex);
 		else
-			rp = tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex, Enum::MonthNamesType(size_t(itime.month - 1)));
+			rp = tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex, Enum::MonthNamesType(uint8_t(itime.month - 1)));
 		break;
 	}
 	default:
@@ -652,6 +651,7 @@ sShape& sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
 	names.emplace_back(name);
 	namedTags.emplace_back(type);
 	nameMeta.emplace_back(flags);
+	namedCache.emplace_back(TAGGED_PROPVAL{});
 	return *this;
 }
 
@@ -680,7 +680,11 @@ void sShape::write(const TAGGED_PROPVAL& tp)
     TAGGED_PROPVAL* prop = EWSContext::alloc<TAGGED_PROPVAL>();
 	*prop = tp;
 	props[tp.proptag].prop = prop; */
-	wProps.emplace_back(tp);
+	auto it = std::find_if(wProps.begin(), wProps.end(), [&](const TAGGED_PROPVAL& t){return t.proptag == tp.proptag;});
+	if(it == wProps.end())
+		wProps.emplace_back(tp);
+	else
+		*it = tp;
 }
 
 /**
@@ -695,8 +699,13 @@ void sShape::write(const TAGGED_PROPVAL& tp)
 void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
 {
 	auto it = std::find(names.begin(), names.end(), name);
-	if(it == names.end())
+	if(it == names.end()) {
+		namedTags.emplace_back(tp.proptag);
+		nameMeta.emplace_back(0);
+		names.emplace_back(name);
+		namedCache.emplace_back(tp);
 		return;
+	}
 	auto index = std::distance(names.begin(), it);
 	TAGGED_PROPVAL augmented{namedTags[index], tp.pvalue};
 	write(augmented);
@@ -709,6 +718,10 @@ void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
  */
 TPROPVAL_ARRAY sShape::write() const
 {return mkArray<TPROPVAL_ARRAY>(wProps);}
+
+bool sShape::writes(uint32_t tag) const
+{return std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;}) != wProps.end();}
+
 
 /**
  * @brief      Reset all properties to unloaded
@@ -797,8 +810,10 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 		++((it->second.flags & FL_RM)? namedRm : namedAdd);
 		props.erase(it);
 	}
-	tags.resize(tags.size()-namedAdd);
-	dTags.resize(dTags.size()-namedRm);//Truncate named IDs
+	if(tags.size() >= namedAdd)
+		tags.resize(tags.size()-namedAdd);
+	if(dTags.size() >=namedRm)
+		dTags.resize(dTags.size()-namedRm);//Truncate named IDs
 	for(size_t index = 0; index < names.size(); ++index) { //Add named IDs
 		uint32_t tag = PROP_TAG(PROP_TYPE(namedTags[index]), ids.ppropid[index]);
 		namedTags[index] = tag;
@@ -810,6 +825,12 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 			props.emplace(tag, PropInfo(nameMeta[index], &names[index]));
 			tags.emplace_back(tag);
 		}
+	}
+	if(namedCache.size() == namedTags.size()) {
+		for(size_t index = 0; index < namedTags.size(); ++index)
+			if(namedCache[index].proptag)
+				write(names[index], TAGGED_PROPVAL{namedTags[index], namedCache[index].pvalue});
+		namedCache.clear();
 	}
 	return true;
 }
@@ -1242,6 +1263,7 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
+	{"Categories", {tChangeDescription::convCategories}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
@@ -1306,7 +1328,7 @@ void tChangeDescription::convProp(const char* type, const char* name, const tiny
 {
 	const Field* field = find(type, name);
 	if(!field) {
-		mlog(LV_WARN, "No conversion for %s::%s", type, name);
+		mlog(LV_WARN, "ews: no conversion for %s::%s", type, name);
 		return;
 	}
 	field->conv(value, shape);
@@ -1354,6 +1376,18 @@ void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& sha
 {
 	const char* text = v->GetText();
 	shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(text? text : "")});
+}
+
+void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
+{
+	uint32_t count = 0;
+	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
+		++count;
+	STRING_ARRAY* categories = EWSContext::construct<STRING_ARRAY>(STRING_ARRAY{count, EWSContext::alloc<char*>(count)});
+	char** dest = categories->ppstr;
+	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
+		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText())+1), s->GetText());
+	shape.write(NtCategories, TAGGED_PROPVAL{PT_MV_UNICODE, categories});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1872,7 +1906,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Recurrence", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
 	{"calendar:Start", {{MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")}, PT_SYSTIME}},
 	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
-	{"item:Categories", {{MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")}, PT_MV_UNICODE}},
+	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -2050,6 +2084,13 @@ tItem::tItem(const sShape& shape)
 	fromProp(shape.get(PR_SUBJECT), Subject);
 	if((prop = shape.get(PR_TRANSPORT_MESSAGE_HEADERS)))
 		InternetMessageHeaders.emplace(tInternetMessageHeader::parse(static_cast<const char*>(prop->pvalue)));
+	if((prop = shape.get(NtCategories)) && PROP_TYPE(prop->proptag) == PT_MV_UNICODE) {
+		const STRING_ARRAY* categories = static_cast<const STRING_ARRAY*>(prop->pvalue);
+		Categories.emplace(categories->count);
+		char** src = categories->ppstr;
+		for(std::string& dest : *Categories)
+			dest = *src++;
+	}
 	shape.putExtended(ExtendedProperty);
 };
 

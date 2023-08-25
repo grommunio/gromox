@@ -388,6 +388,32 @@ void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(RecurrenceRange);
 }
 
+tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
+	tItem(xml),
+	XMLINIT(UID),
+	XMLINIT(Start),
+	XMLINIT(End),
+	XMLINIT(OriginalStart),
+	XMLINIT(IsAllDayEvent),
+	XMLINIT(LegacyFreeBusyStatus),
+	XMLINIT(Location),
+	XMLINIT(IsMeeting),
+	XMLINIT(IsCancelled),
+	XMLINIT(IsRecurring),
+	XMLINIT(MeetingRequestWasSent),
+	XMLINIT(IsResponseRequested),
+	XMLINIT(MyResponseType),
+	XMLINIT(Organizer),
+//	XMLINIT(RequiredAttendees),
+//	XMLINIT(OptionalAttendees),
+//	XMLINIT(Resources),
+	XMLINIT(AppointmentReplyTime),
+	XMLINIT(AppointmentSequenceNumber),
+	XMLINIT(AppointmentState),
+//	XMLINIT(Recurrence),
+	XMLINIT(AllowNewTimeProposal)
+{}
+
 void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
@@ -421,6 +447,25 @@ tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
 
 void tConflictResults::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(Count);}
+
+tContact::tContact(const tinyxml2::XMLElement* xml) :
+	tItem(xml),
+	XMLINIT(FileAs),
+	XMLINIT(DisplayName),
+	XMLINIT(GivenName),
+	XMLINIT(Initials),
+	XMLINIT(MiddleName),
+	XMLINIT(Nickname),
+	XMLINIT(CompanyName),
+//	XMLINIT(EmailAddresses),
+//	XMLINIT(PhoneNumbers),
+	XMLINIT(AssistantName),
+	XMLINIT(ContactSource),
+	XMLINIT(Department),
+	XMLINIT(JobTitle),
+	XMLINIT(OfficeLocation),
+	XMLINIT(Surname)
+{}
 
 void tContact::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -592,6 +637,43 @@ void tInternetMessageHeader::serialize(tinyxml2::XMLElement* xml) const
 	xml->SetText(content.c_str());
 }
 
+tItem::tItem(const tinyxml2::XMLElement* xml) :
+	XMLINIT(MimeContent),
+//	XMLINIT(ItemId),
+//	XMLINIT(ParentFolderId),
+	XMLINIT(ItemClass),
+	XMLINIT(Subject),
+	XMLINIT(Sensitivity),
+//	XMLINIT(Body),
+//	XMLINIT(Attachments),
+//	XMLINIT(DateTimeReceived),
+//	XMLINIT(Size),
+	XMLINIT(Categories),
+	XMLINIT(Importance),
+	XMLINIT(InReplyTo),
+	XMLINIT(IsSubmitted),
+	XMLINIT(IsDraft),
+	XMLINIT(IsFromMe),
+	XMLINIT(IsResend),
+	XMLINIT(IsUnmodified),
+//	XMLINIT(InternetMessageHeaders),
+//	XMLINIT(DateTimeSent),
+//	XMLINIT(DateTimeCreated),
+	XMLINIT(DisplayCc),
+	XMLINIT(DisplayTo),
+	XMLINIT(DisplayBcc),
+//	XMLINIT(HasAttachments),
+//	XMLINIT(Culture),
+//	XMLINIT(LastModifiedName),
+//	XMLINIT(LastModifiedTime),
+	XMLINIT(IsAssociated)
+//	XMLINIT(ConversationId),
+//	XMLINIT(Flag)
+{
+	for(const tinyxml2::XMLElement* xp = xml->FirstChildElement("ExtendedProperty"); xp; xp = xp->NextSiblingElement("ExtendedProperty"))
+		ExtendedProperty.emplace_back(xp);
+}
+
 void tItem::serialize(XMLElement* xml) const
 {
 	auto mc = XMLDUMPT(MimeContent);
@@ -667,6 +749,26 @@ void tMailTipsServiceConfiguration::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(LargeAudienceCap);
 }
 
+tMessage::tMessage(const tinyxml2::XMLElement* xml) :
+	tItem(xml),
+	XMLINIT(Sender),
+	XMLINIT(ToRecipients),
+	XMLINIT(CcRecipients),
+	XMLINIT(BccRecipients),
+	XMLINIT(IsReadReceiptRequested),
+	XMLINIT(IsDeliveryReceiptRequested),
+	XMLINIT(ConversationIndex),
+	XMLINIT(ConversationTopic),
+	XMLINIT(From),
+	XMLINIT(InternetMessageId),
+	XMLINIT(IsRead),
+	XMLINIT(IsResponseRequested),
+	XMLINIT(References),
+	XMLINIT(ReplyTo),
+	XMLINIT(ReceivedBy),
+	XMLINIT(ReceivedRepresenting)
+{}
+
 void tMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	tItem::serialize(xml);
@@ -723,6 +825,10 @@ tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescripti
 	if(!item)
 		throw InputError(E3097);
 }
+
+tSingleRecipient::tSingleRecipient(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Mailbox)
+{}
 
 void tSingleRecipient::serialize(XMLElement* xml) const
 {XMLDUMPT(Mailbox);}
@@ -801,6 +907,16 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+mCreateItemRequest::mCreateItemRequest(const tinyxml2::XMLElement* xml) :
+	XMLINITA(MessageDisposition),
+	XMLINITA(SendMeetingInvitations),
+	XMLINIT(SavedItemFolderId),
+	XMLINIT(Items)
+{}
+
+void mCreateItemResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
 
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)
@@ -901,6 +1017,15 @@ void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPM(MessageText);
 	XMLDUMPM(DescriptiveLinkKey);
 }
+
+mSendItemRequest::mSendItemRequest(const tinyxml2::XMLElement* xml) :
+	XMLINITA(SaveItemToFolder),
+	XMLINIT(ItemIds),
+	XMLINIT(SavedItemFolderId)
+{}
+
+void mSendItemResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(Responses);}
 
 mSetUserOofSettingsRequest::mSetUserOofSettingsRequest(const XMLElement* xml) :
 	XMLINIT(Mailbox), XMLINIT(UserOofSettings)
