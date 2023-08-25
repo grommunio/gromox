@@ -454,8 +454,7 @@ static int npg_read(gi_name_map &map, libolecf_item_t *root)
 			return -EIO;
 		uint16_t propidx = (iki >> 16) & 0xFFFF;
 		uint16_t guididx = (iki >> 1) & 0x7FF;
-		std::unique_ptr<char[], stdlib_delete> pnstr;
-		PROPERTY_NAME pn_req{};
+		PROPERTY_XNAME pn_req;
 		pn_req.kind = (iki & 0x1) ? MNID_STRING : MNID_ID;
 		if (pn_req.kind == MNID_ID) {
 			pn_req.lid = niso;
@@ -469,15 +468,11 @@ static int npg_read(gi_name_map &map, libolecf_item_t *root)
 				return -EIO;
 			if (len > 510)
 				len = 510;
-			auto wbuf = std::make_unique<char[]>(len + 2);
-			if (sp.g_bytes(wbuf.get(), len) != EXT_ERR_SUCCESS)
+			std::string wbuf;
+			wbuf.resize(len);
+			if (sp.g_bytes(wbuf.data(), len) != EXT_ERR_SUCCESS)
 				return -EIO;
-			wbuf[len] = wbuf[len+1] = '\0';
-			auto s = iconvtext(wbuf.get(), len, "UTF-16", "UTF-8//IGNORE");
-			pnstr.reset(strdup(s.c_str()));
-			if (pnstr == nullptr)
-				return -ENOMEM;
-			pn_req.pname = pnstr.get();
+			pn_req.name = iconvtext(wbuf.data(), len, "UTF-16", "UTF-8//IGNORE");
 		}
 		if (guididx == 1) {
 			pn_req.guid = PS_MAPI;

@@ -1016,8 +1016,7 @@ static void do_namemap_table(driver &drv, gi_name_map &map)
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
 		auto rowlen = res.row_lengths();
-		std::unique_ptr<char[]> pnstr;
-		PROPERTY_NAME pn_req{};
+		PROPERTY_XNAME pn_req;
 
 		if (rowlen[1] != sizeof(GUID))
 			continue;
@@ -1026,14 +1025,13 @@ static void do_namemap_table(driver &drv, gi_name_map &map)
 			pn_req.kind = MNID_ID;
 			pn_req.lid  = strtoul(row[2], nullptr, 0);
 		} else {
+			std::string str;
+			str.resize(rowlen[3]);
+			memcpy(str.data(), row[3], rowlen[3]);
 			pn_req.kind = MNID_STRING;
-			pnstr.reset(me_alloc<char>(rowlen[3] + 1));
-			memcpy(pnstr.get(), row[3], rowlen[3] + 1);
-			pn_req.pname = pnstr.get();
+			pn_req.name = std::move(str);
 		}
 		map.emplace(PROP_TAG(PT_UNSPECIFIED, 0x8501 + strtoul(row[0], nullptr, 0)), std::move(pn_req));
-		pnstr.release();
-		pn_req.pname = nullptr;
 	}
 
 	for (const auto &[tag, mn] : map)
@@ -1061,7 +1059,7 @@ static gi_name_map do_namemap(driver &drv)
 		{PSETID_MEETING,          0x0000, 0x003F, 0x8340},
 		{PSETID_KC,               0x0002, 0x0002, 0x8380},
 	};
-	PROPERTY_NAME pn;
+	PROPERTY_XNAME pn;
 
 	for (const auto &row : hardmapped_nprops) {
 		pn.kind = MNID_ID;

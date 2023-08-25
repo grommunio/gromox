@@ -504,7 +504,7 @@ static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
 	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
 		return;
 	std::unique_ptr<char[], stdlib_delete> pnstr;
-	PROPERTY_NAME pn_req{};
+	PROPERTY_XNAME pn_req;
 	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
 	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
 		return;
@@ -516,12 +516,17 @@ static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
 		size_t dsize = 0;
 		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
 			return;
-		/* malloc: match up with allocator used by ext_buffer.cpp etc. */
-		pnstr.reset(me_alloc<char>(dsize + 1));
-		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
+		if (dsize == 0)
 			return;
+		/* malloc: match up with allocator used by ext_buffer.cpp etc. */
+		std::string str;
+		str.resize(dsize + 1);
+		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(),
+		    reinterpret_cast<uint8_t *>(str.data()), dsize + 1, nullptr) < 1)
+			return;
+		str.pop_back();
 		pn_req.kind = MNID_STRING;
-		pn_req.pname = pnstr.get();
+		pn_req.name = std::move(str);
 	}
 
 	EXT_PUSH ep;
@@ -531,7 +536,7 @@ static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
 	    ep.p_uint32(proptag) != pack_result::success ||
 	    ep.p_uint32(0) != pack_result::success ||
 	    ep.p_uint64(0) != pack_result::success ||
-	    ep.p_propname(pn_req) != pack_result::success)
+	    ep.p_propname(static_cast<PROPERTY_NAME>(pn_req)) != pack_result::success)
 		throw YError("PG-1139");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
