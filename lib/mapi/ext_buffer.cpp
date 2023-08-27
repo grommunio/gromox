@@ -257,9 +257,9 @@ pack_result EXT_PULL::g_bin_ex(BINARY *r)
 	return g_bytes(r->pv, r->cb);
 }
 
-pack_result EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
+pack_result EXT_PULL::g_uint16_an(SHORT_ARRAY *r, uint32_t count)
 {
-	TRY(g_uint32(&r->count));
+	r->count = count;
 	if (r->count == 0) {
 		r->ps = NULL;
 		return EXT_ERR_SUCCESS;
@@ -274,9 +274,15 @@ pack_result EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_uint32_a(LONG_ARRAY *r)
+pack_result EXT_PULL::g_uint16_a(SHORT_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	return g_uint16_an(r, r->count);
+}
+
+pack_result EXT_PULL::g_uint32_an(LONG_ARRAY *r, uint32_t count)
+{
+	r->count = count;
 	if (r->count == 0) {
 		r->pl = NULL;
 		return EXT_ERR_SUCCESS;
@@ -291,28 +297,14 @@ pack_result EXT_PULL::g_uint32_a(LONG_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_uint64_a(LONGLONG_ARRAY *r)
+pack_result EXT_PULL::g_uint32_a(LONG_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
-	if (r->count == 0) {
-		r->pll = NULL;
-		return EXT_ERR_SUCCESS;
-	}
-	r->pll = anew<uint64_t>(r->count);
-	if (r->pll == nullptr) {
-		r->count = 0;
-		return EXT_ERR_ALLOC;
-	}
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(g_uint64(&r->pll[i]));
-	return EXT_ERR_SUCCESS;
+	return g_uint32_an(r, r->count);
 }
 
-pack_result EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
+pack_result EXT_PULL::g_uint64_an(LONGLONG_ARRAY *r, uint32_t count)
 {
-	uint16_t count;
-	
-	TRY(g_uint16(&count));
 	r->count = count;
 	if (r->count == 0) {
 		r->pll = NULL;
@@ -328,9 +320,22 @@ pack_result EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_float_a(FLOAT_ARRAY *r)
+pack_result EXT_PULL::g_uint64_a(LONGLONG_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	return g_uint64_an(r, r->count);
+}
+
+pack_result EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
+{
+	uint16_t count;
+	TRY(g_uint16(&count));
+	return g_uint64_an(r, count);
+}
+
+pack_result EXT_PULL::g_float_an(FLOAT_ARRAY *r, uint32_t count)
+{
+	r->count = count;
 	if (r->count == 0) {
 		r->mval = nullptr;
 		return EXT_ERR_SUCCESS;
@@ -345,9 +350,15 @@ pack_result EXT_PULL::g_float_a(FLOAT_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
+pack_result EXT_PULL::g_float_a(FLOAT_ARRAY *r)
 {
 	TRY(g_uint32(&r->count));
+	return g_float_an(r, r->count);
+}
+
+pack_result EXT_PULL::g_double_an(DOUBLE_ARRAY *r, uint32_t count)
+{
+	r->count = count;
 	if (r->count == 0) {
 		r->mval = nullptr;
 		return EXT_ERR_SUCCESS;
@@ -360,6 +371,12 @@ pack_result EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_double(&r->mval[i]));
 	return EXT_ERR_SUCCESS;
+}
+
+pack_result EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
+{
+	TRY(g_uint32(&r->count));
+	return g_double_an(r, r->count);
 }
 
 pack_result EXT_PULL::g_bin_a(BINARY_ARRAY *r)
@@ -447,9 +464,9 @@ pack_result EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_guid_a(GUID_ARRAY *r)
+pack_result EXT_PULL::g_guid_an(GUID_ARRAY *r, uint32_t count)
 {
-	TRY(g_uint32(&r->count));
+	r->count = count;
 	if (r->count == 0) {
 		r->pguid = NULL;
 		return EXT_ERR_SUCCESS;
@@ -462,6 +479,12 @@ pack_result EXT_PULL::g_guid_a(GUID_ARRAY *r)
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_guid(&r->pguid[i]));
 	return EXT_ERR_SUCCESS;
+}
+
+pack_result EXT_PULL::g_guid_a(GUID_ARRAY *r)
+{
+	TRY(g_uint32(&r->count));
+	return g_guid_an(r, r->count);
 }
 
 static pack_result ext_buffer_pull_restriction_and_or(EXT_PULL *pext,
