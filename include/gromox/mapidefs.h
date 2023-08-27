@@ -50,7 +50,7 @@ enum {
 	PT_STRING8 = 0x001E, /* VT_LPSTR, PtypString8 */
 	PT_UNICODE = 0x001F, /* VT_LPWSTR, PtypString */
 	PT_GXI_STRING = 0x0f1e, /* Gromox-specific, internal */
-	PT_SYSTIME = 0x0040, /* VT_FILETIME, PtypTime */
+	PT_SYSTIME = 0x0040, /* VT_FILETIME, PtypTime (signed) */
 	PT_CLSID = 0x0048, /* VT_CLSID, PtypGuid */
 	PT_SVREID = 0x00FB, /* PtypServerId; MS-OXCDATA extension */
 	PT_SRESTRICTION = 0x00FD, /* PtypRestriction; edkmdb.h extension */

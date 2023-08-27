@@ -259,6 +259,9 @@ mapi_la_LIBADD = libphp_mapi.la
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 noinst_PROGRAMS = dldcheck tests/bdump tests/bodyconv tests/compress tests/cryptest tests/gxl-383 tests/jsontest tests/lzxpress tests/utiltest tests/vcard tests/zendfake tools/tzdump
+if HAVE_ESEDB
+noinst_PROGRAMS += tests/epv_unpack
+endif
 dldcheck_SOURCES = tools/dldcheck.cpp
 dldcheck_LDADD = ${dl_LIBS}
 TESTS = tests/utiltest
@@ -270,6 +273,8 @@ tests_compress_SOURCES = tests/compress.cpp
 tests_compress_LDADD = libgromox_common.la
 tests_cryptest_SOURCES = tests/cryptest.cpp
 tests_cryptest_LDADD = libgromox_common.la
+tests_epv_unpack_SOURCES = tests/epv_unpack.cpp tools/edb_pack.cpp tools/edb_pack.hpp
+tests_epv_unpack_LDADD = ${esedb_LIBS} libgromox_mapi.la
 tests_gxl_383_SOURCES = tests/gxl-383.cpp
 tests_gxl_383_LDADD = libgromox_exrpc.la libgromox_mapi.la
 tests_jsontest_SOURCES = tests/jsontest.cpp
