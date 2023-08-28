@@ -93,7 +93,6 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
     uint64_t parent_id, TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	uint64_t tmp_id;
-	BINARY *pentryid;
 	uint32_t tmp_type;
 	uint64_t change_num;
 	uint32_t permission;
@@ -144,10 +143,11 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (!exmdb_client::create_folder_by_properties(dir,
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	if (pctx->pstream->plogon->logon_mode == logon_mode::owner)
+	auto username = pctx->pstream->plogon->eff_user();
+	if (username == STORE_OWNER_GRANTED)
 		return TRUE;
-	auto rpc_info = get_rpc_info();
-	pentryid = common_util_username_to_addressbook_entryid(rpc_info.username);
+	/* Make some ACLs so this user can access later what they have just created. */
+	auto pentryid = common_util_username_to_addressbook_entryid(username);
 	if (pentryid == nullptr)
 		return TRUE;
 	tmp_id = 1;
@@ -170,18 +170,10 @@ static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
     uint64_t folder_id, unsigned int flags)
 {
 	BOOL b_partial;
-	const char *username;
-	DCERPC_INFO rpc_info;
-	
-	if (pctx->pstream->plogon->logon_mode == logon_mode::owner) {
-		username = NULL;	
-	} else {
-		rpc_info = get_rpc_info();
-		username = rpc_info.username;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::empty_folder(pctx->pstream->plogon->get_dir(),
-	    pinfo->cpid, username, folder_id, flags | DELETE_HARD_DELETE,
+	    pinfo->cpid, pctx->pstream->plogon->eff_user(),
+	    folder_id, flags | DELETE_HARD_DELETE,
 	    &b_partial))
 		return FALSE;	
 	if (b_partial)

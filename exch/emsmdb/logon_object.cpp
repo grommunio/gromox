@@ -688,3 +688,29 @@ BOOL logon_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	return exmdb_client::remove_store_properties(plogon->dir, &tmp_proptags);
 }
+
+/**
+ * Returns the effective username to use for permission checking.
+ * %nullptr is returned when we are the store owner ("root").
+ */
+const char *logon_object::eff_user() const
+{
+	if (logon_mode == logon_mode::owner)
+		return STORE_OWNER_GRANTED;
+	/*
+	 * If rpcinfo is empty for some unexplained reason, yield a username
+	 * that fails most permission checks.
+	 */
+	return znul(get_rpc_info().username);
+}
+
+/**
+ * Returns the effective username to use for operations that do some kind of
+ * state tracking (or if there is a special need to treat private store
+ * delegate access and private store guest access differently from public store
+ * guest access).
+ */
+const char *logon_object::readstate_user() const
+{
+	return is_private() ? nullptr : get_rpc_info().username;
+}

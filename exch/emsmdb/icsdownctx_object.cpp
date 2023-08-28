@@ -98,8 +98,6 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 {
 	uint32_t count_fai;
 	uint64_t total_fai;
-	DCERPC_INFO rpc_info;
-	const char *username;
 	uint64_t total_normal;
 	uint32_t count_normal;
 	EID_ARRAY chg_messages, read_messages, given_messages, unread_messages;
@@ -116,15 +114,9 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	auto pseen_fai = (pctx->sync_flags & SYNC_ASSOCIATED) ? pctx->pstate->pseen_fai.get() : nullptr;
 	auto pseen     = (pctx->sync_flags & SYNC_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
 	BOOL b_ordered = (pctx->extra_flags & SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME) ? TRUE : false;
-	if (!pctx->pstream->plogon->is_private()) {
-		rpc_info = get_rpc_info();
-		username = rpc_info.username;
-	} else {
-		username = NULL;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client::get_content_sync(pctx->pstream->plogon->get_dir(),
-	    pctx->pfolder->folder_id, username,
+	    pctx->pfolder->folder_id, pctx->pstream->plogon->readstate_user(),
 	    pctx->pstate->pgiven.get(), pseen, pseen_fai, pread,
 	    pinfo->cpid, pctx->prestriction, b_ordered,
 	    &count_fai, &total_fai, &count_normal, &total_normal,
@@ -225,8 +217,6 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	BINARY *pbin = nullptr;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
-	const char *username;
-	DCERPC_INFO rpc_info;
 	char temp_buff[1024];
 	FOLDER_CHANGES fldchgs;
 	EID_ARRAY given_folders;
@@ -240,15 +230,10 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	
 	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
 		return FALSE;
-	if (pctx->pstream->plogon->logon_mode == logon_mode::owner) {
-		username = NULL;
-	} else {
-		rpc_info = get_rpc_info();
-		username = rpc_info.username;
-	}
 	auto dir = pctx->pstream->plogon->get_dir();
 	if (!exmdb_client::get_hierarchy_sync(dir,
-	    pctx->pfolder->folder_id, username, pctx->pstate->pgiven.get(),
+	    pctx->pfolder->folder_id, pctx->pstream->plogon->eff_user(),
+	    pctx->pstate->pgiven.get(),
 	    pctx->pstate->pseen.get(), &fldchgs, &last_changenum, &given_folders,
 	    &deleted_folders))
 		return FALSE;
@@ -795,16 +780,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = pctx->pstream->plogon->get_dir();
-	if (pctx->pstream->plogon->is_private()) {
-		if (!exmdb_client::read_message(dir,
-		    nullptr, pinfo->cpid, message_id, &pmsgctnt))
-			return FALSE;
-	} else {
-		auto rpc_info = get_rpc_info();
-		if (!exmdb_client::read_message(dir,
-		    rpc_info.username, pinfo->cpid, message_id, &pmsgctnt))
-			return FALSE;
-	}
+	if (!exmdb_client::read_message(dir, pctx->pstream->plogon->readstate_user(),
+	    pinfo->cpid, message_id, &pmsgctnt))
+		return FALSE;
 	if (NULL == pmsgctnt) {
 		pctx->pstate->pgiven->remove(message_id);
 		if (b_downloaded) {

@@ -39,6 +39,8 @@ struct logon_object {
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);
+	const char *eff_user() const;
+	const char *readstate_user() const;
 
 	uint8_t logon_flags = 0;
 	uint32_t open_flags = 0;

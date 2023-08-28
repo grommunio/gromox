@@ -2532,6 +2532,9 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 BOOL exmdb_server::read_table_row(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)

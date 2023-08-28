@@ -33,11 +33,11 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 		return ecNullObject;
 	if (object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto rpc_info = get_rpc_info();
 	auto dir = plogon->get_dir();
-	if (plogon->logon_mode != logon_mode::owner) {
+	auto username = plogon->eff_user();
+	if (username != nullptr) {
 		if (!exmdb_client::get_folder_perm(dir,
-		    pfolder->folder_id, rpc_info.username, &permission))
+		    pfolder->folder_id, username, &permission))
 			return ecError;
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
@@ -113,11 +113,11 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	if (!plogon->is_private())
 		return ecNotSupported;
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
-	auto rpc_info = get_rpc_info();
 	auto dir = plogon->get_dir();
-	if (plogon->logon_mode != logon_mode::owner) {
+	auto username = plogon->eff_user();
+	if (username != nullptr) {
 		if (!exmdb_client::get_folder_perm(dir,
-		    fid_deferred, rpc_info.username, &permission))
+		    fid_deferred, username, &permission))
 			return ecError;
 		if (!(permission & frightsEditAny))
 			return ecAccessDenied;

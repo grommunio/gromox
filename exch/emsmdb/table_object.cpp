@@ -63,9 +63,7 @@ BOOL table_object::load()
 		return TRUE;
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable: {
-		auto rpc_info = get_rpc_info();
-		auto username = ptable->plogon->logon_mode == logon_mode::owner ?
-		                nullptr : rpc_info.username;
+		auto username = ptable->plogon->eff_user();
 		if (!exmdb_client::load_hierarchy_table(ptable->plogon->get_dir(),
 		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, m_restriction,
@@ -74,27 +72,25 @@ BOOL table_object::load()
 		break;
 	}
 	case ropGetContentsTable: {
-		auto rpc_info = get_rpc_info();
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (pinfo == nullptr)
 			return FALSE;
-		const char *username = nullptr;
-		if (ptable->plogon->logon_mode != logon_mode::owner) {
-			if (!ptable->plogon->is_private()) {
-				username = rpc_info.username;
-			} else {
+		auto eff_user = ptable->plogon->eff_user();
+		auto rds_user = ptable->plogon->readstate_user();
+		if (eff_user != STORE_OWNER_GRANTED) {
+			if (ptable->plogon->is_private()) {
 				if (!exmdb_client::get_folder_perm(
 				    ptable->plogon->get_dir(),
 				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
-				    rpc_info.username, &permission))
+				    eff_user, &permission))
 					return FALSE;	
-				if (!(permission & (frightsReadAny | frightsOwner)))
-					username = rpc_info.username;
+				if (permission & (frightsReadAny | frightsOwner))
+					rds_user = nullptr;
 			}
 		}
 		if (!exmdb_client::load_content_table(ptable->plogon->get_dir(),
 		    pinfo->cpid, static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
-		    username, ptable->table_flags, m_restriction,
+		    rds_user, ptable->table_flags, m_restriction,
 		    m_sorts, &table_id, &row_num))
 			return FALSE;
 		break;
@@ -132,8 +128,6 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 {
 	assert(is_loaded());
 	auto ptable = this;
-	DCERPC_INFO rpc_info;
-	const char *username;
 	
 	if (m_columns == nullptr)
 		return FALSE;
@@ -152,13 +146,8 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return static_cast<message_object *>(ptable->pparent_obj)->query_attachment_table(
 		       m_columns, m_position, row_needed, pset);
-	if (!ptable->plogon->is_private()) {
-		rpc_info = get_rpc_info();
-		username = rpc_info.username;
-	} else {
-		username = NULL;
-	}
-	return exmdb_client::query_table(ptable->plogon->get_dir(), username,
+	return exmdb_client::query_table(ptable->plogon->get_dir(),
+	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
 	       m_position, row_needed, pset);
 }
@@ -349,19 +338,11 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
 	auto ptable = this;
-	DCERPC_INFO rpc_info;
-	const char *username;
-	
 	if (m_columns == nullptr)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!ptable->plogon->is_private()) {
-		rpc_info = get_rpc_info();
-		username = rpc_info.username;
-	} else {
-		username = NULL;
-	}
-	return exmdb_client::match_table(ptable->plogon->get_dir(), username,
+	return exmdb_client::match_table(ptable->plogon->get_dir(),
+	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, b_forward, m_position,
 	       pres, m_columns, pposition, ppropvals);
 }
@@ -370,19 +351,11 @@ BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	auto ptable = this;
-	DCERPC_INFO rpc_info;
-	const char *username;
-	
 	if (m_columns == nullptr)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!ptable->plogon->is_private()) {
-		rpc_info = get_rpc_info();
-		username = rpc_info.username;
-	} else {
-		username = NULL;
-	}
-	return exmdb_client::read_table_row(ptable->plogon->get_dir(), username,
+	return exmdb_client::read_table_row(ptable->plogon->get_dir(),
+	       ptable->plogon->readstate_user(),
 	       pinfo->cpid, m_table_id, m_columns,
 	       inst_id, inst_num, ppropvals);
 }
