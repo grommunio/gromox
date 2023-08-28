@@ -3137,11 +3137,10 @@ PROC_PLUGIN::~PROC_PLUGIN()
 */
 static DCERPC_INFO pdu_processor_get_rpc_info()
 {
-	DCERPC_INFO info;
+	DCERPC_INFO info{};
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
 	
-	memset(&info, 0, sizeof(DCERPC_INFO));
 	pcall = pdu_processor_get_call();
 	pcontext = http_parser_get_context();
 	if (NULL != pcontext) {
@@ -3156,20 +3155,12 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 		info.lang = pcontext->lang;
 	}
 	if (NULL != pcall) {
-		if (NULL == pcall->pauth_ctx) {
-			info.is_login = FALSE;
-		} else {
-			info.is_login = pcall->pauth_ctx->is_login;
-		}
+		info.is_login = pcall->pauth_ctx != nullptr ? pcall->pauth_ctx->is_login : false;
 		if (NULL != pcall->pcontext) {
 			info.stat_flags = pcall->pcontext->stat_flags;
 		}
 	} else {
-		if (NULL == pcontext || '\0' == pcontext->username[0]) {
-			info.is_login = FALSE;
-		} else {
-			info.is_login = TRUE;
-		}
+		info.is_login = pcontext != nullptr && *pcontext->username != '\0' ? TRUE : false;
 		info.stat_flags = 0;
 	}
 	return info;
