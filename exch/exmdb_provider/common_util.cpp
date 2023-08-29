@@ -3925,7 +3925,8 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 		*ppermission = sqlite3_column_int64(pstmt, 0);
 		return TRUE;
 	}
-	if (NULL != username && '\0' != username[0]) {
+	bool anon = username == nullptr || *username == '\0';
+	if (!anon) {
 		snprintf(sql_string, std::size(sql_string), "SELECT username, permission"
 		         " FROM permissions WHERE folder_id=%llu", LLU{folder_id});
 		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
@@ -3946,7 +3947,7 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 		}
 	}
 	pstmt.finalize();
-	if (username == nullptr || *username == '\0')
+	if (anon)
 		snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 		         "FROM configurations WHERE config_id=%d",
 		         CONFIG_ID_ANONYMOUS_PERMISSION);
