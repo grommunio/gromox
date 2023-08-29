@@ -520,6 +520,23 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for permission checks after search folder object
+ *              dereferencing [SFOD] and for adjusting public store readstates
+ *
+ * 1. The entryid for a SFO is the same as for the original message; 2.
+ * deleting the SFO will delete the message from its actual generic folder; 3.
+ * that deletion also invalidates/deletes all the SFOs that referenced it; 4.
+ * permissions on referenced folders can be restricted after an SF was
+ * populated, this does not immediately invalidate SFOs and necessitates
+ * permission checks on dereference (also needed in message.cpp).
+ *
+ * Analogy for a SF is a filesystem directory with symlinks or hardlinks or
+ * file bind mounts, but also not quite because of the three properties above.
+ *
+ * Because of #2, we need to perform additional permission checks, since
+ * callers like emsmdb/zcore are generally indifferent to SFs.
+ */
 static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
     uint64_t folder_id, unsigned int del_flags, BOOL *pb_partial,
     uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pmessage_count,
@@ -578,6 +595,9 @@ static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for SFOD permission checks and for adjusting readstates
+ */
 static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
     BOOL *pb_partial, uint64_t *pnormal_size, uint64_t *pfai_size,
@@ -743,7 +763,10 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	return TRUE;
 }
 
-/* only delete empty generic folder or search folder itself, not content */
+/**
+ * Only deletes empty generic folders, or deletes (shuts down) the search
+ * folder itself without modifying SF contents.
+ */
 BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	uint64_t folder_id, BOOL b_hard, BOOL *pb_result)
 {
@@ -813,7 +836,12 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	if (!sql_transact)
 		return false;
 	if (b_search) {
-		/* empty_folder is too much for search folders; it would delete not just the links. */
+		/*
+		 * Calling folder_empty_folder() is too much for search
+		 * folders; it would delete not just the references but also
+		 * the messages, which we do not want for
+		 * exmdb_server::delete_folder.
+		 */
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM folders"
 		         " WHERE folder_id=%llu", LLU{fid_val});
 	} else if (b_hard) {
@@ -866,6 +894,12 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for SFOD permission checks and for adjusting readstates
+ *
+ * Search folders: Unlike delete_folder, empty_folder truly deletes referenced
+ * messages.
+ */
 BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int flags,
     BOOL *pb_partial)
@@ -937,6 +971,9 @@ BOOL exmdb_server::check_folder_cycle(const char *dir,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for population of ACLs of newly created folders
+ */
 static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	BOOL b_guest, const char *username, uint64_t src_fid,
 	uint64_t dst_pid, uint64_t *pdst_fid)
@@ -1035,6 +1072,9 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for population of ACLs of newly created folders
+ */
 static BOOL folder_copy_search_folder(db_item_ptr &pdb,
     cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, uint64_t dst_pid, uint64_t *pdst_fid)
@@ -1127,6 +1167,12 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	return TRUE;
 }
 
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store.
+ * @username:   Used for SFOD permission checks and for population of ACLs of
+ *              newly created folders
+ */
 static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
     bool b_guest, const char *username, uint64_t fid_val, bool b_normal,
     bool b_fai, uint64_t dst_fid, BOOL *pb_partial, uint64_t *pnormal_size,
@@ -1206,6 +1252,12 @@ static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
 	return TRUE;
 }
 
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store.
+ * @username:   Used for permission checks (SFOD & generic folders) and for
+ *              population of ACLs of newly created folders.
+ */
 static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
     cpid_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, BOOL b_normal,
@@ -1218,11 +1270,10 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	auto b_private = exmdb_server::is_private();
 	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
-	if (folder_type == FOLDER_SEARCH) {
+	if (folder_type == FOLDER_SEARCH)
 		return folder_copy_sf_int(pdb, account_id, cpid, b_guest,
 		       username, fid_val, b_normal, b_fai, dst_fid,
 		       pb_partial, pnormal_size, pfai_size);
-	}
 
 	BOOL b_check = true, b_result, b_partial;
 	char sql_string[132];
@@ -1349,7 +1400,19 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	return TRUE;
 }
 
-/* set hierarchy change number when finish action */
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store, or 0 for autodetect from @dir.
+ * @b_guest:    0=acting as store owner (no permission checks),
+ *              1=acting as logon_mode::delegate or ::guest.
+ *              XXX: This field appears redundant because it coincides with
+ *              @username==STORE_OWNER_GRANTED.
+ * @username:   Used for permission checks (SFOD & generic folders) and for
+ *              population of ACLs of newly created folders
+ *
+ * Callers need to update the hierarchy change number when done with copy
+ * operations.
+ */
 BOOL exmdb_server::copy_folder_internal(const char *dir,
     int account_id, cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, BOOL b_normal, BOOL b_fai, BOOL b_sub,
@@ -1404,7 +1467,15 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 
-/* set hierarchy change number when finish action */
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store, or 0 for autodetect from @dir.
+ * @username:   Used for permission checks (SFOD & generic folders) and for
+ *              population of ACLs of newly created folders
+ *
+ * Callers need to update the hierarchy change number when done with copy
+ * operations.
+ */
 BOOL exmdb_server::movecopy_folder(const char *dir,
     int account_id, cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid,
@@ -1796,6 +1867,9 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	return false;
 }
 
+/**
+ * @username:   Identity for which to calculate permission bits
+ */
 BOOL exmdb_server::get_folder_perm(const char *dir,
 	uint64_t folder_id, const char *username,
 	uint32_t *ppermission)
@@ -2263,7 +2337,11 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	return false;
 }
 
-/* public only */
+/**
+ * @username:   Used for retrieving public store readstates
+ *
+ * Function only usable for public stores.
+ */
 BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount)
 {

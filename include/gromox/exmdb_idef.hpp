@@ -1,4 +1,10 @@
 /* When calling these functions, none of the IDLOUT parameters may be NULL */
+/*
+ * The "username" parameters are used for different purposes, e.g. public store
+ * readstate management, or permission evaluation, or population of nascent
+ * ACLs. See the individual exmdb_server:: function heads for a case-by-case
+ * explanation.
+ */
 #define EXMIDL_RETTYPE BOOL
 EXMIDL(ping_store, (const char *dir))
 EXMIDL(get_all_named_propids, (const char *dir, IDLOUT PROPID_ARRAY *propids))

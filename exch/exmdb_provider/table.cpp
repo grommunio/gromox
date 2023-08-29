@@ -82,6 +82,9 @@ static BOOL table_sum_table_count(db_item_ptr &pdb,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 	uint64_t folder_id, const char *username, BOOL b_depth)
 {
@@ -137,6 +140,9 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 	return count;
 }
 
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	uint64_t folder_id, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, sqlite3_stmt *pstmt, int depth,
@@ -179,6 +185,9 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 BOOL exmdb_server::sum_hierarchy(const char *dir,
 	uint64_t folder_id, const char *username,
 	BOOL b_depth, uint32_t *pcount)
@@ -193,6 +202,9 @@ BOOL exmdb_server::sum_hierarchy(const char *dir,
 	return TRUE;
 }
 	
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
     const char *username, uint8_t table_flags, const RESTRICTION *prestriction,
     uint32_t *ptable_id, uint32_t *prow_count) try
@@ -545,7 +557,8 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
 	return b->cb == 16 ? b : nullptr;
 }
 
-/*
+/**
+ * @username:   Used for retrieving public store readstates
  *
  * ptable_id can remain untouched when the folder does not exist.
  *
@@ -1041,7 +1054,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 }
 
 /**
- * @ptable_id:	output table id
+ * @ptable_id:  Output table id
+ * @username:   Used for retrieving public store readstates
  *
  * *ptable_id can be 0 even with a success return code, indicating that no data
  * is available (e.g. folder was deleted while table object is still open).
@@ -1867,9 +1881,15 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	return TRUE;
 }
 
-/* every property value returned in a row MUST
-be less than or equal to 510 bytes in size. */
-// XXX: But that's stupid for rules, which are not objects and cannot be opened any other way.
+/**
+ * @username:   Used for retrieving public store readstates
+ *
+ * ...every property value returned in a row MUST
+ * be less than or equal to 510 bytes in size.
+ *
+ * XXX: But that's stupid for rules, which are not objects and cannot be opened
+ * any other way.
+ */
 BOOL exmdb_server::query_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
@@ -2283,6 +2303,9 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 BOOL exmdb_server::match_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,

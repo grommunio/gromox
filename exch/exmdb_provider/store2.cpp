@@ -120,9 +120,10 @@ int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid, uint64_t mid)
 }
 
 /**
- * @normal_size:	size that the caller should subtract from store size
- * @fai_size:		size that the caller should subtract from store size/FAI
- * @msg_count:		indicator for the caller to update the folder commit time
+ * @username:    Used for permission checking
+ * @normal_size: Size that the caller should subtract from store size
+ * @fai_size:    Size that the caller should subtract from store size/FAI
+ * @msg_count:   Indicator for the caller to update the folder commit time
  */
 static bool folder_purge_softdel(db_item_ptr &db, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
@@ -252,6 +253,8 @@ static bool folder_purge_softdel(db_item_ptr &db, cpid_t cpid,
 }
 
 /**
+ * @username:   Used for permission checking, can be %STORE_OWNER_GRANTED
+ *              or a less-privileged user.
  * @folder_id:	use 0 to scan entire store
  * @age:	soft-deleted items older than this age
  */

@@ -308,6 +308,9 @@ static uint32_t next_instance_id(db_item_ptr &db)
 	return id;
 }
 
+/**
+ * @username:   Used for operations on public store readstates
+ */
 BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
     cpid_t cpid, BOOL b_new, uint64_t folder_id, uint64_t message_id,
     uint32_t *pinstance_id) try

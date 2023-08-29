@@ -136,8 +136,9 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 	}
 }
 
-/*  username is used in public mode to get
-	read information and read change number */
+/**
+ * @username:   Used for retrieving public store readstates
+ */
 BOOL exmdb_server::get_content_sync(const char *dir,
     uint64_t folder_id, const char *username, const IDSET *pgiven,
     const IDSET *pseen, const IDSET *pseen_fai, const IDSET *pread,
@@ -564,6 +565,9 @@ static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
 		preplids->replids[preplids->count++] = replid;
 }
 
+/**
+ * @username:   Used for permission checking and retrieving public store readstates
+ */
 static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
     const char *username, const IDSET *pgiven, const IDSET *pseen,
     sqlite3_stmt *pstmt, sqlite3_stmt *stm_insert_chg,
@@ -610,6 +614,9 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 	return false;
 }
 
+/**
+ * @username:   Passed through to ics_load_folder_changes(), see there
+ */
 BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	uint64_t folder_id, const char *username, const IDSET *pgiven,
 	const IDSET *pseen, FOLDER_CHANGES *pfldchgs, uint64_t *plast_cn,

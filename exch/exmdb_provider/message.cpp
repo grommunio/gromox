@@ -103,7 +103,13 @@ unsigned int format_as(proptag_t x) { return x; }
 }
 #endif
 
-/* can be used when submitting message */
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store, or 0 for autodetect from @dir.
+ * @username:   Used for permission checks (SFOD & generic folders).
+ *
+ * Can be used when submitting message.
+ */
 BOOL exmdb_server::movecopy_message(const char *dir,
     int account_id, cpid_t cpid, uint64_t message_id,
 	uint64_t dst_fid, uint64_t dst_id, BOOL b_move,
@@ -233,6 +239,18 @@ BOOL exmdb_server::movecopy_message(const char *dir,
 	return TRUE;
 }
 
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store, or 0 for autodetect from @dir.
+ * @b_guest:    0=acting as store owner (no permission checks),
+ *              1=acting as logon_mode::delegate or ::guest.
+ *              XXX: This field is redundant because it coincides with
+ *              @username==STORE_OWNER_GRANTED.
+ * @username:   Used for permission checks (SFOD & generic folders & message
+ *              owner).
+ * @src_fid:    The folder from which the action was invoked (this way, we know
+ *              if it came from a search folder or a generic folder).
+ */
 BOOL exmdb_server::movecopy_messages(const char *dir,
     int account_id, cpid_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, uint64_t dst_fid,
@@ -301,7 +319,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 		}
 		/*
 		 * src_val may be a search folder (MS-OXCFOLD v23.2 §2.2.1.6),
-		 * so re-lookup the real source parent.
+		 * so re-lookup for the real parent of the source.
 		 */
 		uint64_t parent_fid = stm_find.col_uint64(0);
 		bool is_associated = stm_find.col_uint64(1);
@@ -434,6 +452,11 @@ BOOL exmdb_server::movecopy_messages(const char *dir,
 	return TRUE;
 }
 
+/**
+ * @account_id: Used for the generation of PR_CHANGE_KEYs. This must be the id
+ *              of the store, or 0 for autodetect from @dir.
+ * @username:   Used for evaluating delete permission.
+ */
 BOOL exmdb_server::delete_messages(const char *dir,
     int account_id, cpid_t cpid, const char *username,
 	uint64_t folder_id, const EID_ARRAY *pmessage_ids,
@@ -828,6 +851,9 @@ BOOL exmdb_server::get_message_rcpts(const char *dir,
 	return message_get_message_rcpts(pdb->psqlite, mid_val, pset);
 }
 
+/**
+ * @username:   Used for adjusting public store readstates
+ */
 BOOL exmdb_server::get_message_properties(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -843,7 +869,11 @@ BOOL exmdb_server::get_message_properties(const char *dir,
 	       pproptags, ppropvals);
 }
 
-/* message_size will not be updated in the function! */
+/**
+ * @username:   Used for adjusting public store readstates
+ *
+ * The message_size will not be updated in the function!
+ */
 BOOL exmdb_server::set_message_properties(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id,
 	const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
@@ -910,6 +940,9 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for adjusting public store readstates
+ */
 BOOL exmdb_server::set_message_read_state(const char *dir,
 	const char *username, uint64_t message_id,
 	uint8_t mark_as_read, uint64_t *pread_cn)
@@ -2265,6 +2298,10 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for production of DEM message properties that refer
+ *              back to the original message
+ */
 static BOOL message_make_dem(const char *username,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id, uint64_t rule_id,
     uint32_t rule_error, uint32_t action_type, uint32_t block_index,
@@ -3835,6 +3872,9 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 	return TRUE;
 }
 
+/**
+ * @username:   Used for adjusting public store readstates
+ */
 BOOL exmdb_server::read_message(const char *dir, const char *username,
     cpid_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt)
 {
@@ -3856,6 +3896,12 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 
+/**
+ * @username:   Used for operations on public store readstate
+ * @account:    Mailbox which initially received the message and which is the
+ *              "executor" of the rules. Used e.g. for producing error reports
+ *              or forwardings with the right new Envelope-From.
+ */
 BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
     const char *account, cpid_t cpid, uint64_t folder_id,
     uint64_t message_id) try

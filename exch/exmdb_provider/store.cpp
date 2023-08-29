@@ -181,7 +181,18 @@ BOOL exmdb_server::remove_store_properties(const char *dir,
 	return transact.commit() == 0 ? TRUE : false;
 }
 
-/* private only */
+/**
+ * @username:   Identity for which to calculate permission bits
+ *
+ * This function is used to determine if the user has any rights to any object
+ * in the mailbox, and this influences whether more front-facing services like
+ * emsmdb or zcore permit MAPI clients to open a emsmdb/zcore store object.
+ * (exmdb is almost stateless and has no store "objects" — you just run one-off
+ * EXRPCs to read/write to the database.)
+ *
+ * Public stores get a different treatment (no call to get_mbox_perm), so
+ * get_mbox_perm happens to reject invocation with a public store.
+ */
 BOOL exmdb_server::get_mbox_perm(const char *dir,
     const char *username, uint32_t *ppermission) try
 {
