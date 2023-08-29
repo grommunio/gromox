@@ -42,6 +42,12 @@ std::unique_ptr<folder_object> folder_object::create(store_object *pstore,
 	return pfolder;
 }
 
+static bool toplevel(uint64_t f)
+{
+	return f == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
+	       f == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+}
+
 BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pfolder = this;
@@ -67,10 +73,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	if (!tmp_proptags.has(PR_SOURCE_KEY))
 		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (!pfolder->pstore->b_private)
-		return TRUE;
-	if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
-	    pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))
+	if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 		return TRUE;
 	if (!tmp_proptags.has(PR_IPM_DRAFTS_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
@@ -144,14 +147,7 @@ bool folder_object::is_readonly_prop(uint32_t proptag) const
 	case PR_IPM_JOURNAL_ENTRYID:
 	case PR_IPM_NOTE_ENTRYID:
 	case PR_IPM_TASK_ENTRYID:
-		if (!pfolder->pstore->b_private)
-			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
-		return true;
+		return pfolder->pstore->b_private && toplevel(pfolder->folder_id);
 	}
 	return FALSE;
 }
@@ -250,68 +246,38 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*ppvalue = deconst(&fake_del);
 		return TRUE;
 	case PR_IPM_DRAFTS_ENTRYID:
-		if (!pfolder->pstore->b_private)
-			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		return TRUE;
 	case PR_IPM_CONTACT_ENTRYID:
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		return TRUE;
 	case PR_IPM_APPOINTMENT_ENTRYID:
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		return TRUE;
 	case PR_IPM_JOURNAL_ENTRYID:
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		return TRUE;
 	case PR_IPM_NOTE_ENTRYID:
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		return TRUE;
 	case PR_IPM_TASK_ENTRYID:
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		*ppvalue = cu_fid_to_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
@@ -329,13 +295,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_ADDITIONAL_REN_ENTRYIDS: {
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS, &pvalue))
@@ -382,13 +343,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	}
 	case PR_ADDITIONAL_REN_ENTRYIDS_EX: {
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_ADDITIONAL_REN_ENTRYIDS_EX, &pvalue))
@@ -439,13 +395,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	}
 	case PR_FREEBUSY_ENTRYIDS: {
-		if (!pfolder->pstore->b_private)
+		if (!pfolder->pstore->b_private || !toplevel(pfolder->folder_id))
 			return FALSE;
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-		    1, PRIVATE_FID_INBOX))
-			return FALSE;	
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 		    CP_ACP, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
 		    PR_FREEBUSY_ENTRYIDS, &pvalue))

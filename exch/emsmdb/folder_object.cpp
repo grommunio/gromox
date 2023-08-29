@@ -59,9 +59,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->emplace_back(t);
 	if (!tmp_proptags.has(PR_SOURCE_KEY))
 		pproptags->emplace_back(PR_SOURCE_KEY);
-	if (!pfolder->plogon->is_private())
-		return TRUE;
-	if (!toplevel(pfolder->folder_id))
+	if (!pfolder->plogon->is_private() || !toplevel(pfolder->folder_id))
 		return TRUE;
 	static constexpr uint32_t tags2[] = {
 		PR_IPM_DRAFTS_ENTRYID, PR_IPM_CONTACT_ENTRYID,
