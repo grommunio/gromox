@@ -16,6 +16,7 @@ namespace gromox::EWS::Requests
 #define EWSFUNC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&)
 
 EWSFUNC(mCreateItemRequest);
+EWSFUNC(mDeleteItemRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetFolderRequest);
 EWSFUNC(mGetItemRequest);

@@ -1991,13 +1991,47 @@ struct mCreateItemResponseMessage : public mItemInfoResponseMessage
 	using mItemInfoResponseMessage::mItemInfoResponseMessage;
 };
 
-
 /**
  * Messages.xsd:990
  */
 struct mCreateItemResponse
 {
 	std::vector<mCreateItemResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1040
+ */
+struct mDeleteItemRequest
+{
+	explicit mDeleteItemRequest(const tinyxml2::XMLElement*);
+
+	Enum::DisposalType DeleteType; // Attribute
+	//<xs:attribute name="SendMeetingCancellations" type="t:CalendarItemCreateOrDeleteOperationType" use="optional"/>
+	//<xs:attribute name="AffectedTaskOccurrences" type="t:AffectedTaskOccurrencesType" use="optional"/>
+	//<xs:attribute name="SuppressReadReceipts" type="xs:boolean" use="optional"/>
+
+	std::vector<tItemId> ItemIds;
+};
+
+/**
+ * Messages.xsd:1545
+ */
+struct mDeleteItemResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "DeleteItemResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:1537
+ */
+struct mDeleteItemResponse
+{
+	std::vector<mDeleteItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

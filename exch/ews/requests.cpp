@@ -158,6 +158,66 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 }
 
 /**
+ * @brief      Process DeleteItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:DeleteItemResponse");
+
+	mDeleteItemResponse data;
+	data.ResponseMessages.reserve(request.ItemIds.size());
+
+	uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+	auto& exmdb = ctx.plugin.exmdb;
+
+	for(const tItemId& itemId : request.ItemIds)
+	{
+		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec parent = ctx.resolveFolder(meid);
+		std::string dir = ctx.getDir(parent);
+		if(!(ctx.permissions(ctx.auth_info.username, parent, dir.c_str()) & frightsDeleteAny)) {
+			data.ResponseMessages.emplace_back("Error", "AccessDenied",
+			                                   "You do not have sufficient permission to delete messages");
+			continue;
+		}
+		if(request.DeleteType == Enum::MoveToDeletedItems) {
+			uint64_t newMid;
+			if(!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &newMid)) {
+				data.ResponseMessages.emplace_back("Error", "ErrorMoveCopyFailed", "Failed to allocate message ID");
+				continue;
+			}
+
+			sFolderSpec deletedItems = ctx.resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
+			BOOL result;
+			if(!exmdb.movecopy_message(dir.c_str(), accountId, CP_ACP, meid.messageId(), deletedItems.folderId, newMid,
+			                                      TRUE, &result) || !result)
+				data.ResponseMessages.emplace_back("Error", "ErrorMoveCopyFailed", "Failed to move message to deleted items");
+			else
+				data.ResponseMessages.emplace_back().success();
+		} else {
+			uint64_t eid = meid.messageId();
+			uint64_t fid = rop_util_make_eid_ex(1, meid.folderId());
+			EID_ARRAY eids{1, &eid};
+			BOOL hardDelete = request.DeleteType == Enum::HardDelete? TRUE : false;
+			BOOL partial;
+			if(!ctx.plugin.exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.auth_info.username, fid, &eids,
+			                                     hardDelete, &partial) || partial)
+				data.ResponseMessages.emplace_back("Error", "ErrorCannotDeleteObject", "Failed to delete item");
+			else
+				data.ResponseMessages.emplace_back().success();
+		}
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data
