@@ -918,6 +918,14 @@ mCreateItemRequest::mCreateItemRequest(const tinyxml2::XMLElement* xml) :
 void mCreateItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
+mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement* xml) :
+	XMLINITA(DeleteType),
+	XMLINIT(ItemIds)
+{}
+
+void mDeleteItemResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)
 {}

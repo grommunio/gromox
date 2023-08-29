@@ -125,10 +125,10 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 /**
  * Mapping of request names to handler functions.
  */
-
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
 	{"CreateItem", process<Structures::mCreateItemRequest>},
+	{"DeleteItem", process<Structures::mDeleteItemRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetItem", process<Structures::mGetItemRequest>},
