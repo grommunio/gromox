@@ -1004,7 +1004,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		if (tmp_guid != tmp_xid.guid)
 			continue;
 		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client::check_message_owner(dir,
 			    message_id, username, &b_owner))
 				return ecError;
@@ -1374,7 +1374,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		}
 		if (!b_exist)
 			continue;
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (SYNC_TYPE_CONTENTS == sync_type) {
 				if (!exmdb_client::check_message_owner(dir,
 				    eid, username, &b_owner))

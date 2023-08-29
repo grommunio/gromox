@@ -8,9 +8,9 @@
 #include <gromox/mapierr.hpp>
 #include <gromox/zcore_rpc.hpp>
 
+#define STORE_OWNER_GRANTED nullptr
 #define HOOK_INBOUND								0x00000200
 #define HOOK_OUTBOUND								0x00000400
-
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
 

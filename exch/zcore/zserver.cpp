@@ -1763,7 +1763,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	if (ids1.pids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < ids.count; ++i) {
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client_check_message_owner(pstore->get_dir(),
 			    ids.pids[i], username, &b_owner))
 				return ecError;
@@ -3979,7 +3979,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		if (!folder->get_properties(&tmp_proptags, &propvals))
 			return ecError;
 		if (b_sub || b_normal || b_fai) {
-			BOOL b_guest = username == nullptr ? false : TRUE;
+			BOOL b_guest = username == STORE_OWNER_GRANTED ? false : TRUE;
 			if (!exmdb_client::copy_folder_internal(pstore->get_dir(),
 			    pstore->account_id, pinfo->cpid, b_guest,
 			    pinfo->get_username(), folder->folder_id,
@@ -4713,7 +4713,7 @@ ec_error_t zs_importdeletion(GUID hsession,
 		}
 		if (!b_exist)
 			continue;
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (SYNC_TYPE_CONTENTS == sync_type) {
 				if (!exmdb_client_check_message_owner(pstore->get_dir(),
 				    eid, username, &b_owner))
@@ -4801,7 +4801,7 @@ ec_error_t zs_importreadstates(GUID hsession,
 			continue;
 		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		bool mark_as_read = pstates->pstate[i].message_flags & MSGFLAG_READ;
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client_check_message_owner(pstore->get_dir(),
 			    message_id, username, &b_owner))
 				return ecError;

@@ -825,7 +825,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			return ecError;
 		if (b_sub || b_normal || b_fai) {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
-			BOOL b_guest = username == nullptr ? false : TRUE;
+			BOOL b_guest = username != STORE_OWNER_GRANTED ? TRUE : false;
 			if (!exmdb_client::copy_folder_internal(plogon->get_dir(),
 			    plogon->account_id, pinfo->cpid, b_guest,
 			    rpc_info.username, fldsrc->folder_id,

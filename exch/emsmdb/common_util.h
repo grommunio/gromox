@@ -11,6 +11,7 @@
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MINIMUM_COMPRESS_SIZE						0x100
+#define STORE_OWNER_GRANTED nullptr
 
 struct logon_object;
 struct MAIL;

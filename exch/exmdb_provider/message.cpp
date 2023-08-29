@@ -467,7 +467,7 @@ BOOL exmdb_server::delete_messages(const char *dir,
 	src_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
 		return FALSE;
-	if (username == nullptr) {
+	if (username == STORE_OWNER_GRANTED) {
 		b_check = FALSE;
 	} else if (folder_type == FOLDER_SEARCH) {
 		b_check = TRUE;

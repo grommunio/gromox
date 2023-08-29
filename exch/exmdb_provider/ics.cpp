@@ -578,7 +578,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 	while (gx_sql_step(pstmt) == SQLITE_ROW) {
 		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
 		change_num = sqlite3_column_int64(pstmt, 1);
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (!cu_get_folder_permission(psqlite,
 			    fid_val, username, &permission))
 				return FALSE;

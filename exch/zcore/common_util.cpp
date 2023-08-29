@@ -1436,8 +1436,8 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 	    &b_private, &account_id, &folder_id))
 		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS);
 	return exmdb_client::movecopy_messages(pstore->get_dir(),
-	       pstore->account_id, cpid, false, nullptr, parent_id, folder_id,
-		FALSE, &ids, &b_partial);
+	       pstore->account_id, cpid, false, STORE_OWNER_GRANTED,
+	       parent_id, folder_id, false, &ids, &b_partial);
 }
 
 void common_util_notify_receipt(const char *username, int type,

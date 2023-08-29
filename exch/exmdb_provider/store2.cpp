@@ -84,7 +84,7 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
 
 int need_msg_perm_check(sqlite3 *db, const char *user, uint64_t fid)
 {
-	if (user == nullptr)
+	if (user == STORE_OWNER_GRANTED)
 		return false;
 	uint32_t perms;
 	if (!cu_get_folder_permission(db, fid, user, &perms))
@@ -99,7 +99,7 @@ int need_msg_perm_check(sqlite3 *db, const char *user, uint64_t fid)
 
 int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid, uint64_t mid)
 {
-	if (user == nullptr)
+	if (user == STORE_OWNER_GRANTED)
 		return true;
 	uint32_t perms;
 	if (!cu_get_folder_permission(db, fid, user, &perms))

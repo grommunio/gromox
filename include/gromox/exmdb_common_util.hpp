@@ -14,6 +14,7 @@
 #define MAX_DIGLEN											256*1024
 #define MAX_RULE_RECIPIENTS									256
 #define MAX_DAMS_PER_RULE_FOLDER							128
+#define STORE_OWNER_GRANTED nullptr
 
 /*
  * These are used by exmdb internally; they never show up in the SQLite

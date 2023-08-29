@@ -90,7 +90,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	if (!b_depth) {
-		if (NULL == username) {
+		if (username == STORE_OWNER_GRANTED) {
 			snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM"
 			          " folders WHERE parent_id=%llu", LLU{folder_id});
 			auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -122,7 +122,7 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 		if (pstmt == nullptr)
 			return 0;
 		while (pstmt.step() == SQLITE_ROW) {
-			if (NULL != username) {
+			if (username != STORE_OWNER_GRANTED) {
 				if (!cu_get_folder_permission(psqlite,
 				    sqlite3_column_int64(pstmt, 0), username, &permission))
 					continue;
@@ -154,7 +154,7 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 		return FALSE;
 	while (pstmt1.step() == SQLITE_ROW) {
 		folder_id1 = sqlite3_column_int64(pstmt1, 0);
-		if (NULL != username) {
+		if (username != STORE_OWNER_GRANTED) {
 			if (!cu_get_folder_permission(psqlite,
 			    folder_id1, username, &permission))
 				continue;
