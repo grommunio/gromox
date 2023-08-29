@@ -125,9 +125,7 @@ bool folder_object::is_readonly_prop(uint32_t proptag)
 	case PR_IPM_NOTE_ENTRYID:
 	case PR_IPM_TASK_ENTRYID: {
 		auto pfolder = this;
-		if (!pfolder->plogon->is_private())
-			return FALSE;
-		return !toplevel(pfolder->folder_id);
+		return pfolder->plogon->is_private() && toplevel(pfolder->folder_id);
 	}
 	}
 	return FALSE;
