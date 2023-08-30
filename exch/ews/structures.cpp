@@ -899,7 +899,7 @@ void sSyncState::init(const std::string& data64)
 	if(data.size() <= 16)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
-		throw InputError(E3052);
+		throw EWSError::InvalidSyncStateData(E3052);
 	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
@@ -908,19 +908,19 @@ void sSyncState::init(const std::string& data64)
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
 			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3053);
+				throw EWSError::InvalidSyncStateData(E3053);
 			break;
 		case MetaTagCnsetSeen:
 			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3054);
+				throw EWSError::InvalidSyncStateData(E3054);
 			break;
 		case MetaTagCnsetRead:
 			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3055);
+				throw EWSError::InvalidSyncStateData(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
 			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3056);
+				throw EWSError::InvalidSyncStateData(E3056);
 			break;
 		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
 			readOffset = *static_cast<uint32_t*>(propval->pvalue);
@@ -1222,7 +1222,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 {
 	std::vector<freebusy_event> fb_data;
 	if (!get_freebusy(username, dir, start_time, end_time, fb_data))
-		throw EWSError::MailRecipientNotFound("failed to load freebusy information");
+		throw EWSError::FreeBusyGenerationFailed("failed to load freebusy information");
 
 	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
 		[](freebusy_event fb_event) { return fb_event.details.has_value(); }) ?

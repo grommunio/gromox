@@ -102,7 +102,7 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
 	else
 		res = plugin.mysql.get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
 	if(!res)
-		throw DispatchError(E3113(isDomain? "domain" : "user", name));
+		throw EWSError::CannotFindUser(E3113(isDomain? "domain" : "user", name));
 	return accountId;
 }
 
@@ -218,7 +218,7 @@ std::string EWSContext::get_maildir(const std::string& username) const
 {
 	char temp[256];
 	if (!plugin.mysql.get_maildir(username.c_str(), temp, std::size(temp)))
-		throw DispatchError(E3007);
+		throw EWSError::CannotFindUser(E3007);
 	return temp;
 }
 
@@ -242,10 +242,10 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 	if(RoutingType == "smtp") {
 		char temp[256];
 		if(!plugin.mysql.get_maildir(Address.c_str(), temp, std::size(temp)))
-			throw DispatchError(E3007);
+			throw EWSError::CannotFindUser(E3125);
 		return temp;
 	} else
-		throw DispatchError(E3006(RoutingType));
+		throw EWSError::InvalidRoutingType(E3006(RoutingType));
 }
 
 /**
@@ -265,7 +265,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 		target = at+1;
 	char targetDir[256];
 	if (!func(target, targetDir, std::size(targetDir)))
-		throw DispatchError(E3007);
+		throw EWSError::CannotFindUser(E3126);
 	return targetDir;
 }
 
@@ -284,7 +284,7 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const sFolderSpec& folder) const
 	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
 	TPROPVAL_ARRAY props = getFolderProps(folder, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
-		throw DispatchError(E3022);
+		throw EWSError::FolderPropertyRequestFailed(E3022);
 	return *props.ppropval;
 }
 
@@ -302,7 +302,7 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPT
 	TPROPVAL_ARRAY result;
 	if (!plugin.exmdb.get_folder_properties(targetDir.c_str(), CP_ACP,
 	    folder.folderId, &props, &result))
-		throw DispatchError(E3023);
+		throw EWSError::FolderPropertyRequestFailed(E3023);
 	return result;
 }
 
@@ -321,7 +321,7 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
 	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
-		throw DispatchError(E3024);
+		throw EWSError::ItemPropertyRequestFailed(E3024);
 	return *props.ppropval;
 }
 
@@ -339,7 +339,7 @@ const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32
 	PROPTAG_ARRAY proptags{1, &tag};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if(props.count != 1 || props.ppropval->proptag != tag)
-		throw DispatchError(E3024);
+		throw EWSError::ItemPropertyRequestFailed(E3127);
 	return props.count == 1 && props.ppropval->proptag == tag? props.ppropval->pvalue : nullptr;
 }
 
@@ -357,7 +357,7 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 	TPROPVAL_ARRAY result;
 	if (!plugin.exmdb.get_message_properties(dir.c_str(), auth_info.username,
 	    CP_ACP, mid, &props, &result))
-		throw DispatchError(E3025);
+		throw EWSError::ItemPropertyRequestFailed(E3025);
 	return result;
 }
 
@@ -376,7 +376,7 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 	TPROPVAL_ARRAY props;
 	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 	if(!plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
-		throw DispatchError(E3082);
+		throw DispatchError(E3083);
 	return tAttachment::create(aid, props);
 }
 
@@ -416,7 +416,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	{
 		MESSAGE_CONTENT* content;
 		if(!exmdb.read_message(dir.c_str(), nullptr, CP_ACP, mid, &content))
-			throw DispatchError(E3071);
+			throw EWSError::ItemNotFound(E3071);
 		MAIL mail;
 		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
@@ -424,14 +424,14 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		                   {*name = getPropertyName(dir, id); return TRUE;};
 		if(!oxcmail_export(content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail,
 		                   alloc, getPropIds, getPropName))
-			throw DispatchError(E3072);
+			throw EWSError::ItemCorrupt(E3072);
 		auto mailLen = mail.get_length();
 		if(mailLen < 0)
-			throw DispatchError(E3073);
+			throw EWSError::ItemCorrupt(E3073);
 		alloc_limiter<stream_block> allocator(mailLen/STREAM_BLOCK_SIZE+1, "ews::loadMime");
 		STREAM tempStream(&allocator);
 		if(!mail.serialize(&tempStream))
-			throw DispatchError(E3074);
+			throw EWSError::ItemCorrupt(E3074);
 		auto& mimeContent = item.MimeContent.emplace();
 		mimeContent.reserve(mailLen);
 		uint8_t* data;
@@ -594,7 +594,7 @@ void EWSContext::normalize(tEmailAddressType& Mailbox) const
 	if(tolower(*Mailbox.RoutingType) == "smtp")
 		return;
 	if(Mailbox.RoutingType != "ex")
-		throw  DispatchError(E3114(*Mailbox.RoutingType));
+		throw  EWSError::InvalidRoutingType(E3114(*Mailbox.RoutingType));
 	Mailbox.EmailAddress = essdn_to_username(*Mailbox.EmailAddress);
 	Mailbox.RoutingType = "smtp";
 }
@@ -616,7 +616,7 @@ void EWSContext::normalize(tMailbox& Mailbox) const
 	if(tolower(*Mailbox.RoutingType) == "smtp")
 		return;
 	if(Mailbox.RoutingType != "ex")
-		throw  DispatchError(E3010(*Mailbox.RoutingType));
+		throw  EWSError::InvalidRoutingType(E3010(*Mailbox.RoutingType));
 	Mailbox.Address = essdn_to_username(Mailbox.Address);
 	Mailbox.RoutingType = "smtp";
 }
@@ -680,14 +680,14 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	{
 		char temp[UADDR_SIZE];
 		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
-			throw DispatchError(E3026);
+			throw EWSError::CannotFindUser(E3026);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
 		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
-			throw DispatchError(E3027);
+			throw EWSError::CannotFindUser(E3027);
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
@@ -719,14 +719,14 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 	{
 		char temp[UADDR_SIZE];
 		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
-			throw DispatchError(E3075);
+			throw EWSError::CannotFindUser(E3075);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
 		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
-			throw DispatchError(E3076);
+			throw EWSError::CannotFindUser(E3076);
 		folderSpec.target = domaininfo.name;
 	}
 	return folderSpec;
@@ -741,14 +741,14 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) const
 {
 	if(!content.children.prcpts)
-		throw DispatchError(E3115);
+		throw EWSError::MissingRecipients(E3115);
 	MAIL mail;
 	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
 	auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
 					   {*name = getPropertyName(dir, id); return TRUE;};
 	if(!oxcmail_export(&content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail, alloc, getPropIds,getPropName))
-		throw DispatchError(E3116);
+		throw EWSError::ItemCorrupt(E3116);
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
 	const auto& prcpts = content.children.prcpts;
@@ -803,7 +803,7 @@ MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec&
 		pcl.serialize();
 		std::unique_ptr<BINARY, Cleaner> pcltemp(pcl.serialize());
 		if(!pcltemp)
-			throw DispatchError(E3122);
+			throw EWSError::NotEnoughMemory(E3122);
 
 		uint8_t* pcldata = alloc<uint8_t>(pcltemp->cb);
 		memcpy(pcldata, pcltemp->pv, pcltemp->cb);
@@ -884,12 +884,12 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		// Convert MimeContent to MESSAGE_CONTENT
 		MAIL mail(plugin.mimePool);
 		if(!mail.load_from_str_move(reinterpret_cast<char*>(item.MimeContent->data()), item.MimeContent->size()))
-			throw DispatchError(E3123);
+			throw EWSError::ItemCorrupt(E3123);
 		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 		{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
 		MESSAGE_CONTENT* cnt = oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc, getPropIds);
 		if(!cnt)
-			throw DispatchError(E3124);
+			throw EWSError::ItemCorrupt(E3124);
 		content = *cnt;
 		// Register tags loaded by importer to the shape
 		const TAGGED_PROPVAL *end = content.proplist.ppropval+content.proplist.count;
@@ -1003,7 +1003,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	pcl.append(changeKey);
 	std::unique_ptr<BINARY, Cleaner> serializedPcl(pcl.serialize());
 	if(!serializedPcl)
-		throw DispatchError(E3088);
+		throw EWSError::NotEnoughMemory(E3088);
 	_props[props.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	_props[props.count++].pvalue = serializedPcl.get();
 
@@ -1030,10 +1030,10 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 	uint32_t userId, domainId;
 	size_t at = username.find('@');
 	if(at == username.npos)
-		throw DispatchError(E3090(username));
+		throw EWSError::CannotFindUser(E3090(username));
 	std::string_view userpart = std::string_view(username).substr(0, at);
 	if(!plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
-		throw DispatchError(E3091(username));
+		throw EWSError::CannotFindUser(E3091(username));
 	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
 	                   plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
@@ -1050,7 +1050,7 @@ void EWSContext::ext_error(pack_result code)
 	switch(code)
 	{
 	case EXT_ERR_SUCCESS: return;
-	case EXT_ERR_ALLOC: throw std::bad_alloc();
+	case EXT_ERR_ALLOC: throw EWSError::NotEnoughMemory(E3128);
 	default: throw DispatchError(E3028(int(code)));
 	}
 }

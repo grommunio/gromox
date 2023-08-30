@@ -368,9 +368,9 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 	response->SetName("m:GetUserAvailabilityResponse");
 
 	if(!request.FreeBusyViewOptions && !request.SuggestionsViewOptions)
-		throw InputError(E3013);
+		throw EWSError::InvalidFreeBusyViewType(E3013);
 	if(!request.TimeZone)
-		throw InputError(E3014);
+		throw EWSError::TimeZone(E3014);
 
 	tDuration& TimeWindow = request.FreeBusyViewOptions? request.FreeBusyViewOptions->TimeWindow :
 	                                                     request.SuggestionsViewOptions->DetailedSuggestionsWindow;

@@ -62,11 +62,22 @@ public:
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
+	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
 	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
+	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
+	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
+	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
+	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
+	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
+	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
+	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
+	ERR(NotEnoughMemory) ///< Out of memory
+	ERR(TimeZone) ///< Invalid or missing time zone
 #undef ERR
 };
 
@@ -113,7 +124,7 @@ E(3020, "failed to query calendar");
 E(3021, "request is marked experimental and can be enabled with 'ews_experimental = 1'");
 E(3022, "failed to get folder entry id");
 E(3023, "failed to get folder properties");
-E(3024, "failed to get item property");
+E(3024, "failed to get item entry id");
 E(3025, "failed to get item properties");
 E(3026, "failed to get username from id");
 E(3027, "failed to get domain info from id");
@@ -202,11 +213,11 @@ E(3109, "PidLidAppointmentRecur contents not recognized");
 E(3110, "Invalid recurrence type");
 E(3111, "failed to load freebusy information");
 E(3112, "cannot create message without ID");
-inline std::string E3113(const char* type, const std::string& name) {return fmt::format("E-3112: failed to get {} ID for '{}'", type, name);}
-inline std::string E3114(const std::string& RoutingType) {return "E-3113: unrecognized RoutingType '"+RoutingType+"'";}
+inline std::string E3113(const char* type, const std::string& name) {return fmt::format("E-3113: failed to get {} ID for '{}'", type, name);}
+inline std::string E3114(const std::string& RoutingType) {return "E-3114: unrecognized RoutingType '"+RoutingType+"'";}
 E(3115, "missing recipients");
 E(3116, "failed to export message");
-inline std::string E3117(int code) {return fmt::format("E-3116: failed to send mail ({})", code);}
+inline std::string E3117(int code) {return fmt::format("E-3117: failed to send mail ({})", code);}
 E(3118, "failed to allocate message ID");
 E(3119, "failed to allocate change number");
 E(3120, "failed to generate change key");
@@ -214,6 +225,10 @@ E(3121, "failed to generate predecessor change list");
 E(3122, "failed to generate predecessor change list");
 E(3123, "failed to load mime content");
 E(3124, "failed to import mail");
+E(3125, "failed to get user maildir");
+E(3126, "failed to get user maildir");
+E(3127, "failed to get item property");
+E(3128, "ext buffer oom");
 
 #undef E
 }
