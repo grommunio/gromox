@@ -140,7 +140,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 	for(sItem& item : request.Items) try
 	{
 		if(!hasAccess)
-			throw EWSError::AccessDenied("Cannot write to target folder");
+			throw EWSError::AccessDenied(E3130);
 
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
@@ -184,17 +184,17 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
 		if(!(ctx.permissions(ctx.auth_info.username, parent, dir.c_str()) & frightsDeleteAny))
-			throw EWSError::AccessDenied("You do not have sufficient permission to delete messages");
+			throw EWSError::AccessDenied(E3131);
 		if(request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid;
 			if(!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &newMid))
-				throw EWSError::MoveCopyFailed("Failed to allocate message ID");
+				throw EWSError::MoveCopyFailed(E3132);
 
 			sFolderSpec deletedItems = ctx.resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
 			BOOL result;
 			if(!exmdb.movecopy_message(dir.c_str(), accountId, CP_ACP, meid.messageId(), deletedItems.folderId, newMid,
 			                                      TRUE, &result) || !result)
-				throw EWSError::MoveCopyFailed("Failed to move message to deleted items");
+				throw EWSError::MoveCopyFailed(E3133);
 			else
 				data.ResponseMessages.emplace_back().success();
 		} else {
@@ -205,7 +205,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			BOOL partial;
 			if(!ctx.plugin.exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.auth_info.username, fid, &eids,
 			                                     hardDelete, &partial) || partial)
-				throw EWSError::CannotDeleteObject("Failed to delete item");
+				throw EWSError::CannotDeleteObject(E3134);
 			else
 				data.ResponseMessages.emplace_back().success();
 		}
@@ -237,7 +237,7 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
 		sFolderSpec parentFolder = ctx.resolveFolder(aid);
 		std::string dir = ctx.getDir(parentFolder);
 		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny))
-			throw EWSError::AccessDenied("Access denied");
+			throw EWSError::AccessDenied(E3135);
 		mGetAttachmentResponseMessage msg;
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
@@ -280,7 +280,7 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 			folderSpec.target = ctx.auth_info.username;
 		folderSpec.normalize();
 		if(!(ctx.permissions(ctx.auth_info.username, folderSpec) & frightsVisible))
-			throw EWSError::AccessDenied("Cannot access target folder");
+			throw EWSError::AccessDenied(E3136);
 		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
 		msg.Folders.emplace_back(ctx.loadFolder(folderSpec, shape));
 		msg.success();
@@ -562,7 +562,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	mSyncFolderHierarchyResponse data;
 	if(!(ctx.permissions(ctx.auth_info.username, folder) & frightsVisible))
 	{
-		data.ResponseMessages.emplace_back(EWSError::AccessDenied("Cannot access target folder"));
+		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3137));
 		data.serialize(response);
 		return;
 	}
@@ -636,7 +636,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	mSyncFolderItemsResponse data;
 	if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
 	{
-		data.ResponseMessages.emplace_back(EWSError::AccessDenied("Cannot access target folder"));
+		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3138));
 		data.serialize(response);
 		return;
 	}
@@ -742,7 +742,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
 		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny))
-			throw EWSError::AccessDenied("Cannot access target folder");
+			throw EWSError::AccessDenied(E3139);
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = eid.messageId();
 		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
@@ -823,14 +823,14 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 
 	// Specified as explicit error in the documentation
 	if(!request.SaveItemToFolder && request.SavedItemFolderId) {
-		data.Responses.emplace_back(EWSError::InvalidSendItemSaveSettings("Save folder ID specified when not saving"));
+		data.Responses.emplace_back(EWSError::InvalidSendItemSaveSettings(E3140));
 		data.serialize(response);
 		return;
 	}
 	sFolderSpec saveFolder = request.SavedItemFolderId? ctx.resolveFolder(request.SavedItemFolderId->folderId) :
 	                                                    sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
 	if(request.SavedItemFolderId && !(ctx.permissions(ctx.auth_info.username, saveFolder) & frightsCreate)) {
-		data.Responses.emplace_back(EWSError::AccessDenied("No write access to save folder"));
+		data.Responses.emplace_back(EWSError::AccessDenied(E3141));
 		data.serialize(response);
 		return;
 	}
@@ -841,11 +841,11 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		sFolderSpec folder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(folder);
 		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
-			throw EWSError::AccessDenied("No write access to save folder");
+			throw EWSError::AccessDenied(E3142);
 
 		MESSAGE_CONTENT* content;
 		if(!ctx.plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content))
-			throw EWSError::ItemNotFound("Failed to load message");
+			throw EWSError::ItemNotFound(E3143);
 		ctx.send(dir, *content);
 
 		if(request.SaveItemToFolder)

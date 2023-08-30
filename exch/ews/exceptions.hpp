@@ -229,6 +229,22 @@ E(3125, "failed to get user maildir");
 E(3126, "failed to get user maildir");
 E(3127, "failed to get item property");
 E(3128, "ext buffer oom");
+E(3129, "context alloc failed");
+E(3130, "cannot write to target folder");
+E(3131, "insufficient permissions to delete messages");
+E(3132, "failed to allocate message ID");
+E(3133, "failed to move message to deleted items");
+E(3134, "delete operation failed");
+E(3135, "insufficient permission");
+E(3136, "cannot access target folder");
+E(3137, "cannot access target folder");
+E(3138, "cannot access target folder");
+E(3139, "cannot access target folder");
+E(3140, "save folder ID specified when not saving");
+E(3141, "no write access to save folder");
+E(3142, "cannot read source item");
+E(3143, "failed to load message");
+E(3144, "failed to load freebusy information");
 
 #undef E
 }

@@ -263,7 +263,7 @@ inline T* EWSContext::alloc(size_t count)
 {
 	T* res = static_cast<T*>(alloc(sizeof(T)*count));
 	if(!res)
-		throw Exceptions::EWSError::NotEnoughMemory("OOM");
+		throw Exceptions::EWSError::NotEnoughMemory(Exceptions::E3129);
 	return res;
 }
 

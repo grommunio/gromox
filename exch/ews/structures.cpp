@@ -1222,7 +1222,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 {
 	std::vector<freebusy_event> fb_data;
 	if (!get_freebusy(username, dir, start_time, end_time, fb_data))
-		throw EWSError::FreeBusyGenerationFailed("failed to load freebusy information");
+		throw EWSError::FreeBusyGenerationFailed(E3144);
 
 	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
 		[](freebusy_event fb_event) { return fb_event.details.has_value(); }) ?
