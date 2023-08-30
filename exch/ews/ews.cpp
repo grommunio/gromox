@@ -28,6 +28,23 @@
 
 DECLARE_HPM_API();
 
+namespace gromox::EWS::Exceptions
+{
+
+/**
+ * @brief      Initialize EWSError
+ *
+ * @param t    EWS ResponseCode
+ * @param m    Error message
+ */
+EWSError::EWSError(const char* t, const std::string& m) : DispatchError(m), type(t)
+{}
+
+void DispatchError::unused() {}
+void EWSError::unused() {}
+
+} // gromox::EWS::Exceptions
+
 using namespace gromox;
 using namespace gromox::EWS;
 using namespace tinyxml2;

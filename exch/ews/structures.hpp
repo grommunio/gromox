@@ -26,6 +26,9 @@ namespace tinyxml2
 namespace gromox::EWS
 {class EWSContext;}
 
+namespace gromox::EWS::Exceptions
+{class EWSError;}
+
 namespace gromox::EWS::Structures
 {
 
@@ -1945,6 +1948,7 @@ struct mResponseMessageType : public NS_EWS_Messages
 	mResponseMessageType() = default;
 	explicit mResponseMessageType(const std::string&, const std::optional<std::string>& = std::nullopt,
 	                              const std::optional<std::string>& = std::nullopt);
+	explicit mResponseMessageType(const Exceptions::EWSError&);
 
 	std::string ResponseClass;
 	std::optional<std::string> MessageText;
@@ -2204,7 +2208,6 @@ struct mGetUserAvailabilityRequest
  */
 struct mFreeBusyResponse : public NS_EWS_Messages
 {
-
 	static constexpr char NAME[] = "FreeBusyResponse";
 
 	mFreeBusyResponse() = default;

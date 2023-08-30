@@ -137,14 +137,12 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 	bool sendMessages = request.MessageDisposition == Enum::SendOnly || request.MessageDisposition == Enum::SendAndSaveCopy;
 
 	data.ResponseMessages.reserve(request.Items.size());
-	for(sItem& item : request.Items)
+	for(sItem& item : request.Items) try
 	{
-		if(!hasAccess) {
-			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot write to target folder");
-			continue;
-		}
+		if(!hasAccess)
+			throw EWSError::AccessDenied("Cannot write to target folder");
 
-		auto& msg = data.ResponseMessages.emplace_back();
+		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		bool send = std::holds_alternative<tMessage>(item) &&	sendMessages;
 		MESSAGE_CONTENT content = ctx.toContent(dir, *targetFolder, item, persist);
@@ -153,7 +151,11 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		if(send)
 			ctx.send(dir, content);
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
+
 	data.serialize(response);
 }
 
@@ -176,28 +178,23 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 	uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
 	auto& exmdb = ctx.plugin.exmdb;
 
-	for(const tItemId& itemId : request.ItemIds)
+	for(const tItemId& itemId : request.ItemIds) try
 	{
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
-		if(!(ctx.permissions(ctx.auth_info.username, parent, dir.c_str()) & frightsDeleteAny)) {
-			data.ResponseMessages.emplace_back("Error", "AccessDenied",
-			                                   "You do not have sufficient permission to delete messages");
-			continue;
-		}
+		if(!(ctx.permissions(ctx.auth_info.username, parent, dir.c_str()) & frightsDeleteAny))
+			throw EWSError::AccessDenied("You do not have sufficient permission to delete messages");
 		if(request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid;
-			if(!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &newMid)) {
-				data.ResponseMessages.emplace_back("Error", "ErrorMoveCopyFailed", "Failed to allocate message ID");
-				continue;
-			}
+			if(!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &newMid))
+				throw EWSError::MoveCopyFailed("Failed to allocate message ID");
 
 			sFolderSpec deletedItems = ctx.resolveFolder(tDistinguishedFolderId(Enum::deleteditems));
 			BOOL result;
 			if(!exmdb.movecopy_message(dir.c_str(), accountId, CP_ACP, meid.messageId(), deletedItems.folderId, newMid,
 			                                      TRUE, &result) || !result)
-				data.ResponseMessages.emplace_back("Error", "ErrorMoveCopyFailed", "Failed to move message to deleted items");
+				throw EWSError::MoveCopyFailed("Failed to move message to deleted items");
 			else
 				data.ResponseMessages.emplace_back().success();
 		} else {
@@ -208,10 +205,12 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			BOOL partial;
 			if(!ctx.plugin.exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.auth_info.username, fid, &eids,
 			                                     hardDelete, &partial) || partial)
-				data.ResponseMessages.emplace_back("Error", "ErrorCannotDeleteObject", "Failed to delete item");
+				throw EWSError::CannotDeleteObject("Failed to delete item");
 			else
 				data.ResponseMessages.emplace_back().success();
 		}
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
 
 	data.serialize(response);
@@ -232,19 +231,21 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
 
 	mGetAttachmentResponse data;
 	data.ResponseMessages.reserve(request.AttachmentIds.size());
-	for(const tRequestAttachmentId& raid : request.AttachmentIds)
+	for(const tRequestAttachmentId& raid : request.AttachmentIds) try
 	{
 		sAttachmentId aid(raid.Id.data(), raid.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(aid);
 		std::string dir = ctx.getDir(parentFolder);
-		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny)) {
-			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Access denied");
-			continue;
-		}
-		mGetAttachmentResponseMessage& msg = data.ResponseMessages.emplace_back();
+		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny))
+			throw EWSError::AccessDenied("Access denied");
+		mGetAttachmentResponseMessage msg;
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch(const EWSError& err) {
+			data.ResponseMessages.emplace_back(err);
 	}
+
 	data.serialize(response);
 }
 
@@ -267,28 +268,26 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 
 	mGetFolderResponse data;
 	data.ResponseMessages.reserve(request.FolderIds.size());
-	for(auto& folderId : request.FolderIds)
+	for(auto& folderId : request.FolderIds) try
 	{
 		sFolderSpec folderSpec;
 		try {
 			folderSpec = ctx.resolveFolder(folderId);
 		} catch (DeserializationError& err) {
-			data.ResponseMessages.emplace_back("Error", "ErrorFolderNotFound", err.what());
-			continue;
+			throw EWSError::FolderNotFound(err.what());
 		}
 		if(!folderSpec.target)
 			folderSpec.target = ctx.auth_info.username;
 		folderSpec.normalize();
 		if(!(ctx.permissions(ctx.auth_info.username, folderSpec) & frightsVisible))
-		{
-			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot access target folder");
-			continue;
-		}
-
+			throw EWSError::AccessDenied("Cannot access target folder");
 		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
 		msg.Folders.emplace_back(ctx.loadFolder(folderSpec, shape));
 		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
+
 	data.serialize(response);
 }
 
@@ -378,30 +377,24 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 
 	mGetUserAvailabilityResponse data;
 	data.FreeBusyResponseArray.emplace().reserve(request.MailboxDataArray.size());
-	for(const tMailboxData& MailboxData : request.MailboxDataArray)
+	for(const tMailboxData& MailboxData : request.MailboxDataArray) try
 	{
-		try {
-			string maildir = ctx.get_maildir(MailboxData.Email);
-			time_t start = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
-			time_t end = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
-			tFreeBusyView fbv(ctx.auth_info.username, maildir.c_str(), start, end);
-			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
-			for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
-			{
-				event.StartTime.offset = request.TimeZone->offset(event.StartTime.time);
-				event.EndTime.offset = request.TimeZone->offset(event.EndTime.time);
-			}
-			fbr.ResponseMessage.emplace().success();
-		} catch (const AccessDenied &) {
-			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
-			fbr.FreeBusyView.emplace();
-			fbr.ResponseMessage.emplace("Error", "InvalidAccessLevel",
-			                            "Cannot access freebusy data of "+MailboxData.Email.Address);
-		} catch (const DispatchError &err) {
-			mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
-			fbr.ResponseMessage.emplace("Error", "ErrorMailRecipientNotFound", "Failed to get freebusy data: "s+err.what());
+		string maildir = ctx.get_maildir(MailboxData.Email);
+		time_t start = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
+		time_t end = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
+		tFreeBusyView fbv(ctx.auth_info.username, maildir.c_str(), start, end);
+		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
+		for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
+		{
+			event.StartTime.offset = request.TimeZone->offset(event.StartTime.time);
+			event.EndTime.offset = request.TimeZone->offset(event.EndTime.time);
 		}
+		fbr.ResponseMessage.emplace().success();
+	} catch(const EWSError& err) {
+		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
+		fbr.ResponseMessage.emplace(err);
 	}
+
 	data.serialize(response);
 }
 
@@ -423,8 +416,12 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	response->SetName("m:GetUserOofSettingsResponse");
 
 	ctx.normalize(request.Mailbox);
-	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username))
-		throw AccessDenied(E3011);
+	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username)) {
+		mGetUserOofSettingsResponse data;
+		data.ResponseMessage = mResponseMessageType(EWSError::AccessDenied(E3011));
+		data.serialize(response);
+		return;
+	}
 
 	//Initialize response data structure
 	mGetUserOofSettingsResponse data;
@@ -492,8 +489,12 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	response->SetName("m:SetUserOofSettingsResponse");
 
 	ctx.normalize(request.Mailbox);
-	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username))
-		throw AccessDenied(E3012);
+	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username)){
+		mGetUserOofSettingsResponse data;
+		data.ResponseMessage = mResponseMessageType(EWSError::AccessDenied(E3012));
+		data.serialize(response);
+		return;
+	}
 	std::string maildir = ctx.get_maildir(request.Mailbox);
 
 	tUserOofSettings& OofSettings = request.UserOofSettings;
@@ -561,7 +562,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	mSyncFolderHierarchyResponse data;
 	if(!(ctx.permissions(ctx.auth_info.username, folder) & frightsVisible))
 	{
-		data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot access target folder");
+		data.ResponseMessages.emplace_back(EWSError::AccessDenied("Cannot access target folder"));
 		data.serialize(response);
 		return;
 	}
@@ -635,7 +636,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	mSyncFolderItemsResponse data;
 	if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
 	{
-		data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Cannot access target folder");
+		data.ResponseMessages.emplace_back(EWSError::AccessDenied("Cannot access target folder"));
 		data.serialize(response);
 		return;
 	}
@@ -736,19 +737,20 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 	mGetItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	sShape shape(request.ItemShape);
-	for(auto& itemId : request.ItemIds) {
+	for(auto& itemId : request.ItemIds) try {
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
-		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny)) {
-			data.ResponseMessages.emplace_back("Error", "InvalidAccessLevel", "Access denied");
-			continue;
-		}
+		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny))
+			throw EWSError::AccessDenied("Cannot access target folder");
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = eid.messageId();
 		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
+
 	data.serialize(response);
 }
 
@@ -821,39 +823,37 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 
 	// Specified as explicit error in the documentation
 	if(!request.SaveItemToFolder && request.SavedItemFolderId) {
-		data.Responses.emplace_back("Error", "ErrorInvalidSendItemSaveSettings", "Save folder ID specified when not saving");
+		data.Responses.emplace_back(EWSError::InvalidSendItemSaveSettings("Save folder ID specified when not saving"));
 		data.serialize(response);
 		return;
 	}
 	sFolderSpec saveFolder = request.SavedItemFolderId? ctx.resolveFolder(request.SavedItemFolderId->folderId) :
 	                                                    sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
 	if(request.SavedItemFolderId && !(ctx.permissions(ctx.auth_info.username, saveFolder) & frightsCreate)) {
-		data.Responses.emplace_back("Error", "InvalidAccessLevel", "No write access to save folder");
+		data.Responses.emplace_back(EWSError::AccessDenied("No write access to save folder"));
 		data.serialize(response);
 		return;
 	}
 
 	data.Responses.reserve(request.ItemIds.size());
-	for(tItemId& itemId : request.ItemIds) {
+	for(tItemId& itemId : request.ItemIds) try {
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(folder);
-		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny)) {
-			data.Responses.emplace_back("Error", "InvalidAccessLevel", "No write access to save folder");
-			continue;
-		}
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
+			throw EWSError::AccessDenied("No write access to save folder");
 
 		MESSAGE_CONTENT* content;
-		if(!ctx.plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content)) {
-			data.Responses.emplace_back("Error", "ErrorItemNotFound", "Failed to load message");
-			continue;
-		}
+		if(!ctx.plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content))
+			throw EWSError::ItemNotFound("Failed to load message");
 		ctx.send(dir, *content);
 
 		if(request.SaveItemToFolder)
 			ctx.create(dir, folder, *content);
 
 		data.Responses.emplace_back().success();
+	} catch(const EWSError& err) {
+		data.Responses.emplace_back(err);
 	}
 
 	data.serialize(response);

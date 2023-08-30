@@ -1222,7 +1222,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 {
 	std::vector<freebusy_event> fb_data;
 	if (!get_freebusy(username, dir, start_time, end_time, fb_data))
-		throw DispatchError(E3111);
+		throw EWSError::MailRecipientNotFound("failed to load freebusy information");
 
 	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
 		[](freebusy_event fb_event) { return fb_event.details.has_value(); }) ?
@@ -2292,9 +2292,27 @@ mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::mo
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Initialize response message
+ *
+ * @param      rclass  Response class, either "Success", "Error" or "Warning"
+ * @param      rcode   EWS Error code
+ * @param      mt      Error message text
+ */
 mResponseMessageType::mResponseMessageType(const std::string& rclass,
     const std::optional<std::string> &rcode, const std::optional<std::string> &mt) :
 	ResponseClass(rclass), MessageText(mt), ResponseCode(rcode)
+{}
+
+/**
+ * @brief      Convert EWSError to response message
+ *
+ * @param      err   Original EWS error
+ */
+mResponseMessageType::mResponseMessageType(const EWSError& err) :
+	ResponseClass("Error"),
+	MessageText(err.what()),
+	ResponseCode(err.type)
 {}
 
 /**

@@ -22,12 +22,6 @@ class DeserializationError : public InputError
 {using InputError::InputError;};
 
 /**
- * @brief     Caller has insufficient permissions
- */
-class AccessDenied : public InputError
-{using InputError::InputError;};
-
-/**
  * @brief      SOAP protocol error
  */
 class SOAPError : public InputError
@@ -43,7 +37,38 @@ class UnknownRequestError : public std::runtime_error
  * @brief      Generic error during request processing
  */
 class DispatchError : public std::runtime_error
-{using std::runtime_error::runtime_error;};
+{
+	using std::runtime_error::runtime_error;
+	virtual void unused(); ///< Used to define vtable location
+};
+
+/**
+ * @brief      Specific EWS error class
+ *
+ * Provides a mechanism to signal specific error codes, as defined in the EWS
+ * specification (Messages.xsd:11).
+ *
+ * EWSErrors should be converted into error response messages instead of a
+ * SOAP client or server error.
+ */
+class EWSError : public DispatchError
+{
+	virtual void unused() override; ///< Used to define vtable location
+public:
+	EWSError(const char*, const std::string&);
+
+	std::string type;
+
+#define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
+	ERR(AccessDenied) ///< Calling account does not have necessary rights
+	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
+	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
+	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
+	ERR(ItemNotFound) ///< Requested message object does not exist
+	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
+	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
+#undef ERR
+};
 
 /**
  * @brief      Generic error to signal missing functionality
