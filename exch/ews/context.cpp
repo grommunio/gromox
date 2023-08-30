@@ -1041,17 +1041,24 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 /**
  * @brief     Convert EXT_PUSH/EXT_PULL return code to exception
  *
- * @param     code    ext_buffer return code
+ * @param     code           ext_buffer return code
+ * @param     msg            Error message
+ * @param     responseCode   EWSError response code for generic errors
  *
  * @todo      Add more exceptions for better differentiation
  */
-void EWSContext::ext_error(pack_result code)
+void EWSContext::ext_error(pack_result code, const char* msg, const char* responseCode)
 {
 	switch(code)
 	{
 	case EXT_ERR_SUCCESS: return;
-	case EXT_ERR_ALLOC: throw EWSError::NotEnoughMemory(E3128);
-	default: throw DispatchError(E3028(int(code)));
+	case EXT_ERR_ALLOC: throw Exceptions::EWSError::NotEnoughMemory(msg? msg : E3128);
+	case EXT_ERR_BUFSIZE: throw Exceptions::DispatchError(msg? msg : E3145);
+	default:
+		if(responseCode && msg)
+			throw Exceptions::EWSError(responseCode, msg);
+		else
+			throw DispatchError(Exceptions::E3028(int(code)));
 	}
 }
 

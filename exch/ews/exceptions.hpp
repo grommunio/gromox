@@ -66,7 +66,11 @@ public:
 	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
 	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
 	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
+	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
+	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
+	ERR(InvalidId) ///< ItemId or ChangeKey malformed
+	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
 	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
@@ -77,7 +81,9 @@ public:
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
 	ERR(NotEnoughMemory) ///< Out of memory
+	ERR(SchemaValidation) ///< XML value is does not confirm to schema
 	ERR(TimeZone) ///< Invalid or missing time zone
+	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
 #undef ERR
 };
 
@@ -245,6 +251,14 @@ E(3141, "no write access to save folder");
 E(3142, "cannot read source item");
 E(3143, "failed to load message");
 E(3144, "failed to load freebusy information");
+E(3145, "misconfigured buffer size");
+E(3146, "failed to deserialize item entry id");
+E(3147, "failed to deserialize attachment index");
+E(3148, "failed to deserialize folder entry id");
+E(3149, "failed to deserialize item entry id");
+E(3150, "missing date string");
+E(3151, "failed to parse date");
+E(3152, "failed to convert timestamp");
 
 #undef E
 }
