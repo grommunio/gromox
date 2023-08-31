@@ -811,7 +811,7 @@ MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec&
 	}
 
 	sShape shape;
-	MESSAGE_CONTENT content;
+	MESSAGE_CONTENT content{};
 	std::visit([&](auto& i){toContent(dir, i, shape, content);}, item);
 
 	if(!shape.writes(PR_LAST_MODIFICATION_TIME))
