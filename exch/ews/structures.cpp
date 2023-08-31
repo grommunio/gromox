@@ -350,7 +350,7 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define TRY(expr) EWSContext::ext_error(expr)
+#define TRY(expr, msg, rc) EWSContext::ext_error(expr, msg, rc)
 
 /**
  * @brief      Create attachment ID from message entry ID and index
@@ -371,10 +371,10 @@ sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
 	if(size > std::numeric_limits<uint32_t>::max())
-		throw DeserializationError(E3081);
+		throw EWSError::InvalidAttachmentId(E3081);
 	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
-	TRY(ext_pull.g_msg_eid(this));
-	TRY(ext_pull.g_uint32(&attachment_num));
+	TRY(ext_pull.g_msg_eid(this), E3146, "ErrorInvalidAttachmentId");
+	TRY(ext_pull.g_uint32(&attachment_num), E3147,"ErrorInvalidAttachmentId");
 }
 
 /**
@@ -396,9 +396,9 @@ void sFolderEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
 	if(size >	std::numeric_limits<uint32_t>::max())
-		throw DeserializationError(E3050);
+		throw EWSError::InvalidFolderId(E3050);
 	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
-	TRY(ext_pull.g_folder_eid(this));
+	TRY(ext_pull.g_folder_eid(this), E3148, "ErrorInvalidFolderId");
 }
 
 /**
@@ -455,9 +455,9 @@ void sMessageEntryId::init(const void* data, uint64_t size)
 {
 	EXT_PULL ext_pull;
 	if(size >	std::numeric_limits<uint32_t>::max())
-		throw DeserializationError(E3050);
+		throw EWSError::InvalidId(E3050);
 	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
-	TRY(ext_pull.g_msg_eid(this));
+	TRY(ext_pull.g_msg_eid(this), E3149, "ErrorInvalidId");
 }
 
 /**
@@ -535,7 +535,7 @@ sFolderSpec::sFolderSpec(const tDistinguishedFolderId& folder)
 	auto it = std::find_if(distNameInfo.begin(), distNameInfo.end(),
 	                       [&folder](const auto& elem){return folder.Id == elem.name;});
 	if(it == distNameInfo.end())
-		throw DeserializationError(E3051(folder.Id));
+		throw EWSError::FolderNotFound(E3051(folder.Id));
 	folderId = rop_util_make_eid_ex(1, it->id);
 	location = it->isPrivate? PRIVATE : PUBLIC;
 	if(folder.Mailbox)
@@ -899,7 +899,7 @@ void sSyncState::init(const std::string& data64)
 	if(data.size() <= 16)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
-		throw InputError(E3052);
+		throw EWSError::InvalidSyncStateData(E3052);
 	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
@@ -908,19 +908,19 @@ void sSyncState::init(const std::string& data64)
 		switch (propval->proptag) {
 		case MetaTagIdsetGiven1:
 			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3053);
+				throw EWSError::InvalidSyncStateData(E3053);
 			break;
 		case MetaTagCnsetSeen:
 			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3054);
+				throw EWSError::InvalidSyncStateData(E3054);
 			break;
 		case MetaTagCnsetRead:
 			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3055);
+				throw EWSError::InvalidSyncStateData(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
 			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
-				throw InputError(E3056);
+				throw EWSError::InvalidSyncStateData(E3056);
 			break;
 		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
 			readOffset = *static_cast<uint32_t*>(propval->pvalue);
@@ -974,19 +974,19 @@ sTimePoint::sTimePoint(const gromox::time_point& tp, const tSerializableTimeZone
 sTimePoint::sTimePoint(const char* dtstr)
 {
 	if(!dtstr)
-		throw DeserializationError("Missing date string");
+		throw EWSError::SchemaValidation(E3150);
 	tm t{};
 	float seconds = 0, unused;
 	int tz_hour = 0, tz_min = 0;
 	if(sscanf(dtstr, "%4d-%02d-%02dT%02d:%02d:%f%03d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min,
 	          &seconds, &tz_hour, &tz_min) < 6) //Timezone info is optional, date and time values mandatory
-		throw DeserializationError("Failed to parse date");
+		throw EWSError::SchemaValidation(E3151);
 	t.tm_sec = int(seconds);
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
 	time_t timestamp = mktime(&t)-timezone;
 	if(timestamp == time_t(-1))
-		throw DeserializationError("Failed to convert timestamp");
+		throw EWSError::ValueOutOfRange(E3152);
 	time = gromox::time_point::clock::from_time_t(timestamp);
 	seconds = std::modf(seconds, &unused);
 	time += std::chrono::microseconds(int(seconds*1000000));
@@ -1222,7 +1222,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 {
 	std::vector<freebusy_event> fb_data;
 	if (!get_freebusy(username, dir, start_time, end_time, fb_data))
-		throw DispatchError(E3111);
+		throw EWSError::FreeBusyGenerationFailed(E3144);
 
 	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
 		[](freebusy_event fb_event) { return fb_event.details.has_value(); }) ?
@@ -1345,7 +1345,7 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 {
 	bool value;
 	if(v->QueryBoolText(&value))
-		throw DeserializationError(E3100(v->GetText()? v->GetText() : "(nil)"));
+		throw EWSError::InvalidExtendedPropertyValue(E3100(v->GetText()? v->GetText() : "(nil)"));
 	shape.write(mkProp(tag, uint8_t(value? TRUE : false)));
 }
 
@@ -1699,32 +1699,32 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		int temp;
 		XMLError res = xml->QueryIntText(&temp);
 		if(res != XML_SUCCESS || temp & ~0xFFFF)
-			throw DeserializationError(E3101(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3101(content? content : "(nil)"));
 		*static_cast<uint16_t*>(dest) = uint16_t(temp);
 		break;
 	}
 	case PT_ERROR:
 	case PT_LONG:
 		if(xml->QueryUnsignedText(static_cast<uint32_t*>(dest)) != XML_SUCCESS)
-			throw DeserializationError(E3102(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3102(content? content : "(nil)"));
 		break;
 	case PT_FLOAT:
 		if(xml->QueryFloatText(static_cast<float*>(dest)) != XML_SUCCESS)
-			throw DeserializationError(E3103(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3103(content? content : "(nil)"));
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		if(xml->QueryDoubleText(static_cast<double*>(dest)) != XML_SUCCESS)
-			throw DeserializationError(E3104(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3104(content? content : "(nil)"));
 		break;
 	case PT_BOOLEAN:
 		if(xml->QueryBoolText(static_cast<bool*>(dest)) != XML_SUCCESS)
-			throw DeserializationError(E3105(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3105(content? content : "(nil)"));
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
 		if(xml->QueryUnsigned64Text(static_cast<uint64_t*>(dest)) != XML_SUCCESS)
-			throw DeserializationError(E3106(content? content : "(nil)"));
+			throw EWSError::InvalidExtendedPropertyValue(E3106(content? content : "(nil)"));
 		break;
 	case PT_SYSTIME:
 		*static_cast<uint64_t*>(dest) = sTimePoint(xml->GetText()).toNT(); break;
@@ -2262,7 +2262,7 @@ void tSetItemField::put(sShape& shape) const
 {
 	const XMLElement* child = item->FirstChildElement();
 	if(!child)
-		throw DeserializationError(E3108);
+		throw EWSError::InvalidExtendedPropertyValue(E3108);
 	if(!strcmp(child->Name(), "ExtendedProperty")) {
 		tExtendedProperty prop(child);
 		if(prop.ExtendedFieldURI.tag())
@@ -2292,9 +2292,27 @@ mFreeBusyResponse::mFreeBusyResponse(tFreeBusyView&& fbv) : FreeBusyView(std::mo
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Initialize response message
+ *
+ * @param      rclass  Response class, either "Success", "Error" or "Warning"
+ * @param      rcode   EWS Error code
+ * @param      mt      Error message text
+ */
 mResponseMessageType::mResponseMessageType(const std::string& rclass,
     const std::optional<std::string> &rcode, const std::optional<std::string> &mt) :
 	ResponseClass(rclass), MessageText(mt), ResponseCode(rcode)
+{}
+
+/**
+ * @brief      Convert EWSError to response message
+ *
+ * @param      err   Original EWS error
+ */
+mResponseMessageType::mResponseMessageType(const EWSError& err) :
+	ResponseClass("Error"),
+	MessageText(err.what()),
+	ResponseCode(err.type)
 {}
 
 /**

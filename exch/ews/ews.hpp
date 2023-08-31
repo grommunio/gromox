@@ -217,7 +217,7 @@ public:
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
-	static void ext_error(pack_result);
+	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
 
 private:
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
@@ -263,7 +263,7 @@ inline T* EWSContext::alloc(size_t count)
 {
 	T* res = static_cast<T*>(alloc(sizeof(T)*count));
 	if(!res)
-		throw Exceptions::DispatchError("OOM");
+		throw Exceptions::EWSError::NotEnoughMemory(Exceptions::E3129);
 	return res;
 }
 

@@ -22,12 +22,6 @@ class DeserializationError : public InputError
 {using InputError::InputError;};
 
 /**
- * @brief     Caller has insufficient permissions
- */
-class AccessDenied : public InputError
-{using InputError::InputError;};
-
-/**
  * @brief      SOAP protocol error
  */
 class SOAPError : public InputError
@@ -43,7 +37,55 @@ class UnknownRequestError : public std::runtime_error
  * @brief      Generic error during request processing
  */
 class DispatchError : public std::runtime_error
-{using std::runtime_error::runtime_error;};
+{
+	using std::runtime_error::runtime_error;
+	virtual void unused(); ///< Used to define vtable location
+};
+
+/**
+ * @brief      Specific EWS error class
+ *
+ * Provides a mechanism to signal specific error codes, as defined in the EWS
+ * specification (Messages.xsd:11).
+ *
+ * EWSErrors should be converted into error response messages instead of a
+ * SOAP client or server error.
+ */
+class EWSError : public DispatchError
+{
+	virtual void unused() override; ///< Used to define vtable location
+public:
+	EWSError(const char*, const std::string&);
+
+	std::string type;
+
+#define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
+	ERR(AccessDenied) ///< Calling account does not have necessary rights
+	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
+	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
+	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
+	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
+	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
+	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
+	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
+	ERR(InvalidId) ///< ItemId or ChangeKey malformed
+	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
+	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
+	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
+	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
+	ERR(ItemCorrupt) ///< Item could not be loaded properly
+	ERR(ItemNotFound) ///< Requested message object does not exist
+	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
+	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
+	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
+	ERR(NotEnoughMemory) ///< Out of memory
+	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(TimeZone) ///< Invalid or missing time zone
+	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
+#undef ERR
+};
 
 /**
  * @brief      Generic error to signal missing functionality
@@ -88,7 +130,7 @@ E(3020, "failed to query calendar");
 E(3021, "request is marked experimental and can be enabled with 'ews_experimental = 1'");
 E(3022, "failed to get folder entry id");
 E(3023, "failed to get folder properties");
-E(3024, "failed to get item property");
+E(3024, "failed to get item entry id");
 E(3025, "failed to get item properties");
 E(3026, "failed to get username from id");
 E(3027, "failed to get domain info from id");
@@ -177,11 +219,11 @@ E(3109, "PidLidAppointmentRecur contents not recognized");
 E(3110, "Invalid recurrence type");
 E(3111, "failed to load freebusy information");
 E(3112, "cannot create message without ID");
-inline std::string E3113(const char* type, const std::string& name) {return fmt::format("E-3112: failed to get {} ID for '{}'", type, name);}
-inline std::string E3114(const std::string& RoutingType) {return "E-3113: unrecognized RoutingType '"+RoutingType+"'";}
+inline std::string E3113(const char* type, const std::string& name) {return fmt::format("E-3113: failed to get {} ID for '{}'", type, name);}
+inline std::string E3114(const std::string& RoutingType) {return "E-3114: unrecognized RoutingType '"+RoutingType+"'";}
 E(3115, "missing recipients");
 E(3116, "failed to export message");
-inline std::string E3117(int code) {return fmt::format("E-3116: failed to send mail ({})", code);}
+inline std::string E3117(int code) {return fmt::format("E-3117: failed to send mail ({})", code);}
 E(3118, "failed to allocate message ID");
 E(3119, "failed to allocate change number");
 E(3120, "failed to generate change key");
@@ -189,6 +231,34 @@ E(3121, "failed to generate predecessor change list");
 E(3122, "failed to generate predecessor change list");
 E(3123, "failed to load mime content");
 E(3124, "failed to import mail");
+E(3125, "failed to get user maildir");
+E(3126, "failed to get user maildir");
+E(3127, "failed to get item property");
+E(3128, "ext buffer oom");
+E(3129, "context alloc failed");
+E(3130, "cannot write to target folder");
+E(3131, "insufficient permissions to delete messages");
+E(3132, "failed to allocate message ID");
+E(3133, "failed to move message to deleted items");
+E(3134, "delete operation failed");
+E(3135, "insufficient permission");
+E(3136, "cannot access target folder");
+E(3137, "cannot access target folder");
+E(3138, "cannot access target folder");
+E(3139, "cannot access target folder");
+E(3140, "save folder ID specified when not saving");
+E(3141, "no write access to save folder");
+E(3142, "cannot read source item");
+E(3143, "failed to load message");
+E(3144, "failed to load freebusy information");
+E(3145, "misconfigured buffer size");
+E(3146, "failed to deserialize item entry id");
+E(3147, "failed to deserialize attachment index");
+E(3148, "failed to deserialize folder entry id");
+E(3149, "failed to deserialize item entry id");
+E(3150, "missing date string");
+E(3151, "failed to parse date");
+E(3152, "failed to convert timestamp");
 
 #undef E
 }
