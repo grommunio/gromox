@@ -5082,7 +5082,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 }
 
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
-    uint64_t starttime, uint64_t endtime, FB_ARRAY *fb_events)
+    time_t starttime, time_t endtime, FB_ARRAY *fb_events)
 {
 	char maildir[256];
 	char username[UADDR_SIZE];

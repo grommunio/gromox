@@ -2044,8 +2044,11 @@ pack_result EXT_PULL::g_msgctnt(MESSAGE_CONTENT *r)
 
 pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 {
-	TRY(g_int64(&fb_event->start_time));
-	TRY(g_int64(&fb_event->end_time));
+	int64_t t;
+	TRY(g_int64(&t));
+	fb_event->start_time = t;
+	TRY(g_int64(&t));
+	fb_event->end_time = t;
 	TRY(g_uint32(&fb_event->busy_status));
 	BOOL b;
 	TRY(g_bool(&b));

@@ -1,4 +1,5 @@
 #pragma once
+#include <ctime>
 #include <vector>
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -36,5 +37,4 @@ struct freebusy_tags
 		timezonestruct = 0;
 };
 
-extern GX_EXPORT bool get_freebusy(const char *, const char *, uint64_t, uint64_t,
-	std::vector<freebusy_event> &);
+extern GX_EXPORT bool get_freebusy(const char *, const char *, time_t, time_t, std::vector<freebusy_event> &);

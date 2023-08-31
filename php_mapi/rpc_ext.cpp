@@ -1068,8 +1068,8 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_getuserfreebusy &d)
 {
 	TRY(x.p_guid(d.hsession));
 	TRY(x.p_bin(d.entryid));
-	TRY(x.p_uint64(d.starttime));
-	TRY(x.p_uint64(d.endtime));
+	TRY(x.p_int64(d.starttime));
+	TRY(x.p_int64(d.endtime));
 	return pack_result::ok;
 }
 

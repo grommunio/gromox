@@ -1529,8 +1529,11 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getuserfreebusy &d)
 {
 	QRF(x.g_guid(&d.hsession));
 	QRF(x.g_bin(&d.entryid));
-	QRF(x.g_uint64(&d.starttime));
-	QRF(x.g_uint64(&d.endtime));
+	int64_t t;
+	QRF(x.g_int64(&t));
+	d.starttime = t;
+	QRF(x.g_int64(&t));
+	d.endtime = t;
 	return pack_result::ok;
 }
 

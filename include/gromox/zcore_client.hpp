@@ -7,6 +7,7 @@
 #undef vasprintf
 #undef asprintf
 #include <cstdint>
+#include <ctime>
 #include <gromox/zcore_rpc.hpp>
 
 struct zcreq;
@@ -104,6 +105,6 @@ ZCIDL(checksession, (GUID hsession))
 ZCIDL(imtomessage2, (GUID session, uint32_t folder, uint32_t data_type, const char *im_data, IDLOUT LONG_ARRAY *msg_handles))
 ZCIDL(essdn_to_username, (const char *essdn, IDLOUT char **username))
 ZCIDL(logon_token, (const char *token, IDLOUT GUID *hsession))
-ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, uint64_t starttime, uint64_t endtime, IDLOUT FB_ARRAY *fb_events))
+ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT FB_ARRAY *fb_events))
 #undef ZCIDL
 #undef IDLOUT

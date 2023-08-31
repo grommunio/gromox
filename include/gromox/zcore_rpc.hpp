@@ -632,8 +632,8 @@ struct zcreq_essdn_to_username : public zcreq {
 struct zcreq_getuserfreebusy : public zcreq {
 	GUID hsession;
 	BINARY entryid;
-	uint64_t starttime;
-	uint64_t endtime;
+	int64_t starttime;
+	int64_t endtime;
 };
 
 struct zcresp {

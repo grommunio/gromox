@@ -324,8 +324,8 @@ static bool goid_to_icaluid(BINARY *gobj, std::string &uid_buf)
 	return true;
 }
 
-bool get_freebusy(const char *username, const char *dir,
-	uint64_t start_time, uint64_t end_time, std::vector<freebusy_event>& fb_data)
+bool get_freebusy(const char *username, const char *dir, time_t start_time,
+    time_t end_time, std::vector<freebusy_event> &fb_data)
 {
 	uint32_t permission = 0;
 	auto cal_eid = rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR);
