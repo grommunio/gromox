@@ -481,7 +481,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		TARRAY_SET rcpts;
 		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
 		{
-			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%lu)", dir.c_str(), mid);
+			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
+				dir.c_str(), static_cast<unsigned long long>(mid));
 			return;
 		}
 		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
@@ -525,7 +526,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		TARRAY_SET rcpts;
 		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
 		{
-			mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%lu)", dir.c_str(), mid);
+			mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
+				dir.c_str(), static_cast<unsigned long long>(mid));
 			return;
 		}
 		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
