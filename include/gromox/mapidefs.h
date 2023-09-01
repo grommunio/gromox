@@ -297,7 +297,7 @@ enum {
 	EVENT_TYPE_SEARCHCOMPLETE = 0x80U,
 };
 
-enum mapi_folder_type {
+enum mapi_folder_type : uint32_t {
 	FOLDER_ROOT = 0,
 	FOLDER_GENERIC = 1,
 	FOLDER_SEARCH = 2,
