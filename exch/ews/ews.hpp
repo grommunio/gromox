@@ -19,6 +19,14 @@
 
 namespace gromox::EWS::detail
 {
+/**
+ * @brief     Generic deleter struct
+ *
+ * Provides explicit deleters for classes without destructor.
+ */
+struct Cleaner
+{inline void operator()(BINARY*);};
+
 struct AttachmentInstanceKey {
 	std::string dir;
 	uint64_t mid;
@@ -177,6 +185,7 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
+	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
@@ -193,6 +202,7 @@ public:
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
+	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&) const;
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
@@ -201,6 +211,7 @@ public:
 	Structures::sFolderSpec resolveFolder(const std::variant<Structures::tFolderId, Structures::tDistinguishedFolderId>&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	void send(const std::string&, const MESSAGE_CONTENT&) const;
+	BINARY serialize(const XID&) const;
 	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&) const;
 	std::string username_to_essdn(const std::string&) const;

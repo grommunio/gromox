@@ -663,6 +663,7 @@ private:
 struct tBaseFolderType : public NS_EWS_Types
 {
 	explicit tBaseFolderType(const sShape&);
+	explicit tBaseFolderType(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -791,6 +792,7 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
+	using tBaseFolderType::tBaseFolderType; // Construct from XML
 	explicit tFolderType(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -1697,6 +1699,7 @@ struct tSyncFolderItemsReadFlag : public NS_EWS_Types
  */
 struct tFolderResponseShape
 {
+	tFolderResponseShape() = default;
 	explicit tFolderResponseShape(const tinyxml2::XMLElement*);
 
 	void tags(sShape&) const;
@@ -1961,6 +1964,49 @@ struct mResponseMessageType : public NS_EWS_Messages
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Messages.xsd:799
+ */
+struct mFolderInfoResponseMessage : public mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	std::vector<sFolder> Folders;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:768
+ */
+struct mCreateFolderRequest
+{
+	explicit mCreateFolderRequest(const tinyxml2::XMLElement*);
+
+	tTargetFolderIdType ParentFolderId;
+	std::vector<sFolder> Folders;
+};
+
+/**
+ * Messages.xsd:575
+ */
+struct mCreateFolderResponseMessage : public mFolderInfoResponseMessage
+{
+	static constexpr char NAME[] = "CreateFolderResponseMessage";
+
+	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:896
+ */
+struct mCreateFolderResponse
+{
+	std::vector<mCreateFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 /**
  * Messages.xsd:990

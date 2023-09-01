@@ -144,6 +144,7 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
  */
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
+	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},

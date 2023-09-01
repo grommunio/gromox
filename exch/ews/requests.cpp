@@ -106,6 +106,39 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 //Request implementations
 
 /**
+ * @brief      Process CreateFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mCreateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:CreateFolderResponse");
+
+	mCreateFolderResponse data;
+
+	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.folderId);
+	std::string dir = ctx.getDir(parent);
+	bool hasAccess = ctx.permissions(ctx.auth_info.username, parent, dir.c_str());
+
+	for(const sFolder& folder : request.Folders) try {
+		if(!hasAccess)
+			throw EWSError::AccessDenied("cannot write to target folder");
+		mCreateFolderResponseMessage msg;
+		msg.Folders.emplace_back(ctx.create(dir, parent, folder));
+		data.ResponseMessages.emplace_back(std::move(msg)).success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process CreateItem
  *
  * @param      request   Request data

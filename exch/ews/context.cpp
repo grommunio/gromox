@@ -28,16 +28,6 @@ namespace
 {
 
 /**
- * @brief     Generic deleter struct
- *
- * Provides explicit deleters for classes without destructor.
- */
-struct Cleaner
-{
-	inline void operator()(BINARY* x) {rop_util_free_binary(x);}
-};;
-
-/**
  * @brief      Convert string to lower case
  *
  * @param      str     String to convert
@@ -64,11 +54,88 @@ T& defaulted(std::optional<T>& container, Args&&... args)
 
 } // Anonymous namespace
 
+namespace detail
+{
+
+void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
+
+} // gromox::EWS::detail
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Create new folder
+ *
+ * @param      dir       Store directory
+ * @param      parent    Parent folder to create folder in
+ * @param      folder    Folder object to create
+ *
+ * @return     Folder object containing FolderId
+ */
+sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, const sFolder& folder) const
+{
+	sShape shape;
+	uint64_t changeNumber;
+	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
+		throw DispatchError(E3153);
+	const tBaseFolderType& baseFolder = std::visit([](const auto& f) -> const tBaseFolderType&
+	                                                 {return static_cast<const tBaseFolderType&>(f);}, folder);
+	for(const tExtendedProperty& prop : baseFolder.ExtendedProperty)
+		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, const_cast<uint64_t*>(&parent.folderId)});
+	const char* fclass = "IPF.Note";
+	mapi_folder_type type = FOLDER_GENERIC;
+	if(baseFolder.FolderClass)
+		fclass = baseFolder.FolderClass->c_str();
+	else
+		switch(folder.index()) {
+		case 1: //CalendarFolder
+			fclass = "IPF.Appointment"; break;
+		case 2: // ContactsFolder
+			fclass = "IPF.Contact"; break;
+		case 3: // SearchFolder
+			type = FOLDER_SEARCH; break;
+		case 4: // TasksFolder
+			fclass = "IPF.Task"; break;
+		}
+	shape.write(TAGGED_PROPVAL{PR_FOLDER_TYPE, &type});
+	shape.write(TAGGED_PROPVAL{PR_CONTAINER_CLASS, const_cast<char*>(fclass)});
+	if(baseFolder.DisplayName)
+		shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, const_cast<char*>(baseFolder.DisplayName->c_str())});
+	uint64_t now = rop_util_current_nttime();
+	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, &now});
+	shape.write({PR_LAST_MODIFICATION_TIME, &now});
+	shape.write({PidTagChangeNumber, &changeNumber});
+
+	bool isPublic = parent.location == parent.PUBLIC;
+	uint32_t accountId = getAccountId(*parent.target, isPublic);
+	XID xid((parent.location == parent.PRIVATE? rop_util_make_user_guid : rop_util_make_domain_guid)(accountId), changeNumber);
+
+	BINARY ckey = serialize(xid);
+	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, &ckey});
+
+	auto pcl = mkPCL(xid);
+	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, pcl.get()});
+
+	sFolderSpec created = parent;
+	getNamedTags(dir, shape, true);
+	TPROPVAL_ARRAY props = shape.write();
+	if(!plugin.exmdb.create_folder_by_properties(dir.c_str(), CP_ACP, &props, &created.folderId))
+		throw EWSError::FolderSave(E3154);
+	if(!created.folderId)
+		throw EWSError::FolderExists(E3155);
+
+	sShape retshape = sShape(tFolderResponseShape());
+	return loadFolder(created, retshape);
+}
+
 /**
  * @brief      Create new item
  *
+ * @param      dir       Store directory
  * @param      parent    Parent folder to create item in
- * @param      item      Item object to store
+ * @param      content   Item content to store
  *
  * @return     Item object containing ItemId
  */
@@ -576,6 +643,25 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 }
 
 /**
+ * @brief      Generate initial predecessor change list from xid
+ *
+ * @param      xid  Initial change key
+ *
+ * @return     Serialized predecessor change list buffer
+ */
+std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid) const
+{
+	PCL pcl;
+	if(!pcl.append(xid))
+		throw DispatchError(E3121);
+	pcl.serialize();
+	std::unique_ptr<BINARY, detail::Cleaner> pcltemp(pcl.serialize());
+	if(!pcltemp)
+		throw EWSError::NotEnoughMemory(E3122);
+	return pcltemp;
+}
+
+/**
  * @brief    Normalize mailbox specification
  *
  * If EmailAddress is empty, nothing happens.
@@ -768,6 +854,26 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 }
 
 /**
+ * @brief      Serialize XID to BINARY
+ *
+ * The internal buffer of the BINARY is stack allocated and must not be
+ * manually freed.
+ *
+ * @param      xid   XID object to serialize
+ *
+ * @return     BINARY objet containing serialize data
+ */
+BINARY EWSContext::serialize(const XID& xid) const
+{
+	printf("%hhu\n", xid.size);
+	uint8_t* buff = alloc<uint8_t>(22);
+	EXT_PUSH ext_push;
+	if(!ext_push.init(buff, 22, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+		throw DispatchError("E3120");
+	return BINARY{ext_push.m_offset, {buff}};
+}
+
+/**
  * @brief     Convert item to MESSAGE_CONTENT
  *
  * @param     dir      Home directory of the associated store
@@ -793,20 +899,9 @@ MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec&
 		uint32_t accountId = getAccountId(*parent.target, isPublic);
 		XID xid((parent.location == parent.PRIVATE? rop_util_make_user_guid : rop_util_make_domain_guid)(accountId), changeNumber);
 
-		uint8_t* buff = alloc<uint8_t>(22);
-		EXT_PUSH ext_push;
-		if(!ext_push.init(buff, 22, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
-			throw DispatchError(E3120);
-		ckey = construct<BINARY>(BINARY{ext_push.m_offset, {buff}});
+		ckey = construct<BINARY>(serialize(xid));
 
-		PCL pcl;
-		if(!pcl.append(xid))
-			throw DispatchError(E3121);
-		pcl.serialize();
-		std::unique_ptr<BINARY, Cleaner> pcltemp(pcl.serialize());
-		if(!pcltemp)
-			throw EWSError::NotEnoughMemory(E3122);
-
+		auto pcltemp = mkPCL(xid);
 		uint8_t* pcldata = alloc<uint8_t>(pcltemp->cb);
 		memcpy(pcldata, pcltemp->pv, pcltemp->cb);
 		pclbin = construct<BINARY>(BINARY{pcltemp->cb, {pcldata}});
@@ -1003,7 +1098,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	if(!currentPclContainer || !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
 	pcl.append(changeKey);
-	std::unique_ptr<BINARY, Cleaner> serializedPcl(pcl.serialize());
+	std::unique_ptr<BINARY, detail::Cleaner> serializedPcl(pcl.serialize());
 	if(!serializedPcl)
 		throw EWSError::NotEnoughMemory(E3088);
 	_props[props.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
@@ -1015,7 +1110,6 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	PROBLEM_ARRAY problems;
 	if(!plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
 		throw DispatchError(E3089);
-
 }
 
 /**

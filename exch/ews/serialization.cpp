@@ -265,6 +265,14 @@ void tAttachment::serialize(XMLElement* xml) const
 	XMLDUMPT(IsInline);
 }
 
+tBaseFolderType::tBaseFolderType(const XMLElement* xml) :
+	XMLINIT(FolderClass),
+	XMLINIT(DisplayName)
+{
+	for(const tinyxml2::XMLElement* xp = xml->FirstChildElement("ExtendedProperty"); xp; xp = xp->NextSiblingElement("ExtendedProperty"))
+		ExtendedProperty.emplace_back(xp);
+}
+
 void tBaseFolderType::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(FolderId);
@@ -908,6 +916,14 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+mCreateFolderRequest::mCreateFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(ParentFolderId),
+	XMLINIT(Folders)
+{}
+
+void mCreateFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 mCreateItemRequest::mCreateItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINITA(MessageDisposition),
 	XMLINITA(SendMeetingInvitations),
@@ -925,6 +941,12 @@ mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement* xml) :
 
 void mDeleteItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
+
+void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Folders);
+}
 
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)

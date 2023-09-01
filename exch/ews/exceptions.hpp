@@ -63,8 +63,10 @@ public:
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
+	ERR(FolderExists) ///< Creating a folder with a name that already exists
 	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
 	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(FolderSave) ///< Folder creation or updated
 	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
 	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
 	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
@@ -259,6 +261,9 @@ E(3149, "failed to deserialize item entry id");
 E(3150, "missing date string");
 E(3151, "failed to parse date");
 E(3152, "failed to convert timestamp");
+E(3153, "failed to allocate cn");
+E(3154, "folder creation failed");
+E(3155, "a folder with that name already exists");
 
 #undef E
 }
