@@ -610,8 +610,6 @@ static BOOL ab_tree_node_to_path(const SIMPLE_TREE_NODE *pnode,
 static bool ab_tree_md5_path(const char *path, uint64_t *pdgt) __attribute__((warn_unused_result));
 static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 {
-	int i;
-	uint64_t b;
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
 	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
 	if (ctx == nullptr ||
@@ -619,11 +617,7 @@ static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 	    EVP_DigestUpdate(ctx.get(), path, strlen(path)) <= 0 ||
 	    EVP_DigestFinal(ctx.get(), dgt_buff, nullptr) <= 0)
 		return false;
-	*pdgt = 0;
-	for (i=0; i<16; i+=2) {
-		b = dgt_buff[i];
-		*pdgt |= (b << 4*i);
-	}
+	memcpy(pdgt, dgt_buff, 8);
 	return true;
 }
 
