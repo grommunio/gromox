@@ -633,15 +633,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 		return NULL;
 	tmp_enum.node_type = static_cast<abnode_type>((guid.time_low >> 24) & 0xff);
 	tmp_enum.item_id = (((int)guid.time_hi_and_version) << 16) | guid.time_mid;
-	tmp_enum.dgt = guid.node[0] |
-		(((uint64_t)guid.node[1]) << 8) |
-		(((uint64_t)guid.node[2]) << 16) |
-		(((uint64_t)guid.node[3]) << 24) |
-		(((uint64_t)guid.node[4]) << 32) |
-		(((uint64_t)guid.node[5]) << 40) |
-		(((uint64_t)guid.clock_seq[0]) << 48) |
-		(((uint64_t)guid.clock_seq[1]) << 56);
-	
+	memcpy(&tmp_enum.dgt, reinterpret_cast<char *>(&guid) + 8, 8);
 	tmp_enum.pabnode = NULL;
 	const SIMPLE_TREE_NODE *ptnode = pdomain->tree.get_root();
 	if (NULL == ptnode) {
@@ -699,14 +691,7 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	ab_tree_node_to_path(&pabnode->stree, temp_path, std::size(temp_path));
 	if (!ab_tree_md5_path(temp_path, &dgt))
 		return false;
-	pguid->node[0] = dgt & 0xFF;
-	pguid->node[1] = (dgt >> 8) & 0xff;
-	pguid->node[2] = (dgt >> 16) & 0xff;
-	pguid->node[3] = (dgt >> 24) & 0xff;
-	pguid->node[4] = (dgt >> 32) & 0xff;
-	pguid->node[5] = (dgt >> 40) & 0xff;
-	pguid->clock_seq[0] = (dgt >> 48) & 0xff;
-	pguid->clock_seq[1] = (dgt >> 56) & 0xff;
+	memcpy(reinterpret_cast<char *>(pguid) + 8, &dgt, 8);
 	return true;
 }
 
