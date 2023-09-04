@@ -31,6 +31,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -511,7 +512,7 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
-		if (pcontext->literal_len < temp_len) {
+		if (cmp_less(pcontext->literal_len, temp_len)) {
 			pcontext->read_offset -= nl_len;
 			auto chunk_len = tail - ctx.literal_ptr;
 			if (chunk_len > 0 && chunk_len < 64 * 1024)
