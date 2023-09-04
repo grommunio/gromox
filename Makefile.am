@@ -19,13 +19,13 @@ pamlib_LTLIBRARIES = pam_gromox.la
 endif
 if HAVE_PHP
 phpinidir = ${dcprefix}${PHP_SYSCONF_DIR}
-phpini_DATA = php_mapi/mapi.ini
+dist_phpini_DATA = php_mapi/mapi.ini
 phplibdir = ${dcprefix}${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 endif
-sysusers_DATA = system/sysusers-gromox.conf
-tmpfiles_DATA = system/tmpfiles-gromox.conf
-unit_DATA = system/gromox-delivery.service \
+dist_sysusers_DATA = system/sysusers-gromox.conf
+dist_tmpfiles_DATA = system/tmpfiles-gromox.conf
+dist_unit_DATA = system/gromox-delivery.service \
 	system/gromox-delivery-queue.service system/gromox-event.service \
 	system/gromox-http.service system/gromox-imap.service \
 	system/gromox-midb.service system/gromox-pop3.service \
@@ -59,8 +59,8 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
-pkglibexec_SCRIPTS = tools/cleaner tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
+dist_pkglibexec_SCRIPTS = tools/cleaner tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
@@ -135,7 +135,7 @@ midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/cmd_parser.h exch/midb/common_
 midb_LDADD = -lpthread ${HX_LIBS} ${dl_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 zcore_SOURCES = exch/zcore/ab_tree.cpp exch/zcore/ab_tree.h exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.hpp exch/zcore/common_util.cpp exch/zcore/common_util.h exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_client.h exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/ics_state.h exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/listener.hpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/object_tree.h exch/zcore/objects.hpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_ext.h exch/zcore/rpc_parser.cpp exch/zcore/rpc_parser.hpp exch/zcore/store_object.cpp exch/zcore/store_object.h exch/zcore/system_services.cpp exch/zcore/system_services.hpp exch/zcore/table_object.cpp exch/zcore/table_object.h exch/zcore/user_object.cpp exch/zcore/zserver.cpp exch/zcore/zserver.hpp lib/svc_loader.cpp
 zcore_LDADD = -lpthread ${crypto_LIBS} ${dl_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
-libgxs_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/store2.cpp exch/exmdb_provider/table.cpp
+libgxs_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/bounce_producer.hpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/db_engine.h exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_listener.h exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_parser.h exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/notification_agent.h exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/store2.cpp exch/exmdb_provider/table.cpp
 libgxs_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${fmt_LIBS} ${HX_LIBS} ${iconv_LIBS} ${sqlite_LIBS} ${xxhash_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 EXTRA_libgxs_exmdb_provider_la_DEPENDENCIES = ${default_sym}
@@ -155,7 +155,7 @@ libgxp_exchange_rfr_la_SOURCES = exch/rfr.cpp
 libgxp_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxp_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = ${default_sym}
-libgxh_ews_la_SOURCES = exch/ews/context.cpp exch/ews/enums.hpp exch/ews/ews.cpp exch/ews/ews.hpp exch/ews/exceptions.hpp exch/ews/requests.cpp exch/ews/requests.hpp exch/ews/serialization.cpp exch/ews/serialization.hpp exch/ews/soaputil.cpp exch/ews/soaputil.hpp exch/ews/structures.cpp exch/ews/structures.hpp
+libgxh_ews_la_SOURCES = exch/ews/ObjectCache.hpp exch/ews/context.cpp exch/ews/enums.hpp exch/ews/ews.cpp exch/ews/ews.hpp exch/ews/exceptions.hpp exch/ews/hash.hpp exch/ews/namedtags.hpp exch/ews/requests.cpp exch/ews/requests.hpp exch/ews/serialization.cpp exch/ews/serialization.hpp exch/ews/soaputil.cpp exch/ews/soaputil.hpp exch/ews/structures.cpp exch/ews/structures.hpp
 libgxh_ews_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxh_ews_la_LIBADD = ${HX_LIBS} ${fmt_LIBS} ${tinyxml_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_exrpc.la
 EXTRA_libgxh_ews_la_DEPENDENCIES = ${default_sym}
@@ -205,7 +205,7 @@ pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = tools/rtf2html.cpp
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 saphpdir = ${pkgdatadir}/sa
-saphp_DATA = tools/php/submit.php
+dist_saphp_DATA = tools/php/submit.php
 event_SOURCES = tools/event.cpp
 event_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 gromox_abktconv_SOURCES = tools/abktconv.cpp
@@ -285,7 +285,7 @@ tests_zendfake_LDADD = libmapi4zf.la
 tools_tzdump_SOURCES = tools/tzdump.cpp
 tools_tzdump_LDADD = ${HX_LIBS} libgromox_common.la
 
-man_MANS = \
+dist_man_MANS = \
 	doc/alias_resolve.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/cleaner.8gx doc/gromox-compress.8 \
@@ -312,10 +312,10 @@ man_MANS = \
 	doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_OLECF
-man_MANS += doc/gromox-oxm2mt.8
+dist_man_MANS += doc/gromox-oxm2mt.8
 endif
 if HAVE_PFF
-man_MANS += doc/gromox-pff2mt.8
+dist_man_MANS += doc/gromox-pff2mt.8
 endif
 
 abkt_files = data/401-0.abkt data/401-1.abkt data/401-2.abkt data/401-200.abkt data/401-3.abkt data/401-6.abkt data/402-0.abkt data/402-1.abkt data/402-2.abkt data/402-200.abkt data/402-3.abkt data/402-6.abkt data/403-0.abkt data/403-1.abkt data/403-2.abkt data/403-200.abkt data/403-3.abkt data/403-6.abkt data/404-0.abkt data/404-1.abkt data/404-2.abkt data/404-200.abkt data/404-3.abkt data/404-6.abkt data/405-0.abkt data/405-1.abkt data/405-2.abkt data/405-200.abkt data/405-3.abkt data/405-6.abkt data/406-0.abkt data/406-1.abkt data/406-2.abkt data/406-200.abkt data/406-3.abkt data/406-6.abkt data/407-0.abkt data/407-1.abkt data/407-2.abkt data/407-200.abkt data/407-3.abkt data/407-6.abkt data/408-0.abkt data/408-1.abkt data/408-2.abkt data/408-200.abkt data/408-3.abkt data/408-6.abkt data/409-0.abkt data/409-1.abkt data/409-2.abkt data/409-200.abkt data/409-3.abkt data/409-6.abkt data/40b-0.abkt data/40b-1.abkt data/40b-2.abkt data/40b-200.abkt data/40b-3.abkt data/40b-6.abkt
@@ -331,7 +331,7 @@ header_files += include/gromox/fileio.h include/gromox/flusher_common.h include/
 header_files += include/gromox/paths.h.in include/gromox/pcl.hpp include/gromox/plugin.hpp include/gromox/proc_common.h include/gromox/proptag_array.hpp include/gromox/propval.hpp include/gromox/range_set.hpp include/gromox/resource_pool.hpp include/gromox/restriction.hpp include/gromox/rop_util.hpp include/gromox/rpc_types.hpp include/gromox/rtf.hpp include/gromox/rtfcp.hpp include/gromox/rule_actions.hpp include/gromox/safeint.hpp include/gromox/scope.hpp include/gromox/simple_tree.hpp include/gromox/sortorder_set.hpp include/gromox/stream.hpp include/gromox/svc_common.h include/gromox/svc_loader.hpp include/gromox/textmaps.hpp include/gromox/threads_pool.hpp include/gromox/tie.hpp include/gromox/timezone.hpp include/gromox/tnef.hpp include/gromox/util.hpp include/gromox/vcard.hpp include/gromox/xarray2.hpp include/gromox/zcore_client.hpp include/gromox/zcore_rpc.hpp include/gromox/zz_ndr_stack.hpp
 dist_pkgdata_DATA = ${abkt_files} ${tzd_files}
 toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
-EXTRA_DIST = ${header_files} ${toolprogs} default.sym exch/bounce_exch.cpp
+EXTRA_DIST = ${header_files} ${toolprogs} default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}${MKDIR_P} include/gromox
