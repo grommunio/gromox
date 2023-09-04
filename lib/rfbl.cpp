@@ -597,7 +597,14 @@ bool parse_bool(const char *s)
 	return true;
 }
 
-std::string bin2txt(const void *vdata, size_t len)
+/**
+ * Use of octal representation: it is shortest (\377 is just as long as \xff,
+ * but \0 is shorter than \x00).
+ *
+ * Average expansion: x2.35
+ * Worst expansion: x4.00
+ */
+std::string bin2cstr(const void *vdata, size_t len)
 {
 	auto data = static_cast<const unsigned char *>(vdata);
 	std::string ret;
@@ -632,6 +639,43 @@ std::string bin2txt(const void *vdata, size_t len)
 	return ret;
 }
 
+/**
+ * Represent a binary blob in a form that is somewhat compact but also show
+ * ASCII and low control codes recognizably.
+ *
+ * Average expansion: x2.13
+ * Worst expansion: x3.00
+ */
+std::string bin2txt(const void *vdata, size_t len)
+{
+	auto data = static_cast<const unsigned char *>(vdata);
+	std::string ret;
+	char b[4]{};
+	for (size_t i = 0; i < len; ++i) {
+		if (data[i] < 32) {
+			static constexpr char enc[] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
+			b[0] = '^';
+			b[1] = enc[data[i]];
+			b[2] = '\0';
+		} else if (isprint(data[i]) && data[i] != '"' &&
+		    data[i] != '\'' && data[i] != '\\' && data[i] != '^') {
+			b[0] = data[i];
+			b[1] = '\0';
+		} else {
+			static constexpr char enc[] = "0123456789abcdef";
+			b[0] = '^';
+			b[1] = enc[data[i] >> 4];
+			b[2] = enc[data[i] & 0xf];
+		}
+		ret.append(b);
+	}
+	return ret;
+}
+
+/**
+ * Average expansion: x2.00
+ * Worst expansion: x2.00
+ */
 std::string bin2hex(const void *vin, size_t len)
 {
 	std::string buffer;

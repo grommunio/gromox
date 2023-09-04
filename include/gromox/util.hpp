@@ -131,8 +131,9 @@ enum hex2bin_mode {
 extern GX_EXPORT void *zalloc(size_t);
 extern GX_EXPORT uint32_t rand();
 extern GX_EXPORT bool parse_bool(const char *s);
-extern GX_EXPORT std::string bin2hex(const void *, size_t);
+extern GX_EXPORT std::string bin2cstr(const void *, size_t);
 extern GX_EXPORT std::string bin2txt(const void *, size_t);
+extern GX_EXPORT std::string bin2hex(const void *, size_t);
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
 extern GX_EXPORT std::string hex2bin(std::string_view, hex2bin_mode = HEX2BIN_EMPTY);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
