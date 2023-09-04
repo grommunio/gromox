@@ -44,6 +44,7 @@
 #include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
@@ -2229,11 +2230,11 @@ static void *midbme_scanwork(void *param)
 			auto now_time = time(nullptr);
 			auto last_diff = now_time - pidb->last_time;
 			auto load_diff = now_time - pidb->load_time;
-			bool clean = pidb->reference == 0 &&
+			bool do_clean = pidb->reference == 0 &&
 			             (pidb->sub_id == 0 ||
-			             last_diff > g_midb_cache_interval ||
-			             load_diff > g_midb_reload_interval);
-			if (!clean) {
+			             std::cmp_greater(last_diff, g_midb_cache_interval) ||
+			             std::cmp_greater(load_diff, g_midb_reload_interval));
+			if (!do_clean) {
 				++it;
 				continue;
 			}

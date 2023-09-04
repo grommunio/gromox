@@ -261,7 +261,7 @@ static int ptemvs_to_prop(const struct pte &pte, const char *cset,
 		           &~unique_tie(err));
 		if (ret < 0)
 			throw az_error("PO-1016", err);
-		else if (ret != strm_size)
+		else if (static_cast<unsigned int>(ret) != strm_size)
 			throw YError("PO-1017");
 
 		if (PROP_TYPE(pte.proptag) == PT_MV_STRING8)

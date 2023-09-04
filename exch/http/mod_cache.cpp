@@ -274,7 +274,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
-	                pcontext->until != pcontext->pitem->sb.st_size;
+	                pcontext->until != static_cast<uint64_t>(pcontext->pitem->sb.st_size);
 	strcpy(response_buff, emit_206 ?
 	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
 	response_len = strlen(response_buff);
@@ -610,7 +610,6 @@ BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp)
 
 BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 {
-	int tmp_len;
 	char tmp_buff[1024];
 	CACHE_CONTEXT *pcontext;
 	
@@ -635,27 +634,26 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 			return FALSE;
 		}
 	}
-	tmp_len = pcontext->until - pcontext->offset >= STREAM_BLOCK_SIZE - 1 ?
-	          STREAM_BLOCK_SIZE - 1 : pcontext->until - pcontext->offset;
 	auto &item = *pcontext->pitem;
-	auto rem_to_eof = pcontext->offset < item.sb.st_size ?
-	                    item.sb.st_size - pcontext->offset : 0;
-	if (tmp_len > rem_to_eof)
-		tmp_len = rem_to_eof;
+	uint32_t writeout_size = std::min(pcontext->until - pcontext->offset, static_cast<uint32_t>(STREAM_BLOCK_SIZE) - 1);
+	auto rem_to_eof = pcontext->offset < static_cast<uint64_t>(item.sb.st_size) ?
+	                  static_cast<uint64_t>(item.sb.st_size) - pcontext->offset : 0;
+	writeout_size = std::min(static_cast<uint64_t>(writeout_size), rem_to_eof);
 	if (item.mblk == nullptr) {
 		mlog(LV_DEBUG, "%s called without active memory mapping", __func__);
 		mod_cache_put_context(phttp);
 		return FALSE;
 	}
 	if (phttp->stream_out.write(static_cast<const char *>(item.mblk) +
-	    pcontext->offset, tmp_len) != STREAM_WRITE_OK) {
+	    pcontext->offset, writeout_size) != STREAM_WRITE_OK) {
 		mod_cache_put_context(phttp);
 		return false;
 	}
-	pcontext->offset += tmp_len;
+	pcontext->offset += writeout_size;
 	if (pcontext->offset == pcontext->until) {
 		if (pcontext->range.size() >= 2) {
 			pcontext->range_pos ++;
+			int tmp_len;
 			if (pcontext->range_pos >= 0 &&
 			    static_cast<size_t>(pcontext->range_pos) < pcontext->range.size()) {
 				pcontext->offset = pcontext->range[pcontext->range_pos].begin;
@@ -677,6 +675,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 					BOUNDARY_STRING);
 				pcontext->range.clear();
 			}
+			tmp_len = std::max(0, tmp_len);
 			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
 				mod_cache_put_context(phttp);
 				return FALSE;

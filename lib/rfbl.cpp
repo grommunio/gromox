@@ -1185,7 +1185,7 @@ std::string zstd_decompress(std::string_view x)
 	auto cl_0 = make_scope_exit([&]() { ZSTD_freeDStream(strm); });
 	ZSTD_initDStream(strm);
 	ZSTD_inBuffer xds = {x.data(), x.size()};
-	size_t ffsize = ZSTD_getFrameContentSize(x.data(), x.size());
+	auto ffsize = ZSTD_getFrameContentSize(x.data(), x.size());
 	if (ffsize == ZSTD_CONTENTSIZE_ERROR)
 		return out;
 	if (ffsize == ZSTD_CONTENTSIZE_UNKNOWN)

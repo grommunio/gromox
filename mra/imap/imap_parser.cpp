@@ -31,6 +31,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
+#include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -430,14 +431,12 @@ static tproc_status ps_stat_rdcmd(imap_context *pcontext)
 
 static tproc_status ps_literal_checking(imap_context *pcontext)
 {
-	if (pcontext->literal_ptr == nullptr) {
+	auto &ctx = *pcontext;
+	if (ctx.literal_ptr == nullptr)
 		return tproc_status::literal_processing;
-	}
-	if (pcontext->read_buffer + pcontext->read_offset - pcontext->literal_ptr <
-	    pcontext->literal_len) {
+	if (&ctx.read_buffer[ctx.read_offset] - ctx.literal_ptr < ctx.literal_len)
 		return tproc_status::cont;
-	}
-	auto temp_len = pcontext->literal_ptr + pcontext->literal_len - pcontext->read_buffer;
+	auto temp_len = &ctx.literal_ptr[ctx.literal_len] - ctx.read_buffer;
 	if (temp_len <= 0 || temp_len >= 64 * 1024 ||
 	    pcontext->command_len + temp_len >= 64 * 1024) {
 		/* IMAP_CODE_2180017: BAD literal size too large */
@@ -445,16 +444,13 @@ static tproc_status ps_literal_checking(imap_context *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
-	memcpy(pcontext->command_buffer + pcontext->command_len, pcontext->read_buffer,
-		temp_len);
+	memcpy(&ctx.command_buffer[ctx.command_len], ctx.read_buffer, temp_len);
 	pcontext->command_len += temp_len;
 	pcontext->read_offset -= temp_len;
-	if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
-		memmove(pcontext->read_buffer, pcontext->literal_ptr + pcontext->literal_len,
-			pcontext->read_offset);
-	} else {
+	if (ctx.read_offset > 0 && ctx.read_offset < 64 * 1024)
+		memmove(ctx.read_buffer, &ctx.literal_ptr[ctx.literal_len], ctx.read_offset);
+	else
 		pcontext->read_offset = 0;
-	}
 	pcontext->literal_ptr = NULL;
 	pcontext->literal_len = 0;
 	return tproc_status::literal_processing;
@@ -511,7 +507,7 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
-		if (pcontext->literal_len < temp_len) {
+		if (cmp_less(pcontext->literal_len, temp_len)) {
 			pcontext->read_offset -= nl_len;
 			auto chunk_len = tail - ctx.literal_ptr;
 			if (chunk_len > 0 && chunk_len < 64 * 1024)

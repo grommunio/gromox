@@ -610,8 +610,6 @@ static BOOL ab_tree_node_to_path(const SIMPLE_TREE_NODE *pnode,
 static bool ab_tree_md5_path(const char *path, uint64_t *pdgt) __attribute__((warn_unused_result));
 static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 {
-	int i;
-	uint64_t b;
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
 	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
 	if (ctx == nullptr ||
@@ -619,11 +617,7 @@ static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 	    EVP_DigestUpdate(ctx.get(), path, strlen(path)) <= 0 ||
 	    EVP_DigestFinal(ctx.get(), dgt_buff, nullptr) <= 0)
 		return false;
-	*pdgt = 0;
-	for (i=0; i<16; i+=2) {
-		b = dgt_buff[i];
-		*pdgt |= (b << 4*i);
-	}
+	memcpy(pdgt, dgt_buff, 8);
 	return true;
 }
 
@@ -639,15 +633,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 		return NULL;
 	tmp_enum.node_type = static_cast<abnode_type>((guid.time_low >> 24) & 0xff);
 	tmp_enum.item_id = (((int)guid.time_hi_and_version) << 16) | guid.time_mid;
-	tmp_enum.dgt = guid.node[0] |
-		(((uint64_t)guid.node[1]) << 8) |
-		(((uint64_t)guid.node[2]) << 16) |
-		(((uint64_t)guid.node[3]) << 24) |
-		(((uint64_t)guid.node[4]) << 32) |
-		(((uint64_t)guid.node[5]) << 40) |
-		(((uint64_t)guid.clock_seq[0]) << 48) |
-		(((uint64_t)guid.clock_seq[1]) << 56);
-	
+	memcpy(&tmp_enum.dgt, reinterpret_cast<char *>(&guid) + 8, 8);
 	tmp_enum.pabnode = NULL;
 	const SIMPLE_TREE_NODE *ptnode = pdomain->tree.get_root();
 	if (NULL == ptnode) {
@@ -705,14 +691,7 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	ab_tree_node_to_path(&pabnode->stree, temp_path, std::size(temp_path));
 	if (!ab_tree_md5_path(temp_path, &dgt))
 		return false;
-	pguid->node[0] = dgt & 0xFF;
-	pguid->node[1] = (dgt >> 8) & 0xff;
-	pguid->node[2] = (dgt >> 16) & 0xff;
-	pguid->node[3] = (dgt >> 24) & 0xff;
-	pguid->node[4] = (dgt >> 32) & 0xff;
-	pguid->node[5] = (dgt >> 40) & 0xff;
-	pguid->clock_seq[0] = (dgt >> 48) & 0xff;
-	pguid->clock_seq[1] = (dgt >> 56) & 0xff;
+	memcpy(reinterpret_cast<char *>(pguid) + 8, &dgt, 8);
 	return true;
 }
 
@@ -745,15 +724,9 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 	case abnode_type::abclass:
 		if (!ab_tree_node_to_guid(pnode, &guid))
 			return false;
-		snprintf(pbuff, 128,
-			"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
-			guid.time_low, guid.time_mid,
-			guid.time_hi_and_version,
-			guid.clock_seq[0],
-			guid.clock_seq[1],
-			guid.node[0], guid.node[1],
-			guid.node[2], guid.node[3],
-			guid.node[4], guid.node[5]);
+		memcpy(pbuff, "/guid=", 6);
+		guid.to_str(&pbuff[6], 32);
+		pbuff[38] = '\0';
 		break;
 	case abnode_type::user: {
 		id = pabnode->id;

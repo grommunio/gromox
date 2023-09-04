@@ -780,9 +780,9 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sItem& item, bool persist) const
 {
 	const auto& exmdb = plugin.exmdb;
-
 	uint64_t messageId, changeNumber;
-	BINARY *ckey, *pclbin;
+	BINARY *ckey = nullptr, *pclbin = nullptr;
+
 	if(persist) {
 		if(!exmdb.allocate_message_id(dir.c_str(), parent.folderId, &messageId))
 			throw DispatchError(E3118);

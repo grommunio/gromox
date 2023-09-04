@@ -172,7 +172,6 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 {
 	int i;
 	BOOL b_found;
-	int32_t bias, dstbias;
 	int16_t year;
 	SYSTEMTIME date;
 	BOOL b_daylight;
@@ -197,6 +196,7 @@ static BOOL oxcical_parse_tzdefinition(const ical_component &vt,
 			b_daylight = TRUE;
 		else
 			continue;
+		int32_t bias = 0, dstbias = 0;
 		if (!oxcical_parse_vtsubcomponent(*pcomponent, &bias, &dstbias, &year, &date))
 			return FALSE;
 		b_found = FALSE;
