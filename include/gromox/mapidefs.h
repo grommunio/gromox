@@ -855,6 +855,7 @@ struct BINARY {
 	};
 
 	int compare(const BINARY &) const;
+	std::string repr(bool verbose = true) const;
 };
 using DATA_BLOB = BINARY;
 
@@ -913,11 +914,6 @@ struct FLATUID_ARRAY {
 struct FLOAT_ARRAY {
 	uint32_t count;
 	float *mval;
-};
-
-struct GEN_ARRAY {
-	uint32_t count;
-	void *mval;
 };
 
 struct GLOBCNT {
@@ -1092,13 +1088,16 @@ struct SVREID {
 	uint32_t instance;
 
 	int compare(const SVREID &) const;
+	std::string repr(bool verbose = true) const;
 };
 
 struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
 
-	std::string repr() const;
+	std::string repr(bool v = true) const;
+	std::string type_repr() const;
+	std::string value_repr(bool v = true) const;
 };
 
 struct tarray_set;
@@ -1109,6 +1108,21 @@ extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
 extern GX_EXPORT void tpropval_array_free_internal(TPROPVAL_ARRAY *);
 extern GX_EXPORT tarray_set *tarray_set_init();
 extern GX_EXPORT void tarray_set_free(tarray_set *);
+
+struct GEN_ARRAY {
+	uint32_t count = 0;
+	union {
+		void *mval = nullptr;
+		int16_t *shrt;
+		int32_t *lng;
+		int64_t *llng;
+		float *flt;
+		double *dbl;
+		const char **str;
+		GUID *guid;
+		BINARY *bin;
+	};
+};
 
 struct TPROPVAL_ARRAY {
 	TAGGED_PROPVAL *find(uint32_t tag) const {
