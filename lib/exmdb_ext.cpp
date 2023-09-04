@@ -743,22 +743,10 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_reload_content_table &d)
 	return x.p_uint32(d.table_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_load_perm_table_v1 &d)
-{
-	TRY(x.g_uint64(&d.folder_id));
-	return x.g_uint8(&d.table_flags);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exreq_load_permission_table &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint32(&d.table_flags);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_load_perm_table_v1 &d)
-{
-	TRY(x.p_uint64(d.folder_id));
-	return x.p_uint8(d.table_flags);
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_load_permission_table &d)
@@ -2280,7 +2268,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_autoreply_tsupdate &d)
 	E(sum_content) \
 	E(load_content_table) \
 	E(reload_content_table) \
-	E(load_perm_table_v1) \
 	E(load_permission_table) \
 	E(load_rule_table) \
 	E(unload_table) \
@@ -3716,7 +3703,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(load_hierarchy_table) \
 	E(sum_content) \
 	E(load_content_table) \
-	E(load_perm_table_v1) \
 	E(load_permission_table) \
 	E(load_rule_table) \
 	E(sum_table) \

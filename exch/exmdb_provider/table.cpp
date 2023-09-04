@@ -1161,12 +1161,6 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL exmdb_server::load_perm_table_v1(const char *dir, uint64_t folder_id,
-    uint8_t table_flags, uint32_t *table_id, uint32_t *row_count)
-{
-	return load_permission_table(dir, folder_id, table_flags, table_id, row_count);
-}
-
 BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
     uint32_t table_flags, uint32_t *ptable_id, uint32_t *prow_count) try
 {

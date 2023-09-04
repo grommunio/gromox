@@ -45,7 +45,6 @@ EXMIDL(load_hierarchy_table, (const char *dir, uint64_t folder_id, const char *u
 EXMIDL(sum_content, (const char *dir, uint64_t folder_id, BOOL b_fai, BOOL b_deleted, IDLOUT uint32_t *count))
 EXMIDL(load_content_table, (const char *dir, cpid_t cpid, uint64_t folder_id, const char *username, uint8_t table_flags, const RESTRICTION *prestriction, const SORTORDER_SET *psorts, IDLOUT uint32_t *table_id, uint32_t *row_count))
 EXMIDL(reload_content_table, (const char *dir, uint32_t table_id))
-EXMIDL(load_perm_table_v1, (const char *dir, uint64_t folder_id, uint8_t table_flags, IDLOUT uint32_t *table_id, uint32_t *row_count))
 EXMIDL(load_permission_table, (const char *dir, uint64_t folder_id, uint32_t table_flags, IDLOUT uint32_t *table_id, uint32_t *row_count))
 EXMIDL(load_rule_table, (const char *dir, uint64_t folder_id,  uint8_t table_flags, const RESTRICTION *prestriction, IDLOUT uint32_t *table_id, uint32_t *row_count))
 EXMIDL(unload_table, (const char *dir, uint32_t table_id))

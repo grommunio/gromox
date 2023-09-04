@@ -64,7 +64,7 @@ enum class exmdb_callid : uint8_t {
 	load_hierarchy_table = 0x26,
 	sum_content = 0x27,
 	load_content_table = 0x28,
-	load_perm_table_v1 = 0x29, // still used by libexmdbpp
+	// load_perm_table_v1 = 0x29,
 	load_rule_table = 0x2a,
 	unload_table = 0x2b,
 	sum_table = 0x2c,
@@ -384,11 +384,6 @@ struct exreq_load_content_table : public exreq {
 
 struct exreq_reload_content_table : public exreq {
 	uint32_t table_id;
-};
-
-struct exreq_load_perm_table_v1 : public exreq {
-	uint64_t folder_id;
-	uint8_t table_flags;
 };
 
 struct exreq_load_permission_table : public exreq {
@@ -1011,7 +1006,6 @@ struct exresp_load_permission_table : public exresp {
 	uint32_t table_id;
 	uint32_t row_count;
 };
-using exresp_load_perm_table_v1 = exresp_load_permission_table;
 
 struct exresp_load_rule_table : public exresp {
 	uint32_t table_id;
