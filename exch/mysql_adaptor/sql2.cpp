@@ -553,7 +553,7 @@ bool mysql_adaptor_get_user_properties(const char* username, TPROPVAL_ARRAY& pro
 
 	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
 	{
-		uint32_t tag = uint32_t(strtoul(row[1], nullptr, 0));
+		uint32_t tag = strtoul(row[1], nullptr, 0);
 		const char* strval = row[3];
 		if(!strval) // Binary values are currently not supported
 			continue;
@@ -561,20 +561,20 @@ bool mysql_adaptor_get_user_properties(const char* username, TPROPVAL_ARRAY& pro
 		switch(PROP_TYPE(tag))
 		{
 		case PT_BOOLEAN: {
-			uint8_t converted = uint8_t(strtoul(strval, nullptr, 0));
+			uint8_t converted = strtoul(strval, nullptr, 0);
 			if (properties.set(tag, &converted) != 0)
 				return false;
 			break;
 		}
 		case PT_SHORT: {
-			uint16_t converted = uint16_t(strtoul(strval, nullptr, 0));
+			uint16_t converted = strtoul(strval, nullptr, 0);
 			if (properties.set(tag, &converted) != 0)
 				return false;
 			break;
 		}
 		case PT_LONG:
 		case PT_ERROR: {
-			uint32_t converted = uint32_t(strtoul(strval, nullptr, 0));
+			uint32_t converted = strtoul(strval, nullptr, 0);
 			if (properties.set(tag, &converted) != 0)
 				return false;
 			break;
