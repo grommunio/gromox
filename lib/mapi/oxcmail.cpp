@@ -152,8 +152,6 @@ using MIME_SKELETON = mime_skeleton;
 }
 
 static constexpr char
-	PidNameAttachmentMacContentType[] = "AttachmentMacContentType",
-	PidNameAttachmentMacInfo[] = "AttachmentMacInfo",
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
 static constexpr size_t namemap_limit = 0x1000;
