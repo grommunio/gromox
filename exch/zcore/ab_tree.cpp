@@ -724,15 +724,9 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 	case abnode_type::abclass:
 		if (!ab_tree_node_to_guid(pnode, &guid))
 			return false;
-		snprintf(pbuff, 128,
-			"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
-			guid.time_low, guid.time_mid,
-			guid.time_hi_and_version,
-			guid.clock_seq[0],
-			guid.clock_seq[1],
-			guid.node[0], guid.node[1],
-			guid.node[2], guid.node[3],
-			guid.node[4], guid.node[5]);
+		memcpy(pbuff, "/guid=", 6);
+		guid.to_str(&pbuff[6], 32);
+		pbuff[38] = '\0';
 		break;
 	case abnode_type::user: {
 		id = pabnode->id;

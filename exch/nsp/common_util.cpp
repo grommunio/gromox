@@ -164,15 +164,10 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 		if (NULL == pobj_guid) {
 			ppermeid->pdn = deconst("/");
 		} else {
-			len = gx_snprintf(buff, std::size(buff),
-				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
-				pobj_guid->time_low, pobj_guid->time_mid,
-				pobj_guid->time_hi_and_version,
-				pobj_guid->clock_seq[0],
-				pobj_guid->clock_seq[1],
-				pobj_guid->node[0], pobj_guid->node[1],
-				pobj_guid->node[2], pobj_guid->node[3],
-				pobj_guid->node[4], pobj_guid->node[5]);
+			memcpy(buff, "/guid=", 6);
+			pobj_guid->to_str(&buff[6], 32);
+			buff[38] = '\0';
+			len = 38;
 			ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
 			if (NULL == ppermeid->pdn) {
 				return FALSE;
