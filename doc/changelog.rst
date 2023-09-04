@@ -1,8 +1,9 @@
-Development 2.11.26
-===================
+Gromox 2.12 (2023-09-04)
+========================
 
 Enhancements:
 
+* ews: support CreateItem, DeleteItem, SendItem requests
 * oxm2mt: support multi-valued properties
 
 Fixes:
@@ -10,6 +11,13 @@ Fixes:
 * kdb2mt: do not abort when --src-mbox is used
 * exmdb_provider: opening the detail view of Personal Addressbook entries now
   works in Outlook, as does selecting them as message recipients
+* zcore: fix a flaw in permissions dialog that caused the delegates
+  to be able to see the private items of the delegator
+
+Behavioral changes:
+
+* exch: remove old PHP EWS handler
+* zcore: delete getuseravailability RPC and replace by new getuserfreebusy RPC
 
 
 Gromox 2.11 (2023-08-21)
