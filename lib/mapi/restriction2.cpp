@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <fmt/core.h>
 #include <libHX/string.h>
@@ -17,6 +18,7 @@
  * This makes copy-paste to source code easier.
  */
 
+using namespace std::string_view_literals;
 using namespace gromox;
 
 static inline const char *relop_repr(relop r)
@@ -34,33 +36,204 @@ static inline const char *relop_repr(relop r)
 	}
 }
 
-std::string TAGGED_PROPVAL::repr() const
+static std::string apptime_repr(double v)
 {
-	std::stringstream ss;
+	auto ut = rop_util_nttime_to_unix(apptime_to_nttime_approx(v));
+	char buf[80]{};
+	auto tm = localtime(&ut);
+	if (tm != nullptr)
+		strftime(buf, std::size(buf), "~%F %T", tm);
+	return fmt::format("{} (raw={})", buf, v);
+}
+
+static std::string currency_repr(int64_t v)
+{
+	auto w = v >= 0 ? v : -v;
+	return fmt::format("{}.{:04}", v / 1000, w % 1000);
+}
+
+static std::string systime_repr(mapitime_t v)
+{
+	auto ut = rop_util_nttime_to_unix(v);
+	char buf[80]{};
+	auto tm = localtime(&ut);
+	if (tm != nullptr)
+		strftime(buf, std::size(buf), "%FT%T", tm);
+	return fmt::format("{} (raw=0x{:x})", buf, v);
+}
+
+static std::string ptstring_repr(const char *s, bool verbose)
+{
+	return !verbose ? fmt::format("[{}]", strlen(s)) :
+	       fmt::format("[{}]=\"{}\"", strlen(s), s);
+}
+
+std::string BINARY::repr(bool verbose) const
+{
+	return !verbose ? fmt::format("[{} bytes]", cb) :
+	       fmt::format("[{}]=\"{}\"", cb, bin2txt(pv, cb));
+}
+
+std::string SVREID::repr(bool verbose) const
+{
+	if (pbin == nullptr)
+		return fmt::format("fid=0x{:x},mid=0x{:x},ins=0x{:x}",
+		       folder_id, message_id, instance);
+	else if (verbose)
+		return bin2hex(pbin->pv, pbin->cb);
+	return fmt::format("[{} bytes]", pbin->cb);
+}
+
+std::string TAGGED_PROPVAL::value_repr(bool verbose) const
+{
+	char guidstr[GUIDSTR_SIZE];
+	if (proptag & MV_FLAG) {
+		auto &xl = *static_cast<const GEN_ARRAY *>(pvalue);
+		auto r = fmt::format("[{}]", xl.count);
+		if (!verbose)
+			return r;
+		r += "={";
+		switch (PROP_TYPE(proptag)) {
+		case PT_MV_SHORT:
+			/* using sv to avoid strlen call */
+			for (size_t i = 0; i < xl.count; ++i)
+				if (xl.shrt[i] == 0)
+					r += "0,"sv;
+				else
+					r += fmt::format("{}/0x{:x},", xl.shrt[i], xl.shrt[i]);
+			break;
+		case PT_MV_LONG:
+			for (size_t i = 0; i < xl.count; ++i)
+				if (xl.lng[i] == 0)
+					r += "0,"sv;
+				else
+					r += fmt::format("{}/0x{:x},", xl.lng[i], xl.lng[i]);
+			break;
+		case PT_MV_FLOAT:
+			for (size_t i = 0; i < xl.count; ++i)
+				if (xl.flt[i] == 0)
+					r += "0,"sv;
+				else
+					r += std::to_string(xl.flt[i]) + ",";
+			break;
+		case PT_MV_DOUBLE:
+			for (size_t i = 0; i < xl.count; ++i)
+				if (xl.dbl[i] == 0)
+					r += "0,"sv;
+				else
+					r += std::to_string(xl.dbl[i]) + ",";
+			break;
+		case PT_MV_APPTIME:
+			for (size_t i = 0; i < xl.count; ++i)
+				r += apptime_repr(xl.dbl[i]) + ",";
+			break;
+		case PT_MV_CURRENCY:
+			for (size_t i = 0; i < xl.count; ++i)
+				if (xl.llng[i] == 0)
+					r += "0,"sv;
+				else
+					r += currency_repr(xl.llng[i]) + ",";
+			break;
+		case PT_MV_I8:
+			for (size_t i = 0; i < xl.count; ++i)
+				if (xl.llng[i] == 0)
+					r += "0,"sv;
+				else
+					r += fmt::format("{}/0x{:x},", xl.llng[i], xl.llng[i]);
+			break;
+		case PT_MV_SYSTIME:
+			for (size_t i = 0; i < xl.count; ++i)
+				r += systime_repr(xl.llng[i]) + ",";
+			break;
+		case PT_MV_BINARY:
+			for (size_t i = 0; i < xl.count; ++i)
+				r += xl.bin[i].repr(verbose) + ",";
+			break;
+		case PT_MV_STRING8:
+		case PT_MV_UNICODE:
+			for (size_t i = 0; i < xl.count; ++i)
+				r += ptstring_repr(xl.str[i], verbose) + ",";
+			break;
+		case PT_MV_CLSID:
+			for (size_t i = 0; i < xl.count; ++i) {
+				xl.guid[i].to_str(guidstr, std::size(guidstr));
+				r += guidstr;
+				r += ",";
+			}
+			break;
+		}
+		r += "}";
+		return r;
+	}
 	switch (PROP_TYPE(proptag)) {
-	#define PTI << std::hex << PROP_ID(proptag) << "h," << std::dec
-	case PT_LONG: ss << "PT_LONG{" PTI << *static_cast<uint32_t *>(pvalue) << "}"; break;
-	case PT_I8: ss << "PT_I8{" PTI << *static_cast<uint64_t *>(pvalue) << "}"; break;
-	case PT_STRING8: ss << "PT_STRING8{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
-	case PT_UNICODE: ss << "PT_UNICODE{" PTI << "\"" << static_cast<const char *>(pvalue) << "\"}"; break;
-	case PT_BINARY: {
-		auto bin = static_cast<const BINARY *>(pvalue);
-		ss << "PT_BINARY{" PTI << "[" << bin->cb << "]=\"" << bin2txt(bin->pv, bin->cb) << "\"}";
+	case PT_SHORT: {
+		auto v = *static_cast<int16_t *>(pvalue);
+		return fmt::format("{}/0x{:x}", v, v);
+	}
+	case PT_LONG: {
+		auto v = *static_cast<int32_t *>(pvalue);
+		return fmt::format("{}/0x{:x}", v, v);
+	}
+	case PT_FLOAT:
+		return std::to_string(*static_cast<float *>(pvalue));
+	case PT_DOUBLE:
+		return std::to_string(*static_cast<double *>(pvalue));
+	case PT_APPTIME:
+		return apptime_repr(*static_cast<double *>(pvalue));
+	case PT_CURRENCY:
+		return currency_repr(*static_cast<int64_t *>(pvalue));
+	case PT_BOOLEAN:
+		static constexpr char bs[2][6] = {"false", "true"};
+		return bs[*static_cast<uint8_t *>(pvalue)];
 		break;
+	case PT_I8: {
+		auto v = *static_cast<int64_t *>(pvalue);
+		return fmt::format("{}/0x{:x}", v, v);
 	}
-	case PT_SVREID: {
-		auto &x = *static_cast<const SVREID *>(pvalue);
-		ss << "PT_SVREID{" PTI;
-		if (x.pbin != nullptr)
-			ss << x.pbin->cb << "bytes}";
-		else
-			ss << "fid=" << std::hex << x.folder_id << ",mid=" << x.message_id << ",ins=" << x.instance << "}";
-		break;
+	case PT_STRING8:
+	case PT_UNICODE:
+		return ptstring_repr(static_cast<const char *>(pvalue), verbose);
+	case PT_SYSTIME:
+		return systime_repr(*static_cast<mapitime_t *>(pvalue));
+	case PT_CLSID:
+		static_cast<GUID *>(pvalue)->to_str(guidstr, std::size(guidstr));
+		return guidstr;
+	case PT_BINARY:
+		return static_cast<const BINARY *>(pvalue)->repr(verbose);
+	case PT_SVREID:
+		return static_cast<const SVREID *>(pvalue)->repr(verbose);
+	default:
+		return {};
 	}
-	default: ss << "PT_" << std::hex << proptag << "h{}"; break;
-	#undef PTI
+}
+
+std::string TAGGED_PROPVAL::type_repr() const
+{
+	#define E(s) case (s): return #s;
+	switch (PROP_TYPE(proptag)) {
+	E(PT_SHORT)
+	E(PT_LONG)
+	E(PT_FLOAT)
+	E(PT_DOUBLE)
+	E(PT_APPTIME)
+	E(PT_CURRENCY)
+	E(PT_BOOLEAN)
+	E(PT_I8)
+	E(PT_STRING8)
+	E(PT_UNICODE)
+	E(PT_SYSTIME)
+	E(PT_CLSID)
+	E(PT_BINARY)
+	E(PT_SVREID)
+	default:
+		return fmt::format("PT_{:04x}h", PROP_TYPE(proptag));
 	}
-	return std::move(ss).str();
+	#undef E
+}
+
+std::string TAGGED_PROPVAL::repr(bool verbose) const
+{
+	return type_repr() + "{" + value_repr(verbose) + "}";
 }
 
 std::string RESTRICTION::repr() const

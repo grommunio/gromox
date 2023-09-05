@@ -71,6 +71,7 @@ Makefile.in
 /tests/bodyconv
 /tests/compress
 /tests/cryptest
+/tests/epv_unpack
 /tests/gxl-383
 /tests/jsontest
 /tests/lzxpress
