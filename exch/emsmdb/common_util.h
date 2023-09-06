@@ -122,6 +122,8 @@ extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
 extern std::shared_ptr<MIME_POOL> common_util_get_mime_pool();
 extern void fxs_propsort(MESSAGE_CONTENT &);
+extern ec_error_t replid_to_replguid(const logon_object &, uint16_t, GUID &);
+extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_t &);
 
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;

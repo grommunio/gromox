@@ -385,8 +385,6 @@ ec_error_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
 ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_found;
-	uint16_t replid;
 	ems_objtype object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
@@ -395,73 +393,24 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 	if (object_type != ems_objtype::logon)
 		return ecNotSupported;
 	memset(plong_term_id, 0, sizeof(LONG_TERM_ID));
-	if (plogon->is_private()) {
-		/*
-		 * As per OXCSTOR v25 §3.2.1 ¶3, we are supposed to consult a
-		 * mapping table; the implementation is just this trivial
-		 * check, and that "table" has an implicit entry with
-		 * replid{1} <=> replguid{user_guid}.
-		 */
-		if (rop_util_get_replid(id) != 1)
-			return ecInvalidParam;
-		plong_term_id->guid = rop_util_make_user_guid(plogon->account_id);
-	} else {
-		replid = rop_util_get_replid(id);
-		if (1 == replid) {
-			plong_term_id->guid = rop_util_make_domain_guid(plogon->account_id);
-		} else {
-			/*
-			 * While the mapping table can be queried, there is no
-			 * way to add entries. At what time do entries vivify
-			 * anyway?
-			 */
-			mlog(LV_ERR, "E-2141: public folder LT/REPL mapping not really implemented");
-			if (!exmdb_client::get_mapping_guid(plogon->get_dir(),
-			    replid, &b_found, &plong_term_id->guid))
-				return ecError;
-			if (!b_found)
-				return ecNotFound;
-		}	
-	}
 	plong_term_id->global_counter = rop_util_get_gc_array(id);
-	return ecSuccess;
+	return replid_to_replguid(*plogon, rop_util_get_replid(id), plong_term_id->guid);
 }	
 
 ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
 		return ecNotSupported;
-	if (plogon->is_private()) {
-		/*
-		 * We are getting REPLGUIDs from other logons too, unclear if
-		 * legit, but let it pass.
-		 */
-		*pid = rop_util_make_eid(1, plong_term_id->global_counter);
-		return ecSuccess;
-	}
-	auto domain_id = rop_util_get_domain_id(plong_term_id->guid);
-	if (domain_id == -1)
+	uint16_t replid = 0;
+	auto ret = replguid_to_replid(*plogon, plong_term_id->guid, replid);
+	if (ret != ecSuccess)
 		return ecInvalidParam;
-	if (domain_id == plogon->account_id) {
-		replid = 1;
-	} else {
-		mlog(LV_ERR, "E-2142: public folder LT/REPL mapping not really implemented");
-		if (!common_util_check_same_org(domain_id, plogon->account_id))
-			return ecInvalidParam;
-		ec_error_t ret = ecSuccess;
-		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
-		    plong_term_id->guid, &replid, &ret))
-			return ecError;
-		if (ret != ecSuccess)
-			return ret;
-	}
 	*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
 	return ecSuccess;
 }
