@@ -30,6 +30,9 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	uint32_t proptag_buff[2];
 	
 	auto rpc_info = get_rpc_info();
+	if (!(open_flags & LOGON_OPEN_FLAG_USE_PER_MDB_REPLID_MAPPING))
+		/* MS-OXCSTOR v25 §3.2.5.1.1, §3.2.5.1.3 */
+		return ecInvalidParam;
 	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
 		auto pdomain = strchr(rpc_info.username, '@');
 		if (pdomain == nullptr)
