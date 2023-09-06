@@ -14,7 +14,6 @@ struct LOGON_PMB_RESPONSE {
 	uint64_t folder_ids[13];
 	uint8_t response_flags;
 	GUID mailbox_guid;
-	/* replguid: something for distributed server-side replication of PMBs */
 	uint16_t replid;
 	GUID replguid;
 	LOGON_TIME logon_time;

@@ -1494,6 +1494,5 @@ extern const GUID
 	PSETID_REPORT, PSETID_SHARING, PSETID_TASK, PSETID_UNIFIEDMESSAGING,
 	PS_INTERNET_HEADERS, PS_MAPI,
 	PS_PUBLIC_STRINGS,
-	gx_dbguid_store_private, gx_dbguid_store_public,
-	gx_replguid_store_private, gx_replguid_store_public;
+	gx_dbguid_store_private, gx_dbguid_store_public;
 extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];

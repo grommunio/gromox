@@ -104,9 +104,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[11] = rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS);
 	pfolder_id[12] = rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS);
 	
-	*replid = 0xFFFF;
-	*replguid = gx_replguid_store_private;
-	replguid->time_low = user_id;
+	*replid   = 5;
+	*replguid = *pmailbox_guid; /* send PR_MAPPING_SIGNATURE */
 	
 	auto cur_time = time(nullptr);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
@@ -188,10 +187,6 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[11] = 0;
 	pfolder_id[12] = 0;
 	
-	*replid = 0xFFFF;
-	*replguid = gx_replguid_store_public;
-	replguid->time_low = domain_id;
-	memset(pper_user_guid, 0, sizeof(GUID));
 	
 	if (!exmdb_client::get_store_property(homedir, CP_ACP,
 	    PR_STORE_RECORD_KEY, &pvalue))
@@ -199,6 +194,9 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	if (pvalue == nullptr)
 		return ecError;
 	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
+	*replid   = 5;
+	*replguid = mailbox_guid; /* send PR_MAPPING_SIGNATURE */
+	memset(pper_user_guid, 0, sizeof(GUID));
 	auto plogon = logon_object::create(logon_flags, open_flags,
 	              logon_mode::guest, domain_id, pdomain, homedir, mailbox_guid);
 	if (plogon == nullptr)
