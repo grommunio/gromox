@@ -728,14 +728,6 @@ BINARY* common_util_to_folder_replica(
 	return pbin;
 }
 
-
-GUID common_util_get_mapping_guid(BOOL b_private, int account_id)
-{
-	account_id *= -1;
-	return b_private ? rop_util_make_user_guid(account_id) :
-	       rop_util_make_domain_guid(account_id);
-}
-
 BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid)
 {
