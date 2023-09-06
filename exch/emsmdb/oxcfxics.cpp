@@ -991,17 +991,18 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	pctx->mark_started();
-	auto username = plogon->eff_user();
 	auto dir = plogon->get_dir();
-	if (username != STORE_OWNER_GRANTED) {
+	auto eff_user = plogon->eff_user();
+	if (eff_user != STORE_OWNER_GRANTED) {
 		auto pfolder = pctx->get_parent_object();
 		folder_id = pfolder->folder_id;
 		if (!exmdb_client::get_folder_perm(dir,
-		    folder_id, username, &permission))
+		    folder_id, eff_user, &permission))
 			return ecError;
 		if (permission & frightsReadAny)
-			username = nullptr;
+			eff_user = nullptr;
 	}
+	auto rds_user = plogon->readstate_user();
 	for (unsigned int i = 0; i < count; ++i) {
 		if (!common_util_binary_to_xid(&pread_stat[i].message_xid, &tmp_xid))
 			return ecError;
@@ -1009,9 +1010,9 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		if (tmp_guid != tmp_xid.guid)
 			continue;
 		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
-		if (username != STORE_OWNER_GRANTED) {
+		if (eff_user != STORE_OWNER_GRANTED) {
 			if (!exmdb_client::check_message_owner(dir,
-			    message_id, username, &b_owner))
+			    message_id, eff_user, &b_owner))
 				return ecError;
 			if (!b_owner)
 				continue;
@@ -1029,8 +1030,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 		flag = tmp_propvals.get<uint8_t>(PR_READ);
 		if ((flag == nullptr || *flag == 0) == (pread_stat[i].mark_as_read == 0))
 			continue;
-		if (!exmdb_client::set_message_read_state(dir,
-		    plogon->is_private() ? nullptr : username,
+		if (!exmdb_client::set_message_read_state(dir, rds_user,
 		    message_id, pread_stat[i].mark_as_read, &read_cn))
 			return ecError;
 		pctx->pstate->pread->append(read_cn);

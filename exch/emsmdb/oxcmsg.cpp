@@ -74,13 +74,13 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecNotFound;
 	
 	tag_access = 0;
-	auto rpc_info = get_rpc_info();
+	auto rpc_user = get_rpc_info().username;
 	if (plogon->logon_mode == logon_mode::owner) {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
 	if (!exmdb_client::get_folder_perm(plogon->get_dir(), folder_id,
-	    rpc_info.username, &permission))
+	    rpc_user, &permission))
 		return ecError;
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 		return ecAccessDenied;
@@ -89,7 +89,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		goto PERMISSION_CHECK;
 	}
 	if (!exmdb_client::check_message_owner(plogon->get_dir(), message_id,
-	    rpc_info.username, &b_owner))
+	    rpc_user, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
 		tag_access |= MAPI_ACCESS_READ;
@@ -192,10 +192,10 @@ ec_error_t rop_createmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
-	auto rpc_info = get_rpc_info();
-	if (plogon->logon_mode != logon_mode::owner) {
+	auto eff_user = plogon->eff_user();
+	if (eff_user != STORE_OWNER_GRANTED) {
 		if (!exmdb_client::get_folder_perm(plogon->get_dir(),
-		    folder_id, rpc_info.username, &permission))
+		    folder_id, eff_user, &permission))
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreate)))
 			return ecAccessDenied;
@@ -542,9 +542,8 @@ static BOOL oxcmsg_setreadflag(logon_object *plogon,
 	static constexpr uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval_buff[2];
 	
-	auto rpc_info = get_rpc_info();
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	auto username = plogon->is_private() ? nullptr : rpc_info.username;
+	auto username = plogon->readstate_user();
 	b_notify = FALSE;
 	b_changed = FALSE;
 	auto dir = plogon->get_dir();
@@ -661,8 +660,7 @@ ec_error_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		res_top.rt = RES_PROPERTY;
 		res_top.pres = &res_prop;
 		uint32_t table_id = 0, row_count = 0;
-		auto rpc_info = get_rpc_info();
-		auto username = plogon->is_private() ? nullptr : rpc_info.username;
+		auto username = plogon->readstate_user();
 		if (!exmdb_client::load_content_table(plogon->dir, CP_ACP,
 		    fld->folder_id, username, TABLE_FLAG_NONOTIFICATIONS,
 		    &res_top, nullptr, &table_id, &row_count))

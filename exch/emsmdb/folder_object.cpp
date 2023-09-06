@@ -175,13 +175,13 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
-		if (pfolder->plogon->logon_mode == logon_mode::owner) {
+		auto eff_user = pfolder->plogon->eff_user();
+		if (eff_user == STORE_OWNER_GRANTED) {
 			*v = rightsAll | frightsContact;
 			return TRUE;
 		}
-		auto rpc_info = get_rpc_info();
 		if (!exmdb_client::get_folder_perm(dir,
-		    pfolder->folder_id, rpc_info.username, v))
+		    pfolder->folder_id, eff_user, v))
 			return FALSE;
 		return TRUE;
 	}
