@@ -2232,8 +2232,8 @@ static void *midbme_scanwork(void *param)
 			auto load_diff = now_time - pidb->load_time;
 			bool do_clean = pidb->reference == 0 &&
 			             (pidb->sub_id == 0 ||
-			             std::cmp_greater(last_diff, g_midb_cache_interval) ||
-			             std::cmp_greater(load_diff, g_midb_reload_interval));
+			             gromox::cmp_greater(last_diff, g_midb_cache_interval) ||
+			             gromox::cmp_greater(load_diff, g_midb_reload_interval));
 			if (!do_clean) {
 				++it;
 				continue;
