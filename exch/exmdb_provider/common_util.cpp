@@ -709,7 +709,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT replguid FROM "
-		"replca_mapping WHERE replid=%d", (int)replid);
+	         "replguidmap WHERE replid=%u", replid);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
