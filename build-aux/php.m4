@@ -28,22 +28,15 @@ AC_DEFUN([PHP_WITH_PHP_CONFIG],[
 	AC_MSG_CHECKING([for PHP ini directory])
 	PHP_SYSCONF_DIR=$($PHP_CONFIG --ini-dir)
 	AS_IF([test "$?" -ne 0], [PHP_SYSCONF_DIR=""])
-	if test -z "${PHP_SYSCONF_DIR}"; then
-	if test -d "/etc/php.d"; then
-		PHP_SYSCONF_DIR="/etc/php.d"
-	elif test -d "/etc/php8/conf.d"; then
-		PHP_SYSCONF_DIR="/etc/php8/conf.d"
-	elif test -d "/etc/php8/apache2/conf.d"; then
-		PHP_SYSCONF_DIR="/etc/php8/apache2/conf.d"
-	elif test -d "/etc/php7/conf.d"; then
-		PHP_SYSCONF_DIR="/etc/php7/conf.d"
-	elif test -d "/etc/php7/apache2/conf.d"; then
-		PHP_SYSCONF_DIR="/etc/php7/apache2/conf.d"
-	else
+	AS_IF([test -z "${PHP_SYSCONF_DIR}"], [AS_IF(
+		[test -d "/etc/php.d"],               [PHP_SYSCONF_DIR="/etc/php.d"],
+		[test -d "/etc/php8/conf.d"],         [PHP_SYSCONF_DIR="/etc/php8/conf.d"],
+		[test -d "/etc/php8/apache2/conf.d"], [PHP_SYSCONF_DIR="/etc/php8/apache2/conf.d"],
+		[test -d "/etc/php7/conf.d"],         [PHP_SYSCONF_DIR="/etc/php7/conf.d"],
+		[test -d "/etc/php7/apache2/conf.d"], [PHP_SYSCONF_DIR="/etc/php7/apache2/conf.d"],
 		dnl Let packagers figure it out
-		PHP_SYSCONF_DIR='${pkgdatadir}/php.conf.d'
-	fi
-	fi
+		[PHP_SYSCONF_DIR='${pkgdatadir}/php.conf.d']
+	)])
 	AC_MSG_RESULT($PHP_SYSCONF_DIR)
 	AC_SUBST([PHP_SYSCONF_DIR])
 ])
