@@ -133,7 +133,6 @@ static void php_mapi_init_globals(zend_mapi_globals *)
 {
 }
 
-static constexpr GUID GUID_NONE{};
 static constexpr char
 	name_mapi_session[] = "MAPI Session",
 	name_mapi_table[] = "MAPI Table",
