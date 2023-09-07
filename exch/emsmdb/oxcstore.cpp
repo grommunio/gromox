@@ -430,7 +430,6 @@ ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	BOOL b_found;
 	ems_objtype object_type;
 	uint16_t replid;
 	
@@ -456,11 +455,12 @@ ec_error_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid
 		mlog(LV_ERR, "E-2142: public folder LT/REPL mapping not really implemented");
 		if (!common_util_check_same_org(domain_id, plogon->account_id))
 			return ecInvalidParam;
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
-		    plong_term_id->guid, &b_found, &replid))
+		    plong_term_id->guid, &replid, &ret))
 			return ecError;
-		if (!b_found)
-			return ecNotFound;
+		if (ret != ecSuccess)
+			return ret;
 	}
 	*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
 	return ecSuccess;

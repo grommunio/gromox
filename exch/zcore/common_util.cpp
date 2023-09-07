@@ -865,7 +865,6 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 BOOL cu_entryid_to_fid(BINARY bin,
 	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
@@ -893,8 +892,9 @@ BOOL cu_entryid_to_fid(BINARY bin,
 		auto pinfo = zs_get_info();
 		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.database_guid, &b_found, &replid) || !b_found)
+		    tmp_entryid.database_guid, &replid, &ret) || ret != ecSuccess)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
@@ -908,7 +908,6 @@ BOOL cu_entryid_to_fid(BINARY bin,
 BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
@@ -942,9 +941,10 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 		auto pinfo = zs_get_info();
 		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
-		    !b_found)
+		    tmp_entryid.folder_database_guid, &replid, &ret) ||
+		    ret != ecSuccess)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
 			tmp_entryid.folder_global_counter);

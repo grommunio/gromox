@@ -506,7 +506,6 @@ BINARY *cu_mid_to_sk(logon_object *plogon, uint64_t message_id)
 BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
@@ -534,9 +533,10 @@ BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
 					tmp_entryid.global_counter);
 			return TRUE;
 		}
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
-		    tmp_entryid.database_guid, &b_found, &replid) ||
-		    !b_found)
+		    tmp_entryid.database_guid, &replid, &ret) ||
+		    ret != ecSuccess)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
@@ -550,7 +550,6 @@ BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
 BOOL cu_entryid_to_mid(logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
@@ -584,9 +583,10 @@ BOOL cu_entryid_to_mid(logon_object *plogon, const BINARY *pbin,
 				tmp_entryid.message_global_counter);
 			return TRUE;
 		}
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
-		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
-		    !b_found)
+		    tmp_entryid.folder_database_guid, &replid, &ret) ||
+		    ret != ecSuccess)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
 			tmp_entryid.folder_global_counter);
@@ -753,11 +753,12 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 				return FALSE;
 			*preplid = 1;
 		} else {
+			ec_error_t ret = ecSuccess;
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 			if (tmp_guid == *pguid)
 				*preplid = 1;
 			else if (!exmdb_client::get_mapping_replid(dir,
-			    *pguid, &b_found, preplid) || !b_found)
+			    *pguid, preplid, &ret) || ret != ecSuccess)
 				return FALSE;
 		}
 	}

@@ -102,8 +102,8 @@ BOOL exmdb_server::get_mapping_guid(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::get_mapping_replid(const char *dir,
-	GUID guid, BOOL *pb_found, uint16_t *preplid)
+BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
+    uint16_t *preplid, ec_error_t *e_result)
 {
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -128,12 +128,16 @@ BOOL exmdb_server::get_mapping_replid(const char *dir,
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
-		*pb_found = FALSE;
+		*e_result = ecNotFound;
 		return TRUE;
 	}
-	*preplid = sqlite3_column_int64(pstmt, 0);
-	/* XXX: check replid for > 0xFFFF and yield ecParameterOverflow */
-	*pb_found = TRUE;
+	auto replid = sqlite3_column_int64(pstmt, 0);
+	if (replid > 0xFFFF) {
+		*e_result = ecParameterOverflow;
+		return TRUE;
+	}
+	*preplid  = replid;
+	*e_result = ecSuccess;
 	return TRUE;
 }
 
