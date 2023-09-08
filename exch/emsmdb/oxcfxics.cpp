@@ -1277,8 +1277,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	EID_ARRAY message_ids;
 	
 	if (ppropvals->count != 1 ||
-	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY) {
-		mlog(LV_WARN, "W-2150: importdeletes expected proptype 0102h, but got tag %xh",
+	    ppropvals->ppropval[0].proptag != PROP_TAG(PT_MV_BINARY, 0)) {
+		mlog(LV_WARN, "W-2150: importdeletes expected proptag 00001102h, but got tag %xh",
 		        ppropvals->ppropval[0].proptag);
 		return ecInvalidParam;
 	}
