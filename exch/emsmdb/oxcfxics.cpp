@@ -869,7 +869,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (!exmdb_client::check_message(dir, folder_id, message_id, &b_exist))
 		return ecError;
 	BOOL b_new = !b_exist ? TRUE : false;
-	*pmessage_id = message_id;
+	*pmessage_id = 0;
 	if (plogon->logon_mode != logon_mode::owner) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client::get_folder_perm(dir,
