@@ -61,7 +61,7 @@ void notify_response_free(NOTIFY_RESPONSE *pnotify)
 	free(pnotify);
 }
 
-static BOOL notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
+static ec_error_t notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 	uint64_t folder_id, uint64_t message_id, uint32_t message_flags,
 	BOOL b_unicode, const char *pmessage_class)
 {
@@ -78,25 +78,25 @@ static BOOL notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 	pmemory->unicode_flag = !!b_unicode;
 	pnotify->notification_data.pstr_class = strdup(pmessage_class);
 	if (pnotify->notification_data.pstr_class == nullptr)
-		return FALSE;
-	return TRUE;
+		return ecServerOOM;
+	return ecSuccess;
 }
 
-static BOOL copy_tags(notify_response &n, const PROPTAG_ARRAY &tags)
+static ec_error_t copy_tags(notify_response &n, const PROPTAG_ARRAY &tags)
 {
 	auto &m = *notify_to_ndm(&n);
 	m.proptags.count = tags.count;
 	if (m.proptags.count == 0)
-		return TRUE;
+		return ecSuccess;
 	m.proptags.pproptag = me_alloc<uint32_t>(tags.count);
 	if (m.proptags.pproptag == nullptr)
-		return false;
+		return ecServerOOM;
 	memcpy(m.proptags.pproptag, tags.pproptag, sizeof(uint32_t) * tags.count);
 	n.notification_data.pproptags = &m.proptags;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
+static ec_error_t notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
     uint64_t folder_id, uint64_t parent_id, const PROPTAG_ARRAY *pproptags)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -108,7 +108,7 @@ static BOOL notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
 	return copy_tags(*pnotify, *pproptags);
 }
 
-static BOOL notify_response_specify_message_created(NOTIFY_RESPONSE *pnotify,
+static ec_error_t notify_response_specify_message_created(NOTIFY_RESPONSE *pnotify,
     uint64_t folder_id, uint64_t message_id, const PROPTAG_ARRAY *pproptags)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -121,7 +121,7 @@ static BOOL notify_response_specify_message_created(NOTIFY_RESPONSE *pnotify,
 	return copy_tags(*pnotify, *pproptags);
 }
 
-static BOOL notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
+static ec_error_t notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
     uint64_t folder_id, uint64_t message_id, uint64_t parent_id,
     const PROPTAG_ARRAY *pproptags)
 {
@@ -139,7 +139,7 @@ static BOOL notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
 	return copy_tags(*pnotify, *pproptags);
 }
 
-static BOOL notify_response_specify_folder_deleted(
+static ec_error_t notify_response_specify_folder_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id, uint64_t parent_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -148,10 +148,10 @@ static BOOL notify_response_specify_folder_deleted(
 	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_message_deleted(
+static ec_error_t notify_response_specify_message_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id, uint64_t message_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -161,10 +161,10 @@ static BOOL notify_response_specify_message_deleted(
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
 	pmemory->message_id = rop_util_make_eid_ex(1, message_id);
-	return TRUE;
+	return ecSuccess;
 }
 	
-static BOOL notify_response_specify_link_deleted(
+static ec_error_t notify_response_specify_link_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id,
 	uint64_t message_id, uint64_t parent_id)
 {
@@ -178,10 +178,10 @@ static BOOL notify_response_specify_link_deleted(
 	pmemory->message_id = rop_util_make_eid_ex(1, message_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnotify,
+static ec_error_t notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnotify,
     uint64_t folder_id, uint32_t *ptotal, uint32_t *punread,
     const PROPTAG_ARRAY *pproptags)
 {
@@ -203,7 +203,7 @@ static BOOL notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnotify,
 	return copy_tags(*pnotify, *pproptags);
 }
 	
-static BOOL notify_response_specify_message_modified(NOTIFY_RESPONSE *pnotify,
+static ec_error_t notify_response_specify_message_modified(NOTIFY_RESPONSE *pnotify,
      uint64_t folder_id, uint64_t message_id, const PROPTAG_ARRAY *pproptags)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -216,7 +216,7 @@ static BOOL notify_response_specify_message_modified(NOTIFY_RESPONSE *pnotify,
 	return copy_tags(*pnotify, *pproptags);
 }
 
-static BOOL notify_response_specify_folder_mvcp(
+static ec_error_t notify_response_specify_folder_mvcp(
 	NOTIFY_RESPONSE *pnotify, uint8_t notification_flags,
 	uint64_t folder_id, uint64_t parent_id,
 	uint64_t old_folder_id, uint64_t old_parent_id)
@@ -231,10 +231,10 @@ static BOOL notify_response_specify_folder_mvcp(
 	pmemory->old_folder_id = rop_util_nfid_to_eid(old_folder_id);
 	pnotify->notification_data.pold_parent_id = &pmemory->old_parent_id;
 	pmemory->old_parent_id = rop_util_make_eid_ex(1, old_parent_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_message_mvcp(
+static ec_error_t notify_response_specify_message_mvcp(
 	NOTIFY_RESPONSE *pnotify, uint8_t notification_flags,
 	uint64_t folder_id, uint64_t message_id,
 	uint64_t old_folder_id, uint64_t old_message_id)
@@ -250,30 +250,30 @@ static BOOL notify_response_specify_message_mvcp(
 	pmemory->old_folder_id = rop_util_make_eid_ex(1, old_folder_id);
 	pnotify->notification_data.pold_message_id = &pmemory->old_message_id;
 	pmemory->old_message_id = rop_util_make_eid_ex(1, old_message_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_folder_search_completed(
+static ec_error_t notify_response_specify_folder_search_completed(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_SEARCHCOMPLETE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_hierarchy_table_changed(
+static ec_error_t notify_response_specify_hierarchy_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_TABLE_CHANGED;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_content_table_changed(
+static ec_error_t notify_response_specify_content_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -281,10 +281,10 @@ static BOOL notify_response_specify_content_table_changed(
 		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_TABLE_CHANGED;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_search_table_changed(
+static ec_error_t notify_response_specify_search_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -294,10 +294,10 @@ static BOOL notify_response_specify_search_table_changed(
 					NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_TABLE_CHANGED;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_hierarchy_table_row_added(
+static ec_error_t notify_response_specify_hierarchy_table_row_added(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t after_folder_id)
 {
@@ -310,10 +310,10 @@ static BOOL notify_response_specify_hierarchy_table_row_added(
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
 	pmemory->after_folder_id = after_folder_id == 0 ? eid_t(0) :
 	                           rop_util_nfid_to_eid(after_folder_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_content_table_row_added(
+static ec_error_t notify_response_specify_content_table_row_added(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance,
 	uint64_t after_folder_id, uint64_t after_row_id,
@@ -338,10 +338,10 @@ static BOOL notify_response_specify_content_table_row_added(
 	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_search_table_row_added(
+static ec_error_t notify_response_specify_search_table_row_added(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance,
 	uint64_t after_folder_id, uint64_t after_row_id,
@@ -368,10 +368,10 @@ static BOOL notify_response_specify_search_table_row_added(
 	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_hierarchy_table_row_deleted(
+static ec_error_t notify_response_specify_hierarchy_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
@@ -380,10 +380,10 @@ static BOOL notify_response_specify_hierarchy_table_row_deleted(
 	pmemory->table_event = TABLE_EVENT_ROW_DELETED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
 	pmemory->row_folder_id = rop_util_nfid_to_eid(row_folder_id);
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_content_table_row_deleted(
+static ec_error_t notify_response_specify_content_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance)
 {
@@ -398,10 +398,10 @@ static BOOL notify_response_specify_content_table_row_deleted(
 	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_search_table_row_deleted(
+static ec_error_t notify_response_specify_search_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance)
 {
@@ -418,10 +418,10 @@ static BOOL notify_response_specify_search_table_row_deleted(
 	pmemory->row_message_id = rop_util_nfid_to_eid2(row_message_id);
 	pnotify->notification_data.prow_instance = &pmemory->row_instance;
 	pmemory->row_instance = row_instance;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_hierarchy_table_row_modified(
+static ec_error_t notify_response_specify_hierarchy_table_row_modified(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t after_folder_id)
 {
@@ -434,10 +434,10 @@ static BOOL notify_response_specify_hierarchy_table_row_modified(
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
 	pmemory->after_folder_id = after_folder_id == 0 ? eid_t(0) :
 	                           rop_util_nfid_to_eid(after_folder_id);
-	return TRUE;
+	return ecSuccess;
 }
 	
-static BOOL notify_response_specify_content_table_row_modified(
+static ec_error_t notify_response_specify_content_table_row_modified(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance,
 	uint64_t after_folder_id, uint64_t after_row_id,
@@ -462,10 +462,10 @@ static BOOL notify_response_specify_content_table_row_modified(
 	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
-	return TRUE;
+	return ecSuccess;
 }
 
-static BOOL notify_response_specify_search_table_row_modified(
+static ec_error_t notify_response_specify_search_table_row_modified(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance,
 	uint64_t after_folder_id, uint64_t after_row_id,
@@ -492,11 +492,10 @@ static BOOL notify_response_specify_search_table_row_modified(
 	                        rop_util_nfid_to_eid2(after_row_id);
 	pnotify->notification_data.pafter_instance = &pmemory->after_instance;
 	pmemory->after_instance = after_instance;
-	return TRUE;
+	return ecSuccess;
 }
 
-
-BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
+ec_error_t notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	BOOL b_cache, const DB_NOTIFY *pdb_notify)
 {
 	uint8_t notification_flags;
@@ -627,7 +626,7 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 		       x->after_folder_id, x->after_row_id, x->after_instance);
 	}
 	}
-	return FALSE;
+	return ecInvalidParam;
 }
 
 void notify_response_content_table_row_event_to_change(

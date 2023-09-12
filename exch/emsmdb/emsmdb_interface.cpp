@@ -1138,7 +1138,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	}
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
-	if (notify_response_retrieve(nfr, b_cache, pdb_notify)) {
+	if (notify_response_retrieve(nfr, b_cache, pdb_notify) == ecSuccess) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);
 		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
