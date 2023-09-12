@@ -134,7 +134,6 @@ void process(mCreateFolderRequest&& request, XMLElement* response, const EWSCont
 		data.ResponseMessages.emplace_back(err);
 	}
 
-
 	data.serialize(response);
 }
 
@@ -223,16 +222,12 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
 		sFolderSpec parentFolder = folder;
 		parentFolder.folderId = *parentFolderId;
 
-		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
-		   !(ctx.permissions(ctx.auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
-			throw EWSError::AccessDenied(E3157);
-
 		if(request.DeleteType == Enum::MoveToDeletedItems) {
 			if(folder.location == folder.PUBLIC)
 				throw EWSError::MoveCopyFailed(E3158);
 			uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
 			uint64_t newParentId = rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS);
-			ctx.moveCopyFolder(dir, folder.folderId, newParentId, accountId, false);
+			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
 		} else {
 			bool hard = request.DeleteType == Enum::HardDelete;
 			BOOL result;
@@ -557,6 +552,47 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 
 	//Finalize response
 	data.ResponseMessage.success();
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process MoveFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mMoveFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName("m:MoveFolderResponse");
+
+	ctx.experimental();
+
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	std::string dir = ctx.getDir(dstFolder);
+	uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+
+	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
+
+	mMoveFolderResponse data;
+	data.ResponseMessages.reserve(request.FolderIds.size());
+
+	sShape shape = sShape(tFolderResponseShape());
+
+	for(const tFolderId& folderId : request.FolderIds) try {
+		if(!dstAccess)
+			throw EWSError::AccessDenied(E3167);
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		if(folder.location != dstFolder.location) // Attempt to move to a different store
+			throw EWSError::CrossMailboxMoveCopy(E3168);
+		ctx.moveCopyFolder(dir, folder, dstFolder.folderId, accountId, false);
+		mMoveFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
+		msg.Folders.emplace_back(ctx.loadFolder(folder, shape));
+		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
 	data.serialize(response);
 }
 

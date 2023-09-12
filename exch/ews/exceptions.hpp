@@ -64,6 +64,7 @@ public:
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
+	ERR(CrossMailboxMoveCopy) ///< Attempted move or copy operation across different stores
 	ERR(DeleteDistinguishedFolder) ///< Attempt to delete distinguished folder (Wait. That's illegal.)
 	ERR(FolderExists) ///< Creating a folder with a name that already exists
 	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
@@ -277,6 +278,8 @@ E(3163, "folder move was aborted");
 E(3164, "could not find copied folder");
 E(3165, "failed to delete folder");
 E(3166, "failed to get parent folder");
+E(3167, "cannot write to destination folder");
+E(3168, "cannot move folder across stores");
 
 #undef E
 }

@@ -1967,6 +1967,17 @@ struct mResponseMessageType : public NS_EWS_Messages
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Messages.xsd:861
+ */
+struct mBaseMoveCopyFolder
+{
+	explicit mBaseMoveCopyFolder(const tinyxml2::XMLElement*);
+
+	tTargetFolderIdType ToFolderId;
+	std::vector<tFolderId> FolderIds;
+};
+
+/**
  * Messages.xsd:799
  */
 struct mFolderInfoResponseMessage : public mResponseMessageType
@@ -2333,6 +2344,32 @@ struct mGetUserOofSettingsResponse
 
 	/* OXWOOF v15 §7.1 says it's optional, but OL disagrees */
 	std::string AllowExternalOof = "All";
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:873
+ */
+struct mMoveFolderRequest : public mBaseMoveCopyFolder
+{using mBaseMoveCopyFolder::mBaseMoveCopyFolder;};
+
+/**
+ * Messages.xsd:579
+ */
+struct mMoveFolderResponseMessage : public mFolderInfoResponseMessage
+{
+	static constexpr char NAME[] = "MoveFolderResponseMessage";
+
+	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:914
+ */
+struct mMoveFolderResponse
+{
+	std::vector<mMoveFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

@@ -672,20 +672,25 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid) const
  *
  * @return     ID of the new folder if copied
  */
-uint64_t EWSContext::moveCopyFolder(const std::string& dir, uint64_t folderId, uint64_t newParent, uint32_t accountId,
+uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& folder, uint64_t newParent, uint32_t accountId,
                                     bool copy) const
 {
 	static uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
 	static const PROPTAG_ARRAY tags{std::size(tagIds), tagIds};
 	TPROPVAL_ARRAY props;
-	if(!plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &tags, &props))
+	if(!plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
 		throw DispatchError(E3159);
 	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
 	const char* folderName = props.get<char>(PR_DISPLAY_NAME);
 	if(!parentFid || !folderName)
 		throw DispatchError(E3160);
+	sFolderSpec parentFolder = folder;
+	parentFolder.folderId = *parentFid;
+	if(!(permissions(auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
+	   !(permissions(auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3157);
 	BOOL exists, partial;
-	if(!plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false, auth_info.username, *parentFid, folderId,
+	if(!plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false, auth_info.username, *parentFid, folder.folderId,
 	                                 newParent, folderName, copy? TRUE : false, &exists, &partial))
 		throw EWSError::MoveCopyFailed(E3161);
 	if(exists)
@@ -693,7 +698,7 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, uint64_t folderId, u
 	if(partial)
 		throw EWSError::MoveCopyFailed(E3163);
 	if(!copy)
-		return folderId;
+		return folder.folderId;
 	uint64_t newFolderId;
 	if(!plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
 		throw DispatchError(E3164);

@@ -203,7 +203,7 @@ public:
 	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&) const;
-	uint64_t moveCopyFolder(const std::string&, uint64_t, uint64_t, uint32_t, bool) const;
+	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
