@@ -503,7 +503,7 @@ ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_te
 	if (dst == nullptr)
 		return NULL;
 	dst->event_type = src->event_type;
-	if (src->event_type == EVENT_TYPE_NEWMAIL) {
+	if (src->event_type == NF_NEW_MAIL) {
 		auto src_nm = static_cast<const NEWMAIL_ZNOTIFICATION *>(src->pnotification_data);
 		NEWMAIL_ZNOTIFICATION *dst_nm;
 		if (!b_temp) {
@@ -659,7 +659,7 @@ ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_te
 
 void common_util_free_znotification(ZNOTIFICATION *pnotification)
 {
-	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
+	if (pnotification->event_type == NF_NEW_MAIL) {
 		auto pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification->pnotification_data);
 		if (pnew_notify->entryid.pb != nullptr)
 			free(pnew_notify->entryid.pb);

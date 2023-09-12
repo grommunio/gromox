@@ -330,7 +330,7 @@ static void zs_notification_proc(const char *dir,
 		return;
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
-		pnotification->event_type = EVENT_TYPE_NEWMAIL;
+		pnotification->event_type = NF_NEW_MAIL;
 		pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
 		if (pnew_mail == nullptr)
 			return;
@@ -364,7 +364,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_created: {
-		pnotification->event_type = EVENT_TYPE_OBJECTCREATED;
+		pnotification->event_type = NF_OBJECT_CREATED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -385,7 +385,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::message_created: {
-		pnotification->event_type = EVENT_TYPE_OBJECTCREATED;
+		pnotification->event_type = NF_OBJECT_CREATED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -404,7 +404,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		pnotification->event_type = EVENT_TYPE_OBJECTDELETED;
+		pnotification->event_type = NF_OBJECT_DELETED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -425,7 +425,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		pnotification->event_type = EVENT_TYPE_OBJECTDELETED;
+		pnotification->event_type = NF_OBJECT_DELETED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -446,7 +446,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		pnotification->event_type = EVENT_TYPE_OBJECTMODIFIED;
+		pnotification->event_type = NF_OBJECT_MODIFIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -462,7 +462,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::message_modified: {
-		pnotification->event_type = EVENT_TYPE_OBJECTMODIFIED;
+		pnotification->event_type = NF_OBJECT_MODIFIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -485,7 +485,7 @@ static void zs_notification_proc(const char *dir,
 	case db_notify_type::folder_moved:
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
-		                            EVENT_TYPE_OBJECTMOVED : EVENT_TYPE_OBJECTCOPIED;
+		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -518,7 +518,7 @@ static void zs_notification_proc(const char *dir,
 	case db_notify_type::message_moved:
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
-		                            EVENT_TYPE_OBJECTMOVED : EVENT_TYPE_OBJECTCOPIED;
+		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -549,7 +549,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::search_completed: {
-		pnotification->event_type = EVENT_TYPE_SEARCHCOMPLETE;
+		pnotification->event_type = NF_SEARCH_COMPLETE;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;

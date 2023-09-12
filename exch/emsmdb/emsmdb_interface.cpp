@@ -1009,7 +1009,7 @@ static BOOL emsmdb_interface_merge_message_modified(
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotification_data->notification_flags ==
-		    (NOTIFICATION_FLAG_OBJECTMODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE) &&
+		    (NF_OBJECT_MODIFIED | NF_BY_MESSAGE) &&
 		    *pnotification_data->pfolder_id == folder_id &&
 		    *pnotification_data->pmessage_id == message_id &&
 		    pnotification_data->pproptags->count == 0)
@@ -1034,7 +1034,7 @@ static BOOL emsmdb_interface_merge_folder_modified(
 		pnotification_data = &pnotify->notification_data;
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotification_data->notification_flags == NOTIFICATION_FLAG_OBJECTMODIFIED &&
+		if (pnotification_data->notification_flags == NF_OBJECT_MODIFIED &&
 		    *pnotification_data->pfolder_id == folder_id &&
 		    pnotification_data->pproptags->count == 0)
 			return TRUE;

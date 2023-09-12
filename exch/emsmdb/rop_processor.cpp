@@ -505,8 +505,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;
-				if (pnotify->notification_data.notification_flags
-					&NOTIFICATION_FLAG_MOST_MESSAGE) {
+				if (pnotify->notification_data.notification_flags & NF_BY_MESSAGE) {
 					if (!tbl->read_row(*pnotify->notification_data.prow_message_id,
 					    *pnotify->notification_data.prow_instance,
 					    &propvals) || propvals.count == 0)

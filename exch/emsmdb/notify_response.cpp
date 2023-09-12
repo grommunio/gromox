@@ -67,7 +67,7 @@ static ec_error_t notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_NEWMAIL | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_NEW_MAIL | NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -100,7 +100,7 @@ static ec_error_t notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotif
     uint64_t folder_id, uint64_t parent_id, const PROPTAG_ARRAY *pproptags)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_OBJECTCREATED;
+	pnotify->notification_data.notification_flags = NF_OBJECT_CREATED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
@@ -113,7 +113,7 @@ static ec_error_t notify_response_specify_message_created(NOTIFY_RESPONSE *pnoti
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_OBJECTCREATED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_OBJECT_CREATED | NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -127,9 +127,9 @@ static ec_error_t notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-						NOTIFICATION_FLAG_OBJECTCREATED |
-						NOTIFICATION_FLAG_MOST_SEARCH |
-						NOTIFICATION_FLAG_MOST_MESSAGE;
+						NF_OBJECT_CREATED |
+						NF_BY_SEARCH |
+						NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -143,7 +143,7 @@ static ec_error_t notify_response_specify_folder_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id, uint64_t parent_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_OBJECTDELETED;
+	pnotify->notification_data.notification_flags = NF_OBJECT_DELETED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
@@ -156,7 +156,7 @@ static ec_error_t notify_response_specify_message_deleted(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_OBJECTDELETED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_OBJECT_DELETED | NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -170,8 +170,8 @@ static ec_error_t notify_response_specify_link_deleted(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_OBJECTDELETED | NOTIFICATION_FLAG_MOST_SEARCH |
-		NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_OBJECT_DELETED | NF_BY_SEARCH |
+		NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -187,16 +187,16 @@ static ec_error_t notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnoti
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-							NOTIFICATION_FLAG_OBJECTMODIFIED;
+							NF_OBJECT_MODIFIED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	if (NULL != ptotal) {
-		pnotify->notification_data.notification_flags |= NOTIFICATION_FLAG_MOST_TOTAL;
+		pnotify->notification_data.notification_flags |= NF_HAS_TOTAL;
 		pnotify->notification_data.ptotal_count = &pmemory->total_count;
 		pmemory->total_count = *ptotal;
 	}
 	if (NULL != punread) {
-		pnotify->notification_data.notification_flags |= NOTIFICATION_FLAG_MOST_UNREAD;
+		pnotify->notification_data.notification_flags |= NF_HAS_UNREAD;
 		pnotify->notification_data.punread_count = &pmemory->unread_count;
 		pmemory->unread_count = *punread;
 	}
@@ -208,7 +208,7 @@ static ec_error_t notify_response_specify_message_modified(NOTIFY_RESPONSE *pnot
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_OBJECTMODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_OBJECT_MODIFIED | NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -241,7 +241,7 @@ static ec_error_t notify_response_specify_message_mvcp(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		notification_flags | NOTIFICATION_FLAG_MOST_MESSAGE;
+		notification_flags | NF_BY_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
@@ -257,7 +257,7 @@ static ec_error_t notify_response_specify_folder_search_completed(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_SEARCHCOMPLETE;
+	pnotify->notification_data.notification_flags = NF_SEARCH_COMPLETE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	return ecSuccess;
@@ -267,7 +267,7 @@ static ec_error_t notify_response_specify_hierarchy_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_TABLE_MODIFIED;
+	pnotify->notification_data.notification_flags = NF_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_TABLE_CHANGED;
 	return ecSuccess;
@@ -278,7 +278,7 @@ static ec_error_t notify_response_specify_content_table_changed(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_TABLE_MODIFIED | NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_TABLE_CHANGED;
 	return ecSuccess;
@@ -289,9 +289,9 @@ static ec_error_t notify_response_specify_search_table_changed(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-					NOTIFICATION_FLAG_TABLE_MODIFIED |
-					NOTIFICATION_FLAG_MOST_SEARCH |
-					NOTIFICATION_FLAG_MOST_MESSAGE;
+					NF_TABLE_MODIFIED |
+					NF_BY_SEARCH |
+					NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_TABLE_CHANGED;
 	return ecSuccess;
@@ -302,7 +302,7 @@ static ec_error_t notify_response_specify_hierarchy_table_row_added(
 	uint64_t after_folder_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_TABLE_MODIFIED;
+	pnotify->notification_data.notification_flags = NF_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_ADDED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -321,7 +321,7 @@ static ec_error_t notify_response_specify_content_table_row_added(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_TABLE_MODIFIED | NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_ADDED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -349,9 +349,9 @@ static ec_error_t notify_response_specify_search_table_row_added(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-					NOTIFICATION_FLAG_TABLE_MODIFIED |
-					NOTIFICATION_FLAG_MOST_SEARCH |
-					NOTIFICATION_FLAG_MOST_MESSAGE;
+					NF_TABLE_MODIFIED |
+					NF_BY_SEARCH |
+					NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_ADDED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -375,7 +375,7 @@ static ec_error_t notify_response_specify_hierarchy_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_TABLE_MODIFIED;
+	pnotify->notification_data.notification_flags = NF_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_DELETED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -389,7 +389,7 @@ static ec_error_t notify_response_specify_content_table_row_deleted(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_TABLE_MODIFIED | NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_DELETED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -407,9 +407,9 @@ static ec_error_t notify_response_specify_search_table_row_deleted(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-					NOTIFICATION_FLAG_TABLE_MODIFIED |
-					NOTIFICATION_FLAG_MOST_SEARCH |
-					NOTIFICATION_FLAG_MOST_MESSAGE;
+					NF_TABLE_MODIFIED |
+					NF_BY_SEARCH |
+					NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_DELETED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -426,7 +426,7 @@ static ec_error_t notify_response_specify_hierarchy_table_row_modified(
 	uint64_t after_folder_id)
 {
 	auto pmemory = notify_to_ndm(pnotify);
-	pnotify->notification_data.notification_flags = NOTIFICATION_FLAG_TABLE_MODIFIED;
+	pnotify->notification_data.notification_flags = NF_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_MODIFIED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -445,7 +445,7 @@ static ec_error_t notify_response_specify_content_table_row_modified(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
+		NF_TABLE_MODIFIED | NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_MODIFIED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -473,9 +473,9 @@ static ec_error_t notify_response_specify_search_table_row_modified(
 {
 	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
-					NOTIFICATION_FLAG_TABLE_MODIFIED |
-					NOTIFICATION_FLAG_MOST_SEARCH |
-					NOTIFICATION_FLAG_MOST_MESSAGE;
+					NF_TABLE_MODIFIED |
+					NF_BY_SEARCH |
+					NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
 	pmemory->table_event = TABLE_EVENT_ROW_MODIFIED;
 	pnotify->notification_data.prow_folder_id = &pmemory->row_folder_id;
@@ -551,7 +551,7 @@ ec_error_t notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	case db_notify_type::folder_copied: {
 		auto x = static_cast<const DB_NOTIFY_FOLDER_MVCP *>(pdb_notify->pdata);
 		notification_flags = pdb_notify->type == db_notify_type::folder_moved ?
-		                     NOTIFICATION_FLAG_OBJECTMOVED : NOTIFICATION_FLAG_OBJECTCOPIED;
+		                     NF_OBJECT_MOVED : NF_OBJECT_COPIED;
 		return notify_response_specify_folder_mvcp(pnotify,
 		       notification_flags, x->folder_id, x->parent_id,
 		       x->old_folder_id, x->old_parent_id);
@@ -560,7 +560,7 @@ ec_error_t notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 	case db_notify_type::message_copied: {
 		auto x = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		notification_flags = pdb_notify->type == db_notify_type::message_moved ?
-		                     NOTIFICATION_FLAG_OBJECTMOVED : NOTIFICATION_FLAG_OBJECTCOPIED;
+		                     NF_OBJECT_MOVED : NF_OBJECT_COPIED;
 		return notify_response_specify_message_mvcp(pnotify,
 		       notification_flags, x->folder_id, x->message_id,
 		       x->old_folder_id, x->old_message_id);
@@ -637,8 +637,8 @@ void notify_response_content_table_row_event_to_change(
 	ptable_event = pnotify->notification_data.ptable_event;
 	memset(&pnotify->notification_data, 0, sizeof(NOTIFICATION_DATA));
 	pnotify->notification_data.notification_flags =
-					NOTIFICATION_FLAG_TABLE_MODIFIED |
-					NOTIFICATION_FLAG_MOST_MESSAGE;
+					NF_TABLE_MODIFIED |
+					NF_BY_MESSAGE;
 	pnotify->notification_data.ptable_event = ptable_event;
 	*ptable_event = TABLE_EVENT_TABLE_CHANGED;
 }
