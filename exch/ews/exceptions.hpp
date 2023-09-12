@@ -62,7 +62,9 @@ public:
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
+	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
+	ERR(DeleteDistinguishedFolder) ///< Attempt to delete distinguished folder (Wait. That's illegal.)
 	ERR(FolderExists) ///< Creating a folder with a name that already exists
 	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
 	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
@@ -264,6 +266,17 @@ E(3152, "failed to convert timestamp");
 E(3153, "failed to allocate cn");
 E(3154, "folder creation failed");
 E(3155, "a folder with that name already exists");
+E(3156, "cannot delete distinguished folder");
+E(3157, "insufficient permissions to delete folder");
+E(3158, "deleted items folder does not exist in public store");
+E(3159, "failed to get folder properties");
+E(3160, "missing parent folder properties");
+E(3161, "folder move failed");
+E(3162, "a folder with that name already exists in the target folder");
+E(3163, "folder move was aborted");
+E(3164, "could not find copied folder");
+E(3165, "failed to delete folder");
+E(3166, "failed to get parent folder");
 
 #undef E
 }

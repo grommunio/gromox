@@ -17,6 +17,7 @@ namespace gromox::EWS::Requests
 
 EWSFUNC(mCreateFolderRequest);
 EWSFUNC(mCreateItemRequest);
+EWSFUNC(mDeleteFolderRequest);
 EWSFUNC(mDeleteItemRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetFolderRequest);

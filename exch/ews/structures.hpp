@@ -184,6 +184,7 @@ struct sFolderSpec
 	sFolderSpec(const std::string&, uint64_t);
 
 	sFolderSpec& normalize();
+	bool isDistinguished() const;
 
 	std::optional<std::string> target;
 	uint64_t folderId=0;
@@ -2047,6 +2048,38 @@ struct mCreateItemResponseMessage : public mItemInfoResponseMessage
 struct mCreateItemResponse
 {
 	std::vector<mCreateItemResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:824
+ */
+struct mDeleteFolderRequest
+{
+	explicit mDeleteFolderRequest(const tinyxml2::XMLElement*);
+
+	Enum::DisposalType DeleteType; // Attribute
+
+	std::vector<tFolderId> FolderIds;
+};
+
+/**
+ * Messages.xsd:573
+ */
+struct mDeleteFolderResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "DeleteFolderResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:836
+ */
+struct mDeleteFolderResponse
+{
+	std::vector<mDeleteFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

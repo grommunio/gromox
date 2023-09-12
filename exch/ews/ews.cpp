@@ -146,6 +146,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 {
 	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
+	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},

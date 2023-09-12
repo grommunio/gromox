@@ -662,6 +662,45 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid) const
 }
 
 /**
+ * @brief      Move or copy a folder
+ *
+ * @param      dir         Store directory
+ * @param      folderId    Id of the folder to move/copy
+ * @param      newParent   Id of the target folder
+ * @param      accountId   Account ID of the executing user
+ * @param      copy        Whether to copy the folder (instead of moving)
+ *
+ * @return     ID of the new folder if copied
+ */
+uint64_t EWSContext::moveCopyFolder(const std::string& dir, uint64_t folderId, uint64_t newParent, uint32_t accountId,
+                                    bool copy) const
+{
+	static uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
+	static const PROPTAG_ARRAY tags{std::size(tagIds), tagIds};
+	TPROPVAL_ARRAY props;
+	if(!plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &tags, &props))
+		throw DispatchError(E3159);
+	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
+	const char* folderName = props.get<char>(PR_DISPLAY_NAME);
+	if(!parentFid || !folderName)
+		throw DispatchError(E3160);
+	BOOL exists, partial;
+	if(!plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false, auth_info.username, *parentFid, folderId,
+	                                 newParent, folderName, copy? TRUE : false, &exists, &partial))
+		throw EWSError::MoveCopyFailed(E3161);
+	if(exists)
+		throw EWSError::FolderExists(E3162);
+	if(partial)
+		throw EWSError::MoveCopyFailed(E3163);
+	if(!copy)
+		return folderId;
+	uint64_t newFolderId;
+	if(!plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
+		throw DispatchError(E3164);
+	return newFolderId;
+}
+
+/**
  * @brief    Normalize mailbox specification
  *
  * If EmailAddress is empty, nothing happens.

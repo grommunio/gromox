@@ -193,6 +193,61 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 }
 
 /**
+ * @brief      Process DeleteFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:DeleteFolderResponse");
+
+	static uint32_t parentFidTag = PidTagParentFolderId;
+	static const PROPTAG_ARRAY parentTags{1, &parentFidTag};
+
+	mDeleteFolderResponse data;
+	data.ResponseMessages.reserve(request.FolderIds.size());
+
+	for(const tFolderId& folderId : request.FolderIds) try {
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		if(folder.isDistinguished())
+			throw EWSError::DeleteDistinguishedFolder(E3156);
+		std::string dir = ctx.getDir(folder);
+		TPROPVAL_ARRAY parentProps = ctx.getFolderProps(folder, parentTags);
+		const uint64_t* parentFolderId = parentProps.get<uint64_t>(parentFidTag);
+		if(!parentFolderId)
+			throw DispatchError(E3166);
+		sFolderSpec parentFolder = folder;
+		parentFolder.folderId = *parentFolderId;
+
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
+		   !(ctx.permissions(ctx.auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3157);
+
+		if(request.DeleteType == Enum::MoveToDeletedItems) {
+			if(folder.location == folder.PUBLIC)
+				throw EWSError::MoveCopyFailed(E3158);
+			uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+			uint64_t newParentId = rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS);
+			ctx.moveCopyFolder(dir, folder.folderId, newParentId, accountId, false);
+		} else {
+			bool hard = request.DeleteType == Enum::HardDelete;
+			BOOL result;
+			if(!ctx.plugin.exmdb.delete_folder(dir.c_str(), CP_ACP, folder.folderId, hard? TRUE : false, &result) || !result)
+				throw EWSError::CannotDeleteObject(E3165);
+		}
+		data.ResponseMessages.emplace_back().success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process DeleteItem
  *
  * @param      request   Request data
