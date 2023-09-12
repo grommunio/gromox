@@ -82,6 +82,20 @@ static BOOL notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 	return TRUE;
 }
 
+static BOOL copy_tags(notify_response &n, const PROPTAG_ARRAY &tags)
+{
+	auto &m = *notify_to_ndm(&n);
+	m.proptags.count = tags.count;
+	if (m.proptags.count == 0)
+		return TRUE;
+	m.proptags.pproptag = me_alloc<uint32_t>(tags.count);
+	if (m.proptags.pproptag == nullptr)
+		return false;
+	memcpy(m.proptags.pproptag, tags.pproptag, sizeof(uint32_t) * tags.count);
+	n.notification_data.pproptags = &m.proptags;
+	return TRUE;
+}
+
 static BOOL notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
     uint64_t folder_id, uint64_t parent_id, const PROPTAG_ARRAY *pproptags)
 {
@@ -91,18 +105,7 @@ static BOOL notify_response_specify_folder_created(NOTIFY_RESPONSE *pnotify,
 	pmemory->folder_id = rop_util_nfid_to_eid(folder_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
-	pnotify->notification_data.pproptags = &pmemory->proptags;
-	pmemory->proptags.count = pproptags->count;
-	if (0 == pmemory->proptags.count) {
-		pmemory->proptags.pproptag = NULL;
-		return TRUE;
-	}
-	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (pmemory->proptags.pproptag == nullptr)
-		return FALSE;
-	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
-		sizeof(uint32_t)*pproptags->count);
-	return TRUE;
+	return copy_tags(*pnotify, *pproptags);
 }
 
 static BOOL notify_response_specify_message_created(NOTIFY_RESPONSE *pnotify,
@@ -115,18 +118,7 @@ static BOOL notify_response_specify_message_created(NOTIFY_RESPONSE *pnotify,
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
 	pmemory->message_id = rop_util_make_eid_ex(1, message_id);
-	pnotify->notification_data.pproptags = &pmemory->proptags;
-	pmemory->proptags.count = pproptags->count;
-	if (0 == pmemory->proptags.count) {
-		pmemory->proptags.pproptag = NULL;
-		return TRUE;
-	}
-	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (pmemory->proptags.pproptag == nullptr)
-		return FALSE;
-	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
-		sizeof(uint32_t)*pproptags->count);
-	return TRUE;
+	return copy_tags(*pnotify, *pproptags);
 }
 
 static BOOL notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
@@ -144,18 +136,7 @@ static BOOL notify_response_specify_link_created(NOTIFY_RESPONSE *pnotify,
 	pmemory->message_id = rop_util_make_eid_ex(1, message_id);
 	pnotify->notification_data.pparent_id = &pmemory->parent_id;
 	pmemory->parent_id = rop_util_make_eid_ex(1, parent_id);
-	pnotify->notification_data.pproptags = &pmemory->proptags;
-	pmemory->proptags.count = pproptags->count;
-	if (0 == pmemory->proptags.count) {
-		pmemory->proptags.pproptag = NULL;
-		return TRUE;
-	}
-	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (pmemory->proptags.pproptag == nullptr)
-		return FALSE;
-	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
-		sizeof(uint32_t)*pproptags->count);
-	return TRUE;
+	return copy_tags(*pnotify, *pproptags);
 }
 
 static BOOL notify_response_specify_folder_deleted(
@@ -219,18 +200,7 @@ static BOOL notify_response_specify_folder_modified(NOTIFY_RESPONSE *pnotify,
 		pnotify->notification_data.punread_count = &pmemory->unread_count;
 		pmemory->unread_count = *punread;
 	}
-	pnotify->notification_data.pproptags = &pmemory->proptags;
-	pmemory->proptags.count = pproptags->count;
-	if (0 == pmemory->proptags.count) {
-		pmemory->proptags.pproptag = NULL;
-		return TRUE;
-	}
-	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (pmemory->proptags.pproptag == nullptr)
-		return FALSE;
-	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
-		sizeof(uint32_t)*pproptags->count);
-	return TRUE;
+	return copy_tags(*pnotify, *pproptags);
 }
 	
 static BOOL notify_response_specify_message_modified(NOTIFY_RESPONSE *pnotify,
@@ -243,18 +213,7 @@ static BOOL notify_response_specify_message_modified(NOTIFY_RESPONSE *pnotify,
 	pmemory->folder_id = rop_util_make_eid_ex(1, folder_id);
 	pnotify->notification_data.pmessage_id = &pmemory->message_id;
 	pmemory->message_id = rop_util_make_eid_ex(1, message_id);
-	pnotify->notification_data.pproptags = &pmemory->proptags;
-	pmemory->proptags.count = pproptags->count;
-	if (0 == pmemory->proptags.count) {
-		pmemory->proptags.pproptag = NULL;
-		return TRUE;
-	}
-	pmemory->proptags.pproptag = me_alloc<uint32_t>(pproptags->count);
-	if (pmemory->proptags.pproptag == nullptr)
-		return FALSE;
-	memcpy(pmemory->proptags.pproptag, pproptags->pproptag,
-		sizeof(uint32_t)*pproptags->count);
-	return TRUE;
+	return copy_tags(*pnotify, *pproptags);
 }
 
 static BOOL notify_response_specify_folder_mvcp(
