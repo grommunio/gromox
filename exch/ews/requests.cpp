@@ -562,9 +562,9 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mMoveFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWSContext& ctx)
 {
-	response->SetName("m:MoveFolderResponse");
+	response->SetName(request.copy? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
 	ctx.experimental();
 
@@ -574,8 +574,10 @@ void process(mMoveFolderRequest&& request, XMLElement* response, const EWSContex
 
 	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
 
-	mMoveFolderResponse data;
-	data.ResponseMessages.reserve(request.FolderIds.size());
+	using MCResponse = std::variant<mCopyFolderResponse, mMoveFolderResponse>;
+	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<0>{});};
+	MCResponse data = mkData();
+	std::visit([&](auto& d){d.ResponseMessages.reserve(request.FolderIds.size());}, data);
 
 	sShape shape = sShape(tFolderResponseShape());
 
@@ -585,15 +587,16 @@ void process(mMoveFolderRequest&& request, XMLElement* response, const EWSContex
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		if(folder.location != dstFolder.location) // Attempt to move to a different store
 			throw EWSError::CrossMailboxMoveCopy(E3168);
-		ctx.moveCopyFolder(dir, folder, dstFolder.folderId, accountId, false);
-		mMoveFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
+		folder.folderId = ctx.moveCopyFolder(dir, folder, dstFolder.folderId, accountId, request.copy);
+		auto& msg = std::visit([&](auto& d) -> mFolderInfoResponseMessage&
+			                    {return static_cast<mFolderInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
 		msg.Folders.emplace_back(ctx.loadFolder(folder, shape));
 		msg.success();
 	} catch(const EWSError& err) {
-		data.ResponseMessages.emplace_back(err);
+		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
 	}
 
-	data.serialize(response);
+	std::visit([&](auto& d){d.serialize(response);}, data);
 }
 
 /**

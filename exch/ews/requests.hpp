@@ -27,7 +27,7 @@ EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
-EWSFUNC(mMoveFolderRequest);
+void process(const Structures::mBaseMoveCopyFolder&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);

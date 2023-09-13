@@ -1971,10 +1971,12 @@ struct mResponseMessageType : public NS_EWS_Messages
  */
 struct mBaseMoveCopyFolder
 {
-	explicit mBaseMoveCopyFolder(const tinyxml2::XMLElement*);
+	mBaseMoveCopyFolder(const tinyxml2::XMLElement*, bool);
 
 	tTargetFolderIdType ToFolderId;
 	std::vector<tFolderId> FolderIds;
+
+	bool copy;
 };
 
 /**
@@ -1985,6 +1987,30 @@ struct mFolderInfoResponseMessage : public mResponseMessageType
 	using mResponseMessageType::mResponseMessageType;
 
 	std::vector<sFolder> Folders;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:879
+ */
+struct mCopyFolderRequest : public mBaseMoveCopyFolder
+{
+	explicit mCopyFolderRequest(const tinyxml2::XMLElement*);
+};
+
+/**
+ * Messages.xsd:580
+ */
+struct mCopyFolderResponseMessage : public mFolderInfoResponseMessage
+{using mFolderInfoResponseMessage::mFolderInfoResponseMessage;};
+
+/**
+ * Messages.xsd:919
+ */
+struct mCopyFolderResponse
+{
+	std::vector<mCopyFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -2352,7 +2378,9 @@ struct mGetUserOofSettingsResponse
  * Messages.xsd:873
  */
 struct mMoveFolderRequest : public mBaseMoveCopyFolder
-{using mBaseMoveCopyFolder::mBaseMoveCopyFolder;};
+{
+	explicit mMoveFolderRequest(const tinyxml2::XMLElement*);
+};
 
 /**
  * Messages.xsd:579

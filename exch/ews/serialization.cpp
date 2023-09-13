@@ -916,10 +916,18 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-mBaseMoveCopyFolder::mBaseMoveCopyFolder(const tinyxml2::XMLElement* xml) :
+mBaseMoveCopyFolder::mBaseMoveCopyFolder(const tinyxml2::XMLElement* xml, bool c) :
 	XMLINIT(ToFolderId),
-	XMLINIT(FolderIds)
+	XMLINIT(FolderIds),
+	copy(c)
 {}
+
+mCopyFolderRequest::mCopyFolderRequest(const tinyxml2::XMLElement* xml) :
+	mBaseMoveCopyFolder(xml, true)
+{}
+
+void mCopyFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
 
 mCreateFolderRequest::mCreateFolderRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(ParentFolderId),
@@ -1052,6 +1060,10 @@ void mItemInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Items);
 }
+
+mMoveFolderRequest::mMoveFolderRequest(const tinyxml2::XMLElement* xml) :
+	mBaseMoveCopyFolder(xml, false)
+{}
 
 void mMoveFolderResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
