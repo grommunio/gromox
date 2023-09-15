@@ -2289,7 +2289,7 @@ tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tTargetFolderIdType::tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&& id) :
+tTargetFolderIdType::tTargetFolderIdType(sFolderId&& id) :
     folderId(std::move(id))
 {}
 

@@ -134,6 +134,8 @@ private:
 	void init(const void*, uint64_t);
 };
 
+using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
+
 /**
  * @brief     Message entry ID extension
  *
@@ -1876,10 +1878,10 @@ struct tSuggestionsViewOptions
  */
 struct tTargetFolderIdType
 {
-	explicit tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&&);
+	explicit tTargetFolderIdType(sFolderId&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
-	std::variant<tFolderId, tDistinguishedFolderId> folderId;
+	sFolderId folderId;
 };
 
 /**
@@ -2197,7 +2199,7 @@ struct mGetFolderRequest
 	mGetFolderRequest(const tinyxml2::XMLElement*);
 
 	tFolderResponseShape FolderShape;
-	std::vector<std::variant<tFolderId, tDistinguishedFolderId>> FolderIds;
+	std::vector<sFolderId> FolderIds;
 };
 
 struct mGetFolderResponseMessage : mResponseMessageType
@@ -2544,7 +2546,7 @@ struct mResolveNamesRequest
 {
 	explicit mResolveNamesRequest(const tinyxml2::XMLElement*);
 
-	std::optional<std::vector<std::variant<tFolderId, tDistinguishedFolderId>>> ParentFolderIds;
+	std::optional<std::vector<sFolderId>> ParentFolderIds;
 	std::string UnresolvedEntry;
 
 	std::optional<bool> ReturnFullContactData; //Attribute

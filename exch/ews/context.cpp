@@ -851,7 +851,7 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
  *
  * @return     Folder specification
  */
-sFolderSpec EWSContext::resolveFolder(const std::variant<tFolderId, tDistinguishedFolderId>& fId) const
+sFolderSpec EWSContext::resolveFolder(const sFolderId& fId) const
 {return std::visit([this](const auto& f){return resolveFolder(f);}, fId);}
 
 /**
