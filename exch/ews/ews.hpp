@@ -12,6 +12,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/mapi_types.hpp>
+#include <include/gromox/pcl.hpp>
 
 #include "ObjectCache.hpp"
 #include "exceptions.hpp"
@@ -19,6 +20,14 @@
 
 namespace gromox::EWS::detail
 {
+/**
+ * @brief     Generic deleter struct
+ *
+ * Provides explicit deleters for classes without destructor.
+ */
+struct Cleaner
+{inline void operator()(BINARY*);};
+
 struct AttachmentInstanceKey {
 	std::string dir;
 	uint64_t mid;
@@ -76,6 +85,7 @@ struct tTasksFolderType;
 
 using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
 using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
+using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
 using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
 }
 
@@ -177,31 +187,37 @@ public:
 		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
 	{}
 
+	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;
 	std::string get_maildir(const std::string&) const;
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
-	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
-	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
+	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
+	template<typename T> const T* getFolderProp(const std::string&, uint64_t, uint32_t) const;
+	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
-	Structures::sFolder loadFolder(const Structures::sFolderSpec&, Structures::sShape&) const;
+	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
+	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
+	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
 	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
-	Structures::sFolderSpec resolveFolder(const std::variant<Structures::tFolderId, Structures::tDistinguishedFolderId>&) const;
+	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sMessageEntryId&) const;
 	void send(const std::string&, const MESSAGE_CONTENT&) const;
+	BINARY serialize(const XID&) const;
 	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
+	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&) const;
 	std::string username_to_essdn(const std::string&) const;
 
@@ -220,6 +236,7 @@ public:
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
 
 private:
+	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
 
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
@@ -233,6 +250,21 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };
+
+/**
+ * @brief      Get single folder property
+ *
+ * @param      dir   Store directory
+ * @param      mid   Folder ID
+ * @param      tag   Tag ID
+ *
+ * @tparam     T     Type to return
+ *
+ * @return     Pointer to property or nullptr if not found.
+ */
+template<typename T>
+const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+{return static_cast<const T*>(getFolderProp(dir, mid, tag));}
 
 /**
  * @brief      Get single item property

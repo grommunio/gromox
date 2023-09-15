@@ -550,6 +550,14 @@ sFolderSpec::sFolderSpec(const std::string &t, uint64_t fid) :
 {}
 
 /**
+ * @brief      Check whether the folder is a distinguished (fixed ID) folder
+ *
+ * @return     true if the folder is distinguished, false otherwise
+ */
+bool sFolderSpec::isDistinguished() const
+{return rop_util_get_gc_value(folderId) < (location == PUBLIC? PUBLIC_FID_CUSTOM : PRIVATE_FID_CUSTOM);}
+
+/**
  * @brief     Trim target specification according to location
  */
 sFolderSpec& sFolderSpec::normalize()
@@ -586,6 +594,23 @@ sShape::sShape(const tFolderResponseShape& shape)
  */
 sShape::sShape(const tItemResponseShape& shape)
 {shape.tags(*this);}
+
+/**
+ * @brief      Initialize shape from changes list
+ *
+ * @param      changes  List of folder changes
+ */
+sShape::sShape(const tFolderChange& changes)
+{
+	for(const auto& change : changes.Updates) {
+		if(std::holds_alternative<tSetFolderField>(change))
+			std::get<tSetFolderField>(change).fieldURI.tags(*this);
+		else if(std::holds_alternative<tDeleteFolderField>(change))
+			std::get<tDeleteFolderField>(change).fieldURI.tags(*this, false);
+		else
+			mlog(LV_WARN, "[ews] AppendToFolderField not implemented - ignoring");
+	}
+}
 
 /**
  * @brief      Initialize shape from changes list
@@ -1239,6 +1264,17 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Alphabetically sorted array of valid folder-related XML tags
+ */
+decltype(tChangeDescription::folderTypes) tChangeDescription::folderTypes = {
+	"CalendarFolder",
+	"ContactsFolder",
+	"Folder",
+	"SearchFolder",
+	"TasksFolder"
+};
+
+/**
  * Alphabetically sorted array of valid item-related XML tags
  */
 decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
@@ -1264,6 +1300,7 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Categories", {tChangeDescription::convCategories}},
+	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
@@ -2258,6 +2295,29 @@ gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) c
  *
  * @param      shape  Shape to write property to
  */
+void tSetFolderField::put(sShape& shape) const
+{
+	const XMLElement* child = folder->FirstChildElement();
+	if(!child)
+		throw EWSError::InvalidExtendedPropertyValue(E3178);
+	if(!strcmp(child->Name(), "ExtendedProperty")) {
+		tExtendedProperty prop(child);
+		if(prop.ExtendedFieldURI.tag())
+			shape.write(prop.propval);
+		else
+			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+	}
+	else
+		convProp(folder->Name(), child->Name(), child, shape);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Write property to shape
+ *
+ * @param      shape  Shape to write property to
+ */
 void tSetItemField::put(sShape& shape) const
 {
 	const XMLElement* child = item->FirstChildElement();
@@ -2281,7 +2341,7 @@ tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tTargetFolderIdType::tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&& id) :
+tTargetFolderIdType::tTargetFolderIdType(sFolderId&& id) :
     folderId(std::move(id))
 {}
 

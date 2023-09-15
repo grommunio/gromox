@@ -144,7 +144,10 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
  */
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
+	{"CopyFolder", process<Structures::mCopyFolderRequest>},
+	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
+	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
@@ -153,11 +156,13 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
+	{"MoveFolder", process<Structures::mMoveFolderRequest>},
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
 	{"SendItem", process<Structures::mSendItemRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
+	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
 	{"UpdateItem", process<Structures::mUpdateItemRequest>},
 };
 

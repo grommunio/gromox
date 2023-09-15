@@ -265,6 +265,14 @@ void tAttachment::serialize(XMLElement* xml) const
 	XMLDUMPT(IsInline);
 }
 
+tBaseFolderType::tBaseFolderType(const XMLElement* xml) :
+	XMLINIT(FolderClass),
+	XMLINIT(DisplayName)
+{
+	for(const tinyxml2::XMLElement* xp = xml->FirstChildElement("ExtendedProperty"); xp; xp = xp->NextSiblingElement("ExtendedProperty"))
+		ExtendedProperty.emplace_back(xp);
+}
+
 void tBaseFolderType::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(FolderId);
@@ -598,6 +606,11 @@ tFieldURI::tFieldURI(const XMLElement* xml) :
 void tFlagType::serialize(XMLElement* xml) const
 {XMLDUMPT(FlagStatus);}
 
+tFolderChange::tFolderChange(const tinyxml2::XMLElement* xml) :
+	VXMLINIT(folderId),
+	XMLINIT(Updates)
+{}
+
 tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
 	XMLINIT(BaseShape),
 	XMLINIT(AdditionalProperties)
@@ -814,6 +827,18 @@ tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
 
+tSetFolderField::tSetFolderField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
+{
+	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
+		if(std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
+		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+			folder = child;
+			break;
+		}
+	if(!folder)
+		throw InputError(E3177);
+}
+
 tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
 {
 	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
@@ -908,6 +933,27 @@ void tUserOofSettings::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+mBaseMoveCopyFolder::mBaseMoveCopyFolder(const tinyxml2::XMLElement* xml, bool c) :
+	XMLINIT(ToFolderId),
+	XMLINIT(FolderIds),
+	copy(c)
+{}
+
+mCopyFolderRequest::mCopyFolderRequest(const tinyxml2::XMLElement* xml) :
+	mBaseMoveCopyFolder(xml, true)
+{}
+
+void mCopyFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mCreateFolderRequest::mCreateFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(ParentFolderId),
+	XMLINIT(Folders)
+{}
+
+void mCreateFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 mCreateItemRequest::mCreateItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINITA(MessageDisposition),
 	XMLINITA(SendMeetingInvitations),
@@ -918,6 +964,14 @@ mCreateItemRequest::mCreateItemRequest(const tinyxml2::XMLElement* xml) :
 void mCreateItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
+mDeleteFolderRequest::mDeleteFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINITA(DeleteType),
+	XMLINIT(FolderIds)
+{}
+
+void mDeleteFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINITA(DeleteType),
 	XMLINIT(ItemIds)
@@ -925,6 +979,12 @@ mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement* xml) :
 
 void mDeleteItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
+
+void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Folders);
+}
 
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)
@@ -1017,6 +1077,13 @@ void mItemInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Items);
 }
+
+mMoveFolderRequest::mMoveFolderRequest(const tinyxml2::XMLElement* xml) :
+	mBaseMoveCopyFolder(xml, false)
+{}
+
+void mMoveFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
 
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -1124,6 +1191,13 @@ void mResolveNamesResponseMessage::serialize(XMLElement* xml) const
 }
 
 void mResolveNamesResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mUpdateFolderRequest::mUpdateFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(FolderChanges)
+{}
+
+void mUpdateFolderResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :

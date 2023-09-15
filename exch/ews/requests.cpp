@@ -106,6 +106,38 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 //Request implementations
 
 /**
+ * @brief      Process CreateFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mCreateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:CreateFolderResponse");
+
+	mCreateFolderResponse data;
+
+	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.folderId);
+	std::string dir = ctx.getDir(parent);
+	bool hasAccess = ctx.permissions(ctx.auth_info.username, parent, dir.c_str());
+
+	for(const sFolder& folder : request.Folders) try {
+		if(!hasAccess)
+			throw EWSError::AccessDenied("cannot write to target folder");
+		mCreateFolderResponseMessage msg;
+		msg.Folders.emplace_back(ctx.create(dir, parent, folder));
+		data.ResponseMessages.emplace_back(std::move(msg)).success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process CreateItem
  *
  * @param      request   Request data
@@ -152,6 +184,57 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 			ctx.send(dir, content);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process DeleteFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:DeleteFolderResponse");
+
+	static uint32_t parentFidTag = PidTagParentFolderId;
+	static const PROPTAG_ARRAY parentTags{1, &parentFidTag};
+
+	mDeleteFolderResponse data;
+	data.ResponseMessages.reserve(request.FolderIds.size());
+
+	for(const tFolderId& folderId : request.FolderIds) try {
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		if(folder.isDistinguished())
+			throw EWSError::DeleteDistinguishedFolder(E3156);
+		std::string dir = ctx.getDir(folder);
+		TPROPVAL_ARRAY parentProps = ctx.getFolderProps(dir, folder.folderId, parentTags);
+		const uint64_t* parentFolderId = parentProps.get<uint64_t>(parentFidTag);
+		if(!parentFolderId)
+			throw DispatchError(E3166);
+		sFolderSpec parentFolder = folder;
+		parentFolder.folderId = *parentFolderId;
+
+		if(request.DeleteType == Enum::MoveToDeletedItems) {
+			if(folder.location == folder.PUBLIC)
+				throw EWSError::MoveCopyFailed(E3158);
+			uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+			uint64_t newParentId = rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS);
+			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
+		} else {
+			bool hard = request.DeleteType == Enum::HardDelete;
+			BOOL result;
+			if(!ctx.plugin.exmdb.delete_folder(dir.c_str(), CP_ACP, folder.folderId, hard? TRUE : false, &result) || !result)
+				throw EWSError::CannotDeleteObject(E3165);
+		}
+		data.ResponseMessages.emplace_back().success();
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
@@ -270,20 +353,18 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 	data.ResponseMessages.reserve(request.FolderIds.size());
 	for(auto& folderId : request.FolderIds) try
 	{
-		sFolderSpec folderSpec;
-		try {
-			folderSpec = ctx.resolveFolder(folderId);
-		} catch (DeserializationError& err) {
-			throw EWSError::FolderNotFound(err.what());
-		}
-		if(!folderSpec.target)
-			folderSpec.target = ctx.auth_info.username;
-		folderSpec.normalize();
-		if(!(ctx.permissions(ctx.auth_info.username, folderSpec) & frightsVisible))
+		sFolderSpec folder;
+		folder = ctx.resolveFolder(folderId);
+		if(!folder.target)
+			folder.target = ctx.auth_info.username;
+		folder.normalize();
+		if(!(ctx.permissions(ctx.auth_info.username, folder) & frightsVisible))
 			throw EWSError::AccessDenied(E3136);
-		mGetFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
-		msg.Folders.emplace_back(ctx.loadFolder(folderSpec, shape));
+		std::string dir = ctx.getDir(folder);
+		mGetFolderResponseMessage msg;
+		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
@@ -473,6 +554,50 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 }
 
 /**
+ * @brief      Process MoveFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName(request.copy? "m:CopyFolderResponse" : "m:MoveFolderResponse");
+
+	ctx.experimental();
+
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	std::string dir = ctx.getDir(dstFolder);
+	uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+
+	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
+
+	using MCResponse = std::variant<mCopyFolderResponse, mMoveFolderResponse>;
+	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<0>{});};
+	MCResponse data = mkData();
+	std::visit([&](auto& d){d.ResponseMessages.reserve(request.FolderIds.size());}, data);
+
+	sShape shape = sShape(tFolderResponseShape());
+
+	for(const tFolderId& folderId : request.FolderIds) try {
+		if(!dstAccess)
+			throw EWSError::AccessDenied(E3167);
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		if(folder.location != dstFolder.location) // Attempt to move to a different store
+			throw EWSError::CrossMailboxMoveCopy(E3168);
+		folder.folderId = ctx.moveCopyFolder(dir, folder, dstFolder.folderId, accountId, request.copy);
+		auto& msg = std::visit([&](auto& d) -> mFolderInfoResponseMessage&
+			                    {return static_cast<mFolderInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
+		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
+		msg.success();
+	} catch(const EWSError& err) {
+		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
+	}
+
+	std::visit([&](auto& d){d.serialize(response);}, data);
+}
+
+/**
  * @brief      Process SetUserOofSettingsRequest
  *
  * Provides functionality of SetUserOofSettingsRequest
@@ -588,7 +713,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		subfolder.folderId = *folderId;
 		if(!(ctx.permissions(ctx.auth_info.username, subfolder, dir.c_str()) & frightsVisible))
 			continue;
-		auto folderData = ctx.loadFolder(subfolder, shape);
+		auto folderData = ctx.loadFolder(dir, subfolder.folderId, shape);
 		if(syncState.given.hint(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
@@ -597,7 +722,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 	for(uint64_t* fid = deleted_fids.pids; fid < deleted_fids.pids+deleted_fids.count; ++fid)
 	{
-		TAGGED_PROPVAL entryID = ctx.getFolderEntryId(sFolderSpec(*folder.target, *fid));
+		TAGGED_PROPVAL entryID = ctx.getFolderEntryId(dir, *fid);
 		msgChanges.emplace_back(tSyncFolderHierarchyDelete(entryID));
 	}
 
@@ -854,6 +979,52 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		data.Responses.emplace_back().success();
 	} catch(const EWSError& err) {
 		data.Responses.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process UpdateFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:UpdateFolderResponse");
+
+	mUpdateFolderResponse data;
+	data.ResponseMessages.reserve(request.FolderChanges.size());
+	sShape idOnly((tFolderResponseShape()));
+
+	for(const auto& change : request.FolderChanges) try {
+		sFolderSpec folder = ctx.resolveFolder(change.folderId);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) | frightsEditAny))
+			throw EWSError::AccessDenied(E3174);
+		sShape shape(change);
+		ctx.getNamedTags(dir, shape, true);
+		for(const auto& update : change.Updates) {
+			if(holds_alternative<tSetFolderField>(update))
+				std::get<tSetFolderField>(update).put(shape);
+		}
+		TPROPVAL_ARRAY props = shape.write();
+		PROPTAG_ARRAY tagsRm = shape.remove();
+		PROBLEM_ARRAY problems;
+		if(!ctx.plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP,folder.folderId, &props, &problems))
+			throw EWSError::FolderSave(E3175);
+		if(!ctx.plugin.exmdb.remove_folder_properties(dir.c_str(), folder.folderId, &tagsRm))
+			throw EWSError::FolderSave(E3176);
+		ctx.updated(dir, folder);
+		mUpdateFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
+		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, idOnly));
+		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
 
 	data.serialize(response);

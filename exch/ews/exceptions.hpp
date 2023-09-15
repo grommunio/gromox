@@ -62,9 +62,14 @@ public:
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
+	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
+	ERR(CrossMailboxMoveCopy) ///< Attempted move or copy operation across different stores
+	ERR(DeleteDistinguishedFolder) ///< Attempt to delete distinguished folder (Wait. That's illegal.)
+	ERR(FolderExists) ///< Creating a folder with a name that already exists
 	ERR(FolderNotFound) ///< Folder ID could not be converted or resolved
 	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(FolderSave) ///< Folder creation or updated
 	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
 	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
 	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
@@ -192,9 +197,9 @@ E(3082, "bad property for message entry id");
 E(3083, "failed to get attachment properties");
 E(3084, "failed to allocate change number");
 E(3085, "failed to serialize address book entry id");
-E(3086, "failed to serialize change key");
+//3086 removed
 E(3087, "failed to load predecessor change list");
-E(3088, "failed to generate predecessor change list");
+//3088 removed
 E(3089, "failed to update message");
 inline std::string E3090(const std::string_view& username) {return fmt::format("E-3090: invalid username '{}'", username);}
 inline std::string E3091(const std::string_view& username) {return fmt::format("E-3091: failed to get user info for '{}'", username);}
@@ -259,6 +264,32 @@ E(3149, "failed to deserialize item entry id");
 E(3150, "missing date string");
 E(3151, "failed to parse date");
 E(3152, "failed to convert timestamp");
+E(3153, "failed to allocate cn");
+E(3154, "folder creation failed");
+E(3155, "a folder with that name already exists");
+E(3156, "cannot delete distinguished folder");
+E(3157, "insufficient permissions to delete folder");
+E(3158, "deleted items folder does not exist in public store");
+E(3159, "failed to get folder properties");
+E(3160, "missing parent folder properties");
+E(3161, "folder move failed");
+E(3162, "a folder with that name already exists in the target folder");
+E(3163, "folder move was aborted");
+E(3164, "could not find copied folder");
+E(3165, "failed to delete folder");
+E(3166, "failed to get parent folder");
+E(3167, "cannot write to destination folder");
+E(3168, "cannot move folder across stores");
+E(3169, "failed to get folder property");
+E(3170, "cannot deserialize predecessor change list");
+E(3171, "failed to allocate change number");
+E(3172, "missing folder target");
+E(3173, "failed to update folder change information");
+E(3174, "cannot modify target folder");
+E(3175, "failed to set folder properties");
+E(3176, "failed to remove folder properties");
+E(3177, "no valid folder object found");
+E(3178, "missing child node in SetFolderField object");
 
 #undef E
 }

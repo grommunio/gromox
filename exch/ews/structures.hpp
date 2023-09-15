@@ -32,11 +32,13 @@ namespace gromox::EWS::Exceptions
 namespace gromox::EWS::Structures
 {
 
+struct tAppendToFolderField;
 struct tAppendToItemField;
 struct tCalendarFolderType;
 struct tCalendarItem;
 struct tContact;
 struct tContactsFolderType;
+struct tDeleteFolderField;
 struct tDeleteItemField;
 struct tDistinguishedFolderId;
 struct tExtendedFieldURI;
@@ -44,6 +46,7 @@ struct tExtendedProperty;
 struct tFieldURI;
 struct tFileAttachment;
 struct tFindResponsePagingAttributes;
+struct tFolderChange;
 struct tFolderId;
 struct tFolderResponseShape;
 struct tFolderType;
@@ -57,6 +60,7 @@ struct tMessage;
 struct tReferenceAttachment;
 struct tSearchFolderType;
 struct tSerializableTimeZone;
+struct tSetFolderField;
 struct tSetItemField;
 class sShape;
 struct tSyncFolderHierarchyCreate;
@@ -134,6 +138,8 @@ private:
 	void init(const void*, uint64_t);
 };
 
+using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
+
 /**
  * @brief     Message entry ID extension
  *
@@ -184,6 +190,7 @@ struct sFolderSpec
 	sFolderSpec(const std::string&, uint64_t);
 
 	sFolderSpec& normalize();
+	bool isDistinguished() const;
 
 	std::optional<std::string> target;
 	uint64_t folderId=0;
@@ -204,6 +211,8 @@ private:
  * Joint folder type
  */
 using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
+
+using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderField, tDeleteFolderField>;
 
 	// TODO: missing item types
 	/*
@@ -286,9 +295,10 @@ public:
 
 	sShape() = default;
 	explicit sShape(const TPROPVAL_ARRAY&);
+	explicit sShape(const tFolderChange&);
 	explicit sShape(const tFolderResponseShape&);
-	explicit sShape(const tItemResponseShape&);
 	explicit sShape(const tItemChange&);
+	explicit sShape(const tItemResponseShape&);
 
 	sShape(const sShape&) = delete;
 	sShape(sShape&&) = delete;
@@ -663,6 +673,7 @@ private:
 struct tBaseFolderType : public NS_EWS_Types
 {
 	explicit tBaseFolderType(const sShape&);
+	explicit tBaseFolderType(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -791,6 +802,7 @@ struct tFolderType : public tBaseFolderType
 {
 	static constexpr char NAME[] = "Folder";
 
+	using tBaseFolderType::tBaseFolderType; // Construct from XML
 	explicit tFolderType(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
@@ -843,7 +855,20 @@ struct tChangeDescription
 	static void convCategories(const tinyxml2::XMLElement*, sShape&);
 
 	static std::array<const char*, 15> itemTypes;
+	static std::array<const char*, 5> folderTypes;
 	static std::unordered_multimap<std::string, Field> fields;
+};
+
+/**
+ * Types.xsd:1486
+ *
+ * TODO: implement functionality
+ */
+struct tAppendToFolderField : public tChangeDescription
+{
+	static constexpr char NAME[] = "AppendToFolderField";
+
+	using tChangeDescription::tChangeDescription;
 };
 
 /**
@@ -883,6 +908,16 @@ struct tContactsFolderType : public tBaseFolderType
 	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
 	//<xs:element name="SourceId" type="xs:string" minOccurs="0"/>
 	//<xs:element name="AccountName" type="xs:string" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:1454
+ */
+struct tDeleteFolderField : public tChangeDescription
+{
+	static constexpr char NAME[] = "DeleteFolderField";
+
+	using tChangeDescription::tChangeDescription;
 };
 
 /**
@@ -1510,6 +1545,20 @@ struct tSerializableTimeZoneTime
 };
 
 /**
+ * Types.xsd:1433
+ */
+struct tSetFolderField : public tChangeDescription
+{
+	static constexpr char NAME[] = "SetFolderField";
+
+	explicit tSetFolderField(const tinyxml2::XMLElement*);
+
+	void put(sShape&) const;
+
+	const tinyxml2::XMLElement* folder = nullptr;
+};
+
+/**
  * Types.xsd:1409
  */
 struct tSetItemField : public tChangeDescription
@@ -1697,6 +1746,7 @@ struct tSyncFolderItemsReadFlag : public NS_EWS_Types
  */
 struct tFolderResponseShape
 {
+	tFolderResponseShape() = default;
 	explicit tFolderResponseShape(const tinyxml2::XMLElement*);
 
 	void tags(sShape&) const;
@@ -1766,6 +1816,16 @@ struct tDistinguishedFolderId
 	std::optional<tEmailAddressType> Mailbox;
 	std::optional<std::string> ChangeKey; //Attribute
 	Enum::DistinguishedFolderIdNameType Id; //Attribute
+};
+
+struct tFolderChange
+{
+	static constexpr char NAME[] = "FolderChange";
+
+	explicit tFolderChange(const tinyxml2::XMLElement*);
+
+	sFolderId folderId;
+	std::vector<sFolderChangeDescription> Updates;
 };
 
 /**
@@ -1872,10 +1932,10 @@ struct tSuggestionsViewOptions
  */
 struct tTargetFolderIdType
 {
-	explicit tTargetFolderIdType(std::variant<tFolderId, tDistinguishedFolderId>&&);
+	explicit tTargetFolderIdType(sFolderId&&);
 	explicit tTargetFolderIdType(const tinyxml2::XMLElement*);
 
-	std::variant<tFolderId, tDistinguishedFolderId> folderId;
+	sFolderId folderId;
 };
 
 /**
@@ -1963,6 +2023,86 @@ struct mResponseMessageType : public NS_EWS_Messages
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Messages.xsd:861
+ */
+struct mBaseMoveCopyFolder
+{
+	mBaseMoveCopyFolder(const tinyxml2::XMLElement*, bool);
+
+	tTargetFolderIdType ToFolderId;
+	std::vector<tFolderId> FolderIds;
+
+	bool copy;
+};
+
+/**
+ * Messages.xsd:799
+ */
+struct mFolderInfoResponseMessage : public mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	std::vector<sFolder> Folders;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:879
+ */
+struct mCopyFolderRequest : public mBaseMoveCopyFolder
+{
+	explicit mCopyFolderRequest(const tinyxml2::XMLElement*);
+};
+
+/**
+ * Messages.xsd:580
+ */
+struct mCopyFolderResponseMessage : public mFolderInfoResponseMessage
+{using mFolderInfoResponseMessage::mFolderInfoResponseMessage;};
+
+/**
+ * Messages.xsd:919
+ */
+struct mCopyFolderResponse
+{
+	std::vector<mCopyFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:768
+ */
+struct mCreateFolderRequest
+{
+	explicit mCreateFolderRequest(const tinyxml2::XMLElement*);
+
+	tTargetFolderIdType ParentFolderId;
+	std::vector<sFolder> Folders;
+};
+
+/**
+ * Messages.xsd:575
+ */
+struct mCreateFolderResponseMessage : public mFolderInfoResponseMessage
+{
+	static constexpr char NAME[] = "CreateFolderResponseMessage";
+
+	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:896
+ */
+struct mCreateFolderResponse
+{
+	std::vector<mCreateFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:990
  */
 struct mItemInfoResponseMessage : public mResponseMessageType
@@ -2001,6 +2141,38 @@ struct mCreateItemResponseMessage : public mItemInfoResponseMessage
 struct mCreateItemResponse
 {
 	std::vector<mCreateItemResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:824
+ */
+struct mDeleteFolderRequest
+{
+	explicit mDeleteFolderRequest(const tinyxml2::XMLElement*);
+
+	Enum::DisposalType DeleteType; // Attribute
+
+	std::vector<tFolderId> FolderIds;
+};
+
+/**
+ * Messages.xsd:573
+ */
+struct mDeleteFolderResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "DeleteFolderResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:836
+ */
+struct mDeleteFolderResponse
+{
+	std::vector<mDeleteFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -2081,7 +2253,7 @@ struct mGetFolderRequest
 	mGetFolderRequest(const tinyxml2::XMLElement*);
 
 	tFolderResponseShape FolderShape;
-	std::vector<std::variant<tFolderId, tDistinguishedFolderId>> FolderIds;
+	std::vector<sFolderId> FolderIds;
 };
 
 struct mGetFolderResponseMessage : mResponseMessageType
@@ -2259,6 +2431,34 @@ struct mGetUserOofSettingsResponse
 };
 
 /**
+ * Messages.xsd:873
+ */
+struct mMoveFolderRequest : public mBaseMoveCopyFolder
+{
+	explicit mMoveFolderRequest(const tinyxml2::XMLElement*);
+};
+
+/**
+ * Messages.xsd:579
+ */
+struct mMoveFolderResponseMessage : public mFolderInfoResponseMessage
+{
+	static constexpr char NAME[] = "MoveFolderResponseMessage";
+
+	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:914
+ */
+struct mMoveFolderResponse
+{
+	std::vector<mMoveFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * @brief      Out-of-office settings set request
  *
  * Messages.xsd:2239
@@ -2400,7 +2600,7 @@ struct mResolveNamesRequest
 {
 	explicit mResolveNamesRequest(const tinyxml2::XMLElement*);
 
-	std::optional<std::vector<std::variant<tFolderId, tDistinguishedFolderId>>> ParentFolderIds;
+	std::optional<std::vector<sFolderId>> ParentFolderIds;
 	std::string UnresolvedEntry;
 
 	std::optional<bool> ReturnFullContactData; //Attribute
@@ -2463,6 +2663,35 @@ struct mSendItemResponse
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+/**
+ * Messages.xsd:886
+ */
+struct mUpdateFolderRequest
+{
+	explicit mUpdateFolderRequest(const tinyxml2::XMLElement*);
+
+	std::vector<tFolderChange> FolderChanges;
+};
+
+/**
+ * Messages.xsd:578
+ */
+struct mUpdateFolderResponseMessage : public mFolderInfoResponseMessage
+{
+	static constexpr char NAME[] = "UpdateFolderResponseMessage";
+
+	using mFolderInfoResponseMessage::mFolderInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:908
+ */
+struct mUpdateFolderResponse
+{
+	std::vector<mUpdateFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
 
 /**
  * Messages.xsd:973
