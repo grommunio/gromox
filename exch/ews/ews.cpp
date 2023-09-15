@@ -162,6 +162,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
+	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
 	{"UpdateItem", process<Structures::mUpdateItemRequest>},
 };
 

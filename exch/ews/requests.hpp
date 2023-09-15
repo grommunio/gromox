@@ -33,6 +33,7 @@ EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);
+EWSFUNC(mUpdateFolderRequest);
 EWSFUNC(mUpdateItemRequest);
 
 #undef EWSFUNC

@@ -606,6 +606,11 @@ tFieldURI::tFieldURI(const XMLElement* xml) :
 void tFlagType::serialize(XMLElement* xml) const
 {XMLDUMPT(FlagStatus);}
 
+tFolderChange::tFolderChange(const tinyxml2::XMLElement* xml) :
+	VXMLINIT(folderId),
+	XMLINIT(Updates)
+{}
+
 tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
 	XMLINIT(BaseShape),
 	XMLINIT(AdditionalProperties)
@@ -821,6 +826,18 @@ tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement*
 tSerializableTimeZone::tSerializableTimeZone(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Bias), XMLINIT(StandardTime), XMLINIT(DaylightTime)
 {}
+
+tSetFolderField::tSetFolderField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
+{
+	for(const tinyxml2::XMLElement* child = xml->FirstChildElement(); child; child = child->NextSiblingElement())
+		if(std::binary_search(folderTypes.begin(), folderTypes.end(), child->Name(),
+		                      [](const char* s1, const char* s2){return strcmp(s1, s2) < 0;})) {
+			folder = child;
+			break;
+		}
+	if(!folder)
+		throw InputError(E3177);
+}
 
 tSetItemField::tSetItemField(const tinyxml2::XMLElement* xml) : tChangeDescription(xml)
 {
@@ -1174,6 +1191,13 @@ void mResolveNamesResponseMessage::serialize(XMLElement* xml) const
 }
 
 void mResolveNamesResponse::serialize(XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mUpdateFolderRequest::mUpdateFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(FolderChanges)
+{}
+
+void mUpdateFolderResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :

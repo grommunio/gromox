@@ -285,6 +285,11 @@ E(3170, "cannot deserialize predecessor change list");
 E(3171, "failed to allocate change number");
 E(3172, "missing folder target");
 E(3173, "failed to update folder change information");
+E(3174, "cannot modify target folder");
+E(3175, "failed to set folder properties");
+E(3176, "failed to remove folder properties");
+E(3177, "no valid folder object found");
+E(3178, "missing child node in SetFolderField object");
 
 #undef E
 }

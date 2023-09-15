@@ -985,6 +985,52 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 }
 
 /**
+ * @brief      Process UpdateFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:UpdateFolderResponse");
+
+	mUpdateFolderResponse data;
+	data.ResponseMessages.reserve(request.FolderChanges.size());
+	sShape idOnly((tFolderResponseShape()));
+
+	for(const auto& change : request.FolderChanges) try {
+		sFolderSpec folder = ctx.resolveFolder(change.folderId);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) | frightsEditAny))
+			throw EWSError::AccessDenied(E3174);
+		sShape shape(change);
+		ctx.getNamedTags(dir, shape, true);
+		for(const auto& update : change.Updates) {
+			if(holds_alternative<tSetFolderField>(update))
+				std::get<tSetFolderField>(update).put(shape);
+		}
+		TPROPVAL_ARRAY props = shape.write();
+		PROPTAG_ARRAY tagsRm = shape.remove();
+		PROBLEM_ARRAY problems;
+		if(!ctx.plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP,folder.folderId, &props, &problems))
+			throw EWSError::FolderSave(E3175);
+		if(!ctx.plugin.exmdb.remove_folder_properties(dir.c_str(), folder.folderId, &tagsRm))
+			throw EWSError::FolderSave(E3176);
+		ctx.updated(dir, folder);
+		mUpdateFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
+		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, idOnly));
+		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process UpdateItem
  *
  * @param      request   Request data
