@@ -12,6 +12,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/mapi_types.hpp>
+#include <include/gromox/pcl.hpp>
 
 #include "ObjectCache.hpp"
 #include "exceptions.hpp"
@@ -202,7 +203,7 @@ public:
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
-	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&) const;
+	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;

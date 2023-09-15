@@ -197,9 +197,9 @@ E(3082, "bad property for message entry id");
 E(3083, "failed to get attachment properties");
 E(3084, "failed to allocate change number");
 E(3085, "failed to serialize address book entry id");
-E(3086, "failed to serialize change key");
+//3086 removed
 E(3087, "failed to load predecessor change list");
-E(3088, "failed to generate predecessor change list");
+//3088 removed
 E(3089, "failed to update message");
 inline std::string E3090(const std::string_view& username) {return fmt::format("E-3090: invalid username '{}'", username);}
 inline std::string E3091(const std::string_view& username) {return fmt::format("E-3091: failed to get user info for '{}'", username);}

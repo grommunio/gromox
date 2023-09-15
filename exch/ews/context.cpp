@@ -407,7 +407,7 @@ const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if(props.count != 1 || props.ppropval->proptag != tag)
 		throw EWSError::ItemPropertyRequestFailed(E3127);
-	return props.count == 1 && props.ppropval->proptag == tag? props.ppropval->pvalue : nullptr;
+	return props.ppropval->pvalue;
 }
 
 /**
@@ -649,9 +649,8 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
  *
  * @return     Serialized predecessor change list buffer
  */
-std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid) const
+std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL pcl) const
 {
-	PCL pcl;
 	if(!pcl.append(xid))
 		throw DispatchError(E3121);
 	pcl.serialize();
@@ -909,11 +908,10 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
  */
 BINARY EWSContext::serialize(const XID& xid) const
 {
-	printf("%hhu\n", xid.size);
-	uint8_t* buff = alloc<uint8_t>(22);
+	uint8_t* buff = alloc<uint8_t>(xid.size);
 	EXT_PUSH ext_push;
-	if(!ext_push.init(buff, 22, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
-		throw DispatchError("E3120");
+	if(!ext_push.init(buff, xid.size, 0) || ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
+		throw DispatchError(E3120);
 	return BINARY{ext_push.m_offset, {buff}};
 }
 
@@ -1129,11 +1127,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	_props[props.count++].pvalue = &abEidContainer;
 
 	XID changeKey{(mid.isPrivate()? rop_util_make_user_guid : rop_util_make_domain_guid)(mid.accountId()), changeNum};
-	uint8_t ckeyBuff[24];
-	EXT_PUSH wCkey;
-	if(!wCkey.init(ckeyBuff, std::size(ckeyBuff), 0) || wCkey.p_xid(changeKey) != EXT_ERR_SUCCESS)
-		throw DispatchError(E3086);
-	BINARY changeKeyContainer{wCkey.m_offset, {ckeyBuff}};
+	BINARY changeKeyContainer = serialize(changeKey);
 	_props[props.count].proptag = PR_CHANGE_KEY;
 	_props[props.count++].pvalue = &changeKeyContainer;
 
@@ -1141,10 +1135,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	PCL pcl;
 	if(!currentPclContainer || !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
-	pcl.append(changeKey);
-	std::unique_ptr<BINARY, detail::Cleaner> serializedPcl(pcl.serialize());
-	if(!serializedPcl)
-		throw EWSError::NotEnoughMemory(E3088);
+	auto serializedPcl = mkPCL(changeKey, std::move(pcl));
 	_props[props.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	_props[props.count++].pvalue = serializedPcl.get();
 
