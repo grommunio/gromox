@@ -127,7 +127,7 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 		throw EWSError::FolderExists(E3155);
 
 	sShape retshape = sShape(tFolderResponseShape());
-	return loadFolder(created, retshape);
+	return loadFolder(dir, created.folderId, retshape);
 }
 
 /**
@@ -341,15 +341,16 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
  *
  * Also works on non-existant folders.
  *
- * @param     folder  Folder specification
+ * @param     dir       Store directory
+ * @param     folderId  Folder ID
  *
  * @return    Tagged property containing the entry ID
  */
-TAGGED_PROPVAL EWSContext::getFolderEntryId(const sFolderSpec& folder) const
+TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t folderId) const
 {
 	static constexpr uint32_t propids[] = {PR_ENTRYID};
 	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
-	TPROPVAL_ARRAY props = getFolderProps(folder, proptags);
+	TPROPVAL_ARRAY props = getFolderProps(dir, folderId, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
 		throw EWSError::FolderPropertyRequestFailed(E3022);
 	return *props.ppropval;
@@ -358,17 +359,16 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const sFolderSpec& folder) const
 /**
  * @brief     Get properties of specified folder
  *
- * @param     folder  Folder Specification
- * @param     props   Properties to get
+ * @param     dir       Store directory
+ * @param     folderId  Folder ID
+ * @param     props     Properties to get
  *
  * @return    Property values
  */
-TPROPVAL_ARRAY EWSContext::getFolderProps(const sFolderSpec& folder, const PROPTAG_ARRAY& props) const
+TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folderId, const PROPTAG_ARRAY& props) const
 {
-	std::string targetDir = getDir(folder);
 	TPROPVAL_ARRAY result;
-	if (!plugin.exmdb.get_folder_properties(targetDir.c_str(), CP_ACP,
-	    folder.folderId, &props, &result))
+	if (!plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
 		throw EWSError::FolderPropertyRequestFailed(E3023);
 	return result;
 }
@@ -455,11 +455,11 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
  *
  * @return     Folder data
  */
-sFolder EWSContext::loadFolder(const sFolderSpec& folder, Structures::sShape& shape) const
+sFolder EWSContext::loadFolder(const std::string& dir, uint64_t folderId, Structures::sShape& shape) const
 {
 	shape.clean();
-	getNamedTags(getDir(folder), shape);
-	shape.properties(getFolderProps(folder, shape.proptags()));
+	getNamedTags(dir, shape);
+	shape.properties(getFolderProps(dir, folderId, shape.proptags()));
 	return tBaseFolderType::create(shape);
 }
 
