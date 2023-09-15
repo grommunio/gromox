@@ -393,6 +393,24 @@ TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) 
 }
 
 /**
+ * @brief      Get folder property value
+ *
+ * @param      dir   Store directory
+ * @param      fid   Folder ID
+ * @param      tag   Tag ID
+ *
+ * @return     Pointer to property value or nullptr if not found
+ */
+const void* EWSContext::getFolderProp(const std::string& dir, uint64_t fid, uint32_t tag) const
+{
+	PROPTAG_ARRAY proptags{1, &tag};
+	TPROPVAL_ARRAY props = getFolderProps(dir, fid, proptags);
+	if(props.count != 1 || props.ppropval->proptag != tag)
+		throw EWSError::FolderPropertyRequestFailed(E3169);
+	return props.ppropval->pvalue;
+}
+
+/**
  * @brief      Get item property value
  *
  * @param      dir   Store directory
@@ -696,8 +714,10 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 		throw EWSError::FolderExists(E3162);
 	if(partial)
 		throw EWSError::MoveCopyFailed(E3163);
-	if(!copy)
+	if(!copy) {
+		updated(dir, folder);
 		return folder.folderId;
+	}
 	uint64_t newFolderId;
 	if(!plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
 		throw DispatchError(E3164);
@@ -1085,6 +1105,39 @@ void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape
 		if(item.From->Mailbox.Name)
 			shape.write(TAGGED_PROPVAL{PR_SENT_REPRESENTING_NAME, item.From->Mailbox.Name->data()});
 	}
+}
+
+/**
+ * @brief      Mark folder as updated
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      folder    Folder to update
+ */
+void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) const
+{
+	if(!folder.target)
+		throw DispatchError(E3172);
+	const BINARY* pclData = getFolderProp<BINARY>(dir, folder.folderId, PR_PREDECESSOR_CHANGE_LIST);
+	PCL pclOld;
+	if(pclData && !pclOld.deserialize(pclData))
+		throw DispatchError(E3170);
+	uint64_t changeNum;
+	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
+		throw DispatchError(E3171);
+	bool isPublic = folder.location == folder.PUBLIC;
+	uint32_t accountId = getAccountId(*folder.target, isPublic);
+	XID changeKey{(isPublic? rop_util_make_domain_guid : rop_util_make_user_guid)(accountId), changeNum};
+	BINARY ckeyBin = serialize(changeKey);
+	auto ppcl = mkPCL(changeKey, std::move(pclOld));
+	uint64_t now = rop_util_current_nttime();
+	TAGGED_PROPVAL props[] = {{PidTagChangeNumber, &changeNum},
+		                      {PR_CHANGE_KEY, &ckeyBin,},
+		                      {PR_PREDECESSOR_CHANGE_LIST, ppcl.get()},
+		                      {PR_LAST_MODIFICATION_TIME, &now}};
+	TPROPVAL_ARRAY proplist{std::size(props), props};
+	PROBLEM_ARRAY problems;
+	if(!plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &proplist, &problems) || problems.count)
+		throw EWSError::FolderSave(E3173);
 }
 
 /**

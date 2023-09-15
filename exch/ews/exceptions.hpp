@@ -280,6 +280,11 @@ E(3165, "failed to delete folder");
 E(3166, "failed to get parent folder");
 E(3167, "cannot write to destination folder");
 E(3168, "cannot move folder across stores");
+E(3169, "failed to get folder property");
+E(3170, "cannot deserialize predecessor change list");
+E(3171, "failed to allocate change number");
+E(3172, "missing folder target");
+E(3173, "failed to update folder change information");
 
 #undef E
 }

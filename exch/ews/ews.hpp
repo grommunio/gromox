@@ -194,6 +194,7 @@ public:
 	uint32_t getAccountId(const std::string&, bool) const;
 	std::string getDir(const Structures::sFolderSpec&) const;
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
+	template<typename T> const T* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
@@ -215,6 +216,7 @@ public:
 	void send(const std::string&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
 	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
+	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&) const;
 	std::string username_to_essdn(const std::string&) const;
 
@@ -233,6 +235,7 @@ public:
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
 
 private:
+	const void* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	const void* getItemProp(const std::string&, uint64_t, uint32_t) const;
 
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
@@ -246,6 +249,21 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 };
+
+/**
+ * @brief      Get single folder property
+ *
+ * @param      dir   Store directory
+ * @param      mid   Folder ID
+ * @param      tag   Tag ID
+ *
+ * @tparam     T     Type to return
+ *
+ * @return     Pointer to property or nullptr if not found.
+ */
+template<typename T>
+const T* EWSContext::getFolderProp(const std::string& dir, uint64_t mid, uint32_t tag) const
+{return static_cast<const T*>(getFolderProp(dir, mid, tag));}
 
 /**
  * @brief      Get single item property
