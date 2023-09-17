@@ -10,6 +10,7 @@
 #include "common_util.h"
 #include "emsmdb_interface.h"
 #include "logon_object.h"
+#include "notify_response.h"
 #include "rop_ext.h"
 #include "rop_ids.hpp"
 #include "rop_processor.h"
@@ -1630,63 +1631,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, REGISTERNOTIFICATION_REQUEST *r)
 	if (r->pmessage_id == nullptr)
 		return EXT_ERR_ALLOC;
 	return pext->g_uint64(r->pmessage_id);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const NOTIFICATION_DATA *r)
-{
-	TRY(pext->p_uint16(r->notification_flags));
-	if (r->ptable_event != nullptr)
-		TRY(pext->p_uint16(*r->ptable_event));
-	if (r->prow_folder_id != nullptr)
-		TRY(pext->p_uint64(*r->prow_folder_id));
-	if (r->prow_message_id != nullptr)
-		TRY(pext->p_uint64(*r->prow_message_id));
-	if (r->prow_instance != nullptr)
-		TRY(pext->p_uint32(*r->prow_instance));
-	if (r->pafter_folder_id != nullptr)
-		TRY(pext->p_uint64(*r->pafter_folder_id));
-	if (r->pafter_row_id != nullptr)
-		TRY(pext->p_uint64(*r->pafter_row_id));
-	if (r->pafter_instance != nullptr)
-		TRY(pext->p_uint32(*r->pafter_instance));
-	if (r->prow_data != nullptr)
-		TRY(pext->p_bin_s(*r->prow_data));
-	if (r->pfolder_id != nullptr)
-		TRY(pext->p_uint64(*r->pfolder_id));
-	if (r->pmessage_id != nullptr)
-		TRY(pext->p_uint64(*r->pmessage_id));
-	if (r->pparent_id != nullptr)
-		TRY(pext->p_uint64(*r->pparent_id));
-	if (r->pold_folder_id != nullptr)
-		TRY(pext->p_uint64(*r->pold_folder_id));
-	if (r->pold_message_id != nullptr)
-		TRY(pext->p_uint64(*r->pold_message_id));
-	if (r->pold_parent_id != nullptr)
-		TRY(pext->p_uint64(*r->pold_parent_id));
-	if (r->pproptags != nullptr)
-		TRY(pext->p_proptag_a(*r->pproptags));
-	if (r->ptotal_count != nullptr)
-		TRY(pext->p_uint32(*r->ptotal_count));
-	if (r->punread_count != nullptr)
-		TRY(pext->p_uint32(*r->punread_count));
-	if (r->pmessage_flags != nullptr)
-		TRY(pext->p_uint32(*r->pmessage_flags));
-	if (NULL != r->punicode_flag) {
-		TRY(pext->p_uint8(*r->punicode_flag));
-		if (!*r->punicode_flag)
-			TRY(pext->p_str(r->pstr_class));
-		else
-			TRY(pext->p_wstr(r->pstr_class));
-	}
-	return EXT_ERR_SUCCESS;
-}
-
-pack_result rop_ext_push(EXT_PUSH *pext, const NOTIFY_RESPONSE *r)
-{
-	TRY(pext->p_uint8(ropRegisterNotify));
-	TRY(pext->p_uint32(r->handle));
-	TRY(pext->p_uint8(r->logon_id));
-	return rop_ext_push(pext, &r->notification_data);
 }
 
 pack_result rop_ext_push(EXT_PUSH *pext, const PENDING_RESPONSE *r)

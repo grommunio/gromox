@@ -1015,13 +1015,6 @@ struct REGISTERNOTIFICATION_REQUEST {
 	uint64_t *pmessage_id;
 };
 
-struct notify_response {
-	uint32_t handle;
-	uint8_t logon_id;
-	NOTIFICATION_DATA notification_data;
-};
-using NOTIFY_RESPONSE = notify_response;
-
 struct PENDING_RESPONSE {
 	uint16_t session_index;
 };

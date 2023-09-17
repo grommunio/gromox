@@ -414,30 +414,6 @@ enum notif_type : unsigned int {
 #define TABLE_EVENT_ROW_MODIFIED					0x0005
 #define TABLE_EVENT_RESTRICTION_CHANGED				0x0007
 
-struct NOTIFICATION_DATA {
-	uint16_t notification_flags;
-	uint16_t *ptable_event;
-	uint64_t *prow_folder_id;
-	uint64_t *prow_message_id;
-	uint32_t *prow_instance;
-	uint64_t *pafter_folder_id;
-	uint64_t *pafter_row_id;
-	uint32_t *pafter_instance;
-	BINARY *prow_data;
-	uint64_t *pfolder_id;
-	uint64_t *pmessage_id;
-	uint64_t *pparent_id;
-	uint64_t *pold_folder_id;
-	uint64_t *pold_message_id;
-	uint64_t *pold_parent_id;
-	PROPTAG_ARRAY *pproptags;
-	uint32_t *ptotal_count;
-	uint32_t *punread_count;
-	uint32_t *pmessage_flags;
-	uint8_t *punicode_flag;
-	char *pstr_class;
-};
-
 enum {
 	PRIVATE_FID_ROOT = 0x01,
 	PRIVATE_FID_DEFERRED_ACTION = 0x02,
