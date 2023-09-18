@@ -57,8 +57,6 @@ BOOL temp_list_add_string(const char *str, int interval)
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	if (grey_list_query(temp_string, false) != GREY_LIST_NOT_FOUND)
-		return FALSE;
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	auto when = time(nullptr) + interval;

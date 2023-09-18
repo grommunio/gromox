@@ -19,9 +19,6 @@ Default: \fI0\fP
 \fBaudit_times\fP
 Default: \fI10\fP
 .TP
-\fBgrey_growing_num\fP
-Default: \fI0\fP
-.TP
 \fBgrowing_num\fP
 The maximum number of additional string table entries on top of what the
 on-disk table file has supplied. So when the table file contains 40 entries and
@@ -49,7 +46,5 @@ Default: \fI2000\fP
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/user_filter.cfg: configuration
-.IP \(bu 4
-\fIstate_file_path\fP/user_filter.txt: greylist
 .SH See also
 \fBgromox\fP(7)

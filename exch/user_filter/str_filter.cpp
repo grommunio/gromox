@@ -21,8 +21,6 @@ using namespace gromox;
 
 enum{
 	STR_FILTER_TEMP_DENY,
-	STR_FILTER_GREY_ALLOW,
-	STR_FILTER_GREY_DENY,
 	STR_FILTER_AUDIT_DENY,
 	STR_FILTER_NOT_HIT
 };
@@ -39,30 +37,23 @@ static char g_module_name[256];
  *      audit_interval      allowing interval for an string
  *      audit_times         during the interval, times of string
  *      temp_list_size		size of temp list
- *      list_path [in]		grey list file path
  */
 void str_filter_init(const char *module_name,
 	BOOL case_sensitive, int audit_num, int audit_interval, int audit_times,
-	int temp_list_size, const char *list_path, int growing_num) 
+    int temp_list_size)
 {
 	gx_strlcpy(g_module_name, module_name, std::size(g_module_name));
     audit_filter_init(case_sensitive, audit_num, audit_interval, audit_times);
-    grey_list_init(case_sensitive, list_path, growing_num);
     temp_list_init(case_sensitive, temp_list_size);
 }
 
 void str_filter_free()
 {
-    grey_list_free();
     temp_list_free();
 }
 
 int str_filter_run()
 {
-    if (0 != grey_list_run()) {
-		str_filter_echo("failed to run grey list");
-        return -1;
-    }
     if (0 != temp_list_run()) {
 		str_filter_echo("failed to run temporary list");
         audit_filter_stop();
@@ -89,15 +80,7 @@ BOOL str_filter_judge(const char *str)
 {
 	if (temp_list_query(str))
 		return FALSE;
-    switch (grey_list_query(str, TRUE)) {
-    case GREY_LIST_ALLOW:
-        return TRUE;
-    case GREY_LIST_DENY:
-        return FALSE;
-    case GREY_LIST_NOT_FOUND:
-		return audit_filter_judge(str);
-    }
-    return TRUE;
+	return audit_filter_judge(str);
 }
 
 /*
@@ -112,15 +95,7 @@ BOOL str_filter_query(const char *str)
 {	
 	if (temp_list_query(str))
 		return TRUE;
-    switch (grey_list_query(str, FALSE)) {
-    case GREY_LIST_ALLOW:
-        return FALSE;
-    case GREY_LIST_DENY:
-        return TRUE;
-    case GREY_LIST_NOT_FOUND:
-		return audit_filter_query(str);
-    }
-    return FALSE;
+	return audit_filter_query(str);
 }
 
 /*

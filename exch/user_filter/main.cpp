@@ -21,9 +21,8 @@ DECLARE_SVC_API();
 
 static BOOL svc_str_filter(int reason, void **ppdata)
 {
-	char list_path[256], temp_buff[128];
-	int audit_max, audit_interval, audit_times;
-	int temp_list_size, growing_num;
+	char temp_buff[128];
+	int audit_max, audit_interval, audit_times, temp_list_size;
 	BOOL case_sensitive;
 	
 	switch(reason) {
@@ -58,24 +57,18 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		temp_list_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (temp_list_size < 0)
 			temp_list_size = 0;
-		str_value = pfile->get_value("GREY_GROWING_NUM");
-		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
-		if (growing_num < 0)
-			growing_num = 0;
 		mlog(LV_INFO, "user_filter: case-%ssensitive, audit_capacity=%d, "
-		        "audit_interval=%s, audit_times=%d, tmplist_capacity=%d, "
-		        "greylist_grow=%d",
+		        "audit_interval=%s, audit_times=%d, tmplist_capacity=%d",
 		        case_sensitive ? "" : "in",
-		        audit_max, temp_buff, audit_times, temp_list_size, growing_num);
+		        audit_max, temp_buff, audit_times, temp_list_size);
 		str_value = pfile->get_value("JUDGE_SERVICE_NAME");
 		std::string judge_name = str_value != nullptr ? str_value : "user_filter_judge";
 		str_value = pfile->get_value("ADD_SERVICE_NAME");
 		std::string add_name = str_value != nullptr ? str_value : "user_filter_add"s;
 		str_value = pfile->get_value("QUERY_SERVICE_NAME");
 		std::string query_name = str_value != nullptr ? str_value : "user_filter_query"s;
-		gx_strlcpy(list_path, "user_filter.txt", std::size(list_path));
 		str_filter_init("user_filter", case_sensitive, audit_max,
-		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
+			audit_interval, audit_times, temp_list_size);
 		if (0 != str_filter_run()) {
 			mlog(LV_ERR, "user_filter: failed to run the module");
 			return FALSE;
