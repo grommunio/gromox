@@ -2,7 +2,7 @@
 .\" SPDX-FileCopyrightText: 2021 grommunio GmbH
 .TH mh_emsmdb 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-mh_emsmdb \(em MAPI-HTTP processor for EMSMDB
+mh_emsmdb \(em http(8gx) processing plugin for MAPIHTTP-wrapped EMSMDB requests
 .SH Description
 mh_emsmdb is a processing plugin for http(8gx) which reacts to URIs starting
 in \fB/mapi/emsmdb/\fP. The ROP stream inside the HTTP request bodies is handedoff to exchange_emsmdb(4gx) for processing.

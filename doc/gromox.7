@@ -26,7 +26,8 @@ mapi(7gx) \(em Definition for "Messaging Application Programming Interface"
 gromox\-selinux(5) \(em SELinux policy for Gromox
 .SS Exchange subsystem and its components
 .IP \(bu 4
-autodiscover(4gx) \(em Autodiscover HTTP Service Protocol handler
+autodiscover(4gx) \(em Autodiscover HTTP Service Protocol handler (AutoDiscover
+responder).
 .IP \(bu 4
 exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
 Protocol (Outlook/Exchange RPCs).
@@ -37,7 +38,7 @@ Service Provider Interface Protocol.
 exchange_rfr(4gx) \(em http(8gx) processing plugin for the Address Book Name
 Service Provider Interface Referral Protocol.
 .IP \(bu 4
-exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
+exmdb_provider(4gx) \(em Gromox Information Store
 .IP \(bu 4
 http(8gx)
 .IP \(bu 4
@@ -50,9 +51,10 @@ FastCGI servers
 mod_rewrite(4gx) \(em http(8gx) processing plugin for altering HTTP request
 URIs before processing
 .IP \(bu 4
-mh_emsmdb(4gx) \(em MAPI-HTTP processor for EMSMDB
+mh_emsmdb(4gx) \(em http(8gx) processing plugin for MAPIHTTP-wrapped EMSMDB
+requests
 .IP \(bu 4
-mh_nsp(4gx) \(em MAPI-HTTP processor for NSPI
+mh_nsp(4gx) \(em http(8gx) processing plugin for MAPIHTTP-wrapped NSPI requests
 .IP \(bu 4
 timer(8gx) \(em deferred command executor
 .SS PHP-MAPI subsystem
@@ -63,6 +65,10 @@ zcore(8gx) \(em Bridge for PHP-MAPI requests
 .SS Mail retrieval agent subsystem (MRA)
 .IP \(bu 4
 imap(8gx) \(em IMAP server
+.IP \(bu 4
+event_proxy(4gx) \(em Event sender service plugin
+.IP \(bu 4
+event_stub(4gx) \(em Event receiver service plugin
 .IP \(bu 4
 midb_agent(4gx) \(em Service plugin for conversing with midb(8gx)
 .IP \(bu 4

@@ -2,7 +2,7 @@
 .\" SPDX-FileCopyrightText: 2020 grommunio GmbH
 .TH event_proxy 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-event_stub \(em event sender service plugin
+event_proxy \(em event sender service plugin
 .SH Description
 event_proxy connects to the event(8gx) daemon and sets itself up so as to be
 able to send notifications.

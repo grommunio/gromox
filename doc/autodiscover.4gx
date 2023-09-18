@@ -2,7 +2,8 @@
 .\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 .TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-Autodiscover HTTP Service Protocol handler (AutoDiscover responder)
+autodiscover \(em Autodiscover HTTP Service Protocol handler (AutoDiscover
+responder)
 .SH Description
 Autodiscover clients can locate the Autodiscover server for a given domain
 \fIexample.com\fP by attempting to resolve the

@@ -2,8 +2,8 @@
 .\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
 .TH exchange_emsmdb 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-http(8gx) processing plugin for the Wire Format Protocol (Outlook/Exchange
-RPCs).
+exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
+Protocol (Outlook/Exchange RPCs).
 .SH Description
 exchange_emsmdb is a processing plugin for http(8gx) which handles the remote
 procedure calls for the EMSMDB v1 and AsyncEMSMDB v1 RPC interfaces, as well as

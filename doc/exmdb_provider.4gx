@@ -2,7 +2,7 @@
 .\" SPDX-FileCopyrightText: 2020-2022 grommunio GmbH
 .TH exmdb_provider 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-exmdb_provider \(em http(8gx) service plugin for exmdb connections
+exmdb_provider \(em Gromox Information Store
 .SH Description
 exmdb_provider is a service plugin for http(8gx). It offers a plethora of
 individual functions (124 of them) for operating on mailbox stores. This
