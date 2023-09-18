@@ -296,7 +296,7 @@ dist_man_MANS = \
 	doc/cgkrepair.8gx doc/cleaner.8gx doc/gromox-compress.8 \
 	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
-	doc/exchange_emsmdb.4gx \
+	doc/ews.4gx doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \

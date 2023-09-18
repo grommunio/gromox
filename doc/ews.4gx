@@ -1,0 +1,42 @@
+.\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
+.\" SPDX-FileCopyrightText: 2023 grommunio GmbH
+.TH ews 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+ews \(em http(8gx) processing plugin for EWS requests
+.SH Description
+The ews(4gx) plugin handles all requests to the \fB/EWS/Exchange.asmx\fP
+URI.
+.SH Configuration directives
+The usual config file location is /etc/gromox/ews.cfg.
+.TP
+\fBews_experimental\fP
+Default: \fI0\fP
+.TP
+\fBews_log_filter\fP
+Default: \fI!\fP
+.TP
+\fBews_pretty_response\fP
+Controls whether SOAP/XML responses produced by ews(4gx) are emitted normally
+("no") or with extra indent for debugging ("yes").
+.br
+Default: \fIno\fP
+.TP
+\fBews_request_logging\fP
+Log all requests (further restricted by log_filter).
+.br
+Default: \fIno\fP
+.TP
+\fBsmtp_server_ip\fP
+Hostname of the SMTP service to utilize for outgoing mails.
+.br
+Default: \fI::1\fP
+.TP
+\fBsmtp_server_port\fP
+Port number for the same.
+.br
+Default: \fI25\fP
+.SH Normative references
+.IP \(bu 4
+OXWAVLS, OXWOOF, OXWSPHOTO
+.SH See also
+\fBgromox\fP(7), \fBhttp\fP(8gx)
