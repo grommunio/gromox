@@ -287,16 +287,6 @@ enum {
 	_DTCT_NONE = 0xff, /* (sentinel value for gromox) */
 };
 
-enum {
-	EVENT_TYPE_NEWMAIL        = 0x2U,
-	EVENT_TYPE_OBJECTCREATED  = 0x4U,
-	EVENT_TYPE_OBJECTDELETED  = 0x8U,
-	EVENT_TYPE_OBJECTMODIFIED = 0x10U,
-	EVENT_TYPE_OBJECTMOVED    = 0x20U,
-	EVENT_TYPE_OBJECTCOPIED   = 0x40U,
-	EVENT_TYPE_SEARCHCOMPLETE = 0x80U,
-};
-
 enum mapi_folder_type : uint32_t {
 	FOLDER_ROOT = 0,
 	FOLDER_GENERIC = 1,

@@ -409,7 +409,7 @@ static void emsmdb_interface_remove_handle(const CXH &cxh)
 			g_user_hash.erase(phandle->username);
 	}
 	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
-		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
+		delete static_cast<notify_response *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -932,26 +932,22 @@ static BOOL emsmdb_interface_merge_content_row_deleted(
 	int count;
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
-	NOTIFICATION_DATA *pnotification_data;
 	
 	count = 1;
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
-		pnotification_data = &pnotify->notification_data;
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotification_data->ptable_event == nullptr)
+		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
 			continue;
-		if (TABLE_EVENT_ROW_DELETED ==
-			*pnotification_data->ptable_event) {
+		if (pnotify->table_event == TABLE_EVENT_ROW_DELETED) {
 			count ++;
 			if (MAX_CONTENT_ROW_DELETED == count) {
-				notify_response_content_table_row_event_to_change(pnotify);
+				pnotify->ctrow_event_to_change();
 				return TRUE;
 			}
-		} else if (TABLE_EVENT_TABLE_CHANGED ==
-			*pnotification_data->ptable_event) {
+		} else if (pnotify->table_event == TABLE_EVENT_TABLE_CHANGED) {
 			return TRUE;
 		}
 	}
@@ -964,21 +960,17 @@ static BOOL emsmdb_interface_merge_hierarchy_row_modified(
 {
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
-	NOTIFICATION_DATA *pnotification_data;
 	auto row_folder_id = rop_util_nfid_to_eid(pmodified_row->row_folder_id);
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
-		pnotification_data = &pnotify->notification_data;
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotification_data->ptable_event == nullptr)
+		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
 			continue;
-		if (TABLE_EVENT_ROW_MODIFIED ==
-			*pnotification_data->ptable_event &&
-			*pnotification_data->prow_folder_id
-			== row_folder_id) {
+		if (pnotify->table_event == TABLE_EVENT_ROW_MODIFIED &&
+		    pnotify->row_folder_id == row_folder_id) {
 			double_list_remove(pnotify_list, pnode);
 			double_list_append_as_tail(pnotify_list, pnode);
 			return TRUE;
@@ -996,7 +988,6 @@ static BOOL emsmdb_interface_merge_message_modified(
 	uint64_t message_id;
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
-	NOTIFICATION_DATA *pnotification_data;
 	
 	folder_id = rop_util_make_eid_ex(
 		1, pmodified_message->folder_id);
@@ -1005,14 +996,12 @@ static BOOL emsmdb_interface_merge_message_modified(
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
-		pnotification_data = &pnotify->notification_data;
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotification_data->notification_flags ==
-		    (NOTIFICATION_FLAG_OBJECTMODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE) &&
-		    *pnotification_data->pfolder_id == folder_id &&
-		    *pnotification_data->pmessage_id == message_id &&
-		    pnotification_data->pproptags->count == 0)
+		if (pnotify->nflags == (NF_OBJECT_MODIFIED | NF_BY_MESSAGE) &&
+		    pnotify->folder_id == folder_id &&
+		    pnotify->message_id == message_id &&
+		    pnotify->proptags.count == 0)
 			return TRUE;
 	}
 	return FALSE;
@@ -1025,18 +1014,16 @@ static BOOL emsmdb_interface_merge_folder_modified(
 {
 	DOUBLE_LIST_NODE *pnode;
 	NOTIFY_RESPONSE *pnotify;
-	NOTIFICATION_DATA *pnotification_data;
 	auto folder_id = rop_util_nfid_to_eid(pmodified_folder->folder_id);
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
 		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
-		pnotification_data = &pnotify->notification_data;
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
-		if (pnotification_data->notification_flags == NOTIFICATION_FLAG_OBJECTMODIFIED &&
-		    *pnotification_data->pfolder_id == folder_id &&
-		    pnotification_data->pproptags->count == 0)
+		if (pnotify->nflags == NF_OBJECT_MODIFIED &&
+		    pnotify->folder_id == folder_id &&
+		    pnotify->proptags.count == 0)
 			return TRUE;
 	}
 	return FALSE;
@@ -1129,7 +1116,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	rsp->rop_id = ropRegisterNotify;
 	rsp->hindex = 0; /* ignore by system */
 	rsp->result = 0; /* ignore by system */
-	auto nfr = notify_response_init(obj_handle, logon_id);
+	auto nfr = notify_response::create(obj_handle, logon_id);
 	rsp->ppayload = nfr;
 	if (rsp->ppayload == nullptr) {
 		emsmdb_interface_put_handle_notify_list(phandle);
@@ -1138,14 +1125,14 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	}
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
-	if (notify_response_retrieve(nfr, b_cache, pdb_notify)) {
+	if (nfr->cvt_from_dbnotify(b_cache, *pdb_notify) == ecSuccess) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);
 		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
 	} else {
 		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
-		notify_response_free(nfr);
+		delete nfr;
 		free(pnode->pdata);
 		free(pnode);
 	}

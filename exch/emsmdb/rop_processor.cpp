@@ -496,24 +496,21 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap.get(), pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (type == ems_objtype::table &&
-				NULL != pnotify->notification_data.ptable_event &&
-				(TABLE_EVENT_ROW_ADDED ==
-				*pnotify->notification_data.ptable_event ||
-				TABLE_EVENT_ROW_MODIFIED ==
-				*pnotify->notification_data.ptable_event)) {
+			    pnotify->nflags & NF_TABLE_MODIFIED &&
+			    (pnotify->table_event == TABLE_EVENT_ROW_ADDED ||
+			    pnotify->table_event == TABLE_EVENT_ROW_MODIFIED)) {
 				auto tbl = static_cast<table_object *>(pobject);
 				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1.get(), ext_buff_size, EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;
-				if (pnotify->notification_data.notification_flags
-					&NOTIFICATION_FLAG_MOST_MESSAGE) {
-					if (!tbl->read_row(*pnotify->notification_data.prow_message_id,
-					    *pnotify->notification_data.prow_instance,
+				if (pnotify->nflags & NF_BY_MESSAGE) {
+					if (!tbl->read_row(pnotify->row_message_id,
+					    pnotify->row_instance,
 					    &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 					
 				} else {
-					if (!tbl->read_row(*pnotify->notification_data.prow_folder_id,
+					if (!tbl->read_row(pnotify->row_folder_id,
 					    0, &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 				}
@@ -522,9 +519,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 					goto NEXT_NOTIFY;
 				tmp_bin.cb = ext_push1.m_offset;
 				tmp_bin.pb = ext_push1.m_udata;
-				pnotify->notification_data.prow_data = &tmp_bin;
+				pnotify->row_data = &tmp_bin;
 			}
-			if (rop_ext_push(&ext_push, pnotify) != pack_result::success) {
+			if (rop_ext_push(ext_push, *pnotify) != pack_result::success) {
 				ext_push.m_offset = last_offset;
 				double_list_insert_as_head(pnotify_list, pnode);
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
@@ -535,7 +532,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			}
 		}
  NEXT_NOTIFY:
-		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
+		delete static_cast<notify_response *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
 		free(pnode->pdata);
 		free(pnode);
 	}

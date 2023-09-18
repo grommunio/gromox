@@ -189,19 +189,19 @@ static pack_result ext_pack_pull_znotification(PULL_CTX *pctx, ZNOTIFICATION *r)
 {
 	TRY(pctx->g_uint32(&r->event_type));
 	switch (r->event_type) {
-	case EVENT_TYPE_NEWMAIL:
+	case NF_NEW_MAIL:
 		r->pnotification_data = emalloc(sizeof(NEWMAIL_ZNOTIFICATION));
 		if (NULL == r->pnotification_data) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_pack_pull_newmail_znotification(pctx,
 		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
-	case EVENT_TYPE_OBJECTCREATED:
-	case EVENT_TYPE_OBJECTDELETED:
-	case EVENT_TYPE_OBJECTMODIFIED:
-	case EVENT_TYPE_OBJECTMOVED:
-	case EVENT_TYPE_OBJECTCOPIED:
-	case EVENT_TYPE_SEARCHCOMPLETE:
+	case NF_OBJECT_CREATED:
+	case NF_OBJECT_DELETED:
+	case NF_OBJECT_MODIFIED:
+	case NF_OBJECT_MOVED:
+	case NF_OBJECT_COPIED:
+	case NF_SEARCH_COMPLETE:
 		r->pnotification_data = emalloc(sizeof(OBJECT_ZNOTIFICATION));
 		if (NULL == r->pnotification_data) {
 			return EXT_ERR_ALLOC;
