@@ -300,6 +300,44 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 }
 
 /**
+ * @brief      Process EmptyFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:EmptyFolderResponse");
+
+	mEmptyFolderResponse data;
+	data.ResponseMessages.reserve(request.FolderIds.size());
+
+	if(request.DeleteType == Enum::MoveToDeletedItems)
+		throw DispatchError(E3181);
+	uint32_t deleteFlags = DEL_MESSAGES | DEL_ASSOCIATED;
+	deleteFlags |= (request.DeleteType == Enum::HardDelete? DELETE_HARD_DELETE : 0) |
+	               (request.DeleteSubFolders? DEL_FOLDERS : 0);
+	for(const sFolderId& folderId : request.FolderIds) try {
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsDeleteAny))
+			throw EWSError::AccessDenied(E3179);
+		BOOL partial;
+		if(!ctx.plugin.exmdb.empty_folder(dir.c_str(), CP_ACP, ctx.auth_info.username, folder.folderId, deleteFlags, &partial)
+		   || partial)
+			throw EWSError::CannotEmptyFolder(E3180);
+		data.ResponseMessages.emplace_back().success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data

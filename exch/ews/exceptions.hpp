@@ -290,6 +290,9 @@ E(3175, "failed to set folder properties");
 E(3176, "failed to remove folder properties");
 E(3177, "no valid folder object found");
 E(3178, "missing child node in SetFolderField object");
+E(3179, "cannot modify target folder");
+E(3180, "failed to empty folder");
+E(3181, "empty folder to deleted items is not supported");
 
 #undef E
 }

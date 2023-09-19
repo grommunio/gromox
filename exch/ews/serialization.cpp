@@ -980,6 +980,15 @@ mDeleteItemRequest::mDeleteItemRequest(const tinyxml2::XMLElement* xml) :
 void mDeleteItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
+mEmptyFolderRequest::mEmptyFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINITA(DeleteType),
+	XMLINITA(DeleteSubFolders),
+	XMLINIT(FolderIds)
+{}
+
+void mEmptyFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);

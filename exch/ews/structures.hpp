@@ -2213,6 +2213,39 @@ struct mDeleteItemResponse
 };
 
 /**
+ * Messages.xsd:842
+ */
+struct mEmptyFolderRequest
+{
+	explicit mEmptyFolderRequest(const tinyxml2::XMLElement*);
+
+	Enum::DisposalType DeleteType; // Attribute
+	bool DeleteSubFolders; // Attribute
+
+	std::vector<sFolderId> FolderIds;
+};
+
+/**
+ * Messages.xsd:574
+ */
+struct mEmptyFolderResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "EmptyFolderResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:855
+ */
+struct mEmptyFolderResponse
+{
+	std::vector<mEmptyFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:1482
  */
 struct mGetAttachmentRequest
