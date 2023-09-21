@@ -434,6 +434,11 @@ void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(RecurrenceRange);
 }
 
+void tDeletedOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Start);
+}
+
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
 	tItem(xml),
 	XMLINIT(UID),
@@ -484,6 +489,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(AppointmentSequenceNumber);
 	XMLDUMPT(AppointmentState);
 	XMLDUMPT(Recurrence);
+	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(AllowNewTimeProposal);
 }
 

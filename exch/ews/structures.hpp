@@ -1113,7 +1113,7 @@ struct tAttendee
 /**
  * Types.xsd:4529
  */
-struct tRecurrencePatternBase {}; // <xs:complexType name="RecurrencePatternBaseType" abstract="true" />
+struct tRecurrencePatternBase  : public NS_EWS_Types {}; // <xs:complexType name="RecurrencePatternBaseType" abstract="true" />
 
 /**
  * Types.xsd:4531
@@ -1235,7 +1235,7 @@ using tRecurrencePattern = std::variant<
 /**
  * Types.xsd:4814
  */
-struct tRecurrenceRangeBase
+struct tRecurrenceRangeBase : public NS_EWS_Types
 {
 	gromox::time_point StartDate;
 
@@ -1307,6 +1307,19 @@ struct tRecurrenceType
 	tRecurrenceRange RecurrenceRange;
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:4919
+ */
+struct tDeletedOccurrenceInfoType : public NS_EWS_Types
+{
+	static constexpr char NAME[] = "DeletedOccurrence";
+
+	gromox::time_point Start;
+
+	void serialize(tinyxml2::XMLElement*) const;
+	tDeletedOccurrenceInfoType(const gromox::time_point s) : Start(s) {};
 };
 
 /**
@@ -1454,7 +1467,7 @@ struct tCalendarItem : public tItem
 	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
 	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
 	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="DeletedOccurrences" type="t:NonEmptyArrayOfDeletedOccurrencesType" minOccurs="0" />
+	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
 	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
 	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
 	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
