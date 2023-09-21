@@ -747,6 +747,18 @@ ec_error_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	return ecSuccess;
 }
 
+/**
+ * PR_SOURCE_KEY consists of a (varying) mdguid and a GC value; that GCV is
+ * scoped to the particular mdguid. PR_CHANGE_KEY consists of a (varying)
+ * cnguid [in .ost files: PR_OST_OLFI] and a CN value.
+ *
+ * The message_id columns in exchange.sqlite3 currently only store the GCV. To
+ * work around this shortcoming, simc_otherstore obtains a GCV in the "home"
+ * mdguid namespace producing a new SK.
+ *
+ * A new SK means "new message", which also means the message gets downloaded
+ * back by the client, which should eventually be fixed.
+ */
 static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
     unsigned int import_flags, icsupctx_object *ctx,
     const TPROPVAL_ARRAY *props, uint64_t *msg_idp,
@@ -816,6 +828,13 @@ static ec_error_t simc_otherstore(LOGMAP *logmap, uint8_t logon_id,
 	if (hnd < 0)
 		return aoh_to_error(hnd);
 	*hnd_out = hnd;
+	/*
+	 * When Cached Mode clients see upload success, the assumption is that
+	 * the message exists with the same PR_SOURCE_KEY. That assumption is
+	 * broken by simc_otherstore, so signal a deletion of the old SK.
+	 * [Events are ignored by Outlook; so the signalling happens via
+	 * delete_impossible_mids instead.]
+	 */
 	return ecSuccess;
 }
 

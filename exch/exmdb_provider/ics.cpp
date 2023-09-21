@@ -136,6 +136,31 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 	}
 }
 
+/* Counterpart for simc_otherstore. */
+static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
+{
+	struct p1data {
+		const idset *given;
+		EID_ARRAY *del;
+		ec_error_t error;
+	} p1 = {&given, &del, ecSuccess};
+	const_cast<idset &>(given).enum_replist(&p1, [](void *param, uint16_t replid) {
+		if (replid <= 1)
+			return;
+		auto p1 = static_cast<p1data *>(param);
+		if (p1->error != ecSuccess)
+			return;
+		const_cast<idset *>(p1->given)->enum_repl(replid, p1, [](void *param, uint64_t msgid) {
+			auto p1 = static_cast<p1data *>(param);
+			if (p1->error != ecSuccess)
+				return;
+			if (!eid_array_append(p1->del, msgid))
+				p1->error = ecServerOOM;
+		});
+	});
+	return p1.error;
+}
+
 /**
  * @username:   Used for retrieving public store readstates
  */
@@ -420,6 +445,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;
 	}
+	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
+		return false;
 	if (!const_cast<IDSET *>(pgiven)->enum_repl(1, &enum_param,
 	    ics_enum_content_idset)) {
 		eid_array_free(enum_param.pdeleted_eids);
