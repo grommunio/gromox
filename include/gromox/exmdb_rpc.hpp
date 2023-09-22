@@ -286,7 +286,7 @@ struct exreq_check_folder_cycle : public exreq {
 };
 
 struct exreq_copy_folder_internal : public exreq {
-	uint32_t account_id;
+	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -310,7 +310,7 @@ struct exreq_set_search_criteria : public exreq {
 };
 
 struct exreq_movecopy_message : public exreq {
-	uint32_t account_id;
+	int32_t account_id;
 	cpid_t cpid;
 	uint64_t message_id;
 	uint64_t dst_fid;
@@ -319,7 +319,7 @@ struct exreq_movecopy_message : public exreq {
 };
 
 struct exreq_movecopy_messages : public exreq {
-	uint32_t account_id;
+	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -330,7 +330,7 @@ struct exreq_movecopy_messages : public exreq {
 };
 
 struct exreq_movecopy_folder : public exreq {
-	uint32_t account_id;
+	int32_t account_id;
 	cpid_t cpid;
 	BOOL b_guest;
 	char *username;
@@ -342,7 +342,7 @@ struct exreq_movecopy_folder : public exreq {
 };
 
 struct exreq_delete_messages : public exreq {
-	uint32_t account_id;
+	int32_t account_id;
 	cpid_t cpid;
 	char *username;
 	uint64_t folder_id;

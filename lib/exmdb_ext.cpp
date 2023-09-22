@@ -380,7 +380,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_copy_folder_internal &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.account_id));
+	TRY(x.g_int32(&d.account_id));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_guest));
 	TRY(x.g_uint8(&tmp_byte));
@@ -397,7 +397,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_copy_folder_internal &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_copy_folder_internal &d)
 {
-	TRY(x.p_uint32(d.account_id));
+	TRY(x.p_int32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_bool(d.b_guest));
 	if (d.username == nullptr) {
@@ -461,7 +461,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_search_criteria &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_message &d)
 {
-	TRY(x.g_uint32(&d.account_id));
+	TRY(x.g_int32(&d.account_id));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint64(&d.message_id));
 	TRY(x.g_uint64(&d.dst_fid));
@@ -471,7 +471,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_message &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_movecopy_message &d)
 {
-	TRY(x.p_uint32(d.account_id));
+	TRY(x.p_int32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_uint64(d.message_id));
 	TRY(x.p_uint64(d.dst_fid));
@@ -483,7 +483,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_messages &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.account_id));
+	TRY(x.g_int32(&d.account_id));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_guest));
 	TRY(x.g_uint8(&tmp_byte));
@@ -502,7 +502,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_messages &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_movecopy_messages &d)
 {
-	TRY(x.p_uint32(d.account_id));
+	TRY(x.p_int32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_bool(d.b_guest));
 	if (d.username == nullptr) {
@@ -521,7 +521,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_folder &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.account_id));
+	TRY(x.g_int32(&d.account_id));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_bool(&d.b_guest));
 	TRY(x.g_uint8(&tmp_byte));
@@ -538,7 +538,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_movecopy_folder &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_movecopy_folder &d)
 {
-	TRY(x.p_uint32(d.account_id));
+	TRY(x.p_int32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
 	TRY(x.p_bool(d.b_guest));
 	if (d.username == nullptr) {
@@ -558,7 +558,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_messages &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(x.g_uint32(&d.account_id));
+	TRY(x.g_int32(&d.account_id));
 	TRY(x.g_nlscp(&d.cpid));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0)
@@ -575,7 +575,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_delete_messages &d)
 
 static pack_result exmdb_push(EXT_PUSH &x, const exreq_delete_messages &d)
 {
-	TRY(x.p_uint32(d.account_id));
+	TRY(x.p_int32(d.account_id));
 	TRY(x.p_uint32(d.cpid));
 	if (d.username == nullptr) {
 		TRY(x.p_uint8(0));
