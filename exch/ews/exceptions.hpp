@@ -293,6 +293,14 @@ E(3178, "missing child node in SetFolderField object");
 E(3179, "cannot modify target folder");
 E(3180, "failed to empty folder");
 E(3181, "empty folder to deleted items is not supported");
+E(3182, "failed to allocate message id");
+E(3183, "movecopy opertaion failed");
+E(3184, "cannot write to destination folder");
+E(3185, "cannot read from source directory");
+E(3186, "move/copy between stores is not supported");
+E(3187, "item not found");
+E(3188, "inconsistent item id");
+E(3189, "source and destination folder are the same");
 
 #undef E
 }

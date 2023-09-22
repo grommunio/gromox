@@ -326,7 +326,7 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
 		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3179);
 		BOOL partial;
-		if(!ctx.plugin.exmdb.empty_folder(dir.c_str(), CP_ACP, ctx.auth_info.username, folder.folderId, deleteFlags, &partial)
+		if(!ctx.plugin.exmdb.empty_folder(dir.c_str(), CP_ACP, nullptr, folder.folderId, deleteFlags, &partial)
 		   || partial)
 			throw EWSError::CannotEmptyFolder(E3180);
 		data.ResponseMessages.emplace_back().success();
@@ -364,7 +364,7 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
-			data.ResponseMessages.emplace_back(err);
+		data.ResponseMessages.emplace_back(err);
 	}
 
 	data.serialize(response);
@@ -592,7 +592,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 }
 
 /**
- * @brief      Process MoveFolder
+ * @brief      Process CopyFolder or MoveFolder
  *
  * @param      request   Request data
  * @param      response  XMLElement to store response in
@@ -627,6 +627,54 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 		auto& msg = std::visit([&](auto& d) -> mFolderInfoResponseMessage&
 			                    {return static_cast<mFolderInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, shape));
+		msg.success();
+	} catch(const EWSError& err) {
+		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);
+	}
+
+	std::visit([&](auto& d){d.serialize(response);}, data);
+}
+
+/**
+ * @brief      Process CopyItem or MoveItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSContext& ctx)
+{
+	response->SetName(request.copy? "m:CopyItemResponse" : "m:MoveItemResponse");
+
+	ctx.experimental();
+
+	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
+	std::string dir = ctx.getDir(dstFolder);
+
+	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
+
+	using MCResponse = std::variant<mCopyItemResponse, mMoveItemResponse>;
+	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<1>{});};
+	MCResponse data = mkData();
+	std::visit([&](auto& d){d.ResponseMessages.reserve(request.ItemIds.size());}, data);
+
+	sShape shape = sShape(tItemResponseShape());
+
+	for(const tItemId& itemId : request.ItemIds) try {
+		if(!dstAccess)
+			throw EWSError::AccessDenied(E3184);
+		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
+		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
+		if(!(ctx.permissions(ctx.auth_info.username, sourceFolder, dir.c_str()) & frightsReadAny))
+			throw EWSError::AccessDenied(E3185);
+		if(sourceFolder.target != dstFolder.target)
+			throw EWSError::CrossMailboxMoveCopy(E3186);
+		ctx.validate(dir, meid);
+		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
+		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
+			                   {return static_cast<mItemInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
+		if(request.ReturnNewItemIds && *request.ReturnNewItemIds)
+			msg.Items.emplace_back(ctx.loadItem(dir, dstFolder.folderId, newItemId, shape));
 		msg.success();
 	} catch(const EWSError& err) {
 		std::visit([&](auto& d){d.ResponseMessages.emplace_back(err);}, data);

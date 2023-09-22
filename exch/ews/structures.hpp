@@ -2036,6 +2036,20 @@ struct mBaseMoveCopyFolder
 };
 
 /**
+ * Messages.xsd:1080
+ */
+struct mBaseMoveCopyItem
+{
+	mBaseMoveCopyItem(const tinyxml2::XMLElement*, bool);
+
+	tTargetFolderIdType ToFolderId;
+	std::vector<tItemId> ItemIds;
+	std::optional<bool> ReturnNewItemIds;
+
+	bool copy;
+};
+
+/**
  * Messages.xsd:799
  */
 struct mFolderInfoResponseMessage : public mResponseMessageType
@@ -2046,6 +2060,19 @@ struct mFolderInfoResponseMessage : public mResponseMessageType
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
+
+/**
+ * Messages.xsd:990
+ */
+struct mItemInfoResponseMessage : public mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	std::vector<sItem> Items;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 
 /**
  * Messages.xsd:879
@@ -2067,6 +2094,31 @@ struct mCopyFolderResponseMessage : public mFolderInfoResponseMessage
 struct mCopyFolderResponse
 {
 	std::vector<mCopyFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1099
+ */
+struct mCopyItemRequest : public mBaseMoveCopyItem
+{
+	explicit mCopyItemRequest(const tinyxml2::XMLElement*);
+};
+
+struct mCopyItemResponseMessage : public mItemInfoResponseMessage
+{
+	static constexpr char NAME[] = "CopyItemResponseMessage";
+
+	using mItemInfoResponseMessage::mItemInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:1529
+ */
+struct mCopyItemResponse
+{
+	std::vector<mCopyItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -2098,18 +2150,6 @@ struct mCreateFolderResponseMessage : public mFolderInfoResponseMessage
 struct mCreateFolderResponse
 {
 	std::vector<mCreateFolderResponseMessage> ResponseMessages;
-
-	void serialize(tinyxml2::XMLElement*) const;
-};
-
-/**
- * Messages.xsd:990
- */
-struct mItemInfoResponseMessage : public mResponseMessageType
-{
-	using mResponseMessageType::mResponseMessageType;
-
-	std::vector<sItem> Items;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
@@ -2487,6 +2527,34 @@ struct mMoveFolderResponseMessage : public mFolderInfoResponseMessage
 struct mMoveFolderResponse
 {
 	std::vector<mMoveFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1093
+ */
+struct mMoveItemRequest : public mBaseMoveCopyItem
+{
+	explicit mMoveItemRequest(const tinyxml2::XMLElement*);
+};
+
+/**
+ * Messages.xsd:597
+ */
+struct mMoveItemResponseMessage : public mItemInfoResponseMessage
+{
+	static constexpr char NAME[] = "MoveItemResponseMessage";
+
+	using mItemInfoResponseMessage::mItemInfoResponseMessage;
+};
+
+/**
+ * Messages.xsd:1524
+ */
+struct mMoveItemResponse
+{
+	std::vector<mMoveItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

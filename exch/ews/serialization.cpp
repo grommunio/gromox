@@ -939,11 +939,25 @@ mBaseMoveCopyFolder::mBaseMoveCopyFolder(const tinyxml2::XMLElement* xml, bool c
 	copy(c)
 {}
 
+mBaseMoveCopyItem::mBaseMoveCopyItem(const tinyxml2::XMLElement* xml, bool c) :
+	XMLINIT(ToFolderId),
+	XMLINIT(ItemIds),
+	XMLINIT(ReturnNewItemIds),
+	copy(c)
+{}
+
 mCopyFolderRequest::mCopyFolderRequest(const tinyxml2::XMLElement* xml) :
 	mBaseMoveCopyFolder(xml, true)
 {}
 
 void mCopyFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mCopyItemRequest::mCopyItemRequest(const tinyxml2::XMLElement* xml) :
+	mBaseMoveCopyItem(xml, true)
+{}
+
+void mCopyItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
 mCreateFolderRequest::mCreateFolderRequest(const tinyxml2::XMLElement* xml) :
@@ -1092,6 +1106,13 @@ mMoveFolderRequest::mMoveFolderRequest(const tinyxml2::XMLElement* xml) :
 {}
 
 void mMoveFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mMoveItemRequest::mMoveItemRequest(const tinyxml2::XMLElement* xml) :
+	mBaseMoveCopyItem(xml, false)
+{}
+
+void mMoveItemResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
 void mResponseMessageType::serialize(tinyxml2::XMLElement* xml) const
