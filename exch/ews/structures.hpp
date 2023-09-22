@@ -483,7 +483,7 @@ struct tCalendarEvent : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "CalendarEvent";
 
-	tCalendarEvent(const freebusy_event);
+	tCalendarEvent(const freebusy_event&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 

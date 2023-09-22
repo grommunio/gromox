@@ -1209,7 +1209,7 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tCalendarEvent::tCalendarEvent(const freebusy_event fb_event) :
+tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 	StartTime(time_point::clock::from_time_t(fb_event.start_time)),
 	EndTime(time_point::clock::from_time_t(fb_event.end_time))
 {
@@ -1256,9 +1256,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 	auto &cal_events = CalendarEventArray.emplace();
 	cal_events.reserve(fb_data.size());
 
-	for (auto &fb_event : fb_data) {
-		cal_events.emplace_back(fb_event);
-	}
+	std::copy(fb_data.begin(), fb_data.end(), std::back_inserter(cal_events));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
