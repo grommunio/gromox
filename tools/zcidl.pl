@@ -11,7 +11,7 @@ our $gen_mode;
 );
 
 if ($gen_mode eq "CLN") {
-	print "#include <$_>\n" for qw(gromox/defs.h gromox/zcore_client.hpp gromox/zcore_rpc.hpp);
+	print "#include <$_>\n" for qw(utility gromox/defs.h gromox/zcore_client.hpp gromox/zcore_rpc.hpp);
 	print "#include \"$_\"\n" for qw(php.h);
 }
 
@@ -39,8 +39,8 @@ while (<STDIN>) {
 			print "\tauto &r = *r1;\n";
 		}
 		print "\tr0->result = zs_$func(", join(", ",
-			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
-			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
+			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "*" : "")."q.$field"; } @$iargs),
+			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "" : "&")."r.$field"; } @$oargs),
 		), ");\n";
 		print "\tbreak;\n}\n";
 		next;
@@ -52,6 +52,8 @@ while (<STDIN>) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
 			print ", deconst($field)";
+		} elsif (substr($type, -1, 1) eq "&") {
+			print ", deconst(&$field)";
 		} else {
 			print ", $field";
 		}
@@ -63,7 +65,8 @@ while (<STDIN>) {
 	}
 	for (@$oargs) {
 		my($type, $field) = @$_;
-		print "\t*$field = r.$field;\n";
+		print "\t", (substr($type, -1, 1) eq "&" ? "" : "*"),
+		      "$field = std::move(r.$field);\n";
 	}
 	print "\treturn r.result;\n}\n\n";
 }

@@ -12,7 +12,7 @@ our $gen_mode;
 );
 
 if ($gen_mode eq "CLN" || $gen_mode eq "SDP") {
-	print "#include <$_>\n" for qw(cstring gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
+	print "#include <$_>\n" for qw(cstring utility gromox/exmdb_client.hpp gromox/exmdb_rpc.hpp);
 	if ($gen_mode eq "SDP") {
 		print "#include <$_>\n" for qw(gromox/exmdb_common_util.hpp gromox/exmdb_ext.hpp gromox/exmdb_provider_client.hpp gromox/exmdb_server.hpp);
 	}
@@ -56,8 +56,8 @@ while (<STDIN>) {
 			print "\tauto &r = *r1;\n";
 		}
 		print "\treturn exmdb_server::$func(", join(", ", "q0->dir",
-			(map { my($type, $field) = @$_; "q.$field"; } @$iargs),
-			(map { my($type, $field) = @$_; "&r.$field"; } @$oargs),
+			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "*" : "")."q.$field"; } @$iargs),
+			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "" : "&")."r.$field"; } @$oargs),
 		), ");\n}\n";
 		next;
 	}
@@ -68,6 +68,11 @@ while (<STDIN>) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
 			print ", deconst($field)";
+		} elsif (substr($type, -1, 1) eq "&") {
+			# struct members should continue to use a pointer,
+			# because refs are so awkward to assign (more so during
+			# deserialization than with serialization)
+			print ", deconst(&$field)";
 		} else {
 			print ", $field";
 		}
@@ -76,7 +81,8 @@ while (<STDIN>) {
 	print "\tif (!exmdb_client_do_rpc(&q, &r))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
-		print "\t*$field = r.$field;\n";
+		print "\t", (substr($type, -1, 1) eq "&" ? "" : "*"),
+		      "$field = std::move(r.$field);\n";
 	}
 	print "\treturn TRUE;\n}\n\n";
 }
