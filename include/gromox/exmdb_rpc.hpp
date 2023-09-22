@@ -30,7 +30,7 @@ enum class exmdb_callid : uint8_t {
 	get_named_propids = 0x04,
 	get_named_propnames = 0x05,
 	get_mapping_guid = 0x06,
-	get_mapping_replid = 0x07,
+	// get_mapping_replid (v1) = 0x07,
 	get_store_all_proptags = 0x08,
 	get_store_properties = 0x09,
 	set_store_properties = 0x0a,
@@ -160,6 +160,7 @@ enum class exmdb_callid : uint8_t {
 	purge_datafiles = 0x86,
 	autoreply_tsquery = 0x87,
 	autoreply_tsupdate = 0x88,
+	get_mapping_replid = 0x89,
 	/* update exch/exmdb_provider/names.cpp! */
 };
 
@@ -871,8 +872,8 @@ struct exresp_get_mapping_guid : public exresp {
 };
 
 struct exresp_get_mapping_replid : public exresp {
-	BOOL b_found;
-	uint16_t replid;
+	uint16_t replid = 0;
+	ec_error_t e_result = ecSuccess;
 };
 
 struct exresp_get_store_all_proptags : public exresp {

@@ -16,7 +16,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(GET_NAMED_PROPIDS),
 	E(GET_NAMED_PROPNAMES),
 	E(GET_MAPPING_GUID),
-	E(GET_MAPPING_REPLID),
+	"GET_MAPPING_REPLID_V1",
 	E(GET_STORE_ALL_PROPTAGS),
 	E(GET_STORE_PROPERTIES),
 	E(SET_STORE_PROPERTIES),
@@ -146,13 +146,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(PURGE_DATAFILES),
 	E(AUTOREPLY_TSQUERY),
 	E(AUTOREPLY_TSUPDATE),
+	E(GET_MAPPING_REPLID),
 };
 #undef E
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::autoreply_tsupdate) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::get_mapping_replid) + 1);
 	auto s = j < std::size(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

@@ -1174,6 +1174,7 @@ pack_result EXT_PULL::g_problem_a(PROBLEM_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
+/* Works for GIDs and XIDs */
 pack_result EXT_PULL::g_xid(uint8_t size, XID *pxid)
 {
 	if (size < 17 || size > 24)

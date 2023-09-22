@@ -2518,14 +2518,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_mapping_guid &d)
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_mapping_replid &d)
 {
-	TRY(x.g_bool(&d.b_found));
-	return x.g_uint16(&d.replid);
+	TRY(x.g_uint16(&d.replid));
+	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_mapping_replid &d)
 {
-	TRY(x.p_bool(d.b_found));
-	return x.p_uint16(d.replid);
+	TRY(x.p_uint16(d.replid));
+	return x.p_uint32(d.e_result);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_store_all_proptags &d)

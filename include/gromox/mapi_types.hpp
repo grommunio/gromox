@@ -390,58 +390,29 @@ struct MESSAGE_READ_STAT {
 #define SYNC_DELETES_FLAG_HIERARCHY					0x01
 #define SYNC_DELETES_FLAG_HARDDELETE				0x02
 
-#define NOTIFICATION_TYPE_NEWMAIL					0x02
-#define NOTIFICATION_TYPE_OBJECTCREATED				0x04
-#define NOTIFICATION_TYPE_OBJECTDELETED				0x08
-#define NOTIFICATION_TYPE_OBJECTMODIFIED			0x10
-#define NOTIFICATION_TYPE_OBJECTMOVED				0x20
-#define NOTIFICATION_TYPE_OBJECTCOPIED				0x40
-#define NOTIFICATION_TYPE_SEARCHCOMPLETE			0x80
+enum notif_type : unsigned int {
+	NF_NEW_MAIL        = 0x2,
+	NF_OBJECT_CREATED  = 0x4,
+	NF_OBJECT_DELETED  = 0x8,
+	NF_OBJECT_MODIFIED = 0x10,
+	NF_OBJECT_MOVED    = 0x20,
+	NF_OBJECT_COPIED   = 0x40,
+	NF_SEARCH_COMPLETE = 0x80,
 
-#define NOTIFICATION_FLAG_NEWMAIL					0x0002
-#define NOTIFICATION_FLAG_OBJECTCREATED				0x0004
-#define NOTIFICATION_FLAG_OBJECTDELETED				0x0008
-#define NOTIFICATION_FLAG_OBJECTMODIFIED			0x0010
-#define NOTIFICATION_FLAG_OBJECTMOVED				0x0020
-#define NOTIFICATION_FLAG_OBJECTCOPIED				0x0040
-#define NOTIFICATION_FLAG_SEARCHCOMPLETE			0x0080
-#define NOTIFICATION_FLAG_TABLE_MODIFIED			0x0100
-#define NOTIFICATION_FLAG_EXTENDED					0x0400
-
-#define NOTIFICATION_FLAG_MOST_TOTAL				0x1000
-#define NOTIFICATION_FLAG_MOST_UNREAD				0x2000
-#define NOTIFICATION_FLAG_MOST_SEARCH				0x4000
-#define NOTIFICATION_FLAG_MOST_MESSAGE				0x8000
+	/* Used only by emsmdb */
+	NF_TABLE_MODIFIED  = 0x100,
+	NF_EXTENDED        = 0x400,
+	NF_HAS_TOTAL       = 0x1000,
+	NF_HAS_UNREAD      = 0x2000,
+	NF_BY_SEARCH       = 0x4000,
+	NF_BY_MESSAGE      = 0x8000,
+};
 
 #define TABLE_EVENT_TABLE_CHANGED					0x0001
 #define TABLE_EVENT_ROW_ADDED						0x0003
 #define TABLE_EVENT_ROW_DELETED						0x0004
 #define TABLE_EVENT_ROW_MODIFIED					0x0005
 #define TABLE_EVENT_RESTRICTION_CHANGED				0x0007
-
-struct NOTIFICATION_DATA {
-	uint16_t notification_flags;
-	uint16_t *ptable_event;
-	uint64_t *prow_folder_id;
-	uint64_t *prow_message_id;
-	uint32_t *prow_instance;
-	uint64_t *pafter_folder_id;
-	uint64_t *pafter_row_id;
-	uint32_t *pafter_instance;
-	BINARY *prow_data;
-	uint64_t *pfolder_id;
-	uint64_t *pmessage_id;
-	uint64_t *pparent_id;
-	uint64_t *pold_folder_id;
-	uint64_t *pold_message_id;
-	uint64_t *pold_parent_id;
-	PROPTAG_ARRAY *pproptags;
-	uint32_t *ptotal_count;
-	uint32_t *punread_count;
-	uint32_t *pmessage_flags;
-	uint8_t *punicode_flag;
-	char *pstr_class;
-};
 
 enum {
 	PRIVATE_FID_ROOT = 0x01,

@@ -346,15 +346,15 @@ static pack_result rpc_ext_push_znotification(
 {
 	QRF(pext->p_uint32(r->event_type));
 	switch (r->event_type) {
-	case EVENT_TYPE_NEWMAIL:
+	case NF_NEW_MAIL:
 		return rpc_ext_push_newmail_znotification(pext,
 		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
-	case EVENT_TYPE_OBJECTCREATED:
-	case EVENT_TYPE_OBJECTDELETED:
-	case EVENT_TYPE_OBJECTMODIFIED:
-	case EVENT_TYPE_OBJECTMOVED:
-	case EVENT_TYPE_OBJECTCOPIED:
-	case EVENT_TYPE_SEARCHCOMPLETE:
+	case NF_OBJECT_CREATED:
+	case NF_OBJECT_DELETED:
+	case NF_OBJECT_MODIFIED:
+	case NF_OBJECT_MOVED:
+	case NF_OBJECT_COPIED:
+	case NF_SEARCH_COMPLETE:
 		return rpc_ext_push_object_znotification(pext,
 		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
 	default:

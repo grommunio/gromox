@@ -2054,9 +2054,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 	}
 	cl_err.release();
 	if (!exmdb_client::subscribe_notification(dir,
-	    NOTIFICATION_TYPE_OBJECTCREATED | NOTIFICATION_TYPE_OBJECTDELETED |
-	    NOTIFICATION_TYPE_OBJECTMODIFIED | NOTIFICATION_TYPE_OBJECTMOVED |
-	    NOTIFICATION_TYPE_OBJECTCOPIED | NOTIFICATION_TYPE_NEWMAIL, TRUE,
+	    NF_OBJECT_CREATED | NF_OBJECT_DELETED | NF_OBJECT_MODIFIED |
+	    NF_OBJECT_MOVED | NF_OBJECT_COPIED | NF_NEW_MAIL, TRUE,
 	    0, 0, &pidb->sub_id))
 		pidb->sub_id = 0;	
 	pidb->load_time = time(nullptr);

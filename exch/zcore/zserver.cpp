@@ -330,7 +330,7 @@ static void zs_notification_proc(const char *dir,
 		return;
 	switch (pdb_notify->type) {
 	case db_notify_type::new_mail: {
-		pnotification->event_type = EVENT_TYPE_NEWMAIL;
+		pnotification->event_type = NF_NEW_MAIL;
 		pnew_mail = cu_alloc<NEWMAIL_ZNOTIFICATION>();
 		if (pnew_mail == nullptr)
 			return;
@@ -364,7 +364,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_created: {
-		pnotification->event_type = EVENT_TYPE_OBJECTCREATED;
+		pnotification->event_type = NF_OBJECT_CREATED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -385,7 +385,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::message_created: {
-		pnotification->event_type = EVENT_TYPE_OBJECTCREATED;
+		pnotification->event_type = NF_OBJECT_CREATED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -404,7 +404,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_deleted: {
-		pnotification->event_type = EVENT_TYPE_OBJECTDELETED;
+		pnotification->event_type = NF_OBJECT_DELETED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -425,7 +425,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::message_deleted: {
-		pnotification->event_type = EVENT_TYPE_OBJECTDELETED;
+		pnotification->event_type = NF_OBJECT_DELETED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -446,7 +446,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::folder_modified: {
-		pnotification->event_type = EVENT_TYPE_OBJECTMODIFIED;
+		pnotification->event_type = NF_OBJECT_MODIFIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -462,7 +462,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::message_modified: {
-		pnotification->event_type = EVENT_TYPE_OBJECTMODIFIED;
+		pnotification->event_type = NF_OBJECT_MODIFIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -485,7 +485,7 @@ static void zs_notification_proc(const char *dir,
 	case db_notify_type::folder_moved:
 	case db_notify_type::folder_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::folder_moved ?
-		                            EVENT_TYPE_OBJECTMOVED : EVENT_TYPE_OBJECTCOPIED;
+		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -518,7 +518,7 @@ static void zs_notification_proc(const char *dir,
 	case db_notify_type::message_moved:
 	case db_notify_type::message_copied: {
 		pnotification->event_type = pdb_notify->type == db_notify_type::message_moved ?
-		                            EVENT_TYPE_OBJECTMOVED : EVENT_TYPE_OBJECTCOPIED;
+		                            NF_OBJECT_MOVED : NF_OBJECT_COPIED;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -549,7 +549,7 @@ static void zs_notification_proc(const char *dir,
 		break;
 	}
 	case db_notify_type::search_completed: {
-		pnotification->event_type = EVENT_TYPE_SEARCHCOMPLETE;
+		pnotification->event_type = NF_SEARCH_COMPLETE;
 		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
 		if (pobj_notify == nullptr)
 			return;
@@ -2408,7 +2408,6 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
     BINARY folder_key, const BINARY *pmessage_key, BINARY *pentryid)
 {
 	XID tmp_xid;
-	BOOL b_found;
 	BINARY *pbin;
 	uint16_t replid;
 	zs_objtype mapi_type;
@@ -2443,11 +2442,12 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 				return ecInvalidParam;
 			if (!system_services_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
+			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-			    tmp_xid.guid, &b_found, &replid))
+			    tmp_xid.guid, &replid, &ret))
 				return ecError;
-			if (!b_found)
-				return ecNotFound;
+			if (ret != ecSuccess)
+				return ret;
 		}
 		folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 	}
@@ -4406,7 +4406,6 @@ ec_error_t zs_importfolder(GUID hsession,
 	BOOL b_exist;
 	BINARY *pbin;
 	BOOL b_guest;
-	BOOL b_found;
 	void *pvalue;
 	BOOL b_partial;
 	uint64_t nttime;
@@ -4503,11 +4502,12 @@ ec_error_t zs_importfolder(GUID hsession,
 				return ecInvalidParam;
 			if (!system_services_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
+			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-			    tmp_xid.guid, &b_found, &replid))
+			    tmp_xid.guid, &replid, &ret))
 				return ecError;
-			if (!b_found)
-				return ecInvalidParam;
+			if (ret != ecSuccess)
+				return ret;
 			folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 		} else {
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
@@ -4626,7 +4626,6 @@ ec_error_t zs_importdeletion(GUID hsession,
 	XID tmp_xid;
 	void *pvalue;
 	BOOL b_exist;
-	BOOL b_found;
 	uint64_t eid;
 	BOOL b_owner;
 	BOOL b_result;
@@ -4692,11 +4691,12 @@ ec_error_t zs_importdeletion(GUID hsession,
 				if (!system_services_check_same_org(domain_id,
 				    pstore->account_id))
 					return ecInvalidParam;
+				ec_error_t ret = ecSuccess;
 				if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-				    tmp_xid.guid, &b_found, &replid))
+				    tmp_xid.guid, &replid, &ret))
 					return ecError;
-				if (!b_found)
-					return ecInvalidParam;
+				if (ret != ecSuccess)
+					return ret;
 				eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 			} else {
 				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());

@@ -14,7 +14,6 @@ struct LOGON_PMB_RESPONSE {
 	uint64_t folder_ids[13];
 	uint8_t response_flags;
 	GUID mailbox_guid;
-	/* replguid: something for distributed server-side replication of PMBs */
 	uint16_t replid;
 	GUID replguid;
 	LOGON_TIME logon_time;
@@ -1013,12 +1012,6 @@ struct REGISTERNOTIFICATION_REQUEST {
 	uint8_t want_whole_store;
 	uint64_t *pfolder_id;
 	uint64_t *pmessage_id;
-};
-
-struct NOTIFY_RESPONSE {
-	uint32_t handle;
-	uint8_t logon_id;
-	NOTIFICATION_DATA notification_data;
 };
 
 struct PENDING_RESPONSE {

@@ -134,10 +134,9 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		return FALSE;
 	
 	pctx->pstate->pgiven->clear();
-	for (size_t i = 0; i < given_messages.count; ++i) {
+	for (size_t i = 0; i < given_messages.count; ++i)
 		if (!pctx->pstate->pgiven->append(given_messages.pids[i]))
 			return FALSE;	
-	}
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		pctx->pmessages = eid_array_dup(&chg_messages);
 		if (pctx->pmessages == nullptr)

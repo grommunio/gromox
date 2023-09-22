@@ -57,7 +57,7 @@ enum ec_error_t {
 	// ecNoFreeJses = 0x0000044C,
 	// ecDifferentJses = 0x0000044D,
 	// ecFileRemove = 0x0000044F,
-	// ecParameterOverflow = 0x00000450,
+	ecParameterOverflow = 0x00000450,
 	// ecBadVersion = 0x00000451,
 	// ecTooManyCols = 0x00000452,
 	// ecHaveMore = 0x00000453,

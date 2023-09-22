@@ -503,7 +503,7 @@ ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_te
 	if (dst == nullptr)
 		return NULL;
 	dst->event_type = src->event_type;
-	if (src->event_type == EVENT_TYPE_NEWMAIL) {
+	if (src->event_type == NF_NEW_MAIL) {
 		auto src_nm = static_cast<const NEWMAIL_ZNOTIFICATION *>(src->pnotification_data);
 		NEWMAIL_ZNOTIFICATION *dst_nm;
 		if (!b_temp) {
@@ -659,7 +659,7 @@ ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *src, BOOL b_te
 
 void common_util_free_znotification(ZNOTIFICATION *pnotification)
 {
-	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
+	if (pnotification->event_type == NF_NEW_MAIL) {
 		auto pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(pnotification->pnotification_data);
 		if (pnew_notify->entryid.pb != nullptr)
 			free(pnew_notify->entryid.pb);
@@ -865,7 +865,6 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 BOOL cu_entryid_to_fid(BINARY bin,
 	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
@@ -893,8 +892,9 @@ BOOL cu_entryid_to_fid(BINARY bin,
 		auto pinfo = zs_get_info();
 		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.database_guid, &b_found, &replid) || !b_found)
+		    tmp_entryid.database_guid, &replid, &ret) || ret != ecSuccess)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
 					tmp_entryid.global_counter);
@@ -908,7 +908,6 @@ BOOL cu_entryid_to_fid(BINARY bin,
 BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
@@ -942,9 +941,10 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 		auto pinfo = zs_get_info();
 		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
+		ec_error_t ret = ecSuccess;
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
-		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
-		    !b_found)
+		    tmp_entryid.folder_database_guid, &replid, &ret) ||
+		    ret != ecSuccess)
 			return FALSE;
 		*pfolder_id = rop_util_make_eid(replid,
 			tmp_entryid.folder_global_counter);
@@ -957,33 +957,73 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	}
 }
 
+#if 0
+static ec_error_t replguid_to_replid(const store_object &logon,
+    const GUID &guid, uint16_t &replid)
+{
+	if (guid == GUID_NONE) {
+		replid = 0;
+		return ecInvalidParam;
+	}
+	if (guid == logon.mailbox_guid) {
+		replid = 5;
+		return ecSuccess;
+	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
+	    reinterpret_cast<const char *>(&gx_dbguid_store_private) + 4, 12) == 0) {
+		auto usr_id = rop_util_get_user_id(guid);
+		if (usr_id == logon.account_id) {
+			replid = 1;
+			return ecSuccess;
+		}
+	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
+	    reinterpret_cast<const char *>(&gx_dbguid_store_public) + 4, 12) == 0) {
+		auto dom_id = rop_util_get_domain_id(guid);
+		if (!system_services_check_same_org(dom_id, logon.account_id))
+			return ecInvalidParam;
+	}
+	ec_error_t ret = ecSuccess;
+	if (!exmdb_client::get_mapping_replid(logon.get_dir(),
+	    guid, &replid, &ret))
+		return ecError;
+	return ret;
+}
+#endif
+
+static ec_error_t replid_to_replguid(const store_object &logon,
+    uint16_t replid, GUID &guid)
+{
+	auto dir = logon.get_dir();
+	BOOL b_found = false;
+	if (replid == 1)
+		guid = logon.b_private ?
+		       rop_util_make_user_guid(logon.account_id) :
+		       rop_util_make_user_guid(logon.account_id);
+	else if (replid == 5)
+		guid = logon.mailbox_guid;
+	else if (!exmdb_client::get_mapping_guid(dir, replid, &b_found, &guid))
+		return ecError;
+	else if (!b_found)
+		return ecNotFound;
+	return ecSuccess;
+}
+
 BINARY *cu_fid_to_entryid(store_object *pstore, uint64_t folder_id)
 {
-	BOOL b_found;
 	BINARY tmp_bin;
-	uint16_t replid;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
+	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	    tmp_entryid.database_guid) != ecSuccess)
+		return nullptr;
 	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
-		tmp_entryid.database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		replid = rop_util_get_replid(folder_id);
-		if (1 != replid) {
-			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
-			    replid, &b_found, &tmp_entryid.database_guid))
-				return NULL;	
-			if (!b_found)
-				return NULL;
-		} else {
-			tmp_entryid.database_guid = rop_util_make_domain_guid(pstore->account_id);
-		}
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
 	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
@@ -1003,8 +1043,6 @@ BINARY *cu_fid_to_entryid(store_object *pstore, uint64_t folder_id)
 BINARY *cu_fid_to_sk(store_object *pstore,
     uint64_t folder_id)
 {
-	BOOL b_found;
-	uint16_t replid;
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
@@ -1015,20 +1053,9 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (pstore->b_private) {
-		longid.guid = rop_util_make_user_guid(pstore->account_id);
-	} else {
-		replid = rop_util_get_replid(folder_id);
-		if (1 == replid) {
-			longid.guid = rop_util_make_domain_guid(pstore->account_id);
-		} else {
-			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
-			    replid, &b_found, &longid.guid))
-				return NULL;	
-			if (!b_found)
-				return NULL;
-		}	
-	}
+	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	    longid.guid) != ecSuccess)
+		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
@@ -1040,34 +1067,26 @@ BINARY *cu_fid_to_sk(store_object *pstore,
 BINARY *cu_mid_to_entryid(store_object *pstore,
 	uint64_t folder_id, uint64_t message_id)
 {
-	BOOL b_found;
 	BINARY tmp_bin;
-	uint16_t replid;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
+	if (replid_to_replguid(*pstore, rop_util_get_replid(folder_id),
+	    tmp_entryid.folder_database_guid) != ecSuccess)
+		return nullptr;
+	if (replid_to_replguid(*pstore, rop_util_get_replid(message_id),
+	    tmp_entryid.message_database_guid) != ecSuccess)
+		return nullptr;
 	if (pstore->b_private) {
 		tmp_bin.cb = 0;
 		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
-		tmp_entryid.folder_database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		replid = rop_util_get_replid(folder_id);
-		if (1 != replid) {
-			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
-			    replid, &b_found, &tmp_entryid.folder_database_guid))
-				return NULL;	
-			if (!b_found)
-				return NULL;
-		} else {
-			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(pstore->account_id);
-		}
 		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
 	}
-	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
 	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
