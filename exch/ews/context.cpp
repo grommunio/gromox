@@ -671,7 +671,6 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL p
 {
 	if(!pcl.append(xid))
 		throw DispatchError(E3121);
-	pcl.serialize();
 	std::unique_ptr<BINARY, detail::Cleaner> pcltemp(pcl.serialize());
 	if(!pcltemp)
 		throw EWSError::NotEnoughMemory(E3122);
