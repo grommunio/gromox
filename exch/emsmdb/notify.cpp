@@ -17,7 +17,7 @@ using namespace gromox;
 
 NOTIFY_RESPONSE *notify_response::create(uint32_t handle, uint8_t logon_id) try
 {
-	return new notify_response(handle, logon_id);
+	return new notify_response{handle, logon_id};
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
