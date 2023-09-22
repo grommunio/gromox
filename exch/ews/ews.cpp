@@ -145,10 +145,12 @@ static void process(const XMLElement* request, XMLElement* response, const EWSCo
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
 	{"CopyFolder", process<Structures::mCopyFolderRequest>},
+	{"CopyItem", process<Structures::mCopyItemRequest>},
 	{"CreateFolder", process<Structures::mCreateFolderRequest>},
 	{"CreateItem", process<Structures::mCreateItemRequest>},
 	{"DeleteFolder", process<Structures::mDeleteFolderRequest>},
 	{"DeleteItem", process<Structures::mDeleteItemRequest>},
+	{"EmptyFolder", process<Structures::mEmptyFolderRequest>},
 	{"GetAttachment", process<Structures::mGetAttachmentRequest>},
 	{"GetFolder", process<Structures::mGetFolderRequest>},
 	{"GetItem", process<Structures::mGetItemRequest>},
@@ -157,6 +159,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},
+	{"MoveItem", process<Structures::mMoveItemRequest>},
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
 	{"SendItem", process<Structures::mSendItemRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},

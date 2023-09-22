@@ -82,6 +82,7 @@ public:
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(ItemSave); ///< Failed to set item properties
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
@@ -290,6 +291,19 @@ E(3175, "failed to set folder properties");
 E(3176, "failed to remove folder properties");
 E(3177, "no valid folder object found");
 E(3178, "missing child node in SetFolderField object");
+E(3179, "cannot modify target folder");
+E(3180, "failed to empty folder");
+E(3181, "empty folder to deleted items is not supported");
+E(3182, "failed to allocate message id");
+E(3183, "movecopy opertaion failed");
+E(3184, "cannot write to destination folder");
+E(3185, "cannot read from source directory");
+E(3186, "move/copy between stores is not supported");
+E(3187, "item not found");
+E(3188, "inconsistent item id");
+E(3189, "source and destination folder are the same");
+E(3190, "cannot write to object");
+E(3191, "cannot write to target folder");
 
 #undef E
 }

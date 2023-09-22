@@ -671,7 +671,6 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL p
 {
 	if(!pcl.append(xid))
 		throw DispatchError(E3121);
-	pcl.serialize();
 	std::unique_ptr<BINARY, detail::Cleaner> pcltemp(pcl.serialize());
 	if(!pcltemp)
 		throw EWSError::NotEnoughMemory(E3122);
@@ -722,6 +721,30 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 	if(!plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
 		throw DispatchError(E3164);
 	return newFolderId;
+}
+
+/**
+ * @brief      Move or copy message object
+ *
+ * @param      dir         Store directory
+ * @param      itemId      Message iD
+ * @param      newParent   Destination folder
+ * @param      accountId   Account ID of executing user
+ * @param      copy        Whether to copy (instead of moving)
+ *
+ * @return     New message ID
+ */
+uint64_t EWSContext::moveCopyItem(const std::string& dir, const sMessageEntryId& meid, uint64_t newParent, bool copy) const
+{
+	auto& exmdb = plugin.exmdb;
+	uint64_t newId;
+	if(!exmdb.allocate_message_id(dir.c_str(), newParent, &newId))
+		throw DispatchError(E3182);
+	BOOL success;
+	if(!plugin.exmdb.movecopy_message(dir.c_str(), 0, CP_ACP, meid.messageId(), newParent, newId, copy? false : TRUE, &success)
+	                                  || !success)
+		throw EWSError::MoveCopyFailed(E3183);
+	return newId;
 }
 
 /**
@@ -1220,6 +1243,27 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 		throw EWSError::CannotFindUser(E3091(username));
 	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
 	                   plugin.x500_org_name.c_str(), domainId, userId, userpart);
+}
+
+/**
+ * @brief      Validate consistency of message entry id
+ *
+ * @param      meid          Message entry id to validate
+ * @param      throwOnError  Whether to throw an appropriate EWSError instead of returning
+ *
+ * @return     true if entry id is consistent, false otherwise (and throwOnError is false)
+ */
+void EWSContext::validate(const std::string& dir, const sMessageEntryId& meid) const
+{
+	const uint64_t* parentFid = nullptr;
+	try {
+		parentFid = getItemProp<uint64_t>(dir, meid.messageId(), PidTagParentFolderId);
+	} catch (const DispatchError&) {
+	}
+	if(!parentFid)
+		throw EWSError::ItemNotFound(E3187);
+	if(rop_util_get_gc_value(*parentFid) != meid.folderId())
+		throw EWSError::InvalidId(E3188);
 }
 
 /**
