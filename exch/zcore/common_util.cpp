@@ -997,7 +997,7 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 	if (replid == 1)
 		guid = logon.b_private ?
 		       rop_util_make_user_guid(logon.account_id) :
-		       rop_util_make_user_guid(logon.account_id);
+		       rop_util_make_domain_guid(logon.account_id);
 	else if (replid == 5)
 		guid = logon.mailbox_guid;
 	else if (!exmdb_client::get_mapping_guid(dir, replid, &b_found, &guid))

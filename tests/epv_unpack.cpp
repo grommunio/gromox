@@ -48,6 +48,8 @@ static int do_mem(const void *data, size_t len)
 		fprintf(stderr, "Unpack failed with status %d\n", static_cast<int>(ret));
 		return EXIT_FAILURE;
 	}
+	if (props.ppropval == nullptr)
+		return EXIT_SUCCESS;
 	for (unsigned int i = 0; i < props.count; ++i)
 		printf("%08xh:%s\n", props.ppropval[i].proptag,
 		       props.ppropval[i].value_repr().c_str());

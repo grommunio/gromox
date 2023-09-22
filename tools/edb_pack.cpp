@@ -151,7 +151,7 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_MV_CLSID_1:
 	case EPV_MV_BINARY_1:
 		TRY(g_uint8(&u.u8));
-		u.u16 = u.u8;
+		u.u16 = static_cast<uint16_t>(u.u8); // COV-CID-1521562
 		break;
 	case EPV_MV_SHORT_2:
 	case EPV_MV_LONG_2:
@@ -440,8 +440,10 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 	else
 		return pack_result::format;
 	r->count = ashort;
-	if (r->count == 0)
+	if (r->count == 0) {
+		r->ppropval = nullptr;
 		return pack_result::ok;
+	}
 	r->ppropval = anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (r->ppropval == nullptr) {
 		r->count = 0;

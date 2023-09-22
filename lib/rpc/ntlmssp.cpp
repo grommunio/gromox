@@ -572,8 +572,6 @@ static bool ntlmssp_parse_packetv(const DATA_BLOB blob, const char *format,
 			if (len1 > 0) {
 				memcpy(ps, &blob.pb[ptr_ofs], len1);
 				ps[len1] = '\0';
-			} else {
-				ps[0] = '\0';
 			}
 			break;
 		case 'B':
