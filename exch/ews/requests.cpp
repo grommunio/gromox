@@ -611,7 +611,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
 
 	using MCResponse = std::variant<mCopyFolderResponse, mMoveFolderResponse>;
-	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<0>{});};
+	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<1>{});};
 	MCResponse data = mkData();
 	std::visit([&](auto& d){d.ResponseMessages.reserve(request.FolderIds.size());}, data);
 
