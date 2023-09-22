@@ -2816,6 +2816,8 @@ struct mUpdateItemResponseMessage : public mItemInfoResponseMessage
 {
 	static constexpr char NAME[] = "UpdateItemResponseMessage";
 
+	using mItemInfoResponseMessage::mItemInfoResponseMessage;
+
 	tConflictResults ConflictResults;
 
 	void serialize(tinyxml2::XMLElement*) const;

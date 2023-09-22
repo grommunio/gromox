@@ -1136,8 +1136,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 
 	sShape idOnly;
 	idOnly.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
-	for(const auto& change : request.ItemChanges) {
-		mUpdateItemResponseMessage& msg = data.ResponseMessages.emplace_back();
+	for(const auto& change : request.ItemChanges) try {
 		sMessageEntryId mid(change.ItemId.Id.data(), change.ItemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);
@@ -1151,13 +1150,16 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 		PROPTAG_ARRAY tagsRm = shape.remove();
 		PROBLEM_ARRAY problems;
 		if(!ctx.plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
-			throw DispatchError(E3092);
+			throw EWSError::ItemSave(E3092);
 		if(!ctx.plugin.exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
-			throw DispatchError(E3093);
+			throw EWSError::ItemSave(E3093);
 		ctx.updated(dir, mid);
+		mUpdateItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
 		msg.ConflictResults.Count = problems.count;
 		msg.success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
 
 	data.serialize(response);

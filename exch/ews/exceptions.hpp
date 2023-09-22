@@ -82,6 +82,7 @@ public:
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
+	ERR(ItemSave); ///< Failed to set item properties
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
