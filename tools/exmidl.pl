@@ -63,18 +63,16 @@ while (<STDIN>) {
 	}
 
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
-	print "\texreq_$func q{};\n\texresp_$func r{};\n";
-	print "\n";
-	print "\tq.call_id = exmdb_callid::$func;\n";
-	print "\tq.dir = deconst(dir);\n";
+	print "\texreq_$func q{exmdb_callid::$func, deconst(dir)";
 	for (@$iargs) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
-			print "\tq.$field = deconst($field);\n";
+			print ", deconst($field)";
 		} else {
-			print "\tq.$field = $field;\n";
+			print ", $field";
 		}
 	}
+	print "};\n\texresp_$func r{};\n";
 	print "\tif (!exmdb_client_do_rpc(&q, &r))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;

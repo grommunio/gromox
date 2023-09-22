@@ -47,16 +47,16 @@ while (<STDIN>) {
 	}
 
 	print "uint32_t zclient_$func($rbsig)\n{\n";
-	print "\tzcreq_$func q{};\n\tzcresp_$func r{};\n\n";
-	print "\tq.call_id = zcore_callid::$func;\n";
+	print "\tzcreq_$func q{zcore_callid::$func";
 	for (@$iargs) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
-			print "\tq.$field = deconst($field);\n";
+			print ", deconst($field)";
 		} else {
-			print "\tq.$field = $field;\n";
+			print ", $field";
 		}
 	}
+	print "};\n\tzcresp_$func r{};\n\n";
 	print "\tif (!zclient_do_rpc(&q, &r))\n\t\treturn ecRpcFailed;\n";
 	if (scalar(@$oargs) > 0) {
 		print "\tif (r.result != ecSuccess)\n\t\treturn r.result;\n";

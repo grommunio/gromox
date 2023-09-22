@@ -44,15 +44,10 @@ BOOL exmdb_client_relay_delivery(const char *dir, const char *from_address,
 		exmdb_server::set_dir(original_dir);
 		return b_result;
 	}
-	exreq_deliver_message q{};
+	exreq_deliver_message q{exmdb_callid::deliver_message, deconst(dir),
+		deconst(from_address), deconst(account), cpid, 0,
+		deconst(pmsg), deconst(pdigest)};
 	exresp_deliver_message r{};
-	q.call_id = exmdb_callid::deliver_message;
-	q.dir = deconst(dir);
-	q.from_address = deconst(from_address);
-	q.account = deconst(account);
-	q.cpid = cpid;
-	q.pmsg = deconst(pmsg);
-	q.pdigest = deconst(pdigest);
 	if (!exmdb_client_do_rpc(&q, &r))
 		return FALSE;
 	*presult = r.result;
