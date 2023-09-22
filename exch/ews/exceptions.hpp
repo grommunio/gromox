@@ -302,6 +302,8 @@ E(3186, "move/copy between stores is not supported");
 E(3187, "item not found");
 E(3188, "inconsistent item id");
 E(3189, "source and destination folder are the same");
+E(3190, "cannot write to object");
+E(3191, "cannot write to target folder");
 
 #undef E
 }
