@@ -1090,7 +1090,7 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 	for(const auto& change : request.FolderChanges) try {
 		sFolderSpec folder = ctx.resolveFolder(change.folderId);
 		std::string dir = ctx.getDir(folder);
-		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) | frightsEditAny))
+		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsEditAny))
 			throw EWSError::AccessDenied(E3174);
 		sShape shape(change);
 		ctx.getNamedTags(dir, shape, true);
