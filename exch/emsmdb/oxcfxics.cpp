@@ -869,7 +869,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (!exmdb_client::check_message(dir, folder_id, message_id, &b_exist))
 		return ecError;
 	BOOL b_new = !b_exist ? TRUE : false;
-	*pmessage_id = message_id;
+	*pmessage_id = 0;
 	if (plogon->logon_mode != logon_mode::owner) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client::get_folder_perm(dir,
@@ -1047,7 +1047,6 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	BOOL b_exist;
 	BINARY *pbin;
 	BOOL b_guest;
-	BOOL b_found;
 	void *pvalue;
 	BOOL b_partial;
 	uint32_t result;
@@ -1132,11 +1131,12 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 				return ecInvalidParam;
 			if (!common_util_check_same_org(domain_id, plogon->account_id))
 				return ecInvalidParam;
+			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(dir,
-			    tmp_xid.guid, &b_found, &replid))
+			    tmp_xid.guid, &replid, &ret))
 				return ecError;
-			if (!b_found)
-				return ecInvalidParam;
+			if (ret != ecSuccess)
+				return ret;
 			folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 		} else {
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
@@ -1266,7 +1266,6 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	XID tmp_xid;
 	void *pvalue;
 	BOOL b_exist;
-	BOOL b_found;
 	uint64_t eid;
 	BOOL b_owner;
 	BOOL b_result;
@@ -1278,8 +1277,8 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	EID_ARRAY message_ids;
 	
 	if (ppropvals->count != 1 ||
-	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY) {
-		mlog(LV_WARN, "W-2150: importdeletes expected proptype 0102h, but got tag %xh",
+	    ppropvals->ppropval[0].proptag != PROP_TAG(PT_MV_BINARY, 0)) {
+		mlog(LV_WARN, "W-2150: importdeletes expected proptag 00001102h, but got tag %xh",
 		        ppropvals->ppropval[0].proptag);
 		return ecInvalidParam;
 	}
@@ -1354,11 +1353,12 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 				if (!common_util_check_same_org(domain_id,
 				    plogon->account_id))
 					return ecInvalidParam;
+				ec_error_t ret = ecSuccess;
 				if (!exmdb_client::get_mapping_replid(dir,
-				    tmp_xid.guid, &b_found, &replid))
+				    tmp_xid.guid, &replid, &ret))
 					return ecError;
-				if (!b_found)
-					return ecInvalidParam;
+				if (ret != ecSuccess)
+					return ret;
 				eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 			} else {
 				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());

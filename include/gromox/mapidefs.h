@@ -1477,13 +1477,12 @@ extern const FLATUID
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
 extern const GUID
-	PSETID_ADDRESS, PSETID_APPOINTMENT,
+	GUID_NONE, PSETID_ADDRESS, PSETID_APPOINTMENT,
 	PSETID_BUSINESSCARDVIEW, PSETID_CALENDARASSISTANT, PSETID_COMMON,
 	PSETID_GROMOX, PSETID_KC, PSETID_KCARCHIVE, PSETID_LOG, PSETID_MEETING,
 	PSETID_NOTE, PSETID_REMOTE,
 	PSETID_REPORT, PSETID_SHARING, PSETID_TASK, PSETID_UNIFIEDMESSAGING,
 	PS_INTERNET_HEADERS, PS_MAPI,
 	PS_PUBLIC_STRINGS,
-	gx_dbguid_store_private, gx_dbguid_store_public,
-	gx_replguid_store_private, gx_replguid_store_public;
+	gx_dbguid_store_private, gx_dbguid_store_public;
 extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];

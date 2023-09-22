@@ -357,33 +357,19 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 
 BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
 {
-	BOOL b_found;
 	BINARY tmp_bin;
-	uint16_t replid;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (plogon->is_private()) {
-		tmp_bin.cb = 0;
-		tmp_bin.pv = &tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
-		tmp_entryid.database_guid = rop_util_make_user_guid(plogon->account_id);
-		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
-	} else {
-		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		replid = rop_util_get_replid(folder_id);
-		if (1 != replid) {
-			if (!exmdb_client::get_mapping_guid(plogon->get_dir(),
-			    replid, &b_found, &tmp_entryid.database_guid))
-				return NULL;	
-			if (!b_found)
-				return NULL;
-		} else {
-			tmp_entryid.database_guid = rop_util_make_domain_guid(plogon->account_id);
-		}
-		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
-	}
+	tmp_bin.cb = 0;
+	tmp_bin.pv = &tmp_entryid.provider_uid;
+	rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
+	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	    tmp_entryid.database_guid) != ecSuccess)
+		return nullptr;
+	tmp_entryid.folder_type = plogon->is_private() ?
+	                          EITLT_PRIVATE_FOLDER : EITLT_PUBLIC_FOLDER;
 	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
@@ -400,8 +386,6 @@ BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
 
 BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
 {
-	BOOL b_found;
-	uint16_t replid;
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
@@ -412,20 +396,9 @@ BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
 	pbin->pv = common_util_alloc(22);
 	if (pbin->pv == nullptr)
 		return NULL;
-	if (plogon->is_private()) {
-		longid.guid = rop_util_make_user_guid(plogon->account_id);
-	} else {
-		replid = rop_util_get_replid(folder_id);
-		if (1 == replid) {
-			longid.guid = rop_util_make_domain_guid(plogon->account_id);
-		} else {
-			if (!exmdb_client::get_mapping_guid(plogon->get_dir(),
-			    replid, &b_found, &longid.guid))
-				return NULL;	
-			if (!b_found)
-				return NULL;
-		}	
-	}
+	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	    longid.guid) != ecSuccess)
+		return nullptr;
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
@@ -437,34 +410,22 @@ BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
 BINARY *cu_mid_to_entryid(logon_object *plogon,
 	uint64_t folder_id, uint64_t message_id)
 {
-	BOOL b_found;
 	BINARY tmp_bin;
-	uint16_t replid;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	if (plogon->is_private()) {
-		tmp_bin.cb = 0;
-		tmp_bin.pv = &tmp_entryid.provider_uid;
-		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
-		tmp_entryid.folder_database_guid = rop_util_make_user_guid(plogon->account_id);
-		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
-	} else {
-		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
-		replid = rop_util_get_replid(folder_id);
-		if (1 != replid) {
-			if (!exmdb_client::get_mapping_guid(plogon->get_dir(),
-			    replid, &b_found, &tmp_entryid.folder_database_guid))
-				return NULL;	
-			if (!b_found)
-				return NULL;
-		} else {
-			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(plogon->account_id);
-		}
-		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
-	}
-	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
+	tmp_bin.cb = 0;
+	tmp_bin.pv = &tmp_entryid.provider_uid;
+	rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
+	if (replid_to_replguid(*plogon, rop_util_get_replid(folder_id),
+	    tmp_entryid.folder_database_guid) != ecSuccess)
+		return nullptr;
+	if (replid_to_replguid(*plogon, rop_util_get_replid(message_id),
+	    tmp_entryid.message_database_guid) != ecSuccess)
+		return nullptr;
+	tmp_entryid.message_type = plogon->is_private() ?
+	                           EITLT_PRIVATE_MESSAGE : EITLT_PUBLIC_MESSAGE;
 	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
@@ -506,7 +467,6 @@ BINARY *cu_mid_to_sk(logon_object *plogon, uint64_t message_id)
 BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id)
 {
-	BOOL b_found;
 	uint16_t replid;
 	EXT_PULL ext_pull;
 	FOLDER_ENTRYID tmp_entryid;
@@ -514,34 +474,14 @@ BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
+	if (replguid_to_replid(*plogon, tmp_entryid.database_guid,
+	    replid) != ecSuccess)
+		return false;
 	switch (tmp_entryid.folder_type) {
-	case EITLT_PRIVATE_FOLDER: {
-		if (!plogon->is_private())
-			return FALSE;
-		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-		if (tmp_guid != tmp_entryid.database_guid)
-			return FALSE;	
-		*pfolder_id = rop_util_make_eid(1,
-				tmp_entryid.global_counter);
+	case EITLT_PRIVATE_FOLDER:
+	case EITLT_PUBLIC_FOLDER:
+		*pfolder_id = rop_util_make_eid(replid, tmp_entryid.global_counter);
 		return TRUE;
-	}
-	case EITLT_PUBLIC_FOLDER: {
-		if (plogon->is_private())
-			return FALSE;
-		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-		if (tmp_guid == tmp_entryid.database_guid) {
-			*pfolder_id = rop_util_make_eid(1,
-					tmp_entryid.global_counter);
-			return TRUE;
-		}
-		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
-		    tmp_entryid.database_guid, &b_found, &replid) ||
-		    !b_found)
-			return FALSE;
-		*pfolder_id = rop_util_make_eid(replid,
-					tmp_entryid.global_counter);
-		return TRUE;
-	}
 	default:
 		return FALSE;
 	}
@@ -550,54 +490,28 @@ BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
 BOOL cu_entryid_to_mid(logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
-	BOOL b_found;
-	uint16_t replid;
+	uint16_t freplid, mreplid;
 	EXT_PULL ext_pull;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	if (ext_pull.g_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	if (tmp_entryid.folder_database_guid != tmp_entryid.message_database_guid)
-		return FALSE;
+	if (replguid_to_replid(*plogon, tmp_entryid.folder_database_guid,
+	    freplid) != ecSuccess)
+		return false;
+	if (replguid_to_replid(*plogon, tmp_entryid.message_database_guid,
+	    mreplid) != ecSuccess)
+		return false;
 	switch (tmp_entryid.message_type) {
-	case EITLT_PRIVATE_MESSAGE: {
-		if (!plogon->is_private())
-			return FALSE;
-		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-		if (tmp_guid != tmp_entryid.folder_database_guid)
-			return FALSE;	
-		*pfolder_id = rop_util_make_eid(1,
-			tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(1,
-			tmp_entryid.message_global_counter);
+	case EITLT_PRIVATE_MESSAGE:
+	case EITLT_PUBLIC_MESSAGE:
+		*pfolder_id  = rop_util_make_eid(freplid, tmp_entryid.folder_global_counter);
+		*pmessage_id = rop_util_make_eid(mreplid, tmp_entryid.message_global_counter);
 		return TRUE;
-	}
-	case EITLT_PUBLIC_MESSAGE: {
-		if (plogon->is_private())
-			return FALSE;
-		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-		if (tmp_guid == tmp_entryid.folder_database_guid) {
-			*pfolder_id = rop_util_make_eid(1,
-				tmp_entryid.folder_global_counter);
-			*pmessage_id = rop_util_make_eid(1,
-				tmp_entryid.message_global_counter);
-			return TRUE;
-		}
-		if (!exmdb_client::get_mapping_replid(plogon->get_dir(),
-		    tmp_entryid.folder_database_guid, &b_found, &replid) ||
-		    !b_found)
-			return FALSE;
-		*pfolder_id = rop_util_make_eid(replid,
-			tmp_entryid.folder_global_counter);
-		*pmessage_id = rop_util_make_eid(replid,
-			tmp_entryid.message_global_counter);
-		return TRUE;
-	}
 	default:
 		return FALSE;
 	}
-	
 }
 
 BINARY *cu_xid_to_bin(const XID &xid)
@@ -728,48 +642,70 @@ BINARY* common_util_to_folder_replica(
 	return pbin;
 }
 
-
-GUID common_util_get_mapping_guid(BOOL b_private, int account_id)
+ec_error_t replguid_to_replid(const logon_object &logon,
+    const GUID &guid, uint16_t &replid)
 {
-	account_id *= -1;
-	return b_private ? rop_util_make_user_guid(account_id) :
-	       rop_util_make_domain_guid(account_id);
+	if (guid == GUID_NONE) {
+		replid = 0;
+		return ecInvalidParam;
+	}
+	if (guid == logon.mailbox_guid) {
+		replid = 5;
+		return ecSuccess;
+	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
+	    reinterpret_cast<const char *>(&gx_dbguid_store_private) + 4, 12) == 0) {
+		auto usr_id = rop_util_get_user_id(guid);
+		if (usr_id == logon.account_id) {
+			replid = 1;
+			return ecSuccess;
+		}
+	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
+	    reinterpret_cast<const char *>(&gx_dbguid_store_public) + 4, 12) == 0) {
+		auto dom_id = rop_util_get_domain_id(guid);
+		if (!common_util_check_same_org(dom_id, logon.account_id))
+			return ecInvalidParam;
+	}
+	ec_error_t ret = ecSuccess;
+	if (!exmdb_client::get_mapping_replid(logon.get_dir(),
+	    guid, &replid, &ret))
+		return ecError;
+	return ret;
+}
+
+/*
+ * Replid 1 is hardwired to the Database GUID (specced somewhere).
+ *
+ * XXX: The translation from/to replids 1-5 is done with code, because the data
+ * is not yet served by the database.
+ *
+ * Replids 2, 3, 4 are reserved in case we need to reproduce (more of the)
+ * EXC behavior at some later point.
+ */
+ec_error_t replid_to_replguid(const logon_object &logon, uint16_t replid,
+    GUID &guid)
+{
+	auto dir = logon.get_dir();
+	BOOL b_found = false;
+	if (replid == 1)
+		guid = logon.is_private() ?
+		       rop_util_make_user_guid(logon.account_id) :
+		       rop_util_make_user_guid(logon.account_id);
+	else if (replid == 5)
+		guid = logon.mailbox_guid;
+	else if (!exmdb_client::get_mapping_guid(dir, replid, &b_found, &guid))
+		return ecError;
+	else if (!b_found)
+		return ecNotFound;
+	return ecSuccess;
 }
 
 BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid)
 {
-	BOOL b_found;
 	auto plogon = static_cast<logon_object *>(pparam);
-	auto dir = plogon->get_dir();
-
-	if (to_guid) {
-		if (plogon->is_private()) {
-			if (*preplid != 1)
-				return FALSE;
-			*pguid = rop_util_make_user_guid(plogon->account_id);
-		} else if (*preplid == 1) {
-			*pguid = rop_util_make_domain_guid(plogon->account_id);
-		} else if (!exmdb_client::get_mapping_guid(dir,
-		    *preplid, &b_found, pguid) || !b_found) {
-			return FALSE;
-		}
-	} else {
-		if (plogon->is_private()) {
-			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-			if (tmp_guid != *pguid)
-				return FALSE;
-			*preplid = 1;
-		} else {
-			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (tmp_guid == *pguid)
-				*preplid = 1;
-			else if (!exmdb_client::get_mapping_replid(dir,
-			    *pguid, &b_found, preplid) || !b_found)
-				return FALSE;
-		}
-	}
-	return TRUE;
+	auto ret = to_guid ? replid_to_replguid(*plogon, *preplid, *pguid) :
+	           replguid_to_replid(*plogon, *pguid, *preplid);
+	return ret == ecSuccess ? TRUE : false;
 }
 
 void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)

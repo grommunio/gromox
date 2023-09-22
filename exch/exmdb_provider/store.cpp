@@ -8,6 +8,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
@@ -89,12 +90,9 @@ BOOL exmdb_server::get_named_propnames(const char *dir,
 	return common_util_get_named_propnames(pdb->psqlite, ppropids, ppropnames);
 }
 
-/* public only */
 BOOL exmdb_server::get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	if (exmdb_server::is_private())
-		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -104,28 +102,42 @@ BOOL exmdb_server::get_mapping_guid(const char *dir,
 	return TRUE;
 }
 
-/* public only */
-BOOL exmdb_server::get_mapping_replid(const char *dir,
-	GUID guid, BOOL *pb_found, uint16_t *preplid)
+BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
+    uint16_t *preplid, ec_error_t *e_result)
 {
-	if (exmdb_server::is_private())
-		return FALSE;
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	char guid_string[GUIDSTR_SIZE], sql_string[128];
 	guid.to_str(guid_string, std::size(guid_string));
-	snprintf(sql_string, std::size(sql_string), "SELECT replid FROM "
-		"replca_mapping WHERE replguid='%s'", guid_string);
+
+	/* Implicit create (MS-OXCSTOR v25 §3.2.5.9) */
+	gx_strlcpy(sql_string, "INSERT INTO replguidmap (`replguid`) VALUES (?)", std::size(sql_string));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
+	pstmt.bind_text(1, guid_string);
+	auto sr = pstmt.step(SQLEXEC_SILENT_CONSTRAINT);
+	if (sr == SQLITE_CONSTRAINT)
+		/* nothing */;
+	else if (sr != SQLITE_DONE)
+		return false;
+	snprintf(sql_string, std::size(sql_string), "SELECT replid FROM "
+	         "replguidmap WHERE replguid='%s'", guid_string);
+	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	if (pstmt == nullptr)
+		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
-		*pb_found = FALSE;
+		*e_result = ecNotFound;
 		return TRUE;
 	}
-	*preplid = sqlite3_column_int64(pstmt, 0);
-	*pb_found = TRUE;
+	auto replid = sqlite3_column_int64(pstmt, 0);
+	if (replid > 0xFFFF) {
+		*e_result = ecParameterOverflow;
+		return TRUE;
+	}
+	*preplid  = replid;
+	*e_result = ecSuccess;
 	return TRUE;
 }
 
@@ -311,7 +323,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	 * Nowadays it's unlimited and we just check for final exhaustion.
 	 */
 	if (tmp_eid + count > GLOBCNT_MAX) {
-		mlog(LV_ERR, "E-1592: store \"%s\" has used up all local replica IDs. "
+		mlog(LV_ERR, "E-1592: store \"%s\" has used up all GCVs, cannot reserve any more. "
 		        "(Did you create too many Offline profiles?)", dir);
 		*pbegin_eid = 0;
 		return TRUE;

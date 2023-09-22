@@ -2408,7 +2408,6 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
     BINARY folder_key, const BINARY *pmessage_key, BINARY *pentryid)
 {
 	XID tmp_xid;
-	BOOL b_found;
 	BINARY *pbin;
 	uint16_t replid;
 	zs_objtype mapi_type;
@@ -2443,11 +2442,12 @@ ec_error_t zs_entryidfromsourcekey(GUID hsession, uint32_t hstore,
 				return ecInvalidParam;
 			if (!system_services_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
+			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-			    tmp_xid.guid, &b_found, &replid))
+			    tmp_xid.guid, &replid, &ret))
 				return ecError;
-			if (!b_found)
-				return ecNotFound;
+			if (ret != ecSuccess)
+				return ret;
 		}
 		folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 	}
@@ -4406,7 +4406,6 @@ ec_error_t zs_importfolder(GUID hsession,
 	BOOL b_exist;
 	BINARY *pbin;
 	BOOL b_guest;
-	BOOL b_found;
 	void *pvalue;
 	BOOL b_partial;
 	uint64_t nttime;
@@ -4503,11 +4502,12 @@ ec_error_t zs_importfolder(GUID hsession,
 				return ecInvalidParam;
 			if (!system_services_check_same_org(domain_id, pstore->account_id))
 				return ecInvalidParam;
+			ec_error_t ret = ecSuccess;
 			if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-			    tmp_xid.guid, &b_found, &replid))
+			    tmp_xid.guid, &replid, &ret))
 				return ecError;
-			if (!b_found)
-				return ecInvalidParam;
+			if (ret != ecSuccess)
+				return ret;
 			folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 		} else {
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
@@ -4626,7 +4626,6 @@ ec_error_t zs_importdeletion(GUID hsession,
 	XID tmp_xid;
 	void *pvalue;
 	BOOL b_exist;
-	BOOL b_found;
 	uint64_t eid;
 	BOOL b_owner;
 	BOOL b_result;
@@ -4692,11 +4691,12 @@ ec_error_t zs_importdeletion(GUID hsession,
 				if (!system_services_check_same_org(domain_id,
 				    pstore->account_id))
 					return ecInvalidParam;
+				ec_error_t ret = ecSuccess;
 				if (!exmdb_client::get_mapping_replid(pstore->get_dir(),
-				    tmp_xid.guid, &b_found, &replid))
+				    tmp_xid.guid, &replid, &ret))
 					return ecError;
-				if (!b_found)
-					return ecInvalidParam;
+				if (ret != ecSuccess)
+					return ret;
 				eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 			} else {
 				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
