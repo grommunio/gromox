@@ -1,3 +1,14 @@
+Gromox 2.13 (2023-09-23)
+========================
+
+Enhancements:
+
+* emsmdb: eliminiate duplicate message appearing when copying to a
+  private non-default / shared store
+* EWS: support the {Create,Delete,Move,Copy,Update,Empty}Folder operation(s)
+* EWS: support the {Copy,Move}Item operation(s)
+
+
 Gromox 2.12 (2023-09-04)
 ========================
 
