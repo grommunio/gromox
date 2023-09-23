@@ -499,7 +499,12 @@ static tproc_status htparse_initssl(http_context *pcontext)
 	}
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 	if (ssl_errno != SSL_ERROR_WANT_READ && ssl_errno != SSL_ERROR_WANT_WRITE) {
-		pcontext->log(LV_DEBUG, "failed to accept TLS connection (ssl_errno=%d)", ssl_errno);
+		unsigned long e;
+		char buf[256];
+		while ((e = ERR_get_error()) != 0) {
+			ERR_error_string_n(e, buf, std::size(buf));
+			mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_ip, buf);
+		}
 		return tproc_status::runoff;
 	}
 	auto current_time = tp_now();

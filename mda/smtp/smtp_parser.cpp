@@ -324,6 +324,12 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 				smtp_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			} else {
+				unsigned long e;
+				char buf[256];
+				while ((e = ERR_get_error()) != 0) {
+					ERR_error_string_n(e, buf, std::size(buf));
+					mlog(LV_DEBUG, "SSL_accept [%s]: %s", pcontext->connection.client_ip, buf);
+				}
 				pcontext->connection.reset();
 			}
 			smtp_parser_context_clear(pcontext);
