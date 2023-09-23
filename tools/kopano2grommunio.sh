@@ -402,7 +402,9 @@ if [[ MountKopanoAttachments -eq 1 ]]; then
     fi
 
     # test for Kopano attachment store, 10 directories 0..9 must exist, we look for 3 directories
-    if [[ ! -d $GrommunioMount/0 ]] || [[ ! -d $GrommunioMount/5 ]] || [[ ! -d $GrommunioMount/9 ]]; then
+    # on kopano with db ver 118, there are directories from 00 to ff (there should be 256 dirs)
+    dir_number=$(find /mnt/kopano -mindepth 1 -maxdepth 1 -type d -regextype posix-egrep -regex '/mnt/kopano/[a-f0-9][a-f0-9]?' |wc -l)
+    if [[ $dir_number -lt 3 ]; then
         echo "$KopanoAttachments resp. $GrommunioMount does not exist. Please check readme on how to setup $0"
         exit 1 # terminate and indicate error
     fi
