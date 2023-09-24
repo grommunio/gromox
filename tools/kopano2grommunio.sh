@@ -402,12 +402,6 @@ if [[ MountKopanoAttachments -eq 1 ]]; then
 		ExitCode=$?
 		Write-MLog "" white
 	fi
-
-	# test for Kopano attachment store, 10 directories 0..9 must exist, we look for 3 directories
-	if [[ ! -d $GrommunioMount/0 ]] || [[ ! -d $GrommunioMount/5 ]] || [[ ! -d $GrommunioMount/9 ]]; then
-		echo "$KopanoAttachments resp. $GrommunioMount does not exist. Please check readme on how to setup $0"
-		exit 1 # terminate and indicate error
-	fi
 else
 	Write-MLog "Do *not* mount attachment directory: $GrommunioMount" yellow
 	Write-MLog "Do *not* verify existence of attachment directory: $GrommunioMount" yellow
