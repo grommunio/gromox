@@ -238,60 +238,62 @@ LOG="/tmp/kopano2grommunio.log"
 # From here on, no code or variables need changing by the user of this script.
 #
 # Trap function for Clean Up
-finish () {
-    # Your cleanup code here
-    echo "$(tput setaf 7)Kill ssh-agent in ERROR TRAP!$(tput sgr 0)"
-    # kill the ssh-agent and unset variables
-    ssh-agent -k > /dev/null
-    sleep 2
-    unset SSH_AGENT_PID
-    unset SSH_AUTH_SOCK
-    # killall ssh-agent
-    #
-    # umount the attachment directory
-    if [[ -d $GrommunioMount/0 ]]; then
-        $FUSERMOUNT -u $GrommunioMount | tee -a $LOG
-    fi
-    #
-    #echo "$(tput setaf 2)End of script.$(tput sgr 0)"
+finish ()
+{
+	# Your cleanup code here
+	echo "$(tput setaf 7)Kill ssh-agent in ERROR TRAP!$(tput sgr 0)"
+	# kill the ssh-agent and unset variables
+	ssh-agent -k > /dev/null
+	sleep 2
+	unset SSH_AGENT_PID
+	unset SSH_AUTH_SOCK
+	# killall ssh-agent
+	#
+	# umount the attachment directory
+	if [[ -d $GrommunioMount/0 ]]; then
+		$FUSERMOUNT -u $GrommunioMount | tee -a $LOG
+	fi
+	#
+	#echo "$(tput setaf 2)End of script.$(tput sgr 0)"
 }
 trap finish EXIT
 
 # Write to log and screen
-Write-MLog () {
-    LEVEL="???"
-    # prepare color and severity level
-    case $2 in
-        "red")
-        LEVEL="FAIL"
-        COL=1
-        ;;
-        "green")
-        LEVEL="INFO"
-        COL=2
-        ;;
-        "yellow")
-        LEVEL="WARN"
-        COL=3
-        ;;
-        "cyan")
-        LEVEL="INFO"
-        COL=6
-        ;;
-        "white")
-        LEVEL="    "
-        COL=7
-        ;;
-        "none")
-        LEVEL=""
-        COL=7
-        ;;
-        *)
-        LEVEL="UNKN"
-        COL=5
-    esac
-    [[ $2 != "none" ]] && echo "$(tput setaf $COL)$1 $(tput sgr 0)"
-    echo "$(date +"%d.%m.%Y %H:%M:%S") $LEVEL $1">>$LOG
+Write-MLog ()
+{
+	LEVEL="???"
+	# prepare color and severity level
+	case $2 in
+	"red")
+		LEVEL="FAIL"
+		COL=1
+		;;
+	"green")
+		LEVEL="INFO"
+		COL=2
+		;;
+	"yellow")
+		LEVEL="WARN"
+		COL=3
+		;;
+	"cyan")
+		LEVEL="INFO"
+		COL=6
+		;;
+	"white")
+		LEVEL="    "
+		COL=7
+		;;
+	"none")
+		LEVEL=""
+		COL=7
+		;;
+	*)
+		LEVEL="UNKN"
+		COL=5
+	esac
+	[[ $2 != "none" ]] && echo "$(tput setaf $COL)$1 $(tput sgr 0)"
+	echo "$(date +"%d.%m.%Y %H:%M:%S") $LEVEL $1">>$LOG
 }
 
 # Main migration logic
@@ -301,50 +303,50 @@ SSHFS="$(which sshfs)"
 # OpenSuse 15.4 provides fusermount3
 FUSERMOUNT="$(which fusermount3 2>/dev/null)"
 if [[ -z $FUSERMOUNT ]];then
-    # OpenSuse 15.3 and Debian 11 provides fusermount
-    FUSERMOUNT="$(which fusermount 2>/dev/null)"
+	# OpenSuse 15.3 and Debian 11 provides fusermount
+	FUSERMOUNT="$(which fusermount 2>/dev/null)"
 fi
 #
 for File in "$SSHFS" "$FUSERMOUNT";
 do
-    if [[ ! -f $File ]]; then
-        # VERBOSE=1
-        Write-MLog "Error: command $File not found, aborting." red
-        exit 1 # terminate and indicate error
-    fi
+	if [[ ! -f $File ]]; then
+		# VERBOSE=1
+		Write-MLog "Error: command $File not found, aborting." red
+		exit 1 # terminate and indicate error
+	fi
 done
 
 # create sample migration list file
 if [[ $CreateSampleMigrationList -eq 1 ]]; then
-    if [[ -f "$MigrationList" ]]; then
-        echo "The file $MigrationList exists, we will *not* overwrite $MigrationList."
-        echo "Please rename or remove $MigrationList and try again."
-        exit 1
-    fi
-    # sample content
-    {
-        echo "# Sample user list for Kopano 2 grommunio migration"
-        echo "# mail address,Kopano login name|store GUID,' '|0|1"
-        echo "# "
-        echo "# Migrate the Public Store"
-        echo "@domain.com,<Public Store GUID>"
-        echo "# "
-        echo "# Migrate users with mail address and Kopano login name, type:0"
-        echo "user1@domain.com,user1,0"
-        echo "user2@domain.com,user2,0"
-        echo "# "
-        echo "# Migrate a user but specify the Kopano store GUID instead of Kopano login, type:1"
-        echo "user3@domain.com,<User 3 store GUID>,1"
-    } > $MigrationList
+	if [[ -f "$MigrationList" ]]; then
+		echo "The file $MigrationList exists, we will *not* overwrite $MigrationList."
+		echo "Please rename or remove $MigrationList and try again."
+		exit 1
+	fi
+	# sample content
+	{
+		echo "# Sample user list for Kopano 2 grommunio migration"
+		echo "# mail address,Kopano login name|store GUID,' '|0|1"
+		echo "# "
+		echo "# Migrate the Public Store"
+		echo "@domain.com,<Public Store GUID>"
+		echo "# "
+		echo "# Migrate users with mail address and Kopano login name, type:0"
+		echo "user1@domain.com,user1,0"
+		echo "user2@domain.com,user2,0"
+		echo "# "
+		echo "# Migrate a user but specify the Kopano store GUID instead of Kopano login, type:1"
+		echo "user3@domain.com,<User 3 store GUID>,1"
+	} > $MigrationList
 
-    echo "Sample $MigrationList have been created."
-    echo "Populate the mail addresses, login names and types."
-    echo "Last, set \$CreateSampleMigrationList=0 and start the migration."
-    echo ""
-    #echo "sed -i s/^CreateSampleMigrationList=1/CreateSampleMigrationList=0/ $0"
-    sed -i "s/^CreateSampleMigrationList=1/CreateSampleMigrationList=0/" "$0"
-    echo ""
-    exit 0
+	echo "Sample $MigrationList have been created."
+	echo "Populate the mail addresses, login names and types."
+	echo "Last, set \$CreateSampleMigrationList=0 and start the migration."
+	echo ""
+	#echo "sed -i s/^CreateSampleMigrationList=1/CreateSampleMigrationList=0/ $0"
+	sed -i "s/^CreateSampleMigrationList=1/CreateSampleMigrationList=0/" "$0"
+	echo ""
+	exit 0
 fi
 
 # Statistics:
@@ -373,47 +375,47 @@ Write-MLog "Kopano 2 grommunio migration start" cyan
 
 # create mount directory if not exists
 if [[ ! -d "$GrommunioMount" ]]; then
-    mkdir -p $GrommunioMount | tee -a $LOG
-    Write-MLog "Create mount directory $GrommunioMount" white
-    Write-MLog "" white
+	mkdir -p $GrommunioMount | tee -a $LOG
+	Write-MLog "Create mount directory $GrommunioMount" white
+	Write-MLog "" white
 fi
 
 if [[ MountKopanoAttachments -eq 1 ]]; then
-    Write-MLog "Mount attachment directory: $GrommunioMount" yellow
-    # mount the attachment directory
-    if [[ -z "$KopanoUserPWD" ]]; then
-        # certificate login
-        Write-MLog "Please Enter Public Server Key Pass Phrase in next Line" yellow
-        # read -sp 'Pass Phrase:' PASS_PHRASE
-        ssh-agent -k > /dev/null
-        sleep 2
-        #unset SSH_AGENT_PID | tee -a $LOG
-        #unset SSH_AUTH_SOCK | tee -a $LOG
-        #
-        ssh-add
-        $SSHFS $KopanoUser@$KopanoServer:$KopanoAttachments $GrommunioMount -o idmap=user | tee -a $LOG
-        ExitCode=$?
-        Write-MLog "" white
-    else
-        # password login
-        $SSHFS $KopanoUser@$KopanoServer:$KopanoAttachments $GrommunioMount -o idmap=user,password_stdin <<< "$KopanoUserPWD" | tee -a $LOG
-        ExitCode=$?
-        Write-MLog "" white
-    fi
+	Write-MLog "Mount attachment directory: $GrommunioMount" yellow
+	# mount the attachment directory
+	if [[ -z "$KopanoUserPWD" ]]; then
+		# certificate login
+		Write-MLog "Please Enter Public Server Key Pass Phrase in next Line" yellow
+		# read -sp 'Pass Phrase:' PASS_PHRASE
+		ssh-agent -k > /dev/null
+		sleep 2
+		#unset SSH_AGENT_PID | tee -a $LOG
+		#unset SSH_AUTH_SOCK | tee -a $LOG
+		#
+		ssh-add
+		$SSHFS $KopanoUser@$KopanoServer:$KopanoAttachments $GrommunioMount -o idmap=user | tee -a $LOG
+		ExitCode=$?
+		Write-MLog "" white
+	else
+		# password login
+		$SSHFS $KopanoUser@$KopanoServer:$KopanoAttachments $GrommunioMount -o idmap=user,password_stdin <<< "$KopanoUserPWD" | tee -a $LOG
+		ExitCode=$?
+		Write-MLog "" white
+	fi
 
-    # test for Kopano attachment store, 10 directories 0..9 must exist, we look for 3 directories
-    if [[ ! -d $GrommunioMount/0 ]] || [[ ! -d $GrommunioMount/5 ]] || [[ ! -d $GrommunioMount/9 ]]; then
-        echo "$KopanoAttachments resp. $GrommunioMount does not exist. Please check readme on how to setup $0"
-        exit 1 # terminate and indicate error
-    fi
+	# test for Kopano attachment store, 10 directories 0..9 must exist, we look for 3 directories
+	if [[ ! -d $GrommunioMount/0 ]] || [[ ! -d $GrommunioMount/5 ]] || [[ ! -d $GrommunioMount/9 ]]; then
+		echo "$KopanoAttachments resp. $GrommunioMount does not exist. Please check readme on how to setup $0"
+		exit 1 # terminate and indicate error
+	fi
 else
-    Write-MLog "Do *not* mount attachment directory: $GrommunioMount" yellow
-    Write-MLog "Do *not* verify existence of attachment directory: $GrommunioMount" yellow
+	Write-MLog "Do *not* mount attachment directory: $GrommunioMount" yellow
+	Write-MLog "Do *not* verify existence of attachment directory: $GrommunioMount" yellow
 fi
 
 if [[ $OnlyCreateGrommunioMailbox -eq 1 ]]; then
-    Write-MLog "Only create mailboxes but do not migrate data." yellow
-    CreateGrommunioMailbox=1
+	Write-MLog "Only create mailboxes but do not migrate data." yellow
+	CreateGrommunioMailbox=1
 fi
 
 Write-MLog "" "white"
@@ -426,140 +428,140 @@ Write-MLog "" "white"
 # we need the command "exec {stdin}<&0" to read from keyboard / stdin
 exec {stdin}<&0
 while IFS= read -r line; do
-    # Write-MLog "Read from file: $line" "white"
-    line=${line//[[:blank:]]/}
-    # Ignore comment lines
-    [[ $line =~ ^#.* ]] && continue
-    # if we do not find a mail address, read next line
-    [[ $line != *"@"* ]] && continue
-    IFS=, read -r MigMBox KopanoUser IsID <<< "$line"
+	# Write-MLog "Read from file: $line" "white"
+	line=${line//[[:blank:]]/}
+	# Ignore comment lines
+	[[ $line =~ ^#.* ]] && continue
+	# if we do not find a mail address, read next line
+	[[ $line != *"@"* ]] && continue
+	IFS=, read -r MigMBox KopanoUser IsID <<< "$line"
 
-    # if empty, populate IsID with default value
-    [[ -z $IsID ]] && IsID=0
+	# if empty, populate IsID with default value
+	[[ -z $IsID ]] && IsID=0
 
-    Write-MLog "" "white"
-    Write-MLog "We found mailbox: $MigMBox and Kopano user/GUID: $KopanoUser, ID: $IsID in list file" green
+	Write-MLog "" "white"
+	Write-MLog "We found mailbox: $MigMBox and Kopano user/GUID: $KopanoUser, ID: $IsID in list file" green
 
-    MailboxesTotal=$((MailboxesTotal+1))
-    SkipImportCreateError=0
+	MailboxesTotal=$((MailboxesTotal+1))
+	SkipImportCreateError=0
 
-    if [[ $MigMBox =~ ^@.* ]]; then
-        Write-MLog "This is the Kopano public store, do not create a mailbox for: $MigMBox" yellow
-    else
-        if [[ $CreateGrommunioMailbox -eq 1 ]]; then
-            Write-MLog "Try to create the mailbox: $MigMBox" yellow
-            grommunio-admin ldap downsync -l $MailboxLanguage "$MigMBox" | tee -a $LOG
-            ExitCode=${PIPESTATUS[0]}
-            if [[ $ExitCode -eq 0 ]]; then
-                # OK
-                MailboxesCreated=$((MailboxesCreated+1))
-                Write-MLog "Mailbox: $MigMBox created successfully" green
-            else
-                # Failed
-                MailboxesCreateFailed=$((MailboxesCreateFailed+1))
-                CreateErrorsMBX+=" $MigMBox"
-                SkipImportCreateError=1
-                Write-MLog "Cannot create mailbox: $MigMBox, error $ExitCode" red
-                # Wait for admin to make a decision.
-                [[ $StopOnError -eq 1 ]] && WaitAfterImport=1
-            fi
-        fi
-    fi
-    #
-    #
-    if [[ $SkipImportCreateError -eq 0 ]] && [[ $OnlyCreateGrommunioMailbox -eq 0 ]]; then
-        #
-        if [[ $MigMBox =~ ^@.* ]]; then
-            Write-MLog "This is the Kopano public store (GUID: $KopanoUser) for domain: $MigMBox" yellow
-            (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
-            ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
-        else
-            if [[ $IsID -eq 0 ]]; then
-                Write-MLog "Migration of mailbox $MigMBox with Kopano login $KopanoUser start" yellow
-                # add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
-                (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-mro "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
-                ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
-            else
-                Write-MLog "Migration of mailbox $MigMBox with Kopano GUID $KopanoUser start" yellow
-                # add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
-                (SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
-                ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
-            fi
-        fi
-        if [[ $ExitCode -eq 0 ]]; then
-            # OK
-            MailboxesImported=$((MailboxesImported+1))
-            Write-MLog "Mailbox: $MigMBox migrated successfully" green
-        else
-            # Failed
-            MailboxesImportFailed=$((MailboxesImportFailed+1))
-            ImportErrorsMBX+=" $MigMBox,"
-            Write-MLog "Cannot migrate mailbox: $MigMBox, error $ExitCode" red
-            # Wait for Admin to make a decision.
-            [[ $StopOnError -eq 1 ]] && WaitAfterImport=1
-        fi
-    else
-        # Try migrate of next mailbox
-        SkipImportCreateError=0
-        if [[ $OnlyCreateGrommunioMailbox -eq 1 ]]; then
-            Write-MLog "Skipped migration of mailbox: $MigMBox, to do: only create mailbox" green
-        else
-            Write-MLog "Skipped migration of mailbox: $MigMBox, to do: creation error" red
-        fi
-    fi
-    Write-MLog "Migration of mailbox $MigMBox end" yellow
+	if [[ $MigMBox =~ ^@.* ]]; then
+		Write-MLog "This is the Kopano public store, do not create a mailbox for: $MigMBox" yellow
+	else
+		if [[ $CreateGrommunioMailbox -eq 1 ]]; then
+			Write-MLog "Try to create the mailbox: $MigMBox" yellow
+			grommunio-admin ldap downsync -l $MailboxLanguage "$MigMBox" | tee -a $LOG
+			ExitCode=${PIPESTATUS[0]}
+			if [[ $ExitCode -eq 0 ]]; then
+				# OK
+				MailboxesCreated=$((MailboxesCreated+1))
+				Write-MLog "Mailbox: $MigMBox created successfully" green
+			else
+				# Failed
+				MailboxesCreateFailed=$((MailboxesCreateFailed+1))
+				CreateErrorsMBX+=" $MigMBox"
+				SkipImportCreateError=1
+				Write-MLog "Cannot create mailbox: $MigMBox, error $ExitCode" red
+				# Wait for admin to make a decision.
+				[[ $StopOnError -eq 1 ]] && WaitAfterImport=1
+			fi
+		fi
+	fi
+	#
+	#
+	if [[ $SkipImportCreateError -eq 0 ]] && [[ $OnlyCreateGrommunioMailbox -eq 0 ]]; then
+		#
+		if [[ $MigMBox =~ ^@.* ]]; then
+			Write-MLog "This is the Kopano public store (GUID: $KopanoUser) for domain: $MigMBox" yellow
+			(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+			ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
+		else
+			if [[ $IsID -eq 0 ]]; then
+				Write-MLog "Migration of mailbox $MigMBox with Kopano login $KopanoUser start" yellow
+				# add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
+				(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-mro "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+				ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
+			else
+				Write-MLog "Migration of mailbox $MigMBox with Kopano GUID $KopanoUser start" yellow
+				# add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
+				(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-at "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+				ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
+			fi
+		fi
+		if [[ $ExitCode -eq 0 ]]; then
+			# OK
+			MailboxesImported=$((MailboxesImported+1))
+			Write-MLog "Mailbox: $MigMBox migrated successfully" green
+		else
+			# Failed
+			MailboxesImportFailed=$((MailboxesImportFailed+1))
+			ImportErrorsMBX+=" $MigMBox,"
+			Write-MLog "Cannot migrate mailbox: $MigMBox, error $ExitCode" red
+			# Wait for Admin to make a decision.
+			[[ $StopOnError -eq 1 ]] && WaitAfterImport=1
+		fi
+	else
+		# Try migrate of next mailbox
+		SkipImportCreateError=0
+		if [[ $OnlyCreateGrommunioMailbox -eq 1 ]]; then
+			Write-MLog "Skipped migration of mailbox: $MigMBox, to do: only create mailbox" green
+		else
+			Write-MLog "Skipped migration of mailbox: $MigMBox, to do: creation error" red
+		fi
+	fi
+	Write-MLog "Migration of mailbox $MigMBox end" yellow
 
-    Write-MLog "" "white"
-    Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes migrated, " yellow
-    Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed migrations failed." yellow
-    Write-MLog "" "white"
-    #
-    # if the $STOP_MARKER exists, interrupt migration and ask the Admin
-    if [[ -f "$STOP_MARKER" ]]; then
-        WaitAfterImport=1
-        Write-MLog "Stop marker: $STOP_MARKER found, interrupting migration." cyan
-    fi
-    #
-    # type "X" to ask the Admin
-    if [[ $WaitAfterImport -eq 0 ]]; then
-        Write-MLog "Type 'X' to interrupt migration ..." cyan
-        read -s -n 1 -t 0.5 key <&$stdin  # -s: do not echo input character, -n 1: read only 1 character (separate with space), -t 1: wait 1 seconds
-        if [[ "$key" == "X" ]]; then
-            WaitAfterImport=1
-            Write-MLog "'X' pressed, interrupting migration." cyan
-        fi
-    fi
-    #
-    # Ask the Admin after migration of mailbox
-    [[ $WaitAfterImport -eq 0 ]] && continue
-    #
-    decision="Y"
-    OK=0
-    while [[ $OK -eq 0 ]]
-    do
-        Write-MLog "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " none
-        read -r -p "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -n1 decision <&$stdin
-        decision=${decision^^}
-        echo "";
-        # echo " $decision"
-        case $decision in
-            "Y")
-              Write-MLog "Migrate next mailbox" green
-              OK=1
-            ;;
-            "A")
-              Write-MLog "Exit on Admin request." red
-              OK=1
-            ;;
-            "C")
-              Write-MLog "Continue without future questions until errors" green
-              WaitAfterImport=0
-            OK=1
-            ;;
-        esac
-    done
-    # Do we want to exit the migrations loop?
-    [[ $decision == "A" ]] && break
+	Write-MLog "" "white"
+	Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes migrated, " yellow
+	Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed migrations failed." yellow
+	Write-MLog "" "white"
+	#
+	# if the $STOP_MARKER exists, interrupt migration and ask the Admin
+	if [[ -f "$STOP_MARKER" ]]; then
+		WaitAfterImport=1
+		Write-MLog "Stop marker: $STOP_MARKER found, interrupting migration." cyan
+	fi
+	#
+	# type "X" to ask the Admin
+	if [[ $WaitAfterImport -eq 0 ]]; then
+		Write-MLog "Type 'X' to interrupt migration ..." cyan
+		read -s -n 1 -t 0.5 key <&$stdin  # -s: do not echo input character, -n 1: read only 1 character (separate with space), -t 1: wait 1 seconds
+		if [[ "$key" == "X" ]]; then
+			WaitAfterImport=1
+			Write-MLog "'X' pressed, interrupting migration." cyan
+		fi
+	fi
+	#
+	# Ask the Admin after migration of mailbox
+	[[ $WaitAfterImport -eq 0 ]] && continue
+	#
+	decision="Y"
+	OK=0
+	while [[ $OK -eq 0 ]]
+	do
+		Write-MLog "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " none
+		read -r -p "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -n1 decision <&$stdin
+		decision=${decision^^}
+		echo "";
+		# echo " $decision"
+		case $decision in
+		"Y")
+			Write-MLog "Migrate next mailbox" green
+			OK=1
+			;;
+		"A")
+			Write-MLog "Exit on Admin request." red
+			OK=1
+			;;
+		"C")
+			Write-MLog "Continue without future questions until errors" green
+			WaitAfterImport=0
+			OK=1
+			;;
+		esac
+	done
+	# Do we want to exit the migrations loop?
+	[[ $decision == "A" ]] && break
 done <"$MigrationList"
 
 Write-MLog "" white
@@ -575,16 +577,16 @@ Write-MLog "" white
 Write-MLog "Total of $MailboxesTotal mailboxes processed" green
 
 if [[ $CreateGrommunioMailbox -eq 1 ]]; then
-    Write-MLog "$MailboxesCreated mailboxes created" green
-    if [[ $MailboxesCreateFailed -ne 0 ]]; then
-        Write-MLog "$MailboxesCreateFailed mailboxes creation failed" red
-        Write-MLog "Affected mailboxes: $CreateErrorsMBX" red
-    fi
+	Write-MLog "$MailboxesCreated mailboxes created" green
+	if [[ $MailboxesCreateFailed -ne 0 ]]; then
+		Write-MLog "$MailboxesCreateFailed mailboxes creation failed" red
+		Write-MLog "Affected mailboxes: $CreateErrorsMBX" red
+	fi
 fi
 Write-MLog "$MailboxesImported mailboxes migrated" green
 if [[ $MailboxesImportFailed -ne 0 ]]; then
-    Write-MLog "$MailboxesImportFailed mailboxes migrated with errors or migration failed" red
-    Write-MLog "Affected mailboxes: $ImportErrorsMBX " red
+	Write-MLog "$MailboxesImportFailed mailboxes migrated with errors or migration failed" red
+	Write-MLog "Affected mailboxes: $ImportErrorsMBX " red
 fi
 Write-MLog "Kopano 2 grommunio migration done." cyan
 #
