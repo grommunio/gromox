@@ -390,6 +390,7 @@ static const char *status_text(unsigned int s)
 	case 403: return "Permission Denied";
 	case 404: return "Not Found";
 	case 405: return "Method Not Allowed";
+	case 408: return "Request Timeout";
 	case 414: return "URI Too Long";
 	case 416: return "Range Not Satisfiable";
 	case 4162: return "Too Many Ranges";
