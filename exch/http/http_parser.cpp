@@ -1298,7 +1298,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	auto current_time = tp_now();
 	if (0 == actual_read) {
 		pcontext->log(LV_DEBUG, "connection lost");
-		return tproc_status::runoff;
+		return tproc_status::endproc;
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
@@ -1353,7 +1353,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	}
 	if (EAGAIN != errno) {
 		pcontext->log(LV_DEBUG, "connection lost");
-		return tproc_status::runoff;
+		return tproc_status::endproc;
 	}
 	/* check if context is timed out */
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
@@ -1367,6 +1367,8 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	if (0 == pcontext->total_length ||
 	    pcontext->bytes_rw < pcontext->total_length) {
 		auto ret = htparse_rdbody_nochan2(pcontext);
+		if (ret == tproc_status::endproc)
+			return tproc_status::runoff;
 		if (ret != tproc_status::runoff)
 			return ret;
 	}
