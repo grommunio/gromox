@@ -451,7 +451,7 @@ static BOOL unauthed(int ctx_id)
 		"Connection: Keep-Alive\r\n"
 		"WWW-Authenticate: Basic realm=\"autodiscover realm\"\r\n"
 		"\r\n";
-	return write_response(ctx_id, content, std::size(content));
+	return write_response(ctx_id, content, std::size(content) - 1);
 }
 
 /**
