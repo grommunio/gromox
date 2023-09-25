@@ -243,7 +243,6 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	unsigned int tmp_len;
 	size_t string_length = 0;
 	char temp_buff[1024];
 	char temp_command[1024];
@@ -269,9 +268,9 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		if (pcontext->stream.write(".\r\n", 3) != STREAM_WRITE_OK)
 			return 1729;
 		pcontext->write_offset = 0;
-		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
-		pcontext->write_length = tmp_len;
+		unsigned int wrlen = MAX_LINE_LENGTH;
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&wrlen));
+		pcontext->write_length = wrlen;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
 			return 1718;
@@ -299,7 +298,6 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
-	unsigned int tmp_len;
 	size_t string_length = 0;
 	char temp_buff[1024];
 	char temp_command[1024];
@@ -325,9 +323,9 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		if (pcontext->stream.write(".\r\n", 3) != STREAM_WRITE_OK)
 			return 1729;
 		pcontext->write_offset = 0;
-		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
-		pcontext->write_length = tmp_len;
+		unsigned int maxbufsize = MAX_LINE_LENGTH;
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&maxbufsize));
+		pcontext->write_length = maxbufsize;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
 			return 1718;

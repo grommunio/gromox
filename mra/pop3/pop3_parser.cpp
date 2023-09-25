@@ -199,7 +199,6 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 {
 	auto pcontext = static_cast<pop3_context *>(vcontext);
 	int len;
-	unsigned int tmp_len;
 	int read_len;
 	int ssl_errno;
 	const char *host_ID;
@@ -281,9 +280,9 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			return tproc_status::cont;
 		}
 		pcontext->write_offset = 0;
-		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
-		pcontext->write_length = tmp_len;
+		unsigned int len = MAX_LINE_LENGTH;
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&len));
+		pcontext->write_length = len;
 		if (NULL == pcontext->write_buff) {
 			pcontext->stream.clear();
 			switch (pop3_parser_retrieve(pcontext)) {
@@ -323,9 +322,9 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			return tproc_status::cont;
 		}
 		pcontext->write_offset = 0;
-		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
-		pcontext->write_length = tmp_len;
+		unsigned int maxbufsize = MAX_LINE_LENGTH;
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&maxbufsize));
+		pcontext->write_length = maxbufsize;
 		if (NULL == pcontext->write_buff) {
 			pcontext->stream.clear();
 			pcontext->write_length = 0;
@@ -428,7 +427,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 {
-	unsigned int size, tmp_len, line_length;
+	unsigned int size, line_length;
 	int read_len;
 	int last_result;
 	BOOL b_stop;
@@ -514,9 +513,9 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		last_result = copy_result;
 	}
 	temp_stream.clear();
-	tmp_len = STREAM_BLOCK_SIZE;
-	pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
-	pcontext->write_length = tmp_len;
+	unsigned int maxbufsize = STREAM_BLOCK_SIZE;
+	pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&maxbufsize));
+	pcontext->write_length = maxbufsize;
 	if (NULL == pcontext->write_buff) {
 		pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
 		pcontext->stream.clear();
