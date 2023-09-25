@@ -113,11 +113,10 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	if (support_tls) {
 		g_force_tls = force_tls;
 		gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-		if (NULL != cb_passwd) {
+		if (cb_passwd != nullptr)
 			gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-		} else {
+		else
 			g_certificate_passwd[0] = '\0';
-		}
 		gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
 	}
 }
@@ -156,12 +155,9 @@ int imap_parser_run()
 			printf("[imap_parser]: Failed to init SSL context\n");
 			return -1;
 		}
-		
-		if ('\0' != g_certificate_passwd[0]) {
+		if (*g_certificate_passwd != '\0')
 			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
 				g_certificate_passwd);
-		}
-		
 		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
 			g_certificate_path) <= 0) {
 			printf("[imap_parser]: fail to use certificate file:");
@@ -199,28 +195,23 @@ int imap_parser_run()
 #endif
 	}
 	num = 4*g_context_num;
-	if (num < 200) {
+	if (num < 200)
 		num = 200;
-	}
-
-	if (num > 800) {
+	if (num > 800)
 		num = 800;
-	}
 	g_mime_pool = MIME_POOL::create(num, FILENUM_PER_MIME, "imap_mime_pool");
 	if (NULL == g_mime_pool) {
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
 	num = 10*g_context_num;
-	if (num < 1000) {
+	if (num < 1000)
 		num = 1000;
-	}
 	g_alloc_dir = alloc_limiter<DIR_NODE>(num, "imap_alloc_dir",
 	              "imap.cfg:g_context_num");
 	num = 4*g_context_num;
-	if (num < 400) {
+	if (num < 400)
 		num = 400;
-	}
 	g_alloc_mjson = mjson_allocator_init(num);
 	
 	try {
@@ -392,13 +383,12 @@ static tproc_status ps_stat_notifying(imap_context *pcontext)
 static tproc_status ps_stat_rdcmd(imap_context *pcontext)
 {
 	ssize_t read_len;
-	if (NULL != pcontext->connection.ssl) {
+	if (pcontext->connection.ssl != nullptr)
 		read_len = SSL_read(pcontext->connection.ssl, pcontext->read_buffer +
 		           pcontext->read_offset, 64*1024 - pcontext->read_offset);
-	} else {
+	else
 		read_len = read(pcontext->connection.sockd, pcontext->read_buffer +
 		           pcontext->read_offset, 64*1024 - pcontext->read_offset);
-	}
 	auto current_time = tp_now();
 	if (0 == read_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -560,11 +550,10 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 				return ps_end_processing(pcontext);
 			case DISPATCH_BREAK:
 				ctx.read_offset -= &ctx.literal_ptr[nl_len] - ctx.read_buffer;
-				if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
+				if (pcontext->read_offset > 0 && pcontext->read_offset < 64 * 1024)
 					memmove(ctx.read_buffer, &ctx.literal_ptr[nl_len], ctx.read_offset);
-				} else {
+				else
 					pcontext->read_offset = 0;
-				}
 				pcontext->literal_ptr = NULL;
 				pcontext->literal_len = 0;
 				pcontext->command_len = 0;
@@ -578,11 +567,10 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 		pcontext->connection.write("* ", 2);
 		pcontext->connection.write(imap_reply_str, string_length);
 		ctx.read_offset -= &ctx.literal_ptr[nl_len] - ctx.read_buffer;
-		if (pcontext->read_offset > 0 && pcontext->read_offset < 64*1024) {
+		if (pcontext->read_offset > 0 && pcontext->read_offset < 64  *1024)
 			memmove(ctx.read_buffer, &ctx.literal_ptr[nl_len], ctx.read_offset);
-		} else {
+		else
 			pcontext->read_offset = 0;
-		}
 		pcontext->literal_ptr = NULL;
 		pcontext->literal_len = 0;
 		pcontext->command_len = 0;
@@ -618,12 +606,11 @@ static tproc_status ps_cmd_processing(imap_context *pcontext)
 		pcontext->command_len += i;
 		pcontext->command_buffer[pcontext->command_len] = '\0';
 		pcontext->read_offset -= i + nl_len;
-		if (pcontext->read_offset > 0 && pcontext->read_offset < 64 * 1024) {
+		if (pcontext->read_offset > 0 && pcontext->read_offset < 64 * 1024)
 			memmove(pcontext->read_buffer, &pcontext->read_buffer[i+nl_len],
 			        pcontext->read_offset);
-		} else {
+		else
 			pcontext->read_offset = 0;
-		}
 
 		char *argv[128];
 		if (iproto_stat::username == pcontext->proto_stat) {
@@ -635,10 +622,8 @@ static tproc_status ps_cmd_processing(imap_context *pcontext)
 		} else if (iproto_stat::password == pcontext->proto_stat) {
 			argv[0] = pcontext->command_buffer;
 			argv[1] = NULL;
-			if (DISPATCH_SHOULD_CLOSE == imap_cmd_parser_password(
-			    1, argv, pcontext)) {
+			if (imap_cmd_parser_password(1, argv, pcontext) == DISPATCH_SHOULD_CLOSE)
 				return ps_end_processing(pcontext);
-			}
 			pcontext->command_len = 0;
 			safe_memset(pcontext->command_buffer, 0, std::size(pcontext->command_buffer));
 			return tproc_status::literal_processing;
@@ -749,11 +734,10 @@ static tproc_status ps_stat_appending(imap_context *pcontext)
 		return ps_end_processing(pcontext, imap_reply_str, string_length);
 	}
 	ssize_t read_len;
-	if (NULL != pcontext->connection.ssl) {
+	if (pcontext->connection.ssl != nullptr)
 		read_len = SSL_read(pcontext->connection.ssl, pbuff, len);
-	} else {
+	else
 		read_len = read(pcontext->connection.sockd, pbuff, len);
-	}
 	auto current_time = tp_now();
 	if (0 == read_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -805,9 +789,8 @@ static tproc_status ps_stat_appending(imap_context *pcontext)
 
 static tproc_status ps_stat_wrdat(imap_context *pcontext)
 {
-	if (0 == pcontext->write_length) {
+	if (pcontext->write_length == 0)
 		imap_parser_wrdat_retrieve(pcontext);
-	}
 	auto written_len = pcontext->connection.write(&pcontext->write_buff[pcontext->write_offset],
 	                   pcontext->write_length - pcontext->write_offset);
 	auto current_time = tp_now();
@@ -830,9 +813,8 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 	}
 	pcontext->connection.last_timestamp = current_time;
 	pcontext->write_offset += written_len;
-	if (pcontext->write_offset < pcontext->write_length) {
+	if (pcontext->write_offset < pcontext->write_length)
 		return tproc_status::cont;
-	}
 
 	if (pcontext->message_fd == -1) {
 		pcontext->write_offset = 0;
@@ -856,9 +838,8 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 		return tproc_status::cont;
 	}
 	auto len = pcontext->literal_len - pcontext->current_len;
-	if (len > 64 * 1024) {
+	if (len > 64 * 1024)
 		len = 64 * 1024;
-	}
 	auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 	if (read_len != len) {
 		imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
@@ -870,16 +851,14 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 	pcontext->current_len += len;
 	pcontext->write_length = len;
 	pcontext->write_offset = 0;
-	if (pcontext->literal_len != pcontext->current_len) {
+	if (pcontext->literal_len != pcontext->current_len)
 		return tproc_status::cont;
-	}
 	close(pcontext->message_fd);
 	pcontext->message_fd = -1;
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
-	if (imap_parser_wrdat_retrieve(pcontext) != IMAP_RETRIEVE_ERROR) {
+	if (imap_parser_wrdat_retrieve(pcontext) != IMAP_RETRIEVE_ERROR)
 		return tproc_status::cont;
-	}
 	/* IMAP_CODE_2180008: internal error, fail to retrieve from stream object */
 	size_t string_length = 0;
 	auto imap_reply_str = resource_get_imap_code(1808, 1, &string_length);
@@ -916,16 +895,14 @@ static tproc_status ps_stat_wrlst(imap_context *pcontext)
 	pcontext->connection.last_timestamp = current_time;
 	pcontext->write_offset += written_len;
 
-	if (pcontext->write_offset < pcontext->write_length) {
+	if (pcontext->write_offset < pcontext->write_length)
 		return tproc_status::cont;
-	}
 	pcontext->write_offset = 0;
 	unsigned int temp_len = MAX_LINE_LENGTH;
 	pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&temp_len));
 	pcontext->write_length = temp_len;
-	if (pcontext->write_buff != nullptr) {
+	if (pcontext->write_buff != nullptr)
 		return tproc_status::cont;
-	}
 	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -1005,9 +982,8 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 	
 	while (true) {
 		line_length = MAX_LINE_LENGTH - pcontext->write_length;
-		if (line_length < 64) {
+		if (line_length < 64)
 			return IMAP_RETRIEVE_OK;
-		}
 		/* make room for CRLF */
 		line_length -= 2;
 		auto copy_result = pcontext->stream.copyline(pcontext->write_buff +
@@ -1044,9 +1020,8 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 						pcontext->current_len = 0;
 						len = MAX_LINE_LENGTH - pcontext->write_length;
-						if (len > pcontext->literal_len) {
+						if (len > pcontext->literal_len)
 							len = pcontext->literal_len;
-						}
 						read_len = read(pcontext->message_fd, pcontext->write_buff +
 									pcontext->write_length, len);
 						if (read_len != len) {
@@ -1090,9 +1065,8 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 						pcontext->current_len = 0;
 						len = MAX_LINE_LENGTH - pcontext->write_length;
-						if (len > pcontext->literal_len) {
+						if (len > pcontext->literal_len)
 							len = pcontext->literal_len;
-						}
 						read_len = read(pcontext->message_fd, pcontext->write_buff +
 									pcontext->write_length, len);
 						if (read_len != len) {
@@ -1139,13 +1113,11 @@ void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(buff);
-	if (NULL == plist) {
+	if (plist == nullptr)
 		return;
-	}
 	for (auto pcontext1 : *plist)
-		if (pcontext != pcontext1 && 0 == strcmp(folder, pcontext1->selected_folder)) {
+		if (pcontext != pcontext1 && strcmp(folder, pcontext1->selected_folder) == 0)
 			pcontext1->b_modify = true;
-		}
 	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
 	system_services_broadcast_event(buff);
@@ -1159,13 +1131,11 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
-	if (NULL == plist) {
+	if (plist == nullptr)
 		return;
-	}
 	for (auto pcontext : *plist)
-		if (0 == strcmp(folder, pcontext->selected_folder)) {
+		if (strcmp(folder, pcontext->selected_folder) == 0)
 			pcontext->b_modify = true;
-		}
 }
 
 void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_string) try
@@ -1176,9 +1146,8 @@ void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_stri
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(buff);
-	if (NULL == plist) {
+	if (plist == nullptr)
 		return;
-	}
 	for (auto pcontext1 : *plist) {
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
@@ -1202,9 +1171,8 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(temp_string);
-	if (NULL == plist) {
+	if (plist == nullptr)
 		return;
-	}
 	for (auto pcontext : *plist)
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
 			pcontext->f_flags.emplace(mid_string);
@@ -1318,11 +1286,10 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		          "* %u RECENT\r\n",
 		          pcontext->contents.n_exists(),
 		          pcontext->contents.n_recent);
-		if (NULL == pstream) {
+		if (pstream == nullptr)
 			pcontext->connection.write(buff, tmp_len);
-		} else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK) {
+		else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK)
 			return;
-		}
 	}
 	
 	for (const auto &mid : f_flags) {
@@ -1341,37 +1308,32 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_ANSWERED) {
-			if (b_first) {
+			if (b_first)
 				buff[tmp_len++] = ' ';
-			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Answered");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_FLAGGED) {
-			if (b_first) {
+			if (b_first)
 				buff[tmp_len++] = ' ';
-			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Flagged");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DELETED) {
-			if (b_first) {
+			if (b_first)
 				buff[tmp_len++] = ' ';
-			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Deleted");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_SEEN) {
-			if (b_first) {
+			if (b_first)
 				buff[tmp_len++] = ' ';
-			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Seen");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DRAFT) {
-			if (b_first) {
+			if (b_first)
 				buff[tmp_len++] = ' ';
-			}
 			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Draft");
 		}
 		tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "))\r\n");
@@ -1520,9 +1482,8 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 imap_context::~imap_context()
 {
 	auto pcontext = this;
-	if (-1 != pcontext->message_fd) {
+	if (pcontext->message_fd >= 0)
 		close(pcontext->message_fd);
-	}
 	if (!pcontext->file_path.empty())
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1351: chmod %s: %s",
@@ -1707,9 +1668,8 @@ static void *imps_scanwork(void *argp)
 	while (!g_notify_stop) {
 		i ++;
 		sleep(1);
-		if (i < SCAN_INTERVAL) {
+		if (i < SCAN_INTERVAL)
 			continue;
-		}
 		
 		i = 0;
 		std::vector<bk> temp_file;
