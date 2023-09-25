@@ -49,22 +49,16 @@ struct HPM_CONTEXT {
 }
 
 static unsigned int g_context_num;
-static uint64_t g_max_size;
-static uint64_t g_cache_size;
 static thread_local HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
 static std::vector<std::string> g_plugin_names;
 
-void hpm_processor_init(int context_num, std::vector<std::string> &&names,
-    uint64_t cache_size, uint64_t max_size)
+void hpm_processor_init(int context_num, std::vector<std::string> &&names)
 {
 	g_context_num = context_num;
 	g_plugin_names = std::move(names);
-	g_cache_size = cache_size;
-	g_max_size = max_size;
 }
-
 
 static BOOL hpm_processor_register_interface(
 	HPM_INTERFACE *pinterface)
@@ -289,12 +283,12 @@ int hpm_processor_take_request(http_context *phttp)
 		auto pplugin = &p;
 		if (!pplugin->interface.preproc(phttp->context_id))
 			continue;
-		if (rq.content_len > g_max_size) {
+		if (rq.content_len > g_rqbody_max_size) {
 			phttp->log(LV_DEBUG, "content-length"
 				" is too long for hpm_processor");
 			return 400;
 		}
-		if (rq.b_chunked || rq.content_len > g_cache_size) {
+		if (rq.b_chunked || rq.content_len > g_rqbody_flush_size) {
 			auto path = LOCAL_DISK_TMPDIR;
 			if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 				mlog(LV_ERR, "E-2079: mkdir %s: %s", path, strerror(errno));
@@ -350,7 +344,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	}
 	if (!rq.b_chunked) {
 		if (rq.posted_size + phttp->stream_in.get_total_length() < rq.content_len &&
-		    phttp->stream_in.get_total_length() < g_cache_size)
+		    phttp->stream_in.get_total_length() < g_rqbody_flush_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
@@ -431,7 +425,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			rq.posted_size += tmp_len;
 			rq.chunk_offset = rq.chunk_size;
 		}
-		if (rq.posted_size > g_max_size) {
+		if (rq.posted_size > g_rqbody_max_size) {
 			phttp->log(LV_DEBUG, "chunked content"
 				" length is too long for hpm_processor");
 			return FALSE;

@@ -109,8 +109,6 @@ struct RECORD_HEADER {
 
 static int g_context_num;
 static time_duration g_exec_timeout;
-static uint64_t g_max_size;
-static uint64_t g_cache_size;
 static std::vector<FASTCGI_NODE> g_fastcgi_list;
 static std::unique_ptr<FASTCGI_CONTEXT[]> g_context_list;
 static std::atomic<int> g_unavailable_times;
@@ -139,13 +137,10 @@ static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
 	return NULL;
 }
 
-void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
-    time_duration exec_timeout)
+void mod_fastcgi_init(int context_num, time_duration exec_timeout)
 {
 	g_context_num = context_num;
 	g_unavailable_times = 0;
-	g_cache_size = cache_size;
-	g_max_size = max_size;
 	g_exec_timeout = exec_timeout;
 }
 
@@ -436,7 +431,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 		"to \"%s\" will be relayed to fastcgi back-end %s",
 		phttp->request.f_request_uri.c_str(),
 		phttp->request.f_host.c_str(), pfnode->sock_path.c_str());
-	if (rq.content_len > g_max_size) {
+	if (rq.content_len > g_rqbody_max_size) {
 		phttp->log(LV_DEBUG, "content-length"
 			" is too long for mod_fastcgi");
 		return 400;
@@ -444,7 +439,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 	auto pcontext = &g_context_list[phttp->context_id];
 	pcontext->last_time = tp_now();
 	pcontext->pfnode = pfnode;
-	if (rq.b_chunked || rq.content_len > g_cache_size) {
+	if (rq.b_chunked || rq.content_len > g_rqbody_flush_size) {
 		auto path = LOCAL_DISK_TMPDIR;
 		if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
@@ -775,17 +770,13 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	if (rq.b_end)
 		return TRUE;
 	if (!rq.b_chunked && rq.body_fd < 0) {
-		/*
-		 * Small enough that it will be hold in memory only
-		 * (g_cache_size consideration in take_request).
-		 */
 		if (rq.content_len <= phttp->stream_in.get_total_length())
 			rq.b_end = true;
 		return TRUE;
 	}
 	if (!rq.b_chunked) {
 		if (rq.posted_size + phttp->stream_in.get_total_length() < rq.content_len &&
-		    phttp->stream_in.get_total_length() < g_cache_size)
+		    phttp->stream_in.get_total_length() < g_rqbody_flush_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
@@ -862,7 +853,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			rq.posted_size += tmp_len;
 			rq.chunk_offset = rq.chunk_size;
 		}
-		if (rq.posted_size > g_max_size) {
+		if (rq.posted_size > g_rqbody_max_size) {
 			phttp->log(LV_DEBUG, "chunked content"
 				" length is too long for mod_fastcgi");
 			return FALSE;

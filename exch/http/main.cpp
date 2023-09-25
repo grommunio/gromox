@@ -84,11 +84,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"context_average_mem", "256K", CFG_SIZE, "192K"},
 	{"context_num", "400", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},
-	{"fastcgi_cache_size", "256K", CFG_SIZE, "64K"},
 	{"fastcgi_exec_timeout", "10min", CFG_TIME, "1min"},
-	{"fastcgi_max_size", "4M", CFG_SIZE, "64K"},
-	{"hpm_cache_size", "512K", CFG_SIZE, "64K"},
-	{"hpm_max_size", "4M", CFG_SIZE, "64K"},
 	{"http_auth_times", "10", CFG_SIZE, "1"},
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
@@ -98,6 +94,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_log_file", "-"},
 	{"http_log_level", "4" /* LV_NOTICE */},
 	{"http_old_php_handler", "0", CFG_BOOL},
+	{"http_rqbody_flush_size", "512K", CFG_SIZE, "0"},
+	{"http_rqbody_max_size", "4M", CFG_SIZE, "1"},
 	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
 	{"http_support_tls", "false", CFG_BOOL},
 	{"http_thread_charge_num", "20", CFG_SIZE, "4"},
@@ -269,22 +267,16 @@ int main(int argc, const char **argv) try
 	HX_unit_size(temp_buff, std::size(temp_buff), max_request_mem, 1024, 0);
 	mlog(LV_INFO, "pdu_processor: maximum request memory is %s", temp_buff);
 
-	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
-	HX_unit_size(temp_buff, std::size(temp_buff), hpm_cache_size, 1024, 0);
-	mlog(LV_INFO, "hpm_processor: fastcgi cache size is %s", temp_buff);
+	uint64_t val = g_config_file->get_ll("http_rqbody_flush_size");
+	HX_unit_size(temp_buff, std::size(temp_buff), val, 1024, 0);
+	mlog(LV_INFO, "http: request bodies to disk when exceeding %s", temp_buff);
+	g_rqbody_flush_size = val;
 	
-	uint64_t hpm_max_size = g_config_file->get_ll("hpm_max_size");
-	HX_unit_size(temp_buff, std::size(temp_buff), hpm_max_size, 1024, 0);
+	val = g_config_file->get_ll("http_rqbody_max_size");
+	HX_unit_size(temp_buff, std::size(temp_buff), val, 1024, 0);
 	mlog(LV_INFO, "hpm_processor: HPM maximum size is %s", temp_buff);
+	g_rqbody_max_size = val;
 
-	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
-	HX_unit_size(temp_buff, std::size(temp_buff), fastcgi_cache_size, 1024, 0);
-	mlog(LV_INFO, "mod_fastcgi: fastcgi cache size is %s", temp_buff);
-	
-	uint64_t fastcgi_max_size = g_config_file->get_ll("fastcgi_max_size");
-	HX_unit_size(temp_buff, std::size(temp_buff), fastcgi_max_size, 1024, 0);
-	mlog(LV_INFO, "mod_fastcgi: fastcgi maximum size is %s", temp_buff);
-	
 	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
 	HX_unit_seconds(temp_buff, std::size(temp_buff), fastcgi_exec_timeout.count(), 0);
 	mlog(LV_INFO, "http: fastcgi execution timeout is %s", temp_buff);
@@ -356,8 +348,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	hpm_processor_init(context_num, std::move(g_dfl_hpm_plugins),
-		hpm_cache_size, hpm_max_size);
+	hpm_processor_init(context_num, std::move(g_dfl_hpm_plugins));
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	if (0 != hpm_processor_run()) {
 		mlog(LV_ERR, "system: could not start HPM processor");
@@ -368,8 +359,7 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: failed to start mod_rewrite");
 		return EXIT_FAILURE;
 	}
-	mod_fastcgi_init(context_num, fastcgi_cache_size,
-		fastcgi_max_size, fastcgi_exec_timeout); 
+	mod_fastcgi_init(context_num, fastcgi_exec_timeout); 
 	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 	if (0 != mod_fastcgi_run()) { 
 		mlog(LV_ERR, "system: failed to start mod_fastcgi");

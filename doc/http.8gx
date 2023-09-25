@@ -67,23 +67,10 @@ files.
 .br
 Default: \fI/usr/share/gromox/http\fP
 .TP
-\fBfastcgi_cache_size\fP
-If the HTTP request to a CGI endpoint has a HTTP body larger than the limit
-given here, the data is buffered in a file rather than kept in memory. If the
-request uses Chunked Transfer Encoding, a file is used unconditionally.
-.br
-Default: \fI256K\fP
-.TP
 \fBfastcgi_exec_timeout\fP
 Maximum execution time for CGI scripts.
 .br
 Default: \fI10 minutes\fP
-.TP
-\fBfastcgi_max_size\fP
-If the Content-Length of a HTTP request to a CGI endpoint is larger than this
-value, the request is rejected.
-.br
-Default: \fI4M\fP
 .TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for the Server HTTP responses
@@ -92,19 +79,6 @@ SMTP HELO lines, for DSN report texts, for MIDB database/EML cache. The
 identifier should only use characters allowed for hostnames.
 .br
 Default: (system hostname)
-.TP
-\fBhpm_cache_size\fP
-If the HTTP request to a HPM endpoint uses Chunked Transfer Encoding or the
-Content-Length field contains a larger value than this limit, the data is
-buffered in a file \fI/tmp/http-\fP%d (%d replaced by internal context id).
-.br
-Default: \fI512K\fP
-.TP
-\fBhpm_max_size\fP
-If the Content-Length of a HTTP request to a HPM endpoint is larger than this
-value, the request is rejected.
-.br
-Default: \fI4M\fP
 .TP
 \fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
@@ -163,6 +137,19 @@ Default: \fI4\fP (notice)
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br
 Default: (unset)
+.TP
+\fBhttp_rqbody_flush_size\fP
+If the HTTP request to a CGI endpoint has a HTTP body larger than the limit
+given here, the data is buffered in a file rather than kept in memory. If the
+request uses Chunked Transfer Encoding, a file is used unconditionally.
+.br
+Default: \fI512K\fP
+.TP
+\fBhttp_rqbody_max_size\fP
+If the Content-Length of a HTTP request to a CGI endpoint is larger than this
+value, the request is rejected.
+.br
+Default: \fI4M\fP
 .TP
 \fBhttp_support_tls\fP
 This flag controls whether (or not) the server offers TLS at all. The default
