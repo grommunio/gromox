@@ -2273,7 +2273,6 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	int i;
 	unsigned int uid;
 	int errnum;
-	int tmp_len;
 	BOOL b_seen;
 	BOOL b_draft;
 	int name_len;
@@ -2320,9 +2319,10 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	}
 	close(pcontext->message_fd);
 	pcontext->message_fd = -1;
-	memcpy(&tmp_len, pbuff.get(), sizeof(tmp_len));
+	uint32_t mfd_len = 0;
+	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
 	MAIL imail(imap_parser_get_mpool());
-	if (!imail.load_from_str_move(&pbuff[tmp_len], node_stat.st_size - tmp_len)) {
+	if (!imail.load_from_str_move(&pbuff[mfd_len], node_stat.st_size - mfd_len)) {
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)

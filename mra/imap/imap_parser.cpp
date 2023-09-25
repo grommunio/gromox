@@ -1268,7 +1268,6 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		return;
 	int id;
 	int err;
-	int tmp_len;
 	int flag_bits;
 	BOOL b_first;
 	char buff[1024];
@@ -1281,14 +1280,14 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 
 	imap_parser_echo_expunges(*pcontext, pstream, std::move(f_expunged));
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder) == 0) {
-		tmp_len = gx_snprintf(buff, std::size(buff),
+		auto outlen = gx_snprintf(buff, std::size(buff),
 		          "* %zu EXISTS\r\n"
 		          "* %u RECENT\r\n",
 		          pcontext->contents.n_exists(),
 		          pcontext->contents.n_recent);
 		if (pstream == nullptr)
-			pcontext->connection.write(buff, tmp_len);
-		else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK)
+			pcontext->connection.write(buff, outlen);
+		else if (pstream->write(buff, outlen) != STREAM_WRITE_OK)
 			return;
 	}
 	
@@ -1301,45 +1300,45 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		    pcontext->selected_folder, mid_string, &flag_bits,
 		    &err) != MIDB_RESULT_OK)
 			continue;
-		tmp_len = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", id);
+		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", id);
 		b_first = FALSE;
 		if (flag_bits & FLAG_RECENT) {
-			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Recent");
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Recent");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_ANSWERED) {
 			if (b_first)
-				buff[tmp_len++] = ' ';
-			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Answered");
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Answered");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_FLAGGED) {
 			if (b_first)
-				buff[tmp_len++] = ' ';
-			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Flagged");
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Flagged");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DELETED) {
 			if (b_first)
-				buff[tmp_len++] = ' ';
-			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Deleted");
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Deleted");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_SEEN) {
 			if (b_first)
-				buff[tmp_len++] = ' ';
-			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Seen");
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Seen");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DRAFT) {
 			if (b_first)
-				buff[tmp_len++] = ' ';
-			tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "\\Draft");
+				buff[outlen++] = ' ';
+			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Draft");
 		}
-		tmp_len += gx_snprintf(&buff[tmp_len], std::size(buff) - tmp_len, "))\r\n");
+		outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "))\r\n");
 		if (pstream == nullptr)
-			pcontext->connection.write(buff, tmp_len);
-		else if (pstream->write(buff, tmp_len) != STREAM_WRITE_OK)
+			pcontext->connection.write(buff, outlen);
+		else if (pstream->write(buff, outlen) != STREAM_WRITE_OK)
 			return;
 	}
 }
