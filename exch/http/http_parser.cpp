@@ -525,7 +525,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 		return http_done(pcontext, -400);
 	}
 	size_t tmp_len = ptoken - line;
-	if (tmp_len >= 32) {
+	if (tmp_len >= std::size(pcontext->request.method)) {
 		pcontext->log(LV_DEBUG, "I-1922: request method error");
 		return http_done(pcontext, -400);
 	}
