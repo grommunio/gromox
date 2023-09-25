@@ -947,16 +947,6 @@ static char *now_str(char *buf, size_t bufsize)
 	return buf;
 }
 
-static size_t find_first_nonprint(const void *vptr, size_t z)
-{
-	auto begin = static_cast<const uint8_t *>(vptr);
-	auto end = begin + z;
-	for (auto p = begin; p < end; ++p)
-		if (!isprint(*p) && !isspace(*p))
-			return p - begin;
-	return z;
-}
-
 static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
     void *pbuff, unsigned int size)
 {
@@ -973,8 +963,8 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 		        now_str(tbuf, std::size(tbuf)),
 		        co.client_ip, co.client_port,
 		        co.server_ip, co.server_port, actual_read);
-		if (find_first_nonprint(pbuff, actual_read) ==
-		    static_cast<size_t>(actual_read)) {
+		auto pfx = utf8_printable_prefix(pbuff, actual_read);
+		if (pfx == static_cast<size_t>(actual_read)) {
 			fflush(stderr);
 			if (HXio_fullwrite(STDERR_FILENO, pbuff, actual_read) < 0)
 				/* ignore */;
@@ -1139,9 +1129,9 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 		        now_str(tbuf, std::size(tbuf)),
 		        co.server_ip, co.server_port,
 		        co.client_ip, co.client_port, written_len);
-		auto pfx = find_first_nonprint(pcontext->write_buff, written_len);
-		fflush(stderr);
+		auto pfx = utf8_printable_prefix(pcontext->write_buff, written_len);
 		if (pfx == static_cast<size_t>(written_len)) {
+			fflush(stderr);
 			if (HXio_fullwrite(STDERR_FILENO, pcontext->write_buff, written_len) < 0)
 				/* ignore */;
 		} else {
@@ -1152,8 +1142,6 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 			 * hexdump starts at the ROP part.
 			 */
 			auto b = static_cast<const uint8_t *>(pcontext->write_buff);
-			while (pfx > 0 && b[pfx-1] != '\r' && b[pfx-1] != '\n')
-				--pfx;
 			if (HXio_fullwrite(STDERR_FILENO, b, pfx) < 0)
 				/* ignore */;
 			HX_hexdump(stderr, &b[pfx], written_len - pfx);

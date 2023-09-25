@@ -1503,6 +1503,26 @@ int strtailcase(const char *h, const char *n)
 	return strcasecmp(&h[hz-nz], n);
 }
 
+size_t utf8_printable_prefix(const void *vinput, size_t max)
+{
+	auto begin = static_cast<const uint8_t *>(vinput);
+	if (begin == nullptr)
+		return 0;
+	const uint8_t *p = begin;
+	for (uint8_t seg = 0; max > 0 && *p != '\0'; ++p, --seg, --max) {
+		if (seg == 0) {
+			if (iscntrl(*p) && !isspace(*p))
+				break;
+			seg = utf8_byte_num[*p];
+			if (seg == 0)
+				break;
+		} else if ((*p & 0xc0) != 0x80) {
+			break;
+		}
+	}
+	return p - begin;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try

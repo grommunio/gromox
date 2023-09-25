@@ -348,6 +348,14 @@ static int t_wildcard()
 	return wildcard_match("[", "*", true) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+static int t_utf8_prefix()
+{
+	static constexpr char s[] = "Aß\r\n";
+	if (utf8_printable_prefix(s, std::size(s) - 1) != std::size(s) - 1)
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 int main()
 {
 	if (t_utf7() != 0)
@@ -386,6 +394,9 @@ int main()
 		return ret;
 	t_convert();
 	ret = t_wildcard();
+	if (ret != 0)
+		return ret;
+	ret = t_utf8_prefix();
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;

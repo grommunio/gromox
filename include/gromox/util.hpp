@@ -160,6 +160,7 @@ extern GX_EXPORT void mlog(unsigned int level, const char *fmt, ...) __attribute
 extern GX_EXPORT int pthread_create4(pthread_t *, std::nullptr_t, void *(*)(void *), void * = nullptr) noexcept;
 extern GX_EXPORT int strtailcase(const char *h, const char *n);
 extern GX_EXPORT void replace_unsafe_basename(char *);
+extern GX_EXPORT size_t utf8_printable_prefix(const void *, size_t);
 
 extern GX_EXPORT const uint8_t utf8_byte_num[256];
 
