@@ -226,7 +226,7 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 	if (strcasecmp(req->method, "POST") != 0)
 		return http_status::method_not_allowed;
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
-	if(!auth_info.b_authed)
+	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	bool enableLog = false;
 	auto[response, code] = dispatch(ctx_id, auth_info, content, len, enableLog);

@@ -97,7 +97,7 @@ static HTTP_AUTH_INFO hpm_processor_get_auth_info(unsigned int context_id)
 	HTTP_AUTH_INFO info;
 	
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	info.b_authed = phttp->b_authed;
+	info.auth_status = phttp->auth_status;
 	info.username = phttp->username;
 	info.password = phttp->password;
 	info.maildir = phttp->maildir;

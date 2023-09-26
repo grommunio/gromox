@@ -58,7 +58,8 @@ struct http_context final : public schedule_context {
 	void *write_buff = nullptr;
 	int write_offset = 0, write_length = 0;
 	BOOL b_close = TRUE; /* Connection MIME Header for indicating closing */
-	BOOL b_authed = false;
+	/* @auth_status: 0=untried, 200=success, 401=rejected */
+	http_status auth_status = http_status::none;
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, password[128]{}, maildir[256]{}, lang[32]{};
 	DOUBLE_LIST_NODE node{};

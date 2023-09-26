@@ -49,7 +49,7 @@ struct http_request {
 using HTTP_REQUEST = http_request;
 
 struct HTTP_AUTH_INFO {
-	BOOL b_authed;
+	http_status auth_status;
 	const char* username;
 	const char* password;
 	const char* maildir;

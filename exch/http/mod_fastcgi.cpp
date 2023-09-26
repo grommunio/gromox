@@ -489,7 +489,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	ndr_push.init(pbuff, *plength, NDR_FLAG_NOALIGN | NDR_FLAG_BIGENDIAN);
 	QRF(mod_fastcgi_push_params_begin(&ndr_push));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "GATEWAY_INTERFACE", "CGI/1.1"));
-	if (phttp->b_authed) {
+	if (phttp->auth_status == http_status::ok) {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_USER", phttp->username));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));

@@ -706,12 +706,12 @@ static tproc_status htp_auth(http_context *pcontext)
 
 		if (*pcontext->lang == '\0')
 			gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("user_default_lang")), sizeof(pcontext->lang));
-		pcontext->b_authed = TRUE;
+		pcontext->auth_status = http_status::ok;
 		pcontext->log(LV_DEBUG, "htp_auth success");
 		return tproc_status::runoff;
 	}
 
-	pcontext->b_authed = FALSE;
+	pcontext->auth_status = http_status::unauthorized;
 	pcontext->log(LV_ERR, "login failed: \"%s\": %s",
 		pcontext->username, mres.errstr.c_str());
 	pcontext->auth_times ++;
@@ -724,6 +724,7 @@ static tproc_status htp_auth(http_context *pcontext)
 
 static tproc_status htp_auth_1(http_context &ctx)
 {
+	ctx.auth_status = http_status::none;
 	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
 	if (line == nullptr)
 		return tproc_status::runoff;
@@ -781,8 +782,7 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	ptoken1++;
 	gx_strlcpy(pcontext->host, ptoken, std::size(pcontext->host));
 	pcontext->port = strtol(ptoken1, nullptr, 0);
-
-	if (!pcontext->b_authed) {
+	if (pcontext->auth_status != http_status::ok) {
 		pcontext->log(LV_DEBUG,
 			"I-1931: authentication needed");
 		return http_done(pcontext, http_status::unauthorized);
@@ -1797,7 +1797,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	pcontext->write_length = 0;
 	pcontext->b_close = TRUE;
-	pcontext->b_authed = FALSE;
+	pcontext->auth_status = http_status::none;
 	pcontext->auth_times = 0;
 	pcontext->username[0] = '\0';
 	pcontext->password[0] = '\0';

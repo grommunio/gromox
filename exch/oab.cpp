@@ -60,7 +60,7 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	// TODO: check if unauthed requests are required
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
-	if(!auth_info.b_authed)
+	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	auto wr = write_response(ctx_id, header, strlen(header));
 	if (wr != http_status::ok)

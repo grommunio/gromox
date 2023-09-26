@@ -314,7 +314,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
-		if (!auth_info.b_authed)
+		if (auth_info.auth_status != http_status::ok)
 			return http_status::unauthorized;
 		if (uri[44] == '/' || uri[44] == '\0')
 			return resp_autocfg(ctx_id, auth_info.username);
@@ -323,8 +323,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
 		return resp_json(ctx_id, uri);
 	}
-
-	if (!auth_info.b_authed)
+	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
