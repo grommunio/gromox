@@ -1,3 +1,16 @@
+Development 2.13.32
+===================
+
+Enhancements:
+
+* daemons: better SSL_accept error log messages
+
+Fixes:
+
+* oxdisco, oab: avoid emitting extraneous NUL byte at end of XML document
+* imap: do not emit continuation request on LITERAL+
+
+
 Gromox 2.13 (2023-09-23)
 ========================
 
