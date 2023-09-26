@@ -20,7 +20,7 @@ This flag determines whether non-LDAP users with no recorded password
 set to whatever credential was passed along in the first authentication
 request.
 .br
-Default: \fno\fP
+Default: \fIno\fP
 .TP
 \fBmysql_dbname\fP
 Default: \fIemail\fP
