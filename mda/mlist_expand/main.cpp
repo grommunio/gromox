@@ -78,8 +78,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
-			case BOUND_OUT:
-			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"mlist %s is expanded", pcontext->ctrl.queue_ID,
 					pcontext->ctrl.from, rcpt_to, rcpt_to);
@@ -111,8 +109,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
-			case BOUND_OUT:
-			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-domain message can be accepted",
@@ -146,8 +142,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
-			case BOUND_OUT:
-			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only inter-member message can be accepted",
@@ -181,8 +175,6 @@ static hook_result expand_process(MESSAGE_CONTEXT *pcontext) try
 			b_touched = TRUE;
 			switch (pcontext->ctrl.bound_type) {
 			case BOUND_IN:
-			case BOUND_OUT:
-			case BOUND_RELAY:
 				mlog(LV_DEBUG, "SMTP message queue-ID: %d, FROM: %s, TO: %s  "
 					"privilege not enough for %s to expand mlist %s, "
 					"only specified senders' message can be accepted",

@@ -103,10 +103,6 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 {
 	int cache_ID;
 	MESSAGE_CONTEXT *pbounce_context;
-	
-	if (pcontext->ctrl.bound_type == BOUND_NOTLOCAL)
-		return hook_result::xcontinue;
-
 	/*
 	 * For diagnostic purposes, don't modify/steal from ctrl->rcpt until
 	 * the replacement list is fully constructed.
@@ -487,8 +483,6 @@ void exmdb_local_log_info(const CONTROL_INFO &ctrl,
 
 	switch (ctrl.bound_type) {
 	case BOUND_IN:
-	case BOUND_OUT:
-	case BOUND_RELAY:
 		mlog(level, "SMTP message queue-ID: %d, FROM: %s, TO: %s  %s",
 			ctrl.queue_ID, ctrl.from, rcpt_to, log_buf);
 		break;

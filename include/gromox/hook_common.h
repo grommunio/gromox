@@ -10,8 +10,6 @@
 enum {
 	BOUND_UNKNOWN, /* unknown message type */
 	BOUND_IN, /* message smtp in */
-	BOUND_OUT, /* message smtp out */
-	BOUND_RELAY, /* message smtp relay */
 	BOUND_SELF, /* message created by hook larger than BOUND_SELF */
 };
 

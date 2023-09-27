@@ -13,7 +13,6 @@ enum {
 };
 
 struct MAIL;
-#define BOUND_NOTLOCAL					7
 
 extern void auto_response_reply(const char *user_home, const char *from, const char *rcpt);
 

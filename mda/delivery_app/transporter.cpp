@@ -1058,8 +1058,6 @@ static void transporter_log_info(const CONTROL_INFO &ctrl, int level,
 			"TO: %s %s", ctrl.from, rcpt_buff.c_str(), log_buf);
 		break;
 	case BOUND_IN:
-	case BOUND_OUT:
-	case BOUND_RELAY:
 		mlog(level, "SMTP message queue-ID: %d, FROM: %s, "
 			"TO: %s %s", ctrl.queue_ID, ctrl.from,
 			rcpt_buff.c_str(), log_buf);
