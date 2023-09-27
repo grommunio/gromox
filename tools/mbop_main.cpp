@@ -194,7 +194,8 @@ static int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 		auto old_msgc = delcount(eid);
-		unsigned int flags = g_soft ? 0 : DELETE_HARD_DELETE;
+		unsigned int flags = DEL_MESSAGES;
+		flags |= g_soft ? 0 : DELETE_HARD_DELETE;
 		flags |= g_recursive ? DEL_FOLDERS : 0;
 		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
 		          eid, flags, &partial);
