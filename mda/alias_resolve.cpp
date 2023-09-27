@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grammm GmbH
+// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_HOOK_API_STATIC
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -14,14 +13,27 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
+#include "mlist_expand/bounce_producer.h"
 
 using namespace gromox;
+
+enum {
+	ML_OK = 0,
+	ML_NONE,
+	ML_XDOMAIN,
+	ML_XINTERNAL,
+	ML_XSPECIFIED,
+};
+
+DECLARE_HOOK_API();
 
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
@@ -30,6 +42,7 @@ static std::mutex xa_alias_lock;
 static std::thread xa_thread;
 static mysql_adaptor_init_param g_parm;
 static std::chrono::seconds g_cache_lifetime;
+static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 
 static MYSQL *sql_make_conn()
 {
@@ -105,9 +118,6 @@ static void xa_refresh_thread()
 static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 {
 	auto ctrl = &ctx->ctrl;
-	if (ctrl->bound_type >= BOUND_SELF)
-		return hook_result::xcontinue;
-
 	if (strchr(ctrl->from, '@') != nullptr) {
 		auto repl = xa_alias_lookup(ctrl->from);
 		if (repl.size() > 0) {
@@ -119,23 +129,65 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	 * For diagnostic purposes, don't modify/steal from ctrl->rcpt until
 	 * the replacement list is fully constructed.
 	 */
-	std::vector<std::string> new_rcpts;
-	for (const auto &rcpt : ctrl->rcpt) {
-		if (strchr(rcpt.c_str(), '@') == nullptr) {
-			new_rcpts.emplace_back(rcpt);
+	std::vector<std::string> output_rcpt;
+	std::set<std::string> seen;
+	std::vector<std::string> todo = ctrl->rcpt;
+
+	for (size_t i = 0; i < todo.size(); ++i) {
+		if (strchr(todo[i].c_str(), '@') == nullptr) {
+			output_rcpt.emplace_back(std::move(todo[i]));
 			continue;
 		}
-		auto repl = xa_alias_lookup(rcpt.c_str());
-		if (repl.size() == 0) {
-			new_rcpts.emplace_back(rcpt);
+		auto repl = xa_alias_lookup(todo[i].c_str());
+		if (repl.size() != 0) {
+			mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s",
+				todo[i].c_str(), repl.c_str());
+			todo[i] = std::move(repl);
+		}
+		if (!seen.emplace(todo[i]).second) {
+			todo[i] = {};
 			continue;
 		}
-		mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s",
-			rcpt.c_str(), repl.c_str());
-		new_rcpts.emplace_back(std::move(repl));
+
+		std::vector<std::string> exp_result;
+		int gmm_result = 0;
+		if (!get_mlist_memb(todo[i].c_str(), ctx->ctrl.from, &gmm_result, exp_result))
+			gmm_result = ML_NONE;
+		switch (gmm_result) {
+		case ML_NONE:
+			output_rcpt.emplace_back(std::move(todo[i]));
+			continue;
+		case ML_OK:
+			mlog(LV_DEBUG, "mlist_expand: subst RCPT %s -> %zu entities",
+				todo[i].c_str(), exp_result.size());
+			todo.insert(todo.begin() + i + 1,
+				std::make_move_iterator(exp_result.begin()),
+				std::make_move_iterator(exp_result.end()));
+			continue;
+		case ML_XDOMAIN:
+		case ML_XINTERNAL:
+		case ML_XSPECIFIED: {
+			auto tpl = gmm_result == ML_XDOMAIN ? "BOUNCE_MLIST_DOMAIN" :
+			           gmm_result == ML_XINTERNAL ? "BOUNCE_MLIST_INTERNAL" :
+			           "BOUNCE_MLIST_SPECIFIED";
+			auto bnctx = get_context();
+			if (bnctx == nullptr || !mlex_bouncer_make(ctx->ctrl.from,
+			    todo[i].c_str(), &ctx->mail, tpl, &bnctx->mail)) {
+				output_rcpt.emplace_back(std::move(todo[i]));
+				break;
+			}
+			bnctx->ctrl.need_bounce = false;
+			snprintf(bnctx->ctrl.from, std::size(bnctx->ctrl.from), "postmaster@%s", get_default_domain());
+			bnctx->ctrl.rcpt.emplace_back(ctx->ctrl.from);
+			throw_context(bnctx);
+			mlog(LV_DEBUG, "mlist_expand: from=<%s> has no privilege to expand mlist <%s> (%s)",
+				ctx->ctrl.from, todo[i].c_str(), tpl);
+			break;
+		}
+		}
 	}
-	ctrl->rcpt = std::move(new_rcpts);
-	return hook_result::xcontinue;
+	ctrl->rcpt = std::move(output_rcpt);
+	return ctx->ctrl.rcpt.empty() ? hook_result::stop : hook_result::xcontinue;
 } catch (const std::bad_alloc &) {
 	mlog(LV_INFO, "E-1611: ENOMEM");
 	return hook_result::proc_error;
@@ -206,6 +258,17 @@ static BOOL xa_main(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_HOOK_API(data);
+	textmaps_init();
+	query_service2("get_mlist_memb", get_mlist_memb);
+	if (get_mlist_memb == nullptr) {
+		mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
+		return FALSE;
+	}
+	if (mlex_bounce_init(";", get_config_path(),
+	    get_data_path(), "mlist_bounce") != 0) {
+		mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
+		return FALSE;
+	}
 	auto mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
 	            mysql_directives);
 	if (mcfg == nullptr) {

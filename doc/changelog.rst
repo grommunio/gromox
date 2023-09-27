@@ -1,9 +1,10 @@
-Development 2.13.34
+Development 2.13.36
 ===================
 
 Enhancements:
 
 * daemons: better SSL_accept error log messages
+* alias_resolve: support for nested mlist expansion
 * gromox-mbop: add emptyfld options -a, -M
 
 Fixes:
