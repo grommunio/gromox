@@ -35,7 +35,6 @@ dist_unit_DATA = system/gromox-delivery.service \
 mta_plugins = \
 	libgxm_alias_resolve.la \
 	libgxm_exmdb_local.la \
-	libgxm_mlist_expand.la \
 	libgxm_remote_delivery.la
 mra_plugins = \
 	libgxs_event_proxy.la \
@@ -103,10 +102,6 @@ libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response
 libgxm_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = ${default_sym}
-libgxm_mlist_expand_la_SOURCES = lib/bounce_mda.cpp mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/bounce_producer.h mda/mlist_expand/main.cpp
-libgxm_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxm_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la
-EXTRA_libgxm_mlist_expand_la_DEPENDENCIES = ${default_sym}
 libgxm_remote_delivery_la_SOURCES = mda/remote_delivery.cpp
 libgxm_remote_delivery_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_remote_delivery_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
