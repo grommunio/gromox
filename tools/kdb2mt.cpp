@@ -1509,7 +1509,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	if ((g_srcguid != nullptr) + (g_srcmbox != nullptr) +
-	    (g_srcmro != nullptr) > 1) {
+	    (g_srcmro != nullptr) != 1) {
 		fprintf(stderr, "Exactly one of --mbox-guid, --mbox-name or --mbox-mro must be specified.\n");
 		terse_help();
 		return EXIT_FAILURE;
