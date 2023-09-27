@@ -1,14 +1,16 @@
-Development 2.13.32
+Development 2.13.34
 ===================
 
 Enhancements:
 
 * daemons: better SSL_accept error log messages
+* gromox-mbop: add emptyfld options -a, -M
 
 Fixes:
 
 * oxdisco, oab: avoid emitting extraneous NUL byte at end of XML document
 * imap: do not emit continuation request on LITERAL+
+* mbop: restore emptyfld functionality after switch to empty_folder v2 RPC
 
 
 Gromox 2.13 (2023-09-23)

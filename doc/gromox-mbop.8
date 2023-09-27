@@ -62,14 +62,20 @@ will not be deleted.)
 Perform a soft deletion.
 .SH emptyfld
 .SS Synopsis
-\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-R\fP] [\fB\-\-soft\fP]
+\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-MRa\fP] [\fB\-\-soft\fP]
 \fIfolder_spec\fP...
 .SS Description
 This command deletes messages from a folder.
 .SS Subcommand options
 .TP
+\fB\-M\fP
+Exempt normal messages from deletion.
+.TP
 \fB-R\fP
 Besides messages, also delete subfolders.
+.TP
+\fB\-a\fP
+Select associated messages (FAI) for deletion.
 .TP
 \fB\-\-soft\fP
 Perform a soft deletion. (This feature is experimental.) Default is hard.

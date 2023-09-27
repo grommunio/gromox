@@ -173,10 +173,18 @@ static int main(int argc, const char **argv)
 
 namespace emptyfld {
 
-static unsigned int g_recursive, g_soft;
+static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE;
+
+static void opt_m(const struct HXoptcb *cb) { g_del_flags &= ~DEL_MESSAGES; }
+static void opt_r(const struct HXoptcb *cb) { g_del_flags |= DEL_FOLDERS; }
+static void opt_a(const struct HXoptcb *cb) { g_del_flags |= DEL_ASSOCIATED; }
+static void opt_s(const struct HXoptcb *cb) { g_del_flags &= ~DELETE_HARD_DELETE; }
+
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'R', HXTYPE_NONE, &g_recursive, nullptr, nullptr, 0, "Recurse into subfolders"},
-	{"soft", 0, HXTYPE_NONE, &g_soft, nullptr, nullptr, 0, "Soft-delete (experimental)"},
+	{nullptr, 'M', HXTYPE_NONE, {}, {}, opt_m, 0, "Exclude normal messages from deletion"},
+	{nullptr, 'R', HXTYPE_NONE, {}, {}, opt_r, 0, "Recurse into subfolders"},
+	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
+	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete (experimental)"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -194,11 +202,8 @@ static int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 		auto old_msgc = delcount(eid);
-		unsigned int flags = DEL_MESSAGES;
-		flags |= g_soft ? 0 : DELETE_HARD_DELETE;
-		flags |= g_recursive ? DEL_FOLDERS : 0;
 		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
-		          eid, flags, &partial);
+		          eid, g_del_flags, &partial);
 		if (!ok) {
 			fprintf(stderr, "empty_folder %s failed\n", *argv);
 			return EXIT_FAILURE;
