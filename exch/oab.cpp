@@ -69,11 +69,9 @@ BOOL OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
 		return write_response(ctx_id, oab_unauthed, std::size(oab_unauthed) - 1);
-
-	write_response(ctx_id, header, strlen(header));
-	write_response(ctx_id, response, strlen(response));
-	return true;
-
+	if (!write_response(ctx_id, header, strlen(header)))
+		return false;
+	return write_response(ctx_id, response, strlen(response));
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1700: ENOMEM\n");
 	return false;
