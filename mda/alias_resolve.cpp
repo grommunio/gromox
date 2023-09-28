@@ -81,7 +81,7 @@ static std::string xa_alias_lookup(const char *srch)
 
 static void xa_refresh_aliases(MYSQL *conn) try
 {
-	static const char query[] = "SELECT aliasname, mainname FROM aliases";
+	static constexpr char query[] = "SELECT aliasname, mainname FROM aliases";
 	if (mysql_query(conn, query) != 0)
 		return;
 	DB_RESULT res = mysql_store_result(conn);
@@ -90,10 +90,27 @@ static void xa_refresh_aliases(MYSQL *conn) try
 	while ((row = res.fetch_row()) != nullptr)
 		if (row[0] != nullptr && row[1] != nullptr)
 			newmap.emplace(row[0], row[1]);
+	auto n_aliases = newmap.size();
+
+	static constexpr char query2[] = "select u.username, uv.propval_str "
+		"from users as u inner join user_properties as up "
+		// require PR_DISPLAY_TYPE(_EX)==DT_REMOTE_MAILUSER
+		"on u.id=up.user_id and up.proptag=0x39050003 and up.propval_str=6 "
+		"inner join user_properties as uv "
+		// extract PR_SMTP_ADDRESS
+		"on u.id=uv.user_id and uv.proptag=0x39fe001f";
+	if (mysql_query(conn, query2) != 0)
+		return;
+	res = mysql_store_result(conn);
+	while ((row = res.fetch_row()) != nullptr)
+		if (row[0] != nullptr && row[1] != nullptr)
+			newmap.emplace(row[0], row[1]);
+	auto n_contacts = newmap.size() - n_aliases;
+
 	std::lock_guard hold(xa_alias_lock);
 	std::swap(xa_alias_map, newmap);
-	mlog(LV_INFO, "I-1612: refreshed alias map (%zu entries)",
-	        xa_alias_map.size());
+	mlog(LV_INFO, "I-1612: refreshed alias_resolve map with %zu aliases and %zu contact objects",
+		n_aliases, n_contacts);
 } catch (const std::bad_alloc &) {
 }
 

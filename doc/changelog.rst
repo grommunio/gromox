@@ -5,6 +5,7 @@ Enhancements:
 
 * daemons: better SSL_accept error log messages
 * alias_resolve: support for nested mlist expansion
+* alias_resolve: support for Global Contact Objects
 * gromox-mbop: add emptyfld options -a, -M
 
 Fixes:
