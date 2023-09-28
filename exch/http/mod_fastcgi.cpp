@@ -24,6 +24,7 @@
 #include <gromox/contexts_pool.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/http.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/ndr.hpp>
@@ -380,7 +381,7 @@ static int mod_fastcgi_connect_backend(const char *path)
 	return sockd;
 }
 
-int mod_fastcgi_take_request(http_context *phttp)
+http_status mod_fastcgi_take_request(http_context *phttp)
 {
 	auto &rq = phttp->request;
 	BOOL b_index;
@@ -393,7 +394,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
-		return 400;
+		return http_status::bad_request;
 	}
 	ptoken = strrchr(request_uri, '?');
 	if (ptoken != nullptr)
@@ -408,7 +409,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 		if (tmp_len >= 16) {
 			phttp->log(LV_DEBUG, "suffix in"
 				" request uri error for mod_fastcgi");
-			return 0;
+			return http_status::none;
 		}
 		strcpy(suffix, ptoken);
 	} else {
@@ -421,12 +422,12 @@ int mod_fastcgi_take_request(http_context *phttp)
 	} else {
 		phttp->log(LV_DEBUG, "request uri format "
 					"error, missing slash for mod_fastcgi");
-		return 400;
+		return http_status::bad_request;
 	}
 	auto pfnode = mod_fastcgi_find_backend(phttp->request.f_host.c_str(),
 	              request_uri, file_name, suffix, &b_index);
 	if (pfnode == nullptr)
-		return 0;
+		return http_status::none;
 	phttp->log(LV_DEBUG, "http request \"%s\" "
 		"to \"%s\" will be relayed to fastcgi back-end %s",
 		phttp->request.f_request_uri.c_str(),
@@ -434,7 +435,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 	if (rq.content_len > g_rqbody_max_size) {
 		phttp->log(LV_DEBUG, "content-length"
 			" is too long for mod_fastcgi");
-		return 400;
+		return http_status::bad_request;
 	}
 	auto pcontext = &g_context_list[phttp->context_id];
 	pcontext->last_time = tp_now();
@@ -443,14 +444,14 @@ int mod_fastcgi_take_request(http_context *phttp)
 		auto path = LOCAL_DISK_TMPDIR;
 		if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 			mlog(LV_ERR, "E-2077: mkdir %s: %s", path, strerror(errno));
-			return 500;
+			return http_status::server_error;
 		}
 		auto ret = rq.body_fd.open_anon(path, O_RDWR | O_TRUNC);
 		if (ret < 0) {
 			mlog(LV_ERR, "E-2078: open_anon(%s)[%s]: %s",
 			        path, rq.body_fd.m_path.c_str(),
 			        strerror(-ret));
-			return 500;
+			return http_status::server_error;
 		}
 		rq.posted_size = 0;
 	} else {
@@ -465,7 +466,7 @@ int mod_fastcgi_take_request(http_context *phttp)
 	pcontext->cli_sockd = -1;
 	pcontext->b_header = FALSE;
 	pcontext->b_active = true;
-	return 200;
+	return http_status::ok;
 }
 
 BOOL mod_fastcgi_check_responded(HTTP_CONTEXT *phttp)

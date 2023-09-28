@@ -36,6 +36,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hpm_common.h>
+#include <gromox/http.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
@@ -389,34 +390,33 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 	return tl;
 }
 
-static const char *status_text(unsigned int s)
+static const char *status_text(http_status s)
 {
 	switch (s) {
-	case 304: return "Not Modified";
-	case 400: return "Bad Request";
-	case 401: return "Unauthorized";
-	case 403: return "Permission Denied";
-	case 404: return "Not Found";
-	case 405: return "Method Not Allowed";
-	case 408: return "Request Timeout";
-	case 414: return "URI Too Long";
-	case 416: return "Range Not Satisfiable";
-	case 4162: return "Too Many Ranges";
-	case 501: return "Not Implemented";
-	case 502: return "Bad FCGI Gateway";
-	case 503: return "Service Unavailable";
-	case 5032: return "Resources Exhausted";
-	case 5042: return "FCGI Timeout";
-	default: return "Internal Server Error";
+	case http_status::not_modified: return "Not Modified";
+	case http_status::bad_request: return "Bad Request";
+	case http_status::unauthorized: return "Unauthorized";
+	case http_status::forbidden: return "Forbidden";
+	case http_status::not_found: return "Not Found";
+	case http_status::method_not_allowed: return "Method Not Allowed";
+	case http_status::timeout: return "Request Timeout";
+	case http_status::uri_too_long: return "URI Too Long";
+	case http_status::range_insatisfiable: return "Range Not Satisfiable";
+	case http_status::too_many_ranges: return "Too Many Ranges";
+	case http_status::not_impl: return "Not Implemented";
+	case http_status::bad_gateway: return "Bad FCGI Gateway";
+	case http_status::service_unavailable: return "Service Unavailable";
+	case http_status::resources_exhausted: return "Resources Exhausted";
+	case http_status::gateway_timeout: return "Gateway Timeout";
+	default: return "Server Error";
 	}
 }
 
-static tproc_status http_done(http_context *ctx, int code) try
+static tproc_status http_done(http_context *ctx, http_status code) try
 {
 	ctx->b_close = TRUE; /* rdbody not consumed yet */
-	if (code < 0) {
-		code = -code;
-	}
+	if (static_cast<int>(code) < 0)
+		code = static_cast<http_status>(-static_cast<int>(code));
 	if (hpm_processor_is_in_charge(ctx))
 		hpm_processor_put_context(ctx);
 	else if (mod_fastcgi_is_in_charge(ctx))
@@ -424,8 +424,10 @@ static tproc_status http_done(http_context *ctx, int code) try
 	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
 	auto msg = status_text(code);
-	if (code >= 1000)
-		code /= 10;
+	if (static_cast<int>(code) >= 1000)
+		code = static_cast<http_status>(static_cast<int>(code) / 10);
+	if (code == http_status::timeout)
+		ctx->b_close = TRUE;
 
 	char dstring[128];
 	rfc1123_dstring(dstring, std::size(dstring));
@@ -435,11 +437,11 @@ static tproc_status http_done(http_context *ctx, int code) try
 		"Content-Length: {}\r\n"
 	        "Content-Type: text/plain; charset=utf-8\r\n"
 		"Connection: {}\r\n",
-		code, msg, dstring, strlen(msg) + 2,
+		static_cast<int>(code), msg, dstring, strlen(msg) + 2,
 		ctx->b_close ? "close" : "keep-alive");
 	if (!ctx->b_close)
 		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
-	if (code == 401)
+	if (code == http_status::unauthorized)
 		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
 	rsp += "\r\n";
 	rsp += msg;
@@ -511,7 +513,7 @@ static tproc_status htparse_initssl(http_context *pcontext)
 		pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 		if (NULL == pcontext->connection.ssl) {
 			mlog(LV_ERR, "E-1185: ENOMEM");
-			return http_done(pcontext, -5032);
+			return http_done(pcontext, http_status::enomem_CL);
 		}
 		SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 	}
@@ -533,7 +535,7 @@ static tproc_status htparse_initssl(http_context *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return tproc_status::polling_rdonly;
 	pcontext->log(LV_DEBUG, "I-1920: timeout");
-	return http_done(pcontext, -408);
+	return http_done(pcontext, http_status::timeout);
 }
 
 static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
@@ -543,12 +545,12 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	auto ptoken = static_cast<char *>(memchr(line, ' ', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "D-1921: request line missing a URI");
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	size_t tmp_len = ptoken - line;
 	if (tmp_len >= std::size(pcontext->request.method)) {
 		pcontext->log(LV_DEBUG, "I-1922: request method error");
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 
 	memcpy(pcontext->request.method, line, tmp_len);
@@ -556,7 +558,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG, "D-1923: request line without HTTP version");
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	size_t tmp_len1 = ptoken1 - ptoken - 1;
 	tmp_len = line_length - (ptoken1 + 6 - line);
@@ -569,18 +571,18 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 	} else {
 		pcontext->log(LV_DEBUG, "I-1924: unrecognized HTTP protocol %.*s",
 			static_cast<int>(tmp_len), &ptoken1[1]);
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	if (tmp_len1 == 0)
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 	if (tmp_len1 >= http_request::uri_limit)
-		return http_done(pcontext, -414);
+		return http_done(pcontext, http_status::uri_too_long_CL);
 	if (!mod_rewrite_process(ptoken + 1,
 	    tmp_len1, pcontext->request.f_request_uri)) {
 		pcontext->request.f_request_uri = std::string_view(&ptoken[1], tmp_len1);
 	} else if (ctx.request.f_request_uri.size() == 0) {
 		ctx.log(LV_ERR, "mod_rewrite left a zero-length URI");
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 		/*
 		 * Since mod_rewrite_process uses a uri_limit-long buffer, size
 		 * won't be exceeded anymore.
@@ -598,7 +600,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	auto ptoken = static_cast<char *>(memchr(line, ':', line_length));
 	if (NULL == ptoken) {
 		pcontext->log(LV_DEBUG, "D-1925: request header has no colon");
-		return http_done(pcontext, -400);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 
 	size_t tmp_len = ptoken - line;
@@ -619,7 +621,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 		char input[264]{}; /* [255long.name]:12345 */
 		if (tmp_len >= sizeof(input)) {
 			ctx.log(LV_DEBUG, "Host field of HTTP request too long");
-			return http_done(pcontext, -400);
+			return http_done(pcontext, http_status::bad_request_CL);
 		}
 		strncpy(input, ptoken, tmp_len);
 		char domain[256];
@@ -643,13 +645,13 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 		"Content-Length")) {
 		if (tmp_len >= 32) {
 			ctx.log(LV_DEBUG, "Content-Length too long");
-			return http_done(&ctx, -400);
+			return http_done(&ctx, http_status::bad_request_CL);
 		}
 		std::string s(ptoken, tmp_len);
 		char *end = nullptr;
 		ctx.request.content_len = strtoull(s.c_str(), &end, 10);
 		if (end == nullptr || *end != '\0')
-			return http_done(pcontext, -400);
+			return http_done(pcontext, http_status::bad_request_CL);
 	} else if (0 == strcasecmp(field_name,
 		"Transfer-Encoding")) {
 		std::string s(ptoken, tmp_len);
@@ -673,7 +675,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return tproc_status::runoff;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1085: ENOMEM");
-	return http_done(pcontext, -5032);
+	return http_done(pcontext, http_status::enomem_CL);
 }
 
 static tproc_status htp_auth(http_context *pcontext)
@@ -683,7 +685,7 @@ static tproc_status htp_auth(http_context *pcontext)
 		pcontext->log(LV_DEBUG,
 			"user %s is denied by user filter",
 			pcontext->username);
-		return http_done(pcontext, 503);
+		return http_done(pcontext, http_status::service_unavailable);
 	}
 
 	sql_meta_result mres;
@@ -696,7 +698,7 @@ static tproc_status htp_auth(http_context *pcontext)
 		if ('\0' == pcontext->maildir[0]) {
 			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s",
 				pcontext->username, mres.errstr.c_str());
-			return http_done(pcontext, 401);
+			return http_done(pcontext, http_status::unauthorized);
 		}
 
 		if (*pcontext->lang == '\0')
@@ -714,7 +716,7 @@ static tproc_status htp_auth(http_context *pcontext)
 	    pcontext->auth_times >= g_max_auth_times)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
-	return http_done(pcontext, 401);
+	return http_done(pcontext, http_status::unauthorized);
 }
 
 static tproc_status htp_auth_1(http_context &ctx)
@@ -746,7 +748,7 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	if (0 == tmp_len || tmp_len >= 1024) {
 		pcontext->log(LV_DEBUG,
 			"I-1926: rpcproxy request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, http_status::bad_request);
 	}
 	char tmp_buff[2048];
 	gx_strlcpy(tmp_buff, pcontext->request.f_request_uri.c_str(), std::size(tmp_buff));
@@ -759,19 +761,19 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	} else {
 		pcontext->log(LV_DEBUG,
 			"I-1928: rpcproxy request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, http_status::bad_request);
 	}
 	auto ptoken1 = strchr(tmp_buff, ':');
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG,
 			"I-1929: rpcproxy request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, http_status::bad_request);
 	}
 	*ptoken1 = '\0';
 	if (ptoken1 - ptoken > 128) {
 		pcontext->log(LV_DEBUG,
 			"I-1930: rpcproxy request method error");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, http_status::bad_request);
 	}
 	ptoken1++;
 	gx_strlcpy(pcontext->host, ptoken, std::size(pcontext->host));
@@ -780,7 +782,7 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	if (!pcontext->b_authed) {
 		pcontext->log(LV_DEBUG,
 			"I-1931: authentication needed");
-		return http_done(pcontext, 401);
+		return http_done(pcontext, http_status::unauthorized);
 	}
 
 	pcontext->total_length = pcontext->request.content_len;
@@ -790,12 +792,12 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 			pcontext->channel_type = hchannel_type::in;
 			pcontext->pchannel = g_inchannel_allocator->get();
 			if (pcontext->pchannel == nullptr)
-				return http_done(pcontext, 5032);
+				return http_done(pcontext, http_status::enomem_CL);
 		} else {
 			pcontext->channel_type = hchannel_type::out;
 			pcontext->pchannel = g_outchannel_allocator->get();
 			if (pcontext->pchannel == nullptr)
-				return http_done(pcontext, 5032);
+				return http_done(pcontext, http_status::enomem_CL);
 		}
 	}
 	pcontext->bytes_rw = stream_1_written;
@@ -808,16 +810,16 @@ static tproc_status htp_delegate_hpm(http_context *pcontext)
 	pcontext->total_length = 0;
 
 	auto ret = http_write_request(pcontext);
-	if (ret != 200)
+	if (ret != http_status::ok)
 		return http_done(pcontext, ret);
 	if (!pcontext->request.b_end)
 		return tproc_status::loop;
 	if (!hpm_processor_proc(pcontext))
-		return http_done(pcontext, 400);
+		return http_done(pcontext, http_status::bad_request);
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1184: ENOMEM");
-		return http_done(pcontext, -5032);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 	if (pcontext->stream_out.get_total_length() == 0)
 		return tproc_status::loop;
@@ -833,16 +835,16 @@ static tproc_status htp_delegate_fcgi(http_context *pcontext)
 	pcontext->total_length = 0;
 
 	auto ret = http_write_request(pcontext);
-	if (ret != 200)
+	if (ret != http_status::ok)
 		return http_done(pcontext, ret);
 	if (!pcontext->request.b_end)
 		return tproc_status::loop;
 	if (!mod_fastcgi_relay_content(pcontext))
-		return http_done(pcontext, 502);
+ 		return http_done(pcontext, http_status::bad_gateway);
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1183: ENOMEM");
-		return http_done(pcontext, -5032);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 	return tproc_status::loop;
 }
@@ -853,16 +855,16 @@ static tproc_status htp_delegate_cache(http_context *pcontext)
 	pcontext->total_length = 0;
 
 	auto ret = http_write_request(pcontext);
-	if (ret != 200)
+	if (ret != http_status::ok)
 		return http_done(pcontext, ret);
 	if (!pcontext->request.b_end)
 		return tproc_status::loop;
 	if (!mod_cache_discard_content(pcontext))
-		return http_done(pcontext, 502);
+		return http_done(pcontext, http_status::bad_gateway);
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1182: ENOMEM");
-		return http_done(pcontext, -5032);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 	return tproc_status::loop;
 }
@@ -875,7 +877,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		case STREAM_LINE_FAIL:
 			pcontext->log(LV_DEBUG,
 				"I-1933: request header line too long");
-			return http_done(pcontext, -400);
+			return http_done(pcontext, http_status::bad_request_CL);
 		case STREAM_LINE_UNAVAILABLE:
 			if (actual_read > 0)
 				return tproc_status::cont;
@@ -905,7 +907,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 			pcontext->request.f_host = pcontext->connection.server_ip;
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			mlog(LV_ERR, "E-1181: ENOMEM");
-			return http_done(pcontext, -5032);
+			return http_done(pcontext, http_status::enomem_CL);
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
 		auto ret = htp_auth_1(*pcontext);
@@ -915,21 +917,21 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") == 0)
 			return htp_delegate_rpc(pcontext, stream_1_written);
 		auto status = hpm_processor_take_request(pcontext);
-		if (status == 200)
+		if (status == http_status::ok)
 			return htp_delegate_hpm(pcontext);
-		else if (status != 0)
+		else if (status != http_status::none)
 			return http_done(pcontext, status);
 		status = mod_fastcgi_take_request(pcontext);
-		if (status == 200)
+		if (status == http_status::ok)
 			return htp_delegate_fcgi(pcontext);
-		else if (status != 0)
+		else if (status != http_status::none)
 			return http_done(pcontext, status);
 		status = mod_cache_take_request(pcontext);
-		if (status == 200)
+		if (status == http_status::ok)
 			return htp_delegate_cache(pcontext);
-		else if (status != 0)
+		else if (status != http_status::none)
 			return http_done(pcontext, status);
-		return http_done(pcontext, 404);
+		return http_done(pcontext, http_status::not_found);
 	}
 	return tproc_status::runoff;
 }
@@ -982,7 +984,7 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		mlog(LV_ERR, "E-1180: ENOMEM");
-		return http_done(pcontext, 5032);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOH", pbuff, size);
 	auto current_time = tp_now();
@@ -1002,7 +1004,7 @@ static tproc_status htparse_rdhead(http_context *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return htparse_rdhead_st(pcontext, actual_read);
 	pcontext->log(LV_DEBUG, "I-1934: timeout");
-	return http_done(pcontext, 408);
+	return http_done(pcontext, http_status::timeout);
 }
 
 static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
@@ -1010,7 +1012,7 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 	if (hpm_processor_is_in_charge(pcontext)) {
 		switch (hpm_processor_retrieve_response(pcontext)) {
 		case HPM_RETRIEVE_ERROR:
-			return http_done(pcontext, 400);
+			return http_done(pcontext, http_status::bad_request);
 		case HPM_RETRIEVE_WRITE:
 			break;
 		case HPM_RETRIEVE_NONE:
@@ -1034,7 +1036,7 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 		case RESPONSE_TIMEOUT:
 			pcontext->log(LV_DEBUG,
 				"fastcgi execution timeout");
-			return http_done(pcontext, 5042);
+			return http_done(pcontext, http_status::gateway_timeout);
 		}
 		if (mod_fastcgi_check_responded(pcontext)) {
 			if (!mod_fastcgi_read_response(pcontext) &&
@@ -1047,12 +1049,12 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 				return tproc_status::cont;
 			}
 		} else if (!mod_fastcgi_read_response(pcontext)) {
-			return http_done(pcontext, 502);
+			return http_done(pcontext, http_status::bad_gateway);
 		}
 	} else if (mod_cache_is_in_charge(pcontext) &&
 	    !mod_cache_read_response(pcontext)) {
 		if (!mod_cache_check_responded(pcontext))
-			return http_done(pcontext, 400);
+			return http_done(pcontext, http_status::bad_request);
 		if (pcontext->stream_out.get_total_length() == 0) {
 			if (pcontext->b_close)
 				return tproc_status::runoff;
@@ -1261,7 +1263,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		mlog(LV_ERR, "E-1179: ENOMEM");
-		return http_done(pcontext, 400);
+		return http_done(pcontext, http_status::bad_request);
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
 	auto current_time = tp_now();
@@ -1272,21 +1274,21 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		auto ret = http_write_request(pcontext);
-		if (ret != 200)
+		if (ret != http_status::ok)
 			return http_done(pcontext, ret);
 		if (!pcontext->request.b_end)
 			return tproc_status::cont;
 		if (hpm_processor_is_in_charge(pcontext)) {
 			if (!hpm_processor_proc(pcontext))
-				return http_done(pcontext, 400);
+				return http_done(pcontext, http_status::bad_request);
 		} else if (mod_fastcgi_is_in_charge(pcontext)) {
 			if (!mod_fastcgi_relay_content(pcontext))
-				return http_done(pcontext, 502);
+				return http_done(pcontext, http_status::bad_gateway);
 		}
 		pcontext->sched_stat = hsched_stat::wrrep;
 		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			mlog(LV_ERR, "E-1178: ENOMEM");
-			return http_done(pcontext, -5032);
+			return http_done(pcontext, http_status::enomem_CL);
 		}
 		if (hpm_processor_is_in_charge(pcontext)) {
 			if (pcontext->stream_out.get_total_length() != 0) {
@@ -1313,7 +1315,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	if (current_time - pcontext->connection.last_timestamp < g_timeout)
 		return tproc_status::polling_rdonly;
 	pcontext->log(LV_DEBUG, "I-1935: timeout");
-	return http_done(pcontext, 408);
+	return http_done(pcontext, http_status::timeout);
 }
 
 static tproc_status htparse_rdbody_nochan(http_context *pcontext)
@@ -1331,7 +1333,7 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") != 0) {
 		pcontext->log(LV_DEBUG, "I-1936: unrecognized HTTP method \"%s\"", pcontext->request.method);
 		/* other http request here if wanted */
-		return http_done(pcontext, 405);
+		return http_done(pcontext, http_status::method_not_allowed);
 	}
 	/* ECHO request */
 	char response_buff[1024];
@@ -1349,7 +1351,7 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	pcontext->sched_stat = hsched_stat::wrrep;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1176: ENOMEM");
-		return http_done(pcontext, -5032);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 	return tproc_status::cont;
 }
@@ -1374,7 +1376,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		auto pbuff = pcontext->stream_in.get_write_buf(&size);
 		if (NULL == pbuff) {
 			mlog(LV_ERR, "E-1175: ENOMEM");
-			return http_done(pcontext, 5032);
+			return http_done(pcontext, http_status::enomem_CL);
 		}
 
 		auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
@@ -1400,7 +1402,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			if (current_time - pcontext->connection.last_timestamp < g_timeout)
 				return tproc_status::polling_rdonly;
 			pcontext->log(LV_DEBUG, "I-1937: timeout");
-			return http_done(pcontext, 408);
+			return http_done(pcontext, http_status::timeout);
 		}
 	}
 
@@ -1484,7 +1486,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		pchannel_out->frag_length = 0;
 	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		mlog(LV_ERR, "E-1174: ENOMEM");
-		return http_done(pcontext, -5032);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 
 	switch (result) {

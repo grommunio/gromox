@@ -26,6 +26,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/http.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
@@ -362,7 +363,7 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
-static int mod_cache_parse_range_value(char *value,
+static http_status mod_cache_parse_range_value(char *value,
     uint32_t size, cache_context *pcontext) try
 {
 	char *ptoken;
@@ -372,11 +373,11 @@ static int mod_cache_parse_range_value(char *value,
 	HX_strrtrim(value);
 	HX_strltrim(value);
 	if (strncasecmp(value, "bytes", 5) != 0)
-		return 416;
+		return http_status::range_insatisfiable;
 	value += 5;
 	HX_strltrim(value);
 	if (*value != '=')
-		return 400;
+		return http_status::bad_request;
 	value ++;
 	HX_strltrim(value);
 	auto val_len = strlen(value);
@@ -388,7 +389,7 @@ static int mod_cache_parse_range_value(char *value,
 		if (value[i] == ',')
 			count ++;
 	if (count > 1024)
-		return 4162;
+		return static_cast<http_status>(4162);
 	plast_token = value;
 	pcontext->range.clear();
 	for (size_t i = 0; i < val_len; ++i) {
@@ -397,19 +398,19 @@ static int mod_cache_parse_range_value(char *value,
 		ptoken = value + i;
 		*ptoken = '\0';
 		if (plast_token == ptoken)
-			return 400;
+			return http_status::bad_request;
 		ptoken1 = strchr(plast_token, '-');
 		if (ptoken1 == nullptr)
-			return 400;
+			return http_status::bad_request;
 		*ptoken1++ = '\0';
 		auto first_bpos = strtol(plast_token, nullptr, 0);
 		if (first_bpos >= 0 && static_cast<unsigned long>(first_bpos) >= size)
-			return 416;
+			return http_status::range_insatisfiable;
 		auto last_bpos = strtol(ptoken1, nullptr, 0);
 		if (last_bpos == 0)
 			last_bpos = size - 1;
 		if (last_bpos < 0 || static_cast<unsigned long>(last_bpos) >= size)
-			return 416;
+			return http_status::range_insatisfiable;
 		RANGE r;
 		if (first_bpos <= last_bpos) {
 			r.begin = first_bpos;
@@ -423,21 +424,21 @@ static int mod_cache_parse_range_value(char *value,
 	}
 	if (pcontext->range.size() == 0)
 		/* RFC 7233 §2.1 specifies at least one range-set is required */
-		return 400;
+		return http_status::bad_request;
 	if (pcontext->range.size() == 1) {
 		pcontext->offset = pcontext->range[0].begin;
 		pcontext->until = pcontext->range[0].end + 1;
 		pcontext->range.clear();
-		return 0;
+		return http_status::none;
 	}
 	pcontext->offset = 0;
 	pcontext->until = 0;
 	pcontext->range_pos = -1;
-	return 0;
+	return http_status::none;
 } catch (const std::bad_alloc &) {
 	pcontext->range.clear();
 	mlog(LV_ERR, "E-1237: ENOMEM");
-	return 503;
+	return http_status::service_unavailable;
 }
 
 static bool rqtype_ok(const char *method, unsigned int set)
@@ -450,7 +451,7 @@ static bool rqtype_ok(const char *method, unsigned int set)
 	return false;
 }
 
-int mod_cache_take_request(http_context *phttp)
+http_status mod_cache_take_request(http_context *phttp)
 {
 	char *ptoken;
 	char suffix[16];
@@ -463,14 +464,14 @@ int mod_cache_take_request(http_context *phttp)
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 				" uri format error for mod_cache");
-		return 400;
+		return http_status::bad_request;
 	}
 	suffix[0] = '\0';
 	ptoken = strrchr(request_uri, '/');
 	if (NULL == ptoken) {
 		phttp->log(LV_DEBUG, "request uri "
 			"format error, missing slash for mod_cache");
-		return 400;
+		return http_status::bad_request;
 	}
 	ptoken ++;
 	ptoken = strrchr(ptoken, '.');
@@ -485,35 +486,36 @@ int mod_cache_take_request(http_context *phttp)
 	                   strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
 	          });
 	if (it == g_directory_list.cend())
-		return 0;
+		return http_status::none;
 	snprintf(tmp_path, std::size(tmp_path), "%s%s", it->dir.c_str(),
 	         request_uri + it->path.size());
 	wrapfd fd = open(tmp_path, O_RDONLY);
 	if (fd.get() < 0)
-		return errno == ENOENT || errno == ENOTDIR ? 404 :
-		       errno == EACCES || errno == EISDIR ? 403 : 503;
+		return errno == ENOENT || errno == ENOTDIR ? http_status::not_found :
+		       errno == EACCES || errno == EISDIR ? http_status::forbidden :
+		       http_status::service_unavailable;
 	if (rqtype_ok(phttp->request.method, 0))
 		;
 	else if (rqtype_ok(phttp->request.method, 1))
-		return 403;
+		return http_status::forbidden;
 	else
-		return 501;
+		return http_status::not_impl;
 	if (fstat(fd.get(), &node_stat) != 0)
-		return 500;
+		return http_status::server_error;
 	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
-		return 500;
+		return http_status::server_error;
 	else if (!S_ISREG(node_stat.st_mode))
-		return 403;
+		return http_status::forbidden;
 	static_assert(UINT32_MAX <= SIZE_MAX);
 	struct stat sb;
 	auto val = mod_cache_get_others_field(phttp->request.f_others, "If-None-Match");
 	if (val != nullptr && mod_cache_retrieve_etag(val, sb)) {
 		if (stat4_eq(sb, node_stat))
-			return 304;
+			return http_status::not_modified;
 	} else if ((val = mod_cache_get_others_field(phttp->request.f_others, "If-Modified-Since")) != nullptr &&
 	    mod_cache_parse_rfc1123_dstring(val, &sb.st_mtime)) {
 		if (sb.st_mtime == node_stat.st_mtime)
-			return 304;
+			return http_status::not_modified;
 	}
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
@@ -523,7 +525,7 @@ int mod_cache_take_request(http_context *phttp)
 		gx_strlcpy(tmp_buff, val, std::size(tmp_buff));
 		auto status = mod_cache_parse_range_value(tmp_buff,
 		              node_stat.st_size, pcontext);
-		if (status != 0)
+		if (status != http_status::none)
 			return status;
 	} else {
 		pcontext->offset = 0;
@@ -540,11 +542,11 @@ int mod_cache_take_request(http_context *phttp)
 			              PROT_READ, MAP_SHARED, fd.get(), 0);
 			if (pitem->mblk == MAP_FAILED) {
 				pcontext->range.clear();
-				return 503;
+				return http_status::service_unavailable;
 			}
 			posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 			pcontext->pitem = std::move(pitem);
-			return 200;
+			return http_status::ok;
 		}
 	}
 	hhold.unlock();
@@ -560,18 +562,18 @@ int mod_cache_take_request(http_context *phttp)
 		              PROT_READ, MAP_SHARED, fd.get(), 0);
 		if (pitem->mblk == MAP_FAILED) {
 			pcontext->range.clear();
-			return 503;
+			return http_status::service_unavailable;
 		}
 		posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 		g_cache_hash.emplace(tmp_path, pitem);
 		pcontext->pitem = std::move(pitem);
-		return 200;
+		return http_status::ok;
 	}
 	} catch (const std::bad_alloc &) {
 		pcontext->range.clear();
-		return 503;
+		return http_status::service_unavailable;
 	}
-	return 200;
+	return http_status::ok;
 }
 
 void mod_cache_put_context(HTTP_CONTEXT *phttp)
