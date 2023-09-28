@@ -10,6 +10,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/http.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/mapi_types.hpp>
 #include <include/gromox/pcl.hpp>
@@ -101,8 +102,7 @@ public:
 	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, const EWSContext &);
 
 	EWSPlugin();
-
-	BOOL proc(int, const void*, uint64_t);
+	http_status proc(int, const void*, uint64_t);
 	static BOOL preproc(int);
 
 	bool logEnabled(const std::string_view&) const;

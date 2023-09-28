@@ -161,9 +161,10 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 			return &h->connection;
 		});
 	if (strcmp(service, "write_response") == 0)
-		return reinterpret_cast<void *>(+[](unsigned int id, const void *b, size_t z) -> BOOL {
+		return reinterpret_cast<void *>(+[](unsigned int id, const void *b, size_t z) -> http_status {
 			auto h = static_cast<http_context *>(http_parser_get_contexts_list()[id]);
-			return h->stream_out.write(b, z) == STREAM_WRITE_OK ? TRUE : false;
+			return h->stream_out.write(b, z) == STREAM_WRITE_OK ?
+			       http_status::ok : http_status::none;
 		});
 	if (strcmp(service, "wakeup_context") == 0)
 		return reinterpret_cast<void *>(hpm_processor_wakeup_context);
@@ -445,7 +446,6 @@ http_status http_write_request(HTTP_CONTEXT *phttp)
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 {
 	auto &rq = phttp->request;
-	BOOL b_result;
 	void *pcontent;
 	struct stat node_stat;
 	
@@ -478,12 +478,12 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		rq.body_fd.close();
 		rq.content_len = node_stat.st_size;
 	}
-	b_result = phpm_ctx->pinterface->proc(phttp->context_id,
-	           pcontent, rq.content_len);
+	auto status = phpm_ctx->pinterface->proc(phttp->context_id,
+	              pcontent, rq.content_len);
 	rq.content_len = 0;
 	if (pcontent != nullptr)
 		free(pcontent);
-	return b_result;
+	return status != http_status::none ? TRUE : false;
 }
 
 BOOL hpm_processor_send(HTTP_CONTEXT *phttp,

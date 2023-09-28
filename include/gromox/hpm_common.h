@@ -7,6 +7,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/generic_connection.hpp>
+#include <gromox/http.hpp>
 #include <gromox/icase.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/util.hpp>
@@ -23,7 +24,7 @@ struct LIB_BUFFER;
 
 struct HPM_INTERFACE {
 	BOOL (*preproc)(int);
-	BOOL (*proc)(int, const void*, uint64_t);
+	http_status (*proc)(int, const void*, uint64_t);
 	int (*retr)(int);
 	BOOL (*send)(int, const void*, int);
 	int (*receive)(int, void*, int length);
@@ -61,7 +62,7 @@ struct HTTP_AUTH_INFO {
 	x GENERIC_CONNECTION *(*get_connection)(int); \
 	x HTTP_REQUEST *(*get_request)(int); \
 	x HTTP_AUTH_INFO (*get_auth_info)(int); \
-	x BOOL (*write_response)(int, const void *, int); \
+	x http_status (*write_response)(int, const void *, int); \
 	x void (*wakeup_context)(int); \
 	x void (*activate_context)(int); \
 	x const char *(*get_host_ID)(); \

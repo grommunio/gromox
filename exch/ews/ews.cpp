@@ -214,7 +214,7 @@ void EWSPlugin::writeheader(int ctx_id, int code, size_t content_length)
  *
  * @return     TRUE if response was written successfully, false otherwise
  */
-static BOOL unauthed(int ctx_id)
+static http_status unauthed(int ctx_id)
 {
 	static constexpr char content[] =
 	        "HTTP/1.1 401 Unauthorized\r\n"
@@ -237,7 +237,7 @@ static BOOL unauthed(int ctx_id)
  *
  * @return     TRUE if request was handled, false otherwise
  */
-BOOL EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
+http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	auto req = get_request(ctx_id);

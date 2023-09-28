@@ -40,7 +40,7 @@ class OxdiscoPlugin {
 	public:
 	OxdiscoPlugin();
 
-	BOOL proc(int, const void*, uint64_t);
+	http_status proc(int, const void *, uint64_t);
 	std::pair<unsigned int, std::string> access_ok(int, const char *, const char *);
 	static BOOL preproc(int);
 
@@ -79,14 +79,14 @@ class OxdiscoPlugin {
 	void loadConfig();
 	static void writeheader(int, int, size_t);
 	static void writeheader_json(int, int, size_t);
-	BOOL die(int, unsigned int status, const char *) const;
-	BOOL resp(int, const char *, const char *, const char *) const;
+	http_status die(int, unsigned int, const char *) const;
+	http_status resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
-	BOOL resp_json(int, const char *) const;
+	http_status resp_json(int, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
-	BOOL resp_autocfg(int, const char *) const;
+	http_status resp_autocfg(int, const char *) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -151,7 +151,7 @@ static constexpr char
 			"</Response>"
 		"</Autodiscover>";
 
-static BOOL unauthed(int);
+static http_status unauthed(int);
 
 static const std::pair<const char *, const char *> protocol_list[] = {
 	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
@@ -304,15 +304,15 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
  * @param      content  Request data
  * @param      len      Length of request data
  *
- * @return     TRUE if request was handled, false otherwise
+ * @return http_status::none if left unhandled, http_status::ok if any response sent
  */
-BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
+http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	auto req = get_request(ctx_id);
 	size_t l = req->f_request_uri.size();
 	if (l == 0)
-		return false;
+		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
 		if (!auth_info.b_authed)
@@ -444,7 +444,7 @@ void OxdiscoPlugin::loadConfig()
  *
  * @return     TRUE if response was written successfully, false otherwise
  */
-static BOOL unauthed(int ctx_id)
+static http_status unauthed(int ctx_id)
 {
 	static constexpr char content[] =
 		"HTTP/1.1 401 Unauthorized\r\n"
@@ -497,7 +497,7 @@ void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length
  * @param      error_msg       Error message for the Autodiscover response
  * @return     BOOL the request was handled/a response was sent
  */
-BOOL OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
+http_status OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
     const char *error_msg) const
 {
 	struct tm timebuf;
@@ -560,7 +560,7 @@ XMLElement *OxdiscoPlugin::add_child(XMLElement *el, const char *tag,
  *
  * @return     BOOL            TRUE if response was successful, false otherwise
  */
-BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
+http_status OxdiscoPlugin::resp(int ctx_id, const char *authuser,
     const char *email, const char *ars) const
 {
 	auto req = get_request(ctx_id);
@@ -874,7 +874,7 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 	return 0;
 }
 
-BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
+http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 {
 	Json::Value respdoc;
 	bool error = true;
@@ -924,7 +924,7 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 	return write_response(ctx_id, response.c_str(), response.size());
 }
 
-BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
+http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 {
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();

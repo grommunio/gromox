@@ -13,9 +13,9 @@ namespace {
 
 class OabPlugin {
 	public:
-		OabPlugin();
-		BOOL proc(int, const void*, uint64_t);
-		static BOOL preproc(int);
+	OabPlugin();
+	http_status proc(int, const void*, uint64_t);
+	static BOOL preproc(int);
 };
 
 }
@@ -63,18 +63,19 @@ BOOL OabPlugin::preproc(int ctx_id)
  *
  * @return     TRUE if request was handled, false otherwise
  */
-BOOL OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
+http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	// TODO: check if unauthed requests are required
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
 		return write_response(ctx_id, oab_unauthed, std::size(oab_unauthed) - 1);
-	if (!write_response(ctx_id, header, strlen(header)))
-		return false;
+	auto wr = write_response(ctx_id, header, strlen(header));
+	if (wr != http_status::ok)
+		return wr;
 	return write_response(ctx_id, response, strlen(response));
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1700: ENOMEM\n");
-	return false;
+	return http_status::none;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -64,13 +64,13 @@ struct MhContext
 	bool loadHeaders();
 	bool getHeader(char*, size_t);
 
-	BOOL unauthed() const;
-	BOOL error_responsecode(resp_code) const;
-	BOOL ping_response() const;
-	BOOL failure_response(uint32_t) const;
-	BOOL normal_response() const;
-	BOOL notification_response() const;
-	BOOL notification_response(uint32_t, uint32_t) const;
+	http_status unauthed() const;
+	http_status error_responsecode(resp_code) const;
+	http_status ping_response() const;
+	http_status failure_response(uint32_t) const;
+	http_status normal_response() const;
+	http_status notification_response() const;
+	http_status notification_response(uint32_t, uint32_t) const;
 
 	int ID = 0;
 	HTTP_REQUEST& orig;

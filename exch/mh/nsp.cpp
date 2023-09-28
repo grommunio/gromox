@@ -136,10 +136,10 @@ public:
 	~MhNspPlugin();
 	NOMOVE(MhNspPlugin);
 
-	BOOL process(int, const void*, uint64_t);
+	http_status process(int, const void*, uint64_t);
 private:
 	using SessionIterator = std::unordered_map<std::string, session_data>::iterator;
-	using ProcRes = std::optional<BOOL>;
+	using ProcRes = std::optional<http_status>;
 
 	static void* scanWork(void*);
 
@@ -305,7 +305,7 @@ static std::unique_ptr<MhNspPlugin> plugin; ///< Global plugin
 
 static BOOL nsp_preproc(int);
 static int nsp_retr(int);
-static BOOL nsp_proc(int, const void*, uint64_t);
+static http_status nsp_proc(int, const void*, uint64_t);
 
 /**
  * @brief	Plugin setup/teardown
@@ -601,14 +601,15 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 	return std::nullopt;
 }
 
-BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
+http_status MhNspPlugin::process(int context_id, const void *content,
+    uint64_t length)
 {
 	auto heapctx = std::make_unique<MhNspContext>(context_id); /* huge object */
 	MhNspContext &ctx = *heapctx;
 	if (!ctx.auth_info.b_authed)
 		return ctx.unauthed();
 	if (!ctx.loadHeaders())
-		return false;
+		return http_status::none;
 	if (ctx.request_value[0] == '\0')
 		return ctx.error_responsecode(resp_code::invalid_verb);
 	if (ctx.request_id[0] == '\0' || ctx.client_info[0] == '\0')
@@ -637,5 +638,7 @@ BOOL MhNspPlugin::process(int context_id, const void *content, uint64_t length)
 static int nsp_retr(int)
 { return HPM_RETRIEVE_DONE; }
 
-static BOOL nsp_proc(int context_id, const void *content, uint64_t length)
-{ return plugin ? plugin->process(context_id, content, length) : false; }
+static http_status nsp_proc(int context_id, const void *content, uint64_t length)
+{
+	return plugin != nullptr ? plugin->process(context_id, content, length) : http_status::none;
+}
