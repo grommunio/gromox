@@ -495,7 +495,7 @@ void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length
  * @param      ctx_id          Request context identifier
  * @param      error_code      Error code for the Autodiscover response (similar to, but not equal to HTTP status codes)
  * @param      error_msg       Error message for the Autodiscover response
- * @return     BOOL always return false
+ * @return     BOOL the request was handled/a response was sent
  */
 BOOL OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
     const char *error_msg) const
@@ -509,8 +509,7 @@ BOOL OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
 	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader(ctx_id, 200, data.size());
-	write_response(ctx_id, data.c_str(), data.size());
-	return false;
+	return write_response(ctx_id, data.c_str(), data.size());
 }
 
 /**
