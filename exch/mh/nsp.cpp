@@ -607,7 +607,7 @@ http_status MhNspPlugin::process(int context_id, const void *content,
 	auto heapctx = std::make_unique<MhNspContext>(context_id); /* huge object */
 	MhNspContext &ctx = *heapctx;
 	if (!ctx.auth_info.b_authed)
-		return ctx.unauthed();
+		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
 		return http_status::none;
 	if (ctx.request_value[0] == '\0')

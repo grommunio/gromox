@@ -27,14 +27,7 @@ static constexpr char
 	header[] =
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/xml\r\n"
-		"Content-Length: 49\r\n\r\n",
-	oab_unauthed[] =
-		"HTTP/1.1 401 Unauthorized\r\n"
-		"Content-Length: 0\r\n"
-		"Content-Type: text/plain; charset=utf-8\r\n"
-		"Connection: Keep-Alive\r\n"
-		"WWW-Authenticate: Basic realm=\"OAB realm\"\r\n"
-		"\r\n";
+		"Content-Length: 49\r\n\r\n";
 
 OabPlugin::OabPlugin(){}
 
@@ -68,7 +61,7 @@ http_status OabPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	// TODO: check if unauthed requests are required
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
-		return write_response(ctx_id, oab_unauthed, std::size(oab_unauthed) - 1);
+		return http_status::unauthorized;
 	auto wr = write_response(ctx_id, header, strlen(header));
 	if (wr != http_status::ok)
 		return wr;

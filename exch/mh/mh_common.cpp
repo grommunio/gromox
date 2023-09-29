@@ -104,20 +104,6 @@ std::string commonHeader(const char *requestType, const char *requestId,
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-http_status MhContext::unauthed() const
-{
-	char dstring[128], tmp_buff[1024];
-	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start_time));
-	auto tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
-		"HTTP/1.1 401 Unauthorized\r\n"
-		"Date: %s\r\n"
-		"Content-Length: 0\r\n"
-		"Connection: Keep-Alive\r\n"
-		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n", dstring);
-	return write_response(ID, tmp_buff, tmp_len);
-}
-
 http_status MhContext::error_responsecode(resp_code response_code) const
 {
 	char dstring[128], text_buff[512], response_buff[4096];

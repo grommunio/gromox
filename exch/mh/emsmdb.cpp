@@ -709,7 +709,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
 	MhEmsmdbContext &ctx = *heapctx;
 	status[ctx.ID] = {};
 	if (!ctx.auth_info.b_authed)
-		return ctx.unauthed();
+		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
 		return http_status::none;
 	if (ctx.request_value[0] == '\0')

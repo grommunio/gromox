@@ -208,24 +208,6 @@ void EWSPlugin::writeheader(int ctx_id, int code, size_t content_length)
 }
 
 /**
- * @brief      Return authentication error
- *
- * @param      ctx_id  Request context identifier
- *
- * @return     TRUE if response was written successfully, false otherwise
- */
-static http_status unauthed(int ctx_id)
-{
-	static constexpr char content[] =
-	        "HTTP/1.1 401 Unauthorized\r\n"
-	        "Content-Length: 0\r\n"
-	        "Connection: Keep-Alive\r\n"
-	        "WWW-Authenticate: Basic realm=\"ews realm\"\r\n"
-	        "\r\n";
-	return write_response(ctx_id, content, strlen(content));
-}
-
-/**
  * @brief      Proccess request
  *
  * Checks if an authentication context exists, dispatches the request and
@@ -241,18 +223,11 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	auto req = get_request(ctx_id);
-	if (strcasecmp(req->method, "POST") != 0) {
-		static constexpr char rsp[] =
-			"HTTP/1.1 405 Method Not Allowed\r\n"
-			"Content-Length: 0\r\n"
-			"Connection: Keep-Alive\r\n"
-			"WWW-Authenticate: Basic realm=\"ews realm\"\r\n"
-			"\r\n";
-		return write_response(ctx_id, rsp, strlen(rsp));
-	}
+	if (strcasecmp(req->method, "POST") != 0)
+		return http_status::method_not_allowed;
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if(!auth_info.b_authed)
-		return unauthed(ctx_id);
+		return http_status::unauthorized;
 	bool enableLog = false;
 	auto[response, code] = dispatch(ctx_id, auth_info, content, len, enableLog);
 	auto logLevel = code == 200? LV_DEBUG : LV_ERR;

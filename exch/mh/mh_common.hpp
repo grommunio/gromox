@@ -64,7 +64,6 @@ struct MhContext
 	bool loadHeaders();
 	bool getHeader(char*, size_t);
 
-	http_status unauthed() const;
 	http_status error_responsecode(resp_code) const;
 	http_status ping_response() const;
 	http_status failure_response(uint32_t) const;

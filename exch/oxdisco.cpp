@@ -151,8 +151,6 @@ static constexpr char
 			"</Response>"
 		"</Autodiscover>";
 
-static http_status unauthed(int);
-
 static const std::pair<const char *, const char *> protocol_list[] = {
 	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
 	{"ActiveSync", "https://{}/Microsoft-Server-ActiveSync"},
@@ -304,7 +302,8 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
  * @param      content  Request data
  * @param      len      Length of request data
  *
- * @return http_status::none if left unhandled, http_status::ok if any response sent
+ * @return http_status::none if left unhandled, http_status::ok if any response sent, or
+ * >=http_status::bad_request to let httpd generate a response
  */
 http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
@@ -316,7 +315,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	auto uri = req->f_request_uri.c_str();
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
 		if (!auth_info.b_authed)
-			return unauthed(ctx_id);
+			return http_status::unauthorized;
 		if (uri[44] == '/' || uri[44] == '\0')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
@@ -326,7 +325,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	}
 
 	if (!auth_info.b_authed)
-		return unauthed(ctx_id);
+		return http_status::unauthorized;
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
@@ -435,25 +434,6 @@ void OxdiscoPlugin::loadConfig()
 	auto s = c->get_value("oxdisco_exonym");
 	if (s != nullptr)
 		host_id = s;
-}
-
-/**
- * @brief      Return authentication error
- *
- * @param      ctx_id  Request context identifier
- *
- * @return     TRUE if response was written successfully, false otherwise
- */
-static http_status unauthed(int ctx_id)
-{
-	static constexpr char content[] =
-		"HTTP/1.1 401 Unauthorized\r\n"
-		"Content-Length: 0\r\n"
-		"Content-Type: text/plain; charset=utf-8\r\n"
-		"Connection: Keep-Alive\r\n"
-		"WWW-Authenticate: Basic realm=\"autodiscover realm\"\r\n"
-		"\r\n";
-	return write_response(ctx_id, content, std::size(content) - 1);
 }
 
 /**
