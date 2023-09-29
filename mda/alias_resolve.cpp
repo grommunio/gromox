@@ -151,10 +151,6 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	std::vector<std::string> todo = ctrl->rcpt;
 
 	for (size_t i = 0; i < todo.size(); ++i) {
-		if (strchr(todo[i].c_str(), '@') == nullptr) {
-			output_rcpt.emplace_back(std::move(todo[i]));
-			continue;
-		}
 		auto repl = xa_alias_lookup(todo[i].c_str());
 		if (repl.size() != 0) {
 			mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s",
@@ -163,6 +159,10 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 		}
 		if (!seen.emplace(todo[i]).second) {
 			todo[i] = {};
+			continue;
+		}
+		if (strchr(todo[i].c_str(), '@') == nullptr) {
+			output_rcpt.emplace_back(std::move(todo[i]));
 			continue;
 		}
 
