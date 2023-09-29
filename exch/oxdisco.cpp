@@ -41,7 +41,7 @@ class OxdiscoPlugin {
 	OxdiscoPlugin();
 
 	BOOL proc(int, const void*, uint64_t);
-	BOOL access_ok(int, const char *, const char *);
+	std::pair<unsigned int, std::string> access_ok(int, const char *, const char *);
 	static BOOL preproc(int);
 
 	struct _mysql {
@@ -115,7 +115,7 @@ static constexpr char
 			"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn={}@{}",
 	public_folder[] = "Public Folder",
 	public_folder_email[] = "public.folder.root@"; /* EXC: PUBS@thedomain */
-static unsigned int bad_address_code = 501;
+static unsigned int ok_code = 200, bad_address_code = 501;
 static constexpr char bad_address_msg[] = "Bad Address";
 static unsigned int invalid_request_code = 600;
 static constexpr char invalid_request_msg[] = "Invalid Request";
@@ -261,37 +261,37 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
  * If @actor has _any_ kind of permission (or a scndstore hint entry),
  * then allow it.
  */
-BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
+std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
+    const char *target, const char *actor)
 {
 	if (m_validate_scndrequest == 0 || strcasecmp(target, actor) == 0 ||
 	    strncasecmp(target, public_folder_email, 19) == 0)
-		return true;
+		return {ok_code, {}};
 	unsigned int auth_user_id = 0, auth_domain_id = 0;
 	mysql.get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
 	std::vector<sql_user> hints;
 	auto err = mysql.scndstore_hints(auth_user_id, hints);
 	if (err != 0) {
 		mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
-		return die(ctx_id, server_error_code, server_error_msg);
+		return {server_error_code, server_error_msg};
 	}
 	if (std::any_of(hints.begin(), hints.end(),
 	    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), target) == 0; }))
-		return true;
+		return {ok_code, {}};
 	sql_meta_result mres;
 	err = mysql.meta(target, WANTPRIV_METAONLY, mres);
 	if (err != 0) {
 		mlog(LV_ERR, "oxdisco: cannot retrieve usermeta for %s", strerror(err));
-		return die(ctx_id, server_error_code, server_error_msg);
+		return {server_error_code, server_error_msg};
 	}
 	uint32_t perm = 0;
 	if (!exmdb.get_mbox_perm(mres.maildir.c_str(), actor, &perm)) {
 		mlog(LV_ERR, "oxdisco: cannot access mailbox of %s to test for permissions", target);
-		return die(ctx_id, server_error_code, server_error_msg);
+		return {server_error_code, server_error_msg};
 	}
 	if (perm != 0)
-		return true;
-	return die(ctx_id, bad_address_code, (bad_address_msg +
-	       " (403 Permission Denied)"s).c_str());
+		return {ok_code, {}};
+	return {bad_address_code, bad_address_msg + " (403 Permission Denied)"s};
 }
 
 /**
@@ -353,8 +353,9 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	auto ars = gtx(*req_node, "AcceptableResponseSchema");
 	if (ars == nullptr)
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
-	if (!access_ok(ctx_id, email, auth_info.username))
-		return false;
+	auto [err_code, reason] = access_ok(ctx_id, email, auth_info.username);
+	if (err_code != ok_code)
+		return die(ctx_id, err_code, reason.c_str());
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
 	}
