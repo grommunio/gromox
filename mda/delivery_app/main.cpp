@@ -73,7 +73,7 @@ static bool delivery_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
-	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
+	mlog_init(cfg->get_value("lda_log_file"), cfg->get_ll("lda_log_level"));
 	return true;
 }
 
