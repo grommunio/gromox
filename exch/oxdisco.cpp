@@ -79,7 +79,7 @@ class OxdiscoPlugin {
 	void loadConfig();
 	static void writeheader(int, int, size_t);
 	static void writeheader_json(int, int, size_t);
-	BOOL die(int, const char *, const char *) const;
+	BOOL die(int, unsigned int status, const char *) const;
 	BOOL resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
@@ -114,14 +114,15 @@ static constexpr char
 	server_base_dn[] = "/o={}/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn={}@{}",
 	public_folder[] = "Public Folder",
-	public_folder_email[] = "public.folder.root@", /* EXC: PUBS@thedomain */
-	bad_address_code[] = "501",
-	bad_address_msg[] = "Bad Address",
-	invalid_request_code[] = "600",
-	invalid_request_msg[] = "Invalid Request",
-	provider_unavailable_code[] = "601",
-	provider_unavailable_msg[] = "Provider is not available",
-	server_error_code[] = "603",
+	public_folder_email[] = "public.folder.root@"; /* EXC: PUBS@thedomain */
+static unsigned int bad_address_code = 501;
+static constexpr char bad_address_msg[] = "Bad Address";
+static unsigned int invalid_request_code = 600;
+static constexpr char invalid_request_msg[] = "Invalid Request";
+static unsigned int provider_unavailable_code = 601;
+static constexpr char provider_unavailable_msg[] = "Provider is not available";
+static unsigned int server_error_code = 603;
+static constexpr char
 	server_error_msg[] = "Server Error",
 	not_supported_protocol[] = "ProtocolNotSupported",
 	not_supported_protocol_message[] = "Protocol: The protocol '{}' is not supported. Supported protocols are: 'ActiveSync,AutodiscoverV1,Ews,Rest,Substrate,SubstrateSearchService,SubstrateNotificationService,OutlookMeetingScheduler,OutlookPay,Actions,Connectors,ConnectorsProcessors,ConnectorsWebhook,NotesClient,OwaPoweredExperience,ToDo,Weve,OutlookLocationsService,OutlookCloudSettingsService,OutlookTailoredExperiences,OwaPoweredExperienceV2,Speedway,SpeechAndLanguagePersonalization,SubstrateSignalService,CompliancePolicyService'.",
@@ -491,11 +492,11 @@ void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length
  * @brief      Stop processing request and send error message
  *
  * @param      ctx_id          Request context identifier
- * @param      error_code      Error code for the Autodiscover response
+ * @param      error_code      Error code for the Autodiscover response (similar to, but not equal to HTTP status codes)
  * @param      error_msg       Error message for the Autodiscover response
  * @return     BOOL always return false
  */
-BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code,
+BOOL OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
     const char *error_msg) const
 {
 	struct tm timebuf;
@@ -580,7 +581,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
 	}
 	if (ret < 0)
-		return die(ctx_id, "503", "Internal Server Error");
+		return die(ctx_id, 503, "Internal Server Error");
 
 	int code = 200;
 	respdoc.InsertEndChild(resproot);
