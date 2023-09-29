@@ -117,6 +117,7 @@ extern void http_parser_shutdown_async();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
 extern void http_report();
+extern std::string http_make_err_response(const http_context &, http_status);
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
 extern unsigned int g_http_debug, g_msrpc_debug;

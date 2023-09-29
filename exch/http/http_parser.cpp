@@ -412,6 +412,31 @@ static const char *status_text(http_status s)
 	}
 }
 
+std::string http_make_err_response(const http_context &ctx, http_status code)
+{
+	auto msg = status_text(code);
+	if (static_cast<int>(code) >= 1000)
+		code = static_cast<http_status>(static_cast<int>(code) / 10);
+	char dstring[128];
+	rfc1123_dstring(dstring, std::size(dstring));
+	auto rsp = fmt::format(
+		"HTTP/1.1 {} {}\r\n"
+		"Date: {}\r\n"
+		"Content-Length: {}\r\n"
+	        "Content-Type: text/plain; charset=utf-8\r\n"
+		"Connection: {}\r\n",
+		static_cast<int>(code), msg, dstring, strlen(msg) + 2,
+		ctx.b_close ? "close" : "keep-alive");
+	if (!ctx.b_close)
+		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
+	if (code == http_status::unauthorized)
+		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
+	rsp += "\r\n";
+	rsp += msg;
+	rsp += "\r\n";
+	return rsp;
+}
+
 static tproc_status http_done(http_context *ctx, http_status code) try
 {
 	ctx->b_close = TRUE; /* rdbody not consumed yet */
@@ -423,29 +448,7 @@ static tproc_status http_done(http_context *ctx, http_status code) try
 		mod_fastcgi_put_context(ctx);
 	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
-	auto msg = status_text(code);
-	if (static_cast<int>(code) >= 1000)
-		code = static_cast<http_status>(static_cast<int>(code) / 10);
-	if (code == http_status::timeout)
-		ctx->b_close = TRUE;
-
-	char dstring[128];
-	rfc1123_dstring(dstring, std::size(dstring));
-	auto rsp = fmt::format(
-		"HTTP/1.1 {} {}\r\n"
-		"Date: {}\r\n"
-		"Content-Length: {}\r\n"
-	        "Content-Type: text/plain; charset=utf-8\r\n"
-		"Connection: {}\r\n",
-		static_cast<int>(code), msg, dstring, strlen(msg) + 2,
-		ctx->b_close ? "close" : "keep-alive");
-	if (!ctx->b_close)
-		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
-	if (code == http_status::unauthorized)
-		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
-	rsp += "\r\n";
-	rsp += msg;
-	rsp += "\r\n";
+	auto rsp = http_make_err_response(*ctx, code);
 	ctx->stream_out.write(rsp.c_str(), rsp.size());
 	ctx->total_length = rsp.size();
 	ctx->bytes_rw = 0;

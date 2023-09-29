@@ -483,6 +483,15 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 	rq.content_len = 0;
 	if (pcontent != nullptr)
 		free(pcontent);
+	if (status >= http_status::bad_request) try {
+		auto rsp = http_make_err_response(*phttp, status);
+		if (phttp->stream_out.write(rsp.c_str(), rsp.size()) != STREAM_WRITE_OK)
+			phttp->b_close = TRUE;
+		return TRUE;
+	} catch (const std::bad_alloc &) {
+		phttp->b_close = TRUE;
+		return TRUE;
+	}
 	return status != http_status::none ? TRUE : false;
 }
 
