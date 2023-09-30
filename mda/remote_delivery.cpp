@@ -261,7 +261,10 @@ static errno_t rd_data(rd_connection &&conn, const MESSAGE_CONTEXT *ctx, std::st
 		return ret;
 	if (ret != 0)
 		return ret;
-	bool did_data = conn.tls != nullptr ? ctx->mail.to_tls(conn.tls.get()) :
+	auto tls_write = +[](void *obj, const void *buf, size_t z) -> ssize_t {
+	                   	return SSL_write(static_cast<SSL *>(obj), buf, z);
+	                 };
+	bool did_data = conn.tls != nullptr ? ctx->mail.emit(tls_write, conn.tls.get()) :
 	                ctx->mail.to_file(conn.fd);
 	if (!did_data) {
 		ret = rd_get_response(conn, response);

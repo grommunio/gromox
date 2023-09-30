@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <json/value.h>
-#include <openssl/ssl.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>

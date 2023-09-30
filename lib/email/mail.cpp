@@ -244,22 +244,6 @@ bool MAIL::to_file(int fd) const
 	       reinterpret_cast<void *>(static_cast<intptr_t>(fd)));
 }
 
-bool MAIL::to_tls(SSL *ssl) const
-{
-	auto pmail = this;
-#ifdef _DEBUG_UMTA
-	if (ssl == nullptr)
-		return false;
-#endif
-	auto pnode = pmail->tree.get_root();
-	if (pnode == nullptr)
-		return false;
-	auto f = +[](void *obj, const void *buf, size_t z) -> ssize_t {
-	         	return SSL_write(static_cast<SSL *>(obj), buf, z);
-	         };
-	return static_cast<const MIME *>(pnode->pdata)->emit(f, ssl);
-}
-
 /*
  *	calculate the mail object length in bytes
  *	@param
