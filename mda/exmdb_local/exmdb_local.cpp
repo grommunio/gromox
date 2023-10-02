@@ -289,7 +289,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	uint32_t tmp_int32;
 	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
-	MESSAGE_CONTEXT *pcontext1;
 
 	if (!exmdb_local_get_user_info(address, home_dir, std::size(home_dir),
 	    lang, std::size(lang), tmzone, std::size(tmzone))) {
@@ -310,20 +309,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
 	
 	auto pmail = &pcontext->mail;
-	if (pcontext->mail.check_dot()) {
-		pcontext1 = get_context();
-		if (NULL != pcontext1) {
-			if (pcontext->mail.transfer_dot(&pcontext1->mail)) {
-				pmail = &pcontext1->mail;
-			} else {
-				put_context(pcontext1);
-				pcontext1 = NULL;
-			}
-		}
-	} else {
-		pcontext1 = NULL;
-	}
-	
 	sequence_ID = exmdb_local_sequence_ID();
 	gx_strlcpy(hostname, get_host_ID(), std::size(hostname));
 	if ('\0' == hostname[0]) {
@@ -338,8 +323,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
 	if (fd.get() < 0) {
 		auto se = errno;
-		if (pcontext1 != nullptr)
-			put_context(pcontext1);
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"open WR %s: %s", eml_path.c_str(), strerror(se));
 		errno = se;
@@ -351,8 +334,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1386: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
-		if (pcontext1 != nullptr)
-			put_context(pcontext1);
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
 		return DELIVERY_OPERATION_FAILURE;
@@ -367,8 +348,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1387: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
-		if (pcontext1 != nullptr)
-			put_context(pcontext1);
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"permanent failure getting mail digest");
 		return DELIVERY_OPERATION_ERROR;
@@ -381,8 +360,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	g_storedir = nullptr;
-	if (pcontext1 != nullptr)
-		put_context(pcontext1);
 	if (NULL == pmsg) {
 		g_alloc_key = nullptr;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)

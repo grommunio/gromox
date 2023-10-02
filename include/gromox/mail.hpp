@@ -31,8 +31,6 @@ struct GX_EXPORT MAIL {
 	bool emit(MIME::write_func, void *) const;
 	bool to_file(int fd) const;
 	bool to_tls(SSL *) const;
-	bool check_dot() const;
-	bool transfer_dot(MAIL *dst, bool add_dot = false);
 	ssize_t get_length() const;
 	MIME *add_head();
 	MIME *get_head();

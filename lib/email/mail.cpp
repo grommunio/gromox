@@ -261,23 +261,6 @@ bool MAIL::to_tls(SSL *ssl) const
 }
 
 /*
- *	check if dot-stuffing in mail
- *	@param
- *		pmail [in]		indicate the mail object
- *	@return
- *		TRUE			dot-stuffing in mail
- *		FALSE			no dot-stuffing in mail
- */
-bool MAIL::check_dot() const
-{
-	auto pmail = this;
-	auto pnode = pmail->tree.get_root();
-	if (pnode == nullptr)
-		return false;
-	return static_cast<const MIME *>(pnode->pdata)->check_dot();
-}
-
-/*
  *	calculate the mail object length in bytes
  *	@param
  *		pmail [in]		indicate the mail object
@@ -735,65 +718,3 @@ bool MAIL::dup(MAIL *pmail_dst)
 		return true;
 	}
 }
-
-/*
- *	add or remove dot-stuffing; copies into a clean object
- *	@param
- *		pmail_src [in]			mail source object
- *		pmail_dst [in, out]		mail destination object
- */
-bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
-{
-	auto pmail_src = this;
-	unsigned int size;
-	char *pbuff;
-	
-#ifdef _DEBUG_UMTA
-	if (pmail_dst == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	pmail_dst->clear();
-	auto mail_len = get_length();
-	if (mail_len < 0)
-		return false;
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
-		"mail_transfer_dot");
-	STREAM tmp_stream(&pallocator);
-	if (!pmail_src->serialize(&tmp_stream))
-		return false;
-	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
-	if (NULL == pbuff) {
-		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-	
-	size_t offset = 0;
-	size = STREAM_BLOCK_SIZE - 3;
-	while (tmp_stream.copyline(pbuff + offset, &size) != STREAM_COPY_END) {
-		pbuff[offset + size++] = '\r';
-		pbuff[offset + size++] = '\n';
-		if (add_dot) {
-			if (pbuff[offset] == '.') {
-				memmove(&pbuff[offset+1], &pbuff[offset], size);
-				++size;
-			}
-		} else if (pbuff[offset] == '.' && pbuff[offset+1] == '.') {
-			size --;
-			memmove(pbuff + offset, pbuff + offset + 1, size);
-		}
-		offset += size;
-		size = STREAM_BLOCK_SIZE - 3;
-	}
-	
-	tmp_stream.clear();
-	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
-		free(pbuff);
-		return false;
-	} else {
-		pmail_dst->buffer = pbuff;
-		return true;
-	}
-}
-

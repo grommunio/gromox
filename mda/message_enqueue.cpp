@@ -271,7 +271,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 			tmp_buff[size++] = '\r';
 			tmp_buff[size++] = '\n';
 		}
-		write_len = fwrite(tmp_buff, 1, size, fp);
+		/* RFC 5321 §4.5.2 dot (un-)stuffing */
+		write_len = fwrite(&tmp_buff[*tmp_buff == '.'], 1, size, fp);
 		if (write_len != size) {
 			goto REMOVE_MESS;
 		}
