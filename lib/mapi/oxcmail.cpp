@@ -512,11 +512,13 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 	return TRUE;
 }
 
-static BOOL oxcmail_parse_address(const char *charset,
-    const EMAIL_ADDR *paddr, uint32_t pr_name, uint32_t pr_addrtype,
+static BOOL oxcmail_parse_address(const char *field,
+    uint32_t pr_name, uint32_t pr_addrtype,
     uint32_t pr_emaddr, uint32_t pr_smtpaddr, uint32_t pr_searchkey,
     uint32_t pr_entryid, TPROPVAL_ARRAY *pproplist)
 {
+	EMAIL_ADDR email_addr, *paddr = &email_addr;
+	parse_mime_addr(&email_addr, field);
 	BINARY tmp_bin;
 	char essdn[1024];
 	char username[UADDR_SIZE];
@@ -1144,20 +1146,17 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 	time_t tmp_time;
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
-	EMAIL_ADDR email_addr;
 	
 	auto penum_param = static_cast<FIELD_ENUM_PARAM *>(pparam);
 	if (strcasecmp(key, "From") == 0) {
-		parse_mime_addr(&email_addr, field);
-		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
+		if (!oxcmail_parse_address(field,
 		    PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
 		    PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS,
 		    PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENT_REPRESENTING_ENTRYID,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "Sender") == 0) {
-		parse_mime_addr(&email_addr, field);
-		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
+		if (!oxcmail_parse_address(field,
 		    PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
 		    PR_SENDER_SMTP_ADDRESS, PR_SENDER_SEARCH_KEY,
 		    PR_SENDER_ENTRYID, &penum_param->pmsg->proplist))
@@ -1189,9 +1188,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		tmp_byte = 1;
 		if (penum_param->pmsg->proplist.set(PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &tmp_byte) != 0)
 			return FALSE;
-		parse_mime_addr(&email_addr, field);
-		if (!oxcmail_parse_address(penum_param->charset,
-		    &email_addr, PidTagReadReceiptName,
+		if (!oxcmail_parse_address(field, PidTagReadReceiptName,
 		    PidTagReadReceiptAddressType, PidTagReadReceiptEmailAddress,
 		    PidTagReadReceiptSmtpAddress, PR_READ_RECEIPT_SEARCH_KEY,
 		    PR_READ_RECEIPT_ENTRYID, &penum_param->pmsg->proplist))
