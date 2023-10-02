@@ -17,7 +17,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ical.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -133,7 +132,6 @@ int main(int argc, const char **argv) try
 	auto cl_3 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
 #undef E
 
-	auto mimepool = MIME_POOL::create();
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    system_services_get_user_ids, system_services_get_username_from_id)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
@@ -184,7 +182,7 @@ int main(int argc, const char **argv) try
 	}
 	if (g_export_mode == EXPORT_MAIL) {
 		if (!oxcmail_export(ctnt, false, oxcmail_body::plain_and_html,
-		    std::move(mimepool), &imail, zalloc, cu_get_propids,
+		    &imail, zalloc, cu_get_propids,
 		    cu_get_propname)) {
 			fprintf(stderr, "oxcmail_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;

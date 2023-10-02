@@ -30,7 +30,6 @@
 #include <gromox/ical.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/rtf.hpp>
@@ -81,7 +80,6 @@ struct MIME_ENUM_PARAM {
 	const char *charset = nullptr, *str_zone = nullptr;
 	GET_PROPIDS get_propids{};
 	EXT_BUFFER_ALLOC alloc{};
-	std::shared_ptr<MIME_POOL> pmime_pool;
 	MESSAGE_CONTENT *pmsg = nullptr;
 	namemap phash;
 	uint16_t last_propid = 0;
@@ -1795,7 +1793,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			return;
 		if (!pmime->read_content(pcontent.get(), &content_len))
 			return;
-		MAIL mail(pmime_enum->pmime_pool);
+		MAIL mail;
 		if (mail.load_from_str_move(pcontent.get(), content_len)) {
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME);
 			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
@@ -2785,7 +2783,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	mime_enum.str_zone = str_zone;
 	mime_enum.get_propids = get_propids;
 	mime_enum.alloc = alloc;
-	mime_enum.pmime_pool = pmail->pmime_pool;
 	mime_enum.pmsg = pmsg.get();
 	mime_enum.phash = phash;
 	select_parts(phead, mime_enum);
@@ -4045,8 +4042,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 
 static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
     BOOL b_inline, MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
-    GET_PROPIDS get_propids, GET_PROPNAME get_propname,
-    std::shared_ptr<MIME_POOL> ppool, MIME *pmime)
+    GET_PROPIDS get_propids, GET_PROPNAME get_propname, MIME *pmime)
 {
 	int tmp_len;
 	BOOL b_vcard;
@@ -4186,7 +4182,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		auto b_tnef = pskeleton->mail_type == oxcmail_type::tnef;
 		MAIL imail;
 		if (!oxcmail_export(pattachment->pembedded,
-		    b_tnef ? TRUE : false, pskeleton->body_type, std::move(ppool), &imail,
+		    b_tnef ? TRUE : false, pskeleton->body_type, &imail,
 		    alloc, std::move(get_propids), std::move(get_propname)))
 			return FALSE;
 		auto mail_len = imail.get_length();
@@ -4235,10 +4231,9 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		origmime.head_touched = TRUE;
 		return true;
 	}
-	auto sec = origmail.pmime_pool->get_mime();
+	auto sec = MIME::create();
 	if (sec == nullptr)
 		return false;
-	auto cl_0 = make_scope_exit([&]() { origmail.pmime_pool->put_mime(sec); });
 	char buf[512];
 	if (!sec->load_from_str_move(nullptr, hdrs->pc, hdrs->cb))
 		return false;
@@ -4271,7 +4266,7 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 }
 
 BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
-    enum oxcmail_body body_type, std::shared_ptr<MIME_POOL> ppool,
+    enum oxcmail_body body_type,
     MAIL *pmail, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     GET_PROPNAME get_propname) try
 {
@@ -4290,7 +4285,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	MIME_FIELD mime_field;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	*pmail = MAIL(ppool);
+	pmail->clear();
 	auto num = pmsg->proplist.get<uint32_t>(PR_INTERNET_CPID);
 	if (num == nullptr || *num == 1200) {
 		pcharset = "utf-8";
@@ -4567,7 +4562,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 				return false;
 			if (!oxcmail_export_attachment(mime_skeleton.pattachments->pplist[i],
 			    TRUE, &mime_skeleton, alloc, get_propids,
-			    get_propname, nullptr, pmime))
+			    get_propname, pmime))
 				return false;
 		}
 	}
@@ -4597,7 +4592,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			return false;
 		if (!oxcmail_export_attachment(pattachment,
 		    b_inline, &mime_skeleton, alloc, get_propids,
-		    get_propname, ppool, pmime))
+		    get_propname, pmime))
 			return false;
 	}
 	return TRUE;

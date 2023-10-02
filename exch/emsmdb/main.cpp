@@ -248,7 +248,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		emsmdb_interface_stop();
 		rop_processor_stop();
 		msgchg_grouping_stop();
-		common_util_stop();
 		asyncemsmdb_interface_free();
 		msgchg_grouping_free();
 		return TRUE;

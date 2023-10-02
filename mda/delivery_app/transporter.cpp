@@ -22,7 +22,6 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/hook_common.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
 #include <gromox/scope.hpp>
@@ -106,7 +105,6 @@ static std::mutex g_queue_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<MESSAGE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
@@ -143,7 +141,6 @@ ANTI_LOOP::ANTI_LOOP()
  *		path [in]				plug-ins path
  *		threads_num				threads number to be created
  *		free_num				free contexts number for hooks to throw out
- *		mime_ratio				how many mimes will be allocated per context
  */
 void transporter_init(const char *path, std::vector<std::string> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
@@ -207,17 +204,6 @@ int transporter_run()
 	for (size_t i = 0; i < g_free_num; ++i) {
 		g_free_list.push_back(&g_free_ptr[i]);
 	}
-
-	g_mime_pool = MIME_POOL::create();
-	if (NULL == g_mime_pool) {
-		transporter_collect_resource();
-		mlog(LV_ERR, "transporter: failed to init MIME pool");
-        return -4;
-	}
-	for (unsigned int i = 0; i < g_threads_max; ++i)
-		g_data_ptr[i].mctx.mail = MAIL(g_mime_pool);
-	for (size_t i = 0; i < g_free_num; ++i)
-		g_free_ptr[i].mail = MAIL(g_mime_pool);
 
 	for (const auto &i : g_plugin_names) {
 		int ret = transporter_load_library(i.c_str());
@@ -303,7 +289,6 @@ static void transporter_collect_hooks()
  */
 static void transporter_collect_resource()
 {
-	g_mime_pool.reset();
 	g_data_ptr.reset();
 	g_free_ptr.reset();
 	g_circles_ptr.reset();

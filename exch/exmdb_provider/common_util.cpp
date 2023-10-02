@@ -97,7 +97,6 @@ E(get_user_ids)
 E(get_domain_ids)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
-E(get_mime_pool)
 E(get_handle)
 #undef E
 decltype(ems_send_mail) ems_send_mail;
@@ -192,7 +191,6 @@ void common_util_pass_service(const char *name, void *func)
 {
 #define E(v, ptr) do { if (strcmp(name, (v)) == 0) { (ptr) = reinterpret_cast<decltype(ptr)>(func); return; } } while (false)
 	E("ems_send_mail", ems_send_mail);
-	E("get_mime_pool", common_util_get_mime_pool);
 	E("get_handle", common_util_get_handle);
 #undef E
 }

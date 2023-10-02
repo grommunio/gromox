@@ -40,7 +40,6 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
@@ -160,7 +159,6 @@ static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static char g_org_name[256];
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static char g_default_charset[32];
 static std::mutex g_hash_lock;
@@ -241,7 +239,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 			mlog(LV_ERR, "E-1252: %s: %s", temp_path, strerror(errno));
 			return 0;
 		}
-		MAIL imail(g_mime_pool);
+		MAIL imail;
 		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
@@ -1465,7 +1463,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		}
 		MAIL imail;
 		if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
-		    g_mime_pool, &imail, common_util_alloc,
+		    &imail, common_util_alloc,
 		    common_util_get_propids, common_util_get_propname)) {
 			mlog(LV_ERR, "E-1222: oxcmail_export of msg %s:%llu failed",
 				dir, static_cast<unsigned long long>(message_id));
@@ -2401,7 +2399,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
 
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
@@ -2583,7 +2581,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
 
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -4459,11 +4457,6 @@ int mail_engine_run()
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}
-	g_mime_pool = MIME_POOL::create();
-	if (NULL == g_mime_pool) {
-		mlog(LV_ERR, "mail_engine: failed to init MIME pool");
-		return -3;
-	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
@@ -4510,5 +4503,4 @@ void mail_engine_stop()
 		pthread_join(g_scan_tid, NULL);
 	}
 	g_hash_table.clear();
-	g_mime_pool.reset();
 }

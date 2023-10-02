@@ -2524,7 +2524,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	g_sqlite_for_oxcmail = rp.sqlite;
 	MAIL imail;
 	if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
-	    common_util_get_mime_pool(), &imail, common_util_alloc,
+	    &imail, common_util_alloc,
 	    message_get_propids, message_get_propname)) {
 		g_sqlite_for_oxcmail = nullptr;
 		return FALSE;
@@ -2581,7 +2581,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 		return ecServerOOM;
 	}
 
-	MAIL imail(common_util_get_mime_pool());
+	MAIL imail;
 	if (!exmdb_bouncer_make(from_address, account, psqlite, message_id,
 	    bounce_type, &imail))
 		return ecServerOOM;
@@ -2681,7 +2681,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 			return ecServerOOM;
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return ecError;
-		imail = MAIL(common_util_get_mime_pool());
+		imail.clear();
 		if (!imail.load_from_str_move(pbuff.get(), node_stat.st_size))
 			return ecError;
 		auto pmime = imail.get_head();
@@ -2700,7 +2700,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 		/* try to avoid TNEF message */
 		g_sqlite_for_oxcmail = rp.sqlite;
 		if (!oxcmail_export(pmsgctnt, false, body_type,
-		    common_util_get_mime_pool(), &imail, common_util_alloc,
+		    &imail, common_util_alloc,
 		    message_get_propids, message_get_propname)) {
 			g_sqlite_for_oxcmail = nullptr;
 			return ecError;
@@ -2709,7 +2709,7 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 	}
 	int ret = ecSuccess;
 	if (action_flavor & FWD_AS_ATTACHMENT) {
-		MAIL imail1(common_util_get_mime_pool());
+		MAIL imail1;
 		auto pmime = imail1.add_head();
 		if (pmime == nullptr)
 			return ecServerOOM;

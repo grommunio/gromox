@@ -53,8 +53,6 @@ template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey>
 template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey>
 {size_t operator()(const gromox::EWS::detail::MessageInstanceKey&) const noexcept;};
 
-struct MIME_POOL;
-
 namespace gromox::EWS {
 
 namespace Structures
@@ -157,7 +155,6 @@ public:
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; /// Lifetime of attachment instances
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; /// Lifetime of message instances
 
-	std::shared_ptr<MIME_POOL> mimePool;
 private:
 	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey>;
 	using CacheObj = std::variant<std::shared_ptr<ExmdbInstance>>;

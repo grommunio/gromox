@@ -29,7 +29,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
@@ -77,7 +76,6 @@ static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static alloc_limiter<DIR_NODE> g_alloc_dir{"g_alloc_dir.d"};
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
 static std::vector<imap_context *> g_sleeping_list;
@@ -197,11 +195,6 @@ int imap_parser_run()
 		num = 200;
 	if (num > 800)
 		num = 800;
-	g_mime_pool = MIME_POOL::create();
-	if (NULL == g_mime_pool) {
-		printf("[imap_parser]: Failed to init MIME pool\n");
-		return -6;
-	}
 	num = 10*g_context_num;
 	if (num < 1000)
 		num = 1000;
@@ -264,7 +257,6 @@ void imap_parser_stop()
 	
 	g_context_list2.clear();
 	g_context_list.reset();
-	g_mime_pool.reset();
 	g_select_hash.clear();
 	if (g_support_tls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
@@ -1707,11 +1699,6 @@ static void *imps_scanwork(void *argp)
 		}
 	}
 	return nullptr;
-}
-
-std::shared_ptr<MIME_POOL> imap_parser_get_mpool()
-{
-	return g_mime_pool;
 }
 
 alloc_limiter<MJSON_MIME> *imap_parser_get_jpool()

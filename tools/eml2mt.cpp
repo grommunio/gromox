@@ -18,7 +18,6 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -103,8 +102,7 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	return TRUE;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
-do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
+static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_mail(const char *file)
 {
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
@@ -114,7 +112,7 @@ do_mail(const char *file, std::shared_ptr<MIME_POOL> mime_pool)
 		return nullptr;
 	}
 
-	MAIL imail(std::move(mime_pool));
+	MAIL imail;
 	if (!imail.load_from_str_move(slurp_data.get(), slurp_len)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
@@ -247,12 +245,11 @@ int main(int argc, const char **argv) try
 	}
 
 	auto cfg = config_file_prg(nullptr, "delivery.cfg", delivery_cfg_defaults);
-	auto mime_pool = MIME_POOL::create();
 	std::vector<message_ptr> msgs;
 
 	for (int i = 1; i < argc; ++i) {
 		if (g_import_mode == IMPORT_MAIL) {
-			auto msg = do_mail(argv[i], mime_pool);
+			auto msg = do_mail(argv[i]);
 			if (msg == nullptr)
 				continue;
 			msgs.push_back(std::move(msg));

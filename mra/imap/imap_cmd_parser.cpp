@@ -625,7 +625,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					mlog(LV_ERR, "E-1461: ENOMEM");
 				}
 				if (rfc_path.size() <= 0 ||
-				    !mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str()))
+				    !mjson.rfc822_build(rfc_path.c_str()))
 					goto FETCH_BODY_SIMPLE;
 				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
 					resource_get_default_charset(pcontext->lang),
@@ -654,7 +654,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					mlog(LV_ERR, "E-1462: ENOMEM");
 				}
 				if (rfc_path.size() <= 0 ||
-				    !mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str()))
+				    !mjson.rfc822_build(rfc_path.c_str()))
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
 				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
 					resource_get_default_charset(pcontext->lang),
@@ -800,7 +800,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					mlog(LV_ERR, "E-1463: ENOMEM");
 				}
 				if (rfc_path.size() > 0 &&
-				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
+				    mjson.rfc822_build(rfc_path.c_str())) {
 					MJSON temp_mjson(imap_parser_get_jpool());
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
@@ -2114,7 +2114,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				return 1800;
 		}
 	}
-	MAIL imail(imap_parser_get_mpool());
+	MAIL imail;
 	if (!imail.load_from_str_move(argv[argc-1], strlen(argv[argc-1])))
 		return 1908;
 	strcpy(flag_buff, "(");
@@ -2324,7 +2324,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	pcontext->message_fd = -1;
 	uint32_t mfd_len = 0;
 	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
-	MAIL imail(imap_parser_get_mpool());
+	MAIL imail;
 	if (!imail.load_from_str_move(&pbuff[mfd_len], node_stat.st_size - mfd_len)) {
 		imail.clear();
 		pbuff.reset();

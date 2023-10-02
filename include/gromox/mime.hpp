@@ -21,6 +21,11 @@ struct GX_EXPORT MIME {
 	~MIME();
 
 	using write_func = ssize_t (*)(void *, const void *, size_t);
+	static MIME *create() try {
+		return new MIME();
+	} catch (const std::bad_alloc &) {
+		return nullptr;
+	}
 	bool load_from_str_move(MIME *parent, char *in_buf, size_t len);
 	void clear();
 	bool write_content(const char *content, size_t len, enum mime_encoding);

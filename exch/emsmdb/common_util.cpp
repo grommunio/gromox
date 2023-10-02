@@ -29,7 +29,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
@@ -62,7 +61,6 @@ unsigned int emsmdb_backfill_transporthdr;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_average_blocks;
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static char g_submit_command[1024];
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
@@ -1377,7 +1375,7 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	std::vector<std::string> rcpt_list;
 	rcpt_list.emplace_back(str);
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!exch_bouncer_make(common_util_get_user_displayname,
@@ -1615,7 +1613,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	auto body_type = get_override_format(*pmsgctnt);
 	common_util_set_dir(dir);
 	/* try to avoid TNEF message */
-	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,
+	if (!oxcmail_export(pmsgctnt, false, body_type, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
 		mlog2(LV_ERR, "E-1281: Failed to export to RFC5322 mail while sending mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
@@ -1754,27 +1752,12 @@ int common_util_run()
 		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}
-	g_mime_pool = MIME_POOL::create();
-	if (NULL == g_mime_pool) {
-		mlog(LV_ERR, "emsmdb: failed to init MIME pool");
-		return -4;
-	}
 	return 0;
-}
-
-void common_util_stop()
-{
-	g_mime_pool.reset();
 }
 
 const char* common_util_get_submit_command()
 {
 	return g_submit_command;
-}
-
-std::shared_ptr<MIME_POOL> common_util_get_mime_pool()
-{
-	return g_mime_pool;
 }
 
 static void mlog2(unsigned int level, const char *format, ...)

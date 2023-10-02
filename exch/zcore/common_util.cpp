@@ -28,7 +28,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/proptag_array.hpp>
@@ -82,7 +81,6 @@ unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40];
 static char g_org_name[256];
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
@@ -402,11 +400,6 @@ void common_util_init(const char *org_name, const char *default_charset,
 
 int common_util_run(const char *data_path)
 {
-	g_mime_pool = MIME_POOL::create();
-	if (NULL == g_mime_pool) {
-		mlog(LV_ERR, "common_util: failed to init MIME pool");
-		return -1;
-	}
 	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
 		system_services_get_username_from_id)) {
 		mlog(LV_ERR, "common_util: failed to init oxcmail library");
@@ -1390,7 +1383,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 		common_util_set_dir(pstore->get_dir());
 		/* try to avoid TNEF message */
 		MAIL imail;
-		if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool,
+		if (!oxcmail_export(pmsgctnt, false, body_type,
 		    &imail, common_util_alloc, common_util_get_propids,
 		    common_util_get_propname))
 			return FALSE;	
@@ -1463,7 +1456,7 @@ void common_util_notify_receipt(const char *username, int type,
 	if (str == nullptr)
 		return;
 	std::vector<std::string> rcpt_list = {str};
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!exch_bouncer_make(system_services_get_user_displayname,
@@ -1935,7 +1928,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id, BINAR
 	common_util_set_dir(pstore->get_dir());
 	/* try to avoid TNEF message */
 	MAIL imail;
-	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,
+	if (!oxcmail_export(pmsgctnt, false, body_type, &imail,
 	    common_util_alloc, common_util_get_propids, common_util_get_propname))
 		return FALSE;	
 	auto mail_len = imail.get_length();
@@ -1984,7 +1977,7 @@ static void zc_unwrap_smime(MAIL &ma) try
 	if (!part->read_content(&ctbuf[written_so_far], &len))
 		return;
 	written_so_far += len;
-	MAIL m2(g_mime_pool);
+	MAIL m2;
 	if (!m2.load_from_str_move(ctbuf.get(), written_so_far))
 		return;
 	m2.buffer = ctbuf.release();
@@ -1999,7 +1992,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 	char charset[32], tmzone[64];
 	
 	auto pinfo = zs_get_info();
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	if (!imail.load_from_str_move(peml_bin->pc, peml_bin->cb))
 		return NULL;
 	if (mxf_flags & MXF_UNWRAP_SMIME_CLEARSIGNED)
