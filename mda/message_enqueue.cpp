@@ -215,10 +215,9 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	uint64_t mess_len = 0;
 	if (NULL == pentity->pflusher->flush_ptr) {
 		fp = fopen(name.c_str(), "w");
-        /* check if the file is created successfully */
-        if (NULL == fp) {
-            return FALSE;
-        }
+		/* check if the file is created successfully */
+		if (fp == nullptr)
+			return FALSE;
 		pentity->pflusher->flush_ptr = fp;
 		/* write first 4(8) bytes in the file to indicate incomplete mess */
 		mess_len = cpu_to_le64(0);
@@ -263,29 +262,25 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	while (true) {
 		size = MAX_LINE_LENGTH;
 		copy_result = pentity->pstream->copyline(tmp_buff, &size);
-		if (STREAM_COPY_OK != copy_result &&
-			STREAM_COPY_PART != copy_result) {
+		if (copy_result != STREAM_COPY_OK &&
+		    copy_result != STREAM_COPY_PART)
 			break;
-		}
 		if (STREAM_COPY_OK == copy_result) {
 			tmp_buff[size++] = '\r';
 			tmp_buff[size++] = '\n';
 		}
 		/* RFC 5321 §4.5.2 dot (un-)stuffing */
 		write_len = fwrite(&tmp_buff[*tmp_buff == '.'], 1, size, fp);
-		if (write_len != size) {
+		if (write_len != size)
 			goto REMOVE_MESS;
-		}
 	}
 	if (STREAM_COPY_TERM == copy_result) {
 		write_len = fwrite(tmp_buff, 1, size, fp);
-		if (write_len != size) {
+		if (write_len != size)
 			goto REMOVE_MESS;
-		}
 	}
-	if (FLUSH_WHOLE_MAIL != pentity->pflusher->flush_action) {
+	if (pentity->pflusher->flush_action != FLUSH_WHOLE_MAIL)
 		return TRUE;
-	}
 	mess_len = ftell(fp);
 	mess_len -= sizeof(uint64_t); /* length at front of file */
    	/* write flush ID */
@@ -343,9 +338,8 @@ static int message_enqueue_retrieve_max_ID() try
         if (temp_ID > max_ID) {
 			temp_path = g_path + "/mess/"s + direntp->d_name;
 			fd = open(temp_path.c_str(), O_RDONLY);
-			if (-1 == fd) {
+			if (fd == -1)
 				continue;
-			}
 			if (read(fd, &size, sizeof(uint32_t)) != sizeof(uint32_t)) {
 				close(fd);
 				continue;
