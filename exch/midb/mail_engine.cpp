@@ -53,7 +53,6 @@
 #include "exmdb_client.h"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
-#define FILENUM_PER_MIME				8
 #define MAX_DIGLEN						256*1024
 #define RELOAD_INTERVAL					3600
 #define MAX_DB_WAITING_THREADS			5
@@ -155,7 +154,6 @@ unsigned int g_midb_cache_interval, g_midb_reload_interval;
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static BOOL g_wal;
 static BOOL g_async;
-static int g_mime_num;
 static size_t g_table_size;
 static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
@@ -4437,7 +4435,7 @@ static void mail_engine_notification_proc(const char *dir,
 
 void mail_engine_init(const char *default_charset, const char *org_name,
     size_t table_size, BOOL b_async, BOOL b_wal,
-    uint64_t mmap_size, int mime_num)
+    uint64_t mmap_size)
 {
 	g_sequence_id = 0;
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
@@ -4446,7 +4444,6 @@ void mail_engine_init(const char *default_charset, const char *org_name,
 	g_wal = b_wal;
 	g_mmap_size = mmap_size;
 	g_table_size = table_size;
-	g_mime_num = mime_num;
 }
 
 int mail_engine_run()
@@ -4462,8 +4459,7 @@ int mail_engine_run()
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}
-	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME,
-	              "midb_mime_pool (midb.cfg:g_mime_num)");
+	g_mime_pool = MIME_POOL::create();
 	if (NULL == g_mime_pool) {
 		mlog(LV_ERR, "mail_engine: failed to init MIME pool");
 		return -3;

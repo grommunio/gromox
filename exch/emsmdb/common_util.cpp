@@ -1723,10 +1723,6 @@ void common_util_init(const char *org_name, int average_blocks,
 
 int common_util_run()
 {
-	int context_num;
-	
-	context_num = get_context_num();
-
 #define E(f, s) do { \
 	query_service2(s, f); \
 	if ((f) == nullptr) { \
@@ -1758,9 +1754,7 @@ int common_util_run()
 		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}
-	auto mime_num = std::clamp(16 * context_num, 1024, 16 * 1024);
-	g_mime_pool = MIME_POOL::create(mime_num, 16,
-	              "emsmdb_mime_pool (http.cfg:context_num)");
+	g_mime_pool = MIME_POOL::create();
 	if (NULL == g_mime_pool) {
 		mlog(LV_ERR, "emsmdb: failed to init MIME pool");
 		return -4;

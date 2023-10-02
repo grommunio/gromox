@@ -43,8 +43,6 @@
 #	define OLD_SSL 1
 #endif
 #define SLEEP_BEFORE_CLOSE true
-#define FILENUM_PER_MIME		8
-
 #define SCAN_INTERVAL			3600
 
 #define SELECT_INTERVAL			20*60
@@ -199,7 +197,7 @@ int imap_parser_run()
 		num = 200;
 	if (num > 800)
 		num = 800;
-	g_mime_pool = MIME_POOL::create(num, FILENUM_PER_MIME, "imap_mime_pool");
+	g_mime_pool = MIME_POOL::create();
 	if (NULL == g_mime_pool) {
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;

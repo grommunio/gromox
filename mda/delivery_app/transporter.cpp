@@ -30,7 +30,6 @@
 #include <gromox/util.hpp>
 #include "delivery.hpp"
 #define FILENUM_PER_CONTROL		32
-#define FILENUM_PER_MIME		32
 #define MAX_THROWING_NUM		16
 #define SCAN_INTERVAL			1
 #define MAX_TIMES_NOT_SERVED	5
@@ -94,7 +93,7 @@ static char				g_path[256];
 static std::vector<std::string> g_plugin_names;
 static char g_local_path[256], g_remote_path[256];
 static HOOK_FUNCTION g_local_hook, g_remote_hook;
-static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
+static unsigned int g_threads_max, g_threads_min, g_free_num;
 static gromox::atomic_bool g_notify_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
@@ -148,7 +147,7 @@ ANTI_LOOP::ANTI_LOOP()
  */
 void transporter_init(const char *path, std::vector<std::string> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
-    unsigned int mime_ratio, bool ignerr)
+    bool ignerr)
 {
 	gx_strlcpy(g_path, path, std::size(g_path));
 	g_plugin_names = std::move(names);
@@ -158,7 +157,6 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
-	g_mime_num = mime_ratio * (threads_max + free_num);
 	/* Preallocate so this won't throw down the road */
 	g_free_list.reserve(free_num);
 	g_queue_list.reserve(free_num);
@@ -210,7 +208,7 @@ int transporter_run()
 		g_free_list.push_back(&g_free_ptr[i]);
 	}
 
-	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, "transporter_mime_pool");
+	g_mime_pool = MIME_POOL::create();
 	if (NULL == g_mime_pool) {
 		transporter_collect_resource();
 		mlog(LV_ERR, "transporter: failed to init MIME pool");
@@ -334,7 +332,6 @@ void transporter_stop()
 	g_path[0] = '\0';
 	g_threads_min = 0;
 	g_threads_max = 0;
-	g_mime_num = 0;
 	double_list_free(&g_hook_list);
 	double_list_free(&g_lib_list);
 	double_list_free(&g_unloading_list);

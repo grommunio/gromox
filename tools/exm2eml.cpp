@@ -133,7 +133,7 @@ int main(int argc, const char **argv) try
 	auto cl_3 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
 #undef E
 
-	auto mimepool = MIME_POOL::create(4096, 8, "mime_pool");
+	auto mimepool = MIME_POOL::create();
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
 	    system_services_get_user_ids, system_services_get_username_from_id)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");

@@ -322,7 +322,7 @@ bool EWSPlugin::logEnabled(const std::string_view& requestName) const
 {return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;}
 
 EWSPlugin::EWSPlugin() :
-	mimePool(MIME_POOL::create(std::clamp(16*get_context_num(), 1024u, 16*1024u), 16, "ews_mime_pool"))
+	mimePool(MIME_POOL::create())
 {
 	loadConfig();
 	cache.run(cache_interval);

@@ -49,7 +49,6 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"admin_mailbox", "root@localhost"},
 	{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
-	{"context_average_mime", "500", CFG_SIZE, "1"},
 	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 	{"dequeue_path", PKGSTATEQUEUEDIR},
@@ -142,10 +141,6 @@ int main(int argc, const char **argv) try
 		}
 	}
 	mlog(LV_INFO, "system: free contexts number is %d", free_contexts);
-    
-	unsigned int mime_ratio = g_config_file->get_ll("context_average_mime");
-	mlog(LV_INFO, "system: average mimes number for one context is %d",
-		mime_ratio);
 
 	size_t max_mem = g_config_file->get_ll("dequeue_maximum_mem");
 	HX_unit_size(temp_buff, std::size(temp_buff), max_mem, 1024, 0);
@@ -189,7 +184,7 @@ int main(int argc, const char **argv) try
 
 	transporter_init(PKGLIBDIR,
 		std::move(g_dfl_mpc_plugins), threads_min, threads_max,
-		free_contexts, mime_ratio, false);
+		free_contexts, false);
     if (0 != transporter_run()) { 
 		mlog(LV_ERR, "system: failed to start transporter");
 		return EXIT_FAILURE;

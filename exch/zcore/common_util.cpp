@@ -79,7 +79,6 @@ struct LANGMAP_ITEM {
 
 unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
-static int g_mime_num;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40];
 static char g_org_name[256];
@@ -385,14 +384,13 @@ BOOL common_util_exmdb_locinfo_from_string(
 	return TRUE;
 }
 
-void common_util_init(const char *org_name, const char *default_charset, int mime_num,
+void common_util_init(const char *org_name, const char *default_charset,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
     unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
     const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
-	g_mime_num = mime_num;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
@@ -404,8 +402,7 @@ void common_util_init(const char *org_name, const char *default_charset, int mim
 
 int common_util_run(const char *data_path)
 {
-	g_mime_pool = MIME_POOL::create(g_mime_num, 16,
-	              "zcore_mime_pool (zcore.cfg:g_mime_num)");
+	g_mime_pool = MIME_POOL::create();
 	if (NULL == g_mime_pool) {
 		mlog(LV_ERR, "common_util: failed to init MIME pool");
 		return -1;
