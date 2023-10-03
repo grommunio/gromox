@@ -415,13 +415,9 @@ static constexpr char tbl_alias_top[] =
 
 static constexpr char tbl_assoc_top[] =
 "CREATE TABLE `associations` ("
-"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
-"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `list_id` int(10) NOT NULL,"
-"  PRIMARY KEY (`id`),"
-"  UNIQUE KEY `list_id_2` (`list_id`,`username`),"
-"  KEY `username` (`username`),"
-"  KEY `list_id` (`list_id`)"
+"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  PRIMARY KEY (`list_id`,`username`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static constexpr char tbl_classes_top[] =
@@ -757,6 +753,12 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{120, "ALTER TABLE `classes` ADD CONSTRAINT `classes_ibfk_2` FOREIGN KEY (`listname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
 	{121, "ALTER TABLE `mlists` DROP CONSTRAINT `mlists_ibfk_1`"},
 	{122, "ALTER TABLE `mlists` ADD CONSTRAINT `mlists_ibfk_1` FOREIGN KEY (`listname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
+	{123, "ALTER TABLE `associations` DROP INDEX `list_id`"},
+	{124, "ALTER TABLE `associations` DROP INDEX `username`"},
+	{125, "ALTER TABLE `associations` DROP COLUMN `id`"},
+	{126, "ALTER TABLE `associations` MODIFY COLUMN `list_id` int(10) NOT NULL FIRST"},
+	{127, "ALTER TABLE `associations` ADD PRIMARY KEY (`list_id`,`username`)"},
+	{128, "ALTER TABLE `associations` DROP INDEX `list_id_2`"},
 	{0, nullptr},
 };
 
