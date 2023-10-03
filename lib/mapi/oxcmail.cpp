@@ -3439,10 +3439,12 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 	auto str  = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = pmsg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && str1 != nullptr) {
-		if (strcasecmp(str, str1) != 0 &&
-		    oxcmail_export_address(pmsg, alloc, tags_sender, cset,
-		    tmp_field, std::size(tmp_field)) &&
-		    !phead->set_field("Sender", tmp_field))
+		if (strcasecmp(str, str1) == 0)
+			return true; /* field not needed */
+		if (!oxcmail_export_address(pmsg, alloc, tags_sender, cset,
+		    tmp_field, std::size(tmp_field)))
+			return true; /* not present */
+		if (!phead->set_field("Sender", tmp_field))
 			return FALSE;
 		return true;
 	}
