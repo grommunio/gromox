@@ -99,6 +99,7 @@ E(get_id_from_homedir)
 E(get_handle)
 #undef E
 decltype(ems_send_mail) ems_send_mail;
+decltype(ems_send_vmail) ems_send_vmail;
 
 static bool cu_eval_subobj_restriction(sqlite3 *, cpid_t, uint64_t msgid, uint32_t proptag, const RESTRICTION *);
 static bool gp_prepare_anystr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
@@ -173,6 +174,7 @@ void common_util_pass_service(const char *name, void *func)
 {
 #define E(v, ptr) do { if (strcmp(name, (v)) == 0) { (ptr) = reinterpret_cast<decltype(ptr)>(func); return; } } while (false)
 	E("ems_send_mail", ems_send_mail);
+	E("ems_send_vmail", ems_send_vmail);
 	E("get_handle", common_util_get_handle);
 #undef E
 }

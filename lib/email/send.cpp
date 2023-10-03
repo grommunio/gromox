@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <string>
@@ -7,6 +7,7 @@
 #include <openssl/ssl.h>
 #include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
+#include <vmime/message.hpp>
 #include <vmime/net/transport.hpp>
 #include <vmime/utility/inputStreamStringAdapter.hpp>
 #include <gromox/mail.hpp>
@@ -58,6 +59,45 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	}
 	try {
 		xprt->send(vsender, vrcpt_list, ct_adap, content.size(), nullptr, {}, {});
+		xprt->disconnect();
+	} catch (const vmime::exception &e) {
+		mlog(LV_ERR, "vmime.send: %s", e.what());
+		return MAPI_W_CANCEL_MESSAGE;
+	}
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1196: ENOMEM");
+	return ecServerOOM;
+}
+
+ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
+    const char *smtp_url, const char *sender,
+    const std::vector<std::string> &rcpt_list) try
+{
+	if (*sender == '\0') {
+		mlog(LV_ERR, "cu_send_mail: empty envelope-from\n");
+		return MAPI_W_CANCEL_MESSAGE;
+	} else if (rcpt_list.size() == 0) {
+		mlog(LV_ERR, "cu_send_mail: empty envelope-rcpt\n");
+		return MAPI_W_CANCEL_MESSAGE;
+	} else if (*smtp_url == '\0') {
+		mlog(LV_ERR, "cu_send_mail: no SMTP target given\n");
+		return MAPI_W_NO_SERVICE;
+	}
+	vmime::mailbox vsender(sender);
+	vmime::mailboxList vrcpt_list;
+	for (const auto &r : rcpt_list)
+		vrcpt_list.appendMailbox(vmime::make_shared<vmime::mailbox>(r));
+	auto xprt = vmime::net::session::create()->getTransport(smtp_url);
+	try {
+		/* vmime default timeout is 30s */
+		xprt->connect();
+	} catch (const vmime::exception &e) {
+		mlog(LV_ERR, "vmime.connect %s: %s", smtp_url, e.what());
+		return MAPI_W_NO_SERVICE;
+	}
+	try {
+		xprt->send(msg, vsender, vrcpt_list, nullptr, {}, {});
 		xprt->disconnect();
 	} catch (const vmime::exception &e) {
 		mlog(LV_ERR, "vmime.send: %s", e.what());

@@ -6,6 +6,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <vmime/message.hpp>
 #include <gromox/mapi_types.hpp>
 #define MIME_NAME_LEN 80U
 #define MIME_FIELD_LEN (64U * 1024)
@@ -62,5 +63,6 @@ extern GX_EXPORT ssize_t rtfcp_uncompressed_size(const BINARY *);
 namespace gromox {
 
 extern GX_EXPORT ec_error_t cu_send_mail(MAIL &, const char *smtp_url, const char *sender, const std::vector<std::string> &rcpt);
+extern GX_EXPORT ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message>, const char *smtp_url, const char *sender, const std::vector<std::string> &rcpt);
 
 }

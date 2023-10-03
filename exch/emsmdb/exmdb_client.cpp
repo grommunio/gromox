@@ -55,6 +55,7 @@ int run()
 	/* pass the service functions to exmdb_provider */
 #define E(s) reinterpret_cast<void *>(s)
 	pass_service("ems_send_mail", E(ems_send_mail));
+	pass_service("ems_send_vmail", E(ems_send_vmail));
 	pass_service("get_handle", E(emsmdb_interface_get_handle));
 #undef E
 	return 0;

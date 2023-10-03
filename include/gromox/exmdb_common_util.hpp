@@ -5,6 +5,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <vmime/message.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -52,6 +53,7 @@ E(get_user_displayname)
 E(get_user_lang)
 #undef E
 extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
+extern ec_error_t (*ems_send_vmail)(vmime::shared_ptr<vmime::message>, const char *sender, const std::vector<std::string> &rcpts);
 extern const GUID *(*common_util_get_handle)();
 
 extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
