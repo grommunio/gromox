@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -22,7 +22,11 @@
 #include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <vmime/addressList.hpp>
+#include <vmime/constants.hpp>
+#include <vmime/mailbox.hpp>
 #include <vmime/mailboxList.hpp>
+#include <vmime/text.hpp>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -3036,54 +3040,38 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	return false;
 }
 
-static BOOL oxcmail_export_addresses(const char *charset,
-    const TARRAY_SET *prcpts, uint32_t rcpt_type, char *field, size_t fdsize)
+static BOOL oxcmail_export_addresses(const TARRAY_SET &rcpt_list,
+    uint32_t rcpt_type, vmime::mailboxList &mblist) try
 {
-	size_t offset = 0;
-	
-	for (const auto &rcpt : *prcpts) {
+	for (const auto &rcpt : rcpt_list) {
 		auto pvalue = rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
 		if (pvalue == nullptr || *pvalue != rcpt_type)
 			continue;
-		if (0 != offset) {
-			if (offset + 5 >= fdsize)
-				return false;
-			strcpy(&field[offset], ",\r\n\t");
-			offset += 4;
-		}
+		auto mb = vmime::make_shared<vmime::mailbox>();
 		auto pdisplay_name = rcpt.get<char>(PR_DISPLAY_NAME);
-		if (NULL != pdisplay_name) {
-			field[offset++] = '"';
-			if (offset >= fdsize)
-				return FALSE;
-			auto tmp_len = oxcmail_encode_mime_string(
-				charset, pdisplay_name, field + offset,
-			               fdsize - offset);
-			if (tmp_len == 0)
-				return FALSE;
-			offset += tmp_len;
-			field[offset++] = '"';
-			if (offset >= fdsize)
-				return FALSE;
-		}
+		if (pdisplay_name != nullptr)
+			mb->setName(vmime::text(pdisplay_name, vmime::charsets::UTF_8));
 		std::string username;
-		if (oxcmail_get_smtp_address(rcpt, &tags_self, g_oxcmail_org_name,
-		    oxcmail_id2user, username))
-			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
-			          pdisplay_name != nullptr ? " <%s>" : "<%s>",
-			          username.c_str()));
+		if (!oxcmail_get_smtp_address(rcpt, &tags_self,
+		    g_oxcmail_org_name, oxcmail_id2user, username))
+			mb->setEmail(username);
+		mblist.appendMailbox(mb);
 	}
-	if (0 == offset || offset >= fdsize)
-		return FALSE;
-	return TRUE;
+	return true;
+} catch (...) {
+	return false;
 }
 
-static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
-    const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
+static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
+    vmime::addressList &adrlist) try
 {
-	size_t fieldmax = MIME_FIELD_LEN;
 	EXT_PULL ext_pull;
-	BINARY_ARRAY address_array;
+	BINARY_ARRAY address_array{};
+	auto cl_0 = make_scope_exit([&]() {
+		for (unsigned int i = 0; i < address_array.count; ++i)
+			free(address_array.pbin[i].pb);
+		free(address_array.pbin);
+	});
 	
 	auto pbin = pmsg->proplist.get<BINARY>(PR_REPLY_RECIPIENT_ENTRIES);
 	if (pbin == nullptr)
@@ -3093,77 +3081,57 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	 * to distinguish between semicolon as a separator and semicolon as
 	 * part of a name. So we ignore that property altogether.
 	 */
-	ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin->pb, pbin->cb, malloc, EXT_FLAG_WCOUNT);
 	if (ext_pull.g_flatentry_a(&address_array) != EXT_ERR_SUCCESS)
 		return FALSE;
-	size_t offset = 0;
 	for (size_t i = 0; i < address_array.count; ++i) {
-		if (0 != offset) {
-			if (offset + 3 >= fieldmax)
-				return false;
-			strcpy(&field[offset], ", ");
-			offset += 2;
-		}
 		EXT_PULL ep2;
-		ONEOFF_ENTRYID oo;
-		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb, alloc, EXT_FLAG_UTF16);
+		ONEOFF_ENTRYID oo{};
+		auto cl_1 = make_scope_exit([&]() {
+			free(oo.pdisplay_name);
+			free(oo.paddress_type);
+			free(oo.pmail_address);
+		});
+		ep2.init(address_array.pbin[i].pb, address_array.pbin[i].cb,
+			malloc, EXT_FLAG_UTF16);
 		if (ep2.g_oneoff_eid(&oo) != EXT_ERR_SUCCESS ||
 		    strcasecmp(oo.paddress_type, "SMTP") != 0) {
 			mlog(LV_WARN, "W-1964: skipping non-SMTP reply-to entry");
 			continue;
 		}
-		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0') {
-			if (offset + 2 >= fieldmax)
-				return false;
-			strcpy(&field[offset++], "\"");
-			auto tmp_len = oxcmail_encode_mime_string(charset,
-					oo.pdisplay_name, field + offset,
-					MIME_FIELD_LEN - offset);
-			offset += tmp_len;
-			if (offset + 3 >= fieldmax)
-				return false;
-			strcpy(&field[offset], "\" ");
-			offset += 2;
-		}
-		offset += std::max(0, gx_snprintf(&field[offset], MIME_FIELD_LEN - offset,
-		          "<%s>", oo.pmail_address));
+		auto mb = vmime::make_shared<vmime::mailbox>();
+		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0')
+			mb->setName(vmime::text(oo.pdisplay_name, vmime::charsets::UTF_8));
+		if (*oo.pmail_address != '\0')
+			mb->setEmail(oo.pmail_address);
+		adrlist.appendAddress(mb);
 	}
-	if (offset == 0 || offset >= fieldmax)
-		return FALSE;
-	field[offset] = '\0';
-	return TRUE;
+	return true;
+} catch (...) {
+	return false;
 }
 
 static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
-    const addr_tags &tags, const char *charset, char *field, size_t fdsize)
+    const addr_tags &tags, vmime::mailbox &mb) try
 {
-	int offset;
-	
-	offset = 0;
 	auto pvalue = pmsg->proplist.get<char>(tags.pr_name);
-	if (pvalue != nullptr && *pvalue != '\0') {
-		field[offset++] = '"';
-		offset += oxcmail_encode_mime_string(charset,
-		          pvalue, field + offset, fdsize - offset);
-		field[offset++] = '"';
-		field[offset++] = ' ';
-		field[offset] = '\0';
-	}
+	if (pvalue != nullptr && *pvalue != '\0')
+		mb.setName(vmime::text(pvalue, vmime::charsets::UTF_8));
 	std::string address;
 	if (oxcmail_get_smtp_address(pmsg->proplist, &tags, g_oxcmail_org_name,
-	    oxcmail_id2user, address))
-		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address.c_str());
-	else if (offset > 0)
-		/*
-		 * RFC 5322 §3.4's ABNF mandates an address at all times.
-		 * If we only emitted "Display Name", parsers can
-		 * preferentially treat that as the email address, so let's add
-		 * <> to nudge them.
-		 */
-		offset += gx_snprintf(field + offset, fdsize - offset, "<>");
-	if (offset == 0)
-		return FALSE;
-	return TRUE;
+	    oxcmail_id2user, address)) {
+		mb.setEmail(address);
+		return true;
+	}
+	return false;
+	/*
+	 * RFC 5322 §3.4's ABNF mandates an address at all times.
+	 * If we only emitted "Display Name", parsers can
+	 * preferentially treat that as the email address.
+	 * (vmime ensures that won't happen.)
+	 */
+} catch (...) {
+	return false;
 }
 
 static BOOL oxcmail_export_content_class(
@@ -3378,21 +3346,20 @@ static const char *sender_id_to_text(const uint32_t *v)
 	}
 }
 
-static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
-    MIME *phead, bool sched)
+static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
+    MIME *phead, bool sched) try
 {
 	if (sched)
 		return true;
-	char tmp_field[MIME_FIELD_LEN];
 	auto str  = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = pmsg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr && str1 != nullptr) {
 		if (strcasecmp(str, str1) == 0)
 			return true; /* field not needed */
-		if (!oxcmail_export_address(pmsg, tags_sender, cset,
-		    tmp_field, std::size(tmp_field)))
+		auto mb = vmime::make_shared<vmime::mailbox>();
+		if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 			return true; /* not present */
-		if (!phead->set_field("Sender", tmp_field))
+		if (!phead->set_field("Sender", mb->generate().c_str()))
 			return FALSE;
 		return true;
 	}
@@ -3405,104 +3372,99 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 	str1 = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (str == nullptr || str1 == nullptr || strcasecmp(str, str1) == 0)
 		return true;
-	if (oxcmail_export_address(pmsg, tags_sender, cset,
-	    tmp_field, std::size(tmp_field)) &&
-	    !phead->set_field("Sender", tmp_field))
-		return false;
+	auto mb = vmime::make_shared<vmime::mailbox>();
+	if (oxcmail_export_address(pmsg, tags_sender, *mb))
+		if (!phead->set_field("Sender", mb->generate().c_str()))
+			return false;
 	return true;
+} catch (...) {
+	return false;
 }
 
 static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
-    const char *cset, MIME *phead, bool sched)
+    MIME *phead, bool sched) try
 {
-	char tmp_field[MIME_FIELD_LEN];
+	auto mb = vmime::make_shared<vmime::mailbox>();
 	if (sched) {
-		if (oxcmail_export_address(pmsg, tags_sender,
-		    cset, tmp_field, std::size(tmp_field)) &&
-		    !phead->set_field("From", tmp_field))
-			return false;
+		if (oxcmail_export_address(pmsg, tags_sender, *mb))
+			if (!phead->set_field("From", mb->generate().c_str()))
+				return false;
 		return true;
 	}
-	if (oxcmail_export_address(pmsg, tags_sent_repr,
-	    cset, tmp_field, std::size(tmp_field))) {
-		if (!phead->set_field("From", tmp_field))
+	if (oxcmail_export_address(pmsg, tags_sent_repr, *mb)) {
+		if (!phead->set_field("From", mb->generate().c_str()))
 			return FALSE;
-	} else if (oxcmail_export_address(pmsg, tags_sender,
-	    cset, tmp_field, std::size(tmp_field)) &&
-	    !phead->set_field("Sender", tmp_field)) {
-		return FALSE;
+	} else if (oxcmail_export_address(pmsg, tags_sender, *mb)) {
+		if (!phead->set_field("Sender", mb->generate().c_str()))
+			return FALSE;
 	}
 	return true;
+} catch (...) {
+	return false;
 }
 
 static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
-    const char *cset, MIME *phead, bool sched)
+    MIME *phead, bool sched) try
 {
-	/* For DSN (DR (NDR too?)) & MDN */
-	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return true;
-	if (oxcmail_export_address(pmsg, tags_read_rcpt,
-	    cset, tmp_field, std::size(tmp_field)))
+	auto mb = vmime::make_shared<vmime::mailbox>();
+	if (oxcmail_export_address(pmsg, tags_read_rcpt, *mb))
 		/* ok */;
-	else if (oxcmail_export_address(pmsg, tags_sender,
-	    cset, tmp_field, std::size(tmp_field)))
+	else if (oxcmail_export_address(pmsg, tags_sender, *mb))
 		/* ok */;
-	else if (!sched && oxcmail_export_address(pmsg, tags_sent_repr,
-	    cset, tmp_field, std::size(tmp_field)))
+	else if (sched && oxcmail_export_address(pmsg, tags_sent_repr, *mb))
 		/* ok */;
 	else
 		return true; /* No recipient */
-	return phead->set_field("Return-Receipt-To", tmp_field);
+	return phead->set_field("Return-Receipt-To", mb->generate().c_str());
+} catch (...) {
+	return false;
 }
 
 static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
-    const char *cset, MIME *phead, bool sched)
+    MIME *phead, bool sched) try
 {
-	/* For read requests */
-	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return true;
-	if (oxcmail_export_address(pmsg, tags_read_rcpt,
-	    cset, tmp_field, std::size(tmp_field)))
+	auto mb = vmime::make_shared<vmime::mailbox>();
+	if (oxcmail_export_address(pmsg, tags_read_rcpt, *mb))
 		/* ok */;
-	else if (oxcmail_export_address(pmsg, tags_sender,
-	    cset, tmp_field, std::size(tmp_field)))
-		/* ok */;
-	else if (!sched && oxcmail_export_address(pmsg, tags_sent_repr,
-	    cset, tmp_field, std::size(tmp_field)))
+	else if (sched && oxcmail_export_address(pmsg, tags_sent_repr, *mb))
 		/* ok */;
 	else
 		return true; /* No recipient */
-	return phead->set_field("Disposition-Notification-To", tmp_field);
+	return phead->set_field("Disposition-Notification-To", mb->generate().c_str());
+} catch (...) {
+	return false;
 }
 
 static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
-    const MIME_SKELETON *pskeleton, MIME *phead)
+    const MIME_SKELETON *pskeleton, MIME *phead) try
 {
 	if (pmsg->children.prcpts == nullptr)
 		return true;
-	char tmp_field[MIME_FIELD_LEN];
-	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
-	    MAPI_TO, tmp_field, std::size(tmp_field)) &&
-	    !phead->set_field("To", tmp_field))
-		return FALSE;
-	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
-	    MAPI_CC, tmp_field, std::size(tmp_field)) &&
-	    !phead->set_field("Cc", tmp_field))
-		return FALSE;
+	auto mblist = vmime::make_shared<vmime::mailboxList>();
+	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_TO, *mblist))
+		if (!phead->set_field("To", mblist->generate().c_str()))
+			return FALSE;
+	mblist = vmime::make_shared<vmime::mailboxList>();
+	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_CC, *mblist))
+		if (!phead->set_field("Cc", mblist->generate().c_str()))
+			return FALSE;
 	if (strncasecmp(pskeleton->pmessage_class, "IPM.Schedule.Meeting.", 21) == 0 ||
 	    strcasecmp(pskeleton->pmessage_class, "IPM.Task") == 0||
 	    strncasecmp(pskeleton->pmessage_class, "IPM.Task.", 9) == 0)
 		return true;
-	if (oxcmail_export_addresses(pskeleton->charset,
-	    pmsg->children.prcpts, MAPI_BCC,
-	    tmp_field, std::size(tmp_field)) &&
-	    !phead->set_field("Bcc", tmp_field))
-		return FALSE;
+	mblist = vmime::make_shared<vmime::mailboxList>();
+	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist))
+		if (!phead->set_field("Bcc", mblist->generate().c_str()))
+			return FALSE;
 	return true;
+} catch (...) {
+	return false;
 }
 
 static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
@@ -3518,17 +3480,18 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 
 	auto sched = pskeleton->mail_type == oxcmail_type::calendar;
 	if (!phead->set_field("MIME-Version", "1.0") ||
-	    !oxcmail_export_sender(pmsg, pskeleton->charset, phead, sched) ||
-	    !oxcmail_export_fromsender(pmsg, pskeleton->charset, phead, sched) ||
-	    !oxcmail_export_receiptto(pmsg, pskeleton->charset, phead, sched) ||
-	    !oxcmail_export_receiptflg(pmsg, pskeleton->charset, phead, sched) ||
+	    !oxcmail_export_sender(pmsg, phead, sched) ||
+	    !oxcmail_export_fromsender(pmsg, phead, sched) ||
+	    !oxcmail_export_receiptto(pmsg, phead, sched) ||
+	    !oxcmail_export_receiptflg(pmsg, phead, sched) ||
 	    !oxcmail_export_tocc(pmsg, pskeleton, phead))
 		return false;
 	char tmp_buff[MIME_FIELD_LEN];
 	char tmp_field[MIME_FIELD_LEN];
-	if (oxcmail_export_reply_to(pmsg, pskeleton->charset, alloc, tmp_field) &&
-	    !phead->set_field("Reply-To", tmp_field))
-		return FALSE;
+	auto adrlist = vmime::make_shared<vmime::addressList>();
+	if (oxcmail_export_reply_to(pmsg, *adrlist))
+		if (!phead->set_field("Reply-To", adrlist->generate().c_str()))
+			return FALSE;
 	if (oxcmail_export_content_class(pskeleton->pmessage_class, tmp_field)) {
 		if (!phead->set_field("Content-Class", tmp_field))
 			return FALSE;
