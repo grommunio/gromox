@@ -50,5 +50,6 @@ extern void transporter_stop();
 extern void transporter_wakeup_one_thread();
 extern int transporter_unload_library(const char *);
 extern int transporter_load_library(const char *);
+extern void transporter_trigger_all(unsigned int);
 
 extern std::shared_ptr<CONFIG_FILE> g_config_file;

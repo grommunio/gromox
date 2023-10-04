@@ -1070,3 +1070,14 @@ static void transporter_log_info(const CONTROL_INFO &ctrl, int level,
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1080: ENOMEM");
 }
+
+void transporter_trigger_all(unsigned int ev)
+{
+	for (auto n = double_list_get_head(&g_lib_list); n != nullptr;
+	     n = double_list_get_after(&g_lib_list, n)) {
+		auto p = static_cast<HOOK_PLUG_ENTITY *>(n->pdata);
+		g_cur_lib = p;
+		p->lib_main(ev, nullptr);
+	}
+	g_cur_lib = nullptr;
+}

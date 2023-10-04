@@ -203,6 +203,7 @@ int main(int argc, const char **argv) try
 		if (g_hup_signalled.exchange(false)) {
 			delivery_reload_config(nullptr);
 			service_trigger_all(PLUGIN_RELOAD);
+			transporter_trigger_all(PLUGIN_RELOAD);
 		}
     }
 	return retcode;
