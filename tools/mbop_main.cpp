@@ -97,7 +97,7 @@ static eid_t lookup_eid_by_name(const char *dir, const char *name)
 namespace delmsg {
 
 static char *g_folderstr;
-static uint64_t g_folderid;
+static eid_t g_folderid;
 static unsigned int g_soft;
 
 static constexpr HXoption g_options_table[] = {
@@ -135,11 +135,13 @@ static int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	if (g_folderstr != nullptr) {
 		char *end = nullptr;
-		g_folderid = strtoul(g_folderstr, &end, 0);
+		uint64_t fid = strtoul(g_folderstr, &end, 0);
 		if (end == g_folderstr || *end != '\0')
 			g_folderid = lookup_eid_by_name(g_storedir, g_folderstr);
+		else
+			g_folderid = rop_util_make_eid_ex(1, fid);
 	}
-	if (g_folderid == 0)
+	if (rop_util_get_gc_value(g_folderid) == 0)
 		return help();
 	std::vector<uint64_t> eids;
 	while (*++argv != nullptr) {
@@ -155,14 +157,13 @@ static int main(int argc, const char **argv)
 	ea.count = eids.size();
 	ea.pids = eids.data();
 	BOOL partial = false;
-	eid_t fid = rop_util_make_eid_ex(1, g_folderid);
-	auto old_msgc = delcount(fid);
+	auto old_msgc = delcount(g_folderid);
 	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_UTF8,
-	    nullptr, fid, &ea, !g_soft, &partial)) {
+	    nullptr, g_folderid, &ea, !g_soft, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}
-	auto diff = delcount(fid) - old_msgc;
+	auto diff = delcount(g_folderid) - old_msgc;
 	if (partial)
 		printf("Partial completion\n");
 	printf("%u messages deleted\n", diff);
