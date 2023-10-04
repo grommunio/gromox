@@ -1,11 +1,12 @@
-Development 2.13.36
-===================
+Gromox 2.14 (2023-10-04)
+========================
 
 Enhancements:
 
 * daemons: better SSL_accept error log messages
 * alias_resolve: support for nested mlist expansion
 * alias_resolve: support for Global Contact Objects
+* delivery: SIGHUP triggers a reload of (more) plugins now
 * gromox-mbop: add emptyfld options -a, -M
 
 Fixes:
@@ -13,6 +14,8 @@ Fixes:
 * oxdisco, oab: avoid emitting extraneous NUL byte at end of XML document
 * imap: do not emit continuation request on LITERAL+
 * mbop: restore emptyfld functionality after switch to empty_folder v2 RPC
+* mbop: ``delmsg -f DRAFT 12345`` did nothing due to a bad translation
+  of the special name
 
 
 Gromox 2.13 (2023-09-23)
