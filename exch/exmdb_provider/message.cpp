@@ -526,10 +526,8 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		if (pstmt.step() != SQLITE_ROW)
 			continue;
 		parent_fid = sqlite3_column_int64(pstmt, 0);
-		if (pstmt.col_int64(1) == 0)
-			normal_size += sqlite3_column_int64(pstmt, 2);
-		else
-			fai_size += sqlite3_column_int64(pstmt, 2);
+		auto is_assoc = pstmt.col_int64(1) != 0;
+		auto obj_size = pstmt.col_int64(2);
 		sqlite3_reset(pstmt);
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
@@ -562,6 +560,10 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 			}
 		}
 		del_count ++;
+		if (is_assoc)
+			normal_size += obj_size;
+		else
+			fai_size += obj_size;
 		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::del_msg,
 			parent_fid, tmp_val, 0);
 		if (folder_type == FOLDER_SEARCH)
