@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
+#include <mutex>
+#include <unordered_map>
 #include <sqlite3.h>
 #include <gromox/database.h>
 #include <gromox/util.hpp>
@@ -32,10 +34,16 @@ xtransaction &xtransaction::operator=(xtransaction &&o) noexcept
 	return *this;
 }
 
+static std::unordered_map<void *, std::string> active_xa;
+static std::mutex active_xa_lock;
+
 xtransaction::~xtransaction()
 {
-	if (m_db != nullptr)
+	if (m_db != nullptr) {
 		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+		std::unique_lock lk(active_xa_lock);
+		active_xa.erase(m_db);
+	}
 }
 
 int xtransaction::commit()
@@ -43,12 +51,23 @@ int xtransaction::commit()
 	if (m_db == nullptr)
 		return SQLITE_OK;
 	auto ret = sqlite3_exec(m_db, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
+	{
+		std::unique_lock lk(active_xa_lock);
+		active_xa.erase(m_db);
+	}
 	m_db = nullptr;
 	return ret;
 }
 
-xtransaction gx_sql_begin_trans(sqlite3 *db)
+xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos)
 {
+	{
+		std::unique_lock lk(active_xa_lock);
+		auto pair = active_xa.emplace(db, pos);
+		if (!pair.second)
+			mlog(LV_ERR, "Nested transaction attempted. DB %p, origin %s, now %s",
+				db, pair.first->second.c_str(), pos.c_str());
+	}
 	auto ret = gx_sql_exec(db, "BEGIN TRANSACTION");
 	return xtransaction(ret == SQLITE_OK ? db : nullptr);
 }
