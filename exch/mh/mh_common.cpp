@@ -104,21 +104,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MhContext::unauthed() const
-{
-	char dstring[128], tmp_buff[1024];
-	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start_time));
-	auto tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
-		"HTTP/1.1 401 Unauthorized\r\n"
-		"Date: %s\r\n"
-		"Content-Length: 0\r\n"
-		"Connection: Keep-Alive\r\n"
-		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n", dstring);
-	return write_response(ID, tmp_buff, tmp_len);
-}
-
-BOOL MhContext::error_responsecode(resp_code response_code) const
+http_status MhContext::error_responsecode(resp_code response_code) const
 {
 	char dstring[128], text_buff[512], response_buff[4096];
 
@@ -144,7 +130,7 @@ BOOL MhContext::error_responsecode(resp_code response_code) const
 	return write_response(ID, response_buff, response_len);
 }
 
-BOOL MhContext::ping_response() const try
+http_status MhContext::ping_response() const try
 {
 	auto current_time = tp_now();
 	auto ct = render_content(current_time, start_time);
@@ -154,10 +140,10 @@ BOOL MhContext::ping_response() const try
 	return write_response(ID, rs.c_str(), rs.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1142: ENOMEM");
-	return false;
+	return http_status::none;
 }
 
-BOOL MhContext::failure_response(uint32_t status) const try
+http_status MhContext::failure_response(uint32_t status) const try
 {
 	char stbuf[8], seq_string[GUIDSTR_SIZE];
 	auto current_time = tp_now();
@@ -171,10 +157,10 @@ BOOL MhContext::failure_response(uint32_t status) const try
 	return write_response(ID, rs.c_str(), rs.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1143: ENOMEM");
-	return false;
+	return http_status::none;
 }
 
-BOOL MhContext::normal_response() const try
+http_status MhContext::normal_response() const try
 {
 	char seq_string[GUIDSTR_SIZE], chunk_string[32];
 	auto current_time = tp_now();
@@ -184,21 +170,29 @@ BOOL MhContext::normal_response() const try
 	          session_string, current_time) +
 	          "Transfer-Encoding: chunked\r\n" +
 	          fmt::format("Set-Cookie: sequence={}\r\n\r\n", seq_string);
-	if (!write_response(ID, rs.c_str(), rs.size()))
-		return false;
+	auto wr = write_response(ID, rs.c_str(), rs.size());
+	if (wr != http_status::ok)
+		return wr;
 	auto ct = render_content(current_time, start_time);
 	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size());
-	if (!write_response(ID, chunk_string, tmp_len) ||
-	    !write_response(ID, ct.c_str(), ct.size()) ||
-	    !write_response(ID, "\r\n", 2))
-		return false;
+	wr = write_response(ID, chunk_string, tmp_len);
+	if (wr != http_status::ok)
+		return wr;
+	wr = write_response(ID, ct.c_str(), ct.size());
+	if (wr != http_status::ok)
+		return wr;
+	wr = write_response(ID, "\r\n", 2);
+	if (wr != http_status::ok)
+		return wr;
 	tmp_len = sprintf(chunk_string, "%x\r\n", epush->m_offset);
-	if (!write_response(ID, chunk_string, tmp_len) ||
-	    !write_response(ID, epush->m_udata, epush->m_offset) ||
-	    !write_response(ID, "\r\n0\r\n\r\n", 7))
-		return false;
-	return TRUE;
+	wr = write_response(ID, chunk_string, tmp_len);
+	if (wr != http_status::ok)
+		return wr;
+	wr = write_response(ID, epush->m_udata, epush->m_offset);
+	if (wr != http_status::ok)
+		return wr;
+	return write_response(ID, "\r\n0\r\n\r\n", 7);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1144: ENOMEM");
-	return false;
+	return http_status::none;
 }

@@ -89,7 +89,7 @@ static constexpr size_t	AVERAGE_SESSION_PER_CONTEXT = 10,
 	FLAG_NOTIFICATION_PENDING = 1;
 
 static BOOL emsmdb_preproc(int context_id);
-static BOOL emsmdb_proc(int context_id, const void *content, uint64_t length);
+static http_status emsmdb_proc(int ctx_id, const void *content, uint64_t len);
 static int emsmdb_retr(int context_id);
 static void emsmdb_term(int context_id);
 static void asyncemsmdb_wakeup_proc(int context_id, BOOL b_pending);
@@ -181,8 +181,8 @@ struct MhEmsmdbContext : public MhContext
 		epush = &ext_push;
 	}
 
-	BOOL notification_response() const;
-	BOOL notification_response(uint32_t, uint32_t) const;
+	http_status notification_response() const;
+	http_status notification_response(uint32_t, uint32_t) const;
 
 	union {
 		connect_request connect;
@@ -209,12 +209,12 @@ public:
 	~MhEmsmdbPlugin();
 	NOMOVE(MhEmsmdbPlugin);
 
-	BOOL process(int, const void*, uint64_t);
+	http_status process(int, const void*, uint64_t);
 	int retr(int);
 	void term(int);
 	void async_wakeup(int, BOOL);
 private:
-	using ProcRes = std::optional<BOOL>;
+	using ProcRes = std::optional<http_status>;
 
 	static void* scanWork(void*);
 
@@ -406,7 +406,8 @@ HPM_ENTRY(hpm_mh_emsmdb);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Response generation
 
-static BOOL notification_response(int ID, time_point start_time, uint32_t result, uint32_t flags_out)
+static http_status notification_response(int ID, time_point start_time,
+    uint32_t result, uint32_t flags_out)
 {
 	decltype(MhEmsmdbContext::response) response;
 	ems_push ext_push;
@@ -421,28 +422,34 @@ static BOOL notification_response(int ID, time_point start_time, uint32_t result
 	auto current_time = tp_now();
 	auto ct = render_content(current_time, start_time);
 	auto tmp_len = sprintf(chunk_string, "%zx\r\n", ct.size() + ext_push.m_offset);
-	if (!write_response(ID, chunk_string, tmp_len) ||
-	    !write_response(ID, ct.c_str(), ct.size()) ||
-	    !write_response(ID, ext_push.m_udata, ext_push.m_offset) ||
-	    !write_response(ID, "\r\n0\r\n\r\n", 7))
-		return false;
-	return TRUE;
+	auto wr = write_response(ID, chunk_string, tmp_len);
+	if (wr != http_status::ok)
+		return wr;
+	wr = write_response(ID, ct.c_str(), ct.size());
+	if (wr != http_status::ok)
+		return wr;
+	wr = write_response(ID, ext_push.m_udata, ext_push.m_offset);
+	if (wr != http_status::ok)
+		return wr;
+	return write_response(ID, "\r\n0\r\n\r\n", 7);
 }
 
-BOOL MhEmsmdbContext::notification_response() const try
+http_status MhEmsmdbContext::notification_response() const try
 {
 	auto current_time = tp_now();
 	auto rs = commonHeader("NotificationWait", request_id, client_info,
 	          session_string, current_time) +
 	          "Transfer-Encoding: chunked\r\n\r\n";
-	return write_response(ID, rs.c_str(), rs.size()) &&
-	       write_response(ID, "c\r\nPROCESSING\r\n\r\n", 17) ? TRUE : false;
+	auto wr = write_response(ID, rs.c_str(), rs.size());
+	if (wr != http_status::ok)
+		return wr;
+	return write_response(ID, "c\r\nPROCESSING\r\n\r\n", 17);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1145: ENOMEM");
-	return false;
+	return http_status::none;
 }
 
-BOOL MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out) const
+http_status MhEmsmdbContext::notification_response(uint32_t result, uint32_t flags_out) const
 {return ::notification_response(ID, start_time, result, flags_out);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -672,8 +679,9 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 	wait_in.acxh.handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	wait_in.acxh.guid = ctx.session_guid;
 	wait_out.flags_out = ctx.ID;
-	if (!ctx.notification_response())
-		return false;
+	auto wr = ctx.notification_response();
+	if (wr != http_status::ok)
+		return wr;
 	if (asyncemsmdb_interface_async_wait(0, &wait_in, &wait_out) == DISPATCH_PENDING) {
 		notification_ctx& nctx = status[ctx.ID];
 		nctx.pending_status = PENDING_STATUS_WAITING;
@@ -688,23 +696,22 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::wait(MhEmsmdbContext &ctx)
 			return ctx.failure_response(ecServerOOM);
 		}
 		ll_hold.unlock();
-		return TRUE;
+		return http_status::ok;
 	}
-	if (!ctx.notification_response(wait_out.result, wait_out.flags_out))
-		return false;
-	return TRUE;
+	return ctx.notification_response(wait_out.result, wait_out.flags_out);
 }
 
-BOOL MhEmsmdbPlugin::process(int context_id, const void *content, uint64_t length)
+http_status MhEmsmdbPlugin::process(int context_id, const void *content,
+    uint64_t length)
 {
 	ProcRes result;
 	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
 	status[ctx.ID] = {};
-	if (!ctx.auth_info.b_authed)
-		return ctx.unauthed();
+	if (ctx.auth_info.auth_status != http_status::ok)
+		return http_status::unauthorized;
 	if (!ctx.loadHeaders())
-		return false;
+		return http_status::none;
 	if (ctx.request_value[0] == '\0')
 		return ctx.error_responsecode(resp_code::invalid_verb);
 	if (ctx.request_id[0] == '\0' || ctx.client_info[0] == '\0')
@@ -799,8 +806,10 @@ void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 	wakeup_context(context_id);
 }
 
-static BOOL emsmdb_proc(int context_id, const void *content, uint64_t length)
-{ return plugin ? plugin->process(context_id, content, length) : false; }
+static http_status emsmdb_proc(int context_id, const void *content, uint64_t length)
+{
+	return plugin != nullptr ? plugin->process(context_id, content, length) : http_status::none;
+}
 
 static int emsmdb_retr(int context_id)
 { return plugin->retr(context_id); }

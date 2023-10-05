@@ -1,0 +1,25 @@
+#pragma once
+
+enum class http_status {
+	none = 0,
+	ok = 200,
+	not_modified = 304,
+	bad_request = 400,
+	bad_request_CL = -400,
+	unauthorized = 401,
+	forbidden = 403,
+	not_found = 404,
+	method_not_allowed = 405,
+	timeout = 408,
+	uri_too_long = 414,
+	uri_too_long_CL = -414,
+	range_insatisfiable = 416,
+	too_many_ranges = 4162,
+	server_error = 500,
+	not_impl = 501,
+	bad_gateway = 502,
+	service_unavailable = 503,
+	resources_exhausted = 5032,
+	enomem_CL = -5032,
+	gateway_timeout = 504,
+};

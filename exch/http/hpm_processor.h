@@ -4,6 +4,7 @@
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/http.hpp>
 #include <gromox/plugin.hpp>
 
 struct http_context;
@@ -22,10 +23,10 @@ struct HPM_PLUGIN : public gromox::generic_module {
 extern void hpm_processor_init(int context_num, std::vector<std::string> &&names);
 extern int hpm_processor_run();
 extern void hpm_processor_stop();
-extern int hpm_processor_take_request(http_context *);
+extern http_status hpm_processor_take_request(http_context *);
 void hpm_processor_put_context(HTTP_CONTEXT *phttp);
 extern bool hpm_processor_is_in_charge(HTTP_CONTEXT *);
-extern int http_write_request(http_context *);
+extern http_status http_write_request(http_context *);
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);
 int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp);
 BOOL hpm_processor_send(HTTP_CONTEXT *phttp,

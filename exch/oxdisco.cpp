@@ -40,8 +40,8 @@ class OxdiscoPlugin {
 	public:
 	OxdiscoPlugin();
 
-	BOOL proc(int, const void*, uint64_t);
-	BOOL access_ok(int, const char *, const char *);
+	http_status proc(int, const void *, uint64_t);
+	std::pair<unsigned int, std::string> access_ok(int, const char *, const char *);
 	static BOOL preproc(int);
 
 	struct _mysql {
@@ -79,14 +79,14 @@ class OxdiscoPlugin {
 	void loadConfig();
 	static void writeheader(int, int, size_t);
 	static void writeheader_json(int, int, size_t);
-	BOOL die(int, const char *, const char *) const;
-	BOOL resp(int, const char *, const char *, const char *) const;
+	http_status die(int, unsigned int, const char *) const;
+	http_status resp(int, const char *, const char *, const char *) const;
 	int resp_web(tinyxml2::XMLElement *, const char *, const char *, const char *ua) const;
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
-	BOOL resp_json(int, const char *) const;
+	http_status resp_json(int, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
 	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
-	BOOL resp_autocfg(int, const char *) const;
+	http_status resp_autocfg(int, const char *) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
@@ -114,14 +114,15 @@ static constexpr char
 	server_base_dn[] = "/o={}/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn={}@{}",
 	public_folder[] = "Public Folder",
-	public_folder_email[] = "public.folder.root@", /* EXC: PUBS@thedomain */
-	bad_address_code[] = "501",
-	bad_address_msg[] = "Bad Address",
-	invalid_request_code[] = "600",
-	invalid_request_msg[] = "Invalid Request",
-	provider_unavailable_code[] = "601",
-	provider_unavailable_msg[] = "Provider is not available",
-	server_error_code[] = "603",
+	public_folder_email[] = "public.folder.root@"; /* EXC: PUBS@thedomain */
+static unsigned int ok_code = 200, bad_address_code = 501;
+static constexpr char bad_address_msg[] = "Bad Address";
+static unsigned int invalid_request_code = 600;
+static constexpr char invalid_request_msg[] = "Invalid Request";
+static unsigned int provider_unavailable_code = 601;
+static constexpr char provider_unavailable_msg[] = "Provider is not available";
+static unsigned int server_error_code = 603;
+static constexpr char
 	server_error_msg[] = "Server Error",
 	not_supported_protocol[] = "ProtocolNotSupported",
 	not_supported_protocol_message[] = "Protocol: The protocol '{}' is not supported. Supported protocols are: 'ActiveSync,AutodiscoverV1,Ews,Rest,Substrate,SubstrateSearchService,SubstrateNotificationService,OutlookMeetingScheduler,OutlookPay,Actions,Connectors,ConnectorsProcessors,ConnectorsWebhook,NotesClient,OwaPoweredExperience,ToDo,Weve,OutlookLocationsService,OutlookCloudSettingsService,OutlookTailoredExperiences,OwaPoweredExperienceV2,Speedway,SpeechAndLanguagePersonalization,SubstrateSignalService,CompliancePolicyService'.",
@@ -149,8 +150,6 @@ static constexpr char
 				"</Error>"
 			"</Response>"
 		"</Autodiscover>";
-
-static BOOL unauthed(int);
 
 static const std::pair<const char *, const char *> protocol_list[] = {
 	{"Actions", ""}, // outlook.office365.com/actionsb2netcore
@@ -260,38 +259,38 @@ static std::string extract_qparam(const char *qstr, const char *srkey)
  * If @actor has _any_ kind of permission (or a scndstore hint entry),
  * then allow it.
  */
-BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
+std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
+    const char *target, const char *actor)
 {
 	if (m_validate_scndrequest == 0 || strcasecmp(target, actor) == 0 ||
 	    strncasecmp(target, public_folder_email, 19) == 0)
-		return true;
+		return {ok_code, {}};
 	unsigned int auth_user_id = 0, auth_domain_id = 0;
 	mysql.get_user_ids(actor, &auth_user_id, &auth_domain_id, nullptr);
 	std::vector<sql_user> hints;
 	auto err = mysql.scndstore_hints(auth_user_id, hints);
 	if (err != 0) {
 		mlog(LV_ERR, "oxdisco: error retrieving secondary store hints: %s", strerror(err));
-		return die(ctx_id, server_error_code, server_error_msg);
+		return {server_error_code, server_error_msg};
 	}
 	if (std::any_of(hints.begin(), hints.end(),
 	    [&](const sql_user &u) { return strcasecmp(u.username.c_str(), target) == 0; }))
-		return true;
+		return {ok_code, {}};
 	sql_meta_result mres;
 	err = mysql.meta(target, WANTPRIV_METAONLY, mres);
 	if (err != 0) {
 		mlog(LV_ERR, "oxdisco: cannot retrieve usermeta for %s: %s",
 			target, strerror(err));
-		return die(ctx_id, server_error_code, server_error_msg);
+		return {server_error_code, server_error_msg};
 	}
 	uint32_t perm = 0;
 	if (!exmdb.get_mbox_perm(mres.maildir.c_str(), actor, &perm)) {
 		mlog(LV_ERR, "oxdisco: cannot access mailbox of %s to test for permissions", target);
-		return die(ctx_id, server_error_code, server_error_msg);
+		return {server_error_code, server_error_msg};
 	}
 	if (perm != 0)
-		return true;
-	return die(ctx_id, bad_address_code, (bad_address_msg +
-	       " (403 Permission Denied)"s).c_str());
+		return {ok_code, {}};
+	return {bad_address_code, bad_address_msg + " (403 Permission Denied)"s};
 }
 
 /**
@@ -304,19 +303,20 @@ BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
  * @param      content  Request data
  * @param      len      Length of request data
  *
- * @return     TRUE if request was handled, false otherwise
+ * @return http_status::none if left unhandled, http_status::ok if any response sent, or
+ * >=http_status::bad_request to let httpd generate a response
  */
-BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
+http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 {
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	auto req = get_request(ctx_id);
 	size_t l = req->f_request_uri.size();
 	if (l == 0)
-		return false;
+		return http_status::none;
 	auto uri = req->f_request_uri.c_str();
 	if (strncasecmp(uri, "/.well-known/autoconfig/mail/config-v1.1.xml", 44) == 0 && brkp(uri[44])) {
-		if (!auth_info.b_authed)
-			return unauthed(ctx_id);
+		if (auth_info.auth_status != http_status::ok)
+			return http_status::unauthorized;
 		if (uri[44] == '/' || uri[44] == '\0')
 			return resp_autocfg(ctx_id, auth_info.username);
 		auto username = extract_qparam(&uri[45], "emailaddress");
@@ -324,9 +324,8 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	} else if (strncasecmp(uri, "/autodiscover/autodiscover.json", 31) == 0 && brkp(uri[31])) {
 		return resp_json(ctx_id, uri);
 	}
-
-	if (!auth_info.b_authed)
-		return unauthed(ctx_id);
+	if (auth_info.auth_status != http_status::ok)
+		return http_status::unauthorized;
 	XMLDocument doc;
 	if (doc.Parse(static_cast<const char *>(content), len) != XML_SUCCESS)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
@@ -353,8 +352,9 @@ BOOL OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) try
 	auto ars = gtx(*req_node, "AcceptableResponseSchema");
 	if (ars == nullptr)
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
-	if (!access_ok(ctx_id, email, auth_info.username))
-		return false;
+	auto [err_code, reason] = access_ok(ctx_id, email, auth_info.username);
+	if (err_code != ok_code)
+		return die(ctx_id, err_code, reason.c_str());
 	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
 	}
@@ -437,25 +437,6 @@ void OxdiscoPlugin::loadConfig()
 }
 
 /**
- * @brief      Return authentication error
- *
- * @param      ctx_id  Request context identifier
- *
- * @return     TRUE if response was written successfully, false otherwise
- */
-static BOOL unauthed(int ctx_id)
-{
-	static constexpr char content[] =
-		"HTTP/1.1 401 Unauthorized\r\n"
-		"Content-Length: 0\r\n"
-		"Content-Type: text/plain; charset=utf-8\r\n"
-		"Connection: Keep-Alive\r\n"
-		"WWW-Authenticate: Basic realm=\"autodiscover realm\"\r\n"
-		"\r\n";
-	return write_response(ctx_id, content, std::size(content) - 1);
-}
-
-/**
  * @brief      Write basic response header
  *
  * @param      ctx_id          Request context identifier
@@ -492,11 +473,11 @@ void OxdiscoPlugin::writeheader_json(int ctx_id, int code, size_t content_length
  * @brief      Stop processing request and send error message
  *
  * @param      ctx_id          Request context identifier
- * @param      error_code      Error code for the Autodiscover response
+ * @param      error_code      Error code for the Autodiscover response (similar to, but not equal to HTTP status codes)
  * @param      error_msg       Error message for the Autodiscover response
- * @return     BOOL always return false
+ * @return     BOOL the request was handled/a response was sent
  */
-BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code,
+http_status OxdiscoPlugin::die(int ctx_id, unsigned int error_code,
     const char *error_msg) const
 {
 	struct tm timebuf;
@@ -508,8 +489,7 @@ BOOL OxdiscoPlugin::die(int ctx_id, const char *error_code,
 	auto data = fmt::format(error_templ, error_time, server_id, error_code, error_msg);
 	mlog(LV_DEBUG, "[oxdisco] die response: %zu, %s", data.size(), data.c_str());
 	writeheader(ctx_id, 200, data.size());
-	write_response(ctx_id, data.c_str(), data.size());
-	return false;
+	return write_response(ctx_id, data.c_str(), data.size());
 }
 
 /**
@@ -560,7 +540,7 @@ XMLElement *OxdiscoPlugin::add_child(XMLElement *el, const char *tag,
  *
  * @return     BOOL            TRUE if response was successful, false otherwise
  */
-BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
+http_status OxdiscoPlugin::resp(int ctx_id, const char *authuser,
     const char *email, const char *ars) const
 {
 	auto req = get_request(ctx_id);
@@ -581,7 +561,7 @@ BOOL OxdiscoPlugin::resp(int ctx_id, const char *authuser,
 		return die(ctx_id, provider_unavailable_code, provider_unavailable_msg);
 	}
 	if (ret < 0)
-		return die(ctx_id, "503", "Internal Server Error");
+		return die(ctx_id, 503, "Internal Server Error");
 
 	int code = 200;
 	respdoc.InsertEndChild(resproot);
@@ -874,7 +854,7 @@ int OxdiscoPlugin::resp_eas(XMLElement *el, const char *email) const
 	return 0;
 }
 
-BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
+http_status OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 {
 	Json::Value respdoc;
 	bool error = true;
@@ -924,7 +904,7 @@ BOOL OxdiscoPlugin::resp_json(int ctx_id, const char *get_request_uri) const
 	return write_response(ctx_id, response.c_str(), response.size());
 }
 
-BOOL OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
+http_status OxdiscoPlugin::resp_autocfg(int ctx_id, const char *username) const
 {
 	tinyxml2::XMLDocument respdoc;
 	auto decl = respdoc.NewDeclaration();
