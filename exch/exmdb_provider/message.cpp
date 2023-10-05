@@ -2595,7 +2595,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 }
 
 static BOOL message_recipient_blocks_to_list(uint32_t count,
-    RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
+    const RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
 {
 	TARRAY_SET rcpts;
 
@@ -2615,7 +2615,7 @@ static BOOL message_recipient_blocks_to_list(uint32_t count,
 }
 
 static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
-	EXT_RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
+    const EXT_RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
 {
 	TARRAY_SET rcpts;
 	

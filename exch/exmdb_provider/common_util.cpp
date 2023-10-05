@@ -4942,7 +4942,7 @@ BOOL cu_adjust_store_size(sqlite3 *psqlite, bool subtract,
 	return TRUE;
 }
 
-BOOL cu_rcpts_to_list(TARRAY_SET *prcpts, std::vector<std::string> &plist) try
+BOOL cu_rcpts_to_list(const TARRAY_SET *prcpts, std::vector<std::string> &plist) try
 {
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
