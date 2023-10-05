@@ -270,7 +270,7 @@ static int help()
 	fprintf(stderr, "Usage: gromox-mbop [global-options] command [command-args...]\n");
 	fprintf(stderr, "Global options:\n");
 	fprintf(stderr, "\t-u emailaddr/-d directory    Name of/path to mailbox\n");
-	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld purge-datafiles unload vacuum\n");
+	fprintf(stderr, "Commands:\n\tclear-photo clear-profile delmsg emptyfld purge-datafiles recalc-sizes unload vacuum\n");
 	return EXIT_FAILURE;
 }
 
@@ -283,20 +283,54 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static inline uint64_t inul(const uint64_t *v)
+{
+	return v != nullptr ? *v : 0;
+}
+
+static bool recalc_sizes(const char *dir)
+{
+	static constexpr uint32_t tags[] = {
+		PR_MESSAGE_SIZE_EXTENDED, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
+		PR_ASSOC_MESSAGE_SIZE_EXTENDED
+	};
+	static constexpr PROPTAG_ARRAY tags1 = {std::size(tags), deconst(tags)};
+	TPROPVAL_ARRAY vals;
+	auto ok = exmdb_client::get_store_properties(dir, CP_ACP, &tags1, &vals);
+	if (!ok)
+		return false;
+	printf("Old: %zu bytes (%zu normal, %zu FAI)\n",
+		inul(vals.get<uint64_t>(tags[0])),
+		inul(vals.get<uint64_t>(tags[1])),
+		inul(vals.get<uint64_t>(tags[2])));
+	ok = exmdb_client::recalc_store_size(g_storedir, 0);
+	if (!ok)
+		return false;
+	ok = exmdb_client::get_store_properties(g_storedir, CP_ACP, &tags1, &vals);
+	if (!ok)
+		return false;
+	printf("New: %zu bytes (%zu normal, %zu FAI)\n",
+		inul(vals.get<uint64_t>(tags[0])),
+		inul(vals.get<uint64_t>(tags[1])),
+		inul(vals.get<uint64_t>(tags[2])));
+	return true;
+}
+
 static int main(int argc, const char **argv)
 {
 	bool ok = false;
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (strcmp(argv[0], "purge-datafiles") == 0) {
+	if (strcmp(argv[0], "purge-datafiles") == 0)
 		ok = exmdb_client::purge_datafiles(g_storedir);
-	} else if (strcmp(argv[0], "unload") == 0) {
+	else if (strcmp(argv[0], "unload") == 0)
 		ok = exmdb_client::unload_store(g_storedir);
-	} else if (strcmp(argv[0], "vacuum") == 0) {
+	else if (strcmp(argv[0], "vacuum") == 0)
 		ok = exmdb_client::vacuum(g_storedir);
-	} else {
+	else if (strcmp(argv[0], "recalc-sizes") == 0)
+		ok = recalc_sizes(g_storedir);
+	else
 		return -EINVAL;
-	}
 	if (!ok) {
 		fprintf(stderr, "%s: the operation failed\n", argv[0]);
 		return EXIT_FAILURE;

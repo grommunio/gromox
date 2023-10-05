@@ -2232,6 +2232,16 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_autoreply_tsupdate &d)
 	return x.p_str(d.peer);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exreq_recalc_store_size &d)
+{
+	return x.g_uint32(&d.flags);
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
+{
+	return x.p_uint32(d.flags);
+}
+
 #define RQ_WITH_ARGS \
 	E(get_named_propids) \
 	E(get_named_propnames) \
@@ -2352,7 +2362,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_autoreply_tsupdate &d)
 	E(store_eid_to_user) \
 	E(purge_softdelete) \
 	E(autoreply_tsquery) \
-	E(autoreply_tsupdate)
+	E(autoreply_tsupdate) \
+	E(recalc_store_size)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3666,7 +3677,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(notify_new_mail) \
 	E(purge_softdelete) \
 	E(purge_datafiles) \
-	E(autoreply_tsupdate)
+	E(autoreply_tsupdate) \
+	E(recalc_store_size)
 #define RSP_WITH_ARGS \
 	E(get_all_named_propids) \
 	E(get_named_propids) \

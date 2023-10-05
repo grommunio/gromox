@@ -524,3 +524,49 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 	mlog(LV_ERR, "E-2226: ENOMEM");
 	return false;
 }
+
+BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
+{
+	auto db = db_engine_get_db(dir);
+	if (db == nullptr || db->psqlite == nullptr)
+		return false;
+	auto idb = db->psqlite;
+	auto comp = [&](proptag_t tag, const char *wh) {
+		char query[240];
+		gx_snprintf(query, std::size(query), "REPLACE INTO store_properties "
+			"(proptag,propval) VALUES (%u, (SELECT SUM(message_size) "
+			"FROM messages WHERE %s))",
+			tag, wh);
+		gx_sql_exec(idb, query);
+	};
+#ifdef EXC
+	/*
+	 * In EXC2019, softdeleting an item decreases PR_MESSAGE_SIZE_EXTENDED,
+	 * restoring it (or other forms of creation) re-increases it.
+	 *
+	 * This means a user can fill up the disk with endless softdelete items.
+	 */
+	comp(PR_MESSAGE_SIZE_EXTENDED, "is_deleted=0");
+	comp(PR_NORMAL_MESSAGE_SIZE_EXTENDED, "is_deleted=0 AND is_associated=0");
+	comp(PR_ASSOC_MESSAGE_SIZE_EXTENDED, "is_deleted=0 AND is_associated=1");
+	comp(PR_DELETED_MESSAGE_SIZE_EXTENDED, "is_deleted=1");
+	comp(PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED, "is_deleted=1 AND is_associated=0");
+	comp(PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED, "is_deleted=1 AND is_associated=1");
+#else
+	/* Gromox tracks/reports actual use that is controllable by the user (GXL-407). */
+	comp(PR_MESSAGE_SIZE_EXTENDED, "1");
+	comp(PR_NORMAL_MESSAGE_SIZE_EXTENDED, "is_associated=0");
+	comp(PR_ASSOC_MESSAGE_SIZE_EXTENDED, "is_associated=1");
+	char query[240];
+	snprintf(query, std::size(query), "DELETE FROM store_properties WHERE proptag IN (%u,%u,%u)",
+	         PR_DELETED_MESSAGE_SIZE_EXTENDED,
+	         PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED,
+	         PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED);
+	gx_sql_exec(idb, query);
+#endif
+	/*
+	 * Currently folder sizes are calculated on-the-fly, but perhaps we
+	 * should keep a rolling number for folders too?
+	 */
+	return TRUE;
+}

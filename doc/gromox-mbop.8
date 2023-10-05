@@ -27,6 +27,8 @@ purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
 purge\-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
+recalc\-sizes: recalculate store size
+.IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
 vacuum: issue the "vacuum" RPC for a mailbox
@@ -102,6 +104,8 @@ recognized (short and long forms): s/sec/second(s), min/minute(s), h/hour(s),
 d/day(s), week(s), month(s), y/year(s).
 .br
 Default: \fI0\fP
+.SH recalc\-sizes
+Recalculates the store size.
 .SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to

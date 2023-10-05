@@ -134,3 +134,4 @@ EXMIDL(purge_softdelete, (const char *dir, const char *username, uint64_t folder
 EXMIDL(purge_datafiles, (const char *dir))
 EXMIDL(autoreply_tsquery, (const char *dir, const char *peer, uint64_t window, IDLOUT uint64_t *tdiff))
 EXMIDL(autoreply_tsupdate, (const char *dir, const char *peer))
+EXMIDL(recalc_store_size, (const char *dir, uint32_t flags))
