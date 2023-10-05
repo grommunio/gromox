@@ -2638,19 +2638,12 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
     uint32_t action_flavor, BOOL b_extended, uint32_t count, void *pblock)
 {
 	int offset;
-	const char *pdomain;
 	char tmp_path[256];
 	struct tm time_buff;
 	char mid_string[128];
 	struct stat node_stat;
 	char tmp_buff[64*1024];
 	MESSAGE_CONTENT *pmsgctnt;
-	
-	pdomain = strchr(rp.ev_to, '@');
-	if (pdomain != nullptr)
-		pdomain ++;
-	else
-		pdomain = "system.mail";
 
 	std::vector<std::string> rcpt_list;
 	if (!b_extended) {
