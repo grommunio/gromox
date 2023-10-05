@@ -2405,6 +2405,35 @@ static BOOL message_get_propname(uint16_t propid,
 	return TRUE;
 }
 
+static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
+    std::vector<std::string> &list) try
+{
+	auto str = props.get<const char>(PR_SMTP_ADDRESS);
+	if (str != nullptr) {
+		list.emplace_back(str);
+		return true;
+	}
+	str = props.get<const char>(PR_ADDRTYPE);
+	if (strcasecmp(str, "SMTP") == 0) {
+		str = props.get<const char>(PR_EMAIL_ADDRESS);
+		if (str != nullptr) {
+			list.emplace_back(str);
+			return true;
+		}
+	}
+	auto entryid = props.get<const BINARY>(PR_ENTRYID);
+	if (entryid == nullptr)
+		return false;
+	char ua[UADDR_SIZE]{};
+	if (!common_util_entryid_to_username(entryid, ua, std::size(ua)))
+		return false;
+	list.emplace_back(ua);
+	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2036: ENOMEM");
+	return false;
+}
+
 static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	uint32_t action_flavor, uint32_t template_message_id,
 	GUID template_guid, BOOL *pb_result)
@@ -2537,8 +2566,12 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	const char *pvalue2 = strchr(rp.ev_from, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	std::vector<std::string> rcpt_list;
-	if (!cu_rcpts_to_list(pmsgctnt->children.prcpts, rcpt_list))
-		return FALSE;
+	for (unsigned int i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
+		const auto &r = *pmsgctnt->children.prcpts->pparray[i];
+		TPROPVAL_ARRAY pv = {r.count, r.ppropval};
+		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
+			return false;
+	}
 	auto ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1188: ems_send_mail: %s", mapi_strerror(ret));
@@ -2594,48 +2627,21 @@ static ec_error_t message_bounce_message(const char *from_address,
 	return ecSuccess;
 }
 
-static BOOL message_recipient_blocks_to_list(uint32_t count,
-    const RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
+template<typename T> static bool msg_rcpt_blocks_to_list(const T &fwd,
+    std::vector<std::string> &rcpt_list)
 {
-	TARRAY_SET rcpts;
-
-	prcpt_list.clear();
-	rcpts.count = count;
-	rcpts.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
-	if (rcpts.pparray == nullptr)
-		return FALSE;
-	for (size_t i = 0; i < count; ++i) {
-		rcpts.pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
-		if (rcpts.pparray[i] == nullptr)
-			return FALSE;
-		rcpts.pparray[i]->count = pblock[i].count;
-		rcpts.pparray[i]->ppropval = pblock[i].ppropval;
+	for (size_t i = 0; i < fwd.count; ++i) {
+		TPROPVAL_ARRAY pv;
+		pv.count = fwd.pblock[i].count;
+		pv.ppropval = fwd.pblock[i].ppropval;
+		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
+			return false;
 	}
-	return cu_rcpts_to_list(&rcpts, prcpt_list);
-}
-
-static BOOL message_ext_recipient_blocks_to_list(uint32_t count,
-    const EXT_RECIPIENT_BLOCK *pblock, std::vector<std::string> &prcpt_list)
-{
-	TARRAY_SET rcpts;
-	
-	prcpt_list.clear();
-	rcpts.count = count;
-	rcpts.pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
-	if (rcpts.pparray == nullptr)
-		return FALSE;
-	for (size_t i = 0; i < count; ++i) {
-		rcpts.pparray[i] = cu_alloc<TPROPVAL_ARRAY>();
-		if (rcpts.pparray[i] == nullptr)
-			return FALSE;
-		rcpts.pparray[i]->count = pblock[i].count;
-		rcpts.pparray[i]->ppropval = pblock[i].ppropval;
-	}
-	return cu_rcpts_to_list(&rcpts, prcpt_list);
+	return true;
 }
 
 static ec_error_t message_forward_message(const rulexec_in &rp,
-    uint32_t action_flavor, BOOL b_extended, uint32_t count, void *pblock)
+    uint32_t action_flavor, std::vector<std::string> &&rcpt_list)
 {
 	int offset;
 	char tmp_path[256];
@@ -2645,16 +2651,6 @@ static ec_error_t message_forward_message(const rulexec_in &rp,
 	char tmp_buff[64*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 
-	std::vector<std::string> rcpt_list;
-	if (!b_extended) {
-		if (!message_recipient_blocks_to_list(count,
-		    static_cast<RECIPIENT_BLOCK *>(pblock), rcpt_list))
-			return ecError;
-	} else {
-		if (!message_ext_recipient_blocks_to_list(count,
-		    static_cast<EXT_RECIPIENT_BLOCK *>(pblock), rcpt_list))
-			return ecError;
-	}
 	std::unique_ptr<char[], stdlib_delete> pbuff;
 	MAIL imail;
 	if (rp.digest.has_value()) {
@@ -3021,8 +3017,10 @@ static ec_error_t op_forward(const rulexec_in &rp, seen_list &seen,
 			block.type, act_idx, rule.provider.c_str(), seen);
 		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
-	return message_forward_message(rp, block.flavor, false, pfwddlgt->count,
-	       pfwddlgt->pblock);
+	std::vector<std::string> rcpt_list;
+	if (!msg_rcpt_blocks_to_list(*pfwddlgt, rcpt_list))
+		return ecError;
+	return message_forward_message(rp, block.flavor, std::move(rcpt_list));
 }
 
 static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
@@ -3086,8 +3084,7 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &fake_true);
 
 	std::vector<std::string> rcpt_list;
-	if (!message_recipient_blocks_to_list(pfwddlgt->count,
-	    pfwddlgt->pblock, rcpt_list))
+	if (!msg_rcpt_blocks_to_list(*pfwddlgt, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
 	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
@@ -3410,8 +3407,7 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &fake_true);
 
 	std::vector<std::string> rcpt_list;
-	if (!message_ext_recipient_blocks_to_list(pextfwddlgt->count,
-	    pextfwddlgt->pblock, rcpt_list))
+	if (!msg_rcpt_blocks_to_list(*pextfwddlgt, rcpt_list))
 		return ecError;
 	char mid_string1[128], tmp_path1[256];
 	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
@@ -3474,8 +3470,10 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 			return message_disable_rule(rp.sqlite, TRUE, rule.id);
-		return message_forward_message(rp, block.flavor, TRUE,
-		       pextfwddlgt->count, pextfwddlgt->pblock);
+		std::vector<std::string> rcpt_list;
+		if (!msg_rcpt_blocks_to_list(*pextfwddlgt, rcpt_list))
+			return ecError;
+		return message_forward_message(rp, block.flavor, std::move(rcpt_list));
 	}
 	case OP_DELEGATE:
 		return opx_delegate(rp, rule, block);

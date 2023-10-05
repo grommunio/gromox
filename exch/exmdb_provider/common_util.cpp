@@ -4942,39 +4942,6 @@ BOOL cu_adjust_store_size(sqlite3 *psqlite, bool subtract,
 	return TRUE;
 }
 
-BOOL cu_rcpts_to_list(const TARRAY_SET *prcpts, std::vector<std::string> &plist) try
-{
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-		if (str != nullptr) {
-			plist.emplace_back(str);
-			continue;
-		}
-		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
-		if (addrtype == nullptr) {
- CONVERT_ENTRYID:
-			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
-			if (entryid == nullptr)
-				return FALSE;
-			char ua[UADDR_SIZE];
-			if (!common_util_entryid_to_username(entryid, ua, UADDR_SIZE))
-				return FALSE;
-			plist.emplace_back(ua);
-		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
-			if (str == nullptr)
-				goto CONVERT_ENTRYID;
-			plist.emplace_back(str);
-		} else {
-			goto CONVERT_ENTRYID;
-		}
-	}
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-2036: ENOMEM");
-	return false;
-}
-
 BINARY *cu_xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;

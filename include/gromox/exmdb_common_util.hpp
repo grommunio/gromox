@@ -161,7 +161,6 @@ BOOL common_util_check_folder_id(sqlite3 *psqlite,
 BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);
 extern BOOL cu_adjust_store_size(sqlite3 *psqlite, bool sub, uint64_t normal_size, uint64_t fai_size);
-extern BOOL cu_rcpts_to_list(const TARRAY_SET *, std::vector<std::string> &);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
