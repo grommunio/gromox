@@ -31,6 +31,7 @@
 
 using namespace gromox;
 
+bool g_rfc9051_enable;
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
@@ -75,6 +76,7 @@ static constexpr cfg_directive imap_cfg_defaults[] = {
 	{"imap_listen_tls_port", "0"},
 	{"imap_log_file", "-"},
 	{"imap_log_level", "4" /* LV_NOTICE */},
+	{"imap_rfc9051", "1", CFG_BOOL},
 	{"imap_support_starttls", "imap_support_tls", CFG_ALIAS},
 	{"imap_support_tls", "false", CFG_BOOL},
 	{"imap_thread_charge_num", "20", CFG_SIZE, "4"},
@@ -100,6 +102,7 @@ static bool imap_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	}
 	mlog_init(cfg->get_value("imap_log_file"), cfg->get_ll("imap_log_level"));
 	g_imapcmd_debug = cfg->get_ll("imap_cmd_debug");
+	g_rfc9051_enable = cfg->get_ll("imap_rfc9051");
 	return true;
 }
 

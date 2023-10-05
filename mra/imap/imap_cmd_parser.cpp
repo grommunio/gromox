@@ -1534,11 +1534,14 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	auto s_command  = readonly ? "EXAMINE" : "SELECT";
 	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 		"* OK [UIDVALIDITY %llu] UIDs valid\r\n"
-		"* OK [UIDNEXT %d] predicted next UID\r\n"
-		"* LIST () \"/\" %s\r\n"
+		"* OK [UIDNEXT %d] predicted next UID\r\n",
+		LLU{uidvalid}, uidnext);
+	if (g_rfc9051_enable)
+		string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
+			"* LIST () \"/\" %s\r\n", quote_encode(temp_name).c_str());
+	string_length += gx_snprintf(&buff[string_length], std::size(buff) - string_length,
 		"%s OK [%s] %s completed\r\n",
-		LLU{uidvalid}, uidnext, quote_encode(temp_name).c_str(), argv[0],
-		s_readonly, s_command);
+		argv[0], s_readonly, s_command);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {

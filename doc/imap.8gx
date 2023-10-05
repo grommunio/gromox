@@ -159,6 +159,11 @@ Filesystem path to the key file needed to unlock the TLS certificate.
 .br
 Default: (unset)
 .TP
+\fBimap_rfc9051\fP
+Enable RFC 9051 (IMAP 4.2) related logic and protocol elements.
+.br
+Default: \fIyes\fP
+.TP
 \fBimap_support_tls\fP
 This flag controls the offering of TLS modes. This affects both the implicit TLS
 port as well as the advertisement of the STARTTLS extension and availability of
