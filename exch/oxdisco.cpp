@@ -279,7 +279,8 @@ BOOL OxdiscoPlugin::access_ok(int ctx_id, const char *target, const char *actor)
 	sql_meta_result mres;
 	err = mysql.meta(target, WANTPRIV_METAONLY, mres);
 	if (err != 0) {
-		mlog(LV_ERR, "oxdisco: cannot retrieve usermeta for %s", strerror(err));
+		mlog(LV_ERR, "oxdisco: cannot retrieve usermeta for %s: %s",
+			target, strerror(err));
 		return die(ctx_id, server_error_code, server_error_msg);
 	}
 	uint32_t perm = 0;
