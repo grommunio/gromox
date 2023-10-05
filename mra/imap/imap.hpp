@@ -119,6 +119,7 @@ struct imap_context final : public schedule_context {
 	STREAM stream; /* stream for writing to imap client */
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{};
+	bool synchronizing_literal = true;
 };
 using IMAP_CONTEXT = imap_context;
 

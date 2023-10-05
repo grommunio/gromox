@@ -1,3 +1,12 @@
+Development 2.14.3
+==================
+
+Fixes:
+
+* imap: do not emit continuation request on LITERAL+
+  (now also for large literals >64K)
+
+
 Gromox 2.14 (2023-10-04)
 ========================
 

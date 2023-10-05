@@ -488,9 +488,9 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 		ctx.literal_ptr = &endbr[1]; /* skip over brace */
 		char *end = nullptr;
 		pcontext->literal_len = strtoul(&openbr[1], &end, 10);
-		bool synchronizing_literal = true;
+		pcontext->synchronizing_literal = true;
 		if (*end == '+' || (*end == '-' && pcontext->literal_len <= 4096)) {
-			synchronizing_literal = false;
+			pcontext->synchronizing_literal = false;
 			++end;
 		}
 		if (end != endbr) {
@@ -520,10 +520,10 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 
 			/* IMAP_CODE_2160003: + ready for additional command text */
 			size_t string_length = 0;
-			if (synchronizing_literal) {
-				auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
-				pcontext->connection.write(imap_reply_str, string_length);
-			}
+			if (!pcontext->synchronizing_literal)
+				return tproc_status::literal_checking;
+			auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
+			pcontext->connection.write(imap_reply_str, string_length);
 			return tproc_status::literal_checking;
 		}
 		memcpy(&ctx.command_buffer[ctx.command_len],
@@ -552,6 +552,8 @@ static tproc_status ps_literal_processing(imap_context *pcontext)
 				pcontext->sched_stat = isched_stat::appending;
 				pcontext->read_offset = 0;
 				pcontext->command_len = 0;
+				if (!pcontext->synchronizing_literal)
+					return tproc_status::cont;
 				/* IMAP_CODE_2160003 + Ready for additional command text */
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1603, 1, &string_length);
