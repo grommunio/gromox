@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <sqlite3.h>
+#include <unistd.h>
 #include <gromox/database.h>
 #include <gromox/util.hpp>
 
@@ -40,7 +41,7 @@ static std::mutex active_xa_lock;
 xtransaction::~xtransaction()
 {
 	if (m_db != nullptr) {
-		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+		gx_sql_exec(m_db, "ROLLBACK");
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(m_db);
 	}
@@ -50,7 +51,24 @@ int xtransaction::commit()
 {
 	if (m_db == nullptr)
 		return SQLITE_OK;
-	auto ret = sqlite3_exec(m_db, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
+	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
+	if (ret == SQLITE_BUSY)
+		mlog(LV_NOTICE, "Something external has a query running "
+			"(stop doing that!) on this sqlite db that blocks us "
+			"from writing the changes amassed in a transaction.");
+	size_t count = 10;
+	while (ret == SQLITE_BUSY && count-- > 0) {
+		sleep(1);
+		ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
+	}
+	if (ret == SQLITE_BUSY)
+		/*
+		 * As most callers have nothing else to do, they themselves
+		 * return from their frame, triggering ~xtransaction and a
+		 * rollback.
+		 */
+		return ret;
+
 	{
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(m_db);
@@ -83,9 +101,9 @@ int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
 		;
 	else
-		mlog(LV_ERR, "sqlite3_exec(%s) \"%s\": %s",
+		mlog(LV_ERR, "sqlite3_exec(%s) \"%s\": %s (%d)",
 			znul(sqlite3_db_filename(db, nullptr)), query,
-		        estr != nullptr ? estr : sqlite3_errstr(ret));
+		        estr != nullptr ? estr : sqlite3_errstr(ret), ret);
 	sqlite3_free(estr);
 	return ret;
 }
@@ -100,8 +118,8 @@ int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 	auto exp = sqlite3_expanded_sql(stm);
 	auto db  = sqlite3_db_handle(stm);
 	auto fn  = db != nullptr ? sqlite3_db_filename(db, nullptr) : nullptr;
-	mlog(LV_ERR, "sqlite3_step(%s) \"%s\": %s", znul(fn), exp != nullptr ?
-		exp : sqlite3_sql(stm), sqlite3_errstr(ret));
+	mlog(LV_ERR, "sqlite3_step(%s) \"%s\": %s (%d)", znul(fn), exp != nullptr ?
+		exp : sqlite3_sql(stm), sqlite3_errstr(ret), ret);
 	sqlite3_free(exp);
 	return ret;
 }
