@@ -984,7 +984,10 @@ static ssize_t htparse_readsock(HTTP_CONTEXT *pcontext, const char *tag,
 			if (HXio_fullwrite(STDERR_FILENO, pbuff, actual_read) < 0)
 				/* ignore */;
 		} else {
-			HX_hexdump(stderr, pbuff, actual_read);
+			fflush(stderr);
+			if (HXio_fullwrite(STDERR_FILENO, pbuff, pfx) < 0)
+				/* ignore */;
+			HX_hexdump(stderr, &static_cast<const char *>(pbuff)[pfx], actual_read - pfx);
 		}
 		fprintf(stderr, "\n<<-%s\n", tag);
 	}
