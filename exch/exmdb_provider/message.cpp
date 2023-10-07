@@ -561,9 +561,9 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		}
 		del_count ++;
 		if (is_assoc)
-			normal_size += obj_size;
-		else
 			fai_size += obj_size;
+		else
+			normal_size += obj_size;
 		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::del_msg,
 			parent_fid, tmp_val, 0);
 		if (folder_type == FOLDER_SEARCH)
