@@ -117,8 +117,13 @@ $LinuxUser = "root"
 # The $LinuxUser password - or use certificate based authentication
 $LinuxUserPWD = "Secret_root_Password"
 
+# Import only these mailboxes, an array of mail addresses, $IgnoreMboxes will be honored
+# To import all mailboxes leave empty, to import only some mailboxes, populate $ImportMboxes
+#[string] $ImportMboxes = 'testi1@example.com','testi2@example.com'
+[string] $ImportMboxes = ''
+
 # Ignore these mailboxes, an array of mail addresses
-[string] $IgnoreMboxes = 'test1@example.com','test2@example.com'
+[string] $IgnoreMboxes = 'testx1@example.com','testx2@example.com'
 
 # Delete .pst files after import to save space.
 $DeletePST = $true
@@ -314,12 +319,21 @@ function Test-Exchange
 # The Main code
 #
 # Do we use an old PowerShell == Version 2.0?
+#
 $PowerShellOld = ($PSVersionTable.PSVersion.Major -eq 2)
 
 # This construct works only in main. PS v2.0 does not provide $PSScriptRoot.
 #
 if (!$PSScriptRoot) {
 	$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+}
+
+# Test if $WinSharedFolder is a valide path
+#
+if (!( $(Try { Test-Path $WinSharedFolder.trim() } Catch { $false }) )) {  #Returns $false if $null, "" or " "
+	Write-Host ""
+	Write-Host "'$WinSharedFolder' is not a valide path, please update variable `$WinSharedFolder and try again." -fore red
+	exit 1
 }
 
 # Initialize variables for statistics
@@ -357,6 +371,11 @@ if ($OnlyCreateGrommunioMailbox ) {
 	$CreateGrommunioMailbox = $true
 }
 
+# Remove all spaces before and after the mail address lists
+#
+$ImportMboxes = $ImportMboxes.trim()
+$IgnoreMboxes = $IgnoreMboxes.trim()
+
 # Document settings in log
 #
 Write-MLog "Settings" none
@@ -364,6 +383,7 @@ Write-MLog "`$GrommunioServer ...........: $GrommunioServer" none
 Write-MLog "`$WinSharedFolder ...........: $WinSharedFolder" none
 Write-MLog "`$LinuxSharedFolder .........: $LinuxSharedFolder" none
 Write-MLog "`$LinuxUser .................: $LinuxUser" none
+Write-MLog "`$ImportMboxes ..............: $ImportMboxes" none
 Write-MLog "`$IgnoreMboxes ..............: $IgnoreMboxes" none
 Write-MLog "`$DeletePST .................: $DeletePST" none
 Write-MLog "`$WaitAfterImport ...........: $WaitAfterImport" none
@@ -397,12 +417,25 @@ $SkipImportCreateError = $false
 #
 foreach ($Mailbox in (Get-Mailbox)) {
 	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString()
+
+	if ($ImportMboxes.length -gt 5) {
+		# Use $ImportMboxes only if it contains a minimum of one mail address
+		if ($ImportMboxes.contains($MigMBox)) {
+			Write-MLog "Mailbox: $MigMBox found in `$ImportMboxes list." green
+		} else {
+			$MailboxesSkipped++
+			$MailboxesTotal++
+			Write-MLog "Ignoring mailbox: $MigMBox, mailbox not in `$ImportMboxes list." yellow
+			continue
+		} # if ($ImportMboxes.contains($MigMBox))
+	} # if ($ImportMboxes.length -gt 5)
+
 	if ($IgnoreMboxes.contains($MigMBox)) {
 		$MailboxesSkipped++
 		$MailboxesTotal++
-		Write-MLog "Ignoring mailbox: $MigMBox" yellow
+		Write-MLog "Ignoring mailbox: $MigMBox, found mailbox in `$IgnoreMboxes list." yellow
 		continue
-	}
+	} # if ($IgnoreMboxes.contains($MigMBox))
 	Write-MLog "" white
 	# Clean up before exporting a mailbox
 	# Remove all MailboxExportRequest, to make check for "Completed" more robust
