@@ -37,7 +37,6 @@ enum {
 };
 
 struct MAIL;
-struct MIME_POOL;
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(get_username_from_id)
 E(check_mlist_include)
@@ -54,7 +53,6 @@ E(get_user_displayname)
 E(get_user_lang)
 #undef E
 extern ec_error_t (*ems_send_mail)(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
-extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();
 extern const GUID *(*common_util_get_handle)();
 
 extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
@@ -163,7 +161,6 @@ BOOL common_util_check_folder_id(sqlite3 *psqlite,
 BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);
 extern BOOL cu_adjust_store_size(sqlite3 *psqlite, bool sub, uint64_t normal_size, uint64_t fai_size);
-extern BOOL cu_rcpts_to_list(TARRAY_SET *, std::vector<std::string> &);
 extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,

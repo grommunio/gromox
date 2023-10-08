@@ -92,7 +92,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
-	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
 	{"zarafa_threads_num", "zcore_threads_num", CFG_ALIAS},
 	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
 	{"zcore_log_file", "-"},
@@ -189,9 +188,6 @@ int main(int argc, const char **argv) try
 	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval);
 	auto cl_5 = make_scope_exit(ab_tree_stop);
 
-	int mime_num = pconfig->get_ll("zarafa_mime_number");
-	mlog(LV_INFO, "system: mime number is %d", mime_num);
-	
 	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
 	mlog(LV_INFO, "system: maximum rcpt number is %lld", max_rcpt);
 	
@@ -211,7 +207,7 @@ int main(int argc, const char **argv) try
 	       g_config_file->get_value("smtp_server_ip"), smtp_port);
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),
-		g_config_file->get_value("default_charset"), mime_num,
+		g_config_file->get_value("default_charset"),
 		max_rcpt, max_mail, max_length, max_rule_len,
 		g_config_file->get_value("smtp_server_ip"), smtp_port,
 		g_config_file->get_value("submit_command"));

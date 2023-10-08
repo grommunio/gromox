@@ -19,7 +19,6 @@ enum class oxcmail_body {
 struct ical;
 struct message_content;
 using MESSAGE_CONTENT = message_content;
-struct MIME_POOL;
 struct vcard;
 
 namespace gromox {
@@ -39,7 +38,7 @@ extern GX_EXPORT BOOL oxcical_export(const MESSAGE_CONTENT *, ical &, EXT_BUFFER
 
 extern BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_USERNAME);
 extern MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *timezone, const MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS);
-extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, BOOL tnef, enum oxcmail_body, std::shared_ptr<MIME_POOL>, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
+extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, BOOL tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT enum oxcmail_body get_override_format(const MESSAGE_CONTENT &);
 extern GX_EXPORT BOOL oxcmail_entryid_to_username(const BINARY *, EXT_BUFFER_ALLOC, char *, size_t);

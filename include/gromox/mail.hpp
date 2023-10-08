@@ -12,15 +12,8 @@
 
 using MAIL_MIME_ENUM = void (*)(const MIME *, void*);
 
-struct MIME_POOL;
 struct GX_EXPORT MAIL {
-	/*
-	 * Default-construction is only allowed for simplifying initialization.
-	 * When used, you must move-assign a new MAIL obj with proper pool ptr
-	 * when actually using a MAIL object.
-	 */
 	MAIL() = default;
-	MAIL(std::shared_ptr<MIME_POOL>);
 	MAIL(MAIL &&) = delete;
 	~MAIL();
 	MAIL &operator=(MAIL &&);
@@ -30,9 +23,6 @@ struct GX_EXPORT MAIL {
 	bool serialize(STREAM *) const;
 	bool emit(MIME::write_func, void *) const;
 	bool to_file(int fd) const;
-	bool to_tls(SSL *) const;
-	bool check_dot() const;
-	bool transfer_dot(MAIL *dst, bool add_dot = false);
 	ssize_t get_length() const;
 	MIME *add_head();
 	MIME *get_head();
@@ -45,6 +35,5 @@ struct GX_EXPORT MAIL {
 	bool set_header(const char *hdr, const char *val);
 
 	SIMPLE_TREE tree{};
-	std::shared_ptr<MIME_POOL> pmime_pool;
 	char *buffer = nullptr;
 };

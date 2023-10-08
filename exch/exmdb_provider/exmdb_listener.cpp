@@ -49,8 +49,7 @@ static void *mdpls_thrwork(void *param)
 	    common_util_get_homedir == nullptr ||
 		NULL == common_util_get_id_from_username ||
 		NULL == common_util_get_domain_ids ||
-	    ems_send_mail == nullptr ||
-	    common_util_get_mime_pool == nullptr) {
+	    ems_send_mail == nullptr) {
 		if (g_notify_stop)
 			break;
 		sleep(1);	

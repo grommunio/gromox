@@ -44,7 +44,7 @@ extern void resource_stop();
 extern int system_services_run();
 extern void system_services_stop();
 
-extern void transporter_init(const char *path, std::vector<std::string> &&names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, unsigned int mime_ratio, bool ignerr);
+extern void transporter_init(const char *path, std::vector<std::string> &&names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, bool ignerr);
 extern int transporter_run();
 extern void transporter_stop();
 extern void transporter_wakeup_one_thread();

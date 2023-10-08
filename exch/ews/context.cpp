@@ -507,7 +507,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
 		auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
 		                   {*name = getPropertyName(dir, id); return TRUE;};
-		if(!oxcmail_export(content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail,
+		if (!oxcmail_export(content, false, oxcmail_body::plain_and_html, &mail,
 		                   alloc, getPropIds, getPropName))
 			throw EWSError::ItemCorrupt(E3072);
 		auto mailLen = mail.get_length();
@@ -921,7 +921,8 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 		                  {*ids = getNamedPropIds(dir, *names); return TRUE;};
 	auto getPropName = [&](uint16_t id, PROPERTY_NAME** name)
 					   {*name = getPropertyName(dir, id); return TRUE;};
-	if(!oxcmail_export(&content, false, oxcmail_body::plain_and_html, plugin.mimePool, &mail, alloc, getPropIds,getPropName))
+	if (!oxcmail_export(&content, false, oxcmail_body::plain_and_html,
+	    &mail, alloc, getPropIds,getPropName))
 		throw EWSError::ItemCorrupt(E3116);
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
@@ -1064,7 +1065,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 {
 	if(item.MimeContent) {
 		// Convert MimeContent to MESSAGE_CONTENT
-		MAIL mail(plugin.mimePool);
+		MAIL mail;
 		if(!mail.load_from_str_move(reinterpret_cast<char*>(item.MimeContent->data()), item.MimeContent->size()))
 			throw EWSError::ItemCorrupt(E3123);
 		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)

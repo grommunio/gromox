@@ -13,7 +13,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
-#include <gromox/mime_pool.hpp>
+#include <gromox/range_set.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/threads_pool.hpp>
@@ -138,7 +138,6 @@ extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
 extern void imap_parser_remove_select(IMAP_CONTEXT *);
 extern  void imap_parser_safe_write(IMAP_CONTEXT *, const void *pbuff, size_t count);
-extern std::shared_ptr<MIME_POOL> imap_parser_get_mpool();
 /* get allocator for mjson mime */
 extern alloc_limiter<MJSON_MIME> *imap_parser_get_jpool();
 extern alloc_limiter<DIR_NODE> *imap_parser_get_dpool();

@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <json/value.h>
-#include <openssl/ssl.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/stream.hpp>
@@ -22,6 +21,11 @@ struct GX_EXPORT MIME {
 	~MIME();
 
 	using write_func = ssize_t (*)(void *, const void *, size_t);
+	static MIME *create() try {
+		return new MIME();
+	} catch (const std::bad_alloc &) {
+		return nullptr;
+	}
 	bool load_from_str_move(MIME *parent, char *in_buf, size_t len);
 	void clear();
 	bool write_content(const char *content, size_t len, enum mime_encoding);
@@ -42,7 +46,6 @@ struct GX_EXPORT MIME {
 	int get_structure_digest(const char *, size_t *, Json::Value &) const;
 	bool serialize(STREAM *) const;
 	bool emit(write_func, void *) const;
-	bool check_dot() const;
 	ssize_t get_length() const;
 	bool get_filename(char *file_name, size_t) const;
 	MIME *get_child();

@@ -82,9 +82,6 @@ Maximum verbosity of logging. 1=crit, 2=error, 3=warn, 4=notice, 5=info, 6=debug
 .br
 Default: \fI4\fP (notice)
 .TP
-\fBmidb_mime_number\fP
-Default: \fI4096\fP
-.TP
 \fBmidb_reload_interval\fP
 The time after a midb.sqlite3 was first loaded that it will be unloaded.
 .br

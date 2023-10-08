@@ -117,9 +117,6 @@ Default: \fI5000\fP
 \fBx500_org_name\fP
 Default: (unspecified)
 .TP
-\fBzarafa_mime_number\fP
-Default: \fI4096\fP
-.TP
 \fBzcore_listen\fP
 The named path for the AF_LOCAL socket that zcore will listen on.
 .br

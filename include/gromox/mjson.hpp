@@ -2,7 +2,6 @@
 #include <memory>
 #include <string>
 #include <json/value.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/util.hpp>
 
@@ -40,7 +39,7 @@ struct GX_EXPORT MJSON {
 	int fetch_structure(const char *charset, BOOL ext, char *buf, int len);
 	int fetch_envelope(const char *charset, char *buf, int len);
 	BOOL rfc822_check();
-	BOOL rfc822_build(std::shared_ptr<MIME_POOL>, const char *storage_path);
+	BOOL rfc822_build(const char *storage_path);
 	BOOL rfc822_get(MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id);
 	int rfc822_fetch(const char *storage_path, const char *charset, BOOL ext, char *buf, int len);
 	int seek_fd(const char *id, int whence);

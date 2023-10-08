@@ -16,7 +16,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/paths.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -321,8 +320,7 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 bool EWSPlugin::logEnabled(const std::string_view& requestName) const
 {return std::binary_search(logFilters.begin(), logFilters.end(), requestName) != invertFilter;}
 
-EWSPlugin::EWSPlugin() :
-	mimePool(MIME_POOL::create(std::clamp(16*get_context_num(), 1024u, 16*1024u), 16, "ews_mime_pool"))
+EWSPlugin::EWSPlugin()
 {
 	loadConfig();
 	cache.run(cache_interval);

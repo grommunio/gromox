@@ -457,7 +457,7 @@ errno_t message_dequeue_save(MESSAGE *pmessage)
 	char *ptr;
 	
 	try {
-		new_file = g_path_save + "/" + std::to_string(pmessage->flush_ID);
+		new_file = g_path_save + "/" + std::to_string(time(nullptr)) + "." + std::to_string(pmessage->flush_ID);
 		old_file = g_path_mess + "/" + std::to_string(pmessage->message_data);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "MDQ-536: ENOMEM");

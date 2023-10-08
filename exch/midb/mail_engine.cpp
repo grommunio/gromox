@@ -40,7 +40,6 @@
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/midb.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
@@ -53,7 +52,6 @@
 #include "exmdb_client.h"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
-#define FILENUM_PER_MIME				8
 #define MAX_DIGLEN						256*1024
 #define RELOAD_INTERVAL					3600
 #define MAX_DB_WAITING_THREADS			5
@@ -155,14 +153,12 @@ unsigned int g_midb_cache_interval, g_midb_reload_interval;
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static BOOL g_wal;
 static BOOL g_async;
-static int g_mime_num;
 static size_t g_table_size;
 static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static char g_org_name[256];
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static char g_default_charset[32];
 static std::mutex g_hash_lock;
@@ -243,7 +239,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 			mlog(LV_ERR, "E-1252: %s: %s", temp_path, strerror(errno));
 			return 0;
 		}
-		MAIL imail(g_mime_pool);
+		MAIL imail;
 		if (!imail.load_from_str_move(slurp_data.get(), slurp_size))
 			return 0;
 		slurp_data.reset();
@@ -1467,7 +1463,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		}
 		MAIL imail;
 		if (!oxcmail_export(pmsgctnt, false, oxcmail_body::plain_and_html,
-		    g_mime_pool, &imail, common_util_alloc,
+		    &imail, common_util_alloc,
 		    common_util_get_propids, common_util_get_propname)) {
 			mlog(LV_ERR, "E-1222: oxcmail_export of msg %s:%llu failed",
 				dir, static_cast<unsigned long long>(message_id));
@@ -2403,7 +2399,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
 
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	Json::Value digest;
@@ -2585,7 +2581,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return errno == ENOMEM ? MIDB_E_NO_MEMORY : MIDB_E_DISK_ERROR;
 	}
 
-	MAIL imail(g_mime_pool);
+	MAIL imail;
 	if (!imail.load_from_str_move(pbuff.get(), slurp_size))
 		return MIDB_E_IMAIL_RETRIEVE;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -4437,7 +4433,7 @@ static void mail_engine_notification_proc(const char *dir,
 
 void mail_engine_init(const char *default_charset, const char *org_name,
     size_t table_size, BOOL b_async, BOOL b_wal,
-    uint64_t mmap_size, int mime_num)
+    uint64_t mmap_size)
 {
 	g_sequence_id = 0;
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
@@ -4446,7 +4442,6 @@ void mail_engine_init(const char *default_charset, const char *org_name,
 	g_wal = b_wal;
 	g_mmap_size = mmap_size;
 	g_table_size = table_size;
-	g_mime_num = mime_num;
 }
 
 int mail_engine_run()
@@ -4461,12 +4456,6 @@ int mail_engine_run()
 		system_services_get_user_ids, system_services_get_username_from_id)) {
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
-	}
-	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME,
-	              "midb_mime_pool (midb.cfg:g_mime_num)");
-	if (NULL == g_mime_pool) {
-		mlog(LV_ERR, "mail_engine: failed to init MIME pool");
-		return -3;
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
 	g_notify_stop = false;
@@ -4514,5 +4503,4 @@ void mail_engine_stop()
 		pthread_join(g_scan_tid, NULL);
 	}
 	g_hash_table.clear();
-	g_mime_pool.reset();
 }

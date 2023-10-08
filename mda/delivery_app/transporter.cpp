@@ -22,7 +22,6 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/hook_common.h>
-#include <gromox/mime_pool.hpp>
 #include <gromox/paths.h>
 #include <gromox/plugin.hpp>
 #include <gromox/scope.hpp>
@@ -30,7 +29,6 @@
 #include <gromox/util.hpp>
 #include "delivery.hpp"
 #define FILENUM_PER_CONTROL		32
-#define FILENUM_PER_MIME		32
 #define MAX_THROWING_NUM		16
 #define SCAN_INTERVAL			1
 #define MAX_TIMES_NOT_SERVED	5
@@ -94,7 +92,7 @@ static char				g_path[256];
 static std::vector<std::string> g_plugin_names;
 static char g_local_path[256], g_remote_path[256];
 static HOOK_FUNCTION g_local_hook, g_remote_hook;
-static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
+static unsigned int g_threads_max, g_threads_min, g_free_num;
 static gromox::atomic_bool g_notify_stop;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
@@ -107,7 +105,6 @@ static std::mutex g_queue_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
-static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<MESSAGE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
@@ -144,11 +141,10 @@ ANTI_LOOP::ANTI_LOOP()
  *		path [in]				plug-ins path
  *		threads_num				threads number to be created
  *		free_num				free contexts number for hooks to throw out
- *		mime_ratio				how many mimes will be allocated per context
  */
 void transporter_init(const char *path, std::vector<std::string> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
-    unsigned int mime_ratio, bool ignerr)
+    bool ignerr)
 {
 	gx_strlcpy(g_path, path, std::size(g_path));
 	g_plugin_names = std::move(names);
@@ -158,7 +154,6 @@ void transporter_init(const char *path, std::vector<std::string> &&names,
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
 	g_free_num = free_num;
-	g_mime_num = mime_ratio * (threads_max + free_num);
 	/* Preallocate so this won't throw down the road */
 	g_free_list.reserve(free_num);
 	g_queue_list.reserve(free_num);
@@ -209,17 +204,6 @@ int transporter_run()
 	for (size_t i = 0; i < g_free_num; ++i) {
 		g_free_list.push_back(&g_free_ptr[i]);
 	}
-
-	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, "transporter_mime_pool");
-	if (NULL == g_mime_pool) {
-		transporter_collect_resource();
-		mlog(LV_ERR, "transporter: failed to init MIME pool");
-        return -4;
-	}
-	for (unsigned int i = 0; i < g_threads_max; ++i)
-		g_data_ptr[i].mctx.mail = MAIL(g_mime_pool);
-	for (size_t i = 0; i < g_free_num; ++i)
-		g_free_ptr[i].mail = MAIL(g_mime_pool);
 
 	for (const auto &i : g_plugin_names) {
 		int ret = transporter_load_library(i.c_str());
@@ -305,7 +289,6 @@ static void transporter_collect_hooks()
  */
 static void transporter_collect_resource()
 {
-	g_mime_pool.reset();
 	g_data_ptr.reset();
 	g_free_ptr.reset();
 	g_circles_ptr.reset();
@@ -334,7 +317,6 @@ void transporter_stop()
 	g_path[0] = '\0';
 	g_threads_min = 0;
 	g_threads_max = 0;
-	g_mime_num = 0;
 	double_list_free(&g_hook_list);
 	double_list_free(&g_lib_list);
 	double_list_free(&g_unloading_list);

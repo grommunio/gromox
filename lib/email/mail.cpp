@@ -11,7 +11,6 @@
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 
@@ -24,20 +23,16 @@ enum {
 };
 
 static bool mail_retrieve_to_mime(MAIL *, MIME *parent, char *begin, char *end);
-static void mail_enum_delete(SIMPLE_TREE_NODE *pnode);
 static bool mail_is_asciipr(const char *astring);
 static void mail_enum_text_mime_charset(const MIME *, void *);
 static void mail_enum_html_charset(const MIME *, void *);
-
-MAIL::MAIL(std::shared_ptr<MIME_POOL> p) : pmime_pool(std::move(p))
-{}
 
 void MAIL::clear()
 {
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
 	if (pnode != nullptr)
-		pmail->tree.destroy_node(pnode, mail_enum_delete);
+		pmail->tree.destroy_node(pnode, [](SIMPLE_TREE_NODE *n) { delete static_cast<MIME *>(n->pdata); });
 	if (NULL != pmail->buffer) {
 		free(pmail->buffer);
 		pmail->buffer = NULL;
@@ -65,19 +60,19 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 	}
 #endif
 	clear();
-	auto pmime = pmail->pmime_pool->get_mime();
+	auto pmime = MIME::create();
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
 	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
-		pmail->pmime_pool->put_mime(pmime);
+		delete pmime;
 		return false;
 	}
 
 	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-		pmail->pmime_pool->put_mime(pmime);
+		delete pmime;
 		return false;
 	}
 	pmail->tree.set_root(&pmime->node);
@@ -90,13 +85,13 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 
 	pmail->clear();
 	/* retrieve as single mail object */
-	pmime = pmail->pmime_pool->get_mime();
+	pmime = MIME::create();
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
 	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
-		pmail->pmime_pool->put_mime(pmime);
+		delete pmime;
 		return false;
 	}
 	pmime->mime_type = mime_type::single;
@@ -132,18 +127,18 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		    ptr[pmime_parent->boundary_len+2] != '\n' &&
 		    ptr[pmime_parent->boundary_len+2] != '-')
 			continue;
-		pmime = pmail->pmime_pool->get_mime();
+		pmime = MIME::create();
 		if (NULL == pmime) {
 			mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 			return false;
 		}
 		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last)) {
-			pmail->pmime_pool->put_mime(pmime);
+			delete pmime;
 			return false;
 		}
 		if (pmime->mime_type == mime_type::none) {
 			mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-			pmail->pmime_pool->put_mime(pmime);
+			delete pmime;
 			return false;
 		}
 		if (pmime_last == nullptr)
@@ -174,18 +169,18 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	if (ptr >= ptr_end)
 		return true;
 	/* some illegal multiple mimes haven't --boundary string-- */
-	pmime = pmail->pmime_pool->get_mime();
+	pmime = MIME::create();
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
 	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last)) {
-		pmail->pmime_pool->put_mime(pmime);
+		delete pmime;
 		return false;
 	}
 	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-		pmail->pmime_pool->put_mime(pmime);
+		delete pmime;
 		return false;
 	}
 	if (pmime_last == nullptr)
@@ -244,39 +239,6 @@ bool MAIL::to_file(int fd) const
 	       reinterpret_cast<void *>(static_cast<intptr_t>(fd)));
 }
 
-bool MAIL::to_tls(SSL *ssl) const
-{
-	auto pmail = this;
-#ifdef _DEBUG_UMTA
-	if (ssl == nullptr)
-		return false;
-#endif
-	auto pnode = pmail->tree.get_root();
-	if (pnode == nullptr)
-		return false;
-	auto f = +[](void *obj, const void *buf, size_t z) -> ssize_t {
-	         	return SSL_write(static_cast<SSL *>(obj), buf, z);
-	         };
-	return static_cast<const MIME *>(pnode->pdata)->emit(f, ssl);
-}
-
-/*
- *	check if dot-stuffing in mail
- *	@param
- *		pmail [in]		indicate the mail object
- *	@return
- *		TRUE			dot-stuffing in mail
- *		FALSE			no dot-stuffing in mail
- */
-bool MAIL::check_dot() const
-{
-	auto pmail = this;
-	auto pnode = pmail->tree.get_root();
-	if (pnode == nullptr)
-		return false;
-	return static_cast<const MIME *>(pnode->pdata)->check_dot();
-}
-
 /*
  *	calculate the mail object length in bytes
  *	@param
@@ -306,7 +268,6 @@ MAIL &MAIL::operator=(MAIL &&o)
 	tree.clear();
 	tree = o.tree;
 	o.tree = {};
-	pmime_pool = o.pmime_pool;
 	buffer = o.buffer;
 	o.buffer = nullptr;
 	return *this;
@@ -324,7 +285,7 @@ MIME *MAIL::add_head()
 	auto pmail = this;
 	if (pmail->tree.get_root() != nullptr)
 		return NULL;
-	auto pmime = pmail->pmime_pool->get_mime();
+	auto pmime = MIME::create();
 	if (pmime == nullptr)
 		return NULL;
 	pmime->clear();
@@ -646,13 +607,13 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
 #endif
 	if (pmime_base->mime_type != mime_type::multiple)
 		return NULL;
-	auto pmime = pmail->pmime_pool->get_mime();
+	auto pmime = MIME::create();
     if (NULL == pmime) {
         return NULL;
     }
 	pmime->clear();
 	if (!pmail->tree.add_child(&pmime_base->node, &pmime->node, opt)) {
-		pmail->pmime_pool->put_mime(pmime);
+		delete pmime;
         return NULL;
     }
     return pmime;
@@ -671,19 +632,6 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param) const
 		auto m = containerof(stn, const MIME, node);
 		enum_func(m, param);
 	});
-}
-
-static void mail_enum_delete(SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return;
-	}
-#endif
-	auto pmime = static_cast<MIME *>(pnode->pdata);
-	pmime->clear();
-	MIME_POOL::put_mime(pmime);
 }
 
 /*
@@ -735,65 +683,3 @@ bool MAIL::dup(MAIL *pmail_dst)
 		return true;
 	}
 }
-
-/*
- *	add or remove dot-stuffing; copies into a clean object
- *	@param
- *		pmail_src [in]			mail source object
- *		pmail_dst [in, out]		mail destination object
- */
-bool MAIL::transfer_dot(MAIL *pmail_dst, bool add_dot)
-{
-	auto pmail_src = this;
-	unsigned int size;
-	char *pbuff;
-	
-#ifdef _DEBUG_UMTA
-	if (pmail_dst == nullptr) {
-		mlog(LV_DEBUG, "NULL pointer in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-#endif
-	pmail_dst->clear();
-	auto mail_len = get_length();
-	if (mail_len < 0)
-		return false;
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
-		"mail_transfer_dot");
-	STREAM tmp_stream(&pallocator);
-	if (!pmail_src->serialize(&tmp_stream))
-		return false;
-	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
-	if (NULL == pbuff) {
-		mlog(LV_DEBUG, "Failed to allocate memory in %s", __PRETTY_FUNCTION__);
-		return false;
-	}
-	
-	size_t offset = 0;
-	size = STREAM_BLOCK_SIZE - 3;
-	while (tmp_stream.copyline(pbuff + offset, &size) != STREAM_COPY_END) {
-		pbuff[offset + size++] = '\r';
-		pbuff[offset + size++] = '\n';
-		if (add_dot) {
-			if (pbuff[offset] == '.') {
-				memmove(&pbuff[offset+1], &pbuff[offset], size);
-				++size;
-			}
-		} else if (pbuff[offset] == '.' && pbuff[offset+1] == '.') {
-			size --;
-			memmove(pbuff + offset, pbuff + offset + 1, size);
-		}
-		offset += size;
-		size = STREAM_BLOCK_SIZE - 3;
-	}
-	
-	tmp_stream.clear();
-	if (!pmail_dst->load_from_str_move(pbuff, offset)) {
-		free(pbuff);
-		return false;
-	} else {
-		pmail_dst->buffer = pbuff;
-		return true;
-	}
-}
-
