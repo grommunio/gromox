@@ -385,8 +385,8 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
  *
  * @param      bin   Binary data. Must not be nullptr.
  */
-sBase64Binary::sBase64Binary(const BINARY* bin)
-{assign(bin->pb, bin->pb+bin->cb);}
+sBase64Binary::sBase64Binary(const BINARY *bin) : std::string(*bin)
+{}
 
 /**
  * @brief     Initilize binary data from tagged propval
@@ -397,8 +397,7 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 {
 	if(PROP_TYPE(tp.proptag) != PT_BINARY)
 		throw DispatchError(E3049);
-	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
-	assign(bin->pb, bin->pb+bin->cb);
+	assign(*static_cast<const BINARY *>(tp.pvalue));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

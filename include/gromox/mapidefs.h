@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <gromox/defs.h>
 
 #define PROP_ID(x) static_cast<uint16_t>((x) >> 16)
@@ -844,6 +845,7 @@ struct BINARY {
 		void *pv;
 	};
 
+	operator std::string_view() const { return std::string_view(pc != nullptr ? pc : "", cb); }
 	int compare(const BINARY &) const;
 	std::string repr(bool verbose = true) const;
 };

@@ -119,8 +119,7 @@ using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAtt
  * Automatically en- and decodes during (de-)serialization, providing direct
  * access to the binary data.
  */
-struct sBase64Binary : public std::vector<uint8_t>
-{
+struct sBase64Binary : public std::string {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
 	sBase64Binary(const BINARY*);

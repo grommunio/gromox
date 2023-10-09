@@ -52,24 +52,6 @@ std::string b64encode(const void* data, size_t len)
 }
 
 /**
- * @brief     Compute Base64 decoded string
- *
- * @param     data    Data to decode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::vector<uint8_t> b64decode(const char* data, size_t len)
-{
-	std::vector<uint8_t> out(len*3/4+1, 0);
-	size_t outlen;
-	if(decode64(data, len, out.data(), out.size(), &outlen))
-		throw DeserializationError(E3033);
-	out.resize(outlen);
-	return out;
-}
-
-/**
  * @brief     Generic deleter struct
  *
  * Provides explicit deleters for classes without destructor.
@@ -140,13 +122,13 @@ sBase64Binary::sBase64Binary(const XMLElement* xml)
 	const char* data = xml->GetText();
 	if(!data)
 		throw DeserializationError(E3034(xml->Name()));
-	std::vector<uint8_t>::operator=(b64decode(data, strlen(data)));
+	assign(base64_decode(data));
 }
 
 /**
  * @brief     Decode Base64 encoded data from XML attribute
  */
-sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64decode(xml->Value(), strlen(xml->Value())))
+sBase64Binary::sBase64Binary(const XMLAttribute *xml) : std::string(base64_decode(xml->Value()))
 {}
 
 /**
@@ -155,7 +137,7 @@ sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64
  * @return    std::string containing base64 encoded data
  */
 std::string sBase64Binary::serialize() const
-{return empty()? std::string() : b64encode(data(), size());}
+{ return empty() ? std::string() : base64_encode(*this); }
 
 /**
  * @brief     Store Base64 encoded data in xml element
@@ -163,7 +145,7 @@ std::string sBase64Binary::serialize() const
  * @param     xml     XML element to store data in
  */
 void sBase64Binary::serialize(XMLElement* xml) const
-{xml->SetText(empty()? "" : b64encode(data(), size()).c_str());}
+{ xml->SetText(empty() ? "" : base64_encode(*this).c_str()); }
 
 /**
  * @brief     Read entry ID from XML attribute
