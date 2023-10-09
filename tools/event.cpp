@@ -431,7 +431,7 @@ using eq_lock_t = std::unique_lock<std::mutex>;
 static void q_id(eq_iter_t eq_node)
 {
 	auto penqueue = &*eq_node;
-	snprintf(penqueue->res_id, std::size(penqueue->res_id), "%s", &penqueue->line[3]);
+	gx_strlcpy(penqueue->res_id, &penqueue->line[3], std::size(penqueue->res_id));
 	penqueue->sk_write("TRUE\r\n");
 }
 
@@ -446,7 +446,7 @@ static int q_listen(eq_iter_t eq_node, std::unique_lock<std::mutex> &eq_hold)
 		penqueue->sk_write("FALSE\r\n");
 		return 0;
 	}
-	snprintf(pdequeue->res_id, std::size(pdequeue->res_id), "%s", &penqueue->line[7]);
+	gx_strlcpy(pdequeue->res_id, &penqueue->line[7], std::size(pdequeue->res_id));
 	pdequeue->fifo = FIFO(FIFO_AVERAGE_LENGTH);
 	std::unique_lock hl_hold(g_host_lock);
 	auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
