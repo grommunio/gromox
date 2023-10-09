@@ -77,7 +77,7 @@ struct ENQUEUE_NODE : public qsock {
 	~ENQUEUE_NODE() { sk_close(); }
 
 	int offset = 0;
-	char res_id[128]{};
+	char res_id[272]{};
 	char buffer[MAX_CMD_LENGTH]{};
 	char line[MAX_CMD_LENGTH]{};
 };
@@ -85,7 +85,7 @@ struct ENQUEUE_NODE : public qsock {
 struct DEQUEUE_NODE : public qsock {
 	~DEQUEUE_NODE();
 
-	char res_id[128]{};
+	char res_id[272]{};
 	FIFO fifo{};
 	std::mutex lock, cond_mutex;
 	std::condition_variable waken_cond;
@@ -93,7 +93,7 @@ struct DEQUEUE_NODE : public qsock {
 
 struct HOST_NODE {
 	DOUBLE_LIST_NODE node{};
-	char res_id[128]{};
+	char res_id[272]{};
 	time_t last_time = 0;
 	std::unordered_map<std::string, time_t> hash;
 	std::vector<std::shared_ptr<DEQUEUE_NODE>> list;
