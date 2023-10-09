@@ -17,6 +17,7 @@ saved_LDFLAGS="$LDFLAGS"
 saved_LIBS="$LIBS"
 AC_LANG_PUSH([C++])
 
+my_CPPFLAGS="-D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64"
 my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 my_LDFLAGS=""
@@ -239,6 +240,7 @@ AS_IF([test "$with_php" != "no"], [
 ])
 AM_CONDITIONAL([HAVE_PHP], [test "$with_php" != no])
 
+AC_SUBST([my_CPPFLAGS])
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
 AC_SUBST([my_LDFLAGS])
