@@ -19,6 +19,7 @@ AC_LANG_PUSH([C++])
 
 my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
+my_LDFLAGS=""
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
 for i in "c++20" "c++2a" "c++17"; do
@@ -240,6 +241,7 @@ AM_CONDITIONAL([HAVE_PHP], [test "$with_php" != no])
 
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
+AC_SUBST([my_LDFLAGS])
 
 AS_IF([test -z "$cxxmode"], [AC_MSG_RESULT([*** No usable -std= argument was detected for this C++ compiler.])])
 AC_LANG_POP([C++])

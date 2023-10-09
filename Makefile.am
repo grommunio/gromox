@@ -2,8 +2,9 @@
 
 ACLOCAL_AMFLAGS = -I build-aux
 AM_CPPFLAGS = -Iinclude -I${top_srcdir}/include ${crypto_CFLAGS} ${iconv_CPPFLAGS} ${HX_CFLAGS} ${jsoncpp_CFLAGS} ${mysql_CFLAGS} ${olecf_CFLAGS} ${pff_CFLAGS} ${sqlite_CFLAGS} ${ssl_CFLAGS} ${xml2_CFLAGS} ${zlib_CFLAGS}
-AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
+AM_CFLAGS   = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
+AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
