@@ -607,7 +607,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	bool b_normal = del_flags & DEL_MESSAGES;
 	bool b_fai    = del_flags & DEL_ASSOCIATED;
 	auto s_normal = b_normal ? "0" : "NULL";
-	auto s_fai    = b_fai ? "0" : "NULL";
+	auto s_fai    = b_fai ? "1" : "NULL";
 	BOOL b_check = true;
 	uint32_t folder_type;
 	char sql_string[256];
