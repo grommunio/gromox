@@ -1,28 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <algorithm>
-#include <cerrno>
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
-#include <dirent.h>
-#include <fcntl.h>
-#include <map>
-#include <memory>
+#include <sqlite3.h>
+#include <sstream>
 #include <string>
-#include <unistd.h>
 #include <utility>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <vmime/contentTypeField.hpp>
+#include <vmime/dateTime.hpp>
+#include <vmime/message.hpp>
+#include <vmime/stringContentHandler.hpp>
+#include <vmime/text.hpp>
+#include <vmime/utility/outputStreamAdapter.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/database.h>
-#include <gromox/defs.h>
-#include <gromox/dsn.hpp>
 #include <gromox/exmdb_common_util.hpp>
-#include <gromox/fileio.h>
-#include <gromox/mail.hpp>
-#include <gromox/mail_func.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
@@ -125,64 +121,59 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 }
 
 BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
-    uint64_t message_id, const char *bounce_type, MAIL *pmail) try
+    uint64_t message_id, const char *bounce_type,
+    vmime::shared_ptr<vmime::message> &pmail) try
 {
-	MIME *pmime;
-	char date_buff[128];
 	std::string subject, content_buff;
 	
 	if (!exmdb_bouncer_make_content(from, rcpt,
 	    psqlite, message_id, bounce_type,
 	    subject, content_buff))
 		return FALSE;
-	auto phead = pmail->add_head();
-	if (phead == nullptr)
-		return FALSE;
-	pmime = phead;
-	pmime->set_content_type("multipart/report");
-	pmime->set_content_param("report-type", "delivery-status");
-	pmime->set_field("From", ("<"s + rcpt + ">").c_str());
-	pmime->set_field("To", ("<"s + from + ">").c_str());
-	pmime->set_field("MIME-Version", "1.0");
-	pmime->set_field("X-Auto-Response-Suppress", "All");
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
-	pmime->set_field("Date", date_buff);
-	pmime->set_field("Subject", subject.c_str());
-	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
-	if (pmime == nullptr)
-		return FALSE;
-	pmime->set_content_type("text/plain");
-	pmime->set_content_param("charset", "utf-8");
-	if (!pmime->write_content(content_buff.c_str(),
-	    content_buff.size(), mime_encoding::automatic))
-		return FALSE;
 
-	DSN dsn;
-	auto pdsn_fields = dsn.get_message_fields();
-	auto mta = "dns;"s + get_host_ID();
+	auto mta    = "dns;"s + get_host_ID();
 	auto t_addr = "rfc822;"s + rcpt;
-	dsn.append_field(pdsn_fields, "Reporting-MTA", mta.c_str());
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
-	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
-	pdsn_fields = dsn.new_rcpt_fields();
-	if (pdsn_fields == nullptr)
-		return FALSE;
-	dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
-	dsn.append_field(pdsn_fields, "Action", "failed");
-	dsn.append_field(pdsn_fields, "Status", "5.0.0");
-	dsn.append_field(pdsn_fields, "Remote-MTA", mta.c_str());
-	
-	content_buff.clear();
-	content_buff.resize(256 * 1024);
-	if (dsn.serialize(content_buff.data(), content_buff.size())) {
-		content_buff.resize(strnlen(content_buff.c_str(), content_buff.size()));
-		pmime = pmail->add_child(phead, MIME_ADD_LAST);
-		if (NULL != pmime) {
-			pmime->set_content_type("message/delivery-status");
-			pmime->write_content(content_buff.c_str(),
-				content_buff.size(), mime_encoding::none);
-		}
-	}
+	auto now    = vmime::datetime::now();
+
+	pmail = vmime::make_shared<vmime::message>();
+	auto hdr = pmail->getHeader();
+	hdr->getField("MIME-Version")->setValue("1.0");
+	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
+	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("delivery-status");
+
+	hdr->From()->setValue(rcpt);
+	hdr->To()->setValue(from);
+	hdr->getField("X-Auto-Response-Suppress")->setValue("All");
+	hdr->Date()->setValue(now);
+	hdr->Subject()->setValue(vmime::text(std::move(subject), vmime::charsets::UTF_8));
+
+	vmime::encoding enc;
+	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
+	auto part1 = vmime::make_shared<vmime::bodyPart>();
+	part1->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(content_buff), std::move(enc)),
+		vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT),
+		vmime::charsets::UTF_8);
+	pmail->getBody()->appendPart(std::move(part1));
+
+	std::ostringstream oss;
+	vmime::utility::outputStreamAdapter vos(oss);
+	vmime::header hdr2;
+	hdr2.getField("Reporting-MTA")->setValue(mta);
+	hdr2.getField("Arrival-Date")->setValue(now);
+	hdr2.generate(vos);
+	oss << "\r\n";
+
+	vmime::header hdr3;
+	hdr3.getField("Final-Recipient")->setValue(t_addr);
+	hdr3.getField("Action")->setValue("failed");
+	hdr3.getField("Status")->setValue("5.0.0");
+	hdr3.getField("Remote-MTA")->setValue(mta);
+	hdr3.generate(vos);
+
+	auto dsn = vmime::make_shared<vmime::bodyPart>();
+	dsn->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(oss).str()),
+		vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DISPOSITION_NOTIFICATION));
+	pmail->getBody()->appendPart(std::move(dsn));
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	return false;

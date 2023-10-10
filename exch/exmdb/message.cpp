@@ -21,6 +21,7 @@
 #include <openssl/md5.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/message.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
@@ -2550,16 +2551,16 @@ static ec_error_t message_bounce_message(const char *from_address,
 		return ecServerOOM;
 	}
 
-	MAIL imail;
+	vmime::shared_ptr<vmime::message> imail;
 	if (!exmdb_bouncer_make(from_address, account, psqlite, message_id,
-	    bounce_type, &imail))
+	    bounce_type, imail))
 		return ecServerOOM;
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
-	auto ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
+	auto ret = ems_send_vmail(imail, tmp_buff, rcpt_list);
 	if (ret != ecSuccess)
-		mlog(LV_ERR, "E-1187: ems_send_mail: %s", mapi_strerror(ret));
+		mlog(LV_ERR, "E-1187: ems_send_vmail: %s", mapi_strerror(ret));
 	return ecSuccess;
 }
 

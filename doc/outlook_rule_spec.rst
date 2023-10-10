@@ -2172,6 +2172,9 @@ The associated message referenced by ``eid`` is stored in the inbox's
 Associated Contents and has a PR_MESSAGE_CLASS of
 ``IPM.Note.Rules.ReplyTemplate.Microsoft``.
 
+``ulActionFlavor`` could be ``STOCK_REPLY_TEMPLATE``, but Outlook does not
+offer this functionality.
+
 
 Action 327 (0x147): Forward as attachment
 =========================================
