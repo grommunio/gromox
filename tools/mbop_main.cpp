@@ -310,10 +310,10 @@ static bool recalc_sizes(const char *dir)
 	ok = exmdb_client::get_store_properties(g_storedir, CP_ACP, &tags1, &vals);
 	if (!ok)
 		return false;
-	printf("New: %zu bytes (%zu normal, %zu FAI)\n",
-		inul(vals.get<uint64_t>(tags[0])),
-		inul(vals.get<uint64_t>(tags[1])),
-		inul(vals.get<uint64_t>(tags[2])));
+	printf("New: %llu bytes (%llu normal, %llu FAI)\n",
+		LLU{inul(vals.get<uint64_t>(tags[0]))},
+		LLU{inul(vals.get<uint64_t>(tags[1]))},
+		LLU{inul(vals.get<uint64_t>(tags[2]))});
 	return true;
 }
 
