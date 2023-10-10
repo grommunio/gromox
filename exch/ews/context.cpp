@@ -561,35 +561,34 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tMessage& message, uint64_t special) const
 {
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(message), special);
-	if(special & sShape::Recipients)
+	if (!(special & sShape::Recipients))
+		return;
+	TARRAY_SET rcpts;
+	if (!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
 	{
-		TARRAY_SET rcpts;
-		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
+			dir.c_str(), static_cast<unsigned long long>(mid));
+		return;
+	}
+	for (TPROPVAL_ARRAY **tps = rcpts.pparray; tps < &rcpts.pparray[rcpts.count]; ++tps)
+	{
+		uint32_t *recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+		if (!recipientType)
+			continue;
+		switch (*recipientType)
 		{
-			mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
-				dir.c_str(), static_cast<unsigned long long>(mid));
-			return;
-		}
-		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
-		{
-			uint32_t* recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
-			if(!recipientType)
-				continue;
-			switch(*recipientType)
-			{
-			case 1: //Primary recipient
-				if(special & sShape::ToRecipients)
-					defaulted(message.ToRecipients).emplace_back(**tps);
-				break;
-			case 2: //Cc recipient
-				if(special & sShape::CcRecipients)
-					defaulted(message.CcRecipients).emplace_back(**tps);
-				break;
-			case 3: //Bcc recipient
-				if(special & sShape::BccRecipients)
-					defaulted(message.BccRecipients).emplace_back(**tps);
-				break;
-			}
+		case 1: //Primary recipient
+			if (special & sShape::ToRecipients)
+				defaulted(message.ToRecipients).emplace_back(**tps);
+			break;
+		case 2: //Cc recipient
+			if (special & sShape::CcRecipients)
+				defaulted(message.CcRecipients).emplace_back(**tps);
+			break;
+		case 3: //Bcc recipient
+			if (special & sShape::BccRecipients)
+				defaulted(message.BccRecipients).emplace_back(**tps);
+			break;
 		}
 	}
 }
@@ -606,35 +605,34 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tCalendarItem& calItem, uint64_t special) const
 {
 	loadSpecial(dir, fid, mid, static_cast<tItem&>(calItem), special);
-	if(special & sShape::Attendees)
+	if (!(special & sShape::Attendees))
+		return;
+	TARRAY_SET rcpts;
+	if (!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
 	{
-		TARRAY_SET rcpts;
-		if(!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+		mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
+			dir.c_str(), static_cast<unsigned long long>(mid));
+		return;
+	}
+	for (TPROPVAL_ARRAY **tps = rcpts.pparray; tps < &rcpts.pparray[rcpts.count]; ++tps)
+	{
+		uint32_t *recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
+		if (!recipientType)
+			continue;
+		switch (*recipientType)
 		{
-			mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
-				dir.c_str(), static_cast<unsigned long long>(mid));
-			return;
-		}
-		for(TPROPVAL_ARRAY** tps = rcpts.pparray; tps < rcpts.pparray+rcpts.count; ++tps)
-		{
-			uint32_t* recipientType = (*tps)->get<uint32_t>(PR_RECIPIENT_TYPE);
-			if(!recipientType)
-				continue;
-			switch(*recipientType)
-			{
-			case 1: //Required attendee
-				if(special & sShape::RequiredAttendees)
-					defaulted(calItem.RequiredAttendees).emplace_back(**tps);
-				break;
-			case 2: //Optional attendee
-				if(special & sShape::OptionalAttendees)
-					defaulted(calItem.OptionalAttendees).emplace_back(**tps);
-				break;
-			case 3: //Resource
-				if(special & sShape::Resources)
-					defaulted(calItem.Resources).emplace_back(**tps);
-				break;
-			}
+		case 1: //Required attendee
+			if (special & sShape::RequiredAttendees)
+				defaulted(calItem.RequiredAttendees).emplace_back(**tps);
+			break;
+		case 2: //Optional attendee
+			if (special & sShape::OptionalAttendees)
+				defaulted(calItem.OptionalAttendees).emplace_back(**tps);
+			break;
+		case 3: //Resource
+			if (special & sShape::Resources)
+				defaulted(calItem.Resources).emplace_back(**tps);
+			break;
 		}
 	}
 }
