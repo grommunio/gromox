@@ -1112,7 +1112,7 @@ BOOL common_util_get_folder_by_name(
 	char sql_string[128];
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id "
-	          "FROM folders WHERE parent_id=%llu", LLU{parent_id});
+	         "FROM folders WHERE parent_id=%llu AND is_deleted=0", LLU{parent_id});
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;

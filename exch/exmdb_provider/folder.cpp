@@ -315,7 +315,7 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 	}
 	auto qstr = "SELECT 1 FROM folders AS f INNER JOIN folder_properties AS fp "
 	            "ON f.folder_id=fp.folder_id AND fp.proptag=? "
-	            "WHERE f.parent_id=? and fp.propval=? COLLATE NOCASE";
+	            "WHERE f.parent_id=? AND f.is_deleted=0 AND fp.propval=? COLLATE NOCASE";
 	auto pstmt = gx_sql_prep(pdb->psqlite, qstr);
 	if (pstmt == nullptr)
 		return FALSE;
