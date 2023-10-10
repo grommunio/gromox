@@ -195,7 +195,9 @@ time_t rop_util_nttime_to_unix(uint64_t nt_time)
 }
 
 gromox::time_point rop_util_nttime_to_unix2(uint64_t nt_time)
-{return gromox::time_point(nt_dur(nt_time)-nt_offset);}
+{
+	return gromox::time_point(std::chrono::duration_cast<gromox::time_point::duration>(nt_dur(nt_time) - nt_offset));
+}
 
 time_t rop_util_rtime_to_unix(uint32_t t)
 {
