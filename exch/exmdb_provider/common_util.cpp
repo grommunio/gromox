@@ -2752,6 +2752,11 @@ static BOOL common_util_set_message_subject(cpid_t cpid, uint64_t message_id,
 
 fhash::fhash(const std::string_view data)
 {
+	/*
+	 * This semi-constant global is here so that the SHA3 version always
+	 * gets a compile check at least without triggering any
+	 * unused-branch warning from compilers or static analyzers.
+	 */
 	if (g_cid_use_xxhash) {
 #ifdef HAVE_XXHASH
 		XXH128_canonical_t canon;
