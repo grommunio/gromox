@@ -3,7 +3,6 @@
 #include <list>
 #include <memory>
 #include <sys/types.h>
-#include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #define FTSTREAM_PRODUCER_POINT_LENGTH			1024

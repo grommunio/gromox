@@ -34,7 +34,6 @@
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mail.hpp>

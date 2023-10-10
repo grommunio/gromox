@@ -33,7 +33,6 @@
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
-#include <gromox/double_list.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -92,7 +91,6 @@ struct DEQUEUE_NODE : public qsock {
 };
 
 struct HOST_NODE {
-	DOUBLE_LIST_NODE node{};
 	char res_id[272]{};
 	time_t last_time = 0;
 	std::unordered_map<std::string, time_t> hash;

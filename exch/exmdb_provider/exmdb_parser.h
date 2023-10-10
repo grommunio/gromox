@@ -7,7 +7,6 @@
 #include <string>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
-#include <gromox/double_list.hpp>
 
 class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 	public:

@@ -3,7 +3,6 @@
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#define DSN_FIELDS			DOUBLE_LIST
 
 namespace gromox {
 

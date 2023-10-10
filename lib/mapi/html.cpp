@@ -19,7 +19,6 @@
 #include <libHX/libxml_helper.h>
 #include <libxml/HTMLparser.h>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>

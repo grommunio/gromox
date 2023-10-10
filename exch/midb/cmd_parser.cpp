@@ -21,7 +21,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/midb.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>

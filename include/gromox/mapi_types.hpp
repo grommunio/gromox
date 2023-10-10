@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
-#include <gromox/double_list.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/range_set.hpp>
 

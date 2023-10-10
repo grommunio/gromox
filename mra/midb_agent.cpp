@@ -28,7 +28,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/list_file.hpp>

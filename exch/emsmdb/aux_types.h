@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include <gromox/double_list.hpp>
 #include <gromox/rpc_types.hpp>
 
 /* OXCRPC v23 §2.2.2.2 */
