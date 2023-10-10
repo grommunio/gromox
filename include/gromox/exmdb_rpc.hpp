@@ -166,8 +166,9 @@ enum class exmdb_callid : uint8_t {
 };
 
 struct exreq {
-	exmdb_callid call_id;
-	char *dir;
+	exreq() = default; /* Prevent use of direct-list-init */
+	exmdb_callid call_id{};
+	char *dir = nullptr;
 };
 
 struct exreq_connect : public exreq {
@@ -856,7 +857,8 @@ struct exreq_recalc_store_size : public exreq {
 };
 
 struct exresp {
-	exmdb_callid call_id;
+	exresp() = default; /* Prevent use of direct-init-list */
+	exmdb_callid call_id{};
 };
 
 struct exresp_get_all_named_propids : public exresp {

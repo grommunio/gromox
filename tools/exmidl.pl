@@ -63,21 +63,23 @@ while (<STDIN>) {
 	}
 
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
-	print "\texreq_$func q{exmdb_callid::$func, deconst(dir)";
+	print "\texreq_$func q{};\n\texresp_$func r{};\n";
+	print "\n";
+	print "\tq.call_id = exmdb_callid::$func;\n";
+	print "\tq.dir = deconst(dir);\n";
 	for (@$iargs) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
-			print ", deconst($field)";
+			print "\tq.$field = deconst($field);\n";
 		} elsif (substr($type, -1, 1) eq "&") {
 			# struct members should continue to use a pointer,
 			# because refs are so awkward to assign (more so during
 			# deserialization than with serialization)
-			print ", deconst(&$field)";
+			print "\tq.$field = deconst(&$field);\n";
 		} else {
-			print ", $field";
+			print "\tq.$field = $field;\n";
 		}
 	}
-	print "};\n\texresp_$func r{};\n";
 	print "\tif (!exmdb_client_do_rpc(&q, &r))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;

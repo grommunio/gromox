@@ -1891,7 +1891,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
 	
-	memset(&d, 0, sizeof(d));
+	d = {};
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte != 0)
@@ -2038,7 +2038,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 	BINARY tmp_bin;
 	uint8_t tmp_byte;
 	
-	memset(&d, 0, sizeof(d));
+	d = {};
 	TRY(x.g_uint64(&d.folder_id));
 	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte != 0)
