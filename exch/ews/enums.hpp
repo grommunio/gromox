@@ -33,12 +33,12 @@ public:
 	constexpr StrEnum(const char* v) : idx(check(v)) {}
 	constexpr explicit StrEnum(index_t index) : idx(check(index)) {}
 
-	constexpr operator std::string() const {return s();}
+	operator std::string() const { return s(); }
 	constexpr operator std::string_view() const {return sv();}
 	constexpr operator const char*() const {return c_str();}
 	constexpr operator index_t() const {return index();}
 
-	constexpr std::string s() const {return Choices[idx];}
+	std::string s() const { return Choices[idx]; }
 	constexpr std::string_view sv() const {return Choices[idx];}
 	constexpr const char* c_str() const {return Choices[idx];}
 	constexpr index_t index() const {return idx;}
@@ -46,7 +46,7 @@ public:
 	constexpr bool operator==(const char* v) const {return strcmp(v, Choices[idx]) == 0;}
 	constexpr bool operator==(const StrEnum& o) const {return idx == o.idx;}
 
-	static constexpr index_t check(const std::string_view& v)
+	static index_t check(const std::string_view &v)
 	{
 		for(index_t i = 0; i < Choices.size(); ++i)
 			if(v == Choices[i])
@@ -56,7 +56,7 @@ public:
 		throw gromox::EWS::Exceptions::EnumError(msg);
 	}
 
-	static constexpr index_t check(index_t value)
+	static index_t check(index_t value)
 	{
 		if(value < sizeof...(Cs))
 			return value;
