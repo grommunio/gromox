@@ -21,6 +21,8 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/message.hpp>
+#include <vmime/text.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
@@ -1386,14 +1388,14 @@ void common_util_notify_receipt(const char *username, int type,
 	if (str == nullptr)
 		return;
 	std::vector<std::string> rcpt_list = {str};
-	MAIL imail;
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
+	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(system_services_get_user_displayname,
-	    system_services_get_user_lang, username, pbrief, bounce_type, &imail))
+	    system_services_get_user_lang, username, pbrief, bounce_type, imail))
 		return;
-	imail.set_header("X-Mailer", ZCORE_UA);
-	auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
+	imail->getHeader()->getField("X-Mailer")->setValue(vmime::text(ZCORE_UA));
+	auto ret = cu_send_vmail(imail, g_smtp_url.c_str(),
 	           username, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1193: cu_send_mail: %xh\n", ret);

@@ -1,31 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <algorithm>
-#include <cerrno>
-#include <cstdio>
-#include <cstring>
 #include <ctime>
-#include <dirent.h>
-#include <fcntl.h>
-#include <map>
-#include <memory>
 #include <string>
-#include <unistd.h>
 #include <utility>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <vmime/addressList.hpp>
+#include <vmime/contentTypeField.hpp>
+#include <vmime/dateTime.hpp>
+#include <vmime/mailbox.hpp>
+#include <vmime/stringContentHandler.hpp>
 #include <gromox/bounce_gen.hpp>
-#include <gromox/defs.h>
-#include <gromox/dsn.hpp>
 #include <gromox/element_data.hpp>
-#include <gromox/fileio.h>
-#include <gromox/mail.hpp>
-#include <gromox/mail_func.hpp>
-#include <gromox/mime.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 
 namespace {
@@ -99,101 +86,68 @@ static bool bounce_producer_make_content(buff_t gul,
 
 bool exch_bouncer_make(buff_t gudn, buff_t gul,
     const char *username, MESSAGE_CONTENT *pbrief,
-    const char *bounce_type, MAIL *pmail) try
+    const char *bounce_type, vmime::shared_ptr<vmime::message> &pmail) try
 {
-	size_t out_len;
-	char mime_to[1024], tmp_buff[1024], date_buff[128];
-	char mime_from[1024];
-	
-	if (gudn(username, tmp_buff, std::size(tmp_buff)) && *tmp_buff != '\0') {
-		strcpy(mime_from, "=?utf-8?b?");
-		encode64(tmp_buff, strlen(tmp_buff), &mime_from[10],
-			std::size(mime_from) - 13, &out_len);
-		strcpy(&mime_from[10+out_len], "?=");
-	} else {
-		*mime_from = '\0';
-	}
+	char tmp_buff[1024];
+	vmime::mailbox expeditor, target;
+
+	if (gudn(username, tmp_buff, std::size(tmp_buff)) && *tmp_buff != '\0')
+		expeditor.setName(vmime::text(tmp_buff, vmime::charsets::UTF_8));
+	expeditor.setEmail(username);
+
 	std::string subject, content_buff;
 	if (!bounce_producer_make_content(gul, username, pbrief,
 	    bounce_type, subject, content_buff))
 		return false;
-	auto phead = pmail->add_head();
-	if (phead == nullptr)
-		return false;
-	auto pmime = phead;
-	pmime->set_content_type("multipart/report");
-	pmime->set_content_param("report-type", "disposition-notification");
+
+	pmail = vmime::make_shared<vmime::message>();
+	auto hdr = pmail->getHeader();
+	hdr->getField("MIME-Version")->setValue("1.0");
+	hdr->ContentType()->setValue(vmime::mediaType(vmime::mediaTypes::MULTIPART, vmime::mediaTypes::MULTIPART_REPORT));
+	vmime::dynamicCast<vmime::contentTypeField>(hdr->ContentType())->setReportType("disposition-notification");
+
 	auto bv = pbrief->proplist.get<const BINARY>(PR_CONVERSATION_INDEX);
-	if (bv != nullptr && encode64(bv->pb, bv->cb, tmp_buff,
-	    std::size(tmp_buff), &out_len) == 0)
-		pmime->set_field("Thread-Index", tmp_buff);
-	auto t_addr = "\""s + mime_from + "\" <" + username + ">";
-	pmime->set_field("From", t_addr.c_str());
-	t_addr = "<"s + username + ">";
+	if (bv != nullptr)
+		hdr->getField("Thread-Index")->setValue(base64_encode({bv->pc, bv->cb}));
+	hdr->From()->setValue(expeditor);
 	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
-	if (str != nullptr && *str != '\0') {
-		strcpy(mime_to, "\"=?utf-8?b?");
-		encode64(str, strlen(str), mime_to + 11,
-			sizeof(mime_to) - 15, &out_len);
-		strcpy(mime_to + 11 + out_len, "?=\"");
-	} else {
-		mime_to[0] = '\0';
-	}
+	if (str != nullptr && *str != '\0')
+		target.setName(vmime::text(str, vmime::charsets::UTF_8));
 	str = pbrief->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
-		out_len = strlen(mime_to);
-		if (out_len != 0)
-			mime_to[out_len++] = ' ';
-		snprintf(mime_to + out_len, sizeof(mime_to) - out_len, "<%s>", str);
+		vmime::addressList target_list;
+		target.setEmail(str);
+		target_list.appendAddress(vmime::make_shared<vmime::mailbox>(target));
+		hdr->To()->setValue(target_list);
 	}
-	if (*mime_to != '\0')
-		pmime->set_field("To", mime_to);
-	pmime->set_field("MIME-Version", "1.0");
-	pmime->set_field("X-Auto-Response-Suppress", "All");
-	rfc1123_dstring(date_buff, std::size(date_buff), 0);
-	pmime->set_field("Date", date_buff);
-	pmime->set_field("Subject", subject.c_str());
-	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
-	if (pmime == nullptr)
-		return false;
-	pmime->set_content_type("text/plain");
-	pmime->set_content_param("charset", "utf-8");
-	if (!pmime->write_content(content_buff.c_str(),
-	    content_buff.size(), mime_encoding::automatic))
-		return false;
+	hdr->getField("X-Auto-Response-Suppress")->setValue("All");
+	hdr->Date()->setValue(vmime::datetime::now());
+	hdr->Subject()->setValue(vmime::text(std::move(subject), vmime::charsets::UTF_8));
 
-	DSN dsn;
-	auto pdsn_fields = dsn.get_message_fields();
-	t_addr = "rfc822;"s + username;
-	dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
+	vmime::encoding enc;
+	enc.setUsage(vmime::encoding::EncodingUsage::USAGE_TEXT);
+	auto part1 = vmime::make_shared<vmime::bodyPart>();
+	part1->getBody()->setContents(vmime::make_shared<vmime::stringContentHandler>(std::move(content_buff), std::move(enc)),
+		vmime::mediaType(vmime::mediaTypes::TEXT, vmime::mediaTypes::TEXT_PLAIN),
+		vmime::charsets::UTF_8);
+	pmail->getBody()->appendPart(std::move(part1));
+
+	auto part2 = vmime::make_shared<vmime::bodyPart>();
+	auto dsn = part2->getHeader();
+	dsn->getField("Final-Recipient")->setValue("rfc822;"s + username);
 	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
-		dsn.append_field(pdsn_fields, "Disposition",
-			"automatic-action/MDN-sent-automatically; displayed");
+		dsn->getField("Disposition")->setValue("automatic-action/MDN-sent-automatically; displayed");
 	else if (strcmp(bounce_type, "BOUNCE_NOTIFY_NON_READ") == 0)
-		dsn.append_field(pdsn_fields, "Disposition",
-			"manual-action/MDN-sent-automatically; deleted");
+		dsn->getField("Disposition")->setValue("manual-action/MDN-sent-automatically; deleted");
 	str = pbrief->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 	if (str != nullptr)
-		dsn.append_field(pdsn_fields, "Original-Message-ID", str);
+		dsn->getField("Original-Message-ID")->setValue(str);
 	bv = pbrief->proplist.get<BINARY>(PR_PARENT_KEY);
-	if (bv != nullptr) {
-		encode64(bv->pb, bv->cb, tmp_buff, std::size(tmp_buff), &out_len);
-		dsn.append_field(pdsn_fields,
-			"X-MSExch-Correlation-Key", tmp_buff);
-	}
-	if (*mime_from != '\0')
-		dsn.append_field(pdsn_fields, "X-Display-Name", mime_from);
-	content_buff.clear();
-	content_buff.resize(256 * 1024);
-	if (dsn.serialize(content_buff.data(), content_buff.size())) {
-		content_buff.resize(strnlen(content_buff.c_str(), content_buff.size()));
-		pmime = pmail->add_child(phead, MIME_ADD_LAST);
-		if (NULL != pmime) {
-			pmime->set_content_type("message/disposition-notification");
-			pmime->write_content(content_buff.c_str(),
-				content_buff.size(), mime_encoding::none);
-		}
-	}
+	if (bv != nullptr)
+		dsn->getField("X-MSExch-Correlation-Key")->setValue(base64_encode({bv->pc, bv->cb}));
+	dsn->getField("X-Display-Name")->setValue(expeditor);
+	part2->getBody()->setContentType(vmime::mediaType(vmime::mediaTypes::MESSAGE, vmime::mediaTypes::MESSAGE_DISPOSITION_NOTIFICATION));
+	pmail->getBody()->appendPart(std::move(part2));
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1482: ENOMEM");

@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/message.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -1322,13 +1323,13 @@ void common_util_notify_receipt(const char *username, int type,
 		return;
 	std::vector<std::string> rcpt_list;
 	rcpt_list.emplace_back(str);
-	MAIL imail;
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
+	vmime::shared_ptr<vmime::message> imail;
 	if (!exch_bouncer_make(common_util_get_user_displayname,
-	    common_util_get_user_lang, username, pbrief, bounce_type, &imail))
+	    common_util_get_user_lang, username, pbrief, bounce_type, imail))
 		return;
-	auto ret = ems_send_mail(&imail, username, rcpt_list);
+	auto ret = ems_send_vmail(imail, username, rcpt_list);
 	if (ret != ecSuccess)
 		mlog2(LV_ERR, "E-1189: ems_send_mail: %s\n", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
