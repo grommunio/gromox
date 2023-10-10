@@ -577,15 +577,15 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			continue;
 		switch (*recipientType)
 		{
-		case 1: //Primary recipient
+		case MAPI_TO:
 			if (special & sShape::ToRecipients)
 				defaulted(message.ToRecipients).emplace_back(**tps);
 			break;
-		case 2: //Cc recipient
+		case MAPI_CC:
 			if (special & sShape::CcRecipients)
 				defaulted(message.CcRecipients).emplace_back(**tps);
 			break;
-		case 3: //Bcc recipient
+		case MAPI_BCC:
 			if (special & sShape::BccRecipients)
 				defaulted(message.BccRecipients).emplace_back(**tps);
 			break;
