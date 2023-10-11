@@ -2,13 +2,12 @@
 .\" SPDX-FileCopyrightText: 2021 grommunio GmbH
 .TH alias_resolve 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-alias_resolve \(em SQL-based alias resolution and domain list plugin for
-delivery(8gx)
+alias_resolve \(em Alias resolution and expansion for delivery(8gx)
 .SH Description
-alias_resolve is a mail delivery agent hook plugin which will download from
-MariaDB/SQL all alias mappings and use them to rewrite the envelope FROM and
-RCPT addresses of mails and which replaces aliases by their respective primary
-addresses,
+alias_resolve is a component of the delivery agent which rewrites the Envelope
+FROM and RCPT fields of incoming messages, resolving aliases to the primary
+email address, resolving contact objects where they occur, and expanding
+mailing lists to their members.
 .SH Configuration directives
 alias_resolve(4gx) reads /etc/gromox/mysql_adaptor.cfg for \fBmysql_host\fP,
 \fBmysql_port\fP, \fBmysql_username\fP, \fBmysql_password\fP,
@@ -24,5 +23,9 @@ Default: \fI1h\fP
 .SH Signals
 When the plugin is reloaded (i.e. SIGHUP to delivery(8gx)), the alias map is
 refreshed as well, resetting the timer for the next refresh.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/mlist_bounce/: response templates for when a mailing list
+could not be expanded
 .SH See also
 \fBgromox\fP(7), \fBdelivery\fP(8gx)
