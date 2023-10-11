@@ -141,7 +141,7 @@ int main(int argc, const char **argv) try
 	if (mysql_real_connect(conn.get(), mysql_host.c_str(), mysql_user.c_str(),
 	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
 	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
-		printf("Failed to connect to the database %s@%s/%s\n",
+		printf("Failed to connect to the MariaDB/MySQL database %s@%s/%s\n",
 		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;
 	}
