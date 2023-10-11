@@ -16,6 +16,26 @@
  */
 struct FNV
 {
+	private:
+	/**
+	 * @brief      Update hash
+	 *
+	 * @param      data   Data to hash
+	 * @param      count  Data element count
+	 *
+	 * @tparam     T      One of uint8_t, uint16_t, uint32_t or uint64_t
+	 *
+	 * @return     New hash value
+	 */
+	template<typename T>
+	constexpr uint64_t apply(const T *data, uint64_t count) noexcept
+	{
+		for (const T *ptr = data; ptr < &data[count]; ++ptr)
+			value = (value ^ static_cast<uint64_t>(*ptr)) * 0x100000001b3ULL;
+		return value;
+	}
+
+	public:
 	/**
 	 * @brief      Initialize by consecutively hashing all objects
 	 *
@@ -83,24 +103,4 @@ struct FNV
 	}
 
 	uint64_t value = 0xcbf29ce484222325ULL; ///< Current hash value
-
-private:
-	/**
-	 * @brief      Update hash
-	 *
-	 * @param      data   Data to hash
-	 * @param      count  Data element count
-	 *
-	 * @tparam     T      One of uint8_t, uint16_t, uint32_t or uint64_t
-	 *
-	 * @return     New hash value
-	 */
-	template<typename T>
-	constexpr uint64_t apply(const T* data, uint64_t count) noexcept
-	{
-		for(const T* ptr = data; ptr < data+count; ++ptr)
-			value = (value^uint64_t(*ptr))*0x100000001b3ULL;
-		return value;
-	}
 };
-
