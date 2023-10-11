@@ -29,6 +29,7 @@
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
@@ -130,12 +131,11 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 }
 
 BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
-    uint64_t message_id, const char *bounce_type, MAIL *pmail)
+    uint64_t message_id, const char *bounce_type, MAIL *pmail) try
 {
 	MIME *pmime;
 	char subject[1024];
 	char mime_from[UADDR_SIZE];
-	char tmp_buff[1024];
 	char date_buff[128];
 	char content_type[128];
 	char content_buff[256*1024];
@@ -151,8 +151,7 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime->set_content_type("multipart/report");
 	pmime->set_content_param("report-type", "delivery-status");
 	pmime->set_field("From", mime_from);
-	snprintf(tmp_buff, UADDR_SIZE + 2, "<%s>", from);
-	pmime->set_field("To", tmp_buff);
+	pmime->set_field("To", ("<"s + from + ">").c_str());
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
@@ -169,19 +168,18 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 
 	DSN dsn;
 	auto pdsn_fields = dsn.get_message_fields();
-	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
+	auto mta = "dns;"s + get_host_ID();
+	auto t_addr = "rfc822;"s + rcpt;
+	dsn.append_field(pdsn_fields, "Reporting-MTA", mta.c_str());
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn.new_rcpt_fields();
 	if (pdsn_fields == nullptr)
 		return FALSE;
-	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt);
-	dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff);
+	dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	dsn.append_field(pdsn_fields, "Action", "failed");
 	dsn.append_field(pdsn_fields, "Status", "5.0.0");
-	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn.append_field(pdsn_fields, "Remote-MTA", tmp_buff);
+	dsn.append_field(pdsn_fields, "Remote-MTA", mta.c_str());
 	
 	if (dsn.serialize(content_buff, std::size(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
@@ -192,4 +190,6 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 		}
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }

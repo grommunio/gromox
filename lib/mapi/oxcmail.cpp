@@ -3883,11 +3883,10 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 }
 
 static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
-    const char *pmessage_class, char *pmdn_content, int max_length)
+    const char *pmessage_class, char *pmdn_content, int max_length) try
 {
 	int tmp_len;
 	size_t base64_len;
-	char tmp_buff[1024];
 	char tmp_address[UADDR_SIZE];
 	
 	tmp_address[0] = '\0';
@@ -3920,10 +3919,11 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
  EXPORT_MDN_CONTENT:
 	DSN dsn;
 	auto pdsn_fields = dsn.get_message_fields();
-	snprintf(tmp_buff, std::size(tmp_buff), "rfc822;%s", tmp_address);
-	if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
+	auto t_addr = "rfc822;"s + tmp_address;
+	if (!dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str()))
 		return FALSE;
 	tmp_len = strlen(pmessage_class);
+	char tmp_buff[1024];
 	strcpy(tmp_buff, tmp_len >= 6 && strcasecmp(&pmessage_class[tmp_len-6], ".IPNRN") == 0 ?
 	       "manual-action/MDN-sent-automatically; displayed" :
 	       "manual-action/MDN-sent-automatically; deleted");
@@ -3945,6 +3945,8 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	    !dsn.append_field(pdsn_fields, "X-Display-Name", tmp_buff))
 		return FALSE;
 	return dsn.serialize(pmdn_content, max_length);
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,

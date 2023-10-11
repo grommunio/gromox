@@ -25,6 +25,7 @@
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 
 /*
@@ -38,7 +39,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail) try
 {
 	MIME *pmime;
-	char charset[32], tmp_buff[1024], date_buff[128], lang[32];
+	char charset[32], date_buff[128], lang[32];
 
 	charset[0] = '\0';
 	auto pdomain = strchr(from, '@');
@@ -100,8 +101,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	if (!str.empty())
 		pmime->set_field("Thread-Index", str.c_str());
 	pmime->set_field("From", from);
-	snprintf(tmp_buff, 256, "<%s>", from);
-	pmime->set_field("To", tmp_buff);
+	pmime->set_field("To", ("<"s + from + ">").c_str());
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
@@ -113,6 +113,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 		mlog(LV_ERR, "exmdb_local: MIME pool exhausted");
 		return false;
 	}
+	char tmp_buff[256];
 	parse_field_value(tp.content_type.c_str(), tp.content_type.size(),
 		tmp_buff, 256, pmime->f_type_params);
 	pmime->set_content_type(tmp_buff);
@@ -125,15 +126,15 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	
 	DSN dsn;
 	auto pdsn_fields = dsn.get_message_fields();
-	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
+	auto mta = "dns;"s + get_host_ID();
+	auto t_addr = "rfc822;"s + rcpt_to;
+	dsn.append_field(pdsn_fields, "Reporting-MTA", mta.c_str());
 	rfc1123_dstring(date_buff, std::size(date_buff), original_time);
 	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn.new_rcpt_fields();
 	if (pdsn_fields == nullptr)
 		return false;
-	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt_to);
-	dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff);
+	dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	if (strcmp(bounce_type, "BOUNCE_MAIL_DELIVERED") != 0) {
 		dsn.append_field(pdsn_fields, "Action", "failed");
 		dsn.append_field(pdsn_fields, "Status", "5.0.0");
@@ -141,8 +142,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 		dsn.append_field(pdsn_fields, "Action", "delivered");
 		dsn.append_field(pdsn_fields, "Status", "2.0.0");
 	}
-	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
-	dsn.append_field(pdsn_fields, "Remote-MTA", tmp_buff);
+	dsn.append_field(pdsn_fields, "Remote-MTA", mta.c_str());
 	char original_ptr[256*1024];
 	if (dsn.serialize(original_ptr, std::size(original_ptr))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
