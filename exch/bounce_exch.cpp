@@ -36,7 +36,7 @@ using buff_t = bool (*)(const char *, char *, size_t);
 
 static bool bounce_producer_make_content(buff_t gul,
     const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
-    char *subject, char *content_type, char *pcontent, size_t content_size) try
+    std::string &subject, std::string &cttype, std::string &content)
 {
 	char charset[32], date_buff[128], lang[32];
 
@@ -94,25 +94,20 @@ static bool bounce_producer_make_content(buff_t gul,
 	hxmc_t *replaced = nullptr;
 	if (HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]) < 0)
 		return false;
-	gx_strlcpy(pcontent, replaced, content_size);
-	HXmc_free(replaced);
-	if (subject != nullptr)
-		strcpy(subject, tp.subject.c_str());
-	if (content_type != nullptr)
-		strcpy(content_type, tp.content_type.c_str());
+	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
+	content = replaced;
+	subject = tp.subject;
+	cttype  = tp.content_type;
 	return true;
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1218: ENOMEM");
-	return false;
 }
 
 bool exch_bouncer_make(buff_t gudn, buff_t gul,
     const char *username, MESSAGE_CONTENT *pbrief,
-    const char *bounce_type, MAIL *pmail)
+    const char *bounce_type, MAIL *pmail) try
 {
 	size_t out_len;
-	char mime_to[1024], subject[1024], tmp_buff[1024], date_buff[128];
-	char mime_from[1024], content_type[128], content_buff[256*1024];
+	char mime_to[1024], tmp_buff[1024], date_buff[128];
+	char mime_from[1024];
 	
 	if (gudn(username, tmp_buff, std::size(tmp_buff)) && *tmp_buff != '\0') {
 		strcpy(mime_from, "=?utf-8?b?");
@@ -122,9 +117,9 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	} else {
 		*mime_from = '\0';
 	}
+	std::string subject, content_type, content_buff;
 	if (!bounce_producer_make_content(gul, username, pbrief,
-	    bounce_type, subject, content_type, content_buff,
-	    std::size(content_buff)))
+	    bounce_type, subject, content_type, content_buff))
 		return false;
 	auto phead = pmail->add_head();
 	if (phead == nullptr)
@@ -136,15 +131,9 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	if (bv != nullptr && encode64(bv->pb, bv->cb, tmp_buff,
 	    std::size(tmp_buff), &out_len) == 0)
 		pmime->set_field("Thread-Index", tmp_buff);
-	std::string t_addr;
-	try {
-		t_addr = "\""s + mime_from + "\" <" + username + ">";
-		pmime->set_field("From", t_addr.c_str());
-		t_addr = "<"s + username + ">";
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1479: ENOMEM");
-		return false;
-	}
+	auto t_addr = "\""s + mime_from + "\" <" + username + ">";
+	pmime->set_field("From", t_addr.c_str());
+	t_addr = "<"s + username + ">";
 	auto str = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_NAME);
 	if (str != nullptr && *str != '\0') {
 		strcpy(mime_to, "\"=?utf-8?b?");
@@ -167,25 +156,20 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	pmime->set_field("X-Auto-Response-Suppress", "All");
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
-	pmime->set_field("Subject", subject);
+	pmime->set_field("Subject", subject.c_str());
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (pmime == nullptr)
 		return false;
-	pmime->set_content_type(content_type);
+	pmime->set_content_type(content_type.c_str());
 	pmime->set_content_param("charset", "\"utf-8\"");
-	if (!pmime->write_content(content_buff,
-	    strlen(content_buff), mime_encoding::automatic))
+	if (!pmime->write_content(content_buff.c_str(),
+	    content_buff.size(), mime_encoding::automatic))
 		return false;
 
 	DSN dsn;
 	auto pdsn_fields = dsn.get_message_fields();
-	try {
-		t_addr = "rfc822;"s + username;
-		dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1482: ENOMEM");
-		return false;
-	}
+	t_addr = "rfc822;"s + username;
+	dsn.append_field(pdsn_fields, "Final-Recipient", t_addr.c_str());
 	if (strcmp(bounce_type, "BOUNCE_NOTIFY_READ") == 0)
 		dsn.append_field(pdsn_fields, "Disposition",
 			"automatic-action/MDN-sent-automatically; displayed");
@@ -203,15 +187,21 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	}
 	if (*mime_from != '\0')
 		dsn.append_field(pdsn_fields, "X-Display-Name", mime_from);
-	if (dsn.serialize(content_buff, std::size(content_buff))) {
+	content_buff.clear();
+	content_buff.resize(256 * 1024);
+	if (dsn.serialize(content_buff.data(), content_buff.size())) {
+		content_buff.resize(strnlen(content_buff.c_str(), content_buff.size()));
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/disposition-notification");
-			pmime->write_content(content_buff,
-				strlen(content_buff), mime_encoding::none);
+			pmime->write_content(content_buff.c_str(),
+				content_buff.size(), mime_encoding::none);
 		}
 	}
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1482: ENOMEM");
+	return false;
 }
 
 }

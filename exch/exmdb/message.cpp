@@ -2390,8 +2390,6 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 {
 	void *pvalue;
 	BINARY tmp_bin;
-	char content_type[128];
-	char tmp_buff[256*1024];
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -2478,25 +2476,26 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 		}
 		pmsgctnt->children.prcpts = prcpts;
 	}
+	std::string subject, content_type, content_buff;
 	if (action_flavor & STOCK_REPLY_TEMPLATE) {
 		if (!exmdb_bouncer_make_content(rp.ev_from, rp.ev_to,
 		    rp.sqlite, rp.message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
-		    nullptr, content_type, tmp_buff, std::size(tmp_buff)))
-			return FALSE;
+		    subject, content_type, content_buff))
+			return false;
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 		common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_BODY);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_HTML);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_RTF_COMPRESSED);
-		if (0 == strcasecmp(content_type, "text/plain")) {
-			cu_set_propval(&pmsgctnt->proplist, PR_BODY, tmp_buff);
-		} else if (0 == strcasecmp(content_type, "text/html")) {
+		if (strcasecmp(content_type.c_str(), "text/plain")) {
+			cu_set_propval(&pmsgctnt->proplist, PR_BODY, content_buff.c_str());
+		} else if (strcasecmp(content_type.c_str(), "text/html") == 0) {
 			auto num = pmsgctnt->proplist.get<const uint32_t>(PR_INTERNET_CPID);
 			if (num != nullptr && *num != 1200)
 				tmp_bin.pc = common_util_convert_copy(false,
-				             static_cast<cpid_t>(*num), tmp_buff);
+				             static_cast<cpid_t>(*num), content_buff.c_str());
 			else
-				tmp_bin.pc = tmp_buff;
+				tmp_bin.pc = deconst(content_buff.c_str());
 			tmp_bin.cb = strlen(tmp_bin.pc);
 			cu_set_propval(&pmsgctnt->proplist, PR_HTML, &tmp_bin);
 		}

@@ -59,8 +59,8 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 
 BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     sqlite3 *psqlite, uint64_t message_id, const char *bounce_type,
-    char *mime_from, char *subject, char *content_type, char *pcontent,
-    size_t content_size) try
+    char *mime_from, std::string &subject, std::string &cttype,
+    std::string &content) try
 {
 	void *pvalue;
 	char charset[32], date_buff[128], lang[32];
@@ -116,14 +116,10 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	hxmc_t *replaced = nullptr;
 	if (HXformat_aprintf(fa, &replaced, &tp.content[tp.body_start]) < 0)
 		return false;
-	gx_strlcpy(pcontent, replaced, content_size);
-	HXmc_free(replaced);
-	if (mime_from != nullptr)
-		strcpy(mime_from, tp.from.c_str());
-	if (subject != nullptr)
-		strcpy(subject, tp.subject.c_str());
-	if (content_type != nullptr)
-		strcpy(content_type, tp.content_type.c_str());
+	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
+	content = replaced;
+	subject = tp.subject;
+	cttype  = tp.content_type;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1219: ENOMEM");
@@ -134,15 +130,12 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
     uint64_t message_id, const char *bounce_type, MAIL *pmail) try
 {
 	MIME *pmime;
-	char subject[1024];
-	char mime_from[UADDR_SIZE];
-	char date_buff[128];
-	char content_type[128];
-	char content_buff[256*1024];
+	char mime_from[UADDR_SIZE], date_buff[128];
+	std::string subject, content_type, content_buff;
 	
 	if (!exmdb_bouncer_make_content(from, rcpt,
 	    psqlite, message_id, bounce_type, mime_from,
-	    subject, content_type, content_buff, std::size(content_buff)))
+	    subject, content_type, content_buff))
 		return FALSE;
 	auto phead = pmail->add_head();
 	if (phead == nullptr)
@@ -156,14 +149,14 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime->set_field("X-Auto-Response-Suppress", "All");
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
-	pmime->set_field("Subject", subject);
+	pmime->set_field("Subject", subject.c_str());
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (pmime == nullptr)
 		return FALSE;
-	pmime->set_content_type(content_type);
+	pmime->set_content_type(content_type.c_str());
 	pmime->set_content_param("charset", "\"utf-8\"");
-	if (!pmime->write_content(content_buff,
-	    strlen(content_buff), mime_encoding::automatic))
+	if (!pmime->write_content(content_buff.c_str(),
+	    content_buff.size(), mime_encoding::automatic))
 		return FALSE;
 
 	DSN dsn;
@@ -181,12 +174,15 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	dsn.append_field(pdsn_fields, "Status", "5.0.0");
 	dsn.append_field(pdsn_fields, "Remote-MTA", mta.c_str());
 	
-	if (dsn.serialize(content_buff, std::size(content_buff))) {
+	content_buff.clear();
+	content_buff.resize(256 * 1024);
+	if (dsn.serialize(content_buff.data(), content_buff.size())) {
+		content_buff.resize(strnlen(content_buff.c_str(), content_buff.size()));
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			pmime->set_content_type("message/delivery-status");
-			pmime->write_content(content_buff,
-				strlen(content_buff), mime_encoding::none);
+			pmime->write_content(content_buff.c_str(),
+				content_buff.size(), mime_encoding::none);
 		}
 	}
 	return TRUE;
