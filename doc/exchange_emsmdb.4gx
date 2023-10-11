@@ -127,8 +127,8 @@ Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
 Default: (unspecified)
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/notify_bounce/: response templates for when mail cannot be
-delivered
+\fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
+mails sent to originators
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
 .SH Outlook notes

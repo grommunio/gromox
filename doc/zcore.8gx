@@ -201,8 +201,8 @@ message store.
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
 .IP \(bu 4
-\fIdata_file_path\fP/notify_bounce/: A directory with translation files for
-bounce notification templates for when mail cannot be delivered
+\fIdata_file_path\fP/notify_bounce/: templates for read/nonread notification
+mails sent to originators
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .IP \(bu 4
