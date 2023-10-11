@@ -1,6 +1,5 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Mail has been delivered successfully
-From: %(postmaster)
 
 Hi,
   Your mail has been delivered to %(rcpt) successfully!

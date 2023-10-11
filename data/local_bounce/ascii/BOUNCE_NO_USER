@@ -1,6 +1,5 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, user doesn't exist!
-From: %(postmaster)
 
 Hi,
   I am sorry to tell you that that the address "%(rcpt)" does not

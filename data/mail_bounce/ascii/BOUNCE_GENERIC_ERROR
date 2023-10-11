@@ -1,6 +1,5 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, system has refused your mail because of some reason
-From: %(postmaster)
 
 Hi,
   your message to "%(rcpt)" has been be refused by some reason!

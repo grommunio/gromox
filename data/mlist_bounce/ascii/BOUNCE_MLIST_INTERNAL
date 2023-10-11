@@ -1,6 +1,5 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, privilege not enough
-From: %(postmaster)
 
 Hi,
   You have not enough privilege to send mail to mail list %(rcpt),

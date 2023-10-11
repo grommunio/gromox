@@ -1,6 +1,5 @@
 Content-Type: text/plain; charset=utf-8
 Subject: Delivery failure, user's mailbox is full
-From: %(postmaster)
 
 Hi,
   I am sorry to tell you that %(rcpt)'s mailbox is full, we cannot
