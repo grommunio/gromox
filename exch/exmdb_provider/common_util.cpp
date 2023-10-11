@@ -1108,30 +1108,26 @@ BOOL common_util_get_folder_by_name(
 	sqlite3 *psqlite, uint64_t parent_id,
 	const char *str_name, uint64_t *pfolder_id)
 {
-	uint64_t tmp_val;
-	char sql_string[128];
+	char sql_string[196];
 	
-	snprintf(sql_string, std::size(sql_string), "SELECT folder_id "
-	         "FROM folders WHERE parent_id=%llu AND is_deleted=0", LLU{parent_id});
+	snprintf(sql_string, std::size(sql_string),
+		"SELECT fp.folder_id, fp.propval FROM folders AS f INNER JOIN"
+		" folder_properties AS fp ON f.parent_id=%llu AND f.is_deleted=0"
+		" AND f.folder_id=fp.folder_id AND fp.proptag=%u",
+		LLU{parent_id}, PR_DISPLAY_NAME);
+	/*
+	 * folder_properties.propval is BLOB, so... not sure if COLLATE NOCASE
+	 * would reliably(!) perform as expected.
+	 */
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	snprintf(sql_string, std::size(sql_string), "SELECT propval "
-		"FROM folder_properties WHERE folder_id=?"
-	        " AND proptag=%u", PR_DISPLAY_NAME);
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
-	if (pstmt1 == nullptr)
-		return FALSE;
 	*pfolder_id = 0;
 	while (pstmt.step() == SQLITE_ROW) {
-		tmp_val = sqlite3_column_int64(pstmt, 0);
-		sqlite3_bind_int64(pstmt1, 1, tmp_val);
-		if (gx_sql_step(pstmt1) == SQLITE_ROW &&
-		    strcasecmp(str_name, pstmt1.col_text(0)) == 0) {
-			*pfolder_id = tmp_val;
+		if (strcasecmp(str_name, pstmt.col_text(1)) == 0) {
+			*pfolder_id = pstmt.col_uint64(0);
 			break;
 		}
-		sqlite3_reset(pstmt1);
 	}
 	return TRUE;
 }
