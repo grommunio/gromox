@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -33,11 +34,20 @@ enum {
 	ML_XSPECIFIED,
 };
 
+namespace {
+
+class alias_map : public std::map<std::string, std::string, std::less<>> {
+	public:
+	const std::string &lookup(const char *srch) const;
+};
+
+}
+
 DECLARE_HOOK_API();
 
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
-static std::map<std::string, std::string, std::less<>> xa_alias_map;
+static std::shared_ptr<alias_map> xa_alias_map;
 static std::mutex xa_alias_lock;
 static std::thread xa_thread;
 static mysql_adaptor_init_param g_parm;
@@ -70,22 +80,21 @@ static MYSQL *sql_make_conn()
 	return conn;
 }
 
-static std::string xa_alias_lookup(const char *srch)
+const std::string &alias_map::lookup(const char *srch) const
 {
 	static const std::string empty;
-	std::lock_guard hold(xa_alias_lock);
-	auto i = xa_alias_map.find(srch);
-	return i != xa_alias_map.cend() ? i->second : empty;
-	/* return a copy, since the map may change after releasing the lock */
+	auto i = find(srch);
+	return i == cend() ? empty : i->second;
 }
 
-static void xa_refresh_aliases(MYSQL *conn) try
+static std::shared_ptr<alias_map> xa_refresh_aliases(MYSQL *conn) try
 {
+	auto newmap_ptr = std::make_shared<alias_map>();
+	auto &newmap = *newmap_ptr;
 	static constexpr char query[] = "SELECT aliasname, mainname FROM aliases";
 	if (mysql_query(conn, query) != 0)
-		return;
+		return nullptr;
 	DB_RESULT res = mysql_store_result(conn);
-	decltype(xa_alias_map) newmap;
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr)
 		if (row[0] != nullptr && row[1] != nullptr)
@@ -100,18 +109,17 @@ static void xa_refresh_aliases(MYSQL *conn) try
 		// extract PR_SMTP_ADDRESS
 		"on u.id=uv.user_id and uv.proptag=0x39fe001f";
 	if (mysql_query(conn, query2) != 0)
-		return;
+		return nullptr;
 	res = mysql_store_result(conn);
 	while ((row = res.fetch_row()) != nullptr)
 		if (row[0] != nullptr && row[1] != nullptr)
 			newmap.emplace(row[0], row[1]);
 	auto n_contacts = newmap.size() - n_aliases;
-
-	std::lock_guard hold(xa_alias_lock);
-	std::swap(xa_alias_map, newmap);
 	mlog(LV_INFO, "I-1612: refreshed alias_resolve map with %zu aliases and %zu contact objects",
 		n_aliases, n_contacts);
+	return newmap_ptr;
 } catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 static void xa_refresh_thread()
@@ -120,7 +128,10 @@ static void xa_refresh_thread()
 	while (!xa_notify_stop) {
 		{
 			auto conn = sql_make_conn();
-			xa_refresh_aliases(conn);
+			auto newmap = xa_refresh_aliases(conn);
+			std::unique_lock lk(xa_alias_lock);
+			if (newmap != nullptr)
+				xa_alias_map = std::move(newmap);
 		}
 		std::unique_lock slp_hold(slp_mtx);
 		xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
@@ -129,9 +140,16 @@ static void xa_refresh_thread()
 
 static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 {
+	decltype(xa_alias_map) alias_map_ptr;
+	{
+		std::unique_lock lk(xa_alias_lock);
+		alias_map_ptr = xa_alias_map;
+	}
+	auto &alias_map = *alias_map_ptr;
+
 	auto ctrl = &ctx->ctrl;
 	if (strchr(ctrl->from, '@') != nullptr) {
-		auto repl = xa_alias_lookup(ctrl->from);
+		auto repl = alias_map.lookup(ctrl->from);
 		if (repl.size() > 0) {
 			mlog(LV_DEBUG, "alias_resolve: subst FROM %s -> %s", ctrl->from, repl.c_str());
 			gx_strlcpy(ctrl->from, repl.c_str(), std::size(ctrl->from));
@@ -146,7 +164,7 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	std::vector<std::string> todo = ctrl->rcpt;
 
 	for (size_t i = 0; i < todo.size(); ++i) {
-		auto repl = xa_alias_lookup(todo[i].c_str());
+		auto repl = alias_map.lookup(todo[i].c_str());
 		if (repl.size() != 0) {
 			mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s",
 				todo[i].c_str(), repl.c_str());
