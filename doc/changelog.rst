@@ -1,10 +1,30 @@
-Development 2.14.3
-==================
+Development 2.14.66
+===================
 
 Fixes:
 
 * imap: do not emit continuation request on LITERAL+
   (now also for large literals >64K)
+* exmdb: ignore softdeleted folders when validating new folder name
+* exmdb: explicitly rollback SQLite transactions when the commit operation
+  failed, to resolve cases of ``cannot start a transaction within a
+  transaction``
+
+Enhancements:
+
+* delivery: support for plus-addresses/recipient delimiters,
+  e.g. <user+extension@example.com>
+* delivery: new config directive ``lda_recipient_delimiters``
+* mbop: new subcommand ``recalc-size`` to recalculate store size
+
+Changes:
+
+* alias_resolve: config directives are no longer read from
+  ``/etc/gromox/alias_resolve.cfg`` but now from ``/etc/gromox/gromox.cfg``
+* oxcmail: do not emit Content-Disposition creation-time/modification-time
+  parameters when those fields are not present in the MAPI object
+* Delete unused columns and indexes from the ``associations`` MariaDB table;
+  (grommunio-admin-api should be updated to >= 1.12)
 
 
 Gromox 2.14 (2023-10-04)
