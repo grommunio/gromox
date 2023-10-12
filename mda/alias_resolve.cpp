@@ -41,6 +41,8 @@ class alias_map : public std::map<std::string, std::string, std::less<>> {
 	const std::string &lookup(const char *srch) const;
 };
 
+using domain_set = std::set<std::string>;
+
 }
 
 DECLARE_HOOK_API();
@@ -48,11 +50,13 @@ DECLARE_HOOK_API();
 static std::atomic<bool> xa_notify_stop{false};
 static std::condition_variable xa_thread_wake;
 static std::shared_ptr<alias_map> xa_alias_map;
+static std::shared_ptr<domain_set> xa_domain_set;
 static std::mutex xa_alias_lock;
 static std::thread xa_thread;
 static mysql_adaptor_init_param g_parm;
 static std::chrono::seconds g_cache_lifetime;
 static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
+static std::string g_rcpt_delimiter;
 
 static MYSQL *sql_make_conn()
 {
@@ -122,6 +126,28 @@ static std::shared_ptr<alias_map> xa_refresh_aliases(MYSQL *conn) try
 	return nullptr;
 }
 
+static std::shared_ptr<domain_set> xa_refresh_domains(MYSQL *conn) try
+{
+	auto newdom_ptr = std::make_shared<domain_set>();
+	auto &newdom = *newdom_ptr;
+	static constexpr char query[] = "SELECT username FROM users UNION SELECT aliasname FROM aliases";
+	if (mysql_query(conn, query) != 0)
+		return nullptr;
+	DB_RESULT res = mysql_store_result(conn);
+	DB_ROW row;
+	while ((row = res.fetch_row()) != nullptr) {
+		if (row[0] == nullptr)
+			continue;
+		auto p = strchr(row[0], '@');
+		if (p == nullptr)
+			continue;
+		newdom.emplace(&p[1]);
+	}
+	return newdom_ptr;
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
 static void xa_refresh_thread()
 {
 	std::mutex slp_mtx;
@@ -129,9 +155,12 @@ static void xa_refresh_thread()
 		{
 			auto conn = sql_make_conn();
 			auto newmap = xa_refresh_aliases(conn);
+			auto newdom = xa_refresh_domains(conn);
 			std::unique_lock lk(xa_alias_lock);
-			if (newmap != nullptr)
+			if (newmap != nullptr) {
 				xa_alias_map = std::move(newmap);
+				xa_domain_set = std::move(newdom);
+			}
 		}
 		std::unique_lock slp_hold(slp_mtx);
 		xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
@@ -141,11 +170,14 @@ static void xa_refresh_thread()
 static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 {
 	decltype(xa_alias_map) alias_map_ptr;
+	decltype(xa_domain_set) domset_ptr;
 	{
 		std::unique_lock lk(xa_alias_lock);
 		alias_map_ptr = xa_alias_map;
+		domset_ptr = xa_domain_set;
 	}
 	auto &alias_map = *alias_map_ptr;
+	auto &domset = *domset_ptr;
 
 	auto ctrl = &ctx->ctrl;
 	if (strchr(ctrl->from, '@') != nullptr) {
@@ -164,6 +196,18 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 	std::vector<std::string> todo = ctrl->rcpt;
 
 	for (size_t i = 0; i < todo.size(); ++i) {
+		auto at = strchr(todo[i].c_str(), '@');
+		if (at != nullptr && domset.find(&at[1]) != domset.cend()) {
+			/*
+			 * Contacts may resolve to remote addresses, which we
+			 * do not want to strip anything from, so limit
+			 * extension removal to our own domains.
+			 */
+			size_t atpos = at - todo[i].c_str();
+			auto expos = todo[i].find_first_of(g_rcpt_delimiter.c_str(), 0, atpos);
+			if (expos != todo[i].npos && expos < atpos)
+				todo[i].erase(expos, atpos - expos);
+		}
 		auto repl = alias_map.lookup(todo[i].c_str());
 		if (repl.size() != 0) {
 			mlog(LV_DEBUG, "alias_resolve: subst RCPT %s -> %s",
@@ -234,6 +278,7 @@ static constexpr const cfg_directive mysql_directives[] = {
 };
 static constexpr const cfg_directive xa_directives[] = {
 	{"lda_alias_cache_lifetime", "1h", CFG_TIME},
+	{"lda_recipient_delimiter", ""},
 	CFG_TABLE_END,
 };
 
@@ -267,6 +312,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
 		return false;
 	}
 	g_cache_lifetime = std::chrono::seconds(acfg->get_ll("lda_alias_cache_lifetime"));
+	g_rcpt_delimiter = znul(acfg->get_value("lda_recipient_delimiter"));
 	return true;
 } catch (const cfg_error &) {
 	return false;
