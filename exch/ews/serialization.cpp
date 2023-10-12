@@ -1330,6 +1330,13 @@ void mSubscribeResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPM(SubscriptionId);
 }
 
+mUnsubscribeRequest::mUnsubscribeRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SubscriptionId)
+{}
+
+void mUnsubscribeResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :
 	XMLINIT(ItemChanges)
 {}

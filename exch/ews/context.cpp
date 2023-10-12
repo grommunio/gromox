@@ -1288,6 +1288,14 @@ tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) 
 }
 
 /**
+ * @brief     End subscriptions
+ *
+ * @param subscriptionId   Subscription to remove
+ */
+bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) const
+{return m_plugin.unsubscribe(subscriptionId.ID, m_auth_info.username);}
+
+/**
  * @brief      Mark message as updated
  *
  * @param      dir       Home directory of user or domain

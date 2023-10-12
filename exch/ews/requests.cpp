@@ -1138,6 +1138,29 @@ void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext
 }
 
 /**
+ * @brief      Process Unsubscribe
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUnsubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:UnsubscribeResponse");
+
+	mUnsubscribeResponse data;
+	if(ctx.unsubscribe(request.SubscriptionId))
+		data.ResponseMessages.emplace_back().success();
+	else
+		data.ResponseMessages.emplace_back("Error", "ErrorSubscriptionNotFound", "Subscription not found");
+
+	data.serialize(response);
+}
+
+
+/**
  * @brief      Process UpdateItem
  *
  * @param      request   Request data

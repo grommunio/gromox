@@ -36,6 +36,7 @@ EWSFUNC(mSetUserOofSettingsRequest);
 EWSFUNC(mSubscribeRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);
+EWSFUNC(mUnsubscribeRequest);
 EWSFUNC(mUpdateFolderRequest);
 EWSFUNC(mUpdateItemRequest);
 

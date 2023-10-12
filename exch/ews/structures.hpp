@@ -3009,6 +3009,36 @@ struct mSubscribeResponse
 };
 
 /**
+ * Messages.xsd:1982
+ */
+struct mUnsubscribeRequest
+{
+	mUnsubscribeRequest(const tinyxml2::XMLElement*);
+
+	tSubscriptionId SubscriptionId;
+};
+
+/**
+ * Implicitely declared at Messages.xsd:1994
+ */
+struct mUnsubscribeResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "UnsubscribeResponse";
+
+	using mResponseMessageType::mResponseMessageType;
+};
+
+/**
+ * Messages.xsd:1994
+ */
+struct mUnsubscribeResponse
+{
+	std::vector<mUnsubscribeResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:973
  */
 struct mUpdateItemRequest
