@@ -117,18 +117,13 @@ static void xa_refresh_aliases(MYSQL *conn) try
 static void xa_refresh_thread()
 {
 	std::mutex slp_mtx;
-	{
-		auto conn = sql_make_conn();
-		std::unique_lock slp_hold(slp_mtx);
-		xa_refresh_aliases(conn);
-	}
 	while (!xa_notify_stop) {
+		{
+			auto conn = sql_make_conn();
+			xa_refresh_aliases(conn);
+		}
 		std::unique_lock slp_hold(slp_mtx);
 		xa_thread_wake.wait_for(slp_hold, g_cache_lifetime);
-		if (xa_notify_stop)
-			break;
-		auto conn = sql_make_conn();
-		xa_refresh_aliases(conn);
 	}
 }
 
