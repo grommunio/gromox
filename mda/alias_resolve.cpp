@@ -220,7 +220,7 @@ static constexpr const cfg_directive mysql_directives[] = {
 	CFG_TABLE_END,
 };
 static constexpr const cfg_directive xa_directives[] = {
-	{"cache_lifetime", "1h", CFG_TIME},
+	{"lda_alias_cache_lifetime", "1h", CFG_TIME},
 	CFG_TABLE_END,
 };
 
@@ -246,14 +246,14 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
 	       g_parm.timeout, g_parm.dbname.c_str());
 
 	if (acfg == nullptr)
-		acfg = config_file_initd("alias_resolve.cfg", get_config_path(),
+		acfg = config_file_initd("gromox.cfg", get_config_path(),
 		       xa_directives);
 	if (acfg == nullptr) {
-		mlog(LV_ERR, "alias_resolve: config_file_initd alias_resolve.cfg: %s",
+		mlog(LV_ERR, "alias_resolve: config_file_initd gromox.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
-	g_cache_lifetime = std::chrono::seconds(acfg->get_ll("cache_lifetime"));
+	g_cache_lifetime = std::chrono::seconds(acfg->get_ll("lda_alias_cache_lifetime"));
 	return true;
 } catch (const cfg_error &) {
 	return false;
@@ -293,10 +293,10 @@ static BOOL xa_main(int reason, void **data)
 		       strerror(errno));
 		return false;
 	}
-	auto acfg = config_file_initd("alias_resolve.cfg", get_config_path(),
+	auto acfg = config_file_initd("gromox.cfg", get_config_path(),
 	            xa_directives);
 	if (acfg == nullptr) {
-		mlog(LV_ERR, "alias_resolve: config_file_initd alias_resolve.cfg: %s",
+		mlog(LV_ERR, "alias_resolve: config_file_initd gromox.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
