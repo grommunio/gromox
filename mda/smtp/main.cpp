@@ -32,6 +32,7 @@ using namespace gromox;
 
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
+std::string g_rcpt_delimiter;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
 
@@ -79,6 +80,24 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 
 static void term_handler(int signo);
 
+static constexpr const cfg_directive dq_gxcfg_dflt[] = {
+	{"lda_recipient_delimiter", ""},
+	CFG_TABLE_END,
+};
+
+static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
+    std::shared_ptr<CONFIG_FILE> pconfig)
+{
+	if (gxcfg == nullptr)
+		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", dq_gxcfg_dflt);
+	if (opt_config_file != nullptr && gxcfg == nullptr) {
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
+		return false;
+	}
+	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
+	return true;
+}
+
 int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
@@ -109,6 +128,8 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "resource: config_file_init %s: %s",
 			opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
+		return EXIT_FAILURE;
+	if (!dq_reload_config(nullptr, g_config_file))
 		return EXIT_FAILURE;
 
 	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
@@ -319,8 +340,10 @@ int main(int argc, const char **argv) try
 	mlog(LV_NOTICE, "system: delivery-queue / SMTP daemon is now running");
 	while (!g_notify_stop) {
 		sleep(3);
-		if (g_hup_signalled.exchange(false))
+		if (g_hup_signalled.exchange(false)) {
+			dq_reload_config(nullptr, nullptr);
 			service_trigger_all(PLUGIN_RELOAD);
+		}
 	}
 	listener_stop_accept();
 	return retcode;

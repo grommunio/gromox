@@ -876,14 +876,32 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 	return false;
 }
 
+static std::string strip_ext(std::string user, const char *delim)
+{
+	/*
+	 * Ugh, this duplicates logic from alias_resolve.cpp. (dq and delivery
+	 * really need to be combined).
+	 */
+	auto at = strchr(user.c_str(), '@');
+	if (at != nullptr) {
+		size_t atpos = at - user.c_str();
+		auto expos = user.find_first_of(delim, 0, atpos);
+		if (expos != user.npos && expos < atpos)
+			user.erase(expos, atpos - expos);
+	}
+	return std::move(user);
+}
+
 /* only used by delivery-queue; who can receive mail? */
-bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) try
+bool mysql_adaptor_check_user(const char *user_raw, const char *delim,
+    char *path, size_t dsize) try
 {
 	char temp_name[UADDR_SIZE*2];
 
 	if (path != nullptr)
 		*path = '\0';
-	mysql_adaptor_encode_squote(username, temp_name);
+	auto username = strip_ext(user_raw, delim);
+	mysql_adaptor_encode_squote(username.c_str(), temp_name);
 	auto qstr =
 		"SELECT DISTINCT u.address_status, u.maildir FROM users AS u "
 		"LEFT JOIN aliases AS a ON u.username=a.mainname "
@@ -899,7 +917,7 @@ bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) tr
 	if (pmyres.num_rows() == 0) {
 		return false;
 	} else if (pmyres.num_rows() > 1) {
-		mlog(LV_WARN, "W-1510: userdb conflict: <%s> is in both \"users\" and \"aliases\"", username);
+		mlog(LV_WARN, "W-1510: userdb conflict: <%s> is in both \"users\" and \"aliases\"", username.c_str());
 		return false;
 	}
 	auto myrow = pmyres.fetch_row();

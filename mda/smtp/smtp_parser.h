@@ -106,3 +106,4 @@ extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *
 
 extern alloc_limiter<stream_block> g_blocks_allocator;
 extern smtp_param g_param;
+extern std::string g_rcpt_delimiter;
