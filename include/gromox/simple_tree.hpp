@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <gromox/common_types.hpp>
 
 enum {
@@ -37,6 +38,27 @@ struct GX_EXPORT mtree {
 	BOOL set_root(tree_node *);
 	BOOL insert_sibling(tree_node *base, tree_node *, int opt);
 	BOOL add_child(tree_node *base, tree_node *, int opt);
+	template<typename T> BOOL set_root(std::unique_ptr<T> &&p)
+	{
+		if (!set_root(&p.get()->node))
+			return false;
+		p.release();
+		return TRUE;
+	}
+	template<typename T> BOOL insert_sibling(tree_node *b, std::unique_ptr<T> &&p, int opt)
+	{
+		if (!insert_sibling(b, &p.get()->node, opt))
+			return false;
+		p.release();
+		return TRUE;
+	}
+	template<typename T> BOOL add_child(tree_node *b, std::unique_ptr<T> &&p, int opt)
+	{
+		if (!add_child(b, &p.get()->node, opt))
+			return false;
+		p.release();
+		return TRUE;
+	}
 	void destroy_node(tree_node *, SIMPLE_TREE_DELETE);
 
 	SIMPLE_TREE_NODE *root = nullptr;
