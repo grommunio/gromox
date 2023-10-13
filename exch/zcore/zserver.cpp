@@ -4965,10 +4965,10 @@ ec_error_t zs_rfc822tomessage(GUID hsession, uint32_t hmessage,
 		return ecNullObject;
 	if (mapi_type != zs_objtype::message)
 		return ecNotSupported;
-	auto pmsgctnt = cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin);
+	std::unique_ptr<MESSAGE_CONTENT, mc_delete> pmsgctnt(cu_rfc822_to_message(pmessage->get_store(), mxf_flags, peml_bin));
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(pmsgctnt.get()) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_messagetoical(GUID hsession, uint32_t hmessage, BINARY *pical_bin)
