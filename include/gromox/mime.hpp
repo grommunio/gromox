@@ -21,8 +21,8 @@ struct GX_EXPORT MIME {
 	~MIME();
 
 	using write_func = ssize_t (*)(void *, const void *, size_t);
-	static MIME *create() try {
-		return new MIME();
+	static std::unique_ptr<MIME> create() try {
+		return std::make_unique<MIME>();
 	} catch (const std::bad_alloc &) {
 		return nullptr;
 	}

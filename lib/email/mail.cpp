@@ -60,22 +60,20 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 	}
 #endif
 	clear();
-	auto pmime = MIME::create();
+	auto mime_uq = MIME::create();
+	auto pmime = mime_uq.get();
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
-	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
-		delete pmime;
+	if (!pmime->load_from_str_move(nullptr, in_buff, length))
 		return false;
-	}
 
 	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-		delete pmime;
 		return false;
 	}
-	pmail->tree.set_root(&pmime->node);
+	pmail->tree.set_root(std::move(mime_uq));
 	if (pmime->mime_type != mime_type::multiple)
 		return true;
 	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
@@ -85,17 +83,16 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 
 	pmail->clear();
 	/* retrieve as single mail object */
-	pmime = MIME::create();
+	mime_uq = MIME::create();
+	pmime = mime_uq.get();
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
-	if (!pmime->load_from_str_move(nullptr, in_buff, length)) {
-		delete pmime;
+	if (!pmime->load_from_str_move(nullptr, in_buff, length))
 		return false;
-	}
 	pmime->mime_type = mime_type::single;
-	pmail->tree.set_root(&pmime->node);
+	pmail->tree.set_root(std::move(mime_uq));
 	return true;
 }
 
@@ -113,6 +110,7 @@ bool MAIL::load_from_str_move(char *in_buff, size_t length)
 static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	char *ptr_begin, char *ptr_end)
 {
+	std::unique_ptr<MIME> mime_uq;
 	MIME *pmime, *pmime_last;
 	char *ptr, *ptr_last;
 
@@ -127,26 +125,24 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		    ptr[pmime_parent->boundary_len+2] != '\n' &&
 		    ptr[pmime_parent->boundary_len+2] != '-')
 			continue;
-		pmime = MIME::create();
+		mime_uq = MIME::create();
+		pmime = mime_uq.get();
 		if (NULL == pmime) {
 			mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 			return false;
 		}
-		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last)) {
-			delete pmime;
+		if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr - ptr_last))
 			return false;
-		}
 		if (pmime->mime_type == mime_type::none) {
 			mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-			delete pmime;
 			return false;
 		}
 		if (pmime_last == nullptr)
 			pmail->tree.add_child(&pmime_parent->node,
-				&pmime->node, SIMPLE_TREE_ADD_LAST);
+				std::move(mime_uq), SIMPLE_TREE_ADD_LAST);
 		else
 			pmail->tree.insert_sibling(&pmime_last->node,
-				&pmime->node, SIMPLE_TREE_INSERT_AFTER);
+				std::move(mime_uq), SIMPLE_TREE_INSERT_AFTER);
 		pmime_last = pmime;
 		if (pmime->mime_type == mime_type::multiple) {
 			auto fss = pmime->first_boundary == nullptr ? nullptr : &pmime->first_boundary[pmime->boundary_len+2];
@@ -169,26 +165,24 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 	if (ptr >= ptr_end)
 		return true;
 	/* some illegal multiple mimes haven't --boundary string-- */
-	pmime = MIME::create();
+	mime_uq = MIME::create();
+	pmime = mime_uq.get();
 	if (NULL == pmime) {
 		mlog(LV_ERR, "mail: MIME pool exhausted (too many parts in mail)");
 		return false;
 	}
-	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last)) {
-		delete pmime;
+	if (!pmime->load_from_str_move(pmime_parent, ptr_last, ptr_end - ptr_last))
 		return false;
-	}
 	if (pmime->mime_type == mime_type::none) {
 		mlog(LV_DEBUG, "mail: fatal error in %s", __PRETTY_FUNCTION__);
-		delete pmime;
 		return false;
 	}
 	if (pmime_last == nullptr)
 		pmail->tree.add_child(&pmime_parent->node,
-			&pmime->node,SIMPLE_TREE_ADD_LAST);
+			std::move(mime_uq), SIMPLE_TREE_ADD_LAST);
 	else
 		pmail->tree.insert_sibling(&pmime_last->node,
-			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
+			std::move(mime_uq), SIMPLE_TREE_INSERT_AFTER);
 	if (pmime->mime_type != mime_type::multiple)
 		return true;
 	auto fss = &pmime->first_boundary[pmime->boundary_len+2];
@@ -285,11 +279,12 @@ MIME *MAIL::add_head()
 	auto pmail = this;
 	if (pmail->tree.get_root() != nullptr)
 		return NULL;
-	auto pmime = MIME::create();
+	auto mime_uq = MIME::create();
+	auto pmime = mime_uq.get();
 	if (pmime == nullptr)
 		return NULL;
 	pmime->clear();
-	pmail->tree.set_root(&pmime->node);
+	pmail->tree.set_root(std::move(mime_uq));
 	return pmime;
 }
 
@@ -607,15 +602,14 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
 #endif
 	if (pmime_base->mime_type != mime_type::multiple)
 		return NULL;
-	auto pmime = MIME::create();
+	auto mime_uq = MIME::create();
+	auto pmime = mime_uq.get();
     if (NULL == pmime) {
         return NULL;
     }
 	pmime->clear();
-	if (!pmail->tree.add_child(&pmime_base->node, &pmime->node, opt)) {
-		delete pmime;
+	if (!pmail->tree.add_child(&pmime_base->node, std::move(mime_uq), opt))
         return NULL;
-    }
     return pmime;
 }
 
