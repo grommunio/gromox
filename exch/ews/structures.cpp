@@ -1036,10 +1036,14 @@ uint64_t sTimePoint::toNT() const
 tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 {
 	AttachmentId.emplace(aid);
-	fromProp(props.find(PR_DISPLAY_NAME), Name);
+	fromProp(props.find(PR_ATTACH_LONG_FILENAME), Name);
 	fromProp(props.find(PR_ATTACH_MIME_TAG), ContentType);
+	fromProp(props.find(PR_ATTACH_CONTENT_ID), ContentId);
 	fromProp(props.find(PR_ATTACH_SIZE), Size);
 	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
+	uint32_t* flags = props.get<uint32_t>(PR_ATTACH_FLAGS);
+	if(flags)
+		IsInline = *flags & ATT_MHTML_REF;
 }
 
 sAttachment tAttachment::create(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
@@ -1981,8 +1985,10 @@ void tFieldURI::tags(sShape& shape, bool add) const
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
 {
 	TAGGED_PROPVAL* tp = props.find(PR_ATTACH_DATA_BIN);
-	if(tp)
+	if(tp) {
 		Content.emplace(*tp);
+		Size = Content->size();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

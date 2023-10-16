@@ -457,7 +457,8 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
 	auto aInst = plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
-	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN};
+	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN,
+	                            PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
 	TPROPVAL_ARRAY props;
 	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 	if(!plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
@@ -528,8 +529,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	}
 	if(special & sShape::Attachments)
 	{
-		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_SIZE,
-		                            PR_LAST_MODIFICATION_TIME};
+		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
+			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
 		auto mInst = plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if(!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))

@@ -408,14 +408,14 @@ struct tAttachment : public NS_EWS_Types
 	static sAttachment create(const sAttachmentId&, const TPROPVAL_ARRAY&);
 
 	std::optional<sAttachmentId> AttachmentId;
-	std::optional<std::string> Name;
-	std::optional<std::string> ContentType;
-	std::optional<std::string> ContentId;
+	std::optional<std::string> Name;///< PR_ATTACH_LONG_FILENAM
+	std::optional<std::string> ContentType; ///< PR_ATTACH_MIME_TAG
+	std::optional<std::string> ContentId; ///< PR_ATTACH_CONTENT_ID
 	std::optional<std::string> ContentLocation;
 	std::optional<std::string> AttachmentOriginalUrl;
 	std::optional<int32_t> Size;
-	std::optional<sTimePoint> LastModifiedTime;
-	std::optional<bool> IsInline;
+	std::optional<sTimePoint> LastModifiedTime; ///< PR_LAST_MODIFICATION_TIME
+	std::optional<bool> IsInline; ///< PR_ATTACHMENT_FLAGS & ATT_MHTML_REF
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
