@@ -2916,14 +2916,13 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 	if (!pmsg->proplist.has(PR_HTML)) {
 		auto s = pmsg->proplist.get<const char>(PR_BODY);
 		if (s != nullptr) {
-			auto phtml_bin = static_cast<BINARY *>(alloc(sizeof(BINARY)));
-			if (phtml_bin == nullptr)
+			BINARY bv;
+			bv.pc = plain_to_html(s);
+			if (bv.pc == nullptr)
 				return NULL;
-			phtml_bin->pc = plain_to_html(s);
-			if (phtml_bin->pc == nullptr)
-				return NULL;
-			phtml_bin->cb = strlen(phtml_bin->pc);
-			pmsg->proplist.set(PR_HTML, phtml_bin);
+			bv.cb = strlen(bv.pc);
+			pmsg->proplist.set(PR_HTML, &bv);
+			free(bv.pc);
 			uint32_t tmp_int32 = CP_UTF8;
 			if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0)
 				return nullptr;
