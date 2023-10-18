@@ -135,7 +135,7 @@ void* EWSContext::alloc(size_t count)
  * @tparam     T         Request data type
  */
 template<typename T>
-static void process(const XMLElement* request, XMLElement* response, const EWSContext& context)
+static void process(const XMLElement* request, XMLElement* response, EWSContext& context)
 {Requests::process(T(request), response, context);}
 
 /**

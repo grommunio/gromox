@@ -97,7 +97,7 @@ class EWSContext;
 class EWSPlugin
 {
 public:
-	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, const EWSContext &);
+	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, EWSContext &);
 
 	EWSPlugin();
 	http_status proc(int, const void*, uint64_t);
