@@ -722,8 +722,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	if (!oxvcard_get_propids(&propids, std::move(get_propids)))
 		return FALSE;
 	vcard.clear();
-	vcard.append_line("PROFILE", "VCARD");
 	vcard.append_line("VERSION", "4.0");
+	vcard.append_line("PROFILE", "VCARD");
 	vcard.append_line("MAILER", "gromox-oxvcard");
 	vcard.append_line("PRODID", "gromox-oxvcard");
 

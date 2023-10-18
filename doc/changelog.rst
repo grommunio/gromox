@@ -1,3 +1,12 @@
+Development 2.15.1
+==================
+
+Fixes:
+
+* oxvcard: export to .vcf now positions the VERSION property in accordance with
+  the vCard 4.0 specification.
+
+
 Gromox 2.15 (2023-10-18)
 ========================
 
