@@ -280,17 +280,17 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
 	if(request_logging >= 2)
 	{
-		for(const XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
+		for(const XMLElement* xml = context.request().body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 			enableLog = enableLog || logEnabled(xml->Name());
 		if(enableLog)
 			mlog(LV_DEBUG, "[ews#%d] Incoming data: %.*s", ctx_id,  len > INT_MAX ? INT_MAX : static_cast<int>(len),
 			     static_cast<const char *>(data));
 	}
-	for(XMLElement* xml = context.request.body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
+	for(XMLElement* xml = context.request().body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
 	{
 		bool logThis = logEnabled(xml->Name());
 		enableLog = enableLog || logThis;
-		XMLElement* responseContainer = context.response.body->InsertNewChildElement(xml->Name());
+		XMLElement* responseContainer = context.response().body->InsertNewChildElement(xml->Name());
 		responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 		responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 		if(logThis && request_logging)
@@ -302,7 +302,7 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 			handler->second(xml, responseContainer, context);
 	}
 	XMLPrinter printer(nullptr, !pretty_response);
-	context.response.doc.Print(&printer);
+	context.response().doc.Print(&printer);
 	return {printer.CStr(), 200};
 } catch (const Exceptions::InputError &err) {
 	return {SOAP::Envelope::fault("Client", err.what()), 200};

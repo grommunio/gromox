@@ -181,8 +181,11 @@ class EWSContext
 {
 public:
 	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
-		ID(id), orig(*get_request(id)), auth_info(ai), request(data, length), plugin(p)
+		m_ID(id), m_orig(*get_request(id)), m_auth_info(ai), m_request(data, length), m_plugin(p)
 	{}
+
+	EWSContext(const EWSContext&) = delete;
+	EWSContext(EWSContext&&) = delete;
 
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
@@ -222,12 +225,10 @@ public:
 
 	void experimental() const;
 
-	int ID = 0;
-	HTTP_REQUEST& orig;
-	HTTP_AUTH_INFO auth_info{};
-	SOAP::Envelope request;
-	SOAP::Envelope response;
-	EWSPlugin& plugin;
+	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
+	inline const EWSPlugin& plugin() const {return m_plugin;}
+	inline const SOAP::Envelope& request() const {return m_request;}
+	inline SOAP::Envelope& response() {return m_response;}
 
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
@@ -248,6 +249,13 @@ private:
 	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MESSAGE_CONTENT&) const;
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
+
+	int m_ID = 0;
+	HTTP_REQUEST& m_orig;
+	HTTP_AUTH_INFO m_auth_info{};
+	SOAP::Envelope m_request;
+	SOAP::Envelope m_response;
+	EWSPlugin& m_plugin;
 };
 
 /**
