@@ -1,5 +1,5 @@
-Development 2.14.66
-===================
+Gromox 2.15 (2023-10-18)
+========================
 
 Fixes:
 
@@ -9,6 +9,7 @@ Fixes:
 * exmdb: explicitly rollback SQLite transactions when the commit operation
   failed, to resolve cases of ``cannot start a transaction within a
   transaction``
+* exmdb: ACE entries for anonymous were misreported to clients
 
 Enhancements:
 
@@ -25,6 +26,15 @@ Changes:
   parameters when those fields are not present in the MAPI object
 * Delete unused columns and indexes from the ``associations`` MariaDB table;
   (grommunio-admin-api should be updated to >= 1.12)
+
+Last-minute notes:
+
+* When gromox-dbop attempts to upgrade to table schema version 127, an SQL
+  query is issued to set a new PRIMARY KEY on a table. It has been brought to
+  our attention that somewhat older MariaDB server versions (namely 10.4.13,
+  10.4.22) contain a bug/not_implemented_feature which makes this query never
+  succeed. The issue is resolved in MariaDB 10.6.15 (as used by the Grommunio
+  Appliance) and newer versions. Details are still under investigation.
 
 
 Gromox 2.14 (2023-10-04)

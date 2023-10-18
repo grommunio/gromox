@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+	SPDX-FileCopyrightText: 2023 grommunio GmbH
 
 Dependency installation
 =======================
@@ -21,7 +21,7 @@ dependencies are needed:
 * libzstd >= 1.4
 * MariaDB Connector/C or compatible
 * OpenLDAP or similar headers
-* OpenSSL or compatible
+* OpenSSL or compatible with SHA-3 support
 * perl5
 * SQLite3
 * tinyxml2 >= 8 (we use this for all things XML)
