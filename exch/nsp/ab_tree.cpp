@@ -62,8 +62,8 @@ using AB_NODE = NSAB_NODE;
 
 namespace {
 
-struct sort_item {
-	SIMPLE_TREE_NODE *pnode = nullptr;
+template<typename T> struct sort_item {
+	T obj;
 	std::string str;
 	inline bool operator<(const sort_item &o) const { return strcasecmp(str.c_str(), o.str.c_str()) < 0; }
 };
@@ -125,9 +125,11 @@ uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
 	return count;
 }
 
-static AB_NODE* ab_tree_get_abnode()
+static std::unique_ptr<NSAB_NODE> ab_tree_get_abnode() try
 {
-	return new(std::nothrow) AB_NODE;
+	return std::make_unique<NSAB_NODE>();
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 NSAB_NODE::~NSAB_NODE()
@@ -158,7 +160,7 @@ const SIMPLE_TREE_NODE *ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 	if (iter != pbase->phash.end())
 		return &iter->second->stree;
 	std::lock_guard rhold(pbase->remote_lock);
-	for (auto xab : pbase->remote_list)
+	for (auto &xab : pbase->remote_list)
 		if (xab->minid == minid)
 			return &xab->stree;
 	return NULL;
@@ -212,13 +214,10 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 
 void AB_BASE::unload()
 {
-	auto pbase = this;
 	gal_list.clear();
 	for (auto &domain : domain_list)
 		ab_tree_destruct_tree(&domain.tree);
 	domain_list.clear();
-	for (auto xab : pbase->remote_list)
-		delete xab;
 }
 
 domain_node::domain_node(domain_node &&o) noexcept :
@@ -289,12 +288,12 @@ static BOOL ab_tree_load_tree(int domain_id,
 	SIMPLE_TREE *ptree, AB_BASE *pbase)
 {
 	int rows;
-	AB_NODE *pabnode;
 	sql_domain dinfo;
 	
 	if (!get_domain_info(domain_id, dinfo))
 		return FALSE;
-	pabnode = ab_tree_get_abnode();
+	auto abnode_uq = ab_tree_get_abnode();
+	auto pabnode = abnode_uq.get();
 	if (pabnode == nullptr)
 		return FALSE;
 	pabnode->node_type = abnode_type::domain;
@@ -312,7 +311,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return false;
 	}
 	auto pdomain = &pabnode->stree;
-	ptree->set_root(pdomain);
+	ptree->set_root(std::move(abnode_uq));
 	if (!ab_tree_cache_node(pbase, pabnode))
 		return false;
 
@@ -320,7 +319,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 	if (!get_domain_groups(domain_id, file_group))
 		return FALSE;
 	for (auto &&grp : file_group) {
-		pabnode = ab_tree_get_abnode();
+		abnode_uq = ab_tree_get_abnode();
+		pabnode = abnode_uq.get();
 		if (pabnode == nullptr)
 			return FALSE;
 		pabnode->node_type = abnode_type::group;
@@ -333,7 +333,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			return false;
 		}
 		auto pgroup = &pabnode->stree;
-		ptree->add_child(pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
+		ptree->add_child(pdomain, std::move(abnode_uq), SIMPLE_TREE_ADD_LAST);
 		if (!ab_tree_cache_node(pbase, pabnode))
 			return false;
 		
@@ -343,41 +343,32 @@ static BOOL ab_tree_load_tree(int domain_id,
 			return FALSE;
 		else if (rows == 0)
 			continue;
-		std::vector<sort_item> parray;
-		auto cl_array = make_scope_exit([&parray]() {
-			for (const auto &e : parray)
-				delete containerof(e.pnode, AB_NODE, stree);
-		});
+		std::vector<sort_item<std::unique_ptr<NSAB_NODE>>> parray;
 		for (auto &&usr : file_user) {
-			pabnode = ab_tree_get_abnode();
+			abnode_uq = ab_tree_get_abnode();
+			pabnode = abnode_uq.get();
 			if (pabnode == nullptr)
 				return false;
 			if (usr.dtypx == DT_DISTLIST) {
-				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-					delete pabnode;
+				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase))
 					return false;
-				}
 			} else {
-				if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-					delete pabnode;
+				if (!ab_tree_load_user(pabnode, std::move(usr), pbase))
 					return false;
-				}
 			}
 			char temp_buff[1024];
 			ab_tree_get_display_name(&pabnode->stree, CP_ACP,
 				temp_buff, std::size(temp_buff));
 			try {
-				parray.push_back(sort_item{&pabnode->stree, temp_buff});
+				parray.push_back(sort_item<std::unique_ptr<NSAB_NODE>>{std::move(abnode_uq), temp_buff});
 			} catch (const std::bad_alloc &) {
 				mlog(LV_ERR, "E-1674: ENOMEM");
-				delete pabnode;
 				return false;
 			}
 		}
 		std::sort(parray.begin(), parray.end());
 		for (int i = 0; i < rows; ++i)
-			ptree->add_child(pgroup, parray[i].pnode, SIMPLE_TREE_ADD_LAST);
-		cl_array.release();
+			ptree->add_child(pgroup, std::move(parray[i].obj), SIMPLE_TREE_ADD_LAST);
 	}
 	
 	std::vector<sql_user> file_user;
@@ -386,42 +377,32 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return FALSE;
 	else if (rows == 0)
 		return TRUE;
-	std::vector<sort_item> parray;
-	auto cl_array = make_scope_exit([&parray]() {
-		for (const auto &e : parray)
-			delete containerof(e.pnode, AB_NODE, stree);
-	});
+	std::vector<sort_item<std::unique_ptr<NSAB_NODE>>> parray;
 	for (auto &&usr : file_user) {
-		pabnode = ab_tree_get_abnode();
+		abnode_uq = ab_tree_get_abnode();
+		pabnode = abnode_uq.get();
 		if (pabnode == nullptr)
 			return false;
 		if (usr.dtypx == DT_DISTLIST) {
-			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
-				delete pabnode;
+			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase))
 				return false;
-			}
 		} else {
-			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
-				delete pabnode;
+			if (!ab_tree_load_user(pabnode, std::move(usr), pbase))
 				return false;
-			}
 		}
 		char temp_buff[1024];
 		ab_tree_get_display_name(&pabnode->stree, CP_ACP,
 			temp_buff, std::size(temp_buff));
 		try {
-			parray.push_back(sort_item{&pabnode->stree, temp_buff});
+			parray.push_back(sort_item<std::unique_ptr<NSAB_NODE>>{std::move(abnode_uq), temp_buff});
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1675: ENOMEM");
-			delete pabnode;
 			return false;
 		}
-		cl_array.release();
 	}
 	std::sort(parray.begin(), parray.end());
 	for (int i = 0; i < rows; ++i)
-		ptree->add_child(pdomain, parray[i].pnode, SIMPLE_TREE_ADD_LAST);
-	cl_array.release();
+		ptree->add_child(pdomain, std::move(parray[i].obj), SIMPLE_TREE_ADD_LAST);
 	return TRUE;
 }
 
@@ -470,16 +451,16 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	}
 	if (pbase->gal_list.size() <= 1)
 		return TRUE;
-	std::vector<sort_item> parray;
+	std::vector<sort_item<tree_node *>> parray;
 	for (auto ptr : pbase->gal_list) {
 		ab_tree_get_display_name(ptr, CP_ACP,
 			temp_buff, std::size(temp_buff));
-		parray.push_back(sort_item{ptr, temp_buff});
+		parray.push_back(sort_item<tree_node *>{ptr, temp_buff});
 	}
 	std::sort(parray.begin(), parray.end());
 	size_t i = 0;
 	for (auto &ptr : pbase->gal_list)
-		ptr = parray[i++].pnode;
+		ptr = parray[i++].obj;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1677: ENOMEM");
@@ -572,8 +553,6 @@ static void *nspab_scanwork(void *param)
 		for (auto &domain : pbase->domain_list)
 			ab_tree_destruct_tree(&domain.tree);
 		pbase->domain_list.clear();
-		for (auto xab : pbase->remote_list)
-			delete xab;
 		pbase->remote_list.clear();
 		pbase->phash.clear();
 		if (!ab_tree_load_base(pbase)) {
@@ -817,7 +796,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 
 	/* The minid belongs to an object that is outside of @pbase */
 	std::unique_lock rhold(pbase->remote_lock);
-	for (auto xab : pbase->remote_list)
+	for (auto &xab : pbase->remote_list)
 		if (xab->minid == minid)
 			return &xab->stree;
 	rhold.unlock();
@@ -831,7 +810,8 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (iter == pbase1->phash.end())
 		return NULL;
 	auto xab = iter->second;
-	auto pabnode = ab_tree_get_abnode();
+	auto abnode_uq = ab_tree_get_abnode();
+	auto pabnode = abnode_uq.get();
 	if (pabnode == nullptr)
 		return NULL;
 	pabnode->stree.pdata = nullptr;
@@ -850,16 +830,13 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		pabnode->d_info = new(std::nothrow) sql_class(*static_cast<sql_class *>(xab->d_info));
 	else
 		pabnode->d_info = new(std::nothrow) sql_user(*static_cast<sql_user *>(xab->d_info));
-	if (pabnode->d_info == nullptr && xab->node_type != abnode_type::remote) {
-		delete pabnode;
+	if (pabnode->d_info == nullptr && xab->node_type != abnode_type::remote)
 		return nullptr;
-	}
 	pbase1.reset();
 	rhold.lock();
 	try {
-		pbase->remote_list.push_back(pabnode);
+		pbase->remote_list.push_back(std::move(abnode_uq));
 	} catch (const std::bad_alloc &) {
-		delete pabnode;
 		return nullptr;
 	}
 	return &pabnode->stree;

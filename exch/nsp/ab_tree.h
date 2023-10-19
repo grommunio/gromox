@@ -83,7 +83,7 @@ struct AB_BASE {
 	 * @remote_list owns all the NSAB_NODEs it references.
 	 * No other AB_BASE members references these nodes.
 	 */
-	std::vector<NSAB_NODE *> remote_list;
+	std::vector<std::unique_ptr<NSAB_NODE>> remote_list;
 	/*
 	 * Ordered view (but in no particular order) over all NSAB_NODEs that represent users
 	 * (so no AB containers).
