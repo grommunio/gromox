@@ -113,9 +113,8 @@ uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
 	uint32_t count;
 	
 	pnode = pnode->get_child();
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return 0;
-	}
 	count = 0;
 	do {
 		if (ab_tree_get_node_type(pnode) >= abnode_type::containers ||
@@ -204,11 +203,10 @@ int ab_tree_run()
 static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 {
 	auto proot = ptree->get_root();
-	if (NULL != proot) {
+	if (proot != nullptr)
 		ptree->destroy_node(proot, [](SIMPLE_TREE_NODE *nd) {
 			delete containerof(nd, AB_NODE, stree);
 		});
-	}
 	ptree->clear();
 }
 
@@ -297,9 +295,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 	if (!get_domain_info(domain_id, dinfo))
 		return FALSE;
 	pabnode = ab_tree_get_abnode();
-	if (NULL == pabnode) {
+	if (pabnode == nullptr)
 		return FALSE;
-	}
 	pabnode->node_type = abnode_type::domain;
 	pabnode->id = domain_id;
 	pabnode->minid = ab_tree_make_minid(minid_type::domain, domain_id);
@@ -324,9 +321,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return FALSE;
 	for (auto &&grp : file_group) {
 		pabnode = ab_tree_get_abnode();
-		if (NULL == pabnode) {
+		if (pabnode == nullptr)
 			return FALSE;
-		}
 		pabnode->node_type = abnode_type::group;
 		pabnode->id = grp.id;
 		pabnode->minid = ab_tree_make_minid(minid_type::group, grp.id);
@@ -343,11 +339,10 @@ static BOOL ab_tree_load_tree(int domain_id,
 		
 		std::vector<sql_user> file_user;
 		rows = get_group_users(grp_id, file_user);
-		if (-1 == rows) {
+		if (rows == -1)
 			return FALSE;
-		} else if (0 == rows) {
+		else if (rows == 0)
 			continue;
-		}
 		std::vector<sort_item> parray;
 		auto cl_array = make_scope_exit([&parray]() {
 			for (const auto &e : parray)
@@ -355,9 +350,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 		});
 		for (auto &&usr : file_user) {
 			pabnode = ab_tree_get_abnode();
-			if (NULL == pabnode) {
+			if (pabnode == nullptr)
 				return false;
-			}
 			if (usr.dtypx == DT_DISTLIST) {
 				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 					delete pabnode;
@@ -388,11 +382,10 @@ static BOOL ab_tree_load_tree(int domain_id,
 	
 	std::vector<sql_user> file_user;
 	rows = get_domain_users(domain_id, file_user);
-	if (-1 == rows) {
+	if (rows == -1)
 		return FALSE;
-	} else if (0 == rows) {
+	else if (rows == 0)
 		return TRUE;
-	}
 	std::vector<sort_item> parray;
 	auto cl_array = make_scope_exit([&parray]() {
 		for (const auto &e : parray)
@@ -400,9 +393,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
-		if (NULL == pabnode) {
+		if (pabnode == nullptr)
 			return false;
-		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				delete pabnode;
@@ -465,9 +457,8 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	for (auto &domain : pbase->domain_list) {
 		auto pdomain = &domain;
 		auto proot = pdomain->tree.get_root();
-		if (NULL == proot) {
+		if (proot == nullptr)
 			continue;
-		}
 		simple_tree_enum_from_node(proot, [&pbase](tree_node *nd, unsigned int) {
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type >= abnode_type::containers ||
@@ -539,9 +530,8 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		if (pbase->status != BASE_STATUS_LIVING) {
 			bhold.unlock();
 			count ++;
-			if (count > 60) {
+			if (count > 60)
 				return nullptr;
-			}
 			sleep(1);
 			goto RETRY_LOAD_BASE;
 		}
@@ -623,9 +613,8 @@ static int ab_tree_node_to_rpath(const SIMPLE_TREE_NODE *pnode,
 	}
 	char temp_buff[HXSIZEOF_Z32+2];
 	auto len = sprintf(temp_buff, "%c%d", k, pabnode->id);
-	if (len >= length) {
+	if (len >= length)
 		return 0;
-	}
 	memcpy(pbuff, temp_buff, len + 1);
 	return len;
 }
@@ -653,9 +642,8 @@ static BOOL ab_tree_node_to_path(const SIMPLE_TREE_NODE *pnode,
 	do {
 		len = ab_tree_node_to_rpath(pnode,
 			pbuff + offset, length - offset);
-		if (0 == len) {
+		if (len == 0)
 			return FALSE;
-		}
 		offset += len;
 	} while ((pnode = pnode->get_parent()) != nullptr);
 	return TRUE;
@@ -757,9 +745,8 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		id = pabnode->id;
 		gx_strlcpy(cusername, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(cusername));
 		ptoken = strchr(cusername, '@');
-		if (NULL != ptoken) {
+		if (ptoken != nullptr)
 			*ptoken = '\0';
-		}
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != abnode_type::domain)
@@ -819,9 +806,8 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		auto iter = pbase->phash.find(minid);
 		return iter != pbase->phash.end() ? &iter->second->stree : nullptr;
 	}
-	if (0 != strncasecmp(pdn + temp_len, "/cn=Recipients/cn=", 18)) {
+	if (strncasecmp(&pdn[temp_len], "/cn=Recipients/cn=", 18) != 0)
 		return NULL;
-	}
 	domain_id = decode_hex_int(pdn + temp_len + 18);
 	id = decode_hex_int(pdn + temp_len + 26);
 	auto minid = ab_tree_make_minid(minid_type::address, id);
@@ -846,9 +832,8 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		return NULL;
 	auto xab = iter->second;
 	auto pabnode = ab_tree_get_abnode();
-	if (NULL == pabnode) {
+	if (pabnode == nullptr)
 		return NULL;
-	}
 	pabnode->stree.pdata = nullptr;
 	pabnode->node_type = abnode_type::remote;
 	pabnode->minid = xab->minid;
@@ -941,9 +926,8 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		}
 		gx_strlcpy(str_dname, obj->username.c_str(), dn_size);
 		ptoken = strchr(str_dname, '@');
-		if (NULL != ptoken) {
+		if (ptoken != nullptr)
 			*ptoken = '\0';
-		}
 		break;
 	}
 	default:
@@ -1019,11 +1003,10 @@ void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode, char *dn, int length)
 	gx_strlcpy(username, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(username));
 	ptoken = strchr(username, '@');
 	HX_strlower(username);
-	if (NULL != ptoken) {
+	if (ptoken != nullptr)
 		ptoken++;
-	} else {
+	else
 		ptoken = username;
-	}
 	if (xab->node_type == abnode_type::remote)
 		encode_hex_int(ab_tree_get_minid_value(xab->minid), hex_string);
 	else

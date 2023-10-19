@@ -51,9 +51,8 @@ int common_util_from_utf8(cpid_t codepage, const char *src, char *dst, size_t le
 	iconv_t conv_id;
 	
 	auto charset = cpid_to_cset(codepage);
-	if (NULL == charset) {
+	if (charset == nullptr)
 		return -1;
-	}
 	conv_id = iconv_open(charset, "UTF-8");
 	if (conv_id == (iconv_t)-1)
 		return -1;
@@ -79,9 +78,8 @@ int common_util_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
 	
 	cpid_cstr_compatible(codepage);
 	auto charset = cpid_to_cset(codepage);
-	if (NULL == charset) {
+	if (charset == nullptr)
 		return -1;
-	}
 	conv_id = iconv_open("UTF-8", charset);
 	if (conv_id == (iconv_t)-1)
 		return -1;
@@ -169,17 +167,15 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 			buff[38] = '\0';
 			len = 38;
 			ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
-			if (NULL == ppermeid->pdn) {
+			if (ppermeid->pdn == nullptr)
 				return FALSE;
-			}
 			memcpy(ppermeid->pdn, buff, len + 1);
 		}
 	}  else {
 		len = strlen(pdn);
 		ppermeid->pdn = ndr_stack_anew<char>(NDR_STACK_OUT, len + 1);
-		if (NULL == ppermeid->pdn) {
+		if (ppermeid->pdn == nullptr)
 			return FALSE;
-		}
 		memcpy(ppermeid->pdn, pdn, len + 1);
 	}
 	return TRUE;
@@ -248,15 +244,13 @@ BOOL common_util_ephemeral_entryid_to_binary(
 NSP_ROWSET* common_util_proprowset_init()
 {
 	auto pset = ndr_stack_anew<NSP_ROWSET>(NDR_STACK_OUT);
-	if (NULL == pset) {
+	if (pset == nullptr)
 		return NULL;
-	}
 	memset(pset, 0, sizeof(NSP_ROWSET));
 	auto count = strange_roundup(pset->crows, SR_GROW_NSP_ROWSET);
 	pset->prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
-	if (NULL == pset->prows) {
+	if (pset->prows == nullptr)
 		return NULL;
-	}
 	return pset;
 }
 
@@ -267,9 +261,8 @@ NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset)
 	if (pset->crows + 1 >= count) {
 		count += SR_GROW_NSP_ROWSET;
 		prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
-		if (NULL == prows) {
+		if (prows == nullptr)
 			return NULL;
-		}
 		memcpy(prows, pset->prows, sizeof(NSP_PROPROW)*pset->crows);
 		pset->prows = prows;
 	}
@@ -281,16 +274,14 @@ NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow)
 {
 	if (NULL == prow) {
 		prow = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT);
-		if (NULL == prow) {
+		if (prow == nullptr)
 			return NULL;
-		}
 	}
 	memset(prow, 0, sizeof(NSP_PROPROW));
 	auto count = strange_roundup(prow->cvalues, SR_GROW_NSP_PROPROW);
 	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
-	if (NULL == prow->pprops) {
+	if (prow->pprops == nullptr)
 		return NULL;
-	}
 	return prow;
 }
 
@@ -301,9 +292,8 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 	if (prow->cvalues + 1 >= count) {
 		count += SR_GROW_NSP_PROPROW;
 		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
-		if (NULL == pprops) {
+		if (pprops == nullptr)
 			return NULL;
-		}
 		memcpy(pprops, prow->pprops,
 			sizeof(PROPERTY_VALUE)*prow->cvalues);
 		prow->pprops = pprops;
@@ -315,15 +305,13 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 LPROPTAG_ARRAY* common_util_proptagarray_init()
 {
 	auto pproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (NULL == pproptags) {
+	if (pproptags == nullptr)
 		return NULL;
-	}
 	memset(pproptags, 0, sizeof(LPROPTAG_ARRAY));
 	auto count = strange_roundup(pproptags->cvalues, SR_GROW_PROPTAG_ARRAY);
 	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
-	if (NULL == pproptags->pproptag) {
+	if (pproptags->pproptag == nullptr)
 		return NULL;
-	}
 	return pproptags;
 }
 
@@ -334,9 +322,8 @@ uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags)
 	if (pproptags->cvalues + 1 >= count) {
 		count += SR_GROW_PROPTAG_ARRAY;
 		pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
-		if (NULL == pproptag) {
+		if (pproptag == nullptr)
 			return NULL;
-		}
 		memcpy(pproptag, pproptags->pproptag,
 			sizeof(uint32_t)*pproptags->cvalues);
 		pproptags->pproptag = pproptag;
