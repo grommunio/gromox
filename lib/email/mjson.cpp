@@ -225,7 +225,7 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
 	if (r == nullptr)
 		return;
 	simple_tree_enum_from_node(r, [&](tree_node *stn, unsigned int) {
-		auto m = containerof(stn, MJSON_MIME, node);
+		auto m = containerof(stn, MJSON_MIME, stree);
 		enum_func(m, param);
 	});
 }
@@ -351,10 +351,10 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		auto pmime = pjson->ppool->get();
-		pmime->node.pdata = pmime;
+		pmime->stree.pdata = pmime;
 		pmime->ppool = pjson->ppool;
 		pmime->mime_type = mime_type::none;
-		pjson->tree.set_root(&pmime->node);
+		pjson->tree.set_root(&pmime->stree);
 	}
 	pnode = pjson->tree.get_root();
 	if (pnode == nullptr)
@@ -363,7 +363,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	if (temp_mime.id.empty()) {
 		if (pmime->get_mtype() != mime_type::none)
 			return FALSE;
-		temp_mime.node = pmime->node;
+		temp_mime.stree = pmime->stree;
 		*pmime = std::move(temp_mime);
 		return TRUE;
 	}
@@ -375,15 +375,15 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 			continue;
 		temp_buff[i] = '\0';
 		int offset = strtol(temp_buff + last_pos, nullptr, 0);
-		pnode = pmime->node.get_child();
+		pnode = pmime->stree.get_child();
 		if (NULL == pnode) {
-			pnode = &pmime->node;
+			pnode = &pmime->stree;
 			pmime = pjson->ppool->get();
-			pmime->node.pdata = pmime;
+			pmime->stree.pdata = pmime;
 			pmime->ppool = pjson->ppool;
 			pmime->mime_type = mime_type::none;
 			if (!pjson->tree.add_child(
-			    pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
+			    pnode, &pmime->stree, SIMPLE_TREE_ADD_LAST)) {
 				pjson->ppool->put(pmime);
 				return FALSE;
 			}
@@ -392,18 +392,18 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 		}
 
 		for (j = 1; j < offset; j++) {
-			pnode = pmime->node.get_sibling();
+			pnode = pmime->stree.get_sibling();
 			if (pnode != nullptr) {
 				pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 				continue;
 			}
-			pnode = &pmime->node;
+			pnode = &pmime->stree;
 			pmime = pjson->ppool->get();
-			pmime->node.pdata = pmime;
+			pmime->stree.pdata = pmime;
 			pmime->ppool = pjson->ppool;
 			pmime->mime_type = mime_type::none;
 			if (!pjson->tree.insert_sibling(pnode,
-			    &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
+			    &pmime->stree, SIMPLE_TREE_INSERT_AFTER)) {
 				pjson->ppool->put(pmime);
 				return FALSE;
 			}
@@ -413,7 +413,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 
 	if (pmime->get_mtype() != mime_type::none)
 		return FALSE;
-	temp_mime.node = pmime->node;
+	temp_mime.stree = pmime->stree;
 	*pmime = std::move(temp_mime);
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -681,7 +681,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		buff[offset++] = ')';
 	} else if (pmime->get_mtype() == mime_type::multiple) {
 		buff[offset++] = '(';
-		auto pnode = pmime->node.get_child();
+		auto pnode = pmime->stree.get_child();
 		if (pnode == nullptr)
 			return -1;
 		auto ret_len = mjson_fetch_mime_structure(static_cast<MJSON_MIME *>(pnode->pdata),
@@ -701,7 +701,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		return -1;
 	}
 
-	auto pnode = pmime->node.get_sibling();
+	auto pnode = pmime->stree.get_sibling();
 	if (NULL != pnode) {
 		pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		goto FETCH_STRUCTURE_LOOP;

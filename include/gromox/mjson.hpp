@@ -9,7 +9,7 @@ struct MJSON_MIME;
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct MJSON_MIME {
-	SIMPLE_TREE_NODE node{};
+	SIMPLE_TREE_NODE stree{};
 	alloc_limiter<MJSON_MIME> *ppool = nullptr;
 	enum mime_type mime_type = mime_type::none;
 	std::string id, ctype, encoding, charset, filename, cid, cntl, cntdspn;

@@ -40,8 +40,7 @@ bool MAIL::set_header(const char *hdr, const char *val)
 
 MIME::MIME()
 {
-	auto pmime = this;
-	pmime->node.pdata		 = pmime;
+	stree.pdata = this;
 }
 
 MIME::~MIME()
@@ -50,7 +49,7 @@ MIME::~MIME()
 
 	if (pmime->mime_type != mime_type::multiple)
 		return;
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	while (NULL != pnode) {
 		delete static_cast<MIME *>(pnode->pdata);
 		pnode = pnode->get_sibling();
@@ -795,7 +794,7 @@ bool MIME::serialize(STREAM *pstream) const
 		pstream->write("This is a multi-part message in MIME format.\r\n\r\n", 48);
 	else
 		pstream->write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -849,7 +848,7 @@ static bool mime_read_multipart_content(const MIME *pmime,
 		tmp_stream.write("This is a multi-part message in MIME format.\r\n\r\n", 48);
 	else
 		tmp_stream.write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1223,7 +1222,7 @@ bool MIME::emit(write_func write, void *fd) const
 	    pmime->first_boundary - pmime->content_begin) {
 		return false;
 	}
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1340,7 +1339,7 @@ ssize_t MIME::get_length() const
 	}
 	mime_len += pmime->first_boundary == nullptr ? 48 :
 	            pmime->first_boundary - pmime->content_begin;
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1565,7 +1564,7 @@ static int mime_get_digest_multi(const MIME *pmime, const char *id_string,
 
 	*poffset += pmime->first_boundary == nullptr ? 48 :
 	            pmime->first_boundary - pmime->content_begin;
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	has_submime = FALSE;
 	count = 1;
 	while (NULL != pnode) {
@@ -1687,7 +1686,7 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	dsarray.append(std::move(digest));
 	*poffset += pmime->first_boundary == nullptr ? 48 :
 	            pmime->first_boundary - pmime->content_begin;
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	has_submime = FALSE;
 	count = 1;
 	while (NULL != pnode) {
@@ -1796,7 +1795,7 @@ static void mime_produce_boundary(MIME *pmime)
 		return;
 	}
 #endif
-	int depth = pmime->node.get_depth();
+	int depth = pmime->stree.get_depth();
 	strcpy(pmime->boundary_string, "----=_NextPart_");
 	auto length = sprintf(pmime->boundary_string + 15, "00%d_000%d_",
 				depth, depth + 5);
@@ -1833,21 +1832,21 @@ static bool mime_is_asciipr(const char *s)
 MIME *MIME::get_child()
 {
 	auto pmime = this;
-	auto pnode = pmime->node.get_child();
+	auto pnode = pmime->stree.get_child();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 MIME *MIME::get_parent()
 {
 	auto pmime = this;
-	auto pnode = pmime->node.get_parent();
+	auto pnode = pmime->stree.get_parent();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 MIME *MIME::get_sibling()
 {
 	auto pmime = this;
-	auto pnode = pmime->node.get_sibling();
+	auto pnode = pmime->stree.get_sibling();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 

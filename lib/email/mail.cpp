@@ -138,10 +138,10 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			return false;
 		}
 		if (pmime_last == nullptr)
-			pmail->tree.add_child(&pmime_parent->node,
+			pmail->tree.add_child(&pmime_parent->stree,
 				std::move(mime_uq), SIMPLE_TREE_ADD_LAST);
 		else
-			pmail->tree.insert_sibling(&pmime_last->node,
+			pmail->tree.insert_sibling(&pmime_last->stree,
 				std::move(mime_uq), SIMPLE_TREE_INSERT_AFTER);
 		pmime_last = pmime;
 		if (pmime->mime_type == mime_type::multiple) {
@@ -178,10 +178,10 @@ static bool mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		return false;
 	}
 	if (pmime_last == nullptr)
-		pmail->tree.add_child(&pmime_parent->node,
+		pmail->tree.add_child(&pmime_parent->stree,
 			std::move(mime_uq), SIMPLE_TREE_ADD_LAST);
 	else
-		pmail->tree.insert_sibling(&pmime_last->node,
+		pmail->tree.insert_sibling(&pmime_last->stree,
 			std::move(mime_uq), SIMPLE_TREE_INSERT_AFTER);
 	if (pmime->mime_type != mime_type::multiple)
 		return true;
@@ -608,7 +608,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
         return NULL;
     }
 	pmime->clear();
-	if (!pmail->tree.add_child(&pmime_base->node, std::move(mime_uq), opt))
+	if (!pmail->tree.add_child(&pmime_base->stree, std::move(mime_uq), opt))
         return NULL;
     return pmime;
 }
@@ -623,7 +623,7 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param) const
     }
 #endif
 	simple_tree_enum_from_node(pmail->tree.get_root(), [&](const tree_node *stn, unsigned int) {
-		auto m = containerof(stn, const MIME, node);
+		auto m = containerof(stn, const MIME, stree);
 		enum_func(m, param);
 	});
 }
