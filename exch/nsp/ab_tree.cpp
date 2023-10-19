@@ -937,12 +937,12 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, cpid_t codepage,
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
 			gx_strlcpy(str_dname, it->second.c_str(), dn_size);
-		} else {
-			gx_strlcpy(str_dname, obj->username.c_str(), dn_size);
-			ptoken = strchr(str_dname, '@');
-			if (NULL != ptoken) {
-				*ptoken = '\0';
-			}
+			break;
+		}
+		gx_strlcpy(str_dname, obj->username.c_str(), dn_size);
+		ptoken = strchr(str_dname, '@');
+		if (NULL != ptoken) {
+			*ptoken = '\0';
 		}
 		break;
 	}
@@ -969,11 +969,10 @@ const char *ab_tree_get_user_info(const tree_node *pnode, unsigned int type)
 	unsigned int tag = 0;
 	switch (type) {
 	case USER_MAIL_ADDRESS:
-		if ((u->dtypx & DTE_MASK_LOCAL) == DT_REMOTE_MAILUSER) {
-			tag = PR_SMTP_ADDRESS;
-			break;
-		}
-		return u->username.c_str();
+		if ((u->dtypx & DTE_MASK_LOCAL) != DT_REMOTE_MAILUSER)
+			return u->username.c_str();
+		tag = PR_SMTP_ADDRESS;
+		break;
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PR_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;

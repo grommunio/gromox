@@ -821,10 +821,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
 		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
 		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
-	} else {
-		if (pproptags->cvalues > 100) {
-			return ecTableTooBig;
-		}
+	} else if (pproptags->cvalues > 100) {
+		return ecTableTooBig;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -1019,10 +1017,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
 		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
 		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
-	} else {
-		if (pproptags->cvalues > 100) {
-			return ecTableTooBig;
-		}
+	} else if (pproptags->cvalues > 100) {
+		return ecTableTooBig;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -2423,10 +2419,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
 		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
 		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
-	} else {
-		if (pproptags->cvalues > 100) {
-			return ecTableTooBig;
-		}
+	} else if (pproptags->cvalues > 100) {
+		return ecTableTooBig;
 	}
 	auto outmids = common_util_proptagarray_init();
 	if (outmids == nullptr)
