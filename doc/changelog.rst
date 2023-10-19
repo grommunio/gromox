@@ -5,6 +5,7 @@ Fixes:
 
 * oxvcard: export to .vcf now positions the VERSION property in accordance with
   the vCard 4.0 specification.
+* oxcmail: cease gratuitous RTF conversion of calendar items
 
 
 Gromox 2.15 (2023-10-18)

@@ -2867,24 +2867,6 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			    !oxcmail_merge_message_attachments(pmsg.get(), pmsg1.get()))
 				return NULL;
 			pmsg = std::move(pmsg1);
-			/* calendar message object can not be displayed
-				correctly without PidTagRtfCompressed convert
-				PidTagHtml to PidTagRtfCompressed */
-			auto phtml_bin = pmsg->proplist.get<const BINARY>(PR_HTML);
-			if (NULL != phtml_bin) {
-				auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
-				cpid_t cpid = num == nullptr ? CP_UTF8 : static_cast<cpid_t>(*num);
-				char *rtfout = nullptr;
-				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, cpid,
-				    &rtfout, &content_len) == ecSuccess) {
-					auto bv = rtfcp_compress(rtfout, content_len);
-					free(rtfout);
-					if (bv != nullptr) {
-						pmsg->proplist.set(PR_RTF_COMPRESSED, bv);
-						rop_util_free_binary(bv);
-					}
-				}
-			}
 		}
 	}
 	if (!pmsg->proplist.has(PR_BODY_W) && !pmsg->proplist.has(PR_BODY_A)) {
