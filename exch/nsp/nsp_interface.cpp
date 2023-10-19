@@ -781,6 +781,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	 * to improve usability of the server for clients", but then, if you
 	 * return more than @count entries, Outlook 2019/2021 crashes.
 	 */
+	*pprows = nullptr;
 	if (g_nsp_trace > 0)
 		fprintf(stderr, "nsp_query_rows: table_count=%u count=%u\n", table_count, count);
 	nsp_trace(__func__, 0, pstat);
@@ -791,11 +792,9 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	BOOL b_ephid = (flags & fEphID) ? TRUE : false;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	if (0 == count && NULL == ptable) {
-		*pprows = NULL;
 		return ecInvalidParam;
 	}
 	
@@ -806,7 +805,6 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	if (NULL == pproptags) {
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		/* OXNSPI v13.1 §3.1.4.1.8 bp 6.2 / NSPI v15 §3.1.4.8 bp 6.2 */
@@ -814,7 +812,6 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
 		if (nt->pproptag == nullptr) {
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
@@ -826,33 +823,26 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
 	} else {
 		if (pproptags->cvalues > 100) {
-			*pprows = NULL;
 			return ecTableTooBig;
 		}
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*pprows = NULL;
 		return ecError;
 	}
-	*pprows = common_util_proprowset_init();
-	if (NULL == *pprows) {
-		*pprows = NULL;
+	auto rowset = common_util_proprowset_init();
+	if (rowset == nullptr)
 		return ecServerOOM;
-	}
-	
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*pprows = NULL;
 		return ecError;
 	}
 	
 	if (ptable != nullptr) {
 		for (size_t i = 0; i < table_count; ++i) {
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			auto pnode = ab_tree_minid_to_node(pbase.get(), ptable[i]);
@@ -865,7 +855,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (result != ecSuccess)
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 		}
-		nsp_trace(__func__, 1, pstat);
+		nsp_trace(__func__, 1, pstat, nullptr, rowset);
+		*pprows = rowset;
 		return ecSuccess;
 	}
 
@@ -876,18 +867,22 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	} else {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
-			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &total);
 		pnode1 = pnode->get_child();
 		if (NULL == pnode1) {
+			nsp_trace(__func__, 1, pstat, nullptr, rowset);
+			*pprows = rowset;
 			return ecSuccess;
 		}
 	}
-	if (total == 0)
+	if (total == 0) {
+		nsp_trace(__func__, 1, pstat, nullptr, rowset);
+		*pprows = rowset;
 		return ecSuccess;
+	}
 	if (pstat->delta >= 0) {
 		start_pos += pstat->delta;
 		if (start_pos >= total)
@@ -901,22 +896,23 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	auto tmp_count = total - start_pos;
 	if (count < tmp_count)
 		tmp_count = count;
-	if (tmp_count == 0)
+	if (tmp_count == 0) {
+		nsp_trace(__func__, 1, pstat, nullptr, rowset);
+		*pprows = rowset;
 		return ecSuccess;
+	}
 	size_t i = 0;
 	if (0 == pstat->container_id) {
 		for (i = start_pos; i < pbase->gal_list.size() &&
 		     i < start_pos + tmp_count; ++i) {
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pbase->gal_list[i],
 				 b_ephid, pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
-				*pprows = nullptr;
 				return result;
 			}
 		}
@@ -931,16 +927,14 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 				++i;
 				continue;
 			}
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode1,
 				 b_ephid, pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
-				*pprows = nullptr;
 				return result;
 			}
 			i++;
@@ -963,16 +957,16 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	pstat->num_pos = start_pos + tmp_count;
 	pstat->total_rec = total;
 #if 0
-	if ((*pprows)->crows == 0) {
-		auto prow = common_util_proprowset_enlarge(*pprows);
+	if (rowset->crows == 0) {
+		auto prow = common_util_proprowset_enlarge(rowset);
 		if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr) {
-			*pprows = nullptr;
 			return ecServerOOM;
 		}
 		nsp_interface_make_ptyperror_row(pproptags, prow);
 	}
 #endif
-	nsp_trace(__func__, 1, pstat, nullptr, *pprows);
+	nsp_trace(__func__, 1, pstat, nullptr, rowset);
+	*pprows = rowset;
 	return ecSuccess;
 }
 
@@ -980,48 +974,42 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
-	nsp_trace(__func__, 0, pstat);
 	int base_id;
 	uint32_t result;
 	NSP_PROPROW *prow;
 	uint32_t tmp_minid;
 	char temp_name[1024];
 	
+	*pprows = nullptr;
+	nsp_trace(__func__, 0, pstat);
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	if (0 != reserved) {
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	if (pstat->sort_type == SortTypeDisplayName) {
 		if (ptarget->proptag != PR_DISPLAY_NAME &&
 		    ptarget->proptag != PR_DISPLAY_NAME_A) {
-			*pprows = NULL;
 			return ecError;
 		}
 	} else if (pstat->sort_type == SortTypePhoneticDisplayName) {
 		if (ptarget->proptag != PR_EMS_AB_PHONETIC_DISPLAY_NAME &&
 		    ptarget->proptag != PR_EMS_AB_PHONETIC_DISPLAY_NAME_A) {
-			*pprows = NULL;
 			return ecError;
 		}
 	} else {
-		*pprows = NULL;
 		return ecError;
 	}
 	if (NULL == pproptags) {
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		pproptags = nt;
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
 		if (nt->pproptag == nullptr) {
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
@@ -1033,24 +1021,20 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
 	} else {
 		if (pproptags->cvalues > 100) {
-			*pprows = NULL;
 			return ecTableTooBig;
 		}
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*pprows = NULL;
 		return ecError;
 	}
-	*pprows = common_util_proprowset_init();
-	if (NULL == *pprows) {
-		*pprows = NULL;
+	auto rowset = common_util_proprowset_init();
+	if (rowset == nullptr) {
 		return ecServerOOM;
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*pprows = NULL;
 		return ecError;
 	}
 	
@@ -1070,10 +1054,9 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			}
 			if (tmp_minid == 0)
 				continue;
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode1, TRUE,
@@ -1083,14 +1066,14 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		}
 		
 		if (0 == tmp_minid) {
-			*pprows = nullptr;
 			return ecNotFound;
 		}
 		
-		pstat->total_rec = (*pprows)->crows;
+		pstat->total_rec = rowset->crows;
 		pstat->cur_rec = tmp_minid;
 		pstat->num_pos = row;
-		nsp_trace(__func__, 1, pstat);
+		nsp_trace(__func__, 1, pstat, nullptr, rowset);
+		*pprows = rowset;
 		return ecSuccess;
 	}
 
@@ -1102,20 +1085,17 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
-			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &total);
 		auto pnode1 = pnode->get_child();
 		if (NULL == pnode1) {
-			*pprows = nullptr;
 			return ecNotFound;
 		}
 	}
 
 	if (0 == total) {
-		*pprows = nullptr;
 		return ecNotFound;
 	}
 	size_t row = 0;
@@ -1127,22 +1107,19 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				pstat->codepage, temp_name, std::size(temp_name));
 			if (strcasecmp(temp_name, ptarget->value.pstr) < 0)
 				continue;
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow ||
 			    NULL == common_util_propertyrow_init(prow)) {
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			if (nsp_interface_fetch_row(ptr,
 			    TRUE, pstat->codepage, pproptags,
 			    prow) != ecSuccess) {
-				*pprows = nullptr;
 				return ecError;
 			}
 			break;
 		}
 		if (row == pbase->gal_list.size()) {
-			*pprows = nullptr;
 			return ecNotFound;
 		}
 		pstat->cur_rec = ab_tree_get_node_minid(pbase->gal_list[row]);
@@ -1161,28 +1138,26 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				++row;
 				continue;
 			}
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow ||
 			    NULL == common_util_propertyrow_init(prow)) {
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			if (nsp_interface_fetch_row(pnode1,
 			    TRUE, pstat->codepage, pproptags,
 			    prow) != ecSuccess) {
-				*pprows = nullptr;
 				return ecError;
 			}
 			break;
 		} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 		if (NULL == pnode1) {
-			*pprows = nullptr;
 			return ecNotFound;
 		}
 		pstat->cur_rec = ab_tree_get_node_minid(pnode1);
 	}
 	pstat->num_pos = row;
 	pstat->total_rec = total;
+	*pprows = rowset;
 	nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 	return ecSuccess;
 }
@@ -1323,57 +1298,45 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)
 {
+	*ppoutmids = nullptr;
+	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	PROPERTY_VALUE prop_val;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
-		*ppoutmids = NULL;
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	if (pstat->sort_type != SortTypeDisplayName &&
 	    pstat->sort_type != SortTypePhoneticDisplayName &&
 	    pstat->sort_type != SortTypeDisplayName_RO &&
 	    pstat->sort_type != SortTypeDisplayName_W) {
-		*ppoutmids = NULL;
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	if (0 != reserved1 || NULL != ppropname) {
-		*ppoutmids = NULL;
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	auto base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*ppoutmids = NULL;
-		*pprows = NULL;
 		return ecError;
 	}
-	*ppoutmids = common_util_proptagarray_init();
-	if (NULL == *ppoutmids) {
-		*pprows = NULL;
+	auto outmids = common_util_proptagarray_init();
+	if (outmids == nullptr) {
 		return ecServerOOM;
 	}
+	NSP_ROWSET *rowset = nullptr;
 	if (NULL == pproptags) {
-		*pprows = NULL;
 	} else {
 		if (pproptags->cvalues > 100) {
-			*ppoutmids = NULL;
-			*pprows = NULL;
 			return ecTableTooBig;
 		}
-		*pprows = common_util_proprowset_init();
-		if (NULL == *pprows) {
-			*ppoutmids = NULL;
+		rowset = common_util_proprowset_init();
+		if (rowset == nullptr) {
 			return ecServerOOM;
 		}
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*ppoutmids = NULL;
-		*pprows = NULL;
 		return ecError;
 	}
 
@@ -1381,25 +1344,19 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	if (pstat->container_id == PR_EMS_AB_MEMBER) {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (pnode == nullptr) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
 		auto mlistaddr = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
 		if (mlistaddr == nullptr) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
 			return ecNotFound;
 		}
 		std::vector<std::string> member_list;
 		int ret = 0;
 		if (!get_mlist_memb(mlistaddr, mlistaddr, &ret, member_list)) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
 			return ecError;
 		}
 		for (const auto &memb : member_list) {
-			if ((*ppoutmids)->cvalues > requested)
+			if (outmids->cvalues > requested)
 				break;
 			unsigned int user_id = 0;
 			if (!get_id_from_username(memb.c_str(), &user_id))
@@ -1411,10 +1368,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
 				continue;	
-			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+			auto pproptag = common_util_proptagarray_enlarge(outmids);
 			if (NULL == pproptag) {
-				*ppoutmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
@@ -1423,21 +1378,17 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	} else if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL == pnode) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
 		char maildir[256];
 		auto temp_buff = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
 		if (temp_buff == nullptr ||
 		    !get_maildir(temp_buff, maildir, std::size(maildir))) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
 			return ecError;
 		}
 		auto delegate_list = delegates_for(maildir);
 		for (const auto &deleg : delegate_list) {
-			if ((*ppoutmids)->cvalues > requested)
+			if (outmids->cvalues > requested)
 				break;
 			unsigned int user_id = 0;
 			if (!get_id_from_username(deleg.c_str(), &user_id))
@@ -1449,10 +1400,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (pfilter != nullptr &&
 			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
 				continue;	
-			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+			auto pproptag = common_util_proptagarray_enlarge(outmids);
 			if (NULL == pproptag) {
-				*ppoutmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
@@ -1465,10 +1414,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
 		    TRUE, pstat->codepage, pstat->container_id, &prop_val,
 		    temp_buff, std::size(temp_buff)) == ecSuccess) {
-			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+			auto pproptag = common_util_proptagarray_enlarge(outmids);
 			if (NULL == pproptag) {
-				*ppoutmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
@@ -1478,14 +1425,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		nsp_interface_position_in_list(pstat,
 			&pbase->gal_list, &start_pos, &total);
 		for (size_t i = start_pos; i < total &&
-		     (*ppoutmids)->cvalues <= requested &&
+		     outmids->cvalues <= requested &&
 		     i < pbase->gal_list.size(); ++i) {
 			auto ptr = pbase->gal_list[i];
 			if (nsp_interface_match_node(ptr, pstat->codepage, pfilter)) {
-				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+				auto pproptag = common_util_proptagarray_enlarge(outmids);
 				if (NULL == pproptag) {
-					*ppoutmids = nullptr;
-					*pprows = nullptr;
 					return ecServerOOM;
 				}
 				*pproptag = ab_tree_get_node_minid(ptr);
@@ -1494,8 +1439,6 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
-			*ppoutmids = nullptr;
-			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
 		uint32_t start_pos, total;
@@ -1504,14 +1447,16 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		pnode = pnode->get_child();
 		if (NULL == pnode) {
 			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
-			nsp_trace(__func__, 1, pstat);
+			*ppoutmids = outmids;
+			*pprows = rowset;
+			nsp_trace(__func__, 1, pstat, nullptr, rowset);
 			return ecSuccess;
 		}
 		size_t i = 0;
 		do {
 			if (ab_tree_hidden(pnode) & AB_HIDE_FROM_AL)
 				continue;
-			if (i >= total || (*ppoutmids)->cvalues > requested) {
+			if (i >= total || outmids->cvalues > requested) {
 				break;
 			} else if (i < start_pos) {
 				i++;
@@ -1519,10 +1464,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 			if (nsp_interface_match_node(pnode,
 			    pstat->codepage, pfilter)) {
-				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+				auto pproptag = common_util_proptagarray_enlarge(outmids);
 				if (NULL == pproptag) {
-					*ppoutmids = nullptr;
-					*pprows = nullptr;
 					return ecServerOOM;
 				}
 				*pproptag = ab_tree_get_node_minid(pnode);
@@ -1532,16 +1475,14 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 
  FETCH_ROWS:
-	if (NULL != *pprows) {
-		for (size_t i = 0; i < (*ppoutmids)->cvalues; ++i) {
-			auto prow = common_util_proprowset_enlarge(*pprows);
+	if (rowset != nullptr) {
+		for (size_t i = 0; i < outmids->cvalues; ++i) {
+			auto prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				*ppoutmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
-			auto pnode = ab_tree_minid_to_node(pbase.get(), (*ppoutmids)->pproptag[i]);
+			auto pnode = ab_tree_minid_to_node(pbase.get(), outmids->pproptag[i]);
 			if (NULL == pnode) {
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 			} else {
@@ -1554,7 +1495,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 	
 	pstat->container_id = pstat->cur_rec; /* MS-OXNSPI §3.1.4.1.10 bp 16 */
-	nsp_trace(__func__, 1, pstat);
+	nsp_trace(__func__, 1, pstat, nullptr, rowset);
+	*ppoutmids = outmids;
+	*pprows = rowset;
 	return ecSuccess;
 }
 
@@ -1567,37 +1510,31 @@ static int nsp_interface_cmpstring(const void *p1, const void *p2)
 int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
 {
+	*ppoutmids = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	int base_id;
 	BOOL b_found;
 	char temp_buff[1024];
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
-		*ppoutmids = NULL;
 		return ecNotSupported;
 	}
 	auto parray = ndr_stack_anew<nsp_sort_item>(NDR_STACK_IN, pinmids->cvalues);
 	if (NULL == parray) {
-		*ppoutmids = NULL;
 		return ecServerOOM;
 	}
-	*ppoutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (NULL == *ppoutmids) {
+	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
+	if (outmids == nullptr)
 		return ecServerOOM;
-	}
-	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids->cvalues);
-	if (NULL == (*ppoutmids)->pproptag) {
-		*ppoutmids = NULL;
+	outmids->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pinmids->cvalues);
+	if (outmids->pproptag == nullptr)
 		return ecServerOOM;
-	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*ppoutmids = NULL;
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*ppoutmids = NULL;
 		return ecError;
 	}
 	size_t count = 0;
@@ -1613,15 +1550,14 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		parray[count].strv = ndr_stack_alloc(
 			NDR_STACK_IN, strlen(temp_buff) + 1);
 		if (NULL == parray[count].string) {
-			*ppoutmids = NULL;
 			return ecServerOOM;
 		}
 		strcpy(parray[count++].string, temp_buff);
 	}
 	qsort(parray, count, sizeof(nsp_sort_item), nsp_interface_cmpstring);
-	(*ppoutmids)->cvalues = count;
+	outmids->cvalues = count;
 	for (size_t i = 0; i < count; ++i)
-		(*ppoutmids)->pproptag[i] = parray[i].minid;
+		outmids->pproptag[i] = parray[i].minid;
 	pstat->total_rec = count;
 	if (!b_found) {
 		/* OXNSPI v13 pg 52 p 8 */
@@ -1629,6 +1565,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->num_pos = 0;
 	}
 	nsp_trace(__func__, 1, pstat);
+	*ppoutmids = outmids;
 	return ecSuccess;
 }
 
@@ -1637,28 +1574,24 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 {
 	int base_id;
 	
+	*ppoutmids = nullptr;
 	if (NULL == pnames) {
-		*ppoutmids = NULL;
 		return ecSuccess;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*ppoutmids = NULL;
 		return ecError;
 	}
-	*ppoutmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
-	if (*ppoutmids == nullptr)
+	auto outmids = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
+	if (outmids == nullptr)
 		return ecServerOOM;
-	(*ppoutmids)->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
-	if (NULL == (*ppoutmids)->pproptag) {
-		*ppoutmids = NULL;
+	outmids->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pnames->count);
+	if (outmids->pproptag == nullptr)
 		return ecServerOOM;
-	}
-	(*ppoutmids)->cvalues = pnames->count;
-	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->count);
+	outmids->cvalues = pnames->count;
+	memset(outmids->pproptag, 0, sizeof(uint32_t) * pnames->count);
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*ppoutmids = NULL;
 		return ecError;
 	}
 	for (size_t i = 0; i < pnames->count; ++i) {
@@ -1666,8 +1599,9 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 			continue;
 		auto ptnode = ab_tree_dn_to_node(pbase.get(), pnames->ppstr[i]);
 		if (ptnode != nullptr)
-			(*ppoutmids)->pproptag[i] = ab_tree_get_node_minid(ptnode);
+			outmids->pproptag[i] = ab_tree_get_node_minid(ptnode);
 	}
+	*ppoutmids = outmids;
 	return ecSuccess;
 }
 
@@ -1815,6 +1749,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
 {
+	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	int base_id;
 	uint32_t row;
@@ -1824,20 +1759,17 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	const SIMPLE_TREE_NODE *pnode1;
 	
 	if (NULL == pstat) {
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	BOOL b_ephid = (flags & fEphID) ? TRUE : false;
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*pprows = NULL;
 		return ecError;
 	}
 	BOOL b_unicode = pstat->codepage == CP_WINUNICODE ? TRUE : false;
 	if (b_unicode && pproptags != nullptr) {
 		for (size_t i = 0; i < pproptags->cvalues; ++i) {
 			if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
-				*pprows = NULL;
 				return ecNotSupported;
 			}
 		}
@@ -1845,7 +1777,6 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*pprows = NULL;
 		return ecError;
 	}
 	
@@ -1865,7 +1796,6 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		} else {
 			auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
-				*pprows = nullptr;
 				return ecInvalidBookmark;
 			}
 			nsp_interface_position_in_table(pstat,
@@ -1887,7 +1817,6 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (pnode1 != nullptr && pstat->container_id != 0) {
 			auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
-				*pprows = nullptr;
 				return ecInvalidBookmark;
 			}
 		}
@@ -1897,62 +1826,55 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		b_proptags = FALSE;
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
-			*pprows = nullptr;
 			return ecServerOOM;
 		}
 		pproptags = nt;
 		result = nsp_interface_get_default_proptags(
 			ab_tree_get_node_type(pnode1), b_unicode, nt);
-		if (result != ecSuccess) {
-			if (result != ecWarnWithErrors)
-				*pprows = nullptr;
+		if (result != ecSuccess)
 			return result;
-		}
 	} else if (pproptags->cvalues > 100) {
-		*pprows = nullptr;
 		return ecTableTooBig;
 	}
-	*pprows = common_util_propertyrow_init(NULL);
-	if (NULL == *pprows) {
-		*pprows = nullptr;
+	auto rowset = common_util_propertyrow_init(NULL);
+	if (rowset == nullptr)
 		return ecServerOOM;
-	}
 	/* MS-OXNSPI 3.1.4.1.7.11 */
 	if (NULL == pnode1) {
-		nsp_interface_make_ptyperror_row(pproptags, *pprows);
+		nsp_interface_make_ptyperror_row(pproptags, rowset);
 		result = ecWarnWithErrors;
 	} else {
 		result = nsp_interface_fetch_row(pnode1, b_ephid,
-					pstat->codepage, pproptags, *pprows);
+		         pstat->codepage, pproptags, rowset);
 	}
 	if (result != ecSuccess) {
-		if (result != ecWarnWithErrors)
-			*pprows = nullptr;
+		if (result == ecWarnWithErrors)
+			*pprows = rowset;
 		NSP_ROWSET rs = {*pprows != nullptr ? 1U : 0U, *pprows};
 		nsp_trace(__func__, 1, pstat, nullptr, &rs);
 		return result;
 	}
 	if (!b_proptags) {
 		size_t count = 0;
-		for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
-			if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR &&
-			    (*pprows)->pprops[i].value.err == ecNotFound)
+		for (size_t i = 0; i < rowset->cvalues; ++i) {
+			if (PROP_TYPE(rowset->pprops[i].proptag) == PT_ERROR &&
+			    rowset->pprops[i].value.err == ecNotFound)
 				continue;
 			if (i != count)
-				(*pprows)->pprops[count] = (*pprows)->pprops[i];
+				rowset->pprops[count] = rowset->pprops[i];
 			count++;
 		}
-		(*pprows)->cvalues = count;
+		rowset->cvalues = count;
 	} else {
-		for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
-			if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR) {
+		for (size_t i = 0; i < rowset->cvalues; ++i) {
+			if (PROP_TYPE(rowset->pprops[i].proptag) == PT_ERROR) {
 				result = ecWarnWithErrors;
 				break;
 			}
 		}
 	}
-	if (result != ecSuccess && result != ecWarnWithErrors)
-		*pprows = NULL;
+	if (result == ecWarnWithErrors)
+		*pprows = rowset;
 	NSP_ROWSET rs = {*pprows != nullptr ? 1U : 0U, *pprows};
 	nsp_trace(__func__, 1, pstat, nullptr, &rs);
 	return result;
@@ -2170,6 +2092,7 @@ static uint32_t nsp_interface_get_tree_specialtables(const SIMPLE_TREE *ptree,
 int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, uint32_t *pversion, NSP_ROWSET **pprows)
 {
+	*pprows = nullptr;
 	nsp_trace(__func__, 0, pstat);
 	int base_id;
 	uint32_t result;
@@ -2177,7 +2100,6 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	PERMANENT_ENTRYID permeid;
 	
 	if (flags & NspiAddressCreationTemplates) {
-		*pprows = NULL;
 		/* creation of templates table */
 		return ecSuccess;
 	}
@@ -2185,54 +2107,47 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	cpid_t codepage = pstat == nullptr ? static_cast<cpid_t>(1252) : pstat->codepage;
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
 	if (!b_unicode && codepage == CP_WINUNICODE) {
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*pprows = NULL;
 		return ecError;
 	}
 	
 	(*pversion) ++;
-	
-	*pprows = common_util_proprowset_init();
-	if (*pprows == nullptr)
+	auto rowset = common_util_proprowset_init();
+	if (rowset == nullptr)
 		return ecServerOOM;
 	
 	/* build the gal root */
-	prow = common_util_proprowset_enlarge(*pprows);
+	prow = common_util_proprowset_enlarge(rowset);
 	if (NULL == prow) {
-		*pprows = NULL;
 		return ecServerOOM;
 	}
 	if (!common_util_set_permanententryid(DT_CONTAINER,
 	    nullptr, nullptr, &permeid)) {
-		*pprows = NULL;
 		return ecServerOOM;
 	}
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage,
 	    false, 0, 0, nullptr, nullptr, &permeid)) {
-		*pprows = NULL;
 		return ecServerOOM;
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*pprows = NULL;
 		return ecError;
 	}
 	for (auto &domain : pbase->domain_list) {
 		auto pdomain = &domain;
 		result = nsp_interface_get_tree_specialtables(
-			&pdomain->tree, b_unicode, codepage, *pprows);
+		         &pdomain->tree, b_unicode, codepage, rowset);
 		if (result != ecSuccess) {
-			*pprows = NULL;
 			return result;
 		}
 	}
-	nsp_trace(__func__, 1, pstat);
+	nsp_trace(__func__, 1, pstat, nullptr, rowset);
+	*pprows = rowset;
 	return ecSuccess;
 }
 
@@ -2325,12 +2240,12 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t flags, LPROPTAG_ARRAY **ppcolumns)
 {
+	*ppcolumns = nullptr;
 	LPROPTAG_ARRAY *pcolumns;
 	BOOL b_unicode = (flags & NspiUnicodeProptypes) ? TRUE : false;
 	
 	pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pcolumns) {
-		*ppcolumns = NULL;
 		return ecServerOOM;
 	}
 	static constexpr uint32_t utags[] = {
@@ -2350,7 +2265,6 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	pcolumns->cvalues = std::size(utags) + std::size(ntags);
 	pcolumns->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, pcolumns->cvalues);
 	if (pcolumns->pproptag == nullptr) {
-		*ppcolumns = nullptr;
 		return ecServerOOM;
 	}
 	size_t i = 0;
@@ -2358,6 +2272,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 		pcolumns->pproptag[i++] = b_unicode ? tag : CHANGE_PROP_TYPE(tag, PT_STRING8);
 	for (auto tag : ntags)
 		pcolumns->pproptag[i++] = tag;
+	*ppcolumns = pcolumns;
 	return ecSuccess;
 }
 
@@ -2367,14 +2282,14 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 {
 	char *pstr;
 	
+	*ppmids = nullptr;
+	*pprows = nullptr;
 	for (size_t i = 0; i < pstrs->count; ++i) {
 		if (pstrs->ppstr[i] == nullptr)
 			continue;
 		auto temp_len = mb_to_utf8_len(pstrs->ppstr[i]);
 		pstr = ndr_stack_anew<char>(NDR_STACK_IN, temp_len);
 		if (NULL == pstr) {
-			*ppmids = NULL;
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		if (common_util_to_utf8(pstat->codepage, pstrs->ppstr[i], pstr, temp_len) == -1)
@@ -2466,7 +2381,6 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, LPROPTAG_ARRAY *&pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
-	nsp_trace(__func__, 0, pstat);
 	int base_id;
 	char *ptoken;
 	uint32_t result;
@@ -2475,9 +2389,10 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t *pproptag;
 	NSP_PROPROW *prow;
 	
+	*ppmids = nullptr;
+	*pprows = nullptr;
+	nsp_trace(__func__, 0, pstat);
 	if (pstat->codepage == CP_WINUNICODE) {
-		*ppmids = NULL;
-		*pprows = NULL;
 		return ecNotSupported;
 	}
 	/*
@@ -2488,23 +2403,17 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	*/
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		*ppmids = NULL;
-		*pprows = NULL;
 		return ecError;
 	}
 	if (NULL == pproptags) {
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
-			*ppmids = NULL;
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		pproptags = nt;
 		nt->cvalues = 7;
 		nt->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_IN, nt->cvalues);
 		if (nt->pproptag == nullptr) {
-			*ppmids = NULL;
-			*pprows = NULL;
 			return ecServerOOM;
 		}
 		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
@@ -2516,34 +2425,24 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
 	} else {
 		if (pproptags->cvalues > 100) {
-			*ppmids = NULL;
-			*pprows = NULL;
 			return ecTableTooBig;
 		}
 	}
-	*ppmids = common_util_proptagarray_init();
-	if (NULL == *ppmids) {
-		*pprows = NULL;
+	auto outmids = common_util_proptagarray_init();
+	if (outmids == nullptr)
 		return ecServerOOM;
-	}
-	*pprows = common_util_proprowset_init();
-	if (NULL == *pprows) {
-		*ppmids = NULL;
+	auto rowset = common_util_proprowset_init();
+	if (rowset == nullptr)
 		return ecServerOOM;
-	}
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
-		*ppmids = NULL;
-		*pprows = NULL;
 		return ecError;
 	}
 	
 	if (0 == pstat->container_id) {
 		for (size_t i = 0; i < pstrs->count; ++i) {
-			pproptag = common_util_proptagarray_enlarge(*ppmids);
+			pproptag = common_util_proptagarray_enlarge(outmids);
 			if (NULL == pproptag) {
-				*ppmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			if (pstrs->ppstr[i] == nullptr) {
@@ -2563,38 +2462,32 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				continue;
 			}
 			*pproptag = MID_RESOLVED;
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
-				*ppmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode, false,
 			         pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
-				*ppmids = nullptr;
-				*pprows = nullptr;
 				return result;
 			}
 		}
+		*ppmids = outmids;
+		*pprows = rowset;
 		nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 		return ecSuccess;
 	}
 
 	auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 	if (NULL == pnode) {
-		*ppmids = nullptr;
-		*pprows = nullptr;
 		return ecInvalidBookmark;
 	}
 	nsp_interface_position_in_table(pstat,
 		pnode, &start_pos, &total);
 	for (size_t i = 0; i < pstrs->count; ++i) {
-		pproptag = common_util_proptagarray_enlarge(*ppmids);
+		pproptag = common_util_proptagarray_enlarge(outmids);
 		if (NULL == pproptag) {
-			*ppmids = nullptr;
-			*pprows = nullptr;
 			return ecServerOOM;
 		}
 		if (pstrs->ppstr[i] == nullptr) {
@@ -2628,22 +2521,20 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			j++;
 		}
 		if (MID_RESOLVED == *pproptag) {
-			prow = common_util_proprowset_enlarge(*pprows);
+			prow = common_util_proprowset_enlarge(rowset);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
-				*ppmids = nullptr;
-				*pprows = nullptr;
 				return ecServerOOM;
 			}
 			result = nsp_interface_fetch_row(pnode2, false,
 			         pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
-				*ppmids = nullptr;
-				*pprows = nullptr;
 				return result;
 			}
 		}
 	}
+	*ppmids = outmids;
+	*pprows = rowset;
 	nsp_trace(__func__, 1, pstat, nullptr, *pprows);
 	return ecSuccess;
 }
@@ -2686,7 +2577,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 		return MAPI_E_UNKNOWN_LCID;
 	}
 
-	auto row = *ppdata = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT);
+	auto row = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT);
 	if (row == nullptr)
 		return ecServerOOM;
 	row->reserved = 0;
@@ -2701,5 +2592,6 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	if (val->value.bin.pv == nullptr)
 		return ecServerOOM;
 	memcpy(val->value.bin.pv, tpldata.data(), tpldata.size());
+	*ppdata = row;
 	return 0;
 }
