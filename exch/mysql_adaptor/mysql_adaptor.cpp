@@ -110,16 +110,15 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 		mres.errstr = "User is not a real user";
 		return EACCES;
 	}
-	auto temp_status = strtoul(myrow[2], nullptr, 0);
-	if (temp_status != 0 && !(wantpriv & WANTPRIV_METAONLY)) {
-		auto uval = temp_status & AF_USER__MASK;
-		if (temp_status & AF_DOMAIN__MASK) {
+	auto address_status = strtoul(myrow[2], nullptr, 0);
+	if (address_status != 0 && !(wantpriv & WANTPRIV_METAONLY)) {
+		auto uval = address_status & AF_USER__MASK;
+		if (address_status & AF_DOMAIN__MASK)
 			mres.errstr = fmt::format("Domain of user \"{}\" is disabled!", username);
-		} else if (uval == AF_USER_SHAREDMBOX) {
+		else if (uval == AF_USER_SHAREDMBOX)
 			mres.errstr = fmt::format("\"{}\" is a shared mailbox with no login", username);
-		} else if (uval != 0) {
+		else if (uval != 0)
 			mres.errstr = fmt::format("User \"{}\" is disabled", username);
-		}
 		return EACCES;
 	}
 	wantpriv &= ~WANTPRIV_METAONLY;
@@ -218,10 +217,9 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 	if (dtypx != DT_MAILUSER)
 		return FALSE;
-	auto temp_status = strtoul(myrow[2], nullptr, 0);
-	if (0 != temp_status) {
+	auto address_status = strtoul(myrow[2], nullptr, 0);
+	if (address_status != 0)
 		return FALSE;
-	}
 	if (!(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_CHGPASSWD))
 		return FALSE;
 
