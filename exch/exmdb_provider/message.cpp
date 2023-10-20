@@ -2414,7 +2414,7 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 		return true;
 	}
 	str = props.get<const char>(PR_ADDRTYPE);
-	if (strcasecmp(str, "SMTP") == 0) {
+	if (str != nullptr && strcasecmp(str, "SMTP") == 0) {
 		str = props.get<const char>(PR_EMAIL_ADDRESS);
 		if (str != nullptr) {
 			list.emplace_back(str);
