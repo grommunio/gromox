@@ -103,14 +103,11 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 		localtime_r(&cur_time, &time_buff);
 	}
 	len = strftime(date_buff, 128, "%x %X", &time_buff);
-	if ('\0' != time_zone[0]) {
+	if (*time_zone != '\0')
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
-	}
-	
 	auto mcharset = bounce_gen_charset(*pmail_original);
-	if ('\0' == charset[0]) {
+	if (*charset == '\0')
 		gx_strlcpy(charset, mcharset.c_str(), std::size(charset));
-	}
 	auto tpptr = bounce_gen_lookup(charset, bounce_type);
 	if (tpptr == nullptr)
 		return false;
@@ -188,9 +185,8 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
 	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn.new_rcpt_fields();
-	if (NULL == pdsn_fields) {
+	if (pdsn_fields == nullptr)
 		return false;
-	}
 	snprintf(tmp_buff, 1024, "rfc822;%s", rcpt_to);
 	dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff);
 	dsn.append_field(pdsn_fields, "Action", "failed");
