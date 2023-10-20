@@ -107,39 +107,33 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 {
 	uint8_t type;
 	TRY(g_uint8(&type));
-	union {
-		int8_t i8;
-		uint8_t u8;
-		int16_t i16;
-		uint16_t u16;
-		int32_t i32;
-		uint32_t u32;
-		int64_t i64;
-		uint64_t u64;
-	} u{};
+	union { int8_t i; uint8_t u; } x8{};
+	union { int16_t i; uint16_t u; } x16{};
+	union { int32_t i; uint32_t u; } x32{};
+	union { int64_t i; uint64_t u; } x64{};
 	switch (type) {
 	case EPV_SHORT_1:
 	case EPV_LONG_1:
 	case EPV_I8_1:
 	case EPV_UNICODE_1:
 	case EPV_BINARY_1:
-		TRY(g_uint8(&u.u8));
+		TRY(g_uint8(&x8.u));
 		break;
 	case EPV_SHORT_2:
 	case EPV_LONG_2:
 	case EPV_I8_2:
 	case EPV_UNICODE_2:
 	case EPV_BINARY_2:
-		TRY(g_uint16(&u.u16));
+		TRY(g_uint16(&x16.u));
 		break;
 	case EPV_LONG_4:
 	case EPV_I8_4:
 	case EPV_SYSTIME_4:
-		TRY(g_uint32(&u.u32));
+		TRY(g_uint32(&x32.u));
 		break;
 	case EPV_I8_8:
 	case EPV_SYSTIME_8:
-		TRY(g_uint64(&u.u64));
+		TRY(g_uint64(&x64.u));
 		break;
 	case EPV_MV_SHORT_1:
 	case EPV_MV_LONG_1:
@@ -150,8 +144,8 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_MV_SYSTIME_1:
 	case EPV_MV_CLSID_1:
 	case EPV_MV_BINARY_1:
-		TRY(g_uint8(&u.u8));
-		u.u16 = static_cast<uint16_t>(u.u8); // COV-CID-1521562
+		TRY(g_uint8(&x8.u));
+		x16.u = x8.u;
 		break;
 	case EPV_MV_SHORT_2:
 	case EPV_MV_LONG_2:
@@ -162,7 +156,7 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_MV_SYSTIME_2:
 	case EPV_MV_CLSID_2:
 	case EPV_MV_BINARY_2:
-		TRY(g_uint16(&u.u16));
+		TRY(g_uint16(&x16.u));
 		break;
 	}
 
@@ -182,8 +176,8 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 			return pack_result::alloc;
 		*vval = r;
 		if (type == EPV_SHORT_0)      *r = 0;
-		else if (type == EPV_SHORT_1) *r = u.i8;
-		else if (type == EPV_SHORT_2) *r = u.i16;
+		else if (type == EPV_SHORT_1) *r = x8.i;
+		else if (type == EPV_SHORT_2) *r = x16.i;
 		return pack_result::ok;
 	}
 	case EPV_LONG_0 ... EPV_LONG_4: {
@@ -192,9 +186,9 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 			return pack_result::alloc;
 		*vval = r;
 		if (type == EPV_LONG_0)      *r = 0;
-		else if (type == EPV_LONG_1) *r = u.i8;
-		else if (type == EPV_LONG_2) *r = u.i16;
-		else if (type == EPV_LONG_4) *r = u.i32;
+		else if (type == EPV_LONG_1) *r = x8.i;
+		else if (type == EPV_LONG_2) *r = x16.i;
+		else if (type == EPV_LONG_4) *r = x32.i;
 		return pack_result::ok;
 	}
 	case EPV_I8_0 ... EPV_I8_8:
@@ -205,12 +199,12 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 		*vval = r;
 		switch (type) {
 		case EPV_I8_0: *r = 0; break;
-		case EPV_I8_1: *r = u.i8; break;
-		case EPV_I8_2: *r = u.i16; break;
+		case EPV_I8_1: *r = x8.i; break;
+		case EPV_I8_2: *r = x16.i; break;
 		case EPV_I8_4:
-		case EPV_SYSTIME_4: *r = u.i32; break;
+		case EPV_SYSTIME_4: *r = x32.i; break;
 		case EPV_I8_8:
-		case EPV_SYSTIME_8: *r = u.i64; break;
+		case EPV_SYSTIME_8: *r = x64.i; break;
 		}
 		return pack_result::ok;
 	}
@@ -254,7 +248,7 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 		if (r == nullptr)
 			return pack_result::alloc;
 		*vval = r;
-		r->cb = type == EPV_BINARY_1 ? u.u8 : u.u16;
+		r->cb = type == EPV_BINARY_1 ? x8.u : x16.u;
 		if (r->cb == 0) {
 			r->pb = nullptr;
 			return pack_result::ok;
@@ -277,25 +271,25 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_UNICODE_1:
 	case EPV_UNICODE_2: {
 		if (type == EPV_UNICODE_1)
-			u.u16 = u.u8;
-		auto r = anew<char>(u.u16 + 1);
+			x16.u = x8.u;
+		auto r = anew<char>(x16.u + 1);
 		if (r == nullptr)
 			return pack_result::alloc;
 		*vval = r;
-		r[u.u16] = '\0';
-		return g_bytes(r, u.u16);
+		r[x16.u] = '\0';
+		return g_bytes(r, x16.u);
 	}
 	case EPV_MV_SHORT_1:
 	case EPV_MV_SHORT_2: {
 		auto r = anew<SHORT_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_uint16_an(r, u.u16) : pack_result::alloc;
+		return r != nullptr ? g_uint16_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_LONG_1:
 	case EPV_MV_LONG_2: {
 		auto r = anew<LONG_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_uint32_an(r, u.u16) : pack_result::alloc;
+		return r != nullptr ? g_uint32_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_I8_1:
 	case EPV_MV_I8_2:
@@ -303,19 +297,19 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_MV_SYSTIME_2: {
 		auto r = anew<LONGLONG_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_uint64_an(r, u.u16) : pack_result::alloc;
+		return r != nullptr ? g_uint64_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_FLOAT_1:
 	case EPV_MV_FLOAT_2: {
 		auto r = anew<FLOAT_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_float_an(r, u.u16) : pack_result::alloc;
+		return r != nullptr ? g_float_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_DOUBLE_1:
 	case EPV_MV_DOUBLE_2: {
 		auto r = anew<FLOAT_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_float_an(r, u.u16) : pack_result::alloc;
+		return r != nullptr ? g_float_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_UNICODE_1:
 	case EPV_MV_UNICODE_2: {
@@ -323,34 +317,34 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 		if (r == nullptr)
 			return pack_result::alloc;
 		*vval = r;
-		r->ppstr = anew<char *>(u.u16 + 1);
+		r->ppstr = anew<char *>(x16.u + 1);
 		if (r->ppstr == nullptr)
 			return pack_result::alloc;
-		r->count = u.u16;
+		r->count = x16.u;
 		r->ppstr[r->count] = nullptr;
 		for (unsigned int i = 0; i < r->count; ++i) {
 			if (m_offset >= m_data_size)
 				return pack_result::format;
-			TRY(g_uint8(&u.u8));
-			switch (u.u8) {
+			TRY(g_uint8(&x8.u));
+			switch (x8.u) {
 			case EPV_UNICODE_0:
-				u.u16 = 0;
+				x16.u = 0;
 				break;
 			case EPV_UNICODE_1:
-				TRY(g_uint8(&u.u8));
-				u.u16 = u.u8;
+				TRY(g_uint8(&x8.u));
+				x16.u = x8.u;
 				break;
 			case EPV_UNICODE_2:
-				TRY(g_uint16(&u.u16));
+				TRY(g_uint16(&x16.u));
 				break;
 			default:
 				return pack_result::format;
 			}
-			r->ppstr[i] = anew<char>(u.u16 + 1);
+			r->ppstr[i] = anew<char>(x16.u + 1);
 			if (r->ppstr[i] == nullptr)
 				return pack_result::alloc;
-			TRY(g_bytes(r->ppstr[i], u.u16));
-			r->ppstr[i][u.u16] = '\0';
+			TRY(g_bytes(r->ppstr[i], x16.u));
+			r->ppstr[i][x16.u] = '\0';
 		}
 		return pack_result::ok;
 	}
@@ -358,7 +352,7 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	case EPV_MV_CLSID_2: {
 		auto r = anew<GUID_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_guid_an(r, u.u16) : pack_result::alloc;
+		return r != nullptr ? g_guid_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_BINARY_1:
 	case EPV_MV_BINARY_2: {
@@ -366,25 +360,25 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 		if (r == nullptr)
 			return pack_result::alloc;
 		*vval = r;
-		r->pbin = anew<BINARY>(u.u16);
+		r->pbin = anew<BINARY>(x16.u);
 		if (r->pbin == nullptr)
 			return pack_result::alloc;
-		r->count = u.u16;
+		r->count = x16.u;
 		for (unsigned int i = 0; i < r->count; ++i) {
 			if (m_offset >= m_data_size)
 				return pack_result::format;
-			TRY(g_uint8(&u.u8));
-			switch (u.u8) {
+			TRY(g_uint8(&x8.u));
+			switch (x8.u) {
 			case EPV_BINARY_0:
 				r->pbin[i].cb = 0;
 				break;
 			case EPV_BINARY_1:
-				TRY(g_uint8(&u.u8));
-				r->pbin[i].cb = u.u8;
+				TRY(g_uint8(&x8.u));
+				r->pbin[i].cb = x8.u;
 				break;
 			case EPV_BINARY_2:
-				TRY(g_uint16(&u.u16));
-				r->pbin[i].cb = u.u16;
+				TRY(g_uint16(&x16.u));
+				r->pbin[i].cb = x16.u;
 				break;
 			default:
 				return pack_result::format;
