@@ -126,9 +126,9 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	auto address_status = strtoul(myrow[1], nullptr, 0);
+	unsigned int address_status = strtoul(myrow[1], nullptr, 0);
 	if (address_status != AF_USER_NORMAL && address_status != AF_USER_SHAREDMBOX)
-		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
+		printf("Warning: Account status (0x%x) indicates this user object normally does not have a mailbox. Proceeding anyway for now...\n", address_status);
 	std::string dir = znul(myrow[2]);
 	myres.clear();
 	conn.reset();
