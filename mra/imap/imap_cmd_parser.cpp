@@ -628,14 +628,14 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				    !mjson.rfc822_build(rfc_path.c_str()))
 					goto FETCH_BODY_SIMPLE;
 				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
-					resource_get_default_charset(pcontext->lang),
+				           pcontext->defcharset,
 					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (len == -1)
 					goto FETCH_BODY_SIMPLE;
 				buff_len += len;
 			} else {
  FETCH_BODY_SIMPLE:
-				auto len = mjson.fetch_structure(resource_get_default_charset(pcontext->lang),
+				auto len = mjson.fetch_structure(pcontext->defcharset,
 					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (len == -1)
 					buff_len += gx_snprintf(buff + buff_len,
@@ -657,14 +657,14 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				    !mjson.rfc822_build(rfc_path.c_str()))
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
 				auto len = mjson.rfc822_fetch(rfc_path.c_str(),
-					resource_get_default_charset(pcontext->lang),
+				           pcontext->defcharset,
 					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (len == -1)
 					goto FETCH_BODYSTRUCTURE_SIMPLE;
 				buff_len += len;
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
-				auto len = mjson.fetch_structure(resource_get_default_charset(pcontext->lang),
+				auto len = mjson.fetch_structure(pcontext->defcharset,
 					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (len == -1)
 					buff_len += gx_snprintf(buff + buff_len,
@@ -675,7 +675,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            std::size(buff) - buff_len, "ENVELOPE ");
-			auto len = mjson.fetch_envelope(resource_get_default_charset(pcontext->lang),
+			auto len = mjson.fetch_envelope(pcontext->defcharset,
 				buff + buff_len, MAX_DIGLEN - buff_len);
 			if (len == -1)
 				buff_len += gx_snprintf(buff + buff_len,
@@ -1329,6 +1329,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		return 1902 | DISPATCH_TAG;
 	if (*pcontext->lang == '\0')
 		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
+	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(pcontext->lang), std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
 	imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 	char caps[128], buff[160];
@@ -1410,6 +1411,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1902;
 	if (*pcontext->lang == '\0')
 		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
+	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(pcontext->lang), std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
 	imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 	return 1705;
@@ -2550,7 +2552,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	std::string buff;
 	auto ssr = system_services_search(pcontext->maildir,
-	           pcontext->selected_folder, resource_get_default_charset(pcontext->lang),
+	           pcontext->selected_folder, pcontext->defcharset,
 	            argc - 2, &argv[2], buff, &errnum);
 	buff.insert(0, "* SEARCH ");
 	auto result = m2icode(ssr, errnum);
@@ -2884,7 +2886,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	std::string buff;
 	auto ssr = system_services_search_uid(pcontext->maildir,
-	           pcontext->selected_folder, resource_get_default_charset(pcontext->lang),
+	           pcontext->selected_folder, pcontext->defcharset,
 	           argc - 3, &argv[3], buff, &errnum);
 	buff.insert(0, "* SEARCH ");
 	auto ret = m2icode(ssr, errnum);
