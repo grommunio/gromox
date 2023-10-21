@@ -10,7 +10,6 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/option.h>
-#include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
@@ -24,7 +23,6 @@ struct srcitem {
 
 }
 
-static std::unique_ptr<LIST_FILE> g_list_file;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
@@ -82,12 +80,6 @@ int main(int argc, const char **argv)
 	size_t rtf_len = unc_size;
 	if (!rtfcp_uncompress(&rtf_bin, pbuff, &rtf_len)) {
 		fprintf(stderr, "fail to uncompress rtf\n");
-		return EXIT_FAILURE;
-	}
-	g_list_file = list_file_initd("cpid.txt", PKGDATADIR, "%d%s:64");
-	if (NULL == g_list_file) {
-		fprintf(stderr, "list_file_init %s: %s\n",
-			PKGDATADIR "/cpid.txt", strerror(errno));
 		return EXIT_FAILURE;
 	}
 	pattachments = attachment_list_init();

@@ -15,9 +15,6 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Files
-.IP \(bu 4
-\fI/usr/share/gromox/cpid.txt\fP: codepage number <-> name definition table
 .SH Normative references
 .IP \(bu 4
 MS-OXRTFCP: Rich Text Format (RTF) Compression Algorithm
