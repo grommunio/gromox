@@ -1360,6 +1360,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 			if (!common_util_entryid_to_username(entryid,
 			    username, std::size(username)))
 				return FALSE;	
+			rcpt_list.emplace_back(username);
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
 			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
 			if (str == nullptr)
