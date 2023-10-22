@@ -1331,8 +1331,9 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 
 	std::vector<std::string> rcpt_list;
 	for (size_t i = 0; i < prcpts->count; ++i) {
+		auto &rcpt = *prcpts->pparray[i];
 		if (b_resend) {
-			auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+			auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 			if (rcpttype == nullptr)
 				return FALSE;
 			if (!(*rcpttype & MAPI_P1))
@@ -1340,20 +1341,20 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 		}
 		/*
 		if (!b_submit) {
-			auto resp = prcpts->pparray[i]->get<const uint32_t>(PR_RESPONSIBILITY);
+			auto resp = rcpt.get<const uint32_t>(PR_RESPONSIBILITY);
 			if (resp == nullptr || *resp != 0)
 				continue;
 		}
 		*/
-		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
+		auto str = rcpt.get<const char>(PR_SMTP_ADDRESS);
 		if (str != nullptr && *str != '\0') {
 			rcpt_list.emplace_back(str);
 			continue;
 		}
-		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
+		auto addrtype = rcpt.get<const char>(PR_ADDRTYPE);
 		if (addrtype == nullptr) {
  CONVERT_ENTRYID:
-			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
+			auto entryid = rcpt.get<const BINARY>(PR_ENTRYID);
 			if (entryid == nullptr)
 				return FALSE;
 			char username[UADDR_SIZE];
@@ -1362,12 +1363,12 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 				return FALSE;	
 			rcpt_list.emplace_back(username);
 		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
+			str = rcpt.get<char>(PR_EMAIL_ADDRESS);
 			if (str == nullptr)
 				return FALSE;
 			rcpt_list.emplace_back(str);
 		} else if (strcasecmp(addrtype, "EX") == 0) {
-			auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
+			auto emaddr = rcpt.get<const char>(PR_EMAIL_ADDRESS);
 			if (emaddr == nullptr)
 				goto CONVERT_ENTRYID;
 			char username[UADDR_SIZE];
