@@ -55,6 +55,8 @@ enum {
 	SMTP_PERMANENT_ERROR
 };
 
+using LLU = unsigned long long;
+
 unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len;
 unsigned int emsmdb_backfill_transporthdr;
@@ -1492,6 +1494,71 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
+static bool mapi_p1(const TPROPVAL_ARRAY &props)
+{
+	auto t = props.get<const uint32_t>(PR_RECIPIENT_TYPE);
+	return t != nullptr && *t & MAPI_P1;
+}
+
+#if 0
+static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
+{
+	auto v = props.get<const uint32_t>(PR_RESPONSIBILITY);
+	return v == nullptr || *v != 0;
+}
+#endif
+
+static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
+    std::vector<std::string> &list, bool resend) try
+{
+	char username[UADDR_SIZE];
+	if (resend && !mapi_p1(props))
+		return ecSuccess;
+	/*
+	if (!b_submit && xp_is_in_charge(rcpt))
+		return ecSuccess;
+	*/
+	auto str = props.get<const char>(PR_SMTP_ADDRESS);
+	if (str != nullptr && *str != '\0') {
+		list.emplace_back(str);
+		return ecSuccess;
+	}
+	str = props.get<char>(PR_ADDRTYPE);
+	if (str != nullptr && strcasecmp(str, "SMTP") == 0) {
+		str = props.get<char>(PR_EMAIL_ADDRESS);
+		if (str != nullptr) {
+			list.emplace_back(str);
+			return ecSuccess;
+		}
+		mlog2(LV_ERR, "E-1124: mid:%llxh recipient has no PR_EMAIL_ADDRESS",
+			LLU{rop_util_get_gc_value(message_id)});
+		return ecInvalidRecips;
+	} else if (str != nullptr && strcasecmp(str, "EX") == 0) {
+		str = props.get<char>(PR_EMAIL_ADDRESS);
+		if (str != nullptr && common_util_essdn_to_username(str,
+		    username, std::size(username))) {
+			list.emplace_back(username);
+			return ecSuccess;
+		}
+	}
+	auto entryid = props.get<const BINARY>(PR_ENTRYID);
+	if (entryid == nullptr) {
+		mlog2(LV_ERR, "E-1285: Cannot get recipient entryid while sending mid:%llu",
+			LLU{rop_util_get_gc_value(message_id)});
+		return ecInvalidRecips;
+	} else if (!common_util_entryid_to_username(entryid,
+	    username, std::size(username))) {
+		mlog2(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
+			LLU{rop_util_get_gc_value(message_id)});
+		return ecInvalidRecips;
+	}
+	list.emplace_back(username);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1123: ENOMEM");
+	return ecServerOOM;
+}
+
 ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_submit)
 {
 	uint64_t message_id = msg->get_id();
@@ -1538,7 +1605,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 		        LLU{rop_util_get_gc_value(message_id)});
 		return ecError;
 	}
-	BOOL b_resend = (*message_flags & MSGFLAG_RESEND) ? TRUE : false;
+	bool b_resend = *message_flags & MSGFLAG_RESEND;
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		mlog2(LV_ERR, "E-1286: Missing recipients for message mid:%llu",
@@ -1548,63 +1615,10 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 
 	std::vector<std::string> rcpt_list;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto &rcpt = *prcpts->pparray[i];
-		if (b_resend) {
-			auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
-			if (rcpttype == nullptr)
-				continue;
-			if (!(*rcpttype & MAPI_P1))
-				continue;	
-		}
-		/*
-		if (!b_submit) {
-			auto resp = rcpt.get<const uint32_t>(PR_RESPONSIBILITY);
-			if (resp == nullptr || *resp != 0)
-				continue;
-		}
-		*/
-		auto str = rcpt.get<const char>(PR_SMTP_ADDRESS);
-		if (str != nullptr && *str != '\0') {
-			rcpt_list.emplace_back(str);
-			continue;
-		}
-		auto addrtype = rcpt.get<const char>(PR_ADDRTYPE);
-		if (addrtype == nullptr) {
- CONVERT_ENTRYID:
-			auto entryid = rcpt.get<const BINARY>(PR_ENTRYID);
-			if (entryid == nullptr) {
-				mlog2(LV_ERR, "E-1285: Cannot get recipient entryid while sending mid:%llu",
-				        LLU{rop_util_get_gc_value(message_id)});
-				return ecInvalidRecips;
-			}
-			char username[UADDR_SIZE];
-			if (!common_util_entryid_to_username(entryid,
-			    username, std::size(username))) {
-				mlog2(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
-				        LLU{rop_util_get_gc_value(message_id)});
-				return ecInvalidRecips;
-			}
-			rcpt_list.emplace_back(username);
-		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			str = rcpt.get<char>(PR_EMAIL_ADDRESS);
-			if (str == nullptr) {
-				mlog2(LV_ERR, "E-1283: Cannot get email address of recipient of SMTP address type while sending mid:%llu",
-				        LLU{rop_util_get_gc_value(message_id)});
-				return ecInvalidRecips;
-			}
-			rcpt_list.emplace_back(str);
-		} else if (strcasecmp(addrtype, "EX") == 0) {
-			auto emaddr = rcpt.get<const char>(PR_EMAIL_ADDRESS);
-			if (emaddr == nullptr)
-				goto CONVERT_ENTRYID;
-			char username[UADDR_SIZE];
-			if (!common_util_essdn_to_username(emaddr,
-			    username, std::size(username)))
-				goto CONVERT_ENTRYID;
-			rcpt_list.emplace_back(username);
-		} else {
-			goto CONVERT_ENTRYID;
-		}
+		auto ret = cu_rcpt_to_list(message_id, *prcpts->pparray[i],
+		           rcpt_list, b_resend);
+		if (ret != ecSuccess)
+			return ret;
 	}
 	if (rcpt_list.size() == 0) {
 		mlog2(LV_ERR, "E-1282: Empty converted recipients list while sending mid:%llu",
