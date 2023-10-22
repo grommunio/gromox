@@ -37,7 +37,7 @@ static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static propididmap_t g_thru_name_map;
 static uint8_t g_splice;
-static unsigned int g_oexcl = 1, g_anchor_folder;
+static unsigned int g_oexcl = 1, g_anchor_folder, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 
 static void cb_anchor_folder(const HXoptcb *cb)
@@ -74,6 +74,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	{nullptr, 'x', HXTYPE_VAL, &g_oexcl, nullptr, nullptr, 0, "Disable O_EXCL like behavior for non-spliced folders"},
+	{"repeat", 0, HXTYPE_UINT, &g_repeat_iter, {}, {}, 0, "For testing purposes, import each message N times", "N"},
 	{"skip-notif", 0, HXTYPE_NONE, &g_skip_notif, nullptr, nullptr, 0, "Skip emission of notifications (if -D)"},
 	{"skip-rules", 0, HXTYPE_NONE, &g_skip_rules, nullptr, nullptr, 0, "Skip execution of rules (if -D)"},
 	{"twostep", '2', HXTYPE_NONE, &g_twostep, nullptr, nullptr, 0, "TWOSTEP rule executor (implies -D; development)"},
@@ -347,8 +348,16 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		tlog("adjusted properties:\n");
 		gi_dump_msgctnt(0, ctnt);
 	}
-	if (!g_do_delivery)
-		return exm_create_msg(folder_it->second.fid_to, &ctnt);
+	if (!g_do_delivery) {
+		for (auto i = 0U; i < g_repeat_iter; ++i) {
+			if (i > 0 && i % 1024 == 0)
+				fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
+			auto ret = exm_create_msg(folder_it->second.fid_to, &ctnt);
+			if (ret != EXIT_SUCCESS)
+				return ret;
+		}
+		return EXIT_SUCCESS;
+	}
 	unsigned int mode = 0;
 	if (!g_skip_rules)
 		mode |= DELIVERY_DO_RULES;
@@ -356,7 +365,14 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		mode |= DELIVERY_DO_NOTIF;
 	if (g_twostep)
 		mode |= DELIVERY_TWOSTEP;
-	return exm_deliver_msg(g_username, &ctnt, mode);
+	for (auto i = 0U; i < g_repeat_iter; ++i) {
+		if (i > 0 && i % 1024 == 0)
+			fprintf(stderr, "mt2exm repeat %u/%u\n", i, g_repeat_iter);
+		auto ret = exm_deliver_msg(g_username, &ctnt, mode);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+	}
+	return EXIT_SUCCESS;
 }
 
 static int exm_packet(const void *buf, size_t bufsize)
