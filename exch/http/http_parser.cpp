@@ -442,13 +442,15 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
 	if (code == http_status::unauthorized) {
 		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
-		if (ctx.last_gss_output.empty())
-			rsp += "WWW-Authenticate: Negotiate\r\n";
-		else if (ctx.last_gss_b64)
-			rsp += "WWW-Authenticate: Negotiate " + ctx.last_gss_output + "\r\n";
-		else
-			rsp += "WWW-Authenticate: Negotiate " +
-			       base64_encode(ctx.last_gss_output) + "\r\n";
+		if (g_config_file->get_ll("http_auth_spnego")) {
+			if (ctx.last_gss_output.empty())
+				rsp += "WWW-Authenticate: Negotiate\r\n";
+			else if (ctx.last_gss_b64)
+				rsp += "WWW-Authenticate: Negotiate " + ctx.last_gss_output + "\r\n";
+			else
+				rsp += "WWW-Authenticate: Negotiate " +
+				       base64_encode(ctx.last_gss_output) + "\r\n";
+		}
 	}
 	rsp += "\r\n";
 	rsp += msg;
@@ -972,6 +974,7 @@ static tproc_status htp_auth_1(http_context &ctx)
 		gx_strlcpy(ctx.password, p, std::size(ctx.password));
 		return htp_auth(&ctx);
 	} else if (strncasecmp(line, "Negotiate TlRMTVNT", 18) == 0 &&
+	    g_config_file->get_ll("http_auth_spnego") &&
 	    g_config_file->get_ll("http_auth_spnego_ntlmssp")) {
 		char decoded[4096];
 		size_t decode_len = 0;
