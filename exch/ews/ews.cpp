@@ -235,8 +235,7 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
-	bool enableLog = false;
-	dispatch(ctx_id, auth_info, content, len, enableLog);
+	dispatch(ctx_id, auth_info, content, len);
 	return http_status::ok;
 }
 
@@ -250,8 +249,7 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  *
  * @return     Pair of response content and HTTP response code
  */
-http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len,
-                                                bool& enableLog) try
+http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
 {
 	if(ctx_id < 0 || size_t(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
@@ -267,36 +265,34 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 			debug->last = now;
 		}
 	}
-	enableLog = false;
+
 	using namespace std::string_literals;
 	auto& pc = contexts[ctx_id] = std::make_unique<EWSContext>(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
 	EWSContext& context = *pc;
+	const XMLElement* request = context.request().body->FirstChildElement();
+	if(!request)
+		return fault(ctx_id, http_status::bad_request, "Missing request node");
+	if(request->NextSibling())
+		mlog(LV_WARN, "[ews#%d] Additional request nodes found - ignoring", ctx_id);
 	if(!rpc_new_stack())
-		mlog(LV_WARN, "[ews#%d]: Failed to allocate stack, exmdb might not work", ctx_id);
+		mlog(LV_WARN, "[ews#%d] Failed to allocate stack, exmdb might not work", ctx_id);
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
-	if(request_logging >= 2)
-	{
-		for(const XMLElement* xml = context.request().body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
-			enableLog = enableLog || logEnabled(xml->Name());
-		if(enableLog)
-			mlog(LV_DEBUG, "[ews#%d] Incoming data: %.*s", ctx_id,  len > INT_MAX ? INT_MAX : static_cast<int>(len),
-			     static_cast<const char *>(data));
-	}
-	for(XMLElement* xml = context.request().body->FirstChildElement(); xml; xml = xml->NextSiblingElement())
-	{
-		bool logThis = logEnabled(xml->Name());
-		enableLog = enableLog || logThis;
-		XMLElement* responseContainer = context.response().body->InsertNewChildElement(xml->Name());
-		responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
-		responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
-		if(logThis && request_logging)
-			mlog(LV_DEBUG, "[ews#%d] Processing %s", ctx_id,  xml->Name());
-		auto handler = requestMap.find(xml->Name());
-		if(handler == requestMap.end())
-		    throw Exceptions::UnknownRequestError("Unknown request '"s+xml->Name()+"'.");
-		else
-			handler->second(xml, responseContainer, context);
-	}
+	bool enableLog = logEnabled(request->Name());
+	if(enableLog && request_logging >= 2)
+		mlog(LV_DEBUG, "[ews#%d] Incoming data: %.*s", ctx_id,  len > INT_MAX ? INT_MAX : static_cast<int>(len),
+		     static_cast<const char *>(data));
+
+	XMLElement* responseContainer = context.response().body->InsertNewChildElement(request->Name());
+	responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
+	responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
+	if(request_logging)
+		mlog(LV_DEBUG, "[ews#%d] Processing %s", ctx_id,  request->Name());
+	auto handler = requestMap.find(request->Name());
+	if(handler == requestMap.end())
+		throw Exceptions::UnknownRequestError("Unknown request '"s+request->Name()+"'.");
+	else
+		handler->second(request, responseContainer, context);
+
 	context.log(enableLog);
 	return http_status::ok;
 } catch (const Exceptions::InputError &err) {

@@ -175,7 +175,7 @@ private:
 	std::vector<std::string> logFilters;
 	bool invertFilter = true;
 
-	http_status dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t, bool&);
+	http_status dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t);
 	void loadConfig();
 };
 
