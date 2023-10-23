@@ -96,7 +96,6 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id);
-extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size_t);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);

@@ -39,7 +39,6 @@ BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
 const char* common_util_essdn_to_domain(const char *pessdn);
 void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t);
-extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size_t);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 BINARY* common_util_public_to_addressbook_entryid(const char *domainname);

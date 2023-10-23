@@ -231,29 +231,6 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	return TRUE;
 }
 
-BOOL oxcmail_entryid_to_username(const BINARY *pbin,
-    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
-{
-	uint32_t flags;
-	EXT_PULL ext_pull;
-	FLATUID provider_uid;
-	
-	if (pbin->cb < 20)
-		return FALSE;
-	ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
-	ext_pull.m_offset = 0;
-	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, g_oxcmail_org_name,
-		       oxcmail_id2user, username, ulen) ? TRUE : false;
-	if (provider_uid == muidOOP)
-		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
-	return FALSE;
-}
-
 static BOOL oxcmail_username_to_oneoff(const char *username,
 	const char *pdisplay_name, BINARY *pbin)
 {

@@ -221,29 +221,6 @@ void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax
 	snprintf(pessdn, dnmax, "/o=%s/" EAG_SRV_F9 "@%s", g_emsmdb_org_name, pdomain);
 }
 
-BOOL common_util_entryid_to_username(const BINARY *pbin,
-    char *username, size_t ulen)
-{
-	uint32_t flags;
-	EXT_PULL ext_pull;
-	FLATUID provider_uid;
-	
-	if (pbin->cb < 20)
-		return FALSE;
-	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
-		return FALSE;	
-	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
-	ext_pull.m_offset = 0;
-	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, g_emsmdb_org_name,
-		       cu_id2user, username, ulen) ? TRUE : false;
-	if (provider_uid == muidOOP)
-		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
-	return FALSE;
-}
-
 BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 {
 	ONEOFF_ENTRYID e{};
