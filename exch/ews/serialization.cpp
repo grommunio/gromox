@@ -295,6 +295,18 @@ void tBaseItemId::serialize(XMLElement* xml) const
 	XMLDUMPA(ChangeKey);
 }
 
+void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(TimeStamp);
+	XMLDUMPT(objectId);
+	XMLDUMPT(ParentFolderId);
+}
+
+tBaseSubscriptionRequest::tBaseSubscriptionRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(FolderIds),
+	XMLINIT(EventTypes)
+{}
+
 void tBody::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(c_str());
@@ -374,6 +386,14 @@ void tRecurrenceRangeBase::serialize(tinyxml2::XMLElement* xml) const
 void tNoEndRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 {
 	tRecurrenceRangeBase::serialize(xml);
+}
+
+void tNotification::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(SubscriptionId);
+	XMLDUMPT(MoreEvents);
+	for(const auto& event : events)
+		XMLDUMPT(event);
 }
 
 void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
@@ -552,6 +572,11 @@ void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	xml->SetText(Entry.c_str());
 	XMLDUMPA(Key);
 }
+
+tPullSubscriptionRequest::tPullSubscriptionRequest(const tinyxml2::XMLElement* xml) :
+	tBaseSubscriptionRequest(xml),
+	XMLINIT(Timeout)
+{}
 
 tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
 	XMLINITA(PropertyTag),
@@ -801,6 +826,19 @@ void tMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(ReceivedRepresenting);
 }
 
+void tModifiedEvent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBaseObjectChangedEvent::serialize(xml);
+	XMLDUMPT(UnreadCount);
+}
+
+void tMovedCopiedEvent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBaseObjectChangedEvent::serialize(xml);
+	XMLDUMPT(oldObjectId);
+	XMLDUMPT(OldParentFolderId);
+}
+
 tPath::tPath(const XMLElement* xml) : Base(fromXMLNodeDispatch<Base>(xml))
 {}
 
@@ -871,6 +909,55 @@ void tSmtpDomain::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(Name);
 	XMLDUMPT(IncludeSubdomains);
+}
+
+/**
+ * @brief      Base64 encode 32bit unsigned integer
+ *
+ * @param      v   Value to encode
+ * @param      d   Destination buffer. Must have space for 6 characters. Pointer is moved to the end of the string.
+ */
+constexpr void tSubscriptionId::encode(uint32_t v, char*& d)
+{
+	for(uint32_t offset = 0; offset < 31; offset += 6)
+		*d++ = b64[(v & (0x3fu << offset)) >> offset];
+}
+
+/**
+ * @brief      Base64 decode 32bit unsigned integer
+ *
+ * @param      s   Data to decode. Pointer is moved to the end of the string.
+ *
+ * @throw      DeserializationError  The input contains invalid characters
+ *
+ * @return Decoded value
+ */
+constexpr uint32_t tSubscriptionId::decode(const uint8_t*& s)
+{
+	uint32_t res = 0;
+	for(uint32_t offset = 0; offset < 6; ++s, ++offset)
+		res |= *s < 128 && i64[*s] >= 0? (i64[*s] << offset*6) : throw DeserializationError(E3112);
+	return res;
+}
+
+tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement* xml)
+{
+	const char* data = xml->GetText();
+	size_t len;
+	if(!data || (len = strlen(data)) != 12)
+		throw DeserializationError(E3111);
+	const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
+	ID = decode(d);
+	timeout = decode(d);
+}
+
+void tSubscriptionId::serialize(tinyxml2::XMLElement* xml) const
+{
+	std::string res(12, 0);
+	char* data = res.data();
+	encode(ID, data);
+	encode(timeout, data);
+	xml->SetText(res.c_str());
 }
 
 tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
@@ -1229,6 +1316,19 @@ mUpdateFolderRequest::mUpdateFolderRequest(const tinyxml2::XMLElement* xml) :
 
 void mUpdateFolderResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
+
+mSubscribeRequest::mSubscribeRequest(const tinyxml2::XMLElement* xml) :
+	VXMLINIT(subscription)
+{}
+
+void mSubscribeResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mSubscribeResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(SubscriptionId);
+}
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :
 	XMLINIT(ItemChanges)

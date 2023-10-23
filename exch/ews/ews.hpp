@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 
 #pragma once
+#include <list>
 #include <optional>
 #include <unordered_map>
 #include <variant>
@@ -18,6 +19,7 @@
 #include "ObjectCache.hpp"
 #include "exceptions.hpp"
 #include "soaputil.hpp"
+#include "structures.hpp"
 
 namespace gromox::EWS::detail
 {
@@ -45,51 +47,26 @@ struct MessageInstanceKey {
 	inline bool operator==(const MessageInstanceKey& o) const
 	{return mid == o.mid && dir == o.dir;}
 };
+
+using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
+using SubscriptionKey = uint32_t;
+
 } // namespace gromox::EWS::detail
+
+struct MIME_POOL;
+
 
 template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey>
 {size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey&) const noexcept;};
 
+template<> struct std::hash<gromox::EWS::detail::ExmdbSubscriptionKey>
+{size_t operator()(const gromox::EWS::detail::ExmdbSubscriptionKey&) const noexcept;};
+
 template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey>
 {size_t operator()(const gromox::EWS::detail::MessageInstanceKey&) const noexcept;};
 
+
 namespace gromox::EWS {
-
-namespace Structures
-{
-struct sAttachmentId;
-struct sFolderEntryId;
-struct sMailboxInfo;
-struct sMessageEntryId;
-class  sShape;
-struct sFolderSpec;
-struct tCalendarFolderType;
-struct tCalendarItem;
-struct tContact;
-struct tContactsFolderType;
-struct tDistinguishedFolderId;
-struct tEmailAddressType;
-struct tFileAttachment;
-struct tFolderId;
-struct tFolderResponseShape;
-struct tFolderType;
-struct tItem;
-struct tItemAttachment;
-struct tItemResponseShape;
-struct tMailbox;
-struct tMessage;
-struct tPath;
-struct tReferenceAttachment;
-struct tSerializableTimeZone;
-struct tSearchFolderType;
-struct tTasksFolderType;
-
-using sAttachment = std::variant<tItemAttachment, tFileAttachment, tReferenceAttachment>;
-using sFolder = std::variant<tFolderType, tCalendarFolderType, tContactsFolderType, tSearchFolderType, tTasksFolderType>;
-using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
-using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
-}
-
 
 class EWSContext;
 
@@ -145,10 +122,37 @@ public:
 		~ExmdbInstance();
 	};
 
+	/**
+	 * @brief      Subscription management struct
+	 */
+	struct Subscription
+	{
+		Subscription(const char*, const EWSPlugin&);
+		Subscription(const Subscription&) = delete;
+		Subscription(Subscription&&) = delete;
+
+		Subscription& operator=(const Subscription&) = delete;
+		Subscription& operator=(Subscription&&) = delete;
+
+		const EWSPlugin& ews; ///< Parent plugin
+		std::string username; ///< Name of the user who created the subscription
+		Structures::sMailboxInfo mailboxInfo; ///< Target mailbox metadata
+		std::mutex lock; ///< I/O mutex
+		std::vector<detail::ExmdbSubscriptionKey> subscriptions; ///< Exmdb subscription keys
+
+		~Subscription();
+	};
+
+	std::list<Structures::sNotificationEvent> events(const detail::ExmdbSubscriptionKey&, size_t, bool&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
+	std::shared_ptr<Subscription> mksub(const Structures::tSubscriptionId&, const char*) const;
+	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
+	std::shared_ptr<Subscription> subscription(detail::SubscriptionKey, uint32_t) const;
+	bool unsubscribe(detail::SubscriptionKey, const char*) const;
+	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
@@ -165,9 +169,13 @@ public:
 	void term(int);
 
 private:
-	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey>;
-	using CacheObj = std::variant<std::shared_ptr<ExmdbInstance>>;
+	template<typename T> using sptr = std::shared_ptr<T>;
+
 	struct DebugCtx;
+
+	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey>;
+	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<Subscription>>;
+
 	static const std::unordered_map<std::string, Handler> requestMap;
 
 	static void writecontent(int, const std::string_view&, bool, gx_loglevel);
@@ -176,6 +184,9 @@ private:
 
 	mutable ObjectCache<CacheKey, CacheObj> cache;
 	std::vector<std::unique_ptr<EWSContext>> contexts;
+
+	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
+	mutable std::mutex subscriptionLock;
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
@@ -210,6 +221,9 @@ public:
 	TAGGED_PROPVAL getFolderEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getFolderProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getFolderProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	std::pair<std::list<Structures::sNotificationEvent>, bool> getEvents(const Structures::tSubscriptionId&) const;
+	TAGGED_PROPVAL getFolderEntryId(const Structures::sFolderSpec&) const;
+	TPROPVAL_ARRAY getFolderProps(const Structures::sFolderSpec&, const PROPTAG_ARRAY&) const;
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
@@ -234,6 +248,9 @@ public:
 	BINARY serialize(const XID&) const;
 	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
+	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
+	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
+	bool unsubscribe(const Structures::tSubscriptionId&) const;
 	void updated(const std::string&, const Structures::sMessageEntryId&) const;
 	std::string username_to_essdn(const std::string&) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
@@ -266,6 +283,7 @@ private:
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
+	Structures::tSubscriptionId subscribe(const std::vector<Structures::sFolderId>&, uint16_t, bool, uint32_t) const;
 
 	void toContent(const std::string&, Structures::tCalendarItem&, Structures::sShape&, MESSAGE_CONTENT&) const;
 	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MESSAGE_CONTENT&) const;

@@ -78,11 +78,12 @@ public:
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
+	ERR(InvalidSubscriptionRequest) ///< Inconsistent subscription request
 	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
-	ERR(ItemSave); ///< Failed to set item properties
+	ERR(ItemSave)  ///< Failed to set item properties
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
@@ -92,6 +93,12 @@ public:
 	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
 #undef ERR
 };
+
+/**
+ * @brief      Error if none of the subscription keys is valid
+ */
+class SubscriptionNotFoundError : public DispatchError
+{using DispatchError::DispatchError;};
 
 /**
  * @brief      Generic error to signal missing functionality
@@ -307,6 +314,12 @@ E(3191, "cannot write to target folder");
 inline std::string E3192(const char* type, const std::string& dir) {return fmt::format("E-3192: failed to get {} ID for '{}'", type, dir);}
 E(3193, "replid not supported");
 E(3194, "failed to retrieve store record key");
+E(3195, "invalid recurrence type");
+E(3196, "malformed subscription id");
+E(3197, "invalid subscription id");
+E(3198, "SubscribeToAllFolders cannot be combined with FolderIds");
+E(3199, "SubscribeToAllFolders cannot be combined with FolderIds");
+E(3200, "cannot subscribe to different mailboxes");
 
 #undef E
 }

@@ -33,6 +33,7 @@ void process(const Structures::mBaseMoveCopyItem&, tinyxml2::XMLElement*, const 
 EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
+EWSFUNC(mSubscribeRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);
 EWSFUNC(mUpdateFolderRequest);

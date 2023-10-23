@@ -27,7 +27,6 @@ using namespace std;
 using namespace tinyxml2;
 
 using Clock = time_point::clock;
-using std::to_string;
 
 ///////////////////////////////////////////////////////////////////////////////
 //Helper functions
@@ -1115,6 +1114,25 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
+}
+
+/**
+ * @brief      Process Subscribe
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:SubscribeResponse");
+
+	mSubscribeResponse data;
+	mSubscribeResponseMessage& msg = data.ResponseMessages.emplace_back();
+	msg.SubscriptionId = std::visit([&](const auto& sub){return ctx.subscribe(sub);}, request.subscription);
+	msg.success();
 
 	data.serialize(response);
 }

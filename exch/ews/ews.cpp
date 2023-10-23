@@ -190,6 +190,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"ResolveNames", process<Structures::mResolveNamesRequest>},
 	{"SendItem", process<Structures::mSendItemRequest>},
 	{"SetUserOofSettingsRequest", process<Structures::mSetUserOofSettingsRequest>},
+	{"Subscribe", process<Structures::mSubscribeRequest>},
 	{"SyncFolderHierarchy", process<Structures::mSyncFolderHierarchyRequest>},
 	{"SyncFolderItems", process<Structures::mSyncFolderItemsRequest>},
 	{"UpdateFolder", process<Structures::mUpdateFolderRequest>},
@@ -461,6 +462,7 @@ static std::unique_ptr<EWSPlugin> g_ews_plugin; ///< Current plugin
  */
 static BOOL ews_init(void **apidata)
 {
+	auto fail = [](auto&&... args){mlog(LV_ERR, args...); return false;};
 	LINK_HPM_API(apidata)
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
@@ -472,8 +474,7 @@ static BOOL ews_init(void **apidata)
 	try {
 		g_ews_plugin.reset(new EWSPlugin());
 	} catch (const std::exception &e) {
-		mlog(LV_ERR, "[ews] failed to initialize plugin: %s", e.what());
-		return false;
+		return fail("[ews] failed to initialize plugin: %s", e.what());
 	}
 	return TRUE;
 }
@@ -548,6 +549,26 @@ EWSPlugin::ExmdbInstance::~ExmdbInstance()
 {plugin.exmdb.unload_instance(dir.c_str(), instanceId);}
 
 /**
+ * @brief      Initialize subscription object
+ *
+ * @param      uname   Name of creating user
+ * @param      plugin  Parent plugin
+ */
+EWSPlugin::Subscription::Subscription(const char* uname, const EWSPlugin& plugin) :
+	ews(plugin), username(uname)
+{}
+
+/**
+ * @brief      Cancel subscription
+ */
+EWSPlugin::Subscription::~Subscription()
+{
+	std::lock_guard lock(ews.subscriptionLock);
+	for(const auto& subKey : subscriptions)
+		ews.unsubscribe(subKey);
+}
+
+/**
  * @brief      Load message instance
  *
  * @param      dir   Home directory of user or domain
@@ -597,6 +618,100 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_message_instance_lifetime, akey, instance);
 	return instance;
+}
+
+/**
+ * @brief      Create subscription
+ *
+ * @param      ID        Subscription ID
+ * @param      username  Owner
+ *
+ * @return Pointer to created subscription
+ */
+std::shared_ptr<EWSPlugin::Subscription> EWSPlugin::mksub(const Structures::tSubscriptionId& ID, const char* username) const
+{
+	using ms = std::chrono::milliseconds;
+	auto sub = std::make_shared<Subscription>(username, *this);
+	cache.emplace(ms(ID.timeout*60'000), ID.ID, sub);
+	return sub;
+}
+
+/**
+ * @brief     Create subscription
+ *
+ * @param     username    Name of the creating user
+ * @param     maildir     Home directory of subscription target
+ * @param     flags       Subscribed events
+ * @param     all         Whether to subscribe to all
+ * @param     folderId    Folder to subscribe to
+ * @param     timeout     Timeout (minutes) of the subscription
+ *
+ * @return    Subscription key
+ */
+detail::ExmdbSubscriptionKey EWSPlugin::subscribe(const std::string& maildir, uint16_t flags,
+                                                  bool all, uint64_t folderId, gromox::EWS::detail::SubscriptionKey parent) const
+{
+	detail::ExmdbSubscriptionKey key{maildir, 0};
+	if(!exmdb.subscribe_notification(maildir.c_str(), flags, all? TRUE : false, folderId, 0, &key.second))
+		throw DispatchError("Failed to create subscription");
+	std::lock_guard lock(subscriptionLock);
+	subscriptions.emplace(key, parent);
+	return key;
+}
+
+/**
+ * @brief      Get subscription with given key
+ *
+ * @param      subscriptionKey   Subscription key
+ * @param      username          Name of accessing user
+ *
+ * @throw      AccessDenied      Accessing user is not the creator of this subscription
+ *
+ * @return     Pointer to subscription or nullptr if not found
+ */
+std::shared_ptr<EWSPlugin::Subscription> EWSPlugin::subscription(detail::SubscriptionKey subscriptionKey, uint32_t timeout) const
+{
+	try {
+		return std::get<sptr<Subscription>>(cache.get(subscriptionKey, std::chrono::milliseconds(timeout*60'000)));
+	} catch (...) { // Key not found or type error
+		return nullptr;
+	}
+}
+
+/**
+ * @brief      Remove subscription
+ *
+ * If the supplied username does not match the username of the subscription,
+ * the call has no effect.
+ *
+ * @param      subscriptionKey   Subscription to remove
+ * @param      username          Requesting user
+ *
+ * @return true if subscription was removed, false otherwise
+ */
+bool EWSPlugin::unsubscribe(detail::SubscriptionKey subscriptionKey, const char* username) const
+{
+	try {
+		CacheKey key = subscriptionKey;
+		auto subscription = std::get<sptr<Subscription>>(cache.get(key));
+		if(subscription->username != username)
+			return false;
+		cache.evict(key);
+		return true;
+	} catch (...) { // Key not found or type error
+		return false;
+	}
+}
+
+/**
+ * @brief      Terminate exmdb subscription
+ *
+ * @param      key    Subscription key
+ */
+void EWSPlugin::unsubscribe(const detail::ExmdbSubscriptionKey& key) const
+{
+	subscriptions.erase(key);
+	exmdb.unsubscribe_notification(key.first.c_str(), key.second);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -655,3 +770,6 @@ size_t std::hash<detail::AttachmentInstanceKey>::operator()(const detail::Attach
 
 size_t std::hash<detail::MessageInstanceKey>::operator()(const detail::MessageInstanceKey& key) const noexcept
 {return FNV(key.dir, key.mid).value;}
+
+size_t std::hash<detail::ExmdbSubscriptionKey>::operator()(const detail::ExmdbSubscriptionKey& key) const noexcept
+{return FNV(key.first, key.second).value;}

@@ -1215,6 +1215,79 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
 }
 
 /**
+ * @brief      Create subscriptions
+ *
+ * @param      folderIds  Folders to subscribe to
+ * @param      eventMask  Events to subscribe to
+ * @param      all        Whether to subscribe to all folders
+ * @param      timeout    Timeout (minutes) of the subscription
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, uint16_t eventMask, bool all, uint32_t timeout) const
+{
+	tSubscriptionId subscriptionId(timeout);
+	auto subscription = m_plugin.mksub(subscriptionId, m_auth_info.username);
+	if(folderIds.empty()) {
+		subscription->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
+		detail::ExmdbSubscriptionKey key =
+			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(PRIVATE_FID_IPMSUBTREE, 1),
+		                       subscriptionId.ID);
+		subscription->subscriptions.emplace_back(key);
+		return subscriptionId;
+	}
+	subscription->subscriptions.reserve(folderIds.size());
+	std::string target;
+	std::string maildir;
+	for(const sFolderId& f : folderIds) {
+		sFolderSpec folderspec = std::visit([&](const auto& fid){return resolveFolder(fid);}, f);
+		if(!folderspec.target)
+			folderspec.target = m_auth_info.username;
+		if(target.empty()) {
+			target = *folderspec.target;
+			maildir = get_maildir(*folderspec.target);
+			subscription->mailboxInfo = getMailboxInfo(maildir, folderspec.location == folderspec.PUBLIC);
+		} else if(target != *folderspec.target)
+			throw EWSError::InvalidSubscriptionRequest(E3200);
+		if(!(permissions(m_auth_info.username, folderspec) & frightsReadAny))
+			continue; // TODO: proper error handling
+		subscription->subscriptions.emplace_back(m_plugin.subscribe(maildir, eventMask, all, folderspec.folderId,
+		                                                            subscriptionId.ID));
+	}
+	return subscriptionId;
+}
+
+/**
+ * @brief      Create new pull subscription
+ *
+ * @param      req    Pull subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if(all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3198);
+	return subscribe(req.FolderIds? *req.FolderIds : std::vector<sFolderId>(), req.eventMask(), all, req.Timeout);
+}
+
+/**
+ * @brief      Create new streaming subscription
+ *
+ * @param      req    Streaming subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if(all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3198);
+	return subscribe(req.FolderIds? *req.FolderIds : std::vector<sFolderId>(), req.eventMask(), all, 5);
+}
+
+/**
  * @brief      Mark message as updated
  *
  * @param      dir       Home directory of user or domain

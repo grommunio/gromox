@@ -1116,6 +1116,35 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Create gromox event mask from event list
+ *
+ * @return gromox event mask
+ *
+ * @todo actual implementation...
+ */
+uint16_t tBaseSubscriptionRequest::eventMask() const
+{
+	uint16_t res = 0;
+	for(auto event : EventTypes)
+		switch(event.index()) {
+		case 0: // CopiedEvent
+			res |= NF_OBJECT_COPIED; break;
+		case 1: // CreatedEvent
+			res |= NF_OBJECT_CREATED; break;
+		case 2: // DeletedEvent
+			res |= NF_OBJECT_DELETED; break;
+		case 3: // ModifiedEvent
+			res |= NF_OBJECT_MODIFIED; break;
+		case 4: // MovedEvent
+			res |= NF_OBJECT_MOVED; break;
+		case 5: // NewMailEvent
+			res |= NF_NEW_MAIL; break;
+		}
+	return res;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 {
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
@@ -2339,6 +2368,28 @@ void tSetItemField::put(sShape& shape) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+std::atomic<uint32_t> tSubscriptionId::globcnt = 0;
+
+/**
+ * @brief      Constructor for single subscription ID
+ *
+ * @param      t   Subscription timeout (minutes)
+ */
+tSubscriptionId::tSubscriptionId(uint32_t t) : ID(++globcnt), timeout(t)
+{}
+
+/**
+ * @brief      Constructor for single subscription ID
+ *
+ * @param      ID  Subscription key
+ * @param      t   Subscription timeout (minutes)
+ */
+tSubscriptionId::tSubscriptionId(uint32_t id, uint32_t t) : ID(++globcnt), timeout(t)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
 {}
