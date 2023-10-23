@@ -769,15 +769,15 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 {
 	int id;
-	int temp_len;
 	int domain_id;
 	char prefix_string[1024];
 	
-	temp_len = gx_snprintf(prefix_string, std::size(prefix_string), "/o=%s/ou=Exchange "
-			"Administrative Group (FYDIBOHF23SPDLT)", g_nsp_org_name);
-	if (temp_len < 0 || strncasecmp(pdn, prefix_string, temp_len) != 0)
+	auto temp_len = gx_snprintf(prefix_string, std::size(prefix_string),
+		"/o=%s/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)"
+		"/cn=Configuration/cn=Servers/cn=", g_nsp_org_name);
+	if (temp_len < 0)
 		return NULL;
-	if (strncasecmp(pdn + temp_len, "/cn=Configuration/cn=Servers/cn=", 32) == 0 &&
+	if (strncasecmp(pdn, prefix_string, temp_len) == 0 &&
 	    strlen(pdn) >= static_cast<size_t>(temp_len) + 60) {
 		/* Reason for 60: see DN format in ab_tree_get_server_dn */
 		id = decode_hex_int(pdn + temp_len + 60);
@@ -785,7 +785,10 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		auto iter = pbase->phash.find(minid);
 		return iter != pbase->phash.end() ? &iter->second->stree : nullptr;
 	}
-	if (strncasecmp(&pdn[temp_len], "/cn=Recipients/cn=", 18) != 0)
+	temp_len = gx_snprintf(prefix_string, std::size(prefix_string),
+	           "/o=%s/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)"
+	           "/cn=Recipients/cn=", g_nsp_org_name);
+	if (temp_len < 0 || strncasecmp(pdn, prefix_string, temp_len) != 0)
 		return NULL;
 	domain_id = decode_hex_int(pdn + temp_len + 18);
 	id = decode_hex_int(pdn + temp_len + 26);
