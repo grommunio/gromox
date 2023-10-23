@@ -304,6 +304,9 @@ E(3188, "inconsistent item id");
 E(3189, "source and destination folder are the same");
 E(3190, "cannot write to object");
 E(3191, "cannot write to target folder");
+inline std::string E3192(const char* type, const std::string& dir) {return fmt::format("E-3192: failed to get {} ID for '{}'", type, dir);}
+E(3193, "replid not supported");
+E(3194, "failed to retrieve store record key");
 
 #undef E
 }

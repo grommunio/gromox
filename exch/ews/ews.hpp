@@ -58,6 +58,8 @@ namespace gromox::EWS {
 namespace Structures
 {
 struct sAttachmentId;
+struct sFolderEntryId;
+struct sMailboxInfo;
 struct sMessageEntryId;
 class  sShape;
 struct sFolderSpec;
@@ -111,6 +113,8 @@ public:
 		decltype(mysql_adaptor_get_domain_ids)* get_domain_ids;
 		decltype(mysql_adaptor_get_domain_info)* get_domain_info;
 		decltype(mysql_adaptor_get_homedir)* get_homedir;
+		decltype(mysql_adaptor_get_id_from_homedir)* get_id_from_homedir;
+		decltype(mysql_adaptor_get_id_from_maildir)* get_id_from_maildir;
 		decltype(mysql_adaptor_get_maildir)* get_maildir;
 		decltype(mysql_adaptor_get_user_aliases) *get_user_aliases;
 		decltype(mysql_adaptor_get_user_displayname) *get_user_displayname;
@@ -143,6 +147,8 @@ public:
 
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
+	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
+	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
@@ -207,6 +213,8 @@ public:
 	TAGGED_PROPVAL getItemEntryId(const std::string&, uint64_t) const;
 	template<typename T> const T* getItemProp(const std::string&, uint64_t, uint32_t) const;
 	TPROPVAL_ARRAY getItemProps(const std::string&, uint64_t, const PROPTAG_ARRAY&) const;
+	GUID getMailboxGuid(const std::string&) const;
+	Structures::sMailboxInfo getMailboxInfo(const std::string&, bool) const;
 	PROPID_ARRAY getNamedPropIds(const std::string&, const PROPNAME_ARRAY&, bool=false) const;
 	void getNamedTags(const std::string&, Structures::sShape&, bool=false) const;
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;

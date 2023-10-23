@@ -457,6 +457,46 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 }
 
 /**
+ * @brief      Get mailbox GUID from store property
+ *
+ * @param      dir   Store directory
+ *
+ * @return     GUID of the mailbox
+ */
+GUID EWSContext::getMailboxGuid(const std::string& dir) const
+{
+	static const uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
+	static constexpr PROPTAG_ARRAY recordKeyTags{1, const_cast<uint32_t*>(&recordKeyTag)};
+	TPROPVAL_ARRAY recordKeyProp;
+	if(!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
+	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
+		throw DispatchError(E3194);
+	const BINARY* recordKeyData = static_cast<const BINARY*>(recordKeyProp.ppropval->pvalue);
+	EXT_PULL guidPull;
+	guidPull.init(recordKeyData->pv, recordKeyData->cb, alloc, 0);
+	GUID mailboxGuid;
+	ext_error(guidPull.g_guid(&mailboxGuid));
+	return mailboxGuid;
+}
+
+/**
+ * @brief      Collect mailbox metadata
+ *
+ * @param      dir       Store directory
+ * @param      isDomain  Whether target is a domain
+ *
+ * @return     Mailbox metadata struct
+ */
+sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) const
+{
+	sMailboxInfo mbinfo{getMailboxGuid(dir), 0, isDomain};
+	auto getId = isDomain? m_plugin.mysql.get_id_from_homedir : m_plugin.mysql.get_id_from_maildir;
+	if(!getId(dir.c_str(), &mbinfo.accountId))
+		throw EWSError::CannotFindUser(E3192(isDomain? "domain" : "user", dir));
+	return mbinfo;
+}
+
+/**
  * @brief     Load attachment
  *
  * @param     dir      Store to load from

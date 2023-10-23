@@ -126,7 +126,8 @@ struct sBase64Binary : public std::vector<uint8_t>
  */
 struct sFolderEntryId : public FOLDER_ENTRYID
 {
-	sFolderEntryId(const tinyxml2::XMLAttribute*);
+	sFolderEntryId() = default;
+	explicit sFolderEntryId(const tinyxml2::XMLAttribute*);
 	sFolderEntryId(const void*, uint64_t);
 
 	std::string serialize() const;
@@ -232,6 +233,16 @@ using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
  * c.f. Types.xsd:1502
  */
 using sItemChangeDescription = std::variant<tAppendToItemField, tSetItemField, tDeleteItemField>;
+
+/**
+ * Mailbox metadata necessary for entry ID generation
+ */
+struct sMailboxInfo
+{
+	GUID mailboxGuid; ///< PR_STORE_RECORD_KEY store property
+	uint32_t accountId; ///< MySQL account ID
+	bool isPublic; ///< Whether it is a public (domain) store
+};
 
 using sNamedPropertyMap = std::unordered_map<uint32_t, PROPERTY_NAME>;
 

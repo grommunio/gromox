@@ -50,6 +50,34 @@ using namespace tinyxml2;
 
 using Exceptions::DispatchError;
 
+namespace
+{
+
+/**
+ * @brief     Convert replica ID to replica GUID
+ *
+ * Currently only replica IDs 1 and 5 are supported.
+ *
+ * @param     mbinfo   Mailbox metadata
+ * @param     replid   Replica ID
+ *
+ * @return    Replica GUID
+ */
+GUID replid_to_replguid(const gromox::EWS::Structures::sMailboxInfo& mbinfo, uint16_t replid)
+{
+	GUID guid;
+	if (replid == 1)
+		guid = mbinfo.isPublic ? rop_util_make_domain_guid(mbinfo.accountId) : rop_util_make_user_guid(mbinfo.accountId);
+	else if (replid == 5)
+		guid = mbinfo.mailboxGuid;
+	else
+		throw DispatchError(Exceptions::E3193);
+	return guid;
+}
+
+} // anonymous namespace
+
+
 /**
  * @brief      Context data for debugging purposes
  *
@@ -330,6 +358,8 @@ EWSPlugin::_mysql::_mysql()
 	getService(get_domain_ids);
 	getService(get_domain_info);
 	getService(get_homedir);
+	getService(get_id_from_homedir);
+	getService(get_id_from_maildir);
 	getService(get_maildir);
 	getService(get_user_aliases);
 	getService(get_user_displayname);
@@ -567,6 +597,50 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadAttachmentInstance(cons
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_message_instance_lifetime, akey, instance);
 	return instance;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Util
+
+/**
+ * @brief      Generate folder entry ID
+ *
+ * @param      mbinfo  Mailbox metadata
+ * @param      fid     Folder id
+ *
+ * @return     Folder entry ID
+ */
+gromox::EWS::Structures::sFolderEntryId EWSPlugin::mkFolderEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid) const
+{
+	Structures::sFolderEntryId feid{};
+	BINARY tmp_bin{0, {.pv = &feid.provider_uid}};
+	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
+	feid.folder_type = mbinfo.isPublic? EITLT_PUBLIC_FOLDER : EITLT_PRIVATE_FOLDER;
+	feid.database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
+	feid.global_counter = rop_util_get_gc_array(fid);
+	return feid;
+}
+
+/**
+ * @brief      Generate message entry ID
+ *
+ * @param      mbinfo  Mailbox metadata
+ * @param      fid     Parent folder id
+ * @param      mid     Message id
+ *
+ * @return     Message entry ID
+ */
+Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailboxInfo& mbinfo, uint64_t fid, uint64_t mid) const
+{
+	Structures::sMessageEntryId meid{};
+	BINARY tmp_bin{0, {.pv = &meid.provider_uid}};
+	rop_util_guid_to_binary(mbinfo.mailboxGuid, &tmp_bin);
+	meid.message_type = mbinfo.isPublic? EITLT_PUBLIC_MESSAGE : EITLT_PRIVATE_MESSAGE;
+	meid.folder_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(fid));
+	meid.folder_global_counter = rop_util_get_gc_array(fid);
+	meid.message_database_guid = replid_to_replguid(mbinfo, rop_util_get_replid(mid));
+	meid.message_global_counter = rop_util_get_gc_array(mid);
+	return meid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
