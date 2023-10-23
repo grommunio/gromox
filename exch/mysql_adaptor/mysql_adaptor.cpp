@@ -883,7 +883,9 @@ static std::string strip_ext(std::string user, const char *delim)
 	auto at = strchr(user.c_str(), '@');
 	if (at != nullptr) {
 		size_t atpos = at - user.c_str();
-		auto expos = user.find_first_of(delim, 0, atpos);
+		auto sv = atpos == user.npos ? std::string_view(user) :
+		          std::string_view(user.c_str(), atpos);
+		auto expos = sv.find_first_of(delim);
 		if (expos != user.npos && expos < atpos)
 			user.erase(expos, atpos - expos);
 	}
