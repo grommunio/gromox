@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023 grommunio GmbH
 // This file is part of Gromox.
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 
@@ -91,6 +93,65 @@ bool emsab_to_email(EXT_PULL &ser, const char *org, cvt_id2user id2user,
 	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
 		return false;
 	return cvt_essdn_to_username(eid.px500dn, org, id2user, addr, asize) == ecSuccess;
+}
+
+static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,
+    std::string &smtpaddr)
+{
+	EMSAB_ENTRYID eid{};
+	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
+	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
+		return ecInvalidParam;
+	return cvt_essdn_to_username(eid.px500dn, org, id2user, smtpaddr);
+}
+
+static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
+    cvt_id2user id2user, std::string &smtpaddr)
+{
+	ONEOFF_ENTRYID eid{};
+	auto cl_0 = make_scope_exit([&]() {
+		free(eid.pdisplay_name);
+		free(eid.paddress_type);
+		free(eid.pmail_address);
+	});
+	if (ser.g_oneoff_eid(&eid) != pack_result::success)
+		return ecInvalidParam;
+	return cvt_genaddr_to_smtpaddr(eid.paddress_type, eid.pmail_address,
+	       org, id2user, smtpaddr);
+}
+
+ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
+    cvt_id2user id2user, std::string &smtpaddr)
+{
+	if (bin == nullptr)
+		return ecNullObject;
+	if (bin->cb < 20)
+		return ecInvalidParam;
+
+	uint32_t flags;
+	EXT_PULL ext_pull;
+	FLATUID provider_uid;
+	ext_pull.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+	if (ext_pull.g_uint32(&flags) != pack_result::success || flags != 0 ||
+	    ext_pull.g_guid(&provider_uid) != pack_result::success)
+		return ecInvalidParam;
+	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
+	ext_pull.m_offset = 0;
+	if (provider_uid == muidEMSAB)
+		return emsab_to_email2(ext_pull, org, id2user, smtpaddr);
+	if (provider_uid == muidOOP)
+		return cvt_oneoff_to_smtpaddr(ext_pull, org, id2user, smtpaddr);
+	return ecUnknownUser;
+}
+
+ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
+    cvt_id2user id2user, char *addr, size_t alen)
+{
+	std::string es_result;
+	auto ret = cvt_entryid_to_smtpaddr(bin, org, id2user, es_result);
+	if (ret == ecSuccess)
+		gx_strlcpy(addr, es_result.c_str(), alen);
+	return ret;
 }
 
 }

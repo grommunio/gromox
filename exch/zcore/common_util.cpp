@@ -146,11 +146,19 @@ bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 		gx_strlcpy(username, str, ulen);
 		return TRUE;
 	}
-	auto bin = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
-	if (bin != nullptr)
-		return common_util_entryid_to_username(bin, username, ulen);
-	username[0] = '\0';
-	return TRUE;
+	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+		   g_org_name, cu_id2user, username, ulen);
+	if (ret == ecSuccess)
+		return TRUE;
+	if (ret == ecNullObject) {
+		*username = '\0';
+		return TRUE;
+	}
+	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
+		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
+		"a user in the local system",
+		static_cast<unsigned long long>(pmessage->message_id));
+	return false;
 }
 
 /**
@@ -1278,8 +1286,8 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	}
 	auto addrtype = props.get<const char>(PR_ADDRTYPE);
 	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	std::string es_result;
 	if (addrtype != nullptr) {
-		std::string es_result;
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
 		           cu_id2user, es_result);
 		if (ret == ecSuccess) {
@@ -1289,19 +1297,11 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 			return ret;
 		}
 	}
-	auto entryid = props.get<const BINARY>(PR_ENTRYID);
-	if (entryid == nullptr) {
-		mlog(LV_ERR, "E-1285: Cannot get recipient entryid while sending mid:%llu",
-			LLU{rop_util_get_gc_value(message_id)});
-		return ecInvalidRecips;
-	} else if (!common_util_entryid_to_username(entryid,
-	    username, std::size(username))) {
-		mlog(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
-			LLU{rop_util_get_gc_value(message_id)});
-		return ecInvalidRecips;
-	}
-	list.emplace_back(username);
-	return ecSuccess;
+	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
+	           g_org_name, cu_id2user, es_result);
+	if (ret == ecSuccess)
+		list.emplace_back(username);
+	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1122: ENOMEM");
 	return ecServerOOM;

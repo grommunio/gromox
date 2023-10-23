@@ -2386,11 +2386,12 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 	auto entryid = props.get<const BINARY>(PR_ENTRYID);
 	if (entryid == nullptr)
 		return false;
-	char ua[UADDR_SIZE]{};
-	if (!common_util_entryid_to_username(entryid, ua, std::size(ua)))
-		return false;
-	list.emplace_back(ua);
-	return true;
+	std::string es_result;
+	auto ret = cvt_entryid_to_smtpaddr(entryid, g_exmdb_org_name,
+	           cu_id2user, es_result);
+	if (ret == ecSuccess)
+		list.emplace_back(std::move(es_result));
+	return ret == ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2036: ENOMEM");
 	return false;

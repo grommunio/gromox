@@ -170,16 +170,19 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 		gx_strlcpy(username, str, ulen);
 		return TRUE;
 	}
-	auto eid = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
-	if (eid != nullptr) {
-		auto ret = common_util_entryid_to_username(eid, username, ulen);
-		if (!ret)
-			mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system",
-			        static_cast<unsigned long long>(pmessage->message_id));
-		return ret;
+	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+	           g_emsmdb_org_name, cu_id2user, username, ulen);
+	if (ret == ecSuccess)
+		return TRUE;
+	if (ret == ecNullObject) {
+		*username = '\0';
+		return TRUE;
 	}
-	username[0] = '\0';
-	return TRUE;
+	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
+		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
+		"a user in the local system",
+		static_cast<unsigned long long>(pmessage->message_id));
+	return false;
 }
 
 /**

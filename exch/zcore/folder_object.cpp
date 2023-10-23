@@ -771,10 +771,14 @@ static BOOL folder_object_flush_delegates(int fd,
 			else if (ret != ecNullObject)
 				return false;
 		}
-		if (address_buff[0] == '\0' && pentryid != nullptr &&
-		    !common_util_entryid_to_username(pentryid,
-		    address_buff, std::size(address_buff)))
-			return FALSE;	
+		if (*address_buff == '\0' && pentryid != nullptr) {
+			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
+			           cu_id2user, address_buff, std::size(address_buff));
+			if (ret == ecSuccess)
+				/* ok */;
+			else if (ret != ecNullObject)
+				return false;
+		}
 		if ('\0' != address_buff[0]) {
 			tmp_len = strlen(address_buff);
 			address_buff[tmp_len++] = '\n';

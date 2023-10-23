@@ -1472,7 +1472,6 @@ static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
 static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
     std::vector<std::string> &list, bool resend) try
 {
-	char username[UADDR_SIZE];
 	if (resend && !mapi_p1(props))
 		return ecSuccess;
 	/*
@@ -1486,8 +1485,8 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	}
 	auto addrtype = props.get<const char>(PR_ADDRTYPE);
 	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	std::string es_result;
 	if (addrtype != nullptr) {
-		std::string es_result;
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
 		           g_emsmdb_org_name, cu_id2user, es_result);
 		if (ret == ecSuccess) {
@@ -1497,19 +1496,11 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 			return ret;
 		}
 	}
-	auto entryid = props.get<const BINARY>(PR_ENTRYID);
-	if (entryid == nullptr) {
-		mlog2(LV_ERR, "E-1285: Cannot get recipient entryid while sending mid:%llu",
-			LLU{rop_util_get_gc_value(message_id)});
-		return ecInvalidRecips;
-	} else if (!common_util_entryid_to_username(entryid,
-	    username, std::size(username))) {
-		mlog2(LV_ERR, "E-1284: Cannot convert recipient entryid to SMTP address while sending mid:%llu",
-			LLU{rop_util_get_gc_value(message_id)});
-		return ecInvalidRecips;
-	}
-	list.emplace_back(username);
-	return ecSuccess;
+	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
+	           g_emsmdb_org_name, cu_id2user, es_result);
+	if (ret == ecSuccess)
+		list.emplace_back(std::move(es_result));
+	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1123: ENOMEM");
 	return ecServerOOM;
