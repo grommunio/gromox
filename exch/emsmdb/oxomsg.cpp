@@ -155,34 +155,17 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
-	if (str != nullptr) {
-		if (strcmp(str, "0") == 0) {
-			/*
-			 * PR_SENT_* is strangely reset when MFCMAPI
-			 * 21.2.21207.01 imports .msg files.
-			 */
-			username[0] = '\0';
-			return TRUE;
-		} else if (strcasecmp(str, "EX") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr) {
-				auto ret = cvt_essdn_to_username(str, g_emsmdb_org_name,
-				           cu_id2user, username, ulen);
-				if (ret != ecSuccess)
-					mlog(LV_WARN, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system",
-					        static_cast<unsigned long long>(pmessage->message_id), str);
-				return ret;
-			}
-		} else if (strcasecmp(str, "SMTP") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr) {
-				gx_strlcpy(username, str, ulen);
-				return TRUE;
-			}
-		}
+	auto addrtype = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	auto emaddr   = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		           g_emsmdb_org_name, cu_id2user, username, ulen);
+		if (ret == ecSuccess)
+			return true;
+		else if (ret != ecNullObject)
+			return false;
 	}
-	str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
 		gx_strlcpy(username, str, ulen);
 		return TRUE;

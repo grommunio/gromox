@@ -131,22 +131,17 @@ bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
-	if (str != nullptr) {
-		if (strcasecmp(str, "EX") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr)
-				return cvt_essdn_to_username(str, g_org_name,
-				       cu_id2user, username, ulen) == ecSuccess;
-		} else if (strcasecmp(str, "SMTP") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr) {
-				gx_strlcpy(username, str, ulen);
-				return TRUE;
-			}
-		}
+	auto addrtype = tmp_propvals.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = tmp_propvals.get<const char>(PR_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
+		           cu_id2user, username, ulen);
+		if (ret == ecSuccess)
+			return true;
+		else if (ret != ecNullObject)
+			return false;
 	}
-	str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
 		gx_strlcpy(username, str, ulen);
 		return TRUE;
@@ -1281,26 +1276,17 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 		list.emplace_back(str);
 		return ecSuccess;
 	}
-	str = props.get<const char>(PR_ADDRTYPE);
-	if (str != nullptr && strcasecmp(str, "SMTP") == 0) {
-		str = props.get<char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr) {
-			list.emplace_back(str);
+	auto addrtype = props.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		std::string es_result;
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
+		           cu_id2user, es_result);
+		if (ret == ecSuccess) {
+			list.emplace_back(std::move(es_result));
 			return ecSuccess;
-		}
-		mlog(LV_ERR, "E-1124: mid:%llxh recipient has no PR_EMAIL_ADDRESS",
-			LLU{rop_util_get_gc_value(message_id)});
-		return ecInvalidRecips;
-	} else if (str != nullptr && strcasecmp(str, "EX") == 0) {
-		str = props.get<char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr) {
-			std::string es_result;
-			auto ret = cvt_essdn_to_username(str, g_org_name,
-			           cu_id2user, es_result);
-			if (ret == ecSuccess) {
-				list.emplace_back(std::move(es_result));
-				return ecSuccess;
-			}
+		} else if (ret != ecNullObject) {
+			return ret;
 		}
 	}
 	auto entryid = props.get<const BINARY>(PR_ENTRYID);

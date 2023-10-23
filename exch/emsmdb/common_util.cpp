@@ -1484,30 +1484,17 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 		list.emplace_back(str);
 		return ecSuccess;
 	}
-	str = props.get<char>(PR_ADDRTYPE);
-	if (str != nullptr && strcasecmp(str, "SMTP") == 0) {
-		str = props.get<char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr) {
-			list.emplace_back(str);
+	auto addrtype = props.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		std::string es_result;
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		           g_emsmdb_org_name, cu_id2user, es_result);
+		if (ret == ecSuccess) {
+			list.emplace_back(std::move(es_result));
 			return ecSuccess;
-		}
-		mlog2(LV_ERR, "E-1124: mid:%llxh recipient has no PR_EMAIL_ADDRESS",
-			LLU{rop_util_get_gc_value(message_id)});
-		return ecInvalidRecips;
-	} else if (str != nullptr && strcasecmp(str, "EX") == 0) {
-		str = props.get<char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr) {
-			std::string es_result;
-			auto ret = cvt_essdn_to_username(str, g_emsmdb_org_name,
-			           cu_id2user, es_result);
-			if (ret == ecSuccess) {
-				list.emplace_back(std::move(es_result));
-				return ecSuccess;
-			} else if (ret == ecUnknownUser) {
-				/* Foreign ESSDN or so; try other props */
-			} else {
-				return ret;
-			}
+		} else if (ret != ecNullObject) {
+			return ret;
 		}
 	}
 	auto entryid = props.get<const BINARY>(PR_ENTRYID);

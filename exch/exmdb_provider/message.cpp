@@ -2370,12 +2370,17 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 		list.emplace_back(str);
 		return true;
 	}
-	str = props.get<const char>(PR_ADDRTYPE);
-	if (str != nullptr && strcasecmp(str, "SMTP") == 0) {
-		str = props.get<const char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr) {
-			list.emplace_back(str);
+	auto addrtype = props.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		std::string es_result;
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		           g_exmdb_org_name, cu_id2user, es_result);
+		if (ret == ecSuccess) {
+			list.emplace_back(std::move(es_result));
 			return true;
+		} else if (ret != ecNullObject) {
+			return false;
 		}
 	}
 	auto entryid = props.get<const BINARY>(PR_ENTRYID);

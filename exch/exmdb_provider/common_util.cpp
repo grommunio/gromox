@@ -75,7 +75,7 @@ struct prepared_statements {
 
 }
 
-static char g_exmdb_org_name[256];
+char g_exmdb_org_name[256];
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
@@ -108,7 +108,7 @@ static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xs
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t);
 
-static ec_error_t cu_id2user(int id, std::string &user) try
+ec_error_t cu_id2user(int id, std::string &user) try
 {
 	char ubuf[UADDR_SIZE];
 	if (!common_util_get_username_from_id(id, ubuf, std::size(ubuf)))

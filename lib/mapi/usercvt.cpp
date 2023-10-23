@@ -48,6 +48,42 @@ ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
 	return ret;
 }
 
+/**
+ * ecNullObject is returned to signify that a situation was encountered that is
+ * equivalent to addrtype not having been present in the first place.
+ */
+ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
+    const char *org, cvt_id2user id2user, std::string &smtpaddr)
+{
+	if (strcasecmp(addrtype, "SMTP") == 0) {
+		if (emaddr != nullptr)
+			smtpaddr = emaddr;
+		return emaddr != nullptr ? ecSuccess : ecNullObject;
+	} else if (strcasecmp(addrtype, "EX") == 0) {
+		if (emaddr == nullptr)
+			return ecNullObject;
+		return cvt_essdn_to_username(emaddr, org, id2user, smtpaddr);
+	} else if (strcmp(addrtype, "0") == 0) {
+		/*
+		 * When MFCMAPI 21.2.21207.01 imports a .msg file, PR_SENT_*
+		 * gets reset to this odd combo.
+		 */
+		return ecNullObject;
+	}
+	return ecUnknownUser;
+}
+
+ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
+    const char *org, cvt_id2user id2user, char *smtpaddr, size_t slen)
+{
+	std::string es_result;
+	auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, org,
+	           id2user, es_result);
+	if (ret == ecSuccess)
+		gx_strlcpy(smtpaddr, es_result.c_str(), slen);
+	return ret;
+}
+
 bool emsab_to_email(EXT_PULL &ser, const char *org, cvt_id2user id2user,
     char *addr, size_t asize)
 {
