@@ -16,6 +16,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -765,8 +766,8 @@ static BOOL folder_object_flush_delegates(int fd,
 			if (strcasecmp(ptype, "SMTP") == 0)
 				gx_strlcpy(address_buff, paddress, std::size(address_buff));
 			else if (strcasecmp(ptype, "EX") == 0)
-				common_util_essdn_to_username(paddress,
-					address_buff, std::size(address_buff));
+				cvt_essdn_to_username(paddress, g_org_name,
+					cu_id2user, address_buff, std::size(address_buff));
 		}
 		if (address_buff[0] == '\0' && pentryid != nullptr &&
 		    !common_util_entryid_to_username(pentryid,

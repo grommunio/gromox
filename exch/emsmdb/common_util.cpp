@@ -35,6 +35,7 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -61,7 +62,8 @@ unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len;
 unsigned int emsmdb_backfill_transporthdr;
 static uint16_t g_smtp_port;
-static char g_smtp_ip[40], g_emsmdb_org_name[256];
+static char g_smtp_ip[40];
+char g_emsmdb_org_name[256];
 static int g_average_blocks;
 static thread_local const char *g_dir_key;
 static char g_submit_command[1024];
@@ -1520,10 +1522,18 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 		return ecInvalidRecips;
 	} else if (str != nullptr && strcasecmp(str, "EX") == 0) {
 		str = props.get<char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr && common_util_essdn_to_username(str,
-		    username, std::size(username))) {
-			list.emplace_back(username);
-			return ecSuccess;
+		if (str != nullptr) {
+			std::string es_result;
+			auto ret = cvt_essdn_to_username(str, g_emsmdb_org_name,
+			           cu_id2user, es_result);
+			if (ret == ecSuccess) {
+				list.emplace_back(std::move(es_result));
+				return ecSuccess;
+			} else if (ret == ecUnknownUser) {
+				/* Foreign ESSDN or so; try other props */
+			} else {
+				return ret;
+			}
 		}
 	}
 	auto entryid = props.get<const BINARY>(PR_ENTRYID);
@@ -1774,4 +1784,15 @@ static void mlog2(unsigned int level, const char *format, ...)
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	mlog(level, "user=%s host=[%s]  %s",
 		rpc_info.username, rpc_info.client_ip, log_buf);
+}
+
+ec_error_t cu_id2user(int id, std::string &user) try
+{
+	char ubuf[UADDR_SIZE];
+	if (!common_util_get_username_from_id(id, ubuf, std::size(ubuf)))
+		return ecError;
+	user = ubuf;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }

@@ -4,6 +4,7 @@
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -17,13 +18,13 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint32_t store_stat, char *pessdn, size_t dnmax, uint64_t *pfolder_id,
     uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *replid,
     GUID *replguid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
-    uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
+    uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t *phout)
 {
 	enum logon_mode logon_mode;
 	struct tm *ptm;
 	struct tm tmp_tm;
 	char maildir[256];
-	char username[UADDR_SIZE];
 	uint32_t permission;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -41,15 +42,18 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		common_util_domain_to_essdn(pdomain, pessdn, dnmax);
 		return ecWrongServer;
 	}
-	if (!common_util_essdn_to_username(pessdn, username, std::size(username)))
-		return ecUnknownUser;
+	std::string username;
+	auto ret = cvt_essdn_to_username(pessdn, g_emsmdb_org_name,
+	           cu_id2user, username);
+	if (ret != ecSuccess)
+		return ret;
 	unsigned int user_id = 0;
-	if (!common_util_get_id_from_username(username, &user_id))
+	if (!common_util_get_id_from_username(username.c_str(), &user_id))
 		return ecUnknownUser;
-	if (0 != strcasecmp(username, rpc_info.username)) {
+	if (strcasecmp(username.c_str(), rpc_info.username) != 0) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)
 			return ecLoginPerm;
-		if (!common_util_get_maildir(username, maildir, std::size(maildir)))
+		if (!common_util_get_maildir(username.c_str(), maildir, std::size(maildir)))
 			return ecError;
 		if (!exmdb_client::get_mbox_perm(maildir,
 		    rpc_info.username, &permission))
@@ -121,7 +125,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 	*pstore_stat = 0;
 	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
-	              user_id, username, maildir, *pmailbox_guid);
+	              user_id, username.c_str(), maildir, *pmailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	/* create logon map and logon object */

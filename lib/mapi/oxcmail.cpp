@@ -34,6 +34,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 
@@ -153,6 +154,17 @@ static constexpr size_t namemap_limit = 0x1000;
 static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
+
+static ec_error_t oxcmail_id2user(int id, std::string &user) try
+{
+	char ubuf[UADDR_SIZE];
+	if (!oxcmail_get_username(id, ubuf, std::size(ubuf)))
+		return ecError;
+	user = ubuf;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
+}
 
 static inline size_t worst_encoding_overhead(size_t in)
 {
@@ -3039,11 +3051,12 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 			}
 		} else if (strcasecmp(at, "EX") == 0) {
 			if (em != nullptr) {
-				auto ok = oxcmail_essdn_to_username(em, &username[7],
-				          ulen > 8 ? ulen - 7 : 0);
-				if (ok) {
-					memcpy(username, "rfc822;", 7);
-					username[7] = '\0';
+				std::string es_result;
+				auto ret = cvt_essdn_to_username(em, g_oxcmail_org_name,
+				           oxcmail_id2user, es_result);
+				if (ret == ecSuccess) {
+					gx_strlcpy(username, "rfc822;", ulen);
+					HX_strlcat(username, es_result.c_str(), ulen);
 					return true;
 				}
 			}

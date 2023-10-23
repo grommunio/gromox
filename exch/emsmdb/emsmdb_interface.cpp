@@ -23,6 +23,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
 #include "aux_types.h"
@@ -519,7 +520,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
 {
 	AUX_INFO aux_out;
 	EXT_PUSH ext_push;
-	char username[UADDR_SIZE];
 	char temp_buff[1024];
 	uint16_t client_mode;
 	uint16_t client_version[4];
@@ -580,14 +580,16 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
 	
 	if (*puser_dn == '\0')
 		return ecAccessDenied;
-	if (!common_util_essdn_to_username(puser_dn,
-	    username, std::size(username)))
+	std::string username;
+	auto ret = cvt_essdn_to_username(puser_dn, g_emsmdb_org_name,
+	           cu_id2user, username);
+	if (ret != ecSuccess)
 		return ecRpcFailed;
-	if (*username == '\0')
+	if (*username.c_str() == '\0')
 		return ecUnknownUser;
-	if (strcasecmp(username, rpc_info.username) != 0)
+	if (strcasecmp(username.c_str(), rpc_info.username) != 0)
 		return ecAccessDenied;
-	if (!common_util_get_user_displayname(username, temp_buff, std::size(temp_buff)) ||
+	if (!common_util_get_user_displayname(username.c_str(), temp_buff, std::size(temp_buff)) ||
 	    common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0)
 		return ecRpcFailed;
 	if (*pdisplayname == '\0')

@@ -9,6 +9,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -157,8 +158,9 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 		} else if (strcasecmp(str, "EX") == 0) {
 			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (str != nullptr) {
-				auto ret = common_util_essdn_to_username(str, username, ulen);
-				if (!ret)
+				auto ret = cvt_essdn_to_username(str, g_emsmdb_org_name,
+				           cu_id2user, username, ulen);
+				if (ret != ecSuccess)
 					mlog(LV_WARN, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system",
 					        static_cast<unsigned long long>(pmessage->message_id), str);
 				return ret;
