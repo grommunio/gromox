@@ -742,8 +742,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		domain_id = pabnode->id;
 		encode_hex_int(id, hex_string);
 		encode_hex_int(domain_id, hex_string1);
-		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
-				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			g_zcab_org_name, hex_string1, hex_string, username);
 		HX_strupper(pbuff);
 		break;
@@ -762,8 +761,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		domain_id = pabnode->id;
 		encode_hex_int(id, hex_string);
 		encode_hex_int(domain_id, hex_string1);
-		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
-				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			g_zcab_org_name, hex_string1, hex_string, ustr.c_str());
 		HX_strupper(pbuff);
 		break;
@@ -918,8 +916,7 @@ static void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode,
 		encode_hex_int(ab_tree_get_minid_value(xab->minid), hex_string);
 	else
 		encode_hex_int(xab->id, hex_string);
-	snprintf(dn, length, "/o=%s/ou=Exchange Administrative "
-	         "Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers"
+	snprintf(dn, length, "/o=%s/" EAG_SERVERS
 	         "/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
 	         "-%02x%02x%s@%s", g_zcab_org_name, username[0], username[1],
 	         username[2], username[3], username[4], username[5],

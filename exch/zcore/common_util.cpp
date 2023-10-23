@@ -260,15 +260,12 @@ BOOL common_util_essdn_to_username(const char *pessdn,
     char *username, size_t ulen)
 {
 	char *pat;
-	int tmp_len;
 	int user_id;
 	const char *plocal;
 	char tmp_essdn[1024];
 	
-	tmp_len = sprintf(tmp_essdn,
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
@@ -284,13 +281,9 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 {
-	int tmp_len;
 	char tmp_essdn[1024];
-	
-	tmp_len = sprintf(tmp_essdn,
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
@@ -301,13 +294,9 @@ BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id)
 {
-	int tmp_len;
 	char tmp_essdn[1024];
-	
-	tmp_len = sprintf(tmp_essdn,
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
@@ -333,8 +322,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
@@ -796,8 +784,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 		*pdomain = '\0';
 		encode_hex_int(user_id, hex_string);
 		encode_hex_int(domain_id, hex_string2);
-		snprintf(x500dn, 1024, "/o=%s/ou=Exchange Administrative "
-				"Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+		snprintf(x500dn, std::size(x500dn), "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 				g_org_name, hex_string2, hex_string, tmp_name);
 		HX_strupper(x500dn);
 		if (!common_util_essdn_to_entryid(x500dn, pbin))

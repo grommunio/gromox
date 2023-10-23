@@ -286,8 +286,7 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
 std::string EWSContext::essdn_to_username(const std::string& essdn) const
 {
 	int user_id;
-	auto ess_tpl = fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-	                           m_plugin.x500_org_name.c_str());
+	auto ess_tpl = fmt::format("/o={}/" EAG_RCPTS "/cn=", m_plugin.x500_org_name.c_str());
 	if (strncasecmp(essdn.c_str(), ess_tpl.c_str(), ess_tpl.size()) != 0)
 		throw DispatchError(E3000);
 	if (essdn.size() > ess_tpl.size() + 16 && essdn[ess_tpl.size()+16] != '-')
@@ -1529,7 +1528,7 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 	std::string_view userpart = std::string_view(username).substr(0, at);
 	if(!m_plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
 		throw EWSError::CannotFindUser(E3091(username));
-	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
+	return fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-{}",
 	                   m_plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
 

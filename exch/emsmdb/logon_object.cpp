@@ -484,7 +484,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	case PR_HIERARCHY_SERVER: {
 		if (plogon->is_private())
 			return FALSE;
-		common_util_get_domain_server(plogon->account, temp_buff);
+		snprintf(temp_buff, std::size(temp_buff), EAG_F9 "@%s", plogon->account);
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)

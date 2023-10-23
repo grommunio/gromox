@@ -180,9 +180,7 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 	char tmp_essdn[1024];
 	
 	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-	               g_emsmdb_org_name);
+	               "/o=%s/" EAG_RCPTS "/cn=", g_emsmdb_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0)
 		return FALSE;
 	if (pessdn[tmp_len+16] != '-')
@@ -217,8 +215,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 		g_emsmdb_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
@@ -238,21 +235,14 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnma
 
 const char* common_util_essdn_to_domain(const char *pessdn)
 {
-	int tmp_len;
 	char tmp_essdn[1024];
-	
-	tmp_len = sprintf(tmp_essdn,
-		"/o=%s/ou=Exchange Administrative Group "
-		"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn="
-		"f98430ae-22ad-459a-afba-68c972eefc56@", g_emsmdb_org_name);
+	auto tmp_len = sprintf(tmp_essdn, "/o=%s/" EAG_SRV_F9 "@", g_emsmdb_org_name);
 	return strncasecmp(pessdn, tmp_essdn, tmp_len) == 0 ? &pessdn[tmp_len] : nullptr;
 }
 
 void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax)
 {
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-		"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn="
-		"f98430ae-22ad-459a-afba-68c972eefc56@%s", g_emsmdb_org_name, pdomain);
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_SRV_F9 "@%s", g_emsmdb_org_name, pdomain);
 }
 
 BOOL common_util_entryid_to_username(const BINARY *pbin,
@@ -276,11 +266,6 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	if (provider_uid == muidOOP)
 		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
 	return FALSE;
-}
-
-void common_util_get_domain_server(const char *account_name, char *pserver)
-{
-	sprintf(pserver, "f98430ae-22ad-459a-afba-68c972eefc56@%s", account_name);
 }
 
 BINARY *cu_username_to_oneoff(const char *username, const char *dispname)

@@ -211,8 +211,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+	snprintf(pessdn, 1024, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 		g_oxcmail_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	if (dtpp != nullptr)
@@ -226,8 +225,7 @@ BOOL oxcmail_essdn_to_username(const char *pessdn,
 	char tmp_buff[1024];
 	
 	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-	               "/o=%s/ou=Exchange Administrative"
-		" Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", g_oxcmail_org_name);
+	               "/o=%s/" EAG_RCPTS "/cn=", g_oxcmail_org_name);
 	if (strncasecmp(pessdn, tmp_buff, tmp_len) != 0)
 		return FALSE;
 	unsigned int user_id = decode_hex_int(&pessdn[tmp_len+8]);

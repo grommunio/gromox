@@ -24,6 +24,12 @@
  */
 #define GROMOX_FALLBACK_TIMEZONE "Pacific/Chatham"
 
+#define EAG_BASE    "ou=Exchange Administrative Group (FYDIBOHF23SPDLT)"
+#define EAG_RCPTS   EAG_BASE "/cn=Recipients"
+#define EAG_SERVERS EAG_BASE "/cn=Configuration/cn=Servers"
+#define EAG_F9      "f98430ae-22ad-459a-afba-68c972eefc56"
+#define EAG_SRV_F9  EAG_SERVERS "/cn=" EAG_F9
+
 enum gx_loglevel {
 	LV_CRIT = 1,
 	LV_ERR = 2,
