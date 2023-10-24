@@ -43,7 +43,6 @@ extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, BOOL tnef, enum ox
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT enum oxcmail_body get_override_format(const MESSAGE_CONTENT &);
 extern GX_EXPORT BOOL oxcmail_entryid_to_username(const BINARY *, EXT_BUFFER_ALLOC, char *, size_t);
-extern GX_EXPORT BOOL oxcmail_essdn_to_username(const char *, char *, size_t);
 extern GX_EXPORT ec_error_t oxcmail_id2user(int, std::string &);
 extern GX_EXPORT BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &, const gromox::addr_tags *, const char *org, ENTRYID_TO_USERNAME, gromox::cvt_id2user, EXT_BUFFER_ALLOC, char *outbuf, size_t outlen);
 

@@ -148,31 +148,6 @@ void common_util_remove_propvals(
 	}
 }
 
-BOOL common_util_essdn_to_username(const char *pessdn,
-    char *username, size_t ulen)
-{
-	char *pat;
-	const char *plocal;
-	char tmp_essdn[1024];
-	
-	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
-	               "/o=%s/" EAG_RCPTS "/cn=", g_exmdb_org_name);
-	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0)
-		return FALSE;
-	if (pessdn[tmp_len+16] != '-')
-		return FALSE;
-	plocal = pessdn + tmp_len + 17;
-	unsigned int user_id = decode_hex_int(&pessdn[tmp_len+8]);
-	if (!common_util_get_username_from_id(user_id, username, ulen))
-		return FALSE;
-	pat = strchr(username, '@');
-	if (pat == nullptr)
-		return FALSE;
-	if (strncasecmp(username, plocal, pat - username) != 0)
-		return FALSE;
-	return TRUE;
-}
-
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	char *pdomain;

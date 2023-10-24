@@ -59,7 +59,6 @@ extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
 extern void cu_set_propval(TPROPVAL_ARRAY *, uint32_t tag, const void *data);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
-extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 extern BOOL common_util_username_to_essdn(const char *username, char *dn, size_t);
 extern void common_util_pass_service(const char *name, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,

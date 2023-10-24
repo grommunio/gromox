@@ -257,29 +257,6 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	}
 }
 
-BOOL common_util_essdn_to_username(const char *pessdn,
-    char *username, size_t ulen)
-{
-	char *pat;
-	int user_id;
-	const char *plocal;
-	char tmp_essdn[1024];
-	
-	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
-	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
-	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
-	    pessdn[tmp_len+16] != '-')
-		return FALSE;
-	plocal = pessdn + tmp_len + 17;
-	user_id = decode_hex_int(pessdn + tmp_len + 8);
-	if (!system_services_get_username_from_id(user_id, username, ulen))
-		return FALSE;
-	pat = strchr(username, '@');
-	if (pat == nullptr)
-		return FALSE;
-	return strncasecmp(username, plocal, pat - username) == 0 ? TRUE : false;
-}
-
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 {
 	char tmp_essdn[1024];

@@ -231,19 +231,6 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	return TRUE;
 }
 
-BOOL oxcmail_essdn_to_username(const char *pessdn,
-    char *username, size_t ulen)
-{
-	char tmp_buff[1024];
-	
-	auto tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-	               "/o=%s/" EAG_RCPTS "/cn=", g_oxcmail_org_name);
-	if (strncasecmp(pessdn, tmp_buff, tmp_len) != 0)
-		return FALSE;
-	unsigned int user_id = decode_hex_int(&pessdn[tmp_len+8]);
-	return oxcmail_get_username(user_id, username, ulen);
-}
-
 BOOL oxcmail_entryid_to_username(const BINARY *pbin,
     EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {

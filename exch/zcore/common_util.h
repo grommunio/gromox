@@ -93,7 +93,6 @@ void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor);
-extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id);
