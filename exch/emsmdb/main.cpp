@@ -90,7 +90,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
 		return false;
 	}
 	g_rop_debug = pconfig->get_ll("rop_debug");
-	emsmdb_max_cxh_per_user = pconfig->get_ll("emsmdb_max_obh_per_session");
+	emsmdb_max_cxh_per_user = pconfig->get_ll("emsmdb_max_cxh_per_user");
 	emsmdb_max_obh_per_session = pconfig->get_ll("emsmdb_max_obh_per_session");
 	emsmdb_pvt_folder_softdel = pconfig->get_ll("emsmdb_private_folder_softdelete");
 	emsmdb_rop_chaining = pconfig->get_ll("emsmdb_rop_chaining");
