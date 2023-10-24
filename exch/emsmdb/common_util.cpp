@@ -263,8 +263,8 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
 	ext_pull.m_offset = 0;
 	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, common_util_essdn_to_username,
-		       username, ulen) ? TRUE : false;
+		return emsab_to_email(ext_pull, g_emsmdb_org_name,
+		       cu_id2user, username, ulen) ? TRUE : false;
 	if (provider_uid == muidOOP)
 		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
 	return FALSE;

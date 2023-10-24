@@ -296,5 +296,4 @@ struct EXT_PUSH {
 };
 
 extern bool emsab_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
-extern bool emsab_to_email(EXT_PULL &, ESSDN_TO_USERNAME, char *addr, size_t adsize);
 extern bool oneoff_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);

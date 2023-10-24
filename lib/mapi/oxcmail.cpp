@@ -155,7 +155,7 @@ static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
 
-static ec_error_t oxcmail_id2user(int id, std::string &user) try
+ec_error_t oxcmail_id2user(int id, std::string &user) try
 {
 	char ubuf[UADDR_SIZE];
 	if (!oxcmail_get_username(id, ubuf, std::size(ubuf)))
@@ -260,8 +260,8 @@ BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
 	ext_pull.m_offset = 0;
 	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, oxcmail_essdn_to_username,
-		       username, ulen) ? TRUE : false;
+		return emsab_to_email(ext_pull, g_oxcmail_org_name,
+		       oxcmail_id2user, username, ulen) ? TRUE : false;
 	if (provider_uid == muidOOP)
 		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
 	return FALSE;
@@ -2999,7 +2999,8 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 }
 
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
-    const addr_tags *ptags, ENTRYID_TO_USERNAME ey2u, ESSDN_TO_USERNAME es2u,
+    const addr_tags *ptags, const char *org,
+    ENTRYID_TO_USERNAME ey2u, cvt_id2user id2user,
     EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
 	auto pproplist = &props;
@@ -3019,7 +3020,8 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
 			}
 		} else if (strcasecmp(s, "EX") == 0) {
 			s = pproplist->get<char>(tags.pr_emaddr);
-			if (s != nullptr && es2u(s, username, ulen))
+			if (s != nullptr && cvt_essdn_to_username(s, org,
+			    id2user, username, ulen) == ecSuccess)
 				return TRUE;
 		}
 	}
@@ -3114,8 +3116,8 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 			if (offset >= fdsize)
 				return FALSE;
 		}
-		if (oxcmail_get_smtp_address(*prcpt, &tags_self,
-		    oxcmail_entryid_to_username, oxcmail_essdn_to_username,
+		if (oxcmail_get_smtp_address(*prcpt, &tags_self, g_oxcmail_org_name,
+		    oxcmail_entryid_to_username, oxcmail_id2user,
 		    alloc, username, std::size(username)))
 			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
 			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
@@ -3201,8 +3203,8 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		field[offset] = '\0';
 	}
  EXPORT_ADDRESS:
-	if (oxcmail_get_smtp_address(pmsg->proplist, &tags,
-	    oxcmail_entryid_to_username, oxcmail_essdn_to_username,
+	if (oxcmail_get_smtp_address(pmsg->proplist, &tags, g_oxcmail_org_name,
+	    oxcmail_entryid_to_username, oxcmail_id2user,
 	    alloc, address, std::size(address)))
 		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address);
 	else if (offset > 0)
@@ -4512,9 +4514,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	if (NULL != pcalendar) {
 		char tmp_buff[1024*1024];
 		
-		if (!oxcical_export(pmsg, ical, alloc,
-		    get_propids, oxcmail_entryid_to_username,
-		    oxcmail_essdn_to_username)) {
+		if (!oxcical_export(pmsg, ical, g_oxcmail_org_name, alloc,
+		    get_propids, oxcmail_entryid_to_username, oxcmail_id2user)) {
 			mlog(LV_WARN, "W-2186: oxcical_export failed for an unspecified reason");
 			return exp_false;
 		}

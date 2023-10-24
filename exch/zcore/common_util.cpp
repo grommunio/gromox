@@ -707,7 +707,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
 	ext_pull.m_offset = 0;
 	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, common_util_essdn_to_username,
+		return emsab_to_email(ext_pull, g_org_name, cu_id2user,
 		       username, ulen) ? TRUE : false;
 	if (provider_uid == muidOOP)
 		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
@@ -2046,10 +2046,9 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
-	if (!oxcical_export(pmsgctnt, ical,
+	if (!oxcical_export(pmsgctnt, ical, g_org_name,
 		common_util_alloc, common_util_get_propids,
-		common_util_entryid_to_username_internal,
-		common_util_essdn_to_username)) {
+	    common_util_entryid_to_username_internal, cu_id2user)) {
 		using LLU = unsigned long long;
 		mlog(LV_DEBUG, "D-2202: oxcical_export %s:%llxh failed",
 			pstore->get_dir(), LLU{message_id});
