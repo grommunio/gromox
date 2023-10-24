@@ -3593,6 +3593,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 			return;
 		datagram.db_notify.pdata = pmodified_folder;
 		pmodified_folder->folder_id = folder_id;
+		pmodified_folder->parent_id = parent_id;
 		pmodified_folder->ptotal = NULL;
 		pmodified_folder->punread = NULL;
 		pmodified_folder->proptags.count = 0;
