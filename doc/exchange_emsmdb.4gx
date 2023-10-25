@@ -59,8 +59,8 @@ Default: \fI100\fP
 .TP
 \fBemsmdb_max_obh_per_session\fP
 The maximum number of object handles each session can have at any one time
-(e.g. folders/messages/etc. open simultaneously). There is one session for each
-mailbox opened.
+(e.g. folders/messages/etc. open simultaneously). Use 0 to indicate unlimited.
+There is one session for each time a mailbox is opened.
 .br
 Default: \fI500\fP
 .TP

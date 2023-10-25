@@ -200,7 +200,8 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	auto plogitem = plogmap->p[logon_id].get();
 	if (plogitem == nullptr)
 		return -EINVAL;
-	if (plogitem->phash.size() >= emsmdb_max_obh_per_session) {
+	if (emsmdb_max_obh_per_session > 0 &&
+	    plogitem->phash.size() >= emsmdb_max_obh_per_session) {
 		auto root = plogitem->root.get();
 		auto lo = root != nullptr && root->type == ems_objtype::logon ?
 		          static_cast<logon_object *>(root->pobject) : nullptr;
