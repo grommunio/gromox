@@ -52,8 +52,8 @@ client.)
 Default: \fI1K\fP
 .TP
 \fBemsmdb_max_cxh_per_user\fP
-The maximum number of RPC context handles any one user can have at any one
-time.
+The maximum number of RPC context handles any one \fBmailbox\fP can have at any
+one time. Use 0 to indicate unlimited.
 .br
 Default: \fI100\fP
 .TP
