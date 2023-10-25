@@ -824,6 +824,7 @@ struct DB_NOTIFY_LINK_DELETED {
 
 struct DB_NOTIFY_FOLDER_MODIFIED {
 	uint64_t folder_id;
+	uint64_t parent_id;
 	uint32_t *ptotal;
 	uint32_t *punread;
 	PROPTAG_ARRAY proptags;
