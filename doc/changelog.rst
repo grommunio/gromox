@@ -6,11 +6,16 @@ Fixes:
 * oxvcard: export to .vcf now positions the VERSION property in accordance with
   the vCard 4.0 specification.
 * oxcmail: cease gratuitous RTF conversion of calendar items
+* mysql_adaptor: a wrong string search was used for recipient delimiters,
+  which could lead to Recipient Invalid/User Not Found
 
 Enhancements:
 
 * Define the "suspended" user state (think of it as a "non-receiving shared
   mailbox").
+* emsmdb, zcore: the ``emsmdb_max_cxh_per_user``,
+  ``emsmdb_max_obh_per_session`` and ``zcore_max_obh_per_session`` config
+  directives can now be set to 0 for unlimited.
 
 
 Gromox 2.15 (2023-10-18)
