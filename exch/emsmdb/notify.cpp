@@ -379,7 +379,7 @@ void notify_response::ctrow_event_to_change()
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 pack_result rop_ext_push(EXT_PUSH &x, const notify_response &n)
 {
-	TRY(x.p_uint8(ropRegisterNotify));
+	TRY(x.p_uint8(ropNotify));
 	TRY(x.p_uint32(n.handle));
 	TRY(x.p_uint8(n.logon_id));
 

@@ -43,7 +43,7 @@ enum {
 	ropGetReceiveFolder = 0x27,
 	// ropSpoolerRules = 0x28,
 	ropRegisterNotification = 0x29,
-	ropRegisterNotify = 0x2A, /* ropNotify */
+	ropNotify = 0x2A,
 	ropOpenStream = 0x2B,
 	ropReadStream = 0x2C,
 	ropWriteStream = 0x2D,

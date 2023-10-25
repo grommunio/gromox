@@ -1814,7 +1814,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
 #undef H
 }
 
-/* not including ropRegisterNotify, ropPending, ropBackoff, ropBufferTooSmall */
+/* not including ropNotify, ropPending, ropBackoff, ropBufferTooSmall */
 pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, ROP_RESPONSE *r)
 {
 	EMSMDB_INFO *pemsmdb_info;

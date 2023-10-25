@@ -1114,7 +1114,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		return;
 	}
 	auto rsp = static_cast<ROP_RESPONSE *>(pnode->pdata);
-	rsp->rop_id = ropRegisterNotify;
+	rsp->rop_id = ropNotify;
 	rsp->hindex = 0; /* ignore by system */
 	rsp->result = 0; /* ignore by system */
 	auto nfr = notify_response::create(obj_handle, logon_id);

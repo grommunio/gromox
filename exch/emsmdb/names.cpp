@@ -50,7 +50,7 @@ static constexpr const char *rop_names[256] = {
 	E(ropGetReceiveFolder),
 	/* 0x28 */ {},
 	E(ropRegisterNotification),
-	E(ropRegisterNotify),
+	E(ropNotify),
 	E(ropOpenStream),
 	E(ropReadStream),
 	E(ropWriteStream),
