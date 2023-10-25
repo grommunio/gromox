@@ -53,7 +53,7 @@ private:
 		Object object;
 	};
 
-	mutable std::mutex objectLock; ///< Mutext to protect object map
+	mutable std::mutex objectLock; ///< Mutex to protect object map
 	std::unordered_map<Key, Container> objects; ///< Stored objects
 
 	std::condition_variable notify; ///< CV to signal stopping
