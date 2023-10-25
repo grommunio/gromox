@@ -71,7 +71,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{513, "530 Authentication required", },
 	{514, "534 Authentication mechanism is too weak"},
 	{515, "538 Encryption required for requested authentication mechanism"},
-	{516, "550 invalid user - <email_addr>"},
+	{516, "550 unknown user - <email_addr>"},
 	{517, "452 Mailbox <email_addr> is full"},
 	{518, "550 access denied to you"},
 	{519, "550 Access to Mailbox <email_addr>  is denied"},
