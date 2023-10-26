@@ -897,7 +897,7 @@ detail::ExmdbSubscriptionKey EWSPlugin::subscribe(const std::string& maildir, ui
 {
 	detail::ExmdbSubscriptionKey key{maildir, 0};
 	if(!exmdb.subscribe_notification(maildir.c_str(), flags, all? TRUE : false, folderId, 0, &key.second))
-		throw DispatchError("Failed to create subscription");
+		throw DispatchError(Exceptions::E3204);
 	std::lock_guard lock(subscriptionLock);
 	subscriptions.emplace(key, parent);
 	return key;

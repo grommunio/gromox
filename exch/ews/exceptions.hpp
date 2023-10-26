@@ -90,6 +90,7 @@ public:
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
 	ERR(TimeZone) ///< Invalid or missing time zone
 	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
 #undef ERR
@@ -316,6 +317,9 @@ E(3198, "SubscribeToAllFolders cannot be combined with FolderIds");
 E(3199, "SubscribeToAllFolders cannot be combined with FolderIds");
 E(3200, "cannot subscribe to different mailboxes");
 E(3201, "invalid subscription ID");
+E(3202, "invalid subscription");
+E(3203, "only the subscription owner may access the subscription");
+E(3204, "failed to create subscription");
 
 #undef E
 }

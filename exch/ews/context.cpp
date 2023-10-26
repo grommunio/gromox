@@ -381,9 +381,9 @@ std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubs
 {
 	auto subscription = m_plugin.subscription(subscriptionId.ID, subscriptionId.timeout);
 	if(!subscription)
-		throw EWSError::InvalidSubscription("Invalid subscription");
+		throw EWSError::InvalidSubscription(E3202);
 	if(subscription->username != m_auth_info.username)
-		throw EWSError::AccessDenied("Only the subscription owner may access the subscription.");
+		throw EWSError::AccessDenied(E3203);
 	std::pair<std::list<sNotificationEvent>, bool> result{{}, subscription->events.size() > 50};
 	auto& evt = subscription->events;
 	if(result.second) {
