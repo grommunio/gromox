@@ -35,23 +35,6 @@ namespace
 {
 
 /**
- * @brief     Compute Base64 encoded string
- *
- * @param     data    Data to encode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::string b64encode(const void* data, size_t len)
-{
-	std::string out(4*((len+2)/3)+1, '\0');
-	size_t outlen;
-	encode64(data, len, out.data(), out.length(), &outlen);
-	out.resize(outlen);
-	return out;
-}
-
-/**
  * @brief     Generic deleter struct
  *
  * Provides explicit deleters for classes without destructor.
@@ -227,7 +210,7 @@ std::string sSyncState::serialize()
 	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
 		throw EWSError::NotEnoughMemory(E3040);
 
-	return b64encode(stateBuffer.m_vdata, stateBuffer.m_offset);
+	return base64_encode({stateBuffer.m_cdata, stateBuffer.m_offset});
 }
 
 /**
