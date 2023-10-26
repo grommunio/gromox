@@ -116,7 +116,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1923, "NO Unable to read message file"},
 	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
 	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
-	{2000 | MIDB_E_HASHTABLE_FULL, "midb: hash table full"},
+	{2000 | MIDB_E_HASHTABLE_FULL, "Unable to read midb.sqlite, see midb logs"},
 	{2000 | MIDB_E_NO_FOLDER, "midb: folder does not exist/failed to read folder"},
 	{2000 | MIDB_E_NO_MEMORY, "midb: out of memory"},
 	{2000 | MIDB_E_NO_MESSAGE, "mail not found"},

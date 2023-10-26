@@ -2157,17 +2157,20 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 			if (!system_services_get_id_from_maildir(path, &user_id) ||
 			    !system_services_get_username_from_id(user_id, pidb->username.data(), pidb->username.size())) {
 				g_hash_table.erase(xp.first);
+				mlog(LV_ERR, "E-2400: user for path %s not found", path);
 				return {};
 			}
 			pidb->username.resize(strlen(pidb->username.c_str()));
 		} catch (const std::bad_alloc &) {
 			g_hash_table.erase(xp.first);
+			mlog(LV_ERR, "E-2401: ENOMEM");
 			return {};
 		}
 		b_load = TRUE;
 	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
 		hhold.unlock();
-		mlog(LV_DEBUG, "mail_engine: too many threads waiting on %s", path);
+		mlog(LV_ERR, "E-2402: mail_engine: there are already %u threads waiting on %s",
+			MAX_DB_WAITING_THREADS, path);
 		return {};
 	}
 	pidb->reference ++;
@@ -2176,6 +2179,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
+		mlog(LV_ERR, "E-2403: mail_engine: timed out obtaining a reference on %s", path);
 		return {};
 	}
 	if (b_load || force_resync) {
@@ -2186,6 +2190,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 		hhold.lock();
 		pidb->reference--;
 		hhold.unlock();
+		mlog(LV_ERR, "E-2404: sqlite object went away on %s, retry", path);
 		return {};
 	}
 	return IDB_REF(pidb);
