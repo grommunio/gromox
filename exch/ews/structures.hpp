@@ -200,6 +200,7 @@ struct sAttachmentId : public sMessageEntryId
 struct sOccurrenceId : public sMessageEntryId
 {
 	sOccurrenceId(const TAGGED_PROPVAL&, uint32_t);
+	sOccurrenceId(const void*, uint64_t);
 
 	uint32_t basedate;
 

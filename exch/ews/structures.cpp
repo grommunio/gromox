@@ -436,6 +436,18 @@ sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 sOccurrenceId::sOccurrenceId(const TAGGED_PROPVAL& tp, uint32_t bd) : sMessageEntryId(tp), basedate(bd)
 {}
 
+/**
+ * @brief      Load occurrence id from binary data
+ */
+sOccurrenceId::sOccurrenceId(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size > std::numeric_limits<uint32_t>::max())
+		throw EWSError::InvalidOccurrenceId(E3205);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_msg_eid(this), E3206, "ErrorInvalidOccurrenceId");
+	TRY(ext_pull.g_uint32(&basedate), E3207, "ErrorInvalidOccurrenceId");
+}
 
 /**
  * @brief     Parse entry ID from binary data

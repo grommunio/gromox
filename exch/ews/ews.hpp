@@ -52,10 +52,16 @@ using ExmdbSubscriptionKey = std::pair<std::string, uint32_t>;
 using SubscriptionKey = uint32_t;
 using ContextWakeupKey = int;
 
+struct EmbeddedInstanceKey
+{
+	std::string dir;
+	uint32_t aid;
+
+	inline bool operator==(const EmbeddedInstanceKey& o) const
+	{return dir == o.dir && aid == o.aid;}
+};
+
 } // namespace gromox::EWS::detail
-
-struct MIME_POOL;
-
 
 template<> struct std::hash<gromox::EWS::detail::AttachmentInstanceKey>
 {size_t operator()(const gromox::EWS::detail::AttachmentInstanceKey&) const noexcept;};
@@ -66,6 +72,8 @@ template<> struct std::hash<gromox::EWS::detail::ExmdbSubscriptionKey>
 template<> struct std::hash<gromox::EWS::detail::MessageInstanceKey>
 {size_t operator()(const gromox::EWS::detail::MessageInstanceKey&) const noexcept;};
 
+template<> struct std::hash<gromox::EWS::detail::EmbeddedInstanceKey>
+{size_t operator()(const gromox::EWS::detail::EmbeddedInstanceKey&) const noexcept;};
 
 namespace gromox::EWS {
 
@@ -151,6 +159,7 @@ public:
 	void event(const char*, BOOL, uint32_t, const DB_NOTIFY*) const;
 	bool linkSubscription(const Structures::tSubscriptionId&, const EWSContext&) const;
 	std::shared_ptr<ExmdbInstance> loadAttachmentInstance(const std::string&, uint64_t, uint64_t, uint32_t) const;
+	std::shared_ptr<ExmdbInstance> loadEmbeddedInstance(const std::string&, uint32_t) const;
 	std::shared_ptr<ExmdbInstance> loadMessageInstance(const std::string&, uint64_t, uint64_t) const;
 	Structures::sFolderEntryId mkFolderEntryId(const Structures::sMailboxInfo&, uint64_t) const;
 	Structures::sMessageEntryId mkMessageEntryId(const Structures::sMailboxInfo&, uint64_t, uint64_t) const;
@@ -171,6 +180,7 @@ public:
 	int experimental = 0; ///< Enable experimental requests, 0 = disabled
 	std::chrono::milliseconds cache_interval{10'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
+	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; /// Lifetime of embedded instances
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; ///< Lifetime of message instances
 	std::chrono::milliseconds event_stream_interval{45'000}; ///< How often to send updates for GetStreamingEvents
 
@@ -189,7 +199,7 @@ private:
 		~WakeupNotify();
 	};
 
-	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextWakeupKey>;
+	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey, detail::SubscriptionKey, detail::ContextWakeupKey, detail::EmbeddedInstanceKey>;
 	using CacheObj = std::variant<sptr<ExmdbInstance>, sptr<Subscription>, sptr<WakeupNotify>>;
 
 	static const std::unordered_map<std::string, Handler> requestMap;
@@ -251,6 +261,7 @@ public:
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
+	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;

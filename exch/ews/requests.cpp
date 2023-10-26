@@ -1018,7 +1018,12 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 			throw EWSError::AccessDenied(E3139);
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = eid.messageId();
-		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
+		if(itemId.Id.size() <= 70) // Normal message entry ids have length of 70, occurrences contain extra data
+			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
+		else {
+			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, oid.basedate, shape));
+		}
 		msg.success();
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);

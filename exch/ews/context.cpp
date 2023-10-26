@@ -41,6 +41,17 @@ inline std::string &tolower(std::string &str)
 }
 
 /**
+ * @brief      Checks if two dates are on the same day
+ *
+ * @param      tm    First time point
+ * @param      tm    Second time point
+ *
+ * @return     true if both time points are on the same day, false otherwise
+ */
+inline bool is_same_day(const tm& date1, const tm& date2)
+{return date1.tm_year == date2.tm_year && date1.tm_yday == date2.tm_yday;}
+
+/**
  * @brief     Access contained value, create if empty
  *
  * @param     container   (Possibly empty) container
@@ -757,6 +768,67 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 	if(shape.special)
 		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
 	return item;
+}
+
+/**
+ * @brief      Load occurrence
+ *
+ * @param      dir      Store directory
+ * @param      fid      Parent folder ID
+ * @param      mid      Message ID
+ * @param      basedate Basedate of the occurrence
+ * @param      shape    Requested item shape
+ *
+ * @return     The s item.
+ */
+sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t mid, uint32_t basedate, sShape& shape) const
+{
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	uint16_t count;
+	if(!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		mlog(LV_ERR, "not able to get get_message_instance_attachments_num"); // TODO: throw error
+
+	PROPNAME_ARRAY propnames;
+	propnames.count = 1;
+	PROPERTY_NAME propname_buff[1];
+	propname_buff[0].kind = MNID_ID;
+	propname_buff[0].guid = PSETID_APPOINTMENT;
+	propname_buff[0].lid = PidLidExceptionReplaceTime;
+	propnames.ppropname = propname_buff;
+	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids.ppropid[0]);
+	TPROPVAL_ARRAY props;
+	PROPTAG_ARRAY tags = shape.proptags();
+	tags.emplace_back(ex_replace_time_tag);
+
+	time_t basedate_ts = gromox::time_point::clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local;
+	localtime_r(&basedate_ts, &basedate_local);
+
+	for(uint16_t i = 0; i < count; ++i)
+	{
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		if(!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
+			mlog(LV_ERR, "not able to get get_message_instance_attachments_num"); // TODO: throw error
+
+		const uint64_t* exstarttime = props.get<uint64_t>(ex_replace_time_tag);
+		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
+		struct tm exstart_local;
+		localtime_r(&exstart, &exstart_local);
+		if(is_same_day(basedate_local, exstart_local))
+		{
+			shape.clean();
+			getNamedTags(dir, shape);
+			shape.properties(getItemProps(dir, mid, shape.proptags()));
+			// shape.properties(props);
+			sItem item = tItem::create(shape);
+			if(shape.special)
+				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+			return item;
+		}
+	}
+	throw EWSError::ItemCorrupt(E3074); //TODO
 }
 
 /**

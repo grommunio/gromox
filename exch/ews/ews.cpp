@@ -461,6 +461,8 @@ void EWSPlugin::loadConfig()
 		cache_message_instance_lifetime = std::chrono::milliseconds(temp);
 	if(cfg->get_int("ews_event_stream_interval", &temp))
 		event_stream_interval = std::chrono::milliseconds(temp);
+	if(cfg->get_int("ews_cache_embedded_instance_lifetime", &temp))
+		cache_embedded_instance_lifetime = std::chrono::milliseconds(temp);
 
 	smtp_server_ip = cfg->get_value("smtp_server_ip");
 	if(cfg->get_int("smtp_server_port", &temp))
@@ -1027,6 +1029,29 @@ Structures::sMessageEntryId EWSPlugin::mkMessageEntryId(const Structures::sMailb
 	return meid;
 }
 
+/**
+ * @brief      Load embedded instance
+ *
+ * @param      dir   Home directory of user or domain
+ * @param      aid   Attachment ID
+ *
+ * @return     Embedded instance information
+ */
+std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadEmbeddedInstance(const std::string& dir, uint32_t aid) const
+{
+	detail::EmbeddedInstanceKey ekey{dir, aid};
+	try {
+		return std::get<std::shared_ptr<EWSPlugin::ExmdbInstance>>(cache.get(ekey, cache_embedded_instance_lifetime));
+	} catch(const std::out_of_range&) {
+	}
+	uint32_t instanceId;
+	if(!exmdb.load_embedded_instance(dir.c_str(), false, aid, &instanceId))
+		throw DispatchError(Exceptions::E3208);
+	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
+	cache.emplace(cache_embedded_instance_lifetime, ekey, instance);
+	return instance;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Hashing
 
@@ -1042,3 +1067,6 @@ size_t std::hash<detail::MessageInstanceKey>::operator()(const detail::MessageIn
 
 size_t std::hash<detail::ExmdbSubscriptionKey>::operator()(const detail::ExmdbSubscriptionKey& key) const noexcept
 {return FNV(key.first, key.second).value;}
+
+size_t std::hash<detail::EmbeddedInstanceKey>::operator()(const detail::EmbeddedInstanceKey& key) const noexcept
+{return FNV(key.dir, key.aid).value;}

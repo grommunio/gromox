@@ -321,6 +321,10 @@ E(3201, "invalid subscription ID");
 E(3202, "invalid subscription");
 E(3203, "only the subscription owner may access the subscription");
 E(3204, "failed to create subscription");
+E(3205, "occurrence ID data too large");
+E(3206, "failed to deserialize occurrence entry id");
+E(3207, "failed to deserialize occurrence basedate");
+E(3208, "failed to load embedded instance");
 
 #undef E
 }
