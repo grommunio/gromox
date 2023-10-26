@@ -337,6 +337,9 @@ private:
 	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MESSAGE_CONTENT&) const;
 	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MESSAGE_CONTENT&) const;
 
+	void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {};
+	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;
+
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 
 	int m_ID = 0;

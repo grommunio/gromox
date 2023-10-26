@@ -1442,6 +1442,7 @@ struct tItem : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 
 	static sItem create(const sShape&);
+	void update(const sShape&);
 };
 
 /**
@@ -1453,14 +1454,15 @@ struct tCalendarItem : public tItem
 
 	explicit tCalendarItem(const sShape&);
 	explicit tCalendarItem(const tinyxml2::XMLElement*);
+	void update(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
 	bool mapNamedProperty(const TAGGED_PROPVAL&, const sNamedPropertyMap&);
 
 	//<!-- iCalendar properties -->
-	std::optional<std::string> UID; // TODO use std::string? UID is hexed goid
-	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
+	std::optional<std::string> UID;
+	std::optional<gromox::time_point> RecurrenceId;
 	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
 
 	// <!-- Single and Occurrence only -->
@@ -1533,6 +1535,7 @@ struct tContact : public tItem
 
 	explicit tContact(const sShape&);
 	explicit tContact(const tinyxml2::XMLElement*);
+	void update(const sShape&);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -1823,6 +1826,7 @@ struct tMessage : public tItem
 
 	explicit tMessage(const sShape&);
 	explicit tMessage(const tinyxml2::XMLElement*);
+	void update(const sShape&);
 
 	std::optional<tSingleRecipient> Sender; ///< PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME
 	std::optional<std::vector<tEmailAddressType>> ToRecipients;

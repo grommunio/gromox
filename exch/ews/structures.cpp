@@ -1222,7 +1222,11 @@ uint16_t tBaseSubscriptionRequest::eventMask() const
 
 ///////////////////////////////////////////////////////////////////////////////
 tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
+{tCalendarItem::update(shape);}
+
+void tCalendarItem::update(const sShape& shape)
 {
+	tItem::update(shape);
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	const TAGGED_PROPVAL* prop;
 	if((prop = shape.get(PR_SENDER_ADDRTYPE)))
@@ -1313,7 +1317,6 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 			case olResponseNotResponded: responseType = Enum::NoResponseReceived; break;
 		}
 		MyResponseType.emplace(responseType);
-
 	}
 
 	if ((prop = shape.get(NtGlobalObjectId)))
@@ -1325,6 +1328,10 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 			UID.emplace(std::move(uid));
 		}
 	}
+
+	// TODO: check if we should use some other property for RecurrenceId
+	if((prop = shape.get(NtExceptionReplaceTime)))
+		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1548,6 +1555,9 @@ void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
 ///////////////////////////////////////////////////////////////////////////////
 
 tContact::tContact(const sShape& shape) : tItem(shape)
+{tContact::update(shape);}
+
+void tContact::update(const sShape& shape)
 {
 	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
 	fromProp(shape.get(PR_GIVEN_NAME), GivenName);
@@ -1580,7 +1590,6 @@ tContact::tContact(const sShape& shape) : tItem(shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::AssistantPhone));
 	if((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone2));
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2033,10 +2042,8 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
-	// {"calendar:DeletedOccurrences", },
 	// {"calendar:EndTimeZone", },
 	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
-	// {"calendar:ModifiedOccurrences", },
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
@@ -2062,6 +2069,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:DeletedOccurrences", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
 	{"calendar:Start", {{MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")}, PT_SYSTIME}},
 	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
+	{"calendar:RecurrenceId", {{MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, const_cast<char*>("ExceptionReplaceTime")}, PT_SYSTIME}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 };
 
@@ -2194,6 +2202,9 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_vi
 ///////////////////////////////////////////////////////////////////////////////
 
 tItem::tItem(const sShape& shape)
+{tItem::update(shape);};
+
+void tItem::update(const sShape& shape)
 {
 	const uint32_t* v32;
 	const TAGGED_PROPVAL* prop;
@@ -2304,6 +2315,9 @@ void tItemResponseShape::tags(sShape& shape) const
 ///////////////////////////////////////////////////////////////////////////////
 
 tMessage::tMessage(const sShape& shape) : tItem(shape)
+{tMessage::update(shape);}
+
+void tMessage::update(const sShape& shape)
 {
 	const TAGGED_PROPVAL* prop;
 	fromProp(shape.get(PR_CONVERSATION_INDEX), ConversationIndex);

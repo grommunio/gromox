@@ -325,6 +325,9 @@ E(3205, "occurrence ID data too large");
 E(3206, "failed to deserialize occurrence entry id");
 E(3207, "failed to deserialize occurrence basedate");
 E(3208, "failed to load embedded instance");
+E(3209, "requested occurrence not found");
+E(3210, "failed to get embedded instances' count");
+E(3211, "failed to get embedded instance properties");
 
 #undef E
 }

@@ -750,6 +750,20 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 }
 
 /**
+ * @brief update properties of a tCalendarItem
+ *
+ * @param calItem     Calendar item
+ * @param shape       Requested item shape
+ * @param props       Properties to update
+ */
+void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPVAL_ARRAY& props) const
+{
+	shape.clean();
+	shape.properties(props);
+	calItem.update(shape);
+}
+
+/**
  * @brief      Load item
  *
  * @param      dir    Store directory
@@ -786,8 +800,11 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 	uint16_t count;
 	if(!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
-		mlog(LV_ERR, "not able to get get_message_instance_attachments_num"); // TODO: throw error
+		throw DispatchError(E3210);
 
+	shape.clean();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
 	PROPNAME_ARRAY propnames;
 	propnames.count = 1;
 	PROPERTY_NAME propname_buff[1];
@@ -810,7 +827,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
 		if(!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
-			mlog(LV_ERR, "not able to get get_message_instance_attachments_num"); // TODO: throw error
+			throw DispatchError(E3211);
 
 		const uint64_t* exstarttime = props.get<uint64_t>(ex_replace_time_tag);
 		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
@@ -818,17 +835,15 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		localtime_r(&exstart, &exstart_local);
 		if(is_same_day(basedate_local, exstart_local))
 		{
-			shape.clean();
-			getNamedTags(dir, shape);
-			shape.properties(getItemProps(dir, mid, shape.proptags()));
-			// shape.properties(props);
 			sItem item = tItem::create(shape);
 			if(shape.special)
 				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
+
 			return item;
 		}
 	}
-	throw EWSError::ItemCorrupt(E3074); //TODO
+	throw EWSError::ItemCorrupt(E3209);
 }
 
 /**
