@@ -785,6 +785,10 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	default:
 		break;
 	}
+	if(sub->waitingContext)
+		// Reschedule next wakeup 0.1 seconds. Should be enough to gather related events.
+		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
+		cache.get(*sub->waitingContext, std::chrono::milliseconds(100));
 } catch(const std::exception& err)
 {mlog(LV_ERR, "Failed to process notification: %s", err.what());}
 
