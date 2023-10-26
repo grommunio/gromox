@@ -344,30 +344,36 @@ tRecurrenceRange get_recurrence_range(const APPOINTMENT_RECUR_PAT& apprecurr)
 }
 
 /**
- * @brief find and process deleted occurrences
+ * @brief process deleted and modified occurrences
  *
- * @param apprecurr
- * @param delOccs
+ * @param entryid      Entryid of the master appointment
+ * @param apprecurr    Appointment recurrence pattern
+ * @param modOccs      Vector containing modified occurrences
+ * @param delOccs      Vector containing deleted occurrences
  */
-void process_deleted_occurrences(const APPOINTMENT_RECUR_PAT& apprecurr,
+void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_PAT& apprecurr,
+	std::vector<tOccurrenceInfoType>& modOccs,
 	std::vector<tDeletedOccurrenceInfoType>& delOccs)
 {
-	std::set<uint32_t>
-		deleted_instances(apprecurr.recur_pat.pdeletedinstancedates,
-			apprecurr.recur_pat.pdeletedinstancedates + apprecurr.recur_pat.deletedinstancecount),
-		modified_instances(apprecurr.recur_pat.pmodifiedinstancedates,
-			apprecurr.recur_pat.pmodifiedinstancedates + apprecurr.recur_pat.modifiedinstancecount),
-		deleted_only, modified_only;
-	std::set_difference(
-		std::begin(deleted_instances),
-		std::end(deleted_instances),
-		std::begin(modified_instances),
-		std::end(modified_instances),
-		std::inserter(deleted_only, deleted_only.begin()));
+	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates,
+		apprecurr.recur_pat.pmodifiedinstancedates + apprecurr.recur_pat.modifiedinstancecount);
 
-	for(const auto &deleted_occ : deleted_only)
-		delOccs.emplace_back(
-			tDeletedOccurrenceInfoType{rop_util_rtime_to_unix2(deleted_occ)});
+	size_t del_count = 0; // counter for deleted occurrences
+	for(size_t i = 0; i < apprecurr.recur_pat.deletedinstancecount; ++i)
+	{
+		if(mod_insts.find(apprecurr.recur_pat.pdeletedinstancedates[i]) != mod_insts.end())
+			modOccs.emplace_back(tOccurrenceInfoType({
+				sOccurrenceId(*entryid, apprecurr.pexceptioninfo[i-del_count].originalstartdate),
+				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].startdatetime),
+				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].enddatetime),
+				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].originalstartdate)}));
+		else
+		{
+			del_count++;
+			delOccs.emplace_back(tDeletedOccurrenceInfoType{rop_util_rtime_to_unix2(
+				apprecurr.recur_pat.pdeletedinstancedates[i])});
+		}
+	}
 }
 
 }
@@ -423,6 +429,13 @@ sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 	TRY(ext_pull.g_msg_eid(this), E3146, "ErrorInvalidAttachmentId");
 	TRY(ext_pull.g_uint32(&attachment_num), E3147,"ErrorInvalidAttachmentId");
 }
+
+/**
+ * @brief      Create occurrence ID from message entry ID property and basedate
+ */
+sOccurrenceId::sOccurrenceId(const TAGGED_PROPVAL& tp, uint32_t bd) : sMessageEntryId(tp), basedate(bd)
+{}
+
 
 /**
  * @brief     Parse entry ID from binary data
@@ -1224,12 +1237,14 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 			// is summed in deletedinstancecount
 			if(apprecurr.recur_pat.deletedinstancecount > 0)
 			{
-				// There are deleted and modified occurrences
-				if(apprecurr.recur_pat.modifiedinstancecount != apprecurr.recur_pat.deletedinstancecount)
-				{
-					auto& delOccs = DeletedOccurrences.emplace();
-					process_deleted_occurrences(apprecurr, delOccs);
-				}
+				std::vector<tOccurrenceInfoType> modOccs;
+				std::vector<tDeletedOccurrenceInfoType> delOccs;
+				auto entryid_propval = shape.get(PR_ENTRYID);
+				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs);
+				if(modOccs.size() > 0)
+					ModifiedOccurrences.emplace(modOccs);
+				if(delOccs.size() > 0)
+					DeletedOccurrences.emplace(delOccs);
 			}
 		}
 	}

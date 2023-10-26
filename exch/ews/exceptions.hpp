@@ -76,6 +76,7 @@ public:
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
 	ERR(InvalidId) ///< ItemId or ChangeKey malformed
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
+	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
 	ERR(InvalidSubscription) ///< Subscription expired

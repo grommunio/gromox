@@ -121,6 +121,17 @@ void sAttachmentId::serialize(XMLElement* xml) const
 	xml->SetAttribute("Id", enc);
 }
 
+void sOccurrenceId::serialize(XMLElement* xml) const
+{
+	char buff[128], enc[256];
+	EXT_PUSH ext_push;
+	ext_push.init(buff, 128, 0, nullptr);
+	EXT_TRY(ext_push.p_msg_eid(*this));
+	EXT_TRY(ext_push.p_uint32(basedate));
+	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
+	xml->SetAttribute("Id", enc);
+}
+
 /**
  * @brief     Decode Base64 encoded data from XML element
  */
@@ -434,6 +445,14 @@ void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(RecurrenceRange);
 }
 
+void tOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(ItemId);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(OriginalStart);
+}
+
 void tDeletedOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(Start);
@@ -489,6 +508,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(AppointmentSequenceNumber);
 	XMLDUMPT(AppointmentState);
 	XMLDUMPT(Recurrence);
+	XMLDUMPT(ModifiedOccurrences);
 	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(AllowNewTimeProposal);
 }

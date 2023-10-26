@@ -193,6 +193,20 @@ struct sAttachmentId : public sMessageEntryId
 };
 
 /**
+ * @brief      Occurrence ID
+ *
+ * Allows referencing modified occurrences by message entry ID and basedate.
+ */
+struct sOccurrenceId : public sMessageEntryId
+{
+	sOccurrenceId(const TAGGED_PROPVAL&, uint32_t);
+
+	uint32_t basedate;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * @brief      Folder specification
  *
  * Resolves folder ID and type either from the distinguished name or
@@ -1310,6 +1324,25 @@ struct tRecurrenceType
 };
 
 /**
+ * Types.xsd:4904
+ */
+struct tOccurrenceInfoType : public NS_EWS_Types
+{
+	static constexpr char NAME[] = "Occurrence";
+
+	sOccurrenceId ItemId;
+	gromox::time_point Start;
+	gromox::time_point End;
+	gromox::time_point OriginalStart;
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tOccurrenceInfoType(const sOccurrenceId id, const gromox::time_point s,
+		const gromox::time_point e, const gromox::time_point os) :
+		ItemId(id), Start(s), End(e), OriginalStart(os) {};
+};
+
+/**
  * Types.xsd:4919
  */
 struct tDeletedOccurrenceInfoType : public NS_EWS_Types
@@ -1319,6 +1352,7 @@ struct tDeletedOccurrenceInfoType : public NS_EWS_Types
 	gromox::time_point Start;
 
 	void serialize(tinyxml2::XMLElement*) const;
+
 	tDeletedOccurrenceInfoType(const gromox::time_point s) : Start(s) {};
 };
 
@@ -1466,7 +1500,7 @@ struct tCalendarItem : public tItem
 	std::optional<tRecurrenceType> Recurrence;
 	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
 	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
-	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
+	std::optional<std::vector<tOccurrenceInfoType>> ModifiedOccurrences;
 	std::optional<std::vector<tDeletedOccurrenceInfoType>> DeletedOccurrences;
 	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0"/>
 	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
