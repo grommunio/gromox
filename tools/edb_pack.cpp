@@ -52,7 +52,7 @@ enum { /* encodings for EDB property values */
 	EPV_BINARY_0     = 0x50,
 	EPV_BINARY_1     = 0x51,
 	EPV_BINARY_2     = 0x52,
-	/* If the PV is >=2049 bytes, it gets replaced. */
+	/* If the propval is >=2049 bytes, it gets replaced. */
 	EPV_NEAR         = 0x78,
 	EPV_FAR          = 0x7a,
 	/*
@@ -463,13 +463,14 @@ pack_result edb_pull::g_edb_propval_a(TPROPVAL_ARRAY *r)
 			r->ppropval[i].proptag = PROP_TAG(PR_NULL, PT_NULL);
 			filter = true;
 		} else if (proc.active) {
+			/* e.g. EPV_FAR not implemented yet, so strip */
 			r->ppropval[i].proptag = CHANGE_PROP_TYPE(r->ppropval[i].proptag, PT_NULL);
 			filter = true;
 		}
 	}
 	if (filter) {
 		auto m = std::remove_if(&r->ppropval[0], &r->ppropval[r->count],
-		         [](const TAGGED_PROPVAL &tp) { return PROP_ID(tp.proptag) == PROP_ID(PR_NULL); });
+		         [](const TAGGED_PROPVAL &tp) { return PROP_TYPE(tp.proptag) == PT_NULL; });
 		r->count = m - &r->ppropval[0];
 	}
 	return pack_result::ok;
