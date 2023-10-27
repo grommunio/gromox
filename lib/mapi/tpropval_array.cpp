@@ -22,9 +22,8 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 	if (parray->count + 1U >= count) {
 		count += SR_GROW_TAGGED_PROPVAL;
 		auto ppropvals = gromox::re_alloc<TAGGED_PROPVAL>(parray->ppropval, count);
-		if (NULL == ppropvals) {
+		if (ppropvals == nullptr)
 			return false;
-		}
 		parray->ppropval = ppropvals;
 	}
 	auto v = propval_dup(PROP_TYPE(proptag), xpropval);
@@ -98,9 +97,8 @@ bool tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 TPROPVAL_ARRAY* tpropval_array_init()
 {
 	auto parray = gromox::me_alloc<TPROPVAL_ARRAY>();
-	if (NULL == parray) {
+	if (parray == nullptr)
 		return NULL;
-	}
 	if (!tpropval_array_init_internal(parray)) {
 		free(parray);
 		return NULL;
@@ -125,9 +123,8 @@ void tpropval_array_free(TPROPVAL_ARRAY *parray)
 TPROPVAL_ARRAY *TPROPVAL_ARRAY::dup() const
 {
 	auto parray1 = tpropval_array_init();
-	if (NULL == parray1) {
+	if (parray1 == nullptr)
 		return NULL;
-	}
 	for (size_t i = 0; i < count; ++i) {
 		if (!tpropval_array_append(parray1, ppropval[i].proptag,
 		    ppropval[i].pvalue)) {
