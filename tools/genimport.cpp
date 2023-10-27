@@ -86,8 +86,6 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	if (g_show_props)
 		tree(depth);
 	auto s = tp.value_repr(g_show_props);
-	if (s.empty())
-		fprintf(stderr, "PG-1130: unsupported proptype %xh\n", tp.proptag);
 	tlog("%08xh:%s%s", tp.proptag, s.c_str(), g_show_props ? "\n" : ", ");
 }
 

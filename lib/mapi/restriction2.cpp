@@ -161,11 +161,17 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 				r += ",";
 			}
 			break;
+		default:
+			r += fmt::format("<unrecognized proptype {:x}>", PROP_TYPE(proptag));
+			break;
 		}
 		r += "}";
 		return r;
 	}
 	switch (PROP_TYPE(proptag)) {
+	case PT_UNSPECIFIED:
+	case PT_NULL:
+		return {};
 	case PT_SHORT: {
 		auto v = *static_cast<int16_t *>(pvalue);
 		return fmt::format("{}/0x{:x}", v, v);
@@ -203,7 +209,7 @@ std::string TAGGED_PROPVAL::value_repr(bool verbose) const
 	case PT_SVREID:
 		return static_cast<const SVREID *>(pvalue)->repr(verbose);
 	default:
-		return {};
+		return fmt::format("<<undecodable {:x}>>", proptag);
 	}
 }
 
