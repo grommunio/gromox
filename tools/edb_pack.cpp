@@ -307,9 +307,9 @@ pack_result edb_pull::g_edb_propval(void **vval, edb_postproc &proc)
 	}
 	case EPV_MV_DOUBLE_1:
 	case EPV_MV_DOUBLE_2: {
-		auto r = anew<FLOAT_ARRAY>();
+		auto r = anew<DOUBLE_ARRAY>();
 		*vval = r;
-		return r != nullptr ? g_float_an(r, x16.u) : pack_result::alloc;
+		return r != nullptr ? g_double_an(r, x16.u) : pack_result::alloc;
 	}
 	case EPV_MV_UNICODE_1:
 	case EPV_MV_UNICODE_2: {
