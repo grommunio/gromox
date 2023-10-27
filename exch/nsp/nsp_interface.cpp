@@ -1795,7 +1795,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			}
 		}
 	}
-	if (result == ecWarnWithErrors)
+	if (result == ecSuccess || result == ecWarnWithErrors)
 		*pprows = rowset;
 	NSP_ROWSET rs = {*pprows != nullptr ? 1U : 0U, *pprows};
 	nsp_trace(__func__, 1, pstat, nullptr, &rs);
