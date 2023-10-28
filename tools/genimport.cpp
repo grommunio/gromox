@@ -83,10 +83,12 @@ void tlog(const char *fmt, ...)
 
 static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 {
-	if (g_show_props)
-		tree(depth);
-	auto s = tp.value_repr(g_show_props);
-	tlog("%08xh:%s%s", tp.proptag, s.c_str(), g_show_props ? "\n" : ", ");
+	if (!g_show_props) {
+		tlog("%08xh,", tp.proptag);
+		return;
+	}
+	tree(depth);
+	tlog("%08xh:%s\n", tp.proptag, tp.value_repr(true).c_str());
 }
 
 void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &props)
