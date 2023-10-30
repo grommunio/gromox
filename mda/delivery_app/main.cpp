@@ -47,7 +47,7 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 };
 
 static constexpr cfg_directive delivery_cfg_defaults[] = {
-	{"admin_mailbox", "root@localhost"},
+	{"admin_mailbox", ""},
 	{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
 	{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
 	{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},

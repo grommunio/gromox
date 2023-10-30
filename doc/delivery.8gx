@@ -20,7 +20,9 @@ filenames begin with libmtahook_.
 The usual config file location is /etc/gromox/delivery.cfg.
 .TP
 \fBadmin_mailbox\fP
-Default: (unspecified)
+An e-mail address where to send reports from the "net_failure" code component.
+.br
+Default: (empty)
 .TP
 \fBconfig_file_path\fP
 Colon-separated list of directories in which further configuration files,
