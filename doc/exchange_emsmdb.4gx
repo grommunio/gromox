@@ -107,9 +107,6 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP
-\fBseparator_for_bounce\fP
-Default: \fI;\fP
-.TP
 \fBsmtp_server_ip\fP
 SMTP server hostname or address to contact for outgoing mail.
 .br

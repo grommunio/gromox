@@ -479,7 +479,7 @@ DECLARE_HOOK_API();
 
 static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
-	char charset[32], org_name[256], separator[16], temp_buff[45], cache_path[256];
+	char charset[32], org_name[256], temp_buff[45], cache_path[256];
 	int cache_interval, retrying_times, alarm_interval, times, interval;
 	int response_capacity, response_interval, conn_num;
 
@@ -500,11 +500,8 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			return FALSE;
 		}
 
-		auto str_value = pfile->get_value("SEPARATOR_FOR_BOUNCE");
-		gx_strlcpy(separator, str_value == nullptr ? " " : str_value, std::size(separator));
 		sprintf(cache_path, "%s/cache", get_queue_path());
-
-		str_value = pfile->get_value("X500_ORG_NAME");
+		auto str_value = pfile->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value != nullptr ? str_value : "Gromox default", std::size(org_name));
 		mlog(LV_INFO, "exmdb_local: x500 org name is \"%s\"", org_name);
 
@@ -594,8 +591,8 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			mlog(LV_ERR, "exmdb_local: failed to start net_failure component");
 			return FALSE;
 		}
-		if (bounce_gen_init(";", get_config_path(),
-		    get_data_path(), "local_bounce") != 0) {
+		if (bounce_gen_init(get_config_path(), get_data_path(),
+		    "local_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
 			return FALSE;
 		}

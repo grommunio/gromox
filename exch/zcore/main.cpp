@@ -84,7 +84,6 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"separator_for_bounce", ";"},
 	{"smtp_server_ip", "::1"},
 	{"smtp_server_port", "25"},
 	{"state_path", PKGSTATEDIR},
@@ -264,8 +263,7 @@ int main(int argc, const char **argv) try
 		mlog(LV_ERR, "system: failed to start common util");
 		return EXIT_FAILURE;
 	}
-	if (bounce_gen_init(g_config_file->get_value("separator_for_bounce"),
-	    g_config_file->get_value("config_file_path"),
+	if (bounce_gen_init(g_config_file->get_value("config_file_path"),
 	    g_config_file->get_value("data_file_path"), "notify_bounce") != 0) {
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;

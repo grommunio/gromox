@@ -20,7 +20,7 @@
 namespace gromox {
 
 using template_map = std::map<std::string, bounce_template>;
-static std::string g_bounce_sep, g_bounce_postmaster;
+static std::string g_bounce_postmaster;
 static std::map<std::string, template_map> g_resource_list;
 
 static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplist)
@@ -78,11 +78,9 @@ static constexpr cfg_directive bounce_gen_dflt[] = {
 	CFG_TABLE_END,
 };
 
-errno_t bounce_gen_init(const char *sep, const char *cfgdir, const char *datadir,
+errno_t bounce_gen_init(const char *cfgdir, const char *datadir,
     const char *bounce_grp) try
 {
-	g_bounce_sep = sep != nullptr ? sep : "";
-
 	auto cfg = config_file_initd("gromox.cfg", cfgdir, bounce_gen_dflt);
 	if (cfg == nullptr) {
 		mlog(LV_ERR, "exmdb_provider: config_file_initd master.cfg: %s",
@@ -148,11 +146,6 @@ const bounce_template *bounce_gen_lookup(const char *cset, const char *tname)
 	return &j->second;
 }
 
-const std::string &bounce_gen_sep()
-{
-	return g_bounce_sep;
-}
-
 const char *bounce_gen_postmaster() { return g_bounce_postmaster.c_str(); }
 
 std::string bounce_gen_rcpts(const tarray_set &rcpts)
@@ -163,7 +156,7 @@ std::string bounce_gen_rcpts(const tarray_set &rcpts)
 		if (str == nullptr)
 			continue;
 		if (!r.empty())
-			r += g_bounce_sep;
+			r += ", ";
 		r += str;
 	}
 	return r;
@@ -177,7 +170,7 @@ std::string bounce_gen_attachs(const ATTACHMENT_LIST &at)
 		if (str == nullptr)
 			continue;
 		if (!r.empty())
-			r += g_bounce_sep;
+			r += "; ";
 		r += str;
 	}
 	return r;

@@ -341,8 +341,8 @@ static BOOL xa_main(int reason, void **data)
 		mlog(LV_ERR, "mlist_expand: failed to get service \"get_mlist_memb\"");
 		return FALSE;
 	}
-	if (mlex_bounce_init(";", get_config_path(),
-	    get_data_path(), "mlist_bounce") != 0) {
+	if (mlex_bounce_init(get_config_path(), get_data_path(),
+	    "mlist_bounce") != 0) {
 		mlog(LV_ERR, "mlist_expand: failed to run bounce producer");
 		return FALSE;
 	}

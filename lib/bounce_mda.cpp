@@ -26,9 +26,8 @@ static void bp_enum_parts(const MIME *mime, void *arg)
 	if (!mime->get_filename(rawname, std::size(rawname)) ||
 	    !mime_string_to_utf8(param.charset, rawname, u8name, std::size(u8name)))
 		return;
-	auto &sep = bounce_gen_sep();
-	if (!param.result.empty() && !sep.empty())
-		param.result += sep;
+	if (!param.result.empty())
+		param.result += "; ";
 	param.result += u8name;
 }
 

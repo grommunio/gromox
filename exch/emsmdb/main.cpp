@@ -61,7 +61,6 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"max_mail_num", "1000000", CFG_SIZE, "1"},
 	{"max_rcpt_num", "256", CFG_SIZE, "1"},
 	{"rop_debug", "0"},
-	{"separator_for_bounce", " "},
 	{"smtp_server_ip", "::1"},
 	{"smtp_server_port", "25"},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
@@ -131,7 +130,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 	char smtp_ip[40];
 	int ping_interval;
 	int average_blocks;
-	char separator[16];
 	char org_name[256];
 	int average_handles;
 	char submit_command[1024];
@@ -156,7 +154,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		}
 		if (!exch_emsmdb_reload(nullptr, pfile))
 			return false;
-		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), std::size(separator));
 		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), std::size(org_name));
 		average_handles = pfile->get_ll("average_handles");
 		average_blocks = pfile->get_ll("average_mem") / 256;
@@ -212,8 +209,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		rop_processor_init(average_handles, ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
-		if (bounce_gen_init(separator, get_config_path(),
-		    get_data_path(), "notify_bounce") != 0) {
+		if (bounce_gen_init(get_config_path(), get_data_path(),
+		    "notify_bounce") != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run bounce producer");
 			return FALSE;
 		}

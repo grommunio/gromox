@@ -51,7 +51,7 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 		if (pvalue == nullptr)
 			continue;
 		if (!r.empty())
-			r += bounce_gen_sep();
+			r += ", ";
 		r += static_cast<const char *>(pvalue);
 	}
 	return r;

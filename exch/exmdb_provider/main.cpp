@@ -60,7 +60,6 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
-	{"separator_for_bounce", ";"},
 	{"sqlite_debug", "0"},
 	{"sqlite_mmap_size", "0", CFG_SIZE},
 	{"sqlite_synchronous", "false", CFG_BOOL},
@@ -199,8 +198,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		}
 		exmdb_client_init(connection_num, threads_num);
 		
-		if (bounce_gen_init(pconfig->get_value("separator_for_bounce"),
-		    get_config_path(), get_data_path(), "mail_bounce") != 0) {
+		if (bounce_gen_init(get_config_path(), get_data_path(),
+		    "mail_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
 		}

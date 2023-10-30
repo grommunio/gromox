@@ -83,9 +83,6 @@ of outbound connections for sending commands.
 .br
 Default: \fI10\fP
 .TP
-\fBseparator_for_bounce\fP
-Default: \fI;\fP
-.TP
 \fBsmtp_server_ip\fP
 SMTP server hostname or address to contact for outgoing mail.
 .br

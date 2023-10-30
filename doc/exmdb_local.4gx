@@ -57,9 +57,6 @@ Default: \fI3min\fP
 \fBretrying_times\fP
 Default: \fI30\fP
 .TP
-\fBseparator_for_bounce\fP
-Default: <space>
-.TP
 \fBx500_org_name\fP
 Default: (unspecified)
 .SH Files
