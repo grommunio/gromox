@@ -1,3 +1,11 @@
+Development 2.16.2
+==================
+
+Fixes:
+
+* oxcmail: reinstate read requests for non-IPM.Schedule messages
+
+
 Gromox 2.16 (2023-10-29)
 ========================
 

@@ -3485,6 +3485,7 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
     const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
 {
+	/* For DSN (DR (NDR too?)) & MDN */
 	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
@@ -3495,7 +3496,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 	else if (oxcmail_export_address(pmsg, alloc, tags_sender,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	else if (!sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
 	else
@@ -3506,6 +3507,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
     const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
 {
+	/* For read requests */
 	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
@@ -3513,7 +3515,10 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 	if (oxcmail_export_address(pmsg, alloc, tags_read_rcpt,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	else if (oxcmail_export_address(pmsg, alloc, tags_sender,
+	    cset, tmp_field, std::size(tmp_field)))
+		/* ok */;
+	else if (!sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
 	else
