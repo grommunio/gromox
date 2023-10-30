@@ -206,11 +206,11 @@ private:
 
 	static http_status fault(int, http_status, const std::string_view&);
 
+	mutable std::mutex subscriptionLock;
+	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
+
 	std::vector<std::unique_ptr<EWSContext>> contexts;
 	mutable ObjectCache<CacheKey, CacheObj> cache;
-
-	mutable std::unordered_map<detail::ExmdbSubscriptionKey, detail::SubscriptionKey> subscriptions;
-	mutable std::mutex subscriptionLock;
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
