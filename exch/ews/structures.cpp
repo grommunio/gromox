@@ -761,6 +761,20 @@ PROPTAG_ARRAY sShape::remove() const
 {return mkArray<PROPTAG_ARRAY>(dTags);}
 
 /**
+ * @brief      Whether the tag was originally requested
+ *
+ * @param      tag    Tag to check
+ * @param      mask   Flag mask
+ *
+ * @return     True if the property was requested, false otherwise
+ */
+bool sShape::requested(uint32_t tag, uint8_t mask) const
+{
+	auto it = props.find(tag);
+	return it != props.end() && (mask == FL_ANY || it->second.flags & mask);
+}
+
+/**
  * @brief      Add property for writing
  *
  * Added properties currently cannot be read/removed and are not registered
@@ -2221,6 +2235,8 @@ void tItem::update(const sShape& shape)
 	}
 	else if(bodyText)
 		Body.emplace(reinterpret_cast<const char*>(bodyText->pvalue), Enum::Text);
+	else if(shape.requested(PR_BODY) || shape.requested(PR_HTML))
+		Body.emplace("", Enum::Text);
 
 	if((prop = shape.get(PR_CHANGE_KEY)))
 		fromProp(prop, defaulted(ItemId).ChangeKey);

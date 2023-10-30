@@ -363,6 +363,7 @@ public:
 
 	PROPTAG_ARRAY remove() const;
 
+	bool requested(uint32_t, uint8_t=FL_FIELD) const;
 	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
 	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
