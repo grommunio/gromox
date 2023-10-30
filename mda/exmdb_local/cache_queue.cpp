@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
@@ -467,8 +468,9 @@ static void *mdl_thrwork(void *arg)
 						temp_rcpt);
 					put_context(pbounce_context);
 				} else {
-					sprintf(pbounce_context->ctrl.from,
-					        "postmaster@%s", get_default_domain());
+					gx_strlcpy(pbounce_context->ctrl.from,
+						bounce_gen_postmaster(),
+						std::size(pbounce_context->ctrl.from));
 					pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 					enqueue_context(pbounce_context);
 				}

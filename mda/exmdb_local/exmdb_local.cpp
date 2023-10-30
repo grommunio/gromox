@@ -149,8 +149,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			pbounce_context->ctrl.need_bounce = FALSE;
-			sprintf(pbounce_context->ctrl.from,
-				"postmaster@%s", get_default_domain());
+			gx_strlcpy(pbounce_context->ctrl.from, bounce_gen_postmaster(),
+				std::size(pbounce_context->ctrl.from));
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
@@ -175,8 +175,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			pbounce_context->ctrl.need_bounce = FALSE;
-			sprintf(pbounce_context->ctrl.from,
-				"postmaster@%s", get_default_domain());
+			gx_strlcpy(pbounce_context->ctrl.from, bounce_gen_postmaster(),
+				std::size(pbounce_context->ctrl.from));
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
@@ -198,8 +198,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			pbounce_context->ctrl.need_bounce = FALSE;
-			sprintf(pbounce_context->ctrl.from,
-				"postmaster@%s", get_default_domain());
+			gx_strlcpy(pbounce_context->ctrl.from, bounce_gen_postmaster(),
+				std::size(pbounce_context->ctrl.from));
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
@@ -225,8 +225,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 				break;
 			}
 			pbounce_context->ctrl.need_bounce = FALSE;
-			sprintf(pbounce_context->ctrl.from,
-				"postmaster@%s", get_default_domain());
+			gx_strlcpy(pbounce_context->ctrl.from, bounce_gen_postmaster(),
+				std::size(pbounce_context->ctrl.from));
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;

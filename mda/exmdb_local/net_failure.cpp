@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include <gromox/defs.h>
+#include <gromox/bounce_gen.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/util.hpp>
 #include <libHX/string.h>
@@ -142,12 +142,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		put_context(pcontext);
 		return;
 	}
-	if (0 == strcasecmp(pdomain, get_default_domain())) {
-		gx_strlcpy(pcontext->ctrl.from, "local-alarm@system.mail", std::size(pcontext->ctrl.from));
-	} else {
-		sprintf(pcontext->ctrl.from, "local-alarm@%s",
-		        get_default_domain());
-	}
+	gx_strlcpy(pcontext->ctrl.from, bounce_gen_postmaster(), std::size(pcontext->ctrl.from));
 	pcontext->ctrl.rcpt.emplace_back(get_admin_mailbox());
 	auto pmime = pcontext->mail.add_head();
 	if (NULL == pmime) {

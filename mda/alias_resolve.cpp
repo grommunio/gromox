@@ -251,7 +251,8 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 				break;
 			}
 			bnctx->ctrl.need_bounce = false;
-			snprintf(bnctx->ctrl.from, std::size(bnctx->ctrl.from), "postmaster@%s", get_default_domain());
+			gx_strlcpy(bnctx->ctrl.from, bounce_gen_postmaster(),
+				std::size(bnctx->ctrl.from));
 			bnctx->ctrl.rcpt.emplace_back(ctx->ctrl.from);
 			throw_context(bnctx);
 			mlog(LV_DEBUG, "mlist_expand: from=<%s> has no privilege to expand mlist <%s> (%s)",
