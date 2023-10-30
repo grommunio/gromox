@@ -47,9 +47,6 @@ files.
 .br
 Default: \fI/usr/share/gromox/smtp\fP
 .TP
-\fBdefault_domain\fP
-Default: (system domainname)
-.TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for greeting lines emitted
 by delivery-queue on the network.

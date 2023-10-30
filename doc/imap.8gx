@@ -62,9 +62,6 @@ searched.
 .br
 Default: \fI/usr/share/gromox/imap\fP
 .TP
-\fBdefault_domain\fP
-Default: (system domainname)
-.TP
 \fBdefault_lang\fP
 Default: \fIen\fP
 .TP

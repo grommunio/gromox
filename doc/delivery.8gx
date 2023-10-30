@@ -36,9 +36,6 @@ searched.
 .br
 Default: \fI/usr/share/gromox/delivery\fP
 .TP
-\fBdefault_domain\fP
-Default: (system domainname)
-.TP
 \fBdequeue_max_mem\fP
 Default: \fI1024M\fP
 .TP

@@ -173,17 +173,6 @@ int main(int argc, const char **argv) try
 	}
 	printf("[system]: host ID is %s\n", str_val);
 	
-	str_val = g_config_file->get_value("default_domain");
-	if (str_val == NULL) {
-		memset(temp_buff, 0, std::size(temp_buff));
-		getdomainname(temp_buff, std::size(temp_buff));
-		g_config_file->set_value("default_domain", temp_buff);
-		str_val = temp_buff;
-		printf("[system]: warning! cannot find default domain, OS domain name "
-			"will be used as default domain\n");
-	}
-	printf("[system]: default domain is %s\n", str_val);
-	
 	unsigned int context_num = g_config_file->get_ll("context_num");
 	unsigned int thread_charge_num = g_config_file->get_ll("imap_thread_charge_num");
 	if (thread_charge_num % 4 != 0) {

@@ -149,17 +149,6 @@ int main(int argc, const char **argv) try
 	}
 	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 	
-	str_val = g_config_file->get_value("default_domain");
-	if (str_val == NULL) {
-		memset(temp_buff, '\0', std::size(temp_buff));
-		getdomainname(temp_buff, std::size(temp_buff));
-		g_config_file->set_value("default_domain", temp_buff);
-		str_val = temp_buff;
-		mlog(LV_WARN, "system: Cannot find default domain. OS domain name "
-			"will be used as default domain.");
-	}
-	mlog(LV_NOTICE, "system: default domain is \"%s\"", str_val);
-	
 	g_config_file->get_uint("context_num", &scfg.context_num);
 	unsigned int thread_charge_num = g_config_file->get_ll("lda_thread_charge_num");
 		if (thread_charge_num % 4 != 0) {

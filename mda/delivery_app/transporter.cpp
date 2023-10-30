@@ -733,7 +733,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	E("register_local", transporter_register_local);
 	E("register_remote", transporter_register_remote);
 	E("get_host_ID", +[]() { return g_config_file->get_value("host_id"); });
-	E("get_default_domain", +[]() { return g_config_file->get_value("default_domain"); });
 	E("get_admin_mailbox", +[]() { return g_config_file->get_value("admin_mailbox"); });
 	E("get_config_path", +[]() {
 		auto r = g_config_file->get_value("config_file_path");

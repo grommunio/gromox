@@ -185,18 +185,6 @@ int main(int argc, const char **argv) try
 	gx_strlcpy(host_name, str_val, std::size(host_name));
 	dns_name = str_val;
 	
-	str_val = g_config_file->get_value("default_domain");
-	if (str_val == NULL) {
-		memset(temp_buff, 0, std::size(temp_buff));
-		if (getdomainname(temp_buff, std::size(temp_buff)) < 0)
-			*temp_buff = '\0';
-		g_config_file->set_value("default_domain", temp_buff);
-		str_val = temp_buff;
-		mlog(LV_WARN, "system: No domain name set. "
-			"OS domain name will be used as default domain.");
-	}
-	mlog(LV_NOTICE, "system: default domain is \"%s\"", str_val);
-
 	ptoken = strchr(host_name, '.');
 	netbios_name = host_name;
 	if (NULL == ptoken) {

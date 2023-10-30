@@ -53,9 +53,6 @@ searched.
 .br
 Default: \fI/usr/share/gromox/pop3\fP
 .TP
-\fBdefault_domain\fP
-Default: (system domainname)
-.TP
 \fBenable_capa_implementation\fP
 When enabled, the server will include an "IMPLEMENTATION" line in the CAPA
 response (RFC 2449 §6.9). This is disabled by default, as it can facilitate
