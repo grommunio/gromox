@@ -14,9 +14,10 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/ical.hpp>
+#include <gromox/textmaps.hpp>
 
 #include "ews.hpp"
 #include "structures.hpp"
@@ -2211,7 +2212,12 @@ void tItem::update(const sShape& shape)
 	const TAGGED_PROPVAL *bodyText = shape.get(PR_BODY), *bodyHtml = shape.get(PR_HTML);
 	if(bodyHtml) {
 		const BINARY* content = reinterpret_cast<const BINARY*>(bodyHtml->pvalue);
-		Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML);
+		const cpid_t* cpid = shape.get<cpid_t>(PR_INTERNET_CPID, sShape::FL_ANY);
+		const char* cset;
+		if(cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
+			Body.emplace(iconvtext(content->pc, content->cb, cset, "UTF-8"), Enum::HTML);
+		else
+			Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML);
 	}
 	else if(bodyText)
 		Body.emplace(reinterpret_cast<const char*>(bodyText->pvalue), Enum::Text);
@@ -2301,7 +2307,7 @@ void tItemResponseShape::tags(sShape& shape) const
 		if(type == Enum::Best || type == Enum::Text)
 			shape.add(PR_BODY, sShape::FL_FIELD);
 		if(type == Enum::Best || type == Enum::HTML)
-			shape.add(PR_HTML, sShape::FL_FIELD);
+			shape.add(PR_HTML, sShape::FL_FIELD).add(PR_INTERNET_CPID);
 		shape.special &= ~sShape::Body;
 	}
 	if(shape.special & sShape::MessageFlags)
