@@ -109,6 +109,7 @@ struct Enum
 	STR(Binary);
 	STR(BinaryArray);
 	STR(Boolean);
+	STR(Business);
 	STR(BusinessFax);
 	STR(BusinessMobile);
 	STR(BusinessPhone);
@@ -120,6 +121,10 @@ struct Enum
 	STR(CLSID);
 	STR(CLSIDArray);
 	STR(Closed);
+	STR(Company);
+	STR(CompanyLastCommaFirst);
+	STR(CompanyLastFirst);
+	STR(CompanyLastSpaceFirst);
 	STR(CompanyMainPhone);
 	STR(Complete);
 	STR(Common);
@@ -143,11 +148,13 @@ struct Enum
 	STR(Detailed);
 	STR(DetailedMerged);
 	STR(Disabled);
+	STR(DisplayName);
 	STR(Double);
 	STR(DoubleArray);
 	STR(EmailAddress1);
 	STR(EmailAddress2);
 	STR(EmailAddress3);
+	STR(Empty);
 	STR(Enabled);
 	STR(End);
 	STR(Error);
@@ -157,6 +164,8 @@ struct Enum
 	STR(Fair);
 	STR(February);
 	STR(First);
+	STR(FirstName);
+	STR(FirstSpaceLast);
 	STR(Flagged);
 	STR(Float);
 	STR(FloatArray);
@@ -168,12 +177,13 @@ struct Enum
 	STR(Friday);
 	STR(Good);
 	STR(GroupMailbox);
-	STR(HomeFax);
-	STR(HomePhone);
-	STR(HomePhone2);
 	STR(HTML);
 	STR(HardDelete);
 	STR(High);
+	STR(Home);
+	STR(HomeFax);
+	STR(HomePhone);
+	STR(HomePhone2);
 	STR(IdOnly);
 	STR(ImplicitContact);
 	STR(Integer);
@@ -193,6 +203,15 @@ struct Enum
 	STR(July);
 	STR(Known);
 	STR(Last);
+	STR(LastCommaFirst);
+	STR(LastCommaFirstCompany);
+	STR(LastFirst);
+	STR(LastFirstCompany);
+	STR(LastFirstMiddleSuffix);
+	STR(LastFirstSuffix);
+	STR(LastName);
+	STR(LastSpaceFirst);
+	STR(LastSpaceFirstCompany);
 	STR(Long);
 	STR(LongArray);
 	STR(Low);
@@ -232,6 +251,7 @@ struct Enum
 	STR(OneOff);
 	STR(Optional);
 	STR(Organizer);
+	STR(Other);
 	STR(OtherFax);
 	STR(OtherTelephone);
 	STR(OutOfOfficeMessage);
@@ -384,6 +404,7 @@ struct Enum
 	using DistinguishedPropertySetType = StrEnum<Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task, Sharing>; ///< Types.xsd:1040
 	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd:5205
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
+	using FileAsMappingType = StrEnum<None, LastCommaFirst, FirstSpaceLast, Company, LastCommaFirstCompany, CompanyLastFirst, LastFirst, LastFirstCompany, CompanyLastCommaFirst, LastFirstSuffix, LastSpaceFirstCompany, CompanyLastSpaceFirst, LastSpaceFirst, DisplayName, FirstName, LastFirstMiddleSuffix, LastName, Empty>; ///< Types.xsd:5283
 	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
 	using FolderQueryTraversalType = StrEnum<Shallow, Deep, SoftDeleted>; ///< Types.xsd:1212
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333
@@ -399,6 +420,7 @@ struct Enum
 	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
 	using NotificationEventType = StrEnum<CopiedEvent, CreatedEvent, DeletedEvent, ModifiedEvent, MovedEvent, NewMailEvent, FreeBusyChangedEvent>; ///< Types.xsd:6085
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
+	using PhysicalAddressKeyType = StrEnum<Home, Business, Other>; ///< Types.xsd:5275
 	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255
 	using ResponseTypeType = StrEnum<Unknown, Organizer, Tentative, Accept, Decline, NoResponseReceived>; ///< Types.xsd:4372
 	using RestrictionRelop = StrEnum<IsLessThan, IsLessThanOrEqual, IsGreaterThan, IsGreaterThanOrEqual, IsEqualTo, IsNotEqualTo>; ///< Helper class, index maps directly to mapi_rtype

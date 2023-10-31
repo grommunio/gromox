@@ -516,6 +516,29 @@ tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
 void tConflictResults::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(Count);}
 
+void tCompleteName::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Title);
+	XMLDUMPT(FirstName);
+	XMLDUMPT(MiddleName);
+	XMLDUMPT(LastName);
+	XMLDUMPT(Suffix);
+	XMLDUMPT(Initials);
+	XMLDUMPT(FullName);
+	XMLDUMPT(Nickname);
+	XMLDUMPT(YomiFirstName);
+	XMLDUMPT(YomiLastName);
+}
+void tPhysicalAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPA(Key);
+	XMLDUMPT(Street);
+	XMLDUMPT(City);
+	XMLDUMPT(State);
+	XMLDUMPT(CountryOrRegion);
+	XMLDUMPT(PostalCode);
+}
+
 tContact::tContact(const tinyxml2::XMLElement* xml) :
 	tItem(xml),
 	XMLINIT(FileAs),
@@ -545,8 +568,10 @@ void tContact::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Initials);
 	XMLDUMPT(MiddleName);
 	XMLDUMPT(Nickname);
+	XMLDUMPT(CompleteName);
 	XMLDUMPT(CompanyName);
 	XMLDUMPT(EmailAddresses);
+	XMLDUMPT(PhysicalAddresses);
 	XMLDUMPT(PhoneNumbers);
 	XMLDUMPT(AssistantName);
 	XMLDUMPT(Department);
@@ -663,6 +688,7 @@ void tExtendedFieldURI::serialize(XMLElement* xml) const
 		xml->SetAttribute("PropertyTag", fmt::format("0x{:x}", *PropertyTag).c_str());
 	XMLDUMPA(PropertyId);
 	XMLDUMPA(PropertySetId);
+	XMLDUMPA(DistinguishedPropertySetId);
 	XMLDUMPA(PropertyName);
 }
 

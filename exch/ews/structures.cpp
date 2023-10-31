@@ -1661,18 +1661,12 @@ tContact::tContact(const sShape& shape) : tItem(shape)
 
 void tContact::update(const sShape& shape)
 {
-	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
-	fromProp(shape.get(PR_GIVEN_NAME), GivenName);
-	// TODO Initials
-	fromProp(shape.get(PR_MIDDLE_NAME), MiddleName);
-	fromProp(shape.get(PR_NICKNAME), Nickname);
 	fromProp(shape.get(PR_COMPANY_NAME), CompanyName);
 	// TODO ContactSource
 	fromProp(shape.get(PR_ASSISTANT), AssistantName);
 	fromProp(shape.get(PR_DEPARTMENT_NAME), Department);
 	fromProp(shape.get(PR_TITLE), JobTitle);
 	fromProp(shape.get(PR_OFFICE_LOCATION), OfficeLocation);
-	fromProp(shape.get(PR_SURNAME), Surname);
 	const char* val;
 	if((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
@@ -1686,12 +1680,57 @@ void tContact::update(const sShape& shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::MobilePhone));
 	if((val = shape.get<char>(PR_PAGER_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Pager));
-	if((val = shape.get<char>(PR_PRIMARY_FAX_NUMBER)))
+	if((val = shape.get<char>(PR_BUSINESS_FAX_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessFax));
 	if((val = shape.get<char>(PR_ASSISTANT_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::AssistantPhone));
 	if((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone2));
+	if((val = shape.get<char>(PR_COMPANY_MAIN_PHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::CompanyMainPhone));
+	if((val = shape.get<char>(PR_HOME_FAX_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomeFax));
+	if((val = shape.get<char>(PR_OTHER_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::OtherTelephone));
+	if((val = shape.get<char>(PR_CALLBACK_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Callback));
+	if((val = shape.get<char>(PR_RADIO_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::RadioPhone));
+	const TAGGED_PROPVAL* prop;
+	if((prop = shape.get(PR_DISPLAY_NAME_PREFIX)))
+		fromProp(prop, defaulted(CompleteName).Title);
+	if((prop = shape.get(PR_GIVEN_NAME))){
+		fromProp(prop, GivenName);
+		fromProp(prop, defaulted(CompleteName).FirstName);
+	}
+	if((prop = shape.get(PR_MIDDLE_NAME))){
+		fromProp(prop, MiddleName);
+		fromProp(prop, defaulted(CompleteName).MiddleName);
+	}
+	if((prop = shape.get(PR_SURNAME))){
+		fromProp(prop, Surname);
+		fromProp(prop, defaulted(CompleteName).LastName);
+	}
+	if((prop = shape.get(PR_GENERATION)))
+		fromProp(prop, defaulted(CompleteName).Suffix);
+	if((prop = shape.get(PR_INITIALS))){
+		fromProp(prop, Initials);
+		fromProp(prop, defaulted(CompleteName).Initials);
+	}
+	if((prop = shape.get(PR_DISPLAY_NAME))){
+		fromProp(prop, DisplayName);
+		fromProp(prop, defaulted(CompleteName).FullName);
+	}
+	if((prop = shape.get(PR_NICKNAME))){
+		fromProp(prop, Nickname);
+		fromProp(prop, defaulted(CompleteName).Nickname);
+	}
+	if((prop = shape.get(NtEmailAddress1)))
+		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress1);
+	if((prop = shape.get(NtEmailAddress2)))
+		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress2);
+	if((prop = shape.get(NtEmailAddress3)))
+		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress3);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2095,6 +2134,11 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
 		PropertyId = propname.lid;
 	else if(propname.kind == MNID_STRING)
 		PropertyName = propname.pname;
+
+	auto it = std::find_if(std::begin(propsetIds), std::end(propsetIds),
+	                       [&](const auto& propsetId){ return propsetId->compare(propname.guid) == 0; });
+	if(it != std::end(propsetIds))
+		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(uint8_t(std::distance(std::begin(propsetIds), it)));
 }
 
 /**
@@ -2478,6 +2522,14 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
+	{"contacts:CompleteName", PR_DISPLAY_NAME_PREFIX},
+	{"contacts:CompleteName", PR_GIVEN_NAME},
+	{"contacts:CompleteName", PR_MIDDLE_NAME},
+	{"contacts:CompleteName", PR_SURNAME},
+	{"contacts:CompleteName", PR_GENERATION},
+	{"contacts:CompleteName", PR_INITIALS},
+	{"contacts:CompleteName", PR_DISPLAY_NAME},
+	{"contacts:CompleteName", PR_NICKNAME}, // TODO: YomiFirstName, YomiLastName;
 	// {"calendar:OriginalStart", },
 	// {"calendar:StartTimeZone", },
 };
@@ -2623,12 +2675,57 @@ std::string tGuid::serialize() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
+	{{"contacts:PhoneNumber", "BusinessPhone"}, PR_BUSINESS_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "BusinessPhone2"}, PR_BUSINESS2_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
+	{{"contacts:PhoneNumber", "CompanyMainPhone"}, PR_COMPANY_MAIN_PHONE_NUMBER},
+	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "MobilePhone"}, PR_MOBILE_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
+	{{"contacts:PhoneNumber", "HomePhone2"}, PR_HOME2_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
+	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Callback"}, PR_CALLBACK_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "RadioPhone"}, PR_RADIO_TELEPHONE_NUMBER},
+	{{"contacts:PhysicalAddress:Street", "Home"}, PR_HOME_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Home"}, PR_HOME_ADDRESS_CITY},
+	{{"contacts:PhysicalAddress:State", "Home"}, PR_HOME_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, PR_HOME_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Home"}, PR_HOME_ADDRESS_POSTAL_CODE},
+	{{"contacts:PhysicalAddress:Street", "Business"}, PR_BUSINESS_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Business"}, PR_BUSINESS_ADDRESS_CITY},
+	{{"contacts:PhysicalAddress:State", "Business"}, PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, PR_BUSINESS_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Business"}, PR_BUSINESS_ADDRESS_POSTAL_CODE},
+	{{"contacts:PhysicalAddress:Street", "Other"}, PR_OTHER_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Other"}, PR_OTHER_ADDRESS_CITY},
+	{{"contacts:PhysicalAddress:State", "Other"}, PR_OTHER_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Other"}, PR_OTHER_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Other"}, PR_OTHER_ADDRESS_POSTAL_CODE},
+}};
 
-/**
- * TODO: Implement tag mapping
- */
-void tIndexedFieldURI::tags(sShape&, bool) const
-{}
+decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
+	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, const_cast<char*>("InstantMessagingAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, const_cast<char*>("Email1EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, const_cast<char*>("Email2EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, const_cast<char*>("Email3EmailAddress")}, PT_UNICODE}},
+}};
+
+void tIndexedFieldURI::tags(sShape& shape, bool add) const
+{
+	static auto compval1 = [](const std::pair<UIKey, uint32_t>& v1, const char* const v2){return strcmp(v1.first.first.c_str(), v2) < 0;};
+
+	auto tags = std::lower_bound(tagMap.begin(), tagMap.end(), FieldURI.c_str(), compval1);
+	if(tags != tagMap.end() && tags->first.first == FieldURI && tags->first.second == FieldIndex)
+		shape.add(tags->second, add? sShape::FL_FIELD : sShape::FL_RM);
+
+	static auto compval2 = [](const std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>& v1, const char* const v2){return strcmp(v1.first.first.c_str(), v2) < 0;};
+	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), FieldURI.c_str(), compval2);
+	if(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex)
+		shape.add(names->second.first, names->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
+}
 
 /**
  * TODO: Implement tag mapping
@@ -2782,7 +2879,10 @@ sItem tItem::create(const sShape& shape)
 
 decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefault = {{
 	{&NtCommonStart, PT_SYSTIME},
-	{&NtCommonEnd, PT_SYSTIME}
+	{&NtCommonEnd, PT_SYSTIME},
+	{&NtEmailAddress1, PT_UNICODE},
+	{&NtEmailAddress2, PT_UNICODE},
+	{&NtEmailAddress3, PT_UNICODE},
 }};
 
 /**

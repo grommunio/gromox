@@ -979,6 +979,11 @@ struct tIndexedFieldURI
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
+
+	using UIKey = std::pair<std::string, std::string>;
+	//Types.xsd:988
+	static std::array<std::pair<UIKey, uint32_t>, 28> tagMap;
+	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 4> nameMap;
 };
 
 /**
@@ -1701,6 +1706,48 @@ struct tCalendarView : public tBasePagingType
 };
 
 /**
+ * Types.xsd:5317
+ */
+struct tCompleteName : public NS_EWS_Types
+{
+	static constexpr char NAME[] = "CompleteName";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tCompleteName() = default;
+
+	std::optional<std::string> Title;
+	std::optional<std::string> FirstName;
+	std::optional<std::string> MiddleName;
+	std::optional<std::string> LastName;
+	std::optional<std::string> Suffix;
+	std::optional<std::string> Initials;
+	std::optional<std::string> FullName;
+	std::optional<std::string> Nickname;
+	std::optional<std::string> YomiFirstName;
+	std::optional<std::string> YomiLastName;
+};
+
+/**
+ * Types.xsd:5379
+ */
+struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
+{
+	static constexpr char NAME[] = "Entry";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	Enum::PhysicalAddressKeyType Key; // Attribute
+
+	std::optional<std::string> Street;
+	std::optional<std::string> City;
+	std::optional<std::string> State;
+	std::optional<std::string> CountryOrRegion;
+	std::optional<std::string> PostalCode;
+
+};
+
+/**
  * Types.xsd:5541
  */
 struct tContact : public tItem
@@ -1714,17 +1761,17 @@ struct tContact : public tItem
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::string> FileAs;
-	// <xs:element name="FileAsMapping" type="t:FileAsMappingType" minOccurs="0" />
+	std::optional<Enum::FileAsMappingType> FileAsMapping;
 	std::optional<std::string> DisplayName;
 	std::optional<std::string> GivenName;
 	std::optional<std::string> Initials;
 	std::optional<std::string> MiddleName;
 	std::optional<std::string> Nickname;
-	// <xs:element name="CompleteName" type="t:CompleteNameType" minOccurs="0" />
+	std::optional<tCompleteName> CompleteName;
 	std::optional<std::string> CompanyName;
 	std::optional<std::vector<tEmailAddressDictionaryEntry>> EmailAddresses;
 	// <xs:element name="AbchEmailAddresses" type="t:AbchEmailAddressDictionaryType" minOccurs="0" />
-	// <xs:element name="PhysicalAddresses" type="t:PhysicalAddressDictionaryType" minOccurs="0" />
+	std::optional<std::vector<tPhysicalAddressDictionaryEntry>> PhysicalAddresses;
 	std::optional<std::vector<tPhoneNumberDictionaryEntry>> PhoneNumbers;
 	std::optional<std::string> AssistantName;
 	// <xs:element name="Birthday" type="xs:dateTime" minOccurs="0" />
@@ -1865,10 +1912,16 @@ struct tItemResponseShape
 
 	static constexpr std::array<uint32_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
 	static constexpr std::array<uint32_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr std::array<uint32_t, 7> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+	static constexpr std::array<uint32_t, 29> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
-		PR_LOCAL_COMMIT_TIME};
-	static const std::array<std::pair<const PROPERTY_NAME*, uint16_t>, 2> namedTagsDefault;
+		PR_LOCAL_COMMIT_TIME, PR_DISPLAY_NAME_PREFIX, PR_GIVEN_NAME, PR_MIDDLE_NAME,
+		PR_SURNAME, PR_GENERATION, PR_INITIALS, PR_DISPLAY_NAME, PR_NICKNAME,
+		PR_BUSINESS_TELEPHONE_NUMBER, PR_HOME_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
+		PR_BUSINESS2_TELEPHONE_NUMBER, PR_MOBILE_TELEPHONE_NUMBER, PR_PAGER_TELEPHONE_NUMBER,
+		PR_BUSINESS_FAX_NUMBER, PR_ASSISTANT_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
+		PR_COMPANY_MAIN_PHONE_NUMBER, PR_HOME_FAX_NUMBER, PR_OTHER_TELEPHONE_NUMBER,
+		PR_CALLBACK_TELEPHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER};
+	static const std::array<std::pair<const PROPERTY_NAME*, uint16_t>, 5> namedTagsDefault;
 };
 
 /**
