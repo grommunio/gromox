@@ -441,16 +441,6 @@ static http_status mod_cache_parse_range_value(char *value,
 	return http_status::service_unavailable;
 }
 
-static bool rqtype_ok(const char *method, unsigned int set)
-{
-	static constexpr char names[2][3][8] =
-		{{"GET", "HEAD", "POST"}, {"PUT", "DELETE", "PATCH"}};
-	for (const auto &i : names[set])
-		if (strcasecmp(method, i) == 0)
-			return true;
-	return false;
-}
-
 http_status mod_cache_take_request(http_context *phttp)
 {
 	char *ptoken;
@@ -494,9 +484,13 @@ http_status mod_cache_take_request(http_context *phttp)
 		return errno == ENOENT || errno == ENOTDIR ? http_status::not_found :
 		       errno == EACCES || errno == EISDIR ? http_status::forbidden :
 		       http_status::service_unavailable;
-	if (rqtype_ok(phttp->request.method, 0))
-		;
-	else if (rqtype_ok(phttp->request.method, 1))
+	if (phttp->request.imethod == http_method::head ||
+	    phttp->request.imethod == http_method::get ||
+	    phttp->request.imethod == http_method::post)
+		/* ok */;
+	else if (phttp->request.imethod == http_method::put ||
+	    phttp->request.imethod == http_method::patch ||
+	    phttp->request.imethod == http_method::xdelete)
 		return http_status::forbidden;
 	else
 		return http_status::not_impl;
@@ -618,7 +612,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 			}
 		}
 		pcontext->b_header = TRUE;
-		if (0 == strcasecmp(phttp->request.method, "HEAD")) {
+		if (phttp->request.imethod == http_method::head) {
 			mod_cache_put_context(phttp);
 			return FALSE;
 		}

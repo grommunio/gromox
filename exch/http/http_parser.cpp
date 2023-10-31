@@ -562,6 +562,23 @@ static tproc_status htparse_initssl(http_context *pcontext)
 	return http_done(pcontext, http_status::timeout);
 }
 
+static enum http_method http_method_lookup(const char *s)
+{
+	/* Ordered by approximate use count */
+#define E(k, v) if (strcasecmp(s, #k) == 0) return http_method::v;
+	E(GET, get)
+	E(POST, post)
+	E(HEAD, head)
+	E(RPC_IN_DATA, rpcin)
+	E(RPC_OUT_DATA, rpcout)
+	E(OPTIONS, options)
+	E(PUT, put)
+	E(DELETE, xdelete)
+	E(PATCH, patch)
+	return *s != '\0' ? http_method::other : http_method::none;
+#undef E
+}
+
 static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
     unsigned int line_length)
 {
@@ -579,6 +596,7 @@ static tproc_status htparse_rdhead_no(http_context *pcontext, char *line,
 
 	memcpy(pcontext->request.method, line, tmp_len);
 	pcontext->request.method[tmp_len] = '\0';
+	pcontext->request.imethod = http_method_lookup(pcontext->request.method);
 	auto ptoken1 = static_cast<char *>(memchr(ptoken + 1, ' ', line_length - tmp_len - 1));
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG, "D-1923: request line without HTTP version");
@@ -1060,7 +1078,7 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	pcontext->total_length = pcontext->request.content_len;
 	/* ECHO request 0x0 ~ 0x10, MS-RPCH 2.1.2.15 */
 	if (pcontext->total_length > 0x10) {
-		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
+		if (pcontext->request.imethod == http_method::rpcin) {
 			pcontext->channel_type = hchannel_type::in;
 			pcontext->pchannel = g_inchannel_allocator->get();
 			if (pcontext->pchannel == nullptr)
@@ -1187,8 +1205,8 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 			return ret;
 		if (pcontext->auth_status == http_status::unauthorized)
 			return htp_delegate_cache(pcontext);
-		if (strcasecmp(pcontext->request.method, "RPC_IN_DATA") == 0 ||
-		    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") == 0)
+		if (pcontext->request.imethod == http_method::rpcin ||
+		    pcontext->request.imethod == http_method::rpcout)
 			return htp_delegate_rpc(pcontext, stream_1_written);
 		auto status = hpm_processor_take_request(pcontext);
 		if (status == http_status::ok)
@@ -1621,9 +1639,8 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 		if (ret != tproc_status::runoff)
 			return ret;
 	}
-
-	if (strcasecmp(pcontext->request.method, "RPC_IN_DATA") != 0 &&
-	    strcasecmp(pcontext->request.method, "RPC_OUT_DATA") != 0) {
+	if (pcontext->request.imethod != http_method::rpcin &&
+	    pcontext->request.imethod != http_method::rpcout) {
 		pcontext->log(LV_DEBUG, "I-1936: unrecognized HTTP method \"%s\"", pcontext->request.method);
 		/* other http request here if wanted */
 		return http_done(pcontext, http_status::method_not_allowed);

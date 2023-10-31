@@ -222,7 +222,7 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	auto req = get_request(ctx_id);
-	if (strcasecmp(req->method, "POST") != 0)
+	if (req->imethod != http_method::post)
 		return http_status::method_not_allowed;
 	HTTP_AUTH_INFO auth_info = get_auth_info(ctx_id);
 	if (auth_info.auth_status != http_status::ok)

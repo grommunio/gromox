@@ -823,7 +823,7 @@ static void emsmdb_term(int context_id)
 static BOOL emsmdb_preproc(int context_id)
 {
 	auto prequest = get_request(context_id);
-	if (strcasecmp(prequest->method, "POST") != 0)
+	if (prequest->imethod != http_method::post)
 		return false;
 	auto uri = prequest->f_request_uri.c_str();
 	if (strncasecmp(uri, "/mapi/emsmdb/?MailboxId=", 24) != 0)

@@ -208,7 +208,7 @@ BOOL OxdiscoPlugin::preproc(int ctx_id)
 	auto req = get_request(ctx_id);
 // In some cases the clients may issue unauthed GET requests
 // In such case the plugin issues redirect in response
-//	if (strcasecmp(req->method, "POST") != 0)
+//	if (req->imethod != http_request::post)
 //		/* emit("All requests must be POST"); */
 //		return false;
 	auto uri = req->f_request_uri.c_str();

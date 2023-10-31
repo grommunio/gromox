@@ -826,7 +826,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	FCGI_ENDREQUESTBODY end_request;
 	auto &fctx = g_context_list[phttp->context_id];
 	
-	if (fctx.b_header && strcasecmp(phttp->request.method, "HEAD") == 0) {
+	if (fctx.b_header && phttp->request.imethod == http_method::head) {
 		mod_fastcgi_put_context(phttp);
 		return FALSE;	
 	}
@@ -989,7 +989,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				strncasecmp(response_buff, "Content-Length:", 15) != 0 &&
 				strcasestr(response_buff, "\r\nContent-Length:") == nullptr;
 			rfc1123_dstring(dstring, std::size(dstring));
-			if (strcasecmp(phttp->request.method, "HEAD") == 0)
+			if (phttp->request.imethod == http_method::head)
 				tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
 								"HTTP/1.1 %s\r\n"
 								"Date: %s\r\n"
@@ -1015,7 +1015,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			fctx.b_header = TRUE;
-			if (strcasecmp(phttp->request.method, "HEAD") == 0)
+			if (phttp->request.imethod == http_method::head)
 				return TRUE;
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {

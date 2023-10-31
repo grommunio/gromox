@@ -31,10 +31,15 @@ struct HPM_INTERFACE {
 	void (*term)(int);
 };
 
+enum class http_method {
+	none, other, options, head, get, post, put, xdelete, patch, rpcin, rpcout
+};
+
 struct http_request {
 	void clear();
 
 	char method[14]{};
+	enum http_method imethod = http_method::none;
 	bool b_chunked = false, b_end = false;
 	char version[8]{};
 	uint64_t content_len = 0, chunk_offset = 0, chunk_size = 0, posted_size = 0;
