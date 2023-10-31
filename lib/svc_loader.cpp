@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <atomic>
 #include <cstdio>
@@ -53,6 +56,9 @@ struct SVC_PLUG_ENTITY : public gromox::generic_module {
 };
 
 }
+
+extern const char version_info_for_memory_dumps[];
+const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 
 static int service_load_library(const char *);
 static void *service_query_service(const char *service, const std::type_info &);
