@@ -1,8 +1,9 @@
-Development 2.16.2
+Development 2.16.8
 ==================
 
 Fixes:
 
+* http: repair hanging communication with MAPI/RPC connections
 * oxcmail: reinstate read requests for non-IPM.Schedule messages
 
 

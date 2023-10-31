@@ -1358,7 +1358,8 @@ static tproc_status htparse_wrrep_nobuf(http_context *pcontext)
 			pcontext->stream_out.clear();
 			return tproc_status::cont;
 		}
-	} else {
+	} else if (pcontext->request.imethod != http_method::rpcin &&
+	    pcontext->request.imethod != http_method::rpcout) {
 		if (pcontext->stream_out.get_total_length() == 0) {
 			if (pcontext->b_close)
 				return tproc_status::runoff;
