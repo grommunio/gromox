@@ -400,6 +400,15 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			return ecServerOOM;
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
 		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
+		/*
+		 * One RPC may contain multiple ROPs and if one ROP fails,
+		 * subsequent ROPs may still be invoked, albeit with
+		 * INVALID_HANDLEs, thus also failing, though with
+		 * ecNullObject. This is normal even if it generated worrying
+		 * output with rop_debug=1.
+		 *
+		 * Think of it as close(open("nonexisting",O_RDONLY));
+		 */
 		auto result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
 		              prop_buff->phandles, prop_buff->hnum);
 		auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);

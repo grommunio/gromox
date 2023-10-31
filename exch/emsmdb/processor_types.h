@@ -1053,6 +1053,12 @@ struct ROP_RESPONSE {
 	void *ppayload;
 };
 
+/**
+ * @hnum:	amount of room in the phandles array in this
+ *              request/response pair
+ * @phandles:	a list of server object handles (akin to file descriptors)
+ *              used for ROPs
+ */
 struct ROP_BUFFER {
 	uint16_t rhe_version;
 	uint16_t rhe_flags;
