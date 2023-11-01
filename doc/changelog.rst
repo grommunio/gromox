@@ -1,10 +1,15 @@
-Development 2.16.8
-==================
+Development 2.16.15
+===================
 
 Fixes:
 
 * http: repair hanging communication with MAPI/RPC connections
 * oxcmail: reinstate read requests for non-IPM.Schedule messages
+
+Enhancements:
+
+* exmdb: augment create_folder and movecopy_folder RPCs with a 32-bit error
+  code, which allows g-web to better detect folders with duplicate names
 
 
 Gromox 2.16 (2023-10-29)

@@ -1717,8 +1717,8 @@ ec_error_t cu_remote_copy_message(store_object *src_store, uint64_t message_id,
 	return ecSuccess;
 }
 
-static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
-	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
+static ec_error_t cu_create_folder(store_object *pstore, uint64_t parent_id,
+    TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	uint64_t tmp_id;
 	BINARY *pentryid;
@@ -1747,7 +1747,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	for (auto t : tags)
 		common_util_remove_propvals(pproplist, t);
 	if (!pproplist->has(PR_DISPLAY_NAME))
-		return FALSE;
+		return ecInvalidParam;
 	propval.proptag = PR_FOLDER_TYPE;
 	propval.pvalue = &tmp_type;
 	tmp_type = FOLDER_GENERIC;
@@ -1756,13 +1756,13 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.pvalue = &parent_id;
 	common_util_set_propvals(pproplist, &propval);
 	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
-		return FALSE;
+		return ecError;
 	propval.proptag = PidTagChangeNumber;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
 	if (pbin == nullptr)
-		return FALSE;
+		return ecMAPIOOM;
 	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(pproplist, &propval);
@@ -1770,19 +1770,22 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (propval.pvalue == nullptr)
-		return FALSE;
+		return ecMAPIOOM;
 	common_util_set_propvals(pproplist, &propval);
 	auto pinfo = zs_get_info();
 	ec_error_t err = ecSuccess;
 	if (!exmdb_client::create_folder(pstore->get_dir(), pinfo->cpid,
-	    pproplist, pfolder_id, &err) || err != ecSuccess ||
-	    *pfolder_id == 0)
-		return FALSE;
+	    pproplist, pfolder_id, &err))
+		return ecError;
+	if (err != ecSuccess)
+		return err;
+	if (*pfolder_id == 0)
+		return ecError;
 	if (pstore->owner_mode())
-		return TRUE;
+		return ecSuccess;
 	pentryid = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (pentryid == nullptr)
-		return TRUE;
+		return ecSuccess;
 	tmp_id = 1;
 	permission = rightsGromox7;
 	permission_row.flags = ROW_ADD;
@@ -1796,7 +1799,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval_buff[2].pvalue = &permission;
 	exmdb_client::update_folder_permission(pstore->get_dir(),
 		*pfolder_id, FALSE, 1, &permission_row);
-	return TRUE;
+	return ecSuccess;
 }
 
 static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
@@ -1859,8 +1862,9 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		propval.pvalue = deconst(new_name);
 		common_util_set_propvals(&tmp_propvals, &propval);
 	}
-	if (!common_util_create_folder(dst_store, folder_id1, &tmp_propvals, &new_fid))
-		return ecError;
+	auto err = cu_create_folder(dst_store, folder_id1, &tmp_propvals, &new_fid);
+	if (err != ecSuccess)
+		return err;
 	auto pinfo = zs_get_info();
 	const char *username = nullptr;
 	if (!src_store->owner_mode()) {
