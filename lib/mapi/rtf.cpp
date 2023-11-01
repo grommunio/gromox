@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -274,9 +275,9 @@ enum {
 
 using CMD_PROC_FUNC = int (*)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
 
-static std::unordered_map<std::string_view, CMD_PROC_FUNC> g_cmd_hash;
 static bool rtf_starting_body(RTF_READER *preader);
 static bool rtf_starting_text(RTF_READER *preader);
+static CMD_PROC_FUNC rtf_find_cmd_function(const char *);
 
 static constexpr cpid_t CP_UNSET = static_cast<cpid_t>(-1);
 
@@ -304,12 +305,6 @@ static int rtf_decode_hex_char(const char *in)
 	else
 		return 0;
 	return retval;
-}
-
-static inline CMD_PROC_FUNC rtf_find_cmd_function(const char *cmd)
-{
-	auto i = g_cmd_hash.find(cmd);
-	return i != g_cmd_hash.cend() ? i->second : nullptr;
 }
 
 static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
@@ -2994,101 +2989,96 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	return false;
 }
 
-bool rtf_init_library()
-{
-	static constexpr std::pair<const char *, CMD_PROC_FUNC> cmd_map[] = {
+static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 		{"*",				rtf_cmd_maybe_ignore},
 		{"-", rtf_cmd_continue},
 		{"_",				rtf_cmd_soft_hyphen},
-		{"~",				rtf_cmd_nonbreaking_space},
 		{"ansi",			rtf_cmd_ansi},
 		{"ansicpg",			rtf_cmd_ansicpg},
 		{"b",				rtf_cmd_b},
-		{"bullet",			rtf_cmd_bullet},
 		{"bin", rtf_cmd_continue},
 		{"blipuid",			rtf_cmd_ignore},
+		{"bullet",			rtf_cmd_bullet},
 		{"caps",			rtf_cmd_caps},
 		{"cb",				rtf_cmd_cb},
 		{"cf",				rtf_cmd_cf},
 		{"colortbl",		rtf_cmd_colortbl},
 		{"deff",			rtf_cmd_deff},
 		{"dn",				rtf_cmd_dn},
-		{"emdash",			rtf_cmd_emdash},
-		{"endash",			rtf_cmd_endash},
 		{"embo",			rtf_cmd_emboss},
+		{"emdash",			rtf_cmd_emdash},
+		{"emfblip",			rtf_cmd_emfblip},
+		{"endash",			rtf_cmd_endash},
 		{"expand",			rtf_cmd_expand},
 		{"expnd",			rtf_cmd_expand},
-		{"emfblip",			rtf_cmd_emfblip},
 		{"f",				rtf_cmd_f},
 		{"fdecor",			rtf_cmd_fdecor}, 
+		{"field",			rtf_cmd_field},
 		{"fmodern",			rtf_cmd_fmodern},
 		{"fnil",			rtf_cmd_fnil},
 		{"fonttbl",			rtf_cmd_fonttbl},
+		{"footer",			rtf_cmd_ignore},
+		{"footerf",			rtf_cmd_ignore},
+		{"footerl",			rtf_cmd_ignore},
+		{"footerr",			rtf_cmd_ignore},
 		{"froman",			rtf_cmd_froman},
 		{"fromhtml", rtf_cmd_continue},
 		{"fs",				rtf_cmd_fs},
 		{"fscript",			rtf_cmd_fscript},
 		{"fswiss",			rtf_cmd_fswiss},
 		{"ftech",			rtf_cmd_ftech},
-		{"field",			rtf_cmd_field},
-		{"footer",			rtf_cmd_ignore},
-		{"footerf",			rtf_cmd_ignore},
-		{"footerl",			rtf_cmd_ignore},
-		{"footerr",			rtf_cmd_ignore},
-		{"highlight",		rtf_cmd_highlight},
 		{"header",			rtf_cmd_ignore},
 		{"headerf",			rtf_cmd_ignore},
 		{"headerl",			rtf_cmd_ignore},
 		{"headerr",			rtf_cmd_ignore},
+		{"highlight",		rtf_cmd_highlight},
 		{"hl",				rtf_cmd_ignore},
 		{"htmltag",			rtf_cmd_htmltag},
 		{"i",				rtf_cmd_i},
+		{"impr",			rtf_cmd_engrave},
 		{"info",			rtf_cmd_info},
 		{"intbl",			rtf_cmd_intbl},
-		{"impr",			rtf_cmd_engrave},
 		{"jpegblip",		rtf_cmd_jpegblip},
 		{"ldblquote",		rtf_cmd_ldblquote},
 		{"line",			rtf_cmd_line},
 		{"lquote",			rtf_cmd_lquote},
 		{"mac",				rtf_cmd_mac},
 		{"macpict",			rtf_cmd_macpict},
-		{"nosupersub",		rtf_cmd_nosupersub},
 		{"nonshppict",		rtf_cmd_ignore},
+		{"nosupersub",		rtf_cmd_nosupersub},
 		{"outl",			rtf_cmd_outl},
 		{"page",			rtf_cmd_page},
 		{"par",				rtf_cmd_par},
 		{"pc",				rtf_cmd_pc},
 		{"pca",				rtf_cmd_pca},
 		{"pich",			rtf_cmd_pich},
-		{"pict",			rtf_cmd_pict},
 		{"picprop",			rtf_cmd_ignore},
+		{"pict",			rtf_cmd_pict},
 		{"picw",			rtf_cmd_picw},
 		{"plain",			rtf_cmd_plain},
-		{"pngblip",			rtf_cmd_pngblip},
 		{"pmmetafile",		rtf_cmd_pmmetafile},
-		{"emfblip",			rtf_cmd_emfblip},
+		{"pngblip",			rtf_cmd_pngblip},
 		{"rdblquote",		rtf_cmd_rdblquote},
 		{"rquote",			rtf_cmd_rquote},
 		{"rtf", rtf_cmd_continue},
 		{"s", rtf_cmd_continue},
-		{"sect",			rtf_cmd_sect},
 		{"scaps",			rtf_cmd_scaps},
-		{"super",			rtf_cmd_super},
-		{"sub",				rtf_cmd_sub},
+		{"sect",			rtf_cmd_sect},
 		{"shad",			rtf_cmd_shad},
+		{"shp", rtf_cmd_continue},
+		{"shppict", rtf_cmd_continue},
 		{"strike",			rtf_cmd_strike},
 		{"striked",			rtf_cmd_striked},
 		{"strikedl",		rtf_cmd_strikedl},
 		{"stylesheet",		rtf_cmd_ignore},
-		{"shp", rtf_cmd_continue},
-		{"shppict", rtf_cmd_continue},
+		{"sub",				rtf_cmd_sub},
+		{"super",			rtf_cmd_super},
 		{"tab",				rtf_cmd_tab},
 		{"tc", rtf_cmd_continue},
 		{"tcn", rtf_cmd_ignore},
 		{"u",				rtf_cmd_u},
 		{"uc",				rtf_cmd_uc},
 		{"ul",				rtf_cmd_ul},
-		{"up",				rtf_cmd_up},
 		{"uld",				rtf_cmd_uld},
 		{"uldash",			rtf_cmd_uldash},
 		{"uldashd",			rtf_cmd_uldashd},
@@ -3100,19 +3090,25 @@ bool rtf_init_library()
 		{"ulthdash",		rtf_cmd_ulthdash},
 		{"ulw",				rtf_cmd_ulw},
 		{"ulwave",			rtf_cmd_ulwave},
+		{"up",				rtf_cmd_up},
 		{"wbmbitspixel",	rtf_cmd_wbmbitspixel},
 		{"wmetafile",		rtf_cmd_wmetafile},
-		{"xe", rtf_cmd_continue}
-	};
+		{"xe", rtf_cmd_continue},
+		{"~",				rtf_cmd_nonbreaking_space},
+};
 
+static CMD_PROC_FUNC rtf_find_cmd_function(const char *cmd)
+{
+	auto i = std::lower_bound(std::cbegin(g_cmd_map), std::cend(g_cmd_map), cmd,
+	         [&](const std::pair<const char *, CMD_PROC_FUNC> &p, const char *cmd) {
+	         	return strcasecmp(p.first, cmd) < 0;
+	         });
+	return i != std::cend(g_cmd_map) && strcasecmp(i->first, cmd) == 0 ?
+	       i->second : nullptr;
+}
+
+bool rtf_init_library()
+{
 	textmaps_init();
-	if (g_cmd_hash.size() > 0)
-		return true;
-	try {
-		g_cmd_hash.insert(cbegin(cmd_map), cend(cmd_map));
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-1543: ENOMEM");
-		return false;
-	}
 	return true;
 }
