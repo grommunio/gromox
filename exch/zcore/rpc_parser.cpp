@@ -139,7 +139,8 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, tv_msec) == 1)
-			write(clifd, &tmp_byte, 1);
+			if (write(clifd, &tmp_byte, 1) < 1)
+				/* ignore */;
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -169,7 +170,8 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, tv_msec) == 1)
-			write(clifd, &tmp_byte, 1);
+			if (write(clifd, &tmp_byte, 1) < 1)
+				/* ignore */;
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -183,7 +185,8 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, tv_msec) == 1)
-			write(clifd, &tmp_byte, 1);
+			if (write(clifd, &tmp_byte, 1) < 1)
+				/* ignore */;
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
@@ -197,14 +200,16 @@ static void *zcrp_thrwork(void *param)
 		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (poll(&fdpoll, 1, tv_msec) == 1)
-			write(clifd, &tmp_byte, 1);
+			if (write(clifd, &tmp_byte, 1) < 1)
+				/* ignore */;
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
 	common_util_free_environment();
 	fdpoll.events = POLLOUT|POLLWRBAND;
 	if (poll(&fdpoll, 1, tv_msec) == 1)
-		write(clifd, tmp_bin.pb, tmp_bin.cb);
+		if (write(clifd, tmp_bin.pb, tmp_bin.cb) < 0)
+			/* ignore */;
 	shutdown(clifd, SHUT_WR);
 	uint8_t tmp_byte;
 	if (read(clifd, &tmp_byte, 1))

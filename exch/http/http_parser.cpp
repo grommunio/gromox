@@ -787,14 +787,23 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 			return -1;
 		}
 		mlog(LV_DEBUG, "ntlm_auth is pid %d", pinfo.p_pid);
-		write(pinfo.p_stdin, "YR ", 3);
+		if (HXio_fullwrite(pinfo.p_stdin, "YR ", 3) < 0) {
+			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
+			return -1;
+		}
 		mlog(LV_DEBUG, "NTLM> YR %s", encinput);
 	} else {
-		write(pinfo.p_stdin, "KK ", 3);
+		if (HXio_fullwrite(pinfo.p_stdin, "KK ", 3) < 0) {
+			mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
+			return -1;
+		}
 		mlog(LV_DEBUG, "NTLM> KK %s", encinput);
 	}
-	write(pinfo.p_stdin, encinput, encsize);
-	write(pinfo.p_stdin, "\n", 1);
+	if (HXio_fullwrite(pinfo.p_stdin, encinput, encsize) < 0 ||
+	    HXio_fullwrite(pinfo.p_stdin, "\n", 1) < 0) {
+		mlog(LV_ERR, "write ntlm_auth: %s", strerror(errno));
+		return -1;
+	}
 
 	auto buffer = std::make_unique<char[]>(NTLMBUFFER);
 	struct pollfd pfd[] = {{pinfo.p_stdout, POLLIN}, {pinfo.p_stderr, POLLIN}};
@@ -822,7 +831,7 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		}
 	}
 
-	auto bytes = read(pinfo.p_stdout, buffer.get(), NTLMBUFFER - 1);
+	auto bytes = HXio_fullread(pinfo.p_stdout, buffer.get(), NTLMBUFFER - 1);
 	if (bytes < 0) {
 		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
 		return -1;

@@ -73,10 +73,9 @@ static int do_decompress(std::unique_ptr<char[], stdlib_delete> &&zdata, size_t 
 		return EXIT_FAILURE;
 	}
 	zdata.reset();
-	if (g_decompress == 1) {
-		write(STDOUT_FILENO, udata.data(), udata.size());
-		return EXIT_SUCCESS;
-	}
+	if (g_decompress == 1)
+		return write(STDOUT_FILENO, udata.data(), udata.size()) < 0 ?
+		       EXIT_FAILURE : EXIT_SUCCESS;
 	edb_pull ep;
 	ep.init(udata.data(), udata.size(), malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	edb_postproc proc;

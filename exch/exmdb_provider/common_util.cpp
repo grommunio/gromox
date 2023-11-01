@@ -4583,12 +4583,16 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			         exmdb_server::get_dir(), mid_string);
 			snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
 			         exmdb_server::get_dir(), mid_string1);
-			link(tmp_path1, tmp_path);
+			if (link(tmp_path1, tmp_path) < 0)
+				mlog(LV_ERR, "E-5310: link %s -> %s: %s",
+					tmp_path1, tmp_path, strerror(errno));
 			snprintf(tmp_path, std::size(tmp_path), "%s/ext/%s",
 			         exmdb_server::get_dir(), mid_string);
 			snprintf(tmp_path1, std::size(tmp_path1), "%s/ext/%s",
 			         exmdb_server::get_dir(), mid_string1);
-			link(tmp_path1, tmp_path);
+			if (link(tmp_path1, tmp_path) < 0)
+				mlog(LV_ERR, "E-5311: link %s -> %s: %s",
+					tmp_path1, tmp_path, strerror(errno));
 		}
 	}
 	if (pmessage_size != nullptr)

@@ -180,7 +180,8 @@ static void *p3ls_thrwork(void *arg)
 			host_ID = znul(g_config_file->get_value("host_id"));
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 				  pop3_reply_str2);
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				/* ignore */;
 			close(sockd2);
 			continue;        
 		}
@@ -194,7 +195,8 @@ static void *p3ls_thrwork(void *arg)
 			pop3_reply_str2 = resource_get_pop3_code(1712, 2, &string_length);
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
-			write(sockd2, buff, len);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				/* ignore */;
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);

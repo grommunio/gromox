@@ -56,14 +56,16 @@ int main(int argc, const char **argv)
 	if (g_tojson) {
 		try {
 			auto out = abkt_tojson(std::move(all), g_cpid);
-			puts(out.c_str());
+			if (puts(out.c_str()) == EOF)
+				return EXIT_FAILURE;
 		} catch (const std::runtime_error &e) {
 			printf("abkt_read: %s\n", e.what());
 		}
 	} else if (g_tobin) {
 		try {
 			auto out = abkt_tobinary(std::move(all), g_cpid, g_dogap);
-			write(STDOUT_FILENO, out.data(), out.size());
+			if (HXio_fullwrite(STDOUT_FILENO, out.data(), out.size()) < 0)
+				return EXIT_FAILURE;
 		} catch (const std::runtime_error &e) {
 			printf("abkt_write: %s\n", e.what());
 		}

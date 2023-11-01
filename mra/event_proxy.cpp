@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <libHX/io.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/socket.h>
@@ -124,7 +125,8 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 				pthread_join(g_scan_id, NULL);
 			}
 			for (auto &c : g_back_list) {
-				write(c.sockd, "QUIT\r\n", 6);
+				if (HXio_fullwrite(c.sockd, "QUIT\r\n", 6) < 0)
+					/* ignore */;
 				close(c.sockd);
 			}
 		}

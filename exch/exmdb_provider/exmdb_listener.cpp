@@ -78,14 +78,16 @@ static void *mdpls_thrwork(void *param)
 			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
 				mlog(LV_INFO, "I-1666: Rejecting %s: not allowed by exmdb_acl", client_hostip);
 			auto tmp_byte = exmdb_response::access_deny;
-			write(sockd, &tmp_byte, 1);
+			if (write(sockd, &tmp_byte, 1) < 1)
+				/* ignore */;
 			close(sockd);
 			continue;
 		}
 		auto pconnection = exmdb_parser_get_connection();
 		if (pconnection == nullptr) {
 			auto tmp_byte = exmdb_response::max_reached;
-			write(sockd, &tmp_byte, 1);
+			if (write(sockd, &tmp_byte, 1) < 1)
+				/* ignore */;
 			close(sockd);
 			continue;
 

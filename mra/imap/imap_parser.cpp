@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <sys/socket.h>
@@ -310,7 +311,9 @@ static tproc_status ps_stat_stls(imap_context *pcontext)
 			/* IMAP_CODE_2180014: BAD internal error: failed to init SSL object */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1814, 1, &string_length);
-			write(pcontext->connection.sockd, imap_reply_str, string_length);
+			if (HXio_fullwrite(pcontext->connection.sockd,
+			    imap_reply_str, string_length) < 0)
+				/* ignore */;
 			imap_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			imap_parser_context_clear(pcontext);
@@ -339,8 +342,9 @@ static tproc_status ps_stat_stls(imap_context *pcontext)
 		/* IMAP_CODE_2180011: BAD timeout */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
-		write(pcontext->connection.sockd, "* ", 2);
-		write(pcontext->connection.sockd, imap_reply_str, string_length);
+		if (HXio_fullwrite(pcontext->connection.sockd, "* ", 2) < 0 ||
+		    HXio_fullwrite(pcontext->connection.sockd, imap_reply_str, string_length) < 0)
+			/* ignore */;
 		imap_parser_log_info(pcontext, LV_DEBUG, "timeout");
 		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 	} else {

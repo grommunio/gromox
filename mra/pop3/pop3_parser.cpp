@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <gromox/cryptoutil.hpp>
@@ -211,7 +212,9 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
 				auto pop3_reply_str = resource_get_pop3_code(1723, 1, &string_length);
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
+				if (HXio_fullwrite(pcontext->connection.sockd,
+				    pop3_reply_str, string_length) < 0)
+					/* ignore */;
 				pop3_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
@@ -229,7 +232,9 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 				if (current_time - pcontext->connection.last_timestamp < g_timeout)
 					return tproc_status::polling_rdonly;
 				auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
-				write(pcontext->connection.sockd, pop3_reply_str, string_length);
+				if (HXio_fullwrite(pcontext->connection.sockd,
+				    pop3_reply_str, string_length) < 0)
+					/* ignore */;
 				pop3_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				SLEEP_BEFORE_CLOSE;
 			}

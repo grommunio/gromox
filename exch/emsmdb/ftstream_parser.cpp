@@ -11,6 +11,7 @@
 #include <utility>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <libHX/io.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
@@ -759,8 +760,10 @@ static BOOL ftstream_parser_truncate_fd(FTSTREAM_PARSER *pstream) try
 	if (pstream->offset == 0)
 		return TRUE;
 	if (pstream->st_size == pstream->offset) {
-		ftruncate(pstream->fd, 0);
-		lseek(pstream->fd, 0, SEEK_SET);
+		if (ftruncate(pstream->fd, 0) < 0)
+			mlog(LV_ERR, "E-5317: ftruncate: %s", strerror(errno));
+		if (lseek(pstream->fd, 0, SEEK_SET) < 0)
+			mlog(LV_ERR, "E-5316: lseek: %s", strerror(errno));
 		pstream->st_size = 0;
 		pstream->offset = 0;
 		return TRUE;
@@ -772,10 +775,14 @@ static BOOL ftstream_parser_truncate_fd(FTSTREAM_PARSER *pstream) try
 	auto len = read(pstream->fd, buff.get(), buff_size);
 	if (len <= 0)
 		return FALSE;
-	ftruncate(pstream->fd, 0);
-	lseek(pstream->fd, 0, SEEK_SET);
-	if (write(pstream->fd, buff.get(), len) != len)
+	if (ftruncate(pstream->fd, 0) < 0)
+		mlog(LV_ERR, "E-5315: ftruncate: %s", strerror(errno));
+	if (lseek(pstream->fd, 0, SEEK_SET) < 0)
+		mlog(LV_ERR, "E-5314: lseek: %s", strerror(errno));
+	if (HXio_fullwrite(pstream->fd, buff.get(), len) < 0) {
+		mlog(LV_ERR, "E-5313: write: %s", strerror(errno));
 		return FALSE;
+	}
 	pstream->st_size = len;
 	pstream->offset = 0;
 	return TRUE;

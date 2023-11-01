@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <gromox/config_file.hpp>
@@ -301,7 +302,8 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 			if (NULL == pcontext->connection.ssl) {
 				/* 452 Temporary internal failure - failed to initialize TLS */
 				auto smtp_reply_str = resource_get_smtp_code(418, 1, &string_length);
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
+				if (HXio_fullwrite(pcontext->connection.sockd, smtp_reply_str, string_length) < 0)
+					/* ignore */;
 				smtp_parser_log_info(pcontext, LV_ERR, "out of SSL object");
 				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		        smtp_parser_context_clear(pcontext);
@@ -320,7 +322,8 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 					return tproc_status::polling_rdonly;
 				/* 451 Timeout */
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
+				if (HXio_fullwrite(pcontext->connection.sockd, smtp_reply_str, string_length) < 0)
+					/* ignore */;
 				smtp_parser_log_info(pcontext, LV_DEBUG, "timeout");
 				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			} else {
@@ -641,7 +644,10 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	va_list ap;
 
 	va_start(ap, format);
-	vasprintf(&unique_tie(line_buf), format, ap);
+	if (vasprintf(&unique_tie(line_buf), format, ap) < 0) {
+		va_end(ap);
+		return; /* ENOMEM */
+	}
 	va_end(ap);
 	
 	std::string all_rcpts;

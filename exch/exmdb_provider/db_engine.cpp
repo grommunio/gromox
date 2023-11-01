@@ -613,7 +613,8 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb,
 
 static void *mdpeng_thrwork(void *param)
 {
-	nice(g_exmdb_search_nice);
+	if (nice(g_exmdb_search_nice) < 0)
+		/* ignore */;
 	
 	while (!g_notify_stop) {
 		std::unique_lock chold(g_cond_mutex);

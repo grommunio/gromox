@@ -208,7 +208,8 @@ static void *imls_thrwork(void *arg)
 			imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, client_hostip,
 				  imap_reply_str2);
-			write(sockd2, buff, len);
+			if (write(sockd2, buff, len) < 0)
+				/* ignore */;
 			mlog(LV_DEBUG, "Connection %s is denied by ipaddr filter: %s",
 				client_hostip, reason.c_str());
 			close(sockd2);

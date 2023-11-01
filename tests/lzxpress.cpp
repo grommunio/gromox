@@ -38,7 +38,11 @@ int main(int argc, char **argv)
 #if defined(__OpenBSD__)
 			arc4random_buf(b1, std::size(b1));
 #else
-			getrandom(b1, std::size(b1), 0);
+			auto ret = getrandom(b1, std::size(b1), 0);
+			if (ret < 0 || static_cast<size_t>(ret) != std::size(b1)) {
+				perror("getrandom short read");
+				return EXIT_FAILURE;
+			}
 #endif
 			auto complen = lzxpress_compress(b1, std::size(b1), b2);
 			auto ucomplen = lzxpress_decompress(b2, complen, outbuf, std::size(outbuf));

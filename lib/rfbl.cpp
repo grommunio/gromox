@@ -798,7 +798,8 @@ errno_t gx_reexec(const char *const *argv) try
 {
 	auto s = getenv("GX_REEXEC_DONE");
 	if (s != nullptr || argv == nullptr) {
-		chdir("/");
+		if (chdir("/") < 0)
+			mlog(LV_ERR, "E-5312: chdir /: %s", strerror(errno));
 		unsetenv("GX_REEXEC_DONE");
 		unsetenv("HX_LISTEN_TOP_FD");
 		unsetenv("LISTEN_FDS");
