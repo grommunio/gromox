@@ -242,7 +242,7 @@ static void exm_adjust_propids(MESSAGE_CONTENT &mc)
 static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 {
 	/*
-	 * exmdb_server_create_folder_by_properties only takes two types,
+	 * exmdb_server_create_folder only allows two types,
 	 * upgrade everything else for best import.
 	 */
 	auto ft = props.get<uint32_t>(PR_FOLDER_TYPE);

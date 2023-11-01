@@ -223,7 +223,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_get_folder_perm &d)
 	return x.p_str(d.username);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_create_folder_by_properties &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_create_folder &d)
 {
 	TRY(x.g_nlscp(&d.cpid));
 	d.pproperties = cu_alloc<TPROPVAL_ARRAY>();
@@ -232,7 +232,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_create_folder_by_properties &d)
 	return x.g_tpropval_a(d.pproperties);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_create_folder_by_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_create_folder &d)
 {
 	TRY(x.p_uint32(d.cpid));
 	return x.p_tpropval_a(*d.pproperties);
@@ -2257,7 +2257,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(check_folder_deleted) \
 	E(get_folder_by_name) \
 	E(get_folder_perm) \
-	E(create_folder_by_properties) \
+	E(create_folder_v1) \
+	E(create_folder) \
 	E(get_folder_all_proptags) \
 	E(get_folder_properties) \
 	E(set_folder_properties) \
@@ -2651,14 +2652,26 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_folder_perm &d)
 	return x.p_uint32(d.permission);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_create_folder_by_properties &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_create_folder_v1 &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_create_folder_by_properties &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_create_folder_v1 &d)
 {
 	return x.p_uint64(d.folder_id);
+}
+
+static pack_result exmdb_pull(EXT_PULL &x, exresp_create_folder &d)
+{
+	TRY(x.g_uint64(&d.folder_id));
+	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_create_folder &d)
+{
+	TRY(x.p_uint64(d.folder_id));
+	return x.p_uint32(d.e_result);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_folder_all_proptags &d)
@@ -3674,7 +3687,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(check_folder_deleted) \
 	E(get_folder_by_name) \
 	E(get_folder_perm) \
-	E(create_folder_by_properties) \
+	E(create_folder_v1) \
+	E(create_folder) \
 	E(get_folder_all_proptags) \
 	E(get_folder_properties) \
 	E(set_folder_properties) \

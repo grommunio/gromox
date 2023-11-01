@@ -2115,8 +2115,13 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 		propval_buff[8].pvalue = common_util_pcl_append(nullptr, static_cast<BINARY *>(propval_buff[7].pvalue));
 		if (propval_buff[8].pvalue == nullptr)
 			return ecError;
-		if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
-		    pinfo->cpid, &tmp_propvals, &folder_id) || folder_id == 0)
+		ec_error_t err = ecSuccess;
+		if (!exmdb_client::create_folder(pstore->get_dir(), pinfo->cpid,
+		    &tmp_propvals, &folder_id, &err))
+			return ecError;
+		if (err != ecSuccess)
+			return err;
+		if (folder_id == 0)
 			return ecError;
 		if (!pstore->owner_mode()) {
 			auto pentryid = common_util_username_to_addressbook_entryid(pinfo->get_username());
@@ -4552,8 +4557,13 @@ ec_error_t zs_importfolder(GUID hsession,
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
 			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;
 		}
-		if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
-		    pinfo->cpid, &tmp_propvals, &tmp_fid) || folder_id != tmp_fid)
+		ec_error_t err = ecSuccess;
+		if (!exmdb_client::create_folder(pstore->get_dir(), pinfo->cpid,
+		    &tmp_propvals, &tmp_fid, &err))
+			return ecError;
+		if (err != ecSuccess)
+			return err;
+		if (folder_id != tmp_fid)
 			return ecError;
 		pctx->pstate->pseen->append(change_num);
 		return ecSuccess;

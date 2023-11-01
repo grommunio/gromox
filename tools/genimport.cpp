@@ -360,12 +360,15 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	}
 	if (dn == nullptr)
 		dn = "";
-	if (!exmdb_client::create_folder_by_properties(g_storedir, CP_ACP,
-	    props, new_fld_id)) {
+	ec_error_t err = ecSuccess;
+	if (!exmdb_client::create_folder(g_storedir, CP_ACP, props, new_fld_id, &err)) {
 		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
-	}
-	if (*new_fld_id == 0) {
+	} else if (err != ecSuccess) {
+		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed: %s\n",
+			dn, mapi_strerror(err));
+		return -EIO;
+	} else if (*new_fld_id == 0) {
 		fprintf(stderr, "exm: Could not create folder \"%s\". "
 			"Either it already existed or some there was some other unspecified problem.\n", dn);
 		return -EEXIST;

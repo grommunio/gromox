@@ -220,9 +220,12 @@ ec_error_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		if (propval_buff[8].pvalue == nullptr)
 			return ecServerOOM;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
-		if (!exmdb_client::create_folder_by_properties(plogon->get_dir(),
-		    pinfo->cpid, &tmp_propvals, &folder_id))
+		ec_error_t err = ecSuccess;
+		if (!exmdb_client::create_folder(plogon->get_dir(), pinfo->cpid,
+		    &tmp_propvals, &folder_id, &err))
 			return ecError;
+		if (err != ecSuccess)
+			return err;
 		if (folder_id == 0)
 			return ecError;
 		if (username != STORE_OWNER_GRANTED) {

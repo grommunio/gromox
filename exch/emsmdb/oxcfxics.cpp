@@ -1177,8 +1177,13 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			tmp_propvals.emplace_back(PR_FOLDER_TYPE, &tmp_type);
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
-		if (!exmdb_client::create_folder_by_properties(dir,
-		    pinfo->cpid, &tmp_propvals, &tmp_fid) || folder_id != tmp_fid)
+		ec_error_t ret = ecSuccess;
+		if (!exmdb_client::create_folder(dir, pinfo->cpid,
+		    &tmp_propvals, &tmp_fid, &ret))
+			return ecError;
+		if (ret != ecSuccess)
+			return ret;
+		if (folder_id != tmp_fid)
 			return ecError;
 		pctx->pstate->pseen->append(change_num);
 		return ecSuccess;

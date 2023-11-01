@@ -232,8 +232,9 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	ppcl.clear();
 	propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[8].pvalue = pbin;
-	if (!exmdb_client::create_folder_by_properties(dir, CP_ACP,
-	    &tmp_propvals, pfolder_id)) {
+	ec_error_t err = ecSuccess;
+	if (!exmdb_client::create_folder(dir, CP_ACP, &tmp_propvals,
+	    pfolder_id, &err) || err != ecSuccess) {
 		rop_util_free_binary(pbin);
 		return FALSE;
 	}

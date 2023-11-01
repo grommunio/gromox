@@ -44,7 +44,7 @@ enum class exmdb_callid : uint8_t {
 	check_folder_deleted = 0x12,
 	get_folder_by_name = 0x13,
 	get_folder_perm = 0x14,
-	create_folder_by_properties = 0x15,
+	create_folder_v1 = 0x15,
 	get_folder_all_proptags = 0x16,
 	get_folder_properties = 0x17,
 	set_folder_properties = 0x18,
@@ -163,6 +163,7 @@ enum class exmdb_callid : uint8_t {
 	get_mapping_replid = 0x89,
 	recalc_store_size = 0x8a,
 	movecopy_folder = 0x8b,
+	create_folder = 0x8c,
 	/* update exch/exmdb_provider/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -244,7 +245,7 @@ struct exreq_get_folder_perm : public exreq {
 	char *username;
 };
 
-struct exreq_create_folder_by_properties : public exreq {
+struct exreq_create_folder : public exreq {
 	cpid_t cpid;
 	TPROPVAL_ARRAY *pproperties;
 };
@@ -933,8 +934,13 @@ struct exresp_get_folder_perm : public exresp {
 	uint32_t permission;
 };
 
-struct exresp_create_folder_by_properties : public exresp {
+struct exresp_create_folder_v1 : public exresp {
 	uint64_t folder_id;
+};
+
+struct exresp_create_folder : public exresp {
+	uint64_t folder_id;
+	ec_error_t e_result;
 };
 
 struct exresp_get_folder_all_proptags : public exresp {
@@ -1296,6 +1302,7 @@ using exreq_allocate_cn = exreq;
 using exreq_vacuum = exreq;
 using exreq_unload_store = exreq;
 using exreq_purge_datafiles = exreq;
+using exreq_create_folder_v1 = exreq_create_folder;
 using exresp_remove_folder_properties = exresp;
 using exresp_reload_content_table = exresp;
 using exresp_unload_table = exresp;

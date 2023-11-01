@@ -149,13 +149,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(GET_MAPPING_REPLID),
 	E(RECALC_STORE_SIZE),
 	E(MOVECOPY_FOLDER),
+	E(CREATE_FOLDER),
 };
 #undef E
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::movecopy_folder) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::create_folder) + 1);
 	auto s = j < std::size(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }

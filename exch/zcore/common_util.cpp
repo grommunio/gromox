@@ -1773,8 +1773,10 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 		return FALSE;
 	common_util_set_propvals(pproplist, &propval);
 	auto pinfo = zs_get_info();
-	if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
-	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
+	ec_error_t err = ecSuccess;
+	if (!exmdb_client::create_folder(pstore->get_dir(), pinfo->cpid,
+	    pproplist, pfolder_id, &err) || err != ecSuccess ||
+	    *pfolder_id == 0)
 		return FALSE;
 	if (pstore->owner_mode())
 		return TRUE;

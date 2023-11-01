@@ -234,8 +234,8 @@ BOOL exmdb_server::get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
-    TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id)
+BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
+    TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id, ec_error_t *errcode)
 {
 	BOOL b_result;
 	uint32_t type = 0, parent_type = 0;
@@ -243,6 +243,7 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 	char sql_string[128];
 	PROBLEM_ARRAY tmp_problems;
 
+	/* Validation of input params */
 	auto folder_id_p = pproperties->get<const eid_t>(PidTagFolderId);
 	if (folder_id_p == nullptr) {
 		tmp_fid = 0;
@@ -252,6 +253,7 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 	}
 	*pfolder_id = 0;
 	auto parent_fid_p = pproperties->get<const eid_t>(PidTagParentFolderId);
+	*errcode = ecInvalidParam;
 	if (parent_fid_p == nullptr || rop_util_get_replid(*parent_fid_p) != 1) {
 		mlog(LV_ERR, "E-1581: create_folder_b_p request with no parent or wrong EID");
 		return TRUE;
@@ -285,45 +287,69 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 		case FOLDER_SEARCH:
 			if (exmdb_server::is_private())
 				break;
-			mlog(LV_ERR, "E-1585: create_folder_b_p request without PCL");
+			mlog(LV_ERR, "E-1585: create_folder_b_p: search folders not allowed in public stores");
 			return TRUE;
 		default:
+			mlog(LV_ERR, "E-5322: create_folder_b_p: unknown folder type %u", type);
 			return TRUE;
 		}
 		common_util_remove_propvals(pproperties, PR_FOLDER_TYPE);
 	}
+
 	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
+	if (pdb == nullptr || pdb->psqlite == nullptr) {
+		*errcode = ecError;
 		return FALSE;
-	if (!common_util_get_folder_type(pdb->psqlite, parent_id, &parent_type))
+	}
+	if (!common_util_get_folder_type(pdb->psqlite, parent_id, &parent_type)) {
+		*errcode = ecNotFound;
 		return FALSE;
-	if (parent_type == FOLDER_SEARCH)
+	}
+	if (parent_type == FOLDER_SEARCH) {
+		/* Search folders should not have subordinates */
+		*errcode = ecAccessDenied;
 		return TRUE;
+	}
+
 	if (0 != tmp_fid) {
+		/* FID collision check */
 		auto tmp_val = rop_util_get_gc_value(tmp_fid);
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
 		          " folders WHERE folder_id=%llu", LLU{tmp_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt == nullptr)
+		if (pstmt == nullptr) {
+			*errcode = ecError;
 			return FALSE;
-		if (pstmt.step() == SQLITE_ROW)
+		}
+		if (pstmt.step() == SQLITE_ROW) {
+			*errcode = ecDuplicateName;
 			return TRUE;
-		if (!common_util_check_allocated_eid(pdb->psqlite, tmp_val, &b_result))
+		}
+		if (!common_util_check_allocated_eid(pdb->psqlite, tmp_val, &b_result)) {
+			*errcode = ecError;
 			return FALSE;
-		if (!b_result)
+		}
+		if (!b_result) {
+			*errcode = ecInvalidParam;
 			return TRUE;
+		}
 	}
+
+	/* Name collision check */
 	auto qstr = "SELECT 1 FROM folders AS f INNER JOIN folder_properties AS fp "
 	            "ON f.folder_id=fp.folder_id AND fp.proptag=? "
 	            "WHERE f.parent_id=? AND f.is_deleted=0 AND fp.propval=? COLLATE NOCASE";
 	auto pstmt = gx_sql_prep(pdb->psqlite, qstr);
+	*errcode = ecError;
 	if (pstmt == nullptr)
 		return FALSE;
 	pstmt.bind_int64(1, PR_DISPLAY_NAME);
 	pstmt.bind_int64(2, parent_id);
 	pstmt.bind_text(3, pname);
-	if (pstmt.step() == SQLITE_ROW)
+	if (pstmt.step() == SQLITE_ROW) {
+		*errcode = ecDuplicateName;
 		return TRUE;
+	}
 	pstmt.finalize();
 
 	uint64_t max_eid = 0;
@@ -423,7 +449,16 @@ BOOL exmdb_server::create_folder_by_properties(const char *dir, cpid_t cpid,
 		return false;
 	db_engine_notify_folder_creation(pdb, parent_id, folder_id);
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
+	*errcode = ecSuccess;
 	return TRUE;
+}
+
+BOOL exmdb_server::create_folder_v1(const char *dir, cpid_t cpid,
+    TPROPVAL_ARRAY *props, uint64_t *newfid)
+{
+	ec_error_t err = ecSuccess;
+	auto ret = create_folder(dir, cpid, props, newfid, &err);
+	return ret;
 }
 
 BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,

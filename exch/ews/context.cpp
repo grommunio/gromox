@@ -121,10 +121,16 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	sFolderSpec created = parent;
 	getNamedTags(dir, shape, true);
 	TPROPVAL_ARRAY props = shape.write();
-	if(!plugin.exmdb.create_folder_by_properties(dir.c_str(), CP_ACP, &props, &created.folderId))
+	ec_error_t err = ecSuccess;
+	if (!plugin.exmdb.create_folder(dir.c_str(), CP_ACP, &props,
+	    &created.folderId, &err))
 		throw EWSError::FolderSave(E3154);
-	if(!created.folderId)
+	if (err == ecDuplicateName)
 		throw EWSError::FolderExists(E3155);
+	if (err != ecSuccess)
+		throw EWSError::FolderSave(std::string(E3154) + ": " + mapi_strerror(err));
+	if (created.folderId == 0)
+		throw EWSError::FolderExists(E3155); // ??
 
 	sShape retshape = sShape(tFolderResponseShape());
 	return loadFolder(dir, created.folderId, retshape);

@@ -140,8 +140,9 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (!exmdb_client::create_folder_by_properties(dir,
-	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
+	ec_error_t err = ecSuccess;
+	if (!exmdb_client::create_folder(dir, pinfo->cpid, pproplist,
+	    pfolder_id, &err) || err != ecSuccess || *pfolder_id == 0)
 		return FALSE;
 	auto username = pctx->pstream->plogon->eff_user();
 	if (username == STORE_OWNER_GRANTED)
