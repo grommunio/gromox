@@ -135,7 +135,7 @@ ssize_t CONNECTION_NODE::sk_write(const char *s, size_t z)
 	if (z == static_cast<size_t>(-1))
 		z = strlen(s);
 	auto ret = HXio_fullwrite(sockd, s, z);
-	if (ret < 0 || static_cast<size_t>(ret) != z) {
+	if (ret < 0) {
 		close(sockd);
 		sockd = -1;
 	}
@@ -179,7 +179,7 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';
 			++temp_len;
-			if (HXio_fullwrite(temp_fd, temp_line, temp_len) != temp_len)
+			if (HXio_fullwrite(temp_fd, temp_line, temp_len) < 0)
 				fprintf(stderr, "write %s: %s\n", temp_path.c_str(), strerror(errno));
 		}
 		close(temp_fd);
@@ -415,7 +415,7 @@ static void *tmr_acceptwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) != 19)
+			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) < 0)
 				/* ignore */;
 			continue;
 		}
@@ -423,7 +423,7 @@ static void *tmr_acceptwork(void *param)
 		std::unique_lock co_hold(g_connection_lock);
 		if (g_connection_list.size() + 1 + g_connection_list1.size() >= g_threads_num) {
 			co_hold.unlock();
-			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) != 35)
+			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
 			continue;
 		}
@@ -433,12 +433,12 @@ static void *tmr_acceptwork(void *param)
 			g_connection_list1.push_back(std::move(conn));
 			cn = &g_connection_list1.back();
 		} catch (const std::bad_alloc &) {
-			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) != 25)
+			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
 			continue;
 		}
 		co_hold.unlock();
-		if (HXio_fullwrite(cn->sockd, "OK\r\n", 4) != 4) {
+		if (HXio_fullwrite(cn->sockd, "OK\r\n", 4) < 0) {
 			close(cn->sockd);
 			cn->sockd = -1;
 		}
@@ -476,7 +476,7 @@ static void execute_timer(TIMER *ptimer)
 	}
 
 	len = sprintf(temp_buff, "%d\t0\t%s\n", ptimer->t_id, result);
-	if (HXio_fullwrite(g_list_fd, temp_buff, len) != len)
+	if (HXio_fullwrite(g_list_fd, temp_buff, len) < 0)
 		fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 }
 
@@ -523,7 +523,7 @@ static void *tmr_thrwork(void *param)
 								ptimer->t_id);
 					g_exec_list.erase(pos);
 					removed_timer = true;
-					if (HXio_fullwrite(g_list_fd, temp_line, temp_len) != temp_len)
+					if (HXio_fullwrite(g_list_fd, temp_line, temp_len) < 0)
 						fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 					break;
 				}
@@ -562,7 +562,7 @@ static void *tmr_thrwork(void *param)
 			encode_line(ptimer->command.c_str(), temp_line + temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len++] = '\n';
-			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) != temp_len)
+			if (HXio_fullwrite(g_list_fd, temp_line, temp_len) < 0)
 				fprintf(stderr, "write to timerlist: %s\n", strerror(errno));
 			li_hold.unlock();
 			temp_len = sprintf(temp_line, "TRUE %d\r\n", ptimer->t_id);

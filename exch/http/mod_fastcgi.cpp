@@ -645,8 +645,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			sk_path, strerror(-cli_sockd));
 		return FALSE;
 	}
-	if (HXio_fullwrite(cli_sockd, tmp_buff, 16) != 16 ||
-	    HXio_fullwrite(cli_sockd, ndr_buff, ndr_length) != ndr_length) {
+	if (HXio_fullwrite(cli_sockd, tmp_buff, 16) < 0 ||
+	    HXio_fullwrite(cli_sockd, ndr_buff, ndr_length) < 0) {
 		auto se = errno;
 		close(cli_sockd);
 		phttp->log(LV_ERR, "Failed to write record to fastcgi back-end %s: %s",

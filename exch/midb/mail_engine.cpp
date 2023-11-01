@@ -252,8 +252,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (fd.get() >= 0) {
 			auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
-			if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
-			    fd.close_wr() != 0)
+			if (wr_ret < 0 || fd.close_wr() != 0)
 				mlog(LV_ERR, "E-2082: write %s: %s", temp_path, strerror(errno));
 		} else {
 			mlog(LV_ERR, "E-1137: open %s for write: %s", temp_path, strerror(errno));
@@ -1483,8 +1482,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		if (fd.get() < 0)
 			return;
 		auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
-		if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
-		    fd.close_wr() != 0) {
+		if (wr_ret < 0 || fd.close_wr() != 0) {
 			mlog(LV_ERR, "E-1134: write %s: %s", temp_path, strerror(errno));
 			return;
 		}
@@ -2418,8 +2416,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 		return MIDB_E_DISK_ERROR;
 	}
 	auto wr_ret = HXio_fullwrite(fd.get(), djson.data(), djson.size());
-	if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
-	    fd.close_wr() != 0)
+	if (wr_ret < 0 || fd.close_wr() != 0)
 		mlog(LV_ERR, "E-2085: write %s: %s", temp_path, strerror(errno));
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)

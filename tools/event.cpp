@@ -175,7 +175,7 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 ssize_t qsock::sk_write(const std::string_view &sv)
 {
 	auto ret = HXio_fullwrite(sockd, sv.data(), sv.size());
-	if (ret < 0 || static_cast<size_t>(ret) != sv.size()) {
+	if (ret < 0) {
 		close(sockd);
 		sockd = -1;
 	}
@@ -387,7 +387,7 @@ static void *ev_acceptwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) != 19)
+			if (HXio_fullwrite(sockd2, "FALSE Access Deny\r\n", 19) < 0)
 				/* ignore */;
 			close(sockd2);
 			continue;
@@ -396,7 +396,7 @@ static void *ev_acceptwork(void *param)
 		std::unique_lock eq_hold(g_enqueue_lock);
 		if (g_enqueue_list.size() + 1 + g_enqueue_list1.size() >= g_threads_num) {
 			eq_hold.unlock();
-			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) != 35)
+			if (HXio_fullwrite(sockd2, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
 			close(sockd2);
 			continue;
@@ -406,7 +406,7 @@ static void *ev_acceptwork(void *param)
 			penqueue = &g_enqueue_list1.back();
 		} catch (const std::bad_alloc &) {
 			eq_hold.unlock();
-			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) != 25)
+			if (HXio_fullwrite(sockd2, "FALSE Not enough memory\r\n", 25) < 0)
 				/* ignore */;
 			close(sockd2);
 			continue;
@@ -414,7 +414,7 @@ static void *ev_acceptwork(void *param)
 
 		penqueue->sockd = sockd2;
 		eq_hold.unlock();
-		if (HXio_fullwrite(sockd2, "OK\r\n", 4) != 4) {
+		if (HXio_fullwrite(sockd2, "OK\r\n", 4) < 0) {
 			close(penqueue->sockd);
 			penqueue->sockd = -1;
 		}

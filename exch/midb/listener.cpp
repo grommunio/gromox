@@ -122,7 +122,7 @@ static void *midls_thrwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			if (HXio_fullwrite(sockd, "FALSE Access Deny\r\n", 19) != 19)
+			if (HXio_fullwrite(sockd, "FALSE Access Deny\r\n", 19) < 0)
 				/* ignore */;
 			close(sockd);
 			continue;
@@ -130,7 +130,7 @@ static void *midls_thrwork(void *param)
 
 		auto holder = cmd_parser_get_connection();
 		if (holder.size() == 0) {
-			if (HXio_fullwrite(sockd, "FALSE Maximum Connection Reached!\r\n", 35) != 35)
+			if (HXio_fullwrite(sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
 				/* ignore */;
 			close(sockd);
 			continue;
@@ -139,7 +139,7 @@ static void *midls_thrwork(void *param)
 		auto pconnection = &holder.front();
 		pconnection->sockd = sockd;
 		pconnection->is_selecting = FALSE;
-		if (HXio_fullwrite(sockd, "OK\r\n", 4) != 4)
+		if (HXio_fullwrite(sockd, "OK\r\n", 4) < 0)
 			continue;
 		cmd_parser_put_connection(std::move(holder));
 	}

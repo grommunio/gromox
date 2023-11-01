@@ -1090,8 +1090,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		return;
 	}
 	auto wr_ret = HXio_fullwrite(fd.get(), djson.data(), djson.size());
-	if (wr_ret < 0 || static_cast<size_t>(wr_ret) != djson.size() ||
-	    fd.close_wr() != 0) {
+	if (wr_ret < 0 || fd.close_wr() != 0) {
 		mlog(LV_ERR, "E-1333: write %s: %s", dgt_path, strerror(errno));
 		fd.close_rd();
 		if (remove(dgt_path) < 0 && errno != ENOENT)

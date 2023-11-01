@@ -195,7 +195,7 @@ static void *smls_thrwork(void *arg)
 			host_ID = znul(g_config_file->get_value("host_id"));
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, host_ID,
 			      smtp_reply_str2);
-			if (HXio_fullwrite(sockd2, buff, len) != len)
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
 				/* ignore */;
 		}
 		/* construct the context object */

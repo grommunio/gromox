@@ -210,7 +210,7 @@ static void *p3ls_thrwork(void *arg)
 			host_ID = znul(g_config_file->get_value("host_id"));
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 			      pop3_reply_str2);
-			if (HXio_fullwrite(sockd2, buff, len) != len)
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
 				/* ignore */;
 		}
 		/* construct the context object */
