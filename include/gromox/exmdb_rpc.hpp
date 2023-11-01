@@ -861,6 +861,10 @@ struct exresp {
 	exmdb_callid call_id{};
 };
 
+struct exresp_error : public exresp {
+	ec_error_t e_result{};
+};
+
 struct exresp_get_all_named_propids : public exresp {
 	PROPID_ARRAY propids;
 };
@@ -1122,10 +1126,6 @@ struct exresp_write_attachment_instance : public exresp {
 	PROBLEM_ARRAY problems;
 };
 
-struct exresp_flush_instance : public exresp {
-	ec_error_t e_result;
-};
-
 struct exresp_get_instance_all_proptags : public exresp {
 	PROPTAG_ARRAY proptags;
 };
@@ -1240,10 +1240,6 @@ struct exresp_deliver_message : public exresp {
 	uint32_t result;
 };
 
-struct exresp_write_message : public exresp {
-	ec_error_t e_result;
-};
-
 struct exresp_read_message : public exresp {
 	MESSAGE_CONTENT *pmsgctnt;
 };
@@ -1336,6 +1332,8 @@ using exresp_purge_softdelete = exresp;
 using exresp_purge_datafiles = exresp;
 using exresp_autoreply_tsupdate = exresp;
 using exresp_recalc_store_size = exresp;
+using exresp_flush_instance = exresp_error;
+using exresp_write_message = exresp_error;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;

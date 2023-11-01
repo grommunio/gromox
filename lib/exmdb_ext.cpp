@@ -3183,12 +3183,12 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_attachment_instanc
 	return x.p_problem_a(d.problems);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_flush_instance &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_error &d)
 {
 	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_flush_instance &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_error &d)
 {
 	return x.p_uint32(d.e_result);
 }
@@ -3483,16 +3483,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_deliver_message &d)
 	TRY(x.p_uint64(d.folder_id));
 	TRY(x.p_uint64(d.message_id));
 	return x.p_uint32(d.result);
-}
-
-static pack_result exmdb_pull(EXT_PULL &x, exresp_write_message &d)
-{
-	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message &d)
-{
-	return x.p_uint32(d.e_result);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_read_message &d)
