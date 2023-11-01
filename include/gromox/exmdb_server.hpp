@@ -12,9 +12,6 @@ enum { /* exmdb_server_build_env flags */
 
 namespace exmdb_server {
 
-extern void (*event_proc)(const char *dir,
-	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
-
 extern int run();
 extern void build_env(unsigned int flags, const char *dir);
 extern void free_env();
@@ -28,7 +25,14 @@ extern const char *get_dir();
 extern void set_dir(const char *);
 extern int get_account_id();
 extern const GUID *get_handle();
+
+/*
+ * presently using void* to silence
+ *
+ * service: type mismatch on dlname "exmdb_client_register_proc" (FvPFvPKcljPK9DB_NOTIFYEE VS FvPvE)
+ */
 extern void register_proc(void *);
+extern void event_proc(const char *dir, BOOL is_table, uint32_t notify_id, const DB_NOTIFY *);
 
 #define IDLOUT
 #define EXMIDL(n, p) extern EXMIDL_RETTYPE n p;

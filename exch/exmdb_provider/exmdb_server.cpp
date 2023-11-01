@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <memory>
+#include <vector>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/svc_common.h>
@@ -28,10 +29,9 @@ struct envctx_delete {
 	void operator()(env_context *x) const { g_ctx_allocator->put(x); }
 };
 
+using evproc_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 static thread_local std::unique_ptr<env_context, envctx_delete> g_env_key;
-
-void (*event_proc)(const char *dir,
-	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
+static std::vector<evproc_t> event_proc_handlers;
 
 int run()
 {
@@ -128,9 +128,20 @@ const GUID *get_handle()
 	return common_util_get_handle();
 }
 
-void register_proc(void *pproc)
+void register_proc(void *f)
 {
-	exmdb_server::event_proc = reinterpret_cast<decltype(exmdb_server::event_proc)>(pproc);
+	event_proc_handlers.emplace_back(reinterpret_cast<evproc_t>(f));
+	/*
+	 * All modifications of event_proc_handlers happen during process startup,
+	 * so exmdb_server::event_proc can run lock-free.
+	 */
+}
+
+void event_proc(const char *dir, BOOL is_table,
+    uint32_t notify_id, const DB_NOTIFY *datagram)
+{
+	for (auto f : event_proc_handlers)
+		f(dir, is_table, notify_id, datagram);
 }
 
 }
