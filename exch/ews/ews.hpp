@@ -155,23 +155,28 @@ public:
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; /// Lifetime of attachment instances
 	std::chrono::milliseconds cache_message_instance_lifetime{30'000}; /// Lifetime of message instances
 
+	int retr(int);
+	void term(int);
+
 private:
 	using CacheKey = std::variant<detail::AttachmentInstanceKey, detail::MessageInstanceKey>;
 	using CacheObj = std::variant<std::shared_ptr<ExmdbInstance>>;
 	struct DebugCtx;
 	static const std::unordered_map<std::string, Handler> requestMap;
 
-	static void writeheader(int, int, size_t);
+	static void writecontent(int, const std::string_view&, bool, gx_loglevel);
+	static void writeheader(int, http_status, size_t);
+	static http_status fault(int, http_status, const std::string_view&);
 
 	mutable ObjectCache<CacheKey, CacheObj> cache;
+	std::vector<std::unique_ptr<EWSContext>> contexts;
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
 	bool invertFilter = true;
 
-	std::pair<std::string, int> dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t, bool&);
+	http_status dispatch(int, HTTP_AUTH_INFO&, const void*, uint64_t, bool&);
 	void loadConfig();
-
 };
 
 /**
@@ -180,6 +185,8 @@ private:
 class EWSContext
 {
 public:
+	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE};
+
 	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
 		m_ID(id), m_orig(*get_request(id)), m_auth_info(ai), m_request(data, length), m_plugin(p)
 	{}
@@ -223,12 +230,21 @@ public:
 	std::string username_to_essdn(const std::string&) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 
+	double age() const;
 	void experimental() const;
 
+	inline int ID() const {return m_ID;}
 	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
 	inline const EWSPlugin& plugin() const {return m_plugin;}
 	inline const SOAP::Envelope& request() const {return m_request;}
 	inline SOAP::Envelope& response() {return m_response;}
+
+	inline http_status code() const {return m_code;}
+	inline void code(http_status c) {m_code = c;}
+	inline bool log() const {return m_log;}
+	inline void log(bool l) {m_log = l;}
+	inline State state() const {return m_state;}
+	inline void state(State s) {m_state = s;}
 
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
@@ -256,6 +272,10 @@ private:
 	SOAP::Envelope m_request;
 	SOAP::Envelope m_response;
 	EWSPlugin& m_plugin;
+	std::chrono::high_resolution_clock::time_point m_created = std::chrono::high_resolution_clock::now();
+	http_status m_code = http_status::ok;
+	State m_state = S_DEFAULT;
+	bool m_log = false;
 };
 
 /**

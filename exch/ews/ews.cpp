@@ -190,7 +190,7 @@ BOOL EWSPlugin::preproc(int ctx_id)
  * @param      code            HTTP response code
  * @param      content_length  Length of the response body
  */
-void EWSPlugin::writeheader(int ctx_id, int code, size_t content_length)
+void EWSPlugin::writeheader(int ctx_id, http_status code, size_t content_length)
 {
 	static constexpr char templ[] =
 	        "HTTP/1.1 {} {}\r\n"
@@ -199,11 +199,20 @@ void EWSPlugin::writeheader(int ctx_id, int code, size_t content_length)
 	        "\r\n";
 	const char* status = "OK";
 	switch(code) {
-	case 400: status = "Bad Request"; break;
-	case 500: status = "Internal Server Error"; break;
+	case http_status::bad_request: status = "Bad Request"; break;
+	case http_status::server_error: status = "Internal Server Error"; break;
+	default: break;
 	}
-	auto rs = fmt::format(templ, code, status, content_length);
+	auto rs = fmt::format(templ, int(code), status, content_length);
 	write_response(ctx_id, rs.c_str(), rs.size());
+}
+
+http_status EWSPlugin::fault(int ctx_id, http_status code, const std::string_view& content)
+{
+	writeheader(ctx_id, code, content.length());
+	if(content.length())
+		write_response(ctx_id, content.data(), content.length());
+	return code;
 }
 
 /**
@@ -220,7 +229,6 @@ void EWSPlugin::writeheader(int ctx_id, int code, size_t content_length)
  */
 http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 {
-	auto start = std::chrono::high_resolution_clock::now();
 	auto req = get_request(ctx_id);
 	if (req->imethod != http_method::post)
 		return http_status::method_not_allowed;
@@ -228,23 +236,8 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
 	if (auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
 	bool enableLog = false;
-	auto[response, code] = dispatch(ctx_id, auth_info, content, len, enableLog);
-	auto logLevel = code == 200? LV_DEBUG : LV_ERR;
-	if(enableLog && response_logging >= 2)
-		mlog(logLevel, "[ews#%d] Response: %s", ctx_id, response.c_str());
-	if(enableLog && response_logging)
-	{
-		auto end = std::chrono::high_resolution_clock::now();
-		double duration = double(std::chrono::duration_cast<std::chrono::microseconds>(end-start).count()) / 1000.0;
-		mlog(logLevel, "[ews#%d] Done, code %d, %zu bytes, %.3fms", ctx_id, code, response.size(), duration);
-	}
-	if(response.length() > std::numeric_limits<int>::max())
-	{
-		response = SOAP::Envelope::fault("Server", "Response body to large");
-		code = 500;
-	}
-	writeheader(ctx_id, code, response.length());
-	return write_response(ctx_id, response.c_str(), int(response.length()));
+	dispatch(ctx_id, auth_info, content, len, enableLog);
+	return http_status::ok;
 }
 
 /**
@@ -257,9 +250,11 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  *
  * @return     Pair of response content and HTTP response code
  */
-std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len,
+http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len,
                                                 bool& enableLog) try
 {
+	if(ctx_id < 0 || size_t(ctx_id) >= contexts.size())
+		return fault(ctx_id, http_status::server_error, "Invalid context ID");
 	std::unique_ptr<std::lock_guard<std::mutex>> lockProxy;
 	if(debug)
 	{
@@ -274,7 +269,8 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 	}
 	enableLog = false;
 	using namespace std::string_literals;
-	EWSContext context(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
+	auto& pc = contexts[ctx_id] = std::make_unique<EWSContext>(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
+	EWSContext& context = *pc;
 	if(!rpc_new_stack())
 		mlog(LV_WARN, "[ews#%d]: Failed to allocate stack, exmdb might not work", ctx_id);
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
@@ -301,13 +297,12 @@ std::pair<std::string, int> EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth
 		else
 			handler->second(xml, responseContainer, context);
 	}
-	XMLPrinter printer(nullptr, !pretty_response);
-	context.response().doc.Print(&printer);
-	return {printer.CStr(), 200};
+	context.log(enableLog);
+	return http_status::ok;
 } catch (const Exceptions::InputError &err) {
-	return {SOAP::Envelope::fault("Client", err.what()), 200};
+	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault("Client", err.what()));
 } catch (const std::exception &err) {
-	return {SOAP::Envelope::fault("Server", err.what()), 500};
+	return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("Server", err.what()));
 }
 
 /**
@@ -324,6 +319,7 @@ EWSPlugin::EWSPlugin()
 {
 	loadConfig();
 	cache.run(cache_interval);
+	contexts.resize(get_context_num());
 }
 
 /**
@@ -443,8 +439,8 @@ static BOOL ews_init(void **apidata)
 	HPM_INTERFACE ifc{};
 	ifc.preproc = &EWSPlugin::preproc;
 	ifc.proc    = [](int ctx, const void *cont, uint64_t len) { return g_ews_plugin->proc(ctx, cont, len); };
-	ifc.retr    = [](int) {return HPM_RETRIEVE_DONE;};
-	ifc.term    = [](int) {};
+	ifc.retr    = [](int ctx) {return g_ews_plugin? g_ews_plugin->retr(ctx) : HPM_RETRIEVE_DONE;};
+	ifc.term    = [](int ctx) {g_ews_plugin? g_ews_plugin->term(ctx) : void(0);};
 	if (!register_interface(&ifc))
 		return false;
 	try {
@@ -477,9 +473,43 @@ static BOOL ews_main(int reason, void **data)
 
 HPM_ENTRY(ews_main);
 
+void EWSPlugin::writecontent(int ctx_id, const std::string_view& data, bool log, gx_loglevel loglevel)
+{
+	write_response(ctx_id, data.data(), int(data.size()));
+	if(log)
+		mlog(loglevel, "[ews#%d] Response: %s", ctx_id, data.data());
+}
+
+int EWSPlugin::retr(int ctx_id)
+{
+	if(ctx_id >= 0 && size_t(ctx_id) < contexts.size() && contexts[ctx_id]) {
+		EWSContext& context = *contexts[ctx_id];
+		switch(context.state()) {
+		case EWSContext::S_DEFAULT:
+		case EWSContext::S_WRITE: {
+			XMLPrinter printer(nullptr, !pretty_response);
+			context.response().doc.Print(&printer);
+			writeheader(ctx_id, context.code(), printer.CStrSize()-1);
+			bool logReponse = context.log() && response_logging >= 2;
+			auto loglevel = context.code() == http_status::ok? LV_DEBUG : LV_ERR;
+			writecontent(ctx_id, {printer.CStr(), static_cast<size_t>(printer.CStrSize()-1)}, logReponse, loglevel);
+			context.state(EWSContext::S_DONE);
+			if(context.log() && response_logging)
+				mlog(loglevel, "[ews#%d] Done, code %d, %d bytes, %.3fms", ctx_id, int(context.code()), printer.CStrSize()-1,
+				     context.age()*1000);
+			return HPM_RETRIEVE_WRITE;
+		}
+		case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;
+		}
+	}
+	return HPM_RETRIEVE_DONE;
+}
+
+void EWSPlugin::term(int ctx)
+{if(ctx >= 0 && size_t(ctx) < contexts.size()) contexts[ctx].reset();}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //Cache
-
 
 EWSPlugin::ExmdbInstance::ExmdbInstance(const EWSPlugin& p, const std::string& d, uint32_t i) :
 	plugin(p), dir(d), instanceId(i)

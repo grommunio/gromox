@@ -64,6 +64,9 @@ void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+double EWSContext::age() const
+{return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
+
 /**
  * @brief      Create new folder
  *
