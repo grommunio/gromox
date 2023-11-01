@@ -55,7 +55,6 @@ Makefile.in
 /imap
 /midb
 /pop3
-/rtf2html
 /timer
 /zcore
 

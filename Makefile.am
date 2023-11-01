@@ -9,7 +9,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -201,8 +201,6 @@ pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = tools/pam_gromox.cpp lib/svc_loader.cpp
 pam_gromox_la_LIBADD = -lpam ${dl_LIBS} ${HX_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
-rtf2html_SOURCES = tools/rtf2html.cpp
-rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 saphpdir = ${pkgdatadir}/sa
 dist_saphp_DATA = tools/php/submit.php
 event_SOURCES = tools/event.cpp
@@ -314,8 +312,7 @@ dist_man_MANS = \
 	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \
-	doc/pam_gromox.4gx doc/pop3.8gx doc/rtf2html.1gx \
-	doc/user_filter.4gx \
+	doc/pam_gromox.4gx doc/pop3.8gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_ESEDB
 dist_man_MANS += doc/gromox-edb2mt.8
