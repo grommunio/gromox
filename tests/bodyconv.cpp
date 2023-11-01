@@ -9,6 +9,7 @@
 #include <string_view>
 #include <unistd.h>
 #include <utility>
+#include <libHX/io.h>
 #include <gromox/defs.h>
 #include <gromox/html.hpp>
 #include <gromox/mail_func.hpp>
@@ -32,7 +33,7 @@ static int ts()
 
 static void help()
 {
-	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcptortf|rtftohtml|htmltotext}" << std::endl;
+	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcp|unrtfcp|rtftohtml|htmltotext}" << std::endl;
 	std::cout << "       Will read from stdin and output to stdout" << std::endl;
 }
 
@@ -70,7 +71,15 @@ int main(int argc, const char **argv)
 		std::string out;
 		if (rtf_to_html(all.c_str(), all.size(), "utf-8", out, at))
 			std::cout << out << std::endl;
-	} else if (strcmp(argv[1], "rtfcptortf") == 0) {
+	} else if (strcmp(argv[1], "rtfcp") == 0) {
+		auto rtf_comp = rtfcp_compress(all.c_str(), all.size());
+		if (rtf_comp != nullptr) {
+			auto wrret = HXio_fullwrite(STDOUT_FILENO, rtf_comp->pv, rtf_comp->cb);
+			free(rtf_comp);
+			if (wrret < 0)
+				return EXIT_FAILURE;
+		}
+	} else if (strcmp(argv[1], "unrtfcp") == 0) {
 		BINARY rtf_comp;
 		rtf_comp.cb = all.size();
 		rtf_comp.pv = deconst(all.c_str());
