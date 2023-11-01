@@ -22,25 +22,25 @@ static thread_local const char *g_id_key;
 static thread_local const char *g_public_username_key;
 static alloc_limiter<ENVIRONMENT_CONTEXT> g_ctx_allocator{"exmdb.ctx_allocator.d"};
 
-namespace {
+namespace exmdb_server {
+
 struct envctx_delete {
 	void operator()(env_context *x) const { g_ctx_allocator->put(x); }
 };
-}
 
 static thread_local std::unique_ptr<env_context, envctx_delete> g_env_key;
 
-void (*exmdb_server::event_proc)(const char *dir,
+void (*event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
-int exmdb_server::run()
+int run()
 {
 	g_ctx_allocator = alloc_limiter<ENVIRONMENT_CONTEXT>(2 * get_context_num(),
 	                  "exmdb_envctx_allocator", "http.cfg:context_num");
 	return 0;
 }
 
-void exmdb_server::build_env(unsigned int flags, const char *dir)
+void build_env(unsigned int flags, const char *dir)
 {
 	common_util_build_tls();
 	std::unique_ptr<env_context, envctx_delete> pctx(g_ctx_allocator.get());
@@ -51,17 +51,17 @@ void exmdb_server::build_env(unsigned int flags, const char *dir)
 	g_env_key = std::move(pctx);
 }
 
-void exmdb_server::free_env()
+void free_env()
 {
 	g_env_key.reset();
 }
 
-void exmdb_server::set_remote_id(const char *remote_id)
+void set_remote_id(const char *remote_id)
 {
 	g_id_key = remote_id;
 }
 
-ALLOC_CONTEXT *exmdb_server::get_alloc_context()
+ALLOC_CONTEXT *get_alloc_context()
 {
 	auto pctx = g_env_key.get();
 	if (pctx == nullptr || pctx->b_local)
@@ -69,17 +69,17 @@ ALLOC_CONTEXT *exmdb_server::get_alloc_context()
 	return &pctx->alloc_ctx;
 }
 
-const char *exmdb_server::get_remote_id()
+const char *get_remote_id()
 {
 	return g_id_key;
 }
 
-void exmdb_server::set_public_username(const char *username)
+void set_public_username(const char *username)
 {
 	g_public_username_key = username;
 }
 
-const char *exmdb_server::get_public_username()
+const char *get_public_username()
 {
 	/* Only ever used by readstate tracking */
 	return g_public_username_key;
@@ -87,24 +87,24 @@ const char *exmdb_server::get_public_username()
 
 /* can not be called in local rpc thread without
 	invoking exmdb_server::build_environment before! */
-bool exmdb_server::is_private()
+bool is_private()
 {
 	return g_env_key->b_private;
 }
 
 /* can not be called in local rpc thread without invoking exmdb_server::build_env before! */
-const char *exmdb_server::get_dir()
+const char *get_dir()
 {
 	return g_env_key->dir;
 }
 
 /* can not be called in local rpc thread without invoking exmdb_server::build_env before! */
-void exmdb_server::set_dir(const char *dir)
+void set_dir(const char *dir)
 {
 	g_env_key->dir = dir;
 }
 
-int exmdb_server::get_account_id()
+int get_account_id()
 {
 	unsigned int account_id = 0;
 	auto pctx = g_env_key.get();
@@ -120,7 +120,7 @@ int exmdb_server::get_account_id()
 	return pctx->account_id;
 }
 
-const GUID *exmdb_server::get_handle()
+const GUID *get_handle()
 {
 	auto pctx = g_env_key.get();
 	if (pctx == nullptr || !pctx->b_local)
@@ -128,7 +128,9 @@ const GUID *exmdb_server::get_handle()
 	return common_util_get_handle();
 }
 
-void exmdb_server::register_proc(void *pproc)
+void register_proc(void *pproc)
 {
 	exmdb_server::event_proc = reinterpret_cast<decltype(exmdb_server::event_proc)>(pproc);
+}
+
 }
