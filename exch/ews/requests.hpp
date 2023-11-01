@@ -21,11 +21,13 @@ EWSFUNC(mDeleteFolderRequest);
 EWSFUNC(mDeleteItemRequest);
 EWSFUNC(mEmptyFolderRequest);
 EWSFUNC(mGetAttachmentRequest);
+EWSFUNC(mGetEventsRequest);
 EWSFUNC(mGetFolderRequest);
 EWSFUNC(mGetItemRequest);
 EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
+void process(gromox::EWS::Structures::mGetStreamingEventsRequest&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
 void process(const Structures::mBaseMoveCopyFolder&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
@@ -33,8 +35,10 @@ void process(const Structures::mBaseMoveCopyItem&, tinyxml2::XMLElement*, const 
 EWSFUNC(mResolveNamesRequest);
 EWSFUNC(mSendItemRequest);
 EWSFUNC(mSetUserOofSettingsRequest);
+EWSFUNC(mSubscribeRequest);
 EWSFUNC(mSyncFolderHierarchyRequest);
 EWSFUNC(mSyncFolderItemsRequest);
+EWSFUNC(mUnsubscribeRequest);
 EWSFUNC(mUpdateFolderRequest);
 EWSFUNC(mUpdateItemRequest);
 

@@ -222,6 +222,14 @@ template<typename T> struct BaseType<std::optional<T>> {
 };
 
 /**
+ * @brief      Container information for std::list
+ */
+template<typename T> struct BaseType<std::list<T>> {
+	using type = T;
+	static constexpr Container container = LIST;
+};
+
+/**
  * @brief      Container information for std::vector
  */
 template<typename T> struct BaseType<std::vector<T>> {
@@ -230,11 +238,12 @@ template<typename T> struct BaseType<std::vector<T>> {
 };
 
 /**
- * @brief      Container information for std::vector
+ * @brief      Container information for std::variant
  */
 template<typename... Ts> struct BaseType<std::variant<Ts...>> {
 	static constexpr Container container = VARIANT;
 };
+
 
 template<typename T>
 using BaseType_t = typename BaseType<T>::type;

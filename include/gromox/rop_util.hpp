@@ -32,6 +32,7 @@ uint64_t rop_util_unix_to_nttime(time_t unix_time);
 uint64_t rop_util_unix_to_nttime(const gromox::time_point&);
 time_t rop_util_nttime_to_unix(uint64_t nt_time);
 gromox::time_point rop_util_nttime_to_unix2(uint64_t nt_time);
+gromox::time_point rop_util_rtime_to_unix2(uint32_t t);
 inline uint32_t rop_util_nttime_to_rtime(uint64_t t) { return t / RTIME_FACTOR; }
 inline uint64_t rop_util_rtime_to_nttime(uint32_t t) { return t * RTIME_FACTOR; }
 extern uint32_t rop_util_unix_to_rtime(time_t);

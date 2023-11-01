@@ -9,13 +9,15 @@
  */
 #include <algorithm>
 #include <iterator>
+#include <set>
 #include <utility>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
+#include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/ical.hpp>
+#include <gromox/textmaps.hpp>
 
 #include "ews.hpp"
 #include "structures.hpp"
@@ -245,8 +247,8 @@ constexpr size_t typeWidth(uint16_t type)
  */
 void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 {
-	for (uint8_t wd = 0; wd < 7; ++wd)
-		if (weekrecur & (1 << wd))
+	for(uint8_t wd = 0; wd < 7; ++wd)
+		if(weekrecur & (1 << wd))
 			daysofweek.append(Enum::DayOfWeekType::Choices[wd]).append(" ");
 	// remove trailing space
 	if(!daysofweek.empty() && std::isspace(daysofweek.back()))
@@ -254,73 +256,125 @@ void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 }
 
 /**
- * @brief Process recurrence data
- *
- * It loads the data into recurrence pattern and recurrence range structures.
+ * @brief Get the recurrence pattern structure
  *
  * @param recurData    Recurrence data
- * @param rp           Destination recurrence pattern
- * @param rr           Destination recurrence range
+ * @return APPOINTMENT_RECUR_PAT Appointment recurrence pattern
  */
-void process_recurrence(const BINARY* recurData,
-	tRecurrencePattern& rp, tRecurrenceRange& rr)
+APPOINTMENT_RECUR_PAT getAppointmentRecur(const BINARY* recurData)
 {
 	EXT_PULL ext_pull;
 	APPOINTMENT_RECUR_PAT apprecurr;
 	ext_pull.init(recurData->pb, recurData->cb, gromox::zalloc, EXT_FLAG_UTF16);
-	ICAL_TIME itime;
-	if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
+	if(ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 		throw InputError(E3109);
+	return apprecurr;
+}
 
-	auto startdate = rop_util_nttime_to_unix2(rop_util_rtime_to_nttime(apprecurr.recur_pat.startdate));
+/**
+ * @brief Get the Recurrence Pattern object
+ *
+ * @param apprecurr    Appointment recurrence pattern
+ * @return tRecurrencePattern
+ */
+tRecurrencePattern get_recurrence_pattern(const APPOINTMENT_RECUR_PAT& apprecurr)
+{
+	ICAL_TIME itime;
 	std::string daysofweek("");
 	switch (apprecurr.recur_pat.patterntype)
 	{
 	case PATTERNTYPE_DAY:
-		rp = tDailyRecurrencePattern(apprecurr.recur_pat.period / 1440);
-		break;
+		return tDailyRecurrencePattern(apprecurr.recur_pat.period / 1440);
 	case PATTERNTYPE_WEEK:
 	{
 		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		rp = tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, Enum::DayOfWeekType(uint8_t(apprecurr.recur_pat.firstdow)));
-		break;
+		return tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek,
+			Enum::DayOfWeekType(uint8_t(apprecurr.recur_pat.firstdow)));
 	}
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_MONTHEND:
 	case PATTERNTYPE_HJMONTH:
 	case PATTERNTYPE_HJMONTHEND:
 	{
-		auto monthly = apprecurr.recur_pat.period % 12 != 0;
-		ical_get_itime_from_yearday(1601, apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
-		if (monthly)
-			rp = tAbsoluteMonthlyRecurrencePattern(apprecurr.recur_pat.period, apprecurr.recur_pat.pts.dayofmonth);
-		else
-			rp = tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth, Enum::MonthNamesType(uint8_t(itime.month - 1)));
-		break;
+		ical_get_itime_from_yearday(1601,
+			apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
+		if(apprecurr.recur_pat.period % 12 != 0)
+			return tAbsoluteMonthlyRecurrencePattern(apprecurr.recur_pat.period,
+				apprecurr.recur_pat.pts.dayofmonth);
+		return tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth,
+			Enum::MonthNamesType(uint8_t(itime.month - 1)));
 	}
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
 	{
-		auto monthly = apprecurr.recur_pat.period % 12 != 0;
-		ical_get_itime_from_yearday(1601, apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
+		ical_get_itime_from_yearday(1601,
+			apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
 		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		Enum::DayOfWeekIndexType dayofweekindex(uint8_t(apprecurr.recur_pat.pts.monthnth.recurnum - 1));
-		if (monthly)
-			rp = tRelativeMonthlyRecurrencePattern(apprecurr.recur_pat.period, daysofweek, dayofweekindex);
-		else
-			rp = tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex, Enum::MonthNamesType(uint8_t(itime.month - 1)));
-		break;
+		Enum::DayOfWeekIndexType dayofweekindex(uint8_t(
+			apprecurr.recur_pat.pts.monthnth.recurnum - 1));
+		if(apprecurr.recur_pat.period % 12 != 0)
+			return tRelativeMonthlyRecurrencePattern(apprecurr.recur_pat.period,
+				daysofweek, dayofweekindex);
+		return tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex,
+			Enum::MonthNamesType(uint8_t(itime.month - 1)));
 	}
 	default:
 		throw InputError(E3110);
 	}
+}
 
-	if (apprecurr.recur_pat.endtype == ENDTYPE_AFTER_N_OCCURRENCES)
-		rr = tNumberedRecurrenceRange(startdate, apprecurr.recur_pat.occurrencecount);
-	else if (apprecurr.recur_pat.endtype == ENDTYPE_AFTER_DATE)
-		rr = tEndDateRecurrenceRange(startdate, rop_util_nttime_to_unix2(rop_util_rtime_to_nttime(apprecurr.recur_pat.enddate)));
-	else
-		rr = tNoEndRecurrenceRange(startdate);
+/**
+ * @brief Get the Recurrence Range object
+ *
+ * @param apprecurr    Appointment recurrence pattern
+ * @return tRecurrenceRange
+ */
+tRecurrenceRange get_recurrence_range(const APPOINTMENT_RECUR_PAT& apprecurr)
+{
+	auto startdate = rop_util_rtime_to_unix2(apprecurr.recur_pat.startdate);
+	switch (apprecurr.recur_pat.endtype)
+	{
+	case ENDTYPE_AFTER_N_OCCURRENCES:
+		return tNumberedRecurrenceRange(startdate, apprecurr.recur_pat.occurrencecount);
+	case ENDTYPE_AFTER_DATE:
+		return tEndDateRecurrenceRange(startdate,
+			rop_util_rtime_to_unix2(apprecurr.recur_pat.enddate));
+	default:
+		return tNoEndRecurrenceRange(startdate);
+	}
+}
+
+/**
+ * @brief process deleted and modified occurrences
+ *
+ * @param entryid      Entryid of the master appointment
+ * @param apprecurr    Appointment recurrence pattern
+ * @param modOccs      Vector containing modified occurrences
+ * @param delOccs      Vector containing deleted occurrences
+ */
+void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_PAT& apprecurr,
+	std::vector<tOccurrenceInfoType>& modOccs,
+	std::vector<tDeletedOccurrenceInfoType>& delOccs)
+{
+	std::set<uint32_t> mod_insts(apprecurr.recur_pat.pmodifiedinstancedates,
+		apprecurr.recur_pat.pmodifiedinstancedates + apprecurr.recur_pat.modifiedinstancecount);
+
+	size_t del_count = 0; // counter for deleted occurrences
+	for(size_t i = 0; i < apprecurr.recur_pat.deletedinstancecount; ++i)
+	{
+		if(mod_insts.find(apprecurr.recur_pat.pdeletedinstancedates[i]) != mod_insts.end())
+			modOccs.emplace_back(tOccurrenceInfoType({
+				sOccurrenceId(*entryid, apprecurr.pexceptioninfo[i-del_count].originalstartdate),
+				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].startdatetime),
+				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].enddatetime),
+				rop_util_rtime_to_unix2(apprecurr.pexceptioninfo[i-del_count].originalstartdate)}));
+		else
+		{
+			del_count++;
+			delOccs.emplace_back(tDeletedOccurrenceInfoType{rop_util_rtime_to_unix2(
+				apprecurr.recur_pat.pdeletedinstancedates[i])});
+		}
+	}
 }
 
 }
@@ -332,8 +386,8 @@ void process_recurrence(const BINARY* recurData,
  *
  * @param      bin   Binary data. Must not be nullptr.
  */
-sBase64Binary::sBase64Binary(const BINARY* bin)
-{assign(bin->pb, bin->pb+bin->cb);}
+sBase64Binary::sBase64Binary(const BINARY *bin) : std::string(*bin)
+{}
 
 /**
  * @brief     Initilize binary data from tagged propval
@@ -344,8 +398,7 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 {
 	if(PROP_TYPE(tp.proptag) != PT_BINARY)
 		throw DispatchError(E3049);
-	const BINARY* bin = static_cast<const BINARY*>(tp.pvalue);
-	assign(bin->pb, bin->pb+bin->cb);
+	assign(*static_cast<const BINARY *>(tp.pvalue));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -375,6 +428,25 @@ sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3146, "ErrorInvalidAttachmentId");
 	TRY(ext_pull.g_uint32(&attachment_num), E3147,"ErrorInvalidAttachmentId");
+}
+
+/**
+ * @brief      Create occurrence ID from message entry ID property and basedate
+ */
+sOccurrenceId::sOccurrenceId(const TAGGED_PROPVAL& tp, uint32_t bd) : sMessageEntryId(tp), basedate(bd)
+{}
+
+/**
+ * @brief      Load occurrence id from binary data
+ */
+sOccurrenceId::sOccurrenceId(const void* data, uint64_t size)
+{
+	EXT_PULL ext_pull;
+	if(size > std::numeric_limits<uint32_t>::max())
+		throw EWSError::InvalidOccurrenceId(E3205);
+	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	TRY(ext_pull.g_msg_eid(this), E3206, "ErrorInvalidOccurrenceId");
+	TRY(ext_pull.g_uint32(&basedate), E3207, "ErrorInvalidOccurrenceId");
 }
 
 /**
@@ -687,6 +759,20 @@ sShape& sShape::add(const PROPERTY_NAME& name, uint16_t type, uint8_t flags)
  */
 PROPTAG_ARRAY sShape::remove() const
 {return mkArray<PROPTAG_ARRAY>(dTags);}
+
+/**
+ * @brief      Whether the tag was originally requested
+ *
+ * @param      tag    Tag to check
+ * @param      mask   Flag mask
+ *
+ * @return     True if the property was requested, false otherwise
+ */
+bool sShape::requested(uint32_t tag, uint8_t mask) const
+{
+	auto it = props.find(tag);
+	return it != props.end() && (mask == FL_ANY || it->second.flags & mask);
+}
 
 /**
  * @brief      Add property for writing
@@ -1114,10 +1200,47 @@ tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBas
     Id(fEntryID), ChangeKey(chKey)
 {}
 
+tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::variant<tFolderId, tItemId>&& oid, tFolderId&& fid) :
+    TimeStamp(ts), objectId(std::move(oid)), ParentFolderId(std::move(fid))
+{}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
+/**
+ * @brief      Create gromox event mask from event list
+ *
+ * @return gromox event mask
+ *
+ * @todo actual implementation...
+ */
+uint16_t tBaseSubscriptionRequest::eventMask() const
 {
+	uint16_t res = 0;
+	for(auto event : EventTypes)
+		switch(event.index()) {
+		case 0: // CopiedEvent
+			res |= NF_OBJECT_COPIED; break;
+		case 1: // CreatedEvent
+			res |= NF_OBJECT_CREATED; break;
+		case 2: // DeletedEvent
+			res |= NF_OBJECT_DELETED; break;
+		case 3: // ModifiedEvent
+			res |= NF_OBJECT_MODIFIED; break;
+		case 4: // MovedEvent
+			res |= NF_OBJECT_MOVED; break;
+		case 5: // NewMailEvent
+			res |= NF_NEW_MAIL; break;
+		}
+	return res;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
+{tCalendarItem::update(shape);}
+
+void tCalendarItem::update(const sShape& shape)
+{
+	tItem::update(shape);
 	fromProp(shape.get(PR_RESPONSE_REQUESTED), IsResponseRequested);
 	const TAGGED_PROPVAL* prop;
 	if((prop = shape.get(PR_SENDER_ADDRTYPE)))
@@ -1130,18 +1253,29 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 	if ((prop = shape.get(NtAppointmentNotAllowPropose)))
 		AllowNewTimeProposal.emplace(!*static_cast<const uint8_t*>(prop->pvalue));
 
-	if ((prop = shape.get(NtAppointmentRecur)))
+	if((prop = shape.get(NtAppointmentRecur)))
 	{
 		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
 		if(recurData->cb > 0) {
-			tRecurrencePattern rp{};
-			tRecurrenceRange rr{};
-
-			process_recurrence(recurData, rp, rr);
+			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecur(recurData);
 
 			auto& rec = Recurrence.emplace();
-			rec.RecurrencePattern = rp;
-			rec.RecurrenceRange = rr;
+			rec.RecurrencePattern = get_recurrence_pattern(apprecurr);
+			rec.RecurrenceRange = get_recurrence_range(apprecurr);
+
+			// The count of the exceptions (modified and deleted occurrences)
+			// is summed in deletedinstancecount
+			if(apprecurr.recur_pat.deletedinstancecount > 0)
+			{
+				std::vector<tOccurrenceInfoType> modOccs;
+				std::vector<tDeletedOccurrenceInfoType> delOccs;
+				auto entryid_propval = shape.get(PR_ENTRYID);
+				process_occurrences(entryid_propval, apprecurr, modOccs, delOccs);
+				if(modOccs.size() > 0)
+					ModifiedOccurrences.emplace(modOccs);
+				if(delOccs.size() > 0)
+					DeletedOccurrences.emplace(delOccs);
+			}
 		}
 	}
 
@@ -1197,7 +1331,6 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 			case olResponseNotResponded: responseType = Enum::NoResponseReceived; break;
 		}
 		MyResponseType.emplace(responseType);
-
 	}
 
 	if ((prop = shape.get(NtGlobalObjectId)))
@@ -1209,6 +1342,10 @@ tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 			UID.emplace(std::move(uid));
 		}
 	}
+
+	// TODO: check if we should use some other property for RecurrenceId
+	if((prop = shape.get(NtExceptionReplaceTime)))
+		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1432,6 +1569,9 @@ void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
 ///////////////////////////////////////////////////////////////////////////////
 
 tContact::tContact(const sShape& shape) : tItem(shape)
+{tContact::update(shape);}
+
+void tContact::update(const sShape& shape)
 {
 	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
 	fromProp(shape.get(PR_GIVEN_NAME), GivenName);
@@ -1464,7 +1604,6 @@ tContact::tContact(const sShape& shape) : tItem(shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::AssistantPhone));
 	if((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone2));
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1917,10 +2056,8 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
-	// {"calendar:DeletedOccurrences", },
 	// {"calendar:EndTimeZone", },
 	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
-	// {"calendar:ModifiedOccurrences", },
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
@@ -1943,8 +2080,10 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:MeetingRequestWasSent", {{MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, const_cast<char*>("FInvited")}, PT_BOOLEAN}},
 	{"calendar:MyResponseType", {{MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus, const_cast<char*>("ResponseStatus")}, PT_LONG}},
 	{"calendar:Recurrence", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
+	{"calendar:DeletedOccurrences", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
 	{"calendar:Start", {{MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")}, PT_SYSTIME}},
 	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
+	{"calendar:RecurrenceId", {{MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, const_cast<char*>("ExceptionReplaceTime")}, PT_SYSTIME}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 };
 
@@ -2077,6 +2216,9 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_vi
 ///////////////////////////////////////////////////////////////////////////////
 
 tItem::tItem(const sShape& shape)
+{tItem::update(shape);};
+
+void tItem::update(const sShape& shape)
 {
 	const uint32_t* v32;
 	const TAGGED_PROPVAL* prop;
@@ -2084,10 +2226,17 @@ tItem::tItem(const sShape& shape)
 	const TAGGED_PROPVAL *bodyText = shape.get(PR_BODY), *bodyHtml = shape.get(PR_HTML);
 	if(bodyHtml) {
 		const BINARY* content = reinterpret_cast<const BINARY*>(bodyHtml->pvalue);
-		Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML);
+		const cpid_t* cpid = shape.get<cpid_t>(PR_INTERNET_CPID, sShape::FL_ANY);
+		const char* cset;
+		if(cpid && *cpid != CP_UTF8 && (cset = cpid_to_cset(*cpid)))
+			Body.emplace(iconvtext(content->pc, content->cb, cset, "UTF-8"), Enum::HTML);
+		else
+			Body.emplace(std::string_view(content->pc, content->cb), Enum::HTML);
 	}
 	else if(bodyText)
 		Body.emplace(reinterpret_cast<const char*>(bodyText->pvalue), Enum::Text);
+	else if(shape.requested(PR_BODY) || shape.requested(PR_HTML))
+		Body.emplace("", Enum::Text);
 
 	if((prop = shape.get(PR_CHANGE_KEY)))
 		fromProp(prop, defaulted(ItemId).ChangeKey);
@@ -2174,7 +2323,7 @@ void tItemResponseShape::tags(sShape& shape) const
 		if(type == Enum::Best || type == Enum::Text)
 			shape.add(PR_BODY, sShape::FL_FIELD);
 		if(type == Enum::Best || type == Enum::HTML)
-			shape.add(PR_HTML, sShape::FL_FIELD);
+			shape.add(PR_HTML, sShape::FL_FIELD).add(PR_INTERNET_CPID);
 		shape.special &= ~sShape::Body;
 	}
 	if(shape.special & sShape::MessageFlags)
@@ -2187,6 +2336,9 @@ void tItemResponseShape::tags(sShape& shape) const
 ///////////////////////////////////////////////////////////////////////////////
 
 tMessage::tMessage(const sShape& shape) : tItem(shape)
+{tMessage::update(shape);}
+
+void tMessage::update(const sShape& shape)
 {
 	const TAGGED_PROPVAL* prop;
 	fromProp(shape.get(PR_CONVERSATION_INDEX), ConversationIndex);
@@ -2221,6 +2373,15 @@ tMessage::tMessage(const sShape& shape) : tItem(shape)
 	if((prop = shape.get(PR_SENT_REPRESENTING_NAME)))
 		fromProp(prop, defaulted(From).Mailbox.Name);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+tMovedCopiedEvent::tMovedCopiedEvent(const sTimePoint& ts, std::variant<tFolderId, tItemId>&& oid, tFolderId&& fid,
+                                     std::variant<aOldFolderId, aOldItemId>&& ooid, tFolderId&& ofid) :
+    tBaseObjectChangedEvent(ts, std::move(oid), std::move(fid)),
+    oldObjectId(std::move(ooid)),
+    OldParentFolderId(std::move(ofid))
+{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -2340,6 +2501,28 @@ void tSetItemField::put(sShape& shape) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::atomic<uint32_t> tSubscriptionId::globcnt = 0;
+
+/**
+ * @brief      Constructor for single subscription ID
+ *
+ * @param      t   Subscription timeout (minutes)
+ */
+tSubscriptionId::tSubscriptionId(uint32_t t) : ID(++globcnt), timeout(t)
+{}
+
+/**
+ * @brief      Constructor for single subscription ID
+ *
+ * @param      ID  Subscription key
+ * @param      t   Subscription timeout (minutes)
+ */
+tSubscriptionId::tSubscriptionId(uint32_t id, uint32_t t) : ID(++globcnt), timeout(t)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
+
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
 {}
 
@@ -2388,5 +2571,21 @@ mResponseMessageType& mResponseMessageType::success()
 {
 	ResponseClass = "Success";
 	ResponseCode = "NoError";
+	return *this;
+}
+
+/**
+ * @brief      Set response message to error state
+ *
+ * @param      rcode   EWS Error code
+ * @param      mt      Error message text
+ *
+ * @return     *this
+ */
+mResponseMessageType& mResponseMessageType::error(const std::string& rcode, const std::string& mt)
+{
+	ResponseClass = "Error";
+	MessageText = mt;
+	ResponseCode = rcode;
 	return *this;
 }

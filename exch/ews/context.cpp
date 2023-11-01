@@ -41,6 +41,17 @@ inline std::string &tolower(std::string &str)
 }
 
 /**
+ * @brief      Checks if two dates are on the same day
+ *
+ * @param      tm    First time point
+ * @param      tm    Second time point
+ *
+ * @return     true if both time points are on the same day, false otherwise
+ */
+inline bool is_same_day(const tm& date1, const tm& date2)
+{return date1.tm_year == date2.tm_year && date1.tm_yday == date2.tm_yday;}
+
+/**
  * @brief     Access contained value, create if empty
  *
  * @param     container   (Possibly empty) container
@@ -64,6 +75,9 @@ void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+double EWSContext::age() const
+{return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
+
 /**
  * @brief      Create new folder
  *
@@ -77,7 +91,7 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 {
 	sShape shape;
 	uint64_t changeNumber;
-	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
+	if(!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNumber))
 		throw DispatchError(E3153);
 	const tBaseFolderType& baseFolder = std::visit([](const auto& f) -> const tBaseFolderType&
 	                                                 {return static_cast<const tBaseFolderType&>(f);}, folder);
@@ -122,7 +136,7 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	getNamedTags(dir, shape, true);
 	TPROPVAL_ARRAY props = shape.write();
 	ec_error_t err = ecSuccess;
-	if (!plugin.exmdb.create_folder(dir.c_str(), CP_ACP, &props,
+	if (!m_plugin.exmdb.create_folder(dir.c_str(), CP_ACP, &props,
 	    &created.folderId, &err))
 		throw EWSError::FolderSave(E3154);
 	if (err == ecDuplicateName)
@@ -151,10 +165,31 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	uint64_t* messageId = content.proplist.get<uint64_t>(PidTagMid);
 	if(!messageId)
 		throw DispatchError(E3112);
-	plugin.exmdb.write_message(dir.c_str(), auth_info.username, CP_ACP, parent.folderId, &content, &error);
+	m_plugin.exmdb.write_message(dir.c_str(), m_auth_info.username, CP_ACP, parent.folderId, &content, &error);
 
 	sShape retshape = sShape(tItemResponseShape());
 	return loadItem(dir, parent.folderId, *messageId, retshape);
+}
+
+/**
+ * @brief      Schedule notification stream for closing
+ */
+void EWSContext::disableEventStream()
+{
+	if(m_notify)
+		m_notify->state = NotificationContext::S_CLOSING;
+}
+
+/**
+ * @brief      Initialize notification context
+ *
+ * @param      timeout   Stream timeout (minutes)
+ */
+void EWSContext::enableEventStream(int timeout)
+{
+	m_state = S_STREAM_NOTIFY;
+	gromox::time_point expire = tp_now()+std::chrono::minutes(timeout);
+	m_notify = std::make_unique<NotificationContext>(expire);
 }
 
 /**
@@ -171,9 +206,9 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
 	display_type unused2;
 	BOOL res;
 	if(isDomain)
-		res = plugin.mysql.get_domain_ids(name.c_str(), &accountId, &unused1);
+		res = m_plugin.mysql.get_domain_ids(name.c_str(), &accountId, &unused1);
 	else
-		res = plugin.mysql.get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
+		res = m_plugin.mysql.get_user_ids(name.c_str(), &accountId, &unused1, &unused2);
 	if(!res)
 		throw EWSError::CannotFindUser(E3113(isDomain? "domain" : "user", name));
 	return accountId;
@@ -191,7 +226,7 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
 PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames, bool create) const
 {
 	PROPID_ARRAY namedIds{};
-	if(!plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds))
+	if(!m_plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds))
 		throw DispatchError(E3069);
 	return namedIds;
 }
@@ -231,7 +266,7 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
 {
 	PROPID_ARRAY propids{1, &id};
 	PROPNAME_ARRAY propnames{};
-	if(!plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
+	if(!m_plugin.exmdb.get_named_propnames(dir.c_str(), &propids, &propnames) || propnames.count != 1)
 		throw DispatchError(E3070);
 	return propnames.ppropname;
 }
@@ -250,7 +285,8 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
 std::string EWSContext::essdn_to_username(const std::string& essdn) const
 {
 	int user_id;
-	auto ess_tpl = fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=", plugin.x500_org_name.c_str());
+	auto ess_tpl = fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=",
+	                           m_plugin.x500_org_name.c_str());
 	if (strncasecmp(essdn.c_str(), ess_tpl.c_str(), ess_tpl.size()) != 0)
 		throw DispatchError(E3000);
 	if (essdn.size() > ess_tpl.size() + 16 && essdn[ess_tpl.size()+16] != '-')
@@ -258,7 +294,7 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
 	const char *lcl = essdn.c_str() + ess_tpl.size() + 17;
 	user_id = decode_hex_int(essdn.c_str() + ess_tpl.size() + 8);
 	std::string username(UADDR_SIZE, 0);
-	if (!plugin.mysql.get_username_from_id(user_id, username.data(), UADDR_SIZE))
+	if (!m_plugin.mysql.get_username_from_id(user_id, username.data(), UADDR_SIZE))
 		throw DispatchError(E3002);
 	username.resize(username.find('\0'));
 	size_t at = username.find('@');
@@ -274,7 +310,7 @@ std::string EWSContext::essdn_to_username(const std::string& essdn) const
  */
 void EWSContext::experimental() const
 {
-	if(!plugin.experimental)
+	if(!m_plugin.experimental)
 		throw UnknownRequestError(E3021);
 }
 
@@ -290,7 +326,7 @@ void EWSContext::experimental() const
 std::string EWSContext::get_maildir(const std::string& username) const
 {
 	char temp[256];
-	if (!plugin.mysql.get_maildir(username.c_str(), temp, std::size(temp)))
+	if (!m_plugin.mysql.get_maildir(username.c_str(), temp, std::size(temp)))
 		throw EWSError::CannotFindUser(E3007);
 	return temp;
 }
@@ -314,7 +350,7 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 	}
 	if(RoutingType == "smtp") {
 		char temp[256];
-		if(!plugin.mysql.get_maildir(Address.c_str(), temp, std::size(temp)))
+		if(!m_plugin.mysql.get_maildir(Address.c_str(), temp, std::size(temp)))
 			throw EWSError::CannotFindUser(E3125);
 		return temp;
 	} else
@@ -330,16 +366,45 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
  */
 std::string EWSContext::getDir(const sFolderSpec& folder) const
 {
-	const char* target = folder.target? folder.target->c_str() : auth_info.username;
+	const char* target = folder.target? folder.target->c_str() : m_auth_info.username;
 	const char* at = strchr(target, '@');
 	bool isPublic = folder.location == sFolderSpec::AUTO? at == nullptr : folder.location == sFolderSpec::PUBLIC;
-	auto func = isPublic? plugin.mysql.get_homedir : plugin.mysql.get_maildir;
+	auto func = isPublic? m_plugin.mysql.get_homedir : m_plugin.mysql.get_maildir;
 	if(isPublic && at)
 		target = at+1;
 	char targetDir[256];
 	if (!func(target, targetDir, std::size(targetDir)))
 		throw EWSError::CannotFindUser(E3126);
 	return targetDir;
+}
+
+/**
+ * @brief      Get cached events from all subscriptions
+ *
+ * Loads up to 50 cached events as specified in
+ * https://learn.microsoft.com/en-us/exchange/client-developer/web-service-reference/getevents-operation#remarks.
+ *
+ * @param subscription   Subscription ID
+ *
+ * @return List of events and indicator whether there are more events
+ */
+std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubscriptionId& subscriptionId) const
+{
+	auto subscription = m_plugin.subscription(subscriptionId.ID, subscriptionId.timeout);
+	if(!subscription)
+		throw EWSError::InvalidSubscription(E3202);
+	if(subscription->username != m_auth_info.username)
+		throw EWSError::AccessDenied(E3203);
+	std::pair<std::list<sNotificationEvent>, bool> result{{}, subscription->events.size() > 50};
+	auto& evt = subscription->events;
+	if(result.second) {
+		auto it = evt.begin();
+		std::advance(it, 50);
+		result.first.splice(result.first.end(), evt, evt.begin(), it);
+	}
+	else
+		result.first.splice(result.first.end(), evt);
+	return result;
 }
 
 /**
@@ -374,7 +439,7 @@ TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t fol
 TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folderId, const PROPTAG_ARRAY& props) const
 {
 	TPROPVAL_ARRAY result;
-	if (!plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
+	if (!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folderId, &props, &result))
 		throw EWSError::FolderPropertyRequestFailed(E3023);
 	return result;
 }
@@ -446,10 +511,50 @@ const void* EWSContext::getItemProp(const std::string& dir, uint64_t mid, uint32
 TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, const PROPTAG_ARRAY& props) const
 {
 	TPROPVAL_ARRAY result;
-	if (!plugin.exmdb.get_message_properties(dir.c_str(), auth_info.username,
+	if (!m_plugin.exmdb.get_message_properties(dir.c_str(), m_auth_info.username,
 	    CP_ACP, mid, &props, &result))
 		throw EWSError::ItemPropertyRequestFailed(E3025);
 	return result;
+}
+
+/**
+ * @brief      Get mailbox GUID from store property
+ *
+ * @param      dir   Store directory
+ *
+ * @return     GUID of the mailbox
+ */
+GUID EWSContext::getMailboxGuid(const std::string& dir) const
+{
+	static const uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
+	static constexpr PROPTAG_ARRAY recordKeyTags{1, const_cast<uint32_t*>(&recordKeyTag)};
+	TPROPVAL_ARRAY recordKeyProp;
+	if(!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
+	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
+		throw DispatchError(E3194);
+	const BINARY* recordKeyData = static_cast<const BINARY*>(recordKeyProp.ppropval->pvalue);
+	EXT_PULL guidPull;
+	guidPull.init(recordKeyData->pv, recordKeyData->cb, alloc, 0);
+	GUID mailboxGuid;
+	ext_error(guidPull.g_guid(&mailboxGuid));
+	return mailboxGuid;
+}
+
+/**
+ * @brief      Collect mailbox metadata
+ *
+ * @param      dir       Store directory
+ * @param      isDomain  Whether target is a domain
+ *
+ * @return     Mailbox metadata struct
+ */
+sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) const
+{
+	sMailboxInfo mbinfo{getMailboxGuid(dir), 0, isDomain};
+	auto getId = isDomain? m_plugin.mysql.get_id_from_homedir : m_plugin.mysql.get_id_from_maildir;
+	if(!getId(dir.c_str(), &mbinfo.accountId))
+		throw EWSError::CannotFindUser(E3192(isDomain? "domain" : "user", dir));
+	return mbinfo;
 }
 
 /**
@@ -462,12 +567,12 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
  */
 sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachmentId& aid) const
 {
-	auto aInst = plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
+	auto aInst = m_plugin.loadAttachmentInstance(dir, aid.folderId(), aid.messageId(), aid.attachment_num);
 	static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_DATA_BIN,
 	                            PR_ATTACH_CONTENT_ID, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
 	TPROPVAL_ARRAY props;
 	PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
-	if(!plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
+	if(!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
 		throw DispatchError(E3083);
 	return tAttachment::create(aid, props);
 }
@@ -503,7 +608,7 @@ sFolder EWSContext::loadFolder(const std::string& dir, uint64_t folderId, Struct
  */
 void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid, tItem& item, uint64_t special) const
 {
-	auto& exmdb = plugin.exmdb;
+	auto& exmdb = m_plugin.exmdb;
 	if(special & sShape::MimeContent)
 	{
 		MESSAGE_CONTENT* content;
@@ -537,7 +642,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	{
 		static uint32_t tagIDs[] = {PR_ATTACH_METHOD, PR_DISPLAY_NAME, PR_ATTACH_MIME_TAG, PR_ATTACH_CONTENT_ID,
 			                        PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_FLAGS};
-		auto mInst = plugin.loadMessageInstance(dir, fid, mid);
+		auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
 		uint16_t count;
 		if(!exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
 			throw DispatchError(E3079);
@@ -545,7 +650,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		item.Attachments.emplace().reserve(count);
 		for(uint16_t i = 0; i < count; ++i)
 		{
-			auto aInst = plugin.loadAttachmentInstance(dir, fid, mid, i);
+			auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
 			TPROPVAL_ARRAY props;
 			PROPTAG_ARRAY tags{std::size(tagIDs), tagIDs};
 			if(!exmdb.get_instance_properties(dir.c_str(), 0, aInst->instanceId, &tags, &props))
@@ -571,7 +676,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	if (!(special & sShape::Recipients))
 		return;
 	TARRAY_SET rcpts;
-	if (!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
 	{
 		mlog(LV_ERR, "[ews] failed to load message recipients (%s:%llu)",
 			dir.c_str(), static_cast<unsigned long long>(mid));
@@ -615,7 +720,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 	if (!(special & sShape::Attendees))
 		return;
 	TARRAY_SET rcpts;
-	if (!plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
+	if (!m_plugin.exmdb.get_message_rcpts(dir.c_str(), mid, &rcpts))
 	{
 		mlog(LV_ERR, "[ews] failed to load calItem recipients (%s:%llu)",
 			dir.c_str(), static_cast<unsigned long long>(mid));
@@ -645,6 +750,20 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 }
 
 /**
+ * @brief update properties of a tCalendarItem
+ *
+ * @param calItem     Calendar item
+ * @param shape       Requested item shape
+ * @param props       Properties to update
+ */
+void EWSContext::updateProps(tCalendarItem& calItem, sShape& shape, const TPROPVAL_ARRAY& props) const
+{
+	shape.clean();
+	shape.properties(props);
+	calItem.update(shape);
+}
+
+/**
  * @brief      Load item
  *
  * @param      dir    Store directory
@@ -663,6 +782,68 @@ sItem EWSContext::loadItem(const std::string&dir, uint64_t fid, uint64_t mid, sS
 	if(shape.special)
 		std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
 	return item;
+}
+
+/**
+ * @brief      Load occurrence
+ *
+ * @param      dir      Store directory
+ * @param      fid      Parent folder ID
+ * @param      mid      Message ID
+ * @param      basedate Basedate of the occurrence
+ * @param      shape    Requested item shape
+ *
+ * @return     The s item.
+ */
+sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t mid, uint32_t basedate, sShape& shape) const
+{
+	auto mInst = m_plugin.loadMessageInstance(dir, fid, mid);
+	uint16_t count;
+	if(!m_plugin.exmdb.get_message_instance_attachments_num(dir.c_str(), mInst->instanceId, &count))
+		throw DispatchError(E3210);
+
+	shape.clean();
+	getNamedTags(dir, shape);
+	shape.properties(getItemProps(dir, mid, shape.proptags()));
+	PROPNAME_ARRAY propnames;
+	propnames.count = 1;
+	PROPERTY_NAME propname_buff[1];
+	propname_buff[0].kind = MNID_ID;
+	propname_buff[0].guid = PSETID_APPOINTMENT;
+	propname_buff[0].lid = PidLidExceptionReplaceTime;
+	propnames.ppropname = propname_buff;
+	PROPID_ARRAY namedids = getNamedPropIds(dir, propnames, true);
+	auto ex_replace_time_tag = PROP_TAG(PT_SYSTIME, namedids.ppropid[0]);
+	TPROPVAL_ARRAY props;
+	PROPTAG_ARRAY tags = shape.proptags();
+	tags.emplace_back(ex_replace_time_tag);
+
+	time_t basedate_ts = gromox::time_point::clock::to_time_t(rop_util_rtime_to_unix2(basedate));
+	struct tm basedate_local;
+	localtime_r(&basedate_ts, &basedate_local);
+
+	for(uint16_t i = 0; i < count; ++i)
+	{
+		auto aInst = m_plugin.loadAttachmentInstance(dir, fid, mid, i);
+		auto eInst = m_plugin.loadEmbeddedInstance(dir, aInst->instanceId);
+		if(!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
+			throw DispatchError(E3211);
+
+		const uint64_t* exstarttime = props.get<uint64_t>(ex_replace_time_tag);
+		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
+		struct tm exstart_local;
+		localtime_r(&exstart, &exstart_local);
+		if(is_same_day(basedate_local, exstart_local))
+		{
+			sItem item = tItem::create(shape);
+			if(shape.special)
+				std::visit([&](auto &&it) { loadSpecial(dir, fid, mid, it, shape.special); }, item);
+			std::visit([&](auto &&it) { updateProps(it, shape, props); }, item);
+
+			return item;
+		}
+	}
+	throw EWSError::ItemCorrupt(E3209);
 }
 
 /**
@@ -699,7 +880,7 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 	static uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
 	static const PROPTAG_ARRAY tags{std::size(tagIds), tagIds};
 	TPROPVAL_ARRAY props;
-	if(!plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
+	if(!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
 		throw DispatchError(E3159);
 	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
 	const char* folderName = props.get<char>(PR_DISPLAY_NAME);
@@ -707,12 +888,12 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 		throw DispatchError(E3160);
 	sFolderSpec parentFolder = folder;
 	parentFolder.folderId = *parentFid;
-	if(!(permissions(auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
-	   !(permissions(auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
+	if(!(permissions(m_auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
+	   !(permissions(m_auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3157);
 	ec_error_t errcode = ecSuccess;
-	if (!plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false,
-	    auth_info.username, *parentFid, folder.folderId, newParent,
+	if (!m_plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false,
+	    m_auth_info.username, *parentFid, folder.folderId, newParent,
 	    folderName, copy ? TRUE : false, &errcode))
 		throw EWSError::MoveCopyFailed(E3161);
 	if (errcode == ecDuplicateName)
@@ -724,7 +905,7 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 		return folder.folderId;
 	}
 	uint64_t newFolderId;
-	if(!plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
+	if(!m_plugin.exmdb.get_folder_by_name(dir.c_str(), newParent, folderName, &newFolderId))
 		throw DispatchError(E3164);
 	return newFolderId;
 }
@@ -742,12 +923,12 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
  */
 uint64_t EWSContext::moveCopyItem(const std::string& dir, const sMessageEntryId& meid, uint64_t newParent, bool copy) const
 {
-	auto& exmdb = plugin.exmdb;
+	auto& exmdb = m_plugin.exmdb;
 	uint64_t newId;
 	if(!exmdb.allocate_message_id(dir.c_str(), newParent, &newId))
 		throw DispatchError(E3182);
 	BOOL success;
-	if(!plugin.exmdb.movecopy_message(dir.c_str(), 0, CP_ACP, meid.messageId(), newParent, newId, copy? false : TRUE, &success)
+	if(!m_plugin.exmdb.movecopy_message(dir.c_str(), 0, CP_ACP, meid.messageId(), newParent, newId, copy? false : TRUE, &success)
 	                                  || !success)
 		throw EWSError::MoveCopyFailed(E3183);
 	return newId;
@@ -823,7 +1004,7 @@ uint32_t EWSContext::permissions(const char* username, const sFolderSpec& folder
 		maildir = temp.c_str();
 	}
 	uint32_t permissions = 0;
-	plugin.exmdb.get_folder_perm(maildir, folder.folderId, username, &permissions);
+	m_plugin.exmdb.get_folder_perm(maildir, folder.folderId, username, &permissions);
 	return permissions;
 }
 
@@ -839,7 +1020,7 @@ uint32_t EWSContext::permissions(const char* username, const sFolderSpec& folder
 sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
 {
 	sFolderSpec folder = sFolderSpec(fId);
-	folder.target = auth_info.username;
+	folder.target = m_auth_info.username;
 	return folder;
 }
 
@@ -859,14 +1040,14 @@ sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 	if(eid.isPrivate())
 	{
 		char temp[UADDR_SIZE];
-		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+		if(!m_plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
 			throw EWSError::CannotFindUser(E3026);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
-		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+		if(!m_plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
 			throw EWSError::CannotFindUser(E3027);
 		folderSpec.target = domaininfo.name;
 	}
@@ -898,14 +1079,14 @@ sFolderSpec EWSContext::resolveFolder(const sMessageEntryId& eid) const
 	if(eid.isPrivate())
 	{
 		char temp[UADDR_SIZE];
-		if(!plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
+		if(!m_plugin.mysql.get_username_from_id(eid.accountId(), temp, UADDR_SIZE))
 			throw EWSError::CannotFindUser(E3075);
 		folderSpec.target = temp;
 	}
 	else
 	{
 		sql_domain domaininfo;
-		if(!plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
+		if(!m_plugin.mysql.get_domain_info(eid.accountId(), domaininfo))
 			throw EWSError::CannotFindUser(E3076);
 		folderSpec.target = domaininfo.name;
 	}
@@ -940,7 +1121,7 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 		normalize(addr);
 		rcpts.emplace_back(*addr.EmailAddress);
 	}
-	ec_error_t err = cu_send_mail(mail, "smtp", plugin.smtp_server_ip.c_str(), plugin.smtp_server_port, auth_info.username,
+	ec_error_t err = cu_send_mail(mail, "smtp", m_plugin.smtp_server_ip.c_str(), m_plugin.smtp_server_port, m_auth_info.username,
 	                              rcpts);
 	if(err != ecSuccess)
 		throw DispatchError(E3117(err));
@@ -966,6 +1147,20 @@ BINARY EWSContext::serialize(const XID& xid) const
 }
 
 /**
+ * @brief      Add subscription to notification context
+ *
+ * @param      subscriptionId  Subscription to add
+ *
+ * @return     true if subscription was added, false on error (not found or no access)
+ */
+bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
+{
+	if(m_notify)
+		m_notify->subscriptions.emplace_back(subscriptionId);
+	return m_plugin.linkSubscription(subscriptionId, *this);
+}
+
+/**
  * @brief     Convert item to MESSAGE_CONTENT
  *
  * @param     dir      Home directory of the associated store
@@ -977,7 +1172,7 @@ BINARY EWSContext::serialize(const XID& xid) const
  */
 MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sItem& item, bool persist) const
 {
-	const auto& exmdb = plugin.exmdb;
+	const auto& exmdb = m_plugin.exmdb;
 	uint64_t messageId, changeNumber;
 	BINARY *ckey = nullptr, *pclbin = nullptr;
 
@@ -1152,7 +1347,7 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
 	if(pclData && !pclOld.deserialize(pclData))
 		throw DispatchError(E3170);
 	uint64_t changeNum;
-	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
+	if(!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
 		throw DispatchError(E3171);
 	bool isPublic = folder.location == folder.PUBLIC;
 	uint32_t accountId = getAccountId(*folder.target, isPublic);
@@ -1166,9 +1361,90 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
 		                      {PR_LAST_MODIFICATION_TIME, &now}};
 	TPROPVAL_ARRAY proplist{std::size(props), props};
 	PROBLEM_ARRAY problems;
-	if(!plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &proplist, &problems) || problems.count)
+	if(!m_plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &proplist, &problems) || problems.count)
 		throw EWSError::FolderSave(E3173);
 }
+
+/**
+ * @brief      Create subscriptions
+ *
+ * @param      folderIds  Folders to subscribe to
+ * @param      eventMask  Events to subscribe to
+ * @param      all        Whether to subscribe to all folders
+ * @param      timeout    Timeout (minutes) of the subscription
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, uint16_t eventMask, bool all, uint32_t timeout) const
+{
+	tSubscriptionId subscriptionId(timeout);
+	auto subscription = m_plugin.mksub(subscriptionId, m_auth_info.username);
+	if(folderIds.empty()) {
+		subscription->mailboxInfo = getMailboxInfo(m_auth_info.maildir, false);
+		detail::ExmdbSubscriptionKey key =
+			m_plugin.subscribe(m_auth_info.maildir, eventMask, true, rop_util_make_eid_ex(PRIVATE_FID_IPMSUBTREE, 1),
+		                       subscriptionId.ID);
+		subscription->subscriptions.emplace_back(key);
+		return subscriptionId;
+	}
+	subscription->subscriptions.reserve(folderIds.size());
+	std::string target;
+	std::string maildir;
+	for(const sFolderId& f : folderIds) {
+		sFolderSpec folderspec = std::visit([&](const auto& fid){return resolveFolder(fid);}, f);
+		if(!folderspec.target)
+			folderspec.target = m_auth_info.username;
+		if(target.empty()) {
+			target = *folderspec.target;
+			maildir = get_maildir(*folderspec.target);
+			subscription->mailboxInfo = getMailboxInfo(maildir, folderspec.location == folderspec.PUBLIC);
+		} else if(target != *folderspec.target)
+			throw EWSError::InvalidSubscriptionRequest(E3200);
+		if(!(permissions(m_auth_info.username, folderspec) & frightsReadAny))
+			continue; // TODO: proper error handling
+		subscription->subscriptions.emplace_back(m_plugin.subscribe(maildir, eventMask, all, folderspec.folderId,
+		                                                            subscriptionId.ID));
+	}
+	return subscriptionId;
+}
+
+/**
+ * @brief      Create new pull subscription
+ *
+ * @param      req    Pull subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tPullSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if(all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3198);
+	return subscribe(req.FolderIds? *req.FolderIds : std::vector<sFolderId>(), req.eventMask(), all, req.Timeout);
+}
+
+/**
+ * @brief      Create new streaming subscription
+ *
+ * @param      req    Streaming subscription request
+ *
+ * @return     Subscription ID
+ */
+tSubscriptionId EWSContext::subscribe(const tStreamingSubscriptionRequest& req) const
+{
+	bool all = req.SubscribeToAllFolders && *req.SubscribeToAllFolders;
+	if(all && req.FolderIds)
+		throw EWSError::InvalidSubscriptionRequest(E3198);
+	return subscribe(req.FolderIds? *req.FolderIds : std::vector<sFolderId>(), req.eventMask(), all, 5);
+}
+
+/**
+ * @brief     End subscriptions
+ *
+ * @param subscriptionId   Subscription to remove
+ */
+bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) const
+{return m_plugin.unsubscribe(subscriptionId.ID, m_auth_info.username);}
 
 /**
  * @brief      Mark message as updated
@@ -1182,7 +1458,7 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
 void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) const
 {
 	uint64_t changeNum;
-	if(!plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
+	if(!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
 		throw DispatchError(E3084);
 	TAGGED_PROPVAL _props[8];
 	TPROPVAL_ARRAY props{0, _props};
@@ -1194,14 +1470,14 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 
 	char displayName[1024];
 	_props[props.count].proptag = PR_LAST_MODIFIER_NAME;
-	if(!plugin.mysql.get_user_displayname(auth_info.username, displayName, std::size(displayName)) || !*displayName)
+	if(!m_plugin.mysql.get_user_displayname(m_auth_info.username, displayName, std::size(displayName)) || !*displayName)
 		_props[props.count++].pvalue = displayName;
 	else
-		_props[props.count++].pvalue = const_cast<char*>(auth_info.username);
+		_props[props.count++].pvalue = const_cast<char*>(m_auth_info.username);
 
 	uint8_t abEidBuff[1280];
 	EXT_PUSH wAbEid;
-	std::string essdn = username_to_essdn(auth_info.username);
+	std::string essdn = username_to_essdn(m_auth_info.username);
 	EMSAB_ENTRYID abEid{0, 1, DT_MAILUSER, essdn.data()};
 	if(!wAbEid.init(abEidBuff, std::size(abEidBuff), EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
 		throw DispatchError(E3085);
@@ -1226,7 +1502,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	_props[props.count++].pvalue = &changeNum;
 
 	PROBLEM_ARRAY problems;
-	if(!plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+	if(!m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
 		throw DispatchError(E3089);
 }
 
@@ -1246,10 +1522,10 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 	if(at == username.npos)
 		throw EWSError::CannotFindUser(E3090(username));
 	std::string_view userpart = std::string_view(username).substr(0, at);
-	if(!plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
+	if(!m_plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
 		throw EWSError::CannotFindUser(E3091(username));
 	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
-	                   plugin.x500_org_name.c_str(), domainId, userId, userpart);
+	                   m_plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
 
 /**

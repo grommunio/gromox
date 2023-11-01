@@ -76,18 +76,22 @@ public:
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
 	ERR(InvalidId) ///< ItemId or ChangeKey malformed
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
+	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
+	ERR(InvalidSubscription) ///< Subscription expired
+	ERR(InvalidSubscriptionRequest) ///< Inconsistent subscription request
 	ERR(InvalidSyncStateData) ///< Transmitted SyncState is invalid
 	ERR(ItemCorrupt) ///< Item could not be loaded properly
 	ERR(ItemNotFound) ///< Requested message object does not exist
 	ERR(ItemPropertyRequestFailed) ///< Failed to retrieve item property
-	ERR(ItemSave); ///< Failed to set item properties
+	ERR(ItemSave)  ///< Failed to set item properties
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
+	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
 	ERR(TimeZone) ///< Invalid or missing time zone
 	ERR(ValueOutOfRange) ///< Value cannot be interpreted correctly (only applied to dates according to official documentation)
 #undef ERR
@@ -304,6 +308,26 @@ E(3188, "inconsistent item id");
 E(3189, "source and destination folder are the same");
 E(3190, "cannot write to object");
 E(3191, "cannot write to target folder");
+inline std::string E3192(const char* type, const std::string& dir) {return fmt::format("E-3192: failed to get {} ID for '{}'", type, dir);}
+E(3193, "replid not supported");
+E(3194, "failed to retrieve store record key");
+E(3195, "invalid recurrence type");
+E(3196, "malformed subscription id");
+E(3197, "invalid subscription id");
+E(3198, "SubscribeToAllFolders cannot be combined with FolderIds");
+E(3199, "SubscribeToAllFolders cannot be combined with FolderIds");
+E(3200, "cannot subscribe to different mailboxes");
+E(3201, "invalid subscription ID");
+E(3202, "invalid subscription");
+E(3203, "only the subscription owner may access the subscription");
+E(3204, "failed to create subscription");
+E(3205, "occurrence ID data too large");
+E(3206, "failed to deserialize occurrence entry id");
+E(3207, "failed to deserialize occurrence basedate");
+E(3208, "failed to load embedded instance");
+E(3209, "requested occurrence not found");
+E(3210, "failed to get embedded instances' count");
+E(3211, "failed to get embedded instance properties");
 
 #undef E
 }

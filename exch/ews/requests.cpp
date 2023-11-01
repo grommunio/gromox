@@ -27,7 +27,6 @@ using namespace std;
 using namespace tinyxml2;
 
 using Clock = time_point::clock;
-using std::to_string;
 
 ///////////////////////////////////////////////////////////////////////////////
 //Helper functions
@@ -122,7 +121,7 @@ void process(mCreateFolderRequest&& request, XMLElement* response, const EWSCont
 
 	sFolderSpec parent = ctx.resolveFolder(request.ParentFolderId.folderId);
 	std::string dir = ctx.getDir(parent);
-	bool hasAccess = ctx.permissions(ctx.auth_info.username, parent, dir.c_str());
+	bool hasAccess = ctx.permissions(ctx.auth_info().username, parent, dir.c_str());
 
 	for(const sFolder& folder : request.Folders) try {
 		if(!hasAccess)
@@ -159,7 +158,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 	if(!targetFolder)
 		targetFolder = ctx.resolveFolder(tDistinguishedFolderId("outbox"));
 	else
-		hasAccess = ctx.permissions(ctx.auth_info.username, *targetFolder) & (frightsOwner | frightsCreate);
+		hasAccess = ctx.permissions(ctx.auth_info().username, *targetFolder) & (frightsOwner | frightsCreate);
 	std::string dir = ctx.getDir(*targetFolder);
 
 	if(!request.MessageDisposition)
@@ -225,13 +224,13 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
 		if(request.DeleteType == Enum::MoveToDeletedItems) {
 			if(folder.location == folder.PUBLIC)
 				throw EWSError::MoveCopyFailed(E3158);
-			uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+			uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
 			uint64_t newParentId = rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS);
 			ctx.moveCopyFolder(dir, folder, newParentId, accountId, false);
 		} else {
 			bool hard = request.DeleteType == Enum::HardDelete;
 			BOOL result;
-			if(!ctx.plugin.exmdb.delete_folder(dir.c_str(), CP_ACP, folder.folderId, hard? TRUE : false, &result) || !result)
+			if(!ctx.plugin().exmdb.delete_folder(dir.c_str(), CP_ACP, folder.folderId, hard? TRUE : false, &result) || !result)
 				throw EWSError::CannotDeleteObject(E3165);
 		}
 		data.ResponseMessages.emplace_back().success();
@@ -258,8 +257,8 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 	mDeleteItemResponse data;
 	data.ResponseMessages.reserve(request.ItemIds.size());
 
-	uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
-	auto& exmdb = ctx.plugin.exmdb;
+	uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
+	auto& exmdb = ctx.plugin().exmdb;
 
 	for(const tItemId& itemId : request.ItemIds) try
 	{
@@ -267,7 +266,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
 		ctx.validate(dir, meid);
-		if(!(ctx.permissions(ctx.auth_info.username, parent, dir.c_str()) & frightsDeleteAny))
+		if(!(ctx.permissions(ctx.auth_info().username, parent, dir.c_str()) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3131);
 		if(request.DeleteType == Enum::MoveToDeletedItems) {
 			uint64_t newMid;
@@ -287,7 +286,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete? TRUE : false;
 			BOOL partial;
-			if(!ctx.plugin.exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.auth_info.username, fid, &eids,
+			if(!ctx.plugin().exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.auth_info().username, fid, &eids,
 			                                     hardDelete, &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3134);
 			else
@@ -324,10 +323,10 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
 	for(const sFolderId& folderId : request.FolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
 		std::string dir = ctx.getDir(folder);
-		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsDeleteAny))
+		if(!(ctx.permissions(ctx.auth_info().username, folder, dir.c_str()) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3179);
 		BOOL partial;
-		if(!ctx.plugin.exmdb.empty_folder(dir.c_str(), CP_ACP, nullptr, folder.folderId, deleteFlags, &partial)
+		if(!ctx.plugin().exmdb.empty_folder(dir.c_str(), CP_ACP, nullptr, folder.folderId, deleteFlags, &partial)
 		   || partial)
 			throw EWSError::CannotEmptyFolder(E3180);
 		data.ResponseMessages.emplace_back().success();
@@ -359,13 +358,44 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
 		sFolderSpec parentFolder = ctx.resolveFolder(aid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, aid);
-		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny))
+		if(!(ctx.permissions(ctx.auth_info().username, parentFolder) & frightsReadAny))
 			throw EWSError::AccessDenied(E3135);
 		mGetAttachmentResponseMessage msg;
 		msg.Attachments.emplace_back(ctx.loadAttachment(dir, aid));
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetEvents
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetEventsResponse");
+
+	mGetEventsResponse data;
+	try {
+		auto [events, more] = ctx.getEvents(request.SubscriptionId);
+		mGetEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
+		tNotification& notification = msg.Notification.emplace();
+		notification.SubscriptionId = std::move(request.SubscriptionId);
+		notification.events = std::move(events);
+		notification.MoreEvents = more;
+		if(notification.events.empty())
+			notification.events.emplace_back(aStatusEvent());
+		msg.success();
+	} catch(EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
 
@@ -396,9 +426,9 @@ void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext
 		sFolderSpec folder;
 		folder = ctx.resolveFolder(folderId);
 		if(!folder.target)
-			folder.target = ctx.auth_info.username;
+			folder.target = ctx.auth_info().username;
 		folder.normalize();
-		if(!(ctx.permissions(ctx.auth_info.username, folder) & frightsVisible))
+		if(!(ctx.permissions(ctx.auth_info().username, folder) & frightsVisible))
 			throw EWSError::AccessDenied(E3136);
 		std::string dir = ctx.getDir(folder);
 		mGetFolderResponseMessage msg;
@@ -503,7 +533,7 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 		string maildir = ctx.get_maildir(MailboxData.Email);
 		time_t start = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.StartTime));
 		time_t end = gromox::time_point::clock::to_time_t(request.TimeZone->remove(TimeWindow.EndTime));
-		tFreeBusyView fbv(ctx.auth_info.username, maildir.c_str(), start, end);
+		tFreeBusyView fbv(ctx.auth_info().username, maildir.c_str(), start, end);
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back(std::move(fbv));
 		for(auto& event : *fbr.FreeBusyView->CalendarEventArray)
 		{
@@ -515,6 +545,35 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
 		mFreeBusyResponse& fbr = data.FreeBusyResponseArray->emplace_back();
 		fbr.ResponseMessage.emplace(err);
 	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process GetDtreamingEventsRequest
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetStreamingEventsResponse");
+
+	mGetStreamingEventsResponse data;
+	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
+
+	ctx.enableEventStream(request.ConnectionTimeout);
+	for(const tSubscriptionId& subscription : request.SubscriptionIds)
+		if(!ctx.streamEvents(subscription))
+			msg.ErrorSubscriptionIds.emplace_back(subscription);
+	if(msg.ErrorSubscriptionIds.empty())
+		msg.success();
+	else
+		msg.error("ErrorInvalidSubscription", "Subscription is invalid.");
+	msg.ConnectionStatus = Enum::OK;
 
 	data.serialize(response);
 }
@@ -537,7 +596,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	response->SetName("m:GetUserOofSettingsResponse");
 
 	ctx.normalize(request.Mailbox);
-	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username)) {
+	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info().username)) {
 		mGetUserOofSettingsResponse data;
 		data.ResponseMessage = mResponseMessageType(EWSError::AccessDenied(E3011));
 		data.serialize(response);
@@ -608,9 +667,9 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
-	uint32_t accountId = ctx.getAccountId(ctx.auth_info.username, false);
+	uint32_t accountId = ctx.getAccountId(ctx.auth_info().username, false);
 
-	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
+	bool dstAccess = ctx.permissions(ctx.auth_info().username, dstFolder, dir.c_str());
 
 	using MCResponse = std::variant<mCopyFolderResponse, mMoveFolderResponse>;
 	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<1>{});};
@@ -653,7 +712,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
 
-	bool dstAccess = ctx.permissions(ctx.auth_info.username, dstFolder, dir.c_str());
+	bool dstAccess = ctx.permissions(ctx.auth_info().username, dstFolder, dir.c_str());
 
 	using MCResponse = std::variant<mCopyItemResponse, mMoveItemResponse>;
 	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<1>{});};
@@ -670,7 +729,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 		if(sourceFolder.target != dstFolder.target)
 			throw EWSError::CrossMailboxMoveCopy(E3186);
 		ctx.validate(dir, meid);
-		if(!(ctx.permissions(ctx.auth_info.username, sourceFolder, dir.c_str()) & frightsReadAny))
+		if(!(ctx.permissions(ctx.auth_info().username, sourceFolder, dir.c_str()) & frightsReadAny))
 			throw EWSError::AccessDenied(E3185);
 		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
@@ -702,7 +761,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 	response->SetName("m:SetUserOofSettingsResponse");
 
 	ctx.normalize(request.Mailbox);
-	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info.username)){
+	if(strcasecmp(request.Mailbox.Address.c_str(), ctx.auth_info().username)){
 		mGetUserOofSettingsResponse data;
 		data.ResponseMessage = mResponseMessageType(EWSError::AccessDenied(E3012));
 		data.serialize(response);
@@ -758,7 +817,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 	response->SetName("m:SyncFolderHierarchyResponse");
 
-	auto& exmdb = ctx.plugin.exmdb;
+	auto& exmdb = ctx.plugin().exmdb;
 	if(!request.SyncFolderId)
 		request.SyncFolderId.emplace(tDistinguishedFolderId(Enum::msgfolderroot));
 
@@ -769,11 +828,11 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 	sFolderSpec folder = ctx.resolveFolder(request.SyncFolderId->folderId);
 	if(!folder.target)
-		folder.target = ctx.auth_info.username;
+		folder.target = ctx.auth_info().username;
 	std::string dir = ctx.getDir(folder.normalize());
 
 	mSyncFolderHierarchyResponse data;
-	if(!(ctx.permissions(ctx.auth_info.username, folder) & frightsVisible))
+	if(!(ctx.permissions(ctx.auth_info().username, folder) & frightsVisible))
 	{
 		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3137));
 		data.serialize(response);
@@ -799,7 +858,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		if(!folderId)
 			continue;
 		subfolder.folderId = *folderId;
-		if(!(ctx.permissions(ctx.auth_info.username, subfolder, dir.c_str()) & frightsVisible))
+		if(!(ctx.permissions(ctx.auth_info().username, subfolder, dir.c_str()) & frightsVisible))
 			continue;
 		auto folderData = ctx.loadFolder(dir, subfolder.folderId, shape);
 		if(syncState.given.hint(*folderId))
@@ -843,17 +902,17 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	syncState.convert();
 
 	if(!folder.target)
-		folder.target = ctx.auth_info.username;
+		folder.target = ctx.auth_info().username;
 	std::string dir = ctx.getDir(folder.normalize());
 
 	mSyncFolderItemsResponse data;
-	if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
+	if(!(ctx.permissions(ctx.auth_info().username, folder, dir.c_str()) & frightsReadAny))
 	{
 		data.ResponseMessages.emplace_back(EWSError::AccessDenied(E3138));
 		data.serialize(response);
 		return;
 	}
-	auto& exmdb = ctx.plugin.exmdb;
+	auto& exmdb = ctx.plugin().exmdb;
 
 	uint32_t fai_count, normal_count;
 	uint64_t fai_total, normal_total, last_cn, last_readcn;
@@ -955,11 +1014,16 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, eid);
-		if(!(ctx.permissions(ctx.auth_info.username, parentFolder) & frightsReadAny))
+		if(!(ctx.permissions(ctx.auth_info().username, parentFolder) & frightsReadAny))
 			throw EWSError::AccessDenied(E3139);
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = eid.messageId();
-		msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
+		if(itemId.Id.size() <= 70) // Normal message entry ids have length of 70, occurrences contain extra data
+			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
+		else {
+			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
+			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, oid.basedate, shape));
+		}
 		msg.success();
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
@@ -990,7 +1054,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 
 	TPROPVAL_ARRAY userProps{};
-	if(!ctx.plugin.mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
+	if(!ctx.plugin().mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
 		throw DispatchError(E3067);
 	TAGGED_PROPVAL* displayName = userProps.find(PR_DISPLAY_NAME);
 
@@ -1004,7 +1068,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	tpropval_array_free_internal(&userProps);
 
 	std::vector<std::string> aliases;
-	if(!ctx.plugin.mysql.get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
+	if(!ctx.plugin().mysql.get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
 		throw DispatchError(E3068);
 	if (aliases.size() > 0) {
 		aliases.resize(min(aliases.size(), size_t(3)));
@@ -1043,7 +1107,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 	}
 	sFolderSpec saveFolder = request.SavedItemFolderId? ctx.resolveFolder(request.SavedItemFolderId->folderId) :
 	                                                    sFolderSpec(tDistinguishedFolderId(Enum::sentitems));
-	if(request.SavedItemFolderId && !(ctx.permissions(ctx.auth_info.username, saveFolder) & frightsCreate)) {
+	if(request.SavedItemFolderId && !(ctx.permissions(ctx.auth_info().username, saveFolder) & frightsCreate)) {
 		data.Responses.emplace_back(EWSError::AccessDenied(E3141));
 		data.serialize(response);
 		return;
@@ -1054,11 +1118,11 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(folder);
-		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsReadAny))
+		if(!(ctx.permissions(ctx.auth_info().username, folder, dir.c_str()) & frightsReadAny))
 			throw EWSError::AccessDenied(E3142);
 
 		MESSAGE_CONTENT* content;
-		if(!ctx.plugin.exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content))
+		if(!ctx.plugin().exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content))
 			throw EWSError::ItemNotFound(E3143);
 		ctx.send(dir, *content);
 
@@ -1093,7 +1157,7 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 	for(const auto& change : request.FolderChanges) try {
 		sFolderSpec folder = ctx.resolveFolder(change.folderId);
 		std::string dir = ctx.getDir(folder);
-		if(!(ctx.permissions(ctx.auth_info.username, folder, dir.c_str()) & frightsEditAny))
+		if(!(ctx.permissions(ctx.auth_info().username, folder, dir.c_str()) & frightsEditAny))
 			throw EWSError::AccessDenied(E3174);
 		sShape shape(change);
 		ctx.getNamedTags(dir, shape, true);
@@ -1104,9 +1168,9 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 		TPROPVAL_ARRAY props = shape.write();
 		PROPTAG_ARRAY tagsRm = shape.remove();
 		PROBLEM_ARRAY problems;
-		if(!ctx.plugin.exmdb.set_folder_properties(dir.c_str(), CP_ACP,folder.folderId, &props, &problems))
+		if(!ctx.plugin().exmdb.set_folder_properties(dir.c_str(), CP_ACP,folder.folderId, &props, &problems))
 			throw EWSError::FolderSave(E3175);
-		if(!ctx.plugin.exmdb.remove_folder_properties(dir.c_str(), folder.folderId, &tagsRm))
+		if(!ctx.plugin().exmdb.remove_folder_properties(dir.c_str(), folder.folderId, &tagsRm))
 			throw EWSError::FolderSave(E3176);
 		ctx.updated(dir, folder);
 		mUpdateFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
@@ -1115,9 +1179,51 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
+}
+
+/**
+ * @brief      Process Subscribe
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:SubscribeResponse");
+
+	mSubscribeResponse data;
+	mSubscribeResponseMessage& msg = data.ResponseMessages.emplace_back();
+	msg.SubscriptionId = std::visit([&](const auto& sub){return ctx.subscribe(sub);}, request.subscription);
+	msg.success();
 
 	data.serialize(response);
 }
+
+/**
+ * @brief      Process Unsubscribe
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mUnsubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:UnsubscribeResponse");
+
+	mUnsubscribeResponse data;
+	if(ctx.unsubscribe(request.SubscriptionId))
+		data.ResponseMessages.emplace_back().success();
+	else
+		data.ResponseMessages.emplace_back("Error", "ErrorSubscriptionNotFound", "Subscription not found");
+
+	data.serialize(response);
+}
+
 
 /**
  * @brief      Process UpdateItem
@@ -1144,7 +1250,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);
 		ctx.validate(dir, mid);
-		if(!(ctx.permissions(ctx.auth_info.username, parentFolder, dir.c_str()) & frightsEditAny))
+		if(!(ctx.permissions(ctx.auth_info().username, parentFolder, dir.c_str()) & frightsEditAny))
 			throw EWSError::AccessDenied(E3190);
 		sShape shape(change);
 		ctx.getNamedTags(dir, shape, true);
@@ -1155,9 +1261,9 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 		TPROPVAL_ARRAY props = shape.write();
 		PROPTAG_ARRAY tagsRm = shape.remove();
 		PROBLEM_ARRAY problems;
-		if(!ctx.plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+		if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
 			throw EWSError::ItemSave(E3092);
-		if(!ctx.plugin.exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
+		if(!ctx.plugin().exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
 			throw EWSError::ItemSave(E3093);
 		ctx.updated(dir, mid);
 		mUpdateItemResponseMessage& msg = data.ResponseMessages.emplace_back();

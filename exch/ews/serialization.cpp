@@ -35,41 +35,6 @@ namespace
 {
 
 /**
- * @brief     Compute Base64 encoded string
- *
- * @param     data    Data to encode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::string b64encode(const void* data, size_t len)
-{
-	std::string out(4*((len+2)/3)+1, '\0');
-	size_t outlen;
-	encode64(data, len, out.data(), out.length(), &outlen);
-	out.resize(outlen);
-	return out;
-}
-
-/**
- * @brief     Compute Base64 decoded string
- *
- * @param     data    Data to decode
- * @param     len     Number of bytes
- *
- * @return    Base64 encoded string
- */
-std::vector<uint8_t> b64decode(const char* data, size_t len)
-{
-	std::vector<uint8_t> out(len*3/4+1, 0);
-	size_t outlen;
-	if(decode64(data, len, out.data(), out.size(), &outlen))
-		throw DeserializationError(E3033);
-	out.resize(outlen);
-	return out;
-}
-
-/**
  * @brief     Generic deleter struct
  *
  * Provides explicit deleters for classes without destructor.
@@ -121,6 +86,17 @@ void sAttachmentId::serialize(XMLElement* xml) const
 	xml->SetAttribute("Id", enc);
 }
 
+void sOccurrenceId::serialize(XMLElement* xml) const
+{
+	char buff[128], enc[256];
+	EXT_PUSH ext_push;
+	ext_push.init(buff, 128, 0, nullptr);
+	EXT_TRY(ext_push.p_msg_eid(*this));
+	EXT_TRY(ext_push.p_uint32(basedate));
+	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
+	xml->SetAttribute("Id", enc);
+}
+
 /**
  * @brief     Decode Base64 encoded data from XML element
  */
@@ -129,13 +105,13 @@ sBase64Binary::sBase64Binary(const XMLElement* xml)
 	const char* data = xml->GetText();
 	if(!data)
 		throw DeserializationError(E3034(xml->Name()));
-	std::vector<uint8_t>::operator=(b64decode(data, strlen(data)));
+	assign(base64_decode(data));
 }
 
 /**
  * @brief     Decode Base64 encoded data from XML attribute
  */
-sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64decode(xml->Value(), strlen(xml->Value())))
+sBase64Binary::sBase64Binary(const XMLAttribute *xml) : std::string(base64_decode(xml->Value()))
 {}
 
 /**
@@ -144,7 +120,7 @@ sBase64Binary::sBase64Binary(const XMLAttribute* xml) : std::vector<uint8_t>(b64
  * @return    std::string containing base64 encoded data
  */
 std::string sBase64Binary::serialize() const
-{return empty()? std::string() : b64encode(data(), size());}
+{ return empty() ? std::string() : base64_encode(*this); }
 
 /**
  * @brief     Store Base64 encoded data in xml element
@@ -152,7 +128,7 @@ std::string sBase64Binary::serialize() const
  * @param     xml     XML element to store data in
  */
 void sBase64Binary::serialize(XMLElement* xml) const
-{xml->SetText(empty()? "" : b64encode(data(), size()).c_str());}
+{ xml->SetText(empty() ? "" : base64_encode(*this).c_str()); }
 
 /**
  * @brief     Read entry ID from XML attribute
@@ -168,15 +144,33 @@ sFolderEntryId::sFolderEntryId(const XMLAttribute* xml)
 /**
  * @brief     Generate entry ID object
  *
- * @return    String containing base64 encoded entry ID
+ * @return    Base64 binary containing entry ID
  */
-std::string sFolderEntryId::serialize() const
+sBase64Binary sFolderEntryId::serialize() const
 {
-	char buff[64];
+	sBase64Binary bin;
+	bin.resize(46);
 	EXT_PUSH ext_push;
-	ext_push.init(buff, 64, 0, nullptr);
+	ext_push.init(bin.data(), 46, 0, nullptr);
 	EXT_TRY(ext_push.p_folder_eid(*this));
-	return b64encode(buff, ext_push.m_offset);
+	bin.resize(ext_push.m_offset);
+	return bin;
+}
+
+/**
+ * @brief     Generate entry ID object
+ *
+ * @return    Base64 binary containing entry ID
+ */
+sBase64Binary sMessageEntryId::serialize() const
+{
+	sBase64Binary bin;
+	bin.resize(70);
+	EXT_PUSH ext_push;
+	ext_push.init(bin.data(), 70, 0, nullptr);
+	EXT_TRY(ext_push.p_msg_eid(*this));
+	bin.resize(ext_push.m_offset);
+	return bin;
 }
 
 /**
@@ -216,7 +210,7 @@ std::string sSyncState::serialize()
 	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
 		throw EWSError::NotEnoughMemory(E3040);
 
-	return b64encode(stateBuffer.m_vdata, stateBuffer.m_offset);
+	return base64_encode({stateBuffer.m_cdata, stateBuffer.m_offset});
 }
 
 /**
@@ -294,6 +288,18 @@ void tBaseItemId::serialize(XMLElement* xml) const
 	XMLDUMPA(Id);
 	XMLDUMPA(ChangeKey);
 }
+
+void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(TimeStamp);
+	XMLDUMPT(objectId);
+	XMLDUMPT(ParentFolderId);
+}
+
+tBaseSubscriptionRequest::tBaseSubscriptionRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(FolderIds),
+	XMLINIT(EventTypes)
+{}
 
 void tBody::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -376,6 +382,14 @@ void tNoEndRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 	tRecurrenceRangeBase::serialize(xml);
 }
 
+void tNotification::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(SubscriptionId);
+	XMLDUMPT(MoreEvents);
+	for(const auto& event : events)
+		XMLDUMPT(event);
+}
+
 void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 {
 	tRecurrenceRangeBase::serialize(xml);
@@ -394,6 +408,19 @@ void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(RecurrencePattern);
 	XMLDUMPT(RecurrenceRange);
+}
+
+void tOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(ItemId);
+	XMLDUMPT(Start);
+	XMLDUMPT(End);
+	XMLDUMPT(OriginalStart);
+}
+
+void tDeletedOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Start);
 }
 
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
@@ -427,6 +454,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	tItem::serialize(xml);
 
 	XMLDUMPT(UID);
+	XMLDUMPT(RecurrenceId);
 	XMLDUMPT(Start);
 	XMLDUMPT(End);
 	XMLDUMPT(IsAllDayEvent);
@@ -446,6 +474,8 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(AppointmentSequenceNumber);
 	XMLDUMPT(AppointmentState);
 	XMLDUMPT(Recurrence);
+	XMLDUMPT(ModifiedOccurrences);
+	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(AllowNewTimeProposal);
 }
 
@@ -552,6 +582,11 @@ void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 	xml->SetText(Entry.c_str());
 	XMLDUMPA(Key);
 }
+
+tPullSubscriptionRequest::tPullSubscriptionRequest(const tinyxml2::XMLElement* xml) :
+	tBaseSubscriptionRequest(xml),
+	XMLINIT(Timeout)
+{}
 
 tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
 	XMLINITA(PropertyTag),
@@ -801,6 +836,19 @@ void tMessage::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(ReceivedRepresenting);
 }
 
+void tModifiedEvent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBaseObjectChangedEvent::serialize(xml);
+	XMLDUMPT(UnreadCount);
+}
+
+void tMovedCopiedEvent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBaseObjectChangedEvent::serialize(xml);
+	XMLDUMPT(oldObjectId);
+	XMLDUMPT(OldParentFolderId);
+}
+
 tPath::tPath(const XMLElement* xml) : Base(fromXMLNodeDispatch<Base>(xml))
 {}
 
@@ -871,6 +919,55 @@ void tSmtpDomain::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(Name);
 	XMLDUMPT(IncludeSubdomains);
+}
+
+/**
+ * @brief      Base64 encode 32bit unsigned integer
+ *
+ * @param      v   Value to encode
+ * @param      d   Destination buffer. Must have space for 6 characters. Pointer is moved to the end of the string.
+ */
+constexpr void tSubscriptionId::encode(uint32_t v, char*& d)
+{
+	for(uint32_t offset = 0; offset < 31; offset += 6)
+		*d++ = b64[(v & (0x3fu << offset)) >> offset];
+}
+
+/**
+ * @brief      Base64 decode 32bit unsigned integer
+ *
+ * @param      s   Data to decode. Pointer is moved to the end of the string.
+ *
+ * @throw      DeserializationError  The input contains invalid characters
+ *
+ * @return Decoded value
+ */
+constexpr uint32_t tSubscriptionId::decode(const uint8_t*& s)
+{
+	uint32_t res = 0;
+	for(uint32_t offset = 0; offset < 6; ++s, ++offset)
+		res |= *s < 128 && i64[*s] >= 0? (i64[*s] << offset*6) : throw DeserializationError(E3112);
+	return res;
+}
+
+tSubscriptionId::tSubscriptionId(const tinyxml2::XMLElement* xml)
+{
+	const char* data = xml->GetText();
+	size_t len;
+	if(!data || (len = strlen(data)) != 12)
+		throw DeserializationError(E3201);
+	const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
+	ID = decode(d);
+	timeout = decode(d);
+}
+
+void tSubscriptionId::serialize(tinyxml2::XMLElement* xml) const
+{
+	std::string res(12, 0);
+	char* data = res.data();
+	encode(ID, data);
+	encode(timeout, data);
+	xml->SetText(res.c_str());
 }
 
 tSuggestionsViewOptions::tSuggestionsViewOptions(const tinyxml2::XMLElement* xml) :
@@ -1019,6 +1116,19 @@ void mGetAttachmentResponseMessage::serialize(XMLElement* xml) const
 	XMLDUMPM(Attachments);
 }
 
+mGetEventsRequest::mGetEventsRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SubscriptionId)
+{}
+
+void mGetEventsResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mGetEventsResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(Notification);
+}
+
 void mGetAttachmentResponse::serialize(XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
@@ -1072,6 +1182,21 @@ void mGetServiceConfigurationResponseMessageType::serialize(XMLElement* xml) con
 {
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(MailTipsConfiguration);
+}
+
+mGetStreamingEventsRequest::mGetStreamingEventsRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SubscriptionIds),
+	XMLINIT(ConnectionTimeout)
+{}
+
+void mGetStreamingEventsResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mGetStreamingEventsResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPM(Notifications);
+	XMLDUMPM(ErrorSubscriptionIds);
+	XMLDUMPM(ConnectionStatus);
 }
 
 mGetUserAvailabilityRequest::mGetUserAvailabilityRequest(const XMLElement* xml) :
@@ -1228,6 +1353,26 @@ mUpdateFolderRequest::mUpdateFolderRequest(const tinyxml2::XMLElement* xml) :
 {}
 
 void mUpdateFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mSubscribeRequest::mSubscribeRequest(const tinyxml2::XMLElement* xml) :
+	VXMLINIT(subscription)
+{}
+
+void mSubscribeResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mSubscribeResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(SubscriptionId);
+}
+
+mUnsubscribeRequest::mUnsubscribeRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SubscriptionId)
+{}
+
+void mUnsubscribeResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
 mUpdateItemRequest::mUpdateItemRequest(const XMLElement* xml) :

@@ -116,6 +116,7 @@ struct Enum
 	STR(CarPhone);
 	STR(CLSID);
 	STR(CLSIDArray);
+	STR(Closed);
 	STR(CompanyMainPhone);
 	STR(Complete);
 	STR(Common);
@@ -123,13 +124,16 @@ struct Enum
 	STR(Contact);
 	STR(Contacts);
 	STR(ContactsActiveDirectory);
+	STR(CopiedEvent);
 	STR(Currency);
 	STR(CurrencyArray);
 	STR(CustomMailTip);
+	STR(CreatedEvent);
 	STR(Day);
 	STR(December);
 	STR(Decline);
 	STR(Default);
+	STR(DeletedEvent);
 	STR(DeliveryRestriction);
 	STR(Detailed);
 	STR(DetailedMerged);
@@ -152,6 +156,7 @@ struct Enum
 	STR(Fourth);
 	STR(Free);
 	STR(FreeBusy);
+	STR(FreeBusyChangedEvent);
 	STR(FreeBusyMerged);
 	STR(Friday);
 	STR(Good);
@@ -189,9 +194,12 @@ struct Enum
 	STR(Mms);
 	STR(MobilePhone);
 	STR(ModerationStatus);
+	STR(ModifiedEvent);
 	STR(Monday);
 	STR(MoveToDeletedItems);
+	STR(MovedEvent);
 	STR(Msn);
+	STR(NewMailEvent);
 	STR(NoData);
 	STR(NoResponseReceived);
 	STR(None);
@@ -206,6 +214,7 @@ struct Enum
 	STR(ObjectArray);
 	STR(October);
 	STR(OfficeIntegrationConfiguration);
+	STR(OK);
 	STR(OneOff);
 	STR(Optional);
 	STR(Organizer);
@@ -346,6 +355,7 @@ struct Enum
 	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
 	using CalendarItemCreateOrDeleteOperationType = StrEnum<SendToNone, SendOnlyToAll, SendToAllAndSaveCopy>; ///<< Types.xsd:4005
+	using ConnectionStatusType = StrEnum<OK, Closed>; ///< Types.xsd:6182
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
 	using DayOfWeekIndexType = StrEnum<First, Second, Third, Fourth, Last>; ///<Types.xsd:4500
@@ -365,6 +375,7 @@ struct Enum
 	using MeetingAttendeeType = StrEnum<Organizer, Required, Optional, Room, Resource>; ///< Types.xsd:6278
 	using MessageDispositionType = StrEnum<SaveOnly, SendOnly, SendAndSaveCopy>; ///< Types.xsd:3997
 	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
+	using NotificationEventType = StrEnum<CopiedEvent, CreatedEvent, DeletedEvent, ModifiedEvent, MovedEvent, NewMailEvent, FreeBusyChangedEvent>; ///< Types.xsd:6085
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
 	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255
 	using ResponseTypeType = StrEnum<Unknown, Organizer, Tentative, Accept, Decline, NoResponseReceived>; ///< Types.xsd:4372
