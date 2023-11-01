@@ -1047,7 +1047,6 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	BINARY *pbin;
 	BOOL b_guest;
 	void *pvalue;
-	BOOL b_partial;
 	uint32_t result;
 	ems_objtype object_type;
 	uint16_t replid;
@@ -1222,16 +1221,15 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			b_guest = FALSE;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
+		ec_error_t err = ecSuccess;
 		if (!exmdb_client::movecopy_folder(dir,
 		    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
 		    parent_id, folder_id, parent_id1,
 		    static_cast<char *>(phichyvals->ppropval[5].pvalue), false,
-		    &b_exist, &b_partial))
+		    &err))
 			return ecError;
-		if (b_exist)
-			return ecDuplicateName;
-		if (b_partial)
-			return ecError;
+		if (err != ecSuccess)
+			return err;
 	}
 	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return ecError;

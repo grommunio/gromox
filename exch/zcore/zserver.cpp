@@ -2278,7 +2278,6 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
     uint32_t hdst_folder, const char *new_name, uint32_t flags)
 {
 	BOOL b_done;
-	BOOL b_exist;
 	BOOL b_cycle;
 	BOOL b_private;
 	BOOL b_partial;
@@ -2361,12 +2360,13 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 		return ecError;
 	if (b_cycle)
 		return ecRootFolder;
+	ec_error_t err = ecSuccess;
 	if (!exmdb_client::movecopy_folder(src_store->get_dir(),
 	    src_store->account_id, pinfo->cpid, b_guest, pinfo->get_username(),
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id,
-	    new_name, b_copy, &b_exist, &b_partial))
+	    new_name, b_copy, &err))
 		return ecError;
-	return b_exist ? ecDuplicateName : ecSuccess;
+	return err;
 }
 
 ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
@@ -4407,7 +4407,6 @@ ec_error_t zs_importfolder(GUID hsession,
 	BINARY *pbin;
 	BOOL b_guest;
 	void *pvalue;
-	BOOL b_partial;
 	uint64_t nttime;
 	uint16_t replid;
 	uint64_t tmp_fid;
@@ -4587,16 +4586,15 @@ ec_error_t zs_importfolder(GUID hsession,
 		} else {
 			b_guest = FALSE;
 		}
+		ec_error_t err = ecSuccess;
 		if (!exmdb_client::movecopy_folder(pstore->get_dir(),
 		    pstore->account_id, pinfo->cpid, b_guest,
 		    pinfo->get_username(), parent_id, folder_id, parent_id1,
 		    static_cast<char *>(pproplist->ppropval[3].pvalue), false,
-		    &b_exist, &b_partial))
+		    &err))
 			return ecError;
-		if (b_exist)
-			return ecDuplicateName;
-		if (b_partial)
-			return ecError;
+		if (err != ecSuccess)
+			return err;
 	}
 	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
 		return ecError;

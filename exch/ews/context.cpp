@@ -704,14 +704,15 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 	if(!(permissions(auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
 	   !(permissions(auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3157);
-	BOOL exists, partial;
-	if(!plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false, auth_info.username, *parentFid, folder.folderId,
-	                                 newParent, folderName, copy? TRUE : false, &exists, &partial))
+	ec_error_t errcode = ecSuccess;
+	if (!plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false,
+	    auth_info.username, *parentFid, folder.folderId, newParent,
+	    folderName, copy ? TRUE : false, &errcode))
 		throw EWSError::MoveCopyFailed(E3161);
-	if(exists)
+	if (errcode == ecDuplicateName)
 		throw EWSError::FolderExists(E3162);
-	if(partial)
-		throw EWSError::MoveCopyFailed(E3163);
+	if (errcode != ecSuccess)
+		throw EWSError::MoveCopyFailed(std::string(E3163) + ": " + mapi_strerror(errcode));
 	if(!copy) {
 		updated(dir, folder);
 		return folder.folderId;

@@ -2792,18 +2792,6 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_movecopy_messages &d)
 	return x.p_bool(d.b_partial);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_movecopy_folder &d)
-{
-	TRY(x.g_bool(&d.b_exist));
-	return x.g_bool(&d.b_partial);
-}
-
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_movecopy_folder &d)
-{
-	TRY(x.p_bool(d.b_exist));
-	return x.p_bool(d.b_partial);
-}
-
 static pack_result exmdb_pull(EXT_PULL &x, exresp_delete_messages &d)
 {
 	return x.g_bool(&d.b_partial);

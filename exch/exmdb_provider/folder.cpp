@@ -1476,11 +1476,9 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
  * Callers need to update the hierarchy change number when done with copy
  * operations.
  */
-BOOL exmdb_server::movecopy_folder(const char *dir,
-    int account_id, cpid_t cpid, BOOL b_guest, const char *username,
-	uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid,
-	const char *str_new, BOOL b_copy, BOOL *pb_exist,
-	BOOL *pb_partial)
+BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
+    BOOL b_guest, const char *username, uint64_t src_pid, uint64_t src_fid,
+    uint64_t dst_fid, const char *str_new, BOOL b_copy, ec_error_t *errcode)
 {
 	uint64_t tmp_fid = 0, fid_val = 0;
 	char sql_string[256];
@@ -1489,17 +1487,16 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
 	auto parent_val = rop_util_get_gc_value(src_pid);
-	*pb_exist = FALSE;
-	*pb_partial = FALSE;
+	*errcode = ecError;
 	if (!b_copy) {
 		if (exmdb_server::is_private()) {
 			if (src_val < PRIVATE_FID_CUSTOM) {
-				*pb_partial = TRUE;
+				*errcode = ecAccessDenied;
 				return TRUE;
 			}
 		} else {
 			if (src_val < PUBLIC_FID_CUSTOM) {
-				*pb_partial = TRUE;
+				*errcode = ecAccessDenied;
 				return TRUE;
 			}
 		}
@@ -1512,13 +1509,13 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 	if (b_copy &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*pb_partial = TRUE;
+		*errcode = ecQuotaExceeded;
 		return TRUE;		
 	}
 	if (!common_util_get_folder_by_name(pdb->psqlite, dst_val, str_new, &tmp_fid))
 		return FALSE;
 	if (0 != tmp_fid) {
-		*pb_exist = TRUE;
+		*errcode = ecDuplicateName;
 		return TRUE;
 	}
 	if (!b_copy) {
@@ -1527,7 +1524,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 		    src_val, &b_included))
 			return FALSE;
 		if (b_included) {
-			*pb_partial = TRUE;
+			*errcode = ecRootFolder;
 			return TRUE;
 		}
 	}
@@ -1628,6 +1625,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir,
 		return false;
 	db_engine_notify_folder_movecopy(pdb, b_copy,
 		dst_val, fid_val, parent_val, src_val);
+	*errcode = ecSuccess;
 	return TRUE;
 }
 

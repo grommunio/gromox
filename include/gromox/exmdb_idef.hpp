@@ -37,7 +37,7 @@ EXMIDL(get_search_criteria, (const char *dir, uint64_t folder_id, IDLOUT uint32_
 EXMIDL(set_search_criteria, (const char *dir, cpid_t cpid, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids, IDLOUT BOOL *b_result))
 EXMIDL(movecopy_message, (const char *dir, int32_t account_id, cpid_t cpid, uint64_t message_id, uint64_t dst_fid, uint64_t dst_id, BOOL b_move, IDLOUT BOOL *b_result))
 EXMIDL(movecopy_messages, (const char *dir, int32_t account_id, cpid_t cpid, BOOL b_guest, const char *username, uint64_t src_fid, uint64_t dst_fid, BOOL b_copy, const EID_ARRAY *pmessage_ids, IDLOUT BOOL *b_partial))
-EXMIDL(movecopy_folder, (const char *dir, int32_t account_id, cpid_t cpid, BOOL b_guest, const char *username, uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid, const char *str_new, BOOL b_copy, IDLOUT BOOL *b_exist, BOOL *b_partial))
+EXMIDL(movecopy_folder, (const char *dir, int32_t account_id, cpid_t cpid, BOOL b_guest, const char *username, uint64_t src_pid, uint64_t src_fid, uint64_t dst_fid, const char *str_new, BOOL b_copy, IDLOUT ec_error_t *e_result))
 EXMIDL(delete_messages, (const char *dir, int32_t account_id, cpid_t cpid, const char *username, uint64_t folder_id, const EID_ARRAY *pmessage_ids, BOOL b_hard, IDLOUT BOOL *b_partial))
 EXMIDL(get_message_brief, (const char *dir, cpid_t cpid, uint64_t message_id, IDLOUT MESSAGE_CONTENT **pbrief))
 EXMIDL(sum_hierarchy, (const char *dir, uint64_t folder_id, const char *username, BOOL b_depth, IDLOUT uint32_t *count))

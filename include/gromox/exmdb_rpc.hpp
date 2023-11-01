@@ -57,7 +57,7 @@ enum class exmdb_callid : uint8_t {
 	set_search_criteria = 0x1f,
 	movecopy_message = 0x20,
 	movecopy_messages = 0x21,
-	movecopy_folder = 0x22,
+	// movecopy_folder_v1 = 0x22,
 	delete_messages = 0x23,
 	get_message_brief = 0x24,
 	sum_hierarchy = 0x25,
@@ -162,6 +162,7 @@ enum class exmdb_callid : uint8_t {
 	autoreply_tsupdate = 0x88,
 	get_mapping_replid = 0x89,
 	recalc_store_size = 0x8a,
+	movecopy_folder = 0x8b,
 	/* update exch/exmdb_provider/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -983,11 +984,6 @@ struct exresp_movecopy_messages : public exresp {
 	BOOL b_partial;
 };
 
-struct exresp_movecopy_folder : public exresp {
-	BOOL b_exist;
-	BOOL b_partial;
-};
-
 struct exresp_delete_messages : public exresp {
 	BOOL b_partial;
 };
@@ -1334,6 +1330,7 @@ using exresp_autoreply_tsupdate = exresp;
 using exresp_recalc_store_size = exresp;
 using exresp_flush_instance = exresp_error;
 using exresp_write_message = exresp_error;
+using exresp_movecopy_folder = exresp_error;
 
 struct DB_NOTIFY_DATAGRAM {
 	char *dir = nullptr;

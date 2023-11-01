@@ -504,9 +504,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
     uint64_t folder_id, const char *pnew_name, uint8_t *ppartial_completion,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
-	BOOL b_exist;
 	BOOL b_cycle;
-	BOOL b_partial;
 	ems_objtype object_type;
 	BINARY *pbin_pcl;
 	uint64_t nt_time;
@@ -578,14 +576,15 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	if (pbin_pcl == nullptr)
 		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	ec_error_t err = ecSuccess;
 	if (!exmdb_client::movecopy_folder(dir,
 	    plogon->account_id, pinfo->cpid, b_guest, rpc_user,
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id,
-	    new_name, FALSE, &b_exist, &b_partial))
+	    new_name, false, &err))
 		return ecError;
-	if (b_exist)
-		return ecDuplicateName;
-	*ppartial_completion = !!b_partial;
+	if (err == ecDuplicateName)
+		return err;
+	*ppartial_completion = err != ecSuccess;
 	nt_time = rop_util_current_nttime();
 	propvals.count = 4;
 	propvals.ppropval = propval_buff;
@@ -608,9 +607,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id,
     uint32_t hsrc, uint32_t hdst)
 {
-	BOOL b_exist;
 	BOOL b_cycle;
-	BOOL b_partial;
 	ems_objtype object_type;
 	char new_name[128];
 	uint32_t permission;
@@ -663,14 +660,15 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	if (b_cycle)
 		return ecRootFolder;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
+	ec_error_t err = ecSuccess;
 	if (!exmdb_client::movecopy_folder(dir,
 	    plogon->account_id, pinfo->cpid, b_guest, rpc_user,
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
-	    TRUE, &b_exist, &b_partial))
+	    TRUE, &err))
 		return ecError;
-	if (b_exist)
-		return ecDuplicateName;
-	*ppartial_completion = !!b_partial;
+	if (err == ecDuplicateName)
+		return err;
+	*ppartial_completion = err != ecSuccess;
 	return ecSuccess;
 }
 

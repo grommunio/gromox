@@ -2733,11 +2733,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
  */
 static int mail_engine_mrenf(int argc, char **argv, int sockd)
 {
-	BOOL b_exist;
 	char *ptoken;
 	BINARY *pbin1;
 	char *ptoken1;
-	BOOL b_partial;
 	uint64_t nt_time;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -2805,16 +2803,17 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	pidb.reset();
 	if (parent_id != folder_id1) {
+		ec_error_t errcode = ecSuccess;
 		if (!exmdb_client::movecopy_folder(argv[1], user_id, CP_ACP,
 		    false, nullptr,
 		    rop_util_make_eid_ex(1, parent_id),
 		    rop_util_make_eid_ex(1, folder_id),
 		    rop_util_make_eid_ex(1, folder_id1),
-		    ptoken, FALSE, &b_exist, &b_partial))
+		    ptoken, false, &errcode))
 			return MIDB_E_MDB_MOVECOPY;
-		if (b_exist)
+		if (errcode == ecDuplicateName)
 			return MIDB_E_FOLDER_EXISTS;
-		if (b_partial)
+		if (errcode != ecSuccess)
 			return MIDB_E_MDB_PARTIAL;
 	}
 	proptags.count = 1;

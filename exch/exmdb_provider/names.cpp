@@ -43,7 +43,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(SET_SEARCH_CRITERIA),
 	E(MOVECOPY_MESSAGE),
 	E(MOVECOPY_MESSAGES),
-	E(MOVECOPY_FOLDER),
+	"MOVECOPY_FOLDER_V1",
 	E(DELETE_MESSAGES),
 	E(GET_MESSAGE_BRIEF),
 	E(SUM_HIERARCHY),
@@ -148,13 +148,14 @@ static constexpr const char *exmdb_rpc_names[] = {
 	E(AUTOREPLY_TSUPDATE),
 	E(GET_MAPPING_REPLID),
 	E(RECALC_STORE_SIZE),
+	E(MOVECOPY_FOLDER),
 };
 #undef E
 
 const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::recalc_store_size) + 1);
+	static_assert(std::size(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::movecopy_folder) + 1);
 	auto s = j < std::size(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }
