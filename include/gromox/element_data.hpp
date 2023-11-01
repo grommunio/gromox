@@ -120,6 +120,7 @@ void message_content_free(MESSAGE_CONTENT *pmsgctnt);
 
 namespace gromox {
 struct mc_delete {
+	inline void operator()(ATTACHMENT_LIST *x) { attachment_list_free(x); }
 	inline void operator()(MESSAGE_CONTENT *x) { message_content_free(x); }
 };
 }
