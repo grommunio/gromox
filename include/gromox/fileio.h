@@ -49,8 +49,8 @@ class tmpfile {
 	~tmpfile() { close(); }
 	operator int() const { return m_fd; }
 	void close();
-	int open_anon(const char *dir, unsigned int flags, unsigned int mode = 0666);
-	int open_linkable(const char *dir, unsigned int flags, unsigned int mode = 0666);
+	int open_anon(const char *dir, unsigned int flags, unsigned int mode = FMODE_PRIVATE);
+	int open_linkable(const char *dir, unsigned int flags, unsigned int mode = FMODE_PRIVATE);
 	errno_t link_to(const char *newpath);
 
 	int m_fd = -1;
@@ -94,7 +94,7 @@ extern GX_EXPORT std::string zstd_decompress(std::string_view);
 extern GX_EXPORT size_t gx_decompressed_size(const char *);
 extern GX_EXPORT errno_t gx_decompress_file(const char *, BINARY &, void *(*)(size_t), void *(*)(void *, size_t));
 extern GX_EXPORT errno_t gx_compress_tofd(std::string_view, int fd, uint8_t complvl = 0);
-extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0);
+extern GX_EXPORT errno_t gx_compress_tofile(std::string_view, const char *outfile, uint8_t complvl = 0, unsigned int mode = FMODE_PRIVATE);
 extern GX_EXPORT std::string base64_encode(const std::string_view &);
 extern GX_EXPORT std::string base64_decode(const std::string_view &);
 extern GX_EXPORT std::string sss_obf_reverse(const std::string_view &);

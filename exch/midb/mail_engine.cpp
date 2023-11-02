@@ -249,7 +249,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite, const char *mid_string,
 		auto djson = json_to_str(digest);
 		snprintf(temp_path, 256, "%s/ext/%s",
 			common_util_get_maildir(), mid_string);
-		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() >= 0) {
 			auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
 			if (wr_ret < 0 || fd.close_wr() != 0)
@@ -1478,7 +1478,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 		         static_cast<long long>(time(nullptr)), ++g_sequence_id);
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
-		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0)
 			return;
 		auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
@@ -1487,7 +1487,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt, uint32_t *puidnext,
 			return;
 		}
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
-		fd = open(temp_path1, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		fd = open(temp_path1, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() < 0)
 			return;
 		if (!imail.to_file(fd.get()))
@@ -2410,7 +2410,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	digest["file"] = "";
 	auto djson = json_to_str(digest);
 	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
-	wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+	wrapfd fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-2073: Opening %s for writing failed: %s", temp_path, strerror(errno));
 		return MIDB_E_DISK_ERROR;

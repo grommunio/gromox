@@ -37,8 +37,6 @@
 
 #define MAXARGS				128
 
-#define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-
 using namespace gromox;
 
 namespace {
@@ -167,7 +165,7 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 		}
 	}
 	auto temp_path = g_list_path + ".tmp";
-	auto temp_fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
+	auto temp_fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 	if (temp_fd >= 0) {
 		for (size_t i = 0; i < item_num; ++i) {
 			if (pitem[i].exectime == 0)
@@ -297,7 +295,7 @@ int main(int argc, const char **argv) try
 	}
 	pfile.reset();
 
-	g_list_fd = open(g_list_path.c_str(), O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
+	g_list_fd = open(g_list_path.c_str(), O_CREAT | O_APPEND | O_WRONLY, FMODE_PRIVATE);
 	if (g_list_fd < 0) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path.c_str(), strerror(errno));
 		return EXIT_FAILURE;

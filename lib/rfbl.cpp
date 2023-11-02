@@ -1429,9 +1429,10 @@ errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 	return 0;
 }
 
-errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile, uint8_t complvl)
+errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile,
+    uint8_t complvl, unsigned int mode)
 {
-	wrapfd fd(open(outfile, O_WRONLY | O_TRUNC | O_CREAT, 0666));
+	wrapfd fd = open(outfile, O_WRONLY | O_TRUNC | O_CREAT, mode);
 	auto ret = gx_compress_tofd(inbuf, fd.get(), complvl);
 	if (ret != 0)
 		return ret;

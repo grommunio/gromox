@@ -35,7 +35,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "delivery.hpp"
-#define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE		1
 #define BLOCK_SIZE				64*1024*2
 #define SLEEP_INTERVAL			50000
@@ -160,7 +159,7 @@ int message_dequeue_run()
         return -2;
     }
 	/* create the message queue */
-	g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
+	g_msg_id = msgget(k_msg, IPC_CREAT | FMODE_PUBLIC);
 	if (-1 == g_msg_id) {
 		mlog(LV_ERR, "mdq: msgget: %s", strerror(errno));
 		return -6;
@@ -468,7 +467,7 @@ errno_t message_dequeue_save(MESSAGE *pmessage)
 			return errno;
 		return 0;
 	}
-	int fd = open(new_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
+	int fd = open(new_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FMODE_PRIVATE);
 	if (fd < 0) {
 		int se = errno;
 		mlog(LV_ERR, "mdq: opening %s for write: %s",

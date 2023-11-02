@@ -3031,7 +3031,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under
 	 * EXCL semantics ahead of time.
 	 */
-	int tfd = open(tmp_path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP);
+	auto tfd = open(tmp_path, O_RDWR | O_CREAT | O_EXCL, FMODE_PRIVATE);
 	if (tfd >= 0) {
 		close(tfd);
 		auto ret = sqlite3_open_v2(tmp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);

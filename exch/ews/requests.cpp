@@ -95,7 +95,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 		return (void) unlink(path.c_str());
 	static const char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
 	auto& content = *reply->Message;
-	std::ofstream file(path, std::ios::binary);
+	std::ofstream file(path, std::ios::binary); /* FMODE_PUBLIC */
 	file.write(header, std::size(header)-1);
 	file.write(content.c_str(), content.size());
 	file.close();
@@ -783,7 +783,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 		throw DispatchError(E3009(OofSettings.ExternalAudience));
 
 	std::string filename = maildir+"/config/autoreply.cfg";
-	std::ofstream file(filename);
+	std::ofstream file(filename); /* FMODE_PUBLIC */
 	file << "oof_state = " << oof_state << "\n"
 	     << "allow_external_oof = " << allow_external_oof << "\n";
 	if(allow_external_oof)

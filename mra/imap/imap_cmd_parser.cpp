@@ -2139,7 +2139,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		             std::to_string(imap_parser_get_sequence_ID()) + "." +
 		             znul(g_config_file->get_value("host_id"));
 		eml_path = std::string(pcontext->maildir) + "/eml/" + mid_string;
-		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1456: ENOMEM");
 	}
@@ -2247,7 +2247,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	} catch (const std::bad_alloc &) {
 		return 1918 | DISPATCH_BREAK;
 	}
-	int fd = open(pcontext->file_path.c_str(), O_CREAT|O_RDWR|O_TRUNC, 0666);
+	int fd = open(pcontext->file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd == -1)
 		return 1909 | DISPATCH_BREAK;
 	len = sizeof(uint32_t);
@@ -2368,7 +2368,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	int fd = -1;
 	try {
 		eml_path = std::string(pcontext->maildir) + "/eml/" + pcontext->mid;
-		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1460: ENOMEM");
 	}

@@ -9,6 +9,8 @@
 #include <string>
 #include <type_traits>
 #include <gromox/mapierr.hpp>
+#define FMODE_PRIVATE 0660U
+#define FMODE_PUBLIC 0666U
 #define SOCKET_TIMEOUT 60
 #define GX_EXPORT __attribute__((visibility("default")))
 #define NOMOVE(K) \

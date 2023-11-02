@@ -31,8 +31,6 @@
 #include "exmdb_local.hpp"
 #define MAX_DIGLEN				256*1024
 
-#define DEF_MODE				S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-
 using namespace gromox;
 
 static bool g_lda_twostep;
@@ -320,7 +318,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	auto mid_string = std::to_string(time(nullptr)) + "." +
 	                  std::to_string(sequence_ID) + "." + hostname;
 	auto eml_path = std::string(home_dir) + "/eml/" + mid_string;
-	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, DEF_MODE);
+	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		auto se = errno;
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,

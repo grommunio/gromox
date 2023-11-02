@@ -24,8 +24,6 @@
 #include "pop3.hpp"
 #include "../midb_agent.hpp"
 
-#define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 

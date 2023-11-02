@@ -2123,7 +2123,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (tmp_list.size() == item_num)
 		return ecSuccess;
 	auto dlg_path = maildir + "/config/delegates.txt"s;
-	wrapfd fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+	wrapfd fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
 	if (fd.get() < 0) {
 		mlog(LV_ERR, "E-2024: open %s: %s",
 			dlg_path.c_str(), strerror(errno));

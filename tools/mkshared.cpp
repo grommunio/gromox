@@ -42,15 +42,13 @@ void adjust_rights(int fd)
 {
 	uid_t uid = -1;
 	gid_t gid = -1;
-	unsigned int mode = S_IRUSR | S_IWUSR;
+	unsigned int mode = FMODE_PUBLIC | S_IXUSR | S_IXGRP | S_IXOTH;
 	struct stat sb;
 
 	if (fstat(fd, &sb) != 0) {
 		perror("fstat");
 		return;
 	}
-	if (S_ISDIR(sb.st_mode))
-		mode |= S_IXUSR;
 	auto sp = getpwnam(RUNNING_IDENTITY);
 	if (sp == nullptr)
 		fprintf(stderr, "No \"" RUNNING_IDENTITY "\" user in system. Not changing UID of mailbox.\n");
@@ -59,12 +57,12 @@ void adjust_rights(int fd)
 	auto gr = getgrnam(RUNNING_IDENTITY);
 	if (gr == nullptr) {
 		fprintf(stderr, "No \"" RUNNING_IDENTITY "\" group in system. Not changing GID of mailbox.\n");
+		mode &= FMODE_PRIVATE;
 	} else {
 		gid = gr->gr_gid;
-		mode |= S_IRGRP | S_IWGRP;
-		if (S_ISDIR(sb.st_mode))
-			mode |= S_IXGRP;
 	}
+	if (!S_ISDIR(sb.st_mode))
+		mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
 	if (fchown(fd, uid, gid) < 0)
 		perror("fchown");
 	if (fchmod(fd, mode) < 0)

@@ -813,7 +813,7 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 		int fd = -1;
 		try {
 			auto dlg_path = pfolder->pstore->get_dir() + "/config/delegates.txt"s;
-			fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+			fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1491: ENOMEM");
 		}

@@ -22,7 +22,6 @@
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
-#define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -123,7 +122,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 		mlog(LV_ERR, "E-1531: ENOMEM");
 		return -1;
 	}
-	wrapfd fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
+	wrapfd fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0)
 		return -1;
 	/* write 0 at the begin of file to indicate message is now being written */

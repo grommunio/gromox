@@ -55,7 +55,7 @@ int listener_run(const char *CS_PATH)
 		return -1;
 	}
 	gx_reexec_record(g_listen_sockd);
-	if (chmod(CS_PATH, 0666) < 0) {
+	if (chmod(CS_PATH, FMODE_PUBLIC) < 0) {
 		close(g_listen_sockd);
 		mlog(LV_ERR, "listener: failed to change the access mode of %s", CS_PATH);
 		return -3;

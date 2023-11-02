@@ -102,7 +102,7 @@ static int message_enqueue_run()
         return -2;
     }
     /* create the message queue */
-    g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
+	g_msg_id = msgget(k_msg, IPC_CREAT | FMODE_PUBLIC);
     if (-1 == g_msg_id) {
 		mlog(LV_ERR, "message_enqueue: msgget: %s", strerror(errno));
         return -6;

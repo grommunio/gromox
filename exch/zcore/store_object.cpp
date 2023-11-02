@@ -1021,7 +1021,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return false;
 	}
 	/* Ensure file exists for config_file_prg */
-	auto fdtest = open(autoreply_path.c_str(), O_CREAT | O_WRONLY, 0666);
+	auto fdtest = open(autoreply_path.c_str(), O_CREAT | O_WRONLY, FMODE_PUBLIC);
 	if (fdtest < 0)
 		return false;
 	close(fdtest);
@@ -1080,7 +1080,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue));
 			}
 		}
-		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
 		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
 			return FALSE;
 		return TRUE;
@@ -1126,7 +1126,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           "charset=\"utf-8\"\r\nSubject: %s%s",
 				           static_cast<const char *>(pvalue), ptoken);
 		}
-		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
 		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
 			return FALSE;
 		return TRUE;

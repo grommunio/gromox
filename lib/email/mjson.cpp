@@ -26,8 +26,6 @@
 
 #define MAX_DIGLEN			256*1024
 
-#define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-
 using namespace gromox;
 
 enum {
@@ -1055,7 +1053,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 	/* for saving stacking size, so use C++
 		style of local variable declaration */
 	size_t mess_len;
-	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+	fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		pbuild->build_result = FALSE;
 		return;
@@ -1082,7 +1080,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 	else
 		digest["file"] = std::string(pbuild->filename) + "." + pmime->get_id();
 	auto djson = json_to_str(digest);
-	fd = open(dgt_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
+	fd = open(dgt_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 	if (fd.get() < 0) {
 		if (remove(msg_path) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1374: remove %s: %s", msg_path, strerror(errno));
