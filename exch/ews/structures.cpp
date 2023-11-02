@@ -1196,9 +1196,11 @@ sFolder tBaseFolderType::create(const sShape& shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, const std::optional<sBase64Binary>& chKey) :
-    Id(fEntryID), ChangeKey(chKey)
-{}
+tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
+{
+	Id.reserve(fEntryID.size()+1); // Extra byte is appended for encoding during serialization, prevent reallocation
+	Id = fEntryID;
+}
 
 tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::variant<tFolderId, tItemId>&& oid, tFolderId&& fid) :
     TimeStamp(ts), objectId(std::move(oid)), ParentFolderId(std::move(fid))
@@ -2241,8 +2243,10 @@ void tItem::update(const sShape& shape)
 	if((prop = shape.get(PR_CHANGE_KEY)))
 		fromProp(prop, defaulted(ItemId).ChangeKey);
 	fromProp(shape.get(PR_CLIENT_SUBMIT_TIME), DateTimeSent);
-	if((prop = shape.get(PR_CONVERSATION_ID)))
+	if((prop = shape.get(PR_CONVERSATION_ID))) {
 		fromProp(prop, defaulted(ConversationId).Id);
+		ConversationId->type = tItemId::ID_GENERIC;
+	}
 	fromProp(shape.get(PR_CREATION_TIME), DateTimeCreated);
 	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
 	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);

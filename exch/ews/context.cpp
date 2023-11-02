@@ -1568,12 +1568,12 @@ void EWSContext::ext_error(pack_result code, const char* msg, const char* respon
 	{
 	case EXT_ERR_SUCCESS: return;
 	case EXT_ERR_ALLOC: throw Exceptions::EWSError::NotEnoughMemory(msg? msg : E3128);
-	case EXT_ERR_BUFSIZE: throw Exceptions::DispatchError(msg? msg : E3145);
+	case EXT_ERR_BUFSIZE:
 	default:
 		if(responseCode && msg)
 			throw Exceptions::EWSError(responseCode, msg);
 		else
-			throw DispatchError(Exceptions::E3028(int(code)));
+			throw DispatchError(code == EXT_ERR_BUFSIZE? E3145 : Exceptions::E3028(int(code)));
 	}
 }
 

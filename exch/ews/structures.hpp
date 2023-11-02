@@ -467,12 +467,22 @@ struct tAttachment : public NS_EWS_Types
  */
 struct tBaseItemId
 {
-	sBase64Binary Id; //Attribute
+	enum IdType : uint8_t {
+		ID_UNKNOWN, ///< Unspecified
+		ID_GENERIC, ///< Non-entry id, but uses the same tag layout
+		ID_FOLDER, ///< 46 byte folder entry id
+		ID_ITEM, ///< 70 byte message entry id
+		ID_ATTACHMENT, ///< 70 byte message entry id + 4 byte attachment index
+		ID_OCCURRENCE, ///< 70 byte message entry id + 4 byte occurrence day
+	};
+
+	mutable sBase64Binary Id; //Attribute
 	std::optional<sBase64Binary> ChangeKey; //Attribute
+	IdType type = ID_UNKNOWN;
 
 	tBaseItemId() = default;
 	tBaseItemId(const tinyxml2::XMLElement*);
-	tBaseItemId(const sBase64Binary&, const std::optional<sBase64Binary>& = std::nullopt);
+	tBaseItemId(const sBase64Binary&, IdType=ID_UNKNOWN);
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

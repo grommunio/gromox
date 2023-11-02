@@ -328,6 +328,7 @@ E(3208, "failed to load embedded instance");
 E(3209, "requested occurrence not found");
 E(3210, "failed to get embedded instances' count");
 E(3211, "failed to get embedded instance properties");
+E(3212, "unknown entry id type");
 
 #undef E
 }
