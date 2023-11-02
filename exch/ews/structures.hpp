@@ -975,7 +975,7 @@ struct tAppendToItemField : public tChangeDescription
  */
 struct tConflictResults
 {
-	int Count;
+	int Count = 0;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
