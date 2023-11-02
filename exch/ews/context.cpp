@@ -831,6 +831,8 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 			throw DispatchError(E3211);
 
 		const uint64_t* exstarttime = props.get<uint64_t>(ex_replace_time_tag);
+		if(!exstarttime)
+			continue;
 		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
 		struct tm exstart_local;
 		localtime_r(&exstart, &exstart_local);
