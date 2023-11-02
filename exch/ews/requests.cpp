@@ -20,10 +20,13 @@
 namespace gromox::EWS::Requests
 {
 
+using std::optional;
+using std::string;
+using std::min;
+using std::max;
 using namespace gromox;
 using namespace gromox::EWS::Exceptions;
 using namespace gromox::EWS::Structures;
-using namespace std;
 using namespace tinyxml2;
 
 using Clock = time_point::clock;
@@ -56,26 +59,26 @@ static inline std::string &tolower(std::string &str)
  */
 optional<string> readMessageBody(const std::string& path) try
 {
-	ifstream ifs(path, ios::in | ios::ate | ios::binary);
+	std::ifstream ifs(path, std::ios::in | std::ios::ate | std::ios::binary);
 	if(!ifs.is_open())
-		return nullopt;
+		return std::nullopt;
 	size_t totalLength = ifs.tellg();
-	ifs.seekg(ios::beg);
+	ifs.seekg(std::ios::beg);
 	while(!ifs.eof())
 	{
-		ifs.ignore(numeric_limits<std::streamsize>::max(), '\r');
+		ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\r');
 		if(ifs.get() == '\n' && ifs.get() == '\r' && ifs.get() == '\n')
 			break;
 	}
 	if(ifs.eof())
-		return nullopt;
+		return std::nullopt;
 	size_t headerLenght = ifs.tellg();
 	string content(totalLength-headerLenght, 0);
 	ifs.read(content.data(), content.size());
 	return content;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "[ews] %s\n", e.what());
-	return nullopt;
+	return std::nullopt;
 }
 
 /**
@@ -92,7 +95,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 		return (void) unlink(path.c_str());
 	static const char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
 	auto& content = *reply->Message;
-	ofstream file(path, ios::binary);
+	std::ofstream file(path, std::ios::binary);
 	file.write(header, std::size(header)-1);
 	file.write(content.c_str(), content.size());
 	file.close();
@@ -780,7 +783,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 		throw DispatchError(E3009(OofSettings.ExternalAudience));
 
 	std::string filename = maildir+"/config/autoreply.cfg";
-	ofstream file(filename);
+	std::ofstream file(filename);
 	file << "oof_state = " << oof_state << "\n"
 	     << "allow_external_oof = " << allow_external_oof << "\n";
 	if(allow_external_oof)

@@ -10,7 +10,8 @@
 #include "exceptions.hpp"
 #include "soaputil.hpp"
 
-using namespace std;
+using std::string;
+using namespace std::string_literals;
 using namespace tinyxml2;
 
 using gromox::EWS::Exceptions::SOAPError;
@@ -48,7 +49,6 @@ Envelope::Envelope()
  */
 Envelope::Envelope(const char* content, size_t nBytes)
 {
-	using namespace string_literals;
 	doc.Parse(content, nBytes);
 	XMLElement* envelope = doc.RootElement();
 	if(!envelope)
