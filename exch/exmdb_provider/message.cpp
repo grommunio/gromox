@@ -1522,24 +1522,24 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 }
 
 static BOOL message_rectify_message(const char *account,
-	const MESSAGE_CONTENT *pmsgctnt, MESSAGE_CONTENT *pmsgctnt1)
+    const MESSAGE_CONTENT *src, MESSAGE_CONTENT *dst)
 {
-	int i;
 	GUID tmp_guid;
 	uint64_t nt_time;
 	EXT_PUSH ext_push;
 	char cid_string[256];
 	static constexpr uint32_t fake_int32 = 0;
 	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
-	auto &dprop = pmsgctnt1->proplist;
+	auto &sprop = src->proplist;
+	auto &dprop = dst->proplist;
 	
 	dprop.count = 0;
 	/* 13 in this function, and at least 2 more in the caller.. */
-	dprop.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);
+	dprop.ppropval = cu_alloc<TAGGED_PROPVAL>(sprop.count + 20);
 	if (dprop.ppropval == nullptr)
 		return FALSE;
-	for (i=0; i<pmsgctnt->proplist.count; i++) {
-		switch (pmsgctnt->proplist.ppropval[i].proptag) {
+	for (unsigned int i = 0; i < sprop.count; ++i) {
+		switch (sprop.ppropval[i].proptag) {
 		case PidTagMid:
 		case PR_ASSOCIATED:
 		case PidTagChangeNumber:
@@ -1547,33 +1547,33 @@ static BOOL message_rectify_message(const char *account,
 			continue;
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
-			if (pmsgctnt->proplist.has(PR_NORMALIZED_SUBJECT) ||
-			    pmsgctnt->proplist.has(PR_NORMALIZED_SUBJECT_A))
+			if (sprop.has(PR_NORMALIZED_SUBJECT) ||
+			    sprop.has(PR_NORMALIZED_SUBJECT_A))
 				continue;	
 			break;
 		}
-		auto &sp = pmsgctnt->proplist.ppropval[i];
+		auto &sp = sprop.ppropval[i];
 		dprop.emplace_back(sp.proptag, sp.pvalue);
 	}
 	dprop.emplace_back(PR_MSG_STATUS, &fake_int32);
-	auto msgfl = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+	auto msgfl = sprop.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgfl == nullptr) {
 		dprop.emplace_back(PR_MESSAGE_FLAGS, &fake_flags);
-		if (!pmsgctnt->proplist.has(PR_READ)) {
+		if (!sprop.has(PR_READ)) {
 			auto x = cu_alloc<uint8_t>();
 			if (x == nullptr)
 				return false;
 			*x = false;
 			dprop.emplace_back(PR_READ, x);
 		}
-	} else if (!pmsgctnt->proplist.has(PR_READ)) {
+	} else if (!sprop.has(PR_READ)) {
 		auto x = cu_alloc<uint8_t>();
 		if (x == nullptr)
 			return false;
 		*x = *msgfl & MSGFLAG_READ;
 		dprop.emplace_back(PR_READ, x);
 	}
-	if (!pmsgctnt->proplist.has(PR_SEARCH_KEY)) {
+	if (!sprop.has(PR_SEARCH_KEY)) {
 		auto pbin = cu_alloc<BINARY>();
 		if (pbin == nullptr)
 			return FALSE;
@@ -1587,7 +1587,7 @@ static BOOL message_rectify_message(const char *account,
 			return false;
 		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
-	if (!pmsgctnt->proplist.has(PR_BODY_CONTENT_ID)) {
+	if (!sprop.has(PR_BODY_CONTENT_ID)) {
 		tmp_guid = GUID::random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
 		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
@@ -1606,35 +1606,35 @@ static BOOL message_rectify_message(const char *account,
 			return FALSE;
 		dprop.emplace_back(PR_BODY_CONTENT_ID, pvalue);
 	}
-	if (!pmsgctnt->proplist.has(PR_CREATOR_NAME)) {
-		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_NAME);
+	if (!sprop.has(PR_CREATOR_NAME)) {
+		auto pvalue = sprop.get<char>(PR_SENDER_NAME);
 		if (pvalue == nullptr)
-			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
+			pvalue = sprop.get<char>(PR_SENT_REPRESENTING_NAME);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_CREATOR_NAME, pvalue);
 	}
-	if (!pmsgctnt->proplist.has(PR_CREATOR_ENTRYID)) {
-		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_ENTRYID);
+	if (!sprop.has(PR_CREATOR_ENTRYID)) {
+		auto pvalue = sprop.get<char>(PR_SENDER_ENTRYID);
 		if (pvalue == nullptr)
-			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_ENTRYID);
+			pvalue = sprop.get<char>(PR_SENT_REPRESENTING_ENTRYID);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_CREATOR_ENTRYID, pvalue);
 	}
-	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_NAME)) {
-		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_NAME);
+	if (!sprop.has(PR_LAST_MODIFIER_NAME)) {
+		auto pvalue = sprop.get<char>(PR_SENDER_NAME);
 		if (pvalue == nullptr)
-			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
+			pvalue = sprop.get<char>(PR_SENT_REPRESENTING_NAME);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_LAST_MODIFIER_NAME, pvalue);
 	}
-	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_ENTRYID)) {
-		auto pvalue = pmsgctnt->proplist.get<BINARY>(PR_SENDER_ENTRYID);
+	if (!sprop.has(PR_LAST_MODIFIER_ENTRYID)) {
+		auto pvalue = sprop.get<BINARY>(PR_SENDER_ENTRYID);
 		if (pvalue == nullptr)
-			pvalue = pmsgctnt->proplist.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
+			pvalue = sprop.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_LAST_MODIFIER_ENTRYID, pvalue);
 	}
-	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
+	auto pbin1 = sprop.get<BINARY>(PR_CONVERSATION_INDEX);
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return FALSE;
@@ -1645,7 +1645,7 @@ static BOOL message_rectify_message(const char *account,
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
 			return FALSE;
-		auto pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC);
+		auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
 		if (pvalue != nullptr && *pvalue != '\0') {
 			if (!message_md5_string(pvalue, pbin->pb))
 				return false;
@@ -1677,53 +1677,48 @@ static BOOL message_rectify_message(const char *account,
 		pbin1->cb = 27;
 		dprop.emplace_back(PR_CONVERSATION_INDEX, pbin1);
 	}
-	auto pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC);
+	auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
 	if (pvalue == nullptr)
-		pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC_A);
+		pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC_A);
 	if (NULL == pvalue) {
-		pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT);
+		pvalue = sprop.get<char>(PR_NORMALIZED_SUBJECT);
 		if (NULL == pvalue) {
-			pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT_A);
+			pvalue = sprop.get<char>(PR_NORMALIZED_SUBJECT_A);
 			if (pvalue != nullptr)
 				dprop.emplace_back(PR_CONVERSATION_TOPIC_A, pvalue);
 		} else {
 			dprop.emplace_back(PR_CONVERSATION_TOPIC, pvalue);
 		}
 	}
-	pmsgctnt1->children.prcpts = pmsgctnt->children.prcpts;
-	if (NULL == pmsgctnt->children.pattachments ||
-		0 == pmsgctnt->children.pattachments->count) {
-		pmsgctnt1->children.pattachments = NULL;
+
+	dst->children.prcpts = src->children.prcpts;
+	auto sal = src->children.pattachments;
+	if (sal == nullptr || sal->count == 0) {
+		dst->children.pattachments = nullptr;
 		return TRUE;
 	}
-	pmsgctnt1->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
-	if (pmsgctnt1->children.pattachments == nullptr)
+	auto dal = dst->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
+	if (dal == nullptr)
 		return FALSE;
-	pmsgctnt1->children.pattachments->count =
-		pmsgctnt->children.pattachments->count;
-	pmsgctnt1->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt->children.pattachments->count);
-	if (pmsgctnt1->children.pattachments->pplist == nullptr)
+	dal->count = sal->count;
+	dal->pplist = cu_alloc<ATTACHMENT_CONTENT *>(sal->count);
+	if (dal->pplist == nullptr)
 		return FALSE;
-	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
-		if (NULL == pmsgctnt->children.pattachments->pplist[i]->pembedded) {
-			pmsgctnt1->children.pattachments->pplist[i] =
-				pmsgctnt->children.pattachments->pplist[i];
+	for (unsigned int i = 0; i < sal->count; ++i) {
+		if (sal->pplist[i]->pembedded == nullptr) {
+			dal->pplist[i] = sal->pplist[i];
 			continue;
 		}
-		pmsgctnt1->children.pattachments->pplist[i] = cu_alloc<ATTACHMENT_CONTENT>();
-		if (pmsgctnt1->children.pattachments->pplist[i] == nullptr)
+		dal->pplist[i] = cu_alloc<ATTACHMENT_CONTENT>();
+		if (dal->pplist[i] == nullptr)
 			return FALSE;
-		pmsgctnt1->children.pattachments->pplist[i]->proplist =
-			pmsgctnt->children.pattachments->pplist[i]->proplist;
+		dal->pplist[i]->proplist = sal->pplist[i]->proplist;
 		auto pembedded = cu_alloc<MESSAGE_CONTENT>();
 		if (pembedded == nullptr)
 			return FALSE;
-		if (!message_rectify_message(account,
-		    pmsgctnt->children.pattachments->pplist[i]->pembedded,
-		    pembedded))
+		if (!message_rectify_message(account, sal->pplist[i]->pembedded, pembedded))
 			return FALSE;
-		pmsgctnt1->children.pattachments->pplist[i]->pembedded =
-			pembedded;
+		dal->pplist[i]->pembedded = pembedded;
 	}
 	return TRUE;
 }
