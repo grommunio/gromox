@@ -2799,8 +2799,10 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 	path = maildir + "/cid/"s + hval.str();
 	cid  = hval.str();
 	std::unique_ptr<char[], stdlib_delete> extradir(HX_dirname(path.c_str()));
-	if (extradir == nullptr)
+	if (extradir == nullptr) {
+		mlog(LV_ERR, "E-5318: ENOMEM");
 		return ENOMEM;
+	}
 	auto ret = HX_mkdir(extradir.get(), S_IRUGO | S_IWUGO | S_IXUGO);
 	if (ret < 0) {
 		mlog(LV_ERR, "E-2388: mkdir %s: %s", extradir.get(), strerror(-ret));
@@ -2828,8 +2830,10 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 	 * still be a block where it is comparatively high.
 	 */
 	auto err = gx_compress_tofd(data, tmf, g_cid_compression);
-	if (err != 0)
+	if (err != 0) {
+		mlog(LV_ERR, "E-5319: zstd routines have failed for object %s", path.c_str());
 		return err;
+	}
 	/*
 	 * If another thread created a writeout in the meantime, we will now
 	 * overwrite it. Since the contents are the same, that has no ill
@@ -2839,7 +2843,11 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 	 * It is not too terrible, considering this can only happen for newly
 	 * instantiated @paths.
 	 */
-	return tmf.link_to(path.c_str());
+	err = tmf.link_to(path.c_str());
+	if (err != 0)
+		mlog(LV_ERR, "E-5320: link %s -> %s: %s", tmf.m_path.c_str(),
+			path.c_str(), strerror(err));
+	return err;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2305: ENOMEM");
 	return ENOMEM;
