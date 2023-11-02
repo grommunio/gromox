@@ -390,7 +390,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_allocate_cn(sqlite3 *psqlite, uint64_t *pcn)
+ec_error_t cu_allocate_cn(sqlite3 *psqlite, uint64_t *pcn)
 {
 	char sql_string[128];
 	
@@ -399,7 +399,7 @@ BOOL common_util_allocate_cn(sqlite3 *psqlite, uint64_t *pcn)
 				CONFIG_ID_LAST_CHANGE_NUMBER);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
-		return FALSE;
+		return ecJetError;
 	uint64_t last_cn = pstmt.step() == SQLITE_ROW ?
 	                   sqlite3_column_int64(pstmt, 0) : 0;
 	pstmt.finalize();
@@ -409,12 +409,12 @@ BOOL common_util_allocate_cn(sqlite3 *psqlite, uint64_t *pcn)
 				CONFIG_ID_LAST_CHANGE_NUMBER);
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
-		return FALSE;
+		return ecJetError;
 	sqlite3_bind_int64(pstmt, 1, last_cn);
 	if (pstmt.step() != SQLITE_DONE)
-		return FALSE;
+		return ecJetError;
 	*pcn = last_cn;
-	return TRUE;
+	return ecSuccess;
 }
 
 BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part)
@@ -4549,7 +4549,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	} else if (!common_util_allocate_eid(psqlite, pdst_mid)) {
 		return FALSE;
 	}
-	if (!common_util_allocate_cn(psqlite, &change_num))
+	if (cu_allocate_cn(psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	if (pchange_num != nullptr)
 		*pchange_num = change_num;

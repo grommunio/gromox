@@ -42,7 +42,7 @@ enum ec_error_t {
 	// MAPI_E_INVALID_RECIPS = 0x19,
 	// MAPI_E_NOT_SUPPORTED = 0x1A,
 	// StoreTestFailure = 0x000003e8,
-	// ecJetError = 0x000003EA,
+	ecJetError = 0x000003EA,
 	ecUnknownUser = 0x000003EB,
 	// ecExiting = 0x000003ED,
 	// ecBadConfig = 0x000003EE,

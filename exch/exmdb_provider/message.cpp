@@ -197,7 +197,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
-		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
+		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return FALSE;
 		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PidTagChangeNumber;
@@ -411,7 +411,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
-		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
+		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 			return FALSE;
 		auto tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PidTagChangeNumber;
@@ -588,7 +588,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		return FALSE;
 	propvals.count = 5;
 	propvals.ppropval = tmp_propvals;
-	if (!common_util_allocate_cn(pdb->psqlite, &change_num))
+	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	tmp_cn = rop_util_make_eid_ex(1, change_num);
 	tmp_propvals[0].proptag = PidTagChangeNumber;
@@ -961,7 +961,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	if (!common_util_allocate_cn(pdb->psqlite, &read_cn))
+	if (cu_allocate_cn(pdb->psqlite, &read_cn) != ecSuccess)
 		return false;
 	if (!exmdb_server::is_private()) {
 		exmdb_server::set_public_username(username);
@@ -1749,7 +1749,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	pproplist = &pmsgctnt->proplist;
 	auto cn_p = pproplist->get<const eid_t>(PidTagChangeNumber);
 	if (cn_p == nullptr) {
-		if (!common_util_allocate_cn(psqlite, &change_num))
+		if (cu_allocate_cn(psqlite, &change_num) != ecSuccess)
 			return FALSE;
 		b_cn = FALSE;
 	} else {

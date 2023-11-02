@@ -83,7 +83,7 @@ extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, cpid_t,
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid);
 BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t *peid);
-BOOL common_util_allocate_cn(sqlite3 *psqlite, uint64_t *pcn);
+extern ec_error_t cu_allocate_cn(sqlite3 *, uint64_t *new_cn);
 BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part);
 BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	uint64_t eid_val, BOOL *pb_result);

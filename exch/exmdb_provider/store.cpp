@@ -295,7 +295,7 @@ BOOL exmdb_server::allocate_cn(const char *dir, uint64_t *pcn)
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!common_util_allocate_cn(pdb->psqlite, &change_num))
+	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	*pcn = rop_util_make_eid_ex(1, change_num);
 	return TRUE;

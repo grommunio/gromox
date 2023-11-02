@@ -1019,7 +1019,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	uint64_t change_num;
 	char sql_string[256];
 	
-	if (!common_util_allocate_cn(psqlite, &change_num))
+	if (cu_allocate_cn(psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
@@ -1120,7 +1120,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	uint64_t change_num;
 	char sql_string[256];
 	
-	if (!common_util_allocate_cn(pdb->psqlite, &change_num))
+	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
 		return FALSE;
 	if (!common_util_allocate_eid(pdb->psqlite, &last_eid))
 		return FALSE;
