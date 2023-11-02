@@ -1521,7 +1521,7 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 	return true;
 }
 
-static BOOL message_rectify_message(const char *account,
+static ec_error_t message_rectify_message(const char *account,
     const MESSAGE_CONTENT *src, MESSAGE_CONTENT *dst)
 {
 	GUID tmp_guid;
@@ -1537,7 +1537,7 @@ static BOOL message_rectify_message(const char *account,
 	/* 13 in this function, and at least 2 more in the caller.. */
 	dprop.ppropval = cu_alloc<TAGGED_PROPVAL>(sprop.count + 20);
 	if (dprop.ppropval == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	for (unsigned int i = 0; i < sprop.count; ++i) {
 		switch (sprop.ppropval[i].proptag) {
 		case PidTagMid:
@@ -1562,36 +1562,36 @@ static BOOL message_rectify_message(const char *account,
 		if (!sprop.has(PR_READ)) {
 			auto x = cu_alloc<uint8_t>();
 			if (x == nullptr)
-				return false;
+				return ecServerOOM;
 			*x = false;
 			dprop.emplace_back(PR_READ, x);
 		}
 	} else if (!sprop.has(PR_READ)) {
 		auto x = cu_alloc<uint8_t>();
 		if (x == nullptr)
-			return false;
+			return ecServerOOM;
 		*x = *msgfl & MSGFLAG_READ;
 		dprop.emplace_back(PR_READ, x);
 	}
 	if (!sprop.has(PR_SEARCH_KEY)) {
 		auto pbin = cu_alloc<BINARY>();
 		if (pbin == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		pbin->cb = 16;
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		tmp_guid = GUID::random_new();
 		if (!ext_push.init(pbin->pb, 16, 0) ||
 		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
-			return false;
+			return ecError;
 		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
 	if (!sprop.has(PR_BODY_CONTENT_ID)) {
 		tmp_guid = GUID::random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
 		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
-			return false;
+			return ecError;
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
 		cid_string[32] = '@';
@@ -1603,7 +1603,7 @@ static BOOL message_rectify_message(const char *account,
 		strncpy(cid_string + 33, pc, 128);
 		auto pvalue = common_util_dup(cid_string);
 		if (pvalue == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		dprop.emplace_back(PR_BODY_CONTENT_ID, pvalue);
 	}
 	if (!sprop.has(PR_CREATOR_NAME)) {
@@ -1637,23 +1637,23 @@ static BOOL message_rectify_message(const char *account,
 	auto pbin1 = sprop.get<BINARY>(PR_CONVERSATION_INDEX);
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	pbin->cb = 16;
 	if (NULL != pbin1 && pbin1->cb >= 22) {
 		pbin->pb = pbin1->pb + 6;
 	} else {
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
 		if (pvalue != nullptr && *pvalue != '\0') {
 			if (!message_md5_string(pvalue, pbin->pb))
-				return false;
+				return ecError;
 		} else {
 			tmp_guid = GUID::random_new();
 			if (!ext_push.init(pbin->pb, 16, 0) ||
 			    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
-				return false;
+				return ecError;
 		}
 	}
 	dprop.emplace_back(PR_CONVERSATION_ID, pbin);
@@ -1661,10 +1661,10 @@ static BOOL message_rectify_message(const char *account,
 	if (NULL == pbin1) {
 		pbin1 = cu_alloc<BINARY>();
 		if (pbin1 == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		pbin1->pv = common_util_alloc(27);
 		if (pbin1->pv == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		nt_time = rop_util_current_nttime();
 		if (!ext_push.init(pbin1->pb, 27, 0) ||
 		    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
@@ -1673,7 +1673,7 @@ static BOOL message_rectify_message(const char *account,
 		    ext_push.p_bytes(pbin->pb, 16) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint8(nt_time & 0xFF) != EXT_ERR_SUCCESS)
-			return false;
+			return ecError;
 		pbin1->cb = 27;
 		dprop.emplace_back(PR_CONVERSATION_INDEX, pbin1);
 	}
@@ -1695,15 +1695,15 @@ static BOOL message_rectify_message(const char *account,
 	auto sal = src->children.pattachments;
 	if (sal == nullptr || sal->count == 0) {
 		dst->children.pattachments = nullptr;
-		return TRUE;
+		return ecSuccess;
 	}
 	auto dal = dst->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
 	if (dal == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	dal->count = sal->count;
 	dal->pplist = cu_alloc<ATTACHMENT_CONTENT *>(sal->count);
 	if (dal->pplist == nullptr)
-		return FALSE;
+		return ecServerOOM;
 	for (unsigned int i = 0; i < sal->count; ++i) {
 		if (sal->pplist[i]->pembedded == nullptr) {
 			dal->pplist[i] = sal->pplist[i];
@@ -1711,16 +1711,17 @@ static BOOL message_rectify_message(const char *account,
 		}
 		dal->pplist[i] = cu_alloc<ATTACHMENT_CONTENT>();
 		if (dal->pplist[i] == nullptr)
-			return FALSE;
+			return ecServerOOM;
 		dal->pplist[i]->proplist = sal->pplist[i]->proplist;
 		auto pembedded = cu_alloc<MESSAGE_CONTENT>();
 		if (pembedded == nullptr)
-			return FALSE;
-		if (!message_rectify_message(account, sal->pplist[i]->pembedded, pembedded))
-			return FALSE;
+			return ecServerOOM;
+		auto err = message_rectify_message(account, sal->pplist[i]->pembedded, pembedded);
+		if (err != ecSuccess)
+			return err;
 		dal->pplist[i]->pembedded = pembedded;
 	}
-	return TRUE;
+	return ecSuccess;
 }
 	
 static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
@@ -1756,7 +1757,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		b_cn = TRUE;
 	}
 	if (!b_internal) {
-		if (!message_rectify_message(account, pmsgctnt, &msgctnt))
+		if (message_rectify_message(account, pmsgctnt, &msgctnt) != ecSuccess)
 			return FALSE;
 		if (!b_embedded && !b_cn) {
 			XID tmp_xid;
