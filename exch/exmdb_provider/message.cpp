@@ -1531,10 +1531,12 @@ static BOOL message_rectify_message(const char *account,
 	char cid_string[256];
 	static constexpr uint32_t fake_int32 = 0;
 	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
+	auto &dprop = pmsgctnt1->proplist;
 	
-	pmsgctnt1->proplist.count = 0;
-	auto *vc = pmsgctnt1->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);
-	if (vc == nullptr)
+	dprop.count = 0;
+	/* 13 in this function, and at least 2 more in the caller.. */
+	dprop.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 20);
+	if (dprop.ppropval == nullptr)
 		return FALSE;
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		switch (pmsgctnt->proplist.ppropval[i].proptag) {
@@ -1550,38 +1552,26 @@ static BOOL message_rectify_message(const char *account,
 				continue;	
 			break;
 		}
-		*vc++ = pmsgctnt->proplist.ppropval[i];
-		pmsgctnt1->proplist.count ++;
+		auto &sp = pmsgctnt->proplist.ppropval[i];
+		dprop.emplace_back(sp.proptag, sp.pvalue);
 	}
-	vc->proptag = PR_MSG_STATUS;
-	vc->pvalue = deconst(&fake_int32);
-	pmsgctnt1->proplist.count ++;
-	++vc;
+	dprop.emplace_back(PR_MSG_STATUS, &fake_int32);
 	auto msgfl = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgfl == nullptr) {
-		vc->proptag = PR_MESSAGE_FLAGS;
-		vc->pvalue = deconst(&fake_flags);
-		pmsgctnt1->proplist.count ++;
-		++vc;
+		dprop.emplace_back(PR_MESSAGE_FLAGS, &fake_flags);
 		if (!pmsgctnt->proplist.has(PR_READ)) {
 			auto x = cu_alloc<uint8_t>();
 			if (x == nullptr)
 				return false;
 			*x = false;
-			vc->proptag = PR_READ;
-			vc->pvalue = x;
-			++pmsgctnt1->proplist.count;
-			++vc;
+			dprop.emplace_back(PR_READ, x);
 		}
 	} else if (!pmsgctnt->proplist.has(PR_READ)) {
 		auto x = cu_alloc<uint8_t>();
 		if (x == nullptr)
 			return false;
 		*x = *msgfl & MSGFLAG_READ;
-		vc->proptag = PR_READ;
-		vc->pvalue = x;
-		++pmsgctnt1->proplist.count;
-		++vc;
+		dprop.emplace_back(PR_READ, x);
 	}
 	if (!pmsgctnt->proplist.has(PR_SEARCH_KEY)) {
 		auto pbin = cu_alloc<BINARY>();
@@ -1595,10 +1585,7 @@ static BOOL message_rectify_message(const char *account,
 		if (!ext_push.init(pbin->pb, 16, 0) ||
 		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 			return false;
-		vc->proptag = PR_SEARCH_KEY;
-		vc->pvalue = pbin;
-		pmsgctnt1->proplist.count ++;
-		++vc;
+		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
 	if (!pmsgctnt->proplist.has(PR_BODY_CONTENT_ID)) {
 		tmp_guid = GUID::random_new();
@@ -1617,54 +1604,35 @@ static BOOL message_rectify_message(const char *account,
 		auto pvalue = common_util_dup(cid_string);
 		if (pvalue == nullptr)
 			return FALSE;
-		vc->proptag = PR_BODY_CONTENT_ID;
-		vc->pvalue = pvalue;
-		pmsgctnt1->proplist.count ++;
-		++vc;
+		dprop.emplace_back(PR_BODY_CONTENT_ID, pvalue);
 	}
 	if (!pmsgctnt->proplist.has(PR_CREATOR_NAME)) {
 		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_NAME);
 		if (pvalue == nullptr)
 			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
-		if (NULL != pvalue) {
-			vc->proptag = PR_CREATOR_NAME;
-			vc->pvalue = pvalue;
-			pmsgctnt1->proplist.count ++;
-			++vc;
-		}
+		if (pvalue != nullptr)
+			dprop.emplace_back(PR_CREATOR_NAME, pvalue);
 	}
 	if (!pmsgctnt->proplist.has(PR_CREATOR_ENTRYID)) {
 		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_ENTRYID);
 		if (pvalue == nullptr)
 			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_ENTRYID);
-		if (NULL != pvalue) {
-			vc->proptag = PR_CREATOR_ENTRYID;
-			vc->pvalue = pvalue;
-			pmsgctnt1->proplist.count ++;
-			++vc;
-		}
+		if (pvalue != nullptr)
+			dprop.emplace_back(PR_CREATOR_ENTRYID, pvalue);
 	}
 	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_NAME)) {
 		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_NAME);
 		if (pvalue == nullptr)
 			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
-		if (NULL != pvalue) {
-			vc->proptag = PR_LAST_MODIFIER_NAME;
-			vc->pvalue = pvalue;
-			pmsgctnt1->proplist.count ++;
-			++vc;
-		}
+		if (pvalue != nullptr)
+			dprop.emplace_back(PR_LAST_MODIFIER_NAME, pvalue);
 	}
 	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_ENTRYID)) {
 		auto pvalue = pmsgctnt->proplist.get<BINARY>(PR_SENDER_ENTRYID);
 		if (pvalue == nullptr)
 			pvalue = pmsgctnt->proplist.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
-		if (NULL != pvalue) {
-			vc->proptag = PR_LAST_MODIFIER_ENTRYID;
-			vc->pvalue = pvalue;
-			pmsgctnt1->proplist.count ++;
-			++vc;
-		}
+		if (pvalue != nullptr)
+			dprop.emplace_back(PR_LAST_MODIFIER_ENTRYID, pvalue);
 	}
 	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
 	auto pbin = cu_alloc<BINARY>();
@@ -1688,14 +1656,8 @@ static BOOL message_rectify_message(const char *account,
 				return false;
 		}
 	}
-	vc->proptag = PR_CONVERSATION_ID;
-	vc->pvalue = pbin;
-	pmsgctnt1->proplist.count ++;
-	++vc;
-	vc->proptag = PR_CONVERSATION_INDEX_TRACKING;
-	vc->pvalue = deconst(&fake_true);
-	pmsgctnt1->proplist.count ++;
-	++vc;
+	dprop.emplace_back(PR_CONVERSATION_ID, pbin);
+	dprop.emplace_back(PR_CONVERSATION_INDEX_TRACKING, &fake_true);
 	if (NULL == pbin1) {
 		pbin1 = cu_alloc<BINARY>();
 		if (pbin1 == nullptr)
@@ -1713,10 +1675,7 @@ static BOOL message_rectify_message(const char *account,
 		    ext_push.p_uint8(nt_time & 0xFF) != EXT_ERR_SUCCESS)
 			return false;
 		pbin1->cb = 27;
-		vc->proptag = PR_CONVERSATION_INDEX;
-		vc->pvalue = pbin1;
-		pmsgctnt1->proplist.count ++;
-		++vc;
+		dprop.emplace_back(PR_CONVERSATION_INDEX, pbin1);
 	}
 	auto pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC);
 	if (pvalue == nullptr)
@@ -1725,17 +1684,10 @@ static BOOL message_rectify_message(const char *account,
 		pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT);
 		if (NULL == pvalue) {
 			pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT_A);
-			if (NULL != pvalue) {
-				vc->proptag = PR_CONVERSATION_TOPIC_A;
-				vc->pvalue = pvalue;
-				pmsgctnt1->proplist.count ++;
-				++vc;
-			}
+			if (pvalue != nullptr)
+				dprop.emplace_back(PR_CONVERSATION_TOPIC_A, pvalue);
 		} else {
-			vc->proptag = PR_CONVERSATION_TOPIC;
-			vc->pvalue = pvalue;
-			pmsgctnt1->proplist.count ++;
-			++vc;
+			dprop.emplace_back(PR_CONVERSATION_TOPIC, pvalue);
 		}
 	}
 	pmsgctnt1->children.prcpts = pmsgctnt->children.prcpts;
