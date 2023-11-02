@@ -1235,6 +1235,7 @@ enum deliver_message_result {
 	result_error = 2,
 	mailbox_full_bysize = 3,
 	mailbox_full_bymsg = 4,
+	partial_completion = 5,
 };
 
 struct exresp_deliver_message : public exresp {

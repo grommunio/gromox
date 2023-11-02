@@ -376,6 +376,14 @@ size_t PROPTAG_ARRAY::indexof(uint32_t tag) const
 	return npos;
 }
 
+size_t PROBLEM_ARRAY::indexof(uint32_t tag) const
+{
+	for (size_t i = 0; i < count; ++i)
+		if (pproblem[i].proptag == tag)
+			return i;
+	return npos;
+}
+
 PROBLEM_ARRAY &PROBLEM_ARRAY::operator+=(PROBLEM_ARRAY &&other)
 {
 	std::move(other.pproblem, other.pproblem + other.count, pproblem + count);

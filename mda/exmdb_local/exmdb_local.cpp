@@ -390,7 +390,9 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		return DELIVERY_OPERATION_ERROR;
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
-	if (dm_status == deliver_message_result::result_ok) {
+	if (dm_status == deliver_message_result::result_ok /*||
+	    dm_status == deliver_message_result::partial_completion */) {
+		/* XXX: still need to make partial_ok behavior configurable */
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 		if (num != nullptr)
 			suppress_mask = *num;

@@ -418,6 +418,9 @@ int exm_deliver_msg(const char *target, MESSAGE_CONTENT *ct, unsigned int mode)
 	case deliver_message_result::mailbox_full_bymsg:
 		fprintf(stderr, "Message rejected - mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return EXIT_FAILURE;
+	case deliver_message_result::partial_completion:
+		fprintf(stderr, "Partial completion - The server could not save all of the message (wrong permissions/disk full/...)\n");
+		return EXIT_FAILURE;
 	}
 	if (!(mode & DELIVERY_TWOSTEP))
 		return EXIT_SUCCESS;

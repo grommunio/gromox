@@ -1725,9 +1725,9 @@ static ec_error_t message_rectify_message(const char *account,
 }
 	
 static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
-    const char *account, cpid_t cpid, BOOL b_embedded,
-	uint64_t parent_id, const MESSAGE_CONTENT *pmsgctnt,
-	uint64_t *pmessage_id)
+    const char *account, cpid_t cpid, BOOL b_embedded, uint64_t parent_id,
+    const MESSAGE_CONTENT *pmsgctnt, uint64_t *pmessage_id,
+    bool *partial_completion)
 {
 	BOOL b_cn;
 	int is_associated = 0;
@@ -1746,6 +1746,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	static const uint32_t fake_uid = 1;
 	const TPROPVAL_ARRAY *pproplist;
 	
+	*partial_completion = false;
 	pproplist = &pmsgctnt->proplist;
 	auto cn_p = pproplist->get<const eid_t>(PidTagChangeNumber);
 	if (cn_p == nullptr) {
@@ -1910,6 +1911,10 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	if (!cu_set_properties(MAPI_MESSAGE, *pmessage_id, cpid,
 	    psqlite, &pmsgctnt->proplist, &tmp_problems))
 		return FALSE;
+	if (pmsgctnt->proplist.has(PR_BODY) && tmp_problems.has(PR_BODY))
+		*partial_completion = true;
+	if (pmsgctnt->proplist.has(PR_HTML) && tmp_problems.has(PR_HTML))
+		*partial_completion = true;
 	if (!b_embedded) {
 		void *pvalue = nullptr;
 		if (!cu_get_property(MAPI_FOLDER, parent_id, CP_ACP,
@@ -1950,16 +1955,19 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			tmp_id = sqlite3_last_insert_rowid(psqlite);
+			auto &atxprops = pmsgctnt->children.pattachments->pplist[i]->proplist;
 			if (!cu_set_properties(MAPI_ATTACH, tmp_id, cpid, psqlite,
-			    &pmsgctnt->children.pattachments->pplist[i]->proplist,
-			    &tmp_problems))
+			    &atxprops, &tmp_problems))
 				return FALSE;
+			if (atxprops.has(PR_ATTACH_DATA_BIN) &&
+			    tmp_problems.has(PR_ATTACH_DATA_BIN))
+				*partial_completion = true;
 			if (pmsgctnt->children.pattachments->pplist[i]->pembedded == nullptr)
 				continue;
 			if (!message_write_message(TRUE,
 			    psqlite, account, cpid, TRUE, tmp_id,
 			    pmsgctnt->children.pattachments->pplist[i]->pembedded,
-			    &message_id))
+			    &message_id, partial_completion))
 				return FALSE;
 			if (0 == message_id) {
 				*pmessage_id = 0;
@@ -2290,8 +2298,9 @@ static BOOL message_make_dem(const char *username,
 	tmp_eid = rop_util_make_eid_ex(1, rule_id);
 	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != 0)
 		return FALSE;
+	bool partial = false;
 	if (!message_write_message(false, psqlite, username, CP_ACP, false,
-	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val))
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &partial))
 		return FALSE;
 	pmsg.reset();
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
@@ -2777,9 +2786,10 @@ static BOOL message_make_dam(const rulexec_in &rp,
 		return FALSE;
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
+	bool partial = false;
 	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
 	    !message_write_message(false, rp.sqlite, rp.ev_to, CP_ACP, false,
-	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val))
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &partial))
 		return FALSE;
 	pmsg.reset();
 	cu_set_property(MAPI_FOLDER, PRIVATE_FID_DEFERRED_ACTION, CP_ACP,
@@ -3671,8 +3681,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
+	bool partial = false;
 	if (!message_write_message(FALSE, pdb->psqlite,
-	    paccount, cpid, false, fid_val, &tmp_msg, &message_id))
+	    paccount, cpid, false, fid_val, &tmp_msg, &message_id, &partial))
 		return FALSE;
 	if (0 == message_id) {
 		*presult = static_cast<uint32_t>(deliver_message_result::result_error);
@@ -3705,7 +3716,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	}
 	mlog(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
-		"%llu", account, LLU{message_id}, LLU{fid_val});
+		"%llu%s", account, LLU{message_id}, LLU{fid_val},
+		partial ? " (partial only)" : "");
 	if (dlflags & DELIVERY_DO_RULES) {
 		auto ec = message_rule_new_message({from_address, account, cpid, b_oof,
 		          pdb->psqlite, fid_val, message_id, std::move(digest)}, seen);
@@ -3729,7 +3741,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	}
 	*new_folder_id = rop_util_make_eid_ex(1, fid_val);
 	*new_msg_id = rop_util_make_eid_ex(1, message_id);
-	*presult = static_cast<uint32_t>(deliver_message_result::result_ok);
+	*presult = static_cast<uint32_t>(partial ?
+	           deliver_message_result::partial_completion :
+	           deliver_message_result::result_ok);
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2032: ENOMEM");
@@ -3784,8 +3798,9 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
+	bool partial = false;
 	if (!message_write_message(FALSE, pdb->psqlite,
-	    account, cpid, false, fid_val, pmsgctnt, &mid_val))
+	    account, cpid, false, fid_val, pmsgctnt, &mid_val, &partial))
 		return FALSE;
 	if (0 == mid_val) {
 		// auto rollback at end of scope
