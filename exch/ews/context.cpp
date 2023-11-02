@@ -69,6 +69,7 @@ namespace detail
 {
 
 void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
+void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 } // gromox::EWS::detail
 
@@ -1271,10 +1272,11 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			throw EWSError::ItemCorrupt(E3123);
 		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 		{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-		MESSAGE_CONTENT* cnt = oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc, getPropIds);
+		std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner> cnt(oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc,
+		                                                                     getPropIds));
 		if(!cnt)
 			throw EWSError::ItemCorrupt(E3124);
-		content = *cnt;
+		content = std::move(*cnt);
 		// Register tags loaded by importer to the shape
 		const TAGGED_PROPVAL *end = content.proplist.ppropval+content.proplist.count;
 		for(const TAGGED_PROPVAL* prop = content.proplist.ppropval; prop != end; ++prop)
