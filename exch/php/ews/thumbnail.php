@@ -30,7 +30,6 @@
 		imagecopyresized($newimage, $im, 0, 0, 0, 0,
 			$n_width, $n_height, $width, $height);
 		imagejpeg($newimage, $tsrc, 100);
-		chmod("$tsrc", 0666);
 		session_destroy();
 		header("Content-Type: image/jpeg");
 		imagejpeg($newimage);

@@ -96,8 +96,6 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 	file.write(header, std::size(header)-1);
 	file.write(content.c_str(), content.size());
 	file.close();
-	if(chmod(path.c_str(), 0666))
-		mlog(LV_WARN, "[ews]: failed to chmod %s: %s", path.c_str(), strerror(errno));
 }
 
 } //anonymous namespace
@@ -791,8 +789,6 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
 		file << "start_time = " << Clock::to_time_t(OofSettings.Duration->StartTime) << "\n"
 		     << "end_time = " << Clock::to_time_t(OofSettings.Duration->EndTime) << "\n";
 	file.close();
-	if(chmod(filename.c_str(), 0666))
-		mlog(LV_WARN, "[ews]: failed to chmod %s: %s", filename.c_str(), strerror(errno));
 
 	writeMessageBody(maildir+"/config/internal-reply", OofSettings.InternalReply);
 	writeMessageBody(maildir+"/config/external-reply", OofSettings.ExternalReply);
