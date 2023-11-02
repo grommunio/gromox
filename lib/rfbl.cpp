@@ -863,10 +863,24 @@ errno_t switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 	if (user == nullptr)
 		user = RUNNING_IDENTITY;
 	switch (HXproc_switch_user(user, nullptr)) {
-	case HXPROC_SU_NOOP:
-		return gx_reexec(nullptr);
-	case HXPROC_SU_SUCCESS:
-		return gx_reexec(argv);
+	case HXPROC_SU_NOOP: {
+		auto ret = gx_reexec(nullptr);
+		if (ret != 0)
+			return ret;
+		auto m = umask(07777);
+		m = (m & ~0070) | ((m & 0700) >> 3); /* copy user bits to group bits */
+		umask(m);
+		return 0;
+	}
+	case HXPROC_SU_SUCCESS: {
+		auto ret = gx_reexec(argv);
+		if (ret != 0)
+			return ret;
+		auto m = umask(07777);
+		m = (m & ~0070) | ((m & 0700) >> 3);
+		umask(m);
+		return 0;
+	}
 	case HXPROC_USER_NOT_FOUND:
 		mlog(LV_ERR, "No such user \"%s\": %s", user, strerror(errno));
 		break;
