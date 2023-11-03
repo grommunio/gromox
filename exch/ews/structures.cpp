@@ -372,7 +372,7 @@ void process_occurrences(const TAGGED_PROPVAL* entryid, const APPOINTMENT_RECUR_
 		{
 			del_count++;
 			delOccs.emplace_back(tDeletedOccurrenceInfoType{rop_util_rtime_to_unix2(
-				apprecurr.recur_pat.pdeletedinstancedates[i])});
+				apprecurr.recur_pat.pdeletedinstancedates[i] + apprecurr.starttimeoffset)});
 		}
 	}
 }
