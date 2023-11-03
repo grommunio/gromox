@@ -39,6 +39,7 @@ static propididmap_t g_thru_name_map;
 static uint8_t g_splice;
 static unsigned int g_oexcl = 1, g_anchor_folder, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
+static unsigned int g_continuous_mode;
 
 static void cb_anchor_folder(const HXoptcb *cb)
 {
@@ -70,6 +71,7 @@ static void cb_anchor_folder(const HXoptcb *cb)
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'B', HXTYPE_STRING, nullptr, nullptr, cb_anchor_folder, 0, "Placement position for unanchored messages", "NAME"},
 	{nullptr, 'D', HXTYPE_NONE, &g_do_delivery, nullptr, nullptr, 0, "Use delivery mode"},
+	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, 0, "Continuous operation mode (do not stop on errors)"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
@@ -472,6 +474,7 @@ int main(int argc, const char **argv) try
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_0 = make_scope_exit(gi_shutdown);
+	int iret = EXIT_SUCCESS;
 	while (true) {
 		uint64_t xsize = 0;
 		errno = 0;
@@ -490,10 +493,14 @@ int main(int argc, const char **argv) try
 			throw YError("PG-1006: %s", strerror(errno));
 		else if (static_cast<size_t>(ret) < xsize)
 			throw YError("PG-1013: EOF on input");
-		exm_packet(buf.get(), xsize);
+		auto pkret = exm_packet(buf.get(), xsize);
+		if (pkret != EXIT_SUCCESS && !g_continuous_mode) {
+			iret = pkret;
+			break;
+		}
 	}
 	gi_dump_thru_map(g_thru_name_map);
-	return EXIT_SUCCESS;
+	return iret;
 } catch (const std::exception &e) {
 	fprintf(stderr, "mt2exm: Exception: %s\n", e.what());
 	return EXIT_FAILURE;

@@ -4,7 +4,7 @@
 .SH Name
 gromox\-mt2exm \(em Utility for importing various mail items
 .SH Synopsis
-\fBgromox\-mt2exm\fP [...] [\fB\-dpt\fP] \fB-u\fP
+\fBgromox\-mt2exm\fP [...] [\fB\-Dcpt\fP] \fB-u\fP
 [\fIuser\fP]\fB@\fP\fIdomain.de\fP
 .SH Description
 gromox\-mt2exm reads a Gromox-specific mailbox transfer format data stream from
@@ -34,6 +34,11 @@ Use delivery mode, i.e. treat messages as if they were sent through the mail
 system rather than being imported. As such, messages are subject to inbox
 rules, and folders in the MT stream will be ignored altogether, which also
 implies that \-B is ignored.
+.TP
+\fB\-c\fP
+Continuous operation mode. Errors during the delivery of a message are
+reported, but mt2exm will continue with importing more messages. The default is
+to exit after reporting a delivery error. Only useful with \fB\-D\fP.
 .TP
 \fB\-p\fP
 Show properties in detail (enhances \fB\-t\fP).
