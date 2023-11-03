@@ -263,6 +263,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 
 	for(const tItemId& itemId : request.ItemIds) try
 	{
+		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parent = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(parent);
@@ -725,6 +726,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 	for(const tItemId& itemId : request.ItemIds) try {
 		if(!dstAccess)
 			throw EWSError::AccessDenied(E3184);
+		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec sourceFolder = ctx.resolveFolder(meid);
 		if(sourceFolder.target != dstFolder.target)
@@ -1009,6 +1011,8 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 	data.ResponseMessages.reserve(request.ItemIds.size());
 	sShape shape(request.ItemShape);
 	for(auto& itemId : request.ItemIds) try {
+		if(itemId.type != tItemId::ID_ITEM && itemId.type != tItemId::ID_OCCURRENCE)
+			ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId eid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(eid);
 		std::string dir = ctx.getDir(parentFolder);
@@ -1017,12 +1021,11 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 			throw EWSError::AccessDenied(E3139);
 		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
 		auto mid = eid.messageId();
-		if(itemId.Id.size() <= 70) // Normal message entry ids have length of 70, occurrences contain extra data
-			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
-		else {
+		if(itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
 			msg.Items.emplace_back(ctx.loadOccurrence(dir, parentFolder.folderId, mid, oid.basedate, shape));
-		}
+		} else
+			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		msg.success();
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
@@ -1114,6 +1117,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 
 	data.Responses.reserve(request.ItemIds.size());
 	for(tItemId& itemId : request.ItemIds) try {
+		ctx.assertIdType(itemId.type, tItemId::ID_ITEM);
 		sMessageEntryId meid(itemId.Id.data(), itemId.Id.size());
 		sFolderSpec folder = ctx.resolveFolder(meid);
 		std::string dir = ctx.getDir(folder);
@@ -1245,6 +1249,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 	sShape idOnly;
 	idOnly.add(PR_ENTRYID, sShape::FL_FIELD).add(PR_CHANGE_KEY, sShape::FL_FIELD).add(PR_MESSAGE_CLASS);
 	for(const auto& change : request.ItemChanges) try {
+		ctx.assertIdType(change.ItemId.type, tFolderId::ID_ITEM);
 		sMessageEntryId mid(change.ItemId.Id.data(), change.ItemId.Id.size());
 		sFolderSpec parentFolder = ctx.resolveFolder(mid);
 		std::string dir = ctx.getDir(parentFolder);

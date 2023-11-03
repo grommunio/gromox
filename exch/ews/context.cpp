@@ -1036,6 +1036,7 @@ sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
  */
 sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 {
+	assertIdType(fId.type, tFolderId::ID_FOLDER);
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
@@ -1551,6 +1552,28 @@ void EWSContext::validate(const std::string& dir, const sMessageEntryId& meid) c
 		throw EWSError::ItemNotFound(E3187);
 	if(rop_util_get_gc_value(*parentFid) != meid.folderId())
 		throw EWSError::InvalidId(E3188);
+}
+
+/**
+ * @brief     Check whether id is of the correct type
+ *
+ * @param     have       Observed ID type
+ * @param     wanted     Expected ID type
+ *
+ * @throw     EWSError   Exception with details
+ */
+void EWSContext::assertIdType(tBaseItemId::IdType have, tBaseItemId::IdType wanted)
+{
+	using IdType = tBaseItemId::IdType;
+	if(have == wanted)
+		return;
+	if(wanted == IdType::ID_FOLDER && have == IdType::ID_ITEM)
+		throw EWSError::CannotUseItemIdForFolderId(E3213);
+	else if(wanted == IdType::ID_ITEM && have == IdType::ID_FOLDER)
+		throw EWSError::CannotUseFolderIdForItemId(E3214);
+	else if(wanted == IdType::ID_ATTACHMENT)
+		throw EWSError::InvalidIdNotAnItemAttachmentId(E3215);
+	throw EWSError::InvalidId(E3216);
 }
 
 /**

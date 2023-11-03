@@ -64,6 +64,8 @@ public:
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
+	ERR(CannotUseFolderIdForItemId) ///< Used folder id where item id was expected
+	ERR(CannotUseItemIdForFolderId) ///< Used item id where folder id was expected
 	ERR(CrossMailboxMoveCopy) ///< Attempted move or copy operation across different stores
 	ERR(DeleteDistinguishedFolder) ///< Attempt to delete distinguished folder (Wait. That's illegal.)
 	ERR(FolderExists) ///< Creating a folder with a name that already exists
@@ -75,6 +77,7 @@ public:
 	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
 	ERR(InvalidId) ///< ItemId or ChangeKey malformed
+	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
@@ -329,6 +332,10 @@ E(3209, "requested occurrence not found");
 E(3210, "failed to get embedded instances' count");
 E(3211, "failed to get embedded instance properties");
 E(3212, "unknown entry id type");
+E(3213, "wrong ID type - expected folder ID, got item ID");
+E(3214, "wrong ID type - expected item ID, got folder ID");
+E(3215, "invalid attachement ID");
+E(3216, "invalid ID type");
 
 #undef E
 }
