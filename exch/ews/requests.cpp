@@ -655,6 +655,45 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 }
 
 /**
+ * @brief      Process GetUserAvailabilityRequest
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:GetUserPhotoResponse");
+
+	mGetUserPhotoResponse data;
+
+	try {
+		std::string dir = ctx.get_maildir(request.Email);
+		PROPERTY_NAME photo{MNID_STRING, PSETID_GROMOX, 0, const_cast<char*>("photo")};
+		PROPNAME_ARRAY propNames{1, &photo};
+		PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
+		if(propIds.count != 1)
+			throw std::runtime_error("failed to get photo property id");
+		uint32_t tag = PROP_TAG(PT_BINARY, *propIds.ppropid);
+		PROPTAG_ARRAY tags{1, &tag};
+		TPROPVAL_ARRAY props;
+		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, &tags, & props);
+		const BINARY* photodata = props.get<BINARY>(tag);
+		if(photodata && photodata->cb)
+			data.PictureData = photodata;
+		else
+			ctx.code(http_status::not_found);
+	} catch(std::exception& err){
+		ctx.code(http_status::not_found);
+		mlog(LV_WARN, "[ews#%d] Failed to load user photo: %s", ctx.ID(), err.what());
+	}
+	data.success();
+	data.serialize(response);
+}
+
+/**
  * @brief      Process CopyFolder or MoveFolder
  *
  * @param      request   Request data
