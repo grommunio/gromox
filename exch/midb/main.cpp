@@ -75,9 +75,6 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
 	{"sqlite_debug", "0"},
-	{"sqlite_mmap_size", "0", CFG_SIZE},
-	{"sqlite_synchronous", "off", CFG_BOOL},
-	{"sqlite_wal_mode", "true", CFG_BOOL},
 	{"state_path", PKGSTATEDIR},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -165,14 +162,6 @@ int main(int argc, const char **argv) try
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
-	uint64_t mmap_size = pconfig->get_ll("sqlite_mmap_size");
-	if (0 == mmap_size) {
-		mlog(LV_INFO, "system: sqlite mmap_size is disabled");
-	} else {
-		HX_unit_size(temp_buff, std::size(temp_buff), mmap_size, 1024, 0);
-		mlog(LV_INFO, "system: sqlite mmap_size is %s", temp_buff);
-	}
-	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
 	} else {
@@ -201,10 +190,7 @@ int main(int argc, const char **argv) try
 	listener_init(listen_ip, listen_port);
 	auto cl_3 = make_scope_exit(listener_stop);
 	mail_engine_init(g_config_file->get_value("default_charset"),
-		g_config_file->get_value("x500_org_name"), table_size,
-		parse_bool(g_config_file->get_value("sqlite_synchronous")) ? TRUE : false,
-		parse_bool(g_config_file->get_value("sqlite_wal_mode")) ? TRUE : false,
-		mmap_size);
+		g_config_file->get_value("x500_org_name"), table_size);
 	auto cl_5 = make_scope_exit(mail_engine_stop);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);

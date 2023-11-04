@@ -150,12 +150,9 @@ unsigned int g_midb_schema_upgrades;
 unsigned int g_midb_cache_interval, g_midb_reload_interval;
 
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
-static BOOL g_wal;
-static BOOL g_async;
 static size_t g_table_size;
 static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
-static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static char g_org_name[256];
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
@@ -2105,7 +2102,6 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 {
 	BOOL b_load;
 	char temp_path[256];
-	char sql_string[1024];
 	
 	b_load = FALSE;
 	std::unique_lock hhold(g_hash_lock);
@@ -2137,12 +2133,6 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 			return {};
 		}
 		gx_sql_exec(pidb->psqlite, "PRAGMA foreign_keys=ON");
-		gx_sql_exec(pidb->psqlite, g_async ? "PRAGMA synchronous=ON" : "PRAGMA synchronous=OFF");
-		gx_sql_exec(pidb->psqlite, g_wal ? "PRAGMA journal_mode=WAL" : "PRAGMA journal_mode=DELETE");
-		if (0 != g_mmap_size) {
-			snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU{g_mmap_size});
-			gx_sql_exec(pidb->psqlite, sql_string);
-		}
 		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
 		/* Delete obsolete field (old midb versions cannot use the db then however) */
 		// gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
@@ -4430,15 +4420,11 @@ static void mail_engine_notification_proc(const char *dir,
 }
 
 void mail_engine_init(const char *default_charset, const char *org_name,
-    size_t table_size, BOOL b_async, BOOL b_wal,
-    uint64_t mmap_size)
+    size_t table_size)
 {
 	g_sequence_id = 0;
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
-	g_async = b_async;
-	g_wal = b_wal;
-	g_mmap_size = mmap_size;
 	g_table_size = table_size;
 }
 
