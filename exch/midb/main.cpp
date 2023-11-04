@@ -64,6 +64,7 @@ static uint16_t g_listen_port;
 static char g_listen_ip[40];
 static int g_listen_sockd = -1;
 static std::vector<std::string> g_acl_list;
+static void (*exmdb_client_event_proc)(const char *dir, BOOL table, uint32_t notify_id, const DB_NOTIFY *);
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -128,6 +129,30 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	else
 		g_midb_schema_upgrades = MIDB_UPGRADE_NO;
 	return true;
+}
+
+static void buildenv(const remote_svr &)
+{
+	common_util_build_environment("");
+}
+
+static void event_proc(const char *dir, BOOL thing,
+    uint32_t notify_id, const DB_NOTIFY *notify)
+{
+	common_util_set_maildir(dir);
+	exmdb_client_event_proc(dir, thing, notify_id, notify);
+}
+
+static int exmdb_client_run_front(const char *dir)
+{
+	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
+	       EXMDB_CLIENT_SKIP_REMOTE | EXMDB_CLIENT_ASYNC_CONNECT, buildenv,
+	       common_util_free_environment, event_proc);
+}
+
+void exmdb_client_register_proc(void *pproc)
+{
+	exmdb_client_event_proc = reinterpret_cast<decltype(exmdb_client_event_proc)>(pproc);
 }
 
 static int system_services_run()
