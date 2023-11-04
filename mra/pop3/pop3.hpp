@@ -97,8 +97,6 @@ extern int resource_run();
 extern void resource_stop();
 extern const char *resource_get_pop3_code(unsigned int code_type, unsigned int n, size_t *len);
 
-extern int system_services_run();
-extern void system_services_stop();
 extern void xrpc_build_env();
 extern void xrpc_free_env();
 

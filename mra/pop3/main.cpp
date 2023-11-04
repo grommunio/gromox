@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <string>
+#include <typeinfo>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -39,6 +40,17 @@
 #include "pop3.hpp"
 
 using namespace gromox;
+
+#define E(s) decltype(system_services_ ## s) system_services_ ## s;
+E(judge_ip)
+E(judge_user)
+E(add_user_into_temp_list)
+E(auth_login)
+E(auth_meta)
+E(list_mail)
+E(delete_mail)
+E(broadcast_event)
+#undef E
 
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
@@ -118,6 +130,43 @@ static bool pop3_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	mlog_init(pconfig->get_value("pop3_log_file"), pconfig->get_ll("pop3_log_level"));
 	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
 	return true;
+}
+
+static int system_services_run()
+{
+#define E(f, s) do { \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		return -1; \
+	} \
+} while (false)
+#define E2(f, s) \
+	((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))))
+
+	E2(system_services_judge_ip, "ip_filter_judge");
+	E2(system_services_judge_user, "user_filter_judge");
+	E2(system_services_add_user_into_temp_list, "user_filter_add");
+	E(system_services_auth_login, "auth_login_gen");
+	E(system_services_auth_meta, "mysql_auth_meta");
+	E(system_services_list_mail, "list_mail");
+	E(system_services_delete_mail, "delete_mail");
+	E2(system_services_broadcast_event, "broadcast_event");
+	return 0;
+#undef E
+#undef E2
+}
+
+static void system_services_stop()
+{
+	service_release("ip_filter_judge", "system");
+	service_release("user_filter_judge", "system");
+	service_release("user_filter_add", "system");
+	service_release("mysql_auth_meta", "system");
+	service_release("auth_login_gen", "system");
+	service_release("list_mail", "system");
+	service_release("delete_mail", "system");
+	service_release("broadcast_event", "system");
 }
 
 static void *p3ls_thrwork(void *arg)
