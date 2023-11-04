@@ -96,7 +96,7 @@ libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} ${iconv_LIBS} libgromox_comm
 
 delivery_SOURCES = lib/svc_loader.cpp mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -lpthread ${dl_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-delivery_queue_SOURCES = lib/svc_loader.cpp mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_cmd_handler.h mda/smtp/smtp_aux.hpp mda/smtp/smtp_parser.cpp mda/smtp/smtp_parser.h mda/smtp/system_services.cpp
+delivery_queue_SOURCES = lib/svc_loader.cpp mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_cmd_handler.h mda/smtp/smtp_aux.hpp mda/smtp/smtp_parser.cpp mda/smtp/smtp_parser.h
 delivery_queue_LDADD = -lpthread ${crypto_LIBS} ${dl_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la
 libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/bounce_producer.h lib/bounce_mda.cpp
 libgxm_alias_resolve_la_LDFLAGS = ${plugin_LDFLAGS}

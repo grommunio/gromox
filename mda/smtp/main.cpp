@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <string>
+#include <typeinfo>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -38,6 +39,12 @@
 #include "smtp_parser.h"
 
 using namespace gromox;
+
+#define E(s) decltype(system_services_ ## s) system_services_ ## s;
+E(judge_user)
+E(add_user_into_temp_list)
+E(check_user)
+#undef E
 
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
@@ -111,6 +118,34 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
 	}
 	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
 	return true;
+}
+
+static int system_services_run()
+{
+#define E(f, s) do { \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))); \
+	if ((f) == nullptr) { \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
+		return -1; \
+	} \
+} while (false)
+#define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(decltype(*(f))))))
+
+	E2(system_services_judge_user, "user_filter_judge");
+	E2(system_services_add_user_into_temp_list, "user_filter_add");
+	E2(system_services_check_user, "check_user");
+	return 0;
+#undef E
+#undef E2
+}
+
+static void system_services_stop()
+{
+	service_release("ip_filter_judge", "system");
+	service_release("user_filter_judge", "system");
+	service_release("user_filter_add", "system");
+	if (system_services_check_user != nullptr)
+		service_release("check_user", "system");
 }
 
 static void *smls_thrwork(void *arg)
