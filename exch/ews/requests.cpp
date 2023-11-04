@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <fstream>
-
+#include <variant>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <tinyxml2.h>
@@ -1161,7 +1161,7 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 		sShape shape(change);
 		ctx.getNamedTags(dir, shape, true);
 		for(const auto& update : change.Updates) {
-			if(holds_alternative<tSetFolderField>(update))
+			if (std::holds_alternative<tSetFolderField>(update))
 				std::get<tSetFolderField>(update).put(shape);
 		}
 		TPROPVAL_ARRAY props = shape.write();
@@ -1254,7 +1254,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 		sShape shape(change);
 		ctx.getNamedTags(dir, shape, true);
 		for(const auto& update : change.Updates) {
-			if(holds_alternative<tSetItemField>(update))
+			if (std::holds_alternative<tSetItemField>(update))
 				std::get<tSetItemField>(update).put(shape);
 		}
 		TPROPVAL_ARRAY props = shape.write();
