@@ -41,6 +41,11 @@ static unsigned int g_oexcl = 1, g_anchor_folder, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 static unsigned int g_continuous_mode;
 
+static const char *strerror_eof(int e)
+{
+	return e != 0 ? strerror(e) : "EOF";
+}
+
 static void cb_anchor_folder(const HXoptcb *cb)
 {
 	/* The strings are the common IMAP names for such folders */
@@ -100,22 +105,16 @@ static void exm_read_base_maps()
 	errno = 0;
 	char magic[8];
 	auto ret = HXio_fullread(STDIN_FILENO, magic, std::size(magic));
-	if (ret < 0)
-		throw YError("PG-1126: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < std::size(magic))
-		throw YError("PG-1009: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != std::size(magic))
+		throw YError("PG-1126: %s", strerror_eof(errno));
 	if (memcmp(magic, "GXMT0003", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
 	ret = HXio_fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
-	if (ret < 0)
-		throw YError("PG-1120: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < sizeof(g_splice))
-		throw YError("PG-1008: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
+		throw YError("PG-1120: %s", strerror_eof(errno));
 	ret = HXio_fullread(STDIN_FILENO, &magic[0], 1);
-	if (ret < 0)
-		throw YError("PG-1124: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < 1)
-		throw YError("PG-1123: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != 1)
+		throw YError("PG-1124: %s", strerror_eof(errno));
 	if (g_splice && g_public_folder && magic[0] != 1)
 		throw YError("PG-1125: Cannot satisfy splice request. The target is a public store, but input is from a private store."
 			" Remove the -s option from your kdb2mt/pff2mt command and retry.");
@@ -126,18 +125,14 @@ static void exm_read_base_maps()
 	uint64_t xsize = 0;
 	errno = 0;
 	ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
-		throw YError("PG-1001: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < sizeof(xsize))
-		throw YError("PG-1007: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
+		throw YError("PG-1001: %s", strerror_eof(errno));
 	xsize = le64_to_cpu(xsize);
 	auto buf = std::make_unique<char[]>(xsize);
 	errno = 0;
 	ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
-	if (ret < 0)
-		throw YError("PG-1002: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < xsize)
-		throw YError("PG-1010: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != xsize)
+		throw YError("PG-1002: %s", strerror_eof(errno));
 	gi_folder_map_read(buf.get(), xsize, g_folder_map);
 	gi_dump_folder_map(g_folder_map);
 	filter_folder_map(g_folder_map);
@@ -147,17 +142,13 @@ static void exm_read_base_maps()
 
 	errno = 0;
 	ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
-		throw YError("PG-1003: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < sizeof(xsize))
-		throw YError("PG-1011: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
+		throw YError("PG-1003: %s", strerror_eof(errno));
 	xsize = le64_to_cpu(xsize);
 	buf = std::make_unique<char[]>(xsize);
 	ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
-	if (ret < 0)
-		throw YError("PG-1004: %s", strerror(errno));
-	else if (static_cast<size_t>(ret) < xsize)
-		throw YError("PG-1012: EOF on input");
+	if (ret < 0 || static_cast<size_t>(ret) != xsize)
+		throw YError("PG-1004: %s", strerror_eof(errno));
 	gi_name_map_read(buf.get(), xsize, g_src_name_map);
 	gi_dump_name_map(g_src_name_map);
 }
@@ -481,18 +472,14 @@ int main(int argc, const char **argv) try
 		auto ret = HXio_fullread(STDIN_FILENO, &xsize, sizeof(xsize));
 		if (ret == 0)
 			break;
-		else if (ret < 0)
-			throw YError("PG-1005: %s", strerror(errno));
-		else if (static_cast<size_t>(ret) < sizeof(xsize))
-			throw YError("PG-1005: EOF");
+		else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
+			throw YError("PG-1005: %s", strerror_eof(errno));
 		xsize = le64_to_cpu(xsize);
 		auto buf = std::make_unique<char[]>(xsize);
 		errno = 0;
 		ret = HXio_fullread(STDIN_FILENO, buf.get(), xsize);
-		if (ret < 0)
-			throw YError("PG-1006: %s", strerror(errno));
-		else if (static_cast<size_t>(ret) < xsize)
-			throw YError("PG-1013: EOF on input");
+		if (ret < 0 || static_cast<size_t>(ret) != xsize)
+			throw YError("PG-1006: %s", strerror_eof(errno));
 		auto pkret = exm_packet(buf.get(), xsize);
 		if (pkret != EXIT_SUCCESS && !g_continuous_mode) {
 			iret = pkret;
