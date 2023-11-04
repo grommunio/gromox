@@ -25,6 +25,7 @@
 
 using namespace gromox;
 
+int (*system_services_check_domain)(const char *);
 gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
@@ -74,6 +75,25 @@ static bool delivery_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	}
 	mlog_init(cfg->get_value("lda_log_file"), cfg->get_ll("lda_log_level"));
 	return true;
+}
+
+static int system_services_run()
+{
+#define E(f, s) do { \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system", typeid(*(f)))); \
+	if ((f) == nullptr) { \
+		mlog(LV_ERR, "system_services: failed to get the \"%s\" service", (s)); \
+		return -1; \
+	} \
+} while (false)
+	E(system_services_check_domain, "domain_list_query");
+	return 0;
+#undef E
+}
+
+static void system_services_stop()
+{
+	service_release("domain_list_query", "system");
 }
 
 int main(int argc, const char **argv) try
