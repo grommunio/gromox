@@ -166,7 +166,7 @@ static bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng,
     uint64_t user_id, uint64_t change_num)
 {
 	XID xid{cng == CN_DOMAIN ? rop_util_make_domain_guid(user_id) :
-	        rop_util_make_user_guid(user_id), change_num};
+	        rop_util_make_user_guid(user_id), rop_util_make_eid_ex(1, change_num)};
 	uint8_t tmp_buff[24];
 	EXT_PUSH ext_push;
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||

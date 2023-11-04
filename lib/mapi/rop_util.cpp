@@ -250,7 +250,7 @@ void rop_util_free_binary(BINARY *pbin)
 	free(pbin);
 }
 
-XID::XID(GUID g, uint64_t change_num) : guid(g), size(22)
+XID::XID(GUID g, eid_t change_num) : guid(g), size(22)
 {
 	memcpy(local_id, rop_util_get_gc_array(change_num).ab, 6);
 }

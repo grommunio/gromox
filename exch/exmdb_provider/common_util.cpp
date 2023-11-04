@@ -4743,7 +4743,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		exmdb_server::is_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
-		change_num});
+		rop_util_make_eid_ex(1, change_num)});
 	if (propval_buff[0].pvalue == nullptr)
 		return FALSE;
 	propval_buff[1].proptag = PR_PREDECESSOR_CHANGE_LIST;

@@ -285,7 +285,7 @@ uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 	return pid_rsp.ppropid[0];
 }
 
-int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
+int exm_set_change_keys(TPROPVAL_ARRAY *props, eid_t change_num)
 {
 	/* Set the change key and initial PCL for the object */
 	XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :

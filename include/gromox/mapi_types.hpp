@@ -181,7 +181,7 @@ struct LONG_TERM_ID_RANGE {
 
 struct XID {
 	XID() = default;
-	XID(GUID, uint64_t);
+	XID(GUID, eid_t cn);
 	GLOBCNT local_to_gc() const { GLOBCNT r; memcpy(r.ab, local_id, 6); return r; }
 
 	GUID guid;

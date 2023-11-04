@@ -207,7 +207,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 			exmdb_server::is_private() ?
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
-			change_num});
+			tmp_cn});
 
 		void *pvalue = nullptr;
 		if (tmp_propvals[1].pvalue == nullptr ||
@@ -421,7 +421,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 			exmdb_server::is_private() ?
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
-			change_num});
+			tmp_cn});
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !cu_get_property(MAPI_FOLDER, parent_fid, CP_ACP,
 		    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
@@ -598,7 +598,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		exmdb_server::is_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
-		change_num});
+		tmp_cn});
 	if (tmp_propvals[1].pvalue == nullptr ||
 	    !cu_get_property(MAPI_FOLDER, src_val, CP_ACP,
 	    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
