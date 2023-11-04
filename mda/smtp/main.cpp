@@ -2,31 +2,40 @@
 #include <cerrno>
 #include <chrono>
 #include <csignal>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
+#include <memory>
+#include <netdb.h>
+#include <pthread.h>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
+#include <libHX/misc.h>
+#include <libHX/option.h>
+#include <libHX/socket.h>
+#include <libHX/string.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_loader.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include <libHX/misc.h>
-#include <libHX/option.h>
-#include <libHX/string.h>
-#include <memory>
-#include "smtp_parser.h" 
-#include <sys/resource.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <utility>
 #include "smtp_aux.hpp"
+#include "smtp_parser.h"
 
 using namespace gromox;
 
@@ -35,6 +44,12 @@ std::shared_ptr<CONFIG_FILE> g_config_file;
 std::string g_rcpt_delimiter;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
+static pthread_t g_thr_id;
+static gromox::atomic_bool g_stop_accept;
+static std::string g_listener_addr;
+static int g_listener_sock = -1, g_listener_ssl_sock = -1;
+uint16_t g_listener_port, g_listener_ssl_port;
+static pthread_t g_ssl_thr_id;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -96,6 +111,180 @@ static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
 	}
 	g_rcpt_delimiter = znul(gxcfg->get_value("lda_recipient_delimiter"));
 	return true;
+}
+
+static void *smls_thrwork(void *arg)
+{
+	const bool use_tls = reinterpret_cast<uintptr_t>(arg);
+	
+	while (true) {
+		struct sockaddr_storage fact_addr, client_peer;
+		socklen_t addrlen = sizeof(client_peer);
+		char client_hostip[40], client_txtport[8], server_hostip[40];
+		/* wait for an incoming connection */
+		auto sockd2 = accept(use_tls ? g_listener_ssl_sock : g_listener_sock,
+		              reinterpret_cast<struct sockaddr *>(&client_peer), &addrlen);
+		if (g_stop_accept) {
+			if (sockd2 >= 0)
+				close(sockd2);
+			return nullptr;
+		}
+		if (sockd2 == -1)
+			continue;
+		auto ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
+		           addrlen, client_hostip, sizeof(client_hostip),
+		           client_txtport, sizeof(client_txtport),
+		           NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
+		addrlen = sizeof(fact_addr);
+		ret = getsockname(sockd2, reinterpret_cast<sockaddr *>(&fact_addr), &addrlen);
+		if (ret != 0) {
+			mlog(LV_ERR, "getsockname: %s", strerror(errno));
+			close(sockd2);
+			continue;
+		}
+		ret = getnameinfo(reinterpret_cast<sockaddr *>(&fact_addr),
+		      addrlen, server_hostip, sizeof(server_hostip),
+		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
+		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
+		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
+			mlog(LV_WARN, "W-1412: fcntl: %s", strerror(errno));
+		static constexpr int flag = 1;
+		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+			mlog(LV_WARN, "W-1413: setsockopt: %s", strerror(errno));
+		auto ctx = static_cast<smtp_context *>(contexts_pool_get_context(CONTEXT_FREE));
+		/* there's no context available in contexts pool, close the connection*/
+		if (ctx == nullptr) {
+			/* 421 <domain> Service not available */
+			size_t sl = 0;
+			auto str = resource_get_smtp_code(401, 1, &sl);
+			auto str2 = resource_get_smtp_code(401, 2, &sl);
+			auto host_ID = znul(g_config_file->get_value("host_id"));
+			char buff[1024];
+			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			           str, host_ID, str2);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				/* ignore */;
+			close(sockd2);
+			continue;
+		}
+		ctx->type = CONTEXT_CONSTRUCTING;
+		if (!use_tls) {
+			/* 220 <domain> Service ready */
+			size_t sl = 0;
+			auto str = resource_get_smtp_code(202, 1, &sl);
+			auto str2 = resource_get_smtp_code(202, 2, &sl);
+			auto host_ID = znul(g_config_file->get_value("host_id"));
+			char buff[1024];
+			auto len = snprintf(buff, std::size(buff), "%s%s%s",
+			           str, host_ID, str2);
+			if (HXio_fullwrite(sockd2, buff, len) < 0)
+				/* ignore */;
+		}
+		/* construct the context object */
+		ctx->connection.last_timestamp = tp_now();
+		ctx->connection.sockd             = sockd2;
+		ctx->last_cmd                  = use_tls ? T_STARTTLS_CMD : 0;
+		ctx->connection.client_port    = client_port;
+		ctx->connection.server_port    = use_tls ? g_listener_ssl_port : g_listener_port;
+		gx_strlcpy(ctx->connection.client_ip, client_hostip, std::size(ctx->connection.client_ip));
+		gx_strlcpy(ctx->connection.server_ip, server_hostip, std::size(ctx->connection.server_ip));
+		/*
+		 * Valid the context and wake up one thread if there are some threads
+		 * block on the condition variable.
+		 */
+		ctx->polling_mask = POLLING_READ;
+		contexts_pool_put_context(ctx, CONTEXT_POLLING);
+	}
+	return nullptr;
+}
+
+static void listener_init(const char *addr, uint16_t port, uint16_t ssl_port)
+{
+	g_listener_addr = addr;
+	g_listener_port = port;
+	g_listener_ssl_port = ssl_port;
+	g_stop_accept = false;
+}
+
+static int listener_run()
+{
+	g_listener_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_port);
+	if (g_listener_sock < 0) {
+		mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
+		       g_listener_port, strerror(-g_listener_sock));
+		return -1;
+	}
+	gx_reexec_record(g_listener_sock);
+	if (g_listener_ssl_port > 0) {
+		g_listener_ssl_sock = HX_inet_listen(g_listener_addr.c_str(), g_listener_ssl_port);
+		if (g_listener_ssl_sock < 0) {
+			mlog(LV_ERR, "listener: failed to create socket [*]:%hu: %s",
+			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
+			return -1;
+		}
+		gx_reexec_record(g_listener_ssl_sock);
+	}
+	return 0;
+}
+
+static int listener_trigger_accept()
+{
+	auto ret = pthread_create4(&g_thr_id, nullptr, smls_thrwork,
+	           reinterpret_cast<void *>(uintptr_t(false)));
+	if (ret != 0) {
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+		return -1;
+	}
+	pthread_setname_np(g_thr_id, "accept");
+	if (g_listener_ssl_port > 0) {
+		ret = pthread_create4(&g_ssl_thr_id, nullptr, smls_thrwork,
+		      reinterpret_cast<void *>(uintptr_t(true)));
+		if (ret != 0) {
+			mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+			return -2;
+		}
+		pthread_setname_np(g_ssl_thr_id, "tls_accept");
+	}
+	return 0;
+}
+
+static void listener_stop_accept()
+{
+	g_stop_accept = true;
+	if (g_listener_sock >= 0)
+		shutdown(g_listener_sock, SHUT_RDWR); /* closed in listener_stop */
+	if (!pthread_equal(g_thr_id, {})) {
+		pthread_kill(g_thr_id, SIGALRM);
+		pthread_join(g_thr_id, nullptr);
+	}
+	if (g_listener_ssl_sock >= 0)
+		shutdown(g_listener_ssl_sock, SHUT_RDWR);
+	if (!pthread_equal(g_ssl_thr_id, {})) {
+		pthread_kill(g_ssl_thr_id, SIGALRM);
+		pthread_join(g_ssl_thr_id, nullptr);
+	}
+}
+
+static void listener_stop()
+{
+	if (g_listener_sock >= 0) {
+		close(g_listener_sock);
+		g_listener_sock = -1;
+	}
+	if (g_listener_ssl_sock >= 0) {
+		close(g_listener_ssl_sock);
+		g_listener_ssl_sock = -1;
+	}
 }
 
 int main(int argc, const char **argv) try
