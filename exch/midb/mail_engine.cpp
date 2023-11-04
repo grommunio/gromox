@@ -940,9 +940,8 @@ static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 		b_result1 = b_result;
 		POP_MATCH(ptree, pnode, conjunction, b_result)
 		goto RECURSION_POINT;
-	} else {
-		return b_result;
 	}
+	return b_result;
 }
 /* end of recursion procedure */
 

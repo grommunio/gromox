@@ -232,10 +232,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 		return FALSE;
 	}
 	rop_util_free_binary(pbin);
-	if (0 == *pfolder_id) {
-		return FALSE;
-	}
-	return TRUE;
+	return *pfolder_id != 0 ? TRUE : false;
 }
 
 BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
