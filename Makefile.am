@@ -113,7 +113,7 @@ EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
 
 pop3_SOURCES = lib/svc_loader.cpp mra/midb_agent.hpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3.hpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp
 pop3_LDADD = -lpthread ${crypto_LIBS} ${dl_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la libgromox_exrpc.la
-imap_SOURCES = lib/svc_loader.cpp mra/midb_agent.hpp mra/imap/imap.hpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
+imap_SOURCES = lib/svc_loader.cpp mra/midb_agent.hpp mra/imap/imap.hpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/main.cpp mra/imap/resource.cpp
 imap_LDADD = -lpthread ${crypto_LIBS} ${dl_LIBS} ${HX_LIBS} ${jsoncpp_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_epoll.la libgromox_email.la libgromox_exrpc.la
 libgxs_event_proxy_la_SOURCES = mra/event_proxy.cpp
 libgxs_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}

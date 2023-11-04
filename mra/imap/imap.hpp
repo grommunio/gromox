@@ -180,8 +180,6 @@ extern const char *resource_get_default_charset(const char *lang);
 extern const char *resource_get_error_string(unsigned int);
 extern void imap_parser_event_expunge(const char *user, const char *folder, unsigned int uid);
 
-extern int system_services_run();
-extern void system_services_stop();
 extern void imrpc_build_env();
 extern void imrpc_free_env();
 
