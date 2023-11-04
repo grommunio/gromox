@@ -10,7 +10,7 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore
-pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
+pkglib_LTLIBRARIES = ${exchange_plugins} ${mta_plugins} ${mra_plugins} libmapi4zf.la
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
 plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS${NO_VSYM}}
@@ -42,13 +42,13 @@ mra_plugins = \
 	libgxs_event_stub.la \
 	libgxs_midb_agent.la
 exchange_plugins = \
-	libgxs_exmdb_provider.la \
-	libgxs_timer_agent.la \
+	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
 	libgxp_exchange_rfr.la \
-	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oxdisco.la libgxh_oab.la \
 	libgxs_authmgr.la libgxs_dnsbl_filter.la \
+	libgxs_exmdb_provider.la \
+	libgxs_timer_agent.la \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la \
 	libgxs_user_filter.la
