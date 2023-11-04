@@ -115,9 +115,8 @@ char* common_util_dup(const char *pstr)
 
 	len = strlen(pstr) + 1;
 	auto pstr1 = static_cast<char *>(common_util_alloc(len));
-	if (NULL == pstr1) {
+	if (pstr1 == nullptr)
 		return NULL;
-	}
 	memcpy(pstr1, pstr, len);
 	return pstr1;
 }
@@ -127,9 +126,8 @@ BINARY *cu_xid_to_bin(const XID &xid)
 	EXT_PUSH ext_push;
 
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
 	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
@@ -142,9 +140,8 @@ static BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 {
 	EXT_PULL ext_pull;
 
-	if (pbin->cb < 17 || pbin->cb > 24) {
+	if (pbin->cb < 17 || pbin->cb > 24)
 		return FALSE;
-	}
 	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 	return ext_pull.g_xid(pbin->cb, pxid) == EXT_ERR_SUCCESS ? TRUE : false;
 }
@@ -153,9 +150,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	PCL ppcl;
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
@@ -167,9 +163,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		return NULL;
 	auto ptmp_bin = ppcl.serialize();
 	ppcl.clear();
-	if (NULL == ptmp_bin) {
+	if (ptmp_bin == nullptr)
 		return NULL;
-	}
 	pbin->cb = ptmp_bin->cb;
 	pbin->pv = common_util_alloc(ptmp_bin->cb);
 	if (pbin->pv == nullptr) {
@@ -193,9 +188,8 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[9];
 	
-	if (!exmdb_client::allocate_cn(dir, &change_num)) {
+	if (!exmdb_client::allocate_cn(dir, &change_num))
 		return FALSE;
-	}
 	uint32_t tmp_type = FOLDER_GENERIC;
 	last_time = rop_util_unix_to_nttime(time(NULL));
 	tmp_propvals.count = 9;
@@ -226,9 +220,8 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	if (!ppcl.append(xid))
 		return FALSE;
 	pbin = ppcl.serialize();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return FALSE;
-	}
 	ppcl.clear();
 	propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[8].pvalue = pbin;
@@ -268,12 +261,10 @@ BOOL common_util_get_propname(
 	propids.count = 1;
 	propids.ppropid = &propid;
 	if (!exmdb_client::get_named_propnames(
-		common_util_get_maildir(), &propids, &propnames)) {
+	    common_util_get_maildir(), &propids, &propnames))
 		return FALSE;	
-	}
-	if (0 == propnames.count) {
+	if (propnames.count == 0)
 		*pppropname = NULL;
-	}
 	*pppropname = propnames.ppropname;
 	return TRUE;
 }

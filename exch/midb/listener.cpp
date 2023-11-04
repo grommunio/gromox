@@ -39,11 +39,10 @@ static void *midls_thrwork(void *);
 
 void listener_init(const char *ip, uint16_t port)
 {
-	if ('\0' != ip[0]) {
+	if (*ip != '\0')
 		gx_strlcpy(g_listen_ip, ip, std::size(g_listen_ip));
-	} else {
+	else
 		g_listen_ip[0] = '\0';
-	}
 	g_listen_port = port;
 	g_listen_sockd = -1;
 	g_notify_stop = true;
@@ -109,9 +108,8 @@ static void *midls_thrwork(void *param)
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
 		auto sockd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name), &addrlen);
-		if (-1 == sockd) {
+		if (sockd == -1)
 			continue;
-		}
 		int ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&peer_name),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);

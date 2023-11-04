@@ -334,9 +334,8 @@ static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv)
 	last_space = cmd_line;
 	while (*ptr != '\0') {
 		if ('{' == *ptr) {
-			if ('}' != cmd_line[cmd_len - 1]) {
+			if (cmd_line[cmd_len-1] != '}')
 				return 0;
-			}
 			argv[argc] = ptr;
 			cmd_line[cmd_len] = '\0';
 			argc ++;

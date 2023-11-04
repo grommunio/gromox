@@ -1796,9 +1796,8 @@ static BOOL mail_engine_get_encoded_name(xstmt &pstmt,
 		auto length = name.size();
 		if (length >= 256)
 			return FALSE;
-		if (0 != offset) {
+		if (offset != 0)
 			temp_name[offset++] = '/';
-		}
 		if (offset + length >= 512)
 			return FALSE;
 		memcpy(&temp_name[offset], name.c_str(), length);
