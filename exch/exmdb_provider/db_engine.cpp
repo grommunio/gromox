@@ -92,13 +92,10 @@ struct ROWDEL_NODE {
 
 }
 
-static BOOL g_wal;
-static BOOL g_async;
 static size_t g_table_size; /* hash table size */
 static unsigned int g_threads_num;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
-static uint64_t g_mmap_size;
 static int g_cache_interval;	/* maximum living interval in table */
 static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
@@ -194,7 +191,6 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 db_item_ptr db_engine_get_db(const char *path)
 {
 	char db_path[256];
-	char sql_string[256];
 	DB_ITEM *pdb;
 	
 	std::unique_lock hhold(g_hash_lock);
@@ -261,12 +257,6 @@ db_item_ptr db_engine_get_db(const char *path)
 		return db_item_ptr(pdb);
 	}
 	gx_sql_exec(pdb->psqlite, "PRAGMA foreign_keys=ON");
-	gx_sql_exec(pdb->psqlite, g_async ? "PRAGMA synchronous=ON" : "PRAGMA synchronous=OFF");
-	gx_sql_exec(pdb->psqlite, g_wal ? "PRAGMA journal_mode=WAL" : "PRAGMA journal_mode=DELETE");
-	if (0 != g_mmap_size) {
-		snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU{g_mmap_size});
-		gx_sql_exec(pdb->psqlite, sql_string);
-	}
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(pdb);
 	return db_item_ptr(pdb);
@@ -685,15 +675,11 @@ static void *mdpeng_thrwork(void *param)
 	return nullptr;
 }
 
-void db_engine_init(size_t table_size, int cache_interval,
-	BOOL b_async, BOOL b_wal, uint64_t mmap_size, unsigned int threads_num)
+void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num)
 {
 	g_notify_stop = true;
 	g_table_size = table_size;
 	g_cache_interval = cache_interval;
-	g_async = b_async;
-	g_wal = b_wal;
-	g_mmap_size = mmap_size;
 	g_threads_num = threads_num;
 	g_thread_ids.reserve(g_threads_num);
 }

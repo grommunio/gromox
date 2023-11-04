@@ -117,7 +117,7 @@ struct DB_ITEM {
 	} tables;
 };
 
-extern void db_engine_init(size_t table_size, int cache_interval, BOOL async, BOOL wal, uint64_t mmap_size, unsigned int threads_num);
+extern void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num);
 extern int db_engine_run();
 extern void db_engine_stop();
 

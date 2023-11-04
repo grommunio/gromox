@@ -61,9 +61,6 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
 	{"sqlite_debug", "0"},
-	{"sqlite_mmap_size", "0", CFG_SIZE},
-	{"sqlite_synchronous", "false", CFG_BOOL},
-	{"sqlite_wal_mode", "false", CFG_BOOL},
 	{"table_size", "5000", CFG_SIZE, "100"},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -149,17 +146,12 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		size_t max_threads = pconfig->get_ll("max_rpc_stub_threads");
 		size_t max_routers = pconfig->get_ll("max_router_connections");
 		int table_size = pconfig->get_ll("table_size");
-		char cache_int_s[64], mmap_size_s[64];
+		char cache_int_s[64];
 		int cache_interval = pconfig->get_ll("cache_interval");
 		HX_unit_seconds(cache_int_s, std::size(cache_int_s), cache_interval, 0);
 		int max_msg_count = pconfig->get_ll("max_store_message_count");
 		int max_rule = pconfig->get_ll("max_rule_number");
 		int max_ext_rule = pconfig->get_ll("max_ext_rule_number");
-		auto b_async = parse_bool(pconfig->get_value("sqlite_synchronous"));
-		auto b_wal = parse_bool(pconfig->get_value("sqlite_wal_mode"));
-		uint64_t mmap_size = pconfig->get_ll("sqlite_mmap_size");
-		if (mmap_size != 0)
-			HX_unit_size(mmap_size_s, std::size(mmap_size_s), mmap_size, 1024, 0);
 		int populating_num = pconfig->get_ll("populating_threads_num");
 		mlog(LV_INFO, "exmdb_provider: x500=\"%s\", "
 		        "rpc_proxyconn_num=%d, notify_stub_threads_num=%d, "
@@ -168,10 +160,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		        org_name, connection_num, threads_num, table_size,
 		        cache_int_s, max_msg_count, max_rule, max_ext_rule,
 		        populating_num);
-		mlog(LV_INFO, "exmdb_provider: sqlite: synchronous=%s journal=%s mmap_size=%s",
-		       b_async ? "ON" : "OFF", b_wal ? "WAL" : "DELETE",
-		       mmap_size == 0 ? "disabled" : mmap_size_s);
-		
 		auto str = pconfig->get_value("exmdb_file_compression");
 		if (str == nullptr || !parse_bool(str))
 			g_cid_compression = 0;
@@ -188,8 +176,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			mlog(LV_INFO, "Content File Compression: zstd-%d", g_cid_compression);
 
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
-		db_engine_init(table_size, cache_interval,
-			b_async ? TRUE : false, b_wal ? TRUE : false, mmap_size, populating_num);
+		db_engine_init(table_size, cache_interval, populating_num);
 		uint16_t listen_port = pconfig->get_ll("exmdb_listen_port");
 		if (0 == listen_port) {
 			exmdb_parser_init(0, 0);
