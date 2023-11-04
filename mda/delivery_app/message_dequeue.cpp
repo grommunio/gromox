@@ -475,18 +475,15 @@ errno_t message_dequeue_save(MESSAGE *pmessage)
 		return errno = se;
 	}
 	auto z = pmessage->mail_length + 4 * sizeof(uint32_t);
-	auto ret = HXio_fullwrite(fd, pmessage->begin_address, z);
-	if (ret < 0)
+	if (HXio_fullwrite(fd, pmessage->begin_address, z) < 0)
 		return -9999;
 	auto len = strlen(pmessage->envelope_from);
-	ret = HXio_fullwrite(fd, pmessage->envelope_from, len + 1);
-	if (ret < 0)
+	if (HXio_fullwrite(fd, pmessage->envelope_from, len + 1) < 0)
 		return -9999;
 	ptr = pmessage->envelope_rcpt;
 	while ((len = strlen(ptr)) != 0) {
 		len++;
-		ret = HXio_fullwrite(fd, ptr, len);
-		if (ret < 0)
+		if (HXio_fullwrite(fd, ptr, len) < 0)
 			return -9999;
 		ptr += len;
 	}

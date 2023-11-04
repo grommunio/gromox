@@ -535,15 +535,12 @@ static void do_folder(mbox_state &mbs, const edb_folder &folder)
  */
 static errno_t do_mbox(mbox_state &mbs)
 {
-	auto wrret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
-	if (wrret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
-	wrret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* splice */
-	if (wrret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
 		throw YError("PG-1015: %s", strerror(errno));
-	wrret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* public store */
-	if (wrret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
 		throw YError("PG-1016: %s", strerror(errno));
 	gi_folder_map_write({});
 
@@ -634,11 +631,9 @@ static errno_t do_file(const char *filename) try
 		return EXIT_FAILURE;
 	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	wrret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (wrret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 		throw YError("PG-1017: %s", strerror(errno));
-	wrret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (wrret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PG-1018: %s", strerror(errno));
 #endif
 	return 0;

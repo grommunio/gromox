@@ -223,12 +223,10 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 		    ep.p_str(tgt.create_name.c_str()) != EXT_ERR_SUCCESS)
 			throw YError("PG-1103");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
-		throw YError("PG-1104: %s", strerror(-ret));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
-		throw YError("PG-1106: %s", strerror(-ret));
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+		throw YError("PG-1104: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+		throw YError("PG-1106: %s", strerror(errno));
 }
 
 void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
@@ -266,12 +264,10 @@ void gi_name_map_write(const gi_name_map &map)
 		    ep.p_propname(static_cast<PROPERTY_NAME>(xn)) != EXT_ERR_SUCCESS)
 			throw YError("PG-1111");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
-		throw YError("PG-1112: %s", strerror(-ret));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
-		throw YError("PG-1114: %s", strerror(-ret));
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+		throw YError("PG-1112: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+		throw YError("PG-1114: %s", strerror(errno));
 }
 
 uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)

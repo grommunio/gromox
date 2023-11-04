@@ -262,15 +262,12 @@ int main(int argc, const char **argv) try
 		}
 	}
 
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
 		throw YError("PG-1014: %s", strerror(errno));
 	uint8_t flag = false;
-	ret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* splice */
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
 		throw YError("PG-1015: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)); /* public store */
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
 		throw YError("PG-1016: %s", strerror(errno));
 	gi_folder_map_t fmap;
 	if (g_import_mode == IMPORT_ICAL)
@@ -301,11 +298,9 @@ int main(int argc, const char **argv) try
 			return EXIT_FAILURE;
 		}
 		uint64_t xsize = cpu_to_le64(ep.m_offset);
-		ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-		if (ret < 0)
+		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 			throw YError("PG-1017: %s", strerror(errno));
-		ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-		if (ret < 0)
+		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 			throw YError("PG-1018: %s", strerror(errno));
 	}
 	return EXIT_SUCCESS;

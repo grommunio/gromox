@@ -1411,8 +1411,7 @@ errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 		auto zr = ZSTD_compressStream2(strm, &outds, &inds, ZSTD_e_continue);
 		if (ZSTD_isError(zr))
 			return EIO;
-		auto r2 = HXio_fullwrite(fd, outds.dst, outds.pos);
-		if (r2 < 0)
+		if (HXio_fullwrite(fd, outds.dst, outds.pos) < 0)
 			return EIO;
 	}
 	while (true) {
@@ -1420,8 +1419,7 @@ errno_t gx_compress_tofd(std::string_view inbuf, int fd, uint8_t complvl)
 		auto zr = ZSTD_compressStream2(strm, &outds, &inds, ZSTD_e_end);
 		if (ZSTD_isError(zr))
 			return EIO;
-		auto r2 = HXio_fullwrite(fd, outds.dst, outds.pos);
-		if (r2 < 0)
+		if (HXio_fullwrite(fd, outds.dst, outds.pos) < 0)
 			return EIO;
 		if (zr == 0)
 			break;

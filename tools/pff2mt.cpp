@@ -539,12 +539,10 @@ static void emit_namedprop(gi_name_map &seen, libpff_record_entry_t *rent,
 	    ep.p_propname(static_cast<PROPERTY_NAME>(pn_req)) != pack_result::success)
 		throw YError("PG-1139");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
-		throw YError("PG-1140: %s", strerror(-ret));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
-		throw YError("PG-1141: %s", strerror(-ret));
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+		throw YError("PG-1140: %s", strerror(errno));
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+		throw YError("PG-1141: %s", strerror(errno));
 	seen.emplace(proptag, std::move(pn_req));
 }
 
@@ -857,11 +855,9 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	ep.p_tpropval_a(*props);
 	ep.p_uint64(0); /* ACL count */
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 		throw YError("PF-1124: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PF-1126: %s", strerror(errno));
 	return 0;
 }
@@ -930,11 +926,9 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 		throw YError("PF-1128: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PF-1130: %s", strerror(errno));
 	return 0;
 }
@@ -1200,11 +1194,9 @@ static errno_t do_file(const char *filename) try
 	}
 
 	uint8_t xsplice = g_splice;
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
 		throw YError("PF-1132: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PF-1133: %s", strerror(errno));
 	/*
 	 * There seems to be no way to export a public store hierarchy from
@@ -1213,8 +1205,7 @@ static errno_t do_file(const char *filename) try
 	 * hierarchy anymore that is worth thinking about.
 	 */
 	xsplice = false; /* <=> not public store. */
-	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PF-1134: %s", strerror(errno));
 	g_folder_map.clear();
 	if (g_splice) {
@@ -1251,7 +1242,7 @@ static errno_t do_file(const char *filename) try
 		if (libpff_file_get_item_by_identifier(file.get(), nid,
 		    &~unique_tie(root), &~unique_tie(err)) < 1)
 			throw az_error("PF-1026", err);
-		ret = do_item(0, pd, root.get());
+		auto ret = do_item(0, pd, root.get());
 		if (ret < 0)
 			return ret;
 	}

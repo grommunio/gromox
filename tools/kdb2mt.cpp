@@ -1131,11 +1131,9 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	for (const auto &ace : item.m_acl.get_perms())
 		ep.p_permission_data(ace);
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 		throw YError("PK-1024: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PK-1026: %s", strerror(errno));
 	return 0;
 }
@@ -1204,11 +1202,9 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
-	auto ret = HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
 		throw YError("PK-1028: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PK-1030: %s", strerror(errno));
 	return 0;
 }
@@ -1382,15 +1378,12 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
 	uint8_t xsplice = g_splice;
-	auto ret = HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8);
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
 		throw YError("PK-1032: %s", strerror(errno));
-	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PK-1034: %s", strerror(errno));
 	xsplice = drv->m_public_store;
-	ret = HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice));
-	if (ret < 0)
+	if (HXio_fullwrite(STDOUT_FILENO, &xsplice, sizeof(xsplice)) < 0)
 		throw YError("PK-1036: %s", strerror(errno));
 	if (g_splice && drv->m_public_store)
 		drv->fmap_setup_splice_public();
@@ -1413,7 +1406,7 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	auto pd = parent_desc::as_folder(~0ULL);
 	for (const auto hid : g_only_objs) {
 		auto item = kdb_item::load_hid_base(*drv, hid);
-		ret = do_item(*drv, 0, pd, *item);
+		auto ret = do_item(*drv, 0, pd, *item);
 		if (ret < 0)
 			throw YError("PK-1015: %s", strerror(-ret));
 	}

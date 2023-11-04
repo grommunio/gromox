@@ -1087,8 +1087,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		pbuild->build_result = FALSE;
 		return;
 	}
-	auto wr_ret = HXio_fullwrite(fd.get(), djson.data(), djson.size());
-	if (wr_ret < 0 || fd.close_wr() != 0) {
+	if (HXio_fullwrite(fd.get(), djson.data(), djson.size()) < 0 ||
+	    fd.close_wr() != 0) {
 		mlog(LV_ERR, "E-1333: write %s: %s", dgt_path, strerror(errno));
 		fd.close_rd();
 		if (remove(dgt_path) < 0 && errno != ENOENT)

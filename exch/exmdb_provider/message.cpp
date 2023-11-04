@@ -3704,8 +3704,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		auto djson = json_to_str(std::move(newdigest));
 		wrapfd fd = open(tmp_path, O_CREAT | O_TRUNC | O_WRONLY, FMODE_PRIVATE);
 		if (fd.get() >= 0) {
-			auto wr_ret = HXio_fullwrite(fd.get(), djson.c_str(), djson.size());
-			if (wr_ret < 0 || fd.close_wr() != 0) {
+			if (HXio_fullwrite(fd.get(), djson.c_str(), djson.size()) < 0 ||
+			    fd.close_wr() != 0) {
 				mlog(LV_ERR, "E-1319: write %s: %s", tmp_path, strerror(errno));
 				return false;
 			}
