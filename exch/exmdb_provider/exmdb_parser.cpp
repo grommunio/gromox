@@ -190,9 +190,8 @@ static void *mdpps_thrwork(void *pparam)
 		if (is_writing) {
 			written_len = write(pconnection->sockd,
 			              static_cast<char *>(pbuff) + offset, buff_len - offset);
-			if (written_len <= 0) {
+			if (written_len <= 0)
 				break;
-			}
 			offset += written_len;
 			if (offset == buff_len) {
 				free(pbuff);
@@ -206,20 +205,17 @@ static void *mdpps_thrwork(void *pparam)
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pconnection->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
-		if (1 != poll(&pfd_read, 1, tv_msec)) {
+		if (poll(&pfd_read, 1, tv_msec) != 1)
 			break;
-		}
 		if (NULL == pbuff) {
 			read_len = read(pconnection->sockd,
 					&buff_len, sizeof(uint32_t));
-			if (read_len != sizeof(uint32_t)) {
+			if (read_len != sizeof(uint32_t))
 				break;
-			}
 			/* ping packet */
 			if (0 == buff_len) {
-				if (1 != write(pconnection->sockd, resp_buff, 1)) {
+				if (write(pconnection->sockd, resp_buff, 1) != 1)
 					break;
-				}
 				continue;
 			}
 			pbuff = malloc(buff_len);
@@ -235,13 +231,11 @@ static void *mdpps_thrwork(void *pparam)
 		}
 		read_len = read(pconnection->sockd,
 		           static_cast<char *>(pbuff) + offset, buff_len - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			break;
-		}
 		offset += read_len;
-		if (offset < buff_len) {
+		if (offset < buff_len)
 			continue;
-		}
 		exmdb_server::build_env(b_private ? EM_PRIVATE : 0, nullptr);
 		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
@@ -265,9 +259,8 @@ static void *mdpps_thrwork(void *pparam)
 					exmdb_server::free_env();
 					exmdb_server::set_remote_id(pconnection->remote_id.c_str());
 					is_connected = TRUE;
-					if (5 != write(pconnection->sockd, resp_buff, 5)) {
+					if (write(pconnection->sockd, resp_buff, 5) != 5)
 						break;
-					}
 					offset = 0;
 					buff_len = 0;
 					continue;
@@ -325,9 +318,7 @@ static void *mdpps_thrwork(void *pparam)
 	}
 	close(pconnection->sockd);
 	pconnection->sockd = -1;
-	if (NULL != pbuff) {
-		free(pbuff);
-	}
+	free(pbuff);
 	if (!pconnection->b_stop) {
 		pconnection->thr_id = {};
 		pthread_detach(pthread_self());
