@@ -1,27 +1,37 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <memory>
+#include <netdb.h>
+#include <pthread.h>
 #include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
+#include <gromox/list_file.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -31,17 +41,20 @@
 #include "cmd_parser.h"
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "listener.h"
 #include "mail_engine.hpp"
 #include "system_services.hpp"
 
 using namespace gromox;
 
-gromox::atomic_bool g_notify_stop;
+static gromox::atomic_bool g_main_notify_stop, g_listener_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
+static uint16_t g_listen_port;
+static char g_listen_ip[40];
+static int g_listen_sockd = -1;
+static std::vector<std::string> g_acl_list;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -82,7 +95,7 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 
 static void term_handler(int signo)
 {
-	g_notify_stop = true;
+	g_main_notify_stop = true;
 }
 
 static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
@@ -106,6 +119,111 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	else
 		g_midb_schema_upgrades = MIDB_UPGRADE_NO;
 	return true;
+}
+
+static void *midls_thrwork(void *param)
+{
+	while (!g_listener_notify_stop) {
+		/* wait for an incoming connection */
+		struct sockaddr_storage peer_name;
+		socklen_t addrlen = sizeof(peer_name);
+		auto sockd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name), &addrlen);
+		if (sockd == -1)
+			continue;
+
+		char client_hostip[40];
+		auto ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&peer_name),
+		           addrlen, client_hostip, sizeof(client_hostip),
+		           nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
+		if (ret != 0) {
+			mlog(LV_ERR, "getnameinfo: %s", gai_strerror(ret));
+			close(sockd);
+			continue;
+		}
+		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
+		    client_hostip) == g_acl_list.cend()) {
+			if (HXio_fullwrite(sockd, "FALSE Access Deny\r\n", 19) < 0)
+				/* ignore */;
+			close(sockd);
+			continue;
+		}
+		auto holder = cmd_parser_get_connection();
+		if (holder.size() == 0) {
+			if (HXio_fullwrite(sockd, "FALSE Maximum Connection Reached!\r\n", 35) < 0)
+				/* ignore */;
+			close(sockd);
+			continue;
+		}
+		auto &conn = holder.front();
+		conn.sockd = sockd;
+		conn.is_selecting = FALSE;
+		if (HXio_fullwrite(sockd, "OK\r\n", 4) < 0)
+			continue;
+		cmd_parser_put_connection(std::move(holder));
+	}
+	return nullptr;
+}
+
+static void listener_init(const char *ip, uint16_t port)
+{
+	if (*ip != '\0')
+		gx_strlcpy(g_listen_ip, ip, std::size(g_listen_ip));
+	else
+		g_listen_ip[0] = '\0';
+	g_listen_port = port;
+	g_listen_sockd = -1;
+	g_listener_notify_stop = true;
+}
+
+static int listener_run(const char *configdir, const char *hosts_allow)
+{
+	g_listen_sockd = HX_inet_listen(g_listen_ip, g_listen_port);
+	if (g_listen_sockd < 0) {
+		mlog(LV_ERR, "listener: failed to create listen socket: %s", strerror(-g_listen_sockd));
+		return -1;
+	}
+	gx_reexec_record(g_listen_sockd);
+	auto &acl = g_acl_list;
+	if (hosts_allow != nullptr)
+		acl = gx_split(hosts_allow, ' ');
+	auto ret = list_file_read_fixedstrings("midb_acl.txt", configdir, acl);
+	if (ret == ENOENT) {
+	} else if (ret != 0) {
+		mlog(LV_ERR, "listener: list_file_initd \"midb_acl.txt\": %s", strerror(errno));
+		close(g_listen_sockd);
+		return -5;
+	}
+	std::sort(acl.begin(), acl.end());
+	acl.erase(std::remove(acl.begin(), acl.end(), ""), acl.end());
+	acl.erase(std::unique(acl.begin(), acl.end()), acl.end());
+	if (acl.size() == 0) {
+		mlog(LV_NOTICE, "system: defaulting to implicit access ACL containing ::1.");
+		acl = {"::1"};
+	}
+	return 0;
+}
+
+static int listener_trigger_accept()
+{
+	pthread_t thr_id;
+
+	g_listener_notify_stop = false;
+	auto ret = pthread_create4(&thr_id, nullptr, midls_thrwork, nullptr);
+	if (ret != 0) {
+		mlog(LV_ERR, "listener: failed to create listener thread: %s", strerror(ret));
+		return -1;
+	}
+	pthread_setname_np(thr_id, "listener");
+	return 0;
+}
+
+static void listener_stop()
+{
+	g_listener_notify_stop = true;
+	if (g_listen_sockd >= 0) {
+		close(g_listen_sockd);
+		g_listen_sockd = -1;
+	}
 }
 
 int main(int argc, const char **argv) try
@@ -240,7 +358,7 @@ int main(int argc, const char **argv) try
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	mlog(LV_NOTICE, "system: MIDB is now running");
-	while (!g_notify_stop) {
+	while (!g_main_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
 			midb_reload_config(nullptr);
