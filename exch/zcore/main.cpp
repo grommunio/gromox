@@ -8,19 +8,24 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <pthread.h>
 #include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <libHX/socket.h>
 #include <libHX/string.h>
+#include <netinet/in.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
@@ -36,7 +41,6 @@
 #include "bounce_producer.hpp"
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "listener.hpp"
 #include "object_tree.h"
 #include "rpc_parser.hpp"
 #include "system_services.hpp"
@@ -44,11 +48,14 @@
 
 using namespace gromox;
 
-gromox::atomic_bool g_notify_stop;
+gromox::atomic_bool g_main_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
+static gromox::atomic_bool g_listener_notify_stop;
+static int g_listen_sockd;
+static pthread_t g_listener_id;
 
 static constexpr struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -103,7 +110,7 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 
 static void term_handler(int signo)
 {
-	g_notify_stop = true;
+	g_main_notify_stop = true;
 }
 
 static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
@@ -130,6 +137,66 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
 	g_oxcical_allday_ymd = pconfig->get_ll("oxcical_allday_ymd");
 	zcore_max_obh_per_session = pconfig->get_ll("zcore_max_obh_per_session");
 	return true;
+}
+
+static void *zcls_thrwork(void *param)
+{
+	struct sockaddr_storage unix_addr;
+
+	while (!g_listener_notify_stop) {
+		socklen_t len = sizeof(unix_addr);
+		memset(&unix_addr, 0, sizeof(unix_addr));
+		int clifd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr), &len);
+		if (clifd == -1)
+			continue;
+		if (!rpc_parser_activate_connection(clifd))
+			close(clifd);
+	}
+	return nullptr;
+}
+
+static void listener_init()
+{
+	g_listen_sockd = -1;
+	g_listener_notify_stop = true;
+}
+
+static int listener_run(const char *sockpath)
+{
+	g_listen_sockd = HX_local_listen(sockpath);
+	if (g_listen_sockd < 0) {
+		mlog(LV_ERR, "listen %s: %s", sockpath, strerror(-g_listen_sockd));
+		return -1;
+	}
+	gx_reexec_record(g_listen_sockd);
+	if (chmod(sockpath, FMODE_PUBLIC) < 0) {
+		close(g_listen_sockd);
+		mlog(LV_ERR, "listener: failed to change the access mode of %s", sockpath);
+		return -3;
+	}
+	g_listener_notify_stop = false;
+	auto ret = pthread_create4(&g_listener_id, nullptr, zcls_thrwork, nullptr);
+	if (ret != 0) {
+		close(g_listen_sockd);
+		mlog(LV_ERR, "listener: failed to create accept thread: %s", strerror(ret));
+		return -5;
+	}
+	pthread_setname_np(g_listener_id, "accept");
+	return 0;
+}
+
+static void listener_stop()
+{
+	g_listener_notify_stop = true;
+	if (g_listen_sockd >= 0)
+		shutdown(g_listen_sockd, SHUT_RDWR);
+	if (!pthread_equal(g_listener_id, {})) {
+		pthread_kill(g_listener_id, SIGALRM);
+		pthread_join(g_listener_id, nullptr);
+	}
+	if (g_listen_sockd >= 0)
+		close(g_listen_sockd);
+	g_listen_sockd = -1;
 }
 
 int main(int argc, const char **argv) try
@@ -293,7 +360,7 @@ int main(int argc, const char **argv) try
 	sigaction(SIGINT, &sact, nullptr);
 	sigaction(SIGTERM, &sact, nullptr);
 	mlog(LV_NOTICE, "system: zcore is now running");
-	while (!g_notify_stop) {
+	while (!g_main_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
 			zcore_reload_config(nullptr, nullptr);
