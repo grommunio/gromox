@@ -3452,7 +3452,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 		Json::Value digest;
 		if (mail_engine_get_digest(pidb->psqlite, dt.first.c_str(),
 		    digest) == 0)
-			return MIDB_E_DIGEST;
+			digest = Json::objectValue;
 		auto djson = json_to_str(digest);
 		djson.insert(0, temp_buff);
 		djson.append("\r\n");
