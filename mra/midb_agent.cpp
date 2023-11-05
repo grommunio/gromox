@@ -1183,7 +1183,7 @@ static unsigned int s_to_flagbits(const char *s)
 
 static bool get_digest_string(const Json::Value &jv, const char *tag, std::string &buff)
 {
-	if (!jv.isMember(tag))
+	if (jv.type() != Json::ValueType::objectValue || !jv.isMember(tag))
 		return false;
 	buff = jv[tag].asString();
 	return true;
@@ -1191,7 +1191,7 @@ static bool get_digest_string(const Json::Value &jv, const char *tag, std::strin
 
 static bool get_digest_integer(const Json::Value &jv, const char *tag, int &i)
 {
-	if (!jv.isMember(tag))
+	if (jv.type() != Json::ValueType::objectValue || !jv.isMember(tag))
 		return false;
 	i = jv[tag].asUInt();
 	return true;
@@ -1200,6 +1200,8 @@ static bool get_digest_integer(const Json::Value &jv, const char *tag, int &i)
 static unsigned int di_to_flagbits(const Json::Value &jv)
 {
 	unsigned int fl = 0, v;
+	if (jv.type() != Json::ValueType::objectValue)
+		return fl;
 	if (jv.isMember("replied") && (v = jv["replied"].asUInt()) != 0)
 		fl |= FLAG_ANSWERED;
 	if (jv.isMember("unsent") && (v = jv["unsent"].asUInt()) != 0)
