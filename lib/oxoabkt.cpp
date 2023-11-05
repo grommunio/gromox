@@ -198,7 +198,8 @@ static void abkt_write(Json::Value &tpl, lb_writer &bin,
     cpid_t cpid, bool dogap)
 {
 	bin.w4(1);
-	if (!tpl.isMember("rowdata")) {
+	if (tpl.type() != Json::ValueType::objectValue ||
+	    !tpl.isMember("rowdata")) {
 		bin.w4(0);
 		return;
 	}

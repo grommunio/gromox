@@ -1032,7 +1032,7 @@ int iconv_validate()
 
 bool get_digest(const Json::Value &jval, const char *key, char *out, size_t outmax) try
 {
-	if (!jval.isMember(key))
+	if (jval.type() != Json::ValueType::objectValue || !jval.isMember(key))
 		return false;
 	auto &memb = jval[key];
 	if (memb.isString())
