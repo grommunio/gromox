@@ -2997,20 +2997,15 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
 		gx_strlcpy(username, s, ulen);
 		return TRUE;
 	}
-	s = pproplist->get<char>(tags.pr_addrtype);
-	if (s != nullptr) {
-		if (strcasecmp(s, "SMTP") == 0) {
-			s = pproplist->get<char>(tags.pr_emaddr);
-			if (s != nullptr) {
-				gx_strlcpy(username, s, ulen);
-				return TRUE;
-			}
-		} else if (strcasecmp(s, "EX") == 0) {
-			s = pproplist->get<char>(tags.pr_emaddr);
-			if (s != nullptr && cvt_essdn_to_username(s, org,
-			    id2user, username, ulen) == ecSuccess)
-				return TRUE;
-		}
+	auto addrtype = pproplist->get<const char>(tags.pr_addrtype);
+	auto emaddr   = pproplist->get<const char>(tags.pr_emaddr);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, org,
+		           id2user, username, ulen);
+		if (ret == ecSuccess)
+			return TRUE;
+		else if (ret != ecNullObject)
+			return false;
 	}
 	auto pvalue = pproplist->get<const BINARY>(tags.pr_entryid);
 	if (pvalue == nullptr)
@@ -3022,36 +3017,25 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
  * Only useful for DSN generation.
  */
 static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
-    EXT_BUFFER_ALLOC alloc, const addr_tags &tags,
-    char *username, size_t ulen)
+    EXT_BUFFER_ALLOC alloc, const addr_tags &tags, const char *org,
+    cvt_id2user id2user, char *username, size_t ulen)
 {
 	auto em = props.get<const char>(tags.pr_smtpaddr);
 	if (em != nullptr) {
 		snprintf(username, ulen, "rfc822;%s", em);
 		return true;
 	}
-	auto at = props.get<char>(tags.pr_addrtype);
+	auto at = props.get<const char>(tags.pr_addrtype);
+	em = props.get<char>(tags.pr_emaddr);
 	if (at != nullptr) {
-		em = props.get<char>(tags.pr_emaddr);
-		if (strcasecmp(at, "SMTP") == 0) {
-			if (em != nullptr) {
-				snprintf(username, ulen, "rfc822;%s", znul(em));
-				return true;
-			}
-		} else if (strcasecmp(at, "EX") == 0) {
-			if (em != nullptr) {
-				std::string es_result;
-				auto ret = cvt_essdn_to_username(em, g_oxcmail_org_name,
-				           oxcmail_id2user, es_result);
-				if (ret == ecSuccess) {
-					gx_strlcpy(username, "rfc822;", ulen);
-					HX_strlcat(username, es_result.c_str(), ulen);
-					return true;
-				}
-			}
-		} else {
-			snprintf(username, ulen, "%s;%s", at, znul(em));
+		std::string es_result;
+		auto ret = cvt_genaddr_to_smtpaddr(at, em, org,
+		           id2user, es_result);
+		if (ret == ecSuccess) {
+			snprintf(username, ulen, "rfc822;%s", es_result.c_str());
 			return true;
+		} else if (ret != ecNullObject) {
+			return false;
 		}
 	}
 	auto v = props.get<const BINARY>(tags.pr_entryid);
@@ -3872,10 +3856,9 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
-static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
-	const char *charset, const char *pmessage_class,
-	EXT_BUFFER_ALLOC alloc, char *pdsn_content,
-	int max_length)
+static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
+    const char *pmessage_class, const char *org, EXT_BUFFER_ALLOC alloc,
+    cvt_id2user id2user, char *pdsn_content, int max_length)
 {
 	char action[16];
 	TARRAY_SET *prcpts;
@@ -3927,7 +3910,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		if (pdsn_fields == nullptr)
 			return FALSE;
 		if (!oxcmail_get_rcpt_address(*prcpts->pparray[i], alloc,
-		    tags_self, tmp_buff, std::size(tmp_buff)))
+		    tags_self, org, id2user, tmp_buff, std::size(tmp_buff)))
 			*tmp_buff = '\0';
 		if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
 			return FALSE;
@@ -4533,7 +4516,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		if (!pmime->set_content_type("message/delivery-status"))
 			return exp_false;
 		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
-		    mime_skeleton.pmessage_class, alloc, tmp_buff, sizeof(tmp_buff)))
+		    mime_skeleton.pmessage_class, g_oxcmail_org_name,
+		    alloc, oxcmail_id2user, tmp_buff, sizeof(tmp_buff)))
 			return exp_false;
 		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
 		    mime_encoding::none))
