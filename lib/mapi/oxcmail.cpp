@@ -3040,12 +3040,14 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	}
 	auto v = props.get<const BINARY>(tags.pr_entryid);
 	if (v != nullptr) {
-		auto ok = oxcmail_entryid_to_username(v, alloc, &username[7],
-			  ulen > 8 ? ulen - 7 : 0);
-		if (ok) {
+		auto ret = cvt_entryid_to_smtpaddr(v, org, id2user,
+		           &username[7], ulen > 8 ? ulen - 7 : 0);
+		if (ret == ecSuccess) {
 			memcpy(username, "rfc822;", 7);
 			username[7] = '\0';
 			return true;
+		} else if (ret != ecNullObject) {
+			return false;
 		}
 	}
 	if (at != nullptr) {
