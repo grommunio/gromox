@@ -29,7 +29,10 @@ namespace gromox::EWS::detail
  * Provides explicit deleters for classes without destructor.
  */
 struct Cleaner
-{inline void operator()(BINARY*);};
+{
+	void operator()(BINARY*);
+	void operator()(MESSAGE_CONTENT*);
+};
 
 struct AttachmentInstanceKey {
 	std::string dir;
@@ -304,6 +307,8 @@ public:
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
+
+	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);
 
 private:

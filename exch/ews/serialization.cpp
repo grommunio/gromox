@@ -82,6 +82,7 @@ void sAttachmentId::serialize(XMLElement* xml) const
 	ext_push.init(buff, 128, 0, nullptr);
 	EXT_TRY(ext_push.p_msg_eid(*this));
 	EXT_TRY(ext_push.p_uint32(attachment_num));
+	EXT_TRY(ext_push.p_int8(tBaseItemId::ID_ATTACHMENT));
 	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
 	xml->SetAttribute("Id", enc);
 }
@@ -93,6 +94,7 @@ void sOccurrenceId::serialize(XMLElement* xml) const
 	ext_push.init(buff, 128, 0, nullptr);
 	EXT_TRY(ext_push.p_msg_eid(*this));
 	EXT_TRY(ext_push.p_uint32(basedate));
+	EXT_TRY(ext_push.p_int8(tBaseItemId::ID_OCCURRENCE));
 	encode64(ext_push.m_vdata, ext_push.m_offset, enc, 256, nullptr);
 	xml->SetAttribute("Id", enc);
 }
@@ -281,11 +283,24 @@ void tBaseFolderType::serialize(XMLElement* xml) const
 
 tBaseItemId::tBaseItemId(const XMLElement* xml) :
 	XMLINITA(Id), XMLINITA(ChangeKey)
-{}
+{
+	if(Id.empty())
+		type = ID_UNKNOWN;
+	else {
+		char t = Id.back();
+		type = (t < 0 || t > ID_OCCURRENCE)? ID_UNKNOWN : IdType(t);
+		Id.pop_back();
+	}
+}
 
 void tBaseItemId::serialize(XMLElement* xml) const
 {
+	IdType t = type;
+	if(t == ID_UNKNOWN)  // try to guess from entry id size, if that fails, someone forgot to mark the correct type
+		t = Id.size() == 46? ID_FOLDER : Id.size() == 70? ID_ITEM : throw DispatchError(E3212);
+	Id.append(1, t);
 	XMLDUMPA(Id);
+	Id.pop_back();
 	XMLDUMPA(ChangeKey);
 }
 

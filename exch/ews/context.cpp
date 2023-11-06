@@ -69,6 +69,7 @@ namespace detail
 {
 
 void Cleaner::operator()(BINARY* x) {rop_util_free_binary(x);}
+void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 } // gromox::EWS::detail
 
@@ -830,6 +831,8 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 			throw DispatchError(E3211);
 
 		const uint64_t* exstarttime = props.get<uint64_t>(ex_replace_time_tag);
+		if(!exstarttime)
+			continue;
 		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
 		struct tm exstart_local;
 		localtime_r(&exstart, &exstart_local);
@@ -1033,6 +1036,7 @@ sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
  */
 sFolderSpec EWSContext::resolveFolder(const tFolderId& fId) const
 {
+	assertIdType(fId.type, tFolderId::ID_FOLDER);
 	sFolderEntryId eid(fId.Id.data(), fId.Id.size());
 	sFolderSpec folderSpec;
 	folderSpec.location = eid.isPrivate()? sFolderSpec::PRIVATE : sFolderSpec::PUBLIC;
@@ -1271,10 +1275,11 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 			throw EWSError::ItemCorrupt(E3123);
 		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
 		{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-		MESSAGE_CONTENT* cnt = oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc, getPropIds);
+		std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner> cnt(oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc,
+		                                                                     getPropIds));
 		if(!cnt)
 			throw EWSError::ItemCorrupt(E3124);
-		content = *cnt;
+		content = std::move(*cnt);
 		// Register tags loaded by importer to the shape
 		const TAGGED_PROPVAL *end = content.proplist.ppropval+content.proplist.count;
 		for(const TAGGED_PROPVAL* prop = content.proplist.ppropval; prop != end; ++prop)
@@ -1550,6 +1555,28 @@ void EWSContext::validate(const std::string& dir, const sMessageEntryId& meid) c
 }
 
 /**
+ * @brief     Check whether id is of the correct type
+ *
+ * @param     have       Observed ID type
+ * @param     wanted     Expected ID type
+ *
+ * @throw     EWSError   Exception with details
+ */
+void EWSContext::assertIdType(tBaseItemId::IdType have, tBaseItemId::IdType wanted)
+{
+	using IdType = tBaseItemId::IdType;
+	if(have == wanted)
+		return;
+	if(wanted == IdType::ID_FOLDER && have == IdType::ID_ITEM)
+		throw EWSError::CannotUseItemIdForFolderId(E3213);
+	else if(wanted == IdType::ID_ITEM && have == IdType::ID_FOLDER)
+		throw EWSError::CannotUseFolderIdForItemId(E3214);
+	else if(wanted == IdType::ID_ATTACHMENT)
+		throw EWSError::InvalidIdNotAnItemAttachmentId(E3215);
+	throw EWSError::InvalidId(E3216);
+}
+
+/**
  * @brief     Convert EXT_PUSH/EXT_PULL return code to exception
  *
  * @param     code           ext_buffer return code
@@ -1564,12 +1591,12 @@ void EWSContext::ext_error(pack_result code, const char* msg, const char* respon
 	{
 	case EXT_ERR_SUCCESS: return;
 	case EXT_ERR_ALLOC: throw Exceptions::EWSError::NotEnoughMemory(msg? msg : E3128);
-	case EXT_ERR_BUFSIZE: throw Exceptions::DispatchError(msg? msg : E3145);
+	case EXT_ERR_BUFSIZE:
 	default:
 		if(responseCode && msg)
 			throw Exceptions::EWSError(responseCode, msg);
 		else
-			throw DispatchError(Exceptions::E3028(int(code)));
+			throw DispatchError(code == EXT_ERR_BUFSIZE? E3145 : Exceptions::E3028(int(code)));
 	}
 }
 
