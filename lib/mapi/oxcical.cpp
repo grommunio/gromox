@@ -2717,9 +2717,8 @@ static bool is_meeting_response(const char *s)
 }
 
 static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
-    const char *org_name, ENTRYID_TO_USERNAME entryid_to_username,
-    cvt_id2user id2user, EXT_BUFFER_ALLOC alloc, const char *partstat,
-    const MESSAGE_CONTENT *pmsg) try
+    const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
+    const char *partstat, const MESSAGE_CONTENT *pmsg) try
 {
 	char username[UADDR_SIZE];
 	char tmp_value[334];
@@ -2770,8 +2769,8 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		if (name != nullptr)
 			piline->append_param("CN", name);
 		if (oxcmail_get_smtp_address(*pmsg->children.prcpts->pparray[i],
-		    nullptr /* tags_self */, org_name, entryid_to_username,
-		    id2user, alloc, username, std::size(username))) {
+		    nullptr /* tags_self */, org_name,
+		    id2user, username, std::size(username))) {
 			snprintf(tmp_value, std::size(tmp_value), "MAILTO:%s", username);
 			piline->append_value(nullptr, tmp_value);
 		}
@@ -3343,8 +3342,7 @@ static std::string oxcical_export_valarm(const MESSAGE_CONTENT &msg,
 
 static std::string oxcical_export_internal(const char *method, const char *tzid,
     const MESSAGE_CONTENT *pmsg, ical &pical, const char *org_name,
-    ENTRYID_TO_USERNAME entryid_to_username, cvt_id2user id2user,
-    EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
+    cvt_id2user id2user, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids) try
 {
 	PROPID_ARRAY propids;
 	APPOINTMENT_RECUR_PAT apprecurr;
@@ -3555,7 +3553,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	if (strcmp(method, "REQUEST") == 0 || strcmp(method, "CANCEL") == 0)
 		oxcical_export_organizer(*pmsg, *pcomponent, org_name, id2user);
 	if (!oxcical_export_recipient_table(*pcomponent, org_name,
-	    entryid_to_username, id2user, alloc, partstat, pmsg))
+	    id2user, alloc, partstat, pmsg))
 		return "E-2211: export_recipient_table - unspecified error";
 	
 	str = pmsg->proplist.get<char>(PR_BODY);
@@ -3778,7 +3776,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
 			auto estr = oxcical_export_internal(method, tzid,
-			      pembedded, pical, org_name, entryid_to_username,
+			      pembedded, pical, org_name,
 			      id2user, alloc, get_propids);
 			if (estr.size() > 0)
 				return estr;
@@ -3793,10 +3791,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 
 BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
     const char *org_name, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
-    ENTRYID_TO_USERNAME entryid_to_username, cvt_id2user id2user)
+    cvt_id2user id2user)
 {
 	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
-	           org_name, entryid_to_username, id2user, alloc,
+	           org_name, id2user, alloc,
 	           std::move(get_propids));
 	if (err.size() > 0) {
 		mlog(LV_ERR, "%s", err.c_str());

@@ -2011,8 +2011,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
 	if (!oxcical_export(pmsgctnt, ical, g_org_name,
-		common_util_alloc, common_util_get_propids,
-	    common_util_entryid_to_username_internal, cu_id2user)) {
+	    common_util_alloc, common_util_get_propids, cu_id2user)) {
 		using LLU = unsigned long long;
 		mlog(LV_DEBUG, "D-2202: oxcical_export %s:%llxh failed",
 			pstore->get_dir(), LLU{message_id});

@@ -194,7 +194,7 @@ int main(int argc, const char **argv) try
 	} else if (g_export_mode == EXPORT_ICAL) {
 		ical ic;
 		if (!oxcical_export(ctnt, ic, g_config_file->get_value("x500_org_name"),
-		    zalloc, cu_get_propids, oxcmail_entryid_to_username, oxcmail_id2user)) {
+		    zalloc, cu_get_propids, oxcmail_id2user)) {
 			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
 		}

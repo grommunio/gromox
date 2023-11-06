@@ -2986,9 +2986,8 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 }
 
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
-    const addr_tags *ptags, const char *org,
-    ENTRYID_TO_USERNAME ey2u, cvt_id2user id2user,
-    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
+    const addr_tags *ptags, const char *org, cvt_id2user id2user,
+    char *username, size_t ulen)
 {
 	auto pproplist = &props;
 	const auto &tags = ptags != nullptr ? *ptags : tags_self;
@@ -3007,10 +3006,9 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
 		else if (ret != ecNullObject)
 			return false;
 	}
-	auto pvalue = pproplist->get<const BINARY>(tags.pr_entryid);
-	if (pvalue == nullptr)
-		return false;
-	return ey2u(pvalue, alloc, username, ulen);
+	auto ret = cvt_entryid_to_smtpaddr(pproplist->get<const BINARY>(tags.pr_entryid),
+	           org, id2user, username, ulen);
+	return ret == ecSuccess;
 }
 
 /**
@@ -3090,8 +3088,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 				return FALSE;
 		}
 		if (oxcmail_get_smtp_address(*prcpt, &tags_self, g_oxcmail_org_name,
-		    oxcmail_entryid_to_username, oxcmail_id2user,
-		    alloc, username, std::size(username)))
+		    oxcmail_id2user, username, std::size(username)))
 			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
 			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
 	}
@@ -3177,8 +3174,7 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	}
  EXPORT_ADDRESS:
 	if (oxcmail_get_smtp_address(pmsg->proplist, &tags, g_oxcmail_org_name,
-	    oxcmail_entryid_to_username, oxcmail_id2user,
-	    alloc, address, std::size(address)))
+	    oxcmail_id2user, address, std::size(address)))
 		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address);
 	else if (offset > 0)
 		/*
@@ -4487,7 +4483,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		char tmp_buff[1024*1024];
 		
 		if (!oxcical_export(pmsg, ical, g_oxcmail_org_name, alloc,
-		    get_propids, oxcmail_entryid_to_username, oxcmail_id2user)) {
+		    get_propids, oxcmail_id2user)) {
 			mlog(LV_WARN, "W-2186: oxcical_export failed for an unspecified reason");
 			return exp_false;
 		}
