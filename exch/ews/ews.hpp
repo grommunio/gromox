@@ -181,6 +181,7 @@ public:
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response
 	int experimental = 0; ///< Enable experimental requests, 0 = disabled
+	size_t max_user_photo_size = 5*1024*1024; ///< Maximum user photo file size (5 MiB)
 	std::chrono::milliseconds cache_interval{5'000}; ///< Interval for cache cleanup
 	std::chrono::milliseconds cache_attachment_instance_lifetime{30'000}; ///< Lifetime of attachment instances
 	std::chrono::milliseconds cache_embedded_instance_lifetime{30'000}; /// Lifetime of embedded instances

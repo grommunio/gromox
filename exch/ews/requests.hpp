@@ -30,6 +30,7 @@ EWSFUNC(mGetServiceConfigurationRequest);
 void process(gromox::EWS::Structures::mGetStreamingEventsRequest&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
+void process(gromox::EWS::Structures::mGetUserPhotoRequest&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&);
 void process(const Structures::mBaseMoveCopyFolder&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 void process(const Structures::mBaseMoveCopyItem&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 EWSFUNC(mResolveNamesRequest);

@@ -1235,6 +1235,17 @@ void mGetUserOofSettingsResponse::serialize(XMLElement* xml) const
 	XMLDUMPM(AllowExternalOof);
 }
 
+mGetUserPhotoRequest::mGetUserPhotoRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Email)
+{}
+
+void mGetUserPhotoResponse::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(HasChanged);
+	XMLDUMPM(PictureData);
+}
+
 void mItemInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 {
 	mResponseMessageType::serialize(xml);

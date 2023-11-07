@@ -230,6 +230,7 @@ const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap 
 	{"GetServiceConfiguration", process<Structures::mGetServiceConfigurationRequest>},
 	{"GetStreamingEvents", process<Structures::mGetStreamingEventsRequest>},
 	{"GetUserAvailabilityRequest", process<Structures::mGetUserAvailabilityRequest>},
+	{"GetUserPhoto", process<Structures::mGetUserPhotoRequest>},
 	{"GetUserOofSettingsRequest", process<Structures::mGetUserOofSettingsRequest>},
 	{"MoveFolder", process<Structures::mMoveFolderRequest>},
 	{"MoveItem", process<Structures::mMoveItemRequest>},
@@ -424,6 +425,7 @@ static constexpr cfg_directive x500_defaults[] = {
 static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_experimental", "0", CFG_BOOL},
 	{"ews_log_filter", "!"},
+	{"ews_max_user_photo_size", "5M", CFG_SIZE},
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
@@ -463,6 +465,7 @@ void EWSPlugin::loadConfig()
 		event_stream_interval = std::chrono::milliseconds(temp);
 	if(cfg->get_int("ews_cache_embedded_instance_lifetime", &temp))
 		cache_embedded_instance_lifetime = std::chrono::milliseconds(temp);
+	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 
 	smtp_server_ip = cfg->get_value("smtp_server_ip");
 	if(cfg->get_int("smtp_server_port", &temp))
@@ -635,7 +638,7 @@ int EWSPlugin::retr(int ctx_id)
 		context.state(EWSContext::S_DONE);
 		if(context.log() && response_logging)
 			mlog(loglevel, "[ews#%d] Done, code %d, %d bytes, %.3fms", ctx_id, int(context.code()), printer.CStrSize()-1,
-				 context.age());
+				 context.age()*1000);
 		return HPM_RETRIEVE_WRITE;
 	}
 	case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;

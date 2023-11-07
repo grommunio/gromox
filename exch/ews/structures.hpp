@@ -2799,6 +2799,35 @@ struct mGetUserAvailabilityResponse
 };
 
 /**
+ * Messages.xsd:4116
+ */
+struct mGetUserPhotoRequest
+{
+	explicit mGetUserPhotoRequest(const tinyxml2::XMLElement*);
+
+	std::string Email;
+	// We currently have no means of resizing/converting photos, so we'll ignore the request data
+	//<xs:element name="SizeRequested" type="t:UserPhotoSizeType" minOccurs="1" maxOccurs="1" />
+	//<xs:element name="TypeRequested" type="t:UserPhotoTypeType" minOccurs="0" maxOccurs="1" />
+};
+
+/**
+ * Messages.xsd:4131
+ *
+ * Does not utilize ResponseMessages array indirection,
+ * instead contains response data directly.
+ */
+struct mGetUserPhotoResponse : public mResponseMessageType
+{
+	using mResponseMessageType::mResponseMessageType;
+
+	bool HasChanged = true; // There is currently no mechanism to determine this, so always return true.
+	sBase64Binary PictureData;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * @brief      Out-of-office settings request
  *
  * Messages.xsg:2215
