@@ -42,7 +42,7 @@ void adjust_rights(int fd)
 {
 	uid_t uid = -1;
 	gid_t gid = -1;
-	unsigned int mode = FMODE_PUBLIC | S_IXUSR | S_IXGRP | S_IXOTH;
+	unsigned int mode = FMODE_PRIVATE | S_IXUSR | S_IXGRP;
 	struct stat sb;
 
 	if (fstat(fd, &sb) != 0) {
