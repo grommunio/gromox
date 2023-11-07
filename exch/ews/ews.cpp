@@ -638,7 +638,7 @@ int EWSPlugin::retr(int ctx_id)
 		context.state(EWSContext::S_DONE);
 		if(context.log() && response_logging)
 			mlog(loglevel, "[ews#%d] Done, code %d, %d bytes, %.3fms", ctx_id, int(context.code()), printer.CStrSize()-1,
-				 context.age());
+				 context.age()*1000);
 		return HPM_RETRIEVE_WRITE;
 	}
 	case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;
