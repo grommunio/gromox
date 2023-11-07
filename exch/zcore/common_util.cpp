@@ -2148,7 +2148,6 @@ ec_error_t cu_vcf_to_message2(store_object *store, char *vcf_data,
 	if (ret != ecSuccess)
 		return ret;
 	common_util_set_dir(store->get_dir());
-	msgvec.reserve(msgvec.size() + cardvec.size());
 	for (const auto &vcard : cardvec) {
 		message_ptr mc(oxvcard_import(&vcard, common_util_get_propids_create));
 		if (mc == nullptr)

@@ -165,7 +165,6 @@ static errno_t do_vcard(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "vcard_parse %s unsuccessful (ecode=%xh)\n", file, ret);
 		return EIO;
 	}
-	mv.reserve(mv.size() + cardvec.size());
 	for (const auto &card : cardvec) {
 		message_ptr mc(oxvcard_import(&card, ee_get_propids));
 		if (mc == nullptr) {
