@@ -364,6 +364,49 @@ static errno_t delstoreprop(const GUID &guid, const char *name)
 	return 0;
 }
 
+static errno_t clear_rwz()
+{
+	static const eid_t inbox = rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+	static constexpr RESTRICTION_EXIST rst_a = {PR_MESSAGE_CLASS};
+	static constexpr RESTRICTION_CONTENT rst_b = {FL_IGNORECASE, PR_MESSAGE_CLASS, {PT_UNICODE, deconst("IPM.RuleOrganizer")}};
+	static constexpr RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_CONTENT, {deconst(&rst_b)}}};
+	static constexpr RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
+	static constexpr RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
+	uint32_t table_id = 0, rowcount = 0;
+	if (!exmdb_client::load_content_table(g_storedir, CP_ACP, inbox,
+	    nullptr, TABLE_FLAG_ASSOCIATED, &rst_e, nullptr,
+	    &table_id, &rowcount))
+		return EIO;
+	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(g_storedir, table_id); });
+	if (rowcount == 0) {
+		printf("0 messages cleared\n");
+		return 0;
+	}
+
+	static constexpr uint32_t qtags1[] = {PidTagMid};
+	static constexpr PROPTAG_ARRAY qtags[] = {std::size(qtags1), deconst(qtags1)};
+	TARRAY_SET rowset{};
+	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
+	    qtags, 0, rowcount, &rowset))
+		return EIO;
+	std::vector<uint64_t> ids;
+	for (unsigned int i = 0; i < rowset.count; ++i) {
+		auto mid = rowset.pparray[i]->get<const uint64_t>(PidTagMid);
+		if (mid != nullptr)
+			ids.push_back(*mid);
+	}
+
+	EID_ARRAY ea_info;
+	ea_info.count = ids.size();
+	ea_info.pids  = ids.data();
+	BOOL partial = false;
+	printf("Deleting %u messages...\n", ea_info.count);
+	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_ACP,
+	    nullptr, inbox, &ea_info, 1, &partial))
+		return EIO;
+	return 0;
+}
+
 int main(int argc, const char **argv)
 {
 	using namespace global;
@@ -403,6 +446,8 @@ int main(int argc, const char **argv)
 		ret = delstoreprop(PSETID_GROMOX, "photo");
 	} else if (strcmp(argv[0], "clear-profile") == 0) {
 		ret = delstoreprop(PSETID_GROMOX, "zcore_profsect");
+	} else if (strcmp(argv[0], "clear-rwz") == 0) {
+		ret = clear_rwz();
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
 	} else {

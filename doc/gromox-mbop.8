@@ -21,6 +21,8 @@ clear\-photo: delete user picture
 .IP \(bu 4
 clear\-profile: delete user's PHP-MAPI profile
 .IP \(bu 4
+clear\-rwz: delete IPM.RuleOrganizer FAI messages from the inbox
+.IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
@@ -43,6 +45,8 @@ the copy of this data stored in exmdb. Note that zcore(8) may still hold a copy
 of the MAPI profile in memory and could write that back to exmdb, nullifying
 the effect of the clear\-profile command. Also, if the store list is absent,
 a new one will implicitly be created when PHP-MAPI/zcore is used.
+.SH clear\-rwz
+Deletes IPM.RuleOrganizer FAI messages from the inbox.
 .SH delmsg
 .SS Synopsis
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_spec\fP
