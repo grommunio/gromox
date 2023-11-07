@@ -2803,7 +2803,7 @@ static errno_t cu_cid_writeout(const char *maildir, std::string_view data,
 		mlog(LV_ERR, "E-5318: ENOMEM");
 		return ENOMEM;
 	}
-	auto ret = HX_mkdir(extradir.get(), S_IRUGO | S_IWUGO | S_IXUGO);
+	auto ret = HX_mkdir(extradir.get(), FMODE_PRIVATE | S_IXUSR | S_IXGRP);
 	if (ret < 0) {
 		mlog(LV_ERR, "E-2388: mkdir %s: %s", extradir.get(), strerror(-ret));
 		return -ret;
