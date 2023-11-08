@@ -1254,7 +1254,9 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 			return htp_delegate_cache(pcontext);
 		else if (status != http_status::none)
 			return http_done(pcontext, status);
-		return http_done(pcontext, http_status::not_found);
+		auto rsp = http_make_err_response(*pcontext, http_status::not_found);
+		pcontext->stream_out.write(rsp.c_str(), rsp.size());
+		return htp_delegate_cache(pcontext);
 	}
 	return tproc_status::runoff;
 }
