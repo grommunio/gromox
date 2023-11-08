@@ -364,17 +364,16 @@ static void *ev_scanwork(void *param)
 
 static void *ev_acceptwork(void *param)
 {
-	socklen_t addrlen;
-	int sockd, sockd2;
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
 	ENQUEUE_NODE *penqueue;
 
-	sockd = (int)(long)param;
+	int sockd = reinterpret_cast<intptr_t>(param);
 	while (!g_notify_stop) {
 		/* wait for an incoming connection */
-        addrlen = sizeof(peer_name);
-        sockd2 = accept(sockd, (struct sockaddr*)&peer_name, &addrlen);
+		socklen_t addrlen = sizeof(peer_name);
+		auto sockd2 = accept4(sockd, (struct sockaddr*)&peer_name,
+		              &addrlen, SOCK_CLOEXEC);
 		if (sockd2 < 0)
 			continue;
 		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),

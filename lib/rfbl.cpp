@@ -771,6 +771,8 @@ void startup_banner(const char *prog)
 
 void gx_reexec_record(int new_fd)
 {
+	if (getenv("GX_REEXEC_DONE") != nullptr)
+		return;
 	for (int fd = gx_reexec_top_fd; fd <= new_fd; ++fd) {
 		unsigned int flags = 0;
 		socklen_t fz = sizeof(flags);

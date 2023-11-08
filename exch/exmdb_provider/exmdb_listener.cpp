@@ -57,7 +57,8 @@ static void *mdpls_thrwork(void *param)
 	while (!g_notify_stop) {
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
-		auto sockd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name), &addrlen);
+		auto sockd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name),
+		             &addrlen, SOCK_CLOEXEC);
 		if (-1 == sockd) {
 			continue;
 		}

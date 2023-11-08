@@ -361,18 +361,17 @@ mod_fastcgi_get_others_field(const http_request::other_map &m, const char *k)
 
 static int mod_fastcgi_connect_backend(const char *path)
 {
-	int sockd, len;
 	struct sockaddr_un un;
 
 	/* create a UNIX domain stream socket */
-	sockd = socket(AF_UNIX, SOCK_STREAM, 0);
+	auto sockd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 	if (sockd < 0)
 		return -errno;
 	/* fill socket address structure with server's address */
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
 	gx_strlcpy(un.sun_path, path, std::size(un.sun_path));
-	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
+	socklen_t len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr *)&un, len) < 0) {
 		auto se = errno;
 		close(sockd);

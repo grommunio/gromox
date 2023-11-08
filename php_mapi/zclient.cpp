@@ -23,10 +23,9 @@
 
 static int zclient_connect()
 {
-	int sockd, len;
 	struct sockaddr_un un;
 	
-	sockd = socket(AF_UNIX, SOCK_STREAM, 0);
+	auto sockd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 	if (sockd < 0) {
 		return -1;
 	}
@@ -35,7 +34,7 @@ static int zclient_connect()
 	zstrplus str_server(zend_string_init(ZEND_STRL("zcore_socket"), 0));
 	auto sockpath = zend_ini_string(deconst("mapi.zcore_socket"), sizeof("mapi.zcore_socket") - 1, 0);
 	gx_strlcpy(un.sun_path, sockpath != nullptr ? sockpath : PKGRUNDIR "/zcore.sock", sizeof(un.sun_path));
-	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
+	socklen_t len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr*)&un, len) < 0) {
 		fprintf(stderr, "connect %s: %s\n", un.sun_path, strerror(errno));
 		close(sockd);

@@ -247,8 +247,9 @@ static void *imls_thrwork(void *arg)
 		socklen_t addrlen = sizeof(client_peer);
 		char client_hostip[40], client_txtport[8], server_hostip[40];
 		/* wait for an incoming connection */
-		auto sockd2 = accept(use_tls ? g_listener_ssl_sock : g_listener_sock,
-		              reinterpret_cast<struct sockaddr *>(&client_peer), &addrlen);
+		auto sockd2 = accept4(use_tls ? g_listener_ssl_sock : g_listener_sock,
+		              reinterpret_cast<struct sockaddr *>(&client_peer),
+		              &addrlen, SOCK_CLOEXEC);
 		if (g_stop_accept) {
 			if (sockd2 >= 0)
 				close(sockd2);

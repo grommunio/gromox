@@ -193,7 +193,8 @@ static void *midls_thrwork(void *param)
 		/* wait for an incoming connection */
 		struct sockaddr_storage peer_name;
 		socklen_t addrlen = sizeof(peer_name);
-		auto sockd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name), &addrlen);
+		auto sockd = accept4(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&peer_name),
+		             &addrlen, SOCK_CLOEXEC);
 		if (sockd == -1)
 			continue;
 

@@ -390,16 +390,15 @@ int main(int argc, const char **argv) try
 
 static void *tmr_acceptwork(void *param)
 {
-	int sockd, sockd2;
-	socklen_t addrlen;
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
 
-	sockd = (int)(long)param;
+	int sockd = reinterpret_cast<intptr_t>(param);
 	while (!g_notify_stop) {
 		/* wait for an incoming connection */
-        addrlen = sizeof(peer_name);
-        sockd2 = accept(sockd, (struct sockaddr*)&peer_name, &addrlen);
+		socklen_t addrlen = sizeof(peer_name);
+		auto sockd2 = accept4(sockd, reinterpret_cast<struct sockaddr *>(&peer_name),
+		              &addrlen, SOCK_CLOEXEC);
 		if (sockd2 < 0)
 			continue;
 		CONNECTION_NODE conn;

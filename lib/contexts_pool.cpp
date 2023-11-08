@@ -75,7 +75,7 @@ errno_t evqueue::init(unsigned int numctx) try
 #ifdef HAVE_SYS_EPOLL_H
 	if (m_fd >= 0)
 		close(m_fd);
-	m_fd = epoll_create(numctx);
+	m_fd = epoll_create1(EPOLL_CLOEXEC);
 	if (m_fd < 0) {
 		mlog(LV_ERR, "contexts_pool: epoll_create: %s", strerror(errno));
 		return errno;

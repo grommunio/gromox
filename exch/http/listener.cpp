@@ -135,7 +135,6 @@ static void *htls_thrwork(void *arg)
 {
 	bool use_tls = reinterpret_cast<uintptr_t>(arg);
 	socklen_t addrlen;
-	int len, flag, sockd2;
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	char buff[1024];
@@ -143,8 +142,9 @@ static void *htls_thrwork(void *arg)
 	for (;;) {
 		addrlen = sizeof(client_peer);
 		/* wait for an incoming connection */
-		sockd2 = accept(use_tls ? g_listener_ssl_sock : g_listener_sock,
-		         reinterpret_cast<struct sockaddr *>(&client_peer), &addrlen);
+		auto sockd2 = accept4(use_tls ? g_listener_ssl_sock : g_listener_sock,
+		              reinterpret_cast<struct sockaddr *>(&client_peer),
+		              &addrlen, SOCK_CLOEXEC);
 		if (g_stop_accept) {
 			if (sockd2 >= 0)
 				close(sockd2);
@@ -179,14 +179,14 @@ static void *htls_thrwork(void *arg)
 		uint16_t client_port = strtoul(client_txtport, nullptr, 0);
 		if (fcntl(sockd2, F_SETFL, O_NONBLOCK) < 0)
 			mlog(LV_WARN, "W-1408: fcntl: %s", strerror(errno));
-		flag = 1;
+		static const int flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1409: setsockopt: %s", strerror(errno));
 		auto pcontext = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
-			len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
+			auto len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
@@ -200,7 +200,7 @@ static void *htls_thrwork(void *arg)
 		std::string reason;
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip, reason)) {
-			len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
+			auto len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
 								"\r\n");
