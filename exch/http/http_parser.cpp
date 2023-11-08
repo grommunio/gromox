@@ -775,6 +775,7 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 {
 	static constexpr size_t NTLMBUFFER = 8192;
 	auto &pinfo = ctx.ntlm_proc;
+	output.clear();
 
 	if (pinfo.p_pid <= 0) {
 		auto prog = g_config_file->get_value("ntlm_auth");
@@ -847,17 +848,17 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		return -1;
 	}
 
-	if (buffer[0] == 'B' && buffer[1] == 'H') {
+	if (buffer[0] == 'B' && buffer[1] == 'H') { // BH
 		mlog(LV_ERR, "ntlm_auth(stdout) broken helper: %.*s",
 			static_cast<int>(bytes), buffer.get());
 		return -1;
-	} else if (buffer[0] == 'T' && buffer[1] == 'T') {
+	} else if (buffer[0] == 'T' && buffer[1] == 'T') { // TT
 		if (bytes > 3) {
 			output.assign(&buffer[3], bytes - 3);
 			mlog(LV_DEBUG, "NTLM< %s", output.c_str());
 		}
 		return -99; /* MOAR */
-	} else if (buffer[0] == 'A' && buffer[1] == 'F') {
+	} else if (buffer[0] == 'A' && buffer[1] == 'F') { // AF
 		if (bytes > 3)
 			output.assign(&buffer[3], bytes - 3);
 		mlog(LV_INFO, "ntlm_auth found actor: %s", output.c_str());
@@ -865,6 +866,7 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		// `DOMAIN\user` or `user@DOMAIN`... and we have no translation
 		gx_strlcpy(ctx.username, output.c_str(), std::size(ctx.username));
 		*ctx.password = '\0';
+		output.clear();
 		return 1;
 	} else if (buffer[0] == 'N' && buffer[1] == 'A') {
 		mlog(LV_DEBUG, "ntlm_auth(stdout) notauth: %.*s",
