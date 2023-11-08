@@ -831,7 +831,7 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		}
 	}
 
-	auto bytes = HXio_fullread(pinfo.p_stdout, buffer.get(), NTLMBUFFER - 1);
+	auto bytes = read(pinfo.p_stdout, buffer.get(), NTLMBUFFER - 1);
 	if (bytes < 0) {
 		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
 		return -1;
