@@ -1,15 +1,28 @@
-Development 2.16.15
-===================
+Development 2.16.103
+====================
 
 Fixes:
 
 * http: repair hanging communication with MAPI/RPC connections
 * oxcmail: reinstate read requests for non-IPM.Schedule messages
+* daemons: set umask such that created files have group write
+  permissions for AAPI
+* imap/midb_agent: fix a crash when some JSON files are empty
+* midb: avoid a hang during the P-DTLU command when an eml/ file is absent
+* mkprivate, mkdomain: repair wrong byte ordering in initial PR_CHANGE_KEYs
 
 Enhancements:
 
 * exmdb: augment create_folder and movecopy_folder RPCs with a 32-bit error
   code, which allows g-web to better detect folders with duplicate names
+* ews: implement Subscribe, Unsubscribe, GetEvents, GetUserPhoto
+* mbop: add subcommand `clear-rwz` to clear out RuleOrganizer FAI messages
+
+Behavioral changes:
+
+* exmdb: the delivery_message RPC will now return with status "partial_write"
+  if major parts of a message (body/attachments) could not be written
+  (disk full/permission denied/etc.)
 
 
 Gromox 2.16 (2023-10-29)
