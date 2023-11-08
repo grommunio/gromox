@@ -775,11 +775,10 @@ void gx_reexec_record(int new_fd)
 		unsigned int flags = 0;
 		socklen_t fz = sizeof(flags);
 		if (fd < 0 || getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN,
-		    &flags, &fz) != 0 || !flags ||
-		    fcntl(fd, F_GETFL, &flags) != 0)
+		    &flags, &fz) != 0 || !flags)
 			continue;
-		flags &= ~FD_CLOEXEC;
-		if (fcntl(fd, F_SETFL, flags) != 0)
+		flags = fcntl(fd, F_GETFD, 0) & ~FD_CLOEXEC;
+		if (fcntl(fd, F_SETFD, flags) != 0)
 			/* ignore */;
 	}
 	if (new_fd > gx_reexec_top_fd)
