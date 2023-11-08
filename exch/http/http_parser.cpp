@@ -728,7 +728,8 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 		pcontext->log(LV_DEBUG,
 			"user %s is denied by user filter",
 			pcontext->username);
-		return http_done(pcontext, http_status::service_unavailable);
+		pcontext->auth_status = http_status::service_unavailable;
+		return tproc_status::runoff;
 	}
 
 	sql_meta_result mres;
@@ -741,7 +742,8 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 		if ('\0' == pcontext->maildir[0]) {
 			pcontext->log(LV_ERR, "maildir for \"%s\" absent: %s",
 				pcontext->username, mres.errstr.c_str());
-			return http_done(pcontext, http_status::unauthorized);
+			pcontext->auth_status = http_status::service_unavailable;
+			return tproc_status::runoff;
 		}
 
 		if (*pcontext->lang == '\0')
@@ -759,8 +761,6 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 	    pcontext->auth_times >= g_max_auth_times)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
-	auto rsp = http_make_err_response(*pcontext, http_status::unauthorized);
-	pcontext->stream_out.write(rsp.c_str(), rsp.size());
 	return tproc_status::runoff;
 } catch (const std::bad_alloc &) {
 	pcontext->b_close = TRUE;
@@ -980,6 +980,17 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 }
 #endif
 
+/*
+ * Implementation notes.
+ *
+ * This function (and its subordinates) will, in general, only touch
+ * ctx.auth_status and then return tproc_status::runoff, so that the caller can
+ * invoke the right methods to get body processing going, depending on the
+ * outcome of htp_auth.
+ *
+ * Only if the request is to be hard-aborted can htp_auth return with a
+ * different status from http_done().
+ */
 static tproc_status htp_auth(http_context &ctx)
 {
 	if (ctx.auth_status != http_status::ok)
@@ -1023,11 +1034,6 @@ static tproc_status htp_auth(http_context &ctx)
 		           decoded, decode_len, ctx.last_gss_output);
 		ctx.last_gss_b64 = true;
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		if (ctx.auth_status == http_status::unauthorized) {
-			auto rsp = http_make_err_response(ctx, http_status::unauthorized);
-			ctx.stream_out.write(rsp.c_str(), rsp.size());
-			return tproc_status::runoff;
-		}
 	} else if (strcasecmp(method, "Negotiate ") == 0 &&
 	    g_config_file->get_ll("http_auth_spnego")) {
 #ifdef HAVE_GSSAPI
@@ -1038,11 +1044,6 @@ static tproc_status htp_auth(http_context &ctx)
 		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
 		ctx.last_gss_b64 = false;
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		if (ctx.auth_status == http_status::unauthorized) {
-			auto rsp = http_make_err_response(ctx, http_status::unauthorized);
-			ctx.stream_out.write(rsp.c_str(), rsp.size());
-			return tproc_status::runoff;
-		}
 #else
 		static bool y = false;
 		if (!y)
@@ -1226,8 +1227,15 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		auto ret = htp_auth(*pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
-		if (pcontext->auth_status == http_status::unauthorized)
+		if (pcontext->auth_status >= http_status::bad_request) {
+			auto rsp = http_make_err_response(*pcontext, http_status::unauthorized);
+			pcontext->stream_out.write(rsp.c_str(), rsp.size());
+			/*
+			 * Force feed to mod_cache (kind of),
+			 * will drain the request body.
+			 */
 			return htp_delegate_cache(pcontext);
+		}
 		if (pcontext->request.imethod == http_method::rpcin ||
 		    pcontext->request.imethod == http_method::rpcout)
 			return htp_delegate_rpc(pcontext, stream_1_written);
