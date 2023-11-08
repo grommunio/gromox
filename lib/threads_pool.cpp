@@ -60,9 +60,8 @@ void threads_pool_init(unsigned int init_pool_num,
 	contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
 	g_threads_pool_max_num = (contexts_max_num +
 		contexts_per_thr - 1)/ contexts_per_thr; 
-	if (g_threads_pool_min_num > g_threads_pool_max_num) {
+	if (g_threads_pool_min_num > g_threads_pool_max_num)
 		g_threads_pool_min_num = g_threads_pool_max_num;
-	}
 	g_threads_pool_cur_thr_num = 0;
 	g_threads_event_proc = NULL;
 	double_list_init(&g_threads_data_list);
@@ -121,9 +120,8 @@ void threads_pool_stop()
 		/* get a thread from list */
 		std::unique_lock tpd_hold(g_threads_pool_data_lock);
 		pnode = double_list_get_head(&g_threads_data_list);
-		if (1 == double_list_get_nodes_num(&g_threads_data_list)) {
+		if (double_list_get_nodes_num(&g_threads_data_list) == 1)
 			b_should_exit = TRUE;
-		}
 		tpd_hold.unlock();
 		pthr = (THR_DATA*)pnode->pdata;
 		thr_id = pthr->id;
@@ -168,9 +166,8 @@ static void *tpol_thrwork(void *pparam)
 	pdata = (THR_DATA*)pparam;
 	max_contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
 	contexts_per_threads = max_contexts_per_thr / 4;
-	if (NULL!= g_threads_event_proc) {
+	if (g_threads_event_proc != nullptr)
 		g_threads_event_proc(THREAD_CREATE);
-	}   
 	
 	cannot_served_times = 0;
 	while (!pdata->notify_stop) {
@@ -186,9 +183,8 @@ static void *tpol_thrwork(void *pparam)
 					g_threads_data_buff.put(pdata);
 					g_threads_pool_cur_thr_num --;
 					tpd_hold.unlock();
-					if (NULL != g_threads_event_proc) {
+					if (g_threads_event_proc != nullptr)
 						g_threads_event_proc(THREAD_DESTROY);
-					}
 					pthread_detach(pthread_self());
 					return nullptr;
 				}
@@ -232,9 +228,8 @@ static void *tpol_thrwork(void *pparam)
 	g_threads_data_buff.put(pdata);
 	g_threads_pool_cur_thr_num --;
 	tpd_hold.unlock();
-	if (NULL != g_threads_event_proc) {
+	if (g_threads_event_proc != nullptr)
 		g_threads_event_proc(THREAD_DESTROY);
-	}
 	return NULL;
 }
 
@@ -264,13 +259,11 @@ static void *tpol_scanwork(void *pparam)
 			continue;
 		}
 		not_empty_times++;
-		if (not_empty_times < MAX_NOT_EMPTY_TIMES) {
+		if (not_empty_times < MAX_NOT_EMPTY_TIMES)
 			continue;
-		}
 		std::lock_guard tpd_hold(g_threads_pool_data_lock);
-		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
+		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num)
 			continue;
-		}
 		auto pdata = g_threads_data_buff.get();
 		if (pdata == nullptr) {
 			mlog(LV_DEBUG, "threads_pool: fatal error, threads pool memory conflicts");
