@@ -770,6 +770,22 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 	return tproc_status::loop;
 }
 
+static void ntlm_stop(struct HXproc &pi)
+{
+	if (pi.p_pid <= 0)
+		return;
+	if (pi.p_stdin >= 0)
+		close(pi.p_stdin);
+	if (pi.p_stdout >= 0)
+		close(pi.p_stdout);
+	if (pi.p_stderr >= 0)
+		close(pi.p_stderr);
+	mlog(LV_DEBUG, "NTLM(%ld) terminating the ntlm_auth worker", static_cast<long>(pi.p_pid));
+	kill(pi.p_pid, SIGKILL);
+	waitpid(pi.p_pid, nullptr, 0);
+	pi.p_pid = 0;
+}
+
 static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
     const char *input, size_t isize, std::string &output)
 {
@@ -1036,7 +1052,9 @@ static tproc_status htp_auth(http_context &ctx)
 		           decoded, decode_len, ctx.last_gss_output);
 		ctx.last_gss_b64 = true;
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-	} else if (strcasecmp(method, "Negotiate ") == 0 &&
+		if (ret <= 0 && ret != -99)
+			ntlm_stop(ctx.ntlm_proc);
+	} else if (strcasecmp(method, "Negotiate") == 0 &&
 	    g_config_file->get_ll("http_auth_spnego")) {
 #ifdef HAVE_GSSAPI
 		char decoded[4096];
@@ -2136,19 +2154,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
         return;
     }
 	auto &ctx = *pcontext;
-	auto &pi = ctx.ntlm_proc;
-	if (pi.p_pid > 0) {
-		if (pi.p_stdin >= 0)
-			close(pi.p_stdin);
-		if (pi.p_stdout >= 0)
-			close(pi.p_stdout);
-		if (pi.p_stderr >= 0)
-			close(pi.p_stderr);
-		mlog(LV_DEBUG, "Stopping ntlm_auth %d", pi.p_pid);
-		kill(pi.p_pid, SIGKILL);
-		waitpid(pi.p_pid, nullptr, 0);
-		pi = {};
-	}
+	ntlm_stop(ctx.ntlm_proc);
 	pcontext->connection.reset();
 	pcontext->sched_stat = hsched_stat::initssl;
 	pcontext->request.clear();
