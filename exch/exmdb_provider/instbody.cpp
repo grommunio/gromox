@@ -9,12 +9,9 @@
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
 #include <gromox/fileio.h>
-#include <gromox/html.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
-#include <gromox/rtf.hpp>
-#include <gromox/rtfcp.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 

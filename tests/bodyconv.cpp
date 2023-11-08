@@ -11,11 +11,8 @@
 #include <utility>
 #include <libHX/io.h>
 #include <gromox/defs.h>
-#include <gromox/html.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/rtf.hpp>
-#include <gromox/rtfcp.hpp>
 #include <gromox/tie.hpp>
 
 using namespace gromox;

@@ -8,10 +8,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <gromox/defs.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
-#include <gromox/rtf.hpp>
-#include <gromox/rtfcp.hpp>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/timezone.hpp>

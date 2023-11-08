@@ -26,14 +26,11 @@
 #include <gromox/dsn.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/html.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/rtf.hpp>
-#include <gromox/rtfcp.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/tnef.hpp>

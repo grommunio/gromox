@@ -18,7 +18,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/int_hash.hpp>
-#include <gromox/rtf.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/textmaps.hpp>
