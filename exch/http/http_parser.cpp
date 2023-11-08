@@ -720,7 +720,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	return http_done(pcontext, http_status::enomem_CL);
 }
 
-static tproc_status htp_auth(http_context *pcontext) try
+static tproc_status htp_auth_basic(http_context *pcontext) try
 {
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
@@ -979,7 +979,7 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 }
 #endif
 
-static tproc_status htp_auth_1(http_context &ctx)
+static tproc_status htp_auth(http_context &ctx)
 {
 	if (ctx.auth_status != http_status::ok)
 		ctx.auth_status = http_status::none;
@@ -999,7 +999,7 @@ static tproc_status htp_auth_1(http_context &ctx)
 		*p++ = '\0';
 		gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
 		gx_strlcpy(ctx.password, p, std::size(ctx.password));
-		return htp_auth(&ctx);
+		return htp_auth_basic(&ctx);
 	} else if (strncasecmp(line, "Negotiate TlRMTVNT", 18) == 0 &&
 	    g_config_file->get_ll("http_auth_spnego") &&
 	    g_config_file->get_ll("http_auth_spnego_ntlmssp")) {
@@ -1209,7 +1209,7 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 			return http_done(pcontext, http_status::enomem_CL);
 		}
 		auto stream_1_written = pcontext->stream_in.get_total_length();
-		auto ret = htp_auth_1(*pcontext);
+		auto ret = htp_auth(*pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
 		if (pcontext->auth_status == http_status::unauthorized)
