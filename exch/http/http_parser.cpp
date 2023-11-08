@@ -470,6 +470,7 @@ static tproc_status http_done(http_context *ctx, http_status code) try
 	else if (mod_cache_is_in_charge(ctx))
 		mod_cache_put_context(ctx);
 	auto rsp = http_make_err_response(*ctx, code);
+	ctx->stream_out.clear();
 	ctx->stream_out.write(rsp.c_str(), rsp.size());
 	ctx->total_length = rsp.size();
 	ctx->bytes_rw = 0;
