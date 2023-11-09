@@ -346,11 +346,11 @@ void VCONN_REF::put()
 	pvconnection = nullptr;
 }
 
-static const char *
-http_parser_request_head(const http_request::other_map &m, const char *k)
+static char *
+http_parser_request_head(http_request::other_map &m, const char *k)
 {
 	auto i = m.find(k);
-	return i != m.end() ? i->second.c_str() : nullptr;
+	return i != m.end() ? i->second.data() : nullptr;
 }
 
 /**
@@ -990,11 +990,18 @@ static tproc_status htp_auth(http_context &ctx)
 		return tproc_status::runoff;
 	}
 	/* http://www.iana.org/assignments/http-authschemes */
-	if (strncasecmp(line, "Basic ", 6) == 0 &&
+	auto method = line;
+	auto past_method = line;
+	while (*past_method != '\0' && !HX_isspace(*past_method))
+		++past_method;
+	*past_method++ = '\0';
+	while (HX_isspace(*past_method))
+		++past_method;
+	if (strcasecmp(method, "Basic") == 0 &&
 	    g_config_file->get_ll("http_auth_basic")) {
 		char decoded[1024];
 		size_t decode_len = 0;
-		if (decode64(&line[6], strlen(&line[6]), decoded, std::size(decoded), &decode_len) != 0)
+		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
 			return tproc_status::runoff;
 		auto p = strchr(decoded, ':');
 		if (p == nullptr)
@@ -1003,14 +1010,15 @@ static tproc_status htp_auth(http_context &ctx)
 		gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
 		gx_strlcpy(ctx.password, p, std::size(ctx.password));
 		return htp_auth_basic(&ctx);
-	} else if (strncasecmp(line, "Negotiate TlRMTVNT", 18) == 0 &&
+	} else if (strcasecmp(method, "Negotiate") == 0 &&
+	    strncmp(past_method, "TlRMTVNT", 8) == 0 &&
 	    g_config_file->get_ll("http_auth_spnego") &&
 	    g_config_file->get_ll("http_auth_spnego_ntlmssp")) {
 		char decoded[4096];
 		size_t decode_len = 0;
-		if (decode64(&line[10], strlen(&line[10]), decoded, std::size(decoded), &decode_len) != 0)
+		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
 			return tproc_status::runoff;
-		auto ret = auth_ntlmssp(ctx, &line[10], strlen(&line[10]),
+		auto ret = auth_ntlmssp(ctx, past_method, strlen(past_method),
 		           decoded, decode_len, ctx.last_gss_output);
 		ctx.last_gss_b64 = true;
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
@@ -1019,12 +1027,12 @@ static tproc_status htp_auth(http_context &ctx)
 			ctx.stream_out.write(rsp.c_str(), rsp.size());
 			return tproc_status::runoff;
 		}
-	} else if (strncasecmp(line, "Negotiate ", 10) == 0 &&
+	} else if (strcasecmp(method, "Negotiate ") == 0 &&
 	    g_config_file->get_ll("http_auth_spnego")) {
 #ifdef HAVE_GSSAPI
 		char decoded[4096];
 		size_t decode_len = 0;
-		if (decode64(&line[10], strlen(&line[10]), decoded, std::size(decoded), &decode_len) != 0)
+		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
 			return tproc_status::runoff;
 		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
 		ctx.last_gss_b64 = false;
