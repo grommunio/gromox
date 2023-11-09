@@ -368,6 +368,16 @@ static constexpr char tbl_orgparam_109[] =
 "  CONSTRAINT `orgparam_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `orgs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_altnames_129[] =
+"CREATE TABLE `altnames` ("
+"  `user_id` int(10) unsigned NOT NULL,"
+"  `altname` varchar(320) NOT NULL,"
+"  `magic` int(10) unsigned NOT NULL DEFAULT 0,"
+"  PRIMARY KEY (`user_id`, `altname`),"
+"  UNIQUE KEY `altname` (`altname`),"
+"  CONSTRAINT `altnames_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") DEFAULT CHARSET=utf8mb4";
+
 static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -520,8 +530,8 @@ static constexpr char tbl_users_top[] =
 "CREATE TABLE `users` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
-"  `primary_email` varchar(320) CHARACTER SET ascii,"
-"  `altname` varchar(64),"
+"  `primary_email` varchar(320) CHARACTER SET ascii," // unused as of schema 110
+"  `altname` varchar(64)," // unused as of schema 129
 "  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  `group_id` int(10) unsigned NOT NULL,"
@@ -583,6 +593,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"task_queue", tbl_taskqueue_102},
 	{"servers", tbl_servers_top},
 	{"orgparam", tbl_orgparam_109},
+	{"altnames", tbl_altnames_129},
 	{nullptr},
 };
 
@@ -759,6 +770,9 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{126, "ALTER TABLE `associations` MODIFY COLUMN `list_id` int(10) NOT NULL FIRST"},
 	{127, "ALTER TABLE `associations` ADD PRIMARY KEY (`list_id`,`username`)"},
 	{128, "ALTER TABLE `associations` DROP INDEX `list_id_2`"},
+	{129, tbl_altnames_129},
+	{130, "INSERT INTO altnames (SELECT id AS user_id, altname, 0 AS magic FROM users WHERE altname IS NOT NULL)"},
+	{131, "UPDATE users SET altname=NULL"},
 	{0, nullptr},
 };
 
