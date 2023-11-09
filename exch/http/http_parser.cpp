@@ -443,13 +443,13 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 	if (code == http_status::unauthorized) {
 		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
 		if (g_config_file->get_ll("http_auth_spnego")) {
-			if (ctx.last_gss_output.empty())
-				rsp += "WWW-Authenticate: Negotiate\r\n";
-			else if (ctx.last_gss_b64)
+			if (ctx.auth_method == auth_method::negotiate_b64 && !ctx.last_gss_output.empty())
 				rsp += "WWW-Authenticate: Negotiate " + ctx.last_gss_output + "\r\n";
-			else
+			else if (ctx.auth_method == auth_method::negotiate && !ctx.last_gss_output.empty())
 				rsp += "WWW-Authenticate: Negotiate " +
 				       base64_encode(ctx.last_gss_output) + "\r\n";
+			else
+				rsp += "WWW-Authenticate: Negotiate\r\n";
 		}
 	}
 	rsp += "\r\n";
@@ -723,6 +723,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 
 static tproc_status htp_auth_basic(http_context *pcontext) try
 {
+	pcontext->auth_method = auth_method::basic;
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
 		pcontext->log(LV_DEBUG,
@@ -1001,9 +1002,18 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
  */
 static tproc_status htp_auth(http_context &ctx)
 {
-	if (ctx.auth_status != http_status::ok)
-		ctx.auth_status = http_status::none;
 	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
+	if (line == nullptr && ctx.auth_status == http_status::ok &&
+	    (ctx.auth_method == auth_method::negotiate ||
+	    ctx.auth_method == auth_method::negotiate_b64))
+		/*
+		 * Negotiate validity is stateful (and requires both sides to
+		 * use Keep-Alive properly).
+		 */
+		return tproc_status::runoff;
+	/* Under anything else, it resets */
+	ctx.auth_method = auth_method::none;
+	ctx.auth_status = http_status::none;
 	if (line == nullptr) {
 		if (g_enforce_auth)
 			ctx.auth_status = http_status::unauthorized;
@@ -1040,8 +1050,8 @@ static tproc_status htp_auth(http_context &ctx)
 			return tproc_status::runoff;
 		auto ret = auth_ntlmssp(ctx, past_method, strlen(past_method),
 		           decoded, decode_len, ctx.last_gss_output);
-		ctx.last_gss_b64 = true;
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+		ctx.auth_method = auth_method::negotiate_b64;
 		if (ret <= 0 && ret != -99)
 			ntlm_stop(ctx.ntlm_proc);
 	} else if (strcasecmp(method, "Negotiate") == 0 &&
@@ -1052,8 +1062,8 @@ static tproc_status htp_auth(http_context &ctx)
 		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
 			return tproc_status::runoff;
 		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
-		ctx.last_gss_b64 = false;
 		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+		ctx.auth_method = auth_method::negotiate;
 #else
 		static bool y = false;
 		if (!y)

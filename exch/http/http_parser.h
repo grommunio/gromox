@@ -22,6 +22,10 @@
 #include <gromox/util.hpp>
 #include "pdu_processor.h"
 
+enum class auth_method {
+	none, basic, negotiate, negotiate_b64,
+};
+
 /* enumeration of http_parser */
 enum {
 	MAX_AUTH_TIMES,
@@ -67,6 +71,8 @@ struct http_context final : public schedule_context {
 	BOOL b_close = TRUE; /* Connection MIME Header for indicating closing */
 	/* @auth_status: 0=untried, 200=success, 401=rejected */
 	http_status auth_status = http_status::none;
+	/* last known authorization method */
+	enum auth_method auth_method = auth_method::none;
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, password[128]{}, maildir[256]{}, lang[32]{};
 	DOUBLE_LIST_NODE node{};
@@ -80,7 +86,6 @@ struct http_context final : public schedule_context {
 	gss_ctx_id_t m_gss_ctx{};
 #endif
 	std::string last_gss_output;
-	bool last_gss_b64 = false;
 };
 using HTTP_CONTEXT = http_context;
 
