@@ -629,8 +629,11 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
 	if (mysql.get_homeserver(is_private ? email : domain,
-	    is_private, homesrv_buf) != 0)
+	    is_private, homesrv_buf) != 0) {
+		mlog(LV_ERR, "oxdisco: no homeserver for \"%s\", does that user even exist?!",
+			is_private ? email : domain);
 		return -1;
+	}
 	const char *homesrv = homesrv_buf.second.c_str();
 	if (*homesrv == '\0')
 		homesrv = host_id.c_str();
@@ -638,8 +641,10 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	std::string DisplayName, LegacyDN, DeploymentId;
 	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
-		if (!mysql.get_user_displayname(email, buf.get(), 4096))
+		if (!mysql.get_user_displayname(email, buf.get(), 4096)) {
+			mlog(LV_ERR, "oxdisco: could not obtain PR_DISPLAY_NAME for \"%s\"", email);
 			return -1;
+		}
 		DisplayName = buf.get();
 		if (!username_to_essdn(email, buf.get(), 4096, user_id, domain_id))
 			return -1;
