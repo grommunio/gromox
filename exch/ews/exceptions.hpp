@@ -140,7 +140,7 @@ E(3017, "failed to get user permissions");
 E(3018, "insufficient access rights");
 E(3019, "failed to load calendar");
 E(3020, "failed to query calendar");
-E(3021, "request is marked experimental and can be enabled with 'ews_experimental = 1'");
+E(3021, "request is marked as beta and can be enabled with 'ews_beta = 1'");
 E(3022, "failed to get folder entry id");
 E(3023, "failed to get folder properties");
 E(3024, "failed to get item entry id");

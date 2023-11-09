@@ -450,6 +450,7 @@ void EWSPlugin::loadConfig()
 
 	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
 	cfg->get_int("ews_experimental", &experimental);
+	cfg->get_int("ews_beta", &experimental);
 	cfg->get_int("ews_pretty_response", &pretty_response);
 	cfg->get_int("ews_request_logging", &request_logging);
 	cfg->get_int("ews_response_logging", &response_logging);
