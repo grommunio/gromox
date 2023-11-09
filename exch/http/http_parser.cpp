@@ -1193,6 +1193,21 @@ static tproc_status htp_delegate_cache(http_context *pcontext)
 	return tproc_status::loop;
 }
 
+static tproc_status http_done_soft(http_context &ctx, enum http_status status) try
+{
+	auto rsp = http_make_err_response(ctx, status);
+	ctx.stream_out.clear();
+	ctx.stream_out.write(rsp.c_str(), rsp.size());
+	/* Force-feed to mod_cache, which will discard rqbody */
+	return htp_delegate_cache(&ctx);
+} catch (const std::bad_alloc &) {
+	ctx.b_close = TRUE;
+	ctx.total_length = 0;
+	ctx.bytes_rw = 0;
+	ctx.sched_stat = hsched_stat::wrrep;
+	return tproc_status::loop;
+}
+
 static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_read)
 {
 	while (true) {
@@ -1237,15 +1252,8 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		auto ret = htp_auth(*pcontext);
 		if (ret != tproc_status::runoff)
 			return ret;
-		if (pcontext->auth_status >= http_status::bad_request) {
-			auto rsp = http_make_err_response(*pcontext, http_status::unauthorized);
-			pcontext->stream_out.write(rsp.c_str(), rsp.size());
-			/*
-			 * Force feed to mod_cache (kind of),
-			 * will drain the request body.
-			 */
-			return htp_delegate_cache(pcontext);
-		}
+		if (pcontext->auth_status >= http_status::bad_request)
+			return http_done_soft(*pcontext, http_status::unauthorized);
 		if (pcontext->request.imethod == http_method::rpcin ||
 		    pcontext->request.imethod == http_method::rpcout)
 			return htp_delegate_rpc(pcontext, stream_1_written);
@@ -1253,20 +1261,18 @@ static tproc_status htparse_rdhead_st(http_context *pcontext, ssize_t actual_rea
 		if (status == http_status::ok)
 			return htp_delegate_hpm(pcontext);
 		else if (status != http_status::none)
-			return http_done(pcontext, status);
+			return http_done_soft(*pcontext, status);
 		status = mod_fastcgi_take_request(pcontext);
 		if (status == http_status::ok)
 			return htp_delegate_fcgi(pcontext);
 		else if (status != http_status::none)
-			return http_done(pcontext, status);
+			return http_done_soft(*pcontext, status);
 		status = mod_cache_take_request(pcontext);
 		if (status == http_status::ok)
 			return htp_delegate_cache(pcontext);
 		else if (status != http_status::none)
-			return http_done(pcontext, status);
-		auto rsp = http_make_err_response(*pcontext, http_status::not_found);
-		pcontext->stream_out.write(rsp.c_str(), rsp.size());
-		return htp_delegate_cache(pcontext);
+			return http_done_soft(*pcontext, status);
+		return http_done_soft(*pcontext, http_status::not_found);
 	}
 	return tproc_status::runoff;
 }
