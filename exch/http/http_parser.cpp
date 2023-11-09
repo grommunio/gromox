@@ -789,7 +789,6 @@ static void ntlm_stop(struct HXproc &pi)
 static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
     const char *input, size_t isize, std::string &output)
 {
-	static constexpr size_t NTLMBUFFER = 8192;
 	auto &pinfo = ctx.ntlm_proc;
 	output.clear();
 
@@ -823,7 +822,6 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		return -1;
 	}
 
-	auto buffer = std::make_unique<char[]>(NTLMBUFFER);
 	struct pollfd pfd[] = {{pinfo.p_stdout, POLLIN}, {pinfo.p_stderr, POLLIN}};
  retry:
 	auto ret = poll(pfd, std::size(pfd), 10 * 1000);
@@ -837,19 +835,22 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		return -1;
 	}
 
+	output.clear();
+	output.resize(8192);
 	if (pfd[1].revents & POLLIN) {
-		auto bytes = read(pinfo.p_stderr, buffer.get(), NTLMBUFFER - 1);
-		if (bytes >= 0) {
-			buffer[bytes] = '\0';
-			HX_chomp(buffer.get());
+		/* Drain stderr first */
+		auto bytes = read(pinfo.p_stderr, output.data(), output.size());
+		if (bytes > 0) {
+			output[bytes] = '\0';
+			HX_chomp(output.data());
+			output.resize(strlen(output.c_str()));
 			mlog(LV_DEBUG, "ntlm_auth(stderr):%c%s",
-				strchr(buffer.get(), '\n') != nullptr ? '\n' : ' ',
-				buffer.get());
+				output.find('\n') != output.npos ? '\n' : ' ',
+				output.c_str());
 			goto retry;
 		}
 	}
-
-	auto bytes = read(pinfo.p_stdout, buffer.get(), NTLMBUFFER - 1);
+	auto bytes = read(pinfo.p_stdout, output.data(), output.size());
 	if (bytes < 0) {
 		mlog(LV_ERR, "ntlm_auth(stdout) error: %s", strerror(errno));
 		return -1;
@@ -857,41 +858,30 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		mlog(LV_ERR, "ntlm_auth(stdout) EOF");
 		return -1;
 	}
-	if (buffer[bytes-1] == '\n')
-		buffer[--bytes] = '\0';
-	if (bytes < 2) {
-		mlog(LV_ERR, "ntlm_auth(stdout) short read");
-		return -1;
-	}
+	output[bytes] = '\0';
+	HX_chomp(output.data());
+	output.resize(strlen(output.c_str()));
+	mlog(LV_DEBUG, "NTLM(%d)< %s", static_cast<int>(pinfo.p_pid), output.c_str());
 
-	if (buffer[0] == 'B' && buffer[1] == 'H') { // BH
-		mlog(LV_ERR, "ntlm_auth(stdout) broken helper: %.*s",
-			static_cast<int>(bytes), buffer.get());
-		return -1;
-	} else if (buffer[0] == 'T' && buffer[1] == 'T') { // TT
-		if (bytes > 3) {
-			output.assign(&buffer[3], bytes - 3);
-			mlog(LV_DEBUG, "NTLM< %s", output.c_str());
-		}
+	if (output[0] == 'T' && output[1] == 'T') { // TT
+		output.erase(0, 3);
 		return -99; /* MOAR */
-	} else if (buffer[0] == 'A' && buffer[1] == 'F') { // AF
-		if (bytes > 3)
-			output.assign(&buffer[3], bytes - 3);
-		mlog(LV_INFO, "ntlm_auth found actor: %s", output.c_str());
-		// The username is whatever the client sent, which can either be
-		// `DOMAIN\user` or `user@DOMAIN`... and we have no translation
-		gx_strlcpy(ctx.username, output.c_str(), std::size(ctx.username));
+	} else if (output[0] == 'A' && output[1] == 'F') { // AF
+		/*
+		 * The AF response contains the winbind (Unix-side) username.
+		 * Depending on smb.conf "winbind use default domain", this can
+		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
+		 * altnames entry is needed for this.
+		 */
+		gx_strlcpy(ctx.username, &output[3], std::size(ctx.username));
 		*ctx.password = '\0';
 		output.clear();
 		return 1;
-	} else if (buffer[0] == 'N' && buffer[1] == 'A') {
-		mlog(LV_DEBUG, "ntlm_auth(stdout) notauth: %.*s",
-			static_cast<int>(bytes), buffer.get());
+	} else if (output[0] == 'N' && output[1] == 'A') {
+		output.clear();
 		return 0;
-	} else {
-		mlog(LV_ERR, "ntlm_auth unknown response: %.*s", static_cast<int>(bytes), buffer.get());
-		return -1;
 	}
+	output.clear();
 	return -1;
 }
 
