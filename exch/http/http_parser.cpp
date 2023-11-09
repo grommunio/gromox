@@ -779,7 +779,7 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		auto prog = g_config_file->get_value("ntlm_auth");
 		if (prog == nullptr || *prog == '\0')
 			prog = "/usr/bin/ntlm_auth";
-		const char *argv[] = {prog, "-d10", "--helper-protocol=squid-2.5-ntlmssp", nullptr};
+		const char *argv[] = {prog, "-d0", "--helper-protocol=squid-2.5-ntlmssp", nullptr};
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
 		auto ret = HXproc_run_async(argv, &pinfo);
 		if (ret < 0) {
