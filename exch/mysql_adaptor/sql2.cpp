@@ -395,7 +395,10 @@ static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
 	auto qstr = is_pvt ?
 	            "SELECT sv.hostname, sv.extname FROM users AS u "
 	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
-	            "WHERE u.username='"s + qent + "' LIMIT 2" :
+	            "LEFT JOIN altnames AS alt ON u.id=alt.user_id "
+	            "AND alt.altname='"s + qent + "' "
+	            "WHERE u.username='"s + qent + "' OR "
+	            "alt.altname='"s + qent + "' LIMIT 2" :
 	            "SELECT sv.hostname, sv.extname FROM domains AS d "
 	            "LEFT JOIN servers AS sv ON d.homeserver=sv.id "
 	            "WHERE d.domainname='"s + qent + "' LIMIT 2";
