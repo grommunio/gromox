@@ -124,6 +124,11 @@ If set to \fB1\fP, prints all incoming and outgoing HTTP traffic to stderr.
 .br
 Default: \fI0\fP
 .TP
+\fBhttp_enforce_auth\fP
+Enforce authentication at all times. This is a debugging knob.
+.br
+Default: \fIno\fP
+.TP
 \fBhttp_krb_service_principal\fP
 .br
 Default: \fBgromox@\fP\fIhost_id\fP

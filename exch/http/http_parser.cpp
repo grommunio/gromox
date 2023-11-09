@@ -119,7 +119,7 @@ static int g_block_auth_fail;
 static time_duration g_timeout;
 unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
-bool g_http_php;
+bool g_http_php, g_enforce_auth;
 static thread_local HTTP_CONTEXT *g_context_key;
 static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator{"g_inchannel_allocator.d"};
 static alloc_limiter<RPC_OUT_CHANNEL> g_outchannel_allocator{"g_outchannel_allocator.d"};
@@ -984,8 +984,11 @@ static tproc_status htp_auth(http_context &ctx)
 	if (ctx.auth_status != http_status::ok)
 		ctx.auth_status = http_status::none;
 	auto line = http_parser_request_head(ctx.request.f_others, "Authorization");
-	if (line == nullptr)
+	if (line == nullptr) {
+		if (g_enforce_auth)
+			ctx.auth_status = http_status::unauthorized;
 		return tproc_status::runoff;
+	}
 	/* http://www.iana.org/assignments/http-authschemes */
 	if (strncasecmp(line, "Basic ", 6) == 0 &&
 	    g_config_file->get_ll("http_auth_basic")) {
@@ -1038,6 +1041,8 @@ static tproc_status htp_auth(http_context &ctx)
 		y = true;
 #endif
 	}
+	if (g_enforce_auth && ctx.auth_status != http_status::ok)
+		ctx.auth_status = http_status::unauthorized;
 	return tproc_status::runoff;
 }
 

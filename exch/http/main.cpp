@@ -91,6 +91,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_auth_times", "10", CFG_SIZE, "1"},
 	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 	{"http_debug", "0"},
+	{"http_enforce_auth", "0", CFG_BOOL},
 	{"http_krb_service_principal", ""},
 	{"http_listen_addr", "::"},
 	{"http_listen_port", "80"},
@@ -130,6 +131,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	}
 	mlog_init(cfg->get_value("http_log_file"), cfg->get_ll("http_log_level"));
 	g_http_debug = cfg->get_ll("http_debug");
+	g_enforce_auth = cfg->get_ll("http_enforce_auth");
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");
 	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");
 	g_http_php = cfg->get_ll("http_old_php_handler");
