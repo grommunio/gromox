@@ -70,8 +70,7 @@ static std::unique_ptr<tinyxml2::XMLPrinter>
 oxd_make_request(const char *email, const char *dn)
 {
 	tinyxml2::XMLDocument doc;
-	auto decl = doc.NewDeclaration();
-	doc.InsertEndChild(decl);
+	doc.InsertEndChild(doc.NewDeclaration());
 	auto root = doc.NewElement("Autodiscover");
 	doc.InsertEndChild(root);
 	root->SetAttribute("xmlns", "http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006");
@@ -288,7 +287,7 @@ static CURLcode setopts(CURL *ch, const char *password, curl_slist *hdrs,
 	ret = curl_easy_setopt(ch, CURLOPT_HTTPHEADER, hdrs);
 	if (ret != CURLE_OK)
 		return ret;
-	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDSIZE_LARGE, xml_request.CStrSize());
+	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDSIZE_LARGE, xml_request.CStrSize() - 1);
 	if (ret != CURLE_OK)
 		return ret;
 	ret = curl_easy_setopt(ch, CURLOPT_POSTFIELDS, xml_request.CStr());
