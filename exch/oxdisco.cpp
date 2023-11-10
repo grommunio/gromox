@@ -332,9 +332,8 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 
 	auto root = doc.RootElement();
 	auto name = root != nullptr ? root->Name() : nullptr;
-	if (name == nullptr || strcasecmp(name, "Autodiscover") != 0) {
+	if (name == nullptr || strcasecmp(name, "Autodiscover") != 0)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
-	}
 
 	if (request_logging > 0)
 		mlog(LV_DEBUG, "[oxdisco] incoming: %.*s",
@@ -355,9 +354,8 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	auto [err_code, reason] = access_ok(ctx_id, email, auth_info.username);
 	if (err_code != ok_code)
 		return die(ctx_id, err_code, reason.c_str());
-	if (!RedirectAddr.empty() || !RedirectUrl.empty()) {
+	if (!RedirectAddr.empty() || !RedirectUrl.empty())
 		mlog(LV_DEBUG, "[oxdisco] send redirect response");
-	}
 	return resp(ctx_id, auth_info.username, email, ars);
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1700: ENOMEM\n");
@@ -1023,9 +1021,8 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
 
 	gx_strlcpy(tmp_name, username, std::size(tmp_name));
 	auto pdomain = strchr(tmp_name, '@');
-	if (NULL == pdomain) {
+	if (pdomain == nullptr)
 		return FALSE;
-	}
 	*pdomain++ = '\0';
 	mysql.get_user_ids(username, &user_id, &domain_id, nullptr);
 	encode_hex_int(user_id, hex_string);
@@ -1064,14 +1061,8 @@ std::string OxdiscoPlugin::get_deploymentid(unsigned int id,
 void OxdiscoPlugin::get_hex_string(const char *str, char *hex_string)
 {
 	size_t l = strlen(str);
-	for (size_t i = 0; i < 12; ++i) {
-		if (i < l) {
-			hex_string[i] = str[i];
-		}
-		else {
-			hex_string[i] = '\0';
-		}
-	}
+	for (size_t i = 0; i < 12; ++i)
+		hex_string[i] = i < l ? str[i] : '\0';
 }
 
 /**
