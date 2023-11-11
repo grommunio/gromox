@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 
 struct rop_request {
@@ -1021,9 +1022,8 @@ using COPYTO_RESPONSE = PROBLEM_RESPONSE;
  *              used for ROPs
  */
 struct ROP_BUFFER {
-	uint16_t rhe_version;
-	uint16_t rhe_flags;
-	DOUBLE_LIST rop_list;
-	uint8_t hnum;
-	uint32_t *phandles;
+	uint16_t rhe_version = 0, rhe_flags = 0;
+	std::vector<rop_request *> rop_list;
+	uint8_t hnum = 0;
+	uint32_t *phandles = nullptr;
 };

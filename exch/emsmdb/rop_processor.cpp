@@ -372,7 +372,7 @@ thread_local const char *g_last_rop_dir;
 
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
-    DOUBLE_LIST *presponse_list) try
+    std::vector<rop_response *> &response_list) try
 {
 	BOOL b_icsup;
 	BINARY tmp_bin;
@@ -400,18 +400,15 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		tmp_len = ext_buff_size;
 	if (!ext_push.init(ext_buff.get(), tmp_len, EXT_FLAG_UTF16))
 		return ecServerOOM;
-	auto rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
+	const auto rop_num = prop_buff->rop_list.size();
 	size_t rop_idx = 0;
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
 	auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
-		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
-		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
-		if (pnode1 == nullptr)
-			return ecServerOOM;
+	for (auto req_iter = prop_buff->rop_list.cbegin();
+	     req_iter != prop_buff->rop_list.cend(); ++req_iter) {
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
-		auto req = static_cast<rop_request *>(pnode->pdata);
+		const rop_request *req = *req_iter;
 		/*
 		 * One RPC may contain multiple ROPs and if one ROP fails,
 		 * subsequent ROPs may still be invoked, albeit with
@@ -424,7 +421,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		rop_response *rsp = nullptr;
 		g_last_rop_dir = nullptr;
 		auto result = rop_dispatch(*req, rsp, prop_buff->phandles, prop_buff->hnum);
-		pnode1->pdata = rsp;
 		bool dbg = g_rop_debug >= 2;
 		if (g_rop_debug >= 1 && result != 0)
 			dbg = true;
@@ -475,12 +471,16 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		auto status = rop_ext_push(ext_push, req->logon_id, *rsp);
 		switch (status) {
 		case EXT_ERR_SUCCESS:
-			double_list_append_as_tail(presponse_list, pnode1);
+			try {
+				response_list.push_back(rsp);
+			} catch (const std::bad_alloc &) {
+				return ecServerOOM;
+			}
 			break;
 		case EXT_ERR_BUFSIZE: {
 			/* MS-OXCPRPT 3.2.5.2, fail the whole RPC */
 			if (req->rop_id == ropGetPropertiesAll &&
-			    pnode == double_list_get_head(&prop_buff->rop_list))
+			    req_iter == prop_buff->rop_list.begin())
 				return ecServerOOM;
 			BUFFERTOOSMALL_RESPONSE bts{};
 			bts.rop_id = ropBufferTooSmall;
@@ -577,7 +577,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	 * to (rop_buff.)GETPROPERTIESSPECIFIC_REQUEST::pproptags, so watch
 	 * lifetime and destruction order.
 	 */
-	DOUBLE_LIST response_list;
+	std::vector<rop_response *> response_list;
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
 	switch (rop_ext_pull(ext_pull, rop_buff)) {
@@ -593,17 +593,16 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		rop_buff.rhe_flags |= RHE_FLAG_XORMAGIC;
 	if (!(flags & RPCEXT2_FLAG_NOCOMPRESSION))
 		rop_buff.rhe_flags |= RHE_FLAG_COMPRESSED;
-	double_list_init(&response_list);
 	tmp_cb = *pcb_out;
 	auto result = rop_processor_execute_and_push(pout, &tmp_cb, &rop_buff,
-	              TRUE, &response_list);
+	              TRUE, response_list);
 	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
 		mlog(LV_DEBUG, "rop_proc_ex+push() EC = %xh", static_cast<unsigned int>(result));
 	if (result != ecSuccess)
 		return result;
 	offset = tmp_cb;
 	last_offset = 0;
-	auto count = double_list_get_nodes_num(&response_list);
+	auto count = response_list.size();
 	if (!(flags & RPCEXT2_FLAG_CHAIN)) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
@@ -614,26 +613,23 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	 * Repeat execution of the last ROP (if it is a chainable ROP) to
 	 * produce more responses pursuant to MS-OXCRPC v24 §3.1.4.2.1.2.2.
 	 */
-	auto pnode = double_list_get_tail(&rop_buff.rop_list);
-	auto pnode1 = double_list_get_tail(&response_list);
-	if (pnode == nullptr || pnode1 == nullptr) {
+	if (rop_buff.rop_list.empty() || response_list.empty()) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
 		return ecSuccess;
 	}
-	auto prequest_mutable = static_cast<rop_request *>(pnode->pdata);
-	auto prequest = static_cast<const rop_request *>(pnode->pdata);
-	auto presponse = static_cast<const rop_response *>(pnode1->pdata);
+	auto prequest_mutable = static_cast<rop_request *>(rop_buff.rop_list.back());
+	auto prequest = static_cast<const rop_request *>(prequest_mutable);
+	auto presponse = static_cast<const rop_response *>(response_list.back());
+
 	if (prequest->rop_id != presponse->rop_id) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
 		return ecSuccess;
 	}
-	double_list_free(&rop_buff.rop_list);
-	double_list_init(&rop_buff.rop_list);
-	double_list_append_as_tail(&rop_buff.rop_list, pnode);
-	double_list_free(&response_list);
-	double_list_init(&response_list);
+	rop_buff.rop_list[0] = std::move(rop_buff.rop_list.back());
+	rop_buff.rop_list.erase(rop_buff.rop_list.begin() + 1, rop_buff.rop_list.end());
+	response_list.clear();
 	
 	if (presponse->rop_id == ropQueryRows) {
 		auto req = static_cast<QUERYROWS_REQUEST *>(prequest_mutable);
@@ -657,15 +653,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
-						&tmp_cb, &rop_buff, FALSE, &response_list);
+			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
 				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
-			pnode1 = double_list_pop_front(&response_list);
-			if (pnode1 == nullptr)
+			if (response_list.empty())
 				break;
-			presponse = static_cast<const rop_response *>(pnode1->pdata);
+			presponse = static_cast<const rop_response *>(response_list.front());
 			if (presponse->rop_id != ropQueryRows ||
 			    presponse->result != ecSuccess)
 				break;
@@ -681,15 +676,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
-						&tmp_cb, &rop_buff, FALSE, &response_list);
+			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
 				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
-			pnode1 = double_list_pop_front(&response_list);
-			if (pnode1 == nullptr)
+			if (response_list.empty())
 				break;
-			presponse = static_cast<const rop_response *>(pnode1->pdata);
+			presponse = static_cast<const rop_response *>(response_list.front());
 			if (presponse->rop_id != ropReadStream ||
 			    presponse->result != ecSuccess)
 				break;
@@ -706,15 +700,14 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
-						&tmp_cb, &rop_buff, FALSE, &response_list);
+			         &tmp_cb, &rop_buff, false, response_list);
 			if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
 				mlog(LV_DEBUG, "rop_proc_ex+chain() EC = %xh", result);
 			if (result != ecSuccess)
 				break;
-			pnode1 = double_list_pop_front(&response_list);
-			if (pnode1 == nullptr)
+			if (response_list.empty())
 				break;
-			presponse = static_cast<const rop_response *>(pnode1->pdata);
+			presponse = static_cast<const rop_response *>(response_list.front());
 			if (presponse->rop_id != ropFastTransferSourceGetBuffer ||
 			    presponse->result != ecSuccess)
 				break;

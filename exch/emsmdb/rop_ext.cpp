@@ -1913,7 +1913,6 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	int tmp_num;
 	uint16_t size;
 	EXT_PULL subext;
-	DOUBLE_LIST_NODE *pnode;
 	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
 	
@@ -1922,7 +1921,7 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 		return EXT_ERR_HEADER_FLAGS;
 	r.rhe_version = rpc_header_ext.version;
 	r.rhe_flags = rpc_header_ext.flags;
-	double_list_init(&r.rop_list);
+	r.rop_list.clear();
 	if (rpc_header_ext.size == 0)
 		return EXT_ERR_HEADER_SIZE;
 	auto pbuff = x.anew<uint8_t>(0x8000);
@@ -1950,14 +1949,12 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 	}
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
-	while (subext.m_offset < size) {
-		pnode = x.anew<DOUBLE_LIST_NODE>();
-		if (pnode == nullptr)
-			return EXT_ERR_ALLOC;
+	while (subext.m_offset < size) try {
 		rop_request *rq = nullptr;
 		TRY(rop_ext_pull(subext, rq));
-		pnode->pdata = rq;
-		double_list_append_as_tail(&r.rop_list, pnode);
+		r.rop_list.push_back(rq);
+	} catch (const std::bad_alloc &) {
+		return pack_result::alloc;
 	}
 	tmp_num = (rpc_header_ext.size_actual - size) / sizeof(uint32_t);
 	if (0 == tmp_num) {
