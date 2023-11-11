@@ -89,15 +89,17 @@ std::string commonHeader(const char *requestType, const char *requestId,
         "X-PendingPeriod: {}\r\n"
         "X-ExpirationInfo: {}\r\n"
         "X-ServerApplication: Exchange/15.00.0847.4040\r\n"
-        "Set-Cookie: sid={}\r\n"
         "Date: {}\r\n";
 	using namespace std::chrono;
 	char dstring[128];
 	rfc1123_dstring(dstring, std::size(dstring), gromox::time_point::clock::to_time_t(date));
-	return fmt::format(templ, requestType, requestId, clientInfo,
-	                static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
-	                static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
-	                sid, dstring);
+	auto rs = fmt::format(templ, requestType, requestId, clientInfo,
+	          static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
+	          static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
+	          dstring);
+	if (*sid != '\0')
+		rs += fmt::format("Set-Cookie: sid={}\r\n", sid);
+	return rs;
 }
 
 }
@@ -145,15 +147,18 @@ http_status MhContext::ping_response() const try
 
 http_status MhContext::failure_response(uint32_t status) const try
 {
-	char stbuf[8], seq_string[GUIDSTR_SIZE];
+	char stbuf[8];
 	auto current_time = tp_now();
 	auto ct = render_content(current_time, start_time);
-	sequence_guid.to_str(seq_string, std::size(seq_string));
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, current_time) +
-	          fmt::format("Content-Length: {}\r\n", ct.size()) +
-	          fmt::format("Set-Cookie: sequence={}\r\n", seq_string) +
-	          "\r\n" + std::move(ct) + binStatus(stbuf, status);
+	          fmt::format("Content-Length: {}\r\n", ct.size());
+	if (sequence_guid != GUID_NONE) {
+		char txt[GUIDSTR_SIZE];
+		sequence_guid.to_str(txt, std::size(txt));
+		rs += fmt::format("Set-Cookie: sequence={}\r\n", txt);
+	}
+	rs += "\r\n" + std::move(ct) + binStatus(stbuf, status);
 	return write_response(ID, rs.c_str(), rs.size());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1143: ENOMEM");
@@ -162,14 +167,17 @@ http_status MhContext::failure_response(uint32_t status) const try
 
 http_status MhContext::normal_response() const try
 {
-	char seq_string[GUIDSTR_SIZE], chunk_string[32];
+	char chunk_string[32];
 	auto current_time = tp_now();
-
-	sequence_guid.to_str(seq_string, std::size(seq_string));
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, current_time) +
-	          "Transfer-Encoding: chunked\r\n" +
-	          fmt::format("Set-Cookie: sequence={}\r\n\r\n", seq_string);
+	          "Transfer-Encoding: chunked\r\n";
+	if (sequence_guid != GUID_NONE) {
+		char txt[GUIDSTR_SIZE];
+		sequence_guid.to_str(txt, std::size(txt));
+		rs += fmt::format("Set-Cookie: sequence={}\r\n", txt);
+	}
+	rs += "\r\n";
 	auto wr = write_response(ID, rs.c_str(), rs.size());
 	if (wr != http_status::ok)
 		return wr;
