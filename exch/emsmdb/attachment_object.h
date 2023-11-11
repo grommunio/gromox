@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include <gromox/defs.h>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
 #include "message_object.h"
@@ -40,5 +40,5 @@ struct attachment_object {
 	message_object *pparent = nullptr;
 	uint32_t instance_id = 0, attachment_num = 0;
 	uint8_t open_flags = 0;
-	DOUBLE_LIST stream_list{};
+	std::vector<stream_object *> stream_list;
 };
