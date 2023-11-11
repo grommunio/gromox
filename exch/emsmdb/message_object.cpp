@@ -75,11 +75,6 @@ static uint32_t message_object_rectify_proptag(uint32_t proptag)
 	}
 }
 
-message_object::message_object()
-{
-	double_list_init(&stream_list);
-}
-
 std::unique_ptr<message_object> message_object::create(logon_object *plogon,
     BOOL b_new, cpid_t cpid, uint64_t message_id, void *pparent,
     uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ICS_STATE> pstate)
@@ -179,7 +174,6 @@ ec_error_t message_object::check_original_touched() const
 message_object::~message_object()
 {
 	auto pmessage = this;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (pmessage->instance_id != 0)
 		exmdb_client::unload_instance(pmessage->plogon->get_dir(),
@@ -190,9 +184,6 @@ message_object::~message_object()
 		proptag_array_free(pmessage->pchanged_proptags);
 	if (pmessage->premoved_proptags != nullptr)
 		proptag_array_free(pmessage->premoved_proptags);
-	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr)
-		free(pnode);
-	double_list_free(&pmessage->stream_list);
 }
 
 errno_t message_object::init_message(bool fai, cpid_t new_cpid)
@@ -592,7 +583,6 @@ BOOL message_object::reload()
 	BOOL b_result;
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY *pcolumns;
-	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_columns;
 	
 	if (pmessage->b_new)
@@ -613,8 +603,7 @@ BOOL message_object::reload()
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_touched = FALSE;
-	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr)
-		free(pnode);
+	stream_list.clear();
 	pmessage->change_num = 0;
 	if (!pmessage->b_new) {
 		if (!exmdb_client::get_instance_property(dir,
@@ -726,14 +715,12 @@ BOOL message_object::query_attachment_table(const PROPTAG_ARRAY *pproptags,
 	       start_pos, row_needed, pset);
 }
 
-BOOL message_object::append_stream_object(stream_object *pstream)
+BOOL message_object::append_stream_object(stream_object *pstream) try
 {
 	auto pmessage = this;
-	DOUBLE_LIST_NODE *pnode;
 	
-	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
-	     pnode = double_list_get_after(&pmessage->stream_list, pnode))
-		if (pnode->pdata == pstream)
+	for (auto so : stream_list)
+		if (so == pstream)
 			return TRUE;
 	if (!pmessage->b_new && pmessage->message_id != 0) {
 		auto u_tag = message_object_rectify_proptag(pstream->get_proptag());
@@ -741,13 +728,11 @@ BOOL message_object::append_stream_object(stream_object *pstream)
 			return FALSE;
 		proptag_array_remove(pmessage->premoved_proptags, u_tag);
 	}
-	pnode = me_alloc<DOUBLE_LIST_NODE>();
-	if (pnode == nullptr)
-		return FALSE;
-	pnode->pdata = pstream;
-	double_list_append_as_tail(&pmessage->stream_list, pnode);
+	stream_list.push_back(pstream);
 	pmessage->b_touched = TRUE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 /* called when stream object is released */
@@ -755,15 +740,14 @@ BOOL message_object::commit_stream_object(stream_object *pstream)
 {
 	auto pmessage = this;
 	uint32_t result;
-	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
-	
-	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		if (pnode->pdata != pstream)
+
+	for (auto it = stream_list.begin(); it != stream_list.end(); ) {
+		if (*it != pstream) {
+			++it;
 			continue;
-		double_list_remove(&pmessage->stream_list, pnode);
-		free(pnode);
+		}
+		it = stream_list.erase(it);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
@@ -778,19 +762,16 @@ BOOL message_object::flush_streams()
 {
 	auto pmessage = this;
 	uint32_t result;
-	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
 	
-	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr) {
-		auto pstream = static_cast<stream_object *>(pnode->pdata);
+	while (stream_list.size() > 0) {
+		auto pstream = stream_list.front();
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
-		    pmessage->instance_id, &tmp_propval, &result)) {
-			double_list_insert_as_head(&pmessage->stream_list, pnode);
+		    pmessage->instance_id, &tmp_propval, &result))
 			return FALSE;
-		}
-		free(pnode);
+		stream_list.erase(stream_list.begin());
 	}
 	return TRUE;
 }
@@ -820,14 +801,12 @@ BOOL message_object::clear_unsent()
 BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
-	int nodes_num;
-	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_instance_all_proptags(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &tmp_proptags))
 		return FALSE;	
-	nodes_num = double_list_get_nodes_num(&pmessage->stream_list);
+	auto nodes_num = stream_list.size();
 	nodes_num += 10;
 	pproptags->count = 0;
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
@@ -847,9 +826,8 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 			break;
 		}
 	}
-	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		auto proptag = static_cast<stream_object *>(pnode->pdata)->get_proptag();
+	for (auto so : stream_list) {
+		auto proptag = so->get_proptag();
 		if (!pproptags->has(proptag))
 			pproptags->emplace_back(proptag);
 	}
@@ -980,14 +958,9 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 static void* message_object_get_stream_property_value(message_object *pmessage,
     uint32_t proptag)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		auto so = static_cast<stream_object *>(pnode->pdata);
+	for (auto so : pmessage->stream_list)
 		if (so->get_proptag() == proptag)
 			return so->get_content();
-	}
 	return NULL;
 }
 
@@ -1074,11 +1047,8 @@ BOOL message_object::get_properties(uint32_t size_limit,
 static BOOL message_object_check_stream_property(message_object *pmessage,
     uint32_t proptag)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
-	     pnode = double_list_get_after(&pmessage->stream_list, pnode))
-		if (static_cast<stream_object *>(pnode->pdata)->get_proptag() == proptag)
+	for (auto so : pmessage->stream_list)
+		if (so->get_proptag() == proptag)
 			return TRUE;
 	return FALSE;
 }
