@@ -1,5 +1,5 @@
-Development 2.16.103
-====================
+Development 2.6.137
+===================
 
 Fixes:
 
@@ -13,6 +13,9 @@ Fixes:
 
 Enhancements:
 
+* http: Windows SSO support via NTLMSSP
+* daemons: support for alternate login names
+  (this allows for assigning shorter usernames for grommunio-web)
 * exmdb: augment create_folder and movecopy_folder RPCs with a 32-bit error
   code, which allows g-web to better detect folders with duplicate names
 * ews: implement Subscribe, Unsubscribe, GetEvents, GetUserPhoto
@@ -23,6 +26,8 @@ Behavioral changes:
 * exmdb: the delivery_message RPC will now return with status "partial_write"
   if major parts of a message (body/attachments) could not be written
   (disk full/permission denied/etc.)
+* delivery: partially-written messages now lead to bounce generation and
+  emergency save action to disk
 
 
 Gromox 2.16 (2023-10-29)
