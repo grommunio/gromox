@@ -36,7 +36,7 @@ enum class http_method {
 };
 
 struct http_request {
-	void clear();
+	void clear() { *this = {}; }
 
 	char method[14]{};
 	enum http_method imethod = http_method::none;

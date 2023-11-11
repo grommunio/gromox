@@ -2126,23 +2126,6 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-void http_request::clear()
-{
-	method[0] = '\0';
-	b_chunked = false;
-	version[0] = '\0';
-	content_len = 0;
-	f_request_uri.clear();
-	f_host.clear();
-	f_user_agent.clear();
-	f_accept.clear();
-	f_accept_language.clear();
-	f_accept_encoding.clear();
-	f_content_type.clear();
-	f_cookie.clear();
-	f_others.clear();
-}
-
 http_context::http_context() :
 	stream_in(&g_blocks_allocator), stream_out(stream_in.allocator)
 {
