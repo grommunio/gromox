@@ -290,7 +290,7 @@ std::pair<unsigned int, std::string> OxdiscoPlugin::access_ok(int ctx_id,
 	}
 	if (perm != 0)
 		return {ok_code, {}};
-	return {bad_address_code, bad_address_msg + " (403 Permission Denied)"s};
+	return {bad_address_code, fmt::format("{} (403 Permission Denied on {})", bad_address_msg, target)};
 }
 
 /**
@@ -347,6 +347,16 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 	auto email = gtx(*req_node, "EMailAddress");
 	if (email == nullptr || strchr(email, '@') == nullptr)
 		return die(ctx_id, invalid_request_code, invalid_request_msg);
+
+	sql_meta_result mres{};
+	if (strncasecmp(email, public_folder_email, 19) != 0) {
+		auto err = mysql.meta(email, 0, mres);
+		if (err != 0) {
+			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", email, strerror(err));
+			return die(ctx_id, 404, "Not Found");
+		}
+		email = mres.username.c_str();
+	}
 
 	auto ars = gtx(*req_node, "AcceptableResponseSchema");
 	if (ars == nullptr)
@@ -616,7 +626,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	}
 
 	auto resp_user = add_child(resp, "User");
-	add_child(resp_user, "AutoDiscoverSMTPAddress", email); // TODO get the primary email address
+	add_child(resp_user, "AutoDiscoverSMTPAddress", email);
 
 	auto buf = std::make_unique<char[]>(4096);
 	auto domain = strchr(email, '@');
