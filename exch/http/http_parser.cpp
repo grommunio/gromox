@@ -787,19 +787,20 @@ static void ntlm_stop(struct HXproc &pi)
 	pi.p_pid = 0;
 }
 
-static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
-    const char *input, size_t isize, std::string &output)
+static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
+    const char *encinput, std::string &output)
 {
+	auto encsize = strlen(encinput);
 	auto &pinfo = ctx.ntlm_proc;
 	output.clear();
 
 	if (pinfo.p_pid <= 0) {
-		auto prog = g_config_file->get_value("ntlm_auth");
 		if (prog == nullptr || *prog == '\0')
-			prog = "/usr/bin/ntlm_auth";
-		const char *argv[] = {prog, "-d0", "--helper-protocol=squid-2.5-ntlmssp", nullptr};
+			prog = "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp";
+		auto args = HX_split(prog, " ", nullptr, 0);
+		auto cl_0 = make_scope_exit([&]() { HX_zvecfree(args); });
 		pinfo.p_flags = HXPROC_STDIN | HXPROC_STDOUT | HXPROC_STDERR;
-		auto ret = HXproc_run_async(argv, &pinfo);
+		auto ret = HXproc_run_async(&args[0], &pinfo);
 		if (ret < 0) {
 			mlog(LV_ERR, "execv ntlm_auth: %s", strerror(-ret));
 			return -1;
@@ -1005,6 +1006,38 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 }
 #endif
 
+static tproc_status htp_auth_spnego(http_context &ctx, const char *past_method)
+{
+	bool rq_ntlmssp = strncmp(past_method, "TlRMTVNT", 8) == 0;
+	auto the_helper = g_config_file->get_value(rq_ntlmssp ? "ntlmssp_program" : "gss_program");
+
+	if (strcmp(the_helper, "internal-gss") != 0) {
+		auto ret = htp_auth_ntlmssp(ctx, the_helper, past_method,
+		           ctx.last_gss_output);
+		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+		ctx.auth_method = auth_method::negotiate_b64;
+		if (ret <= 0 && ret != -99)
+			ntlm_stop(ctx.ntlm_proc);
+	} else {
+#ifdef HAVE_GSSAPI
+		char decoded[4096];
+		size_t decode_len = 0;
+		if (decode64(past_method, strlen(past_method), decoded,
+		    std::size(decoded), &decode_len) != 0)
+			return tproc_status::runoff;
+		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
+		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
+		ctx.auth_method = auth_method::negotiate;
+#else
+		static bool y = false;
+		if (!y)
+			mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
+		y = true;
+#endif
+	}
+	return tproc_status::runoff;
+}
+
 /*
  * Implementation notes.
  *
@@ -1055,38 +1088,16 @@ static tproc_status htp_auth(http_context &ctx)
 		*p++ = '\0';
 		gx_strlcpy(ctx.username, decoded, std::size(ctx.username));
 		gx_strlcpy(ctx.password, p, std::size(ctx.password));
-		return htp_auth_basic(&ctx);
-	} else if (strcasecmp(method, "Negotiate") == 0 &&
-	    strncmp(past_method, "TlRMTVNT", 8) == 0 &&
-	    g_config_file->get_ll("http_auth_spnego") &&
-	    g_config_file->get_ll("http_auth_spnego_ntlmssp")) {
-		char decoded[4096];
-		size_t decode_len = 0;
-		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
-			return tproc_status::runoff;
-		auto ret = auth_ntlmssp(ctx, past_method, strlen(past_method),
-		           decoded, decode_len, ctx.last_gss_output);
-		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		ctx.auth_method = auth_method::negotiate_b64;
-		if (ret <= 0 && ret != -99)
-			ntlm_stop(ctx.ntlm_proc);
+		auto ret = htp_auth_basic(&ctx);
+		if (ret != tproc_status::runoff)
+			return ret;
 	} else if (strcasecmp(method, "Negotiate") == 0 &&
 	    g_config_file->get_ll("http_auth_spnego")) {
-#ifdef HAVE_GSSAPI
-		char decoded[4096];
-		size_t decode_len = 0;
-		if (decode64(past_method, strlen(past_method), decoded, std::size(decoded), &decode_len) != 0)
-			return tproc_status::runoff;
-		auto ret = auth_krb(ctx, decoded, decode_len, ctx.last_gss_output);
-		ctx.auth_status = ret <= 0 ? http_status::unauthorized : http_status::ok;
-		ctx.auth_method = auth_method::negotiate;
-#else
-		static bool y = false;
-		if (!y)
-			mlog(LV_DEBUG, "Cannot handle Negotiate request: software built without GSSAPI");
-		y = true;
-#endif
+		auto ret = htp_auth_spnego(ctx, past_method);
+		if (ret != tproc_status::runoff)
+			return ret;
 	}
+
 	if (g_enforce_auth && ctx.auth_status != http_status::ok)
 		ctx.auth_status = http_status::unauthorized;
 	return tproc_status::runoff;

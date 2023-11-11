@@ -72,6 +72,24 @@ Maximum execution time for CGI scripts.
 .br
 Default: \fI10 minutes\fP
 .TP
+.TP
+\fBgss_program\fP
+The helper program to use for authenticating SPNEGO-GSS requests. The value is
+rudimentarily tokenized at whitespaces, so no special characters may be used.
+(If you need to, write a shell wrapper.) The special value "internal-gss" uses
+libgssapi directly.
+The use of Squid's negotiate_wrapper_auth is optional; Gromox can identify
+whether requests are SPNEGO-NTLMSSP or SPNEGO-Kerberos in the same fashion as
+negotiate_wrapper_auth does.
+.br
+Default: \fIinternal\-gss\fP
+.br
+Example: \fI/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
+.br
+Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
+\-\-helper\-protocol=squid\-2.5\-ntlmssp \-\-kerberos
+/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
+.TP
 \fBhost_id\fP
 A unique identifier for this system. It is used for the Server HTTP responses
 header, for service plugins like exmdb_provider(4gx), which makes use of it for
@@ -89,13 +107,6 @@ Default: \fIyes\fP
 Enable HTTP Negotiate authentication.
 .br
 Default: \fIno\fP
-.TP
-\fBhttp_auth_spnego_ntlmssp\fP
-When a client uses HTTP Negotiate authentication and the negotation data looks
-like NTLMSSP, pass the data to ntlm_auth rather than GSS-API. (When this option
-disabled, data is always passed to GSS-API.)
-.br
-Default: \fIyes\fP
 .TP
 \fBhttp_auth_times\fP
 The number of login tries a user is allowed before the account is blocked.
@@ -200,11 +211,20 @@ all RPCs. Note the daemon log level needs to be "debug" (6), too.
 .br
 Default: \fI0\fP
 .TP
-\fBntlm_auth\fP
-Path to samba-winbind ntlm_auth or equivalent program that accepts the
-arguments `\fB\-d0 \-\-helper\-protocol=squid\-2.5\-ntlmssp\fP`.
+\fBntlmssp_program\fP
+Path to samba-winbind ntlm_auth or equivalent program that implements the Squid
+authentication helper text protocol ("YR, TT, KK, AF"). The value is
+rudimentarily tokenized at whitespaces, so no special characters may be used.
+(If you need to, write a shell wrapper.)
+The use of Squid's negotiate_wrapper_auth is optional; Gromox can identify
+whether requests are SPNEGO-NTLMSSP or SPNEGO-Kerberos in the same fashion as
+negotiate_wrapper_auth does.
 .br
-Default: \fI/usr/bin/ntlm_auth\fP
+Default: \fI/usr/bin/ntlm_auth \-\-helper\-protocol=squid\-2.5\-ntlmssp\fP
+.br
+Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
+\-\-helper\-protocol=squid\-2.5\-ntlmssp \-\-kerberos
+/usr/lib/squid/negotiate_kerberos_auth \-s GSS_C_NO_NAME\fP
 .TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
