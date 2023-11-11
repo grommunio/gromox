@@ -12,6 +12,7 @@ decltype(system_services_judge_ip) system_services_judge_ip;
 BOOL (*system_services_judge_user)(const char*);
 BOOL (*system_services_add_user_into_temp_list)(const char *, int);
 decltype(system_services_auth_login) system_services_auth_login;
+decltype(system_services_auth_meta) system_services_auth_meta;
 
 int system_services_run()
 {
@@ -28,6 +29,7 @@ int system_services_run()
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_auth_login, "auth_login_gen");
+	E(system_services_auth_meta, "mysql_auth_meta");
 	return 0;
 #undef E
 #undef E2
@@ -39,4 +41,5 @@ void system_services_stop()
 	service_release("user_filter_judge", "system");
 	service_release("user_filter_add", "system");
 	service_release("auth_login_gen", "system");
+	service_release("mysql_auth_meta", "system");
 }

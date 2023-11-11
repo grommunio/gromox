@@ -874,9 +874,25 @@ static int auth_ntlmssp(http_context &ctx, const char *encinput, size_t encsize,
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
 		 */
-		gx_strlcpy(ctx.username, &output[3], std::size(ctx.username));
+		sql_meta_result mres;
+		auto err = system_services_auth_meta(&output[3], 0, mres);
+		if (err != 0) {
+			mlog(LV_DEBUG, "ntlm_auth success on \"%s\", but not found in Gromox", &output[3]);
+			output.clear();
+			return 0;
+		}
+		gx_strlcpy(ctx.username, mres.username.c_str(), std::size(ctx.username));
 		*ctx.password = '\0';
 		output.clear();
+		gx_strlcpy(ctx.maildir, mres.maildir.c_str(), std::size(ctx.maildir));
+		if (*ctx.maildir == '\0') {
+			ctx.log(LV_ERR, "maildir for \"%s\" absent: %s",
+				ctx.username, mres.errstr.c_str());
+			return -1;
+		}
+		gx_strlcpy(ctx.lang, mres.lang.c_str(), std::size(ctx.lang));
+		if (*ctx.lang == '\0')
+			gx_strlcpy(ctx.lang, znul(g_config_file->get_value("user_default_lang")), sizeof(ctx.lang));
 		return 1;
 	} else if (output[0] == 'N' && output[1] == 'A') {
 		output.clear();
