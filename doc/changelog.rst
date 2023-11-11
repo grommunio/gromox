@@ -1,5 +1,5 @@
-Development 2.6.137
-===================
+Gromox 2.17 (2023-11-11)
+========================
 
 Fixes:
 
@@ -13,7 +13,7 @@ Fixes:
 
 Enhancements:
 
-* http: Windows SSO support via NTLMSSP
+* http: Windows SSO support via HTTP Negotiate authentication
 * daemons: support for alternate login names
   (this allows for assigning shorter usernames for grommunio-web)
 * exmdb: augment create_folder and movecopy_folder RPCs with a 32-bit error
