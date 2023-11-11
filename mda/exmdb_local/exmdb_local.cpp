@@ -390,8 +390,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		return DELIVERY_OPERATION_ERROR;
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
-	if (dm_status == deliver_message_result::result_ok /*||
-	    dm_status == deliver_message_result::partial_completion */) {
+	if (dm_status == deliver_message_result::result_ok) {
 		/* XXX: still need to make partial_ok behavior configurable */
 		auto num = pmsg->proplist.get<const uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 		if (num != nullptr)
@@ -415,6 +414,10 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
 			auto_response_reply(home_dir, address, pcontext->ctrl.from);
 		break;
+	case deliver_message_result::partial_completion:
+		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
+			"server could not store message in full to %s", home_dir);
+		return DELIVERY_OPERATION_ERROR;
 	case deliver_message_result::result_error:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"error result returned when delivering "
