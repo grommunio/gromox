@@ -889,7 +889,7 @@ static std::string strip_ext(std::string user, const char *delim)
 		if (expos != user.npos && expos < atpos)
 			user.erase(expos, atpos - expos);
 	}
-	return std::move(user);
+	return user;
 }
 
 /* only used by delivery-queue; who can receive mail? */
