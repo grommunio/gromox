@@ -575,7 +575,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	DOUBLE_LIST response_list;
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
-	switch (rop_ext_pull(&ext_pull, &rop_buff)) {
+	switch (rop_ext_pull(ext_pull, rop_buff)) {
 	case EXT_ERR_SUCCESS:
 		break;
 	case EXT_ERR_ALLOC:
