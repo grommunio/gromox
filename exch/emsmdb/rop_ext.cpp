@@ -18,26 +18,25 @@
 
 using namespace gromox;
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const LOGON_TIME *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_TIME &r)
 {
-	TRY(pext->p_uint8(r->second));
-	TRY(pext->p_uint8(r->minute));
-	TRY(pext->p_uint8(r->hour));
-	TRY(pext->p_uint8(r->day_of_week));
-	TRY(pext->p_uint8(r->day));
-	TRY(pext->p_uint8(r->month));
-	return pext->p_uint16(r->year);
+	TRY(x.p_uint8(r.second));
+	TRY(x.p_uint8(r.minute));
+	TRY(x.p_uint8(r.hour));
+	TRY(x.p_uint8(r.day_of_week));
+	TRY(x.p_uint8(r.day));
+	TRY(x.p_uint8(r.month));
+	return x.p_uint16(r.year);
 }
 
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const GHOST_SERVER *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GHOST_SERVER &r)
 {
-	if (r->server_count == 0 || r->cheap_server_count > r->server_count)
+	if (r.server_count == 0 || r.cheap_server_count > r.server_count)
 		return EXT_ERR_FORMAT;
-	TRY(pext->p_uint16(r->server_count));
-	TRY(pext->p_uint16(r->cheap_server_count));
-	for (size_t i = 0; i < r->server_count; ++i)
-		TRY(pext->p_str(r->ppservers[i]));
+	TRY(x.p_uint16(r.server_count));
+	TRY(x.p_uint16(r.cheap_server_count));
+	for (size_t i = 0; i < r.server_count; ++i)
+		TRY(x.p_str(r.ppservers[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -47,28 +46,28 @@ static pack_result rop_ext_push(EXT_PUSH *pext, const NULL_DST_RESPONSE *r)
 	return pext->p_uint8(r->partial_completion);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROPERTY_PROBLEM *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROPERTY_PROBLEM &r)
 {
-	TRY(pext->p_uint16(r->index));
-	TRY(pext->p_uint32(r->proptag));
-	return pext->p_uint32(r->err);
+	TRY(x.p_uint16(r.index));
+	TRY(x.p_uint32(r.proptag));
+	return x.p_uint32(r.err);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROBLEM_ARRAY *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROBLEM_ARRAY &r)
 {
-	TRY(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(rop_ext_push(pext, &r->pproblem[i]));
+	TRY(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(rop_ext_push(x, r.pproblem[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROPIDNAME_ARRAY *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROPIDNAME_ARRAY &r)
 {
-	TRY(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_uint16(r->ppropid[i]));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_propname(r->ppropname[i]));
+	TRY(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.p_uint16(r.ppropid[i]));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.p_propname(r.ppropname[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -108,7 +107,7 @@ static pack_result rop_ext_push(EXT_PUSH *pext, const LOGON_PMB_RESPONSE *r)
 	TRY(pext->p_guid(r->mailbox_guid));
 	TRY(pext->p_uint16(r->replid));
 	TRY(pext->p_guid(r->replguid));
-	TRY(rop_ext_push(pext, &r->logon_time));
+	TRY(rop_ext_push(*pext, r->logon_time));
 	TRY(pext->p_uint64(r->gwart_time));
 	return pext->p_uint32(r->store_stat);
 }
@@ -176,7 +175,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, GETOWNINGSERVERS_REQUEST *r)
 
 static pack_result rop_ext_push(EXT_PUSH *pext, const GETOWNINGSERVERS_RESPONSE *r)
 {
-	return rop_ext_push(pext, &r->ghost);
+	return rop_ext_push(*pext, r->ghost);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, PUBLICFOLDERISGHOSTED_REQUEST *r)
@@ -190,7 +189,7 @@ static pack_result rop_ext_push(EXT_PUSH *pext,
 	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return rop_ext_push(pext, r->pghost);
+	return rop_ext_push(*pext, *r->pghost);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, LONGTERMIDFROMID_REQUEST *r)
@@ -277,7 +276,7 @@ static pack_result rop_ext_push(EXT_PUSH *pext, const OPENFOLDER_RESPONSE *r)
 	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return rop_ext_push(pext, r->pghost);
+	return rop_ext_push(*pext, *r->pghost);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, CREATEFOLDER_REQUEST *r)
@@ -305,7 +304,7 @@ static pack_result rop_ext_push(EXT_PUSH *pext, const CREATEFOLDER_RESPONSE *r)
 	if (r->pghost == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return rop_ext_push(pext, r->pghost);
+	return rop_ext_push(*pext, *r->pghost);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, DELETEFOLDER_REQUEST *r)
@@ -1047,7 +1046,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIES_REQUEST *r)
 
 static pack_result rop_ext_push(EXT_PUSH *x, const PROBLEM_RESPONSE *r)
 {
-	return rop_ext_push(x, &r->problems);
+	return rop_ext_push(*x, r->problems);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIESNOREPLICATE_REQUEST *r)
@@ -1092,7 +1091,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, QUERYNAMEDPROPERTIES_REQUEST *r)
 
 static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYNAMEDPROPERTIES_RESPONSE *r)
 {
-	return rop_ext_push(pext, &r->propidnames);
+	return rop_ext_push(*pext, r->propidnames);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, COPYPROPERTIES_REQUEST *r)
