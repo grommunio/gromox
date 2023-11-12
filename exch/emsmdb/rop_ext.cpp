@@ -314,9 +314,9 @@ static pack_result rop_ext_pull(EXT_PULL *pext, DELETEFOLDER_REQUEST *r)
 	return pext->g_uint64(&r->folder_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const DELETEFOLDER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *x, const PARTIAL_COMPLETION_RESPONSE *r)
 {
-	return pext->p_uint8(r->partial_completion);
+	return x->p_uint8(r->partial_completion);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, SETSEARCHCRITERIA_REQUEST *r)
@@ -376,11 +376,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, MOVECOPYMESSAGES_REQUEST *r)
 	return pext->g_uint8(&r->want_copy);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const MOVECOPYMESSAGES_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, MOVEFOLDER_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->dhindex));
@@ -391,11 +386,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, MOVEFOLDER_REQUEST *r)
 		return pext->g_str(&r->pnew_name);
 	else
 		return pext->g_wstr(&r->pnew_name);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const MOVEFOLDER_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, COPYFOLDER_REQUEST *r)
@@ -411,20 +401,10 @@ static pack_result rop_ext_pull(EXT_PULL *pext, COPYFOLDER_REQUEST *r)
 		return pext->g_wstr(&r->pnew_name);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYFOLDER_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, EMPTYFOLDER_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	return pext->g_uint8(&r->want_delete_associated);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const EMPTYFOLDER_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext,
@@ -434,22 +414,11 @@ static pack_result rop_ext_pull(EXT_PULL *pext,
 	return pext->g_uint8(&r->want_delete_associated);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, DELETEMESSAGES_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->want_asynchronous));
 	TRY(pext->g_uint8(&r->notify_non_read));
 	return pext->g_uint64_sa(&r->message_ids);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const DELETEMESSAGES_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, HARDDELETEMESSAGES_REQUEST *r)
@@ -487,20 +456,15 @@ static pack_result rop_ext_pull(EXT_PULL *pext, SETCOLUMNS_REQUEST *r)
 	return pext->g_proptag_a(&r->proptags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETCOLUMNS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *x, const TABLE_STATUS_RESPONSE *r)
 {
-	return pext->p_uint8(r->table_status);
+	return x->p_uint8(r->table_status);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, SORTTABLE_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->table_flags));
 	return pext->g_sortorder_set(&r->sort_criteria);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const SORTTABLE_RESPONSE *r)
-{
-	return pext->p_uint8(r->table_status);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, RESTRICT_REQUEST *r)
@@ -525,11 +489,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, RESTRICT_REQUEST *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const RESTRICT_RESPONSE *r)
-{	
-	return pext->p_uint8(r->table_status);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, QUERYROWS_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->flags));
@@ -542,16 +501,6 @@ static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYROWS_RESPONSE *r)
 	TRY(pext->p_uint8(r->seek_pos));
 	TRY(pext->p_uint16(r->count));
 	return pext->p_bytes(r->bin_rows.pb, r->bin_rows.cb);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const ABORT_RESPONSE *r)
-{
-	return pext->p_uint8(r->table_status);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETSTATUS_RESPONSE *r)
-{
-	return pext->p_uint8(r->table_status);
 }
 
 static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYPOSITION_RESPONSE *r)
@@ -855,11 +804,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, SETREADFLAGS_REQUEST *r)
 	return pext->g_uint64_sa(&r->message_ids);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETREADFLAGS_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, SETMESSAGEREADFLAG_REQUEST *r,
     BOOL b_private)
 {
@@ -1101,9 +1045,9 @@ static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIES_REQUEST *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETPROPERTIES_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *x, const PROBLEM_RESPONSE *r)
 {
-	return rop_ext_push(pext, &r->problems);
+	return rop_ext_push(x, &r->problems);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIESNOREPLICATE_REQUEST *r)
@@ -1120,31 +1064,14 @@ static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIESNOREPLICATE_REQUEST
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const SETPROPERTIESNOREPLICATE_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext,	DELETEPROPERTIES_REQUEST *r)
 {
 	return pext->g_proptag_a(&r->proptags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const DELETEPROPERTIES_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, DELETEPROPERTIESNOREPLICATE_REQUEST *r)
 {
 	return pext->g_proptag_a(&r->proptags);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const DELETEPROPERTIESNOREPLICATE_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, QUERYNAMEDPROPERTIES_REQUEST *r)
@@ -1176,11 +1103,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, COPYPROPERTIES_REQUEST *r)
 	return pext->g_proptag_a(&r->proptags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYPROPERTIES_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
-}
-
 static pack_result rop_ext_pull(EXT_PULL *pext, COPYTO_REQUEST *r)
 {
 	TRY(pext->g_uint8(&r->dhindex));
@@ -1188,11 +1110,6 @@ static pack_result rop_ext_pull(EXT_PULL *pext, COPYTO_REQUEST *r)
 	TRY(pext->g_uint8(&r->want_subobjects));
 	TRY(pext->g_uint8(&r->copy_flags));
 	return pext->g_proptag_a(&r->excluded_proptags);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYTO_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
 }
 
 static pack_result rop_ext_pull(EXT_PULL *pext, PROGRESS_REQUEST *r)
