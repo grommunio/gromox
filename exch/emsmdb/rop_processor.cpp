@@ -409,9 +409,9 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		 *
 		 * Think of it as close(open("nonexisting",O_RDONLY));
 		 */
-		auto result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
-		              prop_buff->phandles, prop_buff->hnum);
-		auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+		rop_response *rsp = nullptr;
+		auto result = rop_dispatch(*req, rsp, prop_buff->phandles, prop_buff->hnum);
+		pnode1->pdata = rsp;
 		bool dbg = g_rop_debug >= 2;
 		if (g_rop_debug >= 1 && result != 0)
 			dbg = true;

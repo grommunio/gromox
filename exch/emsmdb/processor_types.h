@@ -1000,7 +1000,7 @@ using COPYTO_RESPONSE = PROBLEM_RESPONSE;
 
 /* end of rop request and response structure */
 
-struct ROP_REQUEST {
+struct rop_request {
 	uint8_t rop_id;
 	uint8_t logon_id;
 	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex,
@@ -1009,6 +1009,7 @@ struct ROP_REQUEST {
 	void *ppayload;
 	BINARY rq_bookmark;
 };
+using ROP_REQUEST = rop_request;
 
 struct rop_response {
 	uint8_t rop_id;

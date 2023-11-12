@@ -15,9 +15,11 @@ using namespace gromox;
 
 unsigned int g_rop_debug;
 
-ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
+ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
     uint32_t *phandles, uint8_t hnum)
 {
+	auto prequest = &request;
+	const auto ppresponse = &rshead;
 	void *pdata;
 	uint8_t rop_id;
 	uint16_t max_rop;
