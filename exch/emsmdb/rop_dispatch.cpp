@@ -301,14 +301,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
-		if ((*ppresponse)->result == ecDstNullObject) {
-			auto nr = cu_alloc<NULL_DST_RESPONSE>();
-			if (nr == nullptr)
-				return ecServerOOM;
-			nr->dhindex = rq->dhindex;
-			nr->partial_completion = rsp->partial_completion;
-			(*ppresponse)->ppayload = nr;
-		}
+		if ((*ppresponse)->result != ecDstNullObject)
+			break;
+		auto nr = cu_alloc<NULL_DST_RESPONSE>();
+		if (nr == nullptr)
+			return ecServerOOM;
+		nr->dhindex = rq->dhindex;
+		nr->partial_completion = rsp->partial_completion;
+		(*ppresponse)->ppayload = nr;
 		break;
 	}
 	case ropMoveFolder: {
@@ -325,14 +325,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
-		if ((*ppresponse)->result == ecDstNullObject) {
-			auto nr = cu_alloc<NULL_DST_RESPONSE>();
-			if (nr == nullptr)
-				return ecServerOOM;
-			nr->dhindex = rq->dhindex;
-			nr->partial_completion = rsp->partial_completion;
-			(*ppresponse)->ppayload = nr;
-		}
+		if ((*ppresponse)->result != ecDstNullObject)
+			break;
+		auto nr = cu_alloc<NULL_DST_RESPONSE>();
+		if (nr == nullptr)
+			return ecServerOOM;
+		nr->dhindex = rq->dhindex;
+		nr->partial_completion = rsp->partial_completion;
+		(*ppresponse)->ppayload = nr;
 		break;
 	}
 	case ropCopyFolder: {
@@ -349,14 +349,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			rq->pnew_name, &rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
-		if ((*ppresponse)->result == ecDstNullObject) {
-			auto nr = cu_alloc<NULL_DST_RESPONSE>();
-			if (nr == nullptr)
-				return ecServerOOM;
-			nr->dhindex = rq->dhindex;
-			nr->partial_completion = rsp->partial_completion;
-			(*ppresponse)->ppayload = nr;
-		}
+		if ((*ppresponse)->result != ecDstNullObject)
+			break;
+		auto nr = cu_alloc<NULL_DST_RESPONSE>();
+		if (nr == nullptr)
+			return ecServerOOM;
+		nr->dhindex = rq->dhindex;
+		nr->partial_completion = rsp->partial_completion;
+		(*ppresponse)->ppayload = nr;
 		break;
 	}
 	case ropEmptyFolder: {
@@ -496,10 +496,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->count,
 			&ext_push, pemsmdb_info->plogmap.get(), prequest->logon_id,
 			phandles[prequest->hindex]);
-		if ((*ppresponse)->result == ecSuccess) {
-			rsp->bin_rows.pv = pdata;
-			rsp->bin_rows.cb = ext_push.m_offset;
-		}
+		if ((*ppresponse)->result != ecSuccess)
+			break;
+		rsp->bin_rows.pv = pdata;
+		rsp->bin_rows.cb = ext_push.m_offset;
 		break;
 	}
 	case ropAbort: {
@@ -630,10 +630,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			rq->category_id, &rsp->expanded_count,
 			&rsp->count, &ext_push,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
-		if ((*ppresponse)->result == ecSuccess) {
-			rsp->bin_rows.pv = pdata;
-			rsp->bin_rows.cb = ext_push.m_offset;
-		}
+		if ((*ppresponse)->result != ecSuccess)
+			break;
+		rsp->bin_rows.pv = pdata;
+		rsp->bin_rows.cb = ext_push.m_offset;
 		break;
 	}
 	case ropCollapseRow: {
@@ -754,10 +754,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			rq->reserved, &rsp->count,
 			&ext_push, pemsmdb_info->plogmap.get(), prequest->logon_id,
 			phandles[prequest->hindex]);
-		if ((*ppresponse)->result == ecSuccess) {
-			rsp->bin_recipients.pv = pdata;
-			rsp->bin_recipients.cb = ext_push.m_offset;
-		}
+		if ((*ppresponse)->result != ecSuccess)
+			break;
+		rsp->bin_recipients.pv = pdata;
+		rsp->bin_recipients.cb = ext_push.m_offset;
 		break;
 	}
 	case ropReloadCachedInformation: {
@@ -1125,13 +1125,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
-		if ((*ppresponse)->result == ecDstNullObject) {
-			auto nr = cu_alloc<NULL_DST1_RESPONSE>();
-			if (nr == nullptr)
-				return ecServerOOM;
-			nr->dhindex = rq->dhindex;
-			(*ppresponse)->ppayload = nr;
-		}
+		if ((*ppresponse)->result != ecDstNullObject)
+			break;
+		auto nr = cu_alloc<NULL_DST1_RESPONSE>();
+		if (nr == nullptr)
+			return ecServerOOM;
+		nr->dhindex = rq->dhindex;
+		(*ppresponse)->ppayload = nr;
 		break;
 	}
 	case ropCopyTo: {
@@ -1148,13 +1148,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rq->excluded_proptags, &rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
-		if ((*ppresponse)->result == ecDstNullObject) {
-			auto nr = cu_alloc<NULL_DST1_RESPONSE>();
-			if (nr == nullptr)
-				return ecServerOOM;
-			nr->dhindex = rq->dhindex;
-			(*ppresponse)->ppayload = nr;
-		}
+		if ((*ppresponse)->result != ecDstNullObject)
+			break;
+		auto nr = cu_alloc<NULL_DST1_RESPONSE>();
+		if (nr == nullptr)
+			return ecServerOOM;
+		nr->dhindex = rq->dhindex;
+		(*ppresponse)->ppayload = nr;
 		break;
 	}
 	case ropProgress: {
@@ -1257,15 +1257,15 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->read_bytes, &rsp->written_bytes,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
-		if ((*ppresponse)->result == ecDstNullObject) {
-			auto nr = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
-			if (nr == nullptr)
-				return ecServerOOM;
-			nr->dhindex = rq->dhindex;
-			nr->read_bytes = 0;
-			nr->written_bytes = 0;
-			(*ppresponse)->ppayload = nr;
-		}
+		if ((*ppresponse)->result != ecDstNullObject)
+			break;
+		auto nr = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
+		if (nr == nullptr)
+			return ecServerOOM;
+		nr->dhindex = rq->dhindex;
+		nr->read_bytes = 0;
+		nr->written_bytes = 0;
+		(*ppresponse)->ppayload = nr;
 		break;
 	}
 	case ropLockRegionStream: {
