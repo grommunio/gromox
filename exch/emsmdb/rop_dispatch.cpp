@@ -87,12 +87,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetReceiveFolder: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETRECEIVEFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETRECEIVEFOLDER_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getreceivefolder(rq->pstr_class,
 			&rsp->folder_id, &rsp->pstr_class,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -107,104 +107,104 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetReceiveFolderTable: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETRECEIVEFOLDERTABLE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getreceivefoldertable(&rsp->rows,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetStoreState: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETSTORESTAT_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getstorestat(&rsp->stat,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetOwningServers: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETOWNINGSERVERS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETOWNINGSERVERS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getowningservers(
 			rq->folder_id, &rsp->ghost,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropPublicFolderIsGhosted: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<PUBLICFOLDERISGHOSTED_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const PUBLICFOLDERISGHOSTED_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_publicfolderisghosted(
 			rq->folder_id, &rsp->pghost,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropLongTermIdFromId: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<LONGTERMIDFROMID_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const LONGTERMIDFROMID_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_longtermidfromid(
 			rq->id, &rsp->long_term_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropIdFromLongTermId: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<IDFROMLONGTERMID_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const IDFROMLONGTERMID_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_idfromlongtermid(
 			&rq->long_term_id, &rsp->id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPerUserLongTermIds: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETPERUSERLONGTERMIDS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETPERUSERLONGTERMIDS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getperuserlongtermids(
 			&rq->guid, &rsp->ids,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPerUserGuid: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETPERUSERGUID_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETPERUSERGUID_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getperuserguid(
 			&rq->long_term_id, &rsp->guid,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropReadPerUserInformation: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<READPERUSERINFORMATION_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const READPERUSERINFORMATION_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_readperuserinformation(
 			&rq->long_folder_id, rq->reserved, rq->data_offset,
 			rq->max_data_size, &rsp->has_finished, &rsp->data,
@@ -224,11 +224,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const OPENFOLDER_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openfolder(rq->folder_id,
 			rq->open_flags, &rsp->has_rules, &rsp->pghost,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -239,11 +239,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const CREATEFOLDER_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<CREATEFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_createfolder(rq->folder_type,
 			rq->use_unicode, rq->open_existing, rq->reserved,
 			rq->pfolder_name, rq->pfolder_comment,
@@ -254,12 +254,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropDeleteFolder: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<DELETEFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const DELETEFOLDER_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deletefolder(rq->flags,
 			rq->folder_id, &rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -274,13 +274,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetSearchCriteria: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETSEARCHCRITERIA_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETSEARCHCRITERIA_REQUEST *>(prequest->ppayload);
 		rsp->logon_id = prequest->logon_id;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getsearchcriteria(rq->use_unicode,
 			rq->include_restriction, rq->include_folders,
 			&rsp->pres, &rsp->folder_ids, &rsp->search_status,
@@ -291,11 +291,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const MOVECOPYMESSAGES_REQUEST *>(prequest->ppayload);
 		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<MOVECOPYMESSAGES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_movecopymessages(&rq->message_ids,
 			rq->want_asynchronous, rq->want_copy,
 			&rsp->partial_completion,
@@ -315,11 +315,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const MOVEFOLDER_REQUEST *>(prequest->ppayload);
 		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<MOVEFOLDER_RESPONSE>();;
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_movefolder(rq->want_asynchronous,
 			rq->use_unicode, rq->folder_id, rq->pnew_name,
 			&rsp->partial_completion,
@@ -339,11 +339,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const COPYFOLDER_REQUEST *>(prequest->ppayload);
 		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COPYFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_copyfolder(rq->want_asynchronous,
 			rq->want_recursive, rq->use_unicode, rq->folder_id,
 			rq->pnew_name, &rsp->partial_completion,
@@ -360,24 +360,24 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropEmptyFolder: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<EMPTYFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const EMPTYFOLDER_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_emptyfolder(rq->want_asynchronous,
 			rq->want_delete_associated, &rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropHardDeleteMessagesAndSubfolders: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<EMPTYFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_harddeletemessagesandsubfolders(
 			rq->want_asynchronous, rq->want_delete_associated,
 			&rsp->partial_completion,
@@ -385,12 +385,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropDeleteMessages: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<DELETEMESSAGES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const DELETEMESSAGES_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deletemessages(rq->want_asynchronous,
 			rq->notify_non_read, &rq->message_ids,
 			&rsp->partial_completion,
@@ -398,12 +398,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropHardDeleteMessages: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<HARDDELETEMESSAGES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const HARDDELETEMESSAGES_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_harddeletemessages(
 			rq->want_asynchronous, rq->notify_non_read,
 			&rq->message_ids, &rsp->partial_completion,
@@ -414,11 +414,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const GETHIERARCHYTABLE_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex > hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<GETHIERARCHYTABLE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_gethierarchytable(
 			rq->table_flags, &rsp->row_count,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -429,11 +429,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const GETCONTENTSTABLE_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<GETCONTENTSTABLE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_getcontentstable(rq->table_flags,
 			&rsp->row_count,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -441,43 +441,42 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSetColumns: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETCOLUMNS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETCOLUMNS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setcolumns(rq->table_flags,
 			&rq->proptags, &rsp->table_status,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSortTable: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SORTTABLE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SORTTABLE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_sorttable(rq->table_flags,
 			&rq->sort_criteria, &rsp->table_status,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropRestrict: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<RESTRICT_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const RESTRICT_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_restrict(rq->res_flags, rq->pres,
 			&rsp->table_status,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryRows: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<QUERYROWS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
@@ -491,6 +490,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16 | EXT_FLAG_TBLLMT))
 			return ecServerOOM;
 		auto rq = static_cast<const QUERYROWS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_queryrows(rq->flags,
 			rq->forward_read, rq->row_count, &rsp->seek_pos,
 			&rsp->count,
@@ -503,43 +503,43 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropAbort: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<ABORT_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_abort(&rsp->table_status,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetStatus: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETSTATUS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getstatus(&rsp->table_status,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryPosition: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<QUERYPOSITION_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_queryposition(
 			&rsp->numerator, &rsp->denominator,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSeekRow: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SEEKROW_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SEEKROW_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_seekrow(rq->seek_pos, rq->offset,
 			rq->want_moved_count, &rsp->has_soughtless,
 			&rsp->offset_sought,
@@ -547,12 +547,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSeekRowBookmark: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SEEKROWBOOKMARK_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SEEKROWBOOKMARK_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_seekrowbookmark(&rq->bookmark,
 			rq->offset, rq->want_moved_count, &rsp->row_invisible,
 			&rsp->has_soughtless, &rsp->offset_sought,
@@ -567,32 +567,32 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropCreateBookmark: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<CREATEBOOKMARK_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_createbookmark(&rsp->bookmark,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryColumnsAll: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<QUERYCOLUMNSALL_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_querycolumnsall(&rsp->proptags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropFindRow: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<FINDROW_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const FINDROW_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_findrow(rq->flags, rq->pres,
 			rq->seek_pos, &rq->bookmark, &rsp->bookmark_invisible,
 			&rsp->prow, &rsp->pcolumns,
@@ -612,7 +612,6 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	case ropExpandRow: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<EXPANDROW_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
@@ -626,6 +625,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16))
 			return ecServerOOM;
 		auto rq = static_cast<const EXPANDROW_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_expandrow(rq->max_count,
 			rq->category_id, &rsp->expanded_count,
 			&rsp->count, &ext_push,
@@ -637,36 +637,36 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropCollapseRow: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COLLAPSEROW_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const COLLAPSEROW_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_collapserow(
 			rq->category_id, &rsp->collapsed_count,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetCollapseState: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETCOLLAPSESTATE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETCOLLAPSESTATE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getcollapsestate(rq->row_id,
 			rq->row_instance, &rsp->collapse_state,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetCollapseState: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETCOLLAPSESTATE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETCOLLAPSESTATE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setcollapsestate(
 			&rq->collapse_state, &rsp->bookmark,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -676,11 +676,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const OPENMESSAGE_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENMESSAGE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openmessage(rq->cpid, rq->folder_id,
 			rq->open_mode_flags, rq->message_id,
 			&rsp->has_named_properties, &rsp->subject_prefix,
@@ -695,11 +695,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const CREATEMESSAGE_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<CREATEMESSAGE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_createmessage(rq->cpid,
 			rq->folder_id, rq->associated_flag, &rsp->pmessage_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -707,13 +707,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSaveChangesMessage: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SAVECHANGESMESSAGE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SAVECHANGESMESSAGE_REQUEST *>(prequest->ppayload);
 		rsp->ihindex2 = rq->ihindex2;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_savechangesmessage(rq->save_flags,
 			&rsp->message_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -736,7 +736,6 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropReadRecipients: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<READRECIPIENTS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
@@ -750,6 +749,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16))
 			return ecServerOOM;
 		auto rq = static_cast<const READRECIPIENTS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_readrecipients(rq->row_id,
 			rq->reserved, &rsp->count,
 			&ext_push, pemsmdb_info->plogmap.get(), prequest->logon_id,
@@ -761,12 +761,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropReloadCachedInformation: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<RELOADCACHEDINFORMATION_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const RELOADCACHEDINFORMATION_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_reloadcachedinformation(rq->reserved,
 			&rsp->has_named_properties, &rsp->subject_prefix,
 			&rsp->normalized_subject, &rsp->recipient_count,
@@ -776,12 +776,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSetMessageStatus: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETMESSAGESTATUS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETMESSAGESTATUS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setmessagestatus(rq->message_id,
 			rq->message_status, rq->status_mask,
 			&rsp->message_status,
@@ -789,24 +789,24 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetMessageStatus: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETMESSAGESTATUS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETMESSAGESTATUS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getmessagestatus(
 			rq->message_id, &rsp->message_status,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetReadFlags: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETREADFLAGS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETREADFLAGS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setreadflags(rq->want_asynchronous,
 			rq->read_flags, &rq->message_ids,
 			&rsp->partial_completion,
@@ -817,13 +817,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const SETMESSAGEREADFLAG_REQUEST *>(prequest->ppayload);
 		if (rq->ihindex2 >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETMESSAGEREADFLAG_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		rsp->logon_id = prequest->logon_id;
 		rsp->pclient_data = rq->pclient_data;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setmessagereadflag(
 			rq->flags, rq->pclient_data, &rsp->read_changed,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -845,11 +845,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const CREATEATTACHMENT_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<CREATEATTACHMENT_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_createattachment(
 			&rsp->attachment_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -878,11 +878,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const OPENEMBEDDEDMESSAGE_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENEMBEDDEDMESSAGE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openembeddedmessage(rq->cpid,
 			rq->open_embedded_flags, &rsp->reserved,
 			&rsp->message_id, &rsp->has_named_properties,
@@ -904,11 +904,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetValidAttachments: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETVALIDATTACHMENTS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getvalidattachments(&rsp->attachment_ids,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -929,11 +929,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetAddressTypes: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETADDRESSTYPES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getaddresstypes(&rsp->address_types,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -952,11 +952,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropTransportSend: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<TRANSPORTSEND_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_transportsend(&rsp->ppropvals,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -970,22 +970,22 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetTransportFolder: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETTRANSPORTFOLDER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_gettransportfolder(&rsp->folder_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropOptionsData: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<OPTIONSDATA_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const OPTIONSDATA_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_optionsdata(rq->paddress_type,
 			rq->want_win32, &rsp->reserved, &rsp->options_info,
 			&rsp->help_file, &rsp->pfile_name,
@@ -993,119 +993,119 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetPropertyIdsFromNames: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETPROPERTYIDSFROMNAMES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETPROPERTYIDSFROMNAMES_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertyidsfromnames(
 			rq->flags, &rq->propnames, &rsp->propids,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetNamesFromPropertyIds: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETNAMESFROMPROPERTYIDS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETNAMESFROMPROPERTYIDS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getnamesfrompropertyids(
 			&rq->propids, &rsp->propnames,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertiesSpecific: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETPROPERTIESSPECIFIC_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETPROPERTIESSPECIFIC_REQUEST *>(prequest->ppayload);
 		rsp->pproptags = deconst(&rq->proptags);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertiesspecific(
 			rq->size_limit, rq->want_unicode, &rq->proptags, &rsp->row,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertiesAll: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETPROPERTIESALL_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETPROPERTIESALL_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertiesall(rq->size_limit,
 			rq->want_unicode, &rsp->propvals,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertiesList: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETPROPERTIESLIST_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertieslist(&rsp->proptags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetProperties: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETPROPERTIES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETPROPERTIES_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setproperties(
 			&rq->propvals, &rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetPropertiesNoReplicate: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETPROPERTIESNOREPLICATE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SETPROPERTIESNOREPLICATE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setpropertiesnoreplicate(
 			&rq->propvals, &rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropDeleteProperties: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<DELETEPROPERTIES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const DELETEPROPERTIES_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deleteproperties(
 			&rq->proptags, &rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropDeletePropertiesNoReplicate: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<DELETEPROPERTIESNOREPLICATE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const DELETEPROPERTIESNOREPLICATE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deletepropertiesnoreplicate(
 			&rq->proptags, &rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryNamedProperties: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<QUERYNAMEDPROPERTIES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const QUERYNAMEDPROPERTIES_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_querynamedproperties(
 			rq->query_flags, rq->pguid, &rsp->propidnames,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -1115,11 +1115,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const COPYPROPERTIES_REQUEST *>(prequest->ppayload);
 		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COPYPROPERTIES_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_copyproperties(
 			rq->want_asynchronous, rq->copy_flags, &rq->proptags,
 			&rsp->problems,
@@ -1138,11 +1138,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const COPYTO_REQUEST *>(prequest->ppayload);
 		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COPYTO_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_copyto(rq->want_asynchronous,
 			rq->want_subobjects, rq->copy_flags,
 			&rq->excluded_proptags, &rsp->problems,
@@ -1158,13 +1158,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropProgress: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<PROGRESS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const PROGRESS_REQUEST *>(prequest->ppayload);
 		rsp->logon_id = prequest->logon_id;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_progress(rq->want_cancel,
 			&rsp->completed_count, &rsp->total_count,
 			&rop_id, &partial_completion, pemsmdb_info->plogmap.get(),
@@ -1175,11 +1175,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const OPENSTREAM_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENSTREAM_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openstream(rq->proptag,
 			rq->flags, &rsp->stream_size,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1187,24 +1187,24 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropReadStream: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<READSTREAM_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const READSTREAM_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_readstream(rq->byte_count,
 			rq->max_byte_count, &rsp->data,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropWriteStream: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<WRITESTREAM_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const WRITESTREAM_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_writestream(
 			&rq->data, &rsp->written_size,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -1216,11 +1216,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	case ropGetStreamSize: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETSTREAMSIZE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getstreamsize(&rsp->stream_size,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -1233,12 +1233,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSeekStream: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SEEKSTREAM_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SEEKSTREAM_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_seekstream(rq->seek_pos,
 			rq->offset, &rsp->new_pos,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -1285,12 +1285,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropWriteAndCommitStream: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<WRITEANDCOMMITSTREAM_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const WRITEANDCOMMITSTREAM_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_writeandcommitstream(
 			&rq->data, &rsp->written_size,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -1362,12 +1362,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropFastTransferDestinationPutBuffer: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<FASTTRANSFERDESTPUTBUFFER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const FASTTRANSFERDESTPUTBUFFER_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_fasttransferdestputbuffer(
 			&rq->transfer_data, &rsp->transfer_status,
 			&rsp->in_progress_count, &rsp->total_step_count,
@@ -1376,12 +1376,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropFastTransferSourceGetBuffer: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<FASTTRANSFERSOURCEGETBUFFER_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const FASTTRANSFERSOURCEGETBUFFER_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_fasttransfersourcegetbuffer(
 			rq->buffer_size, rq->max_buffer_size,
 			&rsp->transfer_status, &rsp->in_progress_count,
@@ -1459,11 +1459,11 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const SYNCIMPORTMESSAGECHANGE_REQUEST *>(prequest->ppayload);
 		if (rq->ohindex > hnum)
 			return ecInvalidObject;
-		rshead->hindex = rq->ohindex;
 		auto rsp = cu_alloc<SYNCIMPORTMESSAGECHANGE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
+		rshead->hindex = rq->ohindex;
 		rshead->result = rop_syncimportmessagechange(
 			rq->import_flags, &rq->propvals, &rsp->message_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1479,12 +1479,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSynchronizationImportHierarchyChange: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SYNCIMPORTHIERARCHYCHANGE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SYNCIMPORTHIERARCHYCHANGE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncimporthierarchychange(
 			&rq->hichyvals, &rq->propvals, &rsp->folder_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
@@ -1499,12 +1499,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropSynchronizationImportMessageMove: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SYNCIMPORTMESSAGEMOVE_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const SYNCIMPORTMESSAGEMOVE_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncimportmessagemove(
 			&rq->src_folder_id, &rq->src_message_id,
 			&rq->change_list, &rq->dst_message_id,
@@ -1562,12 +1562,12 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		break;
 	}
 	case ropGetLocalReplicaIds: {
-		rshead->hindex = prequest->hindex;
 		auto rsp = cu_alloc<GETLOCALREPLICAIDS_RESPONSE>();
 		rshead->ppayload = rsp;
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<const GETLOCALREPLICAIDS_REQUEST *>(prequest->ppayload);
+		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getlocalreplicaids(
 			rq->count, &rsp->replguid, &rsp->global_count,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
