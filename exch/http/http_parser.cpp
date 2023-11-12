@@ -441,7 +441,7 @@ std::string http_make_err_response(const http_context &ctx, http_status code)
 	if (!ctx.b_close)
 		rsp += fmt::format("Keep-Alive: timeout={}\r\n", TOSEC(g_timeout));
 	if (code == http_status::unauthorized) {
-		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n";
+		rsp += "WWW-Authenticate: Basic realm=\"msrpc realm\", charset=\"utf-8\"\r\n";
 		if (g_config_file->get_ll("http_auth_spnego")) {
 			if (ctx.auth_method == auth_method::negotiate_b64 && !ctx.last_gss_output.empty())
 				rsp += "WWW-Authenticate: Negotiate " + ctx.last_gss_output + "\r\n";
