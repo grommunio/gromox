@@ -150,7 +150,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, SETRECEIVEFOLDER_REQUEST *r)
 	return pext->g_str(&r->pstr_class);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *pext, const GETRECEIVEFOLDERTABLE_RESPONSE *r)
 {
 	PROPTAG_ARRAY columns;
 	static constexpr uint32_t proptags[] =
@@ -734,7 +734,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, CREATEMESSAGE_REQUEST *r)
 	return pext->g_uint8(&r->associated_flag);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, CREATEMESSAGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *pext, const CREATEMESSAGE_RESPONSE *r)
 {
 	if (r->pmessage_id == nullptr)
 		return pext->p_uint8(0);
@@ -783,7 +783,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, READRECIPIENTS_REQUEST *r)
 	return pext->g_uint16(&r->reserved);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, READRECIPIENTS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *pext, const READRECIPIENTS_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->count));
 	return pext->p_bytes(r->bin_recipients.pb, r->bin_recipients.cb);
@@ -794,7 +794,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, RELOADCACHEDINFORMATION_REQUEST 
 	return pext->g_uint16(&r->reserved);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, RELOADCACHEDINFORMATION_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *pext, const RELOADCACHEDINFORMATION_RESPONSE *r)
 {
 	auto &ext = *pext;
 	uint8_t i;
@@ -1163,7 +1163,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, QUERYNAMEDPROPERTIES_REQUEST *r)
 	return pext->g_guid(r->pguid);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, QUERYNAMEDPROPERTIES_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYNAMEDPROPERTIES_RESPONSE *r)
 {
 	return rop_ext_push(pext, &r->propidnames);
 }
@@ -1815,7 +1815,7 @@ static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
 }
 
 /* not including ropNotify, ropPending, ropBackoff, ropBufferTooSmall */
-pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, ROP_RESPONSE *r)
+pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, const ROP_RESPONSE *r)
 {
 	EMSMDB_INFO *pemsmdb_info;
 	

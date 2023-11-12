@@ -567,6 +567,11 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	uint32_t last_offset;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
+	/*
+	 * (response_list.)GETPROPERTIESSPECIFIC_RESPONSE::pproptags can link
+	 * to (rop_buff.)GETPROPERTIESSPECIFIC_REQUEST::pproptags, so watch
+	 * lifetime and destruction order.
+	 */
 	DOUBLE_LIST response_list;
 	
 	ext_pull.init(pin, cb_in, common_util_alloc, EXT_FLAG_UTF16);
@@ -607,7 +612,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		return ecSuccess;
 	}
 	auto prequest = static_cast<const ROP_REQUEST *>(pnode->pdata);
-	auto presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+	auto presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
 	if (prequest->rop_id != presponse->rop_id) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
@@ -621,7 +626,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	
 	if (presponse->rop_id == ropQueryRows) {
 		auto req = static_cast<QUERYROWS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<QUERYROWS_RESPONSE *>(presponse->ppayload);
+		auto rsp = static_cast<const QUERYROWS_RESPONSE *>(presponse->ppayload);
 		if (req->flags == QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS) {
 			rop_ext_set_rhe_flag_last(pout, last_offset);
 			*pcb_out = offset;
@@ -650,7 +655,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			pnode1 = double_list_pop_front(&response_list);
 			if (pnode1 == nullptr)
 				break;
-			presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+			presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
 			if (presponse->rop_id != ropQueryRows ||
 			    presponse->result != ecSuccess)
 				break;
@@ -663,7 +668,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (presponse->result == ecSuccess &&
 		       *pcb_out - offset >= 0x2000 && count < g_max_rop_payloads) {
-			if (static_cast<READSTREAM_RESPONSE *>(presponse->ppayload)->data.cb == 0)
+			if (static_cast<const READSTREAM_RESPONSE *>(presponse->ppayload)->data.cb == 0)
 				break;
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
@@ -675,7 +680,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			pnode1 = double_list_pop_front(&response_list);
 			if (pnode1 == nullptr)
 				break;
-			presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+			presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
 			if (presponse->rop_id != ropReadStream ||
 			    presponse->result != ecSuccess)
 				break;
@@ -701,7 +706,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			pnode1 = double_list_pop_front(&response_list);
 			if (pnode1 == nullptr)
 				break;
-			presponse = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+			presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
 			if (presponse->rop_id != ropFastTransferSourceGetBuffer ||
 			    presponse->result != ecSuccess)
 				break;
