@@ -60,7 +60,10 @@ subscription_object::~subscription_object()
 
 notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
 {
-	return new notify_response{handle, logon_id};
+	auto r = new notify_response{};
+	r->handle = handle;
+	r->logon_id = logon_id;
+	return r;
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
@@ -414,7 +417,11 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 
 void notify_response::ctrow_event_to_change()
 {
-	*this       = notify_response{handle, logon_id};
+	auto saved_handle = handle;
+	auto saved_logon  = logon_id;
+	*this       = {};
+	handle      = saved_handle;
+	logon_id    = saved_logon;
 	nflags      = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
 	table_event = TABLE_EVENT_TABLE_CHANGED;
 }

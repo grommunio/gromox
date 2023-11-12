@@ -3,11 +3,12 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
+#include "processor_types.hpp"
 
 struct DB_NOTIFY;
 struct logon_object;
 
-struct notify_response {
+struct notify_response : public rop_response {
 	static notify_response *create(uint32_t, uint8_t);
 	~notify_response();
 	ec_error_t cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &);

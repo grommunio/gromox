@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
@@ -1535,23 +1535,28 @@ pack_result rop_ext_push(EXT_PUSH &x, const PENDING_RESPONSE &r)
 	return x.p_uint16(r.session_index);
 }
 
-static pack_result rop_ext_pull(EXT_PULL &x, rop_request &r)
+static pack_result rop_ext_pull(EXT_PULL &x, rop_request *&request)
 {
-	r.rq_bookmark.pb = deconst(x.m_udata) + x.m_offset;
-	r.rq_bookmark.cb = x.m_data_size - x.m_offset;
-	TRY(x.g_uint8(&r.rop_id));
-	TRY(x.g_uint8(&r.logon_id));
-	TRY(x.g_uint8(&r.hindex));
-	r.ppayload = nullptr;
+	rop_request head;
+	auto ret = pack_result::success;
+
+	head.rq_bookmark.pb = deconst(x.m_udata) + x.m_offset;
+	head.rq_bookmark.cb = x.m_data_size - x.m_offset;
+	TRY(x.g_uint8(&head.rop_id));
+	TRY(x.g_uint8(&head.logon_id));
+	TRY(x.g_uint8(&head.hindex));
 	
 #define H(rop, t) \
 	case (rop): { \
 		auto r0 = x.anew<t ## _REQUEST>(); \
-		r.ppayload = r0; \
-		return r0 != nullptr ? rop_ext_pull(x, *r0) : pack_result::alloc; \
+		request = r0; \
+		if (r0 == nullptr) \
+			return pack_result::alloc; \
+		ret = rop_ext_pull(x, *r0); \
+		break; \
 	}
 
-	switch (r.rop_id) {
+	switch (head.rop_id) {
 	H(ropLogon, LOGON);
 	H(ropGetReceiveFolder, GETRECEIVEFOLDER);
 	H(ropSetReceiveFolder, SETRECEIVEFOLDER);
@@ -1563,15 +1568,16 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request &r)
 	H(ropGetPerUserGuid, GETPERUSERGUID);
 	H(ropReadPerUserInformation, READPERUSERINFORMATION);
 	case ropWritePerUserInformation: {
-		r.ppayload = x.anew<WRITEPERUSERINFORMATION_REQUEST>();
-		if (r.ppayload == nullptr)
+		auto r0 = x.anew<WRITEPERUSERINFORMATION_REQUEST>();
+		if (r0 == nullptr)
 			return EXT_ERR_ALLOC;
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, r.logon_id);
+		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		return rop_ext_pull(x, *static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r.ppayload),
-		       plogon->is_private());
+		ret = rop_ext_pull(x, *r0, plogon->is_private());
+		request = r0;
+		break;
 	}
 	H(ropOpenFolder, OPENFOLDER);
 	H(ropCreateFolder, CREATEFOLDER);
@@ -1611,15 +1617,16 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request &r)
 	H(ropGetMessageStatus, GETMESSAGESTATUS);
 	H(ropSetReadFlags, SETREADFLAGS);
 	case ropSetMessageReadFlag: {
-		r.ppayload = x.anew<SETMESSAGEREADFLAG_REQUEST>();
-		if (r.ppayload == nullptr)
+		auto r0 = x.anew<SETMESSAGEREADFLAG_REQUEST>();
+		if (r0 == nullptr)
 			return EXT_ERR_ALLOC;
 		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, r.logon_id);
+		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, head.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		return rop_ext_pull(x, *static_cast<SETMESSAGEREADFLAG_REQUEST *>(r.ppayload),
-		       plogon->is_private());
+		ret = rop_ext_pull(x, *r0, plogon->is_private());
+		request = r0;
+		break;
 	}
 	H(ropOpenAttachment, OPENATTACHMENT);
 	H(ropCreateAttachment, CREATEATTACHMENT);
@@ -1697,11 +1704,18 @@ static pack_result rop_ext_pull(EXT_PULL &x, rop_request &r)
 	case ropCommitStream:
 	case ropGetStreamSize:
 	case ropSynchronizationUploadStateStreamEnd:
-	case ropRelease:
-		return EXT_ERR_SUCCESS;
+	case ropRelease: {
+		auto r0 = x.anew<rop_request>();
+		request = r0;
+		if (r0 == nullptr)
+			return pack_result::alloc;
+		break;
+	}
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
+	*request = std::move(head);
+	return ret;
 #undef H
 }
 
@@ -1715,7 +1729,7 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 		switch (r.rop_id) {
 		case ropLogon:
 			if (r.result == ecWrongServer)
-				return rop_ext_push(x, *static_cast<const LOGON_REDIRECT_RESPONSE *>(r.ppayload));
+				return rop_ext_push(x, static_cast<const LOGON_REDIRECT_RESPONSE &>(r));
 			return pack_result::success;
 		case ropGetPropertyIdsFromNames:
 			if (r.result == ecWarnWithErrors)
@@ -1725,16 +1739,16 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 		case ropMoveFolder:
 		case ropCopyFolder:
 			if (r.result == ecDstNullObject)
-				return rop_ext_push(x, *static_cast<const NULL_DST_RESPONSE *>(r.ppayload));
+				return rop_ext_push(x, static_cast<const NULL_DST_RESPONSE &>(r));
 			break;
 		case ropCopyProperties:
 		case ropCopyTo:
 			if (r.result == ecDstNullObject)
-				return x.p_uint32(static_cast<const NULL_DST1_RESPONSE *>(r.ppayload)->dhindex);
+				return x.p_uint32(static_cast<const NULL_DST1_RESPONSE &>(r).dhindex);
 			return pack_result::success;
 		case ropCopyToStream:
 			if (r.result == ecDstNullObject)
-				return rop_ext_push(x, *static_cast<const COPYTOSTREAM_NULL_DEST_RESPONSE *>(r.ppayload));
+				return rop_ext_push(x, static_cast<const COPYTOSTREAM_NULL_DEST_RESPONSE &>(r));
 			return pack_result::success;
 		case ropEmptyFolder:
 		case ropDeleteFolder:
@@ -1751,7 +1765,7 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 
 #define H(rop, t) \
 	case (rop): \
-		return rop_ext_push(x, *static_cast<const t ## _RESPONSE *>(r.ppayload));
+		return rop_ext_push(x, static_cast<const t ## _RESPONSE &>(r));
 
 	switch (r.rop_id) {
 	case ropLogon: {
@@ -1760,8 +1774,8 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		return plogon->is_private() ?
-		       rop_ext_push(x, *static_cast<const LOGON_PMB_RESPONSE *>(r.ppayload)) :
-		       rop_ext_push(x, *static_cast<const LOGON_PF_RESPONSE *>(r.ppayload));
+		       rop_ext_push(x, static_cast<const LOGON_PMB_RESPONSE &>(r)) :
+		       rop_ext_push(x, static_cast<const LOGON_PF_RESPONSE &>(r));
 	}
 	H(ropGetReceiveFolder, GETRECEIVEFOLDER);
 	H(ropGetReceiveFolderTable, GETRECEIVEFOLDERTABLE);
@@ -1940,10 +1954,9 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 		pnode = x.anew<DOUBLE_LIST_NODE>();
 		if (pnode == nullptr)
 			return EXT_ERR_ALLOC;
-		pnode->pdata = x.anew<rop_request>();
-		if (pnode->pdata == nullptr)
-			return EXT_ERR_ALLOC;
-		TRY(rop_ext_pull(subext, *static_cast<rop_request *>(pnode->pdata)));
+		rop_request *rq = nullptr;
+		TRY(rop_ext_pull(subext, rq));
+		pnode->pdata = rq;
 		double_list_append_as_tail(&r.rop_list, pnode);
 	}
 	tmp_num = (rpc_header_ext.size_actual - size) / sizeof(uint32_t);

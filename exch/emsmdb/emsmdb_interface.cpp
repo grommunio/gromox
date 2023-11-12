@@ -410,8 +410,7 @@ static void emsmdb_interface_remove_handle(const CXH &cxh)
 			g_user_hash.erase(phandle->username);
 	}
 	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
-		delete static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
-		free(pnode->pdata);
+		delete static_cast<notify_response *>(pnode->pdata);
 		free(pnode);
 	}
 	/* Destroy logmap after gl_hold is released */
@@ -943,7 +942,7 @@ static BOOL emsmdb_interface_merge_content_row_deleted(
 	count = 1;
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
@@ -970,7 +969,7 @@ static BOOL emsmdb_interface_merge_hierarchy_row_modified(
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
@@ -1000,7 +999,7 @@ static BOOL emsmdb_interface_merge_message_modified(
 		1, pmodified_message->message_id);
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotify->nflags == (NF_OBJECT_MODIFIED | NF_BY_MESSAGE) &&
@@ -1022,7 +1021,7 @@ static BOOL emsmdb_interface_merge_folder_modified(
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(pnode->pdata);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotify->nflags == NF_OBJECT_MODIFIED &&
@@ -1116,18 +1115,16 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		free(pnode);
 		return;
 	}
-	auto rsp = static_cast<rop_response *>(pnode->pdata);
-	rsp->rop_id = ropNotify;
-	rsp->hindex = 0; /* ignore by system */
-	rsp->result = 0; /* ignore by system */
 	auto nfr = notify_response::create(obj_handle, logon_id);
-	rsp->ppayload = nfr;
-	if (rsp->ppayload == nullptr) {
+	if (nfr == nullptr) {
 		emsmdb_interface_put_handle_notify_list(phandle);
 		free(pnode->pdata);
 		free(pnode);
 		return;
 	}
+	nfr->rop_id = ropNotify;
+	nfr->hindex = 0; /* ignore by system */
+	nfr->result = 0; /* ignore by system */
 	BOOL b_cache = phandle->info.client_mode == CLIENT_MODE_CACHED ? TRUE : false;
 	if (nfr->cvt_from_dbnotify(b_cache, *pdb_notify) == ecSuccess) {
 		double_list_append_as_tail(&phandle->notify_list, pnode);
@@ -1137,7 +1134,6 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		b_processing = phandle->b_processing;
 		emsmdb_interface_put_handle_notify_list(phandle);
 		delete nfr;
-		free(pnode->pdata);
 		free(pnode);
 	}
 	if (!b_processing)
