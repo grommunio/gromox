@@ -21,7 +21,9 @@ dependencies are needed:
 * libzstd >= 1.4
 * MariaDB Connector/C or compatible
 * OpenLDAP or similar headers
-* OpenSSL or compatible with SHA-3 support
+* OpenSSL-compatible libssl
+* OpenSSL-compatible libcrypto
+  (must have SHA-3 *if* libxxhash is not used)
 * perl5
 * SQLite3
 * tinyxml2 >= 8 (we use this for all things XML)
@@ -30,6 +32,7 @@ dependencies are needed:
 Optional deps:
 
 * libc/libresolv with "res_nquerydomain" & "ns_initparse" functions
+* libesedb
 * libolecf
 * libpff
 * libxxhash >= 0.7
