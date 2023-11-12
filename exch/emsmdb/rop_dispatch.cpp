@@ -220,9 +220,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropOpenFolder: {
 		auto rq = static_cast<OPENFOLDER_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENFOLDER_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -235,9 +235,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCreateFolder: {
 		auto rq = static_cast<CREATEFOLDER_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<CREATEFOLDER_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -287,7 +287,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropMoveCopyMessages: {
 		auto rq = static_cast<MOVECOPYMESSAGES_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		auto rsp = cu_alloc<MOVECOPYMESSAGES_RESPONSE>();
@@ -298,12 +298,12 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			rq->want_asynchronous, rq->want_copy,
 			&rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
 			auto nr = cu_alloc<NULL_DST_RESPONSE>();
 			if (nr == nullptr)
 				return ecServerOOM;
-			nr->hindex = rq->hindex;
+			nr->dhindex = rq->dhindex;
 			nr->partial_completion = rsp->partial_completion;
 			(*ppresponse)->ppayload = nr;
 		}
@@ -311,7 +311,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropMoveFolder: {
 		auto rq = static_cast<MOVEFOLDER_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		auto rsp = cu_alloc<MOVEFOLDER_RESPONSE>();;
@@ -322,12 +322,12 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			rq->use_unicode, rq->folder_id, rq->pnew_name,
 			&rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
 			auto nr = cu_alloc<NULL_DST_RESPONSE>();
 			if (nr == nullptr)
 				return ecServerOOM;
-			nr->hindex = rq->hindex;
+			nr->dhindex = rq->dhindex;
 			nr->partial_completion = rsp->partial_completion;
 			(*ppresponse)->ppayload = nr;
 		}
@@ -335,7 +335,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCopyFolder: {
 		auto rq = static_cast<COPYFOLDER_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COPYFOLDER_RESPONSE>();
@@ -346,12 +346,12 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			rq->want_recursive, rq->use_unicode, rq->folder_id,
 			rq->pnew_name, &rsp->partial_completion,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
 			auto nr = cu_alloc<NULL_DST_RESPONSE>();
 			if (nr == nullptr)
 				return ecServerOOM;
-			nr->hindex = rq->hindex;
+			nr->dhindex = rq->dhindex;
 			nr->partial_completion = rsp->partial_completion;
 			(*ppresponse)->ppayload = nr;
 		}
@@ -410,9 +410,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropGetHierarchyTable: {
 		auto rq = static_cast<GETHIERARCHYTABLE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex > hnum)
+		if (rq->ohindex > hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<GETHIERARCHYTABLE_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -425,9 +425,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropGetContentsTable: {
 		auto rq = static_cast<GETCONTENTSTABLE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<GETCONTENTSTABLE_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -672,9 +672,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropOpenMessage: {
 		auto rq = static_cast<OPENMESSAGE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENMESSAGE_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -691,9 +691,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCreateMessage: {
 		auto rq = static_cast<CREATEMESSAGE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<CREATEMESSAGE_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -711,11 +711,11 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 		if (rsp == nullptr)
 			return ecServerOOM;
 		auto rq = static_cast<SAVECHANGESMESSAGE_REQUEST *>(prequest->ppayload);
-		rsp->hindex = rq->hindex;
+		rsp->ihindex2 = rq->ihindex2;
 		(*ppresponse)->result = rop_savechangesmessage(rq->save_flags,
 			&rsp->message_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->ihindex2]);
 		break;
 	}
 	case ropRemoveAllRecipients: {
@@ -813,7 +813,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropSetMessageReadFlag: {
 		auto rq = static_cast<SETMESSAGEREADFLAG_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ihindex2 >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		auto rsp = cu_alloc<SETMESSAGEREADFLAG_RESPONSE>();
@@ -825,14 +825,14 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 		(*ppresponse)->result = rop_setmessagereadflag(
 			rq->flags, rq->pclient_data, &rsp->read_changed,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->ihindex2]);
 		break;
 	}
 	case ropOpenAttachment: {
 		auto rq = static_cast<OPENATTACHMENT_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_openattachment(
 			rq->flags, rq->attachment_id,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -841,9 +841,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCreateAttachment: {
 		auto rq = static_cast<CREATEATTACHMENT_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<CREATEATTACHMENT_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -863,20 +863,20 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropSaveChangesAttachment: {
 		auto rq = static_cast<SAVECHANGESATTACHMENT_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ihindex2 >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_savechangesattachment(
 			rq->save_flags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->ihindex2]);
 		break;
 	}
 	case ropOpenEmbeddedMessage: {
 		auto rq = static_cast<OPENEMBEDDEDMESSAGE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENEMBEDDEDMESSAGE_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -893,9 +893,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropGetAttachmentTable: {
 		auto rq = static_cast<GETATTACHMENTTABLE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_getattachmenttable(rq->table_flags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
@@ -1111,7 +1111,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCopyProperties: {
 		auto rq = static_cast<COPYPROPERTIES_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COPYPROPERTIES_RESPONSE>();
@@ -1122,19 +1122,19 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			rq->want_asynchronous, rq->copy_flags, &rq->proptags,
 			&rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
 			auto v = cu_alloc<uint32_t>();
 			(*ppresponse)->ppayload = v;
 			if (v == nullptr)
 				return ecServerOOM;
-			*v = rq->hindex;
+			*v = rq->dhindex;
 		}
 		break;
 	}
 	case ropCopyTo: {
 		auto rq = static_cast<COPYTO_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
 		auto rsp = cu_alloc<COPYTO_RESPONSE>();
@@ -1145,13 +1145,13 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			rq->want_subobjects, rq->copy_flags,
 			&rq->excluded_proptags, &rsp->problems,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
 			auto v = cu_alloc<uint32_t>();
 			(*ppresponse)->ppayload = v;
 			if (v == nullptr)
 				return ecServerOOM;
-			*v = rq->hindex;
+			*v = rq->dhindex;
 		}
 		break;
 	}
@@ -1171,9 +1171,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropOpenStream: {
 		auto rq = static_cast<OPENSTREAM_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<OPENSTREAM_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -1244,7 +1244,7 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCopyToStream: {
 		auto rq = static_cast<COPYTOSTREAM_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->dhindex >= hnum)
 			return ecInvalidObject;
 		auto rsp = cu_alloc<COPYTOSTREAM_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
@@ -1254,12 +1254,12 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 		(*ppresponse)->result = rop_copytostream(rq->byte_count,
 			&rsp->read_bytes, &rsp->written_bytes,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
-			phandles[rq->hindex]);
+			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
 			auto nr = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
 			if (nr == nullptr)
 				return ecServerOOM;
-			nr->hindex = rq->hindex;
+			nr->dhindex = rq->dhindex;
 			nr->read_bytes = 0;
 			nr->written_bytes = 0;
 			(*ppresponse)->ppayload = nr;
@@ -1296,9 +1296,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropCloneStream: {
 		auto rq = static_cast<CLONESTREAM_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_clonestream(pemsmdb_info->plogmap.get(),
 			prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
@@ -1314,9 +1314,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropGetPermissionsTable: {
 		auto rq = static_cast<GETPERMISSIONSTABLE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex > hnum)
+		if (rq->ohindex > hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_getpermissionstable(rq->flags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
@@ -1332,9 +1332,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropGetRulesTable: {
 		auto rq = static_cast<GETRULESTABLE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex > hnum)
+		if (rq->ohindex > hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_getrulestable(rq->flags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
@@ -1350,9 +1350,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropFastTransferDestinationConfigure: {
 		auto rq = static_cast<FASTTRANSFERDESTCONFIGURE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_fasttransferdestconfigure(
 			rq->source_operation, rq->flags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1392,9 +1392,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropFastTransferSourceCopyFolder: {
 		auto rq = static_cast<FASTTRANSFERSOURCECOPYFOLDER_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result =	rop_fasttransfersourcecopyfolder(
 			rq->flags, rq->send_options,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1403,9 +1403,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropFastTransferSourceCopyMessages: {
 		auto rq = static_cast<FASTTRANSFERSOURCECOPYMESSAGES_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_fasttransfersourcecopymessages(
 			&rq->message_ids, rq->flags, rq->send_options,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1414,9 +1414,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropFastTransferSourceCopyTo: {
 		auto rq = static_cast<FASTTRANSFERSOURCECOPYTO_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result =	rop_fasttransfersourcecopyto(
 			rq->level, rq->flags, rq->send_options, &rq->proptags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1425,9 +1425,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropFastTransferSourceCopyProperties: {
 		auto rq = static_cast<FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result =	rop_fasttransfersourcecopyproperties(
 			rq->level, rq->flags, rq->send_options, &rq->proptags,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1443,9 +1443,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropSynchronizationConfigure: {
 		auto rq = static_cast<SYNCCONFIGURE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_syncconfigure(rq->sync_type,
 			rq->send_options, rq->sync_flags, rq->pres,
 			rq->extra_flags, &rq->proptags,
@@ -1455,9 +1455,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropSynchronizationImportMessageChange: {
 		auto rq = static_cast<SYNCIMPORTMESSAGECHANGE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex > hnum)
+		if (rq->ohindex > hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		auto rsp = cu_alloc<SYNCIMPORTMESSAGECHANGE_RESPONSE>();
 		(*ppresponse)->ppayload = rsp;
 		if (rsp == nullptr)
@@ -1512,9 +1512,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropSynchronizationOpenCollector: {
 		auto rq = static_cast<SYNCOPENCOLLECTOR_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_syncopencollector(
 			rq->is_content_collector,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
@@ -1523,9 +1523,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropSynchronizationGetTransferState: {
 		auto rq = static_cast<SYNCGETTRANSFERSTATE_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_syncgettransferstate(
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
@@ -1573,9 +1573,9 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 	}
 	case ropRegisterNotification: {
 		auto rq = static_cast<REGISTERNOTIFICATION_REQUEST *>(prequest->ppayload);
-		if (rq->hindex >= hnum)
+		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
-		(*ppresponse)->hindex = rq->hindex;
+		(*ppresponse)->hindex = rq->ohindex;
 		(*ppresponse)->result = rop_registernotification(
 			rq->notification_types, rq->reserved,
 			rq->want_whole_store, rq->pfolder_id, rq->pmessage_id,
