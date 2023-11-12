@@ -193,12 +193,18 @@ struct MOVECOPYMESSAGES_RESPONSE {
 };
 
 /**
- * Alternate response for ropMoveCopyMessages, ropMoveFolder, ropCopyFolder,
- * ropCopyProperties, ropCopyTo.
+ * Alternate response for ropMoveCopyMessages, ropMoveFolder, ropCopyFolder.
  */
 struct NULL_DST_RESPONSE {
 	uint32_t dhindex;
 	uint8_t partial_completion;
+};
+
+/**
+ * Alternate response for ropCopyProperties, ropCopyTo.
+ */
+struct NULL_DST1_RESPONSE {
+	uint32_t dhindex;
 };
 
 struct MOVEFOLDER_REQUEST {

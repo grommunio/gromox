@@ -1847,7 +1847,7 @@ pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, ROP_RESPONSE *r)
 		case ropCopyProperties:
 		case ropCopyTo:
 			if (r->result == ecDstNullObject)
-				return pext->p_uint32(*static_cast<uint8_t *>(r->ppayload));
+				return pext->p_uint32(static_cast<NULL_DST1_RESPONSE *>(r->ppayload)->dhindex);
 			return pack_result::success;
 		case ropCopyToStream:
 			if (r->result == ecDstNullObject)

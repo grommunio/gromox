@@ -1124,11 +1124,11 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			auto v = cu_alloc<uint32_t>();
-			(*ppresponse)->ppayload = v;
-			if (v == nullptr)
+			auto nr = cu_alloc<NULL_DST1_RESPONSE>();
+			if (nr == nullptr)
 				return ecServerOOM;
-			*v = rq->dhindex;
+			nr->dhindex = rq->dhindex;
+			(*ppresponse)->ppayload = nr;
 		}
 		break;
 	}
@@ -1147,11 +1147,11 @@ ec_error_t rop_dispatch(ROP_REQUEST *prequest, ROP_RESPONSE **ppresponse,
 			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			auto v = cu_alloc<uint32_t>();
-			(*ppresponse)->ppayload = v;
-			if (v == nullptr)
+			auto nr = cu_alloc<NULL_DST1_RESPONSE>();
+			if (nr == nullptr)
 				return ecServerOOM;
-			*v = rq->dhindex;
+			nr->dhindex = rq->dhindex;
+			(*ppresponse)->ppayload = nr;
 		}
 		break;
 	}
