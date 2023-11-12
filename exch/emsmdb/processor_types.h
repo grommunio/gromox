@@ -1010,13 +1010,14 @@ struct ROP_REQUEST {
 	BINARY rq_bookmark;
 };
 
-struct ROP_RESPONSE {
+struct rop_response {
 	uint8_t rop_id;
 	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex, ..)
 	uint8_t hindex;
 	uint32_t result;
 	void *ppayload;
 };
+using ROP_RESPONSE = rop_response;
 
 /**
  * @hnum:	amount of room in the phandles array in this

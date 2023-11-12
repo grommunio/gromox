@@ -448,7 +448,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
 			bts->size_needed = rpcext_cutoff;
 			bts->buffer = req->rq_bookmark;
-			if (rop_ext_push(&ext_push, req->logon_id, rsp) != pack_result::success)
+			if (rop_ext_push(ext_push, req->logon_id, *rsp) != pack_result::success)
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		}
@@ -461,7 +461,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (rsp == nullptr)
 			continue;
 		uint32_t last_offset = ext_push.m_offset;
-		auto status = rop_ext_push(&ext_push, req->logon_id, rsp);
+		auto status = rop_ext_push(ext_push, req->logon_id, *rsp);
 		switch (status) {
 		case EXT_ERR_SUCCESS:
 			double_list_append_as_tail(presponse_list, pnode1);
@@ -479,7 +479,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			bts->size_needed = 0x8000;
 			bts->buffer = req->rq_bookmark;
 			ext_push.m_offset = last_offset;
-			if (rop_ext_push(&ext_push, req->logon_id, rsp) != pack_result::success)
+			if (rop_ext_push(ext_push, req->logon_id, *rsp) != pack_result::success)
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
 		}
@@ -535,7 +535,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				ext_push.m_offset = last_offset;
 				double_list_insert_as_head(pnotify_list, pnode);
 				emsmdb_interface_get_cxr(&tmp_pending.session_index);
-				auto status = rop_ext_push(&ext_push, &tmp_pending);
+				auto status = rop_ext_push(ext_push, tmp_pending);
 				if (status != EXT_ERR_SUCCESS)
 					ext_push.m_offset = last_offset;
 				break;
