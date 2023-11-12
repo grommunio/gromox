@@ -447,7 +447,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 				return ecServerOOM;
 			auto bts = static_cast<BUFFERTOOSMALL_RESPONSE *>(rsp->ppayload);
 			bts->size_needed = rpcext_cutoff;
-			bts->buffer = req->bookmark;
+			bts->buffer = req->rq_bookmark;
 			if (rop_ext_push(&ext_push, req->logon_id, rsp) != pack_result::success)
 				return ecBufferTooSmall;
 			goto MAKE_RPC_EXT;
@@ -477,7 +477,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			if (rsp->ppayload == nullptr)
 				return ecServerOOM;
 			bts->size_needed = 0x8000;
-			bts->buffer = req->bookmark;
+			bts->buffer = req->rq_bookmark;
 			ext_push.m_offset = last_offset;
 			if (rop_ext_push(&ext_push, req->logon_id, rsp) != pack_result::success)
 				return ecBufferTooSmall;

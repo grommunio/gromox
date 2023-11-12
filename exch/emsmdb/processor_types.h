@@ -1052,7 +1052,7 @@ struct ROP_REQUEST {
 	// SourceHandleIndex, ResposneHandleIndex)
 	uint8_t hindex;
 	void *ppayload;
-	BINARY bookmark;
+	BINARY rq_bookmark;
 };
 
 struct ROP_RESPONSE {

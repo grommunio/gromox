@@ -1644,8 +1644,8 @@ static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
 	auto &ext = *pext;
 	EMSMDB_INFO *pemsmdb_info;
 	
-	r->bookmark.pb = deconst(ext.m_udata) + ext.m_offset;
-	r->bookmark.cb = ext.m_data_size - ext.m_offset;
+	r->rq_bookmark.pb = deconst(ext.m_udata) + ext.m_offset;
+	r->rq_bookmark.cb = ext.m_data_size - ext.m_offset;
 	TRY(pext->g_uint8(&r->rop_id));
 	TRY(pext->g_uint8(&r->logon_id));
 	TRY(pext->g_uint8(&r->hindex));
