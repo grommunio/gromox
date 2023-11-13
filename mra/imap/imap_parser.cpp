@@ -1194,6 +1194,8 @@ void imap_parser_bcast_expunge(const imap_context &current,
 	HX_strlower(user_lo);
 	/*
 	 * gromox-event does not send back events to our own process.
+	 * (So, we have to edit the data structures for our other threads
+	 * from this function.)
 	 * Benefit: no IPC roundtrip to notify other threads.
 	 * Downside: Some code duplication between imap_parser_event_expunge
 	 * and imap_parser_bcast_expunge.
@@ -1266,7 +1268,8 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 } catch (const std::bad_alloc &) {
 }
 
-void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
+void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
+    bool show_expunge)
 {
 	if (!pcontext->b_modify)
 		return;
@@ -1274,15 +1277,20 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	int flag_bits;
 	BOOL b_first;
 	char buff[1024];
+	decltype(pcontext->f_expunged_uids) f_expunged;
 	
 	std::unique_lock hl_hold(g_hash_lock);
 	pcontext->b_modify = false;
-	auto f_expunged = std::move(pcontext->f_expunged_uids);
+	if (show_expunge)
+		/* RFC 9051 §7.2.1 */
+		f_expunged = std::move(pcontext->f_expunged_uids);
 	auto f_flags = std::move(pcontext->f_flags);
 	hl_hold.unlock();
 
-	imap_parser_echo_expunges(*pcontext, pstream, std::move(f_expunged));
-	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder) == 0) {
+	if (show_expunge)
+		imap_parser_echo_expunges(*pcontext, pstream, std::move(f_expunged));
+	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
+	    show_expunge) == 0) {
 		auto outlen = gx_snprintf(buff, std::size(buff),
 		          "* %zu EXISTS\r\n"
 		          "* %u RECENT\r\n",

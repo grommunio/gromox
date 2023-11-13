@@ -1596,7 +1596,8 @@ static int m2icode(int r, int e)
 /**
  * Get a listing of all mails in the folder to build the uid<->seqid mapping.
  */
-int content_array::refresh(imap_context &ctx, const char *folder)
+int content_array::refresh(imap_context &ctx, const char *folder,
+    bool with_expunges)
 {
 	XARRAY xa;
 	int errnum = 0;
@@ -1608,9 +1609,20 @@ int content_array::refresh(imap_context &ctx, const char *folder)
 	if (ret != 0)
 		return ret;
 
-	for (size_t i = 0; i < xa.m_vec.size(); ++i)
-		xa.m_vec[i].id = i + 1;
-	*this = std::move(xa);
+	if (with_expunges) {
+		for (size_t i = 0; i < xa.m_vec.size(); ++i)
+			xa.m_vec[i].id = i + 1;
+		*this = std::move(xa);
+	} else {
+		auto start = m_vec.size();
+		for (auto &newmail : xa.m_vec) {
+			if (get_itemx(newmail.uid) != nullptr)
+				continue; /* already known */
+			m_vec.emplace_back(std::move(newmail));
+			m_vec[start].id = start + 1;
+			++start;
+		}
+	}
 	n_recent = std::count_if(m_vec.cbegin(), m_vec.cend(),
 	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
 	auto iter = std::find_if(m_vec.cbegin(), m_vec.cend(),
@@ -2615,7 +2627,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return ret;
 	auto num = xarray.get_capacity();
 	if (num == 0) {
-		imap_parser_echo_modify(pcontext, nullptr);
+		imap_parser_echo_modify(pcontext, nullptr, true);
 		return 1726;
 	}
 	std::vector<MITEM *> exp_list;

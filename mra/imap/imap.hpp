@@ -65,7 +65,7 @@ struct imap_context;
 struct content_array final : public XARRAY {
 	using XARRAY::XARRAY;
 	using XARRAY::operator=;
-	int refresh(imap_context &, const char *folder_name);
+	int refresh(imap_context &, const char *folder_name, bool with_expunges = false);
 	inline size_t n_exists() const { return m_vec.size(); }
 	unsigned int n_recent = 0, firstunseen = -1;
 };
@@ -76,6 +76,8 @@ struct content_array final : public XARRAY {
  * @contents:	current mapping of seqid -> mid/uid for the currently selected folder
  * @f_flags:    imapuids that were asynchronously reflagged by another thread
  *              and which needs to be conveyed to the client
+ * @f_expunged_uids: imapuids that were asynchronously deleted by another thread
+ *                   and which needs to be conveyed to the client
  */
 struct imap_context final : public schedule_context {
 	imap_context();
@@ -96,8 +98,13 @@ struct imap_context final : public schedule_context {
 	content_array contents;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	gromox::atomic_bool b_modify{false};
+	/*
+	 * Because one mail can get repeatedly re-flagged, f_flags is modeled
+	 * with unordered_set (to squash duplicates outright). But a mail can
+	 * only be expunged once, so f_expunged_uids is just a vector.
+	 */
 	std::unordered_set<uint32_t> f_flags;
-	std::vector<unsigned int> f_expunged_uids;
+	std::vector<uint32_t> f_expunged_uids;
 	char tag_string[32]{};
 	int command_len = 0;
 	char command_buffer[64*1024]{};
@@ -121,7 +128,7 @@ extern gromox::time_point imap_parser_get_context_timestamp(const schedule_conte
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 extern int imap_parser_threads_event_proc(int action);
 extern void imap_parser_bcast_touch(const imap_context *, const char *user, const char *folder);
-extern void imap_parser_echo_modify(IMAP_CONTEXT *, STREAM *);
+extern void imap_parser_echo_modify(imap_context *, STREAM *, bool show_expunges = false);
 extern void imap_parser_bcast_flags(const imap_context &, uint32_t uid);
 extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
