@@ -11,6 +11,7 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <fmt/core.h>
 #include <libHX/defs.h>
 #include <sys/stat.h>
 #include <gromox/database.h>
@@ -568,35 +569,30 @@ BOOL exmdb_server::clear_message_instance(const char *dir, uint32_t instance_id)
 static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
     uint32_t *outlen) try
 {
-	static constexpr size_t bmaxsize = 256;
-	auto buf = cu_alloc<char>(bmaxsize);
-	if (buf == nullptr)
-		return nullptr;
-	buf[0] = '\0';
-
+	std::string buf;
 	if (tag == ID_TAG_HTML)
-		strcpy(buf, "<html><body><p><tt>");
+		buf = "<html><body><p><tt>";
 	else if (tag == ID_TAG_RTFCOMPRESSED)
-		strcpy(buf, "\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\n");
+		buf = "\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\n";
 	else if (tag == ID_TAG_BODY)
-		strcpy(buf, "XXXX");
+		buf.resize(4);
 	if (tag != 0)
-		snprintf(buf + strlen(buf), bmaxsize - strlen(buf),
-		         mode <= 1 ? "[CID=%s Tag=%xh] Property/Attachment absent" :
-		         "[CID=%s Tag=%xh] Filler text for debugging",
-		         cid, tag);
+		buf += fmt::format("[CID={} Tag={:x}] {}", cid, tag,
+		       mode <= 1 ? "Property/Attachment absent" : "Filler text for debugging");
 	if (tag == ID_TAG_HTML)
-		snprintf(buf + strlen(buf), bmaxsize - strlen(buf),
-		         "</tt></p></body></html>");
+		buf += "</tt></p></body></html>";
 	else if (tag == ID_TAG_RTFCOMPRESSED)
-		snprintf(buf + strlen(buf), bmaxsize - strlen(buf), "\\par\n}");
-
+		buf += "\\par\n}";
+	auto out = cu_alloc<char>(buf.size() + 1);
+	if (out == nullptr)
+		return nullptr;
+	memcpy(out, buf.c_str(), buf.size() + 1);
 	if (outlen != nullptr) {
-		*outlen = strlen(buf);
+		*outlen = buf.size();
 		if (tag == ID_TAG_BODY)
-			cpu_to_le32p(buf, *outlen - 4);
+			cpu_to_le32p(out, *outlen - 4);
 	}
-	return buf;
+	return out;
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
