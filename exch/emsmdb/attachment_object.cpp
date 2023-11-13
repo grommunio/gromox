@@ -45,7 +45,6 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 			return NULL;
 		pattachment->attachment_num = attachment_num;
 	}
-	double_list_init(&pattachment->stream_list);
 	return pattachment;
 }
 
@@ -82,14 +81,9 @@ BOOL attachment_object::init_attachment()
 attachment_object::~attachment_object()
 {
 	auto pattachment = this;
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (pattachment->instance_id != 0)
 		exmdb_client::unload_instance(pattachment->pparent->plogon->get_dir(),
 			pattachment->instance_id);
-	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr)
-		free(pnode);
-	double_list_free(&pattachment->stream_list);
 }
 
 void attachment_object::set_open_flags(uint8_t f)
@@ -127,37 +121,32 @@ ec_error_t attachment_object::save()
 	return ecSuccess;
 }
 
-BOOL attachment_object::append_stream_object(stream_object *pstream)
+BOOL attachment_object::append_stream_object(stream_object *pstream) try
 {
 	auto pattachment = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-	     pnode = double_list_get_after(&pattachment->stream_list, pnode))
-		if (pnode->pdata == pstream)
+	for (auto so : stream_list)
+		if (so == pstream)
 			return TRUE;
-	pnode = gromox::me_alloc<DOUBLE_LIST_NODE>();
-	if (pnode == nullptr)
-		return FALSE;
-	pnode->pdata = pstream;
-	double_list_append_as_tail(&pattachment->stream_list, pnode);
+	stream_list.push_back(pstream);
 	pattachment->b_touched = TRUE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-/* cablled when stream object is released */
+/* called when stream object is released */
 BOOL attachment_object::commit_stream_object(stream_object *pstream)
 {
 	auto pattachment = this;
 	uint32_t result;
-	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
-	
-	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (pnode->pdata != pstream)
+
+	for (auto it = stream_list.begin(); it != stream_list.end(); ) {
+		if (*it != pstream) {
+			++it;
 			continue;
-		double_list_remove(&pattachment->stream_list, pnode);
+		}
+		it = stream_list.erase(it);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
 		return exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
@@ -170,19 +159,16 @@ BOOL attachment_object::flush_streams()
 {
 	auto pattachment = this;
 	uint32_t result;
-	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
 	
-	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr) {
-		auto pstream = static_cast<stream_object *>(pnode->pdata);
+	while (stream_list.size() > 0) {
+		auto pstream = stream_list.front();
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
-		    pattachment->instance_id, &tmp_propval, &result)) {
-			double_list_insert_as_head(&pattachment->stream_list, pnode);
+		    pattachment->instance_id, &tmp_propval, &result))
 			return FALSE;
-		}
-		free(pnode);
+		stream_list.erase(stream_list.begin());
 	}
 	return TRUE;
 	
@@ -191,23 +177,20 @@ BOOL attachment_object::flush_streams()
 BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
-	int nodes_num;
-	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_instance_all_proptags(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags))
 		return FALSE;	
-	nodes_num = double_list_get_nodes_num(&pattachment->stream_list) + 1;
+	auto nodes_num = stream_list.size() + 1;
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
 	if (pproptags->pproptag == nullptr)
 		return FALSE;
 	memcpy(pproptags->pproptag, tmp_proptags.pproptag,
 				sizeof(uint32_t)*tmp_proptags.count);
-	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		auto proptag = static_cast<stream_object *>(pnode->pdata)->get_proptag();
+	for (auto so : stream_list) {
+		auto proptag = so->get_proptag();
 		if (!pproptags->has(proptag))
 			pproptags->emplace_back(proptag);
 	}
@@ -270,16 +253,11 @@ static BOOL attachment_object_get_calculated_property(
 }
 
 static void* attachment_object_get_stream_property_value(
-    attachment_object *pattachment, uint32_t proptag)
+    attachment_object *at, uint32_t proptag)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		auto so = static_cast<stream_object *>(pnode->pdata);
+	for (auto so : at->stream_list)
 		if (so->get_proptag() == proptag)
 			return so->get_content();
-	}
 	return NULL;
 }
 
@@ -331,13 +309,10 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 }
 
 static BOOL attachment_object_check_stream_property(
-    attachment_object *pattachment, uint32_t proptag)
+    attachment_object *at, uint32_t proptag)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
-	     pnode = double_list_get_after(&pattachment->stream_list, pnode))
-		if (static_cast<stream_object *>(pnode->pdata)->get_proptag() == proptag)
+	for (auto so : at->stream_list)
+		if (so->get_proptag() == proptag)
 			return TRUE;
 	return FALSE;
 }

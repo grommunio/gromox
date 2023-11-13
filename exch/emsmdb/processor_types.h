@@ -2,6 +2,18 @@
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
 
+struct PARTIAL_COMPLETION_RESPONSE {
+	uint8_t partial_completion;
+};
+
+struct TABLE_STATUS_RESPONSE {
+	uint8_t table_status;
+};
+
+struct PROBLEM_RESPONSE {
+	PROBLEM_ARRAY problems;
+};
+
 struct LOGON_REQUEST {
 	uint8_t logon_flags;
 	uint32_t open_flags;
@@ -125,7 +137,7 @@ struct WRITEPERUSERINFORMATION_REQUEST {
 };
 
 struct OPENFOLDER_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint64_t folder_id;
 	uint8_t open_flags;
 };
@@ -136,7 +148,7 @@ struct OPENFOLDER_RESPONSE {
 };
 
 struct CREATEFOLDER_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t folder_type;
 	uint8_t use_unicode;
 	uint8_t open_existing;
@@ -156,11 +168,6 @@ struct DELETEFOLDER_REQUEST {
 	uint8_t flags;
 	uint64_t folder_id;
 };
-
-struct DELETEFOLDER_RESPONSE {
-	uint8_t partial_completion;
-};
-
 
 struct SETSEARCHCRITERIA_REQUEST {
 	RESTRICTION *pres;
@@ -182,35 +189,37 @@ struct GETSEARCHCRITERIA_RESPONSE {
 };
 
 struct MOVECOPYMESSAGES_REQUEST {
-	uint8_t hindex;
+	uint8_t dhindex;
 	LONGLONG_ARRAY message_ids;
 	uint8_t want_asynchronous;
 	uint8_t want_copy;
 };
 
-struct MOVECOPYMESSAGES_RESPONSE {
+/**
+ * Alternate response for ropMoveCopyMessages, ropMoveFolder, ropCopyFolder.
+ */
+struct NULL_DST_RESPONSE {
+	uint32_t dhindex;
 	uint8_t partial_completion;
 };
 
-struct NULL_DST_RESPONSE {
-	uint32_t hindex;
-	uint8_t partial_completion;
+/**
+ * Alternate response for ropCopyProperties, ropCopyTo.
+ */
+struct NULL_DST1_RESPONSE {
+	uint32_t dhindex;
 };
 
 struct MOVEFOLDER_REQUEST {
-	uint8_t hindex;
+	uint8_t dhindex;
 	uint8_t want_asynchronous;
 	uint8_t use_unicode;
 	uint64_t folder_id;
 	char *pnew_name;
 };
 
-struct MOVEFOLDER_RESPONSE {
-	uint8_t partial_completion;
-};
-
 struct COPYFOLDER_REQUEST {
-	uint8_t hindex;
+	uint8_t dhindex;
 	uint8_t want_asynchronous;
 	uint8_t want_recursive;
 	uint8_t use_unicode;
@@ -218,26 +227,14 @@ struct COPYFOLDER_REQUEST {
 	char *pnew_name;
 };
 
-struct COPYFOLDER_RESPONSE {
-	uint8_t partial_completion;
-};
-
 struct EMPTYFOLDER_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t want_delete_associated;
 };
 
-struct EMPTYFOLDER_RESPONSE {
-	uint8_t partial_completion;
-};
-
 struct HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t want_delete_associated;
-};
-
-struct HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE {
-	uint8_t partial_completion;
 };
 
 struct DELETEMESSAGES_REQUEST {
@@ -246,22 +243,14 @@ struct DELETEMESSAGES_REQUEST {
 	LONGLONG_ARRAY message_ids;
 };
 
-struct DELETEMESSAGES_RESPONSE {
-	uint8_t partial_completion;
-};
-
 struct HARDDELETEMESSAGES_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t notify_non_read;
 	LONGLONG_ARRAY message_ids;
 };
 
-struct HARDDELETEMESSAGES_RESPONSE {
-	uint8_t partial_completion;
-};
-
 struct GETHIERARCHYTABLE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t table_flags;
 };
 
@@ -270,7 +259,7 @@ struct GETHIERARCHYTABLE_RESPONSE {
 };
 
 struct GETCONTENTSTABLE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t table_flags;
 };
 
@@ -278,14 +267,9 @@ struct GETCONTENTSTABLE_RESPONSE {
 	uint32_t row_count;
 };
 
-
 struct SETCOLUMNS_REQUEST {
 	uint8_t table_flags;
 	PROPTAG_ARRAY proptags;
-};
-
-struct SETCOLUMNS_RESPONSE {
-	uint8_t table_status;
 };
 
 struct SORTTABLE_REQUEST {
@@ -293,17 +277,9 @@ struct SORTTABLE_REQUEST {
 	SORTORDER_SET sort_criteria;
 };
 
-struct SORTTABLE_RESPONSE {
-	uint8_t table_status;
-};
-
 struct RESTRICT_REQUEST {
 	uint8_t res_flags;
 	RESTRICTION *pres;
-};
-
-struct RESTRICT_RESPONSE {
-	uint8_t table_status;
 };
 
 struct QUERYROWS_REQUEST {
@@ -316,14 +292,6 @@ struct QUERYROWS_RESPONSE {
 	uint8_t seek_pos;
 	uint16_t count;
 	BINARY bin_rows;
-};
-
-struct ABORT_RESPONSE {
-	uint8_t table_status;
-};
-
-struct GETSTATUS_RESPONSE {
-	uint8_t table_status;
 };
 
 struct QUERYPOSITION_RESPONSE {
@@ -421,13 +389,12 @@ struct SETCOLLAPSESTATE_RESPONSE {
 };
 
 struct OPENMESSAGE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint16_t cpid;
 	uint64_t folder_id;
 	uint8_t open_mode_flags;
 	uint64_t message_id;
 };
-
 
 struct OPENMESSAGE_RESPONSE {
 	uint8_t has_named_properties;
@@ -439,9 +406,8 @@ struct OPENMESSAGE_RESPONSE {
 	OPENRECIPIENT_ROW *precipient_row;
 };
 
-
 struct CREATEMESSAGE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint16_t cpid;
 	uint64_t folder_id;
 	uint8_t associated_flag;
@@ -452,12 +418,12 @@ struct CREATEMESSAGE_RESPONSE {
 };
 
 struct SAVECHANGESMESSAGE_REQUEST {
-	uint8_t hindex;
+	uint8_t ihindex2;
 	uint8_t save_flags;
 };
 
 struct SAVECHANGESMESSAGE_RESPONSE {
-	uint8_t hindex;
+	uint8_t ihindex2;
 	uint64_t message_id;
 };
 
@@ -519,12 +485,8 @@ struct GETMESSAGESTATUS_RESPONSE {
 	uint32_t message_status;
 };
 
-struct SETREADFLAGS_RESPONSE {
-	uint8_t partial_completion;
-};
-
 struct SETMESSAGEREADFLAG_REQUEST {
-	uint8_t hindex;
+	uint8_t ihindex2;
 	uint8_t flags;
 	LONG_TERM_ID *pclient_data;
 };
@@ -536,13 +498,13 @@ struct SETMESSAGEREADFLAG_RESPONSE {
 };
 
 struct OPENATTACHMENT_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t flags;
 	uint32_t attachment_id;
 };
 
 struct CREATEATTACHMENT_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 };
 
 struct CREATEATTACHMENT_RESPONSE {
@@ -554,12 +516,12 @@ struct DELETEATTACHMENT_REQUEST {
 };
 
 struct SAVECHANGESATTACHMENT_REQUEST {
-	uint8_t hindex;
+	uint8_t ihindex2;
 	uint8_t save_flags;
 };
 
 struct OPENEMBEDDEDMESSAGE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint16_t cpid;
 	uint8_t open_embedded_flags;
 };
@@ -577,7 +539,7 @@ struct OPENEMBEDDEDMESSAGE_RESPONSE {
 };
 
 struct GETATTACHMENTTABLE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t table_flags;
 };
 
@@ -675,32 +637,16 @@ struct SETPROPERTIES_REQUEST {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct SETPROPERTIES_RESPONSE {
-	PROBLEM_ARRAY problems;
-};
-
 struct SETPROPERTIESNOREPLICATE_REQUEST {
 	TPROPVAL_ARRAY propvals;
-};
-
-struct SETPROPERTIESNOREPLICATE_RESPONSE {
-	PROBLEM_ARRAY problems;
 };
 
 struct DELETEPROPERTIES_REQUEST {
 	PROPTAG_ARRAY proptags;
 };
 
-struct DELETEPROPERTIES_RESPONSE {
-	PROBLEM_ARRAY problems;
-};
-
 struct DELETEPROPERTIESNOREPLICATE_REQUEST {
 	PROPTAG_ARRAY proptags;
-};
-
-struct DELETEPROPERTIESNOREPLICATE_RESPONSE {
-	PROBLEM_ARRAY problems;
 };
 
 struct QUERYNAMEDPROPERTIES_REQUEST {
@@ -713,26 +659,18 @@ struct QUERYNAMEDPROPERTIES_RESPONSE {
 };
 
 struct COPYPROPERTIES_REQUEST {
-	uint8_t hindex;
+	uint8_t dhindex;
 	uint8_t want_asynchronous;
 	uint8_t copy_flags;
 	PROPTAG_ARRAY proptags;
 };
 
-struct COPYPROPERTIES_RESPONSE {
-	PROBLEM_ARRAY problems;
-};
-
 struct COPYTO_REQUEST {
-	uint8_t hindex;
+	uint8_t dhindex;
 	uint8_t want_asynchronous;
 	uint8_t want_subobjects;
 	uint8_t copy_flags;
 	PROPTAG_ARRAY excluded_proptags;
-};
-
-struct COPYTO_RESPONSE {
-	PROBLEM_ARRAY problems;
 };
 
 struct PROGRESS_REQUEST {
@@ -746,7 +684,7 @@ struct PROGRESS_RESPONSE {
 };
 
 struct OPENSTREAM_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint32_t proptag;
 	uint8_t flags;
 };
@@ -790,7 +728,7 @@ struct SEEKSTREAM_RESPONSE {
 };
 
 struct COPYTOSTREAM_REQUEST {
-	uint8_t hindex;
+	uint8_t dhindex;
 	uint64_t byte_count;
 };
 
@@ -799,8 +737,11 @@ struct COPYTOSTREAM_RESPONSE {
 	uint64_t written_bytes;
 };
 
+/**
+ * Alternate response for ropCopyToStream.
+ */
 struct COPYTOSTREAM_NULL_DEST_RESPONSE {
-	uint32_t hindex;
+	uint32_t dhindex;
 	uint64_t read_bytes;
 	uint64_t written_bytes;
 };
@@ -826,7 +767,7 @@ struct WRITEANDCOMMITSTREAM_RESPONSE {
 };
 
 struct CLONESTREAM_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 };
 
 struct MODIFYPERMISSIONS_REQUEST {
@@ -835,12 +776,10 @@ struct MODIFYPERMISSIONS_REQUEST {
 	PERMISSION_DATA *prow;
 };
 
-
 struct GETPERMISSIONSTABLE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t flags;
 };
-
 
 struct MODIFYRULES_REQUEST {
 	uint8_t flags;
@@ -849,7 +788,7 @@ struct MODIFYRULES_REQUEST {
 };
 
 struct GETRULESTABLE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t flags;
 };
 
@@ -859,7 +798,7 @@ struct UPDATEDEFERREDACTIONMESSAGES_REQUEST {
 };
 
 struct FASTTRANSFERDESTCONFIGURE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t source_operation;
 	uint8_t flags;
 };
@@ -890,20 +829,20 @@ struct FASTTRANSFERSOURCEGETBUFFER_RESPONSE {
 };
 
 struct FASTTRANSFERSOURCECOPYFOLDER_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t flags;
 	uint8_t send_options;
 };
 
 struct FASTTRANSFERSOURCECOPYMESSAGES_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	LONGLONG_ARRAY message_ids;
 	uint8_t flags;
 	uint8_t send_options;
 };
 
 struct FASTTRANSFERSOURCECOPYTO_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t level;
 	uint32_t flags;
 	uint8_t send_options;
@@ -911,7 +850,7 @@ struct FASTTRANSFERSOURCECOPYTO_REQUEST {
 };
 
 struct FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t level;
 	uint8_t flags;
 	uint8_t send_options;
@@ -923,7 +862,7 @@ struct TELLVERSION_REQUEST {
 };
 
 struct SYNCCONFIGURE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t sync_type;
 	uint8_t send_options;
 	uint16_t sync_flags;
@@ -933,7 +872,7 @@ struct SYNCCONFIGURE_REQUEST {
 };
 
 struct SYNCIMPORTMESSAGECHANGE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t import_flags;
 	TPROPVAL_ARRAY propvals;
 };
@@ -974,12 +913,12 @@ struct SYNCIMPORTMESSAGEMOVE_RESPONSE {
 };
 
 struct SYNCOPENCOLLECTOR_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t is_content_collector;
 };
 
 struct SYNCGETTRANSFERSTATE_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 };
 
 struct SYNCUPLOADSTATESTREAMBEGIN_REQUEST {
@@ -1006,7 +945,7 @@ struct GETLOCALREPLICAIDS_RESPONSE {
 };
 
 struct REGISTERNOTIFICATION_REQUEST {
-	uint8_t hindex;
+	uint8_t ohindex;
 	uint8_t notification_types;
 	uint8_t reserved;
 	uint8_t want_whole_store;
@@ -1036,22 +975,50 @@ struct BUFFERTOOSMALL_RESPONSE {
 	BINARY buffer;
 };
 
+using DELETEFOLDER_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using MOVECOPYMESSAGES_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using MOVEFOLDER_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using COPYFOLDER_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using EMPTYFOLDER_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using DELETEMESSAGES_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using HARDDELETEMESSAGES_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+using SETREADFLAGS_RESPONSE = PARTIAL_COMPLETION_RESPONSE;
+
+using SETCOLUMNS_RESPONSE = TABLE_STATUS_RESPONSE;
+using SORTTABLE_RESPONSE = TABLE_STATUS_RESPONSE;
+using RESTRICT_RESPONSE = TABLE_STATUS_RESPONSE;
+using ABORT_RESPONSE = TABLE_STATUS_RESPONSE;
+using GETSTATUS_RESPONSE = TABLE_STATUS_RESPONSE;
+
+using SETPROPERTIES_RESPONSE = PROBLEM_RESPONSE;
+using SETPROPERTIESNOREPLICATE_RESPONSE = PROBLEM_RESPONSE;
+using DELETEPROPERTIES_RESPONSE = PROBLEM_RESPONSE;
+using DELETEPROPERTIESNOREPLICATE_RESPONSE = PROBLEM_RESPONSE;
+using COPYPROPERTIES_RESPONSE = PROBLEM_RESPONSE;
+using COPYTO_RESPONSE = PROBLEM_RESPONSE;
+
 /* end of rop request and response structure */
 
-struct ROP_REQUEST {
+struct rop_request {
 	uint8_t rop_id;
 	uint8_t logon_id;
+	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex,
+	// SourceHandleIndex, ResposneHandleIndex)
 	uint8_t hindex;
 	void *ppayload;
-	BINARY bookmark;
+	BINARY rq_bookmark;
 };
+using ROP_REQUEST = rop_request;
 
-struct ROP_RESPONSE {
+struct rop_response {
 	uint8_t rop_id;
+	// meaning dependent on rop_id (OutputHandleIndex, InputHandleIndex, ..)
 	uint8_t hindex;
 	uint32_t result;
 	void *ppayload;
 };
+using ROP_RESPONSE = rop_response;
 
 /**
  * @hnum:	amount of room in the phandles array in this

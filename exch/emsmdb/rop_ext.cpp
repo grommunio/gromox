@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstring>
 #include <gromox/defs.h>
@@ -18,139 +17,138 @@
 
 using namespace gromox;
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const LOGON_TIME *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_TIME &r)
 {
-	TRY(pext->p_uint8(r->second));
-	TRY(pext->p_uint8(r->minute));
-	TRY(pext->p_uint8(r->hour));
-	TRY(pext->p_uint8(r->day_of_week));
-	TRY(pext->p_uint8(r->day));
-	TRY(pext->p_uint8(r->month));
-	return pext->p_uint16(r->year);
+	TRY(x.p_uint8(r.second));
+	TRY(x.p_uint8(r.minute));
+	TRY(x.p_uint8(r.hour));
+	TRY(x.p_uint8(r.day_of_week));
+	TRY(x.p_uint8(r.day));
+	TRY(x.p_uint8(r.month));
+	return x.p_uint16(r.year);
 }
 
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const GHOST_SERVER *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GHOST_SERVER &r)
 {
-	if (r->server_count == 0 || r->cheap_server_count > r->server_count)
+	if (r.server_count == 0 || r.cheap_server_count > r.server_count)
 		return EXT_ERR_FORMAT;
-	TRY(pext->p_uint16(r->server_count));
-	TRY(pext->p_uint16(r->cheap_server_count));
-	for (size_t i = 0; i < r->server_count; ++i)
-		TRY(pext->p_str(r->ppservers[i]));
+	TRY(x.p_uint16(r.server_count));
+	TRY(x.p_uint16(r.cheap_server_count));
+	for (size_t i = 0; i < r.server_count; ++i)
+		TRY(x.p_str(r.ppservers[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const NULL_DST_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const NULL_DST_RESPONSE &r)
 {
-	TRY(pext->p_uint32(r->hindex));
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.p_uint32(r.dhindex));
+	return x.p_uint8(r.partial_completion);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROPERTY_PROBLEM *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROPERTY_PROBLEM &r)
 {
-	TRY(pext->p_uint16(r->index));
-	TRY(pext->p_uint32(r->proptag));
-	return pext->p_uint32(r->err);
+	TRY(x.p_uint16(r.index));
+	TRY(x.p_uint32(r.proptag));
+	return x.p_uint32(r.err);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROBLEM_ARRAY *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROBLEM_ARRAY &r)
 {
-	TRY(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(rop_ext_push(pext, &r->pproblem[i]));
+	TRY(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(rop_ext_push(x, r.pproblem[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROPIDNAME_ARRAY *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROPIDNAME_ARRAY &r)
 {
-	TRY(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_uint16(r->ppropid[i]));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_propname(r->ppropname[i]));
+	TRY(x.p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.p_uint16(r.ppropid[i]));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.p_propname(r.ppropname[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, MESSAGE_READ_STAT *r)
+static pack_result rop_ext_pull(EXT_PULL &x, MESSAGE_READ_STAT &r)
 {
-	TRY(pext->g_sbin(&r->message_xid));
-	return pext->g_uint8(&r->mark_as_read);
+	TRY(x.g_sbin(&r.message_xid));
+	return x.g_uint8(&r.mark_as_read);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, LOGON_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, LOGON_REQUEST &r)
 {
 	uint16_t size;
 	
-	TRY(pext->g_uint8(&r->logon_flags));
-	TRY(pext->g_uint32(&r->open_flags));
-	TRY(pext->g_uint32(&r->store_stat));
-	TRY(pext->g_uint16(&size));
+	TRY(x.g_uint8(&r.logon_flags));
+	TRY(x.g_uint32(&r.open_flags));
+	TRY(x.g_uint32(&r.store_stat));
+	TRY(x.g_uint16(&size));
 	if (0 == size) {
-		r->pessdn = NULL;
+		r.pessdn = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pessdn = pext->anew<char>(size);
-	if (r->pessdn == nullptr)
+	r.pessdn = x.anew<char>(size);
+	if (r.pessdn == nullptr)
 		return EXT_ERR_ALLOC;
-	TRY(pext->g_bytes(r->pessdn, size));
-	if (r->pessdn[size-1] != '\0')
+	TRY(x.g_bytes(r.pessdn, size));
+	if (r.pessdn[size-1] != '\0')
 		return EXT_ERR_FORMAT;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const LOGON_PMB_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_PMB_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->logon_flags));
+	TRY(x.p_uint8(r.logon_flags));
 	for (size_t i = 0; i < 13; ++i)
-		TRY(pext->p_uint64(r->folder_ids[i]));
-	TRY(pext->p_uint8(r->response_flags));
-	TRY(pext->p_guid(r->mailbox_guid));
-	TRY(pext->p_uint16(r->replid));
-	TRY(pext->p_guid(r->replguid));
-	TRY(rop_ext_push(pext, &r->logon_time));
-	TRY(pext->p_uint64(r->gwart_time));
-	return pext->p_uint32(r->store_stat);
+		TRY(x.p_uint64(r.folder_ids[i]));
+	TRY(x.p_uint8(r.response_flags));
+	TRY(x.p_guid(r.mailbox_guid));
+	TRY(x.p_uint16(r.replid));
+	TRY(x.p_guid(r.replguid));
+	TRY(rop_ext_push(x, r.logon_time));
+	TRY(x.p_uint64(r.gwart_time));
+	return x.p_uint32(r.store_stat);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const LOGON_PF_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_PF_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->logon_flags));
+	TRY(x.p_uint8(r.logon_flags));
 	for (size_t i = 0; i < 13; ++i)
-		TRY(pext->p_uint64(r->folder_ids[i]));
-	TRY(pext->p_uint16(r->replid));
-	TRY(pext->p_guid(r->replguid));
-	return pext->p_guid(r->per_user_guid);
+		TRY(x.p_uint64(r.folder_ids[i]));
+	TRY(x.p_uint16(r.replid));
+	TRY(x.p_guid(r.replguid));
+	return x.p_guid(r.per_user_guid);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const LOGON_REDIRECT_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const LOGON_REDIRECT_RESPONSE &r)
 {
 	uint8_t size;
 	
-	TRY(pext->p_uint8(r->logon_flags));
-	size = strlen(r->pserver_name) + 1;
-	TRY(pext->p_uint8(size));
-	return pext->p_bytes(r->pserver_name, size);
+	TRY(x.p_uint8(r.logon_flags));
+	size = strlen(r.pserver_name) + 1;
+	TRY(x.p_uint8(size));
+	return x.p_bytes(r.pserver_name, size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETRECEIVEFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETRECEIVEFOLDER_REQUEST &r)
 {
-	return pext->g_str(&r->pstr_class);
+	return x.g_str(&r.pstr_class);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETRECEIVEFOLDER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETRECEIVEFOLDER_RESPONSE &r)
 {
-	TRY(pext->p_uint64(r->folder_id));
-	return pext->p_str(r->pstr_class);
+	TRY(x.p_uint64(r.folder_id));
+	return x.p_str(r.pstr_class);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETRECEIVEFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETRECEIVEFOLDER_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->folder_id));
-	return pext->g_str(&r->pstr_class);
+	TRY(x.g_uint64(&r.folder_id));
+	return x.g_str(&r.pstr_class);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETRECEIVEFOLDERTABLE_RESPONSE &r)
 {
 	PROPTAG_ARRAY columns;
 	static constexpr uint32_t proptags[] =
@@ -158,1507 +156,1401 @@ static pack_result rop_ext_push(EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *
 	
 	columns.count = std::size(proptags);
 	columns.pproptag = deconst(proptags);
-	TRY(pext->p_uint32(r->rows.count));
-	for (size_t i = 0; i < r->rows.count; ++i)
-		TRY(pext->p_proprow(columns, r->rows.prows[i]));
+	TRY(x.p_uint32(r.rows.count));
+	for (size_t i = 0; i < r.rows.count; ++i)
+		TRY(x.p_proprow(columns, r.rows.prows[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETSTORESTAT_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETSTORESTAT_RESPONSE &r)
 {
-	return pext->p_uint32(r->stat);	
+	return x.p_uint32(r.stat);	
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETOWNINGSERVERS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETOWNINGSERVERS_REQUEST &r)
 {
-	return pext->g_uint64(&r->folder_id);
+	return x.g_uint64(&r.folder_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETOWNINGSERVERS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETOWNINGSERVERS_RESPONSE &r)
 {
-	return rop_ext_push(pext, &r->ghost);
+	return rop_ext_push(x, r.ghost);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, PUBLICFOLDERISGHOSTED_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, PUBLICFOLDERISGHOSTED_REQUEST &r)
 {
-	return pext->g_uint64(&r->folder_id);
+	return x.g_uint64(&r.folder_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const PUBLICFOLDERISGHOSTED_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const PUBLICFOLDERISGHOSTED_RESPONSE &r)
 {
-	if (r->pghost == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return rop_ext_push(pext, r->pghost);
+	if (r.pghost == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return rop_ext_push(x, *r.pghost);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, LONGTERMIDFROMID_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, LONGTERMIDFROMID_REQUEST &r)
 {
-	return pext->g_uint64(&r->id);
+	return x.g_uint64(&r.id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const LONGTERMIDFROMID_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const LONGTERMIDFROMID_RESPONSE &r)
 {
-	return pext->p_longterm(r->long_term_id);
+	return x.p_longterm(r.long_term_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, IDFROMLONGTERMID_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, IDFROMLONGTERMID_REQUEST &r)
 {
-	return pext->g_longterm(&r->long_term_id);
+	return x.g_longterm(&r.long_term_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const IDFROMLONGTERMID_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const IDFROMLONGTERMID_RESPONSE &r)
 {
-	return pext->p_uint64(r->id);
+	return x.p_uint64(r.id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETPERUSERLONGTERMIDS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETPERUSERLONGTERMIDS_REQUEST &r)
 {
-	return pext->g_guid(&r->guid);
+	return x.g_guid(&r.guid);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETPERUSERLONGTERMIDS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETPERUSERLONGTERMIDS_RESPONSE &r)
 {	
-	return pext->p_longterm_a(r->ids);
+	return x.p_longterm_a(r.ids);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETPERUSERGUID_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETPERUSERGUID_REQUEST &r)
 {
-	return pext->g_longterm(&r->long_term_id);
+	return x.g_longterm(&r.long_term_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETPERUSERGUID_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETPERUSERGUID_RESPONSE &r)
 {
-	return pext->p_guid(r->guid);
+	return x.p_guid(r.guid);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, READPERUSERINFORMATION_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, READPERUSERINFORMATION_REQUEST &r)
 {
-	TRY(pext->g_longterm(&r->long_folder_id));
-	TRY(pext->g_uint8(&r->reserved));
-	TRY(pext->g_uint32(&r->data_offset));
-	return pext->g_uint16(&r->max_data_size);
+	TRY(x.g_longterm(&r.long_folder_id));
+	TRY(x.g_uint8(&r.reserved));
+	TRY(x.g_uint32(&r.data_offset));
+	return x.g_uint16(&r.max_data_size);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const READPERUSERINFORMATION_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const READPERUSERINFORMATION_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->has_finished));
-	return pext->p_bin_s(r->data);
+	TRY(x.p_uint8(r.has_finished));
+	return x.p_bin_s(r.data);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    WRITEPERUSERINFORMATION_REQUEST *r, BOOL b_private)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    WRITEPERUSERINFORMATION_REQUEST &r, BOOL b_private)
 {
-	TRY(pext->g_longterm(&r->long_folder_id));
-	TRY(pext->g_uint8(&r->has_finished));
-	TRY(pext->g_uint32(&r->offset));
-	TRY(pext->g_sbin(&r->data));
-	if (r->offset == 0 && b_private) {
-		r->pguid = pext->anew<GUID>();
-		if (r->pguid == nullptr)
+	TRY(x.g_longterm(&r.long_folder_id));
+	TRY(x.g_uint8(&r.has_finished));
+	TRY(x.g_uint32(&r.offset));
+	TRY(x.g_sbin(&r.data));
+	if (r.offset == 0 && b_private) {
+		r.pguid = x.anew<GUID>();
+		if (r.pguid == nullptr)
 			return EXT_ERR_ALLOC;
-		return pext->g_guid(r->pguid);
+		return x.g_guid(r.pguid);
 	}
-	r->pguid = NULL;
+	r.pguid = nullptr;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, OPENFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, OPENFOLDER_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint64(&r->folder_id));
-	return pext->g_uint8(&r->open_flags);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint64(&r.folder_id));
+	return x.g_uint8(&r.open_flags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const OPENFOLDER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const OPENFOLDER_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->has_rules));
-	if (r->pghost == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return rop_ext_push(pext, r->pghost);
+	TRY(x.p_uint8(r.has_rules));
+	if (r.pghost == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return rop_ext_push(x, *r.pghost);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, CREATEFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, CREATEFOLDER_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->folder_type));
-	TRY(pext->g_uint8(&r->use_unicode));
-	TRY(pext->g_uint8(&r->open_existing));
-	TRY(pext->g_uint8(&r->reserved));
-	if (0 == r->use_unicode) {
-		TRY(pext->g_str(&r->pfolder_name));
-		return pext->g_str(&r->pfolder_comment);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.folder_type));
+	TRY(x.g_uint8(&r.use_unicode));
+	TRY(x.g_uint8(&r.open_existing));
+	TRY(x.g_uint8(&r.reserved));
+	if (!r.use_unicode) {
+		TRY(x.g_str(&r.pfolder_name));
+		return x.g_str(&r.pfolder_comment);
 	}
-	TRY(pext->g_wstr(&r->pfolder_name));
-	return pext->g_wstr(&r->pfolder_comment);
+	TRY(x.g_wstr(&r.pfolder_name));
+	return x.g_wstr(&r.pfolder_comment);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const CREATEFOLDER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const CREATEFOLDER_RESPONSE &r)
 {
-	TRY(pext->p_uint64(r->folder_id));
-	TRY(pext->p_uint8(r->is_existing));
-	if (r->is_existing == 0)
+	TRY(x.p_uint64(r.folder_id));
+	TRY(x.p_uint8(r.is_existing));
+	if (r.is_existing == 0)
 		return EXT_ERR_SUCCESS;
-	TRY(pext->p_uint8(r->has_rules));
-	if (r->pghost == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return rop_ext_push(pext, r->pghost);
+	TRY(x.p_uint8(r.has_rules));
+	if (r.pghost == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return rop_ext_push(x, *r.pghost);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, DELETEFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, DELETEFOLDER_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->flags));
-	return pext->g_uint64(&r->folder_id);
+	TRY(x.g_uint8(&r.flags));
+	return x.g_uint64(&r.folder_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const DELETEFOLDER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PARTIAL_COMPLETION_RESPONSE &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	return x.p_uint8(r.partial_completion);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETSEARCHCRITERIA_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETSEARCHCRITERIA_REQUEST &r)
 {
-	auto &ext = *pext;
 	uint16_t res_size;
 	
-	TRY(pext->g_uint16(&res_size));
+	TRY(x.g_uint16(&res_size));
 	if (0 == res_size) {
-		r->pres = NULL;
+		r.pres = nullptr;
 	} else {
-		r->pres = pext->anew<RESTRICTION>();
-		if (r->pres == nullptr)
+		r.pres = x.anew<RESTRICTION>();
+		if (r.pres == nullptr)
 			return EXT_ERR_ALLOC;
-		uint32_t offset = ext.m_offset + res_size;
-		TRY(pext->g_restriction(r->pres));
-		if (ext.m_offset > offset)
+		uint32_t offset = x.m_offset + res_size;
+		TRY(x.g_restriction(r.pres));
+		if (x.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		ext.m_offset = offset;
+		x.m_offset = offset;
 	}
-	TRY(pext->g_uint64_sa(&r->folder_ids));
-	return pext->g_uint32(&r->search_flags);
+	TRY(x.g_uint64_sa(&r.folder_ids));
+	return x.g_uint32(&r.search_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETSEARCHCRITERIA_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETSEARCHCRITERIA_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->use_unicode));
-	TRY(pext->g_uint8(&r->include_restriction));
-	return pext->g_uint8(&r->include_folders);
+	TRY(x.g_uint8(&r.use_unicode));
+	TRY(x.g_uint8(&r.include_restriction));
+	return x.g_uint8(&r.include_folders);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETSEARCHCRITERIA_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETSEARCHCRITERIA_RESPONSE &r)
 {
-	auto &ext = *pext;
-	if (NULL == r->pres) {
-		TRY(pext->p_uint16(0));
+	if (r.pres == nullptr) {
+		TRY(x.p_uint16(0));
 	} else {
-		uint32_t offset1 = ext.m_offset;
-		TRY(pext->advance(sizeof(uint16_t)));
-		TRY(pext->p_restriction(*r->pres));
-		uint16_t res_size = ext.m_offset - (offset1 + sizeof(uint16_t));
-		uint32_t offset2 = ext.m_offset;
-		ext.m_offset = offset1;
-		TRY(pext->p_uint16(res_size));
-		ext.m_offset = offset2;
+		uint32_t offset1 = x.m_offset;
+		TRY(x.advance(sizeof(uint16_t)));
+		TRY(x.p_restriction(*r.pres));
+		uint16_t res_size = x.m_offset - (offset1 + sizeof(uint16_t));
+		uint32_t offset2 = x.m_offset;
+		x.m_offset = offset1;
+		TRY(x.p_uint16(res_size));
+		x.m_offset = offset2;
 	}
-	TRY(pext->p_uint8(r->logon_id));
-	TRY(pext->p_uint64_sa(r->folder_ids));
-	return pext->p_uint32(r->search_status);
+	TRY(x.p_uint8(r.logon_id));
+	TRY(x.p_uint64_sa(r.folder_ids));
+	return x.p_uint32(r.search_status);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, MOVECOPYMESSAGES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, MOVECOPYMESSAGES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint64_sa(&r->message_ids));
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	return pext->g_uint8(&r->want_copy);
+	TRY(x.g_uint8(&r.dhindex));
+	TRY(x.g_uint64_sa(&r.message_ids));
+	TRY(x.g_uint8(&r.want_asynchronous));
+	return x.g_uint8(&r.want_copy);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const MOVECOPYMESSAGES_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, MOVEFOLDER_REQUEST &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.g_uint8(&r.dhindex));
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.use_unicode));
+	TRY(x.g_uint64(&r.folder_id));
+	return r.use_unicode ? x.g_wstr(&r.pnew_name) : x.g_str(&r.pnew_name);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, MOVEFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, COPYFOLDER_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->use_unicode));
-	TRY(pext->g_uint64(&r->folder_id));
-	if (!r->use_unicode)
-		return pext->g_str(&r->pnew_name);
-	else
-		return pext->g_wstr(&r->pnew_name);
+	TRY(x.g_uint8(&r.dhindex));
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.want_recursive));
+	TRY(x.g_uint8(&r.use_unicode));
+	TRY(x.g_uint64(&r.folder_id));
+	return r.use_unicode ? x.g_wstr(&r.pnew_name) : x.g_str(&r.pnew_name);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const MOVEFOLDER_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, EMPTYFOLDER_REQUEST &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.g_uint8(&r.want_asynchronous));
+	return x.g_uint8(&r.want_delete_associated);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, COPYFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->want_recursive));
-	TRY(pext->g_uint8(&r->use_unicode));
-	TRY(pext->g_uint64(&r->folder_id));
-	if (!r->use_unicode)
-		return pext->g_str(&r->pnew_name);
-	else
-		return pext->g_wstr(&r->pnew_name);
+	TRY(x.g_uint8(&r.want_asynchronous));
+	return x.g_uint8(&r.want_delete_associated);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYFOLDER_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, DELETEMESSAGES_REQUEST &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.notify_non_read));
+	return x.g_uint64_sa(&r.message_ids);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, EMPTYFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, HARDDELETEMESSAGES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	return pext->g_uint8(&r->want_delete_associated);
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.notify_non_read));
+	return x.g_uint64_sa(&r.message_ids);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const EMPTYFOLDER_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETHIERARCHYTABLE_REQUEST &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.g_uint8(&r.ohindex));
+	return x.g_uint8(&r.table_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETHIERARCHYTABLE_RESPONSE &r)
 {
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	return pext->g_uint8(&r->want_delete_associated);
+	return x.p_uint32(r.row_count);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETCONTENTSTABLE_REQUEST &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.g_uint8(&r.ohindex));
+	return x.g_uint8(&r.table_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, DELETEMESSAGES_REQUEST *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETCONTENTSTABLE_RESPONSE &r)
 {
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->notify_non_read));
-	return pext->g_uint64_sa(&r->message_ids);
+	return x.p_uint32(r.row_count);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const DELETEMESSAGES_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETCOLUMNS_REQUEST &r)
 {
-	return pext->p_uint8(r->partial_completion);
+	TRY(x.g_uint8(&r.table_flags));
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, HARDDELETEMESSAGES_REQUEST *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const TABLE_STATUS_RESPONSE &r)
 {
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->notify_non_read));
-	return pext->g_uint64_sa(&r->message_ids);
+	return x.p_uint8(r.table_status);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETHIERARCHYTABLE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SORTTABLE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->table_flags);
+	TRY(x.g_uint8(&r.table_flags));
+	return x.g_sortorder_set(&r.sort_criteria);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETHIERARCHYTABLE_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, RESTRICT_REQUEST &r)
 {
-	return pext->p_uint32(r->row_count);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, GETCONTENTSTABLE_REQUEST *r)
-{
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->table_flags);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETCONTENTSTABLE_RESPONSE *r)
-{
-	return pext->p_uint32(r->row_count);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, SETCOLUMNS_REQUEST *r)
-{
-	TRY(pext->g_uint8(&r->table_flags));
-	return pext->g_proptag_a(&r->proptags);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETCOLUMNS_RESPONSE *r)
-{
-	return pext->p_uint8(r->table_status);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, SORTTABLE_REQUEST *r)
-{
-	TRY(pext->g_uint8(&r->table_flags));
-	return pext->g_sortorder_set(&r->sort_criteria);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const SORTTABLE_RESPONSE *r)
-{
-	return pext->p_uint8(r->table_status);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, RESTRICT_REQUEST *r)
-{
-	auto &ext = *pext;
 	uint16_t res_size;
 	
-	TRY(pext->g_uint8(&r->res_flags));
-	TRY(pext->g_uint16(&res_size));
+	TRY(x.g_uint8(&r.res_flags));
+	TRY(x.g_uint16(&res_size));
 	if (0 == res_size) {
-		r->pres = NULL;
+		r.pres = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pres = pext->anew<RESTRICTION>();
-	if (r->pres == nullptr)
+	r.pres = x.anew<RESTRICTION>();
+	if (r.pres == nullptr)
 		return EXT_ERR_ALLOC;
-	uint32_t offset = ext.m_offset + res_size;
-	TRY(pext->g_restriction(r->pres));
-	if (ext.m_offset > offset)
+	uint32_t offset = x.m_offset + res_size;
+	TRY(x.g_restriction(r.pres));
+	if (x.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	ext.m_offset = offset;
+	x.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const RESTRICT_RESPONSE *r)
-{	
-	return pext->p_uint8(r->table_status);
+static pack_result rop_ext_pull(EXT_PULL &x, QUERYROWS_REQUEST &r)
+{
+	TRY(x.g_uint8(&r.flags));
+	TRY(x.g_uint8(&r.forward_read));
+	return x.g_uint16(&r.row_count);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, QUERYROWS_REQUEST *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const QUERYROWS_RESPONSE &r)
 {
-	TRY(pext->g_uint8(&r->flags));
-	TRY(pext->g_uint8(&r->forward_read));
-	return pext->g_uint16(&r->row_count);
+	TRY(x.p_uint8(r.seek_pos));
+	TRY(x.p_uint16(r.count));
+	return x.p_bytes(r.bin_rows.pb, r.bin_rows.cb);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYROWS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const QUERYPOSITION_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->seek_pos));
-	TRY(pext->p_uint16(r->count));
-	return pext->p_bytes(r->bin_rows.pb, r->bin_rows.cb);
+	TRY(x.p_uint32(r.numerator));
+	return x.p_uint32(r.denominator);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const ABORT_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SEEKROW_REQUEST &r)
 {
-	return pext->p_uint8(r->table_status);
+	TRY(x.g_uint8(&r.seek_pos));
+	TRY(x.g_int32(&r.offset));
+	return x.g_uint8(&r.want_moved_count);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETSTATUS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SEEKROW_RESPONSE &r)
 {
-	return pext->p_uint8(r->table_status);
+	TRY(x.p_uint8(r.has_soughtless));
+	return x.p_int32(r.offset_sought);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYPOSITION_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SEEKROWBOOKMARK_REQUEST &r)
 {
-	TRY(pext->p_uint32(r->numerator));
-	return pext->p_uint32(r->denominator);
+	TRY(x.g_sbin(&r.bookmark));
+	TRY(x.g_int32(&r.offset));
+	return x.g_uint8(&r.want_moved_count);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SEEKROW_REQUEST *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SEEKROWBOOKMARK_RESPONSE &r)
 {
-	TRY(pext->g_uint8(&r->seek_pos));
-	TRY(pext->g_int32(&r->offset));
-	return pext->g_uint8(&r->want_moved_count);
+	TRY(x.p_uint8(r.row_invisible));
+	TRY(x.p_uint8(r.has_soughtless));
+	return x.p_uint32(r.offset_sought);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SEEKROW_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SEEKROWFRACTIONAL_REQUEST &r)
 {
-	TRY(pext->p_uint8(r->has_soughtless));
-	return pext->p_int32(r->offset_sought);
+	TRY(x.g_uint32(&r.numerator));
+	return x.g_uint32(&r.denominator);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SEEKROWBOOKMARK_REQUEST *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const CREATEBOOKMARK_RESPONSE &r)
 {
-	TRY(pext->g_sbin(&r->bookmark));
-	TRY(pext->g_int32(&r->offset));
-	return pext->g_uint8(&r->want_moved_count);
+	return x.p_bin_s(r.bookmark);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SEEKROWBOOKMARK_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const QUERYCOLUMNSALL_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->row_invisible));
-	TRY(pext->p_uint8(r->has_soughtless));
-	return pext->p_uint32(r->offset_sought);
+	return x.p_proptag_a(r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SEEKROWFRACTIONAL_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, FINDROW_REQUEST &r)
 {
-	TRY(pext->g_uint32(&r->numerator));
-	return pext->g_uint32(&r->denominator);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const CREATEBOOKMARK_RESPONSE *r)
-{
-	return pext->p_bin_s(r->bookmark);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const QUERYCOLUMNSALL_RESPONSE *r)
-{
-	return pext->p_proptag_a(r->proptags);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, FINDROW_REQUEST *r)
-{
-	auto &ext = *pext;
 	uint16_t res_size;
 	
-	TRY(pext->g_uint8(&r->flags));
-	TRY(pext->g_uint16(&res_size));
+	TRY(x.g_uint8(&r.flags));
+	TRY(x.g_uint16(&res_size));
 	if (0 == res_size) {
-		r->pres = NULL;
+		r.pres = nullptr;
 	} else {
-		r->pres = pext->anew<RESTRICTION>();
-		if (r->pres == nullptr)
+		r.pres = x.anew<RESTRICTION>();
+		if (r.pres == nullptr)
 			return EXT_ERR_ALLOC;
-		uint32_t offset = ext.m_offset + res_size;
-		TRY(pext->g_restriction(r->pres));
-		if (ext.m_offset > offset)
+		uint32_t offset = x.m_offset + res_size;
+		TRY(x.g_restriction(r.pres));
+		if (x.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		ext.m_offset = offset;
+		x.m_offset = offset;
 	}
-	TRY(pext->g_uint8(&r->seek_pos));
-	return pext->g_sbin(&r->bookmark);
+	TRY(x.g_uint8(&r.seek_pos));
+	return x.g_sbin(&r.bookmark);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const FINDROW_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const FINDROW_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->bookmark_invisible));
-	if (r->prow == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	TRY(pext->p_proprow(*r->pcolumns, *r->prow));
+	TRY(x.p_uint8(r.bookmark_invisible));
+	if (r.prow == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	TRY(x.p_proprow(*r.pcolumns, *r.prow));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, FREEBOOKMARK_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, FREEBOOKMARK_REQUEST &r)
 {
-	return pext->g_sbin(&r->bookmark);
+	return x.g_sbin(&r.bookmark);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, EXPANDROW_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, EXPANDROW_REQUEST &r)
 {
-	TRY(pext->g_uint16(&r->max_count));
-	return pext->g_uint64(&r->category_id);
+	TRY(x.g_uint16(&r.max_count));
+	return x.g_uint64(&r.category_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const EXPANDROW_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const EXPANDROW_RESPONSE &r)
 {
-	TRY(pext->p_uint32(r->expanded_count));
-	TRY(pext->p_uint16(r->count));
-	return pext->p_bytes(r->bin_rows.pb, r->bin_rows.cb);
+	TRY(x.p_uint32(r.expanded_count));
+	TRY(x.p_uint16(r.count));
+	return x.p_bytes(r.bin_rows.pb, r.bin_rows.cb);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, COLLAPSEROW_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, COLLAPSEROW_REQUEST &r)
 {
-	return pext->g_uint64(&r->category_id);
+	return x.g_uint64(&r.category_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COLLAPSEROW_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const COLLAPSEROW_RESPONSE &r)
 {
-	return pext->p_uint32(r->collapsed_count);
+	return x.p_uint32(r.collapsed_count);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETCOLLAPSESTATE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETCOLLAPSESTATE_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->row_id));
-	return pext->g_uint32(&r->row_instance);
+	TRY(x.g_uint64(&r.row_id));
+	return x.g_uint32(&r.row_instance);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETCOLLAPSESTATE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETCOLLAPSESTATE_RESPONSE &r)
 {
-	return pext->p_bin_s(r->collapse_state);
+	return x.p_bin_s(r.collapse_state);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETCOLLAPSESTATE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETCOLLAPSESTATE_REQUEST &r)
 {
-	return pext->g_sbin(&r->collapse_state);
+	return x.g_sbin(&r.collapse_state);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETCOLLAPSESTATE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SETCOLLAPSESTATE_RESPONSE &r)
 {
-	return pext->p_bin_s(r->bookmark);
+	return x.p_bin_s(r.bookmark);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, OPENMESSAGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, OPENMESSAGE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint16(&r->cpid));
-	TRY(pext->g_uint64(&r->folder_id));
-	TRY(pext->g_uint8(&r->open_mode_flags));
-	return pext->g_uint64(&r->message_id);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint16(&r.cpid));
+	TRY(x.g_uint64(&r.folder_id));
+	TRY(x.g_uint8(&r.open_mode_flags));
+	return x.g_uint64(&r.message_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const OPENMESSAGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const OPENMESSAGE_RESPONSE &r)
 {
-	auto &ext = *pext;
-	uint8_t i;
-	
-	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(pext->p_typed_str(r->subject_prefix));
-	TRY(pext->p_typed_str(r->normalized_subject));
-	TRY(pext->p_uint16(r->recipient_count));
-	TRY(pext->p_proptag_a(r->recipient_columns));
-	if (r->row_count == 0)
-		return pext->p_uint8(0);
-	uint32_t offset = ext.m_offset;
-	TRY(pext->advance(sizeof(uint8_t)));
-	for (i=0; i<r->row_count; i++) {
-		uint32_t last_offset = ext.m_offset;
-		auto status = pext->p_openrecipient_row(r->recipient_columns, r->precipient_row[i]);
+	TRY(x.p_uint8(r.has_named_properties));
+	TRY(x.p_typed_str(r.subject_prefix));
+	TRY(x.p_typed_str(r.normalized_subject));
+	TRY(x.p_uint16(r.recipient_count));
+	TRY(x.p_proptag_a(r.recipient_columns));
+	if (r.row_count == 0)
+		return x.p_uint8(0);
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint8_t)));
+	unsigned int i;
+	for (i = 0; i < r.row_count; ++i) {
+		uint32_t last_offset = x.m_offset;
+		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-		    ext.m_alloc_size - ext.m_offset < 256) {
-			ext.m_offset = last_offset;
+		    x.m_alloc_size - x.m_offset < 256) {
+			x.m_offset = last_offset;
 			break;
 		}
 	}
 	if (i == 0)
 		return EXT_ERR_SUCCESS;
-	uint32_t offset1 = ext.m_offset;
-	ext.m_offset = offset;
-	TRY(pext->p_uint8(i));
-	ext.m_offset = offset1;
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint8(i));
+	x.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, CREATEMESSAGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, CREATEMESSAGE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint16(&r->cpid));
-	TRY(pext->g_uint64(&r->folder_id));
-	return pext->g_uint8(&r->associated_flag);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint16(&r.cpid));
+	TRY(x.g_uint64(&r.folder_id));
+	return x.g_uint8(&r.associated_flag);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, CREATEMESSAGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const CREATEMESSAGE_RESPONSE &r)
 {
-	if (r->pmessage_id == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_uint64(*r->pmessage_id);
+	if (r.pmessage_id == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_uint64(*r.pmessage_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SAVECHANGESMESSAGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SAVECHANGESMESSAGE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->save_flags);
+	TRY(x.g_uint8(&r.ihindex2));
+	return x.g_uint8(&r.save_flags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SAVECHANGESMESSAGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SAVECHANGESMESSAGE_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->hindex));
-	return pext->p_uint64(r->message_id);
+	TRY(x.p_uint8(r.ihindex2));
+	return x.p_uint64(r.message_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, REMOVEALLRECIPIENTS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, REMOVEALLRECIPIENTS_REQUEST &r)
 {
-	return pext->g_uint32(&r->reserved);
+	return x.g_uint32(&r.reserved);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, MODIFYRECIPIENTS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRECIPIENTS_REQUEST &r)
 {
-	TRY(pext->g_proptag_a(&r->proptags));
-	TRY(pext->g_uint16(&r->count));
-	if (0 == r->count) {
-		r->prow = NULL;
+	TRY(x.g_proptag_a(&r.proptags));
+	TRY(x.g_uint16(&r.count));
+	if (r.count == 0) {
+		r.prow = nullptr;
 	} else {
-		r->prow = pext->anew<MODIFYRECIPIENT_ROW>(r->count);
-		if (NULL == r->prow) {
-			r->count = 0;
+		r.prow = x.anew<MODIFYRECIPIENT_ROW>(r.count);
+		if (r.prow == nullptr) {
+			r.count = 0;
 			return EXT_ERR_ALLOC;
 		}
 	}
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->g_modrcpt_row(&r->proptags, &r->prow[i]));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.g_modrcpt_row(&r.proptags, &r.prow[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, READRECIPIENTS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, READRECIPIENTS_REQUEST &r)
 {
-	TRY(pext->g_uint32(&r->row_id));
-	return pext->g_uint16(&r->reserved);
+	TRY(x.g_uint32(&r.row_id));
+	return x.g_uint16(&r.reserved);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, READRECIPIENTS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const READRECIPIENTS_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->count));
-	return pext->p_bytes(r->bin_recipients.pb, r->bin_recipients.cb);
+	TRY(x.p_uint8(r.count));
+	return x.p_bytes(r.bin_recipients.pb, r.bin_recipients.cb);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, RELOADCACHEDINFORMATION_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, RELOADCACHEDINFORMATION_REQUEST &r)
 {
-	return pext->g_uint16(&r->reserved);
+	return x.g_uint16(&r.reserved);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, RELOADCACHEDINFORMATION_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const RELOADCACHEDINFORMATION_RESPONSE &r)
 {
-	auto &ext = *pext;
-	uint8_t i;
-	
-	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(pext->p_typed_str(r->subject_prefix));
-	TRY(pext->p_typed_str(r->normalized_subject));
-	TRY(pext->p_uint16(r->recipient_count));
-	TRY(pext->p_proptag_a(r->recipient_columns));
-	if (r->row_count == 0)
-		return pext->p_uint8(0);
-	uint32_t offset = ext.m_offset;
-	TRY(pext->advance(sizeof(uint8_t)));
-	for (i=0; i<r->row_count; i++) {
-		uint32_t last_offset = ext.m_offset;
-		auto status = pext->p_openrecipient_row(r->recipient_columns, r->precipient_row[i]);
+	TRY(x.p_uint8(r.has_named_properties));
+	TRY(x.p_typed_str(r.subject_prefix));
+	TRY(x.p_typed_str(r.normalized_subject));
+	TRY(x.p_uint16(r.recipient_count));
+	TRY(x.p_proptag_a(r.recipient_columns));
+	if (r.row_count == 0)
+		return x.p_uint8(0);
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint8_t)));
+	unsigned int i;
+	for (i = 0; i < r.row_count; ++i) {
+		uint32_t last_offset = x.m_offset;
+		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-		    ext.m_alloc_size - ext.m_offset < 256) {
-			ext.m_offset = last_offset;
+		    x.m_alloc_size - x.m_offset < 256) {
+			x.m_offset = last_offset;
 			break;
 		}
 	}
 	if (i == 0)
 		return EXT_ERR_SUCCESS;
-	uint32_t offset1 = ext.m_offset;
-	ext.m_offset = offset;
-	TRY(pext->p_uint8(i));
-	ext.m_offset = offset1;
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint8(i));
+	x.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETMESSAGESTATUS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETMESSAGESTATUS_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->message_id));
-	TRY(pext->g_uint32(&r->message_status));
-	return pext->g_uint32(&r->status_mask);
+	TRY(x.g_uint64(&r.message_id));
+	TRY(x.g_uint32(&r.message_status));
+	return x.g_uint32(&r.status_mask);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETMESSAGESTATUS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SETMESSAGESTATUS_RESPONSE &r)
 {
-	return pext->p_uint32(r->message_status);
+	return x.p_uint32(r.message_status);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETMESSAGESTATUS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETMESSAGESTATUS_REQUEST &r)
 {
-	return pext->g_uint64(&r->message_id);
+	return x.g_uint64(&r.message_id);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETMESSAGESTATUS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETMESSAGESTATUS_RESPONSE &r)
 {
-	return pext->p_uint32(r->message_status);
+	return x.p_uint32(r.message_status);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETREADFLAGS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETREADFLAGS_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->read_flags));
-	return pext->g_uint64_sa(&r->message_ids);
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.read_flags));
+	return x.g_uint64_sa(&r.message_ids);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETREADFLAGS_RESPONSE *r)
-{
-	return pext->p_uint8(r->partial_completion);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, SETMESSAGEREADFLAG_REQUEST *r,
+static pack_result rop_ext_pull(EXT_PULL &x, SETMESSAGEREADFLAG_REQUEST &r,
     BOOL b_private)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->flags));
+	TRY(x.g_uint8(&r.ihindex2));
+	TRY(x.g_uint8(&r.flags));
 	if (b_private) {
-		r->pclient_data = NULL;
+		r.pclient_data = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pclient_data = pext->anew<LONG_TERM_ID>();
-	if (r->pclient_data == nullptr)
+	r.pclient_data = x.anew<LONG_TERM_ID>();
+	if (r.pclient_data == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_longterm(r->pclient_data);
+	return x.g_longterm(r.pclient_data);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETMESSAGEREADFLAG_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SETMESSAGEREADFLAG_RESPONSE &r)
 {
-	if (r->read_changed == 0 || r->pclient_data == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	TRY(pext->p_uint8(r->logon_id));
-	return pext->p_longterm(*r->pclient_data);
+	if (r.read_changed == 0 || r.pclient_data == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	TRY(x.p_uint8(r.logon_id));
+	return x.p_longterm(*r.pclient_data);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, OPENATTACHMENT_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, OPENATTACHMENT_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->flags));
-	return pext->g_uint32(&r->attachment_id);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.flags));
+	return x.g_uint32(&r.attachment_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, CREATEATTACHMENT_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, CREATEATTACHMENT_REQUEST &r)
 {
-	return pext->g_uint8(&r->hindex);
+	return x.g_uint8(&r.ohindex);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const CREATEATTACHMENT_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const CREATEATTACHMENT_RESPONSE &r)
 {
-	return pext->p_uint32(r->attachment_id);
+	return x.p_uint32(r.attachment_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, DELETEATTACHMENT_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, DELETEATTACHMENT_REQUEST &r)
 {
-	return pext->g_uint32(&r->attachment_id);
+	return x.g_uint32(&r.attachment_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SAVECHANGESATTACHMENT_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SAVECHANGESATTACHMENT_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->save_flags);
+	TRY(x.g_uint8(&r.ihindex2));
+	return x.g_uint8(&r.save_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, OPENEMBEDDEDMESSAGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, OPENEMBEDDEDMESSAGE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint16(&r->cpid));
-	return pext->g_uint8(&r->open_embedded_flags);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint16(&r.cpid));
+	return x.g_uint8(&r.open_embedded_flags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const OPENEMBEDDEDMESSAGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const OPENEMBEDDEDMESSAGE_RESPONSE &r)
 {
-	auto &ext = *pext;
-	int i;
-	
-	TRY(pext->p_uint8(r->reserved));
-	TRY(pext->p_uint64(r->message_id));
-	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(pext->p_typed_str(r->subject_prefix));
-	TRY(pext->p_typed_str(r->normalized_subject));
-	TRY(pext->p_uint16(r->recipient_count));
-	TRY(pext->p_proptag_a(r->recipient_columns));
-	if (r->row_count == 0)
-		return pext->p_uint8(0);
-	uint32_t offset = ext.m_offset;
-	TRY(pext->advance(sizeof(uint8_t)));
-	for (i=0; i<r->row_count; i++) {
-		uint32_t last_offset = ext.m_offset;
-		auto status = pext->p_openrecipient_row(r->recipient_columns, r->precipient_row[i]);
+	TRY(x.p_uint8(r.reserved));
+	TRY(x.p_uint64(r.message_id));
+	TRY(x.p_uint8(r.has_named_properties));
+	TRY(x.p_typed_str(r.subject_prefix));
+	TRY(x.p_typed_str(r.normalized_subject));
+	TRY(x.p_uint16(r.recipient_count));
+	TRY(x.p_proptag_a(r.recipient_columns));
+	if (r.row_count == 0)
+		return x.p_uint8(0);
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint8_t)));
+	unsigned int i;
+	for (i = 0; i < r.row_count; ++i) {
+		uint32_t last_offset = x.m_offset;
+		auto status = x.p_openrecipient_row(r.recipient_columns, r.precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
-		    ext.m_alloc_size - ext.m_offset < 256) {
-			ext.m_offset = last_offset;
+		    x.m_alloc_size - x.m_offset < 256) {
+			x.m_offset = last_offset;
 			break;
 		}
 	}
 	if (i == 0)
 		return EXT_ERR_SUCCESS;
-	uint32_t offset1 = ext.m_offset;
-	ext.m_offset = offset;
-	TRY(pext->p_uint8(i));
-	ext.m_offset = offset1;
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint8(i));
+	x.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETATTACHMENTTABLE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETATTACHMENTTABLE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->table_flags);
+	TRY(x.g_uint8(&r.ohindex));
+	return x.g_uint8(&r.table_flags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETVALIDATTACHMENTS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETVALIDATTACHMENTS_RESPONSE &r)
 {	
-	return pext->p_uint32_a(r->attachment_ids);
+	return x.p_uint32_a(r.attachment_ids);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SUBMITMESSAGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SUBMITMESSAGE_REQUEST &r)
 {
-	return pext->g_uint8(&r->submit_flags);
+	return x.g_uint8(&r.submit_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, ABORTSUBMIT_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, ABORTSUBMIT_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->folder_id));
-	return pext->g_uint64(&r->message_id);
+	TRY(x.g_uint64(&r.folder_id));
+	return x.g_uint64(&r.message_id);
 }
 
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETADDRESSTYPES_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETADDRESSTYPES_RESPONSE &r)
 {
-	auto &ext = *pext;
-	TRY(pext->p_uint16(r->address_types.count));
-	uint32_t offset = ext.m_offset;
-	TRY(pext->advance(sizeof(uint16_t)));
-	for (size_t i = 0; i < r->address_types.count; ++i)
-		TRY(pext->p_str(r->address_types.ppstr[i]));
-	uint16_t size = ext.m_offset - (offset + sizeof(uint16_t));
-	uint32_t offset1 = ext.m_offset;
-	ext.m_offset = offset;
-	TRY(pext->p_uint16(size));
-	ext.m_offset = offset1;
+	TRY(x.p_uint16(r.address_types.count));
+	uint32_t offset = x.m_offset;
+	TRY(x.advance(sizeof(uint16_t)));
+	for (size_t i = 0; i < r.address_types.count; ++i)
+		TRY(x.p_str(r.address_types.ppstr[i]));
+	uint16_t size = x.m_offset - (offset + sizeof(uint16_t));
+	uint32_t offset1 = x.m_offset;
+	x.m_offset = offset;
+	TRY(x.p_uint16(size));
+	x.m_offset = offset1;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SPOOLERLOCKMESSAGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SPOOLERLOCKMESSAGE_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->message_id));
-	return pext->g_uint8(&r->lock_stat);
+	TRY(x.g_uint64(&r.message_id));
+	return x.g_uint8(&r.lock_stat);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const TRANSPORTSEND_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const TRANSPORTSEND_RESPONSE &r)
 {
-	if (r->ppropvals == nullptr)
-		return pext->p_uint8(1);
-	TRY(pext->p_uint8(0));
-	return pext->p_tpropval_a(*r->ppropvals);
+	if (r.ppropvals == nullptr)
+		return x.p_uint8(1);
+	TRY(x.p_uint8(0));
+	return x.p_tpropval_a(*r.ppropvals);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, TRANSPORTNEWMAIL_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, TRANSPORTNEWMAIL_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->message_id));
-	TRY(pext->g_uint64(&r->folder_id));
-	TRY(pext->g_str(&r->pstr_class));
-	return pext->g_uint32(&r->message_flags);
+	TRY(x.g_uint64(&r.message_id));
+	TRY(x.g_uint64(&r.folder_id));
+	TRY(x.g_str(&r.pstr_class));
+	return x.g_uint32(&r.message_flags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETTRANSPORTFOLDER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETTRANSPORTFOLDER_RESPONSE &r)
 {
-	return pext->p_uint64(r->folder_id);
+	return x.p_uint64(r.folder_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, OPTIONSDATA_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, OPTIONSDATA_REQUEST &r)
 {
-	TRY(pext->g_str(&r->paddress_type));
-	return pext->g_uint8(&r->want_win32);
+	TRY(x.g_str(&r.paddress_type));
+	return x.g_uint8(&r.want_win32);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const OPTIONSDATA_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const OPTIONSDATA_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->reserved));
-	TRY(pext->p_bin_s(r->options_info));
-	TRY(pext->p_bin_s(r->help_file));
-	if (r->help_file.cb > 0)
-		return pext->p_str(r->pfile_name);
+	TRY(x.p_uint8(r.reserved));
+	TRY(x.p_bin_s(r.options_info));
+	TRY(x.p_bin_s(r.help_file));
+	if (r.help_file.cb > 0)
+		return x.p_str(r.pfile_name);
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETPROPERTYIDSFROMNAMES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTYIDSFROMNAMES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->flags));
-	return pext->g_propname_a(&r->propnames);
+	TRY(x.g_uint8(&r.flags));
+	return x.g_propname_a(&r.propnames);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const GETPROPERTYIDSFROMNAMES_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const GETPROPERTYIDSFROMNAMES_RESPONSE &r)
 {
-	return pext->p_propid_a(r->propids);
+	return x.p_propid_a(r.propids);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETNAMESFROMPROPERTYIDS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETNAMESFROMPROPERTYIDS_REQUEST &r)
 {
-	return pext->g_propid_a(&r->propids);
+	return x.g_propid_a(&r.propids);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const GETNAMESFROMPROPERTYIDS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const GETNAMESFROMPROPERTYIDS_RESPONSE &r)
 {
-	return pext->p_propname_a(r->propnames);
+	return x.p_propname_a(r.propnames);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETPROPERTIESSPECIFIC_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTIESSPECIFIC_REQUEST &r)
 {
-	TRY(pext->g_uint16(&r->size_limit));
-	TRY(pext->g_uint16(&r->want_unicode));
-	return pext->g_proptag_a(&r->proptags);
+	TRY(x.g_uint16(&r.size_limit));
+	TRY(x.g_uint16(&r.want_unicode));
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const GETPROPERTIESSPECIFIC_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const GETPROPERTIESSPECIFIC_RESPONSE &r)
 {
-	return pext->p_proprow(*r->pproptags, r->row);
+	return x.p_proprow(*r.pproptags, r.row);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETPROPERTIESALL_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETPROPERTIESALL_REQUEST &r)
 {
-	TRY(pext->g_uint16(&r->size_limit));
-	return pext->g_uint16(&r->want_unicode);
+	TRY(x.g_uint16(&r.size_limit));
+	return x.g_uint16(&r.want_unicode);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETPROPERTIESALL_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETPROPERTIESALL_RESPONSE &r)
 {
-	return pext->p_tpropval_a(r->propvals);
+	return x.p_tpropval_a(r.propvals);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETPROPERTIESLIST_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETPROPERTIESLIST_RESPONSE &r)
 {
-	return pext->p_proptag_a(r->proptags);
+	return x.p_proptag_a(r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETPROPERTIES_REQUEST &r)
 {
-	auto &ext = *pext;
 	uint16_t size;
 	
-	TRY(pext->g_uint16(&size));
-	uint32_t offset = ext.m_offset + size;
-	TRY(pext->g_tpropval_a(&r->propvals));
-	if (ext.m_offset > offset)
+	TRY(x.g_uint16(&size));
+	uint32_t offset = x.m_offset + size;
+	TRY(x.g_tpropval_a(&r.propvals));
+	if (x.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	ext.m_offset = offset;
+	x.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SETPROPERTIES_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROBLEM_RESPONSE &r)
 {
-	return rop_ext_push(pext, &r->problems);
+	return rop_ext_push(x, r.problems);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETPROPERTIESNOREPLICATE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETPROPERTIESNOREPLICATE_REQUEST &r)
 {
-	auto &ext = *pext;
 	uint16_t size;
 	
-	TRY(pext->g_uint16(&size));
-	uint32_t offset = ext.m_offset + size;
-	TRY(pext->g_tpropval_a(&r->propvals));
-	if (ext.m_offset > offset)
+	TRY(x.g_uint16(&size));
+	uint32_t offset = x.m_offset + size;
+	TRY(x.g_tpropval_a(&r.propvals));
+	if (x.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	ext.m_offset = offset;
+	x.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const SETPROPERTIESNOREPLICATE_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, DELETEPROPERTIES_REQUEST &r)
 {
-	return rop_ext_push(pext, &r->problems);
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,	DELETEPROPERTIES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, DELETEPROPERTIESNOREPLICATE_REQUEST &r)
 {
-	return pext->g_proptag_a(&r->proptags);
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const DELETEPROPERTIES_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, DELETEPROPERTIESNOREPLICATE_REQUEST *r)
-{
-	return pext->g_proptag_a(&r->proptags);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const DELETEPROPERTIESNOREPLICATE_RESPONSE *r)
-{
-	return rop_ext_push(pext, &r->problems);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, QUERYNAMEDPROPERTIES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, QUERYNAMEDPROPERTIES_REQUEST &r)
 {
 	uint8_t has_guid;
 	
-	TRY(pext->g_uint8(&r->query_flags));
-	TRY(pext->g_uint8(&has_guid));
+	TRY(x.g_uint8(&r.query_flags));
+	TRY(x.g_uint8(&has_guid));
 	if (0 == has_guid) {
-		r->pguid = NULL;
+		r.pguid = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pguid = pext->anew<GUID>();
-	if (r->pguid == nullptr)
+	r.pguid = x.anew<GUID>();
+	if (r.pguid == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_guid(r->pguid);
+	return x.g_guid(r.pguid);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, QUERYNAMEDPROPERTIES_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const QUERYNAMEDPROPERTIES_RESPONSE &r)
 {
-	return rop_ext_push(pext, &r->propidnames);
+	return rop_ext_push(x, r.propidnames);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, COPYPROPERTIES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, COPYPROPERTIES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->copy_flags));
-	return pext->g_proptag_a(&r->proptags);
+	TRY(x.g_uint8(&r.dhindex));
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.copy_flags));
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYPROPERTIES_RESPONSE *r)
+static pack_result rop_ext_pull(EXT_PULL &x, COPYTO_REQUEST &r)
 {
-	return rop_ext_push(pext, &r->problems);
+	TRY(x.g_uint8(&r.dhindex));
+	TRY(x.g_uint8(&r.want_asynchronous));
+	TRY(x.g_uint8(&r.want_subobjects));
+	TRY(x.g_uint8(&r.copy_flags));
+	return x.g_proptag_a(&r.excluded_proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, COPYTO_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, PROGRESS_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->want_asynchronous));
-	TRY(pext->g_uint8(&r->want_subobjects));
-	TRY(pext->g_uint8(&r->copy_flags));
-	return pext->g_proptag_a(&r->excluded_proptags);
+	return x.g_uint8(&r.want_cancel);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYTO_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const PROGRESS_RESPONSE &r)
 {
-	return rop_ext_push(pext, &r->problems);
+	TRY(x.p_uint8(r.logon_id));
+	TRY(x.p_uint32(r.completed_count));
+	return x.p_uint32(r.total_count);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, PROGRESS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, OPENSTREAM_REQUEST &r)
 {
-	return pext->g_uint8(&r->want_cancel);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint32(&r.proptag));
+	return x.g_uint8(&r.flags);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const PROGRESS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const OPENSTREAM_RESPONSE &r)
 {
-	TRY(pext->p_uint8(r->logon_id));
-	TRY(pext->p_uint32(r->completed_count));
-	return pext->p_uint32(r->total_count);
+	return x.p_uint32(r.stream_size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, OPENSTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, READSTREAM_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint32(&r->proptag));
-	return pext->g_uint8(&r->flags);
-}
-
-static pack_result rop_ext_push(EXT_PUSH *pext, const OPENSTREAM_RESPONSE *r)
-{
-	return pext->p_uint32(r->stream_size);
-}
-
-static pack_result rop_ext_pull(EXT_PULL *pext, READSTREAM_REQUEST *r)
-{
-	TRY(pext->g_uint16(&r->byte_count));
-	if (r->byte_count == 0xBABE)
-		return pext->g_uint32(&r->max_byte_count);
-	r->max_byte_count = 0;
+	TRY(x.g_uint16(&r.byte_count));
+	if (r.byte_count == 0xBABE)
+		return x.g_uint32(&r.max_byte_count);
+	r.max_byte_count = 0;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const READSTREAM_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const READSTREAM_RESPONSE &r)
 {
-	return pext->p_bin_s(r->data);
+	return x.p_bin_s(r.data);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, WRITESTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, WRITESTREAM_REQUEST &r)
 {
-	return pext->g_sbin(&r->data);
+	return x.g_sbin(&r.data);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const WRITESTREAM_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const WRITESTREAM_RESPONSE &r)
 {
-	return pext->p_uint16(r->written_size);
+	return x.p_uint16(r.written_size);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const GETSTREAMSIZE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const GETSTREAMSIZE_RESPONSE &r)
 {
-	return pext->p_uint32(r->stream_size);
+	return x.p_uint32(r.stream_size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SETSTREAMSIZE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SETSTREAMSIZE_REQUEST &r)
 {
-	return pext->g_uint64(&r->stream_size);
+	return x.g_uint64(&r.stream_size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SEEKSTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SEEKSTREAM_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->seek_pos));
-	return pext->g_int64(&r->offset);
+	TRY(x.g_uint8(&r.seek_pos));
+	return x.g_int64(&r.offset);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const SEEKSTREAM_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const SEEKSTREAM_RESPONSE &r)
 {
-	return pext->p_uint64(r->new_pos);
+	return x.p_uint64(r.new_pos);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, COPYTOSTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, COPYTOSTREAM_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint64(&r->byte_count);
+	TRY(x.g_uint8(&r.dhindex));
+	return x.g_uint64(&r.byte_count);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYTOSTREAM_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const COPYTOSTREAM_RESPONSE &r)
 {
-	TRY(pext->p_uint64(r->read_bytes));
-	return pext->p_uint64(r->written_bytes);
+	TRY(x.p_uint64(r.read_bytes));
+	return x.p_uint64(r.written_bytes);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext, const COPYTOSTREAM_NULL_DEST_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x, const COPYTOSTREAM_NULL_DEST_RESPONSE &r)
 {
-	TRY(pext->p_uint32(r->hindex));
-	TRY(pext->p_uint64(r->read_bytes));
-	return pext->p_uint64(r->written_bytes);
+	TRY(x.p_uint32(r.dhindex));
+	TRY(x.p_uint64(r.read_bytes));
+	return x.p_uint64(r.written_bytes);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, LOCKREGIONSTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, LOCKREGIONSTREAM_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->region_offset));
-	TRY(pext->g_uint64(&r->region_size));
-	return pext->g_uint32(&r->lock_flags);
+	TRY(x.g_uint64(&r.region_offset));
+	TRY(x.g_uint64(&r.region_size));
+	return x.g_uint32(&r.lock_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, UNLOCKREGIONSTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, UNLOCKREGIONSTREAM_REQUEST &r)
 {
-	TRY(pext->g_uint64(&r->region_offset));
-	TRY(pext->g_uint64(&r->region_size));
-	return pext->g_uint32(&r->lock_flags);
+	TRY(x.g_uint64(&r.region_offset));
+	TRY(x.g_uint64(&r.region_size));
+	return x.g_uint32(&r.lock_flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, WRITEANDCOMMITSTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, WRITEANDCOMMITSTREAM_REQUEST &r)
 {
-	return pext->g_sbin(&r->data);
+	return x.g_sbin(&r.data);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const WRITEANDCOMMITSTREAM_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const WRITEANDCOMMITSTREAM_RESPONSE &r)
 {
-	return pext->p_uint16(r->written_size);
+	return x.p_uint16(r.written_size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, CLONESTREAM_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, CLONESTREAM_REQUEST &r)
 {
-	return pext->g_uint8(&r->hindex);
+	return x.g_uint8(&r.ohindex);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, MODIFYPERMISSIONS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, MODIFYPERMISSIONS_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->flags));
-	TRY(pext->g_uint16(&r->count));
-	if (0 == r->count) {
-		r->prow = NULL;
+	TRY(x.g_uint8(&r.flags));
+	TRY(x.g_uint16(&r.count));
+	if (r.count == 0) {
+		r.prow = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	r->prow = pext->anew<PERMISSION_DATA>(r->count);
-	if (NULL == r->prow) {
-		r->count = 0;
+	r.prow = x.anew<PERMISSION_DATA>(r.count);
+	if (r.prow == nullptr) {
+		r.count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->g_permission_data(&r->prow[i]));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.g_permission_data(&r.prow[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETPERMISSIONSTABLE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETPERMISSIONSTABLE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->flags);
+	TRY(x.g_uint8(&r.ohindex));
+	return x.g_uint8(&r.flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, MODIFYRULES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, MODIFYRULES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->flags));
-	TRY(pext->g_uint16(&r->count));
-	if (r->count == 0)
+	TRY(x.g_uint8(&r.flags));
+	TRY(x.g_uint16(&r.count));
+	if (r.count == 0)
 		return EXT_ERR_FORMAT;
-	r->prow = pext->anew<RULE_DATA>(r->count);
-	if (NULL == r->prow) {
-		r->count = 0;
+	r.prow = x.anew<RULE_DATA>(r.count);
+	if (r.prow == nullptr) {
+		r.count = 0;
 		return EXT_ERR_SUCCESS;
 	}
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->g_rule_data(&r->prow[i]));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.g_rule_data(&r.prow[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETRULESTABLE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETRULESTABLE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->flags);
+	TRY(x.g_uint8(&r.ohindex));
+	return x.g_uint8(&r.flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    UPDATEDEFERREDACTIONMESSAGES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    UPDATEDEFERREDACTIONMESSAGES_REQUEST &r)
 {
-	TRY(pext->g_sbin(&r->server_entry_id));
-	return pext->g_sbin(&r->client_entry_id);
+	TRY(x.g_sbin(&r.server_entry_id));
+	return x.g_sbin(&r.client_entry_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, FASTTRANSFERDESTCONFIGURE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, FASTTRANSFERDESTCONFIGURE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->source_operation));
-	return pext->g_uint8(&r->flags);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.source_operation));
+	return x.g_uint8(&r.flags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    FASTTRANSFERDESTPUTBUFFER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    FASTTRANSFERDESTPUTBUFFER_REQUEST &r)
 {
-	return pext->g_sbin(&r->transfer_data);	
+	return x.g_sbin(&r.transfer_data);	
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const FASTTRANSFERDESTPUTBUFFER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const FASTTRANSFERDESTPUTBUFFER_RESPONSE &r)
 {
-	TRY(pext->p_uint16(r->transfer_status));
-	TRY(pext->p_uint16(r->in_progress_count));
-	TRY(pext->p_uint16(r->total_step_count));
-	TRY(pext->p_uint8(r->reserved));
-	return pext->p_uint16(r->used_size);
+	TRY(x.p_uint16(r.transfer_status));
+	TRY(x.p_uint16(r.in_progress_count));
+	TRY(x.p_uint16(r.total_step_count));
+	TRY(x.p_uint8(r.reserved));
+	return x.p_uint16(r.used_size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, FASTTRANSFERSOURCEGETBUFFER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, FASTTRANSFERSOURCEGETBUFFER_REQUEST &r)
 {
-	TRY(pext->g_uint16(&r->buffer_size));
-	if (r->buffer_size == 0xBABE)
-		return pext->g_uint16(&r->max_buffer_size);
-	r->max_buffer_size = 0;
+	TRY(x.g_uint16(&r.buffer_size));
+	if (r.buffer_size == 0xBABE)
+		return x.g_uint16(&r.max_buffer_size);
+	r.max_buffer_size = 0;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const FASTTRANSFERSOURCEGETBUFFER_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const FASTTRANSFERSOURCEGETBUFFER_RESPONSE &r)
 {
-	TRY(pext->p_uint16(r->transfer_status));
-	TRY(pext->p_uint16(r->in_progress_count));
-	TRY(pext->p_uint16(r->total_step_count));
-	TRY(pext->p_uint8(r->reserved));
-	return pext->p_bin_s(r->transfer_data);
+	TRY(x.p_uint16(r.transfer_status));
+	TRY(x.p_uint16(r.in_progress_count));
+	TRY(x.p_uint16(r.total_step_count));
+	TRY(x.p_uint8(r.reserved));
+	return x.p_bin_s(r.transfer_data);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    FASTTRANSFERSOURCECOPYFOLDER_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    FASTTRANSFERSOURCECOPYFOLDER_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->flags));
-	return pext->g_uint8(&r->send_options);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.flags));
+	return x.g_uint8(&r.send_options);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    FASTTRANSFERSOURCECOPYMESSAGES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    FASTTRANSFERSOURCECOPYMESSAGES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint64_sa(&r->message_ids));
-	TRY(pext->g_uint8(&r->flags));
-	return pext->g_uint8(&r->send_options);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint64_sa(&r.message_ids));
+	TRY(x.g_uint8(&r.flags));
+	return x.g_uint8(&r.send_options);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, FASTTRANSFERSOURCECOPYTO_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, FASTTRANSFERSOURCECOPYTO_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->level));
-	TRY(pext->g_uint32(&r->flags));
-	TRY(pext->g_uint8(&r->send_options));
-	return pext->g_proptag_a(&r->proptags);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.level));
+	TRY(x.g_uint32(&r.flags));
+	TRY(x.g_uint8(&r.send_options));
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->level));
-	TRY(pext->g_uint8(&r->flags));
-	TRY(pext->g_uint8(&r->send_options));
-	return pext->g_proptag_a(&r->proptags);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.level));
+	TRY(x.g_uint8(&r.flags));
+	TRY(x.g_uint8(&r.send_options));
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, TELLVERSION_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, TELLVERSION_REQUEST &r)
 {
 	for (size_t i = 0; i < 3; ++i)
-		TRY(pext->g_uint16(&r->version[i]));
+		TRY(x.g_uint16(&r.version[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCCONFIGURE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCCONFIGURE_REQUEST &r)
 {
-	auto &ext = *pext;
 	uint16_t res_size;
 	
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->sync_type));
-	TRY(pext->g_uint8(&r->send_options));
-	TRY(pext->g_uint16(&r->sync_flags));
-	TRY(pext->g_uint16(&res_size));
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.sync_type));
+	TRY(x.g_uint8(&r.send_options));
+	TRY(x.g_uint16(&r.sync_flags));
+	TRY(x.g_uint16(&res_size));
 	if (0 == res_size) {
-		r->pres = NULL;
+		r.pres = nullptr;
 	} else {
-		r->pres = pext->anew<RESTRICTION>();
-		if (r->pres == nullptr)
+		r.pres = x.anew<RESTRICTION>();
+		if (r.pres == nullptr)
 			return EXT_ERR_ALLOC;
-		uint32_t offset = ext.m_offset + res_size;
-		TRY(pext->g_restriction(r->pres));
-		if (ext.m_offset > offset)
+		uint32_t offset = x.m_offset + res_size;
+		TRY(x.g_restriction(r.pres));
+		if (x.m_offset > offset)
 			return EXT_ERR_FORMAT;
-		ext.m_offset = offset;
+		x.m_offset = offset;
 	}
-	TRY(pext->g_uint32(&r->extra_flags));
-	return pext->g_proptag_a(&r->proptags);
+	TRY(x.g_uint32(&r.extra_flags));
+	return x.g_proptag_a(&r.proptags);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCIMPORTMESSAGECHANGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCIMPORTMESSAGECHANGE_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->import_flags));
-	return pext->g_tpropval_a(&r->propvals);
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.import_flags));
+	return x.g_tpropval_a(&r.propvals);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const SYNCIMPORTMESSAGECHANGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const SYNCIMPORTMESSAGECHANGE_RESPONSE &r)
 {
-	return pext->p_uint64(r->message_id);
+	return x.p_uint64(r.message_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    SYNCIMPORTREADSTATECHANGES_REQUEST *r) try
+static pack_result rop_ext_pull(EXT_PULL &x,
+    SYNCIMPORTREADSTATECHANGES_REQUEST &r) try
 {
-	auto &ext = *pext;
 	uint16_t size;
 	static constexpr size_t ta_size = 0x1000;
 	auto tmp_array = std::make_unique<MESSAGE_READ_STAT[]>(ta_size);
 	
-	TRY(pext->g_uint16(&size));
+	TRY(x.g_uint16(&size));
 	if (size == 0)
 		return EXT_ERR_FORMAT;
-	r->count = 0;
-	uint32_t offset = ext.m_offset + size;
-	while (ext.m_offset < offset && r->count < ta_size)
-		TRY(rop_ext_pull(pext, &tmp_array[r->count++]));
-	if (ext.m_offset != offset)
+	r.count = 0;
+	uint32_t offset = x.m_offset + size;
+	while (x.m_offset < offset && r.count < ta_size)
+		TRY(rop_ext_pull(x, tmp_array[r.count++]));
+	if (x.m_offset != offset)
 		return EXT_ERR_FORMAT;
-	r->pread_stat = pext->anew<MESSAGE_READ_STAT>(r->count);
-	if (NULL == r->pread_stat) {
-		r->count = 0;
+	r.pread_stat = x.anew<MESSAGE_READ_STAT>(r.count);
+	if (r.pread_stat == nullptr) {
+		r.count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	memcpy(r->pread_stat, tmp_array.get(), sizeof(tmp_array[0]) * r->count);
+	memcpy(r.pread_stat, tmp_array.get(), sizeof(tmp_array[0]) * r.count);
 	return EXT_ERR_SUCCESS;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1171: ENOMEM");
 	return EXT_ERR_ALLOC;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCIMPORTHIERARCHYCHANGE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCIMPORTHIERARCHYCHANGE_REQUEST &r)
 {
-	TRY(pext->g_tpropval_a(&r->hichyvals));
-	return pext->g_tpropval_a(&r->propvals);
+	TRY(x.g_tpropval_a(&r.hichyvals));
+	return x.g_tpropval_a(&r.propvals);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const SYNCIMPORTHIERARCHYCHANGE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const SYNCIMPORTHIERARCHYCHANGE_RESPONSE &r)
 {
-	return pext->p_uint64(r->folder_id);
+	return x.p_uint64(r.folder_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCIMPORTDELETES_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCIMPORTDELETES_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->flags));
-	return pext->g_tpropval_a(&r->propvals);
+	TRY(x.g_uint8(&r.flags));
+	return x.g_tpropval_a(&r.propvals);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCIMPORTMESSAGEMOVE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCIMPORTMESSAGEMOVE_REQUEST &r)
 {
-	TRY(pext->g_bin_ex(&r->src_folder_id));
-	TRY(pext->g_bin_ex(&r->src_message_id));
-	TRY(pext->g_bin_ex(&r->change_list));
-	TRY(pext->g_bin_ex(&r->dst_message_id));
-	return pext->g_bin_ex(&r->change_number);
+	TRY(x.g_bin_ex(&r.src_folder_id));
+	TRY(x.g_bin_ex(&r.src_message_id));
+	TRY(x.g_bin_ex(&r.change_list));
+	TRY(x.g_bin_ex(&r.dst_message_id));
+	return x.g_bin_ex(&r.change_number);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const SYNCIMPORTMESSAGEMOVE_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const SYNCIMPORTMESSAGEMOVE_RESPONSE &r)
 {
-	return pext->p_uint64(r->message_id);
+	return x.p_uint64(r.message_id);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCOPENCOLLECTOR_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCOPENCOLLECTOR_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	return pext->g_uint8(&r->is_content_collector);
+	TRY(x.g_uint8(&r.ohindex));
+	return x.g_uint8(&r.is_content_collector);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, SYNCGETTRANSFERSTATE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, SYNCGETTRANSFERSTATE_REQUEST &r)
 {
-	return pext->g_uint8(&r->hindex);
+	return x.g_uint8(&r.ohindex);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    SYNCUPLOADSTATESTREAMBEGIN_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    SYNCUPLOADSTATESTREAMBEGIN_REQUEST &r)
 {
-	TRY(pext->g_uint32(&r->proptag_stat));
-	return pext->g_uint32(&r->buffer_size);
+	TRY(x.g_uint32(&r.proptag_stat));
+	return x.g_uint32(&r.buffer_size);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    SYNCUPLOADSTATESTREAMCONTINUE_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    SYNCUPLOADSTATESTREAMCONTINUE_REQUEST &r)
 {
-	return pext->g_bin_ex(&r->stream_data);
+	return x.g_bin_ex(&r.stream_data);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext,
-    SETLOCALREPLICAMIDSETDELETED_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x,
+    SETLOCALREPLICAMIDSETDELETED_REQUEST &r)
 {
-	auto &ext = *pext;
 	uint16_t data_size;
 	
-	TRY(pext->g_uint16(&data_size));
-	uint32_t offset = ext.m_offset + data_size;
-	TRY(pext->g_uint32(&r->count));
-	if (r->count == 0)
+	TRY(x.g_uint16(&data_size));
+	uint32_t offset = x.m_offset + data_size;
+	TRY(x.g_uint32(&r.count));
+	if (r.count == 0)
 		return EXT_ERR_FORMAT;
-	r->prange = pext->anew<LONG_TERM_ID_RANGE>(r->count);
-	if (NULL == r->prange) {
-		r->count = 0;
+	r.prange = x.anew<LONG_TERM_ID_RANGE>(r.count);
+	if (r.prange == nullptr) {
+		r.count = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->g_longterm_range(&r->prange[i]));
-	if (ext.m_offset > offset)
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(x.g_longterm_range(&r.prange[i]));
+	if (x.m_offset > offset)
 		return EXT_ERR_FORMAT;
-	ext.m_offset = offset;
+	x.m_offset = offset;
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, GETLOCALREPLICAIDS_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, GETLOCALREPLICAIDS_REQUEST &r)
 {
-	return pext->g_uint32(&r->count);
+	return x.g_uint32(&r.count);
 }
 
-static pack_result rop_ext_push(EXT_PUSH *pext,
-    const GETLOCALREPLICAIDS_RESPONSE *r)
+static pack_result rop_ext_push(EXT_PUSH &x,
+    const GETLOCALREPLICAIDS_RESPONSE &r)
 {
-	TRY(pext->p_guid(r->replguid));
-	return pext->p_bytes(r->global_count.ab, 6);
+	TRY(x.p_guid(r.replguid));
+	return x.p_bytes(r.global_count.ab, 6);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, REGISTERNOTIFICATION_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, REGISTERNOTIFICATION_REQUEST &r)
 {
-	TRY(pext->g_uint8(&r->hindex));
-	TRY(pext->g_uint8(&r->notification_types));
-	TRY(pext->g_uint8(&r->reserved));
-	TRY(pext->g_uint8(&r->want_whole_store));
-	if (r->want_whole_store) {
-		r->pfolder_id = NULL;
-		r->pmessage_id = NULL;
+	TRY(x.g_uint8(&r.ohindex));
+	TRY(x.g_uint8(&r.notification_types));
+	TRY(x.g_uint8(&r.reserved));
+	TRY(x.g_uint8(&r.want_whole_store));
+	if (r.want_whole_store) {
+		r.pfolder_id  = nullptr;
+		r.pmessage_id = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	r->pfolder_id = pext->anew<uint64_t>();
-	if (r->pfolder_id == nullptr)
+	r.pfolder_id = x.anew<uint64_t>();
+	if (r.pfolder_id == nullptr)
 		return EXT_ERR_ALLOC;
-	TRY(pext->g_uint64(r->pfolder_id));
-	r->pmessage_id = pext->anew<uint64_t>();
-	if (r->pmessage_id == nullptr)
+	TRY(x.g_uint64(r.pfolder_id));
+	r.pmessage_id = x.anew<uint64_t>();
+	if (r.pmessage_id == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_uint64(r->pmessage_id);
+	return x.g_uint64(r.pmessage_id);
 }
 
-pack_result rop_ext_push(EXT_PUSH *pext, const PENDING_RESPONSE *r)
+pack_result rop_ext_push(EXT_PUSH &x, const PENDING_RESPONSE &r)
 {
-	TRY(pext->p_uint8(ropPending));
-	return pext->p_uint16(r->session_index);
+	TRY(x.p_uint8(ropPending));
+	return x.p_uint16(r.session_index);
 }
 
-static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
+static pack_result rop_ext_pull(EXT_PULL &x, ROP_REQUEST &r)
 {
-	auto &ext = *pext;
 	EMSMDB_INFO *pemsmdb_info;
 	
-	r->bookmark.pb = deconst(ext.m_udata) + ext.m_offset;
-	r->bookmark.cb = ext.m_data_size - ext.m_offset;
-	TRY(pext->g_uint8(&r->rop_id));
-	TRY(pext->g_uint8(&r->logon_id));
-	TRY(pext->g_uint8(&r->hindex));
-	r->ppayload = NULL;
+	r.rq_bookmark.pb = deconst(x.m_udata) + x.m_offset;
+	r.rq_bookmark.cb = x.m_data_size - x.m_offset;
+	TRY(x.g_uint8(&r.rop_id));
+	TRY(x.g_uint8(&r.logon_id));
+	TRY(x.g_uint8(&r.hindex));
+	r.ppayload = nullptr;
 	
 #define H(rop, t) \
 	case (rop): { \
-		auto r0 = pext->anew<t ## _REQUEST>(); \
-		r->ppayload = r0; \
-		return r0 != nullptr ? rop_ext_pull(pext, r0) : pack_result::alloc; \
+		auto r0 = x.anew<t ## _REQUEST>(); \
+		r.ppayload = r0; \
+		return r0 != nullptr ? rop_ext_pull(x, *r0) : pack_result::alloc; \
 	}
 
-	switch (r->rop_id) {
+	switch (r.rop_id) {
 	H(ropLogon, LOGON);
 	H(ropGetReceiveFolder, GETRECEIVEFOLDER);
 	H(ropSetReceiveFolder, SETRECEIVEFOLDER);
@@ -1670,15 +1562,14 @@ static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
 	H(ropGetPerUserGuid, GETPERUSERGUID);
 	H(ropReadPerUserInformation, READPERUSERINFORMATION);
 	case ropWritePerUserInformation: {
-		r->ppayload = pext->anew<WRITEPERUSERINFORMATION_REQUEST>();
-		if (r->ppayload == nullptr)
+		r.ppayload = x.anew<WRITEPERUSERINFORMATION_REQUEST>();
+		if (r.ppayload == nullptr)
 			return EXT_ERR_ALLOC;
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), r->logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), r.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		return rop_ext_pull(pext,
-		       static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r->ppayload),
+		return rop_ext_pull(x, *static_cast<WRITEPERUSERINFORMATION_REQUEST *>(r.ppayload),
 		       plogon->is_private());
 	}
 	H(ropOpenFolder, OPENFOLDER);
@@ -1719,15 +1610,14 @@ static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
 	H(ropGetMessageStatus, GETMESSAGESTATUS);
 	H(ropSetReadFlags, SETREADFLAGS);
 	case ropSetMessageReadFlag: {
-		r->ppayload = pext->anew<SETMESSAGEREADFLAG_REQUEST>();
-		if (r->ppayload == nullptr)
+		r.ppayload = x.anew<SETMESSAGEREADFLAG_REQUEST>();
+		if (r.ppayload == nullptr)
 			return EXT_ERR_ALLOC;
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), r->logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), r.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
-		return rop_ext_pull(pext,
-		       static_cast<SETMESSAGEREADFLAG_REQUEST *>(r->ppayload),
+		return rop_ext_pull(x, *static_cast<SETMESSAGEREADFLAG_REQUEST *>(r.ppayload),
 		       plogon->is_private());
 	}
 	H(ropOpenAttachment, OPENATTACHMENT);
@@ -1815,44 +1705,37 @@ static pack_result rop_ext_pull(EXT_PULL *pext, ROP_REQUEST *r)
 }
 
 /* not including ropNotify, ropPending, ropBackoff, ropBufferTooSmall */
-pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, ROP_RESPONSE *r)
+pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const ROP_RESPONSE &r)
 {
 	EMSMDB_INFO *pemsmdb_info;
 	
-	if (r->rop_id == ropGetMessageStatus)
-		TRY(pext->p_uint8(ropSetMessageStatus));
-	else
-		TRY(pext->p_uint8(r->rop_id));
-	
-	TRY(pext->p_uint8(r->hindex));
-	TRY(pext->p_uint32(r->result));
-	if (r->result != ecSuccess) {
-		switch (r->rop_id) {
+	TRY(x.p_uint8(r.rop_id != ropSetMessageStatus ? r.rop_id : ropGetMessageStatus));
+	TRY(x.p_uint8(r.hindex));
+	TRY(x.p_uint32(r.result));
+	if (r.result != ecSuccess) {
+		switch (r.rop_id) {
 		case ropLogon:
-			if (r->result == ecWrongServer)
-				return rop_ext_push(pext,
-				       static_cast<LOGON_REDIRECT_RESPONSE *>(r->ppayload));
+			if (r.result == ecWrongServer)
+				return rop_ext_push(x, *static_cast<const LOGON_REDIRECT_RESPONSE *>(r.ppayload));
 			return pack_result::success;
 		case ropGetPropertyIdsFromNames:
-			if (r->result == ecWarnWithErrors)
+			if (r.result == ecWarnWithErrors)
 				break;
 			return pack_result::success;
 		case ropMoveCopyMessages:
 		case ropMoveFolder:
 		case ropCopyFolder:
-			if (r->result == ecDstNullObject)
-				return rop_ext_push(pext,
-				       static_cast<NULL_DST_RESPONSE *>(r->ppayload));
+			if (r.result == ecDstNullObject)
+				return rop_ext_push(x, *static_cast<const NULL_DST_RESPONSE *>(r.ppayload));
 			break;
 		case ropCopyProperties:
 		case ropCopyTo:
-			if (r->result == ecDstNullObject)
-				return pext->p_uint32(*static_cast<uint8_t *>(r->ppayload));
+			if (r.result == ecDstNullObject)
+				return x.p_uint32(static_cast<const NULL_DST1_RESPONSE *>(r.ppayload)->dhindex);
 			return pack_result::success;
 		case ropCopyToStream:
-			if (r->result == ecDstNullObject)
-				return rop_ext_push(pext,
-				       static_cast<COPYTOSTREAM_NULL_DEST_RESPONSE *>(r->ppayload));
+			if (r.result == ecDstNullObject)
+				return rop_ext_push(x, *static_cast<const COPYTOSTREAM_NULL_DEST_RESPONSE *>(r.ppayload));
 			return pack_result::success;
 		case ropEmptyFolder:
 		case ropDeleteFolder:
@@ -1869,19 +1752,17 @@ pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, ROP_RESPONSE *r)
 
 #define H(rop, t) \
 	case (rop): \
-		return rop_ext_push(pext, static_cast<t ## _RESPONSE *>(r->ppayload));
+		return rop_ext_push(x, *static_cast<const t ## _RESPONSE *>(r.ppayload));
 
-	switch (r->rop_id) {
+	switch (r.rop_id) {
 	case ropLogon: {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		return plogon->is_private() ?
-		       rop_ext_push(pext,
-		       static_cast<LOGON_PMB_RESPONSE *>(r->ppayload)) :
-		       rop_ext_push(pext,
-		       static_cast<LOGON_PF_RESPONSE *>(r->ppayload));
+		       rop_ext_push(x, *static_cast<const LOGON_PMB_RESPONSE *>(r.ppayload)) :
+		       rop_ext_push(x, *static_cast<const LOGON_PF_RESPONSE *>(r.ppayload));
 	}
 	H(ropGetReceiveFolder, GETRECEIVEFOLDER);
 	H(ropGetReceiveFolderTable, GETRECEIVEFOLDERTABLE);
@@ -2014,9 +1895,8 @@ pack_result rop_ext_push(EXT_PUSH *pext, uint8_t logon_id, ROP_RESPONSE *r)
 #undef H
 }
 
-pack_result rop_ext_pull(EXT_PULL *pext, ROP_BUFFER *r)
+pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 {
-	auto &ext = *pext;
 	int tmp_num;
 	uint16_t size;
 	EXT_PULL subext;
@@ -2024,18 +1904,18 @@ pack_result rop_ext_pull(EXT_PULL *pext, ROP_BUFFER *r)
 	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
 	
-	TRY(pext->g_rpc_header_ext(&rpc_header_ext));
+	TRY(x.g_rpc_header_ext(&rpc_header_ext));
 	if (!(rpc_header_ext.flags & RHE_FLAG_LAST))
 		return EXT_ERR_HEADER_FLAGS;
-	r->rhe_version = rpc_header_ext.version;
-	r->rhe_flags = rpc_header_ext.flags;
-	double_list_init(&r->rop_list);
+	r.rhe_version = rpc_header_ext.version;
+	r.rhe_flags = rpc_header_ext.flags;
+	double_list_init(&r.rop_list);
 	if (rpc_header_ext.size == 0)
 		return EXT_ERR_HEADER_SIZE;
-	auto pbuff = pext->anew<uint8_t>(0x8000);
+	auto pbuff = x.anew<uint8_t>(0x8000);
 	if (pbuff == nullptr)
 		return EXT_ERR_ALLOC;
-	auto pdata = ext.m_udata + ext.m_offset;
+	auto pdata = x.m_udata + x.m_offset;
 	/*
 	 * Obfuscation case - modify data in place (devs: ensure callers
 	 * have the object actually mutable)
@@ -2058,31 +1938,31 @@ pack_result rop_ext_pull(EXT_PULL *pext, ROP_BUFFER *r)
 	subext.init(pbuff, rpc_header_ext.size_actual, common_util_alloc, EXT_FLAG_UTF16);
 	TRY(subext.g_uint16(&size));
 	while (subext.m_offset < size) {
-		pnode = pext->anew<DOUBLE_LIST_NODE>();
+		pnode = x.anew<DOUBLE_LIST_NODE>();
 		if (pnode == nullptr)
 			return EXT_ERR_ALLOC;
-		pnode->pdata = pext->anew<ROP_REQUEST>();
+		pnode->pdata = x.anew<ROP_REQUEST>();
 		if (pnode->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(rop_ext_pull(&subext, static_cast<ROP_REQUEST *>(pnode->pdata)));
-		double_list_append_as_tail(&r->rop_list, pnode);
+		TRY(rop_ext_pull(subext, *static_cast<ROP_REQUEST *>(pnode->pdata)));
+		double_list_append_as_tail(&r.rop_list, pnode);
 	}
 	tmp_num = (rpc_header_ext.size_actual - size) / sizeof(uint32_t);
 	if (0 == tmp_num) {
-		r->hnum = 0;
-		r->phandles = NULL;
+		r.hnum = 0;
+		r.phandles = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
 	if (tmp_num > 255)
 		return EXT_ERR_RANGE;
-	r->hnum = tmp_num;
-	r->phandles = pext->anew<uint32_t>(r->hnum);
-	if (NULL == r->phandles) {
-		r->hnum = 0;
+	r.hnum = tmp_num;
+	r.phandles = x.anew<uint32_t>(r.hnum);
+	if (r.phandles == nullptr) {
+		r.hnum = 0;
 		return EXT_ERR_ALLOC;
 	}
-	for (size_t i = 0; i < r->hnum; ++i)
-		TRY(subext.g_uint32(&r->phandles[i]));
+	for (size_t i = 0; i < r.hnum; ++i)
+		TRY(subext.g_uint32(&r.phandles[i]));
 	return EXT_ERR_SUCCESS;
 }
 

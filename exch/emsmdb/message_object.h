@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -15,7 +16,7 @@ struct stream_object;
 
 struct message_object {
 	protected:
-	message_object();
+	message_object() = default;
 	NOMOVE(message_object)
 
 	public:
@@ -66,5 +67,5 @@ struct message_object {
 	std::shared_ptr<ics_state> pstate;
 	PROPTAG_ARRAY *precipient_columns = nullptr;
 	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
-	DOUBLE_LIST stream_list{};
+	std::vector<stream_object *> stream_list;
 };
