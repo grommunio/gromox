@@ -573,7 +573,7 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
 	if (tag == ID_TAG_HTML)
 		buf = "<html><body><p><tt>";
 	else if (tag == ID_TAG_RTFCOMPRESSED)
-		buf = "\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\n";
+		buf = "\x7b\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\n";
 	else if (tag == ID_TAG_BODY)
 		buf.resize(4);
 	if (tag != 0)
@@ -582,7 +582,7 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
 	if (tag == ID_TAG_HTML) {
 		buf += "</tt></p></body></html>";
 	} else if (tag == ID_TAG_RTFCOMPRESSED) {
-		buf += "\\par\n}";
+		buf += "\\par\n\x7d";
 		auto bin = rtfcp_compress(buf.c_str(), buf.size());
 		if (bin == nullptr)
 			return nullptr;
