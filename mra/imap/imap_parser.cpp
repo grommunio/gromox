@@ -1107,7 +1107,7 @@ static std::vector<imap_context *> *sh_query(const char *x)
 	return i == g_select_hash.end() ? nullptr : &i->second;
 }
 
-void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
+void imap_parser_bcast_touch(const imap_context *current, const char *username,
     const char *folder)
 {
 	char buff[1024];
@@ -1118,9 +1118,10 @@ void imap_parser_bcast_touch(IMAP_CONTEXT *pcontext, const char *username,
 	auto plist = sh_query(buff);
 	if (plist == nullptr)
 		return;
-	for (auto pcontext1 : *plist)
-		if (pcontext != pcontext1 && strcmp(folder, pcontext1->selected_folder) == 0)
-			pcontext1->b_modify = true;
+	for (auto other : *plist)
+		if (current != other &&
+		    strcmp(folder, other->selected_folder) == 0)
+			other->b_modify = true;
 	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
 	system_services_broadcast_event(buff);
@@ -1136,31 +1137,33 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 	auto plist = sh_query(temp_string);
 	if (plist == nullptr)
 		return;
-	for (auto pcontext : *plist)
-		if (strcmp(folder, pcontext->selected_folder) == 0)
-			pcontext->b_modify = true;
+	for (auto other : *plist)
+		if (strcmp(folder, other->selected_folder) == 0)
+			other->b_modify = true;
 }
 
-void imap_parser_bcast_flags(IMAP_CONTEXT *pcontext, const std::string &mid_string) try
+void imap_parser_bcast_flags(const imap_context *pcurr,
+    const std::string &mid_string) try
 {
+	auto &current = *pcurr;
 	char buff[1024];
 	
-	gx_strlcpy(buff, pcontext->username, std::size(buff));
+	gx_strlcpy(buff, current.username, std::size(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = sh_query(buff);
 	if (plist == nullptr)
 		return;
-	for (auto pcontext1 : *plist) {
-		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
-			pcontext1->selected_folder)) {
-			pcontext1->f_flags.emplace(mid_string);
-			pcontext1->b_modify = true;
-		}
+	for (auto other : *plist) {
+		if (&current == other ||
+		    strcmp(current.selected_folder, other->selected_folder) != 0)
+			continue;
+		other->f_flags.emplace(mid_string);
+		other->b_modify = true;
 	}
 	hl_hold.unlock();
-	auto buf = "MESSAGE-FLAG "s + pcontext->username + " " +
-	           pcontext->selected_folder + " " + mid_string;
+	auto buf = "MESSAGE-FLAG "s + current.username + " " +
+	           current.selected_folder + " " + mid_string;
 	system_services_broadcast_event(buf.c_str());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1468: ENOMEM");
@@ -1176,11 +1179,12 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	auto plist = sh_query(temp_string);
 	if (plist == nullptr)
 		return;
-	for (auto pcontext : *plist)
-		if (0 == strcmp(pcontext->selected_folder, folder)) {
-			pcontext->f_flags.emplace(mid_string);
-			pcontext->b_modify = true;
-		}
+	for (auto other : *plist) {
+		if (strcmp(folder, other->selected_folder) != 0)
+			continue;
+		other->f_flags.emplace(mid_string);
+		other->b_modify = true;
+	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1087: ENOMEM");
 }
@@ -1232,11 +1236,11 @@ void imap_parser_event_expunge(const char *user, const char *folder, unsigned in
 	auto ctx_list = sh_query(user_lo);
 	if (ctx_list == nullptr)
 		return;
-	for (auto ctx : *ctx_list) {
-		if (strcmp(ctx->selected_folder, folder) == 0) {
-			ctx->f_expunged_uids.emplace_back(uid);
-			ctx->b_modify = true;
-		}
+	for (auto other : *ctx_list) {
+		if (strcmp(folder, other->selected_folder) != 0)
+			continue;
+		other->f_expunged_uids.emplace_back(uid);
+		other->b_modify = true;
 	}
 }
 
