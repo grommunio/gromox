@@ -579,10 +579,19 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
 	if (tag != 0)
 		buf += fmt::format("[CID={} Tag={:x}] {}", cid, tag,
 		       mode <= 1 ? "Property/Attachment absent" : "Filler text for debugging");
-	if (tag == ID_TAG_HTML)
+	if (tag == ID_TAG_HTML) {
 		buf += "</tt></p></body></html>";
-	else if (tag == ID_TAG_RTFCOMPRESSED)
+	} else if (tag == ID_TAG_RTFCOMPRESSED) {
 		buf += "\\par\n}";
+		auto bin = rtfcp_compress(buf.c_str(), buf.size());
+		if (bin == nullptr)
+			return nullptr;
+		auto out = bin->pb;
+		if (outlen != nullptr)
+			*outlen = bin->cb;
+		free(bin);
+		return out;
+	}
 	auto out = cu_alloc<char>(buf.size() + 1);
 	if (out == nullptr)
 		return nullptr;
