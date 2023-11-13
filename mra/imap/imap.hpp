@@ -74,6 +74,8 @@ struct content_array final : public XARRAY {
  * @b_modify:	flag indicating that other clients concurrently modified the mailbox
  * 		(@f_flags, @f_expunged_uids is filled with changes)
  * @contents:	current mapping of seqid -> mid/uid for the currently selected folder
+ * @f_flags:    imapuids that were asynchronously reflagged by another thread
+ *              and which needs to be conveyed to the client
  */
 struct imap_context final : public schedule_context {
 	imap_context();
@@ -94,7 +96,7 @@ struct imap_context final : public schedule_context {
 	content_array contents;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
 	gromox::atomic_bool b_modify{false};
-	std::unordered_set<std::string> f_flags;
+	std::unordered_set<uint32_t> f_flags;
 	std::vector<unsigned int> f_expunged_uids;
 	char tag_string[32]{};
 	int command_len = 0;
@@ -120,7 +122,7 @@ extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 extern int imap_parser_threads_event_proc(int action);
 extern void imap_parser_bcast_touch(const imap_context *, const char *user, const char *folder);
 extern void imap_parser_echo_modify(IMAP_CONTEXT *, STREAM *);
-extern void imap_parser_bcast_flags(const imap_context *, const std::string &mid);
+extern void imap_parser_bcast_flags(const imap_context &, uint32_t uid);
 extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
 extern void imap_parser_remove_select(IMAP_CONTEXT *);

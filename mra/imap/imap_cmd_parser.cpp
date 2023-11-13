@@ -852,7 +852,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_bcast_flags(pcontext, pitem->mid);
+				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
 			auto pmime = mjson.get_mime("");
@@ -888,7 +888,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_bcast_flags(pcontext, pitem->mid);
+				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
 		} else if (strcasecmp(kw, "UID") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
@@ -977,7 +977,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					pcontext->selected_folder, pitem->mid,
 					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
-				imap_parser_bcast_flags(pcontext, pitem->mid);
+				imap_parser_bcast_flags(*pcontext, pitem->uid);
 			}
 		}
 	}
@@ -989,7 +989,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		if (!(pitem->flag_bits & FLAG_SEEN)) {
 			system_services_unset_flags(pcontext->maildir,
 				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errnum);
-			imap_parser_bcast_flags(pcontext, pitem->mid);
+			imap_parser_bcast_flags(*pcontext, pitem->uid);
 		}
 	}
 	return 0;
@@ -2900,7 +2900,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		imap_cmd_parser_store_flags(argv[3], pitem->mid,
 			ct_item->id, 0, flag_bits, pcontext);
-		imap_parser_bcast_flags(pcontext, pitem->mid);
+		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1721;
@@ -3166,7 +3166,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		imap_cmd_parser_store_flags(argv[4], pitem->mid,
 			ct_item->id, pitem->uid, flag_bits, pcontext);
-		imap_parser_bcast_flags(pcontext, pitem->mid);
+		imap_parser_bcast_flags(*pcontext, pitem->uid);
 	}
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1724;

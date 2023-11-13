@@ -54,8 +54,7 @@ static void *imps_thrwork(void *);
 static void *imps_scanwork(void *);
 static void imap_parser_event_proc(char *event);
 static void imap_parser_event_touch(const char *user, const char *folder);
-static void imap_parser_event_flag(const char *username, const char *folder,
-	const char *mid_string);
+static void imap_parser_event_flag(const char *username, const char *folder, uint32_t uid);
 
 static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontext);
 
@@ -1142,10 +1141,8 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 			other->b_modify = true;
 }
 
-void imap_parser_bcast_flags(const imap_context *pcurr,
-    const std::string &mid_string) try
+void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
 {
-	auto &current = *pcurr;
 	char buff[1024];
 	
 	gx_strlcpy(buff, current.username, std::size(buff));
@@ -1158,19 +1155,19 @@ void imap_parser_bcast_flags(const imap_context *pcurr,
 		if (&current == other ||
 		    strcmp(current.selected_folder, other->selected_folder) != 0)
 			continue;
-		other->f_flags.emplace(mid_string);
+		other->f_flags.emplace(uid);
 		other->b_modify = true;
 	}
 	hl_hold.unlock();
-	auto buf = "MESSAGE-FLAG "s + current.username + " " +
-	           current.selected_folder + " " + mid_string;
+	auto buf = "MESSAGE-UFLAG "s + current.username + " " +
+	           current.selected_folder + " " + std::to_string(uid);
 	system_services_broadcast_event(buf.c_str());
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1468: ENOMEM");
 }
 
 static void imap_parser_event_flag(const char *username, const char *folder,
-    const char *mid_string) try
+    uint32_t uid) try
 {
 	char temp_string[UADDR_SIZE];
 	gx_strlcpy(temp_string, username, std::size(temp_string));
@@ -1182,7 +1179,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	for (auto other : *plist) {
 		if (strcmp(folder, other->selected_folder) != 0)
 			continue;
-		other->f_flags.emplace(mid_string);
+		other->f_flags.emplace(uid);
 		other->b_modify = true;
 	}
 } catch (const std::bad_alloc &) {
@@ -1273,7 +1270,6 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 {
 	if (!pcontext->b_modify)
 		return;
-	int id;
 	int err;
 	int flag_bits;
 	BOOL b_first;
@@ -1298,16 +1294,15 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			return;
 	}
 	
-	for (const auto &mid : f_flags) {
-		auto mid_string = mid.c_str();
-		if (system_services_get_id(pcontext->maildir,
-		    pcontext->selected_folder, mid_string,
-		    reinterpret_cast<unsigned int *>(&id)) != MIDB_RESULT_OK ||
-		    system_services_get_flags(pcontext->maildir,
-		    pcontext->selected_folder, mid_string, &flag_bits,
+	for (auto uid : f_flags) {
+		auto item = pcontext->contents.get_itemx(uid);
+		if (item == nullptr)
+			continue;
+		if (system_services_get_flags(pcontext->maildir,
+		    pcontext->selected_folder, item->mid, &flag_bits,
 		    &err) != MIDB_RESULT_OK)
 			continue;
-		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", id);
+		auto outlen = gx_snprintf(buff, std::size(buff), "* %d FETCH (FLAGS (", item->id);
 		b_first = FALSE;
 		if (flag_bits & FLAG_RECENT) {
 			outlen += gx_snprintf(&buff[outlen], std::size(buff) - outlen, "\\Recent");
@@ -1579,14 +1574,14 @@ static void imap_parser_event_proc(char *event)
 			*pspace = '\0';
 			imap_parser_event_touch(event + 13, pspace + 1);
 		}
-	} else if (0 == strncasecmp(event, "MESSAGE-FLAG ", 13)) {
-		pspace = strchr(event + 13, ' ');
+	} else if (strncasecmp(event, "MESSAGE-UFLAG ", 14) == 0) {
+		pspace = strchr(&event[14], ' ');
 		if (NULL != pspace) {
 			*pspace = '\0';
 			pspace1 = strchr(pspace + 1, ' ');
 			if (NULL != pspace1) {
 				*pspace1 = '\0';
-				imap_parser_event_flag(event + 13, pspace + 1, pspace1 + 1);
+				imap_parser_event_flag(&event[14], &pspace[1], strtoul(&pspace1[1], nullptr, 0));
 			}
 		}
 	} else if (strncasecmp(event, "MESSAGE-EXPUNGE ", 16) == 0) {
