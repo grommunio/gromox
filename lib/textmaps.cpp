@@ -142,7 +142,7 @@ bool verify_cpid(uint32_t id)
 	return g_cpid2name_map.find(id) != g_cpid2name_map.cend() &&
 	       id != CP_UTF16 && id != CP_UTF16BE &&
 	       id != CP_UTF32 && id != CP_UTF32BE &&
-	       id != CP_UTF7 && id != CP_UTF8;
+	       id != CP_UTF7;
 }
 
 const char *cpid_to_cset(cpid_t id)
