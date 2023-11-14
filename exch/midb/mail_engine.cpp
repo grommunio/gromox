@@ -4314,9 +4314,7 @@ static void mail_engine_modify_notification_message(
 static void mail_engine_notification_proc(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify)
 {
-	uint64_t folder_id;
-	uint64_t parent_id;
-	uint64_t message_id;
+	uint64_t parent_id = 0, folder_id = 0, message_id = 0;
 	char temp_buff[1280];
 	char sql_string[1024];
 	
