@@ -1608,15 +1608,14 @@ int content_array::refresh(imap_context &ctx, const char *folder)
 	if (ret != 0)
 		return ret;
 
-	auto &vec = xa.m_vec;
 	for (size_t i = 0; i < xa.m_vec.size(); ++i)
-		vec[i].id = i + 1;
-	n_recent = std::count_if(vec.cbegin(), vec.cend(),
-	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
-	auto iter = std::find_if(vec.cbegin(), vec.cend(),
-	            [](const MITEM &m) { return !(m.flag_bits & FLAG_SEEN); });
-	firstunseen = iter == vec.end() ? 0 : iter - vec.cbegin() + 1;
+		xa.m_vec[i].id = i + 1;
 	*this = std::move(xa);
+	n_recent = std::count_if(m_vec.cbegin(), m_vec.cend(),
+	           [](const MITEM &m) { return m.flag_bits & FLAG_RECENT; });
+	auto iter = std::find_if(m_vec.cbegin(), m_vec.cend(),
+	            [](const MITEM &m) { return !(m.flag_bits & FLAG_SEEN); });
+	firstunseen = iter == m_vec.end() ? 0 : iter - m_vec.cbegin() + 1;
 	return 0;
 }
 
