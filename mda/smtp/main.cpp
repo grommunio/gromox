@@ -22,7 +22,6 @@
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -326,7 +325,6 @@ static void listener_stop()
 int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
-	struct rlimit rl;
 	char temp_buff[256];
 	smtp_param scfg;
 
@@ -470,21 +468,7 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
-	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
-		return EXIT_FAILURE;
-	}
-	if (rl.rlim_cur < scfg.context_num + 128 ||
-	    rl.rlim_max < scfg.context_num + 128) {
-		rl.rlim_cur = scfg.context_num + 128;
-		rl.rlim_max = scfg.context_num + 128;
-		if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-			mlog(LV_WARN, "setrlimit RLIMIT_NFILE %zu: %s",
-				static_cast<size_t>(rl.rlim_max), strerror(errno));
-		else
-			mlog(LV_NOTICE, "system: FD limit set to %zu",
-				static_cast<size_t>(rl.rlim_cur));
-	}
+	filedes_limit_bump(scfg.context_num + 128);
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

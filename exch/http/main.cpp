@@ -17,7 +17,6 @@
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include <sys/resource.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
@@ -140,7 +139,6 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 
 int main(int argc, const char **argv) try
 {
-	struct rlimit rl;
 	char temp_buff[256];
 	int retcode = EXIT_FAILURE;
 	char host_name[UDOM_SIZE], *ptoken;
@@ -285,21 +283,7 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
-	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
-		return EXIT_FAILURE;
-	}
-	if (rl.rlim_cur < 5*context_num + 256 ||
-		rl.rlim_max < 5*context_num + 256) {
-		rl.rlim_cur = 5*context_num + 256;
-		rl.rlim_max = 5*context_num + 256;
-		if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-			mlog(LV_WARN, "setrlimit RLIMIT_NFILE %zu: %s",
-				static_cast<size_t>(rl.rlim_max), strerror(errno));
-		else
-			mlog(LV_NOTICE, "system: FD limit set to %zu",
-				static_cast<size_t>(rl.rlim_cur));
-	}
+	filedes_limit_bump(5 * context_num + 256);
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

@@ -1618,7 +1618,8 @@ int content_array::refresh(imap_context &ctx, const char *folder,
 		for (auto &newmail : xa.m_vec) {
 			if (get_itemx(newmail.uid) != nullptr)
 				continue; /* already known */
-			m_vec.emplace_back(std::move(newmail));
+			auto uid = newmail.uid;
+			append(std::move(newmail), uid);
 			m_vec[start].id = start + 1;
 			++start;
 		}
@@ -1658,7 +1659,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
-	ret = pcontext->contents.refresh(*pcontext, temp_name);
+	ret = pcontext->contents.refresh(*pcontext, temp_name, true);
 	if (ret != 0)
 		return ret;
 	strcpy(pcontext->selected_folder, temp_name);
@@ -2670,6 +2671,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
+	imap_parser_echo_modify(pcontext, nullptr, true);
 	/* IMAP_CODE_2170026: OK EXPUNGE completed */
 	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
 	string_length = gx_snprintf(buff, std::size(buff),
@@ -3351,7 +3353,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
-	imap_parser_echo_modify(pcontext, NULL);
+	imap_parser_echo_modify(pcontext, nullptr, true);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
 	auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
 	string_length = gx_snprintf(buff, std::size(buff),

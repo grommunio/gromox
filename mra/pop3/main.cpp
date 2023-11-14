@@ -22,7 +22,6 @@
 #include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
@@ -391,7 +390,6 @@ static void *xrpc_alloc(size_t z)
 int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
-	struct rlimit rl;
 	char temp_buff[256];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -522,19 +520,7 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
-	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		printf("[system]: fail to get file limitation\n");
-		return EXIT_FAILURE;
-	}
-	if (rl.rlim_cur < 2*context_num + 128 ||
-		rl.rlim_max < 2*context_num + 128) {
-		rl.rlim_cur = 2*context_num + 128;
-		rl.rlim_max = 2*context_num + 128;
-		if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-			printf("[system]: fail to set file limitation\n");
-		else
-			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
-	}
+	filedes_limit_bump(2 * context_num + 128);
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

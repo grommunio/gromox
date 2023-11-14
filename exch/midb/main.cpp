@@ -20,7 +20,6 @@
 #include <libHX/option.h>
 #include <libHX/socket.h>
 #include <libHX/string.h>
-#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -295,7 +294,6 @@ static void listener_stop()
 
 int main(int argc, const char **argv) try
 {
-	struct rlimit rl;
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
 	
@@ -346,23 +344,8 @@ int main(int argc, const char **argv) try
 	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
+	filedes_limit_bump(5 * table_size);
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
-	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
-		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
-	} else {
-		rlim_t tb5 = 5 * table_size;
-		if (rl.rlim_cur < tb5 || rl.rlim_max < tb5) {
-			rl.rlim_cur = tb5;
-			rl.rlim_max = tb5;
-			if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
-				mlog(LV_WARN, "setrlimit RLIMIT_NFILE %zu: %s",
-					static_cast<size_t>(rl.rlim_max), strerror(errno));
-			else
-				mlog(LV_NOTICE, "system: FD limit set to %zu",
-					static_cast<size_t>(rl.rlim_cur));
-		}
-	}
-
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
