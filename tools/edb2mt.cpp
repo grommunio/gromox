@@ -463,13 +463,15 @@ static void folder_prop_handler(edb_folder &f, const std::string &key,
 	case PT_SYSTIME:
 	case PT_STRING8:
 	case PT_UNICODE:
-		f.props.set(proptag, val.c_str());
+		if (f.props.set(proptag, val.c_str()) != 0)
+			throw std::bad_alloc();
 		return;
 	case PT_BINARY: {
 		BINARY bv;
 		bv.pv = val.data();
 		bv.cb = val.size();
-		f.props.set(proptag, &bv);
+		if (f.props.set(proptag, &bv) != 0)
+			throw std::bad_alloc();
 		return;
 	}
 	default:
@@ -635,8 +637,8 @@ static errno_t do_file(const char *filename) try
 		throw YError("PG-1017: %s", strerror(errno));
 	if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
 		throw YError("PG-1018: %s", strerror(errno));
-#endif
 	return 0;
+#endif
 } catch (const char *e) {
 	fprintf(stderr, "edb: Exception: %s\n", e);
 	return ECANCELED;
