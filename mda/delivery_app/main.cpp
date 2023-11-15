@@ -143,10 +143,11 @@ int main(int argc, const char **argv)
 		threads_min, threads_max);
 
 	unsigned int free_contexts = threads_max;
-	if (g_config_file->get_uint("free_context_num", &free_contexts)) {
+	if (g_config_file->get_value("free_context_num") != nullptr) {
+		free_contexts = g_config_file->get_ll("free_context_num");
 		if (free_contexts < threads_max) {
 			free_contexts = threads_max; 
-			g_config_file->set_int("free_context_num", free_contexts);
+			g_config_file->set_value("free_context_num", std::to_string(free_contexts).c_str());
 		}
 	}
 	mlog(LV_INFO, "system: free contexts number is %d", free_contexts);

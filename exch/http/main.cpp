@@ -197,7 +197,7 @@ int main(int argc, const char **argv)
 	unsigned int thread_charge_num = g_config_file->get_ll("http_thread_charge_num");
 	if (thread_charge_num % 4 != 0) {
 		thread_charge_num = thread_charge_num / 4 * 4;
-		g_config_file->set_int("http_thread_charge_num", thread_charge_num);
+		g_config_file->set_value("http_thread_charge_num", std::to_string(thread_charge_num).c_str());
 	}
 	mlog(LV_INFO, "system: one thread is in charge of %d contexts",
 		thread_charge_num);
@@ -209,10 +209,10 @@ int main(int argc, const char **argv)
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			context_num = thread_charge_num;
-			g_config_file->set_int("context_num", context_num);
+			g_config_file->set_value("context_num", std::to_string(context_num).c_str());
 			mlog(LV_NOTICE, "system: rectified contexts number to %d", context_num);
 		}
-		g_config_file->set_int("http_thread_init_num", thread_init_num);
+		g_config_file->set_value("http_thread_init_num", std::to_string(thread_init_num).c_str());
 	}
 	mlog(LV_INFO, "system: threads pool initial threads number is %d",
 		thread_init_num);

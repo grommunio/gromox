@@ -334,24 +334,6 @@ BOOL CONFIG_FILE::save()
 	return TRUE;
 }
 
-BOOL CONFIG_FILE::get_int(const char *key, int *value) const
-{
-	auto v = get_value(key);
-	if (v == nullptr)
-		return FALSE;
-	*value = strtol(v, nullptr, 0);
-	return TRUE;
-}
-
-BOOL CONFIG_FILE::get_uint(const char *key, unsigned int *value) const
-{
-	auto v = get_value(key);
-	if (v == nullptr)
-		return FALSE;
-	*value = strtoul(v, nullptr, 0);
-	return TRUE;
-}
-
 /**
  * Not suitable for signed or maybe-signed (e.g. time_t) quantities.
  */
@@ -363,13 +345,6 @@ unsigned long long CONFIG_FILE::get_ll(const char *key) const
 		return 0;
 	}
 	return strtoull(sv, nullptr, 0);
-}
-
-BOOL CONFIG_FILE::set_int(const char *key, int value) try
-{
-	return set_value(key, std::to_string(value).c_str());
-} catch (const std::bad_alloc &) {
-	return false;
 }
 
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)

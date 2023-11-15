@@ -440,7 +440,13 @@ static constexpr cfg_directive x500_defaults[] = {
 };
 
 static constexpr cfg_directive ews_cfg_defaults[] = {
-	{"ews_experimental", "0", CFG_BOOL},
+	{"ews_beta", "0", CFG_BOOL},
+	{"ews_cache_attachment_instance_lifetime", "30000"},
+	{"ews_cache_embedded_instance_lifetime", "30000"},
+	{"ews_cache_interval", "5000"},
+	{"ews_cache_message_instance_lifetime", "30000"},
+	{"ews_event_stream_interval", "45000"},
+	{"ews_experimental", "ews_beta", CFG_ALIAS},
 	{"ews_log_filter", "!"},
 	{"ews_max_user_photo_size", "5M", CFG_SIZE},
 	{"ews_pretty_response", "0", CFG_BOOL},
@@ -466,28 +472,20 @@ void EWSPlugin::loadConfig()
 	mlog(LV_INFO, "[ews]: x500 org name is \"%s\"", x500_org_name.c_str());
 
 	cfg = config_file_initd("ews.cfg", get_config_path(), ews_cfg_defaults);
-	cfg->get_int("ews_experimental", &experimental);
-	cfg->get_int("ews_beta", &experimental);
-	cfg->get_int("ews_pretty_response", &pretty_response);
-	cfg->get_int("ews_request_logging", &request_logging);
-	cfg->get_int("ews_response_logging", &response_logging);
+	experimental = cfg->get_ll("ews_beta");
+	pretty_response = cfg->get_ll("ews_pretty_response");
+	request_logging = cfg->get_ll("ews_request_logging");
+	response_logging = cfg->get_ll("ews_response_logging");
 
-	int temp;
-	if(cfg->get_int("ews_cache_interval", &temp))
-		cache_interval = std::chrono::milliseconds(temp);
-	if(cfg->get_int("ews_cache_attachment_instance_lifetime", &temp))
-		cache_attachment_instance_lifetime = std::chrono::milliseconds(temp);
-	if(cfg->get_int("ews_cache_message_instance_lifetime", &temp))
-		cache_message_instance_lifetime = std::chrono::milliseconds(temp);
-	if(cfg->get_int("ews_event_stream_interval", &temp))
-		event_stream_interval = std::chrono::milliseconds(temp);
-	if(cfg->get_int("ews_cache_embedded_instance_lifetime", &temp))
-		cache_embedded_instance_lifetime = std::chrono::milliseconds(temp);
+	cache_interval = std::chrono::milliseconds(cfg->get_ll("ews_cache_interval"));
+	cache_attachment_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_attachment_instance_lifetime"));
+	cache_message_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_message_instance_lifetime"));
+	event_stream_interval = std::chrono::milliseconds(cfg->get_ll("ews_event_stream_interval"));
+	cache_embedded_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_embedded_instance_lifetime"));
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 
 	smtp_server_ip = cfg->get_value("smtp_server_ip");
-	if(cfg->get_int("smtp_server_port", &temp))
-		smtp_server_port = uint16_t(temp);
+	smtp_server_port = cfg->get_ll("smtp_server_port");
 
 	const char* logFilter = cfg->get_value("ews_log_filter");
 	if(logFilter && strlen(logFilter))

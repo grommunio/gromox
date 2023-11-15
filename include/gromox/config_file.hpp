@@ -40,10 +40,7 @@ struct GX_EXPORT CONFIG_FILE {
 	const char *get_value(const char *key) const;
 	BOOL set_value(const char *key, const char *value);
 	BOOL save();
-	BOOL get_int(const char *key, int *) const;
-	BOOL get_uint(const char *key, unsigned int *) const;
 	unsigned long long get_ll(const char *key) const;
-	BOOL set_int(const char *key, int);
 
     CONFIG_ENTRY *config_table;
     size_t num_entries;
