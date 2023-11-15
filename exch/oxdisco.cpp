@@ -425,7 +425,7 @@ void OxdiscoPlugin::loadConfig()
 	}
 	/* If there is no autodiscover.cfg, we have an old system and are done. */
 	c = config_file_initd("autodiscover.cfg", get_config_path(), nullptr);
-	if (c == nullptr || *c->file_name == '\0')
+	if (c == nullptr || c->m_filename.empty())
 		return;
 	/* If there is autodiscover.cfg, ignore autodiscover.ini */
 	c = config_file_initd("autodiscover.cfg", get_config_path(), autodiscover_cfg_defaults);

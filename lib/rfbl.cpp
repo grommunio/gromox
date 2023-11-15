@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cerrno>
 #include <climits>
 #include <clocale>
@@ -1678,4 +1679,199 @@ void XARRAY::clear()
 {
 	m_vec.clear();
 	m_hash.clear();
+}
+
+config_file::cfg_entry::cfg_entry(const cfg_directive &d) :
+	m_min(znul(d.min)), m_max(znul(d.max)), m_flags(d.flags)
+{
+	set(d.deflt);
+}
+
+void config_file::cfg_entry::set(const char *sv)
+{
+	if (m_flags & CFG_BOOL) {
+		m_val = parse_bool(sv) ? "1" : "0";
+	} else if (m_flags & CFG_TIME) {
+		auto nv = HX_strtoull_sec(sv, nullptr);
+		if (m_min.size() > 0)
+			nv = std::max(nv, HX_strtoull_sec(m_min.c_str(), nullptr));
+		if (m_max.size() > 0)
+			nv = std::min(nv, HX_strtoull_sec(m_max.c_str(), nullptr));
+		m_val = std::to_string(nv);
+	} else if (m_flags & CFG_SIZE) {
+		auto nv = HX_strtoull_unit(sv, nullptr, 1024);
+		if (m_min.size() > 0)
+			nv = std::max(nv, HX_strtoull_unit(m_min.c_str(), nullptr, 1024));
+		if (m_max.size() > 0)
+			nv = std::min(nv, HX_strtoull_unit(m_max.c_str(), nullptr, 1024));
+		m_val = std::to_string(nv);
+	} else {
+		m_val = sv;
+	}
+}
+
+config_file::config_file(const cfg_directive *kd)
+{
+	if (kd != nullptr)
+		for (; kd->key != nullptr; ++kd)
+			m_vars.emplace(kd->key, cfg_entry{*kd});
+}
+
+const char *config_file::get_value(const char *sk) const
+{
+	std::string key = sk;
+	while (true) {
+		HX_strlower(key.data());
+		auto i = m_vars.find(key);
+		if (i == m_vars.cend())
+			return nullptr;
+		if (i->second.m_flags & CFG_ALIAS) {
+			key = i->second.m_val.c_str();
+			continue;
+		}
+		return i->second.m_val.c_str();
+	}
+}
+
+/**
+ * Not suitable for signed or maybe-signed (e.g. time_t) quantities.
+ */
+unsigned long long config_file::get_ll(const char *key) const
+{
+	auto s = get_value(key);
+	if (s == nullptr) {
+		mlog(LV_ERR, "*** config key \"%s\" has no default and was not set either; yielding 0", key);
+		return 0;
+	}
+	return strtoull(s, nullptr, 0);
+}
+
+void config_file::set_value(const char *sk, const char *sv) try
+{
+	std::string key = sk;
+	while (true) {
+		HX_strlower(key.data());
+		auto i = m_vars.find(key);
+		if (i == m_vars.end()) {
+//			printf("\e[32m\t%s = \e[1m%s\e[0m\n", key, sv);
+			m_vars.emplace(key, cfg_entry{sv});
+			return;
+		} else if (i->second.m_flags & CFG_ALIAS) {
+//			printf("\e[32m\t%s ...\e[0m\n", key, sv);
+			key = i->second.m_val.c_str();
+		} else {
+//			printf("\e[32m\t%s = \e[1m%s\e[0m\n", key, sv);
+			i->second.set(sv);
+			return;
+		}
+	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2367: ENOMEM");
+}
+
+BOOL config_file::save()
+{
+	if (std::none_of(m_vars.cbegin(), m_vars.cend(),
+	    [&](const value_type &kv) { return kv.second.m_flags & CFG_TOUCHED; }))
+		return TRUE;
+	std::unique_ptr<FILE, file_deleter> fp(fopen(m_filename.c_str(), "w"));
+	if (fp == nullptr) {
+		fprintf(stderr, "config_file.save %s: %s\n", m_filename.c_str(), strerror(errno));
+		return false;
+	}
+	for (const auto &kv : m_vars)
+		fprintf(fp.get(), "%s = %s\n", kv.first.c_str(), kv.second.m_val.c_str());
+	return TRUE;
+}
+
+std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
+    const cfg_directive *key_desc) try
+{
+	auto cfg = std::make_shared<CONFIG_FILE>(key_desc);
+	cfg->m_filename = filename;
+	std::unique_ptr<FILE, file_deleter> fh(fopen(filename, "r"));
+	if (fh == nullptr)
+		return nullptr;
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	while (HX_getl(&line, fh.get()) != nullptr) {
+		HX_chomp(line);
+		HX_strrtrim(line);
+		auto p = line;
+		while (HX_isspace(*p))
+			++p;
+		if (*line == '#')
+			continue;
+		auto key_begin = p;
+		while (*p != '\0' && *p != '=' && !HX_isspace(*p))
+			++p;
+		auto key_end = p;
+		while (HX_isspace(*p))
+			++p;
+		if (*p != '=')
+			continue;
+		++p;
+		while (HX_isspace(*p))
+			++p;
+		*key_end = '\0';
+		cfg->set_value(key_begin, p);
+	}
+	return cfg;
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
+/**
+ * @fb:		filename (base) - "foo.cfg"
+ * @sdlist:	colon-separated path list
+ *
+ * Attempt to read config file @fb from various paths (@sdlist).
+ */
+std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
+    const char *sdlist, const cfg_directive *key_desc) try
+{
+	if (sdlist == nullptr || strchr(fb, '/') != nullptr)
+		return config_file_init(fb, key_desc);
+	errno = 0;
+	for (auto &&dir : gx_split(sdlist, ':')) {
+		if (dir.size() == 0)
+			continue;
+		errno = 0;
+		auto full = std::move(dir) + "/" + fb;
+		auto cfg = config_file_init(full.c_str(), key_desc);
+		if (cfg != nullptr)
+			return cfg;
+		if (errno != ENOENT) {
+			mlog(LV_ERR, "config_file_initd %s: %s",
+			        full.c_str(), strerror(errno));
+			return nullptr;
+		}
+	}
+	return std::make_shared<CONFIG_FILE>(key_desc);
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return nullptr;
+}
+
+static const char *default_searchpath()
+{
+	const char *ed = getenv("GROMOX_CONFIG_PATH");
+	return ed != nullptr ? ed : PKGSYSCONFDIR;
+}
+
+/**
+ * Routine intended for programs:
+ *
+ * Read user-specified config file (@ov) or, if that is unset, try the default file
+ * (@fb, located in default searchpaths) in silent mode.
+ */
+std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
+    const cfg_directive *key_desc)
+{
+	if (ov == nullptr)
+		return config_file_initd(fb, default_searchpath(), key_desc);
+	auto cfg = config_file_init(ov, key_desc);
+	if (cfg == nullptr)
+		mlog(LV_ERR, "config_file_init %s: %s", ov, strerror(errno));
+	return cfg;
 }
