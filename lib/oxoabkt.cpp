@@ -9,11 +9,14 @@
 #include <utility>
 #include <json/writer.h>
 #include <gromox/binrdwr.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/tie.hpp>
+#define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::success) return klfdv; } while (false)
 
 using namespace gromox;
 
@@ -85,17 +88,21 @@ static inline bool cttype_uses_pattern(unsigned int t)
 // DTBLDDLBX has three proptags: ulPRDisplayProperty [to be PT_TSTRING], ulPRSetProperty [PT_*], ulPRTableName [PT_OBJECT].
 // DTBLLBX has two proptags: ulPRSetProperty [PT_*], ulPRTableName [PT_OBJECT]
 
-static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
+static pack_result abkt_read_row(EXT_PULL &bin, Json::Value &jrow,
     unsigned int vers, cpid_t cpid)
 {
-	jrow["posx"]  = bin.r4();
-	jrow["sizex"] = bin.r4();
-	jrow["posy"]  = bin.r4();
-	jrow["sizey"] = bin.r4();
-	auto ct_type = bin.r4(), flags = bin.r4();
-	uint32_t gxT2Extra = vers == 2 ? bin.r4() : 0;
-	auto dwType = bin.r4();
-	auto ulSize = bin.r4(), ulString = bin.r4();
+	uint32_t v, ct_type, flags, gxT2Extra = 0, dwType, ulSize, ulString;
+	TRY(bin.g_uint32(&v)); jrow["posx"]  = v;
+	TRY(bin.g_uint32(&v)); jrow["sizex"] = v;
+	TRY(bin.g_uint32(&v)); jrow["posy"]  = v;
+	TRY(bin.g_uint32(&v)); jrow["sizey"] = v;
+	TRY(bin.g_uint32(&ct_type));
+	TRY(bin.g_uint32(&flags));
+	if (vers == 2)
+		TRY(bin.g_uint32(&gxT2Extra));
+	TRY(bin.g_uint32(&dwType));
+	TRY(bin.g_uint32(&ulSize));
+	TRY(bin.g_uint32(&ulString));
 	if (ct_type == DTCT_PAGE)
 		flags = _DT_NONE;
 	jrow["ct_type"] = abkt_cttype2str(ct_type);
@@ -118,32 +125,40 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
 	}
 	std::string text;
 	if (cttype_uses_label(ct_type) || cttype_uses_pattern(ct_type)) {
+		std::unique_ptr<char[], stdlib_delete> raw;
+		auto saved_offset = bin.m_offset;
+		bin.m_offset = ulString;
 		if (cpid == CP_ACP) {
-			text = bin.preadustr(ulString);
+			TRY(bin.g_wstr(&unique_tie(raw)));
+			text = raw.get();
 		} else {
-			text = bin.preadstr(ulString);
+			TRY(bin.g_str(&unique_tie(raw)));
 			auto cset = cpid_to_cset(cpid);
 			if (cset != nullptr)
-				text = iconvtext(text.data(), text.size(), cset, "UTF-8");
+				text = iconvtext(raw.get(), strlen(raw.get()), cset, "UTF-8");
 		}
+		bin.m_offset = saved_offset;
 	}
 	if (cttype_uses_label(ct_type))
 		jrow["label"] = std::move(text);
 	else if (cttype_uses_pattern(ct_type))
 		jrow["pattern"] = std::move(text);
+	return pack_result::success;
 }
 
-static void abkt_read(lb_reader &bin, Json::Value &tpl, cpid_t cpid)
+static pack_result abkt_read(EXT_PULL &bin, Json::Value &tpl, cpid_t cpid)
 {
-	auto vers = bin.r4();
+	uint32_t vers, rows;
+	TRY(bin.g_uint32(&vers));
 	if (vers != 1 && vers != 2)
-		throw lb_reader::invalid();
+		return pack_result::format;
 	auto &rowdata = tpl["rowdata"] = Json::arrayValue;
-	auto rows = bin.r4();
+	TRY(bin.g_uint32(&rows));
 	while (rows-- > 0) {
 		auto &row = rowdata.append(Json::objectValue);
 		abkt_read_row(bin, row, vers, cpid);
 	}
+	return pack_result::success;
 }
 
 static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, cpid_t cpid)
@@ -222,9 +237,14 @@ namespace gromox {
 
 std::string abkt_tojson(std::string_view bin, cpid_t codepage)
 {
-	lb_reader reader(bin.data(), bin.size());
+	EXT_PULL reader;
+	reader.init(bin.data(), bin.size(), malloc, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 	Json::Value jval;
-	abkt_read(reader, jval, codepage);
+	auto ret = abkt_read(reader, jval, codepage);
+	if (ret != pack_result::success)
+		throw std::runtime_error("parsing ended with error " +
+		      std::to_string(static_cast<int>(ret)) + " at pos " +
+		      std::to_string(reader.m_offset));
 	return Json::writeString(Json::StreamWriterBuilder(), std::move(jval));
 }
 
