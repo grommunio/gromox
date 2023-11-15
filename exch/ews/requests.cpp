@@ -1058,7 +1058,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		ctx.validate(dir, eid);
 		if(!(ctx.permissions(ctx.auth_info().username, parentFolder) & frightsReadAny))
 			throw EWSError::AccessDenied(E3139);
-		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
+		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
 		if(itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
@@ -1066,6 +1066,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		} else
 			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
