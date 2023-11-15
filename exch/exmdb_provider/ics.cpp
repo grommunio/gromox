@@ -37,7 +37,7 @@ struct IDSET_CACHE {
 	~IDSET_CACHE();
 	NOMOVE(IDSET_CACHE);
 	BOOL init(const IDSET *);
-	BOOL hint(uint64_t);
+	bool contains(uint64_t);
 
 	sqlite3 *psqlite = nullptr;
 	xstmt pstmt;
@@ -94,23 +94,23 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	return TRUE;
 }
 
-BOOL IDSET_CACHE::hint(uint64_t id_val)
+bool IDSET_CACHE::contains(uint64_t id_val)
 {
 	auto pcache = this;
 	
 	if (NULL == pcache->pstmt) {
 		pcache->pstmt = gx_sql_prep(pcache->psqlite, "SELECT id_val FROM id_vals WHERE id_val=?");
 		if (pcache->pstmt == nullptr)
-			return FALSE;
+			return false;
 	}
 	sqlite3_reset(pcache->pstmt);
 	sqlite3_bind_int64(pcache->pstmt, 1, id_val);
 	if (pcache->pstmt.step() == SQLITE_ROW)
-		return TRUE;
+		return true;
 	for (const auto &range_node : pcache->range_list)
 		if (range_node.contains(id_val))
-			return TRUE;	
-	return FALSE;
+			return true;
+	return false;
 }
 
 static void ics_enum_content_idset(void *vparam, uint64_t message_id)
@@ -314,15 +314,15 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		if (read_cn > *plast_readcn)
 			*plast_readcn = read_cn;
 		if (b_fai) {
-			if (cache.hint(mid_val) &&
-			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
+			if (cache.contains(mid_val) &&
+			    const_cast<idset *>(pseen_fai)->contains(rop_util_make_eid_ex(1, change_num)))
 				continue;
-		} else if (cache.hint(mid_val) &&
-		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
+		} else if (cache.contains(mid_val) &&
+		    const_cast<idset *>(pseen)->contains(rop_util_make_eid_ex(1, change_num))) {
 			if (pread == nullptr)
 				continue;
 			if (read_cn == 0 ||
-			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn)))
+			    const_cast<idset *>(pread)->contains(rop_util_make_eid_ex(1, read_cn)))
 				continue;
 			int read_state;
 			if (b_private) {
@@ -419,7 +419,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			return FALSE;
 		uint64_t mid_val = sqlite3_column_int64(stm_select_chg, 0);
 		pchg_mids->pids[pchg_mids->count++] = rop_util_make_eid_ex(1, mid_val);
-		if (cache.hint(mid_val))
+		if (cache.contains(mid_val))
 			pupdated_mids->pids[pupdated_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 	}
 	} /* section 2b */
@@ -623,8 +623,8 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 			return FALSE;
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		if (const_cast<IDSET *>(pgiven)->hint(rop_util_make_eid_ex(1, fid_val)) &&
-		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num)))
+		if (const_cast<idset *>(pgiven)->contains(rop_util_make_eid_ex(1, fid_val)) &&
+		    const_cast<idset *>(pseen)->contains(rop_util_make_eid_ex(1, change_num)))
 			continue;
 		sqlite3_reset(stm_insert_chg);
 		sqlite3_bind_int64(stm_insert_chg, 1, fid_val);

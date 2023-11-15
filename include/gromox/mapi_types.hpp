@@ -737,7 +737,7 @@ class idset {
 	BOOL append_range(uint16_t replid, uint64_t low_value, uint64_t high_value);
 	void remove(uint64_t eid);
 	BOOL concatenate(const idset *set_src);
-	BOOL hint(uint64_t eid);
+	bool contains(uint64_t eid) const;
 	BINARY *serialize();
 	BINARY *serialize_replid() const;
 	BINARY *serialize_replguid();
