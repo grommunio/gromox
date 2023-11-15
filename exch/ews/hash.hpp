@@ -36,6 +36,7 @@ struct FNV
 	}
 
 	public:
+	FNV() = default;
 	/**
 	 * @brief      Initialize by consecutively hashing all objects
 	 *
