@@ -1011,7 +1011,7 @@ void sSyncState::init(const std::string& data64)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidSyncStateData(E3052);
-	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
+	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, EXT_FLAG_WCOUNT);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
 	for (TAGGED_PROPVAL* propval = propvals.ppropval; propval < propvals.ppropval+propvals.count; ++propval)

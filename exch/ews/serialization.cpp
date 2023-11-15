@@ -209,7 +209,7 @@ std::string sSyncState::serialize()
 		/* ignore error */;
 
 	EXT_PUSH stateBuffer;
-	if(!stateBuffer.init(nullptr, 0, 0) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
+	if(!stateBuffer.init(nullptr, 0, EXT_FLAG_WCOUNT) || stateBuffer.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
 		throw EWSError::NotEnoughMemory(E3040);
 
 	return base64_encode({stateBuffer.m_cdata, stateBuffer.m_offset});
