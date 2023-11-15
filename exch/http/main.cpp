@@ -137,7 +137,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	return true;
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	char temp_buff[256];
 	int retcode = EXIT_FAILURE;
@@ -406,8 +406,6 @@ int main(int argc, const char **argv) try
 		}
 	}
 	return retcode;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }
 
 static void term_handler(int signo)

@@ -69,7 +69,7 @@ static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 };
 
 static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
-    std::shared_ptr<CONFIG_FILE> pconfig) try
+    std::shared_ptr<CONFIG_FILE> pconfig)
 {
 	if (gxcfg == nullptr)
 		gxcfg = config_file_initd("gromox.cfg", get_config_path(), emsmdb_gxcfg_dflt);
@@ -98,8 +98,6 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
 	ems_max_active_users = pconfig->get_ll("ems_max_active_users");
 	ems_max_pending_sesnotif = pconfig->get_ll("ems_max_pending_sesnotif");
 	return true;
-} catch (const cfg_error &) {
-	return false;
 }
 
 static constexpr DCERPC_INTERFACE interface_emsmdb = {
@@ -119,7 +117,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 };
 
 extern void emsmdb_report();
-static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
+static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 {
 	int max_mail;
 	int max_rcpt;
@@ -250,8 +248,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		return TRUE;
 	}
 	return TRUE;
-} catch (const cfg_error &) {
-	return false;
 }
 PROC_ENTRY(proc_exchange_emsmdb);
 

@@ -190,7 +190,7 @@ void qsock::sk_close()
 	sockd = -1;
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv,
@@ -320,8 +320,6 @@ int main(int argc, const char **argv) try
 		sleep(1);
 	}
 	return EXIT_SUCCESS;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }
 
 static void *ev_scanwork(void *param)

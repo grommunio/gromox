@@ -69,7 +69,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 unsigned int g_dbg_synth_content;
 unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
-static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
+static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 {
 	if (pconfig == nullptr)
 		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path(),
@@ -100,11 +100,9 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	else
 		g_exmdb_schema_upgrades = EXMDB_UPGRADE_NO;
 	return true;
-} catch (const cfg_error &) {
-	return false;
 }
 
-static BOOL svc_exmdb_provider(int reason, void **ppdata) try
+static BOOL svc_exmdb_provider(int reason, void **ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:
@@ -260,8 +258,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		return TRUE;
 	}
 	return TRUE;
-} catch (const cfg_error &) {
-	return false;
 }
 
 SVC_ENTRY(svc_exmdb_provider);

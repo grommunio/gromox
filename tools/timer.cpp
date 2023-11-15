@@ -208,7 +208,7 @@ static TIMER *put_timer(TIMER &&ptimer)
 	return &g_exec_list.back();
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	time_t cur_time;
 	time_t last_cltime;
@@ -384,8 +384,6 @@ int main(int argc, const char **argv) try
 
 	}
 	return EXIT_SUCCESS;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }
 
 static void *tmr_acceptwork(void *param)

@@ -160,7 +160,7 @@ static bool list_file_read_midb(const char *filename) try
 	return false;
 }
 
-static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> cfg) try
+static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("midb_agent.cfg", get_config_path(), midb_agent_cfg_defaults);
@@ -174,8 +174,6 @@ static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> cfg) try
 		fprintf(stderr, "[midb_agent]: memory pool is switched off through config\n");
 	g_midb_command_buffer_size = cfg->get_ll("midb_agent_command_buffer_size");
 	return true;
-} catch (const cfg_error &) {
-	return false;
 }
 
 static BOOL svc_midb_agent(int reason, void **ppdata)

@@ -103,7 +103,7 @@ static int create_search_folder(sqlite3 *sdb, uint64_t fid, uint64_t parent,
 	return ret;
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	uint64_t nt_time;
 	sqlite3 *psqlite;
@@ -344,6 +344,4 @@ int main(int argc, const char **argv) try
 	}
 	pstmt.finalize();
 	return sql_transact.commit() == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }

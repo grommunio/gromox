@@ -96,7 +96,7 @@ static void system_services_stop()
 	service_release("domain_list_query", "system");
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
@@ -211,8 +211,6 @@ int main(int argc, const char **argv) try
 		}
     }
 	return retcode;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }
 
 static void term_handler(int signo)

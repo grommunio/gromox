@@ -376,7 +376,7 @@ static hook_result remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	return hook_result::stop;
 }
 
-static BOOL remote_delivery_entry(int request, void **apidata) try
+static BOOL remote_delivery_entry(int request, void **apidata)
 {
 	if (request == PLUGIN_FREE) {
 		g_tls_ctx.reset();
@@ -405,7 +405,5 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		return false;
 	}
 	return TRUE;
-} catch (const cfg_error &) {
-	return false;
 }
 HOOK_ENTRY(remote_delivery_entry);

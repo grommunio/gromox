@@ -51,8 +51,6 @@ struct GX_EXPORT CONFIG_FILE {
 	char file_name[256];
 };
 
-struct cfg_error : public std::exception {};
-
 #define NO_SEARCH_DIRS nullptr
 #if defined(__OpenBSD__)
 #define RUNNING_IDENTITY "_gromox"

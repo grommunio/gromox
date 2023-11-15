@@ -55,7 +55,7 @@ static constexpr cfg_directive mkmidb_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	sqlite3 *psqlite;
 	
@@ -181,6 +181,4 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 	return sql_transact.commit() == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }

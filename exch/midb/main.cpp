@@ -292,7 +292,7 @@ static void listener_stop()
 	}
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	char temp_buff[45];
 	std::shared_ptr<CONFIG_FILE> pconfig;
@@ -416,6 +416,4 @@ int main(int argc, const char **argv) try
 		}
 	}
 	return EXIT_SUCCESS;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }

@@ -463,7 +463,7 @@ static void *imrpc_alloc(size_t z)
 	return g_alloc_mgr->alloc(z);
 }
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
@@ -683,8 +683,6 @@ int main(int argc, const char **argv) try
 	}
 	listener_stop_accept();
 	return retcode;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }
 
 static void term_handler(int signo)

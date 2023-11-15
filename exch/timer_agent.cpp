@@ -60,7 +60,7 @@ static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
 
-static BOOL svc_timer_agent(int reason, void **ppdata) try
+static BOOL svc_timer_agent(int reason, void **ppdata)
 {
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -127,8 +127,6 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 		return TRUE;
 	}
 	return TRUE;
-} catch (const cfg_error &) {
-	return false;
 }
 SVC_ENTRY(svc_timer_agent);
 

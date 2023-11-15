@@ -62,7 +62,7 @@ static constexpr unsigned int rightsGromoxPubDefault = /* (0x41b/1051) */
 	frightsReadAny | frightsCreate | frightsVisible | frightsEditOwned |
 	frightsDeleteOwned;
 
-int main(int argc, const char **argv) try
+int main(int argc, const char **argv)
 {
 	sqlite3 *psqlite;
 	char mysql_string[1024];
@@ -247,6 +247,4 @@ int main(int argc, const char **argv) try
 	}
 	pstmt.finalize();
 	return sql_transact.commit() == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-} catch (const cfg_error &) {
-	return EXIT_FAILURE;
 }
