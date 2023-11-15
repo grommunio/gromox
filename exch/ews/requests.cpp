@@ -610,15 +610,19 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
 	data.OofSettings.emplace();
 
 	//Get OOF state
+	static constexpr struct cfg_directive oof_defaults[] = {
+		{"allow_external_oof", "0", CFG_BOOL},
+		{"external_audience", "0", CFG_BOOL},
+		{"oof_state", "0"},
+		CFG_TABLE_END,
+	};
 	std::string maildir = ctx.get_maildir(request.Mailbox);
 	string configPath = maildir+"/config/autoreply.cfg";
-	auto configFile = config_file_init(configPath.c_str(), nullptr);
+	auto configFile = config_file_init(configPath.c_str(), oof_defaults);
 	if(configFile) {
-		int oof_state = 0;
-		int allow_external_oof = 0, external_audience = 0;
-		configFile->get_int("oof_state", &oof_state);
-		configFile->get_int("allow_external_oof", &allow_external_oof);
-		configFile->get_int("external_audience", &external_audience);
+		auto oof_state          = configFile->get_ll("oof_state");
+		auto allow_external_oof = configFile->get_ll("allow_external_oof");
+		auto external_audience  = configFile->get_ll("external_audience");
 		switch(oof_state) {
 		case 1:
 			data.OofSettings->OofState = "Enabled"; break;
