@@ -162,6 +162,7 @@ extern GX_EXPORT int strtailcase(const char *h, const char *n);
 extern GX_EXPORT void replace_unsafe_basename(char *);
 extern GX_EXPORT size_t utf8_printable_prefix(const void *, size_t);
 extern GX_EXPORT errno_t filedes_limit_bump(unsigned int);
+extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
 
 extern GX_EXPORT const uint8_t utf8_byte_num[256];
 
