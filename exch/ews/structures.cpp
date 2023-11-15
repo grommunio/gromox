@@ -2209,7 +2209,7 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_vi
 			result.back().content.append(" ").append(trim(line));
 		else if((sep = line.find(':')) == std::string_view::npos)
 			continue;
-		else
+		else if(sep && line.size() > sep+1)
 			result.emplace_back(line.substr(0, sep), trim(line.substr(sep+1)));
 	}
 	return result;
