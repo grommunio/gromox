@@ -8,7 +8,6 @@
 #include <string_view>
 #include <utility>
 #include <json/writer.h>
-#include <gromox/binrdwr.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
@@ -161,7 +160,8 @@ static pack_result abkt_read(EXT_PULL &bin, Json::Value &tpl, cpid_t cpid)
 	return pack_result::success;
 }
 
-static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, cpid_t cpid)
+static pack_result abkt_write_row(Json::Value &jrow, EXT_PUSH &bin,
+    uint32_t &auxofs, cpid_t cpid)
 {
 	unsigned int ct_type = abkt_cttype2int(jrow["ct_type"].asString().c_str());
 	unsigned int flags = _DT_NONE;
@@ -178,59 +178,61 @@ static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, cpid
 	if (jrow["is_doublebyte"].asBool()) flags |= DT_ACCEPT_DBCS;
 	if (jrow["is_index"].asBool())      flags |= DT_SET_SELECTION;
 
-	bin.w4(jrow["posx"].asUInt());
-	bin.w4(jrow["sizex"].asUInt());
-	bin.w4(jrow["posy"].asUInt());
-	bin.w4(jrow["sizey"].asUInt());
-	bin.w4(ct_type);
-	bin.w4(flags);
-	bin.w4(cttype_uses_proptag(ct_type) ? jrow["proptag"].asUInt() : 0);
-	bin.w4(ct_type == DTCT_EDIT ? jrow["maxlen"].asUInt() : 0);
+	TRY(bin.p_uint32(jrow["posx"].asUInt()));
+	TRY(bin.p_uint32(jrow["sizex"].asUInt()));
+	TRY(bin.p_uint32(jrow["posy"].asUInt()));
+	TRY(bin.p_uint32(jrow["sizey"].asUInt()));
+	TRY(bin.p_uint32(ct_type));
+	TRY(bin.p_uint32(flags));
+	TRY(bin.p_uint32(cttype_uses_proptag(ct_type) ? jrow["proptag"].asUInt() : 0));
+	TRY(bin.p_uint32(ct_type == DTCT_EDIT ? jrow["maxlen"].asUInt() : 0));
 	if (!cttype_uses_label(ct_type) && !cttype_uses_pattern(ct_type)) {
-		bin.w4(0);
-		return;
+		TRY(bin.p_uint32(0));
+		return pack_result::success;
 	}
 	auto field = cttype_uses_pattern(ct_type) ? "pattern" : "label";
 	std::string text = jrow[field].asString();
-	bin.w4(aux.offset);
+	TRY(bin.p_uint32(auxofs));
+	auto saved_offset = bin.m_offset;
+	if (saved_offset > auxofs)
+		return pack_result::format;
+	TRY(bin.advance(auxofs - saved_offset));
+	bin.m_offset = auxofs;
 	if (cpid != CP_ACP) {
 		auto cset = cpid_to_cset(cpid);
 		if (cset != nullptr)
 			text = iconvtext(text.data(), text.size(), "UTF-8", cset);
-		aux.offset += text.size() + 1;
-		aux.data += std::move(text);
-		aux.data += '\0';
-		return;
+		TRY(bin.p_str(text.c_str()));
+	} else {
+		TRY(bin.p_wstr(text.c_str()));
 	}
-	text = iconvtext(text.data(), text.size(), "UTF-8", "UTF-16LE");
-	aux.offset += text.size() + 2;
-	aux.data += std::move(text);
-	aux.data += '\0';
-	aux.data += '\0';
+	auxofs = bin.m_offset;
+	bin.m_offset = saved_offset;
+	return pack_result::success;
 }
 
-static void abkt_write(Json::Value &tpl, lb_writer &bin,
+static pack_result abkt_write(Json::Value &tpl, EXT_PUSH &bin,
     cpid_t cpid, bool dogap)
 {
-	bin.w4(1);
+	TRY(bin.p_uint32(1));
 	if (tpl.type() != Json::ValueType::objectValue ||
 	    !tpl.isMember("rowdata")) {
-		bin.w4(0);
-		return;
+		TRY(bin.p_uint32(0));
+		return pack_result::success;
 	}
 	auto rows = std::min(tpl["rowdata"].size(), UINT_MAX - 1);
-	bin.w4(rows);
-	abktaux aux;
-	aux.offset = 8 + 36 * rows;
+	TRY(bin.p_uint32(rows));
+	uint32_t auxofs = 8 + 36 * rows;
 	if (dogap)
-		aux.offset += 4;
+		auxofs += 4;
 	for (unsigned int i = 0; i < rows; ++i) {
 		auto &row = tpl["rowdata"][i];
-		abkt_write_row(row, aux, bin, cpid);
+		abkt_write_row(row, bin, auxofs, cpid);
 	}
 	if (dogap)
-		bin.w4(0);
-	bin.write(aux.data.data(), aux.data.size());
+		TRY(bin.p_uint32(0));
+	bin.m_offset = auxofs;
+	return pack_result::success;
 }
 
 namespace gromox {
@@ -252,10 +254,12 @@ std::string abkt_tobinary(std::string_view json, cpid_t codepage, bool dogap)
 {
 	Json::Value jval;
 	if (!json_from_str(std::move(json), jval))
-		throw lb_reader::invalid();
-	lb_writer writer;
+		throw std::runtime_error("Invalid JSON input");
+	EXT_PUSH writer;
+	if (!writer.init(nullptr, 0, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT, nullptr))
+		throw std::bad_alloc();
 	abkt_write(jval, writer, codepage, dogap);
-	return std::move(writer.m_data);
+	return std::string(writer.m_cdata, writer.m_offset);
 }
 
 }
