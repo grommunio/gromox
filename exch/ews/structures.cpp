@@ -1011,7 +1011,7 @@ void sSyncState::init(const std::string& data64)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidSyncStateData(E3052);
-	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, 0);
+	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, EXT_FLAG_WCOUNT);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
 	for (TAGGED_PROPVAL* propval = propvals.ppropval; propval < propvals.ppropval+propvals.count; ++propval)
@@ -2209,7 +2209,7 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_vi
 			result.back().content.append(" ").append(trim(line));
 		else if((sep = line.find(':')) == std::string_view::npos)
 			continue;
-		else
+		else if(sep && line.size() > sep+1)
 			result.emplace_back(line.substr(0, sep), trim(line.substr(sep+1)));
 	}
 	return result;

@@ -972,62 +972,67 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	uint32_t maxItems = request.MaxChangesReturned;
 	bool clipped = false;
 
-	mSyncFolderItemsResponseMessage& msg = data.ResponseMessages.emplace_back();
-	msg.Changes.reserve(min(chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count, maxItems));
-	maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
-	for(uint64_t* mid = deleted_mids.pids; mid < deleted_mids.pids+deleted_mids.count; ++mid)
-	{
-		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
-		syncState.given.remove(*mid);
-	}
-	clipped = clipped || nolonger_mids.count > maxItems;
-	maxItems -= nolonger_mids.count = min(nolonger_mids.count, maxItems);
-	for(uint64_t* mid = nolonger_mids.pids; mid < nolonger_mids.pids+nolonger_mids.count; ++mid)
-	{
-		msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
-		syncState.given.remove(*mid);
-	}
-	clipped = clipped || chg_mids.count > maxItems;
-	maxItems -= chg_mids.count = min(chg_mids.count, maxItems);
-	for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
-	{
-		const uint64_t* changeNum = ctx.getItemProp<uint64_t>(dir, *mid, PidTagChangeNumber);
-		if(!changeNum)
-			continue;
-		if(eid_array_check(&updated_mids, *mid))
-			msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
+	try {
+		mSyncFolderItemsResponseMessage msg;
+		msg.Changes.reserve(min(chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count, maxItems));
+		maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
+		for(uint64_t* mid = deleted_mids.pids; mid < deleted_mids.pids+deleted_mids.count; ++mid)
+		{
+			msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
+			syncState.given.remove(*mid);
+		}
+		clipped = clipped || nolonger_mids.count > maxItems;
+		maxItems -= nolonger_mids.count = min(nolonger_mids.count, maxItems);
+		for(uint64_t* mid = nolonger_mids.pids; mid < nolonger_mids.pids+nolonger_mids.count; ++mid)
+		{
+			msg.Changes.emplace_back(tSyncFolderItemsDelete(ctx.getItemEntryId(dir, *mid)));
+			syncState.given.remove(*mid);
+		}
+		clipped = clipped || chg_mids.count > maxItems;
+		maxItems -= chg_mids.count = min(chg_mids.count, maxItems);
+		for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
+		{
+			const uint64_t* changeNum = ctx.getItemProp<uint64_t>(dir, *mid, PidTagChangeNumber);
+			if(!changeNum)
+				continue;
+			if(eid_array_check(&updated_mids, *mid))
+				msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
+			else
+				msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
+			if(!syncState.given.append(*mid) || !syncState.seen.append(*changeNum))
+				throw DispatchError(E3065);
+		}
+		uint32_t readSynced = syncState.readOffset;
+		uint32_t skip = min(syncState.readOffset, read_mids.count);
+		read_mids.count = min(read_mids.count-skip, maxItems)+skip;
+		maxItems -= read_mids.count-skip;
+		clipped = clipped || read_mids.count-skip > maxItems;
+		for(uint64_t* mid = read_mids.pids+skip; mid < read_mids.pids+read_mids.count; ++mid)
+			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), true});
+		readSynced += read_mids.count-skip;
+		skip = min(unread_mids.count, syncState.readOffset-read_mids.count+skip);
+		unread_mids.count = min(unread_mids.count-skip, maxItems)+skip;
+		clipped = clipped || unread_mids.count-skip > maxItems;
+		for(uint64_t* mid = unread_mids.pids+skip; mid < unread_mids.pids+unread_mids.count; ++mid)
+			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), false});
+		if(!clipped)
+		{
+			syncState.seen.clear();
+			syncState.read.clear();
+			if((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
+			   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
+				throw DispatchError(E3066);
+			syncState.readOffset = 0;
+		}
 		else
-			msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
-		if(!syncState.given.append(*mid) || !syncState.seen.append(*changeNum))
-			throw DispatchError(E3065);
+			syncState.readOffset = readSynced+unread_mids.count-skip;
+		msg.SyncState = syncState.serialize();
+		msg.IncludesLastItemInRange = !clipped;
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
 	}
-	uint32_t readSynced = syncState.readOffset;
-	uint32_t skip = min(syncState.readOffset, read_mids.count);
-	read_mids.count = min(read_mids.count-skip, maxItems)+skip;
-	maxItems -= read_mids.count-skip;
-	clipped = clipped || read_mids.count-skip > maxItems;
-	for(uint64_t* mid = read_mids.pids+skip; mid < read_mids.pids+read_mids.count; ++mid)
-		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), true});
-	readSynced += read_mids.count-skip;
-	skip = min(unread_mids.count, syncState.readOffset-read_mids.count+skip);
-	unread_mids.count = min(unread_mids.count-skip, maxItems)+skip;
-	clipped = clipped || unread_mids.count-skip > maxItems;
-	for(uint64_t* mid = unread_mids.pids+skip; mid < unread_mids.pids+unread_mids.count; ++mid)
-		msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(ctx.getItemEntryId(dir, *mid)), false});
-	if(!clipped)
-	{
-		syncState.seen.clear();
-		syncState.read.clear();
-		if((last_cn && !syncState.seen.append_range(1, 1, rop_util_get_gc_value(last_cn))) ||
-		   (last_readcn && !syncState.read.append_range(1, 1, rop_util_get_gc_value(last_readcn))))
-			throw DispatchError(E3066);
-		syncState.readOffset = 0;
-	}
-	else
-		syncState.readOffset = readSynced+unread_mids.count-skip;
-	msg.SyncState = syncState.serialize();
-	msg.IncludesLastItemInRange = !clipped;
-	msg.success();
 	data.serialize(response);
 }
 
@@ -1058,7 +1063,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		ctx.validate(dir, eid);
 		if(!(ctx.permissions(ctx.auth_info().username, parentFolder) & frightsReadAny))
 			throw EWSError::AccessDenied(E3139);
-		mGetItemResponseMessage& msg = data.ResponseMessages.emplace_back();
+		mGetItemResponseMessage msg;
 		auto mid = eid.messageId();
 		if(itemId.type == tItemId::ID_OCCURRENCE) {
 			sOccurrenceId oid(itemId.Id.data(), itemId.Id.size());
@@ -1066,6 +1071,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
 		} else
 			msg.Items.emplace_back(ctx.loadItem(dir, parentFolder.folderId, mid, shape));
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}

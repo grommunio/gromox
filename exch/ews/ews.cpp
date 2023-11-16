@@ -132,12 +132,16 @@ struct EWSPlugin::DebugCtx
 {
 	static constexpr uint8_t FL_LOCK = 1 << 0;
 	static constexpr uint8_t FL_RATELIMIT = 1 << 1;
+	static constexpr uint8_t FL_LOOP_DETECT = 1 << 2;
 
 	explicit DebugCtx(const std::string_view&);
 
 	std::mutex requestLock{};
+	std::mutex hashLock{};
+	std::unordered_map<uint64_t, size_t> requestHashes; ///< How often a request with this hash value occurred
 	std::chrono::high_resolution_clock::time_point last;
 	std::chrono::high_resolution_clock::duration minRequestTime{};
+	uint32_t loopThreshold = 0;  ///< How many request repetitions to ignore before warning
 	uint8_t flags = 0;
 };
 
@@ -169,6 +173,11 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 				flags |= FL_RATELIMIT | FL_LOCK;
 				minRequestTime = std::chrono::nanoseconds(1000000000/rateLimit);
 			}
+		} else if(opt == "loop_detect")
+			flags |= FL_LOOP_DETECT;
+		else if(opt.substr(0, 12) == "loop_detect=") {
+			flags |= FL_LOOP_DETECT;
+			loopThreshold = uint32_t(std::stoul(std::string(opt.substr(12))));
 		}
 		else
 			mlog(LV_WARN, "[ews] Ignoring unknown debug directive '%s'", std::string(opt).c_str());
@@ -318,6 +327,14 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 			auto now = std::chrono::high_resolution_clock::now();
 			std::this_thread::sleep_for(debug->last-now+debug->minRequestTime);
 			debug->last = now;
+		}
+		if(debug->flags & DebugCtx::FL_LOOP_DETECT) {
+			std::lock_guard hashGuard(debug->hashLock);
+			uint64_t hash = FNV()(data, len);
+			size_t count = debug->requestHashes[hash]++;
+			if(count > debug->loopThreshold)
+				mlog(LV_WARN, "[ews#%d]: Possible loop, request hash has been seen %zu time%s before", ctx_id, count,
+				count == 1? "" : "s");
 		}
 	}
 
@@ -485,7 +502,7 @@ void EWSPlugin::loadConfig()
 	}
 	const char* debugOpts = cfg->get_value("ews_debug");
 	if(debugOpts)
-		debug.reset(new DebugCtx(debugOpts));
+		debug = std::make_unique<DebugCtx>(debugOpts);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
