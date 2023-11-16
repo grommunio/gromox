@@ -82,7 +82,12 @@ static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
 }
 
 /**
- * @username:   Used for retrieving public store readstates
+ * @username:     Used for retrieving public store readstates
+ * @pgiven:       Set of MIDs the client has
+ * @pseen:        Set of CNs the client has
+ * @prestriction: Used by the client to limit the timeframe to synchronize ("most recent x days")
+ * @b_ordered:    Request that messages be ordered by delivery_time (fallback: lastmod_time)
+ *                (else: no specific order; MS-OXCFXICS §3.2.5.9.1.1)
  */
 BOOL exmdb_server::get_content_sync(const char *dir,
     uint64_t folder_id, const char *username, const IDSET *pgiven,
@@ -102,7 +107,12 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	*pnormal_total = 0;
 	auto b_private = exmdb_server::is_private();
 
-	/* Setup of scratch space db */
+	/*
+	 * Setup of scratch space db.
+	 *
+	 * All three tables are implicitly ordered by MID (due to PK)
+	 * SELECTs on those three should use ORDER BY if explicit order is desired.
+	 */
 	if (sqlite3_open_v2(":memory:", &psqlite,
 	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
@@ -133,7 +143,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 
-	/* Query section 1 */
+	/*
+	 * #1:
+	 * Determine message counts, bytesize totals, and maximum CNs.
+	 * (The result is dependent on prestriction.)
+	 */
 	{
 	auto transact1 = gx_sql_begin_trans(psqlite);
 	if (!transact1)
@@ -304,7 +318,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		return false;
 	} /* section 1 */
 
-	/* Query section 2a */
+	/*
+	 * section #2a: exact-allocate pupdated_mids, pchg_mids
+	 */
 	{
 	ssize_t count;
 	{
@@ -326,7 +342,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	} /* section 2a */
 
-	/* Query section 2b */
+	/*
+	 * #2b: compute pchg_mids, pupdated_mids
+	 */
 	{
 	auto stm_select_chg = gx_sql_prep(psqlite, b_ordered ?
 	                      "SELECT message_id FROM changes ORDER BY delivery_time DESC, mod_time DESC" :
@@ -345,7 +363,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} /* section 2b */
 	}
 
-	/* Query section 3 */
+	/*
+	 * #3: Build nolonger_mids, which is the set of MIDs that the client
+	 * has but the server has deleted (and server is more recent).
+	 */
 	{
 	ENUM_PARAM enum_param;
 	enum_param.stm_exist = gx_sql_prep(psqlite,
@@ -410,7 +431,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 
 	pdb.reset();
 
-	/* Query section 4 */
+	/* Query section 4 - pgiven_mids: what the server has */
 	{
 	auto stm_select_exist = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (stm_select_exist == nullptr ||
@@ -436,7 +457,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	} /* section 4 */
 
-	/* Query section 5 */
+	/* Query section 5 - Determine MIDs for unread and read sets */
 	if (NULL != pread) {
 		auto stm_select_rd = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
 		if (stm_select_rd == nullptr ||
