@@ -119,6 +119,14 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 			}
 		}
 	}
+
+	bool contains(T v) const
+	{
+		for (const auto &node : *this)
+			if (node.contains(v))
+				return true;
+		return false;
+	}
 };
 
 using imap_seq_list = range_set<uint32_t>;

@@ -107,10 +107,7 @@ bool IDSET_CACHE::contains(uint64_t id_val)
 	sqlite3_bind_int64(pcache->pstmt, 1, id_val);
 	if (pcache->pstmt.step() == SQLITE_ROW)
 		return true;
-	for (const auto &range_node : pcache->range_list)
-		if (range_node.contains(id_val))
-			return true;
-	return false;
+	return range_list.contains(id_val);
 }
 
 static void ics_enum_content_idset(void *vparam, uint64_t message_id)

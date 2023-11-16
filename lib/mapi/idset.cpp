@@ -120,10 +120,7 @@ bool idset::contains(uint64_t eid) const
 	                  [&](const repl_node &n) { return n.replid == replid; });
 	if (prepl_node == repl_list.end())
 		return false;
-	for (const auto &range_node : prepl_node->range_list)
-		if (range_node.contains(value))
-			return true;
-	return false;
+	return prepl_node->range_list.contains(value);
 }
 
 static std::unique_ptr<BINARY, mdel> idset_init_binary()
