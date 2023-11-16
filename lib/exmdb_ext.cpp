@@ -4232,7 +4232,7 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 	case exmdb_response::misconfig_mode: return "Prefix has type mismatch";
 	case exmdb_response::connect_incomplete: return "No prior CONNECT RPC made";
 	case exmdb_response::pull_error: return "Invalid request/Server-side deserializing error";
-	case exmdb_response::dispatch_error: return "Dispatch error";
+	case exmdb_response::dispatch_error: return "Dispatch error/Request rejected/DB error (check gromox-http log)";
 	case exmdb_response::push_error: return "Server-side serialize error";
 	default: break;
 	}

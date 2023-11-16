@@ -500,7 +500,7 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	if (bin.pb == nullptr)
 		return false;
 	if (bin.cb == 1) {
-		fprintf(stderr, "%s: %s\n", __func__,
+		fprintf(stderr, "%s(%s): %s\n", __func__, znul(rq->dir),
 			exmdb_rpc_strerror(static_cast<exmdb_response>(bin.pb[0])));
 		exmdb_rpc_free(bin.pb);
 		return false;
