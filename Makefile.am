@@ -108,7 +108,7 @@ libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = ${default_sym}
 libgxm_remote_delivery_la_SOURCES = mda/remote_delivery.cpp
 libgxm_remote_delivery_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxm_remote_delivery_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
+libgxm_remote_delivery_la_LIBADD = -lpthread ${libssl_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
 
 pop3_SOURCES = lib/svc_loader.cpp mra/midb_agent.hpp mra/pop3/main.cpp mra/pop3/pop3.hpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp
