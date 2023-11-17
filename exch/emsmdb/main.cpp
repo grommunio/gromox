@@ -203,7 +203,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
-		msgchg_grouping_init(get_data_path());
 		rop_processor_init(average_handles, ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
@@ -220,7 +219,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			mlog(LV_ERR, "emsmdb: failed to run exmdb client");
 			return FALSE;
 		}
-		if (0 != msgchg_grouping_run()) {
+		if (msgchg_grouping_run(get_data_path()) != 0) {
 			mlog(LV_ERR, "emsmdb: failed to run msgchg grouping");
 			return FALSE;
 		}
@@ -242,9 +241,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		asyncemsmdb_interface_stop();
 		emsmdb_interface_stop();
 		rop_processor_stop();
-		msgchg_grouping_stop();
 		asyncemsmdb_interface_free();
-		msgchg_grouping_free();
 		return TRUE;
 	}
 	return TRUE;

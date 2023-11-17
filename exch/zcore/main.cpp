@@ -333,9 +333,6 @@ int main(int argc, const char **argv)
 	if (!zcore_reload_config(nullptr, pconfig))
 		return EXIT_FAILURE;
 
-	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
-	auto cl_0c = make_scope_exit(msgchg_grouping_free);
-	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
 	unsigned int threads_num = pconfig->get_ll("zcore_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
@@ -437,7 +434,7 @@ int main(int argc, const char **argv)
 		mlog(LV_ERR, "system: failed to start bounce producer");
 		return EXIT_FAILURE;
 	}
-	if (0 != msgchg_grouping_run()) {
+	if (msgchg_grouping_run(g_config_file->get_value("data_file_path")) != 0) {
 		mlog(LV_ERR, "system: failed to start msgchg grouping");
 		return EXIT_FAILURE;
 	}
