@@ -9,6 +9,8 @@
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/msgchg_grouping.hpp>
+#include <gromox/paths.h>
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
@@ -366,6 +368,24 @@ static int t_utf8_prefix()
 	return EXIT_SUCCESS;
 }
 
+static int t_mcg()
+{
+	msgchg_grouping_init(PKGDATADIR);
+	if (msgchg_grouping_run() != 0)
+		return EXIT_FAILURE;
+	auto pgi = msgchg_grouping_get_groupinfo([](void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *id) -> BOOL {
+		static uint16_t propid = 0x8000;
+		*id = propid++;
+		return TRUE;
+	}, nullptr, 1);
+	assert(pgi->group_id == 1);
+	assert(pgi->count == 25);
+	assert(pgi->pgroups[0].count == 5);
+	assert(PROP_ID(pgi->pgroups[7].pproptag[0]) >= 0x8000);
+	assert(PROP_TYPE(pgi->pgroups[7].pproptag[0]) != 0);
+	return 0;
+}
+
 int main()
 {
 	if (t_utf7() != 0)
@@ -374,6 +394,8 @@ int main()
 	randstring(buf + 2, 0, "A");
 	randstring(buf, 1, "");
 
+	if (t_mcg() != 0)
+		return EXIT_FAILURE;
 	if (t_extpp() != 0)
 		return EXIT_FAILURE;
 	t_convert();
