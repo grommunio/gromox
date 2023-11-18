@@ -14,7 +14,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.h"
-#define IDSET_CACHE_MIN_RANGE				10
 
 using namespace gromox;
 
@@ -32,85 +31,6 @@ struct REPLID_ARRAY {
 	uint16_t replids[1024];
 };
 
-struct IDSET_CACHE {
-	IDSET_CACHE() = default;
-	~IDSET_CACHE();
-	NOMOVE(IDSET_CACHE);
-	BOOL init(const IDSET *);
-	BOOL hint(uint64_t);
-
-	sqlite3 *psqlite = nullptr;
-	xstmt pstmt;
-	repl_node::range_list_t range_list;
-};
-
-}
-
-IDSET_CACHE::~IDSET_CACHE()
-{
-	pstmt.finalize();
-	if (psqlite != nullptr)
-		sqlite3_close(psqlite);
-}
-
-BOOL IDSET_CACHE::init(const IDSET *pset)
-{
-	auto pcache = this;
-	
-	if (sqlite3_open_v2(":memory:", &pcache->psqlite,
-	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
-		return FALSE;
-	if (gx_sql_exec(pcache->psqlite, "CREATE TABLE id_vals "
-	    "(id_val INTEGER PRIMARY KEY)") != SQLITE_OK)
-		return FALSE;
-	pcache->pstmt = NULL;
-	const repl_node::range_list_t *prange_list = nullptr;
-	for (const auto &repl_node : pset->get_repl_list()) {
-		if (repl_node.replid == 1) {
-			prange_list = &repl_node.range_list;
-			break;
-		}
-	}
-	if (prange_list == nullptr)
-		return TRUE;
-	auto stmt = gx_sql_prep(pcache->psqlite, "INSERT INTO id_vals VALUES (?)");
-	if (stmt == nullptr)
-		return FALSE;
-	for (const auto &range_node : *prange_list) {
-		if (range_node.hi - range_node.lo >= IDSET_CACHE_MIN_RANGE) try {
-			pcache->range_list.vec().push_back(range_node);
-			continue;
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1623: ENOMEM");
-			return false;
-		}
-		for (auto ival = range_node.lo; ival <= range_node.hi; ++ival) {
-			sqlite3_reset(stmt);
-			sqlite3_bind_int64(stmt, 1, ival);
-			if (stmt.step() != SQLITE_DONE)
-				return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-BOOL IDSET_CACHE::hint(uint64_t id_val)
-{
-	auto pcache = this;
-	
-	if (NULL == pcache->pstmt) {
-		pcache->pstmt = gx_sql_prep(pcache->psqlite, "SELECT id_val FROM id_vals WHERE id_val=?");
-		if (pcache->pstmt == nullptr)
-			return FALSE;
-	}
-	sqlite3_reset(pcache->pstmt);
-	sqlite3_bind_int64(pcache->pstmt, 1, id_val);
-	if (pcache->pstmt.step() == SQLITE_ROW)
-		return TRUE;
-	for (const auto &range_node : pcache->range_list)
-		if (range_node.contains(id_val))
-			return TRUE;	
-	return FALSE;
 }
 
 static void ics_enum_content_idset(void *vparam, uint64_t message_id)
@@ -208,9 +128,6 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 			return FALSE;
 	}
-	IDSET_CACHE cache;
-	if (!cache.init(pgiven))
-		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -313,16 +230,18 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		}
 		if (read_cn > *plast_readcn)
 			*plast_readcn = read_cn;
+		auto msg_eid = rop_util_make_eid_ex(1, mid_val);
+		auto chg_eid = rop_util_make_eid_ex(1, change_num);
 		if (b_fai) {
-			if (cache.hint(mid_val) &&
-			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
+			if (pgiven->contains(msg_eid) &&
+			    const_cast<idset *>(pseen_fai)->contains(chg_eid))
 				continue;
-		} else if (cache.hint(mid_val) &&
-		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
+		} else if (pgiven->contains(msg_eid) &&
+		    const_cast<idset *>(pseen)->contains(chg_eid)) {
 			if (pread == nullptr)
 				continue;
 			if (read_cn == 0 ||
-			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn)))
+			    const_cast<idset *>(pread)->contains(rop_util_make_eid_ex(1, read_cn)))
 				continue;
 			int read_state;
 			if (b_private) {
@@ -418,9 +337,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		if (stm_select_chg.step() != SQLITE_ROW)
 			return FALSE;
 		uint64_t mid_val = sqlite3_column_int64(stm_select_chg, 0);
-		pchg_mids->pids[pchg_mids->count++] = rop_util_make_eid_ex(1, mid_val);
-		if (cache.hint(mid_val))
-			pupdated_mids->pids[pupdated_mids->count++] = rop_util_make_eid_ex(1, mid_val);
+		auto eid = rop_util_make_eid_ex(1, mid_val);
+		pchg_mids->pids[pchg_mids->count++] = eid;
+		if (pgiven->contains(eid))
+			pupdated_mids->pids[pupdated_mids->count++] = eid;
 	}
 	} /* section 2b */
 	}
@@ -623,8 +543,8 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
 			return FALSE;
 		if (change_num > *plast_cn)
 			*plast_cn = change_num;
-		if (const_cast<IDSET *>(pgiven)->hint(rop_util_make_eid_ex(1, fid_val)) &&
-		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num)))
+		if (const_cast<idset *>(pgiven)->contains(rop_util_make_eid_ex(1, fid_val)) &&
+		    const_cast<idset *>(pseen)->contains(rop_util_make_eid_ex(1, change_num)))
 			continue;
 		sqlite3_reset(stm_insert_chg);
 		sqlite3_bind_int64(stm_insert_chg, 1, fid_val);

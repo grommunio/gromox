@@ -186,6 +186,16 @@ static int t_id8()
 	return EXIT_SUCCESS;
 }
 
+static int t_id9()
+{
+	gromox::range_set<int> s;
+	s.insert(61, 63);
+	s.insert(51, 53);
+	for (int i = 50; i <= 64; ++i)
+		printf("%d: %d\n", i, s.contains(i));
+	return 0;
+}
+
 static int t_seq()
 {
 	imap_seq_list r;
@@ -373,7 +383,7 @@ int main()
 		return EXIT_FAILURE;
 	using fpt = decltype(&t_interval);
 	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
-	             t_id7, t_id8, t_seq};
+	             t_id7, t_id8, t_id9, t_seq};
 	for (auto f : fct) {
 		auto ret = f();
 		if (ret != EXIT_SUCCESS)

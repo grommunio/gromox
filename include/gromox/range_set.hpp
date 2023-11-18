@@ -5,6 +5,7 @@
 #else
 #	define GX_RANGE_NODE_ASSERT
 #endif
+#include <algorithm>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -40,6 +41,8 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 	public:
 	using base::begin;
 	using base::end;
+	using base::cbegin;
+	using base::cend;
 	using base::front;
 	using base::back;
 	using base::size;
@@ -118,6 +121,13 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 				return;
 			}
 		}
+	}
+
+	bool contains(T v) const
+	{
+		auto i = std::lower_bound(cbegin(), cend(), v,
+		         [&](const gromox::range_node<T> &rn, T v) { return rn.hi < v; });
+		return i != cend() ? i->contains(v) : false;
 	}
 };
 

@@ -108,7 +108,7 @@ BOOL idset::concatenate(const IDSET *pset_src)
 	return TRUE;
 }
 
-BOOL idset::hint(uint64_t eid)
+bool idset::contains(uint64_t eid) const
 {
 	auto pset = this;
 	
@@ -119,11 +119,8 @@ BOOL idset::hint(uint64_t eid)
 	auto prepl_node = std::find_if(repl_list.begin(), repl_list.end(),
 	                  [&](const repl_node &n) { return n.replid == replid; });
 	if (prepl_node == repl_list.end())
-		return FALSE;
-	for (const auto &range_node : prepl_node->range_list)
-		if (range_node.contains(value))
-			return TRUE;
-	return FALSE;
+		return false;
+	return prepl_node->range_list.contains(value);
 }
 
 static std::unique_ptr<BINARY, mdel> idset_init_binary()

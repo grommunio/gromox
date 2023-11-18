@@ -901,7 +901,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		if(!(ctx.permissions(ctx.auth_info().username, subfolder, dir.c_str()) & frightsVisible))
 			continue;
 		auto folderData = ctx.loadFolder(dir, subfolder.folderId, shape);
-		if(syncState.given.hint(*folderId))
+		if (syncState.given.contains(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
 			msgChanges.emplace_back(tSyncFolderHierarchyCreate(std::move(folderData)));
