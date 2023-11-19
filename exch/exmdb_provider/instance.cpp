@@ -690,52 +690,49 @@ void *instance_read_cid_content(const char *cid, uint32_t *plen, uint32_t tag) t
 	return nullptr;
 }
 
-static BOOL instance_read_attachment(
-	const ATTACHMENT_CONTENT *pattachment1,
-	ATTACHMENT_CONTENT *pattachment)
+static BOOL instance_read_attachment(const ATTACHMENT_CONTENT *src,
+    ATTACHMENT_CONTENT *dst)
 {
-	int i;
-	
-	if (pattachment1->proplist.count > 1) {
-		pattachment->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pattachment1->proplist.count);
-		if (pattachment->proplist.ppropval == nullptr)
+	if (src->proplist.count > 1) {
+		dst->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(src->proplist.count);
+		if (dst->proplist.ppropval == nullptr)
 			return FALSE;
 	} else {
-		pattachment->proplist.count = 0;
-		pattachment->proplist.ppropval = NULL;
+		dst->proplist.count = 0;
+		dst->proplist.ppropval = nullptr;
 		return TRUE;
 	}
-	pattachment->proplist.count = 0;
-	for (i=0; i<pattachment1->proplist.count; i++) {
-		auto tag = pattachment1->proplist.ppropval[i].proptag;
+	dst->proplist.count = 0;
+	for (unsigned int i = 0; i < src->proplist.count; ++i) {
+		auto tag = src->proplist.ppropval[i].proptag;
 		switch (tag) {
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT: {
 			auto pbin = cu_alloc<BINARY>();
 			if (pbin == nullptr)
 				return FALSE;
-			auto cidstr = static_cast<const char *>(pattachment1->proplist.ppropval[i].pvalue);
+			auto cidstr = static_cast<const char *>(src->proplist.ppropval[i].pvalue);
 			pbin->pv = instance_read_cid_content(cidstr, &pbin->cb, 0);
 			if (pbin->pv == nullptr)
 				return FALSE;
-			pattachment->proplist.emplace_back(tag == ID_TAG_ATTACHDATABINARY ?
+			dst->proplist.emplace_back(tag == ID_TAG_ATTACHDATABINARY ?
 				PR_ATTACH_DATA_BIN : PR_ATTACH_DATA_OBJ, pbin);
 			break;
 		}
 		default:
-			pattachment->proplist.ppropval[pattachment->proplist.count++] =
-				pattachment1->proplist.ppropval[i];
+			dst->proplist.ppropval[dst->proplist.count++] =
+				src->proplist.ppropval[i];
 			break;
 		}
 	}
-	if (pattachment1->pembedded == nullptr) {
-		pattachment->pembedded = NULL;
+	if (src->pembedded == nullptr) {
+		dst->pembedded = nullptr;
 		return TRUE;
 	}
-	pattachment->pembedded = cu_alloc<MESSAGE_CONTENT>();
-	if (pattachment->pembedded == nullptr)
+	dst->pembedded = cu_alloc<MESSAGE_CONTENT>();
+	if (dst->pembedded == nullptr)
 		return FALSE;
-	return instance_read_message(pattachment1->pembedded, pattachment->pembedded);
+	return instance_read_message(src->pembedded, dst->pembedded);
 }
 
 static BOOL instance_read_message(
