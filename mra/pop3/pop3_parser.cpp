@@ -199,7 +199,6 @@ time_point pop3_parser_get_context_timestamp(const schedule_context *ctx)
 tproc_status pop3_parser_process(schedule_context *vcontext)
 {
 	auto pcontext = static_cast<pop3_context *>(vcontext);
-	int len;
 	int read_len;
 	int ssl_errno;
 	const char *host_ID;
@@ -257,7 +256,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 				auto pop3_reply_str = resource_get_pop3_code(1711, 1, &string_length);
 				auto pop3_reply_str2 = resource_get_pop3_code(1711, 2, &string_length);
 				host_ID = znul(g_config_file->get_value("host_id"));
-				len = sprintf(reply_buf, "%s%s%s", pop3_reply_str, host_ID,
+				auto len = sprintf(reply_buf, "%s%s%s", pop3_reply_str, host_ID,
 						      pop3_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buf, len);
 			}

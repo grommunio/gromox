@@ -329,15 +329,15 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 		return cvt_msg_modified(n, *static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(dbn.pdata));
 	case db_notify_type::folder_moved:
 	case db_notify_type::folder_copied: {
-		auto nflags = dbn.type == db_notify_type::folder_moved ?
-		              NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		return cvt_fld_mvcp(n, nflags, *static_cast<const DB_NOTIFY_FOLDER_MVCP *>(dbn.pdata));
+		auto nf = dbn.type == db_notify_type::folder_moved ?
+		          NF_OBJECT_MOVED : NF_OBJECT_COPIED;
+		return cvt_fld_mvcp(n, nf, *static_cast<const DB_NOTIFY_FOLDER_MVCP *>(dbn.pdata));
 	}
 	case db_notify_type::message_moved:
 	case db_notify_type::message_copied: {
-		auto nflags = dbn.type == db_notify_type::message_moved ?
-		              NF_OBJECT_MOVED : NF_OBJECT_COPIED;
-		return cvt_msg_mvcp(n, nflags, *static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(dbn.pdata));
+		auto nf = dbn.type == db_notify_type::message_moved ?
+		          NF_OBJECT_MOVED : NF_OBJECT_COPIED;
+		return cvt_msg_mvcp(n, nf, *static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(dbn.pdata));
 	}
 	case db_notify_type::search_completed:
 		return cvt_fld_search_completed(n, *static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(dbn.pdata));

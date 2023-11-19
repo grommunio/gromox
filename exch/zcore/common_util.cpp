@@ -1880,7 +1880,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	if (pmessage_ids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		auto err = cu_remote_copy_message(src_store, pmessage_ids->pids[i],
+		err = cu_remote_copy_message(src_store, pmessage_ids->pids[i],
 		           dst_store, new_fid);
 		if (err != ecSuccess)
 			return err;
@@ -1901,8 +1901,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
 			return ecError;
-		auto err = cu_remote_copy_folder(src_store, *pfolder_id, dst_store,
-		           new_fid, nullptr);
+		err = cu_remote_copy_folder(src_store, *pfolder_id, dst_store,
+		      new_fid, nullptr);
 		if (err != ecSuccess)
 			return err;
 	}

@@ -64,18 +64,18 @@ static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
 		EID_ARRAY *del;
 		ec_error_t error;
 	} p1 = {&given, &del, ecSuccess};
-	const_cast<idset &>(given).enum_replist(&p1, [](void *param, uint16_t replid) {
+	const_cast<idset &>(given).enum_replist(&p1, [](void *param1, uint16_t replid) {
 		if (replid <= 1)
 			return;
-		auto p1 = static_cast<p1data *>(param);
-		if (p1->error != ecSuccess)
+		auto p2 = static_cast<p1data *>(param1);
+		if (p2->error != ecSuccess)
 			return;
-		const_cast<idset *>(p1->given)->enum_repl(replid, p1, [](void *param, uint64_t msgid) {
-			auto p1 = static_cast<p1data *>(param);
-			if (p1->error != ecSuccess)
+		const_cast<idset *>(p2->given)->enum_repl(replid, p2, [](void *param2, uint64_t msgid) {
+			auto p3 = static_cast<p1data *>(param2);
+			if (p3->error != ecSuccess)
 				return;
-			if (!eid_array_append(p1->del, msgid))
-				p1->error = ecServerOOM;
+			if (!eid_array_append(p3->del, msgid))
+				p3->error = ecServerOOM;
 		});
 	});
 	return p1.error;

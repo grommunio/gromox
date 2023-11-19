@@ -3100,8 +3100,8 @@ static constexpr std::pair<const char *, CMD_PROC_FUNC> g_cmd_map[] = {
 static CMD_PROC_FUNC rtf_find_cmd_function(const char *cmd)
 {
 	auto i = std::lower_bound(std::cbegin(g_cmd_map), std::cend(g_cmd_map), cmd,
-	         [&](const std::pair<const char *, CMD_PROC_FUNC> &p, const char *cmd) {
-	         	return strcasecmp(p.first, cmd) < 0;
+	         [&](const std::pair<const char *, CMD_PROC_FUNC> &p, const char *c) {
+	         	return strcasecmp(p.first, c) < 0;
 	         });
 	return i != std::cend(g_cmd_map) && strcasecmp(i->first, cmd) == 0 ?
 	       i->second : nullptr;
