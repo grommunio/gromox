@@ -735,9 +735,8 @@ static BOOL instance_read_attachment(const ATTACHMENT_CONTENT *src,
 	return instance_read_message(src->pembedded, dst->pembedded);
 }
 
-static BOOL instance_read_message(
-	const MESSAGE_CONTENT *pmsgctnt1,
-	MESSAGE_CONTENT *pmsgctnt)
+static BOOL instance_read_message(const MESSAGE_CONTENT *src,
+    MESSAGE_CONTENT *dst)
 {
 	void *pbuff;
 	uint32_t length;
@@ -745,75 +744,75 @@ static BOOL instance_read_message(
 	TPROPVAL_ARRAY *pproplist1;
 	ATTACHMENT_CONTENT *pattachment1;
 	
-	pmsgctnt->proplist.count = pmsgctnt1->proplist.count;
-	if (0 != pmsgctnt1->proplist.count) {
-		pmsgctnt->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt1->proplist.count + 1);
-		if (pmsgctnt->proplist.ppropval == nullptr)
+	dst->proplist.count = src->proplist.count;
+	if (src->proplist.count != 0) {
+		dst->proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(src->proplist.count + 1);
+		if (dst->proplist.ppropval == nullptr)
 			return FALSE;
 	} else {
-		pmsgctnt->proplist.ppropval = NULL;
+		dst->proplist.ppropval = NULL;
 	}
-	size_t i;
-	for (i=0; i<pmsgctnt1->proplist.count; i++) {
-		auto tag = pmsgctnt1->proplist.ppropval[i].proptag;
+	for (size_t i = 0; i < src->proplist.count; ++i) {
+		auto tag = src->proplist.ppropval[i].proptag;
 		switch (tag) {
 		case ID_TAG_BODY: {
-			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
+			auto cidstr = static_cast<const char *>(src->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 			if (pbuff == nullptr)
 				return FALSE;
-			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY;
-			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff);
+			dst->proplist.ppropval[i].proptag = PR_BODY;
+			dst->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff);
 			break;
 		}
 		case ID_TAG_BODY_STRING8: {
-			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
+			auto cidstr = static_cast<const char *>(src->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, 0);
 			if (pbuff == nullptr)
 				return FALSE;
-			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY_A;
-			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
+			dst->proplist.ppropval[i].proptag = PR_BODY_A;
+			dst->proplist.ppropval[i].pvalue = pbuff;
 			break;
 		}
 		case ID_TAG_HTML:
 		case ID_TAG_RTFCOMPRESSED: {
-			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
+			auto cidstr = static_cast<const char *>(src->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, &length, tag);
 			if (pbuff == nullptr)
 				return FALSE;
-			pmsgctnt->proplist.ppropval[i].proptag = tag == ID_TAG_HTML ? PR_HTML : PR_RTF_COMPRESSED;
+			dst->proplist.ppropval[i].proptag = tag == ID_TAG_HTML ? PR_HTML : PR_RTF_COMPRESSED;
 			auto pbin = cu_alloc<BINARY>();
 			if (pbin == nullptr)
 				return FALSE;
 			pbin->cb = length;
 			pbin->pv = pbuff;
-			pmsgctnt->proplist.ppropval[i].pvalue = pbin;
+			dst->proplist.ppropval[i].pvalue = pbin;
 			break;
 		}
 		case ID_TAG_TRANSPORTMESSAGEHEADERS: {
-			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
+			auto cidstr = static_cast<const char *>(src->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, ID_TAG_BODY);
 			if (pbuff == nullptr)
 				return FALSE;
-			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff);
+			dst->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS;
+			dst->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff);
 			break;
 		}
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
-			auto cidstr = static_cast<const char *>(pmsgctnt1->proplist.ppropval[i].pvalue);
+			auto cidstr = static_cast<const char *>(src->proplist.ppropval[i].pvalue);
 			pbuff = instance_read_cid_content(cidstr, nullptr, 0);
 			if (pbuff == nullptr)
 				return FALSE;
-			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
-			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
+			dst->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
+			dst->proplist.ppropval[i].pvalue = pbuff;
 			break;
 		}
 		default:
-			pmsgctnt->proplist.ppropval[i] = pmsgctnt1->proplist.ppropval[i];
+			dst->proplist.ppropval[i] = src->proplist.ppropval[i];
 			break;
 		}
 	}
-	auto wtf = reinterpret_cast<const TPROPVAL_ARRAY *>(pmsgctnt1);
+	size_t i = src->proplist.count;
+	auto wtf = reinterpret_cast<const TPROPVAL_ARRAY *>(src);
 	auto pnormalized_subject = wtf->get<char>(PR_NORMALIZED_SUBJECT);
 	if (NULL == pnormalized_subject) {
 		pnormalized_subject = wtf->get<char>(PR_NORMALIZED_SUBJECT_A);
@@ -823,29 +822,29 @@ static BOOL instance_read_message(
 				psubject_prefix = "";
 			length = strlen(pnormalized_subject)
 					+ strlen(psubject_prefix) + 1;
-			pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT_A;
-			pmsgctnt->proplist.ppropval[i].pvalue =
+			dst->proplist.ppropval[i].proptag = PR_SUBJECT_A;
+			dst->proplist.ppropval[i].pvalue =
 						common_util_alloc(length);
-			if (pmsgctnt->proplist.ppropval[i].pvalue == nullptr)
+			if (dst->proplist.ppropval[i].pvalue == nullptr)
 				return FALSE;
-			sprintf(static_cast<char *>(pmsgctnt->proplist.ppropval[i].pvalue),
+			sprintf(static_cast<char *>(dst->proplist.ppropval[i].pvalue),
 				"%s%s", psubject_prefix, pnormalized_subject);
-			pmsgctnt->proplist.count ++;
+			++dst->proplist.count;
 		} else {
 			psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX);
 			if (NULL == psubject_prefix) {
 				psubject_prefix = wtf->get<char>(PR_SUBJECT_PREFIX_A);
 				if (NULL != psubject_prefix) {
-					pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT_A;
-					pmsgctnt->proplist.ppropval[i].pvalue =
+					dst->proplist.ppropval[i].proptag = PR_SUBJECT_A;
+					dst->proplist.ppropval[i].pvalue =
 						deconst(psubject_prefix);
-					pmsgctnt->proplist.count ++;
+					++dst->proplist.count;
 				}
 			} else {
-				pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT;
-				pmsgctnt->proplist.ppropval[i].pvalue =
+				dst->proplist.ppropval[i].proptag = PR_SUBJECT;
+				dst->proplist.ppropval[i].pvalue =
 					deconst(psubject_prefix);
-				pmsgctnt->proplist.count ++;
+				++dst->proplist.count;
 			}
 		}
 	} else {
@@ -854,36 +853,36 @@ static BOOL instance_read_message(
 			psubject_prefix = "";
 		length = strlen(pnormalized_subject)
 					+ strlen(psubject_prefix) + 1;
-		pmsgctnt->proplist.ppropval[i].proptag = PR_SUBJECT;
-		pmsgctnt->proplist.ppropval[i].pvalue =
+		dst->proplist.ppropval[i].proptag = PR_SUBJECT;
+		dst->proplist.ppropval[i].pvalue =
 					common_util_alloc(length);
-		if (pmsgctnt->proplist.ppropval[i].pvalue == nullptr)
+		if (dst->proplist.ppropval[i].pvalue == nullptr)
 			return FALSE;
-		sprintf(static_cast<char *>(pmsgctnt->proplist.ppropval[i].pvalue),
+		sprintf(static_cast<char *>(dst->proplist.ppropval[i].pvalue),
 			"%s%s", psubject_prefix, pnormalized_subject);
-		pmsgctnt->proplist.count ++;
+		++dst->proplist.count;
 	}
-	if (NULL == pmsgctnt1->children.prcpts) {
-		pmsgctnt->children.prcpts = NULL;
+	if (src->children.prcpts == nullptr) {
+		dst->children.prcpts = nullptr;
 	} else {
-		pmsgctnt->children.prcpts = cu_alloc<TARRAY_SET>();
-		if (pmsgctnt->children.prcpts == nullptr)
+		dst->children.prcpts = cu_alloc<TARRAY_SET>();
+		if (dst->children.prcpts == nullptr)
 			return FALSE;
-		pmsgctnt->children.prcpts->count =
-			pmsgctnt1->children.prcpts->count;
-		if (0 != pmsgctnt1->children.prcpts->count) {
-			pmsgctnt->children.prcpts->pparray = cu_alloc<TPROPVAL_ARRAY *>(pmsgctnt1->children.prcpts->count);
-			if (pmsgctnt->children.prcpts->pparray == nullptr)
+		dst->children.prcpts->count =
+			src->children.prcpts->count;
+		if (src->children.prcpts->count != 0) {
+			dst->children.prcpts->pparray = cu_alloc<TPROPVAL_ARRAY *>(src->children.prcpts->count);
+			if (dst->children.prcpts->pparray == nullptr)
 				return FALSE;
 		} else {
-			pmsgctnt->children.prcpts->pparray = NULL;
+			dst->children.prcpts->pparray = nullptr;
 		}
-		for (i=0; i<pmsgctnt1->children.prcpts->count; i++) {
+		for (i = 0; i < src->children.prcpts->count; ++i) {
 			auto pproplist = cu_alloc<TPROPVAL_ARRAY>();
 			if (pproplist == nullptr)
 				return FALSE;
-			pmsgctnt->children.prcpts->pparray[i] = pproplist;
-			pproplist1 = pmsgctnt1->children.prcpts->pparray[i];
+			dst->children.prcpts->pparray[i] = pproplist;
+			pproplist1 = src->children.prcpts->pparray[i];
 			if (pproplist1->count > 1) {
 				pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(pproplist1->count);
 				if (pproplist->ppropval == nullptr)
@@ -898,29 +897,29 @@ static BOOL instance_read_message(
 				pproplist->ppropval[pproplist->count++] = pproplist1->ppropval[j];
 		}
 	}
-	if (NULL == pmsgctnt1->children.pattachments) {
-		pmsgctnt->children.pattachments = NULL;
+	if (src->children.pattachments == nullptr) {
+		dst->children.pattachments = nullptr;
 		return TRUE;
 	}
-	pmsgctnt->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
-	if (pmsgctnt->children.pattachments == nullptr)
+	dst->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
+	if (dst->children.pattachments == nullptr)
 		return FALSE;
-	pmsgctnt->children.pattachments->count =
-		pmsgctnt1->children.pattachments->count;
-	if (0 != pmsgctnt1->children.pattachments->count) {
-		pmsgctnt->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(pmsgctnt1->children.pattachments->count);
-		if (pmsgctnt->children.pattachments->pplist == nullptr)
+	dst->children.pattachments->count =
+		src->children.pattachments->count;
+	if (src->children.pattachments->count != 0) {
+		dst->children.pattachments->pplist = cu_alloc<ATTACHMENT_CONTENT *>(src->children.pattachments->count);
+		if (dst->children.pattachments->pplist == nullptr)
 			return FALSE;
 	} else {
-		pmsgctnt->children.pattachments->pplist = NULL;
+		dst->children.pattachments->pplist = nullptr;
 	}
-	for (i = 0; i < pmsgctnt1->children.pattachments->count; i++) {
+	for (i = 0; i < src->children.pattachments->count; i++) {
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
 		memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
-		pmsgctnt->children.pattachments->pplist[i] = pattachment;
-		pattachment1 = pmsgctnt1->children.pattachments->pplist[i];
+		dst->children.pattachments->pplist[i] = pattachment;
+		pattachment1 = src->children.pattachments->pplist[i];
 		if (!instance_read_attachment(pattachment1, pattachment))
 			return FALSE;
 	}
