@@ -127,6 +127,15 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	return ecRpcFailed;
 }
 
+/**
+ * Returns:
+ * - %true and @username is empty: no delegation was requested
+ * - %true and @username is set: delegation with given identity;
+ *   identity guaranteed to exist; caller still needs to perform a
+ *   permission check.
+ * - %false: unable to contact server,
+ *   or requested identity not present in the system
+ */
 static bool oxomsg_extract_delegate(message_object *pmessage,
     char *username, size_t ulen)
 {

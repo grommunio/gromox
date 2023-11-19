@@ -112,6 +112,7 @@ BOOL common_util_verify_columns_and_sorts(
 	return TRUE;
 }
 
+/* Cf. oxomsg_extract_delegate for comments */
 bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 {
 	uint32_t proptag_buff[4];
