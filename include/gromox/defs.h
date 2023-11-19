@@ -177,4 +177,14 @@ template<typename Container, typename Pred> void erase_first_if(Container &c, Pr
 	}
 }
 
+template<typename T> struct deref_iterator {
+	T **ptr = nullptr;
+	constexpr deref_iterator(T **p = nullptr) : ptr(p) {}
+	constexpr T &operator*() { return **ptr; }
+	constexpr bool operator==(const deref_iterator &o) const { return ptr == o.ptr; }
+	constexpr bool operator!=(const deref_iterator &o) const { return ptr != o.ptr; }
+	constexpr deref_iterator &operator--() { --ptr; return *this; }
+	constexpr deref_iterator &operator++() { ++ptr; return *this; }
+};
+
 }

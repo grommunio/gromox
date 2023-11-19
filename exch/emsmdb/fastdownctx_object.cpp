@@ -221,8 +221,8 @@ void fxs_propsort(MESSAGE_CONTENT &mc)
 		}
 	}
 	if (mc.children.pattachments != nullptr) {
-		for (auto i = 0U; i < mc.children.pattachments->count; ++i) {
-			auto e = mc.children.pattachments->pplist[i]->pembedded;
+		for (auto &at : *mc.children.pattachments) {
+			auto e = at.pembedded;
 			if (e != nullptr)
 				fxs_propsort(*e);
 		}

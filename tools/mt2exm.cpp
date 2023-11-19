@@ -222,14 +222,8 @@ static void exm_adjust_propids(MESSAGE_CONTENT &mc)
 			exm_adjust_namedprops(*mc.children.prcpts->pparray[i]);
 		}
 	if (mc.children.pattachments != nullptr)
-		for (size_t i = 0; i < mc.children.pattachments->count; ++i) {
-			if (mc.children.pattachments->pplist == nullptr)
-				continue;
-			auto at = mc.children.pattachments->pplist[i];
-			if (at == nullptr)
-				continue;
-			exm_adjust_propids(*at);
-		}
+		for (auto &at : *mc.children.pattachments)
+			exm_adjust_propids(at);
 }
 
 static void exm_folder_adjust(TPROPVAL_ARRAY &props)

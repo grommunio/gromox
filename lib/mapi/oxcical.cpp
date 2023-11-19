@@ -1616,9 +1616,8 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 			oxcical_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
 	if (pmsg->children.pattachments != nullptr)
-		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
-			oxcical_replace_propid(
-				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
+		for (auto &at : *pmsg->children.pattachments)
+			oxcical_replace_propid(&at.proplist, phash1);
 	return TRUE;
 }
 
@@ -3760,10 +3759,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		pcomponent->append_line("X-MICROSOFT-DISALLOW-COUNTER", *flag != 0 ? "TRUE" : "FALSE");
 	
 	if (!b_exceptional && pmsg->children.pattachments != nullptr) {
-		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
-			if (pmsg->children.pattachments->pplist[i]->pembedded == nullptr)
+		for (auto &attachment : *pmsg->children.pattachments) {
+			auto pembedded = attachment.pembedded;
+			if (pembedded == nullptr)
 				continue;
-			auto pembedded = pmsg->children.pattachments->pplist[i]->pembedded;
 			str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS);
 			if (str == nullptr)
 				str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS_A);

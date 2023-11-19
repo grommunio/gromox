@@ -146,13 +146,10 @@ static void rx_npid_collect(const MESSAGE_CONTENT &ctnt, std::set<uint16_t> &m)
 		for (unsigned int i = 0; i < ctnt.children.prcpts->count; ++i)
 			rx_npid_collect(*ctnt.children.prcpts->pparray[i], m);
 	if (ctnt.children.pattachments != nullptr) {
-		for (unsigned int i = 0; i < ctnt.children.pattachments->count; ++i) {
-			auto at = ctnt.children.pattachments->pplist[i];
-			if (at == nullptr)
-				continue;
-			rx_npid_collect(at->proplist, m);
-			if (at->pembedded != nullptr)
-				rx_npid_collect(*at->pembedded, m);
+		for (const auto &at : *ctnt.children.pattachments) {
+			rx_npid_collect(at.proplist, m);
+			if (at.pembedded != nullptr)
+				rx_npid_collect(*at.pembedded, m);
 		}
 	}
 }
@@ -179,13 +176,10 @@ static void rx_npid_transform(MESSAGE_CONTENT &ctnt,
 		for (unsigned int i = 0; i < ctnt.children.prcpts->count; ++i)
 			rx_npid_transform(*ctnt.children.prcpts->pparray[i], src, dst);
 	if (ctnt.children.pattachments != nullptr) {
-		for (unsigned int i = 0; i < ctnt.children.pattachments->count; ++i) {
-			auto at = ctnt.children.pattachments->pplist[i];
-			if (at == nullptr)
-				continue;
-			rx_npid_transform(at->proplist, src, dst);
-			if (at->pembedded != nullptr)
-				rx_npid_transform(*at->pembedded, src, dst);
+		for (auto &at : *ctnt.children.pattachments) {
+			rx_npid_transform(at.proplist, src, dst);
+			if (at.pembedded != nullptr)
+				rx_npid_transform(*at.pembedded, src, dst);
 		}
 	}
 }
@@ -399,14 +393,13 @@ static bool rx_eval_msgsub(const MESSAGE_CHILDREN &ch, uint32_t tag,
 			}
 		}
 	} else if (tag == PR_MESSAGE_ATTACHMENTS && ch.pattachments != nullptr) {
-		for (size_t i = 0; i < ch.pattachments->count; ++i) {
-			auto atx = ch.pattachments->pplist[i];
+		for (const auto &at : *ch.pattachments) {
 			if (res.rt == RES_COUNT) {
-				if (rx_eval_props(nullptr, atx[i].proplist,
+				if (rx_eval_props(nullptr, at.proplist,
 				    static_cast<RESTRICTION_COUNT *>(res.pres)->sub_res))
 					++count;
 			} else {
-				if (rx_eval_props(nullptr, atx[i].proplist, res))
+				if (rx_eval_props(nullptr, at.proplist, res))
 					return true;
 			}
 		}

@@ -1946,23 +1946,21 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
+		for (auto &at : *pmsgctnt->children.pattachments) {
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			tmp_id = sqlite3_last_insert_rowid(psqlite);
-			auto &atxprops = pmsgctnt->children.pattachments->pplist[i]->proplist;
+			auto &atxprops = at.proplist;
 			if (!cu_set_properties(MAPI_ATTACH, tmp_id, cpid, psqlite,
 			    &atxprops, &tmp_problems))
 				return FALSE;
 			if (atxprops.has(PR_ATTACH_DATA_BIN) &&
 			    tmp_problems.has(PR_ATTACH_DATA_BIN))
 				*partial_completion = true;
-			if (pmsgctnt->children.pattachments->pplist[i]->pembedded == nullptr)
+			if (at.pembedded == nullptr)
 				continue;
-			if (!message_write_message(TRUE,
-			    psqlite, account, cpid, TRUE, tmp_id,
-			    pmsgctnt->children.pattachments->pplist[i]->pembedded,
-			    &message_id, partial_completion))
+			if (!message_write_message(TRUE, psqlite, account, cpid, TRUE,
+			    tmp_id, at.pembedded, &message_id, partial_completion))
 				return FALSE;
 			if (0 == message_id) {
 				*pmessage_id = 0;

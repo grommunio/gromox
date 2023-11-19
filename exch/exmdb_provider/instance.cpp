@@ -742,7 +742,6 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 	uint32_t length;
 	const char *psubject_prefix;
 	TPROPVAL_ARRAY *pproplist1;
-	ATTACHMENT_CONTENT *pattachment1;
 	
 	dst->proplist.count = src->proplist.count;
 	if (src->proplist.count != 0) {
@@ -913,14 +912,13 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 	} else {
 		dst->children.pattachments->pplist = nullptr;
 	}
-	for (i = 0; i < src->children.pattachments->count; i++) {
+	for (auto &attachment1 : *src->children.pattachments) {
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
 		memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
 		dst->children.pattachments->pplist[i] = pattachment;
-		pattachment1 = src->children.pattachments->pplist[i];
-		if (!instance_read_attachment(pattachment1, pattachment))
+		if (!instance_read_attachment(&attachment1, pattachment))
 			return FALSE;
 	}
 	return TRUE;
@@ -951,11 +949,10 @@ static BOOL instance_identify_attachments(ATTACHMENT_LIST *pattachments)
 {
 	uint32_t i;
 	
-	for (i=0; i<pattachments->count; i++) {
-		if (pattachments->pplist[i]->proplist.set(PR_ATTACH_NUM, &i) != 0)
+	for (auto &at : *pattachments) {
+		if (at.proplist.set(PR_ATTACH_NUM, &i) != 0)
 			return FALSE;	
-		if (pattachments->pplist[i]->pembedded != nullptr &&
-		    !instance_identify_message(pattachments->pplist[i]->pembedded))
+		if (at.pembedded != nullptr && !instance_identify_message(at.pembedded))
 			return FALSE;	
 	}
 	return TRUE;
@@ -2820,10 +2817,9 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
 	if (pproptags1 == nullptr)
 		return FALSE;
-	auto pattachments = pmsgctnt->children.pattachments;
-	for (unsigned int i = 0; i < pattachments->count; ++i) {
-		for (unsigned int j = 0; j < pattachments->pplist[i]->proplist.count; ++j) {
-			auto tag = pattachments->pplist[i]->proplist.ppropval[j].proptag;
+	for (auto &at : *pmsgctnt->children.pattachments) {
+		for (unsigned int j = 0; j < at.proplist.count; ++j) {
+			auto tag = at.proplist.ppropval[j].proptag;
 			switch (PROP_TYPE(tag)) {
 			case PT_UNSPECIFIED:
 			case PT_NULL:

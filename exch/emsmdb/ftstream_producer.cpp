@@ -574,11 +574,9 @@ static BOOL ftstream_producer_write_messagechildren(
 	}
 	if (pchildren->pattachments == nullptr)
 		return TRUE;
-	for (size_t i = 0; i < pchildren->pattachments->count; ++i) {
-		if (!ftstream_producer_write_attachment(pstream,
-		    b_delprop, pchildren->pattachments->pplist[i]))
+	for (auto &at : *pchildren->pattachments)
+		if (!ftstream_producer_write_attachment(pstream, b_delprop, &at))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -731,9 +729,8 @@ BOOL ftstream_producer::write_messagechangepartial(
 					return FALSE;
 				if (!write_uint32(PR_MESSAGE_ATTACHMENTS))
 					return FALSE;
-				for (size_t k = 0; k < pmsg->children.pattachments->count; ++k)
-					if (!ftstream_producer_write_attachment(pstream,
-					    TRUE, pmsg->children.pattachments->pplist[k]))
+				for (auto &at : *pmsg->children.pattachments)
+					if (!ftstream_producer_write_attachment(pstream, TRUE, &at))
 						return FALSE;
 				break;
 			default:

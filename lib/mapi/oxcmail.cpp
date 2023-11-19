@@ -1923,9 +1923,8 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 			oxcmail_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
 	if (pmsg->children.pattachments != nullptr)
-		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
-			oxcmail_replace_propid(
-				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
+		for (auto &at : *pmsg->children.pattachments)
+			oxcmail_replace_propid(&at.proplist, phash1);
 	return TRUE;
 }
 
@@ -3230,9 +3229,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
     const char *pcharset, BOOL b_tnef, enum oxcmail_body body_type,
     MIME_SKELETON *pskeleton)
 {
-	int i;
 	char *pbuff;
-	ATTACHMENT_CONTENT *pattachment;
 	pskeleton->clear();
 	pskeleton->charset = pcharset;
 	pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
@@ -3310,8 +3307,8 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	}
 	if (pmsg->children.pattachments == nullptr)
 		return TRUE;
-	for (i=0; i<pmsg->children.pattachments->count; i++) {
-		pattachment = pmsg->children.pattachments->pplist[i];
+	for (auto &attachment : *pmsg->children.pattachments) {
+		auto pattachment = &attachment;
 		if (NULL != pattachment->pembedded) {
 			pskeleton->b_attachment = TRUE;
 			continue;
@@ -4238,7 +4235,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	char tmp_charset[32];
 	const char *pcharset;
 	MIME_FIELD mime_field;
-	ATTACHMENT_CONTENT *pattachment;
 	
 	pmail->clear();
 	auto num = pmsg->proplist.get<uint32_t>(PR_INTERNET_CPID);
@@ -4524,8 +4520,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	
 	if (pmsg->children.pattachments == nullptr)
 		return TRUE;
-	for (i=0; i<pmsg->children.pattachments->count; i++) {
-		pattachment = pmsg->children.pattachments->pplist[i];
+	for (auto &attachment : *pmsg->children.pattachments) {
+		auto pattachment = &attachment;
 		if (NULL != pattachment->pembedded) {
 			auto str = pattachment->pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
 			if (str != nullptr && strcasecmp(str,
