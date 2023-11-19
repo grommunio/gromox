@@ -1164,6 +1164,7 @@ struct LTPROPVAL_ARRAY {
 	TAGGED_PROPVAL *propval;
 };
 
+/* Better known as rowset/row_set in MSMAPI */
 struct tarray_set {
 	void erase(uint32_t index);
 	TPROPVAL_ARRAY *emplace();
@@ -1171,6 +1172,10 @@ struct tarray_set {
 	inline const TPROPVAL_ARRAY *back() const { return pparray[count-1]; }
 	gromox::errno_t append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
+	gromox::deref_iterator<TPROPVAL_ARRAY> begin() { return pparray; }
+	gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray != nullptr ? &pparray[count] : nullptr; }
+	gromox::const_deref_iterator<TPROPVAL_ARRAY> begin() const { return pparray; }
+	gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray != nullptr ? &pparray[count] : nullptr; }
 
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
