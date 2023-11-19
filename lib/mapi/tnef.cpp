@@ -1104,9 +1104,8 @@ static void tnef_message_to_unicode(cpid_t cpid, MESSAGE_CONTENT *pmsg)
 		charset = "CP1252";
 	tnef_tpropval_array_to_unicode(charset, &pmsg->proplist);
 	if (pmsg->children.prcpts != nullptr)
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			tnef_tpropval_array_to_unicode(charset,
-				pmsg->children.prcpts->pparray[i]);
+		for (auto &rcpt : *pmsg->children.prcpts)
+			tnef_tpropval_array_to_unicode(charset, &rcpt);
 	if (pmsg->children.pattachments != nullptr)
 		for (auto &at : *pmsg->children.pattachments)
 			tnef_tpropval_array_to_unicode(charset, &at.proplist);
@@ -1574,8 +1573,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	tnef_replace_propid(&pmsg->proplist, phash1);
 	if (pmsg->children.prcpts != nullptr)
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
+		for (auto &rcpt : *pmsg->children.prcpts)
+			tnef_replace_propid(&rcpt, phash1);
 	if (pmsg->children.pattachments != nullptr)
 		for (auto &at : *pmsg->children.pattachments)
 			tnef_replace_propid(&at.proplist, phash1);
@@ -2259,14 +2258,13 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			if (tnef_propset.pplist == nullptr)
 				return FALSE;
 		}
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			num = pmsg->children.prcpts->pparray[i]->get<uint32_t>(PR_RECIPIENT_TYPE);
+		for (auto &msg_rcpt : *pmsg->children.prcpts) {
+			num = msg_rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
 			/* BCC recipients must be excluded */
 			if (num != nullptr && *num == MAPI_BCC)
 				continue;
 			tnef_propset.pplist[tnef_propset.count] =
-				tnef_convert_recipient(pmsg->children.prcpts->pparray[i],
-					alloc, get_propname);
+				tnef_convert_recipient(&msg_rcpt, alloc, get_propname);
 			if (tnef_propset.pplist[tnef_propset.count] == nullptr)
 				return FALSE;
 			tnef_propset.count ++;

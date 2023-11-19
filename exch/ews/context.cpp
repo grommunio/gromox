@@ -1114,9 +1114,8 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 		throw EWSError::ItemCorrupt(E3116);
 	std::vector<std::string> rcpts;
 	rcpts.reserve(content.children.prcpts->count);
-	const auto& prcpts = content.children.prcpts;
-	for(TPROPVAL_ARRAY** rcpt = prcpts->pparray; rcpt != prcpts->pparray+prcpts->count; ++rcpt) {
-		tEmailAddressType addr(**rcpt);
+	for (auto &rcpt : *content.children.prcpts) {
+		tEmailAddressType addr(rcpt);
 		if(!addr.EmailAddress)
 			continue;
 		normalize(addr);

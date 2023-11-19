@@ -1613,8 +1613,8 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	}
 	oxcical_replace_propid(&pmsg->proplist, phash1);
 	if (pmsg->children.prcpts != nullptr)
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			oxcical_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
+		for (auto &rcpt : *pmsg->children.prcpts)
+			oxcical_replace_propid(&rcpt, phash1);
 	if (pmsg->children.pattachments != nullptr)
 		for (auto &at : *pmsg->children.pattachments)
 			oxcical_replace_propid(&at.proplist, phash1);
@@ -2744,13 +2744,13 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 	}	
 	auto flag = pmsg->proplist.get<const uint8_t>(PR_RESPONSE_REQUESTED);
 	auto b_rsvp = flag != nullptr && *flag != 0;
-	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-		auto rcptflags = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_FLAGS);
+	for (auto &rcpt : *pmsg->children.prcpts) {
+		auto rcptflags = rcpt.get<const uint32_t>(PR_RECIPIENT_FLAGS);
 		if (rcptflags == nullptr)
 			continue;
 		if (*rcptflags & (recipExceptionalDeleted | recipOrganizer))
 			continue;
-		auto rcpttype = pmsg->children.prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+		auto rcpttype = rcpt.get<const uint32_t>(PR_RECIPIENT_TYPE);
 		if (rcpttype != nullptr && *rcpttype == MAPI_ORIG)
 			continue;
 		auto piline = &pevent_component.append_line("ATTENDEE");
@@ -2764,11 +2764,10 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 			piline->append_param("PARTSTAT", partstat);
 		if (b_rsvp)
 			piline->append_param("RSVP", "TRUE");
-		auto name = pmsg->children.prcpts->pparray[i]->get<const char>(PR_DISPLAY_NAME);
+		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
 			piline->append_param("CN", name);
-		if (oxcmail_get_smtp_address(*pmsg->children.prcpts->pparray[i],
-		    nullptr /* tags_self */, org_name,
+		if (oxcmail_get_smtp_address(rcpt, nullptr /* tags_self */, org_name,
 		    id2user, username, std::size(username))) {
 			snprintf(tmp_value, std::size(tmp_value), "MAILTO:%s", username);
 			piline->append_value(nullptr, tmp_value);

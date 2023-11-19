@@ -1931,12 +1931,12 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
+		for (auto &rcpt : *pmsgctnt->children.prcpts) {
 			if (pstmt.step() != SQLITE_DONE)
 				return FALSE;
 			tmp_id = sqlite3_last_insert_rowid(psqlite);
 			if (!cu_set_properties(MAPI_MAILUSER, tmp_id, cpid, psqlite,
-			    pmsgctnt->children.prcpts->pparray[i], &tmp_problems))
+			    &rcpt, &tmp_problems))
 				return FALSE;
 		}
 	}
@@ -2522,8 +2522,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	const char *pvalue2 = strchr(rp.ev_from, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	std::vector<std::string> rcpt_list;
-	for (unsigned int i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
-		const auto &r = *pmsgctnt->children.prcpts->pparray[i];
+	for (auto &r : *pmsgctnt->children.prcpts) {
 		TPROPVAL_ARRAY pv = {r.count, r.ppropval};
 		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
 			return false;

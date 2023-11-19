@@ -143,8 +143,8 @@ static void rx_npid_collect(const MESSAGE_CONTENT &ctnt, std::set<uint16_t> &m)
 {
 	rx_npid_collect(ctnt.proplist, m);
 	if (ctnt.children.prcpts != nullptr)
-		for (unsigned int i = 0; i < ctnt.children.prcpts->count; ++i)
-			rx_npid_collect(*ctnt.children.prcpts->pparray[i], m);
+		for (const auto &rcpt : *ctnt.children.prcpts)
+			rx_npid_collect(rcpt, m);
 	if (ctnt.children.pattachments != nullptr) {
 		for (const auto &at : *ctnt.children.pattachments) {
 			rx_npid_collect(at.proplist, m);
@@ -173,8 +173,8 @@ static void rx_npid_transform(MESSAGE_CONTENT &ctnt,
 {
 	rx_npid_transform(ctnt.proplist, src, dst);
 	if (ctnt.children.prcpts != nullptr)
-		for (unsigned int i = 0; i < ctnt.children.prcpts->count; ++i)
-			rx_npid_transform(*ctnt.children.prcpts->pparray[i], src, dst);
+		for (auto &rcpt : *ctnt.children.prcpts)
+			rx_npid_transform(rcpt, src, dst);
 	if (ctnt.children.pattachments != nullptr) {
 		for (auto &at : *ctnt.children.pattachments) {
 			rx_npid_transform(at.proplist, src, dst);
@@ -381,14 +381,13 @@ static bool rx_eval_msgsub(const MESSAGE_CHILDREN &ch, uint32_t tag,
 {
 	uint32_t count = 0;
 	if (tag == PR_MESSAGE_RECIPIENTS && ch.prcpts != nullptr) {
-		for (size_t i = 0; i < ch.prcpts->count; ++i) {
-			auto rcpt = ch.prcpts->pparray[i];
+		for (const auto &rcpt : *ch.prcpts) {
 			if (res.rt == RES_COUNT) {
-				if (rx_eval_props(nullptr, *rcpt,
+				if (rx_eval_props(nullptr, rcpt,
 				    static_cast<RESTRICTION_COUNT *>(res.pres)->sub_res))
 					++count;
 			} else {
-				if (rx_eval_props(nullptr, *rcpt, res))
+				if (rx_eval_props(nullptr, rcpt, res))
 					return true;
 			}
 		}

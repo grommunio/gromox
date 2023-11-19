@@ -1920,8 +1920,8 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 	}
 	oxcmail_replace_propid(&pmsg->proplist, phash1);
 	if (pmsg->children.prcpts != nullptr)
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			oxcmail_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
+		for (auto &rcpt : *pmsg->children.prcpts)
+			oxcmail_replace_propid(&rcpt, phash1);
 	if (pmsg->children.pattachments != nullptr)
 		for (auto &at : *pmsg->children.pattachments)
 			oxcmail_replace_propid(&at.proplist, phash1);
@@ -2421,8 +2421,8 @@ static const MIME *oxcmail_parse_mdn(const MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (pmsg->proplist.set(PR_ORIGINAL_DELIVERY_TIME, ts) != 0 ||
 	    pmsg->proplist.set(PR_RECEIPT_TIME, ts) != 0)
 		return NULL;
-	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-		if (pmsg->children.prcpts->pparray[i]->set(PR_REPORT_TIME, ts) != 0)
+	for (auto &rcpt : *pmsg->children.prcpts)
+		if (rcpt.set(PR_REPORT_TIME, ts) != 0)
 			return NULL;
 	return pmime;
 }
@@ -3031,15 +3031,14 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	return false;
 }
 
-static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
-    uint32_t rcpt_type, char *field, size_t fdsize)
+static BOOL oxcmail_export_addresses(const char *charset,
+    const TARRAY_SET *prcpts, uint32_t rcpt_type, char *field, size_t fdsize)
 {
 	size_t offset = 0;
 	char username[UADDR_SIZE];
 	
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto prcpt = prcpts->pparray[i];
-		auto pvalue = prcpt->get<uint32_t>(PR_RECIPIENT_TYPE);
+	for (const auto &rcpt : *prcpts) {
+		auto pvalue = rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
 		if (pvalue == nullptr || *pvalue != rcpt_type)
 			continue;
 		if (0 != offset) {
@@ -3048,7 +3047,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 			strcpy(&field[offset], ",\r\n\t");
 			offset += 4;
 		}
-		auto pdisplay_name = prcpt->get<char>(PR_DISPLAY_NAME);
+		auto pdisplay_name = rcpt.get<char>(PR_DISPLAY_NAME);
 		if (NULL != pdisplay_name) {
 			field[offset++] = '"';
 			if (offset >= fdsize)
@@ -3063,7 +3062,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 			if (offset >= fdsize)
 				return FALSE;
 		}
-		if (oxcmail_get_smtp_address(*prcpt, &tags_self, g_oxcmail_org_name,
+		if (oxcmail_get_smtp_address(rcpt, &tags_self, g_oxcmail_org_name,
 		    oxcmail_id2user, username, std::size(username)))
 			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
 			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
@@ -3831,7 +3830,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
     cvt_id2user id2user, char *pdsn_content, int max_length)
 {
 	char action[16];
-	TARRAY_SET *prcpts;
 	char tmp_buff[1024];
 	static constexpr const char status_strings1[][6] =
 		{"5.4.0", "5.1.0", "5.6.5", "5.6.5", "5.2.0", "5.3.0", "4.4.3"};
@@ -3874,23 +3872,22 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		*action = '\0';
 	if (pmsg->children.prcpts == nullptr)
 		goto SERIALIZE_DSN;
-	prcpts = pmsg->children.prcpts;
-	for (size_t i = 0; i < prcpts->count; ++i) {
+	for (const auto &rcpt : *pmsg->children.prcpts) {
 		pdsn_fields = dsn.new_rcpt_fields();
 		if (pdsn_fields == nullptr)
 			return FALSE;
-		if (!oxcmail_get_rcpt_address(*prcpts->pparray[i],
-		    tags_self, org, id2user, tmp_buff, std::size(tmp_buff)))
+		if (!oxcmail_get_rcpt_address(rcpt, tags_self, org, id2user,
+		    tmp_buff, std::size(tmp_buff)))
 			*tmp_buff = '\0';
 		if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
 			return FALSE;
 		if (*action != '\0' &&
 		    !dsn.append_field(pdsn_fields, "Action", action))
 			return FALSE;
-		auto num = prcpts->pparray[i]->get<const uint32_t>(PR_NDR_DIAG_CODE);
+		auto num = rcpt.get<const uint32_t>(PR_NDR_DIAG_CODE);
 		if (num != nullptr) {
 			if (*num == MAPI_DIAG_NO_DIAGNOSTIC) {
-				num = prcpts->pparray[i]->get<uint32_t>(PR_NDR_REASON_CODE);
+				num = rcpt.get<uint32_t>(PR_NDR_REASON_CODE);
 				if (num != nullptr) {
 					strcpy(tmp_buff, *num > 6 ? "5.4.0" :
 					       status_strings1[*num]);
@@ -3898,7 +3895,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 						return FALSE;
 				}
 			} else {
-				num = prcpts->pparray[i]->get<uint32_t>(PR_NDR_REASON_CODE);
+				num = rcpt.get<uint32_t>(PR_NDR_REASON_CODE);
 				if (num != nullptr) {
 					strcpy(tmp_buff, *num > 48 ? "5.0.0" :
 					       status_strings2[*num]);
@@ -3907,15 +3904,15 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 				}
 			}
 		}
-		str = prcpts->pparray[i]->get<char>(PR_DSN_REMOTE_MTA);
+		str = rcpt.get<char>(PR_DSN_REMOTE_MTA);
 		if (str != nullptr && !dsn.append_field(pdsn_fields,
 		    "Remote-MTA", str))
 			return FALSE;
-		str = prcpts->pparray[i]->get<char>(PR_SUPPLEMENTARY_INFO);
+		str = rcpt.get<char>(PR_SUPPLEMENTARY_INFO);
 		if (str != nullptr && !dsn.append_field(pdsn_fields,
 		    "X-Supplementary-Info", str))
 			return FALSE;
-		str = prcpts->pparray[i]->get<char>(PR_DISPLAY_NAME);
+		str = rcpt.get<char>(PR_DISPLAY_NAME);
 		if (str != nullptr && oxcmail_encode_mime_string(charset,
 		    str, tmp_buff, std::size(tmp_buff)) > 0 &&
 		    !dsn.append_field(pdsn_fields, "X-Display-Name", tmp_buff))

@@ -212,14 +212,9 @@ static void exm_adjust_propids(MESSAGE_CONTENT &mc)
 	exm_adjust_staticprops(mc.proplist);
 	exm_adjust_namedprops(mc.proplist);
 	if (mc.children.prcpts != nullptr)
-		for (size_t i = 0; i < mc.children.prcpts->count; ++i) {
-			if (mc.children.prcpts->pparray == nullptr)
-				continue;
-			auto set = mc.children.prcpts->pparray[i];
-			if (set == nullptr)
-				continue;
-			exm_adjust_staticprops(*mc.children.prcpts->pparray[i]);
-			exm_adjust_namedprops(*mc.children.prcpts->pparray[i]);
+		for (auto &rcpt : *mc.children.prcpts) {
+			exm_adjust_staticprops(rcpt);
+			exm_adjust_namedprops(rcpt);
 		}
 	if (mc.children.pattachments != nullptr)
 		for (auto &at : *mc.children.pattachments)

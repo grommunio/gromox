@@ -562,9 +562,8 @@ static BOOL ftstream_producer_write_messagechildren(
 			return FALSE;
 	}
 	if (pchildren->prcpts != nullptr)
-		for (size_t i = 0; i < pchildren->prcpts->count; ++i)
-			if (!ftstream_producer_write_recipient(pstream,
-			    pchildren->prcpts->pparray[i]))
+		for (auto &rcpt : *pchildren->prcpts)
+			if (!ftstream_producer_write_recipient(pstream, &rcpt))
 				return FALSE;
 	if (b_delprop) {
 		if (!pstream->write_uint32(MetaTagFXDelProp))
@@ -717,9 +716,8 @@ BOOL ftstream_producer::write_messagechangepartial(
 					return FALSE;
 				if (!write_uint32(PR_MESSAGE_RECIPIENTS))
 					return FALSE;
-				for (size_t k = 0; k < pmsg->children.prcpts->count; ++k)
-					if (!ftstream_producer_write_recipient(pstream,
-					    pmsg->children.prcpts->pparray[k]))
+				for (const auto &rcpt : *pmsg->children.prcpts)
+					if (!ftstream_producer_write_recipient(pstream, &rcpt))
 						return FALSE;
 				break;
 			case PR_MESSAGE_ATTACHMENTS:

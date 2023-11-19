@@ -1495,7 +1495,6 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	BOOL b_partial;
 	uint64_t new_id;
 	uint64_t folder_id;
-	TARRAY_SET *prcpts;
 	MESSAGE_CONTENT *pmsgctnt;
 	using LLU = unsigned long long;
 	
@@ -1532,7 +1531,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 		return ecError;
 	}
 	bool b_resend = *message_flags & MSGFLAG_RESEND;
-	prcpts = pmsgctnt->children.prcpts;
+	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		mlog2(LV_ERR, "E-1286: Missing recipients for message mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
@@ -1540,9 +1539,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	}
 
 	std::vector<std::string> rcpt_list;
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto ret = cu_rcpt_to_list(message_id, *prcpts->pparray[i],
-		           rcpt_list, b_resend);
+	for (const auto &rcpt : *prcpts) {
+		auto ret = cu_rcpt_to_list(message_id, rcpt, rcpt_list, b_resend);
 		if (ret != ecSuccess)
 			return ret;
 	}

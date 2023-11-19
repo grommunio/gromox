@@ -1577,7 +1577,7 @@ BOOL exmdb_server::get_instance_all_proptags(const char *dir,
 	       giat_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags);
 }
 
-static BOOL instance_get_message_display_recipients(TARRAY_SET *prcpts,
+static BOOL instance_get_message_display_recipients(const tarray_set *prcpts,
     cpid_t cpid, uint32_t proptag, void **ppvalue) try
 {
 	std::string dr;
@@ -1598,18 +1598,18 @@ static BOOL instance_get_message_display_recipients(TARRAY_SET *prcpts,
 		recipient_type = MAPI_BCC;
 		break;
 	}
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
+	for (const auto &rcpt : *prcpts) {
+		auto rcpttype = rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
 		if (rcpttype == nullptr || *rcpttype != recipient_type)
 			continue;
-		auto name = prcpts->pparray[i]->get<const char>(PR_DISPLAY_NAME);
+		auto name = rcpt.get<char>(PR_DISPLAY_NAME);
 		if (name == nullptr) {
-			name = prcpts->pparray[i]->get<char>(PR_DISPLAY_NAME_A);
+			name = rcpt.get<char>(PR_DISPLAY_NAME_A);
 			if (name != nullptr)
 				name = common_util_convert_copy(TRUE, cpid, name);
 		}
 		if (name == nullptr)
-			name = prcpts->pparray[i]->get<char>(PR_SMTP_ADDRESS);
+			name = rcpt.get<char>(PR_SMTP_ADDRESS);
 		if (name == nullptr)
 			continue;
 		if (!dr.empty())
@@ -2575,15 +2575,13 @@ BOOL exmdb_server::get_message_instance_rcpts_num(const char *dir,
 BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
     uint32_t instance_id, PROPTAG_ARRAY *pproptags)
 {
-	TARRAY_SET *prcpts;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto pinstance = instance_get_instance_c(pdb, instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
-	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
+	auto pmsgctnt = static_cast<const MESSAGE_CONTENT *>(pinstance->pcontent);
 	if (NULL == pmsgctnt->children.prcpts) {
 		pproptags->count = 0;
 		pproptags->pproptag = NULL;
@@ -2592,11 +2590,10 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 	std::unique_ptr<PROPTAG_ARRAY, pta_delete> pproptags1(proptag_array_init());
 	if (pproptags1 == nullptr)
 		return FALSE;
-	prcpts = pmsgctnt->children.prcpts;
-	for (size_t i = 0; i < prcpts->count; ++i)
-		for (size_t j = 0; j < prcpts->pparray[i]->count; ++j)
+	for (auto &rcpt : *pmsgctnt->children.prcpts)
+		for (size_t j = 0; j < rcpt.count; ++j)
 			if (!proptag_array_append(pproptags1.get(),
-			    prcpts->pparray[i]->ppropval[j].proptag))
+			    rcpt.ppropval[j].proptag))
 				return FALSE;
 	/* MSMAPI expects to always see these four tags, even if no rows are sent later. */
 	proptag_array_append(pproptags1.get(), PR_RECIPIENT_TYPE);
