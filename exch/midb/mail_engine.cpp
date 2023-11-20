@@ -1325,56 +1325,6 @@ static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
 	       sqlite3_column_int64(pstmt, 0);
 }
 
-static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
-	const char *folder_name)
-{
-	uint32_t idx;
-	uint64_t folder_id;
-	char sql_string[1024];
-	static constexpr unsigned int sort_field = FIELD_UID;
-	static const char field_name[] = "uid";
-
-	auto xact = gx_sql_begin_trans(pidb->psqlite);
-	if (!xact)
-		return false;
-	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
-	             " sort_field FROM folders WHERE name=?");
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_text(pstmt, 1, folder_name, -1, SQLITE_STATIC);
-	if (pstmt.step() != SQLITE_ROW)
-		return FALSE;
-	folder_id = sqlite3_column_int64(pstmt, 0);
-	if (sqlite3_column_int64(pstmt, 1) == sort_field)
-		return TRUE;
-	pstmt.finalize();
-	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM messages"
-	          " WHERE folder_id=%llu ORDER BY %s", LLU{folder_id}, field_name);
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	auto pstmt1 = gx_sql_prep(pidb->psqlite, "UPDATE messages"
-	              " SET idx=? WHERE message_id=?");
-	if (pstmt1 == nullptr)
-		return FALSE;
-	idx = 1;
-	while (pstmt.step() == SQLITE_ROW) {
-		sqlite3_reset(pstmt1);
-		sqlite3_bind_int64(pstmt1, 1, idx);
-		sqlite3_bind_int64(pstmt1, 2,
-			sqlite3_column_int64(pstmt, 0));
-		if (pstmt1.step() != SQLITE_DONE)
-			return FALSE;
-		idx ++;
-	}
-	pstmt.finalize();
-	pstmt1.finalize();
-	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET sort_field=%d "
-	        "WHERE folder_id=%llu", sort_field, LLU{folder_id});
-	gx_sql_exec(pidb->psqlite, sql_string);
-	return TRUE;
-}
-
 static void mail_engine_extract_digest_fields(const Json::Value &digest, char *subject,
     size_t subjsize, char *from, size_t fromsize, char *rcpt, size_t rcptsize,
     size_t *psize)
@@ -3186,8 +3136,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
-		return MIDB_E_MNG_SORTFOLDER;
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		/* "MAX:MAX" */
 		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
@@ -3275,8 +3223,6 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
-		return MIDB_E_MNG_SORTFOLDER;
 	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) FROM "
 		"messages WHERE folder_id=%llu AND deleted=1", LLU{folder_id});
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -3349,8 +3295,6 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
-		return MIDB_E_MNG_SORTFOLDER;
 	/* UNSET always means MAX, never MIN */
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		snprintf(sql_string, std::size(sql_string), "SELECT mid_string"
