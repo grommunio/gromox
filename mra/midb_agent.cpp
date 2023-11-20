@@ -78,7 +78,6 @@ static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, const std::vector<MSG_UNIT *> &);
-static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
 static int get_mail_uid(const char *path, const char *folder, const std::string &mid, unsigned int *uid);
 static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *first_seen, int *perrno);
 static int make_folder(const char *path, const char *folder, int *perrno);
@@ -206,7 +205,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		pthread_setname_np(g_scan_id, "midb_agent");
 
 #define E(f) register_service(#f, f)
-		if (!E(list_mail) || !E(delete_mail) || !E(get_mail_id) ||
+		if (!E(list_mail) || !E(delete_mail) ||
 		    !E(get_mail_uid) || !E(summary_folder) || !E(make_folder) ||
 		    !E(remove_folder) || !E(ping_mailbox) ||
 		    !E(rename_folder) || !E(subscribe_folder) ||
@@ -654,30 +653,6 @@ static int imap_search_uid(const char *path, const char *folder,
 	return MIDB_RDWR_ERROR;
 } catch (const std::bad_alloc &) {
 	return MIDB_LOCAL_ENOMEM;
-}
-
-static int get_mail_id(const char *path, const char *folder,
-    const char *mid_string, unsigned int *pid)
-{
-	char buff[1024];
-
-	auto pback = get_connection(path);
-	if (pback == nullptr)
-		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, std::size(buff), "P-OFST %s %s %s\r\n",
-				path, folder, mid_string);
-	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
-	if (ret != 0)
-		return ret;
-	if (0 == strncmp(buff, "TRUE", 4)) {
-		*pid = strtol(buff + 5, nullptr, 0) + 1;
-		pback.reset();
-		return MIDB_RESULT_OK;
-	} else if (0 == strncmp(buff, "FALSE ", 6)) {
-		pback.reset();
-		return MIDB_RESULT_ERROR;
-	}
-	return MIDB_RDWR_ERROR;
 }
 
 static int get_mail_uid(const char *path, const char *folder,
