@@ -53,7 +53,8 @@ static eid_t lookup_eid_by_name(const char *dir, const char *name)
 	           pathcomp[0].c_str(), [](const std::pair<const char *, uint8_t> &pair, const char *x) {
 	           	return strcmp(pair.first, x) < 0;
 	           });
-	if (ptr == std::end(fld_special_names) || strcmp(ptr->first, name) != 0)
+	if (ptr == std::end(fld_special_names) ||
+	    strcmp(ptr->first, pathcomp[0].c_str()) != 0)
 		return 0;
 
 	eid_t fid = rop_util_make_eid_ex(1, ptr->second);
