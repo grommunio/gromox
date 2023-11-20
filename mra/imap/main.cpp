@@ -47,7 +47,6 @@ E(judge_user)
 E(add_user_into_temp_list)
 E(auth_login)
 E(auth_meta)
-E(get_id)
 E(get_uid)
 E(summary_folder)
 E(make_folder)
@@ -172,7 +171,6 @@ static int system_services_run()
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_auth_login, "auth_login_gen");
 	E(system_services_auth_meta, "mysql_auth_meta");
-	E(system_services_get_id, "get_mail_id");
 	E(system_services_get_uid, "get_mail_uid");
 	E(system_services_summary_folder, "summary_folder");
 	E(system_services_make_folder, "make_folder");
@@ -210,7 +208,6 @@ static void system_services_stop()
 	service_release("user_filter_add", "system");
 	service_release("mysql_auth_meta", "system");
 	service_release("auth_login_gen", "system");
-	service_release("get_mail_id", "system");
 	service_release("get_mail_uid", "system");
 	service_release("summary_folder", "system");
 	service_release("make_folder", "system");
