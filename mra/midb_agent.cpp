@@ -1541,8 +1541,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
 						}
-					} else {
-						b_format_error = TRUE;
 					}
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
