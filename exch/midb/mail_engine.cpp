@@ -3312,26 +3312,24 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
-using dtlu_node = std::pair<std::string /* mid_string */, uint32_t /* idx */>;
-
 static int dtlu_query(IDB_ITEM *pidb, const char *sql_string,
-    size_t total_mail, std::vector<dtlu_node> &temp_list)
+    size_t total_mail, std::vector<std::string> &temp_list)
 {
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
 	while (pstmt.step() == SQLITE_ROW)
-		temp_list.emplace_back(pstmt.col_text(1), pstmt.col_int64(0));
+		temp_list.emplace_back(pstmt.col_text(0));
 	return 0;
 }
 
 /*
  * Fetch detail (via IMAP UID)
  * Request:
- * 	P-DTLU <store-dir> <folder> <1-based seqid(min)> <1-based seqid(max)>
+ * 	P-DTLU <store-dir> <folder> <1-based imapuid(min)> <1-based imapuid(max)>
  * Response:
  * 	TRUE <#messages>
- * 	<0-based seqid> <digest>  // repeat x #messages
+ * 	- <digest>  // repeat x #messages
  */
 static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 {
@@ -3355,33 +3353,33 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 		return MIDB_E_MNG_SORTFOLDER;
 	/* UNSET always means MAX, never MIN */
 	if (first == SEQ_STAR && last == SEQ_STAR)
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string"
+		snprintf(sql_string, std::size(sql_string), "SELECT mid_string"
 		         " FROM messages WHERE folder_id=%llu ORDER BY uid DESC LIMIT 1",
 		         LLU{folder_id});
 	else if (first == SEQ_STAR)
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
+		snprintf(sql_string, std::size(sql_string), "SELECT mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid<=%u "
 		         " ORDER BY uid DESC LIMIT 1", LLU{folder_id}, last);
 	else if (last == SEQ_STAR)
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
+		snprintf(sql_string, std::size(sql_string), "SELECT mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u"
 		         " ORDER BY uid", LLU{folder_id}, first);
 	else if (last == first)
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
+		snprintf(sql_string, std::size(sql_string), "SELECT mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid=%u",
 		         LLU{folder_id}, first);
 	else
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
+		snprintf(sql_string, std::size(sql_string), "SELECT mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u AND"
 		         " uid<=%u ORDER BY uid", LLU{folder_id}, first, last);
 
-	std::vector<dtlu_node> temp_list;
+	std::vector<std::string> temp_list;
 	auto iret = dtlu_query(pidb.get(), sql_string, total_mail, temp_list);
 	if (iret != 0)
 		return iret;
 	if (temp_list.empty() && (first == SEQ_STAR || last == SEQ_STAR)) {
 		/* Rerun like in pshru */
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string"
+		snprintf(sql_string, std::size(sql_string), "SELECT mid_string"
 		         " FROM messages WHERE folder_id=%llu ORDER BY uid"
 		         " DESC LIMIT 1", LLU{folder_id});
 		iret = dtlu_query(pidb.get(), sql_string, total_mail, temp_list);
@@ -3396,11 +3394,9 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	if (ret != 0)
 		return ret;
 	for (const auto &dt : temp_list) {
-		temp_len = gx_snprintf(temp_buff, std::size(temp_buff),
-		           "%d ", dt.second - 1);
+		temp_len = gx_snprintf(temp_buff, std::size(temp_buff), "- ");
 		Json::Value digest;
-		if (mail_engine_get_digest(pidb->psqlite, dt.first.c_str(),
-		    digest) == 0)
+		if (mail_engine_get_digest(pidb->psqlite, dt.c_str(), digest) == 0)
 			digest = Json::objectValue;
 		auto djson = json_to_str(digest);
 		djson.insert(0, temp_buff);
