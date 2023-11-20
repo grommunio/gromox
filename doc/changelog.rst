@@ -1,3 +1,25 @@
+Development 2.17.122
+====================
+
+Fixes:
+
+* exmdb: synthesized PR_RTF_COMPRESSED properties (in relation to the
+  "dbg_synthesize_content" config directive) had an incomplete header
+* oxcmail: repair inadvertent propid/proptag swap causing TNEF export to fail
+* mbop/purge-softdelete: make pathspec `SENT/2022` actually work
+* imap: messages delete events from OL/g-web now make it to IMAP clients
+
+Enhancements:
+
+* midb: propagate folder change events; IMAP clients now recognize when a
+  message was deleted in g-web/Outlook
+* http: RFC 7617 support for the Basic authentication header line
+* nsp: allow connections from Windows with UTF-8 locale
+* midb: removal of seqid renumbering, which speeds up
+  IMAP SELECT/LIST/FETCH commands.
+* authmgr: PAM is now offered as an authentication backend
+
+
 Gromox 2.17 (2023-11-11)
 ========================
 
