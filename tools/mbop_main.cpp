@@ -235,6 +235,8 @@ static int main(int argc, const char **argv)
 {
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (argc < 2)
+		fprintf(stderr, "mbop/purge: No folders specified, no action taken.");
 	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
 	while (*++argv != nullptr) {
 		uint64_t id = strtoull(*argv, nullptr, 0);
