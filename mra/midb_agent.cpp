@@ -78,9 +78,8 @@ static ssize_t read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, const std::vector<MSG_UNIT *> &);
-static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
 static int get_mail_uid(const char *path, const char *folder, const std::string &mid, unsigned int *uid);
-static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *first_seen, int *perrno);
+static int summary_folder(const char *path, const char *folder, size_t *exists, size_t *recent, size_t *unseen, uint32_t *uidvalid, uint32_t *uidnext, int *perrno);
 static int make_folder(const char *path, const char *folder, int *perrno);
 static int remove_folder(const char *path, const char *folder, int *perrno);
 static int ping_mailbox(const char *path, int *perrno);
@@ -206,7 +205,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		pthread_setname_np(g_scan_id, "midb_agent");
 
 #define E(f) register_service(#f, f)
-		if (!E(list_mail) || !E(delete_mail) || !E(get_mail_id) ||
+		if (!E(list_mail) || !E(delete_mail) ||
 		    !E(get_mail_uid) || !E(summary_folder) || !E(make_folder) ||
 		    !E(remove_folder) || !E(ping_mailbox) ||
 		    !E(rename_folder) || !E(subscribe_folder) ||
@@ -656,30 +655,6 @@ static int imap_search_uid(const char *path, const char *folder,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-static int get_mail_id(const char *path, const char *folder,
-    const char *mid_string, unsigned int *pid)
-{
-	char buff[1024];
-
-	auto pback = get_connection(path);
-	if (pback == nullptr)
-		return MIDB_NO_SERVER;
-	auto length = gx_snprintf(buff, std::size(buff), "P-OFST %s %s %s\r\n",
-				path, folder, mid_string);
-	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
-	if (ret != 0)
-		return ret;
-	if (0 == strncmp(buff, "TRUE", 4)) {
-		*pid = strtol(buff + 5, nullptr, 0) + 1;
-		pback.reset();
-		return MIDB_RESULT_OK;
-	} else if (0 == strncmp(buff, "FALSE ", 6)) {
-		pback.reset();
-		return MIDB_RESULT_ERROR;
-	}
-	return MIDB_RDWR_ERROR;
-}
-
 static int get_mail_uid(const char *path, const char *folder,
     const std::string &mid_string, unsigned int *puid)
 {
@@ -704,15 +679,13 @@ static int get_mail_uid(const char *path, const char *folder,
 	return MIDB_RDWR_ERROR;
 }
 
-static int summary_folder(const char *path, const char *folder, int *pexists,
-	int *precent, int *punseen, unsigned long *puidvalid,
-	unsigned int *puidnext, int *pfirst_unseen, int *perrno)
+static int summary_folder(const char *path, const char *folder, size_t *pexists,
+    size_t *precent, size_t *punseen, uint32_t *puidvalid, uint32_t *puidnext,
+    int *perrno)
 {
 	char buff[1024];
-	int exists, recent;
-	int unseen, first_unseen;
-	unsigned long uidvalid;
-	unsigned int uidnext;
+	size_t exists, recent, unseen;
+	unsigned long uidvalid, uidnext;
 
 	auto pback = get_connection(path);
 	if (pback == nullptr)
@@ -721,33 +694,32 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
-	if (0 == strncmp(buff, "TRUE", 4)) {
-		if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
-		    &recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
-			*perrno = -1;
-			pback.reset();
-			return MIDB_RESULT_ERROR;
-		}
-		if (pexists != nullptr)
-			*pexists = exists;
-		if (precent != nullptr)
-			*precent = recent;
-		if (punseen != nullptr)
-			*punseen = unseen;
-		if (puidvalid != nullptr)
-			*puidvalid = uidvalid;
-		if (puidnext != nullptr)
-			*puidnext = uidnext;
-		if (pfirst_unseen != nullptr)
-			*pfirst_unseen = first_unseen + 1;
-		pback.reset();
-		return MIDB_RESULT_OK;
-	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+	if (strncmp(buff, "FALSE ", 6) == 0) {
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
+	} else if (strncmp(buff, "TRUE", 4) != 0) {
+		return MIDB_RDWR_ERROR;
 	}
-	return MIDB_RDWR_ERROR;
+
+	if (sscanf(buff, "TRUE %zu %zu %zu %lu %lu", &exists,
+	    &recent, &unseen, &uidvalid, &uidnext) != 5) {
+		*perrno = -1;
+		pback.reset();
+		return MIDB_RESULT_ERROR;
+	}
+	if (pexists != nullptr)
+		*pexists = exists;
+	if (precent != nullptr)
+		*precent = recent;
+	if (punseen != nullptr)
+		*punseen = unseen;
+	if (puidvalid != nullptr)
+		*puidvalid = uidvalid;
+	if (puidnext != nullptr)
+		*puidnext = uidnext;
+	pback.reset();
+	return MIDB_RESULT_OK;
 }
 	
 static int make_folder(const char *path, const char *folder, int *perrno)
@@ -1569,8 +1541,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							auto pitem = pxarray->get_item(num - 1);
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pitem->digest);
 						}
-					} else {
-						b_format_error = TRUE;
 					}
 					line_pos = 0;
 				} else if (buff[i] != '\r' || i != offset - 1) {
