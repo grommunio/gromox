@@ -3015,7 +3015,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	uint32_t unreads = pstmt.step() ? sqlite3_column_int64(pstmt, 0) : 0;
+	uint32_t unreads = pstmt.step() == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) : 0;
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) FROM"
 	          " messages WHERE folder_id=%llu AND recent=0", LLU{folder_id});
