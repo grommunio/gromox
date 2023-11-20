@@ -3209,24 +3209,24 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu "
-		         "ORDER BY idx DESC LIMIT 1", LLU{folder_id});
+		         "ORDER BY uid DESC LIMIT 1", LLU{folder_id});
 	else if (first == SEQ_STAR)
 		/* "MAX:99" */
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
-		         "FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY idx DESC LIMIT 1",
+		         "FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY uid DESC LIMIT 1",
 		         LLU{folder_id}, last);
 	else if (last == SEQ_STAR)
 		/* "99:MAX" */
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
-		         "FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx",
+		         "FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY uid",
 		         LLU{folder_id}, first);
 	else
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u AND uid<=%u "
-		         "ORDER BY idx", LLU{folder_id}, first, last);
+		         "ORDER BY uid", LLU{folder_id}, first, last);
 
 	std::vector<simu_node> temp_list;
 	auto iret = simu_query(pidb.get(), sql_string, total_mail, temp_list);
@@ -3240,7 +3240,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		 */
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size"
-		         " FROM messages WHERE folder_id=%llu ORDER BY idx DESC LIMIT 1",
+		         " FROM messages WHERE folder_id=%llu ORDER BY uid DESC LIMIT 1",
 		         LLU{folder_id});
 		iret = simu_query(pidb.get(), sql_string, total_mail, temp_list);
 		if (iret != 0)
@@ -3305,7 +3305,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	length = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string),
-	         "SELECT idx, mid_string, uid FROM messages WHERE folder_id=%llu AND deleted=1 ORDER BY idx",
+	         "SELECT idx, mid_string, uid FROM messages WHERE folder_id=%llu AND deleted=1 ORDER BY uid",
 	         LLU{folder_id});
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -3375,16 +3375,16 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	/* UNSET always means MAX, never MIN */
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string"
-		         " FROM messages WHERE folder_id=%llu ORDER BY idx DESC LIMIT 1",
+		         " FROM messages WHERE folder_id=%llu ORDER BY uid DESC LIMIT 1",
 		         LLU{folder_id});
 	else if (first == SEQ_STAR)
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid<=%u "
-		         " ORDER BY idx DESC LIMIT 1", LLU{folder_id}, last);
+		         " ORDER BY uid DESC LIMIT 1", LLU{folder_id}, last);
 	else if (last == SEQ_STAR)
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u"
-		         " ORDER BY idx", LLU{folder_id}, first);
+		         " ORDER BY uid", LLU{folder_id}, first);
 	else if (last == first)
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid=%u",
@@ -3392,7 +3392,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	else
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u AND"
-		         " uid<=%u ORDER BY idx", LLU{folder_id}, first, last);
+		         " uid<=%u ORDER BY uid", LLU{folder_id}, first, last);
 
 	std::vector<dtlu_node> temp_list;
 	auto iret = dtlu_query(pidb.get(), sql_string, total_mail, temp_list);
@@ -3401,7 +3401,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd) try
 	if (temp_list.empty() && (first == SEQ_STAR || last == SEQ_STAR)) {
 		/* Rerun like in pshru */
 		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string"
-		         " FROM messages WHERE folder_id=%llu ORDER BY idx"
+		         " FROM messages WHERE folder_id=%llu ORDER BY uid"
 		         " DESC LIMIT 1", LLU{folder_id});
 		iret = dtlu_query(pidb.get(), sql_string, total_mail, temp_list);
 		if (iret != 0)
