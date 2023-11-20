@@ -59,6 +59,8 @@ static eid_t lookup_eid_by_name(const char *dir, const char *name)
 
 	eid_t fid = rop_util_make_eid_ex(1, ptr->second);
 	for (size_t i = 1; i < pathcomp.size(); ++i) {
+		if (pathcomp[i].empty())
+			continue;
 		RESTRICTION_CONTENT rst_4 = {FL_IGNORECASE, PR_DISPLAY_NAME, {PR_DISPLAY_NAME, deconst(pathcomp[i].c_str())}};
 		RESTRICTION_EXIST rst_3   = {PR_DISPLAY_NAME};
 		RESTRICTION rst_2[2]      = {{RES_EXIST, {&rst_3}}, {RES_CONTENT, {&rst_4}}};
