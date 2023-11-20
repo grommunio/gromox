@@ -696,33 +696,34 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	auto ret = rw_command(pback->sockd, buff, length, std::size(buff));
 	if (ret != 0)
 		return ret;
-	if (0 == strncmp(buff, "TRUE", 4)) {
-		if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
-		    &recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
-			*perrno = -1;
-			pback.reset();
-			return MIDB_RESULT_ERROR;
-		}
-		if (pexists != nullptr)
-			*pexists = exists;
-		if (precent != nullptr)
-			*precent = recent;
-		if (punseen != nullptr)
-			*punseen = unseen;
-		if (puidvalid != nullptr)
-			*puidvalid = uidvalid;
-		if (puidnext != nullptr)
-			*puidnext = uidnext;
-		if (pfirst_unseen != nullptr)
-			*pfirst_unseen = first_unseen + 1;
-		pback.reset();
-		return MIDB_RESULT_OK;
-	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+	if (strncmp(buff, "FALSE ", 6) == 0) {
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
+	} else if (strncmp(buff, "TRUE", 4) != 0) {
+		return MIDB_RDWR_ERROR;
 	}
-	return MIDB_RDWR_ERROR;
+
+	if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
+	    &recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
+		*perrno = -1;
+		pback.reset();
+		return MIDB_RESULT_ERROR;
+	}
+	if (pexists != nullptr)
+		*pexists = exists;
+	if (precent != nullptr)
+		*precent = recent;
+	if (punseen != nullptr)
+		*punseen = unseen;
+	if (puidvalid != nullptr)
+		*puidvalid = uidvalid;
+	if (puidnext != nullptr)
+		*puidnext = uidnext;
+	if (pfirst_unseen != nullptr)
+		*pfirst_unseen = first_unseen + 1;
+	pback.reset();
+	return MIDB_RESULT_OK;
 }
 	
 static int make_folder(const char *path, const char *folder, int *perrno)
