@@ -139,6 +139,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 	AC_MSG_ERROR([vmime is still too old. See doc/install.rst.])
 ])
 PKG_CHECK_MODULES([zlib], [zlib])
+dnl Linux-PAM only gained a .pc file in v1.5.1-41-gb4f0e2e1 (2021)
 have_pamheader=""
 AC_CHECK_HEADERS([crypt.h endian.h syslog.h])
 AC_CHECK_HEADERS([sys/endian.h sys/epoll.h sys/event.h sys/random.h sys/xattr.h])

@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #define DECLARE_SVC_API_STATIC
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -20,6 +23,9 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#ifdef HAVE_SECURITY_PAM_MODULES_H
+#	include <security/pam_appl.h>
+#endif
 #include <gromox/authmgr.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -28,6 +34,7 @@
 #include <gromox/json.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -35,7 +42,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
-enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID };
+enum { A_DENY_ALL, A_ALLOW_ALL, A_EXTERNID_LDAP, A_EXTERNID_PAM };
 
 namespace {
 struct sslfree2 : public sslfree {
@@ -50,7 +57,7 @@ struct sslfree2 : public sslfree {
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_mysql_login;
 static decltype(ldap_adaptor_login3) *fptr_ldap_login;
-static unsigned int am_choice = A_EXTERNID;
+static unsigned int am_choice = A_EXTERNID_LDAP;
 
 static std::unique_ptr<EVP_PKEY, sslfree2>
 read_pkey(const unsigned char *pk_str, size_t pk_size)
@@ -165,6 +172,67 @@ static bool login_token(const char *token,
 	return false;
 }
 
+#ifdef HAVE_SECURITY_PAM_MODULES_H
+static int login_pam_conv(int num_msg, const struct pam_message **msg_ap,
+    struct pam_response **res_ap, void *ptr)
+{
+	int j = 0;
+	for (; j < num_msg; ++j) {
+		switch (msg_ap[j]->msg_style) {
+		case PAM_PROMPT_ECHO_ON:
+			/* Wants to know username, but we already gave it to PAM. */
+			return PAM_CONV_ERR;
+		case PAM_PROMPT_ECHO_OFF:
+			res_ap[j] = me_alloc<pam_response>();
+			if (res_ap[j] == nullptr)
+				return PAM_CONV_ERR;
+			res_ap[j]->resp_retcode = PAM_SUCCESS;
+			res_ap[j]->resp = strdup(static_cast<const char *>(ptr));
+			if (res_ap[j]->resp == nullptr)
+				return PAM_CONV_ERR;
+			break;
+		default:
+			return PAM_CONV_ERR;
+		}
+	}
+	return PAM_SUCCESS;
+}
+#endif
+
+static bool login_pam(const char *user, const char *pass,
+    sql_meta_result &mres) try
+{
+#ifdef HAVE_SECURITY_PAM_MODULES_H
+	const struct pam_conv conv = {
+		.conv        = login_pam_conv,
+		.appdata_ptr = static_cast<void *>(const_cast<char *>(pass)),
+	};
+	pam_handle_t *ph = nullptr;
+	auto ret = pam_start("gromox", user, &conv, &ph);
+	if (ret != PAM_SUCCESS) {
+		mres.errstr = "pam_start function failed";
+		return false;
+	}
+	ret = pam_authenticate(ph, 0);
+	pam_end(ph, ret);
+	switch (ret) {
+	case PAM_SUCCESS:
+		return true;
+	case PAM_AUTH_ERR:
+	case PAM_ACCT_EXPIRED:
+		mres.errstr = "PAM authentication error";
+		break;
+	case PAM_USER_UNKNOWN:
+		mres.errstr = "No such user";
+		break;
+	}
+#endif
+	return false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2393: ENOMEM");
+	return false;
+}
+
 static bool login_gen(const char *username, const char *password,
     unsigned int wantpriv, sql_meta_result &mres) try
 {
@@ -176,9 +244,11 @@ static bool login_gen(const char *username, const char *password,
 		auth = false;
 	else if (am_choice == A_ALLOW_ALL)
 		auth = true;
-	else if (am_choice == A_EXTERNID && mres.have_xid > 0)
+	else if (am_choice == A_EXTERNID_LDAP && mres.have_xid > 0)
 		auth = fptr_ldap_login(mres.username.c_str(), password, mres);
-	else if (am_choice == A_EXTERNID)
+	else if (am_choice == A_EXTERNID_PAM && mres.have_xid > 0)
+		auth = login_pam(mres.username.c_str(), password, mres);
+	else if (am_choice == A_EXTERNID_LDAP)
 		auth = fptr_mysql_login(mres.username.c_str(), password,
 		       mres.enc_passwd, mres.errstr);
 	auth = auth && err == 0;
@@ -208,11 +278,14 @@ static bool authmgr_reload()
 	} else if (strcmp(val, "allow_all") == 0) {
 		am_choice = A_ALLOW_ALL;
 		mlog(LV_NOTICE, "authmgr: Arbitrary passwords will be accepted for authentication");
-	} else if (strcmp(val, "always_mysql") == 0 || strcmp(val, "always_ldap") == 0) {
-		am_choice = A_EXTERNID;
-		mlog(LV_WARN, "authmgr: auth_backend_selection=always_mysql/always_ldap is obsolete; switching to =externid");
-	} else if (strcmp(val, "externid") == 0) {
-		am_choice = A_EXTERNID;
+	} else if (strcmp(val, "always_mysql") == 0) {
+		am_choice = A_EXTERNID_LDAP;
+		mlog(LV_WARN, "authmgr: auth_backend_selection=always_mysql is an obsolete term; proceeding with =ldap");
+	} else if (strcmp(val, "ldap") == 0 || strcmp(val, "always_ldap") == 0 ||
+	    strcmp(val, "externid") == 0) {
+		am_choice = A_EXTERNID_LDAP;
+	} else if (strcmp(val, "pam") == 0) {
+		am_choice = A_EXTERNID_PAM;
 	}
 
 	if (fptr_ldap_login == nullptr) {

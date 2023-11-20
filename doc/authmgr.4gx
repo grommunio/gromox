@@ -15,20 +15,26 @@ The usual config file location is /etc/gromox/authmgr.cfg.
 This controls how authmgr will verify passwords supplied with login operations.
 See the "Authentication modes" section below for details.
 .br
-Available: \fIdeny_all\fP, \fIallow_all\fP, \fIexternid\fP
+Available: \fIdeny_all\fP, \fIallow_all\fP, \fIldap\fP, \fIpam\fP
 .br
-Default: \fIexternid\fP
+Default: \fIldap\fP
 .SH Authentication modes
 .IP \(bu 4
-\fIdeny_all\fP rejects every attempt at authentication. This is at best useful
-for testing.
+\fIdeny_all\fP: every attempt at authentication is rejected. This is at best
+useful for testing.
 .IP \(bu 4
-\fIallow_all\fP permits every attempt at authentication (provided the user
-exists). This may be handy when doing the initial mass-import of mailboxes via
-external IMAP-to-IMAP synchronization utilities such as imapsync without
+\fIallow_all\fP: every attempt at authentication (provided the user exists) is
+permitted. This may be handy when doing the initial mass-import of mailboxes
+via external IMAP-to-IMAP synchronization utilities such as imapsync without
 needing to know user passwords.
 .IP \(bu 4
-\fIexternid\fP will cause authmgr to selectively pick LDAP/MySQL, depending on
-whether the user was imported from LDAP or not.
+\fIldap\fP (old name: \fBexternid\fP): authmgr will selectively pick
+LDAP/MySQL, depending on whether the externid column in the user database has a
+value or contains just the empty string. The particular value is ignored and
+only meaningful to the importer.
+.IP \(bu 4
+\fIpam\fP: authmgr will selectively pick PAM/MySQL. The PAM service name will
+be "gromox". Be sure that pam_gromox.so is \fBnot\fP invoked as part of that
+PAM service stack, or it will lead to infinite recursion.
 .SH See also
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)
