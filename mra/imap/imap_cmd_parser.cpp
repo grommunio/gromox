@@ -2277,15 +2277,19 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (b_draft)
 		strcat(flag_buff, "U");
 	strcat(flag_buff, ")");
-	if (str_received == nullptr ||
-	    !imap_cmd_parser_convert_imaptime(str_received, &tmp_time))
-		time(&tmp_time);
 	std::string mid_string, eml_path;
 	int fd = -1;
 	try {
-		mid_string = std::to_string(tmp_time) + "." +
-		             std::to_string(imap_parser_get_sequence_ID()) + "." +
-		             znul(g_config_file->get_value("host_id"));
+		if (str_received != nullptr &&
+		    imap_cmd_parser_convert_imaptime(str_received, &tmp_time)) {
+			char txt[GUIDSTR_SIZE];
+			GUID::random_new().to_str(txt, std::size(txt), 32);
+			mid_string = std::to_string(tmp_time) + ".g" + txt;
+		} else {
+			mid_string = std::to_string(time(nullptr)) + ".n" +
+			             std::to_string(imap_parser_get_sequence_ID());
+		}
+		mid_string += "."s + znul(g_config_file->get_value("host_id"));
 		eml_path = std::string(pcontext->maildir) + "/eml/" + mid_string;
 		fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	} catch (const std::bad_alloc &) {
