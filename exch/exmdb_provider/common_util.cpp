@@ -46,6 +46,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #define S2A(x) reinterpret_cast<const char *>(x)
 
@@ -74,7 +75,7 @@ struct prepared_statements {
 
 }
 
-static char g_exmdb_org_name[256];
+char g_exmdb_org_name[256];
 static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
@@ -107,6 +108,17 @@ static bool gp_prepare_mvstr(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xs
 static bool gp_prepare_default(sqlite3 *, mapi_object_type, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
 static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, cpid_t);
 
+ec_error_t cu_id2user(int id, std::string &user) try
+{
+	char ubuf[UADDR_SIZE];
+	if (!common_util_get_username_from_id(id, ubuf, std::size(ubuf)))
+		return ecError;
+	user = ubuf;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
 void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
 {
 	int i;
@@ -136,33 +148,6 @@ void common_util_remove_propvals(
 	}
 }
 
-BOOL common_util_essdn_to_username(const char *pessdn,
-    char *username, size_t ulen)
-{
-	char *pat;
-	const char *plocal;
-	char tmp_essdn[1024];
-	
-	auto tmp_len = gx_snprintf(tmp_essdn, std::size(tmp_essdn),
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-	               g_exmdb_org_name);
-	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0)
-		return FALSE;
-	if (pessdn[tmp_len+16] != '-')
-		return FALSE;
-	plocal = pessdn + tmp_len + 17;
-	unsigned int user_id = decode_hex_int(&pessdn[tmp_len+8]);
-	if (!common_util_get_username_from_id(user_id, username, ulen))
-		return FALSE;
-	pat = strchr(username, '@');
-	if (pat == nullptr)
-		return FALSE;
-	if (strncasecmp(username, plocal, pat - username) != 0)
-		return FALSE;
-	return TRUE;
-}
-
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
 {
 	char *pdomain;
@@ -180,8 +165,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 		g_exmdb_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
@@ -3786,7 +3770,8 @@ BOOL common_util_addressbook_entryid_to_username(const BINARY *pentryid_bin,
 	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
 	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	return common_util_essdn_to_username(tmp_entryid.px500dn, username, ulen);
+	return cvt_essdn_to_username(tmp_entryid.px500dn, g_exmdb_org_name,
+	       cu_id2user, username, ulen) == ecSuccess ? TRUE : false;
 }
 
 BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
@@ -3800,29 +3785,6 @@ BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
 		return FALSE;
 	gx_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
 	return TRUE;
-}
-
-BOOL common_util_entryid_to_username(const BINARY *pbin,
-    char *username, size_t ulen)
-{
-	uint32_t flags;
-	EXT_PULL ext_pull;
-	FLATUID provider_uid;
-	
-	if (pbin->cb < 20)
-		return FALSE;
-	ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
-	ext_pull.m_offset = 0;
-	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, common_util_essdn_to_username,
-		       username, ulen) ? TRUE : false;
-	if (provider_uid == muidOOP)
-		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
-	return FALSE;
 }
 
 BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
@@ -4499,7 +4461,6 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 {
 	BINARY *pbin;
 	EXT_PULL ext_pull;
-	char tmp_name[UADDR_SIZE];
 	EMSAB_ENTRYID ab_entryid;
 	
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP, psqlite,
@@ -4514,12 +4475,14 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		*pb_owner = false;
 		return TRUE;
 	}
-	if (!common_util_essdn_to_username(ab_entryid.px500dn,
-	    tmp_name, std::size(tmp_name))) {
+	std::string es_result;
+	auto ret = cvt_essdn_to_username(ab_entryid.px500dn, g_exmdb_org_name,
+	           cu_id2user, es_result);
+	if (ret != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;
 	}
-	*pb_owner = strcasecmp(username, tmp_name) == 0 ? TRUE : false;
+	*pb_owner = strcasecmp(username, es_result.c_str()) == 0 ? TRUE : false;
 	return TRUE;
 }
 

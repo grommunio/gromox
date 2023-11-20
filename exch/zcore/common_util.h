@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <type_traits>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -92,11 +93,9 @@ void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor);
-extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id);
-extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size_t);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);
@@ -159,6 +158,7 @@ extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(zcore_callid);
+extern ec_error_t cu_id2user(int, std::string &);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
 extern BINARY *cu_read_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype);
 extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype, const void *buf, size_t);
@@ -166,3 +166,4 @@ extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
 extern unsigned int zcore_backfill_transporthdr;
+extern char g_org_name[256];

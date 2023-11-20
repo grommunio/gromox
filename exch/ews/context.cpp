@@ -12,6 +12,7 @@
 #include <gromox/mail.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
+#include <gromox/usercvt.hpp>
 
 #include "exceptions.hpp"
 #include "ews.hpp"
@@ -285,25 +286,21 @@ PROPERTY_NAME* EWSContext::getPropertyName(const std::string& dir, uint16_t id) 
  */
 std::string EWSContext::essdn_to_username(const std::string& essdn) const
 {
-	int user_id;
-	auto ess_tpl = fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-	                           m_plugin.x500_org_name.c_str());
-	if (strncasecmp(essdn.c_str(), ess_tpl.c_str(), ess_tpl.size()) != 0)
-		throw DispatchError(E3000);
-	if (essdn.size() > ess_tpl.size() + 16 && essdn[ess_tpl.size()+16] != '-')
-		throw DispatchError(E3001);
-	const char *lcl = essdn.c_str() + ess_tpl.size() + 17;
-	user_id = decode_hex_int(essdn.c_str() + ess_tpl.size() + 8);
-	std::string username(UADDR_SIZE, 0);
-	if (!m_plugin.mysql.get_username_from_id(user_id, username.data(), UADDR_SIZE))
+	auto id2u = [&](int id, std::string &user) -> ec_error_t {
+		char buf[UADDR_SIZE];
+		if (!m_plugin.mysql.get_username_from_id(id, buf, std::size(buf)))
+			throw DispatchError(E3002);
+		user = buf;
+		return ecSuccess;
+	};
+	std::string username;
+	auto err = gromox::cvt_essdn_to_username(essdn.c_str(),
+	           m_plugin.x500_org_name.c_str(), id2u, username);
+	if (err == ecSuccess)
+		return username;
+	if (err == ecUnknownUser)
 		throw DispatchError(E3002);
-	username.resize(username.find('\0'));
-	size_t at = username.find('@');
-	if (at == std::string::npos)
-		throw DispatchError(E3003);
-	if (strncasecmp(username.data(), lcl, at) != 0)
-		throw DispatchError(E3004);
-	return username;
+	throw DispatchError(E3003);
 }
 
 /**
@@ -346,7 +343,7 @@ std::string EWSContext::get_maildir(const tMailbox& Mailbox) const
 	std::string RoutingType = Mailbox.RoutingType.value_or("smtp");
 	std::string Address = Mailbox.Address;
 	if(tolower(RoutingType) == "ex"){
-		Address = essdn_to_username(Mailbox.Address);
+		Address = essdn_to_username(Address);
 		RoutingType = "smtp";
 	}
 	if(RoutingType == "smtp") {
@@ -1529,7 +1526,7 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 	std::string_view userpart = std::string_view(username).substr(0, at);
 	if(!m_plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
 		throw EWSError::CannotFindUser(E3091(username));
-	return fmt::format("/o={}/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn={:08x}{:08x}-{}",
+	return fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-{}",
 	                   m_plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
 

@@ -704,7 +704,7 @@ EWSPlugin::Subscription::Subscription(const char* uname, const EWSPlugin& plugin
  */
 EWSPlugin::Subscription::~Subscription()
 {
-	std::lock_guard lock(ews.subscriptionLock);
+	std::lock_guard ss_lock(ews.subscriptionLock);
 	for(const auto& subKey : subscriptions)
 		ews.unsubscribe(subKey);
 	if(waitingContext)

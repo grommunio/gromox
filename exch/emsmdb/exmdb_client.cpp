@@ -2,9 +2,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -230,12 +232,13 @@ BOOL check_message_owner(const char *dir, uint64_t message_id,
 		*pb_owner = false;
 		return TRUE;
 	}
-	if (!common_util_essdn_to_username(ab_entryid.px500dn,
-	    tmp_name, std::size(tmp_name))) {
+	std::string es_result;
+	if (cvt_essdn_to_username(ab_entryid.px500dn, g_emsmdb_org_name,
+	    cu_id2user, es_result) != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;
 	}
-	*pb_owner = strcasecmp(username, tmp_name) == 0 ? TRUE : false;
+	*pb_owner = strcasecmp(es_result.c_str(), tmp_name) == 0 ? TRUE : false;
 	return TRUE;
 }
 

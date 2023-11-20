@@ -59,7 +59,6 @@ extern bool cu_rebuild_subjects(const char *&, const char *&, const char *&);
 extern void cu_set_propval(TPROPVAL_ARRAY *, uint32_t tag, const void *data);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
-extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 extern BOOL common_util_username_to_essdn(const char *username, char *dn, size_t);
 extern void common_util_pass_service(const char *name, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
@@ -124,7 +123,6 @@ extern BOOL common_util_addressbook_entryid_to_username(const BINARY *eid, char 
 extern BOOL common_util_addressbook_entryid_to_essdn(const BINARY *eid, char *dn, size_t);
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
-extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size_t);
 extern BOOL common_util_parse_addressbook_entryid(const BINARY *, char *address_type, size_t atsize, char *email_address, size_t emsize);
 BINARY* common_util_to_private_folder_entryid(
 	sqlite3 *psqlite, const char *username,
@@ -179,7 +177,9 @@ uint32_t common_util_calculate_attachment_size(
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
 extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t mid = 0);
+extern ec_error_t cu_id2user(int, std::string &);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num, g_cid_compression;
 extern thread_local unsigned int g_inside_flush_instance;
 extern thread_local sqlite3 *g_sqlite_for_oxcmail;
+extern char g_exmdb_org_name[];

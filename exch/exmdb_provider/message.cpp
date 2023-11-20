@@ -2370,22 +2370,28 @@ static bool cu_rcpt_to_list(const TPROPVAL_ARRAY &props,
 		list.emplace_back(str);
 		return true;
 	}
-	str = props.get<const char>(PR_ADDRTYPE);
-	if (str != nullptr && strcasecmp(str, "SMTP") == 0) {
-		str = props.get<const char>(PR_EMAIL_ADDRESS);
-		if (str != nullptr) {
-			list.emplace_back(str);
+	auto addrtype = props.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		std::string es_result;
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		           g_exmdb_org_name, cu_id2user, es_result);
+		if (ret == ecSuccess) {
+			list.emplace_back(std::move(es_result));
 			return true;
+		} else if (ret != ecNullObject) {
+			return false;
 		}
 	}
 	auto entryid = props.get<const BINARY>(PR_ENTRYID);
 	if (entryid == nullptr)
 		return false;
-	char ua[UADDR_SIZE]{};
-	if (!common_util_entryid_to_username(entryid, ua, std::size(ua)))
-		return false;
-	list.emplace_back(ua);
-	return true;
+	std::string es_result;
+	auto ret = cvt_entryid_to_smtpaddr(entryid, g_exmdb_org_name,
+	           cu_id2user, es_result);
+	if (ret == ecSuccess)
+		list.emplace_back(std::move(es_result));
+	return ret == ecSuccess;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2036: ENOMEM");
 	return false;

@@ -16,6 +16,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -761,17 +762,23 @@ static BOOL folder_object_flush_delegates(int fd,
 			}
 		}
 		address_buff[0] = '\0';
-		if (NULL != ptype && NULL != paddress) {
-			if (strcasecmp(ptype, "SMTP") == 0)
-				gx_strlcpy(address_buff, paddress, std::size(address_buff));
-			else if (strcasecmp(ptype, "EX") == 0)
-				common_util_essdn_to_username(paddress,
-					address_buff, std::size(address_buff));
+		if (ptype != nullptr) {
+			auto ret = cvt_genaddr_to_smtpaddr(ptype, paddress,
+			           g_org_name, cu_id2user, address_buff,
+			           std::size(address_buff));
+			if (ret == ecSuccess)
+				/* ok */;
+			else if (ret != ecNullObject)
+				return false;
 		}
-		if (address_buff[0] == '\0' && pentryid != nullptr &&
-		    !common_util_entryid_to_username(pentryid,
-		    address_buff, std::size(address_buff)))
-			return FALSE;	
+		if (*address_buff == '\0' && pentryid != nullptr) {
+			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
+			           cu_id2user, address_buff, std::size(address_buff));
+			if (ret == ecSuccess)
+				/* ok */;
+			else if (ret != ecNullObject)
+				return false;
+		}
 		if ('\0' != address_buff[0]) {
 			tmp_len = strlen(address_buff);
 			address_buff[tmp_len++] = '\n';

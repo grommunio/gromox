@@ -30,6 +30,7 @@
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include "ab_tree.h"
@@ -2378,20 +2379,23 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 {
 	EXT_PUSH ext_push;
-	char username[UADDR_SIZE];
-	char tmp_buff[1024];
+	std::string username;
 	STORE_ENTRYID store_entryid = {};
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
-		if (!common_util_essdn_to_username(mailbox_dn,
-		    username, std::size(username)))
+		auto ret = cvt_essdn_to_username(mailbox_dn, g_org_name,
+		           cu_id2user, username);
+		if (ret == ecUnknownUser)
 			return ecNotFound;
+		else if (ret != ecSuccess)
+			return ret;
 	} else {
-		gx_strlcpy(username, mailbox_dn, std::size(username));
-		if (!common_util_username_to_essdn(username,
+		char tmp_buff[1024];
+		if (!common_util_username_to_essdn(mailbox_dn,
 		    tmp_buff, std::size(tmp_buff)))
 			return ecNotFound;
-		mailbox_dn = tmp_buff;
+		username = tmp_buff;
+		mailbox_dn = username.c_str();
 	}
 	store_entryid.flags = 0;
 	store_entryid.version = 0;
@@ -2399,7 +2403,7 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 	store_entryid.wrapped_flags = 0;
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 	store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
-	store_entryid.pserver_name = username;
+	store_entryid.pserver_name = deconst(username.c_str());
 	store_entryid.pmailbox_dn = deconst(mailbox_dn);
 	pentryid->pv = common_util_alloc(1024);
 	if (pentryid->pv == nullptr ||
@@ -3219,12 +3223,15 @@ ec_error_t zs_modifyrecipients(GUID hsession,
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_SMTP_ADDRESS;
-				if (!common_util_essdn_to_username(ab_entryid.px500dn,
-				    tmp_buff, std::size(tmp_buff)))
+				std::string es_result;
+				auto ret = cvt_essdn_to_username(ab_entryid.px500dn,
+				           g_org_name, cu_id2user, es_result);
+				if (ret != ecSuccess)
 					continue;
-				tmp_propval.pvalue = common_util_dup(tmp_buff);
+				tmp_propval.pvalue = common_util_dup(es_result.c_str());
 				if (tmp_propval.pvalue == nullptr)
-					return ecError;
+					return ecServerOOM;
+				es_result.clear();
 				common_util_set_propvals(prcpt, &tmp_propval);
 				if (!system_services_get_user_displayname(tmp_buff,
 				    tmp_buff, std::size(tmp_buff)))
@@ -5177,9 +5184,10 @@ ec_error_t zs_linkmessage(GUID hsession,
 
 ec_error_t zs_essdn_to_username(const char *essdn, char **username)
 {
-	char u[UADDR_SIZE];
-	if (!common_util_essdn_to_username(essdn, u, std::size(u)))
-		return ecNotFound;
-	*username = common_util_dup(u);
+	std::string es_result;
+	auto ret = cvt_essdn_to_username(essdn, g_org_name, cu_id2user, es_result);
+	if (ret != ecSuccess)
+		return ret;
+	*username = common_util_dup(es_result.c_str());
 	return ecSuccess;
 }

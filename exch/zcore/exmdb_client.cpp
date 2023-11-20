@@ -2,10 +2,12 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <string>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/usercvt.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
 
@@ -161,12 +163,13 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		*pb_owner = false;
 		return TRUE;
 	}
-	if (!common_util_essdn_to_username(ab_entryid.px500dn,
-	    tmp_name, std::size(tmp_name))) {
+	std::string es_result;
+	auto ret = cvt_essdn_to_username(ab_entryid.px500dn, g_org_name, cu_id2user, es_result);
+	if (ret != ecSuccess) {
 		*pb_owner = false;
 		return TRUE;
 	}
-	*pb_owner = strcasecmp(username, tmp_name) == 0 ? TRUE : false;
+	*pb_owner = strcasecmp(es_result.c_str(), tmp_name) == 0 ? TRUE : false;
 	return TRUE;
 }
 

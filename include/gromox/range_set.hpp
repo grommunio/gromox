@@ -126,7 +126,7 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 	bool contains(T v) const
 	{
 		auto i = std::lower_bound(cbegin(), cend(), v,
-		         [&](const gromox::range_node<T> &rn, T v) { return rn.hi < v; });
+		         [&](const gromox::range_node<T> &rn, T vv) { return rn.hi < vv; });
 		return i != cend() ? i->contains(v) : false;
 	}
 };

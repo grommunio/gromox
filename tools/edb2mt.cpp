@@ -443,8 +443,8 @@ static void folder_prop_handler(edb_folder &f, const std::string &key,
 	 */
 	auto iter = std::lower_bound(std::begin(folder_col_to_tag),
 	            std::end(folder_col_to_tag), key.c_str(),
-	            [](const std::pair<const char *, uint32_t> &p, const char *key) {
-	            	return strcasecmp(p.first, key) < 0;
+	            [](const std::pair<const char *, uint32_t> &p, const char *k) {
+	            	return strcasecmp(p.first, k) < 0;
 	            });
 	if (iter == std::end(folder_col_to_tag) ||
 	    strcasecmp(iter->first, key.c_str()) != 0)

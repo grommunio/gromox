@@ -34,14 +34,11 @@ extern ssize_t common_util_mb_from_utf8(cpid_t cpid, const char *src, char *dst,
 extern ssize_t common_util_mb_to_utf8(cpid_t cpid, const char *src, char *dst, size_t len);
 extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
-extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
 const char* common_util_essdn_to_domain(const char *pessdn);
 void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t);
-extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size_t);
-void common_util_get_domain_server(const char *account_name, char *pserver);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 BINARY* common_util_public_to_addressbook_entryid(const char *domainname);
@@ -92,6 +89,7 @@ void common_util_notify_receipt(const char *username,
 extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
 extern ec_error_t ems_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t cu_send_message(logon_object *, message_object *, bool submit);
+extern ec_error_t cu_id2user(int, std::string &);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
 
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
@@ -124,6 +122,7 @@ extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_
 
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
+extern char g_emsmdb_org_name[256];
 
 static inline uint32_t fx_divisor(uint64_t total)
 {

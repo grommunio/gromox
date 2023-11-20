@@ -9,6 +9,7 @@
 #include <gromox/list_file.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -126,6 +127,15 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	return ecRpcFailed;
 }
 
+/**
+ * Returns:
+ * - %true and @username is empty: no delegation was requested
+ * - %true and @username is set: delegation with given identity;
+ *   identity guaranteed to exist; caller still needs to perform a
+ *   permission check.
+ * - %false: unable to contact server,
+ *   or requested identity not present in the system
+ */
 static bool oxomsg_extract_delegate(message_object *pmessage,
     char *username, size_t ulen)
 {
@@ -145,47 +155,34 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
-	if (str != nullptr) {
-		if (strcmp(str, "0") == 0) {
-			/*
-			 * PR_SENT_* is strangely reset when MFCMAPI
-			 * 21.2.21207.01 imports .msg files.
-			 */
-			username[0] = '\0';
-			return TRUE;
-		} else if (strcasecmp(str, "EX") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr) {
-				auto ret = common_util_essdn_to_username(str, username, ulen);
-				if (!ret)
-					mlog(LV_WARN, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system",
-					        static_cast<unsigned long long>(pmessage->message_id), str);
-				return ret;
-			}
-		} else if (strcasecmp(str, "SMTP") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr) {
-				gx_strlcpy(username, str, ulen);
-				return TRUE;
-			}
-		}
+	auto addrtype = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	auto emaddr   = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr,
+		           g_emsmdb_org_name, cu_id2user, username, ulen);
+		if (ret == ecSuccess)
+			return true;
+		else if (ret != ecNullObject)
+			return false;
 	}
-	str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
 		gx_strlcpy(username, str, ulen);
 		return TRUE;
 	}
-	auto eid = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
-	if (eid != nullptr) {
-		auto ret = common_util_entryid_to_username(eid, username, ulen);
-		if (!ret)
-			mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system",
-			        static_cast<unsigned long long>(pmessage->message_id));
-		return ret;
+	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+	           g_emsmdb_org_name, cu_id2user, username, ulen);
+	if (ret == ecSuccess)
+		return TRUE;
+	if (ret == ecNullObject) {
+		*username = '\0';
+		return TRUE;
 	}
-	username[0] = '\0';
-	return TRUE;
+	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
+		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
+		"a user in the local system",
+		static_cast<unsigned long long>(pmessage->message_id));
+	return false;
 }
 
 /**

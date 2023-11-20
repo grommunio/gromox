@@ -36,6 +36,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/timezone.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
 #include "bounce_producer.hpp"
@@ -50,6 +51,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
+using LLU = unsigned long long;
 
 enum {
 	SMTP_SEND_OK = 0,
@@ -80,7 +82,7 @@ unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40];
-static char g_org_name[256];
+char g_org_name[256];
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
 static thread_local std::unique_ptr<env_context> g_env_key;
@@ -110,6 +112,7 @@ BOOL common_util_verify_columns_and_sorts(
 	return TRUE;
 }
 
+/* Cf. oxomsg_extract_delegate for comments */
 bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 {
 	uint32_t proptag_buff[4];
@@ -128,31 +131,34 @@ bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
-	if (str != nullptr) {
-		if (strcasecmp(str, "EX") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr)
-				return common_util_essdn_to_username(str,
-				       username, ulen);
-		} else if (strcasecmp(str, "SMTP") == 0) {
-			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr) {
-				gx_strlcpy(username, str, ulen);
-				return TRUE;
-			}
-		}
+	auto addrtype = tmp_propvals.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = tmp_propvals.get<const char>(PR_EMAIL_ADDRESS);
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
+		           cu_id2user, username, ulen);
+		if (ret == ecSuccess)
+			return true;
+		else if (ret != ecNullObject)
+			return false;
 	}
-	str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
 		gx_strlcpy(username, str, ulen);
 		return TRUE;
 	}
-	auto bin = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
-	if (bin != nullptr)
-		return common_util_entryid_to_username(bin, username, ulen);
-	username[0] = '\0';
-	return TRUE;
+	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
+		   g_org_name, cu_id2user, username, ulen);
+	if (ret == ecSuccess)
+		return TRUE;
+	if (ret == ecNullObject) {
+		*username = '\0';
+		return TRUE;
+	}
+	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
+		"its PR_SENT_REPRESENTING_ENTRYID does not reference "
+		"a user in the local system",
+		static_cast<unsigned long long>(pmessage->message_id));
+	return false;
 }
 
 /**
@@ -255,41 +261,11 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	}
 }
 
-BOOL common_util_essdn_to_username(const char *pessdn,
-    char *username, size_t ulen)
-{
-	char *pat;
-	int tmp_len;
-	int user_id;
-	const char *plocal;
-	char tmp_essdn[1024];
-	
-	tmp_len = sprintf(tmp_essdn,
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
-	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
-	    pessdn[tmp_len+16] != '-')
-		return FALSE;
-	plocal = pessdn + tmp_len + 17;
-	user_id = decode_hex_int(pessdn + tmp_len + 8);
-	if (!system_services_get_username_from_id(user_id, username, ulen))
-		return FALSE;
-	pat = strchr(username, '@');
-	if (pat == nullptr)
-		return FALSE;
-	return strncasecmp(username, plocal, pat - username) == 0 ? TRUE : false;
-}
-
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 {
-	int tmp_len;
 	char tmp_essdn[1024];
-	
-	tmp_len = sprintf(tmp_essdn,
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
@@ -300,13 +276,9 @@ BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 BOOL common_util_essdn_to_ids(const char *pessdn,
 	int *pdomain_id, int *puser_id)
 {
-	int tmp_len;
 	char tmp_essdn[1024];
-	
-	tmp_len = sprintf(tmp_essdn,
-			"/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
-			g_org_name);
+	auto tmp_len = snprintf(tmp_essdn, std::size(tmp_essdn),
+	               "/o=%s/" EAG_RCPTS "/cn=", g_org_name);
 	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
 	    pessdn[tmp_len+16] != '-')
 		return FALSE;
@@ -332,8 +304,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
 	return TRUE;
@@ -683,7 +654,8 @@ BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
 	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	return common_util_essdn_to_username(tmp_entryid.px500dn, username, ulen);
+	return cvt_essdn_to_username(tmp_entryid.px500dn, g_org_name,
+	       cu_id2user, username, ulen);
 }
 
 BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
@@ -698,36 +670,6 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 	*ptype = tmp_entryid.type;
 	gx_strlcpy(pessdn, tmp_entryid.px500dn, dsize);
 	return TRUE;
-}
-
-static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
-    EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
-{
-	uint32_t flags;
-	EXT_PULL ext_pull;
-	FLATUID provider_uid;
-	
-	if (pbin->cb < 20)
-		return FALSE;
-	ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
-	ext_pull.m_offset = 0;
-	if (provider_uid == muidEMSAB)
-		return emsab_to_email(ext_pull, common_util_essdn_to_username,
-		       username, ulen) ? TRUE : false;
-	if (provider_uid == muidOOP)
-		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
-	return FALSE;
-}
-
-BOOL common_util_entryid_to_username(const BINARY *pbin,
-    char *username, size_t ulen)
-{
-	return common_util_entryid_to_username_internal(pbin,
-	       common_util_alloc, username, ulen);
 }
 
 BINARY* common_util_username_to_addressbook_entryid(
@@ -795,8 +737,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 		*pdomain = '\0';
 		encode_hex_int(user_id, hex_string);
 		encode_hex_int(domain_id, hex_string2);
-		snprintf(x500dn, 1024, "/o=%s/ou=Exchange Administrative "
-				"Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+		snprintf(x500dn, std::size(x500dn), "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 				g_org_name, hex_string2, hex_string, tmp_name);
 		HX_strupper(x500dn);
 		if (!common_util_essdn_to_entryid(x500dn, pbin))
@@ -1284,6 +1225,58 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
+static bool mapi_p1(const TPROPVAL_ARRAY &props)
+{
+	auto v = props.get<const uint32_t>(PR_RECIPIENT_TYPE);
+	return v != nullptr && *v & MAPI_P1;
+}
+
+#if 0
+static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
+{
+	auto v = props.get<const uint32_t>(PR_RESPONSIBILITY);
+	return v == nullptr || *v != 0;
+}
+#endif
+
+static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
+    std::vector<std::string> &list, bool resend) try
+{
+	char username[UADDR_SIZE];
+	if (resend && !mapi_p1(props))
+		return ecSuccess;
+	/*
+	if (!b_submit && xp_is_in_charge(rcpt))
+		return ecSuccess;
+	*/
+	auto str = props.get<const char>(PR_SMTP_ADDRESS);
+	if (str != nullptr && *str != '\0') {
+		list.emplace_back(str);
+		return ecSuccess;
+	}
+	auto addrtype = props.get<const char>(PR_ADDRTYPE);
+	auto emaddr   = props.get<const char>(PR_EMAIL_ADDRESS);
+	std::string es_result;
+	if (addrtype != nullptr) {
+		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
+		           cu_id2user, es_result);
+		if (ret == ecSuccess) {
+			list.emplace_back(std::move(es_result));
+			return ecSuccess;
+		} else if (ret != ecNullObject) {
+			return ret;
+		}
+	}
+	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
+	           g_org_name, cu_id2user, es_result);
+	if (ret == ecSuccess)
+		list.emplace_back(username);
+	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1122: ENOMEM");
+	return ecServerOOM;
+}
+
 BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 {
 	uint64_t message_id = msg->get_id();
@@ -1321,64 +1314,20 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 	auto num = pmsgctnt->proplist.get<const uint32_t>(PR_MESSAGE_FLAGS);
 	if (num == nullptr)
 		return FALSE;
-	BOOL b_resend = (*num & MSGFLAG_RESEND) ? TRUE : false;
+	bool b_resend = *num & MSGFLAG_RESEND;
 	prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr)
 		return FALSE;
 	if (prcpts->count == 0)
 		mlog(LV_INFO, "I-1504: Store %s attempted to send message %llxh to 0 recipients",
-		        pstore->get_account(), static_cast<unsigned long long>(message_id));
+		        pstore->get_account(), LLU{message_id});
 
 	std::vector<std::string> rcpt_list;
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		if (b_resend) {
-			auto rcpttype = prcpts->pparray[i]->get<const uint32_t>(PR_RECIPIENT_TYPE);
-			if (rcpttype == nullptr)
-				return FALSE;
-			if (!(*rcpttype & MAPI_P1))
-				continue;	
-		}
-		/*
-		if (!b_submit) {
-			auto resp = prcpts->pparray[i]->get<const uint32_t>(PR_RESPONSIBILITY);
-			if (resp == nullptr || *resp != 0)
-				continue;
-		}
-		*/
-		auto str = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
-		if (str != nullptr && *str != '\0') {
-			rcpt_list.emplace_back(str);
-			continue;
-		}
-		auto addrtype = prcpts->pparray[i]->get<const char>(PR_ADDRTYPE);
-		if (addrtype == nullptr) {
- CONVERT_ENTRYID:
-			auto entryid = prcpts->pparray[i]->get<const BINARY>(PR_ENTRYID);
-			if (entryid == nullptr)
-				return FALSE;
-			char username[UADDR_SIZE];
-			if (!common_util_entryid_to_username(entryid,
-			    username, std::size(username)))
-				return FALSE;	
-			rcpt_list.emplace_back(username);
-		} else if (strcasecmp(addrtype, "SMTP") == 0) {
-			str = prcpts->pparray[i]->get<char>(PR_EMAIL_ADDRESS);
-			if (str == nullptr)
-				return FALSE;
-			rcpt_list.emplace_back(str);
-		} else if (strcasecmp(addrtype, "EX") == 0) {
-			auto emaddr = prcpts->pparray[i]->get<const char>(PR_EMAIL_ADDRESS);
-			if (emaddr == nullptr)
-				goto CONVERT_ENTRYID;
-			char username[UADDR_SIZE];
-			if (!common_util_essdn_to_username(emaddr,
-			    username, std::size(username)))
-				goto CONVERT_ENTRYID;
-			rcpt_list.emplace_back(username);
-		} else {
-			goto CONVERT_ENTRYID;
-		}
-	}
+	for (size_t i = 0; i < prcpts->count; ++i)
+		if (cu_rcpt_to_list(message_id, *prcpts->pparray[i], rcpt_list,
+		    b_resend) != ecSuccess)
+			return false;
+
 	if (rcpt_list.size() > 0) {
 		auto body_type = get_override_format(*pmsgctnt);
 		common_util_set_dir(pstore->get_dir());
@@ -1880,7 +1829,7 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 	if (pmessage_ids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		auto err = cu_remote_copy_message(src_store, pmessage_ids->pids[i],
+		err = cu_remote_copy_message(src_store, pmessage_ids->pids[i],
 		           dst_store, new_fid);
 		if (err != ecSuccess)
 			return err;
@@ -1901,8 +1850,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (pfolder_id == nullptr)
 			return ecError;
-		auto err = cu_remote_copy_folder(src_store, *pfolder_id, dst_store,
-		           new_fid, nullptr);
+		err = cu_remote_copy_folder(src_store, *pfolder_id, dst_store,
+		      new_fid, nullptr);
 		if (err != ecSuccess)
 			return err;
 	}
@@ -2031,10 +1980,8 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
-	if (!oxcical_export(pmsgctnt, ical,
-		common_util_alloc, common_util_get_propids,
-		common_util_entryid_to_username_internal,
-		common_util_essdn_to_username)) {
+	if (!oxcical_export(pmsgctnt, ical, g_org_name,
+	    common_util_alloc, common_util_get_propids, cu_id2user)) {
 		using LLU = unsigned long long;
 		mlog(LV_DEBUG, "D-2202: oxcical_export %s:%llxh failed",
 			pstore->get_dir(), LLU{message_id});
@@ -2209,4 +2156,15 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 	if (!exmdb_client::set_store_properties(dir, CP_ACP, &values, &prob))
 		return EINVAL;
 	return 0;
+}
+
+ec_error_t cu_id2user(int id, std::string &user) try
+{
+	char ubuf[UADDR_SIZE];
+	if (!system_services_get_username_from_id(id, ubuf, std::size(ubuf)))
+		return ecError;
+	user = ubuf;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }

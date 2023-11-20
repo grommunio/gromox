@@ -111,8 +111,7 @@ static constexpr char
 	mailbox_base_url[] = "https://{}/mapi/{}/?MailboxId={}@{}",
 	ews_base_url[] = "https://{}/EWS/{}",
 	oab_base_url[] = "https://{}/OAB/",
-	server_base_dn[] = "/o={}/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn={}@{}",
+	server_base_dn[] = "/o={}/" EAG_SERVERS "/cn={}@{}",
 	public_folder[] = "Public Folder",
 	public_folder_email[] = "public.folder.root@"; /* EXC: PUBS@thedomain */
 static unsigned int ok_code = 200, bad_address_code = 501;
@@ -1037,8 +1036,7 @@ BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
 	mysql.get_user_ids(username, &user_id, &domain_id, nullptr);
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			x500_org_name.c_str(), hex_string2, hex_string, tmp_name);
 	return TRUE;
 }
@@ -1051,8 +1049,7 @@ BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
 
 	mysql.get_domain_ids(domainname, &domain_id, &org_id);
 	encode_hex_int(domain_id, hex_string);
-	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
-			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s00000000-public.folder.root",
+	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s00000000-public.folder.root",
 			x500_org_name.c_str(), hex_string);
 	return TRUE;
 }

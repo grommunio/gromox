@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
@@ -14,6 +15,7 @@
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/safeint.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
@@ -273,8 +275,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			if (paddress == nullptr || paddress_type == nullptr)
 				continue;
 			if (0 == strcasecmp(paddress_type, "EX")) {
-				if (!common_util_essdn_to_username(paddress,
-				    username, std::size(username)))
+				if (cvt_essdn_to_username(paddress, g_org_name,
+				    cu_id2user, username, std::size(username)) != ecSuccess)
 					continue;
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
 				gx_strlcpy(username, paddress, std::size(username));
