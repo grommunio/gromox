@@ -3112,7 +3112,7 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 namespace {
 
 struct simu_node {
-	uint32_t idx, uid;
+	uint32_t uid;
 	unsigned int size;
 	char flags[10];
 	std::string mid_string;
@@ -3128,7 +3128,6 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 		return MIDB_E_SQLPREP;
 	while (pstmt.step() == SQLITE_ROW) {
 		simu_node sn;
-		sn.idx = pstmt.col_int64(0);
 		sn.mid_string = pstmt.col_text(1);
 		sn.uid = pstmt.col_int64(2);
 		auto &flags_buff = sn.flags;
@@ -3156,13 +3155,16 @@ static int simu_query(IDB_ITEM *pidb, const char *sql_string,
 	return 0;
 }
 
-/*
+/**
  * Give summary of messages present in folder (via IMAP UID)
  * Request:
  * 	P-SIMU <store-dir> <folder-name> <uid(min)> <uid(max)>
  * Response:
  * 	TRUE <#msgcount>
- * 	<0-based seqid> <mid> <uid> <flags> <size>  // repeat x #msgcount
+ * 	- <midstr> <uid> <flags> <size>  // repeat x #msgcount
+ *
+ * midb_agent:list_mail [POP3 logic] uses midstr and size.
+ * midb_agent:fetch_simple_uid [IMAP logic] uses midstr, uid, flags.
  */
 static int mail_engine_psimu(int argc, char **argv, int sockd) try
 {
@@ -3188,24 +3190,24 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		return MIDB_E_MNG_SORTFOLDER;
 	if (first == SEQ_STAR && last == SEQ_STAR)
 		/* "MAX:MAX" */
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
+		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu "
 		         "ORDER BY uid DESC LIMIT 1", LLU{folder_id});
 	else if (first == SEQ_STAR)
 		/* "MAX:99" */
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
+		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid<=%u ORDER BY uid DESC LIMIT 1",
 		         LLU{folder_id}, last);
 	else if (last == SEQ_STAR)
 		/* "99:MAX" */
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
+		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY uid",
 		         LLU{folder_id}, first);
 	else
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
+		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size "
 		         "FROM messages WHERE folder_id=%llu AND uid>=%u AND uid<=%u "
 		         "ORDER BY uid", LLU{folder_id}, first, last);
@@ -3220,7 +3222,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 		 * the last message in the mailbox, even if 559 is higher than
 		 * any assigned UID value".
 		 */
-		snprintf(sql_string, std::size(sql_string), "SELECT idx, mid_string, uid, "
+		snprintf(sql_string, std::size(sql_string), "SELECT 0, mid_string, uid, "
 		         "replied, unsent, flagged, deleted, read, recent, forwarded, size"
 		         " FROM messages WHERE folder_id=%llu ORDER BY uid DESC LIMIT 1",
 		         LLU{folder_id});
@@ -3232,8 +3234,8 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
 	auto temp_len = snprintf(temp_buff, std::size(temp_buff),
 	                "TRUE %zu\r\n", temp_list.size());
 	for (const auto &sn : temp_list) {
-		auto buff_len = gx_snprintf(temp_line, std::size(temp_line), "%u %s %u %s %u\r\n",
-		                sn.idx - 1, sn.mid_string.c_str(), sn.uid, sn.flags, sn.size);
+		auto buff_len = gx_snprintf(temp_line, std::size(temp_line), "- %s %u %s %u\r\n",
+		                sn.mid_string.c_str(), sn.uid, sn.flags, sn.size);
 		if (256*1024 - temp_len < buff_len) {
 			auto ret = cmd_write(sockd, temp_buff, temp_len);
 			if (ret != 0)
