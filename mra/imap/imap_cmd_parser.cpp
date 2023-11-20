@@ -1636,8 +1636,6 @@ static int imap_cmd_parser_selex(int argc, char **argv,
     IMAP_CONTEXT *pcontext, bool readonly) try
 {
 	int errnum;
-	unsigned int uidnext;
-	unsigned long uidvalid;
 	size_t string_length = 0;
 	char temp_name[1024];
 	char buff[1024];
@@ -1653,6 +1651,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 		pcontext->selected_folder[0] = '\0';
 	}
 	
+	uint32_t uidvalid = 0, uidnext = 0;
 	auto ssr = system_services_summary_folder(pcontext->maildir, temp_name,
 	           nullptr, nullptr, nullptr, &uidvalid, &uidnext, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -2139,12 +2138,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 {
 	int i;
 	int errnum;
-	int exists;
-	int recent;
-	int unseen;
-	unsigned int uidnext;
 	BOOL b_first;
-	unsigned long uidvalid;
 	int temp_argc;
 	char buff[1024];
 	size_t string_length = 0;
@@ -2161,6 +2155,9 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		strlen(argv[3]) - 2, temp_argv, sizeof(temp_argv));
 	if (temp_argc == -1)
 		return 1800;
+
+	size_t exists = 0, recent = 0, unseen = 0;
+	uint32_t uidvalid = 0, uidnext = 0;
 	auto ssr = system_services_summary_folder(pcontext->maildir, temp_name,
 	           &exists, &recent, &unseen, &uidvalid, &uidnext, &errnum);
 	auto ret = m2icode(ssr, errnum);
@@ -2172,27 +2169,26 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	                quote_encode(argv[2]).c_str());
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
-		if (!b_first) {
+		if (!b_first)
 			buff[string_length++] = ' ';
-		} else {
+		else
 			b_first = FALSE;
-		}
 		if (strcasecmp(temp_argv[i], "MESSAGES") == 0)
 			string_length += gx_snprintf(buff + string_length,
-			                 std::size(buff) - string_length, "MESSAGES %d", exists);
+			                 std::size(buff) - string_length, "MESSAGES %zu", exists);
 		else if (strcasecmp(temp_argv[i], "RECENT") == 0)
 			string_length += gx_snprintf(buff + string_length,
-			                 std::size(buff) - string_length, "RECENT %d", recent);
+			                 std::size(buff) - string_length, "RECENT %zu", recent);
 		else if (strcasecmp(temp_argv[i], "UIDNEXT") == 0)
 			string_length += gx_snprintf(buff + string_length,
-			                 std::size(buff) - string_length, "UIDNEXT %d", uidnext);
+			                 std::size(buff) - string_length, "UIDNEXT %llu", LLU{uidnext});
 		else if (strcasecmp(temp_argv[i], "UIDVALIDITY") == 0)
 			string_length += gx_snprintf(buff + string_length,
 			                 std::size(buff) - string_length, "UIDVALIDITY %llu",
 			                 LLU{uidvalid});
 		else if (strcasecmp(temp_argv[i], "UNSEEN") == 0)
 			string_length += gx_snprintf(buff + string_length,
-			                 std::size(buff) - string_length, "UNSEEN %d", unseen);
+			                 std::size(buff) - string_length, "UNSEEN %zu", unseen);
 		else
 			return 1800;
 	}
@@ -2212,7 +2208,6 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum, i;
 	BOOL b_seen;
 	BOOL b_draft;
-	unsigned long uidvalid;
 	int temp_argc;
 	BOOL b_flagged;
 	BOOL b_answered;
@@ -2321,6 +2316,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto imap_reply_str = resource_get_imap_code(1715, 1, &string_length);
 	auto imap_reply_str1 = resource_get_imap_code(1715, 2, &string_length1);
 	for (i=0; i<10; i++) {
+		uint32_t uidvalid = 0;
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid, nullptr,
 		    &errnum) == MIDB_RESULT_OK &&
@@ -2434,7 +2430,6 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	BOOL b_seen;
 	BOOL b_draft;
 	int name_len;
-	unsigned long uidvalid;
 	int flags_len;
 	BOOL b_flagged;
 	BOOL b_answered;
@@ -2563,6 +2558,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	auto imap_reply_str = resource_get_imap_code(1715, 1, &string_length);
 	auto imap_reply_str1 = resource_get_imap_code(1715, 2, &string_length1);
 	for (i=0; i<10; i++) {
+		uint32_t uidvalid = 0;
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid,
 		    nullptr, &errnum) == MIDB_RESULT_OK &&
@@ -2925,7 +2921,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
-	unsigned long uidvalidity;
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
@@ -2945,6 +2940,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	auto result = m2icode(ssr, errnum);
 	if (result != 0)
 		return result;
+	uint32_t uidvalidity = 0;
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
 	    &errnum) != MIDB_RESULT_OK)
@@ -3191,7 +3187,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
-	unsigned long uidvalidity;
 	size_t string_length = 0, string_length1 = 0;
 	char buff[64*1024];
 	char temp_name[1024];
@@ -3210,6 +3205,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
+	uint32_t uidvalidity = 0;
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity,
 	    nullptr, &errnum) != MIDB_RESULT_OK)

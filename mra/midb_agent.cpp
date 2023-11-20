@@ -79,7 +79,7 @@ static int connect_midb(const char *host, uint16_t port);
 static int list_mail(const char *path, const char *folder, std::vector<MSG_UNIT> &, int *num, uint64_t *size);
 static int delete_mail(const char *path, const char *folder, const std::vector<MSG_UNIT *> &);
 static int get_mail_uid(const char *path, const char *folder, const std::string &mid, unsigned int *uid);
-static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *perrno);
+static int summary_folder(const char *path, const char *folder, size_t *exists, size_t *recent, size_t *unseen, uint32_t *uidvalid, uint32_t *uidnext, int *perrno);
 static int make_folder(const char *path, const char *folder, int *perrno);
 static int remove_folder(const char *path, const char *folder, int *perrno);
 static int ping_mailbox(const char *path, int *perrno);
@@ -679,14 +679,13 @@ static int get_mail_uid(const char *path, const char *folder,
 	return MIDB_RDWR_ERROR;
 }
 
-static int summary_folder(const char *path, const char *folder, int *pexists,
-    int *precent, int *punseen, unsigned long *puidvalid,
-    unsigned int *puidnext, int *perrno)
+static int summary_folder(const char *path, const char *folder, size_t *pexists,
+    size_t *precent, size_t *punseen, uint32_t *puidvalid, uint32_t *puidnext,
+    int *perrno)
 {
 	char buff[1024];
-	int exists, recent, unseen;
-	unsigned long uidvalid;
-	unsigned int uidnext;
+	size_t exists, recent, unseen;
+	unsigned long uidvalid, uidnext;
 
 	auto pback = get_connection(path);
 	if (pback == nullptr)
@@ -703,7 +702,7 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 		return MIDB_RDWR_ERROR;
 	}
 
-	if (sscanf(buff, "TRUE %d %d %d %lu %u", &exists,
+	if (sscanf(buff, "TRUE %zu %zu %zu %lu %lu", &exists,
 	    &recent, &unseen, &uidvalid, &uidnext) != 5) {
 		*perrno = -1;
 		pback.reset();

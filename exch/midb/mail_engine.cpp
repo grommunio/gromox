@@ -2979,11 +2979,6 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
  */
 static int mail_engine_pfddt(int argc, char **argv, int sockd)
 {
-	int temp_len;
-	uint32_t total;
-	uint32_t uidnext;
-	uint64_t uidvalid;
-	uint64_t folder_id;
 	char temp_buff[1024];
 	char sql_string[1024];
 	
@@ -2997,8 +2992,8 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	sqlite3_bind_text(pstmt, 1, argv[2], -1, SQLITE_STATIC);
 	if (pstmt.step() != SQLITE_ROW)
 		return MIDB_E_NO_FOLDER;
-	folder_id = sqlite3_column_int64(pstmt, 0);
-	uidnext = sqlite3_column_int64(pstmt, 1);
+	auto folder_id = pstmt.col_uint64(0);
+	auto uidnext = pstmt.col_uint64(1);
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) "
 	          "FROM messages WHERE folder_id=%llu", LLU{folder_id});
@@ -3007,26 +3002,26 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 	if (pstmt.step() != SQLITE_ROW)
 		return MIDB_E_NO_FOLDER;
-	total = sqlite3_column_int64(pstmt, 0);
+	size_t total = pstmt.col_uint64(0);
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) FROM "
 	          "messages WHERE folder_id=%llu AND read=0", LLU{folder_id});
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	uint32_t unreads = pstmt.step() == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) : 0;
+	size_t unreads = pstmt.step() == SQLITE_ROW ? pstmt.col_uint64(0) : 0;
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT count(message_id) FROM"
 	          " messages WHERE folder_id=%llu AND recent=0", LLU{folder_id});
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
-	uint32_t recents = pstmt.step() == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) : 0;
+	size_t recents = pstmt.step() == SQLITE_ROW ? pstmt.col_uint64(0) : 0;
 	pstmt.finalize();
 	pidb.reset();
-	uidvalid = folder_id;
-	temp_len = sprintf(temp_buff, "TRUE %u %u %u %llu %u\r\n",
-	           total, recents, unreads, LLU{uidvalid}, uidnext + 1);
+	auto temp_len = sprintf(temp_buff, "TRUE %zu %zu %zu %llu %llu\r\n",
+	                total, recents, unreads, LLU{folder_id},
+	                LLU{uidnext + 1});
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
