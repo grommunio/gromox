@@ -1654,8 +1654,7 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	}
 	
 	auto ssr = system_services_summary_folder(pcontext->maildir, temp_name,
-	           nullptr, nullptr, nullptr, &uidvalid, &uidnext,
-	           nullptr, &errnum);
+	           nullptr, nullptr, nullptr, &uidvalid, &uidnext, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -2163,7 +2162,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (temp_argc == -1)
 		return 1800;
 	auto ssr = system_services_summary_folder(pcontext->maildir, temp_name,
-	           &exists, &recent, &unseen, &uidvalid, &uidnext, nullptr, &errnum);
+	           &exists, &recent, &unseen, &uidvalid, &uidnext, &errnum);
 	auto ret = m2icode(ssr, errnum);
 	if (ret != 0)
 		return ret;
@@ -2324,7 +2323,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	for (i=0; i<10; i++) {
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid, nullptr,
-		    nullptr, &errnum) == MIDB_RESULT_OK &&
+		    &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    mid_string.c_str(), &uid) == MIDB_RESULT_OK) {
 			string_length = gx_snprintf(buff, std::size(buff),
@@ -2566,7 +2565,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	for (i=0; i<10; i++) {
 		if (system_services_summary_folder(pcontext->maildir,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid,
-		    nullptr, nullptr, &errnum) == MIDB_RESULT_OK &&
+		    nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    pcontext->mid.c_str(), &uid) == MIDB_RESULT_OK) {
 			string_length = gx_snprintf(buff, std::size(buff), "%s %s [APPENDUID %llu %d] %s",
@@ -2948,7 +2947,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return result;
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
-	    nullptr, &errnum) != MIDB_RESULT_OK)
+	    &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
 	b_copied = TRUE;
 	b_first = FALSE;
@@ -3213,7 +3212,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return ret;
 	if (system_services_summary_folder(pcontext->maildir,
 	    temp_name, nullptr, nullptr, nullptr, &uidvalidity,
-	    nullptr, nullptr, &errnum) != MIDB_RESULT_OK)
+	    nullptr, &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
 	b_copied = TRUE;
 	b_first = FALSE;

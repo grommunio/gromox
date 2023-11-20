@@ -2975,11 +2975,10 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
  * Request:
  * 	P-FDDT <store-dir> <folder-name>
  * Response:
- * 	TRUE <#messages> <#recents> <#unreads> <uidvalidity> <uidnext> <0-based firstunread>
+ * 	TRUE <#messages> <#recents> <#unreads> <uidvalidity> <uidnext>
  */
 static int mail_engine_pfddt(int argc, char **argv, int sockd)
 {
-	int offset;
 	int temp_len;
 	uint32_t total;
 	uint32_t uidnext;
@@ -3024,22 +3023,10 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 		return MIDB_E_SQLPREP;
 	uint32_t recents = pstmt.step() == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) : 0;
 	pstmt.finalize();
-	snprintf(sql_string, std::size(sql_string), "SELECT min(idx) FROM messages "
-	          "WHERE folder_id=%llu AND read=0", LLU{folder_id});
-	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	if (pstmt.step() == SQLITE_ROW) {
-		offset = sqlite3_column_int64(pstmt, 0);
-		offset --;
-	} else {
-		offset = -1;
-	}
-	pstmt.finalize();
 	pidb.reset();
 	uidvalid = folder_id;
-	temp_len = sprintf(temp_buff, "TRUE %u %u %u %llu %u %d\r\n",
-	           total, recents, unreads, LLU{uidvalid}, uidnext + 1, offset);
+	temp_len = sprintf(temp_buff, "TRUE %u %u %u %llu %u\r\n",
+	           total, recents, unreads, LLU{uidvalid}, uidnext + 1);
 	return cmd_write(sockd, temp_buff, temp_len);
 }
 
