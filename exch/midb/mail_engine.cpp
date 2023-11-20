@@ -2937,41 +2937,6 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 }
 
 /*
- * Lookup seqid of a message.
- * Request:
- * 	P-OFST <store-dir> <folder-name> <mid>
- * Response:
- * 	TRUE <0-based idx>
- */
-static int mail_engine_pofst(int argc, char **argv, int sockd)
-{
-	int idx, temp_len;
-	char temp_buff[1024];
-	
-	auto pidb = mail_engine_get_idb(argv[1]);
-	if (pidb == nullptr)
-		return MIDB_E_HASHTABLE_FULL;
-	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
-	if (folder_id == 0)
-		return MIDB_E_NO_FOLDER;
-	if (!mail_engine_sort_folder(pidb.get(), argv[2]))
-		return MIDB_E_MNG_SORTFOLDER;
-	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
-	             " idx FROM messages WHERE mid_string=?");
-	if (pstmt == nullptr)
-		return MIDB_E_SQLPREP;
-	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
-	if (pstmt.step() != SQLITE_ROW ||
-	    gx_sql_col_uint64(pstmt, 0) != folder_id)
-		return MIDB_E_NO_MESSAGE;
-	idx = sqlite3_column_int64(pstmt, 1);
-	pstmt.finalize();
-	pidb.reset();
-	temp_len = sprintf(temp_buff, "TRUE %d\r\n", idx - 1);
-	return cmd_write(sockd, temp_buff, temp_len);
-}
-
-/*
  * Lookup UID for a message.
  * Request:
  * 	P-UNID <store-dir> <folder-name> <mid>
@@ -4462,7 +4427,6 @@ int mail_engine_run()
 	cmd_parser_register_command("M-ENUM", {mail_engine_menum, 2});
 	cmd_parser_register_command("M-CKFL", {mail_engine_mckfl, 2});
 	cmd_parser_register_command("M-PING", {mail_engine_mping, 2});
-	cmd_parser_register_command("P-OFST", {mail_engine_pofst, 4});
 	cmd_parser_register_command("P-UNID", {mail_engine_punid, 4});
 	cmd_parser_register_command("P-FDDT", {mail_engine_pfddt, 3});
 	cmd_parser_register_command("P-SUBF", {mail_engine_psubf, 3});
