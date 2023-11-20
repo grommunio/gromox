@@ -3258,15 +3258,13 @@ static int mail_engine_psimu(int argc, char **argv, int sockd) try
  * 	P-DELL <dir> <folder-name>
  * Response:
  * 	TRUE <#messages>
- * 	<0-based seqid> <mid> <uid>  // repeat x #messages
+ * 	- <mid> <uid>  // repeat x #messages
  */
 static int mail_engine_pdell(int argc, char **argv, int sockd)
 {
 	int length;
 	int temp_len;
-	int buff_len;
 	uint32_t uid;
-	uint32_t idx;
 	char temp_line[1024];
 	char sql_string[1024];
 	char temp_buff[256*1024];
@@ -3289,18 +3287,17 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	length = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string),
-	         "SELECT idx, mid_string, uid FROM messages WHERE folder_id=%llu AND deleted=1 ORDER BY uid",
+	         "SELECT mid_string, uid FROM messages WHERE folder_id=%llu AND deleted=1 ORDER BY uid",
 	         LLU{folder_id});
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr)
 		return MIDB_E_SQLPREP;
 	temp_len = sprintf(temp_buff, "TRUE %d\r\n", length);
 	while (pstmt.step() == SQLITE_ROW) {
-		idx = sqlite3_column_int64(pstmt, 0);
-		auto mid_string = pstmt.col_text(1);
-		uid = sqlite3_column_int64(pstmt, 2);
-		buff_len = gx_snprintf(temp_line, std::size(temp_line),
-			"%u %s %u\r\n", idx - 1, mid_string, uid);
+		auto mid_string = pstmt.col_text(0);
+		uid = sqlite3_column_int64(pstmt, 1);
+		auto buff_len = gx_snprintf(temp_line, std::size(temp_line),
+		                "- %s %u\r\n", mid_string, uid);
 		if (256*1024 - temp_len < buff_len) {
 			auto ret = cmd_write(sockd, temp_buff, temp_len);
 			if (ret != 0)
