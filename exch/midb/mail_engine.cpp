@@ -1334,6 +1334,9 @@ static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
 	static constexpr unsigned int sort_field = FIELD_UID;
 	static const char field_name[] = "uid";
 
+	auto xact = gx_sql_begin_trans(pidb->psqlite);
+	if (!xact)
+		return false;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " sort_field FROM folders WHERE name=?");
 	if (pstmt == nullptr)
