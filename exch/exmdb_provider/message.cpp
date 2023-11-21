@@ -1524,8 +1524,6 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 static ec_error_t message_rectify_message(const char *account,
     const MESSAGE_CONTENT *src, MESSAGE_CONTENT *dst)
 {
-	GUID tmp_guid;
-	uint64_t nt_time;
 	EXT_PUSH ext_push;
 	char cid_string[256];
 	static constexpr uint32_t fake_int32 = 0;
@@ -1581,16 +1579,14 @@ static ec_error_t message_rectify_message(const char *account,
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
 			return ecServerOOM;
-		tmp_guid = GUID::random_new();
 		if (!ext_push.init(pbin->pb, 16, 0) ||
-		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
 			return ecError;
 		dprop.emplace_back(PR_SEARCH_KEY, pbin);
 	}
 	if (!sprop.has(PR_BODY_CONTENT_ID)) {
-		tmp_guid = GUID::random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
-		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
 			return ecError;
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
@@ -1634,48 +1630,47 @@ static ec_error_t message_rectify_message(const char *account,
 		if (pvalue != nullptr)
 			dprop.emplace_back(PR_LAST_MODIFIER_ENTRYID, pvalue);
 	}
-	auto pbin1 = sprop.get<BINARY>(PR_CONVERSATION_INDEX);
-	auto pbin = cu_alloc<BINARY>();
-	if (pbin == nullptr)
+	auto old_cvindex = sprop.get<BINARY>(PR_CONVERSATION_INDEX);
+	auto new_cvid = cu_alloc<BINARY>();
+	if (new_cvid == nullptr)
 		return ecServerOOM;
-	pbin->cb = 16;
-	if (NULL != pbin1 && pbin1->cb >= 22) {
-		pbin->pb = pbin1->pb + 6;
+	new_cvid->cb = 16;
+	if (old_cvindex != nullptr && old_cvindex->cb >= 22) {
+		new_cvid->pb = &old_cvindex->pb[6];
 	} else {
-		pbin->pv = common_util_alloc(16);
-		if (pbin->pv == nullptr)
+		new_cvid->pv = common_util_alloc(16);
+		if (new_cvid->pv == nullptr)
 			return ecServerOOM;
 		auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
 		if (pvalue != nullptr && *pvalue != '\0') {
-			if (!message_md5_string(pvalue, pbin->pb))
+			if (!message_md5_string(pvalue, new_cvid->pb))
 				return ecError;
 		} else {
-			tmp_guid = GUID::random_new();
-			if (!ext_push.init(pbin->pb, 16, 0) ||
-			    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
+			if (!ext_push.init(new_cvid->pb, 16, 0) ||
+			    ext_push.p_guid(GUID::random_new()) != EXT_ERR_SUCCESS)
 				return ecError;
 		}
 	}
-	dprop.emplace_back(PR_CONVERSATION_ID, pbin);
+	dprop.emplace_back(PR_CONVERSATION_ID, new_cvid);
 	dprop.emplace_back(PR_CONVERSATION_INDEX_TRACKING, &fake_true);
-	if (NULL == pbin1) {
-		pbin1 = cu_alloc<BINARY>();
-		if (pbin1 == nullptr)
+	if (old_cvindex == nullptr) {
+		auto new_cvindex = cu_alloc<BINARY>();
+		if (new_cvindex == nullptr)
 			return ecServerOOM;
-		pbin1->pv = common_util_alloc(27);
-		if (pbin1->pv == nullptr)
+		new_cvindex->pv = common_util_alloc(27);
+		if (new_cvindex->pv == nullptr)
 			return ecServerOOM;
-		nt_time = rop_util_current_nttime();
-		if (!ext_push.init(pbin1->pb, 27, 0) ||
+		auto nt_time = rop_util_current_nttime();
+		if (!ext_push.init(new_cvindex->pb, 27, 0) ||
 		    ext_push.p_uint8(1) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(nt_time >> 32) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint8((nt_time >> 24) & 0xff) != EXT_ERR_SUCCESS ||
-		    ext_push.p_bytes(pbin->pb, 16) != EXT_ERR_SUCCESS ||
+		    ext_push.p_bytes(new_cvid->pb, 16) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint32(0xFFFFFFFF) != EXT_ERR_SUCCESS ||
 		    ext_push.p_uint8(nt_time & 0xFF) != EXT_ERR_SUCCESS)
 			return ecError;
-		pbin1->cb = 27;
-		dprop.emplace_back(PR_CONVERSATION_INDEX, pbin1);
+		new_cvindex->cb = ext_push.m_offset;
+		dprop.emplace_back(PR_CONVERSATION_INDEX, new_cvindex);
 	}
 	auto pvalue = sprop.get<char>(PR_CONVERSATION_TOPIC);
 	if (pvalue == nullptr)
