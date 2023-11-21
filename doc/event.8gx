@@ -109,7 +109,7 @@ folder metadata has changed and warrants being reloaded.
 The notification "MESSAGE-FLAG <username> <folder> <messageid>" informs
 listeners that the message metadata has changed and warrants being reloaded.
 .PP
-The notification "MESSAGE-EXPUNGE <username> <folder> <messageid...>" informs
+The notification "MESSAGE-EXPUNGE <username> <folder> <messageid>" informs
 listeners that the message was deleted.
 .PP
 Clients in Dequeue Mode will receive notifications. Each notification line
