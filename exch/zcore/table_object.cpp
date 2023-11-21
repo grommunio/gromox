@@ -864,8 +864,8 @@ static bool table_object_evaluate_restriction(const TPROPVAL_ARRAY *ppropvals,
 		auto pvalue = ppropvals->getval(rprop->proptag);
 		if (pvalue == nullptr || rprop->proptag != PR_ANR)
 			return rprop->eval(pvalue);
-		return strcasestr(static_cast<char *>(rprop->propval.pvalue),
-		       static_cast<char *>(pvalue)) != nullptr;
+		return strcasestr(static_cast<const char *>(rprop->propval.pvalue),
+		       static_cast<const char *>(pvalue)) != nullptr;
 	}
 	case RES_PROPCOMPARE: {
 		auto rprop = pres->pcmp;

@@ -61,7 +61,7 @@ ec_error_t rop_modifypermissions(uint8_t flags, uint16_t count,
 			 * Ignore bits that a client should not send
 			 * (OXCPERM v15 §2.2.7).
 			 */
-			*v &= rightsMaxROP;
+			*deconst(v) &= rightsMaxROP; // mutable
 	}
 	if (!exmdb_client::update_folder_permission(plogon->get_dir(),
 	    folder_id, b_freebusy, count, prow))

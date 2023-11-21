@@ -1117,18 +1117,29 @@ struct GEN_ARRAY {
 };
 
 struct TPROPVAL_ARRAY {
-	TAGGED_PROPVAL *find(uint32_t tag) const {
+	TAGGED_PROPVAL *find(uint32_t tag) {
+		for (size_t i = 0; i < count; ++i)
+			if (ppropval[i].proptag == tag)
+				return &ppropval[i];
+		return nullptr;
+	}
+	const TAGGED_PROPVAL *find(uint32_t tag) const {
 		for (size_t i = 0; i < count; ++i)
 			if (ppropval[i].proptag == tag)
 				return &ppropval[i];
 		return nullptr;
 	}
 	inline bool has(uint32_t tag) const { return find(tag) != nullptr; }
-	inline void *getval(uint32_t tag) const {
+	inline void *getval(uint32_t tag) {
 		auto v = find(tag);
 		return v != nullptr ? v->pvalue : nullptr;
 	}
-	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
+	inline const void *getval(uint32_t tag) const {
+		auto v = find(tag);
+		return v != nullptr ? v->pvalue : nullptr;
+	}
+	template<typename T> inline const T *get(uint32_t tag) const { return static_cast<const T *>(getval(tag)); }
+	template<typename T> inline T *get(uint32_t tag) { return static_cast<T *>(getval(tag)); }
 	int set(uint32_t tag, const void *d);
 	inline int set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
 	void emplace_back(uint32_t tag, const void *d) {

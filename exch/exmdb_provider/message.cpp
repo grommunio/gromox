@@ -3791,7 +3791,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	auto pvalue = pmsgctnt->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+	auto pvalue = /*mutable*/ deconst(pmsgctnt)->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (pvalue != nullptr)
 		*pvalue = nt_time;
 

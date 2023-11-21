@@ -164,7 +164,7 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, const MESSAGE_CONTENT& content) const
 {
 	ec_error_t error;
-	uint64_t* messageId = content.proplist.get<uint64_t>(PidTagMid);
+	auto messageId = content.proplist.get<const uint64_t>(PidTagMid);
 	if(!messageId)
 		throw DispatchError(E3112);
 	m_plugin.exmdb.write_message(dir.c_str(), m_auth_info.username, CP_ACP, parent.folderId, &content, &error);

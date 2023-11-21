@@ -139,8 +139,8 @@ struct mime_skeleton {
 	BOOL b_inline = false, b_attachment = false;
 	std::string rtf;
 	BINARY rtf_bin{};
-	char *pplain = nullptr;
-	BINARY *phtml = nullptr;
+	const char *pplain = nullptr;
+	const BINARY *phtml = nullptr;
 	const char *charset = nullptr, *pmessage_class = nullptr;
 	ATTACHMENT_LIST *pattachments = nullptr;
 };
@@ -3232,7 +3232,6 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 {
 	int i;
 	char *pbuff;
-	BINARY *prtf;
 	ATTACHMENT_CONTENT *pattachment;
 	pskeleton->clear();
 	pskeleton->charset = pcharset;
@@ -3258,13 +3257,13 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	    pskeleton->mail_type == oxcmail_type::tnef) {
 		/* do nothing */
 	} else {
-		uint8_t *flag = nullptr;
+		const uint8_t *flag = nullptr;
 		auto pvalue = pmsg->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
 		if (NULL != pvalue && NATIVE_BODY_RTF == *pvalue &&
 		    ((flag = pmsg->proplist.get<uint8_t>(PR_RTF_IN_SYNC)) == nullptr ||
 		    *flag == 0)) {
  FIND_RTF:
-			prtf = pmsg->proplist.get<BINARY>(PR_RTF_COMPRESSED);
+			auto prtf = pmsg->proplist.get<const BINARY>(PR_RTF_COMPRESSED);
 			if (NULL != prtf) {
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
 				pbuff = nullptr;

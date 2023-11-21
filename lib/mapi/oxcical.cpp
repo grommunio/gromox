@@ -3428,7 +3428,6 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	ical_component *ptz_component = nullptr;
-	BINARY *bin = nullptr;
 	if (!b_exceptional) {
 	
 	if (*method != '\0')
@@ -3439,7 +3438,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur};
 	if (!get_propids(&propnames, &propids))
 		return E_2201;
-	bin = pmsg->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
+	auto bin = pmsg->proplist.get<const BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	if (bin != nullptr) {
 		EXT_PULL ext_pull;
 		ext_pull.init(bin->pb, bin->cb, alloc, EXT_FLAG_UTF16);
