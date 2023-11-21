@@ -1796,6 +1796,22 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	if (special_folder(encoded_name))
 		return 1913;
+
+	{
+		std::vector<std::string> folder_list;
+		auto ssr = system_services_enum_folders(pcontext->maildir,
+			   folder_list, &errnum);
+		auto ret = m2icode(ssr, errnum);
+		if (ret != 0)
+			return ret;
+		imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
+		dir_tree folder_tree(imap_parser_get_dpool());
+		folder_tree.load_from_memfile(std::move(folder_list));
+		auto dh = folder_tree.match(argv[2]);
+		if (dh != nullptr && folder_tree.get_child(dh) != nullptr)
+			return 1924;
+	}
+
 	auto ssr = system_services_remove_folder(pcontext->maildir,
 	           encoded_name, &errnum);
 	auto ret = m2icode(ssr, errnum);
