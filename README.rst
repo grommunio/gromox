@@ -3,7 +3,7 @@ Gromox
 
 Gromox is the central groupware server component of grommunio. It is capable of
 serving as a replacement for Microsoft Exchange and compatibles. Connectivity
-options include RPC/HTTP (Outlook Anywhere), MAPI/HTTP, IMAP, POP3, an
+options include RPC/HTTP (Outlook Anywhere), MAPI/HTTP, EWS, IMAP, POP3, an
 SMTP-speaking LDA, and a PHP module with a MAPI function subset. Components can
 scale-out over multiple hosts.
 
@@ -66,8 +66,9 @@ OXCDATA, OXDSCLI, OXCFOLD, OXCFXICS, OXCICAL, OXCMAIL, OXCMAPIHTTP (plus yet
 undocumented encodings), OXCMSG, OXCNOTIF, OXNSPI, OXCPERM, OXCPRPT, OXCROPS,
 OXCRPC, OXCSTOR, OXCTABL, OXMSG, OXOABK, OXOABKT, OXOCAL, OXOCNTC, OXODLGT,
 OXOMSG, OXORULE, OXOSFLD, OXOSMIME, OXPROPS, OXTNEF, OXVCARD, and (partially)
-OXABREF, OXOCFG, OXRTFCP, OXWOOF, CFB, PST, as well as parts of the
-specifications of DCERPC/C7086, DTYP, RPCE and RPCH.
+OXABREF, OXOCFG, OXRTFCP, OXWAVLS, OXWOOF, OXWSCDATA, OXWSCONT, OXWSCORE,
+OXWSFOLD, OXWSMSG, OXWSMTGS, OXWSPOST, OXWSRSLNM, OXWSSYNC, OXWSTASK, CFB, PST,
+as well as parts of the specifications of DCERPC/C7086, DTYP, RPCE and RPCH.
 
 
 Contributing
