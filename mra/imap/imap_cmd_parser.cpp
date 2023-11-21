@@ -1915,53 +1915,62 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
 	temp_tree.load_from_memfile(temp_file);
-	std::string buf;
+	pcontext->stream.clear();
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
+		std::string buf;
 		if (filter_special) {
-			buf += "* LIST (\\Inbox) \"/\" \"INBOX\"\r\n";
+			buf = "* LIST (\\Inbox) \"/\" \"INBOX\"\r\n";
 		} else {
 			auto pdir = temp_tree.match("INBOX");
 			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-			buf += fmt::format("* LIST ({}\\Has{}Children) \"/\" \"INBOX\"\r\n",
-			       return_special ? "\\Inbox " : "", have ? "" : "No");
+			buf = fmt::format("* LIST ({}\\Has{}Children) \"/\" \"INBOX\"\r\n",
+			      return_special ? "\\Inbox " : "", have ? "" : "No");
 		}
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
 	}
 	for (unsigned int i = 0; i < 4; ++i) {
 		char temp_name[1024];
 		imap_cmd_parser_sysfolder_to_imapfolder(pcontext->lang, g_folder_list[i], temp_name);
 		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern.c_str())) {
+			std::string buf;
 			if (filter_special) {
-				buf += fmt::format("* LIST ({}) \"/\" {}\r\n",
-				       g_xproperty_list[i], quote_encode(temp_name));
+				buf = fmt::format("* LIST ({}) \"/\" {}\r\n",
+				      g_xproperty_list[i], quote_encode(temp_name));
 			} else {
 				auto pdir = temp_tree.match(temp_name);
 				auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-				buf += fmt::format("* LIST ({}{}\\Has{}Children) \"/\" {}\r\n",
-				       return_special ? g_xproperty_list[i] : "",
-				       return_special ? " " : "",
-				       have ? "" : "No", quote_encode(temp_name));
+				buf = fmt::format("* LIST ({}{}\\Has{}Children) \"/\" {}\r\n",
+				      return_special ? g_xproperty_list[i] : "",
+				      return_special ? " " : "",
+				      have ? "" : "No", quote_encode(temp_name));
 			}
+			if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+				return 1922;
 		}
 	}
 	for (const auto &temp_name : temp_file) {
 		if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern.c_str()))
 			continue;
 		if (filter_special) {
-			buf += fmt::format("* LIST () \"/\" {}\r\n",
-			       quote_encode(temp_name));
+			auto buf = fmt::format("* LIST () \"/\" {}\r\n",
+			           quote_encode(temp_name));
+			if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+				return 1922;
 			continue;
 		}
 		auto pdir = temp_tree.match(temp_name.c_str());
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-		buf += fmt::format("* LIST (\\Has{}Children) \"/\" {}\r\n",
-		       have ? "" : "No", quote_encode(temp_name));
+		auto buf = fmt::format("* LIST (\\Has{}Children) \"/\" {}\r\n",
+		           have ? "" : "No", quote_encode(temp_name));
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
 	}
 	temp_file.clear();
-	pcontext->stream.clear();
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170011: OK LIST completed */
-	buf += fmt::format("{} {}", argv[0], resource_get_imap_code(1711, 1));
+	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1711, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
@@ -1992,8 +2001,8 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
 	dir_tree temp_tree(imap_parser_get_dpool());
 	temp_tree.load_from_memfile(temp_file);
+	pcontext->stream.clear();
 
-	std::string buf;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
 		auto pdir = temp_tree.match("INBOX");
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
@@ -2001,8 +2010,10 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		 * RFC 6154 does not document \Inbox, but Thunderbird
 		 * evaluates it.
 		 */
-		buf += fmt::format("* XLIST (\\Inbox \\Has{}Children) \"/\" \"INBOX\"\r\n",
-		       have ? "" : "No");
+		auto buf = fmt::format("* XLIST (\\Inbox \\Has{}Children) \"/\" \"INBOX\"\r\n",
+		           have ? "" : "No");
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != 0)
+			return 1922;
 	}
 	for (unsigned int i = 0; i < 4; ++i) {
 		char temp_name[1024];
@@ -2011,9 +2022,11 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern.c_str())) {
 			auto pdir = temp_tree.match(temp_name);
 			auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-			buf += fmt::format("* XLIST ({} \\Has{}Children) \"/\" {}\r\n",
-			       g_xproperty_list[i], have ? "" : "No",
-			       quote_encode(temp_name));
+			auto buf  = fmt::format("* XLIST ({} \\Has{}Children) \"/\" {}\r\n",
+			            g_xproperty_list[i], have ? "" : "No",
+			            quote_encode(temp_name));
+			if (pcontext->stream.write(buf.c_str(), buf.size()) != 0)
+				return 1922;
 		}
 	}
 	for (const auto &temp_name : temp_file) {
@@ -2021,15 +2034,16 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			continue;
 		auto pdir = temp_tree.match(temp_name.c_str());
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-		buf += fmt::format("* XLIST (\\Has{}Children) \"/\" {}\r\n",
-		       have ? "" : "No", quote_encode(temp_name));
+		auto buf  = fmt::format("* XLIST (\\Has{}Children) \"/\" {}\r\n",
+		            have ? "" : "No", quote_encode(temp_name));
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != 0)
+			return 1922;
 	}
 	temp_file.clear();
-	pcontext->stream.clear();
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170012: OK XLIST completed */
-	buf += fmt::format("{} {}", argv[0], resource_get_imap_code(1712, 1));
+	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1712, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
@@ -2073,22 +2087,23 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	dir_tree temp_tree(imap_parser_get_dpool());
 	temp_tree.load_from_memfile(temp_file1);
 	temp_file1.clear();
+	pcontext->stream.clear();
 
-	std::string buf;
 	for (const auto &temp_name : temp_file) {
 		if (!imap_cmd_parser_wildcard_match(temp_name.c_str(), search_pattern.c_str()))
 			continue;
 		auto pdir = temp_tree.match(temp_name.c_str());
 		auto have = pdir != nullptr && temp_tree.get_child(pdir) != nullptr;
-		buf += fmt::format("* LSUB (\\Has{}Children) \"/\" {}\r\n",
-		       have ? "" : "No", quote_encode(temp_name));
+		auto buf  = fmt::format("* LSUB (\\Has{}Children) \"/\" {}\r\n",
+		            have ? "" : "No", quote_encode(temp_name));
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+			return 1922;
 	}
 	temp_file.clear();
-	pcontext->stream.clear();
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170013: OK LSUB completed */
-	buf += fmt::format("{} {}", argv[0], resource_get_imap_code(1713, 1));
+	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1713, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
@@ -2146,10 +2161,14 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		else
 			return 1800;
 	}
+	buf += ")\r\n";
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+		return 1922;
 	if (pcontext->proto_stat == iproto_stat::select)
-		imap_parser_echo_modify(pcontext, NULL);
-	buf += fmt::format(")\r\n{} {}", argv[0], resource_get_imap_code(1714, 1));
-	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
+		imap_parser_echo_modify(pcontext, &pcontext->stream);
+	buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1714, 1));
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
+		return 1922;
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
 	return 1915;
@@ -2611,7 +2630,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
-	imap_parser_echo_modify(pcontext, nullptr, true);
+	imap_parser_echo_modify(pcontext, &pcontext->stream, true);
 	/* IMAP_CODE_2170026: OK EXPUNGE completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
@@ -2654,14 +2673,10 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->stream.clear();
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
-	buff.clear();
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
-	auto imap_reply_str = resource_get_imap_code(1719, 1);
-	buff += argv[0];
-	buff += " ";
-	buff += imap_reply_str;
+	buff = fmt::format("{} {}", argv[0], resource_get_imap_code(1719, 1));
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
@@ -2971,9 +2986,11 @@ int imap_cmd_parser_uid_search(int argc, char **argv,
 		return ret;
 	buff.append("\r\n");
 	pcontext->stream.clear();
+	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
+		return 1922;
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
-	buff += fmt::format("{} {}", argv[0], resource_get_imap_code(1723, 1));
+	buff = fmt::format("{} {}", argv[0], resource_get_imap_code(1723, 1));
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
@@ -3263,7 +3280,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
-	imap_parser_echo_modify(pcontext, nullptr, true);
+	imap_parser_echo_modify(pcontext, &pcontext->stream, true);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
