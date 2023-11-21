@@ -42,6 +42,14 @@
 #include "../midb_agent.hpp"
 #define MAX_DIGLEN		256*1024
 
+/*
+ *
+ * The inbox name, "INBOX", is specified as case-insensitive, but most code in
+ * here does not handle folder names like "inbox/foo/bar", i.e. subordinates of
+ * inbox where inbox is not exactly spelled "INBOX". Blech.
+ *
+ */
+
 using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
@@ -167,7 +175,7 @@ DIR_NODE *dir_tree::match(const char *path)
 	temp_path[len] = '\0';
 	
 	ptr1 = temp_path;
-	while ((ptr2 = strchr(ptr1, '/')) != NULL) {
+	for (unsigned int level = 0; (ptr2 = strchr(ptr1, '/')) != nullptr; ++level) {
 		*ptr2 = '\0';
 		pnode = pnode->get_child();
 		if (pnode == nullptr)
@@ -175,6 +183,9 @@ DIR_NODE *dir_tree::match(const char *path)
 		do {
 			pdir = static_cast<DIR_NODE *>(pnode->pdata);
 			if (strcmp(pdir->name, ptr1) == 0)
+				break;
+			if (level == 0 && strcmp(pdir->name, "INBOX") == 0 &&
+			    strcasecmp(ptr1, "inbox") == 0)
 				break;
 		} while ((pnode = pnode->get_sibling()) != nullptr);
 		if (pnode == nullptr)
@@ -1808,7 +1819,9 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		dir_tree folder_tree(imap_parser_get_dpool());
 		folder_tree.load_from_memfile(std::move(folder_list));
 		auto dh = folder_tree.match(argv[2]);
-		if (dh != nullptr && folder_tree.get_child(dh) != nullptr)
+		if (dh == nullptr)
+			return 1925;
+		if (folder_tree.get_child(dh) != nullptr)
 			return 1924;
 	}
 

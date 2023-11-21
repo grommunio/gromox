@@ -115,6 +115,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1922, "NO Too many messages in result"},
 	{1923, "NO Unable to read message file"},
 	{1924, "NO DELETE subfolders first"},
+	{1925, "NO [NONEXISTENT] Folder does not exist"},
 	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
 	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
 	{2000 | MIDB_E_HASHTABLE_FULL, "Unable to read midb.sqlite, see midb logs"},
