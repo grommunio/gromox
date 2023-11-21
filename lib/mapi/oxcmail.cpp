@@ -2992,7 +2992,7 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
  * Only useful for DSN generation.
  */
 static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
-    EXT_BUFFER_ALLOC alloc, const addr_tags &tags, const char *org,
+    const addr_tags &tags, const char *org,
     cvt_id2user id2user, char *username, size_t ulen)
 {
 	auto em = props.get<const char>(tags.pr_smtpaddr);
@@ -3033,7 +3033,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 }
 
 static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
-    uint32_t rcpt_type, EXT_BUFFER_ALLOC alloc, char *field, size_t fdsize)
+    uint32_t rcpt_type, char *field, size_t fdsize)
 {
 	size_t offset = 0;
 	char username[UADDR_SIZE];
@@ -3131,8 +3131,7 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 }
 
 static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
-    EXT_BUFFER_ALLOC alloc, const addr_tags &tags, const char *charset,
-    char *field, size_t fdsize)
+    const addr_tags &tags, const char *charset, char *field, size_t fdsize)
 {
 	int offset;
 	char address[UADDR_SIZE];
@@ -3382,7 +3381,7 @@ static const char *sender_id_to_text(const uint32_t *v)
 }
 
 static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
-    EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
+    MIME *phead, bool sched)
 {
 	if (sched)
 		return true;
@@ -3392,7 +3391,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 	if (str != nullptr && str1 != nullptr) {
 		if (strcasecmp(str, str1) == 0)
 			return true; /* field not needed */
-		if (!oxcmail_export_address(pmsg, alloc, tags_sender, cset,
+		if (!oxcmail_export_address(pmsg, tags_sender, cset,
 		    tmp_field, std::size(tmp_field)))
 			return true; /* not present */
 		if (!phead->set_field("Sender", tmp_field))
@@ -3408,7 +3407,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 	str1 = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (str == nullptr || str1 == nullptr || strcasecmp(str, str1) == 0)
 		return true;
-	if (oxcmail_export_address(pmsg, alloc, tags_sender, cset,
+	if (oxcmail_export_address(pmsg, tags_sender, cset,
 	    tmp_field, std::size(tmp_field)) &&
 	    !phead->set_field("Sender", tmp_field))
 		return false;
@@ -3416,21 +3415,21 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg, const char *cset,
 }
 
 static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
-    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
+    const char *cset, MIME *phead, bool sched)
 {
 	char tmp_field[MIME_FIELD_LEN];
 	if (sched) {
-		if (oxcmail_export_address(pmsg, alloc, tags_sender,
+		if (oxcmail_export_address(pmsg, tags_sender,
 		    cset, tmp_field, std::size(tmp_field)) &&
 		    !phead->set_field("From", tmp_field))
 			return false;
 		return true;
 	}
-	if (oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	if (oxcmail_export_address(pmsg, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field))) {
 		if (!phead->set_field("From", tmp_field))
 			return FALSE;
-	} else if (oxcmail_export_address(pmsg, alloc, tags_sender,
+	} else if (oxcmail_export_address(pmsg, tags_sender,
 	    cset, tmp_field, std::size(tmp_field)) &&
 	    !phead->set_field("Sender", tmp_field)) {
 		return FALSE;
@@ -3439,20 +3438,20 @@ static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
 }
 
 static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
-    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
+    const char *cset, MIME *phead, bool sched)
 {
 	/* For DSN (DR (NDR too?)) & MDN */
 	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return true;
-	if (oxcmail_export_address(pmsg, alloc, tags_read_rcpt,
+	if (oxcmail_export_address(pmsg, tags_read_rcpt,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (oxcmail_export_address(pmsg, alloc, tags_sender,
+	else if (oxcmail_export_address(pmsg, tags_sender,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (!sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	else if (!sched && oxcmail_export_address(pmsg, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
 	else
@@ -3461,20 +3460,20 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 }
 
 static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
-    const char *cset, EXT_BUFFER_ALLOC alloc, MIME *phead, bool sched)
+    const char *cset, MIME *phead, bool sched)
 {
 	/* For read requests */
 	char tmp_field[MIME_FIELD_LEN];
 	auto flag = pmsg->proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return true;
-	if (oxcmail_export_address(pmsg, alloc, tags_read_rcpt,
+	if (oxcmail_export_address(pmsg, tags_read_rcpt,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (oxcmail_export_address(pmsg, alloc, tags_sender,
+	else if (oxcmail_export_address(pmsg, tags_sender,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
-	else if (!sched && oxcmail_export_address(pmsg, alloc, tags_sent_repr,
+	else if (!sched && oxcmail_export_address(pmsg, tags_sent_repr,
 	    cset, tmp_field, std::size(tmp_field)))
 		/* ok */;
 	else
@@ -3483,17 +3482,17 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 }
 
 static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
-    const MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc, MIME *phead)
+    const MIME_SKELETON *pskeleton, MIME *phead)
 {
 	if (pmsg->children.prcpts == nullptr)
 		return true;
 	char tmp_field[MIME_FIELD_LEN];
 	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
-	    MAPI_TO, alloc, tmp_field, std::size(tmp_field)) &&
+	    MAPI_TO, tmp_field, std::size(tmp_field)) &&
 	    !phead->set_field("To", tmp_field))
 		return FALSE;
 	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
-	    MAPI_CC, alloc, tmp_field, std::size(tmp_field)) &&
+	    MAPI_CC, tmp_field, std::size(tmp_field)) &&
 	    !phead->set_field("Cc", tmp_field))
 		return FALSE;
 	if (strncasecmp(pskeleton->pmessage_class, "IPM.Schedule.Meeting.", 21) == 0 ||
@@ -3501,7 +3500,7 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	    strncasecmp(pskeleton->pmessage_class, "IPM.Task.", 9) == 0)
 		return true;
 	if (oxcmail_export_addresses(pskeleton->charset,
-	    pmsg->children.prcpts, MAPI_BCC, alloc,
+	    pmsg->children.prcpts, MAPI_BCC,
 	    tmp_field, std::size(tmp_field)) &&
 	    !phead->set_field("Bcc", tmp_field))
 		return FALSE;
@@ -3521,11 +3520,11 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 
 	auto sched = pskeleton->mail_type == oxcmail_type::calendar;
 	if (!phead->set_field("MIME-Version", "1.0") ||
-	    !oxcmail_export_sender(pmsg, pskeleton->charset, alloc, phead, sched) ||
-	    !oxcmail_export_fromsender(pmsg, pskeleton->charset, alloc, phead, sched) ||
-	    !oxcmail_export_receiptto(pmsg, pskeleton->charset, alloc, phead, sched) ||
-	    !oxcmail_export_receiptflg(pmsg, pskeleton->charset, alloc, phead, sched) ||
-	    !oxcmail_export_tocc(pmsg, pskeleton, alloc, phead))
+	    !oxcmail_export_sender(pmsg, pskeleton->charset, phead, sched) ||
+	    !oxcmail_export_fromsender(pmsg, pskeleton->charset, phead, sched) ||
+	    !oxcmail_export_receiptto(pmsg, pskeleton->charset, phead, sched) ||
+	    !oxcmail_export_receiptflg(pmsg, pskeleton->charset, phead, sched) ||
+	    !oxcmail_export_tocc(pmsg, pskeleton, phead))
 		return false;
 	char tmp_buff[MIME_FIELD_LEN];
 	char tmp_field[MIME_FIELD_LEN];
@@ -3832,7 +3831,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 }
 
 static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
-    const char *pmessage_class, const char *org, EXT_BUFFER_ALLOC alloc,
+    const char *pmessage_class, const char *org,
     cvt_id2user id2user, char *pdsn_content, int max_length)
 {
 	char action[16];
@@ -3884,7 +3883,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		pdsn_fields = dsn.new_rcpt_fields();
 		if (pdsn_fields == nullptr)
 			return FALSE;
-		if (!oxcmail_get_rcpt_address(*prcpts->pparray[i], alloc,
+		if (!oxcmail_get_rcpt_address(*prcpts->pparray[i],
 		    tags_self, org, id2user, tmp_buff, std::size(tmp_buff)))
 			*tmp_buff = '\0';
 		if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
@@ -3930,10 +3929,8 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	return dsn.serialize(pdsn_content, max_length);
 }
 
-static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
-	const char *charset, const char *pmessage_class,
-	EXT_BUFFER_ALLOC alloc, char *pmdn_content,
-	int max_length)
+static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg, const char *charset,
+    const char *pmessage_class, char *pmdn_content, int max_length)
 {
 	int tmp_len;
 	size_t base64_len;
@@ -4492,7 +4489,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			return exp_false;
 		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, g_oxcmail_org_name,
-		    alloc, oxcmail_id2user, tmp_buff, sizeof(tmp_buff)))
+		    oxcmail_id2user, tmp_buff, sizeof(tmp_buff)))
 			return exp_false;
 		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
 		    mime_encoding::none))
@@ -4506,7 +4503,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 		if (!pmime->set_content_type("message/disposition-notification"))
 			return exp_false;
 		if (!oxcmail_export_mdn(pmsg, mime_skeleton.charset,
-		    mime_skeleton.pmessage_class, alloc, tmp_buff,
+		    mime_skeleton.pmessage_class, tmp_buff,
 		    std::size(tmp_buff)))
 			return exp_false;
 		if (!pmime->write_content(tmp_buff, strlen(tmp_buff),
