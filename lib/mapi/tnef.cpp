@@ -1104,13 +1104,11 @@ static void tnef_message_to_unicode(cpid_t cpid, MESSAGE_CONTENT *pmsg)
 		charset = "CP1252";
 	tnef_tpropval_array_to_unicode(charset, &pmsg->proplist);
 	if (pmsg->children.prcpts != nullptr)
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			tnef_tpropval_array_to_unicode(charset,
-				pmsg->children.prcpts->pparray[i]);
+		for (auto &rcpt : *pmsg->children.prcpts)
+			tnef_tpropval_array_to_unicode(charset, &rcpt);
 	if (pmsg->children.pattachments != nullptr)
-		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
-			tnef_tpropval_array_to_unicode(charset,
-				&pmsg->children.pattachments->pplist[i]->proplist);
+		for (auto &at : *pmsg->children.pattachments)
+			tnef_tpropval_array_to_unicode(charset, &at.proplist);
 }
 
 static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *tnef_pv)
@@ -1575,12 +1573,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	tnef_replace_propid(&pmsg->proplist, phash1);
 	if (pmsg->children.prcpts != nullptr)
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
+		for (auto &rcpt : *pmsg->children.prcpts)
+			tnef_replace_propid(&rcpt, phash1);
 	if (pmsg->children.pattachments != nullptr)
-		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
-			tnef_replace_propid(
-				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
+		for (auto &at : *pmsg->children.pattachments)
+			tnef_replace_propid(&at.proplist, phash1);
 	if (!pmsg->proplist.has(PR_INTERNET_CPID) &&
 	    pmsg->proplist.set(PR_INTERNET_CPID, &cpid) != 0)
 		return nullptr;
@@ -2043,7 +2040,6 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	uint8_t tmp_byte;
 	REND_DATA tmp_rend;
 	char tmp_buff[4096];
-	ATTACHMENT_CONTENT *pattachment;
 	
 	if (pext->p_uint32(0x223e9f78) != EXT_ERR_SUCCESS ||
 	    pext->p_uint16(TNEF_LEGACY) != EXT_ERR_SUCCESS)
@@ -2262,14 +2258,13 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			if (tnef_propset.pplist == nullptr)
 				return FALSE;
 		}
-		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			num = pmsg->children.prcpts->pparray[i]->get<uint32_t>(PR_RECIPIENT_TYPE);
+		for (auto &msg_rcpt : *pmsg->children.prcpts) {
+			num = msg_rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
 			/* BCC recipients must be excluded */
 			if (num != nullptr && *num == MAPI_BCC)
 				continue;
 			tnef_propset.pplist[tnef_propset.count] =
-				tnef_convert_recipient(pmsg->children.prcpts->pparray[i],
-					alloc, get_propname);
+				tnef_convert_recipient(&msg_rcpt, alloc, get_propname);
 			if (tnef_propset.pplist[tnef_propset.count] == nullptr)
 				return FALSE;
 			tnef_propset.count ++;
@@ -2314,8 +2309,8 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	if (pmsg->children.pattachments == nullptr)
 		return TRUE;
 	
-	for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
-		pattachment = pmsg->children.pattachments->pplist[i];
+	for (auto &attachment : *pmsg->children.pattachments) {
+		auto pattachment = &attachment;
 		tmp_proptags.count = 0;
 		/* ATTRIBUTE_ID_ATTACHRENDDATA */
 		auto pmethod = pattachment->proplist.get<uint32_t>(PR_ATTACH_METHOD);

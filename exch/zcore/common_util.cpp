@@ -1288,7 +1288,6 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 	int account_id;
 	uint64_t new_id;
 	uint64_t folder_id;
-	TARRAY_SET *prcpts;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -1315,7 +1314,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 	if (num == nullptr)
 		return FALSE;
 	bool b_resend = *num & MSGFLAG_RESEND;
-	prcpts = pmsgctnt->children.prcpts;
+	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (prcpts == nullptr)
 		return FALSE;
 	if (prcpts->count == 0)
@@ -1323,8 +1322,8 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 		        pstore->get_account(), LLU{message_id});
 
 	std::vector<std::string> rcpt_list;
-	for (size_t i = 0; i < prcpts->count; ++i)
-		if (cu_rcpt_to_list(message_id, *prcpts->pparray[i], rcpt_list,
+	for (auto &rcpt : *prcpts)
+		if (cu_rcpt_to_list(message_id, rcpt, rcpt_list,
 		    b_resend) != ecSuccess)
 			return false;
 

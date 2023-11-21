@@ -717,18 +717,13 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 static void icsdownctx_object_trim_embedded(
 	MESSAGE_CONTENT *pmsgctnt)
 {
-	int i, j;
-	MESSAGE_CONTENT *pembedded;
-	ATTACHMENT_CONTENT *pattachment;
-	
 	if (pmsgctnt->children.pattachments == nullptr)
 		return;
-	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
-		pattachment = pmsgctnt->children.pattachments->pplist[i];
-		if (pattachment->pembedded == nullptr)
+	for (auto &at : *pmsgctnt->children.pattachments) {
+		auto pembedded = at.pembedded;
+		if (pembedded == nullptr)
 			continue;
-		pembedded = pattachment->pembedded;
-		for (j=0; j<pembedded->proplist.count; j++) {
+		for (unsigned int j = 0; j < pembedded->proplist.count; ++j) {
 			if (pembedded->proplist.ppropval[j].proptag == PidTagMid) {
 				*static_cast<uint64_t *>(pembedded->proplist.ppropval[j].pvalue) = 0;
 				break;
@@ -745,25 +740,19 @@ static void icsdownctx_object_trim_embedded(
 static void icsdownctx_object_trim_report_recipients(
 	MESSAGE_CONTENT *pmsgctnt)
 {
-	int i;
-	ATTACHMENT_CONTENT *pattachment;
-	
 	auto pvalue = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (pvalue != nullptr && strncasecmp(pvalue, "REPORT.IPM.Note.", 16) == 0)
 		pmsgctnt->children.prcpts = NULL;
 	if (pmsgctnt->children.pattachments == nullptr)
 		return;
-	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
-		pattachment = pmsgctnt->children.pattachments->pplist[i];
-		if (pattachment->pembedded != nullptr)
-			icsdownctx_object_trim_report_recipients(pattachment->pembedded);
-	}
+	for (auto &at : *pmsgctnt->children.pattachments)
+		if (at.pembedded != nullptr)
+			icsdownctx_object_trim_report_recipients(at.pembedded);
 }
 
 static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	uint64_t message_id, BOOL b_downloaded, int *ppartial_count)
 {
-	int i;
 	BOOL b_full;
 	void *pvalue;
 	uint64_t last_cn;
@@ -773,7 +762,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	PROGRESS_MESSAGE progmsg;
 	TPROPVAL_ARRAY chgheader;
 	MESSAGE_CONTENT *pmsgctnt;
-	MESSAGE_CONTENT *pembedded;
 	MSGCHG_PARTIAL msg_partial;
 	static constexpr uint8_t fake_true = 1;
 	static constexpr uint8_t fake_false = 0;
@@ -813,10 +801,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		}
 		if (pvalue == nullptr)
 			return FALSE;
-		for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
-			if (!pmsgctnt->children.pattachments->pplist[i]->proplist.has(PR_IN_CONFLICT))
+		for (auto &at : *pmsgctnt->children.pattachments) {
+			if (!at.proplist.has(PR_IN_CONFLICT))
 				continue;
-			pembedded = pmsgctnt->children.pattachments->pplist[i]->pembedded;
+			auto pembedded = at.pembedded;
 			if (pembedded == nullptr)
 				return FALSE;
 			icsdownctx_object_trim_embedded(pembedded);

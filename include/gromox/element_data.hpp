@@ -24,6 +24,8 @@ struct attachment_list {
 	void remove(uint16_t index);
 	BOOL append_internal(attachment_content *);
 	attachment_list *dup() const;
+	gromox::deref_iterator<attachment_content> begin() { return pplist; }
+	gromox::deref_iterator<attachment_content> end() { return pplist != nullptr ? &pplist[count] : nullptr; }
 
 	uint16_t count;
 	attachment_content **pplist;

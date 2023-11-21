@@ -5228,7 +5228,6 @@ uint32_t common_util_calculate_message_size(
 {
 	uint32_t message_size;
 	TAGGED_PROPVAL *ppropval;
-	ATTACHMENT_CONTENT *pattachment;
 	
 	/* PR_ASSOCIATED, PidTagMid, PidTagChangeNumber */
 	message_size = sizeof(uint8_t) + 2*sizeof(uint64_t);
@@ -5273,8 +5272,8 @@ uint32_t common_util_calculate_message_size(
 		}
 	}
 	if (NULL != pmsgctnt->children.pattachments) {
-		for (size_t i = 0; i < pmsgctnt->children.pattachments->count; ++i) {
-			pattachment = pmsgctnt->children.pattachments->pplist[i];
+		for (auto &at : *pmsgctnt->children.pattachments) {
+			auto pattachment = &at;
 			for (size_t j = 0; j < pattachment->proplist.count; ++j) {
 				ppropval = pattachment->proplist.ppropval + j;
 				switch (ppropval->proptag) {

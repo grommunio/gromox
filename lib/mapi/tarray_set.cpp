@@ -87,8 +87,8 @@ tarray_set *tarray_set::dup() const
 	if (NULL == pset1) {
 		return NULL;
 	}
-	for (size_t i = 0; i < pset->count; ++i) {
-		tpropval_array_ptr pproplist(pset->pparray[i]->dup());
+	for (const auto &row : *pset) {
+		tpropval_array_ptr pproplist(row.dup());
 		if (NULL == pproplist) {
 			tarray_set_free(pset1);
 			return NULL;

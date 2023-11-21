@@ -715,7 +715,6 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	struct tm tmp_tm;
 	PROPID_ARRAY propids;
 	const char *photo_type;
-	ATTACHMENT_CONTENT *pattachment;
 	char tmp_buff[VCARD_MAX_BUFFER_LEN];
 	std::string vcarduid;
 	static constexpr const char *tel_types[] =
@@ -779,15 +778,14 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	
 	auto flag = pmsg->proplist.get<const uint8_t>(PR_ATTACHMENT_CONTACTPHOTO);
 	if (flag != nullptr && *flag != 0 && pmsg->children.pattachments != nullptr) {
-		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {
-			pattachment = pmsg->children.pattachments->pplist[i];
-			pvalue = pattachment->proplist.get<char>(PR_ATTACH_EXTENSION);
+		for (auto &at : *pmsg->children.pattachments) {
+			pvalue = at.proplist.get<char>(PR_ATTACH_EXTENSION);
 			if (pvalue == nullptr)
 				continue;
 			if (!is_photo(pvalue))
 				continue;
 			photo_type = pvalue;
-			auto bv = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
+			auto bv = at.proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 			if (bv == nullptr)
 				continue;
 			auto &photo_line = vcard.append_line("PHOTO");

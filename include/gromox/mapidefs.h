@@ -1117,18 +1117,29 @@ struct GEN_ARRAY {
 };
 
 struct TPROPVAL_ARRAY {
-	TAGGED_PROPVAL *find(uint32_t tag) const {
+	TAGGED_PROPVAL *find(uint32_t tag) {
+		for (size_t i = 0; i < count; ++i)
+			if (ppropval[i].proptag == tag)
+				return &ppropval[i];
+		return nullptr;
+	}
+	const TAGGED_PROPVAL *find(uint32_t tag) const {
 		for (size_t i = 0; i < count; ++i)
 			if (ppropval[i].proptag == tag)
 				return &ppropval[i];
 		return nullptr;
 	}
 	inline bool has(uint32_t tag) const { return find(tag) != nullptr; }
-	inline void *getval(uint32_t tag) const {
+	inline void *getval(uint32_t tag) {
 		auto v = find(tag);
 		return v != nullptr ? v->pvalue : nullptr;
 	}
-	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
+	inline const void *getval(uint32_t tag) const {
+		auto v = find(tag);
+		return v != nullptr ? v->pvalue : nullptr;
+	}
+	template<typename T> inline const T *get(uint32_t tag) const { return static_cast<const T *>(getval(tag)); }
+	template<typename T> inline T *get(uint32_t tag) { return static_cast<T *>(getval(tag)); }
 	int set(uint32_t tag, const void *d);
 	inline int set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
 	void emplace_back(uint32_t tag, const void *d) {
@@ -1153,6 +1164,7 @@ struct LTPROPVAL_ARRAY {
 	TAGGED_PROPVAL *propval;
 };
 
+/* Better known as rowset/row_set in MSMAPI */
 struct tarray_set {
 	void erase(uint32_t index);
 	TPROPVAL_ARRAY *emplace();
@@ -1160,6 +1172,10 @@ struct tarray_set {
 	inline const TPROPVAL_ARRAY *back() const { return pparray[count-1]; }
 	gromox::errno_t append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
+	gromox::deref_iterator<TPROPVAL_ARRAY> begin() { return pparray; }
+	gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray != nullptr ? &pparray[count] : nullptr; }
+	gromox::const_deref_iterator<TPROPVAL_ARRAY> begin() const { return pparray; }
+	gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray != nullptr ? &pparray[count] : nullptr; }
 
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;

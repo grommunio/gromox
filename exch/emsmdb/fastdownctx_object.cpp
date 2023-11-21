@@ -214,15 +214,14 @@ void fxs_propsort(MESSAGE_CONTENT &mc)
 	std::sort(&mp[0], &mp[mc.proplist.count], fxs_tagcmp_msg);
 
 	if (mc.children.prcpts != nullptr) {
-		for (auto i = 0U; i < mc.children.prcpts->count; ++i) {
-			auto &rc = *mc.children.prcpts->pparray[i];
+		for (auto &rc : *mc.children.prcpts) {
 			auto &rp = rc.ppropval;
 			std::sort(&rp[0], &rp[rc.count], fxs_tagcmp_rcpt);
 		}
 	}
 	if (mc.children.pattachments != nullptr) {
-		for (auto i = 0U; i < mc.children.pattachments->count; ++i) {
-			auto e = mc.children.pattachments->pplist[i]->pembedded;
+		for (auto &at : *mc.children.pattachments) {
+			auto e = at.pembedded;
 			if (e != nullptr)
 				fxs_propsort(*e);
 		}

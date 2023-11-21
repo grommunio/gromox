@@ -1127,7 +1127,7 @@ tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 	fromProp(props.find(PR_ATTACH_CONTENT_ID), ContentId);
 	fromProp(props.find(PR_ATTACH_SIZE), Size);
 	fromProp(props.find(PR_LAST_MODIFICATION_TIME), LastModifiedTime);
-	uint32_t* flags = props.get<uint32_t>(PR_ATTACH_FLAGS);
+	auto flags = props.get<const uint32_t>(PR_ATTACH_FLAGS);
 	if(flags)
 		IsInline = *flags & ATT_MHTML_REF;
 }
@@ -2125,7 +2125,7 @@ void tFieldURI::tags(sShape& shape, bool add) const
 
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
 {
-	TAGGED_PROPVAL* tp = props.find(PR_ATTACH_DATA_BIN);
+	const TAGGED_PROPVAL *tp = props.find(PR_ATTACH_DATA_BIN);
 	if(tp) {
 		Content.emplace(*tp);
 		Size = Content->size();

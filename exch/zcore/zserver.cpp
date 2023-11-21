@@ -4439,21 +4439,21 @@ ec_error_t zs_importfolder(GUID hsession,
 	hierarchy_propvals.count = 4;
 	hierarchy_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_PARENT_SOURCE_KEY;
-	propval_buff[0].pvalue = ppropvals->getval(PR_PARENT_SOURCE_KEY);
+	propval_buff[0].pvalue = deconst(ppropvals->getval(PR_PARENT_SOURCE_KEY));
 	if (propval_buff[0].pvalue == nullptr)
 		return ecInvalidParam;
 	propval_buff[1].proptag = PR_SOURCE_KEY;
-	propval_buff[1].pvalue = ppropvals->getval(PR_SOURCE_KEY);
+	propval_buff[1].pvalue = deconst(ppropvals->getval(PR_SOURCE_KEY));
 	if (propval_buff[1].pvalue == nullptr)
 		return ecInvalidParam;
 	propval_buff[2].proptag = PR_LAST_MODIFICATION_TIME;
-	propval_buff[2].pvalue = ppropvals->getval(PR_LAST_MODIFICATION_TIME);
+	propval_buff[2].pvalue = deconst(ppropvals->getval(PR_LAST_MODIFICATION_TIME));
 	if (NULL == propval_buff[2].pvalue) {
 		propval_buff[2].pvalue = &nttime;
 		nttime = rop_util_current_nttime();
 	}
 	propval_buff[3].proptag = PR_DISPLAY_NAME;
-	propval_buff[3].pvalue = ppropvals->getval(PR_DISPLAY_NAME);
+	propval_buff[3].pvalue = deconst(ppropvals->getval(PR_DISPLAY_NAME));
 	if (propval_buff[3].pvalue == nullptr)
 		return ecInvalidParam;
 	auto pinfo = zs_query_session(hsession);

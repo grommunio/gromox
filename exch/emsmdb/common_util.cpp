@@ -741,7 +741,8 @@ BOOL common_util_propvals_to_row(
 		return FALSE;
 	for (i=0; i<pcolumns->count; i++) {
 		const auto tag = pcolumns->pproptag[i];
-		auto val = prow->pppropval[i] = ppropvals->getval(tag);
+		auto val = ppropvals->getval(tag);
+		prow->pppropval[i] = deconst(val);
 		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
 			continue;
 		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
@@ -750,7 +751,7 @@ BOOL common_util_propvals_to_row(
 		prow->pppropval[i] = pflagged_val;
 		if (val != nullptr) {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
-			pflagged_val->pvalue = val;
+			pflagged_val->pvalue = deconst(val);
 			continue;
 		}
 		/*
@@ -762,7 +763,8 @@ BOOL common_util_propvals_to_row(
 		 * only the Error variant is only ever seen/used in practice.
 		 */
 		pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
-		pflagged_val->pvalue = val = ppropvals->getval(CHANGE_PROP_TYPE(tag, PT_ERROR));
+		val = ppropvals->getval(CHANGE_PROP_TYPE(tag, PT_ERROR));
+		pflagged_val->pvalue = deconst(val);
 		if (val != nullptr)
 			continue;
 		/*
@@ -829,7 +831,7 @@ BOOL common_util_propvals_to_row_ex(cpid_t cpid,
 	if (prow->pppropval == nullptr)
 		return FALSE;
 	for (i=0; i<pcolumns->count; i++) {
-		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
+		prow->pppropval[i] = deconst(ppropvals->getval(pcolumns->pproptag[i]));
 		if (prow->pppropval[i] != nullptr &&
 		    PROP_TYPE(pcolumns->pproptag[i]) == PT_UNSPECIFIED &&
 		    !common_util_convert_unspecified(cpid, b_unicode,
@@ -842,7 +844,7 @@ BOOL common_util_propvals_to_row_ex(cpid_t cpid,
 			return FALSE;
 		if (NULL == prow->pppropval[i]) {
 			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
-			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
+			pflagged_val->pvalue = deconst(ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR)));
 			if (pflagged_val->pvalue == nullptr)
 				pflagged_val->pvalue = deconst(&errcode);
 		} else {
@@ -1493,7 +1495,6 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	BOOL b_partial;
 	uint64_t new_id;
 	uint64_t folder_id;
-	TARRAY_SET *prcpts;
 	MESSAGE_CONTENT *pmsgctnt;
 	using LLU = unsigned long long;
 	
@@ -1530,7 +1531,7 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 		return ecError;
 	}
 	bool b_resend = *message_flags & MSGFLAG_RESEND;
-	prcpts = pmsgctnt->children.prcpts;
+	const tarray_set *prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		mlog2(LV_ERR, "E-1286: Missing recipients for message mid:%llu",
 		        LLU{rop_util_get_gc_value(message_id)});
@@ -1538,9 +1539,8 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	}
 
 	std::vector<std::string> rcpt_list;
-	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto ret = cu_rcpt_to_list(message_id, *prcpts->pparray[i],
-		           rcpt_list, b_resend);
+	for (const auto &rcpt : *prcpts) {
+		auto ret = cu_rcpt_to_list(message_id, rcpt, rcpt_list, b_resend);
 		if (ret != ecSuccess)
 			return ret;
 	}
