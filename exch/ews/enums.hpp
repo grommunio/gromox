@@ -102,6 +102,7 @@ struct Enum
 	STR(April);
 	STR(AssistantPhone);
 	STR(August);
+	STR(Beginning);
 	STR(Best);
 	STR(Binary);
 	STR(BinaryArray);
@@ -132,6 +133,7 @@ struct Enum
 	STR(Day);
 	STR(December);
 	STR(Decline);
+	STR(Deep);
 	STR(Default);
 	STR(DeletedEvent);
 	STR(DeliveryRestriction);
@@ -144,6 +146,7 @@ struct Enum
 	STR(EmailAddress2);
 	STR(EmailAddress3);
 	STR(Enabled);
+	STR(End);
 	STR(Error);
 	STR(Excellent); // Smithers
 	STR(ExternalMemberCount);
@@ -174,6 +177,12 @@ struct Enum
 	STR(InternetHeaders);
 	STR(InvalidRecipient);
 	STR(IPPhone);
+	STR(IsEqualTo);
+	STR(IsGreaterThan);
+	STR(IsGreaterThanOrEqual);
+	STR(IsLessThan);
+	STR(IsLessThanOrEqual);
+	STR(IsNotEqualTo);
 	STR(Isdn);
 	STR(January);
 	STR(June);
@@ -250,11 +259,13 @@ struct Enum
 	STR(SendToAllAndSaveCopy);
 	STR(SendToNone);
 	STR(September);
+	STR(Shallow);
 	STR(SharePointURLs);
 	STR(Sharing); //=Caring
 	STR(Short);
 	STR(ShortArray);
 	STR(SoftDelete);
+	STR(SoftDeleted);
 	STR(Store);
 	STR(String);
 	STR(StringArray);
@@ -366,9 +377,11 @@ struct Enum
 	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd:5205
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
 	using FlagStatusType = StrEnum<NotFlagged, Flagged, Complete>; ///< Types.xsd:2445
+	using FolderQueryTraversalType = StrEnum<Shallow, Deep, SoftDeleted>; ///< Types.xsd:1212
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333
 	using LegacyFreeBusyType = StrEnum<Free, Tentative, Busy, OOF, WorkingElsewhere, NoData>; ///< Types.xsd:4352
 	using ImportanceChoicesType = StrEnum<Low, Normal, High>; ///< Types.xsd:1708
+	using IndexBasePointType = StrEnum<Beginning, End>; ///< Types.xsd:4196
 	using MailboxTypeType = StrEnum<Unknown, OneOff, Mailbox, PublicDL, PrivateDL, Contact, PublicFolder, GroupMailbox, ImplicitContact, User>; ///< Types.xsd:253
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060
@@ -379,6 +392,7 @@ struct Enum
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
 	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255
 	using ResponseTypeType = StrEnum<Unknown, Organizer, Tentative, Accept, Decline, NoResponseReceived>; ///< Types.xsd:4372
+	using RestrictionRelop = StrEnum<IsLessThan, IsLessThanOrEqual, IsGreaterThan, IsGreaterThanOrEqual, IsEqualTo, IsNotEqualTo>; ///< Helper class, index maps directly to mapi_rtype
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
 	using SensitivityChoicesType = StrEnum<Normal, Personal, Private, Confidential>; ///< Types.xsd:1698
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019

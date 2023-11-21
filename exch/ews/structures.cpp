@@ -1208,6 +1208,11 @@ tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::vari
 
 ///////////////////////////////////////////////////////////////////////////////
 
+//We have to put the vtable somewhere...
+tBasePagingType::~tBasePagingType() {}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief      Create gromox event mask from event list
  *
@@ -1712,6 +1717,207 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
 {}
 
 /**
+ * @brief      Build restriction from XML data
+ *
+ * @return     RESTRICTION* or nullptr if empty
+ */
+const RESTRICTION* tRestriction::build() const
+{
+	if(!source)
+		return nullptr;
+	RESTRICTION* restriction = EWSContext::alloc<RESTRICTION>();
+	deserialize(*restriction, source);
+	return restriction;
+}
+
+void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+{
+	const char* name = src->Name();
+	if(!strcmp(name, "And") || !strcmp(name, "Or"))
+		build_andor(dst, src);
+	else if(!strcmp(name, "Contains"))
+		build_contains(dst, src);
+	else if(!strcmp(name, "Excludes"))
+		build_excludes(dst, src);
+	else if(!strcmp(name, "Exists"))
+		build_exists(dst, src);
+	else if(!strcmp(name, "Not"))
+		build_not(dst, src);
+	else try {
+		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()));
+	} catch(EnumError&) { // The name of the node could not be mapped to a relop
+		throw EWSError::InvalidRestriction(E3220(name));
+	}
+}
+
+void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+{
+	dst.rt = strcmp(src->Name(), "And")? mapi_rtype::r_or : mapi_rtype::r_and;
+	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
+	dst.andor->count = 0;
+	for(const tinyxml2::XMLElement* child = src->FirstChildElement(); child; child = child->NextSiblingElement())
+		++dst.andor->count;
+	RESTRICTION* res = dst.andor->pres = EWSContext::alloc<RESTRICTION>(dst.andor->count);
+	for(const tinyxml2::XMLElement* child = src->FirstChildElement(); child; child = child->NextSiblingElement())
+		deserialize(*res++, child);
+}
+
+void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op)
+{
+	uint32_t tag = getTag(src);
+	const tinyxml2::XMLElement* cmptarget = src->FirstChildElement("FieldURIOrConstant");
+	if(!cmptarget)
+		throw EWSError::InvalidRestriction(E3221);
+	void* constantData = loadConstant(cmptarget, PROP_TYPE(tag));
+	dst.rt = constantData? mapi_rtype::property : mapi_rtype::propcmp;
+	if(constantData) {// Constant found and loaded -> compare to static data
+		dst.prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+		dst.prop->relop = op;
+		dst.prop->proptag = tag;
+		dst.prop->propval = TAGGED_PROPVAL{tag, constantData};
+	} else {
+		dst.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>();
+		dst.pcmp->relop = op;
+		dst.pcmp->proptag1 = tag;
+		dst.pcmp->proptag2 = getTag(cmptarget);
+		if(!dst.pcmp->comparable())
+			throw EWSError::InvalidRestriction(E3223(dst.pcmp->proptag1, dst.pcmp->proptag2));
+	}
+}
+
+void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+{
+	dst.rt = mapi_rtype::content;
+	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
+	if(!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src)))
+		throw EWSError::InvalidRestriction(E3224);
+	if(!dst.cont->comparable())
+			throw EWSError::InvalidRestriction(E3225);
+	if(!(dst.cont->propval.pvalue = loadConstant(src, PROP_TYPE(dst.cont->proptag))))
+		throw EWSError::InvalidRestriction(E3226);
+	const char* mode = src->Attribute("ContainmentMode");
+	if(!mode || !strcmp(mode, "FullString"))
+		dst.cont->fuzzy_level = FL_FULLSTRING;
+	else if(!strcmp(mode, "Prefixed"))
+		dst.cont->fuzzy_level = FL_PREFIX;
+	else if(!strcmp(mode, "Substring"))
+		dst.cont->fuzzy_level = FL_SUBSTRING;
+	else if(!strcmp(mode, "PrefixOnWords"))
+		dst.cont->fuzzy_level = FL_PREFIX_ON_ANY_WORD;
+	else if(!strcmp(mode, "ExactPhrase"))
+		dst.cont->fuzzy_level = FL_PHRASE_MATCH;
+	else
+		throw EWSError::InvalidRestriction(E3227(mode));
+	const char* comp = src->Attribute("ContainmentComparison");
+	if(!comp || !strcmp(comp, "Exact"))
+		;
+	else if(!strcmp(comp, "IgnoreCase"))
+		dst.cont->fuzzy_level |= FL_IGNORECASE;
+	else if(!strcmp(comp, "IgnoreNonSpacingCharacters"))
+		dst.cont->fuzzy_level |= FL_IGNORENONSPACE;
+	else if(!strcmp(comp, "Loose"))
+		dst.cont->fuzzy_level |= FL_LOOSE;
+	else if(!strcmp(comp, "LooseAndIgnoreCase"))
+		dst.cont->fuzzy_level |= FL_LOOSE | FL_IGNORECASE;
+	else if(!strcmp(comp, "LooseAndIgnoreNonSpace"))
+		dst.cont->fuzzy_level |= FL_LOOSE | FL_IGNORENONSPACE;
+	else if(!strcmp(comp, "IgnoreCaseAndNoneSpacingCharacters"))
+		dst.cont->fuzzy_level |= FL_LOOSE | FL_IGNORECASE | FL_IGNORENONSPACE;
+	else
+		throw EWSError::InvalidRestriction(E3228(comp));
+}
+
+void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+{
+	dst.rt = mapi_rtype::bitmask;
+	dst.bm = EWSContext::construct<RESTRICTION_BITMASK>();
+	dst.bm->bitmask_relop = bm_relop::nez;
+	if(!(dst.bm->proptag = getTag(src)))
+		throw EWSError::InvalidRestriction(E3229);
+	if(!dst.bm->comparable())
+		throw EWSError::InvalidRestriction(E3230(tExtendedFieldURI::typeName(PROP_TYPE(dst.bm->proptag)), dst.bm->proptag));
+	const tinyxml2::XMLElement* bitmask = src->FirstChildElement("BitMask");
+	if(!bitmask)
+		throw EWSError::InvalidRestriction(E3231);
+	dst.bm->mask = bitmask->UnsignedAttribute("Value");
+}
+
+void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+{
+	dst.rt = mapi_rtype::exist;
+	dst.exist = EWSContext::construct<RESTRICTION_EXIST>();
+	if(!(dst.exist->proptag = getTag(src)))
+		throw EWSError::InvalidRestriction(E3232);
+}
+
+void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+{
+	const tinyxml2::XMLElement* child = src->FirstChildElement();
+	if(!child)
+		throw EWSError::InvalidRestriction(E3233);
+	dst.rt = mapi_rtype::r_not;
+	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
+	deserialize(dst.xnot->res, child);
+}
+
+void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t type)
+{
+	const tinyxml2::XMLElement* constantNode = parent->FirstChildElement("Constant");
+	if(!constantNode)
+		return nullptr;
+	const char* value = constantNode->Attribute("Value");
+	if(!value)
+		throw EWSError::InvalidRestriction(E3234);
+	size_t allocSize = typeWidth(type);
+	void* dest = allocSize? EWSContext::alloc(allocSize) : nullptr;
+	switch(type) {
+	case PT_SHORT:{
+		int temp;
+		XMLError res = constantNode->QueryIntAttribute("Value", &temp);
+		if(res != XML_SUCCESS || temp & ~0xFFFF)
+			throw EWSError::InvalidRestriction(E3235(value));
+		*static_cast<uint16_t*>(dest) = uint16_t(temp);
+		break;
+	}
+	case PT_ERROR:
+	case PT_LONG:
+		if(constantNode->QueryUnsignedAttribute("Value", static_cast<uint32_t*>(dest)) != XML_SUCCESS)
+			throw EWSError::InvalidRestriction(E3236(value));
+		break;
+	case PT_FLOAT:
+		if(constantNode->QueryFloatAttribute("Value", static_cast<float*>(dest)) != XML_SUCCESS)
+			throw EWSError::InvalidRestriction(E3237(value));
+		break;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		if(constantNode->QueryDoubleAttribute("Value", static_cast<double*>(dest)) != XML_SUCCESS)
+			throw EWSError::InvalidRestriction(E3238(value));
+		break;
+	case PT_BOOLEAN:
+		if(constantNode->QueryBoolAttribute("Value", static_cast<bool*>(dest)) != XML_SUCCESS)
+			throw EWSError::InvalidRestriction(E3239(value));
+		break;
+	case PT_CURRENCY:
+	case PT_I8:
+		if(constantNode->QueryUnsigned64Attribute("Value", static_cast<uint64_t*>(dest)) != XML_SUCCESS)
+			throw EWSError::InvalidRestriction(E3240(value));
+		break;
+	case PT_SYSTIME:
+		*static_cast<uint64_t*>(dest) = sTimePoint(constantNode->Attribute("Value")).toNT(); break;
+	case PT_STRING8:
+	case PT_UNICODE: {
+		size_t len = value? strlen(value) : 0;
+		dest = EWSContext::alloc(len+1);
+		memcpy(static_cast<char*>(dest), len? value : "", len+1);
+		break;
+	}
+	default:
+		throw EWSError::InvalidRestriction(E3241(tExtendedFieldURI::typeName(type)));
+	}
+	return dest;
+}
+
+/**
  * @brief     Generate URI from named property
  *
  * @param     type       Property type
@@ -2121,6 +2327,19 @@ void tFieldURI::tags(sShape& shape, bool add) const
 		shape.special |= specials->second;
 }
 
+/**
+ * @brief      Return tag of the field
+ *
+ * If a field is mapped to multiple tags, only the first tag is returned.
+ *
+ * @return    Tag or 0 if not found
+ */
+uint32_t tFieldURI::tag() const
+{
+	auto tags = tagMap.equal_range(FieldURI);
+	return tags.first == tags.second? 0 : tags.first->second;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 tFileAttachment::tFileAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props) : tAttachment(aid, props)
@@ -2161,6 +2380,17 @@ tFolderType::tFolderType(const sShape& shape) : tBaseFolderType(shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+uint32_t tFractionalPageView::offset(uint32_t total) const
+{return uint32_t(size_t(total)*Numerator/Denominator);}
+
+void tFractionalPageView::update(tFindResponsePagingAttributes& attr, uint32_t count, uint32_t total) const
+{
+	attr.NumeratorOffset = offset(total)+count;
+	attr.AbsoluteDenominator = total;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tGuid::tGuid(const GUID& guid) : GUID(guid)
 {}
 
@@ -2179,6 +2409,20 @@ std::string tGuid::serialize() const
 void tIndexedFieldURI::tags(sShape&, bool) const
 {}
 
+/**
+ * TODO: Implement tag mapping
+ */
+uint32_t tIndexedFieldURI::tag() const
+{return 0;}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32_t tIndexedPageView::offset(uint32_t total) const
+{return BasePoint == Enum::Beginning? Offset : total > Offset? total-Offset : 0;}
+
+void tIndexedPageView::update(tFindResponsePagingAttributes& attr, uint32_t count, uint32_t) const
+{attr.IndexedPagingOffset = Offset+count;}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -2396,6 +2640,17 @@ tMovedCopiedEvent::tMovedCopiedEvent(const sTimePoint& ts, std::variant<tFolderI
  */
 void tPath::tags(sShape& shape, bool add) const
 {return std::visit([&](auto&& v){return v.tags(shape, add);}, asVariant());};
+
+/**
+ * @brief     Get first tag specified by the path
+ *
+ * In most cases a path maps to exactly one tag,
+ * for the other cases only the first mapped tag is returned.
+ *
+ * @return    Tag or 0 if not found
+ */
+uint32_t tPath::tag() const
+{return std::visit([&](auto&& v){return v.tag();}, asVariant());};
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -13,6 +13,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 
 #include "exceptions.hpp"
 #include "requests.hpp"
@@ -332,6 +333,73 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
 		   || partial)
 			throw EWSError::CannotEmptyFolder(E3180);
 		data.ResponseMessages.emplace_back().success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+
+/**
+ * @brief      Process FindFolder
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mFindFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental();
+
+	response->SetName("m:FindFolderResponse");
+
+	sShape shape(request.FolderShape);
+	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
+	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
+	const RESTRICTION* res = request.Restriction? request.Restriction->build() : nullptr;
+
+	auto& exmdb = ctx.plugin().exmdb;
+	mFindFolderResponse data;
+	data.ResponseMessages.reserve(request.ParentFolderIds.size());
+	tBasePagingType* paging = request.IndexedPageFolderView? &*request.IndexedPageFolderView :
+	                          request.FractionalPageFolderView? &*request.FractionalPageFolderView :
+	                          static_cast<tBasePagingType*>(nullptr);
+	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
+
+	for(const sFolderId&  folderId : request.ParentFolderIds) try {
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		if(!(ctx.permissions(ctx.auth_info().username, folder) & frightsVisible))
+			throw EWSError::AccessDenied(E3218);
+		std::string dir = ctx.getDir(folder);
+		uint32_t tableId, rowCount;
+		if(!exmdb.load_hierarchy_table(dir.c_str(), folder.folderId, nullptr, tableFlags, res, &tableId, &rowCount))
+			throw EWSError::FolderPropertyRequestFailed(E3219);
+		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if(!rowCount) {
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+		ctx.getNamedTags(dir, shape);
+		PROPTAG_ARRAY tags = shape.proptags();
+		TARRAY_SET table;
+		uint32_t offset = paging? paging->offset(rowCount) : 0;
+		uint32_t results = maxResults? std::min(maxResults, rowCount-offset) : rowCount;
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset,
+			              results, &table);
+		mFindFolderResponseMessage msg;
+		msg.RootFolder.emplace().Folders.reserve(rowCount);
+		for(const TPROPVAL_ARRAY& props : table) {
+			shape.clean();
+			shape.properties(props);
+			msg.RootFolder->Folders.emplace_back(tBaseFolderType::create(shape));
+		}
+		if(paging)
+			paging->update(*msg.RootFolder, results, rowCount);
+		msg.RootFolder->IncludesLastItemInRange = results+offset >= rowCount;
+		msg.RootFolder->TotalItemsInView = rowCount;
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}

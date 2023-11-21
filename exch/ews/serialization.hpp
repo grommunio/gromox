@@ -90,6 +90,21 @@ struct ExplicitConvert<int32_t>
 };
 
 /**
+ * @brief      Conversion specialization for unsigned integer
+ */
+template<>
+struct ExplicitConvert<uint32_t>
+{
+	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, uint32_t& value)
+	{return xml->QueryUnsignedText(&value);}
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, uint32_t& value)
+	{return xml->QueryUnsignedValue(&value);}
+};
+
+/**
  * @brief      Conversion specialization for unsigned long integer
  */
 template<>
@@ -409,7 +424,10 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
  */
 template<typename T>
 static T fromXMLNodeOpt(const tinyxml2::XMLElement* child)
-{return child && !child->NoChildren()? T(fromXMLNodeDispatch<BaseType_t<T>>(child)) : std::nullopt;}
+{
+	return child && (!child->NoChildren() || child->FirstAttribute())? // Completely empty tags might as well not be there.
+	           T(fromXMLNodeDispatch<BaseType_t<T>>(child)) : std::nullopt;
+}
 
 /**
  * @brief      Deserialize list of elements

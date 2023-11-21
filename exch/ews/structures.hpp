@@ -500,6 +500,22 @@ struct tBaseNotificationEvent : public NS_EWS_Types
 ALIAS(tBaseNotificationEvent, StatusEvent);
 
 /**
+ * Types.xsd:4192
+ *
+ * Also provides polymorphic interface for indexed and fractional page view.
+ */
+struct tBasePagingType
+{
+	explicit tBasePagingType(const tinyxml2::XMLElement* xml);
+	virtual ~tBasePagingType();
+
+	std::optional<int32_t> MaxEntriesReturned; // Attribute
+
+	virtual uint32_t offset(uint32_t) const = 0;
+	virtual void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const = 0;
+};
+
+/**
  * Types.xsd:6117
  *
  * Used slightly different than in the specification, as `Watermark` is
@@ -807,6 +823,7 @@ struct tFieldURI
 	tFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
+	uint32_t tag() const;
 
 	std::string FieldURI; //Attribute
 
@@ -831,6 +848,31 @@ struct tFileAttachment : public tAttachment
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
+
+/**
+ * Types.xsd:1947
+ */
+struct tFindResponsePagingAttributes
+{
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<int> IndexedPagingOffset; // Attribute
+	std::optional<int> NumeratorOffset; // Attribute
+	std::optional<int> AbsoluteDenominator; // Attribute
+	std::optional<bool> IncludesLastItemInRange; // Attribute
+	std::optional<int> TotalItemsInView; // Attribute
+};
+
+/**
+ * Types.xsd:1973
+ */
+struct tFindFolderParent : public tFindResponsePagingAttributes
+{
+	std::vector<sFolder> Folders;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 /**
  * Types.xsd:2436
  */
@@ -846,6 +888,20 @@ struct tFlagType
 };
 
 /**
+ * Types.xsd:4212
+ */
+struct tFractionalPageView : public tBasePagingType
+{
+	tFractionalPageView(const tinyxml2::XMLElement*);
+
+	int Numerator; // Attribute
+	int Denominator; // Attribute
+
+	uint32_t offset(uint32_t) const override;
+	void update(tFindResponsePagingAttributes&, uint32_t, uint32_t total) const override;
+};
+
+/**
  * Types.xsd:1108
  */
 struct tIndexedFieldURI
@@ -855,9 +911,24 @@ struct tIndexedFieldURI
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
+	uint32_t tag() const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
+};
+
+/**
+ * Types.xsd:4203
+ */
+struct tIndexedPageView : public tBasePagingType
+{
+	explicit tIndexedPageView(const tinyxml2::XMLElement*);
+
+	uint32_t Offset; // Attribute
+	Enum::IndexBasePointType BasePoint; // Attribute
+
+	uint32_t offset(uint32_t) const override;
+	void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const override;
 };
 
 /**
@@ -888,6 +959,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	explicit inline tPath(Base &&b) : Base(std::move(b)) {}
 
 	void tags(sShape&, bool=true) const;
+	uint32_t tag() const;
 
 	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
 };
@@ -2221,20 +2293,6 @@ struct tUserOofSettings
 };
 
 /**
- * Types.xsd:1947
- */
-struct tFindResponsePagingAttributes
-{
-	void serialize(tinyxml2::XMLElement*) const;
-
-	std::optional<int> IndexedPagingOffset;
-	std::optional<int> NumeratorOffset;
-	std::optional<int> AbsoluteDenominator;
-	std::optional<bool> IncludesLastItemInRange;
-	std::optional<int> TotalItemsInView;
-};
-
-/**
  * Types.xsd:4264
  */
 struct tResolution : public tFindResponsePagingAttributes
@@ -2246,6 +2304,33 @@ struct tResolution : public tFindResponsePagingAttributes
 
 	tEmailAddressType Mailbox;
 	std::optional<tContact> Contact;
+};
+
+/**
+ * Types.xsd:5978
+ *
+ * Instead of directly mapping the XML data, it is cached to be directly
+ * converted to the gromox RESTRICTION structure.
+ */
+class tRestriction
+{
+public:
+	explicit tRestriction(const tinyxml2::XMLElement*);
+
+	const RESTRICTION* build() const;
+private:
+	const tinyxml2::XMLElement* source = nullptr;  ///< XMLElement of the contained restriction
+
+	static void build_andor(RESTRICTION&, const tinyxml2::XMLElement*);
+	static void build_compare(RESTRICTION&, const tinyxml2::XMLElement*, relop);
+	static void build_contains(RESTRICTION&, const tinyxml2::XMLElement*);
+	static void build_excludes(RESTRICTION&, const tinyxml2::XMLElement*);
+	static void build_exists(RESTRICTION&, const tinyxml2::XMLElement*);
+	static void build_not(RESTRICTION&, const tinyxml2::XMLElement*);
+	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*);  // Implemented in serialization.cpp
+
+	static void* loadConstant(const tinyxml2::XMLElement*, uint16_t);
+	static uint32_t getTag(const tinyxml2::XMLElement*);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2534,6 +2619,45 @@ struct mEmptyFolderResponseMessage : public mResponseMessageType
 struct mEmptyFolderResponse
 {
 	std::vector<mEmptyFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:781
+ */
+struct mFindFolderRequest
+{
+	explicit mFindFolderRequest(const tinyxml2::XMLElement*);
+
+	tFolderResponseShape FolderShape;
+	std::optional<tFractionalPageView> FractionalPageFolderView; // Specified as variant, but easier to handle this way
+	std::optional<tIndexedPageView> IndexedPageFolderView;
+	std::optional<tRestriction> Restriction;
+	std::vector<sFolderId> ParentFolderIds;
+	Enum::FolderQueryTraversalType Traversal; // Attribute
+};
+
+/**
+ * Messages.xsd:809
+ */
+struct mFindFolderResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "FindFolderResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tFindFolderParent> RootFolder;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:818
+ */
+struct mFindFolderResponse
+{
+	std::vector<mFindFolderResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };
