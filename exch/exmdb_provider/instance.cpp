@@ -2693,8 +2693,7 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 		if (pmsgctnt->children.prcpts == nullptr)
 			return FALSE;
 	}
-	for (size_t i = 0; i < pset->count; ++i) {
-		auto &mod = *pset->pparray[i];
+	for (const auto &mod : *pset) {
 		auto prow_id = mod.get<uint32_t>(PR_ROWID);
 		if (prow_id == nullptr)
 			continue;

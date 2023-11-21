@@ -1466,8 +1466,8 @@ ec_error_t tarray_set_to_php(const TARRAY_SET *pset, zval *pret)
 	zval pzpropval;
 	
 	zarray_init(pret);
-	for (size_t i = 0; i < pset->count; ++i) {
-		auto err = tpropval_array_to_php(pset->pparray[i], &pzpropval);
+	for (const auto &row : *pset) {
+		auto err = tpropval_array_to_php(&row, &pzpropval);
 		if (err != ecSuccess)
 			return err;
 		zend_hash_next_index_insert(HASH_OF(pret), &pzpropval);

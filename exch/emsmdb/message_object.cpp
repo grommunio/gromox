@@ -649,9 +649,9 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	if (!exmdb_client::update_message_instance_rcpts(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, pset))
 		return FALSE;	
-	for (size_t i = 0; i < pset->count; ++i) {
-		for (size_t j = 0; j < pset->pparray[i]->count; ++j) {
-			switch (pset->pparray[i]->ppropval[j].proptag) {
+	for (const auto &row : *pset) {
+		for (size_t j = 0; j < row.count; ++j) {
+			switch (row.ppropval[j].proptag) {
 			case PR_RESPONSIBILITY:
 			case PR_ADDRTYPE:
 			case PR_DISPLAY_NAME:
@@ -669,7 +669,7 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 				continue;
 			}
 			proptag_array_append(pmessage->precipient_columns,
-				pset->pparray[i]->ppropval[j].proptag);
+				row.ppropval[j].proptag);
 		}
 	}
 	pmessage->b_touched = TRUE;
