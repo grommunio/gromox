@@ -505,9 +505,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
     const char *tags, size_t offset1, ssize_t length1, char *value,
     size_t val_len) try
 {
-	int i;
 	BOOL b_hit;
-	int tmp_argc, fd;
+	int tmp_argc, i;
 	char* tmp_argv[128];
 	char buff[128*1024];
 	char temp_buff[1024];
@@ -516,10 +515,10 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	auto pbody = strchr(cmd_tag, '[');
 	if (length > 128 * 1024)
 		return -1;
-	fd = open(file_path, O_RDONLY);
-	if (fd == -1)
+	wrapfd fd = open(file_path, O_RDONLY);
+	if (fd.get() < 0)
 		return -1;
-	if (lseek(fd, offset, SEEK_SET) < 0)
+	if (lseek(fd.get(), offset, SEEK_SET) < 0)
 		mlog(LV_ERR, "E-1431: lseek: %s", strerror(errno));
 	gx_strlcpy(temp_buff, tags, std::size(temp_buff));
 	if (tags[0] == '(')
@@ -529,12 +528,10 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		tmp_argc = parse_imap_args(temp_buff,
 			strlen(tags), tmp_argv, sizeof(tmp_argv));
 
-	auto ret = read(fd, buff, length);
-	if (ret < 0 || static_cast<size_t>(ret) != length) {
-		close(fd);
+	auto ret = read(fd.get(), buff, length);
+	if (ret < 0 || static_cast<size_t>(ret) != length)
 		return -1;
-	}
-	close(fd);
+	fd.close_rd();
 	size_t len, buff_len = 0;
 	std::string buff1;
 	while ((len = parse_mime_field(buff + buff_len, length - buff_len,
@@ -2279,7 +2276,6 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 		strcat(flag_buff, "U");
 	strcat(flag_buff, ")");
 	std::string mid_string, eml_path;
-	int fd = -1;
 	if (str_received != nullptr &&
 	    imap_cmd_parser_convert_imaptime(str_received, &tmp_time)) {
 		char txt[GUIDSTR_SIZE];
@@ -2291,17 +2287,17 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	}
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
 	eml_path = std::string(pcontext->maildir) + "/eml/" + mid_string;
-	fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd < 0 || !imail.to_file(fd)) {
-		if (-1 != fd) {
-			close(fd);
-			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1370: remove %s: %s",
-				        eml_path.c_str(), strerror(errno));
-		}
+	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
+	if (fd.get() < 0 || !imail.to_file(fd.get())) {
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1370: remove %s: %s",
+			        eml_path.c_str(), strerror(errno));
 		return 1909;
 	}
-	close(fd);
+	if (fd.close_wr() < 0) {
+		mlog(LV_WARN, "E-2395: write %s: %s", eml_path.c_str(), strerror(errno));
+		return 1909;
+	}
 	imail.clear();
 
 	auto ssr = system_services_insert_mail(pcontext->maildir, temp_name,
@@ -2398,8 +2394,8 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 		std::to_string(imap_parser_get_sequence_ID()) + "." +
 		znul(g_config_file->get_value("host_id"));
 	pcontext->file_path = pcontext->maildir + "/tmp/"s + pcontext->mid;
-	int fd = open(pcontext->file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd == -1)
+	wrapfd fd = open(pcontext->file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
+	if (fd.get() < 0)
 		return 1909 | DISPATCH_BREAK;
 	len = sizeof(uint32_t);
 	len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", temp_name);
@@ -2411,8 +2407,8 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 		len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", str_received);
 	buff[len++] = '\0';
 	cpu_to_le32p(buff, len);
-	write(fd, buff, len);
-	pcontext->message_fd = fd;
+	write(fd.get(), buff, len);
+	pcontext->message_fd = fd.release();
 	gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 	pcontext->stream.clear();
 	return DISPATCH_CONTINUE;
@@ -2517,10 +2513,9 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
 	std::string eml_path;
-	int fd = -1;
 	eml_path = std::string(pcontext->maildir) + "/eml/" + pcontext->mid;
-	fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
-	if (fd < 0 || !imail.to_file(fd)) {
+	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
+	if (fd.get() < 0 || !imail.to_file(fd.get())) {
 		imail.clear();
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
@@ -2528,15 +2523,15 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->mid.clear();
 		pcontext->file_path.clear();
-		if (-1 != fd) {
-			close(fd);
-			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
-				mlog(LV_WARN, "W-1346: remove %s: %s",
-				        eml_path.c_str(), strerror(errno));
-		}
+		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
+			mlog(LV_WARN, "W-1346: remove %s: %s",
+			        eml_path.c_str(), strerror(errno));
 		return 1909;
 	}
-	close(fd);
+	if (fd.close_wr() < 0) {
+		mlog(LV_WARN, "E-2395: write %s: %s", eml_path.c_str(), strerror(errno));
+		return 1909;
+	}
 	imail.clear();
 	pbuff.reset();
 	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
