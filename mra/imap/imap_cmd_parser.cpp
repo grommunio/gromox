@@ -2952,7 +2952,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_uid_search(int argc, char **argv,
+    imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -2972,25 +2973,25 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->stream.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
-	auto imap_reply_str = resource_get_imap_code(1723, 1);
-	buff += argv[0];
-	buff += " ";
-	buff += imap_reply_str;
+	buff += fmt::format("{} {}", argv[0], resource_get_imap_code(1723, 1));
 	if (pcontext->stream.write(buff.c_str(), buff.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = isched_stat::wrlst;
 	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2396: ENOMEM");
+	return 1918;
 }
 
-int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_uid_fetch(int argc, char **argv,
+    imap_context *pcontext) try
 {
 	int num;
 	int errnum;
 	int i;
 	BOOL b_data;
 	BOOL b_detail;
-	char buff[1024];
 	char* tmp_argv[128];
 	imap_seq_list list_seq;
 	mdi_list list_data;
@@ -3028,11 +3029,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
-	{
-	auto imap_reply_str = resource_get_imap_code(1728, 1);
-	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
-	}
-	if (pcontext->stream.write(buff, strlen(buff)) != STREAM_WRITE_OK)
+	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1728, 1));
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -3043,6 +3041,9 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->sched_stat = isched_stat::wrlst;
 	}
 	return DISPATCH_BREAK;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2397: ENOMEM");
+	return 1918;
 }
 
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
@@ -3111,10 +3112,8 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
-	char buff[64*1024];
 	char temp_name[1024];
 	imap_seq_list list_seq;
-	char uid_string[64*1024];
 	
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -3136,7 +3135,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	b_copied = TRUE;
 	b_first = FALSE;
 	int num = xarray.get_capacity();
-	int string_length = 0;
+	std::string uid_string;
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		if (system_services_copy_mail(pcontext->maildir,
@@ -3154,12 +3153,11 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 				continue;
 			}
 			if (b_first) {
-				uid_string[string_length++] = ',';
+				uid_string += ',';
 			} else {
 				b_first =  TRUE;
 			}
-			string_length += gx_snprintf(uid_string + string_length,
-			                 std::size(uid_string) - string_length, "%d", uid);
+			uid_string += std::to_string(uid);
 			break;
 		}
 		if (j == 10)
@@ -3177,26 +3175,24 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			temp_name, exp_list, &errnum);
 	}
 	pcontext->stream.clear();
-	string_length = 0;
+	std::string buf;
 	if (b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 		/* IMAP_CODE_2170025: OK <COPYUID> UID COPY completed */
 		auto imap_reply_str = resource_get_imap_code(1725, 1);
 		auto imap_reply_str1 = resource_get_imap_code(1725, 2);
 		if (uidvalidity != 0)
-			string_length = gx_snprintf(buff, std::size(buff),
-				"%s %s [COPYUID %llu %s %s] %s", argv[0],
-				imap_reply_str, LLU{uidvalidity}, argv[3],
+			buf = fmt::format("{} {} [COPYUID {} {} {}] {}", argv[0],
+				imap_reply_str, uidvalidity, argv[3],
 				uid_string, imap_reply_str1);
 		else
-			string_length = gx_snprintf(buff, std::size(buff), "%s %s %s",
-					argv[0], imap_reply_str, imap_reply_str1);
+			buf = fmt::format("{} {} {}", argv[0], imap_reply_str,
+			      imap_reply_str1);
 	} else {
 		/* IMAP_CODE_2190017: NO UID COPY failed */
-		auto imap_reply_str = resource_get_imap_code(1917, 1);
-		string_length = gx_snprintf(buff, std::size(buff), "%s %s", argv[0], imap_reply_str);
+		buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1917, 1));
 	}
-	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = isched_stat::wrlst;
@@ -3210,7 +3206,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 {
 	int errnum;
 	int max_uid;
-	char buff[1024];
 	imap_seq_list list_seq;
 	
 	if (pcontext->proto_stat != iproto_stat::select)
@@ -3261,9 +3256,8 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 			mlog(LV_WARN, "W-2086: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
-		auto string_length = gx_snprintf(buff, std::size(buff),
-			"* %u EXPUNGE\r\n", ct_item->id - del_num);
-		if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+		auto buf = fmt::format("* {} EXPUNGE\r\n", ct_item->id - del_num);
+		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 			return 1922;
 		del_num ++;
 	}
@@ -3271,10 +3265,8 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		imap_parser_bcast_expunge(*pcontext, exp_list);
 	imap_parser_echo_modify(pcontext, nullptr, true);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
-	auto imap_reply_str = resource_get_imap_code(1726, 1);
-	auto string_length = gx_snprintf(buff, std::size(buff),
-		"%s %s", argv[0], imap_reply_str);
-	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = isched_stat::wrlst;
@@ -3288,8 +3280,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 {
 	int errnum, result, i;
 	BOOL b_deleted;
-	char prev_selected[sizeof(pcontext->selected_folder)], buff[1024];
-	const char *estring;
+	char prev_selected[sizeof(pcontext->selected_folder)];
 	
 	if (*pcontext->selected_folder == '\0')
 		return;
@@ -3302,40 +3293,32 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 	XARRAY xarray;
 	result = system_services_list_deleted(pcontext->maildir,
 	         prev_selected, &xarray, &errnum);
+	std::string buf;
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		auto imap_reply_str = resource_get_imap_code(1905, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff), "* %s", imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
-	}
-	case MIDB_RDWR_ERROR: {
+		buf = fmt::format("* {}", resource_get_imap_code(1905, 1));
+		break;
+	case MIDB_RDWR_ERROR:
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		auto imap_reply_str = resource_get_imap_code(1906, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff), "* %s", imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
-	}
-	case MIDB_LOCAL_ENOMEM: {
-		auto imap_reply_str = resource_get_imap_code(1920, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff), "* %s", imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
-	}
-	default: {
-		estring = resource_get_error_string(errnum);
+		buf = fmt::format("* {}", resource_get_imap_code(1906, 1));
+		break;
+	case MIDB_LOCAL_ENOMEM:
+		buf = fmt::format("* {}", resource_get_imap_code(1920, 1));
+		break;
+	default:
 		/* IMAP_CODE_2190007: NO server internal error, */
-		auto imap_reply_str = resource_get_imap_code(1907, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff),
-			"* %s%s", imap_reply_str, estring);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
+		buf = fmt::format("* {}{}", resource_get_imap_code(1907, 1),
+		      resource_get_error_string(errnum));
+		break;
 	}
+	if (result != MIDB_RESULT_OK) {
+		imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
+		return;
 	}
 	b_deleted = FALSE;
 	int num = xarray.get_capacity();
@@ -3354,7 +3337,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 			auto pitem = xarray.get_item(i);
 			if (zero_uid_bit(*pitem))
 				continue;
-			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
+			auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pitem->mid);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 				mlog(LV_WARN, "W-2087: remove %s: %s",
 				        eml_path.c_str(), strerror(errno));
@@ -3362,37 +3345,28 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
 			b_deleted = TRUE;
 		}
 		break;
-	case MIDB_NO_SERVER: {
+	case MIDB_NO_SERVER:
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
-		auto imap_reply_str = resource_get_imap_code(1905, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff), "* %s", imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
-	}
-	case MIDB_RDWR_ERROR: {
+		buf = fmt::format("* {}", resource_get_imap_code(1905, 1));
+		break;
+	case MIDB_RDWR_ERROR:
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
-		auto imap_reply_str = resource_get_imap_code(1906, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff), "* %s", imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
-	}
-	case MIDB_LOCAL_ENOMEM: {
-		auto imap_reply_str = resource_get_imap_code(1920, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff), "* %s", imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
-	}
-	default: {
-		estring = resource_get_error_string(errnum);
+		buf = fmt::format("* {}", resource_get_imap_code(1906, 1));
+		break;
+	case MIDB_LOCAL_ENOMEM:
+		buf = fmt::format("* {}", resource_get_imap_code(1920, 1));
+		break;
+	default:
 		/* IMAP_CODE_2190007: NO server internal error, */
-		auto imap_reply_str = resource_get_imap_code(1907, 1);
-		auto string_length = gx_snprintf(buff, std::size(buff),
-			"* %s%s", imap_reply_str, estring);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return;
+		buf = fmt::format("* {}{}", resource_get_imap_code(1907, 1),
+		      resource_get_error_string(errnum));
+		break;
 	}
+	if (result != MIDB_RESULT_OK) {
+		imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
+		return;
 	}
 	if (b_deleted)
 		imap_parser_bcast_touch(pcontext,
