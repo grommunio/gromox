@@ -912,12 +912,13 @@ static BOOL instance_read_message(const MESSAGE_CONTENT *src,
 	} else {
 		dst->children.pattachments->pplist = nullptr;
 	}
+	i = 0;
 	for (auto &attachment1 : *src->children.pattachments) {
 		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (pattachment == nullptr)
 			return FALSE;
 		memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
-		dst->children.pattachments->pplist[i] = pattachment;
+		dst->children.pattachments->pplist[i++] = pattachment;
 		if (!instance_read_attachment(&attachment1, pattachment))
 			return FALSE;
 	}
