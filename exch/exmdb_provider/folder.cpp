@@ -747,11 +747,6 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
 		uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
-		if ((b_private && fid_val < PRIVATE_FID_CUSTOM) ||
-		    (!b_private && fid_val < PUBLIC_FID_CUSTOM)) {
-			*pb_partial = TRUE;
-			continue;
-		}
 		bool is_deleted = pstmt.col_int64(1);
 		if (!b_hard && is_deleted)
 			continue;
@@ -778,6 +773,11 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		    nullptr, nullptr))
 			return FALSE;
 		if (b_partial) {
+			*pb_partial = TRUE;
+			continue;
+		}
+		if ((b_private && fid_val < PRIVATE_FID_CUSTOM) ||
+		    (!b_private && fid_val < PUBLIC_FID_CUSTOM)) {
 			*pb_partial = TRUE;
 			continue;
 		}
