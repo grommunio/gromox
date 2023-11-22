@@ -2169,7 +2169,6 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	char *str_received = nullptr, *flags_string = nullptr;
 	char flag_buff[16];
 	char temp_name[1024];
-	char buff[1024];
 	
 	if (!pcontext->is_authed())
 		return 1804;
@@ -2229,18 +2228,18 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	if (b_draft)
 		strcat(flag_buff, "U");
 	strcat(flag_buff, ")");
-	std::string mid_string, eml_path;
+	std::string mid_string;
 	if (str_received != nullptr &&
 	    imap_cmd_parser_convert_imaptime(str_received, &tmp_time)) {
 		char txt[GUIDSTR_SIZE];
 		GUID::random_new().to_str(txt, std::size(txt), 32);
-		mid_string = std::to_string(tmp_time) + ".g" + txt;
+		mid_string = fmt::format("{}.g{}", tmp_time, txt);
 	} else {
-		mid_string = std::to_string(time(nullptr)) + ".n" +
-		             std::to_string(imap_parser_get_sequence_ID());
+		mid_string = fmt::format("{}.n{}", time(nullptr),
+			     imap_parser_get_sequence_ID());
 	}
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
-	eml_path = std::string(pcontext->maildir) + "/eml/" + mid_string;
+	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, mid_string);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0 || !imail.to_file(fd.get())) {
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
@@ -2266,7 +2265,7 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	/* IMAP_CODE_2170015: OK <APPENDUID> APPEND completed */
 	auto imap_reply_str = resource_get_imap_code(1715, 1);
 	auto imap_reply_str1 = resource_get_imap_code(1715, 2);
-	int string_length = 0;
+	std::string buf;
 	for (i=0; i<10; i++) {
 		uint32_t uidvalid = 0;
 		if (system_services_summary_folder(pcontext->maildir,
@@ -2274,18 +2273,17 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 		    &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    mid_string.c_str(), &uid) == MIDB_RESULT_OK) {
-			string_length = gx_snprintf(buff, std::size(buff),
-			                "%s %s [APPENDUID %llu %d] %s",
-			                argv[0], imap_reply_str, LLU{uidvalid},
-				uid, imap_reply_str1);
+			buf = fmt::format("{} {} [APPENDUID {} {}] {}",
+			      argv[0], imap_reply_str, uidvalid,
+			      uid, imap_reply_str1);
 			break;
 		}
 		usleep(50000);
 	}
 	if (i == 10)
-		string_length = gx_snprintf(buff, std::size(buff), "%s %s %s",
-				argv[0], imap_reply_str, imap_reply_str1);
-	imap_parser_safe_write(pcontext, buff, string_length);
+		buf = fmt::format("{} {} {}", argv[0], imap_reply_str,
+		      imap_reply_str1);
+	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1456: ENOMEM");
@@ -2304,8 +2302,6 @@ static inline bool is_flag_name(const char *flag)
 static int imap_cmd_parser_append_begin2(int argc, char **argv,
     imap_context *pcontext) try
 {
-	int temp_argc, len;
-	char buff[1024];
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
 	char str_flags[128];
@@ -2336,32 +2332,35 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 		if (flags_string[0] != '(' ||
 		    flags_string[strlen(flags_string)-1] != ')')
 			return 1800 | DISPATCH_BREAK;
-		temp_argc = parse_imap_args(flags_string + 1, strlen(flags_string) - 2,
-		            temp_argv, sizeof(temp_argv));
+		auto temp_argc = parse_imap_args(&flags_string[1],
+		                 strlen(flags_string) - 2,
+		                 temp_argv, std::size(temp_argv));
 		if (temp_argc == -1)
 			return 1800 | DISPATCH_BREAK;
 		for (int i = 0; i < temp_argc; ++i)
 			if (!is_flag_name(temp_argv[i]))
 				return 1800 | DISPATCH_BREAK;
 	}
-	pcontext->mid = std::to_string(time(nullptr)) + "." +
-		std::to_string(imap_parser_get_sequence_ID()) + "." +
-		znul(g_config_file->get_value("host_id"));
-	pcontext->file_path = pcontext->maildir + "/tmp/"s + pcontext->mid;
+	pcontext->mid = fmt::format("{}.{}.{}",
+	                time(nullptr), imap_parser_get_sequence_ID(),
+	                znul(g_config_file->get_value("host_id")));
+	pcontext->file_path = fmt::format("{}/tmp/{}",
+	                      pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(pcontext->file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0)
 		return 1909 | DISPATCH_BREAK;
-	len = sizeof(uint32_t);
-	len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", temp_name);
-	buff[len++] = '\0';
+	std::string buf;
+	buf.resize(sizeof(uint32_t));
+	buf += temp_name;
+	buf += '\0';
 	if (flags_string != nullptr)
-		len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", str_flags);
-	buff[len++] = '\0';
+		buf += str_flags;
+	buf += '\0';
 	if (str_received != nullptr)
-		len += gx_snprintf(&buff[len], std::size(buff) - len, "%s", str_received);
-	buff[len++] = '\0';
-	cpu_to_le32p(buff, len);
-	write(fd.get(), buff, len);
+		buf += str_received;
+	buf += '\0';
+	cpu_to_le32p(buf.data(), buf.size());
+	write(fd.get(), buf.c_str(), buf.size());
 	pcontext->message_fd = fd.release();
 	gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 	pcontext->stream.clear();
@@ -2394,7 +2393,6 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	char flag_buff[16];
 	char temp_name[1024];
 	struct stat node_stat;
-	char buff[1024];
 	
 	b_answered = FALSE;
 	b_flagged = FALSE;
@@ -2466,8 +2464,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	if (str_internal[0] == '\0' ||
 	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
-	std::string eml_path;
-	eml_path = std::string(pcontext->maildir) + "/eml/" + pcontext->mid;
+	auto eml_path = fmt::format("{}/eml{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0 || !imail.to_file(fd.get())) {
 		imail.clear();
@@ -2506,7 +2503,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	/* IMAP_CODE_2170015: OK <APPENDUID> APPEND completed */
 	auto imap_reply_str = resource_get_imap_code(1715, 1);
 	auto imap_reply_str1 = resource_get_imap_code(1715, 2);
-	int string_length = 0;
+	std::string buf;
 	for (i=0; i<10; i++) {
 		uint32_t uidvalid = 0;
 		if (system_services_summary_folder(pcontext->maildir,
@@ -2514,17 +2511,17 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		    nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    pcontext->mid.c_str(), &uid) == MIDB_RESULT_OK) {
-			string_length = gx_snprintf(buff, std::size(buff), "%s %s [APPENDUID %llu %d] %s",
-				pcontext->tag_string, imap_reply_str, LLU{uidvalid},
-				uid, imap_reply_str1);
+			buf = fmt::format("{} {} [APPENDUID {} {}] {}",
+			      pcontext->tag_string, imap_reply_str, uidvalid,
+			      uid, imap_reply_str1);
 			break;
 		}
 		usleep(50000);
 	}
 	if (i == 10)
-		string_length = gx_snprintf(buff, std::size(buff), "%s %s %s",
-			pcontext->tag_string, imap_reply_str, imap_reply_str1);
-	imap_parser_safe_write(pcontext, buff, string_length);
+		buf = fmt::format("{} {} {}", pcontext->tag_string,
+		      imap_reply_str, imap_reply_str1);
+	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1460: ENOMEM");
@@ -2860,11 +2857,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	BOOL b_first;
 	BOOL b_copied;
 	int i, j;
-	char buff[64*1024];
 	char temp_name[1024];
 	imap_seq_list list_uid;
-	char uid_string[64*1024];
-	char uid_string1[64*1024];
     
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -2886,7 +2880,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	b_copied = TRUE;
 	b_first = FALSE;
 	int num = xarray.get_capacity();
-	int string_length = 0, string_length1 = 0;
+	std::string uid_string, uid_string1;
 	for (i=0; i<num; i++) {
 		auto pitem = xarray.get_item(i);
 		pitem = pcontext->contents.get_itemx(pitem->uid);
@@ -2907,15 +2901,13 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 				continue;
 			}
 			if (b_first) {
-				uid_string[string_length++] = ',';
-				uid_string1[string_length1++] = ',';
+				uid_string += ',';
+				uid_string1 += ',';
 			} else {
 				b_first =  TRUE;
 			}
-			string_length += gx_snprintf(uid_string + string_length,
-					 std::size(uid_string) - string_length, "%d", pitem->uid);
-			string_length1 += gx_snprintf(uid_string1 + string_length1,
-					  std::size(uid_string1) - string_length1, "%d", uid);
+			uid_string += std::to_string(pitem->uid);
+			uid_string1 += std::to_string(uid);
 			break;
 		}
 		if (j == 10)
@@ -2933,26 +2925,24 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			temp_name, exp_list, &errnum);
 	}
 	pcontext->stream.clear();
+	std::string buf;
 	if (b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 		/* IMAP_CODE_2170022: OK <COPYUID> COPY completed */
 		auto imap_reply_str = resource_get_imap_code(1722, 1);
 		auto imap_reply_str1 = resource_get_imap_code(1722, 2);
 		if (uidvalidity != 0)
-			string_length = gx_snprintf(buff, std::size(buff),
-				"%s %s [COPYUID %llu %s %s] %s", argv[0],
-				imap_reply_str, LLU{uidvalidity},
-				uid_string, uid_string1, imap_reply_str1);
+			buf = fmt::format("{} {} [COPYUID {} {} {}] {}",
+			      argv[0], imap_reply_str, uidvalidity,
+			      uid_string, uid_string1, imap_reply_str1);
 		else
-			string_length = gx_snprintf(buff, std::size(buff),
-				"%s %s %s", argv[0], imap_reply_str, imap_reply_str1);
+			buf = fmt::format("{} {} {}", argv[0],
+			      imap_reply_str, imap_reply_str1);
 	} else {
 		/* IMAP_CODE_2190016: NO COPY failed */
-		auto imap_reply_str = resource_get_imap_code(1916, 1);
-		string_length = gx_snprintf(buff, std::size(buff),
-			"%s %s", argv[0], imap_reply_str);
+		buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1916, 1));
 	}
-	if (pcontext->stream.write(buff, string_length) != STREAM_WRITE_OK)
+	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = isched_stat::wrlst;
