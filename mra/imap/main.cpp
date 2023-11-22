@@ -302,9 +302,8 @@ static void *imls_thrwork(void *arg)
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip, reason)) {
 			/* IMAP_CODE_2180016: BAD access is denied from your IP address <remote_ip> */
-			size_t string_length = 0;
-			auto imap_reply_str = resource_get_imap_code(1816, 1, &string_length);
-			auto imap_reply_str2 = resource_get_imap_code(1816, 2, &string_length);
+			auto imap_reply_str = resource_get_imap_code(1816, 1);
+			auto imap_reply_str2 = resource_get_imap_code(1816, 2);
 			char buff[1024];
 			auto len = snprintf(buff, std::size(buff), "* %s%s%s",
 			           imap_reply_str, client_hostip, imap_reply_str2);

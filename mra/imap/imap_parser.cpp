@@ -1360,8 +1360,6 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 
 static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	size_t string_length;
-	const char *imap_reply_str;
 	char reply_buff[1024];
 	static constexpr std::pair<const char *, int (*)(int, char **, IMAP_CONTEXT *)> proc[] = {
 		{"APPEND", imap_cmd_parser_append},
@@ -1411,8 +1409,8 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 			return it->second(argc, argv, pcontext);
 	}
 
-	imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-	string_length = gx_snprintf(reply_buff, std::size(reply_buff), "%s %s", argv[0], imap_reply_str);
+	auto imap_reply_str = resource_get_imap_code(1800, 1);
+	auto string_length = gx_snprintf(reply_buff, std::size(reply_buff), "%s %s", argv[0], imap_reply_str);
 	pcontext->connection.write(reply_buff, string_length);
 	return DISPATCH_CONTINUE;
 }

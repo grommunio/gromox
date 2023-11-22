@@ -190,25 +190,32 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 	thread_local char reason[40];
 	auto it = g_def_code_table.find(code_type);
 	if (it == g_def_code_table.end()) {
-		*len = snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		auto w = snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		if (len != nullptr)
+			*len = w;
 		return reason;
 	}
 	int ret_len = it->second[0];
 	auto ret_ptr = &it->second[1];
     if (FIRST_PART == n)    {
-        *len = ret_len - 1;
+		auto w = ret_len - 1;
+		if (len != nullptr)
+			*len = w;
         return ret_ptr;
     }
     if (SECOND_PART == n)   {
         ret_ptr = ret_ptr + ret_len + 1;
 		ret_len = it->second[ret_len+1];
         if (ret_len > 0) {
-            *len = ret_len - 1;
+			auto w = ret_len - 1;
+			if (len != nullptr)
+				*len = w;
             return ret_ptr;
         }
     }
 	mlog(LV_DEBUG, "resource: rcode does not exist (resource_get_imap_code)");
-	*len = 15;
+	if (len != nullptr)
+		*len = 15;
 	return "unknown error\r\n";
 }
 
