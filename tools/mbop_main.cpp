@@ -216,6 +216,8 @@ static int main(int argc, const char **argv)
 		if (partial)
 			printf("Partial completion\n");
 		printf("Folder %s: %u messages deleted\n", *argv, diff);
+		if (g_del_flags & DEL_FOLDERS)
+			printf("(not including any messages in subfolders)\n");
 	}
 	return EXIT_SUCCESS;
 }
