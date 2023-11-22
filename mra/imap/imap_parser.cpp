@@ -1120,7 +1120,7 @@ void imap_parser_bcast_touch(const imap_context *current, const char *username,
 	for (auto other : *plist)
 		if (current != other &&
 		    strcmp(folder, other->selected_folder) == 0)
-			other->b_modify = true;
+			other->async_change_mask |= REPORT_NEWMAIL;
 	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
 	system_services_broadcast_event(buff);
@@ -1138,7 +1138,7 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 		return;
 	for (auto other : *plist)
 		if (strcmp(folder, other->selected_folder) == 0)
-			other->b_modify = true;
+			other->async_change_mask |= REPORT_NEWMAIL;
 }
 
 void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
@@ -1156,7 +1156,7 @@ void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
 		    strcmp(current.selected_folder, other->selected_folder) != 0)
 			continue;
 		other->f_flags.emplace(uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_FLAGS;
 	}
 	hl_hold.unlock();
 	auto buf = "MESSAGE-UFLAG "s + current.username + " " +
@@ -1180,7 +1180,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 		if (strcmp(folder, other->selected_folder) != 0)
 			continue;
 		other->f_flags.emplace(uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_FLAGS;
 	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1087: ENOMEM");
@@ -1210,7 +1210,7 @@ void imap_parser_bcast_expunge(const imap_context &current,
 			continue;
 		for (auto p : exp_list)
 			other->f_expunged_uids.emplace_back(p->uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_EXPUNGE;
 	}
 	hl_hold.unlock();
 	/* Bcast to other entities */
@@ -1239,12 +1239,12 @@ void imap_parser_event_expunge(const char *user, const char *folder, unsigned in
 		if (strcmp(folder, other->selected_folder) != 0)
 			continue;
 		other->f_expunged_uids.emplace_back(uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_EXPUNGE;
 	}
 }
 
 static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
-    std::vector<unsigned int> &&exp_list) try
+    const std::vector<unsigned int> &exp_list) try
 {
 	std::vector<unsigned int> seqid_list;
 	for (auto uid : exp_list) {
@@ -1269,9 +1269,9 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 }
 
 void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
-    bool show_expunge)
+    unsigned int report_what)
 {
-	if (!pcontext->b_modify)
+	if (pcontext->async_change_mask == 0)
 		return;
 	int err;
 	int flag_bits;
@@ -1280,17 +1280,19 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 	decltype(pcontext->f_expunged_uids) f_expunged;
 	
 	std::unique_lock hl_hold(g_hash_lock);
-	pcontext->b_modify = false;
-	if (show_expunge)
+	if (report_what & REPORT_EXPUNGE) {
 		/* RFC 9051 §7.2.1 */
 		f_expunged = std::move(pcontext->f_expunged_uids);
+		pcontext->async_change_mask &= ~REPORT_EXPUNGE;
+	}
 	auto f_flags = std::move(pcontext->f_flags);
+	pcontext->async_change_mask &= ~(REPORT_FLAGS | REPORT_NEWMAIL);
 	hl_hold.unlock();
 
-	if (show_expunge)
-		imap_parser_echo_expunges(*pcontext, pstream, std::move(f_expunged));
+	if (report_what & REPORT_EXPUNGE)
+		imap_parser_echo_expunges(*pcontext, pstream, f_expunged);
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
-	    show_expunge) == 0) {
+	    f_expunged.size() > 0) == 0) {
 		auto outlen = gx_snprintf(buff, std::size(buff),
 		          "* %zu EXISTS\r\n"
 		          "* %u RECENT\r\n",
@@ -1525,7 +1527,7 @@ static void *imps_thrwork(void *argp)
 			if (pcontext == nullptr)
 				break;
 			if (pcontext->sched_stat == isched_stat::idling) {
-				if (pcontext->b_modify) {
+				if (pcontext->async_change_mask != 0) {
 					pcontext->sched_stat = isched_stat::notifying;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 					if (pcontext == ptail)
@@ -1633,7 +1635,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 		if (plist->size() == 0) {
 			g_select_hash.erase(temp_string);
 		} else {
-			pcontext->b_modify = false;
+			pcontext->async_change_mask = 0;
 			pcontext->f_flags.clear();
 			pcontext->f_expunged_uids.clear();
 			for (auto pcontext1 : *plist) {
