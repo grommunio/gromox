@@ -1570,38 +1570,24 @@ void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format,
 
 }
 
-static void imap_parser_event_proc(char *event)
+static void imap_parser_event_proc(char *line)
 {
-	char *pspace, *pspace1;
-	
-	if (0 == strncasecmp(event, "FOLDER-TOUCH ", 13)) {
-		pspace = strchr(event + 13, ' ');
-		if (NULL != pspace) {
-			*pspace = '\0';
-			imap_parser_event_touch(event + 13, pspace + 1);
-		}
-	} else if (strncasecmp(event, "MESSAGE-UFLAG ", 14) == 0) {
-		pspace = strchr(&event[14], ' ');
-		if (NULL != pspace) {
-			*pspace = '\0';
-			pspace1 = strchr(pspace + 1, ' ');
-			if (NULL != pspace1) {
-				*pspace1 = '\0';
-				imap_parser_event_flag(&event[14], &pspace[1], strtoul(&pspace1[1], nullptr, 0));
-			}
-		}
-	} else if (strncasecmp(event, "MESSAGE-EXPUNGE ", 16) == 0) {
-		pspace = strchr(&event[16], ' ');
-		if (pspace != nullptr) {
-			*pspace = '\0';
-			pspace1 = strchr(&pspace[1], ' ');
-			if (pspace1 != nullptr) {
-				*pspace1 = '\0';
-				auto id = strtoul(&pspace1[1], nullptr, 0);
-				if (id > 0)
-					imap_parser_event_expunge(&event[16], &pspace[1], id);
-			}
-		}
+	char *argv[4]{};
+	auto argc = HX_split_fixed(line, " ", std::size(argv), argv);
+	if (argc < 1)
+		return;
+	if (strcasecmp(argv[0], "FOLDER-TOUCH") == 0) {
+		if (argc < 3)
+			return;
+		imap_parser_event_touch(argv[1], argv[2]);
+	} else if (strcasecmp(argv[0], "MESSAGE-UFLAG") == 0) {
+		if (argc < 4)
+			return;
+		imap_parser_event_flag(argv[1], argv[2], strtoul(argv[3], nullptr, 0));
+	} else if (strcasecmp(argv[0], "MESSAGE-EXPUNGE") == 0) {
+		if (argc < 4)
+			return;
+		imap_parser_event_expunge(argv[1], argv[2], strtoul(argv[3], nullptr, 0));
 	}
 }
 
