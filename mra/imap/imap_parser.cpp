@@ -1597,7 +1597,7 @@ static void imap_parser_event_proc(char *event)
 			pspace1 = strchr(&pspace[1], ' ');
 			if (pspace1 != nullptr) {
 				*pspace1 = '\0';
-				auto id = strtoul(&pspace[1], nullptr, 0);
+				auto id = strtoul(&pspace1[1], nullptr, 0);
 				if (id > 0)
 					imap_parser_event_expunge(&event[16], &pspace[1], id);
 			}
