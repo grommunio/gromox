@@ -114,6 +114,8 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1921, "NO Too many messages in folder / midb returned too many results / IMAP buffer not big enough"},
 	{1922, "NO Too many messages in result"},
 	{1923, "NO Unable to read message file"},
+	{1924, "NO DELETE subfolders first"},
+	{1925, "NO [NONEXISTENT] Folder does not exist"},
 	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
 	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
 	{2000 | MIDB_E_HASHTABLE_FULL, "Unable to read midb.sqlite, see midb logs"},
@@ -188,25 +190,32 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 	thread_local char reason[40];
 	auto it = g_def_code_table.find(code_type);
 	if (it == g_def_code_table.end()) {
-		*len = snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		auto w = snprintf(reason, std::size(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		if (len != nullptr)
+			*len = w;
 		return reason;
 	}
 	int ret_len = it->second[0];
 	auto ret_ptr = &it->second[1];
     if (FIRST_PART == n)    {
-        *len = ret_len - 1;
+		auto w = ret_len - 1;
+		if (len != nullptr)
+			*len = w;
         return ret_ptr;
     }
     if (SECOND_PART == n)   {
         ret_ptr = ret_ptr + ret_len + 1;
 		ret_len = it->second[ret_len+1];
         if (ret_len > 0) {
-            *len = ret_len - 1;
+			auto w = ret_len - 1;
+			if (len != nullptr)
+				*len = w;
             return ret_ptr;
         }
     }
 	mlog(LV_DEBUG, "resource: rcode does not exist (resource_get_imap_code)");
-	*len = 15;
+	if (len != nullptr)
+		*len = 15;
 	return "unknown error\r\n";
 }
 

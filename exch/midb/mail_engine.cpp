@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
@@ -3889,17 +3890,20 @@ static void mail_engine_add_notification_message(
 	}
 }
 
-static void mail_engine_delete_notification_message(
-	IDB_ITEM *pidb, uint64_t folder_id, uint64_t message_id)
+static void mail_engine_delete_notification_message(IDB_ITEM *pidb,
+    uint64_t folder_id, uint64_t message_id,
+    const std::string &username, const char *folder_name)
 {
 	char sql_string[1024];
 	
-	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
+	snprintf(sql_string, std::size(sql_string), "SELECT folder_id, uid FROM "
 	          "messages WHERE message_id=%llu", LLU{message_id});
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 	    gx_sql_col_uint64(pstmt, 0) != folder_id)
 		return;
+	system_services_broadcast_event(fmt::format("MESSAGE-EXPUNGE {} {} {}",
+		username, folder_name, pstmt.col_uint64(1)).c_str());
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM messages"
 	        " WHERE message_id=%llu", LLU{message_id});
@@ -4244,7 +4248,15 @@ static void mail_engine_notification_proc(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		folder_id = n->folder_id;
 		message_id = n->message_id;
-		mail_engine_delete_notification_message(pidb.get(), folder_id, message_id);
+
+		snprintf(sql_string, std::size(sql_string),
+			"SELECT name FROM folders WHERE folder_id=%llu", LLU{folder_id});
+		auto stm = gx_sql_prep(pidb->psqlite, sql_string);
+		if (stm == nullptr || stm.step() != SQLITE_ROW)
+			return;
+		mail_engine_delete_notification_message(pidb.get(), folder_id,
+			message_id, pidb->username, stm.col_text(0));
+		folder_id = 0;
 		break;
 	}
 	case db_notify_type::folder_modified: {
@@ -4271,10 +4283,18 @@ static void mail_engine_notification_proc(const char *dir,
 		auto n = static_cast<const DB_NOTIFY_MESSAGE_MVCP *>(pdb_notify->pdata);
 		folder_id = n->old_folder_id;
 		message_id = n->old_message_id;
-		mail_engine_delete_notification_message(pidb.get(), folder_id, message_id);
+
+		snprintf(sql_string, std::size(sql_string),
+			"SELECT name FROM folders WHERE folder_id=%llu", LLU{folder_id});
+		auto stm = gx_sql_prep(pidb->psqlite, sql_string);
+		if (stm == nullptr || stm.step() != SQLITE_ROW)
+			return;
+		mail_engine_delete_notification_message(pidb.get(), folder_id,
+			message_id, pidb->username, stm.col_text(0));
 		folder_id = n->folder_id;
 		message_id = n->message_id;
-		mail_engine_add_notification_message(pidb.get(), folder_id, message_id);
+		mail_engine_add_notification_message(pidb.get(), folder_id,
+			message_id);
 		break;
 	}
 	case db_notify_type::folder_copied: {

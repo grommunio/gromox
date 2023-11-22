@@ -44,6 +44,14 @@ enum class isched_stat {
 	notifying, autologout, disconnected,
 };
 
+/* For use in report_what, imap_context::async_change_flags */
+enum {
+	REPORT_NEWMAIL = 0x01,
+	REPORT_FLAGS   = 0x02,
+	REPORT_EXPUNGE = 0x04,
+	REPORT_ALL     = ~0U,
+};
+
 enum {
 	IMAP_RETRIEVE_TERM,
 	IMAP_RETRIEVE_OK,
@@ -97,7 +105,7 @@ struct imap_context final : public schedule_context {
 	char selected_folder[1024]{};
 	content_array contents;
 	BOOL b_readonly = false; /* is selected folder read only, this is for the examine command */
-	gromox::atomic_bool b_modify{false};
+	std::atomic<unsigned int> async_change_mask{0};
 	/*
 	 * Because one mail can get repeatedly re-flagged, f_flags is modeled
 	 * with unordered_set (to squash duplicates outright). But a mail can
@@ -128,7 +136,7 @@ extern gromox::time_point imap_parser_get_context_timestamp(const schedule_conte
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 extern int imap_parser_threads_event_proc(int action);
 extern void imap_parser_bcast_touch(const imap_context *, const char *user, const char *folder);
-extern void imap_parser_echo_modify(imap_context *, STREAM *, bool show_expunges = false);
+extern void imap_parser_echo_modify(imap_context *, STREAM *, unsigned int report = REPORT_NEWMAIL | REPORT_FLAGS);
 extern void imap_parser_bcast_flags(const imap_context &, uint32_t uid);
 extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
@@ -184,7 +192,7 @@ extern char *capability_list(char *, size_t, IMAP_CONTEXT *);
 
 extern int resource_run();
 extern void resource_stop();
-extern const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_t *len);
+extern const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_t *len = nullptr);
 extern const char *resource_get_default_charset(const char *lang);
 extern const char *resource_get_error_string(unsigned int);
 extern void imap_parser_event_expunge(const char *user, const char *folder, unsigned int uid);

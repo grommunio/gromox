@@ -1120,7 +1120,7 @@ void imap_parser_bcast_touch(const imap_context *current, const char *username,
 	for (auto other : *plist)
 		if (current != other &&
 		    strcmp(folder, other->selected_folder) == 0)
-			other->b_modify = true;
+			other->async_change_mask |= REPORT_NEWMAIL;
 	hl_hold.unlock();
 	snprintf(buff, 1024, "FOLDER-TOUCH %s %s", username, folder);
 	system_services_broadcast_event(buff);
@@ -1138,7 +1138,7 @@ static void imap_parser_event_touch(const char *username, const char *folder)
 		return;
 	for (auto other : *plist)
 		if (strcmp(folder, other->selected_folder) == 0)
-			other->b_modify = true;
+			other->async_change_mask |= REPORT_NEWMAIL;
 }
 
 void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
@@ -1156,7 +1156,7 @@ void imap_parser_bcast_flags(const imap_context &current, uint32_t uid) try
 		    strcmp(current.selected_folder, other->selected_folder) != 0)
 			continue;
 		other->f_flags.emplace(uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_FLAGS;
 	}
 	hl_hold.unlock();
 	auto buf = "MESSAGE-UFLAG "s + current.username + " " +
@@ -1180,7 +1180,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 		if (strcmp(folder, other->selected_folder) != 0)
 			continue;
 		other->f_flags.emplace(uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_FLAGS;
 	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1087: ENOMEM");
@@ -1210,7 +1210,7 @@ void imap_parser_bcast_expunge(const imap_context &current,
 			continue;
 		for (auto p : exp_list)
 			other->f_expunged_uids.emplace_back(p->uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_EXPUNGE;
 	}
 	hl_hold.unlock();
 	/* Bcast to other entities */
@@ -1239,12 +1239,12 @@ void imap_parser_event_expunge(const char *user, const char *folder, unsigned in
 		if (strcmp(folder, other->selected_folder) != 0)
 			continue;
 		other->f_expunged_uids.emplace_back(uid);
-		other->b_modify = true;
+		other->async_change_mask |= REPORT_EXPUNGE;
 	}
 }
 
 static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
-    std::vector<unsigned int> &&exp_list) try
+    const std::vector<unsigned int> &exp_list) try
 {
 	std::vector<unsigned int> seqid_list;
 	for (auto uid : exp_list) {
@@ -1269,9 +1269,9 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 }
 
 void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
-    bool show_expunge)
+    unsigned int report_what)
 {
-	if (!pcontext->b_modify)
+	if (pcontext->async_change_mask == 0)
 		return;
 	int err;
 	int flag_bits;
@@ -1280,17 +1280,19 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 	decltype(pcontext->f_expunged_uids) f_expunged;
 	
 	std::unique_lock hl_hold(g_hash_lock);
-	pcontext->b_modify = false;
-	if (show_expunge)
+	if (report_what & REPORT_EXPUNGE) {
 		/* RFC 9051 §7.2.1 */
 		f_expunged = std::move(pcontext->f_expunged_uids);
+		pcontext->async_change_mask &= ~REPORT_EXPUNGE;
+	}
 	auto f_flags = std::move(pcontext->f_flags);
+	pcontext->async_change_mask &= ~(REPORT_FLAGS | REPORT_NEWMAIL);
 	hl_hold.unlock();
 
-	if (show_expunge)
-		imap_parser_echo_expunges(*pcontext, pstream, std::move(f_expunged));
+	if (report_what & REPORT_EXPUNGE)
+		imap_parser_echo_expunges(*pcontext, pstream, f_expunged);
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
-	    show_expunge) == 0) {
+	    f_expunged.size() > 0) == 0) {
 		auto outlen = gx_snprintf(buff, std::size(buff),
 		          "* %zu EXISTS\r\n"
 		          "* %u RECENT\r\n",
@@ -1360,8 +1362,6 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 
 static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	size_t string_length;
-	const char *imap_reply_str;
 	char reply_buff[1024];
 	static constexpr std::pair<const char *, int (*)(int, char **, IMAP_CONTEXT *)> proc[] = {
 		{"APPEND", imap_cmd_parser_append},
@@ -1411,8 +1411,8 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 			return it->second(argc, argv, pcontext);
 	}
 
-	imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-	string_length = gx_snprintf(reply_buff, std::size(reply_buff), "%s %s", argv[0], imap_reply_str);
+	auto imap_reply_str = resource_get_imap_code(1800, 1);
+	auto string_length = gx_snprintf(reply_buff, std::size(reply_buff), "%s %s", argv[0], imap_reply_str);
 	pcontext->connection.write(reply_buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -1527,7 +1527,7 @@ static void *imps_thrwork(void *argp)
 			if (pcontext == nullptr)
 				break;
 			if (pcontext->sched_stat == isched_stat::idling) {
-				if (pcontext->b_modify) {
+				if (pcontext->async_change_mask != 0) {
 					pcontext->sched_stat = isched_stat::notifying;
 					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 					if (pcontext == ptail)
@@ -1572,38 +1572,24 @@ void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format,
 
 }
 
-static void imap_parser_event_proc(char *event)
+static void imap_parser_event_proc(char *line)
 {
-	char *pspace, *pspace1;
-	
-	if (0 == strncasecmp(event, "FOLDER-TOUCH ", 13)) {
-		pspace = strchr(event + 13, ' ');
-		if (NULL != pspace) {
-			*pspace = '\0';
-			imap_parser_event_touch(event + 13, pspace + 1);
-		}
-	} else if (strncasecmp(event, "MESSAGE-UFLAG ", 14) == 0) {
-		pspace = strchr(&event[14], ' ');
-		if (NULL != pspace) {
-			*pspace = '\0';
-			pspace1 = strchr(pspace + 1, ' ');
-			if (NULL != pspace1) {
-				*pspace1 = '\0';
-				imap_parser_event_flag(&event[14], &pspace[1], strtoul(&pspace1[1], nullptr, 0));
-			}
-		}
-	} else if (strncasecmp(event, "MESSAGE-EXPUNGE ", 16) == 0) {
-		pspace = strchr(&event[16], ' ');
-		if (pspace != nullptr) {
-			*pspace = '\0';
-			pspace1 = strchr(&pspace[1], ' ');
-			if (pspace1 != nullptr) {
-				*pspace1 = '\0';
-				auto id = strtoul(&pspace[1], nullptr, 0);
-				if (id > 0)
-					imap_parser_event_expunge(&event[16], &pspace[1], id);
-			}
-		}
+	char *argv[4]{};
+	auto argc = HX_split_fixed(line, " ", std::size(argv), argv);
+	if (argc < 1)
+		return;
+	if (strcasecmp(argv[0], "FOLDER-TOUCH") == 0) {
+		if (argc < 3)
+			return;
+		imap_parser_event_touch(argv[1], argv[2]);
+	} else if (strcasecmp(argv[0], "MESSAGE-UFLAG") == 0) {
+		if (argc < 4)
+			return;
+		imap_parser_event_flag(argv[1], argv[2], strtoul(argv[3], nullptr, 0));
+	} else if (strcasecmp(argv[0], "MESSAGE-EXPUNGE") == 0) {
+		if (argc < 4)
+			return;
+		imap_parser_event_expunge(argv[1], argv[2], strtoul(argv[3], nullptr, 0));
 	}
 }
 
@@ -1649,7 +1635,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 		if (plist->size() == 0) {
 			g_select_hash.erase(temp_string);
 		} else {
-			pcontext->b_modify = false;
+			pcontext->async_change_mask = 0;
 			pcontext->f_flags.clear();
 			pcontext->f_expunged_uids.clear();
 			for (auto pcontext1 : *plist) {

@@ -89,6 +89,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 crypt_LIBS=""
 dl_LIBS=""
 libldap_LIBS=""
+pam_LIBS=""
 resolv_LIBS=""
 AH_TEMPLATE([HAVE_ESEDB], [])
 AH_TEMPLATE([HAVE_GSSAPI], [])
@@ -155,6 +156,7 @@ AC_CHECK_FUNCS([fsetxattr posix_fadvise])
 AC_SEARCH_LIBS([crypt], [crypt], [crypt_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([dlopen], [dl], [dl_LIBS="$LIBS"; LIBS=""])
 AC_SEARCH_LIBS([ns_initparse], [resolv], [resolv_LIBS="$LIBS"; LIBS=""])
+AC_SEARCH_LIBS([pam_get_item], [pam], [pam_LIBS="$LIBS"; LIBS=""])
 LIBS="$LIBS $resolv_LIBS"
 AH_TEMPLATE([HAVE_RES_NQUERYDOMAIN], [])
 AC_MSG_CHECKING([for res_nquerydomain])
@@ -173,6 +175,7 @@ AC_LINK_IFELSE(
 LIBS="$saved_LIBS"
 AC_SUBST([crypt_LIBS])
 AC_SUBST([dl_LIBS])
+AC_SUBST([pam_LIBS])
 AC_SUBST([resolv_LIBS])
 dnl
 dnl Can't use AC_SEARCH_LIBS([iconv_open]) because that does not process
