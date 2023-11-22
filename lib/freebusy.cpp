@@ -272,7 +272,7 @@ static int goid_to_icaluid2(BINARY *gobj, std::string &uid_buf)
 {
 	EXT_PUSH ext_push;
 	char guidbuf[16], ngidbuf[56];
-	GLOBALOBJECTID ngid;
+	GLOBALOBJECTID ngid{};
 
 	if (gobj == nullptr) {
 		if (!ext_push.init(guidbuf, std::size(guidbuf), 0) ||
