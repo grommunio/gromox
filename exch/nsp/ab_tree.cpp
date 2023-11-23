@@ -766,8 +766,6 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 
 const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 {
-	int id;
-	int domain_id;
 	char prefix_string[1024];
 	
 	auto temp_len = gx_snprintf(prefix_string, std::size(prefix_string),
@@ -777,7 +775,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (strncasecmp(pdn, prefix_string, temp_len) == 0 &&
 	    strlen(pdn) >= static_cast<size_t>(temp_len) + 60) {
 		/* Reason for 60: see DN format in ab_tree_get_server_dn */
-		id = decode_hex_int(pdn + temp_len + 60);
+		auto id = decode_hex_int(pdn + temp_len + 60);
 		auto minid = ab_tree_make_minid(minid_type::address, id);
 		auto iter = pbase->phash.find(minid);
 		return iter != pbase->phash.end() ? &iter->second->stree : nullptr;
@@ -786,8 +784,8 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	           "/o=%s/" EAG_RCPTS "/cn=", g_nsp_org_name);
 	if (temp_len < 0 || strncasecmp(pdn, prefix_string, temp_len) != 0)
 		return NULL;
-	domain_id = decode_hex_int(pdn + temp_len + 18);
-	id = decode_hex_int(pdn + temp_len + 26);
+	auto domain_id = decode_hex_int(pdn + temp_len);
+	auto id = decode_hex_int(pdn + temp_len + 8);
 	auto minid = ab_tree_make_minid(minid_type::address, id);
 	auto iter = pbase->phash.find(minid);
 	if (iter != pbase->phash.end())
