@@ -787,6 +787,28 @@ static void ntlm_stop(struct HXproc &pi)
 	pi.p_pid = 0;
 }
 
+static int htp_auth_finalize(http_context &ctx, const char *user)
+{
+	sql_meta_result mres;
+	auto err = system_services_auth_meta(user, 0, mres);
+	if (err != 0) {
+		mlog(LV_DEBUG, "ntlm/krb auth success on \"%s\", but not found in Gromox", user);
+		return 0;
+	}
+	gx_strlcpy(ctx.username, mres.username.c_str(), std::size(ctx.username));
+	*ctx.password = '\0';
+	gx_strlcpy(ctx.maildir, mres.maildir.c_str(), std::size(ctx.maildir));
+	if (*ctx.maildir == '\0') {
+		ctx.log(LV_ERR, "maildir for \"%s\" absent: %s",
+			ctx.username, mres.errstr.c_str());
+		return -1;
+	}
+	gx_strlcpy(ctx.lang, mres.lang.c_str(), std::size(ctx.lang));
+	if (*ctx.lang == '\0')
+		gx_strlcpy(ctx.lang, znul(g_config_file->get_value("user_default_lang")), sizeof(ctx.lang));
+	return 1;
+}
+
 static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
     const char *encinput, std::string &output)
 {
@@ -868,38 +890,18 @@ static int htp_auth_ntlmssp(http_context &ctx, const char *prog,
 	if (output[0] == 'T' && output[1] == 'T') { // TT
 		output.erase(0, 3);
 		return -99; /* MOAR */
-	} else if (output[0] == 'A' && output[1] == 'F') { // AF
+	}
+	output.clear();
+	if (output[0] == 'A' && output[1] == 'F') // AF
 		/*
 		 * The AF response contains the winbind (Unix-side) username.
 		 * Depending on smb.conf "winbind use default domain", this can
 		 * be just "user5", or it can be "DOMAIN\user5". Either way, an
 		 * altnames entry is needed for this.
 		 */
-		sql_meta_result mres;
-		auto err = system_services_auth_meta(&output[3], 0, mres);
-		if (err != 0) {
-			mlog(LV_DEBUG, "ntlm_auth success on \"%s\", but not found in Gromox", &output[3]);
-			output.clear();
-			return 0;
-		}
-		gx_strlcpy(ctx.username, mres.username.c_str(), std::size(ctx.username));
-		*ctx.password = '\0';
-		output.clear();
-		gx_strlcpy(ctx.maildir, mres.maildir.c_str(), std::size(ctx.maildir));
-		if (*ctx.maildir == '\0') {
-			ctx.log(LV_ERR, "maildir for \"%s\" absent: %s",
-				ctx.username, mres.errstr.c_str());
-			return -1;
-		}
-		gx_strlcpy(ctx.lang, mres.lang.c_str(), std::size(ctx.lang));
-		if (*ctx.lang == '\0')
-			gx_strlcpy(ctx.lang, znul(g_config_file->get_value("user_default_lang")), sizeof(ctx.lang));
-		return 1;
-	} else if (output[0] == 'N' && output[1] == 'A') {
-		output.clear();
+		return htp_auth_finalize(ctx, output.c_str());
+	else if (output[0] == 'N' && output[1] == 'A')
 		return 0;
-	}
-	output.clear();
 	return -1;
 }
 
