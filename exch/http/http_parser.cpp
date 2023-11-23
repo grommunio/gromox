@@ -990,9 +990,10 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 	else
 		output.clear();
 
-	if (ret == GSS_S_CONTINUE_NEEDED) {
+	if (ret == GSS_S_CONTINUE_NEEDED)
 		return -99; /* MOAR */
-	} else if (ret != GSS_S_COMPLETE) {
+	output.clear();
+	if (ret != GSS_S_COMPLETE) {
 		krblog("Unable to accept security context", ret, status);
 		return 0;
 	}
@@ -1002,9 +1003,9 @@ static int auth_krb(http_context &ctx, const char *input, size_t isize,
 		krblog("Unable to convert username", ret, status);
 		return 0;
 	}
-
-	mlog(LV_DEBUG, "Kerberos username: %s", static_cast<const char *>(gss_user_buf.value));
-	return 1;
+	std::string ub(static_cast<const char *>(gss_user_buf.value), gss_user_buf.length);
+	mlog(LV_DEBUG, "Kerberos username: %s", ub.c_str());
+	return htp_auth_finalize(ctx, ub.c_str());
 }
 #endif
 
