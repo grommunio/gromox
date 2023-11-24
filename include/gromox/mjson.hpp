@@ -50,7 +50,7 @@ struct GX_EXPORT MJSON {
 	size_t get_mail_length() const { return size; }
 	MJSON_MIME *get_mime(const char *id);
 
-	SIMPLE_TREE tree{};
+	SIMPLE_TREE stree{};
 	alloc_limiter<MJSON_MIME> *ppool = nullptr;
 	bool read = false, replied = false, forwarded = false, unsent = false;
 	bool flag = false;
