@@ -1221,12 +1221,15 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 		if(!ctx.plugin().exmdb.remove_folder_properties(dir.c_str(), folder.folderId, &tagsRm))
 			throw EWSError::FolderSave(E3176);
 		ctx.updated(dir, folder);
-		mUpdateFolderResponseMessage& msg = data.ResponseMessages.emplace_back();
+		mUpdateFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, idOnly));
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}
+
+	data.serialize(response);
 }
 
 /**
