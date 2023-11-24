@@ -74,7 +74,6 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
 static std::vector<imap_context *> g_sleeping_list;
@@ -134,8 +133,6 @@ static void imap_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int imap_parser_run()
 {
-	int num;
-	
 	if (g_support_tls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
@@ -184,11 +181,6 @@ int imap_parser_run()
 		CRYPTO_set_locking_callback(imap_parser_ssl_locking);
 #endif
 	}
-	num = 4*g_context_num;
-	if (num < 400)
-		num = 400;
-	g_alloc_mjson = mjson_allocator_init(num);
-	
 	try {
 		g_context_list = std::make_unique<IMAP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
@@ -1680,11 +1672,6 @@ static void *imps_scanwork(void *argp)
 		}
 	}
 	return nullptr;
-}
-
-alloc_limiter<MJSON_MIME> *imap_parser_get_jpool()
-{
-	return &g_alloc_mjson;
 }
 
 int imap_parser_get_sequence_ID()

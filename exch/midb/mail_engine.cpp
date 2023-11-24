@@ -156,7 +156,6 @@ static std::atomic<unsigned int> g_sequence_id;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
 static char g_org_name[256];
-static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static char g_default_charset[32];
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
@@ -549,7 +548,7 @@ static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 						break;
 					b_loaded = true;
 				}
-				MJSON temp_mjson(&g_alloc_mjson);
+				MJSON temp_mjson;
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (!temp_mjson.load_from_json(digest, temp_buff))
@@ -825,7 +824,7 @@ static bool mail_engine_ct_match_mail(sqlite3 *psqlite, const char *charset,
 				}
 				if (b_result1)
 					break;
-				MJSON temp_mjson(&g_alloc_mjson);
+				MJSON temp_mjson;
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (!temp_mjson.load_from_json(digest, temp_buff))
@@ -4351,7 +4350,6 @@ int mail_engine_run()
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}
-	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {

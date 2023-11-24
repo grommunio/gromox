@@ -725,7 +725,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
     BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
 {
 	int errnum;
-	MJSON mjson(imap_parser_get_jpool());
+	MJSON mjson;
 	char buff[MAX_DIGLEN];
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
@@ -919,7 +919,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
 				    mjson.rfc822_build(rfc_path.c_str())) {
-					MJSON temp_mjson(imap_parser_get_jpool());
+					MJSON temp_mjson;
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))

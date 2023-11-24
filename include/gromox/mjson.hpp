@@ -10,7 +10,6 @@ using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct MJSON_MIME {
 	SIMPLE_TREE_NODE stree{};
-	alloc_limiter<MJSON_MIME> *ppool = nullptr;
 	enum mime_type mime_type = mime_type::none;
 	std::string id, ctype, encoding, charset, filename, cid, cntl, cntdspn;
 	size_t head = 0, begin = 0, length = 0;
@@ -30,7 +29,6 @@ struct MJSON_MIME {
 
 struct GX_EXPORT MJSON {
 	MJSON() = default;
-	MJSON(alloc_limiter<MJSON_MIME> *);
 	~MJSON();
 	NOMOVE(MJSON);
 
@@ -51,7 +49,6 @@ struct GX_EXPORT MJSON {
 	MJSON_MIME *get_mime(const char *id);
 
 	SIMPLE_TREE stree{};
-	alloc_limiter<MJSON_MIME> *ppool = nullptr;
 	bool read = false, replied = false, forwarded = false, unsent = false;
 	bool flag = false;
 	unsigned int priority = 0, uid = 0;
@@ -74,5 +71,3 @@ enum {
 	MJSON_MIME_CONTENT,
 	MJSON_MIME_ENTIRE
 };
-
-extern GX_EXPORT alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size, const char *name = nullptr, const char *hint = nullptr);

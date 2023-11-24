@@ -62,25 +62,6 @@ static void mjson_enum_build(MJSON_MIME *, void *);
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 
-alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size,
-    const char *name, const char *hint)
-{
-	return alloc_limiter<MJSON_MIME>(max_size, name, hint);
-}
-
-/*
- *	@param
- *		pjson [in]			indicate the mjson object
- *		ppool [in]		    indicate the allocator for mime object
- */
-MJSON::MJSON(alloc_limiter<MJSON_MIME> *p) : ppool(p)
-{
-#ifdef _DEBUG_UMTA
-	if (p == nullptr)
-		throw std::invalid_argument("[mail]: NULL pointer in mjson_init");
-#endif
-}
-
 /*
  *	clear the mjson mime nodes from the tree and
  *  the head information of mail
@@ -129,8 +110,7 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 		return;
 	}
 #endif
-	auto m = static_cast<MJSON_MIME *>(pnode->pdata);
-	m->ppool->put(m);
+	delete static_cast<MJSON_MIME *>(pnode->pdata);
 }
 
 MJSON::~MJSON()
@@ -320,8 +300,6 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	int j, last_pos = 0;
 	char temp_buff[64];
 	MJSON_MIME temp_mime;
-	
-	temp_mime.ppool = pjson->ppool;
 	temp_mime.mime_type = type == TYPE_STRUCTURE ? mime_type::multiple : mime_type::single;
 
 	auto &m    = temp_mime;
@@ -348,11 +326,10 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 		temp_mime.ctype = "message/rfc822";
 	auto pnode = pjson->stree.get_root();
 	if (NULL == pnode) {
-		auto pmime = pjson->ppool->get();
-		pmime->stree.pdata = pmime;
-		pmime->ppool = pjson->ppool;
+		auto pmime = std::make_unique<MJSON_MIME>();
+		pmime->stree.pdata = pmime.get();
 		pmime->mime_type = mime_type::none;
-		pjson->stree.set_root(&pmime->stree);
+		pjson->stree.set_root(std::move(pmime));
 	}
 	pnode = pjson->stree.get_root();
 	if (pnode == nullptr)
@@ -376,15 +353,13 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 		pnode = pmime->stree.get_child();
 		if (NULL == pnode) {
 			pnode = &pmime->stree;
-			pmime = pjson->ppool->get();
+			auto pmime_uq = std::make_unique<MJSON_MIME>();
+			pmime = pmime_uq.get();
 			pmime->stree.pdata = pmime;
-			pmime->ppool = pjson->ppool;
 			pmime->mime_type = mime_type::none;
-			if (!pjson->stree.add_child(
-			    pnode, &pmime->stree, SIMPLE_TREE_ADD_LAST)) {
-				pjson->ppool->put(pmime);
+			if (!pjson->stree.add_child(pnode, std::move(pmime_uq),
+			    SIMPLE_TREE_ADD_LAST))
 				return FALSE;
-			}
 		} else {
 			pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 		}
@@ -396,15 +371,13 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 				continue;
 			}
 			pnode = &pmime->stree;
-			pmime = pjson->ppool->get();
+			auto pmime_uq = std::make_unique<MJSON_MIME>();
+			pmime = pmime_uq.get();
 			pmime->stree.pdata = pmime;
-			pmime->ppool = pjson->ppool;
 			pmime->mime_type = mime_type::none;
-			if (!pjson->stree.insert_sibling(pnode,
-			    &pmime->stree, SIMPLE_TREE_INSERT_AFTER)) {
-				pjson->ppool->put(pmime);
+			if (!pjson->stree.insert_sibling(pnode, std::move(pmime_uq),
+			    SIMPLE_TREE_INSERT_AFTER))
 				return FALSE;
-			}
 		}
 		last_pos = i + 1;
 	}
@@ -625,7 +598,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			Json::Value digest;
 			if (!json_from_str({slurp_data.get(), slurp_size}, digest))
 				goto RFC822_FAILURE;
-			MJSON temp_mjson(pmime->ppool);
+			MJSON temp_mjson;
 			if (!temp_mjson.load_from_json(digest, storage_path))
 				goto RFC822_FAILURE;
 			buff[offset] = ' ';
@@ -1044,7 +1017,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		pbuff = std::move(pbuff1);
 	}
 	
-	MJSON temp_mjson(pmime->ppool);
+	MJSON temp_mjson;
 	MAIL imail;
 	if (!imail.load_from_str_move(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
