@@ -63,7 +63,7 @@ struct XARRAY;
 struct XARRAY_UNIT;
 
 struct DIR_NODE {
-	SIMPLE_TREE_NODE node;
+	SIMPLE_TREE_NODE stree;
 	BOOL b_loaded;
 	char name[256];
 	alloc_limiter<DIR_NODE> *ppool;

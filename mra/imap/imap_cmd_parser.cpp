@@ -66,7 +66,7 @@ struct dir_tree {
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
 
-	SIMPLE_TREE tree{};
+	SIMPLE_TREE stree{};
 	alloc_limiter<DIR_NODE> *ppool = nullptr;
 };
 using DIR_TREE = dir_tree;
@@ -99,15 +99,15 @@ void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
 	char temp_path[4096 + 1];
 	SIMPLE_TREE_NODE *pnode, *pnode_parent;
 
-	auto proot = ptree->tree.get_root();
+	auto proot = ptree->stree.get_root();
 	if (NULL == proot) {
 		auto pdir = ptree->ppool->get();
-		pdir->node.pdata = pdir;
+		pdir->stree.pdata = pdir;
 		pdir->name[0] = '\0';
 		pdir->b_loaded = TRUE;
 		pdir->ppool = ptree->ppool;
-		ptree->tree.set_root(&pdir->node);
-		proot = &pdir->node;
+		ptree->stree.set_root(&pdir->stree);
+		proot = &pdir->stree;
 	}
 
 	for (const auto &pfile_path : pfile) {
@@ -133,12 +133,12 @@ void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
 
 			if (NULL == pnode) {
 				auto pdir = ptree->ppool->get();
-				pdir->node.pdata = pdir;
+				pdir->stree.pdata = pdir;
 				gx_strlcpy(pdir->name, ptr1, std::size(pdir->name));
 				pdir->b_loaded = FALSE;
 				pdir->ppool = ptree->ppool;
-				pnode = &pdir->node;
-				ptree->tree.add_child(pnode_parent, pnode,
+				pnode = &pdir->stree;
+				ptree->stree.add_child(pnode_parent, pnode,
 					SIMPLE_TREE_ADD_LAST);
 			}
 			ptr1 = ptr2 + 1;
@@ -149,9 +149,9 @@ void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
 
 static void dir_tree_clear(DIR_TREE *ptree)
 {
-	auto pnode = ptree->tree.get_root();
+	auto pnode = ptree->stree.get_root();
 	if (pnode != nullptr)
-		ptree->tree.destroy_node(pnode, dir_tree_enum_delete);
+		ptree->stree.destroy_node(pnode, dir_tree_enum_delete);
 }
 
 DIR_NODE *dir_tree::match(const char *path)
@@ -162,7 +162,7 @@ DIR_NODE *dir_tree::match(const char *path)
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
 
-	auto pnode = ptree->tree.get_root();
+	auto pnode = ptree->stree.get_root();
 	if (pnode == nullptr)
 		return NULL;
 	if (*path == '\0')
@@ -198,7 +198,7 @@ DIR_NODE *dir_tree::match(const char *path)
 
 DIR_NODE *dir_tree::get_child(DIR_NODE* pdir)
 {
-	auto pnode = pdir->node.get_child();
+	auto pnode = pdir->stree.get_child();
 	return pnode != nullptr ? static_cast<DIR_NODE *>(pnode->pdata) : nullptr;
 }
 
@@ -206,7 +206,7 @@ dir_tree::~dir_tree()
 {
 	auto ptree = this;
 	dir_tree_clear(ptree);
-	ptree->tree.clear();
+	ptree->stree.clear();
 	ptree->ppool = NULL;
 }
 
