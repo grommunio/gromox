@@ -2349,7 +2349,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			pexception->reminderdelta = alarmdelta;
 		}
 	}
-	if (!oxcical_fetch_propname(pmsg, phash, alloc, get_propids))
+	if (!oxcical_fetch_propname(pmsg, phash, alloc, std::move(get_propids)))
 		return "E-2735";
 	return nullptr;
 }
@@ -2530,8 +2530,8 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 		return ecError;
 	auto err = oxcical_import_internal(str_zone, pvalue, b_proposal,
 	           calendartype, pical, uid_list.begin()->second, alloc,
-	           get_propids, username_to_entryid, pmsg, nullptr, nullptr,
-	           nullptr, nullptr);
+	           std::move(get_propids), username_to_entryid, pmsg,
+	           nullptr, nullptr, nullptr, nullptr);
 	if (err != nullptr) {
 		mlog(LV_ERR, "%s", err);
 		return ecError;
@@ -3062,7 +3062,7 @@ static void oxcical_export_organizer(const MESSAGE_CONTENT &msg,
 			str = msg.proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (str != nullptr) {
 				auto ret = cvt_essdn_to_username(str, org_name,
-				           id2user, buf, std::size(buf));
+				           std::move(id2user), buf, std::size(buf));
 				str = ret == ecSuccess ? buf : nullptr;
 			}
 		}
@@ -3780,7 +3780,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 
-	return oxcical_export_valarm(*pmsg, *pcomponent, get_propids);
+	return oxcical_export_valarm(*pmsg, *pcomponent, std::move(get_propids));
 } catch (const std::bad_alloc &) {
 	return "E-2097: ENOMEM";
 }
@@ -3791,8 +3791,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
     cvt_id2user id2user)
 {
 	auto err = oxcical_export_internal(nullptr, nullptr, pmsg, pical,
-	           org_name, id2user, alloc,
-	           std::move(get_propids));
+	           org_name, std::move(id2user), alloc, std::move(get_propids));
 	if (err.size() > 0) {
 		mlog(LV_ERR, "%s", err.c_str());
 		return false;

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
@@ -44,7 +45,7 @@ ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
     cvt_id2user id2user, char *username, size_t ulen)
 {
 	std::string es_result;
-	auto ret = cvt_essdn_to_username(idn, org, id2user, es_result);
+	auto ret = cvt_essdn_to_username(idn, org, std::move(id2user), es_result);
 	if (ret == ecSuccess)
 		gx_strlcpy(username, es_result.c_str(), ulen);
 	return ret;
@@ -64,7 +65,7 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 	} else if (strcasecmp(addrtype, "EX") == 0) {
 		if (emaddr == nullptr)
 			return ecNullObject;
-		return cvt_essdn_to_username(emaddr, org, id2user, smtpaddr);
+		return cvt_essdn_to_username(emaddr, org, std::move(id2user), smtpaddr);
 	} else if (strcmp(addrtype, "0") == 0) {
 		/*
 		 * When MFCMAPI 21.2.21207.01 imports a .msg file, PR_SENT_*
@@ -80,7 +81,7 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 {
 	std::string es_result;
 	auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, org,
-	           id2user, es_result);
+	           std::move(id2user), es_result);
 	if (ret == ecSuccess)
 		gx_strlcpy(smtpaddr, es_result.c_str(), slen);
 	return ret;
@@ -92,7 +93,8 @@ bool emsab_to_email(EXT_PULL &ser, const char *org, cvt_id2user id2user,
 	EMSAB_ENTRYID eid;
 	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
 		return false;
-	return cvt_essdn_to_username(eid.px500dn, org, id2user, addr, asize) == ecSuccess;
+	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user),
+	       addr, asize) == ecSuccess;
 }
 
 static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,
@@ -102,7 +104,7 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
 	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
 	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
 		return ecInvalidParam;
-	return cvt_essdn_to_username(eid.px500dn, org, id2user, smtpaddr);
+	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user), smtpaddr);
 }
 
 static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
@@ -117,7 +119,7 @@ static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
 	if (ser.g_oneoff_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
 	return cvt_genaddr_to_smtpaddr(eid.paddress_type, eid.pmail_address,
-	       org, id2user, smtpaddr);
+	       org, std::move(id2user), smtpaddr);
 }
 
 ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
@@ -138,9 +140,9 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
 	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
 	ext_pull.m_offset = 0;
 	if (provider_uid == muidEMSAB)
-		return emsab_to_email2(ext_pull, org, id2user, smtpaddr);
+		return emsab_to_email2(ext_pull, org, std::move(id2user), smtpaddr);
 	if (provider_uid == muidOOP)
-		return cvt_oneoff_to_smtpaddr(ext_pull, org, id2user, smtpaddr);
+		return cvt_oneoff_to_smtpaddr(ext_pull, org, std::move(id2user), smtpaddr);
 	return ecUnknownUser;
 }
 
@@ -148,7 +150,7 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
     cvt_id2user id2user, char *addr, size_t alen)
 {
 	std::string es_result;
-	auto ret = cvt_entryid_to_smtpaddr(bin, org, id2user, es_result);
+	auto ret = cvt_entryid_to_smtpaddr(bin, org, std::move(id2user), es_result);
 	if (ret == ecSuccess)
 		gx_strlcpy(addr, es_result.c_str(), alen);
 	return ret;

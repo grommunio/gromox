@@ -2910,7 +2910,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			return imp_null;
 	}
 	if (field_param.b_flag_del)
-		oxcmail_remove_flag_propties(pmsg.get(), get_propids);
+		oxcmail_remove_flag_propties(pmsg.get(), std::move(get_propids));
 	return pmsg.release();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2182: ENOMEM");
@@ -2983,7 +2983,7 @@ BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
 			return false;
 	}
 	auto ret = cvt_entryid_to_smtpaddr(pproplist->get<const BINARY>(tags.pr_entryid),
-	           org, id2user, username, ulen);
+	           org, std::move(id2user), username, ulen);
 	return ret == ecSuccess;
 }
 
@@ -3014,7 +3014,7 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	}
 	auto v = props.get<const BINARY>(tags.pr_entryid);
 	if (v != nullptr) {
-		auto ret = cvt_entryid_to_smtpaddr(v, org, id2user,
+		auto ret = cvt_entryid_to_smtpaddr(v, org, std::move(id2user),
 		           &username[7], ulen > 8 ? ulen - 7 : 0);
 		if (ret == ecSuccess) {
 			memcpy(username, "rfc822;", 7);
