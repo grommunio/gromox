@@ -109,7 +109,6 @@ class VCONN_REF {
 };
 }
 
-alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static size_t g_context_num;
 static gromox::atomic_bool g_async_stop;
 static bool g_support_tls;
@@ -362,7 +361,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 {
 	int size1;
 	int size1_used;
-	STREAM stream_dst(&g_blocks_allocator);
+	STREAM stream_dst;
 	auto pstream_src = &stream_src, pstream_dst = &stream_dst;
 	int size = STREAM_BLOCK_SIZE;
 	auto pbuff = pstream_src->get_read_buf(reinterpret_cast<unsigned int *>(&size));
@@ -2156,8 +2155,7 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-http_context::http_context() :
-	stream_in(&g_blocks_allocator), stream_out(stream_in.allocator)
+http_context::http_context()
 {
 	auto pcontext = this;
 	pcontext->node.pdata = pcontext;

@@ -493,8 +493,6 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
-	g_blocks_allocator = alloc_limiter<stream_block>(scfg.context_num * context_aver_mem,
-	                     "smtp_blocks_alloc", "smtp.cfg:context_num,context_aver_mem");
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 
 		mlog(LV_ERR, "system: failed to start SMTP parser");

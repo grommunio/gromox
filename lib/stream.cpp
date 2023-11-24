@@ -22,11 +22,17 @@ enum {
 	STREAM_EOM_CRORLF,
 };
 
+namespace {
+struct stream_block {
+	DOUBLE_LIST_NODE list_node;
+	char buf[STREAM_BLOCK_SIZE];
+};
+}
+
 static void stream_free(STREAM *);
 static BOOL stream_append_node(STREAM *pstream); 
 
-STREAM::STREAM(alloc_limiter<stream_block> *palloc) :
-	allocator(palloc)
+STREAM::STREAM()
 {
 	auto pstream = this;
 	BOOL bappend;
@@ -56,14 +62,13 @@ STREAM::STREAM(const STREAM &o) :
 	wr_block_pos(o.wr_block_pos), rd_total_pos(o.rd_total_pos),
 	wr_total_pos(o.wr_total_pos), last_eom_parse(o.last_eom_parse),
 	block_line_parse(o.block_line_parse), block_line_pos(o.block_line_pos),
-	allocator(o.allocator), list(o.list), is_clone(true)
+	list(o.list), is_clone(true)
 {}
 
 STREAM &STREAM::operator=(STREAM &&o)
 {
 	stream_free(this);
 	xcopy(o);
-	o.allocator = nullptr;
 	double_list_init(&o.list);
 	double_list_free(&o.list);
 	return *this;
@@ -82,7 +87,6 @@ void STREAM::xcopy(const STREAM &o)
 	last_eom_parse = o.last_eom_parse;
 	block_line_parse = o.block_line_parse;
 	block_line_pos = o.block_line_pos;
-	allocator = o.allocator;
 	list = o.list;
 }
 
@@ -186,10 +190,6 @@ void STREAM::clear()
 {
 	auto pstream = this;
 	DOUBLE_LIST_NODE *pnode, *phead;
-#ifdef _DEBUG_UMTA
-	if (allocator == nullptr)
-		return;
-#endif
 	phead = double_list_get_head(&pstream->list);
 	if (phead == nullptr)
 		goto CLEAR_RETRUN;
@@ -200,7 +200,7 @@ void STREAM::clear()
 		if (pnode == phead)
 			break;
 		double_list_remove(&pstream->list, pnode);
-		pstream->allocator->put(containerof(pnode, stream_block, list_node));
+		delete containerof(pnode, stream_block, list_node);
 		pnode = double_list_get_tail(&pstream->list);
 	}
 
@@ -234,8 +234,7 @@ void stream_free(STREAM *pstream)
 	pstream->clear();
 	phead = double_list_pop_front(&pstream->list);
 	if (phead != nullptr)
-		pstream->allocator->put(containerof(phead, stream_block, list_node));
-	pstream->allocator = NULL;
+		delete containerof(phead, stream_block, list_node);
 	double_list_free(&pstream->list);
 }
 
@@ -248,7 +247,7 @@ void stream_free(STREAM *pstream)
  *		  TRUE	  success
  *		  FALSE	   fail
  */
-static BOOL stream_append_node(STREAM *pstream)
+static BOOL stream_append_node(STREAM *pstream) try
 {
 	DOUBLE_LIST_NODE *pnode;
 #ifdef _DEBUG_UMTA
@@ -259,16 +258,18 @@ static BOOL stream_append_node(STREAM *pstream)
 		pnode = double_list_get_after(&pstream->list,
 			pstream->pnode_wr);
 	} else {
-		auto blk = pstream->allocator->get();
+		auto blk = new stream_block;
 		if (blk == nullptr)
 			return FALSE;
 		pnode = &blk->list_node;
-		pnode->pdata = (char*)pnode + sizeof(DOUBLE_LIST_NODE);
+		pnode->pdata = blk->buf;
 		double_list_append_as_tail(&pstream->list, pnode);
 	}
 	pstream->pnode_wr = pnode;
 	pstream->wr_block_pos = 0;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 /*

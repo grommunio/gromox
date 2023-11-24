@@ -63,7 +63,6 @@ static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 smtp_param g_param;
-alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 
 /* 
  * construct a smtp parser object
@@ -470,7 +469,7 @@ tproc_status smtp_parser_process(schedule_context *vcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		case STREAM_EOM_DIRTY:
-			pcontext->stream_second.emplace(&g_blocks_allocator);
+			pcontext->stream_second.emplace();
 			pcontext->stream.split_eom(&*pcontext->stream_second);
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
@@ -592,10 +591,6 @@ void envelope_info::clear()
 	strcpy(parsed_domain, "unknown");
 	rcpt_to.clear();
 }
-
-smtp_context::smtp_context() :
-	stream(&g_blocks_allocator)
-{}
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 {

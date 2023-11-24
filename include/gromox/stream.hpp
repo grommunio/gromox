@@ -39,7 +39,7 @@ enum {
 };
 
 struct STREAM {
-	STREAM(alloc_limiter<stream_block> *);
+	STREAM();
 	STREAM(STREAM &&) = delete;
 	STREAM &operator=(STREAM &&);
 	~STREAM();
@@ -70,7 +70,6 @@ struct STREAM {
 	size_t rd_total_pos = 0, wr_total_pos = 0;
 	size_t last_eom_parse = 0;
 	size_t block_line_parse = 0, block_line_pos = 0;
-	alloc_limiter<stream_block> *allocator = nullptr;
 	DOUBLE_LIST list{};
 
 	protected:

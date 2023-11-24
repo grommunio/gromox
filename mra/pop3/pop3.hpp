@@ -36,7 +36,7 @@ enum {
 struct CONFIG_FILE;
 
 struct pop3_context final : public schedule_context {
-	pop3_context();
+	pop3_context() = default;
 	~pop3_context();
 	NOMOVE(pop3_context);
 
@@ -113,5 +113,4 @@ extern uint16_t g_listener_ssl_port;
 extern unsigned int g_popcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_tls, g_force_tls;
-extern alloc_limiter<stream_block> g_blocks_allocator;
 extern std::shared_ptr<CONFIG_FILE> g_config_file;

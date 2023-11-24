@@ -31,11 +31,6 @@ enum class mime_type {
 	none, single, single_obj, multiple,
 };
 
-struct stream_block {
-	DOUBLE_LIST_NODE list_node;
-	char buf[STREAM_BLOCK_SIZE];
-};
-
 struct GX_EXPORT LIB_BUFFER {
 	LIB_BUFFER(const char *n) : m_name(n) {}
 	LIB_BUFFER(LIB_BUFFER &&) noexcept = delete;

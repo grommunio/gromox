@@ -623,8 +623,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		auto mailLen = mail.get_length();
 		if(mailLen < 0)
 			throw EWSError::ItemCorrupt(E3073);
-		alloc_limiter<stream_block> allocator(mailLen/STREAM_BLOCK_SIZE+1, "ews::loadMime");
-		STREAM tempStream(&allocator);
+		STREAM tempStream;
 		if(!mail.serialize(&tempStream))
 			throw EWSError::ItemCorrupt(E3074);
 		auto& mimeContent = item.MimeContent.emplace();
