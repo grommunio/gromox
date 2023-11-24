@@ -141,13 +141,7 @@ void STREAM::try_mark_line()
 		pstream->line_result = STREAM_LINE_FAIL;
 		return;
 	}
-	if (pnode == pstream->pnode_wr) {
-		end = pstream->wr_block_pos;
-	} else {
-		end = STREAM_BLOCK_SIZE;
-	}
-	
-	
+	end = pnode == pstream->pnode_wr ? pstream->wr_block_pos : STREAM_BLOCK_SIZE;
 	for (i=pstream->block_line_parse; i<end; i++) {
 		temp1 = *((char*)pnode->pdata + i);
 		switch (temp1) {
@@ -920,16 +914,8 @@ void STREAM::try_mark_eom()
 	
 	pnode = pstream->pnode_wr;
 	for (i=0; i<=block_deep; i++) {
-		if (i == block_deep) {
-			until_pos = block_offset;
-		} else {
-			until_pos = 0;
-		}
-		if (0 == i) {
-			from_pos = pstream->wr_block_pos - 1;
-		} else {
-			from_pos = STREAM_BLOCK_SIZE - 1;
-		}
+		until_pos = i == block_deep ? block_offset : 0;
+		from_pos  = i == 0 ? pstream->wr_block_pos - 1 : STREAM_BLOCK_SIZE - 1;
 		for (j=from_pos; j>=until_pos; j--) {
 			pbuff = (char*)pnode->pdata;
 			if (pbuff[j] != '.')
@@ -962,11 +948,7 @@ void STREAM::try_mark_eom()
 					temp_buff[4] = '\0';
 				} else {
 					pnode1 = double_list_get_after(&pstream->list, pnode);
-					if (NULL == pnode1) {
-						temp_buff[4] = '\0';
-					} else {
-						temp_buff[4] = ((char *)pnode1->pdata)[0];
-					}
+					temp_buff[4] = pnode1 == nullptr ? '\0' : *static_cast<const char *>(pnode1->pdata);
 				}
 			} else if (from_pos == j) {
 				if (0 == i) {
@@ -1006,12 +988,7 @@ void STREAM::try_mark_eom()
 		}
 	}
  NONE_EOM:
-	if (pstream->wr_total_pos >= 2) {
-		pstream->last_eom_parse = pstream->wr_total_pos - 2;
-	} else {
-		pstream->last_eom_parse = 0;
-	}
-	return;
+	pstream->last_eom_parse = pstream->wr_total_pos >= 2 ? pstream->wr_total_pos - 2 : 0;
 }
 
 /*
