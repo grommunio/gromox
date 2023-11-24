@@ -199,11 +199,9 @@ void STREAM::clear()
 		goto CLEAR_RETRUN;
 	}
 	while (true) {
-		if (pnode != phead) {
-			double_list_remove(&pstream->list, pnode);
-		} else {
+		if (pnode == phead)
 			break;
-		}
+		double_list_remove(&pstream->list, pnode);
 		pstream->allocator->put(containerof(pnode, stream_block, list_node));
 		pnode = double_list_get_tail(&pstream->list);
 	}
@@ -953,15 +951,12 @@ void STREAM::try_mark_eom()
 			} else if (from_pos == j) {
 				if (0 == i) {
 					continue;
-				} else {
-					pnode1 = double_list_get_after(&pstream->list, pnode);
-					if (NULL == pnode1) {
-						continue;
-					} else {
-						temp_buff[3] = ((char *)pnode1->pdata)[0];
-						temp_buff[4] = ((char *)pnode1->pdata)[1];
-					}
 				}
+				pnode1 = double_list_get_after(&pstream->list, pnode);
+				if (pnode1 == nullptr)
+					continue;
+				temp_buff[3] = ((char *)pnode1->pdata)[0];
+				temp_buff[4] = ((char *)pnode1->pdata)[1];
 			} else {
 				temp_buff[3] = pbuff[j + 1];
 				temp_buff[4] = pbuff[j + 2];
