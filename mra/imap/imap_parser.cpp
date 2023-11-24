@@ -74,7 +74,6 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static alloc_limiter<DIR_NODE> g_alloc_dir{"g_alloc_dir.d"};
 static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
@@ -84,11 +83,6 @@ static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-
-alloc_limiter<DIR_NODE> *imap_parser_get_dpool()
-{
-	return &g_alloc_dir;
-}
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
     time_duration timeout, time_duration autologout_time, int max_auth_times,
@@ -190,11 +184,6 @@ int imap_parser_run()
 		CRYPTO_set_locking_callback(imap_parser_ssl_locking);
 #endif
 	}
-	num = 10*g_context_num;
-	if (num < 1000)
-		num = 1000;
-	g_alloc_dir = alloc_limiter<DIR_NODE>(num, "imap_alloc_dir",
-	              "imap.cfg:g_context_num");
 	num = 4*g_context_num;
 	if (num < 400)
 		num = 400;
