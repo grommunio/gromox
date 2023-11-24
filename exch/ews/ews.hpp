@@ -424,7 +424,7 @@ template<typename T, typename... Args>
 inline T* EWSContext::construct(Args&&... args)
 {
 	static_assert(std::is_trivially_destructible_v<T>, "Can only construct trivially destructible types");
-	return new(alloc<T>()) T(std::forward<Args...>(args...));
+	return new(alloc<T>()) T(std::forward<Args>(args)...);
 }
 
 }
