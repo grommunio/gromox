@@ -93,25 +93,26 @@ files from disk that are no longer referenced by any message.
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBpurge-softdelete\fP [\fB\-r\fP]
 [\fB\-t\fP \fItimespec\fP] \fIfolder_spec\fP...
 .SS Description
-This command removes all messages from a folder which are marked as
-softdeleted. (The entire mailbox can be processed by specifying the root
-folder plus the -r option.)
+This command hard-deletes all messages from a folder which are marked as
+soft-deleted. (The entire mailbox can be processed by specifying the root
+folder plus the \-r option.)
 .SS Subcommand options
 .TP
-\fB-r\fP
+\fB\-r\fP
 Recurse into subfolders.
 .TP
 \fB\-t\fP \fItimespec\fP
-Specifies the minimum age that soft-deleted messages must have before they are
-hard-deleted. timespec can be something like \fI1d12h\fP. A number of units are
-recognized (short and long forms): s/sec/second(s), min/minute(s), h/hour(s),
-d/day(s), week(s), month(s), y/year(s).
+Specifies the minimum time to the last modification that soft-deleted messages
+must have before they are hard-deleted. timespec can be something like
+\fI1d12h\fP. A number of units are recognized (short and long forms):
+s/sec/second(s), min/minute(s), h/hour(s), d/day(s), week(s), month(s),
+y/year(s).
 .br
-Default: \fI0\fP
+Default: \fI0\fP (immediate deletion)
 .SS Examples
 .IP \(bu 4
-To clear an entire mailbox: gromox\-mbop \-u abc@example.com purge\-softdelete
-\-r /
+To process an entire mailbox and wipe everything older than a few days:
+gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 .SH recalc\-sizes
 Recalculates the store size.
 .SH unload
