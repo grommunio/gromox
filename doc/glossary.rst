@@ -299,6 +299,78 @@ Folder Associated Item, FAI
 Limits
 ======
 
-GLOBCNT_MAX = 2^47
-	Maximum number of unique objects that could,
-	over the entire liftime of the mailbox, ever exist.
+Global user count
+	Gromox limit: 2^31 - 16, based on ab_tree minid limits.
+	Upper theoretical limit: 2^32 - 16.
+
+Global domain count
+	Gromox limit: 2^29 - 16, based on ab_tree minid limits.
+	Upper theoretical limit: 2^32 - 16.
+
+Global department count
+	Gromox limit: 2^29 - 16, based on ab_tree minid limits.
+	Upper theoretical limit: 2^32 - 16.
+
+Global AB class count
+	Gromox limit: 2^29 - 16, based on ab_tree minid limits.
+	Upper theoretical limit: 2^32 - 16.
+
+
+Mailbox size
+	Limit: 15 exabytes.
+	The range of the ``PR_MESSAGESIZE_EXTENDED`` property is 0..2^63, the
+	unit is in bytes.
+
+Mailbox quota restriction
+	Limit: 2 terabytes.
+	The range of the ``PR_PROHIBIT_RECEIVE_QUOTA``,
+	``PR_PROHIBIT_SEND_QUOTA``, ``PR_STORAGE_QUOTA_LIMIT`` property is
+	0..2^31, the unit is kilobytes.
+
+Changes
+	Lowest known limit: 2^47, due to a mystery historic choice for the
+	``CHANGE_NUMBER_BEGIN`` constant of 0x800000000000 in the Gromox 2.17
+	source code.
+	Regular specced limit: 2^48 changes per replid.
+	Upper theoretical limit: 2^64 (by starting to use multiple replids for
+	one "replica").
+
+GLOBCNT
+	Lowest known limit: 2^47 objects for replid 1 (imposed by limit for
+	*Changes*).
+	Regular specced limit: 2^48.
+	Upper theoretical limit: 2^64.
+
+Folders
+	Lowest known limit: 2^31. Gromox 2.17 does range reservations when a
+	folder is created in online mode (cf. ``SYSTEM_ALLOCATED_EID_RANGE``
+	and ``ALLOCATED_EID_RANGE`` in source code), so the GLOBCNT space could
+	already be used up after 2^31 folders.
+	Regular specced limit: 2^48 (cf. *GLOBCNT*).
+	Upper theoretical limit: 2^64 (cf. *GLOBCNT*).
+
+Messages
+	Lowest known limit: 2^31. If you restrict yourself to place only one
+	message per folder, then *folders* is the limit.
+	Regular specced limit: 2^48 (cf. *GLOBCNT*).
+	Upper theoretical limit: 2^64 (cf. *GLOBCNT*).
+
+Receive folders
+	Lowest known limit: 2000, due to a mystery historic choice for the
+	``MAXIMUM_RECEIVE_FOLDERS`` constant in the Gromox 2.17 source code.
+	Regular specced limit: 2^48 (cf. *Folders*).
+	Upper theoretical limit: 2^64 (cf. *Folders*).
+
+Named properties
+	Lowest knwon limit: 28672 (propids 0x8000..0xefff inclusive) per
+	mailbox, due to a mystery historic choice for the
+	``MAXIMUM_PROPNAME_NUMBER`` constant in the Gromox 2.17 source code.
+	Technical limit: 32767 (propids 0x8000..0xfffe inclusive) per mailbox.
+
+
+Foreign limits
+==============
+
+* PFF files are said to have a technical limit of 4096 TB, but Outlook has imposed
+  `extra arbitary limits
+  <https://support.microsoft.com/en-gb/topic/how-to-configure-the-size-limit-for-both-pst-and-ost-files-in-outlook-2f13f558-d40e-9c2a-e3b6-02806fa535f4>`_.
