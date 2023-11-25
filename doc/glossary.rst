@@ -334,6 +334,7 @@ Folder Associated Item, FAI
 Limits
 ======
 
+<<<<<<< HEAD
 Global user count
 	Gromox limit: 2^31 - 16, based on ab_tree minid limits.
 	Upper theoretical limit: 2^32 - 16.
@@ -350,6 +351,11 @@ Global AB class count
 	Gromox limit: 2^29 - 16, based on ab_tree minid limits.
 	Upper theoretical limit: 2^32 - 16.
 
+Username
+	Length limit: 319.
+	64 characters for the localpart left of the '@' sign, 253 characters
+	for the hostname right of the '@' sign [254 chars if trailing dots are
+	used]. (RFC 1035)
 
 Mailbox size
 	Limit: 15 exabytes.

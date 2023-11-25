@@ -40,14 +40,16 @@ enum gx_loglevel {
 };
 
 enum {
-	ULCLPART_SIZE = 65, /* localpart(64) plus \0 */
-	UDOM_SIZE = 256, /* domain(255) plus \0 */
-	UADDR_SIZE = 321, /* localpart(64) "@" domain \0 */
+	/* cf. glossary.rst, plus a \0 for us */
+	ULCLPART_SIZE = 65,
+	UDOM_SIZE = 255,
+	UADDR_SIZE = 320,
 
 	/*
 	 * The name of a namedprop can be at most 254 UTF-16 chars as per
 	 * OXCPRPT v17 §4.1.1. Since Gromox operates in UTF-8, that's a few
-	 * more octets. (TNEF uses a larger, 32-bit field.)
+	 * more octets. (TNEF uses a 32-bit field to encode the length, but
+	 * that does not really change the limits imposed elsewhere.)
 	 */
 	GUIDSTR_SIZE = 37,
 	NP_NAMEBUF_SIZE = 763,
