@@ -63,10 +63,9 @@ struct XARRAY;
 struct XARRAY_UNIT;
 
 struct DIR_NODE {
-	SIMPLE_TREE_NODE node;
+	SIMPLE_TREE_NODE stree;
 	BOOL b_loaded;
 	char name[256];
-	alloc_limiter<DIR_NODE> *ppool;
 };
 
 struct imap_context;
@@ -142,9 +141,6 @@ extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
 extern void imap_parser_remove_select(IMAP_CONTEXT *);
 extern  void imap_parser_safe_write(IMAP_CONTEXT *, const void *pbuff, size_t count);
-/* get allocator for mjson mime */
-extern alloc_limiter<MJSON_MIME> *imap_parser_get_jpool();
-extern alloc_limiter<DIR_NODE> *imap_parser_get_dpool();
 extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(IMAP_CONTEXT *, int level, const char *format, ...);
 
@@ -236,4 +232,3 @@ extern uint16_t g_listener_ssl_port;
 extern unsigned int g_imapcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_tls, g_force_tls, g_rfc9051_enable;
-extern alloc_limiter<stream_block> g_blocks_allocator;

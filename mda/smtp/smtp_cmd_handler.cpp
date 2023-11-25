@@ -272,7 +272,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
         return DISPATCH_CONTINUE;
     }
 	/* fill the new stream the data after "data" command */
-	STREAM stream(&g_blocks_allocator);
+	STREAM stream;
 	unsigned int size2 = STREAM_BLOCK_SIZE;
 	void *pbuff2 = stream.get_write_buf(&size2);
 	/*

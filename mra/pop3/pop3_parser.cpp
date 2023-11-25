@@ -37,7 +37,6 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
-alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
 static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
@@ -451,7 +450,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		return POP3_RETRIEVE_TERM;
 	}
 
-	STREAM temp_stream(&g_blocks_allocator);
+	STREAM temp_stream;
 	while (temp_stream.get_total_length() < g_retrieving_size) {
 		size = STREAM_BLOCK_SIZE;
 		void *pbuff = temp_stream.get_write_buf(&size);
@@ -612,10 +611,6 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 	ctx->connection.write(str, zlen);
 	return ret & DISPATCH_ACTMASK;
 }
-
-pop3_context::pop3_context() :
-	stream(&g_blocks_allocator)
-{}
 
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 {

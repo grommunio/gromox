@@ -60,14 +60,15 @@ using mdi_list = std::vector<std::string>; /* message data item (RFC 3501 §6.4.
 namespace {
 
 struct dir_tree {
-	dir_tree(alloc_limiter<DIR_NODE> *);
+	dir_tree() = default;
 	~dir_tree();
+	NOMOVE(dir_tree);
+
 	void load_from_memfile(const std::vector<std::string> &);
 	DIR_NODE *match(const char *path);
 	static DIR_NODE *get_child(DIR_NODE *);
 
-	SIMPLE_TREE tree{};
-	alloc_limiter<DIR_NODE> *ppool = nullptr;
+	SIMPLE_TREE stree{};
 };
 using DIR_TREE = dir_tree;
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
@@ -83,31 +84,21 @@ static constexpr const char *g_folder_list[] = {"draft", "sent", "trash", "junk"
 /* RFC 6154 says \Junk, but Thunderbird evaluates \Spam */
 static constexpr const char *g_xproperty_list[] = {"\\Drafts", "\\Sent", "\\Trash", "\\Junk \\Spam"};
 
-static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
-{
-	auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
-	pdir->ppool->put(pdir);
-}
-
-dir_tree::dir_tree(alloc_limiter<DIR_NODE> *a) : ppool(a)
-{}
-
-void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
+void dir_tree::load_from_memfile(const std::vector<std::string> &pfile) try
 {
 	auto ptree = this;
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
 	SIMPLE_TREE_NODE *pnode, *pnode_parent;
 
-	auto proot = ptree->tree.get_root();
+	auto proot = ptree->stree.get_root();
 	if (NULL == proot) {
-		auto pdir = ptree->ppool->get();
-		pdir->node.pdata = pdir;
+		auto pdir = std::make_unique<DIR_NODE>();
+		pdir->stree.pdata = pdir.get();
 		pdir->name[0] = '\0';
 		pdir->b_loaded = TRUE;
-		pdir->ppool = ptree->ppool;
-		ptree->tree.set_root(&pdir->node);
-		proot = &pdir->node;
+		proot = &pdir->stree;
+		ptree->stree.set_root(std::move(pdir));
 	}
 
 	for (const auto &pfile_path : pfile) {
@@ -132,26 +123,27 @@ void dir_tree::load_from_memfile(const std::vector<std::string> &pfile)
 			}
 
 			if (NULL == pnode) {
-				auto pdir = ptree->ppool->get();
-				pdir->node.pdata = pdir;
+				auto pdir = std::make_unique<DIR_NODE>();
+				pdir->stree.pdata = pdir.get();
 				gx_strlcpy(pdir->name, ptr1, std::size(pdir->name));
 				pdir->b_loaded = FALSE;
-				pdir->ppool = ptree->ppool;
-				pnode = &pdir->node;
-				ptree->tree.add_child(pnode_parent, pnode,
-					SIMPLE_TREE_ADD_LAST);
+				pnode = &pdir->stree;
+				ptree->stree.add_child(pnode_parent,
+					std::move(pdir), SIMPLE_TREE_ADD_LAST);
 			}
 			ptr1 = ptr2 + 1;
 		}
 		static_cast<DIR_NODE *>(pnode->pdata)->b_loaded = TRUE;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2903: ENOMEM");
 }
 
 static void dir_tree_clear(DIR_TREE *ptree)
 {
-	auto pnode = ptree->tree.get_root();
+	auto pnode = ptree->stree.get_root();
 	if (pnode != nullptr)
-		ptree->tree.destroy_node(pnode, dir_tree_enum_delete);
+		ptree->stree.destroy_node(pnode, [](tree_node *p) { delete static_cast<DIR_NODE *>(p->pdata); });
 }
 
 DIR_NODE *dir_tree::match(const char *path)
@@ -162,7 +154,7 @@ DIR_NODE *dir_tree::match(const char *path)
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
 
-	auto pnode = ptree->tree.get_root();
+	auto pnode = ptree->stree.get_root();
 	if (pnode == nullptr)
 		return NULL;
 	if (*path == '\0')
@@ -198,7 +190,7 @@ DIR_NODE *dir_tree::match(const char *path)
 
 DIR_NODE *dir_tree::get_child(DIR_NODE* pdir)
 {
-	auto pnode = pdir->node.get_child();
+	auto pnode = pdir->stree.get_child();
 	return pnode != nullptr ? static_cast<DIR_NODE *>(pnode->pdata) : nullptr;
 }
 
@@ -206,8 +198,7 @@ dir_tree::~dir_tree()
 {
 	auto ptree = this;
 	dir_tree_clear(ptree);
-	ptree->tree.clear();
-	ptree->ppool = NULL;
+	ptree->stree.clear();
 }
 
 static inline bool special_folder(const char *name)
@@ -734,7 +725,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
     BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
 {
 	int errnum;
-	MJSON mjson(imap_parser_get_jpool());
+	MJSON mjson;
 	char buff[MAX_DIGLEN];
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
@@ -928,7 +919,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
 				if (rfc_path.size() > 0 &&
 				    mjson.rfc822_build(rfc_path.c_str())) {
-					MJSON temp_mjson(imap_parser_get_jpool());
+					MJSON temp_mjson;
 					char mjson_id[64], final_id[64];
 					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id))
@@ -1777,7 +1768,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (ret != 0)
 			return ret;
 		imap_cmd_parser_convert_folderlist(pcontext->lang, folder_list);
-		dir_tree folder_tree(imap_parser_get_dpool());
+		dir_tree folder_tree;
 		folder_tree.load_from_memfile(std::move(folder_list));
 		auto dh = folder_tree.match(argv[2]);
 		if (dh == nullptr)
@@ -1913,7 +1904,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	}
 
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
-	dir_tree temp_tree(imap_parser_get_dpool());
+	dir_tree temp_tree;
 	temp_tree.load_from_memfile(temp_file);
 	pcontext->stream.clear();
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern.c_str())) {
@@ -1999,7 +1990,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	if (ret != 0)
 		return ret;
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file);
-	dir_tree temp_tree(imap_parser_get_dpool());
+	dir_tree temp_tree;
 	temp_tree.load_from_memfile(temp_file);
 	pcontext->stream.clear();
 
@@ -2084,7 +2075,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	system_services_enum_folders(pcontext->maildir, temp_file1, &errnum);
 	writefolderlines(temp_file1);
 	imap_cmd_parser_convert_folderlist(pcontext->lang, temp_file1);
-	dir_tree temp_tree(imap_parser_get_dpool());
+	dir_tree temp_tree;
 	temp_tree.load_from_memfile(temp_file1);
 	temp_file1.clear();
 	pcontext->stream.clear();

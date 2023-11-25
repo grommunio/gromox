@@ -4136,9 +4136,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
 			return false;
-		alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
-			"oxcmail_export_attachment");
-		STREAM tmp_stream(&pallocator);
+		STREAM tmp_stream;
 		if (!imail.serialize(&tmp_stream))
 			return FALSE;
 		imail.clear();

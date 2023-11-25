@@ -58,7 +58,7 @@ struct EXT_DATA {
 };
 
 struct smtp_context final : public schedule_context {
-	smtp_context();
+	smtp_context() = default;
 	NOMOVE(smtp_context);
 
 	GENERIC_CONNECTION connection;
@@ -104,6 +104,5 @@ extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
-extern alloc_limiter<stream_block> g_blocks_allocator;
 extern smtp_param g_param;
 extern std::string g_rcpt_delimiter;

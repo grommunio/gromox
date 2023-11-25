@@ -1889,9 +1889,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore, uint64_t inst_id, BINAR
 	auto mail_len = imail.get_length();
 	if (mail_len < 0)
 		return false;
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
-		"zcu_msgtorfc822", "(dynamic)");
-	STREAM tmp_stream(&pallocator);
+	STREAM tmp_stream;
 	if (!imail.serialize(&tmp_stream))
 		return FALSE;
 	imail.clear();

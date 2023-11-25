@@ -59,11 +59,10 @@ static int t_digest()
 
 int main()
 {
-	alloc_limiter<MJSON_MIME> al(4096, "mjson");
 	Json::Value json;
 	if (!json_from_str(tdata1, json))
 		return EXIT_FAILURE;
-	MJSON m(&al);
+	MJSON m;
 	if (!m.load_from_json(json, "/tmp")) {
 		fprintf(stderr, "retrieve failed\n");
 		return EXIT_FAILURE;

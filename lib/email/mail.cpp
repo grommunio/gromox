@@ -650,9 +650,7 @@ bool MAIL::dup(MAIL *pmail_dst)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	alloc_limiter<stream_block> pallocator(mail_len / STREAM_BLOCK_SIZE + 1,
-		"mail::dup");
-	STREAM tmp_stream(&pallocator);
+	STREAM tmp_stream;
 	if (!pmail_src->serialize(&tmp_stream))
 		return false;
 	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));

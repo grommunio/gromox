@@ -64,7 +64,6 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
-alloc_limiter<stream_block> g_blocks_allocator{"g_blocks_allocator.d"};
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
@@ -74,8 +73,6 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static alloc_limiter<DIR_NODE> g_alloc_dir{"g_alloc_dir.d"};
-static alloc_limiter<MJSON_MIME> g_alloc_mjson{"g_alloc_mjson.d"};
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
 static std::vector<imap_context *> g_sleeping_list;
@@ -84,11 +81,6 @@ static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-
-alloc_limiter<DIR_NODE> *imap_parser_get_dpool()
-{
-	return &g_alloc_dir;
-}
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
     time_duration timeout, time_duration autologout_time, int max_auth_times,
@@ -140,8 +132,6 @@ static void imap_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int imap_parser_run()
 {
-	int num;
-	
 	if (g_support_tls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
@@ -190,16 +180,6 @@ int imap_parser_run()
 		CRYPTO_set_locking_callback(imap_parser_ssl_locking);
 #endif
 	}
-	num = 10*g_context_num;
-	if (num < 1000)
-		num = 1000;
-	g_alloc_dir = alloc_limiter<DIR_NODE>(num, "imap_alloc_dir",
-	              "imap.cfg:g_context_num");
-	num = 4*g_context_num;
-	if (num < 400)
-		num = 400;
-	g_alloc_mjson = mjson_allocator_init(num);
-	
 	try {
 		g_context_list = std::make_unique<IMAP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
@@ -1448,8 +1428,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) tr
 	return imap_cmd_parser_dval(argc, argv, ctx, 1915);
 }
 
-imap_context::imap_context() :
-	stream(&g_blocks_allocator)
+imap_context::imap_context()
 {
 	auto pcontext = this;
     pcontext->connection.sockd = -1;
@@ -1691,11 +1670,6 @@ static void *imps_scanwork(void *argp)
 		}
 	}
 	return nullptr;
-}
-
-alloc_limiter<MJSON_MIME> *imap_parser_get_jpool()
-{
-	return &g_alloc_mjson;
 }
 
 int imap_parser_get_sequence_ID()

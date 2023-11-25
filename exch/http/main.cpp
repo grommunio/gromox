@@ -315,9 +315,6 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	g_blocks_allocator = alloc_limiter<stream_block>(context_num * context_aver_mem,
-	                     "http_blocks_allocator",
-	                     "http.cfg:context_num,context_average_mem");
 	pdu_processor_init(context_num, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
 		std::move(g_dfl_proc_plugins));
