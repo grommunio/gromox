@@ -28,6 +28,7 @@
 #include "logon_object.h"
 
 using namespace gromox;
+using LLU = unsigned long long;
 
 enum {
 	FUNC_ID_UINT32,
@@ -515,9 +516,9 @@ BOOL icsdownctx_object::make_sync()
 	return TRUE;
 }
 
-static BOOL icsdownctx_object_extract_msgctntinfo(
-	MESSAGE_CONTENT *pmsgctnt, uint8_t extra_flags,
-	TPROPVAL_ARRAY *pchgheader, PROGRESS_MESSAGE *pprogmsg)
+static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
+    uint8_t extra_flags, uint64_t message_id, TPROPVAL_ARRAY *pchgheader,
+    PROGRESS_MESSAGE *pprogmsg)
 {
 	pchgheader->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (pchgheader->ppropval == nullptr)
@@ -530,13 +531,19 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
 	auto ts = pmsgctnt->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
-	if (ts == nullptr)
+	if (ts == nullptr) {
+		mlog(LV_INFO, "I-2385: ICS: cannot transfer msg %llxh without PR_LAST_MODIFICATION_TIME\n",
+			LLU{message_id});
 		return FALSE;
+	}
 	pchgheader->emplace_back(PR_LAST_MODIFICATION_TIME, ts);
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
-	if (bin == nullptr)
+	if (bin == nullptr) {
+		mlog(LV_INFO, "I-2383: ICS: cannot transfer msg %llxh without PR_CHANGE_KEY\n",
+			LLU{message_id});
 		return FALSE;
+	}
 	pchgheader->emplace_back(PR_CHANGE_KEY, bin);
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
@@ -787,8 +794,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	icsdownctx_object_trim_report_recipients(pmsgctnt);
 	auto folder_id = pctx->pfolder->folder_id;
 	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PR_MSG_STATUS);
-	if (pstatus == nullptr)
+	if (pstatus == nullptr) {
+		mlog(LV_INFO, "I-2384: ICS: cannot transfer msg %llxh without PR_MSG_STATUS", LLU{message_id});
 		return FALSE;
+	}
 	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
 		if (!(pctx->sync_flags & SYNC_NO_FOREIGN_KEYS)) {
 			if (!exmdb_client::get_folder_property(dir,
@@ -823,7 +832,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				cu_set_propval(&pembedded->proplist, PR_SOURCE_KEY, psk);
 			}
 			if (!icsdownctx_object_extract_msgctntinfo(pembedded,
-			    pctx->extra_flags, &chgheader, &progmsg))
+			    pctx->extra_flags, message_id, &chgheader, &progmsg))
 				return FALSE;
 			icsdownctx_object_adjust_msgctnt(pembedded, pctx->pproptags,
 				!(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS));
@@ -880,7 +889,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
 	}
 	if (!icsdownctx_object_extract_msgctntinfo(pmsgctnt,
-	    pctx->extra_flags, &chgheader, &progmsg))
+	    pctx->extra_flags, message_id, &chgheader, &progmsg))
 		return FALSE;
 	auto cond1 = !(pctx->sync_flags & SYNC_ONLY_SPECIFIED_PROPS);
 	if (!(pctx->sync_flags & SYNC_IGNORE_SPECIFIED_ON_ASSOCIATED) ||
