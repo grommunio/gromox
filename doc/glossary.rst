@@ -2,10 +2,15 @@
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
 	SPDX-FileCopyrightText: 2023 grommunio GmbH
 
-Concept index
-=============
+Overview
+========
 
-Roughly sorted to get a bottom-up view.
+The sorting of sections was chosen so that a bottom-up view builds as one
+reads. Terms within one section are likewise sorted.
+
+
+Stores
+======
 
 Default Store
 	In a *MAPI profile*, there is a "default store" (default mailbox).
@@ -52,8 +57,7 @@ Non-default store
 	extra PSTs opened in a MAPI profile.
 
 Shared Store
-	A term used for a non-default private store to which multiple users
-	have some form of access.
+	A term used for a non-default private store.
 
 MAPI Profile
 	A list of one or more mailboxes. This concept only exists client-side,
@@ -67,16 +71,21 @@ exchange.sqlite3
 	operating system's filesystem, are: message bodies, transport header
 	property value, file attachments.
 
+
+Numbers and identifiers
+=======================
+
 FLATUID
-	A GUID which is treated as 16 raw bytes.
+	16 raw octets.
 
 GUID
 	Globally Unique Identifier. Also known as Universally Unique Identifier
 	(UUID). 128 bits in length. Not all bits are random; RFC 4122 defines
 	semantic meaning for certain bits. GUIDs are encoded little-endian so
 	byteorder is a concern for text representations. Common text forms are
-	32 chars (32 hex nibbles), 36 chars (added 4 dashes for RFC 4122
-	fields), 38 chars (added 2 curly braces).
+	32 chars (32 hex nibbles), 36 chars (added 4 dashes to make the RFC 4122
+	field separation visible), 38 chars (added 2 curly braces at the left
+	and right end).
 
 Mailbox GUID
 	A value which is found in ``mdb01.edb`` in table ``Mailbox``, column
@@ -97,6 +106,8 @@ Database GUID
 	column ``LocalIdGuid``.
 	In Exchange, dbguid is distinct from Store GUID.
 	In Gromox, dbguid is the same value as GABUID.
+	In Outlook Cached Mode, every OST file has its own dbguid. (Deleting
+	the OST file leads a new dbguid being generated.)
 
 Folder Database GUID
 	Visible in EX entryids (with conditions) at bytes 22-38.
@@ -118,33 +129,66 @@ Mapping Signature
 	ReplIDs.
 	In Gromox, the Mapping Signature has the same value as the Store GUID.
 
-Internal Identifier
-	Either a FID or MID.
-
 IID_
 	A prefix in source code for "interface identifier", related to the
 	MSMAPI C API and the ``IUnknown::QueryInterface`` function therein.
 	Identifiers may be ``IID_IMessage``, ``IID_IMAPIFolder``,
-	``IID_IMAPITable``, etc.
+	``IID_IMAPITable``, etc. Not to be confused with "internal identifier"
+	(see below).
+
+GLOBCNT / GCV
+	Short for "global object count(er)". Scope: one mailbox replica. Limit:
+	2^48. Every folder and message object is assigned a **unique,
+	non-reusable** GC value (GCV). GCVs need not be assigned in any
+	particular order, and no particular order should be inferred from GCVs.
+	In practice, a strictly monotonically increasing counter is used. This
+	is memory efficient and incurs lower fragmentation of the GCV space
+	than random GCV assignment.
+
+	Some components can perform a *range reservation* (e.g.
+	``ropGetLocalReplicaIds`` and the gromox-exmdb ``create_folder`` RPC).
+	causing the *top-level* counter to make bigger jumps, while the
+	component that performed the reservation deals out GCVs objects from
+	that range and seemingly in backwards fashion. For example, in Gromox,
+	a created folder may receive GCV 0x10000 and because it reserves
+	0x10001..0x1ffff for messages, the next folder gets GCV 0x20000. Once
+	the first folder has exceeded its reservation, it will make another,
+	e.g. 0x30000..0x3ffff.
+
+	In Gromox (2.17), the SQLite fields ``folder_id`` and ``message_id``
+	are GCVs. (This may change at a later time.)
+
+	On the wire, GLOBCNT is encoded as 6 octets, MSB-first (big-endian). In
+	Gromox source code, it is also MSB-first in certain representations
+	(e.g. ``struct GLOBCNT``)
+
+Internal Identifier
+	The aggregation of the 48-bit *GLOBCNT* plus the 16-bit *replid* of the
+	creator. Scope: all replicas of a mailbox. Limit: not defined because
+	aggregate. Total size: 8 octets. IIDs have no particular order. On the
+	wire, GLOBCNT is MSB-first, but replid is LSB-first. Historic design
+	choices made it such that Gromox's source code keeps these as uint64_t
+	with mixed-endianess, cf. function ``rop_util_make_eid_ex``. Unparsed
+	IIDs look a bit weird in log messages because of this bit order.
 
 Folder Identifier, FID
-	Visible in EX entryids (with conditions) at bytes 38-46.
-	Consists of GCV (6 bytes) + ReplID (2 bytes) = 8 bytes.
-	Because those 8 bytes are treated as a 64-bit integer
-	in Gromox, FIDs in Gromox often look reversed.
-	In Gromox, "fid" as a variable name sometimes refers to
-	either the 8-byte FID or just the GCV.
+	Name for *internal identifier* when talking about a folder object. The
+	FID can be observed in *EX entryids* (with conditions) at bytes 38–46.
+	In Gromox source code (as of 2.17), ``fid`` as a variable name
+	sometimes refers to either the internal identifier or just the GCV.
+	``fid_val`` is almost exclusively the GCV form.
 
 Message Identifier, MID
-	Visible in EX entryids (with conditions) at bytes 62-70.
-	Consists of GCV (6 bytes) + ReplID (2 bytes) = 8 bytes.
-	Because those 8 bytes are treated as a 64-bit integer
-	in Gromox, FIDs in Gromox often look reversed.
-	In Gromox, "mid" as a variable name sometimes refers to
-	either the 8-byte MID or just the GCV.
+	Name for *internal identifier* when talking about a message object. The
+	MID can be observed in *EX entryids* (with conditions) at bytes 62–70.
+	In Gromox source code (as of 2.17), ``mid`` as a variable name
+	sometimes refers to either the internal identifier or just the GCV.
+	``mid_val`` is almost exclusively the GCV form.
 
 Global Identifier, GID
-	Database GUID (16 bytes) + GCV (6 bytes) = 22 bytes.
+	The aggregation of the 128-bit dbguid plus the 48-bit *GLOBCNT*. Scope:
+	all replicas of a mailbox. Limit: not defined because aggregate. Total
+	size: 22 octets.
 
 External Identifier for objects, XID
 	EX: 16-byte namespace GUID (which?) + GCV (6 bytes) = 22 bytes.
@@ -181,15 +225,6 @@ GABUID
 
 	16-byte GUID value composed of 4 bytes Gromox domain ID plus
 	12 fixed bytes {XXXXXXXX-0afb-7df6-9192-49886aa738ce}.
-
-GLOBCNT / GCV
-	Global object count. Scope: mailbox. Limit: 2^48.
-	Every new folder and message is assigned a GC value.
-	ICS clients can bulk-reserve GCV blocks on the server
-	for delegation. The GC counter on the server is effectively
-	strictly monotonically increasing. Because ICS clients
-	can upload objects late, the GC value is no indicator for
-	any particular order.
 
 PR_CHANGE_KEY
 	Identifier for the most recent change.
@@ -366,6 +401,13 @@ Named properties
 	mailbox, due to a mystery historic choice for the
 	``MAXIMUM_PROPNAME_NUMBER`` constant in the Gromox 2.17 source code.
 	Technical limit: 32767 (propids 0x8000..0xfffe inclusive) per mailbox.
+
+Replicas
+	Lowest anticipated limit: 32763.
+	Upper theoretical limit: 65535.
+	(replid 0 is unused, replid 1 is already used at mailbox creation time,
+	Exchange/Gromox reserve another 4, and we are unsure whether replids
+	are treated as a signed or unsigned 16-bit quantity.)
 
 
 Foreign limits
