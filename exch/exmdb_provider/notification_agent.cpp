@@ -93,11 +93,12 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 			    static_cast<size_t>(bytes_written) != dg.cb ||
 			    !notification_agent_read_response(prouter))
 				goto EXIT_THREAD;
-			std::lock_guard rt_lock(prouter->lock);
+			std::unique_lock rt_lock(prouter->lock);
 			if (prouter->datagram_list.size() > 0) {
 				dg = prouter->datagram_list.front();
 				prouter->datagram_list.pop_front();
 			} else {
+				rt_lock.unlock();
 				dg.cb = 0;
 				dg.pb = nullptr;
 			}
