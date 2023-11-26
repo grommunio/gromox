@@ -283,8 +283,8 @@ static constexpr const cfg_directive xa_directives[] = {
 	CFG_TABLE_END,
 };
 
-static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg,
-    std::shared_ptr<CONFIG_FILE> acfg)
+static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&mcfg,
+    std::shared_ptr<CONFIG_FILE> &&acfg)
 {
 	if (mcfg == nullptr)
 		mcfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
@@ -358,7 +358,7 @@ static BOOL xa_main(int reason, void **data)
 		       strerror(errno));
 		return false;
 	}
-	if (!xa_reload_config(mcfg, acfg) ||
+	if (!xa_reload_config(std::move(mcfg), std::move(acfg)) ||
 	    !register_hook(xa_alias_subst))
 		return false;
 	try {

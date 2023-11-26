@@ -159,7 +159,7 @@ static bool list_file_read_midb(const char *filename) try
 	return false;
 }
 
-static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> cfg)
+static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> &&cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("midb_agent.cfg", get_config_path(), midb_agent_cfg_defaults);
@@ -191,7 +191,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 				strerror(errno));
 			return FALSE;
 		}
-		if (!midb_agent_reload(pconfig))
+		if (!midb_agent_reload(std::move(pconfig)))
 			return false;
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;

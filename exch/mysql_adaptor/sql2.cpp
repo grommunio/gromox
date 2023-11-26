@@ -452,7 +452,7 @@ static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> &&cfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path(),
@@ -636,7 +636,7 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 		       strerror(errno));
 		return false;
 	}
-	if (!mysql_adaptor_reload_config(cfg))
+	if (!mysql_adaptor_reload_config(std::move(cfg)))
 		return false;
 	if (mysql_adaptor_run() != 0) {
 		mlog(LV_ERR, "mysql_adaptor: failed to startup");

@@ -236,7 +236,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	if (parent == nullptr)
 		plogitem->root = pobjnode;
 	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
-		pobjnode->parent = parent;
+		pobjnode->parent = std::move(parent);
 	if (pobjnode->type == ems_objtype::icsupctx) {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref ++;
