@@ -619,7 +619,7 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->pre_rstlen                   = 0;
 	pcontext->stream.clear();
 	pcontext->menv.clear();
-	memset(&pcontext->menv.hello_domain, '\0', std::size(pcontext->menv.hello_domain));
+	*pcontext->menv.hello_domain = '\0';
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
 }
 

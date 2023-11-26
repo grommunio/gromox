@@ -24,13 +24,13 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
 	pcontext->command_protocol = HT_SMTP;
-    if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
+	if (line_length >= 5 && line_length <= UDOM_SIZE - 1 + 5) {
         /* command error, cannot be recognized by system */
 		if (cmd_line[4] != ' ')
 			/* 502 Command not implemented */
 			return 506;
 		/* copy parameter to hello_domain */
-		memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
+		strncpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
 		pcontext->menv.hello_domain[line_length-5] = '\0';
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
@@ -49,12 +49,12 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
     char buff[1024];
             
 	/* SAME AS HELO [begin] */
-    if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
+	if (line_length >= 5 && line_length <= UDOM_SIZE - 1 + 5) {
 		/* command error, cannot be recognized by system */
 		if (cmd_line[4] != ' ')
 			return 506;
 		/* copy parameter to hello_domain */
-		memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
+		strncpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
 		pcontext->menv.hello_domain[line_length-5] = '\0';
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
