@@ -2174,7 +2174,6 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 	int temp_argc;
 	BOOL b_flagged;
 	BOOL b_answered;
-	time_t tmp_time;
 	char* temp_argv[5];
 	char *str_received = nullptr, *flags_string = nullptr;
 	char flag_buff[16];
@@ -2239,13 +2238,14 @@ int imap_cmd_parser_append(int argc, char **argv, imap_context *pcontext) try
 		strcat(flag_buff, "U");
 	strcat(flag_buff, ")");
 	std::string mid_string;
+	time_t tmp_time = time(nullptr);
 	if (str_received != nullptr &&
 	    imap_cmd_parser_convert_imaptime(str_received, &tmp_time)) {
 		char txt[GUIDSTR_SIZE];
 		GUID::random_new().to_str(txt, std::size(txt), 32);
 		mid_string = fmt::format("{}.g{}", tmp_time, txt);
 	} else {
-		mid_string = fmt::format("{}.n{}", time(nullptr),
+		mid_string = fmt::format("{}.n{}", tmp_time,
 			     imap_parser_get_sequence_ID());
 	}
 	mid_string += "."s + znul(g_config_file->get_value("host_id"));
