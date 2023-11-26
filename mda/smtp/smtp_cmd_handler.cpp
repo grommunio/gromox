@@ -26,14 +26,12 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 	pcontext->command_protocol = HT_SMTP;
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
         /* command error, cannot be recognized by system */
-        if (cmd_line[4] != ' ') {
-            /* 502 Command not implemented */
+		if (cmd_line[4] != ' ')
+			/* 502 Command not implemented */
 			return 506;
-        } else {
-            /* copy parameter to hello_domain */
-			memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
-			pcontext->menv.hello_domain[line_length-5] = '\0';
-        }
+		/* copy parameter to hello_domain */
+		memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
+		pcontext->menv.hello_domain[line_length-5] = '\0';
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
 		return 502;
@@ -52,14 +50,12 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
             
 	/* SAME AS HELO [begin] */
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
-        /* command error, cannot be recognized by system */
-        if (cmd_line[4] != ' ') {
+		/* command error, cannot be recognized by system */
+		if (cmd_line[4] != ' ')
 			return 506;
-        } else {
-            /* copy parameter to hello_domain */
-			memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
-			pcontext->menv.hello_domain[line_length-5] = '\0';
-        }
+		/* copy parameter to hello_domain */
+		memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
+		pcontext->menv.hello_domain[line_length-5] = '\0';
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
 		return 202;
@@ -174,10 +170,9 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
                 email_addr.local_part, email_addr.domain);
             /* 250 OK */
 			return 205;
-        } else {
-            /* bad sequence */
-			return 507;
-        }
+	}
+	/* bad sequence */
+	return 507;
 }
 
 int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
