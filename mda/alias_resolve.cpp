@@ -181,7 +181,7 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 
 	auto ctrl = &ctx->ctrl;
 	if (strchr(ctrl->from, '@') != nullptr) {
-		auto repl = alias_map.lookup(ctrl->from);
+		const auto &repl = alias_map.lookup(ctrl->from);
 		if (repl.size() > 0) {
 			mlog(LV_DEBUG, "alias_resolve: subst FROM %s -> %s", ctrl->from, repl.c_str());
 			gx_strlcpy(ctrl->from, repl.c_str(), std::size(ctrl->from));

@@ -230,7 +230,7 @@ static bool find_recur_times(const ical_component *tzcom,
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;
 	do {
-		auto itime = irrule.instance_itime;
+		ICAL_TIME itime = irrule.instance_itime;
 		time_t ut{}, utnz{};
 		if (!ical_itime_to_utc(tzcom, itime, &ut))
 			break;

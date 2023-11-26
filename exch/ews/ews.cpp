@@ -99,7 +99,7 @@ void writeheader(int ctx_id, http_status code, size_t content_length)
 	case http_status::server_error: status = "Internal Server Error"; break;
 	default: break;
 	}
-	auto rs = content_length? fmt::format(templ, int(code), status, content_length) :
+	std::string rs = content_length ? fmt::format(templ, static_cast<int>(code), status, content_length) :
 	              fmt::format(templ_nolen, int(code), status);
 	write_response(ctx_id, rs.c_str(), rs.size());
 }

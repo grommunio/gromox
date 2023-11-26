@@ -392,7 +392,7 @@ static errno_t mysql_adaptor_homeserver(const char *entity, bool is_pvt,
 {
 	char qent[UADDR_SIZE*2];
 	mysql_adaptor_encode_squote(entity, qent);
-	auto qstr = is_pvt ?
+	std::string qstr = is_pvt ?
 	            "SELECT sv.hostname, sv.extname FROM users AS u "
 	            "LEFT JOIN servers AS sv ON u.homeserver=sv.id "
 	            "LEFT JOIN altnames AS alt ON u.id=alt.user_id "

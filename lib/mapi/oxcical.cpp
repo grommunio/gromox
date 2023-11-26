@@ -347,8 +347,8 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	auto b_exceptional = irrule.b_start_exceptional;
 	if (b_exceptional && !irrule.iterate())
 		return FALSE;
-	auto itime_base = irrule.base_itime;
-	auto itime_first = irrule.instance_itime;
+	ICAL_TIME itime_base = irrule.base_itime;
+	ICAL_TIME itime_first = irrule.instance_itime;
 	apr->readerversion2 = 0x3006;
 	apr->writerversion2 = 0x3009;
 	apr->recur_pat.readerversion = 0x3004;

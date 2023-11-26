@@ -542,7 +542,7 @@ static std::unique_ptr<MYSQL, mysql_delete> sql_login()
 static int sql_meta(MYSQL *sqh, const char *username, bool is_domain,
     unsigned int *user_id, std::string &storedir) try
 {
-	auto query = is_domain ?
+	std::string query = is_domain ?
 		("SELECT `id`, `homedir` FROM `domains` WHERE `domainname`='"s + sql_escape(sqh, username) + "'") :
 		("SELECT `id`, `maildir` FROM `users` WHERE `username`='"s + sql_escape(sqh, username) + "'");
 	if (mysql_real_query(sqh, query.c_str(), query.size()) != 0) {

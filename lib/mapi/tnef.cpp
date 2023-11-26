@@ -2035,7 +2035,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 {
 	auto pext = &ext;
 	auto alloc = ext.tnef_alloc;
-	auto get_propname = ext.tnef_getpropname;
+	const auto &get_propname = ext.tnef_getpropname;
 	BOOL b_key;
 	uint8_t tmp_byte;
 	REND_DATA tmp_rend;

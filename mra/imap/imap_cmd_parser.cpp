@@ -697,7 +697,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext, MJSON *pjson,
 		}
 		pmime = pjson->get_mime(temp_id);
 		if (NULL != pmime) {
-			auto eml_path = storage_path == nullptr ?
+			std::string eml_path = storage_path == nullptr ?
 				std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
 				std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
 			len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
