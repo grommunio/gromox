@@ -86,7 +86,7 @@ class hxmc_deleter {
 static unsigned int g_max_loglevel = LV_NOTICE;
 static std::shared_mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
-static bool g_log_direct = true, g_log_tty, g_log_syslog;
+static bool g_log_tty, g_log_syslog;
 static int gx_reexec_top_fd = -1;
 
 static const char *mapi_errname(unsigned int e)
@@ -1179,24 +1179,24 @@ errno_t tmpfile::link_to(const char *newpath)
 void mlog_init(const char *filename, unsigned int max_level)
 {
 	g_max_loglevel = max_level;
-	g_log_direct = filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0;
+	if (filename == nullptr || *filename == '\0' || strcmp(filename, "-") == 0)
+		g_logfp.reset();
 	g_log_syslog = filename != nullptr && strcmp(filename, "syslog") == 0;
 	g_log_tty    = isatty(STDERR_FILENO);
-	if (g_log_direct && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
+	if (g_logfp == nullptr && getppid() == 1 && getenv("JOURNAL_STREAM") != nullptr)
 		g_log_syslog = true;
 	if (g_log_syslog) {
 		openlog(nullptr, LOG_PID, LOG_MAIL);
 		setlogmask((1 << (max_level + 2)) - 1);
 		return;
 	}
-	if (g_log_direct) {
+	if (g_logfp == nullptr) {
 		setvbuf(stderr, nullptr, _IOLBF, 0);
 		return;
 	}
 	std::lock_guard hold(g_log_mutex);
 	g_logfp.reset(fopen(filename, "a"));
-	g_log_direct = g_logfp == nullptr;
-	if (g_log_direct) {
+	if (g_logfp == nullptr) {
 		mlog(LV_ERR, "Could not open %s for writing: %s. Using stderr.",
 		        filename, strerror(errno));
 		setvbuf(stderr, nullptr, _IOLBF, 0);
@@ -1215,7 +1215,7 @@ void mlog(unsigned int level, const char *fmt, ...)
 		vsyslog(level + 1, fmt, args);
 		va_end(args);
 		return;
-	} else if (g_log_direct) {
+	} else if (g_logfp == nullptr) {
 		if (g_log_tty)
 			fprintf(stderr,
 				level <= LV_ERR ? "\e[1;31m" :
