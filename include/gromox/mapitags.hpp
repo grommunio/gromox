@@ -1110,7 +1110,7 @@ using proptag_t = decltype(PR_NULL);
 
 enum {
 	PidLidAttendeeCriticalChange = 0x0001,
-	PidLidGlobalObjectId = 0x0003,
+	PidLidGlobalObjectId = 0x0003, /* a.k.a. LID_GLOBAL_OBJID */
 	PidLidIsException = 0x000A,
 	PidLidStartRecurrenceTime = 0x000E,
 	PidLidOwnerCriticalChange = 0x001A,
