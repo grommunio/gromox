@@ -21,8 +21,8 @@
 #include <istream>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <pthread.h>
-#include <shared_mutex>
 #include <spawn.h>
 #include <sstream>
 #include <streambuf>
@@ -84,7 +84,7 @@ class hxmc_deleter {
 }
 
 static unsigned int g_max_loglevel = LV_NOTICE;
-static std::shared_mutex g_log_mutex;
+static std::mutex g_log_mutex;
 static std::unique_ptr<FILE, file_deleter> g_logfp;
 static bool g_log_tty, g_log_syslog;
 static int gx_reexec_top_fd = -1;
@@ -1236,10 +1236,12 @@ void mlog(unsigned int level, const char *fmt, ...)
 	auto now = time(nullptr);
 	struct tm tmbuf;
 	strftime(buf + 3, std::size(buf) - 3, "%FT%T ", localtime_r(&now, &tmbuf));
-	std::shared_lock hold(g_log_mutex);
-	fputs(buf, g_logfp.get());
-	vfprintf(g_logfp.get(), fmt, args);
-	fputc('\n', g_logfp.get());
+	{
+		std::lock_guard hold(g_log_mutex);
+		fputs(buf, g_logfp.get());
+		vfprintf(g_logfp.get(), fmt, args);
+		fputc('\n', g_logfp.get());
+	}
 	va_end(args);
 }
 
