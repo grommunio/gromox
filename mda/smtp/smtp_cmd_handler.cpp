@@ -101,9 +101,8 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	SMTP_CONTEXT *pcontext)
 {
-	if (NULL != pcontext->connection.ssl) {
+	if (pcontext->connection.ssl != nullptr)
 		return 506;
-	}
 	if (!g_param.support_starttls)
 		return 506;
 	pcontext->last_cmd = T_STARTTLS_CMD;
@@ -116,9 +115,8 @@ int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
 	if (g_param.support_starttls && g_param.force_starttls &&
-		NULL == pcontext->connection.ssl) {
+	    pcontext->connection.ssl == nullptr)
 		return 520;
-	}
         /* 502 Command not implemented */
 	return 506;
 }
@@ -131,22 +129,18 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
     char buff[1024], buff2[1024];
     EMAIL_ADDR email_addr;    
     
-    if (line_length <= 10 || 0 != strncasecmp(cmd_line + 4, " FROM:", 6)) {
-        /* syntax error or arguments error*/
+	if (line_length <= 10 || 0 != strncasecmp(cmd_line + 4, " FROM:", 6))
+		/* syntax error or arguments error*/
 		return 505;
-    }
     memcpy(buff, cmd_line + 10    , line_length - 10);
     buff[line_length - 10] = '\0';
 	HX_strltrim(buff);
 	/* rfc require MTA support empty from address */
-	if (0 == strncmp(buff, "<>", 2)) {
+	if (strncmp(buff, "<>", 2) == 0)
 		strcpy(buff, ENVELOPE_FROM_NULL);
-	}
 	if (g_param.support_starttls && g_param.force_starttls &&
-		NULL == pcontext->connection.ssl) {
+	    pcontext->connection.ssl == nullptr)
 		return 520;
-	}
-
     parse_email_addr(&email_addr, buff);
 	if (!email_addr.has_addr()) {
         /* 550 invalid user - <email_addr> */
@@ -183,15 +177,12 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
     char buff[1024], reason[1024], path[256];
     EMAIL_ADDR email_addr;
     
-    if (line_length <= 8 || 0 != strncasecmp(cmd_line + 4, " TO:", 4)) {
+	if (line_length <= 8 || 0 != strncasecmp(cmd_line + 4, " TO:", 4))
         /* syntax error or arguments error*/
 		return 505;
-    }
 	if (g_param.support_starttls && g_param.force_starttls &&
-		NULL == pcontext->connection.ssl) {
+	    pcontext->connection.ssl == nullptr)
 		return 520;
-	}
-
     memcpy(buff, cmd_line + 8, line_length - 8);
     buff[line_length - 8] = '\0';
     parse_email_addr(&email_addr, buff);
@@ -239,22 +230,19 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     const char* smtp_reply_str;
 
-    if (T_RCPT_CMD != pcontext->last_cmd) {
-        /* 503 bad sequence of command, RCPT first */
+	if (pcontext->last_cmd != T_RCPT_CMD)
+		/* 503 bad sequence of command, RCPT first */
 		/*
 		 * Since @last_cmd means "last successful command", and RCPT
 		 * with unresovlable addresses is considered a failed command,
 		 * we happen to fulfill RFC 2033 §4.2 requirements here.
 		 */
 		return 509;
-    }    
 	if (!smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext))
 		return DISPATCH_CONTINUE;
 	if (g_param.support_starttls && g_param.force_starttls &&
-		NULL == pcontext->connection.ssl) {
+	    pcontext->connection.ssl == nullptr)
 		return 520;
-	}
-
     /* 354 Start mail input; end with <CRLF>.<CRLF> */
 	smtp_reply_str = resource_get_smtp_code(303, 1, &string_length);
     pcontext->last_cmd = T_DATA_CMD;
@@ -345,10 +333,8 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
 	if (g_param.support_starttls && g_param.force_starttls &&
-		NULL == pcontext->connection.ssl) {
+	    pcontext->connection.ssl == nullptr)
 		return 520;
-	}
-
     /* 214 Help available on http:// ... */
 	return 201;
 }        
@@ -359,12 +345,10 @@ int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
 	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
 	if (g_param.support_starttls && g_param.force_starttls &&
-		NULL == pcontext->connection.ssl) {
+	    pcontext->connection.ssl == nullptr)
 		return 520;
-	}
-
         /* 252 Cannot VRFY user, but will accept message and attempt */       
-		return 209;
+	return 209;
 }    
 
 int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
