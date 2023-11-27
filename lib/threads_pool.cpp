@@ -35,7 +35,6 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num;
 static std::atomic<unsigned int> g_threads_pool_cur_thr_num;
-static alloc_limiter<THR_DATA> g_threads_data_buff{"g_threads_data_buff.d"};
 static DOUBLE_LIST g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
 static std::mutex g_threads_pool_data_lock, g_threads_pool_cond_mutex;
@@ -67,14 +66,11 @@ void threads_pool_init(unsigned int init_pool_num,
 	double_list_init(&g_threads_data_list);
 }
 
-int threads_pool_run(const char *hint)
+int threads_pool_run(const char *hint) try
 {
 	int created_thr_num;
 	
-	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
-	g_threads_data_buff = alloc_limiter<THR_DATA>(g_threads_pool_max_num,
-	                      "threads_data_buff", hint);
-	/* list is also protected by g_threads_pool_data_lock */
+	/* list is protected by g_threads_pool_data_lock */
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
@@ -85,13 +81,14 @@ int threads_pool_run(const char *hint)
 
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
-		auto pdata = g_threads_data_buff.get();
+		auto pdata = new THR_DATA;
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
 		ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
 		if (ret != 0) {
 			mlog(LV_ERR, "threads_pool: failed to create a pool thread: %s", strerror(ret));
+			return -1;
 		} else {
 			char buf[32];
 			snprintf(buf, sizeof(buf), "ep_pool/%zu", i);
@@ -102,6 +99,9 @@ int threads_pool_run(const char *hint)
 	}
 	g_threads_pool_cur_thr_num = created_thr_num;
 	return 0;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2369: ENOMEM");
+	return -1;
 }
 
 void threads_pool_stop()
@@ -180,7 +180,7 @@ static void *tpol_thrwork(void *pparam)
 				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS)) >= 0 &&
 				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr)) {
 					double_list_remove(&g_threads_data_list, &pdata->node);
-					g_threads_data_buff.put(pdata);
+					delete pdata;
 					g_threads_pool_cur_thr_num --;
 					tpd_hold.unlock();
 					if (g_threads_event_proc != nullptr)
@@ -225,7 +225,7 @@ static void *tpol_thrwork(void *pparam)
 	
 	std::unique_lock tpd_hold(g_threads_pool_data_lock);
 	double_list_remove(&g_threads_data_list, &pdata->node);
-	g_threads_data_buff.put(pdata);
+	delete pdata;
 	g_threads_pool_cur_thr_num --;
 	tpd_hold.unlock();
 	if (g_threads_event_proc != nullptr)
@@ -264,9 +264,11 @@ static void *tpol_scanwork(void *pparam)
 		std::lock_guard tpd_hold(g_threads_pool_data_lock);
 		if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num)
 			continue;
-		auto pdata = g_threads_data_buff.get();
-		if (pdata == nullptr) {
-			mlog(LV_DEBUG, "threads_pool: fatal error, threads pool memory conflicts");
+		THR_DATA *pdata;
+		try {
+			pdata = new THR_DATA;
+		} catch (const std::bad_alloc &) {
+			mlog(LV_DEBUG, "E-2368: ENOMEM");
 			not_empty_times = 0;
 			continue;
 		}
@@ -276,7 +278,7 @@ static void *tpol_scanwork(void *pparam)
 		auto ret = pthread_create4(&pdata->id, nullptr, tpol_thrwork, pdata);
 		if (ret != 0) {
 			mlog(LV_WARN, "W-1445: failed to increase pool threads: %s", strerror(ret));
-			g_threads_data_buff.put(pdata);
+			delete pdata;
 			not_empty_times = 0;
 			continue;
 		}
