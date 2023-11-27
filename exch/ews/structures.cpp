@@ -1621,6 +1621,17 @@ tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tEffectiveRights::tEffectiveRights(uint32_t perm) :
+    CreateAssociated(perm & frightsCreate),
+    CreateContents(perm & frightsCreate),
+    CreateHierarchy(perm & frightsCreateSubfolder),
+    Delete(perm & frightsDeleteAny),
+    Modify(perm & frightsEditAny),
+    Read(perm & frightsReadAny)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 decltype(tExtendedFieldURI::typeMap) tExtendedFieldURI::typeMap = {{
 	{"ApplicationTime", PT_APPTIME},
 	{"ApplicationTimeArray", PT_MV_APPTIME},
@@ -2222,13 +2233,13 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 ///////////////////////////////////////////////////////////////////////////////
 
 decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
+	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
+	{"folder:DisplayName", PR_DISPLAY_NAME},
+	{"folder:FolderClass", PR_CONTAINER_CLASS},
 	{"folder:FolderId", PidTagFolderId},
 	{"folder:ParentFolderId", PR_PARENT_ENTRYID},
-	{"folder:DisplayName", PR_DISPLAY_NAME},
-	{"folder:UnreadCount", PR_CONTENT_UNREAD},
 	{"folder:TotalCount", PR_CONTENT_COUNT},
-	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
-	{"folder:FolderClass", PR_CONTAINER_CLASS},
+	{"folder:UnreadCount", PR_CONTENT_UNREAD},
 	{"item:ConversationId", PR_CONVERSATION_ID},
 	{"item:DisplayTo", PR_DISPLAY_TO},
 	{"item:DateTimeCreated", PR_CREATION_TIME},
@@ -2299,6 +2310,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
 	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
 	{"calendar:Resources", sShape::Resources},
+	{"folder:EffectiveRights", sShape::Permissions},
 	{"item:Attachments", sShape::Attachments},
 	{"item:Body", sShape::Body},
 	{"item:IsDraft", sShape::MessageFlags},

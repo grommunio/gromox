@@ -392,7 +392,11 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		for(const TPROPVAL_ARRAY& props : table) {
 			shape.clean();
 			shape.properties(props);
-			msg.RootFolder->Folders.emplace_back(tBaseFolderType::create(shape));
+			sFolder& child = msg.RootFolder->Folders.emplace_back(tBaseFolderType::create(shape));
+			const auto& fid = std::visit([](auto&& f){return f.FolderId;}, child);
+			if(shape.special && fid)
+				std::visit([&](auto& f) {ctx.loadSpecial(dir, sFolderEntryId(fid->Id.data(), fid->Id.size()).folderId(), f,
+						                                 shape.special);}, child);
 		}
 		if(paging)
 			paging->update(*msg.RootFolder, results, rowCount);

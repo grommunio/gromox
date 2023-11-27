@@ -277,6 +277,7 @@ void tBaseFolderType::serialize(XMLElement* xml) const
 	XMLDUMPT(DisplayName);
 	XMLDUMPT(TotalCount);
 	XMLDUMPT(ChildFolderCount);
+	XMLDUMPT(EffectiveRights);
 	for(const tExtendedProperty& ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
@@ -558,6 +559,16 @@ void tDuration::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(StartTime);
 	XMLDUMPT(EndTime);
+}
+
+void tEffectiveRights::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(CreateAssociated);
+	XMLDUMPT(CreateContents);
+	XMLDUMPT(CreateHierarchy);
+	XMLDUMPT(Delete);
+	XMLDUMPT(Modify);
+	XMLDUMPT(Read);
 }
 
 tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :

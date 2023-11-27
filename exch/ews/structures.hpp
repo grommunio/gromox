@@ -330,6 +330,7 @@ public:
 	static constexpr uint64_t RequiredAttendees = 1 << 7;
 	static constexpr uint64_t OptionalAttendees = 1 << 8;
 	static constexpr uint64_t Resources =         1 << 9;
+	static constexpr uint64_t Permissions =       1 << 10;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -723,6 +724,21 @@ struct tGuid : public GUID
 	std::string serialize() const;
 };
 
+struct tEffectiveRights
+{
+	explicit tEffectiveRights(uint32_t);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	bool CreateAssociated;
+	bool CreateContents;
+	bool CreateHierarchy;
+	bool Delete;
+	bool Modify;
+	bool Read;
+	//std::optional<bool> ViewPrivateItems;
+};
+
 /**
  * Types.xsd:1142
  */
@@ -798,7 +814,7 @@ struct tBaseFolderType : public NS_EWS_Types
 	std::optional<int32_t> ChildFolderCount;
 	std::vector<tExtendedProperty> ExtendedProperty;
 	//<xs:element name="ManagedFolderInformation" type="t:ManagedFolderInformationType" minOccurs="0"/>
-	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0"/>
+	std::optional<tEffectiveRights> EffectiveRights;
 	//<xs:element name="DistinguishedFolderId" type="t:DistinguishedFolderIdNameType" minOccurs="0"/>
 	//<xs:element name="PolicyTag" type="t:RetentionTagType" minOccurs="0" />
 	//<xs:element name="ArchiveTag" type="t:RetentionTagType" minOccurs="0" />
@@ -830,7 +846,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 13> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 14> specialMap; ///< Mapping for special properties
 };
 
 /**

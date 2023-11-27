@@ -268,6 +268,7 @@ public:
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;
