@@ -170,11 +170,10 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 
 static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type)
 {
-	if (NDR_STACK_IN == type) {
+	if (type == NDR_STACK_IN)
 		return pstack_root->in_stack.get_total();
-	} else if (NDR_STACK_OUT) {
+	else if (type == NDR_STACK_OUT)
 		return pstack_root->out_stack.get_total();
-	}
 	return 0;
 }
 
