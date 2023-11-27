@@ -1923,38 +1923,24 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (6 != prts->num) {
+	if (prts->num != 6 ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(chan_cookie, chan_ck_size);
-	if (RTS_CMD_CHANNEL_LIFETIME != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_CHANNEL_LIFETIME)
 		return FALSE;
-	}
 	*plife_time = prts->commands[3].command.channellifetime;
-	
-	if (RTS_CMD_CLIENT_KEEPALIVE != prts->commands[4].command_type) {
+	if (prts->commands[4].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
-	}
 	*pclient_keepalive = std::chrono::milliseconds(prts->commands[4].command.clientkeepalive);
-	if (RTS_CMD_ASSOCIATION_GROUP_ID !=
-		prts->commands[5].command_type) {
+	if (prts->commands[5].command_type != RTS_CMD_ASSOCIATION_GROUP_ID)
 		return FALSE;
-	}
 	prts->commands[5].command.associationgroupid.to_str(associationgroupid, gid_size);
 	return TRUE;
 }
@@ -1965,27 +1951,18 @@ static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (4 != prts->num) {
+	if (prts->num != 4 ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(chan_cookie, chan_ck_size);
-	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_RECEIVE_WINDOW_SIZE)
 		return FALSE;
-	}
 	*pwindow_size = prts->commands[3].command.receivewindowsize;
 	
 	return TRUE;
@@ -1997,30 +1974,19 @@ static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (4 != prts->num) {
+	if (prts->num != 4 ||
+	    prts->commands[0].command_type != RTS_CMD_VERSION ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_VERSION != prts->commands[0].command_type) {
-		return FALSE;
-	}
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(pred_cookie, pred_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[3].command.cookie.to_str(succ_cookie, succ_ck_size);
 	return TRUE;
 }
@@ -2030,19 +1996,12 @@ static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (1 != prts->num) {
+	if (prts->num != 1 ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
 	return TRUE;
 }
@@ -2052,27 +2011,16 @@ static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (3 != prts->num) {
+	if (prts->num != 3 ||
+	    prts->commands[0].command_type != RTS_CMD_DESTINATION ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_DESTINATION != prts->commands[0].command_type) {
-		return FALSE;
-	}
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
-	if (RTS_CMD_VERSION != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_VERSION)
 		return FALSE;
-	}
-	
 	return TRUE;
 }
 
@@ -2083,34 +2031,22 @@ static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (5 != prts->num) {
+	if (prts->num != 5 ||
+	    prts->commands[0].command_type != RTS_CMD_VERSION ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_VERSION != prts->commands[0].command_type) {
-		return FALSE;
-	}
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(pred_cookie, pred_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[3].command.cookie.to_str(succ_cookie, succ_ck_size);
-	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[4].command_type) {
+	if (prts->commands[4].command_type != RTS_CMD_RECEIVE_WINDOW_SIZE)
 		return FALSE;
-	}
 	*pwindow_size = prts->commands[4].command.receivewindowsize;
 	
 	return TRUE;
@@ -2120,21 +2056,14 @@ static BOOL pdu_processor_retrieve_outr2_c1(DCERPC_CALL *pcall)
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (1 != prts->num) {
+	if (prts->num != 1)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_EMPTY != prts->commands[0].command_type &&
-		RTS_CMD_PADDING != prts->commands[0].command_type) {
+	if (prts->commands[0].command_type != RTS_CMD_EMPTY &&
+	    prts->commands[0].command_type != RTS_CMD_PADDING)
 		return FALSE;
-	}
-	
 	return TRUE;
 	
 }
@@ -2144,19 +2073,12 @@ static BOOL pdu_processor_retrieve_keep_alive(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (1 != prts->num) {
+	if (prts->num != 1 ||
+	    prts->commands[0].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_CLIENT_KEEPALIVE != prts->commands[0].command_type) {
-		return FALSE;
-	}
 	*pkeep_alive = std::chrono::milliseconds(prts->commands[0].command.clientkeepalive);
 	return TRUE;
 }
@@ -2166,20 +2088,14 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (2 != prts->num) {
+	if (prts->num != 2)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_DESTINATION != prts->commands[0].command_type ||
-		RTS_CMD_FLOW_CONTROL_ACK != prts->commands[1].command_type) {
+	if (prts->commands[0].command_type != RTS_CMD_DESTINATION ||
+	    prts->commands[1].command_type != RTS_CMD_FLOW_CONTROL_ACK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
