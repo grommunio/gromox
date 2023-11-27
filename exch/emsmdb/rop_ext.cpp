@@ -1709,7 +1709,7 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const ROP_RESPONSE &r)
 {
 	EMSMDB_INFO *pemsmdb_info;
 	
-	TRY(x.p_uint8(r.rop_id != ropSetMessageStatus ? r.rop_id : ropGetMessageStatus));
+	TRY(x.p_uint8(r.rop_id != ropGetMessageStatus ? r.rop_id : ropSetMessageStatus));
 	TRY(x.p_uint8(r.hindex));
 	TRY(x.p_uint32(r.result));
 	if (r.result != ecSuccess) {
