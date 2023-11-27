@@ -2474,7 +2474,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	if (str_internal[0] == '\0' ||
 	    !imap_cmd_parser_convert_imaptime(str_internal, &tmp_time))
 		time(&tmp_time);
-	auto eml_path = fmt::format("{}/eml{}", pcontext->maildir, pcontext->mid);
+	auto eml_path = fmt::format("{}/eml/{}", pcontext->maildir, pcontext->mid);
 	wrapfd fd = open(eml_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
 	if (fd.get() < 0 || !imail.to_file(fd.get())) {
 		imail.clear();
