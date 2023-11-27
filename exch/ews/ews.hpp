@@ -274,7 +274,7 @@ public:
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
 	int notify();
-	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
+	uint32_t permissions(const std::string&, uint64_t) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;

@@ -887,8 +887,8 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 		throw DispatchError(E3160);
 	sFolderSpec parentFolder = folder;
 	parentFolder.folderId = *parentFid;
-	if(!(permissions(m_auth_info.username, folder, dir.c_str()) & frightsDeleteAny) ||
-	   !(permissions(m_auth_info.username, parentFolder, dir.c_str()) & frightsDeleteAny))
+	if(!(permissions(dir, folder.folderId) & frightsDeleteAny) ||
+	   !(permissions(dir, parentFolder.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3157);
 	ec_error_t errcode = ecSuccess;
 	if (!m_plugin.exmdb.movecopy_folder(dir.c_str(), accountId, CP_ACP, false,
@@ -982,28 +982,21 @@ void EWSContext::normalize(tMailbox& Mailbox) const
 }
 
 /**
- * @brief     Get folder permissions
+ * @brief     Get folder permissions for current user
  *
- * Always returns full access if target matches username.
+ * Always returns full access if the maildir matches the currently logged in user.
  *
- * @param     username    Name of the user requesting access
- * @param     folder      Target folder specification
- * @param     maildir     Target maildir or nullptr to resolve automatically
+ * @param     maildir     Target maildir
+ * @param     folderId    Target folder ID
  *
  * @return    Permission flags
  */
-uint32_t EWSContext::permissions(const char* username, const sFolderSpec& folder, const char* maildir) const
+uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) const
 {
-	if(username == folder.target)
+	if(maildir == m_auth_info.maildir)
 		return 0xFFFFFFFF;
-	std::string temp;
-	if(!maildir)
-	{
-		temp = getDir(folder);
-		maildir = temp.c_str();
-	}
 	uint32_t permissions = 0;
-	m_plugin.exmdb.get_folder_perm(maildir, folder.folderId, username, &permissions);
+	m_plugin.exmdb.get_folder_perm(maildir.c_str(), folderId, m_auth_info.username, &permissions);
 	return permissions;
 }
 
@@ -1397,7 +1390,7 @@ tSubscriptionId EWSContext::subscribe(const std::vector<sFolderId>& folderIds, u
 			subscription->mailboxInfo = getMailboxInfo(maildir, folderspec.location == folderspec.PUBLIC);
 		} else if(target != *folderspec.target)
 			throw EWSError::InvalidSubscriptionRequest(E3200);
-		if(!(permissions(m_auth_info.username, folderspec) & frightsReadAny))
+		if(!(permissions(maildir, folderspec.folderId) & frightsReadAny))
 			continue; // TODO: proper error handling
 		subscription->subscriptions.emplace_back(m_plugin.subscribe(maildir, eventMask, all, folderspec.folderId,
 		                                                            subscriptionId.ID));
