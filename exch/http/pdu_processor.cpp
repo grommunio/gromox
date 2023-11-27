@@ -115,12 +115,6 @@ static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static alloc_limiter<DCERPC_CALL> g_call_allocator{"g_call_allocator.d"};
-static alloc_limiter<DCERPC_AUTH_CONTEXT> g_auth_allocator{"g_auth_allocator.d"};
-static alloc_limiter<ASYNC_NODE> g_async_allocator{"g_async_allocator.d"};
-static alloc_limiter<BLOB_NODE> g_bnode_allocator{"g_bnode_allocator.d"};
-static alloc_limiter<NDR_STACK_ROOT> g_stack_allocator{"g_stack_allocator.d"};
-static alloc_limiter<DCERPC_CONTEXT> g_context_allocator{"g_context_allocator.d"};
 static std::vector<std::string> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
@@ -145,13 +139,12 @@ dcerpc_call::dcerpc_call() :
 	double_list_init(&reply_list);
 }
 
-static NDR_STACK_ROOT* pdu_processor_new_stack_root()
+static NDR_STACK_ROOT *pdu_processor_new_stack_root() try
 {
-	auto pstack_root = g_stack_allocator.get();
-	if (NULL == pstack_root) {
-		return NULL;
-	}
-	return pstack_root;
+	return new NDR_STACK_ROOT();
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2389: ENOMEM");
+	return nullptr;
 }
 
 void* pdu_processor_ndr_stack_alloc(int type, size_t size)
@@ -172,7 +165,7 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 {
 	if (g_stack_key == pstack_root)
 		g_stack_key = nullptr;
-	g_stack_allocator->put(pstack_root);
+	delete pstack_root;
 }
 
 static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type)
@@ -214,21 +207,6 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 
 int pdu_processor_run()
 {
-	int context_num;
-	
-	g_call_allocator = alloc_limiter<DCERPC_CALL>(g_connection_num * g_connection_ratio,
-	                   "pdu_call_allocator", "http.cfg:context_num");
-	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = alloc_limiter<DCERPC_CONTEXT>(context_num,
-	                      "pdu_ctx_allocator", "http.cfg:context_num");
-	g_auth_allocator = alloc_limiter<DCERPC_AUTH_CONTEXT>(context_num,
-	                   "pdu_auth_allocator", "http.cfg:context_num");
-	g_bnode_allocator = alloc_limiter<BLOB_NODE>(32 * g_connection_num,
-	                    "pdu_bnode_allocator", "http.cfg:context_num");
-	g_async_allocator = alloc_limiter<ASYNC_NODE>(2 * context_num,
-	                    "pdu_async_allocator", "http.cfg:context_num");
-	g_stack_allocator = alloc_limiter<NDR_STACK_ROOT>(4 * context_num,
-	                    "pdu_stack_allocator", "http.cfg:context_num");
 	for (const auto &i : g_plugin_names) {
 		int ret = pdu_processor_load_library(i.c_str());
 		if (ret != PLUGIN_LOAD_OK)
@@ -246,12 +224,12 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		free(pblob_node->blob.pb);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 	}
 	double_list_free(&pcall->reply_list);
 	if (g_call_key == pcall)
 		g_call_key = nullptr;
-	g_call_allocator->put(pcall);
+	delete pcall;
 }
 
 static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
@@ -272,10 +250,10 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 		}
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 	}
 	double_list_free(&pcontext->async_list);
-	g_context_allocator->put(pcontext);
+	delete pcontext;
 }
 
 void pdu_processor_stop()
@@ -373,7 +351,7 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 			ntlmssp_destroy(pauth_ctx->pntlmssp);
 			pauth_ctx->pntlmssp = NULL;
 		}
-		g_auth_allocator->put(pauth_ctx);
+		delete pauth_ctx;
 	}
 	double_list_free(&pprocessor->auth_list);
 	
@@ -430,7 +408,7 @@ void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		pstream->write(pblob_node->blob.pb, pblob_node->blob.cb);
 		free(pblob_node->blob.pb);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 	}
 }
 
@@ -444,7 +422,7 @@ void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list)
 
 void pdu_processor_free_blob(BLOB_NODE *pbnode)
 {
-	g_bnode_allocator->put(pbnode);
+	delete pbnode;
 }
 
 static DCERPC_CALL* pdu_processor_get_fragmented_call(
@@ -681,7 +659,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	return TRUE;
 }
 
-static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
+static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	static constexpr uint8_t zeros[4] = {};
@@ -696,19 +674,19 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.pad.pb = deconst(zeros);
 	pkt.payload.fault.pad.cb = sizeof(zeros);
 
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2388: ENOMEM");
+	return false;
 }
 
 /*
@@ -716,7 +694,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
   return false if we can't handle the auth request for some 
   reason (in which case we send a bind_nak)
 */
-static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
+static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 {
 	DCERPC_BIND *pbind;
 	uint32_t auth_length;
@@ -728,10 +706,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		mlog(LV_DEBUG, "pdu_processor: maximum auth contexts number of connection reached");
 		return FALSE;
 	}
-	auto pauth_ctx = g_auth_allocator->get();
-	if (NULL == pauth_ctx) {
-		return FALSE;
-	}
+	auto pauth_ctx = new DCERPC_AUTH_CONTEXT();
 	memset(pauth_ctx, 0, sizeof(DCERPC_AUTH_CONTEXT));
 	pauth_ctx->node.pdata = pauth_ctx;
 	
@@ -744,14 +719,14 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	}
 	if (!pdu_processor_pull_auth_trailer(ppkt, &pbind->auth_info,
 		&pauth_ctx->auth_info, &auth_length, FALSE)) {
-		g_auth_allocator->put(pauth_ctx);
+		delete pauth_ctx;
 		return FALSE;
 	}
 	
 	if (NULL != pdu_processor_find_auth_context(pcall->pprocessor,
 		pauth_ctx->auth_info.auth_context_id)) {
 		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-		g_auth_allocator->put(pauth_ctx);
+		delete pauth_ctx;
 		return FALSE;
 	}
 	
@@ -780,7 +755,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		}
 		if (NULL == pauth_ctx->pntlmssp) {
 			pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-			g_auth_allocator->put(pauth_ctx);
+			delete pauth_ctx;
 			return FALSE;
 		}
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
@@ -788,9 +763,12 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		return TRUE;
 	}
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-	g_auth_allocator->put(pauth_ctx);
+	delete pauth_ctx;
 	mlog(LV_DEBUG, "pdu_processor: unsupported authentication type");
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2387: ENOMEM");
+	return false;
 }
 
 /*
@@ -826,7 +804,7 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 }
 
 /* return a dcerpc bind_nak */
-static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
+static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	
@@ -836,21 +814,21 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	pkt.payload.bind_nak.reject_reason = reason;
 	pkt.payload.bind_nak.num_versions = 0;
 
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, NULL)) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2386: ENOMEM");
+	return false;
 }
 
 static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
@@ -940,8 +918,10 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
-		pcontext = g_context_allocator->get();
-		if (NULL == pcontext) {
+		try {
+			pcontext = new DCERPC_CONTEXT();
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2385: ENOMEM");
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 		pcontext->node.pdata = pcontext;
@@ -1067,8 +1047,11 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
+	BLOB_NODE *pblob_node;
+	try {
+		pblob_node = new BLOB_NODE();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2384: ENOMEM");
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1081,7 +1064,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, &pauth_ctx->auth_info)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
@@ -1140,7 +1123,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 		ntlmssp_destroy(pauth_ctx->pntlmssp);
 		pauth_ctx->pntlmssp = NULL;
 	}
-	g_auth_allocator->put(pauth_ctx);
+	delete pauth_ctx;
 	return TRUE;
 }
 
@@ -1245,8 +1228,10 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 		/* add this context to the list of available context_ids */
-		pcontext = g_context_allocator->get();
-		if (NULL == pcontext) {
+		try {
+			pcontext = new DCERPC_CONTEXT();
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2383: ENOMEM");
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
 			goto ALTER_ACK;
@@ -1343,8 +1328,11 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		return FALSE;
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
+	BLOB_NODE *pblob_node;
+	try {
+		pblob_node = new BLOB_NODE();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2382: ENOMEM");
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1359,7 +1347,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -1558,8 +1546,11 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 	/* Fragmentation into Transport Service Data Units (TSDU) */
 	do {
-		auto pblob_node = g_bnode_allocator->get();
-		if (NULL == pblob_node) {
+		BLOB_NODE *pblob_node;
+		try {
+			pblob_node = new BLOB_NODE();
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2381: ENOMEM");
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
@@ -1586,7 +1577,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
-			g_bnode_allocator->put(pblob_node);
+			delete pblob_node;
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
@@ -1624,8 +1615,11 @@ static uint32_t pdu_processor_apply_async_id()
 	if (pcontext->channel_type != hchannel_type::in)
 		return 0;
 	auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pasync_node = g_async_allocator->get();
-	if (NULL == pasync_node) {
+	ASYNC_NODE *pasync_node;
+	try {
+		pasync_node = new ASYNC_NODE();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2380: ENOMEM");
 		return 0;
 	}
 	pasync_node->node.pdata = pasync_node;
@@ -1644,7 +1638,7 @@ static uint32_t pdu_processor_apply_async_id()
 	auto ctx_num = g_connection_num * g_connection_ratio;
 	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 		fprintf(stderr, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)\n");
 		return 0;
 	}
@@ -1652,7 +1646,7 @@ static uint32_t pdu_processor_apply_async_id()
 		g_async_hash.emplace(async_id, nullptr);
 	} catch (const std::bad_alloc &) {
 		as_hold.unlock();
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 		fprintf(stderr, "E-2044: ENOMEM\n");
 		return 0;
 	}
@@ -1710,7 +1704,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 	}
 	as_hold.unlock();
 	if (NULL != pnode) {
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 	}
 }
 
@@ -1790,7 +1784,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 		as_hold.unlock();
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 		return;
 	}
 	pcall->pprocessor->async_num ++;
@@ -1809,7 +1803,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 		as_hold.unlock();
 	}
 	pdu_processor_free_call(pasync_node->pcall);
-	g_async_allocator->put(pasync_node);
+	delete pasync_node;
 }
 
 static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
@@ -1948,7 +1942,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 		}
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 	}
 }
 
@@ -1985,7 +1979,7 @@ void pdu_processor_rts_echo(char *pbuff)
 	ndr.destroy();
 }
 
-BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 
@@ -1996,21 +1990,21 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2379: ENOMEM");
+	return false;
 }
 
 static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
@@ -2280,12 +2274,9 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
 	return TRUE;
 }
 
-static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
+static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2297,7 +2288,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2307,7 +2298,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2316,14 +2307,14 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2378: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
+BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2335,7 +2326,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.payload.rts.num = 3;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(3);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2349,7 +2340,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2358,14 +2349,14 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2377: ENOMEM");
+	return false;
 }
 
-static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
+static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2378,7 +2369,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2387,7 +2378,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2396,14 +2387,14 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2376: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2415,7 +2406,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2424,7 +2415,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2433,14 +2424,14 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2375: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2452,7 +2443,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 2;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2463,7 +2454,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2472,14 +2463,14 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2374: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2491,7 +2482,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2499,7 +2490,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2508,16 +2499,16 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2373: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_flowcontrolack_withdestination(
-	DCERPC_CALL *pcall, uint32_t bytes_received,
-	uint32_t available_window, const char *channel_cookie)
+BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
+    uint32_t bytes_received, uint32_t available_window,
+    const char *channel_cookie) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2528,7 +2519,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	pkt.payload.rts.num = 2;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2541,13 +2532,13 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	fc.available_window = available_window;
 	if (!fc.channel_cookie.from_str(channel_cookie)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2556,6 +2547,9 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2372: ENOMEM");
+	return false;
 }
 
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
@@ -2584,8 +2578,11 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	}
 	
 	ndr.init(pbuff, length, flags);
-	auto pcall = g_call_allocator->get();
-	if (NULL == pcall) {
+	DCERPC_CALL *pcall;
+	try {
+		pcall = new DCERPC_CALL();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2371: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
 	}
 	pcall->b_bigendian = b_bigendian;
@@ -2815,7 +2812,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 }
 
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
-	uint16_t length, DCERPC_CALL **ppcall)
+    uint16_t length, DCERPC_CALL **ppcall) try
 {
 	NDR_PULL ndr;
 	BOOL b_result;
@@ -2839,8 +2836,11 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	ndr.init(pbuff, length, flags);
-	auto pcall = g_call_allocator->get();
-	if (NULL == pcall) {
+	DCERPC_CALL *pcall;
+	try {
+		pcall = new DCERPC_CALL();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2370: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
 	}
 	pcall->pprocessor = pprocessor;
@@ -3039,6 +3039,9 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		*ppcall = pcall;
 		return PDU_PROCESSOR_OUTPUT;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2370: ENOMEM");
+	return PDU_PROCESSOR_ERROR;
 }
 
 static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
