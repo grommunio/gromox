@@ -188,11 +188,7 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
     } e;
 
 	e.i = 0xFF000000;
-	if (0 != e.c[0]) {
-		g_bigendian = TRUE;
-	} else {
-		g_bigendian = FALSE;
-	}
+	g_bigendian = e.c[0] != 0 ? TRUE : false;
 	g_last_async_id = 0;
 	g_connection_ratio = connection_ratio;
 	g_connection_num = connection_num;
@@ -929,12 +925,9 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext->b_ndr64 = b_ndr64;
 		pcontext->stat_flags = 0;
 		pcontext->pendpoint = pcall->pprocessor->pendpoint;
-		if (0 == pbind->assoc_group_id) {
-			pcall->pprocessor->assoc_group_id = 
-				pdu_processor_allocate_group_id(pcall->pprocessor->pendpoint);
-		} else {
-			pcall->pprocessor->assoc_group_id = pbind->assoc_group_id;
-		}
+		pcall->pprocessor->assoc_group_id =
+			pbind->assoc_group_id != 0 ? pbind->assoc_group_id :
+			pdu_processor_allocate_group_id(pcall->pprocessor->pendpoint);
 		pcontext->assoc_group_id = pcall->pprocessor->assoc_group_id;
 		double_list_init(&pcontext->async_list);
 		pcall->pcontext = pcontext;
@@ -943,11 +936,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	}
 
 	if (0 == pcall->pprocessor->cli_max_recv_frag) {
-		if (pbind->max_recv_frag > 0x2000) {
-			pcall->pprocessor->cli_max_recv_frag = 0x2000;
-		} else {
-			pcall->pprocessor->cli_max_recv_frag = pbind->max_recv_frag;
-		}
+		pcall->pprocessor->cli_max_recv_frag = std::min(pbind->max_recv_frag, static_cast<uint16_t>(0x2000));
 	}
 
 	extra_flags = 0;
@@ -989,13 +978,8 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pkt.payload.bind_ack.max_recv_frag = 0x2000;
 	pkt.payload.bind_ack.pad.pb = nullptr;
 	pkt.payload.bind_ack.pad.cb = 0;
-	
-	if (NULL != pcall->pcontext) {
-		pkt.payload.bind_ack.assoc_group_id = pcall->pcontext->assoc_group_id;
-	} else {
-		pkt.payload.bind_ack.assoc_group_id = DUMMY_ASSOC_GROUP;
-	}
-
+	pkt.payload.bind_ack.assoc_group_id = pcall->pcontext != nullptr ?
+		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	if (NULL != pinterface) {
 		auto port2 = pdu_processor_find_secondary(
 					pcall->pprocessor->pendpoint->host,
@@ -1294,13 +1278,8 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.payload.alter_ack.max_recv_frag = 0x2000;
 	pkt.payload.alter_ack.pad.pb = nullptr;
 	pkt.payload.alter_ack.pad.cb = 0;
-	
-	if (NULL != pcontext) {
-		pkt.payload.alter_ack.assoc_group_id = pcall->pcontext->assoc_group_id;
-	} else {
-		pkt.payload.alter_ack.assoc_group_id = DUMMY_ASSOC_GROUP;
-	}
-	
+	pkt.payload.alter_ack.assoc_group_id = pcontext != nullptr ?
+		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	pkt.payload.alter_ack.secondary_address[0] = '\0';
 	
 	pkt.payload.alter_ack.num_contexts = 1;
@@ -1856,12 +1835,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	}
 	
 	pcall->ptr_cnt = ndr_pull.get_ptrcnt();
-	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		pobject = &prequest->object.object;
-	} else {
-		pobject = NULL;
-	}
-	
+	pobject = (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) ?
+	          &prequest->object.object : nullptr;
 	handle = pcall->pcontext->assoc_group_id;
 	handle <<= 32;
 	handle |= pcall->pcontext->context_id;
