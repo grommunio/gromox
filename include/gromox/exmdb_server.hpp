@@ -12,7 +12,6 @@ enum { /* exmdb_server_build_env flags */
 
 namespace exmdb_server {
 
-extern int run();
 extern void build_env(unsigned int flags, const char *dir);
 extern void free_env();
 extern void set_remote_id(const char *);

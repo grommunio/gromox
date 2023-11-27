@@ -120,8 +120,6 @@ unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_http_php, g_enforce_auth;
 static thread_local HTTP_CONTEXT *g_context_key;
-static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator{"g_inchannel_allocator.d"};
-static alloc_limiter<RPC_OUT_CHANNEL> g_outchannel_allocator{"g_outchannel_allocator.d"};
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
@@ -268,12 +266,6 @@ int http_parser_run()
 		mlog(LV_ERR, "http_parser: failed to allocate HTTP contexts");
         return -8;
     }
-	g_inchannel_allocator = alloc_limiter<RPC_IN_CHANNEL>(g_context_num,
-	                        "http_inchannel_allocator",
-	                        "http.cfg:context_num");
-	g_outchannel_allocator = alloc_limiter<RPC_OUT_CHANNEL>(g_context_num,
-	                         "http_outchannel_allocator",
-	                         "http.cfg:context_num");
     return 0;
 }
 
@@ -502,7 +494,7 @@ static tproc_status http_end(http_context *ctx)
 					conn->pcontext_in = nullptr;
 				conn.put();
 			}
-			g_inchannel_allocator->put(chan);
+			delete chan;
 		} else {
 			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
 			auto conn = http_parser_get_vconnection(ctx->host,
@@ -512,7 +504,7 @@ static tproc_status http_end(http_context *ctx)
 					conn->pcontext_out = nullptr;
 				conn.put();
 			}
-			g_outchannel_allocator->put(chan);
+			delete chan;
 		}
 		ctx->pchannel = nullptr;
 	}
@@ -1106,7 +1098,7 @@ static tproc_status htp_auth(http_context &ctx)
 }
 
 static tproc_status htp_delegate_rpc(http_context *pcontext,
-    size_t stream_1_written)
+    size_t stream_1_written) try
 {
 	auto tmp_len = pcontext->request.f_request_uri.size();
 	if (0 == tmp_len || tmp_len >= 1024) {
@@ -1153,18 +1145,17 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	if (pcontext->total_length > 0x10) {
 		if (pcontext->request.imethod == http_method::rpcin) {
 			pcontext->channel_type = hchannel_type::in;
-			pcontext->pchannel = g_inchannel_allocator->get();
-			if (pcontext->pchannel == nullptr)
-				return http_done(pcontext, http_status::enomem_CL);
+			pcontext->pchannel = new RPC_IN_CHANNEL();
 		} else {
 			pcontext->channel_type = hchannel_type::out;
-			pcontext->pchannel = g_outchannel_allocator->get();
-			if (pcontext->pchannel == nullptr)
-				return http_done(pcontext, http_status::enomem_CL);
+			pcontext->pchannel = new RPC_OUT_CHANNEL();
 		}
 	}
 	pcontext->bytes_rw = stream_1_written;
 	return tproc_status::loop;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2391: ENOMEM");
+	return http_done(pcontext, http_status::enomem_CL);
 }
 
 static tproc_status htp_delegate_hpm(http_context *pcontext)

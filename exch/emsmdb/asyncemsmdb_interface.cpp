@@ -55,7 +55,6 @@ static size_t g_tag_hash_max;
 static std::mutex g_list_lock, g_async_lock;
 static std::condition_variable g_waken_cond;
 static std::unordered_map<int, ASYNC_WAIT *> g_async_hash;
-static alloc_limiter<ASYNC_WAIT> g_wait_allocator{"emsmdb.g_wait_allocator.d"};
 
 static void *aemsi_scanwork(void *);
 static void *aemsi_thrwork(void *);
@@ -80,8 +79,6 @@ int asyncemsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_wait_allocator = alloc_limiter<ASYNC_WAIT>(2 * context_num,
-	                   "wait_allocator", "http.cfg:context_num");
 	g_tag_hash_max = context_num;
 	g_notify_stop = false;
 	auto ret = pthread_create4(&g_scan_id, nullptr, aemsi_scanwork, nullptr);
@@ -138,7 +135,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 {
 	char tmp_tag[TAG_SIZE];
 	
-	auto pwait = g_wait_allocator.get();
+	auto pwait = new ASYNC_WAIT();
 	if (NULL == pwait) {
 		pout->flags_out = 0;
 		pout->result = ecRejected;
@@ -147,13 +144,13 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	auto rpc_info = get_rpc_info();
 	if (!emsmdb_interface_check_acxh(&pin->acxh, pwait->username, &pwait->cxr, TRUE) ||
 		0 != strcasecmp(rpc_info.username, pwait->username)) {
-		g_wait_allocator.put(pwait);
+		delete pwait;
 		pout->flags_out = 0;
 		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
 	if (emsmdb_interface_check_notify(&pin->acxh)) {
-		g_wait_allocator.put(pwait);
+		delete pwait;
 		pout->flags_out = FLAG_NOTIFICATION_PENDING;
 		pout->result = ecSuccess;
 		return DISPATCH_SUCCESS;
@@ -178,7 +175,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 			throw std::bad_alloc();
 	} catch (const std::bad_alloc &) {
 		as_hold.unlock();
-		g_wait_allocator.put(pwait);
+		delete pwait;
 		pout->flags_out = 0;
 		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
@@ -193,7 +190,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (async_id != 0)
 		g_async_hash.erase(async_id);
 	as_hold.unlock();
-	g_wait_allocator.put(pwait);
+	delete pwait;
 	pout->flags_out = 0;
 	pout->result = ecRejected;
 	return DISPATCH_SUCCESS;
@@ -214,7 +211,7 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	g_tag_hash.erase(tmp_tag);
 	g_async_hash.erase(async_id);
 	as_hold.unlock();
-	g_wait_allocator.put(pwait);
+	delete pwait;
 }
 
 /* called by moh_emsmdb module */
@@ -237,7 +234,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 		g_async_hash.erase(pwait->async_id);
 	g_tag_hash.erase(iter);
 	as_hold.unlock();
-	g_wait_allocator.put(pwait);
+	delete pwait;
 }
 
 static void asyncemsmdb_interface_activate(
@@ -250,7 +247,7 @@ static void asyncemsmdb_interface_activate(
 		pwait->out_payload.pout->flags_out = b_pending ? FLAG_NOTIFICATION_PENDING : 0;
 		async_reply(pwait->async_id, pwait->out_payload.pout);
 	}
-	g_wait_allocator.put(pwait);
+	delete pwait;
 }
 
 void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)

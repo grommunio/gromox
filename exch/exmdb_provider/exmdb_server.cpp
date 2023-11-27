@@ -15,40 +15,29 @@ struct env_context {
 	int account_id = 0;
 	bool b_local = false, b_private = false;
 };
-using ENVIRONMENT_CONTEXT = env_context;
 
 }
 
 static thread_local const char *g_id_key;
 static thread_local const char *g_public_username_key;
-static alloc_limiter<ENVIRONMENT_CONTEXT> g_ctx_allocator{"exmdb.ctx_allocator.d"};
 
 namespace exmdb_server {
 
-struct envctx_delete {
-	void operator()(env_context *x) const { g_ctx_allocator->put(x); }
-};
-
 using evproc_t = void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
-static thread_local std::unique_ptr<env_context, envctx_delete> g_env_key;
+static thread_local std::unique_ptr<env_context> g_env_key;
 static std::vector<evproc_t> event_proc_handlers;
 
-int run()
-{
-	g_ctx_allocator = alloc_limiter<ENVIRONMENT_CONTEXT>(2 * get_context_num(),
-	                  "exmdb_envctx_allocator", "http.cfg:context_num");
-	return 0;
-}
-
-void build_env(unsigned int flags, const char *dir)
+void build_env(unsigned int flags, const char *dir) try
 {
 	common_util_build_tls();
-	std::unique_ptr<env_context, envctx_delete> pctx(g_ctx_allocator.get());
+	auto pctx = std::make_unique<env_context>();
 	pctx->b_local = flags & EM_LOCAL;
 	pctx->b_private = flags & EM_PRIVATE;
 	pctx->dir = dir;
 	pctx->account_id = -1;
 	g_env_key = std::move(pctx);
+} catch (const std::bad_alloc &) {
+	gromox::mlog(LV_ERR, "E-2390: ENOMEM!");
 }
 
 void free_env()

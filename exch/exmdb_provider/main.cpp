@@ -188,11 +188,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			mlog(LV_ERR, "exmdb_provider: failed to start bounce producer");
 			return FALSE;
 		}
-		if (exmdb_server::run()) {
-			mlog(LV_ERR, "exmdb_provider: failed to start exmdb server");
-			db_engine_stop();
-			return FALSE;
-		}
 		if (0 != db_engine_run()) {
 			mlog(LV_ERR, "exmdb_provider: failed to start db engine");
 			db_engine_stop();
