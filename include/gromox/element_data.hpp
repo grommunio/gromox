@@ -25,7 +25,7 @@ struct attachment_list {
 	BOOL append_internal(attachment_content *);
 	attachment_list *dup() const;
 	gromox::deref_iterator<attachment_content> begin() { return pplist; }
-	gromox::deref_iterator<attachment_content> end() { return pplist != nullptr ? &pplist[count] : nullptr; }
+	gromox::deref_iterator<attachment_content> end() { return pplist + count; }
 
 	uint16_t count;
 	attachment_content **pplist;

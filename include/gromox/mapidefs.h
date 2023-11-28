@@ -1180,9 +1180,9 @@ struct tarray_set {
 	gromox::errno_t append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
 	gromox::deref_iterator<TPROPVAL_ARRAY> begin() { return pparray; }
-	gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray != nullptr ? &pparray[count] : nullptr; }
+	gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray + count; }
 	gromox::const_deref_iterator<TPROPVAL_ARRAY> begin() const { return pparray; }
-	gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray != nullptr ? &pparray[count] : nullptr; }
+	gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray + count; }
 
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
