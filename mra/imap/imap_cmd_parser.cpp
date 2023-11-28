@@ -2160,7 +2160,9 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1714, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
 		return 1922;
-	return DISPATCH_CONTINUE;
+	pcontext->write_offset = 0;
+	pcontext->sched_stat = isched_stat::wrlst;
+	return DISPATCH_BREAK;
 } catch (const std::bad_alloc &) {
 	return 1915;
 }

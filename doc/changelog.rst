@@ -6,6 +6,7 @@ Fixes:
 * imap placed eml files in the wrong spot.
   You may need to `mmv /var/lib/gromox/user/X/Y/eml1*
   /var/lib/gromox/user/X/Y/eml/1#1` for the various user directories.
+* imap: fix broken response for STATUS command to client
 * http: resolve altnames and update user context after authentication success
   with krb
 
