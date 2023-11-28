@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
