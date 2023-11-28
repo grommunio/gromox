@@ -635,7 +635,8 @@ tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
 void tExtendedFieldURI::serialize(XMLElement* xml) const
 {
 	XMLDUMPA(PropertyType);
-	XMLDUMPA(PropertyTag);
+	if(PropertyTag)
+		xml->SetAttribute("PropertyTag", fmt::format("0x{:x}", *PropertyTag).c_str());
 	XMLDUMPA(PropertyId);
 	XMLDUMPA(PropertySetId);
 	XMLDUMPA(PropertyName);
