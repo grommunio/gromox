@@ -115,12 +115,6 @@ static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static alloc_limiter<DCERPC_CALL> g_call_allocator{"g_call_allocator.d"};
-static alloc_limiter<DCERPC_AUTH_CONTEXT> g_auth_allocator{"g_auth_allocator.d"};
-static alloc_limiter<ASYNC_NODE> g_async_allocator{"g_async_allocator.d"};
-static alloc_limiter<BLOB_NODE> g_bnode_allocator{"g_bnode_allocator.d"};
-static alloc_limiter<NDR_STACK_ROOT> g_stack_allocator{"g_stack_allocator.d"};
-static alloc_limiter<DCERPC_CONTEXT> g_context_allocator{"g_context_allocator.d"};
 static std::vector<std::string> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
@@ -145,26 +139,23 @@ dcerpc_call::dcerpc_call() :
 	double_list_init(&reply_list);
 }
 
-static NDR_STACK_ROOT* pdu_processor_new_stack_root()
+static NDR_STACK_ROOT *pdu_processor_new_stack_root() try
 {
-	auto pstack_root = g_stack_allocator.get();
-	if (NULL == pstack_root) {
-		return NULL;
-	}
-	return pstack_root;
+	return new NDR_STACK_ROOT();
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2389: ENOMEM");
+	return nullptr;
 }
 
 void* pdu_processor_ndr_stack_alloc(int type, size_t size)
 {
 	auto proot = g_stack_key;
-	if (NULL == proot) {
+	if (proot == nullptr)
 		return NULL;
-	}
-	if (NDR_STACK_IN == type) {
+	if (type == NDR_STACK_IN)
 		return proot->in_stack.alloc(size);
-	} else if (NDR_STACK_OUT == type) {
+	else if (type == NDR_STACK_OUT)
 		return proot->out_stack.alloc(size);
-	}
 	return NULL;
 }
 
@@ -172,16 +163,15 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 {
 	if (g_stack_key == pstack_root)
 		g_stack_key = nullptr;
-	g_stack_allocator->put(pstack_root);
+	delete pstack_root;
 }
 
 static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type)
 {
-	if (NDR_STACK_IN == type) {
+	if (type == NDR_STACK_IN)
 		return pstack_root->in_stack.get_total();
-	} else if (NDR_STACK_OUT) {
+	else if (type == NDR_STACK_OUT)
 		return pstack_root->out_stack.get_total();
-	}
 	return 0;
 }
 
@@ -196,11 +186,7 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
     } e;
 
 	e.i = 0xFF000000;
-	if (0 != e.c[0]) {
-		g_bigendian = TRUE;
-	} else {
-		g_bigendian = FALSE;
-	}
+	g_bigendian = e.c[0] != 0 ? TRUE : false;
 	g_last_async_id = 0;
 	g_connection_ratio = connection_ratio;
 	g_connection_num = connection_num;
@@ -214,21 +200,6 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 
 int pdu_processor_run()
 {
-	int context_num;
-	
-	g_call_allocator = alloc_limiter<DCERPC_CALL>(g_connection_num * g_connection_ratio,
-	                   "pdu_call_allocator", "http.cfg:context_num");
-	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = alloc_limiter<DCERPC_CONTEXT>(context_num,
-	                      "pdu_ctx_allocator", "http.cfg:context_num");
-	g_auth_allocator = alloc_limiter<DCERPC_AUTH_CONTEXT>(context_num,
-	                   "pdu_auth_allocator", "http.cfg:context_num");
-	g_bnode_allocator = alloc_limiter<BLOB_NODE>(32 * g_connection_num,
-	                    "pdu_bnode_allocator", "http.cfg:context_num");
-	g_async_allocator = alloc_limiter<ASYNC_NODE>(2 * context_num,
-	                    "pdu_async_allocator", "http.cfg:context_num");
-	g_stack_allocator = alloc_limiter<NDR_STACK_ROOT>(4 * context_num,
-	                    "pdu_stack_allocator", "http.cfg:context_num");
 	for (const auto &i : g_plugin_names) {
 		int ret = pdu_processor_load_library(i.c_str());
 		if (ret != PLUGIN_LOAD_OK)
@@ -246,12 +217,12 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		free(pblob_node->blob.pb);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 	}
 	double_list_free(&pcall->reply_list);
 	if (g_call_key == pcall)
 		g_call_key = nullptr;
-	g_call_allocator->put(pcall);
+	delete pcall;
 }
 
 static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
@@ -261,21 +232,19 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 	while (true) {
 		std::unique_lock as_hold(g_async_lock);
 		pnode = double_list_pop_front(&pcontext->async_list);
-		if (NULL == pnode) {
+		if (pnode == nullptr)
 			break;
-		}
 		auto pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
 		g_async_hash.erase(pasync_node->async_id);
 		as_hold.unlock();
-		if (NULL != pcontext->pinterface->reclaim) {
+		if (pcontext->pinterface->reclaim != nullptr)
 			pcontext->pinterface->reclaim(pasync_node->async_id);
-		}
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 	}
 	double_list_free(&pcontext->async_list);
-	g_context_allocator->put(pcontext);
+	delete pcontext;
 }
 
 void pdu_processor_stop()
@@ -373,7 +342,7 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 			ntlmssp_destroy(pauth_ctx->pntlmssp);
 			pauth_ctx->pntlmssp = NULL;
 		}
-		g_auth_allocator->put(pauth_ctx);
+		delete pauth_ctx;
 	}
 	double_list_free(&pprocessor->auth_list);
 	
@@ -430,7 +399,7 @@ void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		pstream->write(pblob_node->blob.pb, pblob_node->blob.cb);
 		free(pblob_node->blob.pb);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 	}
 }
 
@@ -444,7 +413,7 @@ void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list)
 
 void pdu_processor_free_blob(BLOB_NODE *pbnode)
 {
-	g_bnode_allocator->put(pbnode);
+	delete pbnode;
 }
 
 static DCERPC_CALL* pdu_processor_get_fragmented_call(
@@ -483,9 +452,8 @@ static DCERPC_CONTEXT* pdu_processor_find_context(PDU_PROCESSOR *pprocessor,
 	for (pnode=double_list_get_head(&pprocessor->context_list); NULL!=pnode;
 		pnode=double_list_get_after(&pprocessor->context_list, pnode)) {
 		auto pcontext = static_cast<DCERPC_CONTEXT *>(pnode->pdata);
-		if (context_id == pcontext->context_id) {
+		if (context_id == pcontext->context_id)
 			return pcontext;
-		}
 	}
 	return NULL;
 }
@@ -498,9 +466,8 @@ static DCERPC_AUTH_CONTEXT* pdu_processor_find_auth_context(
 	for (pnode=double_list_get_head(&pprocessor->auth_list); NULL!=pnode;
 		pnode=double_list_get_after(&pprocessor->auth_list, pnode)) {
 		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-		if (auth_context_id == pauth_ctx->auth_info.auth_context_id) {
+		if (auth_context_id == pauth_ctx->auth_info.auth_context_id)
 			return pauth_ctx;
-		}
 	}
 	return NULL;
 }
@@ -522,10 +489,8 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	ndr.init(ptrailer->pb, ptrailer->cb, flags);
 	if (ndr.advance(data_and_pad) != NDR_ERR_SUCCESS)
 		return FALSE;
-	if (NDR_ERR_SUCCESS != pdu_ndr_pull_dcerpc_auth(&ndr, pauth)) {
+	if (pdu_ndr_pull_dcerpc_auth(&ndr, pauth) != pack_result::success)
 		return FALSE;
-	}
-
 	if (auth_data_only && data_and_pad != pauth->auth_pad_length) {
 		mlog(LV_DEBUG, "pdu_processor: WARNING: pad length mismatch, "
 			"calculated %u got %u\n", data_and_pad, pauth->auth_pad_length);
@@ -552,9 +517,8 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	prequest = &ppkt->payload.request;
 	hdr_size = DCERPC_REQUEST_LENGTH;
 	if (0 == ppkt->auth_length) {
-		if (0 == double_list_get_nodes_num(&pcall->pprocessor->auth_list)) {
+		if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) == 0)
 			return FALSE;
-		}
 		pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 		pcall->pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 		switch (pcall->pauth_ctx->auth_info.auth_level) {
@@ -576,10 +540,8 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		return FALSE;
 	}
 	pcall->pauth_ctx = pauth_ctx;
-	
-	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID)
 		hdr_size += 16;
-	}
 	
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_DEFAULT:
@@ -648,17 +610,13 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	
 	
 	pdata = malloc(DCERPC_BASE_MARSHALL_SIZE);
-	if (NULL == pdata) {
+	if (pdata == nullptr)
 		return FALSE;
-	}
-	
 	flags = 0;
 	if (!(ppkt->drep[0] & DCERPC_DREP_LE))
 		flags = NDR_FLAG_BIGENDIAN;
-	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	}
-	
 	ndr.init(pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
 	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
@@ -681,7 +639,7 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	return TRUE;
 }
 
-static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
+static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	static constexpr uint8_t zeros[4] = {};
@@ -696,19 +654,19 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.pad.pb = deconst(zeros);
 	pkt.payload.fault.pad.cb = sizeof(zeros);
 
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2388: ENOMEM");
+	return false;
 }
 
 /*
@@ -716,7 +674,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
   return false if we can't handle the auth request for some 
   reason (in which case we send a bind_nak)
 */
-static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
+static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 {
 	DCERPC_BIND *pbind;
 	uint32_t auth_length;
@@ -728,10 +686,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		mlog(LV_DEBUG, "pdu_processor: maximum auth contexts number of connection reached");
 		return FALSE;
 	}
-	auto pauth_ctx = g_auth_allocator->get();
-	if (NULL == pauth_ctx) {
-		return FALSE;
-	}
+	auto pauth_ctx = new DCERPC_AUTH_CONTEXT();
 	memset(pauth_ctx, 0, sizeof(DCERPC_AUTH_CONTEXT));
 	pauth_ctx->node.pdata = pauth_ctx;
 	
@@ -744,14 +699,14 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	}
 	if (!pdu_processor_pull_auth_trailer(ppkt, &pbind->auth_info,
 		&pauth_ctx->auth_info, &auth_length, FALSE)) {
-		g_auth_allocator->put(pauth_ctx);
+		delete pauth_ctx;
 		return FALSE;
 	}
 	
 	if (NULL != pdu_processor_find_auth_context(pcall->pprocessor,
 		pauth_ctx->auth_info.auth_context_id)) {
 		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-		g_auth_allocator->put(pauth_ctx);
+		delete pauth_ctx;
 		return FALSE;
 	}
 	
@@ -760,7 +715,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			&pauth_ctx->node);
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
-		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT) {
+		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT)
 			pauth_ctx->pntlmssp = ntlmssp_init(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
 									NTLMSSP_NEGOTIATE_128|
@@ -768,7 +723,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 									NTLMSSP_NEGOTIATE_NTLM2|
 									NTLMSSP_NEGOTIATE_ALWAYS_SIGN,
 									http_parser_get_password);
-		} else {
+		else
 			pauth_ctx->pntlmssp = ntlmssp_init(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
 									NTLMSSP_NEGOTIATE_128|
@@ -777,10 +732,9 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 									NTLMSSP_NEGOTIATE_NTLM2|
 									NTLMSSP_NEGOTIATE_ALWAYS_SIGN,
 									http_parser_get_password);
-		}
 		if (NULL == pauth_ctx->pntlmssp) {
 			pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-			g_auth_allocator->put(pauth_ctx);
+			delete pauth_ctx;
 			return FALSE;
 		}
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
@@ -788,9 +742,12 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		return TRUE;
 	}
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-	g_auth_allocator->put(pauth_ctx);
+	delete pauth_ctx;
 	mlog(LV_DEBUG, "pdu_processor: unsupported authentication type");
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2387: ENOMEM");
+	return false;
 }
 
 /*
@@ -802,9 +759,8 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 	DOUBLE_LIST_NODE *pnode;
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return TRUE;
-	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 	switch (pauth_ctx->auth_info.auth_type) {
 	case RPC_C_AUTHN_NONE:
@@ -826,7 +782,7 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 }
 
 /* return a dcerpc bind_nak */
-static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
+static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	
@@ -836,21 +792,21 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	pkt.payload.bind_nak.reject_reason = reason;
 	pkt.payload.bind_nak.num_versions = 0;
 
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, NULL)) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2386: ENOMEM");
+	return false;
 }
 
 static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
@@ -877,17 +833,13 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	}
 	
 	/* can not bind twice on the same connection */
-	if (0 != pcall->pprocessor->assoc_group_id) {
+	if (pcall->pprocessor->assoc_group_id != 0)
 		return pdu_processor_bind_nak(pcall, 0);
-	}
-
 	context_id = pbind->ctx_list[0].context_id;
 
 	/* bind only there's no context, otherwise, use alter */
-	if (double_list_get_nodes_num(&pcall->pprocessor->context_list) > 0) {
+	if (double_list_get_nodes_num(&pcall->pprocessor->context_list) > 0)
 		return pdu_processor_bind_nak(pcall, 0);
-	}
-	
 	if_version = pbind->ctx_list[0].abstract_syntax.version;
 	uuid = pbind->ctx_list[0].abstract_syntax.uuid;
 
@@ -923,9 +875,8 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
 		char uuid_str[GUIDSTR_SIZE];
 		pbind->ctx_list[1].transfer_syntaxes[0].uuid.to_str(uuid_str, sizeof(uuid_str));
-		if (0 == strncmp("6cb71c2c-9812-4540", uuid_str, 18)) {
+		if (strncmp("6cb71c2c-9812-4540", uuid_str, 18) == 0)
 			b_negotiate = TRUE;
-		}
 	}
 	auto pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
@@ -940,8 +891,10 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
-		pcontext = g_context_allocator->get();
-		if (NULL == pcontext) {
+		try {
+			pcontext = new DCERPC_CONTEXT();
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2385: ENOMEM");
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 		pcontext->node.pdata = pcontext;
@@ -950,12 +903,9 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext->b_ndr64 = b_ndr64;
 		pcontext->stat_flags = 0;
 		pcontext->pendpoint = pcall->pprocessor->pendpoint;
-		if (0 == pbind->assoc_group_id) {
-			pcall->pprocessor->assoc_group_id = 
-				pdu_processor_allocate_group_id(pcall->pprocessor->pendpoint);
-		} else {
-			pcall->pprocessor->assoc_group_id = pbind->assoc_group_id;
-		}
+		pcall->pprocessor->assoc_group_id =
+			pbind->assoc_group_id != 0 ? pbind->assoc_group_id :
+			pdu_processor_allocate_group_id(pcall->pprocessor->pendpoint);
 		pcontext->assoc_group_id = pcall->pprocessor->assoc_group_id;
 		double_list_init(&pcontext->async_list);
 		pcall->pcontext = pcontext;
@@ -963,42 +913,32 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		reason = 0;
 	}
 
-	if (0 == pcall->pprocessor->cli_max_recv_frag) {
-		if (pbind->max_recv_frag > 0x2000) {
-			pcall->pprocessor->cli_max_recv_frag = 0x2000;
-		} else {
-			pcall->pprocessor->cli_max_recv_frag = pbind->max_recv_frag;
-		}
-	}
-
+	if (pcall->pprocessor->cli_max_recv_frag == 0)
+		pcall->pprocessor->cli_max_recv_frag = std::min(pbind->max_recv_frag, static_cast<uint16_t>(0x2000));
 	extra_flags = 0;
 	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN &&
 	    g_header_signing) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pcontext->stat_flags |= DCERPC_CALL_STAT_FLAG_HEADER_SIGNING;
-		}
 		extra_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 	}
 
 	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pcontext->stat_flags |= DCERPC_CALL_STAT_FLAG_MULTIPLEXED;
-		}
 		extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 
 	/* handle any authentication that is being requested */
 	if (!pdu_processor_auth_bind(pcall)) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return pdu_processor_bind_nak(pcall,
 					DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
 	if (!pdu_processor_auth_bind_ack(pcall)) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 
@@ -1010,13 +950,8 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pkt.payload.bind_ack.max_recv_frag = 0x2000;
 	pkt.payload.bind_ack.pad.pb = nullptr;
 	pkt.payload.bind_ack.pad.cb = 0;
-	
-	if (NULL != pcall->pcontext) {
-		pkt.payload.bind_ack.assoc_group_id = pcall->pcontext->assoc_group_id;
-	} else {
-		pkt.payload.bind_ack.assoc_group_id = DUMMY_ASSOC_GROUP;
-	}
-
+	pkt.payload.bind_ack.assoc_group_id = pcall->pcontext != nullptr ?
+		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	if (NULL != pinterface) {
 		auto port2 = pdu_processor_find_secondary(
 					pcall->pprocessor->pendpoint->host,
@@ -1030,18 +965,16 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pkt.payload.bind_ack.num_contexts = 1;
 		pkt.payload.bind_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
-			if (NULL != pcontext) {
+			if (pcontext != nullptr)
 				pdu_processor_free_context(pcontext);
-			}
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 	} else {
 		pkt.payload.bind_ack.num_contexts = 2;
 		pkt.payload.bind_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
-			if (NULL != pcontext) {
+			if (pcontext != nullptr)
 				pdu_processor_free_context(pcontext);
-			}
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 		pkt.payload.bind_ack.ctx_list[1].result =
@@ -1061,18 +994,19 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		pdu_ndr_free_ncacnpkt(&pkt);
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
+	BLOB_NODE *pblob_node;
+	try {
+		pblob_node = new BLOB_NODE();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2384: ENOMEM");
 		pdu_ndr_free_ncacnpkt(&pkt);
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	
@@ -1081,19 +1015,16 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, &pauth_ctx->auth_info)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
-		if (NULL != pcontext) {
+		delete pblob_node;
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	
 	pdu_ndr_free_ncacnpkt(&pkt);
-	
-	if (NULL != pcontext) {
+	if (pcontext != nullptr)
 		double_list_insert_as_head(&pcall->pprocessor->context_list,
 			&pcontext->node);
-	}
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -1107,9 +1038,8 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	
 	ppkt = &pcall->pkt;
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
-	if (NULL == pnode) {
+	if (pnode == nullptr)
 		return TRUE;
-	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
 	/* can't work without an existing state, and an new blob to feed it */
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
@@ -1140,7 +1070,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 		ntlmssp_destroy(pauth_ctx->pntlmssp);
 		pauth_ctx->pntlmssp = NULL;
 	}
-	g_auth_allocator->put(pauth_ctx);
+	delete pauth_ctx;
 	return TRUE;
 }
 
@@ -1245,8 +1175,10 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 		/* add this context to the list of available context_ids */
-		pcontext = g_context_allocator->get();
-		if (NULL == pcontext) {
+		try {
+			pcontext = new DCERPC_CONTEXT();
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2383: ENOMEM");
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
 			goto ALTER_ACK;
@@ -1269,36 +1201,30 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	if (0 == result) {
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN &&
 		    g_header_signing) {
-			if (NULL != pcontext) {
+			if (pcontext != nullptr)
 				pcontext->stat_flags |= DCERPC_CALL_STAT_FLAG_HEADER_SIGNING;
-			}
 			extra_flags |= DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN;
 		} else {
-			if (NULL != pcontext) {
+			if (pcontext != nullptr)
 				pcontext->stat_flags &= ~DCERPC_CALL_STAT_FLAG_HEADER_SIGNING;
-			}
 		}
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) {
-			if (NULL != pcontext) {
+			if (pcontext != nullptr)
 				pcontext->stat_flags |= DCERPC_CALL_STAT_FLAG_MULTIPLEXED;
-			}
 			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 		} else {
-			if (NULL != pcontext) {
+			if (pcontext != nullptr)
 				pcontext->stat_flags &= ~DCERPC_CALL_STAT_FLAG_MULTIPLEXED;
-			}
 		}
 	}
 	if (!pdu_processor_auth_alter(pcall)) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return FALSE;
 	}
 	if (!pdu_processor_auth_alter_ack(pcall)) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return FALSE;
 	}
 	
@@ -1310,21 +1236,15 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.payload.alter_ack.max_recv_frag = 0x2000;
 	pkt.payload.alter_ack.pad.pb = nullptr;
 	pkt.payload.alter_ack.pad.cb = 0;
-	
-	if (NULL != pcontext) {
-		pkt.payload.alter_ack.assoc_group_id = pcall->pcontext->assoc_group_id;
-	} else {
-		pkt.payload.alter_ack.assoc_group_id = DUMMY_ASSOC_GROUP;
-	}
-	
+	pkt.payload.alter_ack.assoc_group_id = pcontext != nullptr ?
+		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	pkt.payload.alter_ack.secondary_address[0] = '\0';
 	
 	pkt.payload.alter_ack.num_contexts = 1;
 	pkt.payload.alter_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 	if (NULL == pkt.payload.alter_ack.ctx_list) {
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return FALSE;
 	}
 	pkt.payload.alter_ack.ctx_list[0].result = result;
@@ -1337,18 +1257,19 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
 		pdu_ndr_free_ncacnpkt(&pkt);
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return FALSE;
 	}
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
+	BLOB_NODE *pblob_node;
+	try {
+		pblob_node = new BLOB_NODE();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2382: ENOMEM");
 		pdu_ndr_free_ncacnpkt(&pkt);
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
 		return FALSE;
 	}
 	pblob_node->node.pdata = pblob_node;
@@ -1356,19 +1277,15 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, &pauth_ctx->auth_info)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		if (NULL != pcontext) {
+		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
-		}
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
 	pdu_ndr_free_ncacnpkt(&pkt);
-	
-	if (NULL != pcontext) {
+	if (pcontext != nullptr)
 		double_list_insert_as_head(&pprocessor->context_list, &pcontext->node);
-	}
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -1390,9 +1307,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	creds2.cb = 0;
 	pauth_ctx = pcall->pauth_ctx;
 	/* non-signed packets are simple */
-	if (0 == sig_size) {
+	if (sig_size == 0)
 		return pdu_processor_ncacn_push_with_auth(pblob, ppkt, NULL);
-	}
 
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
@@ -1407,16 +1323,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 	
 	flags = 0;
-	if (pcall->b_bigendian) {
+	if (pcall->b_bigendian)
 		flags |= NDR_FLAG_BIGENDIAN;
-	}
 	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
 	ndr.init(ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
-	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
+	if (pdu_ndr_push_ncacnpkt(&ndr, ppkt) != pack_result::success)
 		return FALSE;
-	}
-	
 	pauth_ctx->auth_info.auth_pad_length =
 		(16 - (ppkt->payload.response.stub_and_verifier.cb & 15)) & 15;
 	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != NDR_ERR_SUCCESS)
@@ -1436,10 +1349,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	if (pcall->pcontext->b_ndr64)
 		ndr.flags &= ~NDR_FLAG_NDR64;
 	/* add the auth verifier */
-	if (NDR_ERR_SUCCESS != pdu_ndr_push_dcerpc_auth(&ndr,
-		&pauth_ctx->auth_info)) {
+	if (pdu_ndr_push_dcerpc_auth(&ndr, &pauth_ctx->auth_info) != pack_result::success)
 		return FALSE;
-	}
 
 	/* extract the whole packet as a blob */
 	pblob->pb = ndr.data;
@@ -1477,9 +1388,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	}
 
 	auto pdata = me_alloc<uint8_t>(pblob->cb + creds2.cb);
-	if (NULL == pdata) {
+	if (pdata == nullptr)
 		return FALSE;
-	}
 	memcpy(pdata, pblob->pb, pblob->cb);
 	memcpy(&pdata[pblob->cb], creds2.pb, creds2.cb);
 	pblob->pb = pdata;
@@ -1558,8 +1468,11 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 	/* Fragmentation into Transport Service Data Units (TSDU) */
 	do {
-		auto pblob_node = g_bnode_allocator->get();
-		if (NULL == pblob_node) {
+		BLOB_NODE *pblob_node;
+		try {
+			pblob_node = new BLOB_NODE();
+		} catch (const std::bad_alloc &) {
+			mlog(LV_ERR, "E-2381: ENOMEM");
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
@@ -1586,7 +1499,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
-			g_bnode_allocator->put(pblob_node);
+			delete pblob_node;
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
@@ -1606,26 +1519,26 @@ static uint32_t pdu_processor_apply_async_id()
 	HTTP_CONTEXT *pcontext;
 	
 	pcall = pdu_processor_get_call();
-	if (NULL == pcall) {
+	if (pcall == nullptr)
 		return 0;
-	}
 	auto pstack_root = g_stack_key;
-	if (NULL == pstack_root) {
+	if (pstack_root == nullptr)
 		return 0;
-	}
 	if (double_list_get_nodes_num(&pcall->pcontext->async_list) >= MAX_SYNC_PER_CONTEXT) {
 		mlog(LV_DEBUG, "pdu_processor: maximum async contexts number of connection reached");
 		return 0;
 	}
 	pcontext = http_parser_get_context();
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return 0;
-	}
 	if (pcontext->channel_type != hchannel_type::in)
 		return 0;
 	auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-	auto pasync_node = g_async_allocator->get();
-	if (NULL == pasync_node) {
+	ASYNC_NODE *pasync_node;
+	try {
+		pasync_node = new ASYNC_NODE();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2380: ENOMEM");
 		return 0;
 	}
 	pasync_node->node.pdata = pasync_node;
@@ -1644,7 +1557,7 @@ static uint32_t pdu_processor_apply_async_id()
 	auto ctx_num = g_connection_num * g_connection_ratio;
 	if (g_async_hash.size() >= 2 * ctx_num) {
 		as_hold.unlock();
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 		fprintf(stderr, "E-2045: g_async_hash reached maximum fill level (influenced by http.cfg:context_num,connection_ratio)\n");
 		return 0;
 	}
@@ -1652,7 +1565,7 @@ static uint32_t pdu_processor_apply_async_id()
 		g_async_hash.emplace(async_id, nullptr);
 	} catch (const std::bad_alloc &) {
 		as_hold.unlock();
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 		fprintf(stderr, "E-2044: ENOMEM\n");
 		return 0;
 	}
@@ -1668,9 +1581,8 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 	DOUBLE_LIST_NODE *pnode;
 	
 	pcall = pdu_processor_get_call();
-	if (NULL == pcall) {
+	if (pcall == nullptr)
 		return;
-	}
 	std::lock_guard as_hold(g_async_lock);
 	auto iter = g_async_hash.find(async_id);
 	if (iter == g_async_hash.end() || iter->second != nullptr)
@@ -1692,9 +1604,8 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 	ASYNC_NODE *pasync_node;
 	
 	pcall = pdu_processor_get_call();
-	if (NULL == pcall) {
+	if (pcall == nullptr)
 		return;
-	}
 	std::unique_lock as_hold(g_async_lock);
 	auto iter = g_async_hash.find(async_id);
 	if (iter == g_async_hash.end() || iter->second != nullptr)
@@ -1709,9 +1620,12 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 		}
 	}
 	as_hold.unlock();
-	if (NULL != pnode) {
-		g_async_allocator->put(pasync_node);
-	}
+	/*
+	 * pnode now indicates whether the end of list was reached (pasync_node
+	 * does not!—it has its last value).
+	 */
+	if (pnode != nullptr)
+		delete pasync_node;
 }
 
 /* to check if the async_id is still available and
@@ -1747,9 +1661,8 @@ BOOL pdu_processor_rpc_new_stack()
 	NDR_STACK_ROOT *pstack_root;
 	
 	pstack_root = pdu_processor_new_stack_root();
-	if (NULL == pstack_root) {
+	if (pstack_root == nullptr)
 		return FALSE;
-	}
 	g_stack_key = pstack_root;
 	return TRUE;
 }
@@ -1772,16 +1685,14 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	
 	/* Caller needs to have invoked rpc_build_environment */
 	pcall = pdu_processor_get_call();
-	if (NULL == pcall) {
+	if (pcall == nullptr)
 		return;
-	}
 	std::unique_lock as_hold(g_async_lock);
 	for (pnode=double_list_get_head(&pcall->pcontext->async_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
 		pasync_node = static_cast<ASYNC_NODE *>(pnode->pdata);
-		if (pasync_node->async_id == async_id) {
+		if (pasync_node->async_id == async_id)
 			break;
-		}
 	}
 	if (pnode == nullptr || pasync_node == nullptr)
 		return;
@@ -1790,7 +1701,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 		as_hold.unlock();
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 		return;
 	}
 	pcall->pprocessor->async_num ++;
@@ -1809,7 +1720,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 		as_hold.unlock();
 	}
 	pdu_processor_free_call(pasync_node->pcall);
-	g_async_allocator->put(pasync_node);
+	delete pasync_node;
 }
 
 static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
@@ -1828,15 +1739,13 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	pprocessor = pcall->pprocessor;
 	prequest = &pcall->pkt.payload.request;
 	pcontext = pdu_processor_find_context(pprocessor, prequest->context_id);
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_UNK_IF);
-	}
 	
 	/* normally, stack root will be freed in pdu_processor_reply_request */
 	pstack_root = pdu_processor_new_stack_root();
-	if (NULL == pstack_root) {
+	if (pstack_root == nullptr)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
-	}
 	
 	g_call_key = pcall;
 	g_stack_key = pstack_root;
@@ -1863,12 +1772,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	}
 	
 	pcall->ptr_cnt = ndr_pull.get_ptrcnt();
-	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		pobject = &prequest->object.object;
-	} else {
-		pobject = NULL;
-	}
-	
+	pobject = (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) ?
+	          &prequest->object.object : nullptr;
 	handle = pcall->pcontext->assoc_group_id;
 	handle <<= 32;
 	handle |= pcall->pcontext->context_id;
@@ -1943,12 +1848,11 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	}
 	as_hold.unlock();
 	if (b_cancel) {
-		if (NULL != pcontext->pinterface->reclaim) {
+		if (pcontext->pinterface->reclaim != nullptr)
 			pcontext->pinterface->reclaim(async_id);
-		}
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		g_async_allocator->put(pasync_node);
+		delete pasync_node;
 	}
 }
 
@@ -1958,9 +1862,8 @@ static void pdu_processor_process_orphaned(DCERPC_CALL *pcall)
 	
 	pcallx = pdu_processor_get_fragmented_call(
 		pcall->pprocessor, pcall->pkt.call_id);
-	if (NULL != pcallx) {
+	if (pcallx != nullptr)
 		pdu_processor_free_call(pcallx);
-	}
 }
 
 void pdu_processor_rts_echo(char *pbuff)
@@ -1985,7 +1888,7 @@ void pdu_processor_rts_echo(char *pbuff)
 	ndr.destroy();
 }
 
-BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall) try
 {
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 
@@ -1996,21 +1899,21 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 
-	auto pblob_node = g_bnode_allocator->get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2379: ENOMEM");
+	return false;
 }
 
 static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
@@ -2020,38 +1923,24 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (6 != prts->num) {
+	if (prts->num != 6 ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(chan_cookie, chan_ck_size);
-	if (RTS_CMD_CHANNEL_LIFETIME != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_CHANNEL_LIFETIME)
 		return FALSE;
-	}
 	*plife_time = prts->commands[3].command.channellifetime;
-	
-	if (RTS_CMD_CLIENT_KEEPALIVE != prts->commands[4].command_type) {
+	if (prts->commands[4].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
-	}
 	*pclient_keepalive = std::chrono::milliseconds(prts->commands[4].command.clientkeepalive);
-	if (RTS_CMD_ASSOCIATION_GROUP_ID !=
-		prts->commands[5].command_type) {
+	if (prts->commands[5].command_type != RTS_CMD_ASSOCIATION_GROUP_ID)
 		return FALSE;
-	}
 	prts->commands[5].command.associationgroupid.to_str(associationgroupid, gid_size);
 	return TRUE;
 }
@@ -2062,27 +1951,18 @@ static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (4 != prts->num) {
+	if (prts->num != 4 ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(chan_cookie, chan_ck_size);
-	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_RECEIVE_WINDOW_SIZE)
 		return FALSE;
-	}
 	*pwindow_size = prts->commands[3].command.receivewindowsize;
 	
 	return TRUE;
@@ -2094,30 +1974,19 @@ static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (4 != prts->num) {
+	if (prts->num != 4 ||
+	    prts->commands[0].command_type != RTS_CMD_VERSION ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_VERSION != prts->commands[0].command_type) {
-		return FALSE;
-	}
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(pred_cookie, pred_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[3].command.cookie.to_str(succ_cookie, succ_ck_size);
 	return TRUE;
 }
@@ -2127,19 +1996,12 @@ static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (1 != prts->num) {
+	if (prts->num != 1 ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
 	return TRUE;
 }
@@ -2149,27 +2011,16 @@ static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (3 != prts->num) {
+	if (prts->num != 3 ||
+	    prts->commands[0].command_type != RTS_CMD_DESTINATION ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_DESTINATION != prts->commands[0].command_type) {
-		return FALSE;
-	}
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
-	if (RTS_CMD_VERSION != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_VERSION)
 		return FALSE;
-	}
-	
 	return TRUE;
 }
 
@@ -2180,34 +2031,22 @@ static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (5 != prts->num) {
+	if (prts->num != 5 ||
+	    prts->commands[0].command_type != RTS_CMD_VERSION ||
+	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_VERSION != prts->commands[0].command_type) {
-		return FALSE;
-	}
-	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
-		return FALSE;
-	}
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
+	if (prts->commands[2].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[2].command.cookie.to_str(pred_cookie, pred_ck_size);
-	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
+	if (prts->commands[3].command_type != RTS_CMD_COOKIE)
 		return FALSE;
-	}
 	prts->commands[3].command.cookie.to_str(succ_cookie, succ_ck_size);
-	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[4].command_type) {
+	if (prts->commands[4].command_type != RTS_CMD_RECEIVE_WINDOW_SIZE)
 		return FALSE;
-	}
 	*pwindow_size = prts->commands[4].command.receivewindowsize;
 	
 	return TRUE;
@@ -2217,21 +2056,14 @@ static BOOL pdu_processor_retrieve_outr2_c1(DCERPC_CALL *pcall)
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (1 != prts->num) {
+	if (prts->num != 1)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_EMPTY != prts->commands[0].command_type &&
-		RTS_CMD_PADDING != prts->commands[0].command_type) {
+	if (prts->commands[0].command_type != RTS_CMD_EMPTY &&
+	    prts->commands[0].command_type != RTS_CMD_PADDING)
 		return FALSE;
-	}
-	
 	return TRUE;
 	
 }
@@ -2241,19 +2073,12 @@ static BOOL pdu_processor_retrieve_keep_alive(DCERPC_CALL *pcall,
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (1 != prts->num) {
+	if (prts->num != 1 ||
+	    prts->commands[0].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_CLIENT_KEEPALIVE != prts->commands[0].command_type) {
-		return FALSE;
-	}
 	*pkeep_alive = std::chrono::milliseconds(prts->commands[0].command.clientkeepalive);
 	return TRUE;
 }
@@ -2263,29 +2088,20 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
 {
 	DCERPC_RTS *prts;
 	
-	if (DCERPC_PKT_RTS != pcall->pkt.pkt_type) {
+	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	}
-	
 	prts = &pcall->pkt.payload.rts;
-	
-	if (2 != prts->num) {
+	if (prts->num != 2)
 		return FALSE;
-	}
-	
-	if (RTS_CMD_DESTINATION != prts->commands[0].command_type ||
-		RTS_CMD_FLOW_CONTROL_ACK != prts->commands[1].command_type) {
+	if (prts->commands[0].command_type != RTS_CMD_DESTINATION ||
+	    prts->commands[1].command_type != RTS_CMD_FLOW_CONTROL_ACK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
-static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
+static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2297,7 +2113,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2307,7 +2123,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2316,14 +2132,14 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2378: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
+BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2335,7 +2151,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.payload.rts.num = 3;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(3);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2349,7 +2165,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2358,14 +2174,14 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2377: ENOMEM");
+	return false;
 }
 
-static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
+static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2378,7 +2194,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2387,7 +2203,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2396,14 +2212,14 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2376: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2415,7 +2231,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2424,7 +2240,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2433,14 +2249,14 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2375: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2452,7 +2268,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 2;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2463,7 +2279,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2472,14 +2288,14 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2374: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
+BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2491,7 +2307,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2499,7 +2315,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2508,16 +2324,16 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2373: ENOMEM");
+	return false;
 }
 
-BOOL pdu_processor_rts_flowcontrolack_withdestination(
-	DCERPC_CALL *pcall, uint32_t bytes_received,
-	uint32_t available_window, const char *channel_cookie)
+BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
+    uint32_t bytes_received, uint32_t available_window,
+    const char *channel_cookie) try
 {
-	auto pblob_node = g_bnode_allocator.get();
-	if (NULL == pblob_node) {
-		return FALSE;
-	}
+	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
@@ -2528,7 +2344,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	pkt.payload.rts.num = 2;
 	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
 	if (NULL == pkt.payload.rts.commands) {
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2541,13 +2357,13 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	fc.available_window = available_window;
 	if (!fc.channel_cookie.from_str(channel_cookie)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		g_bnode_allocator->put(pblob_node);
+		delete pblob_node;
 		return FALSE;
 	}
 	
@@ -2556,6 +2372,9 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2372: ENOMEM");
+	return false;
 }
 
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
@@ -2579,13 +2398,14 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	pcontext = http_parser_get_context();
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return PDU_PROCESSOR_ERROR;
-	}
-	
 	ndr.init(pbuff, length, flags);
-	auto pcall = g_call_allocator->get();
-	if (NULL == pcall) {
+	DCERPC_CALL *pcall;
+	try {
+		pcall = new DCERPC_CALL();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2371: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
 	}
 	pcall->b_bigendian = b_bigendian;
@@ -2815,7 +2635,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 }
 
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
-	uint16_t length, DCERPC_CALL **ppcall)
+    uint16_t length, DCERPC_CALL **ppcall) try
 {
 	NDR_PULL ndr;
 	BOOL b_result;
@@ -2839,8 +2659,11 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	if (pbuff[DCERPC_PFC_OFFSET] & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	ndr.init(pbuff, length, flags);
-	auto pcall = g_call_allocator->get();
-	if (NULL == pcall) {
+	DCERPC_CALL *pcall;
+	try {
+		pcall = new DCERPC_CALL();
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-2370: ENOMEM");
 		return PDU_PROCESSOR_ERROR;
 	}
 	pcall->pprocessor = pprocessor;
@@ -3039,6 +2862,9 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		*ppcall = pcall;
 		return PDU_PROCESSOR_OUTPUT;
 	}
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2370: ENOMEM");
+	return PDU_PROCESSOR_ERROR;
 }
 
 static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
@@ -3185,85 +3011,68 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 {
 	void *ret_addr;
 
-	if (NULL == g_cur_plugin) {
+	if (g_cur_plugin == nullptr)
 		return NULL;
-	}
-	if (strcmp(service, "register_endpoint") == 0) {
+	if (strcmp(service, "register_endpoint") == 0)
 		return reinterpret_cast<void *>(pdu_processor_register_endpoint);
-	}
-	if (strcmp(service, "register_interface") == 0) {
+	if (strcmp(service, "register_interface") == 0)
 		return reinterpret_cast<void *>(pdu_processor_register_interface);
-	}
 	if (strcmp(service, "unregister_interface") == 0)
 		return reinterpret_cast<void *>(pdu_processor_unregister_interface);
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "get_host_ID") == 0) {
+	if (strcmp(service, "get_host_ID") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_config_file->get_value("host_id"); });
-	}
-	if (strcmp(service, "get_config_path") == 0) {
+	if (strcmp(service, "get_config_path") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("config_file_path");
 			return r != nullptr ? r : PKGSYSCONFDIR;
 		});
-	}
-	if (strcmp(service, "get_data_path") == 0) {
+	if (strcmp(service, "get_data_path") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("data_file_path");
 			return r != nullptr ? r : PKGDATADIR "/http:" PKGDATADIR;
 		});
-	}
 	if (strcmp(service, "get_state_path") == 0)
 		return reinterpret_cast<void *>(+[]() {
 			auto r = g_config_file->get_value("state_path");
 			return r != nullptr ? r : PKGSTATEDIR;
 		});
-	if (strcmp(service, "get_context_num") == 0) {
+	if (strcmp(service, "get_context_num") == 0)
 		return reinterpret_cast<void *>(+[]() { return g_connection_num; });
-	}
-	if (strcmp(service, "get_binding_handle") == 0) {
+	if (strcmp(service, "get_binding_handle") == 0)
 		return reinterpret_cast<void *>(pdu_processor_get_binding_handle);
-	}
-	if (strcmp(service, "get_rpc_info") == 0) {
+	if (strcmp(service, "get_rpc_info") == 0)
 		return reinterpret_cast<void *>(pdu_processor_get_rpc_info);
-	}
-	if (strcmp(service, "is_rpc_bigendian") == 0) {
+	if (strcmp(service, "is_rpc_bigendian") == 0)
 		return reinterpret_cast<void *>(+[]() -> BOOL {
 			auto c = pdu_processor_get_call();
 			return c != nullptr ? c->b_bigendian : g_bigendian;
 		});
-	}
-	if (strcmp(service, "ndr_stack_alloc") == 0) {
+	if (strcmp(service, "ndr_stack_alloc") == 0)
 		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
-	}
-	if (strcmp(service, "apply_async_id") == 0) {
+	if (strcmp(service, "apply_async_id") == 0)
 		return reinterpret_cast<void *>(pdu_processor_apply_async_id);
-	}
-	if (strcmp(service, "activate_async_id") == 0) {
+	if (strcmp(service, "activate_async_id") == 0)
 		return reinterpret_cast<void *>(pdu_processor_activate_async_id);
-	}
-	if (strcmp(service, "cancel_async_id") == 0) {
+	if (strcmp(service, "cancel_async_id") == 0)
 		return reinterpret_cast<void *>(pdu_processor_cancel_async_id);
-	}
-	if (strcmp(service, "rpc_build_environment") == 0) {
+	if (strcmp(service, "rpc_build_environment") == 0)
 		return reinterpret_cast<void *>(pdu_processor_rpc_build_environment);
-	}
 	if (strcmp(service, "rpc_new_stack") == 0)
 		return reinterpret_cast<void *>(pdu_processor_rpc_new_stack);
 	if (strcmp(service, "rpc_free_stack") == 0)
 		return reinterpret_cast<void *>(pdu_processor_rpc_free_stack);
-	if (strcmp(service, "async_reply") == 0) {
+	if (strcmp(service, "async_reply") == 0)
 		return reinterpret_cast<void *>(pdu_processor_async_reply);
-	}
 	/* check if already exists in the reference list */
 	for (const auto &nd : g_cur_plugin->list_reference)
 		if (nd.service_name == service)
 			return nd.service_addr;
 	auto fn = g_cur_plugin->file_name.c_str();
 	ret_addr = service_query(service, fn, ti);
-	if (NULL == ret_addr) {
+	if (ret_addr == nullptr)
 		return NULL;
-	}
 	try {
 		g_cur_plugin->list_reference.emplace_back(service_node{ret_addr, service});
 	} catch (const std::bad_alloc &) {

@@ -69,7 +69,6 @@ struct env_context {
 	alloc_context allocator;
 	int clifd = -1;
 };
-using ENVIRONMENT_CONTEXT = env_context;
 
 struct LANGMAP_ITEM {
 	char lang[32];
