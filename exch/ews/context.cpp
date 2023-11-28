@@ -1167,9 +1167,9 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
  * @param     item     Item to convert
  * @param     persist  Whether the message is to be stored
  *
- * @return MESSAGE_CONTENT structure
+ * @return Pointer to MESSAGE_CONTENT structure
  */
-MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sItem& item, bool persist) const
+EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolderSpec& parent, sItem& item, bool persist) const
 {
 	const auto& exmdb = m_plugin.exmdb;
 	uint64_t messageId, changeNumber;
@@ -1194,7 +1194,9 @@ MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec&
 	}
 
 	sShape shape;
-	MESSAGE_CONTENT content{};
+	MCONT_PTR content(message_content_init());
+	if(!content)
+		throw EWSError::NotEnoughMemory(E3217);
 	std::visit([&](auto& i){toContent(dir, i, shape, content);}, item);
 
 	if(!shape.writes(PR_LAST_MODIFICATION_TIME))
@@ -1208,9 +1210,8 @@ MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec&
 	}
 	getNamedTags(dir, shape, true);
 
-	TPROPVAL_ARRAY proptemp = shape.write();
-	content.proplist = TPROPVAL_ARRAY{proptemp.count, alloc<TAGGED_PROPVAL>(proptemp.count)};
-	memcpy(content.proplist.ppropval, proptemp.ppropval, sizeof(TAGGED_PROPVAL)*proptemp.count);
+	for(const TAGGED_PROPVAL& prop : shape.write())
+		content->proplist.set(prop);
 	return content;
 }
 
@@ -1224,11 +1225,11 @@ MESSAGE_CONTENT EWSContext::toContent(const std::string& dir, const sFolderSpec&
  * @param      dir       Home directory of the target store
  * @param      item      Calendar item to create
  * @param      shape     Shape to store properties in
- * @param      content   Message content struct
+ * @param      content   Message content
  *
  * @todo Map remaining fields
  */
-void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MESSAGE_CONTENT& content) const
+void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
 {toContent(dir, static_cast<tItem&>(item), shape, content);}
 
 /**
@@ -1241,11 +1242,11 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
  * @param      dir       Home directory of the target store
  * @param      item      Contact item to create
  * @param      shape     Shape to store properties in
- * @param      content   Message content struct
+ * @param      content   Message content
  *
  * @todo Map remaining fields
  */
-void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape, MESSAGE_CONTENT& content) const
+void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape, MCONT_PTR& content) const
 {toContent(dir, static_cast<tItem&>(item), shape, content);}
 
 /**
@@ -1257,11 +1258,11 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
  * @param      dir       Home directory of the target store
  * @param      item      Item to create
  * @param      shape     Shape to store properties in
- * @param      content   Message content struct
+ * @param      content   Message content
  *
  * @todo Map remaining fields
  */
-void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MESSAGE_CONTENT& content) const
+void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MCONT_PTR& content) const
 {
 	if(item.MimeContent) {
 		// Convert MimeContent to MESSAGE_CONTENT
@@ -1274,11 +1275,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		                                                                     getPropIds));
 		if(!cnt)
 			throw EWSError::ItemCorrupt(E3124);
-		content = std::move(*cnt);
-		// Register tags loaded by importer to the shape
-		const TAGGED_PROPVAL *end = content.proplist.ppropval+content.proplist.count;
-		for(const TAGGED_PROPVAL* prop = content.proplist.ppropval; prop != end; ++prop)
-			shape.write(*prop);
+		content = std::move(cnt);
 	}
 	if(item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>(item.ItemClass->c_str())});
@@ -1309,17 +1306,17 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
  * @param      dir       Home directory of the target store
  * @param      item      Message to create
  * @param      shape     Shape to store properties in
- * @param      content   Message content struct
+ * @param      content   Message content
  *
  * @todo Map remaining fields
  */
-void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MESSAGE_CONTENT& content) const
+void EWSContext::toContent(const std::string& dir, tMessage& item, sShape& shape, MCONT_PTR& content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	size_t recipients = (item.ToRecipients? item.ToRecipients->size() : 0)
 	                    + (item.CcRecipients? item.CcRecipients->size() : 0)
 	                    + (item.BccRecipients? item.BccRecipients->size() : 0);
-	if(recipients && !content.children.prcpts) {
+	if(recipients && !content->children.prcpts) {
 		//TODO: Add recipients
 	}
 	if(item.From) {
