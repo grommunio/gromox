@@ -41,7 +41,9 @@ static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
 	{"SHORTCUTS", PRIVATE_FID_SHORTCUTS},
 	{"SYNC_ISSUES", PRIVATE_FID_SYNC_ISSUES},
 	{"TASKS", PRIVATE_FID_TASKS},
+	{"TRASH", PRIVATE_FID_DELETED_ITEMS},
 	{"VIEWS", PRIVATE_FID_VIEWS},
+	{"WASTEBASKET", PRIVATE_FID_DELETED_ITEMS},
 };
 
 static eid_t lookup_eid_by_name(const char *dir, const char *name)
