@@ -231,6 +231,8 @@ private:
 class EWSContext
 {
 public:
+	using MCONT_PTR = std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner>; ///< Unique pointer to MESSAGE_CONTENT
+
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
 	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
@@ -280,7 +282,7 @@ public:
 	void send(const std::string&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
-	MESSAGE_CONTENT toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
+	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
 	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
@@ -338,12 +340,12 @@ private:
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
 	Structures::tSubscriptionId subscribe(const std::vector<Structures::sFolderId>&, uint16_t, bool, uint32_t) const;
 
-	void toContent(const std::string&, Structures::tCalendarItem&, Structures::sShape&, MESSAGE_CONTENT&) const;
-	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MESSAGE_CONTENT&) const;
-	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MESSAGE_CONTENT&) const;
-	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MESSAGE_CONTENT&) const;
+	void toContent(const std::string&, Structures::tCalendarItem&, Structures::sShape&, MCONT_PTR&) const;
+	void toContent(const std::string&, Structures::tContact&, Structures::sShape&, MCONT_PTR&) const;
+	void toContent(const std::string&, Structures::tItem&, Structures::sShape&, MCONT_PTR&) const;
+	void toContent(const std::string&, Structures::tMessage&, Structures::sShape&, MCONT_PTR&) const;
 
-	void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {};
+	inline void updateProps(Structures::tItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const {}
 	void updateProps(Structures::tCalendarItem&, Structures::sShape&, const TPROPVAL_ARRAY&) const;
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;

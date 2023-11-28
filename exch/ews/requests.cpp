@@ -177,11 +177,11 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
 		mCreateItemResponseMessage msg;
 		bool persist = !(std::holds_alternative<tMessage>(item) && request.MessageDisposition == Enum::SendOnly);
 		bool send = std::holds_alternative<tMessage>(item) &&	sendMessages;
-		MESSAGE_CONTENT content = ctx.toContent(dir, *targetFolder, item, persist);
+		auto content = ctx.toContent(dir, *targetFolder, item, persist);
 		if(persist)
-			msg.Items.emplace_back(ctx.create(dir, *targetFolder, content));
+			msg.Items.emplace_back(ctx.create(dir, *targetFolder, *content));
 		if(send)
-			ctx.send(dir, content);
+			ctx.send(dir, *content);
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {

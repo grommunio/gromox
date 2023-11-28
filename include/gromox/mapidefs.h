@@ -1149,6 +1149,13 @@ struct TPROPVAL_ARRAY {
 	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
 	TPROPVAL_ARRAY *dup() const;
 
+	using iterator = TAGGED_PROPVAL*;
+	using const_iterator = const TAGGED_PROPVAL*;
+	inline iterator begin() {return ppropval;}
+	inline iterator end() {return ppropval+count;}
+	inline const_iterator begin() const {return ppropval;}
+	inline const_iterator end() const {return ppropval+count;}
+
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 };

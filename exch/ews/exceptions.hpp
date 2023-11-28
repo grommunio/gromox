@@ -336,6 +336,7 @@ E(3213, "wrong ID type - expected folder ID, got item ID");
 E(3214, "wrong ID type - expected item ID, got folder ID");
 E(3215, "invalid attachement ID");
 E(3216, "invalid ID type");
+E(3217, "could not initialize message content");
 
 #undef E
 }
