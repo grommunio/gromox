@@ -1,3 +1,20 @@
+Development 2.18.33
+===================
+
+Fixes:
+
+* imap placed eml files in the wrong spot.
+  You may need to `mmv /var/lib/gromox/user/X/Y/eml1*
+  /var/lib/gromox/user/X/Y/eml/1#1` for the various user directories.
+* http: resolve altnames and update user context after authentication success
+  with krb
+
+Enhancements:
+
+* `gromox-mbop emptyfld` now recognizes a `-t` option to limit deletion to
+  messages of certain age.
+
+
 Gromox 2.18 (2023-11-27)
 ========================
 
