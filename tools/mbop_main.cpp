@@ -17,6 +17,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using LLU = unsigned long long;
 namespace exmdb_client = exmdb_client_remote;
 
 static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
@@ -186,6 +187,8 @@ static int main(int argc, const char **argv)
 namespace emptyfld {
 
 static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE;
+static char *g_time_str;
+static mapitime_t g_cutoff_time;
 
 static void opt_m(const struct HXoptcb *cb) { g_del_flags &= ~DEL_MESSAGES; }
 static void opt_r(const struct HXoptcb *cb) { g_del_flags |= DEL_FOLDERS; }
@@ -196,15 +199,134 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'M', HXTYPE_NONE, {}, {}, opt_m, 0, "Exclude normal messages from deletion"},
 	{nullptr, 'R', HXTYPE_NONE, {}, {}, opt_r, 0, "Recurse into subfolders"},
 	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
+	{nullptr, 't', HXTYPE_STRING, &g_time_str, {}, {}, 0, "Messages need to be older than...", "TIMESPEC"},
 	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete (experimental)"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
+static int generic_del(eid_t fid, const std::vector<uint64_t> &chosen)
+{
+	BOOL partial_complete = false;
+	EID_ARRAY ea;
+	ea.count = chosen.size();
+	ea.pids  = deconst(chosen.data());
+	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_ACP,
+	    nullptr, fid, &ea, false, &partial_complete)) {
+		fprintf(stderr, "fid %llxh delete_messages failed\n", LLU{fid});
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+static int select_mids_by_time(eid_t fid, unsigned int tbl_flags,
+    std::vector<uint64_t> &chosen)
+{
+	uint32_t table_id = 0, row_count = 0;
+	static constexpr RESTRICTION_EXIST rst_a = {PR_LAST_MODIFICATION_TIME};
+	RESTRICTION_PROPERTY rst_b = {RELOP_LE, PR_LAST_MODIFICATION_TIME,
+		{PR_LAST_MODIFICATION_TIME, &g_cutoff_time}};
+	RESTRICTION rst_c[2] = {{RES_EXIST, {deconst(&rst_a)}}, {RES_PROPERTY, {deconst(&rst_b)}}};
+	RESTRICTION_AND_OR rst_d = {std::size(rst_c), deconst(rst_c)};
+	RESTRICTION rst_e = {RES_AND, {deconst(&rst_d)}};
+	if (!exmdb_client::load_content_table(g_storedir, CP_ACP, fid, nullptr,
+	    tbl_flags, &rst_e, nullptr, &table_id, &row_count)) {
+		fprintf(stderr, "fid %llxh load_content_table failed\n", LLU{fid});
+		return EXIT_FAILURE;
+	}
+	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(g_storedir, table_id); });
+	static constexpr uint32_t mtags[] = {PidTagMid};
+	static constexpr PROPTAG_ARRAY mtaghdr = {std::size(mtags), deconst(mtags)};
+	tarray_set rowset{};
+	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
+	    &mtaghdr, 0, row_count, &rowset)) {
+		fprintf(stderr, "fid %llxh query_table failed\n", LLU{fid});
+		return EXIT_FAILURE;
+	}
+	for (const auto &row : rowset) {
+		auto mid = row.get<const eid_t>(PidTagMid);
+		if (mid != nullptr)
+			chosen.push_back(*mid);
+	}
+	return EXIT_SUCCESS;
+}
+
+static int do_contents(eid_t fid, unsigned int tbl_flags)
+{
+	std::vector<uint64_t> chosen;
+	auto ret = select_mids_by_time(fid, tbl_flags, chosen);
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	return generic_del(fid, std::move(chosen));
+}
+
+static int do_hierarchy(eid_t fid)
+{
+	uint32_t prev_delc, prev_fldc;
+	delcount(fid, &prev_delc, &prev_fldc);
+	auto cl_0 = make_scope_exit([&]() {
+		uint32_t curr_delc, curr_fldc;
+		delcount(fid, &curr_delc, &curr_fldc);
+		printf("Folder %llxh: deleted %d messages\n", LLU{fid}, curr_delc - prev_delc);
+	});
+	if (g_del_flags & DEL_MESSAGES) {
+		auto ret = do_contents(fid, 0);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+	}
+	if (g_del_flags & DEL_ASSOCIATED) {
+		auto ret = do_contents(fid, MAPI_ASSOCIATED);
+		if (ret != EXIT_SUCCESS)
+			return ret;
+	}
+	if (!(g_del_flags & DEL_FOLDERS))
+		return EXIT_SUCCESS;
+
+	uint32_t table_id = 0, row_count = 0;
+	if (!exmdb_client::load_hierarchy_table(g_storedir, fid,
+	    nullptr, 0, nullptr, &table_id, &row_count)) {
+		fprintf(stderr, "fid %llxh load_content_table failed\n", LLU{fid});
+		return EXIT_FAILURE;
+	}
+	static constexpr uint32_t ftags[] = {PidTagFolderId};
+	static constexpr PROPTAG_ARRAY ftaghdr[] = {std::size(ftags), deconst(ftags)};
+	tarray_set rowset{};
+	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
+	    ftaghdr, 0, row_count, &rowset)) {
+		fprintf(stderr, "fid %llxh query_table failed\n", LLU{fid});
+		exmdb_client::unload_table(g_storedir, table_id);
+		return EXIT_FAILURE;
+	}
+	exmdb_client::unload_table(g_storedir, table_id);
+	for (const auto &row : rowset) {
+		auto p = row.get<const eid_t>(PidTagFolderId);
+		if (p != nullptr)
+			do_hierarchy(*p);
+	}
+	return EXIT_SUCCESS;
+}
+
 static int main(int argc, const char **argv)
 {
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (g_time_str != nullptr) {
+		char *end = nullptr;
+		auto t = HX_strtoull_sec(g_time_str, &end);
+		if (t == ULLONG_MAX && errno == ERANGE) {
+			fprintf(stderr, "Timespec \"%s\" is too damn big\n", g_time_str);
+			return EXIT_FAILURE;
+		} else if (end != nullptr && *end != '\0') {
+			fprintf(stderr, "Timespec \"%s\" not fully understand (error at: \"%s\")\n",
+				g_time_str, end);
+			return EXIT_FAILURE;
+		}
+		g_cutoff_time = rop_util_unix_to_nttime(time(nullptr) - t);
+		if (g_del_flags & DEL_FOLDERS)
+			fprintf(stderr, "Quirk of using both -R+-t: Messages will be deleted but not the folders\n");
+	}
+
+	int ret = EXIT_SUCCESS;
 	while (*++argv != nullptr) {
 		BOOL partial = false;
 		uint64_t id = strtoull(*argv, nullptr, 0);
@@ -213,21 +335,30 @@ static int main(int argc, const char **argv)
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
 		}
+		if (g_cutoff_time != 0) {
+			/* Deletion via client */
+			int ret = do_hierarchy(eid);
+			if (ret != EXIT_SUCCESS)
+				return ret;
+			continue;
+		}
 		uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
 		delcount(eid, &prev_delc, &prev_fldc);
 		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
 		          eid, g_del_flags, &partial);
 		if (!ok) {
-			fprintf(stderr, "empty_folder %s failed\n", *argv);
-			return EXIT_FAILURE;
+			fprintf(stderr, "empty_folder(%s) failed\n", *argv);
+			ret = EXIT_FAILURE;
 		}
 		delcount(eid, &curr_delc, &curr_fldc);
 		if (partial)
 			printf("Partial completion (e.g. essential permanent folders were not deleted)\n");
 		printf("Folder %s: deleted %d messages, deleted %d subfolders plus messages\n",
 			*argv, curr_delc - prev_delc, prev_fldc - curr_fldc);
+		if (ret != EXIT_SUCCESS)
+			break;
 	}
-	return EXIT_SUCCESS;
+	return ret;
 }
 
 }
@@ -435,10 +566,10 @@ int main(int argc, const char **argv)
 	if (argc == 0)
 		return global::help();
 	if (g_arg_username != nullptr && g_arg_userdir != nullptr) {
-		fprintf(stderr, "Can only specify one of -d or -u\n");
+		fprintf(stderr, "Only one of -d and -u must be specified before the subcommand.\n");
 		return EXIT_FAILURE;
 	} else if (g_arg_username == nullptr && g_arg_userdir == nullptr) {
-		fprintf(stderr, "Must specify either -d or -u\n");
+		fprintf(stderr, "The -d or -u option must be specified before the subcommand.\n");
 		return EXIT_FAILURE;
 	}
 

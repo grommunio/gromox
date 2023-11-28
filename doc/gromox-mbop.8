@@ -68,8 +68,8 @@ will not be deleted.)
 Perform a soft deletion.
 .SH emptyfld
 .SS Synopsis
-\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-MRa\fP] [\fB\-\-soft\fP]
-\fIfolder_spec\fP...
+\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-MRa\fP] [\fB\-t\fP
+\fIage\fP] [\fB\-\-soft\fP] \fIfolder_spec\fP...
 .SS Description
 This command deletes messages from a folder.
 .SS Subcommand options
@@ -78,13 +78,22 @@ This command deletes messages from a folder.
 Exempt normal messages from deletion.
 .TP
 \fB-R\fP
-Besides messages, also delete subfolders.
+Recurse into subfolders.
 .TP
 \fB\-a\fP
 Select associated messages (FAI) for deletion.
 .TP
+\fB\-t\fP \fItimespec\fP
+Select only messages which have a last modification timestamp older than
+\fItimespec\fP. (See further below near purge\-softdelete for a short
+explanation of timespec.)
+.TP
 \fB\-\-soft\fP
 Perform a soft deletion. (This feature is experimental.) Default is hard.
+.SS Examples
+.IP \(bu 4
+Take out the trash ("Deleted Items") for a lazy user:
+gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 .SH purge\-datafiles
 The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.

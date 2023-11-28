@@ -931,6 +931,8 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 
 /**
  * @username:   Used for SFOD permission checks and for adjusting readstates
+ * @flags:      Zero or more of: DEL_MESSAGES, DEL_ASSOCIATED,
+ *              DELETE_HARD_DELETE, DEL_FOLDERS.
  *
  * Search folders: Unlike delete_folder, empty_folder truly deletes referenced
  * messages.
