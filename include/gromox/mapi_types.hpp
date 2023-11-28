@@ -417,6 +417,7 @@ enum notif_type : unsigned int {
 #define TABLE_EVENT_RESTRICTION_CHANGED				0x0007
 
 enum {
+	/* List of permanent (not removable) folders */
 	PRIVATE_FID_ROOT = 0x01,
 	PRIVATE_FID_DEFERRED_ACTION = 0x02,
 	PRIVATE_FID_SPOOLER_QUEUE = 0x03,

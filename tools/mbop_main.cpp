@@ -118,16 +118,21 @@ static int help()
 
 }
 
-static uint32_t delcount(eid_t fid)
+static void delcount(eid_t fid, uint32_t *delc, uint32_t *fldc)
 {
-	static constexpr uint32_t tag_msgc = PR_DELETED_COUNT_TOTAL;
-	static constexpr PROPTAG_ARRAY tags_msgc = {1, deconst(&tag_msgc)};
+	static constexpr uint32_t tags[] = {PR_DELETED_COUNT_TOTAL, PR_FOLDER_CHILD_COUNT};
+	static constexpr PROPTAG_ARRAY taghdr = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props;
+	*delc = *fldc = 0;
 	if (!exmdb_client::get_folder_properties(g_storedir, CP_ACP, fid,
-	    &tags_msgc, &props))
-		return 0;
-	auto c = props.get<const uint32_t>(tag_msgc);
-	return c != nullptr ? *c : 0;
+	    &taghdr, &props)) {
+		fprintf(stderr, "delcount: get_folder_properties failed\n");
+		return;
+	}
+	auto c = props.get<const uint32_t>(tags[0]);
+	*delc = c != nullptr ? *c : 0;
+	c = props.get<const uint32_t>(tags[1]);
+	*fldc = c != nullptr ? *c : 0;
 }
 
 namespace delmsg {
@@ -160,16 +165,17 @@ static int main(int argc, const char **argv)
 	ea.count = eids.size();
 	ea.pids = eids.data();
 	BOOL partial = false;
-	auto old_msgc = delcount(g_folderid);
+	uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
+	delcount(g_folderid, &prev_delc, &prev_fldc);
 	if (!exmdb_client::delete_messages(g_storedir, g_user_id, CP_UTF8,
 	    nullptr, g_folderid, &ea, !g_soft, &partial)) {
 		printf("RPC was rejected.\n");
 		return EXIT_FAILURE;
 	}
-	auto diff = delcount(g_folderid) - old_msgc;
+	delcount(g_folderid, &curr_delc, &curr_fldc);
 	if (partial)
 		printf("Partial completion\n");
-	printf("%u messages deleted\n", diff);
+	printf("%d messages deleted\n", curr_delc - prev_delc);
 	return EXIT_SUCCESS;
 }
 
@@ -205,19 +211,19 @@ static int main(int argc, const char **argv)
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
 		}
-		auto old_msgc = delcount(eid);
+		uint32_t prev_delc, prev_fldc, curr_delc, curr_fldc;
+		delcount(eid, &prev_delc, &prev_fldc);
 		auto ok = exmdb_client::empty_folder(g_storedir, CP_UTF8, nullptr,
 		          eid, g_del_flags, &partial);
 		if (!ok) {
 			fprintf(stderr, "empty_folder %s failed\n", *argv);
 			return EXIT_FAILURE;
 		}
-		auto diff = delcount(eid) - old_msgc;
+		delcount(eid, &curr_delc, &curr_fldc);
 		if (partial)
-			printf("Partial completion\n");
-		printf("Folder %s: %u messages deleted\n", *argv, diff);
-		if (g_del_flags & DEL_FOLDERS)
-			printf("(not including any messages in subfolders)\n");
+			printf("Partial completion (e.g. essential permanent folders were not deleted)\n");
+		printf("Folder %s: deleted %d messages, deleted %d subfolders plus messages\n",
+			*argv, curr_delc - prev_delc, prev_fldc - curr_fldc);
 	}
 	return EXIT_SUCCESS;
 }
