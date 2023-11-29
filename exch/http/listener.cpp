@@ -198,8 +198,7 @@ static void *htls_thrwork(void *arg)
 		pcontext->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
 		std::string reason;
-		if (system_services_judge_ip != nullptr &&
-		    !system_services_judge_ip(client_hostip, reason)) {
+		if (!system_services_judge_ip(client_hostip, reason)) {
 			auto len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"

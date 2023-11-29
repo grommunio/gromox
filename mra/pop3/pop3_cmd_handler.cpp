@@ -91,8 +91,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 		memcpy(pcontext->username, cmd_line + 5, umx);
 		pcontext->username[umx] = '\0';
 		HX_strltrim(pcontext->username);
-		if (system_services_judge_user != nullptr &&
-		    !system_services_judge_user(pcontext->username)) {
+		if (!system_services_judge_user(pcontext->username)) {
 			string_length = sprintf(buff, "%s%s%s",
 			                resource_get_pop3_code(1717, 1, &string_length),
 			                pcontext->username,
@@ -152,9 +151,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			mres_auth.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= g_max_auth_times) {
-			if (system_services_add_user_into_temp_list != nullptr)
-				system_services_add_user_into_temp_list(pcontext->username,
-					g_block_auth_fail);
+			system_services_add_user_into_temp_list(pcontext->username,
+				g_block_auth_fail);
 			return 1706 | DISPATCH_SHOULD_CLOSE;
 		}
 		return 1714 | DISPATCH_CONTINUE;
@@ -172,9 +170,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 				mres_auth.errstr.c_str());
 			pcontext->auth_times ++;
 			if (pcontext->auth_times >= g_max_auth_times) {
-				if (system_services_add_user_into_temp_list != nullptr)
-					system_services_add_user_into_temp_list(pcontext->username,
-						g_block_auth_fail);
+				system_services_add_user_into_temp_list(pcontext->username,
+					g_block_auth_fail);
 				return 1706 | DISPATCH_SHOULD_CLOSE;
 			}
 			return 1714 | DISPATCH_CONTINUE;

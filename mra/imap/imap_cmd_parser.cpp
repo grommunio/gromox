@@ -1394,8 +1394,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 	if (target_mbox != nullptr)
 		*target_mbox++ = '\0';
 	HX_strltrim(pcontext->username);
-	if (system_services_judge_user != nullptr &&
-	    !system_services_judge_user(pcontext->username)) {
+	if (!system_services_judge_user(pcontext->username)) {
 		imap_parser_log_info(pcontext, LV_NOTICE, "user %s is "
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
@@ -1409,9 +1408,8 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 		pcontext->auth_times ++;
 		if (pcontext->auth_times < g_max_auth_times)
 			return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
-		if (system_services_add_user_into_temp_list != nullptr)
-			system_services_add_user_into_temp_list(pcontext->username,
-				g_block_auth_fail);
+		system_services_add_user_into_temp_list(pcontext->username,
+			g_block_auth_fail);
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
@@ -1426,9 +1424,8 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 			++pcontext->auth_times;
 			if (pcontext->auth_times < g_max_auth_times)
 				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
-			if (system_services_add_user_into_temp_list != nullptr)
-				system_services_add_user_into_temp_list(pcontext->username,
-					g_block_auth_fail);
+			system_services_add_user_into_temp_list(pcontext->username,
+				g_block_auth_fail);
 			return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 		}
 	}
@@ -1474,8 +1471,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		*target_mbox++ = '\0';
 	gx_strlcpy(pcontext->username, argv[2], std::size(pcontext->username));
 	HX_strltrim(pcontext->username);
-	if (system_services_judge_user != nullptr &&
-	    !system_services_judge_user(pcontext->username)) {
+	if (!system_services_judge_user(pcontext->username)) {
 		imap_parser_log_info(pcontext, LV_WARN, "user %s is "
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_SHOULD_CLOSE;
@@ -1492,9 +1488,8 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
 			return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		}
-		if (system_services_add_user_into_temp_list != nullptr)
-			system_services_add_user_into_temp_list(pcontext->username,
-				g_block_auth_fail);
+		system_services_add_user_into_temp_list(pcontext->username,
+			g_block_auth_fail);
 		return 1903 | DISPATCH_SHOULD_CLOSE;
 	}
 	safe_memset(temp_password, 0, std::size(temp_password));
@@ -1509,9 +1504,8 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			++pcontext->auth_times;
 			if (pcontext->auth_times < g_max_auth_times)
 				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
-			if (system_services_add_user_into_temp_list != nullptr)
-				system_services_add_user_into_temp_list(pcontext->username,
-					g_block_auth_fail);
+			system_services_add_user_into_temp_list(pcontext->username,
+				g_block_auth_fail);
 			return 1903 | DISPATCH_SHOULD_CLOSE;
 		}
 	}

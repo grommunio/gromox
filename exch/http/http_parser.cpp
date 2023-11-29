@@ -715,8 +715,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 static tproc_status htp_auth_basic(http_context *pcontext) try
 {
 	pcontext->auth_method = auth_method::basic;
-	if (system_services_judge_user != nullptr &&
-	    !system_services_judge_user(pcontext->username)) {
+	if (!system_services_judge_user(pcontext->username)) {
 		pcontext->log(LV_DEBUG,
 			"user %s is denied by user filter",
 			pcontext->username);
@@ -749,8 +748,7 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 	pcontext->log(LV_ERR, "login failed: \"%s\": %s",
 		pcontext->username, mres.errstr.c_str());
 	pcontext->auth_times ++;
-	if (system_services_add_user_into_temp_list != nullptr &&
-	    pcontext->auth_times >= g_max_auth_times)
+	if (pcontext->auth_times >= g_max_auth_times)
 		system_services_add_user_into_temp_list(
 			pcontext->username, g_block_auth_fail);
 	return tproc_status::runoff;
