@@ -6,6 +6,7 @@
 #include <mutex>
 #include <sqlite3.h>
 #include <string>
+#include <gromox/database.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #define CONTENT_ROW_HEADER						1
@@ -94,10 +95,18 @@ struct instance_node {
 };
 using INSTANCE_NODE = instance_node;
 
+struct prepared_statements {
+	~prepared_statements();
+	bool begin(sqlite3 *);
+
+	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
+};
+
 struct DB_ITEM {
 	DB_ITEM() = default;
 	~DB_ITEM();
 	NOMOVE(DB_ITEM);
+	std::unique_ptr<prepared_statements> begin_optim();
 
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};

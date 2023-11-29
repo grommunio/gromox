@@ -48,6 +48,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
+#include "db_engine.h"
 #define S2A(x) reinterpret_cast<const char *>(x)
 
 using XUI = unsigned int;
@@ -69,10 +70,6 @@ class fhash {
 	std::string cid;
 };
 
-struct prepared_statements {
-	xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
-};
-
 }
 
 char g_exmdb_org_name[256];
@@ -80,7 +77,6 @@ static unsigned int g_max_msg, g_cid_use_xxhash = 1;
 thread_local unsigned int g_inside_flush_instance;
 thread_local sqlite3 *g_sqlite_for_oxcmail;
 static thread_local prepared_statements *g_opt_key;
-static thread_local const char *g_opt_key_src;
 unsigned int g_max_rule_num, g_max_extrule_num;
 unsigned int g_cid_compression = 0; /* disabled(0), specific_level(n) */
 static std::atomic<unsigned int> g_sequence_id;
@@ -192,8 +188,6 @@ void common_util_build_tls()
 {
 	g_inside_flush_instance = false;
 	g_sqlite_for_oxcmail = nullptr;
-	g_opt_key = nullptr;
-	g_opt_key_src = nullptr;
 }
 
 unsigned int common_util_sequence_ID()
@@ -469,49 +463,49 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
 	return TRUE;
 }
 
-BOOL common_util_begin_message_optimize(sqlite3 *psqlite, const char *src)
+bool prepared_statements::begin(sqlite3 *psqlite)
 {
-	if (g_opt_key != nullptr) {
-		mlog(LV_ERR, "E-1229: cannot satisfy nested common_util_begin_message_optimize call (previous: %s, new: %s)",
-			znul(g_opt_key_src), znul(src));
-		return TRUE;
-	}
-	std::unique_ptr<prepared_statements> op(new(std::nothrow) prepared_statements);
-	if (op == nullptr)
-		return FALSE;
-	op->msg_norm = gx_sql_prep(psqlite, "SELECT propval"
+	msg_norm = gx_sql_prep(psqlite, "SELECT propval"
 	               " FROM message_properties WHERE "
 	               "message_id=? AND proptag=?");
-	if (op->msg_norm == nullptr)
+	if (msg_norm == nullptr)
 		return FALSE;
-	op->msg_str = gx_sql_prep(psqlite, "SELECT proptag, "
+	msg_str = gx_sql_prep(psqlite, "SELECT proptag, "
 	              "propval FROM message_properties WHERE "
 	              "message_id=? AND proptag IN (?,?)");
-	if (op->msg_str == nullptr)
+	if (msg_str == nullptr)
 		return FALSE;
-	op->rcpt_norm = gx_sql_prep(psqlite, "SELECT propval "
+	rcpt_norm = gx_sql_prep(psqlite, "SELECT propval "
 	                "FROM recipients_properties WHERE "
 	                "recipient_id=? AND proptag=?");
-	if (op->rcpt_norm == nullptr)
+	if (rcpt_norm == nullptr)
 		return FALSE;
-	op->rcpt_str = gx_sql_prep(psqlite, "SELECT proptag, propval"
+	rcpt_str = gx_sql_prep(psqlite, "SELECT proptag, propval"
 	               " FROM recipients_properties WHERE recipient_id=?"
 	               " AND proptag IN (?,?)");
-	if (op->rcpt_str == nullptr)
+	if (rcpt_str == nullptr)
 		return FALSE;
-	g_opt_key = op.release();
-	g_opt_key_src = src;
-	return TRUE;
+	return true;
 }
 
-void common_util_end_message_optimize()
+prepared_statements::~prepared_statements()
 {
-	auto op = g_opt_key;
-	if (op == nullptr)
-		return;
-	g_opt_key = nullptr;
-	g_opt_key_src = nullptr;
-	delete op;
+	if (g_opt_key == this)
+		g_opt_key = nullptr;
+}
+
+std::unique_ptr<prepared_statements> DB_ITEM::begin_optim() try
+{
+	auto op = std::make_unique<prepared_statements>();
+	if (!op->begin(psqlite))
+		return nullptr;
+	if (g_opt_key != nullptr)
+		mlog(LV_ERR, "E-2359: overlapping optimize_statements");
+	g_opt_key = op.get();
+	return op;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2358: ENOMEM");
+	return nullptr;
 }
 
 static sqlite3_stmt *

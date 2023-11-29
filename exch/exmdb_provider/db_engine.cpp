@@ -1255,11 +1255,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
 		return;	
-	bool b_optimize = false;
-	auto cl_0 = make_scope_exit([&]() {
-		if (b_optimize)
-			common_util_end_message_optimize();
-	});
+	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	for (auto &tnode : pdb->tables.table_list) {
 		auto ptable = &tnode;
@@ -1289,9 +1285,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
 			datagram1.db_notify.pdata = padded_row1;
-			if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
+			optim = pdb->begin_optim();
+			if (optim == nullptr)
 				return;
-			b_optimize = true;
 		}
 		datagram.id_array = {1, &ptable->table_id};
 		datagram1.id_array = datagram.id_array;
