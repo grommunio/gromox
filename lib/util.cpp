@@ -296,7 +296,7 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 	if (out_len > 0)
 		/* Leave room for \0 */
 		--out_len;
-	gx_strlcpy(tmp_charset, replace_iconv_charset(charset), std::size(tmp_charset));
+	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", replace_iconv_charset(charset));
 	conv_id = iconv_open("UTF-8", tmp_charset);
 	if (conv_id == iconv_t(-1)) {
 		mlog(LV_ERR, "E-2108: iconv_open %s: %s",

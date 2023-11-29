@@ -1525,13 +1525,15 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 			return false;
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
 		TAGGED_PROPVAL propval;
+		/*
+		 * string_to_utf8() may or may not(!) call iconv. Thus, we have
+		 * an unconditional utf8_filter call in case the message
+		 * declared charset=utf-8 and still included garbage.
+		 */
 		if (string_to_utf8(best_charset, pcontent.get(), cutf.get(), content_size)) {
 			propval.proptag = PR_BODY;
 			propval.pvalue  = cutf.get();
-			if (!utf8_valid(cutf.get())) {
-				mlog(LV_NOTICE, "utf8_valid failed for a text/plain MIME part");
-				utf8_filter(cutf.get());
-			}
+			utf8_filter(cutf.get());
 		} else {
 			propval.proptag = PR_BODY_A;
 			propval.pvalue  = pcontent.get();
