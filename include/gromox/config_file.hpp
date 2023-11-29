@@ -11,6 +11,7 @@ enum cfg_flags {
 	CFG_SIZE = 0x2U,
 	CFG_TIME = 0x4U,
 	CFG_ALIAS = 0x8U,
+	CFG_TIME_NS = 0x10U,
 	CFG_TOUCHED = 0x80U,
 };
 

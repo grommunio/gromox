@@ -1698,6 +1698,22 @@ void config_file::cfg_entry::set(const char *sv)
 		if (m_max.size() > 0)
 			nv = std::min(nv, HX_strtoull_sec(m_max.c_str(), nullptr));
 		m_val = std::to_string(nv);
+	} else if (m_flags & CFG_TIME_NS) {
+#ifdef HAVE_LIBHX4_18
+		auto nv = HX_strtoull_nsec(sv, nullptr);
+		if (m_min.size() > 0)
+			nv = std::max(nv, HX_strtoull_nsec(m_min.c_str(), nullptr));
+		if (m_max.size() > 0)
+			nv = std::min(nv, HX_strtoull_nsec(m_max.c_str(), nullptr));
+#else
+		auto nv = HX_strtoull_sec(sv, nullptr);
+		if (m_min.size() > 0)
+			nv = std::max(nv, HX_strtoull_sec(m_min.c_str(), nullptr));
+		if (m_max.size() > 0)
+			nv = std::min(nv, HX_strtoull_sec(m_max.c_str(), nullptr));
+		nv *= 1000000000;
+#endif
+		m_val = std::to_string(nv);
 	} else if (m_flags & CFG_SIZE) {
 		auto nv = HX_strtoull_unit(sv, nullptr, 1024);
 		if (m_min.size() > 0)
