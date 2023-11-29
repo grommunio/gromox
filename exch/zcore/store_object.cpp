@@ -493,7 +493,7 @@ static void *store_object_get_oof_property(const char *maildir,
 		if (oofstate == nullptr)
 			return NULL;
 		pvalue = oofstate;
-		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
+		auto pconfig = config_file_init(path.c_str(), nullptr);
 		if (NULL == pconfig) {
 			*oofstate = 0;
 		} else {
@@ -541,7 +541,7 @@ static void *store_object_get_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
+		auto pconfig = config_file_init(path.c_str(), nullptr);
 		if (pconfig == nullptr)
 			return NULL;
 		pvalue = cu_alloc<uint64_t>();
@@ -555,7 +555,7 @@ static void *store_object_get_oof_property(const char *maildir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
+		auto pconfig = config_file_init(path.c_str(), nullptr);
 		if (pconfig == nullptr)
 			return deconst(&fake_false);
 		str_value = pconfig->get_value(proptag == PR_EC_ALLOW_EXTERNAL ?
@@ -1027,7 +1027,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	close(fdtest);
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
+		auto pconfig = config_file_init(autoreply_path.c_str(), nullptr);
 		if (pconfig == nullptr)
 			return FALSE;
 		auto v = *static_cast<const uint32_t *>(pvalue);
@@ -1036,7 +1036,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
+		auto pconfig = config_file_init(autoreply_path.c_str(), nullptr);
 		if (pconfig == nullptr)
 			return FALSE;
 		long long t = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(pvalue));
@@ -1133,7 +1133,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
+		auto pconfig = config_file_init(autoreply_path.c_str(), nullptr);
 		if (pconfig == nullptr)
 			return FALSE;
 		pconfig->set_value(proptag == PR_EC_ALLOW_EXTERNAL ?

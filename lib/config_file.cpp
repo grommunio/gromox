@@ -164,7 +164,7 @@ std::shared_ptr<CONFIG_FILE> config_file_initd(const char *fb,
 /**
  * Routine intended for programs:
  *
- * Read user-specified config file (@uc) or, if that is unset, try the default file
+ * Read user-specified config file (@ov) or, if that is unset, try the default file
  * (@fb, located in default searchpaths) in silent mode.
  */
 std::shared_ptr<CONFIG_FILE> config_file_prg(const char *ov, const char *fb,
