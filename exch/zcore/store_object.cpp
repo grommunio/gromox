@@ -454,6 +454,13 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
+static constexpr struct cfg_directive oof_defaults[] = {
+	{"allow_external_oof", "0", CFG_BOOL},
+	{"external_audience", "0", CFG_BOOL},
+	{"oof_state", "0"},
+	CFG_TABLE_END,
+};
+
 static void *store_object_get_oof_property(const char *maildir,
     uint32_t proptag) try
 {
@@ -493,14 +500,8 @@ static void *store_object_get_oof_property(const char *maildir,
 		if (oofstate == nullptr)
 			return NULL;
 		pvalue = oofstate;
-		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
-		if (NULL == pconfig) {
-			*oofstate = 0;
-		} else {
-			str_value = pconfig->get_value("OOF_STATE");
-			*oofstate = str_value == nullptr ? 0 :
-			            std::max(static_cast<int>(strtol(str_value, nullptr, 0)), 0);
-		}
+		auto pconfig = config_file_init(path.c_str(), oof_defaults);
+		*oofstate = pconfig != nullptr ? pconfig->get_ll("oof_state") : 0;
 		return pvalue;
 	}
 	case PR_EC_OUTOFOFFICE_MSG:
@@ -541,7 +542,7 @@ static void *store_object_get_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
+		auto pconfig = config_file_init(path.c_str(), oof_defaults);
 		if (pconfig == nullptr)
 			return NULL;
 		pvalue = cu_alloc<uint64_t>();
@@ -555,13 +556,11 @@ static void *store_object_get_oof_property(const char *maildir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_prg(nullptr, path.c_str(), nullptr);
+		auto pconfig = config_file_init(path.c_str(), oof_defaults);
 		if (pconfig == nullptr)
 			return deconst(&fake_false);
-		str_value = pconfig->get_value(proptag == PR_EC_ALLOW_EXTERNAL ?
-		            "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE");
-		pvalue = str_value == nullptr || strtol(str_value, nullptr, 0) == 0 ?
-		         deconst(&fake_false) : deconst(&fake_true);
+		auto key = proptag == PR_EC_ALLOW_EXTERNAL ? "allow_external_oof" : "external_audience";
+		pvalue = deconst(pconfig->get_ll(key) == 0 ? &fake_false : &fake_true);
 		return pvalue;
 	}
 	}
@@ -1027,7 +1026,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	close(fdtest);
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
+		auto pconfig = config_file_init(autoreply_path.c_str(), oof_defaults);
 		if (pconfig == nullptr)
 			return FALSE;
 		auto v = *static_cast<const uint32_t *>(pvalue);
@@ -1036,7 +1035,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
+		auto pconfig = config_file_init(autoreply_path.c_str(), oof_defaults);
 		if (pconfig == nullptr)
 			return FALSE;
 		long long t = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(pvalue));
@@ -1133,7 +1132,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str(), nullptr);
+		auto pconfig = config_file_init(autoreply_path.c_str(), oof_defaults);
 		if (pconfig == nullptr)
 			return FALSE;
 		pconfig->set_value(proptag == PR_EC_ALLOW_EXTERNAL ?

@@ -104,6 +104,7 @@ static std::unordered_map<std::string, DB_ITEM> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
+unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel;
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
@@ -462,10 +463,20 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		    sqlite3_column_int64(pstmt, 0)))
 			return FALSE;
 	pstmt.finalize();
+	auto t_start = tp_now();
+	auto cl_1 = make_scope_exit([&]() {
+		auto t_end = tp_now();
+		auto t_diff = std::chrono::duration<double>(t_end - t_start).count();
+		if (pmessage_ids->count > 0 && t_diff >= 1)
+			mlog(LV_DEBUG, "db_eng_sf: %u messages in %.2f seconds",
+				pmessage_ids->count, t_diff);
+	});
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
-		if (count == g_exmdb_search_pacing) {
+               auto t_msg = tp_now();
+               if (count >= g_exmdb_search_pacing ||
+                   (t_msg - t_start) >= std::chrono::nanoseconds(g_exmdb_search_pacing_time)) {
 			if (!db_reload(pdb, dir))
 				return false;
 			count = 0;

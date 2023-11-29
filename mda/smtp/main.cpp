@@ -369,11 +369,11 @@ int main(int argc, const char **argv)
 	}
 	mlog(LV_NOTICE, "system: host ID is \"%s\"", str_val);
 	
-	g_config_file->get_uint("context_num", &scfg.context_num);
+	scfg.context_num = g_config_file->get_ll("context_num");
 	unsigned int thread_charge_num = g_config_file->get_ll("lda_thread_charge_num");
 		if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			g_config_file->set_int("lda_thread_charge_num", thread_charge_num);
+			g_config_file->set_value("lda_thread_charge_num", std::to_string(thread_charge_num).c_str());
 		}
 	mlog(LV_INFO, "system: one thread is in charge of %d contexts",
 		thread_charge_num);
@@ -384,10 +384,10 @@ int main(int argc, const char **argv)
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			scfg.context_num = thread_charge_num;
-			g_config_file->set_int("context_num", scfg.context_num);
+			g_config_file->set_value("context_num", std::to_string(scfg.context_num).c_str());
 			mlog(LV_NOTICE, "system: rectified contexts number to %d", scfg.context_num);
 		}
-		g_config_file->set_int("lda_thread_init_num", thread_init_num);
+		g_config_file->set_value("lda_thread_init_num", std::to_string(thread_init_num).c_str());
 	}
 	mlog(LV_INFO, "system: threads pool initial threads number is %d",
 		thread_init_num);

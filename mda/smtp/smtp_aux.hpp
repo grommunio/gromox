@@ -26,13 +26,13 @@ extern BOOL FLH_LibMain(int);
 
 extern uint16_t g_listener_ssl_port;
 
-struct CONFIG_FILE;
+struct config_file;
 
 extern int resource_run();
 extern void resource_stop();
 extern const char *resource_get_smtp_code(unsigned int code_type, unsigned int n, size_t *len);
 
-extern std::shared_ptr<CONFIG_FILE> g_config_file;
+extern std::shared_ptr<config_file> g_config_file;
 
 enum{
     SERVICE_AUTH_ERROR,       /* auth session fail  */

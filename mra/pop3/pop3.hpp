@@ -33,7 +33,7 @@ enum {
 	POP3_RETRIEVE_ERROR
 };
 
-struct CONFIG_FILE;
+struct config_file;
 
 struct pop3_context final : public schedule_context {
 	pop3_context() = default;
@@ -113,4 +113,4 @@ extern uint16_t g_listener_ssl_port;
 extern unsigned int g_popcmd_debug;
 extern int g_max_auth_times, g_block_auth_fail;
 extern bool g_support_tls, g_force_tls;
-extern std::shared_ptr<CONFIG_FILE> g_config_file;
+extern std::shared_ptr<config_file> g_config_file;

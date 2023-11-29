@@ -12,7 +12,7 @@ enum {
 	MESSAGE_DEQUEUE_HOLDING,
 };
 
-struct CONFIG_FILE;
+struct config_file;
 
 /* message struct for dequeuing from mail queue */
 struct MESSAGE {
@@ -49,4 +49,4 @@ extern int transporter_unload_library(const char *);
 extern int transporter_load_library(const char *);
 extern void transporter_trigger_all(unsigned int);
 
-extern std::shared_ptr<CONFIG_FILE> g_config_file;
+extern std::shared_ptr<config_file> g_config_file;

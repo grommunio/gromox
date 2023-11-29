@@ -1,6 +1,7 @@
 #pragma once
-#include <exception>
+#include <map>
 #include <memory>
+#include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #define CFG_TABLE_END {}
@@ -10,6 +11,8 @@ enum cfg_flags {
 	CFG_SIZE = 0x2U,
 	CFG_TIME = 0x4U,
 	CFG_ALIAS = 0x8U,
+	CFG_TIME_NS = 0x10U,
+	CFG_TOUCHED = 0x80U,
 };
 
 /**
@@ -21,35 +24,33 @@ struct cfg_directive {
 	const char *key = nullptr, *deflt = nullptr;
 	unsigned int flags = 0;
 	const char *min = nullptr, *max = nullptr;
-
-	bool operator<(const cfg_directive &) const;
-	bool operator<(const char *) const;
-	bool operator==(const cfg_directive &) const = delete;
 };
 
-struct CONFIG_ENTRY {
-    char keyname[256];
-    char value[256];
-	BOOL is_touched;
-};
-
-struct GX_EXPORT CONFIG_FILE {
-	CONFIG_FILE() = default;
-	~CONFIG_FILE();
-	NOMOVE(CONFIG_FILE);
-	const char *get_value(const char *key) const;
-	BOOL set_value(const char *key, const char *value);
+class GX_EXPORT config_file {
+	public:
+	config_file() = default;
+	config_file(const cfg_directive *);
+	const char *get_value(const char *key) const __attribute__((nonnull(2)));
+	unsigned long long get_ll(const char *key) const __attribute__((nonnull(2)));
+	void set_value(const char *k, const char *v) __attribute__((nonnull(2,3)));
 	BOOL save();
-	BOOL get_int(const char *key, int *) const;
-	BOOL get_uint(const char *key, unsigned int *) const;
-	unsigned long long get_ll(const char *key) const;
-	BOOL set_int(const char *key, int);
 
-    CONFIG_ENTRY *config_table;
-    size_t num_entries;
-	size_t total_entries;
-	char file_name[256];
+	std::string m_filename;
+
+	private:
+	struct GX_EXPORT cfg_entry {
+		cfg_entry() = default;
+		cfg_entry(const char *s) __attribute__((nonnull(2))) : m_val(s) {}
+		cfg_entry(const cfg_directive &d);
+		void set(const char *s) __attribute__((nonnull(2)));
+		std::string m_val, m_min, m_max;
+		unsigned int m_flags = 0;
+	};
+	using map_type = std::map<std::string, cfg_entry>;
+	using value_type = map_type::value_type;
+	map_type m_vars;
 };
+using CONFIG_FILE = config_file;
 
 #define NO_SEARCH_DIRS nullptr
 #if defined(__OpenBSD__)
