@@ -531,11 +531,10 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
 	auto ts = pmsgctnt->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
-	if (ts == nullptr) {
-		mlog(LV_INFO, "I-2363: ICS: cannot transfer msg %llxh without PR_LAST_MODIFICATION_TIME",
-			LLU{message_id});
-		return FALSE;
-	}
+	uint64_t now = rop_util_unix_to_nttime(time(nullptr));
+	if (ts == nullptr)
+		/* Faking it seems to work */
+		ts = &now;
 	pchgheader->emplace_back(PR_LAST_MODIFICATION_TIME, ts);
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
