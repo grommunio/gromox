@@ -491,8 +491,8 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 		auto b = g_midb_command_buffer_size.load();
 		size_t ap = b / (2 + ilog10(b));
 		mlog(LV_ERR, "E-2154: midb response is longer than expected (%zu), rejecting IMAP command. "
-		        "Consider raising midb_agent_command_buffer_size or having fewer mails in the folder. "
-		        "(Approx. limit %zu messages.)",
+		        "Consider raising midb_agent.cfg:midb_agent_command_buffer_size "
+		        "or having fewer mails in the folder. (Approx. limit %zu messages.)",
 		        ilen, ap);
 		return MIDB_TOO_MANY_RESULTS;
 	} else if (ret < 0) {
