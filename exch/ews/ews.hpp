@@ -268,13 +268,14 @@ public:
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
+	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
 	std::unique_ptr<BINARY, detail::Cleaner> mkPCL(const XID&, PCL=PCL()) const;
 	uint64_t moveCopyFolder(const std::string&, const Structures::sFolderSpec&, uint64_t, uint32_t, bool) const;
 	uint64_t moveCopyItem(const std::string&, const Structures::sMessageEntryId&, uint64_t, bool) const;
 	void normalize(Structures::tEmailAddressType&) const;
 	void normalize(Structures::tMailbox&) const;
 	int notify();
-	uint32_t permissions(const char*, const Structures::sFolderSpec&, const char* = nullptr) const;
+	uint32_t permissions(const std::string&, uint64_t) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tDistinguishedFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::tFolderId&) const;
 	Structures::sFolderSpec resolveFolder(const Structures::sFolderId&) const;
@@ -424,7 +425,7 @@ template<typename T, typename... Args>
 inline T* EWSContext::construct(Args&&... args)
 {
 	static_assert(std::is_trivially_destructible_v<T>, "Can only construct trivially destructible types");
-	return new(alloc<T>()) T(std::forward<Args...>(args...));
+	return new(alloc<T>()) T(std::forward<Args>(args)...);
 }
 
 }

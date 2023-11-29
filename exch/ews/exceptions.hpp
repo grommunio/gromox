@@ -80,6 +80,7 @@ public:
 	ERR(InvalidIdNotAnItemAttachmentId) ///< Attachment id expected, but got something else
 	ERR(InvalidExtendedPropertyValue) ///< Value of extended property does not match its type
 	ERR(InvalidOccurrenceId) ///< Cannot deserialize occurrence ID
+	ERR(InvalidRestriction) ///< Restriction cannot be deserialized
 	ERR(InvalidRoutingType) ///< RoutingType holds an unrecognized value
 	ERR(InvalidSendItemSaveSettings) ///< Specifying target folder when not saving
 	ERR(InvalidSubscription) ///< Subscription expired
@@ -337,6 +338,29 @@ E(3214, "wrong ID type - expected item ID, got folder ID");
 E(3215, "invalid attachement ID");
 E(3216, "invalid ID type");
 E(3217, "could not initialize message content");
+E(3218, "cannot access target folder");
+E(3219, "failed to load hierarchy table");
+inline std::string E3220(const char* name) {return fmt::format("E-3220: unknown restriction type '{}'", name);}
+E(3221, "missing FieldURIOrConstant node");
+inline std::string E3223(uint32_t tag1, uint32_t tag2) {return fmt::format("E-3223: properties 0x{:08x} and 0x{:08x} are not comparable", tag1, tag2);}
+E(3224, "failed to find tag for Contains path");
+E(3225, "invalid Contains property type");
+E(3226, "missing Constant node");
+inline std::string E3227(const char* mode){return fmt::format("E-3227: invalid ContainmentMode '{}'", mode);}
+inline std::string E3228(const char* comp){return fmt::format("E-3228: invalid ContainmentComparison'{}'", comp);}
+E(3229, "failed to find tag for Excludes path");
+inline std::string E3230(const char* type, uint32_t tag) {return fmt::format("E-3230: cannnot apply bitmask operation to {} tag (0x{:08x})", type, tag);}
+E(3231, "missing BitMask node");
+E(3232, "failed to find tag for Exist path");
+E(3233, "missing child restriction for Not restriction");
+E(3234, "missing Value attribute");
+inline std::string E3235(const std::string_view& val) {return fmt::format("E-3235: invalid short value '{}'", val);}
+inline std::string E3236(const std::string_view& val) {return fmt::format("E-3236: invalid long value '{}'", val);}
+inline std::string E3237(const std::string_view& val) {return fmt::format("E-3237: invalid float value '{}'", val);}
+inline std::string E3238(const std::string_view& val) {return fmt::format("E-3238: invalid double value '{}'", val);}
+inline std::string E3239(const std::string_view& val) {return fmt::format("E-3239: invalid boolean value '{}'", val);}
+inline std::string E3240(const std::string_view& val) {return fmt::format("E-3240: invalid i8 value '{}'", val);}
+inline std::string E3241(const char* type) {return fmt::format("E-3241: Constant Value of type {} is not supported", type);}
 
 #undef E
 }

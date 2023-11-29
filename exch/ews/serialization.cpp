@@ -277,6 +277,7 @@ void tBaseFolderType::serialize(XMLElement* xml) const
 	XMLDUMPT(DisplayName);
 	XMLDUMPT(TotalCount);
 	XMLDUMPT(ChildFolderCount);
+	XMLDUMPT(EffectiveRights);
 	for(const tExtendedProperty& ep : ExtendedProperty)
 		toXMLNode(xml, "t:ExtendedProperty", ep);
 }
@@ -310,6 +311,9 @@ void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(objectId);
 	XMLDUMPT(ParentFolderId);
 }
+
+tBasePagingType::tBasePagingType(const tinyxml2::XMLElement* xml) : XMLINITA(MaxEntriesReturned)
+{}
 
 tBaseSubscriptionRequest::tBaseSubscriptionRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(FolderIds),
@@ -557,6 +561,16 @@ void tDuration::serialize(XMLElement* xml) const
 	XMLDUMPT(EndTime);
 }
 
+void tEffectiveRights::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(CreateAssociated);
+	XMLDUMPT(CreateContents);
+	XMLDUMPT(CreateHierarchy);
+	XMLDUMPT(Delete);
+	XMLDUMPT(Modify);
+	XMLDUMPT(Read);
+}
+
 tEmailAddressType::tEmailAddressType(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Name),
 	XMLINIT(EmailAddress),
@@ -592,6 +606,12 @@ void tFileAttachment::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Content);
 }
 
+void tFindFolderParent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tFindResponsePagingAttributes::serialize(xml);
+	XMLDUMPT(Folders);
+}
+
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(Entry.c_str());
@@ -615,7 +635,8 @@ tExtendedFieldURI::tExtendedFieldURI(const tinyxml2::XMLElement* xml) :
 void tExtendedFieldURI::serialize(XMLElement* xml) const
 {
 	XMLDUMPA(PropertyType);
-	XMLDUMPA(PropertyTag);
+	if(PropertyTag)
+		xml->SetAttribute("PropertyTag", fmt::format("0x{:x}", *PropertyTag).c_str());
 	XMLDUMPA(PropertyId);
 	XMLDUMPA(PropertySetId);
 	XMLDUMPA(PropertyName);
@@ -672,6 +693,12 @@ void tFolderType::serialize(XMLElement* xml) const
 	XMLDUMPT(UnreadCount);
 }
 
+tFractionalPageView::tFractionalPageView(const tinyxml2::XMLElement* xml) :
+	tBasePagingType(xml),
+	XMLINITA(Numerator),
+	XMLINITA(Denominator)
+{}
+
 void tFreeBusyView::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(FreeBusyViewType);
@@ -692,6 +719,12 @@ tGuid::tGuid(const XMLAttribute* xml)
 tIndexedFieldURI::tIndexedFieldURI(const XMLElement* xml) :
 	XMLINITA(FieldURI),
 	XMLINITA(FieldIndex)
+{}
+
+tIndexedPageView::tIndexedPageView(const tinyxml2::XMLElement* xml) :
+	tBasePagingType(xml),
+	XMLINITA(Offset),
+	XMLINITA(BasePoint)
 {}
 
 void tInternetMessageHeader::serialize(tinyxml2::XMLElement* xml) const
@@ -875,6 +908,16 @@ void tReplyBody::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(Message);
 	XMLDUMPA(lang);
+}
+
+tRestriction::tRestriction(const tinyxml2::XMLElement* xml) :
+	source(xml->FirstChildElement())
+{}
+
+uint32_t tRestriction::getTag(const tinyxml2::XMLElement* parent)
+{
+	tPath path(fromXMLNodeVariantFind<tPath::Base>(parent));
+	return path.tag();
 }
 
 tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement* xml) :
@@ -1113,6 +1156,24 @@ mEmptyFolderRequest::mEmptyFolderRequest(const tinyxml2::XMLElement* xml) :
 {}
 
 void mEmptyFolderResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+mFindFolderRequest::mFindFolderRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(FolderShape),
+	XMLINIT(FractionalPageFolderView),
+	XMLINIT(IndexedPageFolderView),
+	XMLINIT(Restriction),
+	XMLINIT(ParentFolderIds),
+	XMLINITA(Traversal)
+{}
+
+void mFindFolderResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(RootFolder);
+}
+
+void mFindFolderResponse::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPM(ResponseMessages);}
 
 void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
