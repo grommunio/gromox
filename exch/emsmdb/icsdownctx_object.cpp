@@ -532,7 +532,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	
 	auto ts = pmsgctnt->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (ts == nullptr) {
-		mlog(LV_INFO, "I-2385: ICS: cannot transfer msg %llxh without PR_LAST_MODIFICATION_TIME\n",
+		mlog(LV_INFO, "I-2363: ICS: cannot transfer msg %llxh without PR_LAST_MODIFICATION_TIME",
 			LLU{message_id});
 		return FALSE;
 	}
@@ -540,7 +540,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(MESSAGE_CONTENT *pmsgctnt,
 	
 	bin = pmsgctnt->proplist.get<BINARY>(PR_CHANGE_KEY);
 	if (bin == nullptr) {
-		mlog(LV_INFO, "I-2383: ICS: cannot transfer msg %llxh without PR_CHANGE_KEY\n",
+		mlog(LV_INFO, "I-2362: ICS: cannot transfer msg %llxh without PR_CHANGE_KEY\n",
 			LLU{message_id});
 		return FALSE;
 	}
