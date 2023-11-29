@@ -300,8 +300,10 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&mcfg,
 	g_parm.pass = mcfg->get_value("mysql_password");
 	g_parm.dbname = mcfg->get_value("mysql_dbname");
 	g_parm.timeout = mcfg->get_ll("mysql_rdwr_timeout");
+	bool local = g_parm.host.size() == 0 || g_parm.host == "localhost";
 	mlog(LV_NOTICE, "alias_resolve: mysql [%s]:%d, timeout=%d, db=%s",
-	       g_parm.host.size() == 0 ? "*" : g_parm.host.c_str(), g_parm.port,
+	       local ? "<Local IPC>" : g_parm.host.c_str(),
+	       local ? 0 : g_parm.port,
 	       g_parm.timeout, g_parm.dbname.c_str());
 
 	if (acfg == nullptr)
