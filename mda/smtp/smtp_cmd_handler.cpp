@@ -197,7 +197,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
     }
 	if (pcontext->last_cmd != T_MAIL_CMD && pcontext->last_cmd != T_RCPT_CMD)
 		return 507; /* bad sequence */
-	if (0 && system_services_check_user != nullptr) {
+	if (system_services_check_user != nullptr) {
 		snprintf(buff, std::size(buff), "%s@%s", email_addr.local_part,
 				email_addr.domain);
 		if (!system_services_check_user(buff, g_rcpt_delimiter.c_str(),
