@@ -480,6 +480,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			if (!db_reload(pdb, dir))
 				return false;
 			count = 0;
+			t_start = tp_now();
 		}
 		if (!cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, pmessage_ids->pids[i], prestriction))
