@@ -187,18 +187,19 @@ static int main(int argc, const char **argv)
 
 namespace emptyfld {
 
-static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE;
+static unsigned int g_del_flags = DEL_MESSAGES | DELETE_HARD_DELETE, g_recurse;
 static char *g_time_str;
 static mapitime_t g_cutoff_time;
 
 static void opt_m(const struct HXoptcb *cb) { g_del_flags &= ~DEL_MESSAGES; }
-static void opt_r(const struct HXoptcb *cb) { g_del_flags |= DEL_FOLDERS; }
+static void opt_nuke(const struct HXoptcb *cb) { g_del_flags |= DEL_FOLDERS; }
 static void opt_a(const struct HXoptcb *cb) { g_del_flags |= DEL_ASSOCIATED; }
 static void opt_s(const struct HXoptcb *cb) { g_del_flags &= ~DELETE_HARD_DELETE; }
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'M', HXTYPE_NONE, {}, {}, opt_m, 0, "Exclude normal messages from deletion"},
-	{nullptr, 'R', HXTYPE_NONE, {}, {}, opt_r, 0, "Recurse into subfolders"},
+	{nullptr, 'R', HXTYPE_NONE, &g_recurse, {}, {}, 0, "Recurse into subfolders to delete messages"},
+	{"nuke-folders", 0, HXTYPE_NONE, {}, {}, opt_nuke, 0, "Do not recurse but delete subfolders outright"},
 	{nullptr, 'a', HXTYPE_NONE, {}, {}, opt_a, 0, "Include associated messages in deletion"},
 	{nullptr, 't', HXTYPE_STRING, &g_time_str, {}, {}, 0, "Messages need to be older than...", "TIMESPEC"},
 	{"soft",    0, HXTYPE_NONE, {}, {}, opt_s, 0, "Soft-delete (experimental)"},
@@ -280,7 +281,7 @@ static int do_hierarchy(eid_t fid)
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
-	if (!(g_del_flags & DEL_FOLDERS))
+	if (!g_recurse)
 		return EXIT_SUCCESS;
 
 	uint32_t table_id = 0, row_count = 0;
@@ -311,6 +312,10 @@ static int main(int argc, const char **argv)
 {
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (g_del_flags & DEL_FOLDERS && g_recurse) {
+		fprintf(stderr, "Combining -R and --nuke-folders is not supported; use two separate mbop calls.\n");
+		return EXIT_FAILURE;
+	}
 	if (g_time_str != nullptr) {
 		char *end = nullptr;
 		auto t = HX_strtoull_sec(g_time_str, &end);
@@ -323,8 +328,10 @@ static int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 		g_cutoff_time = rop_util_unix_to_nttime(time(nullptr) - t);
-		if (g_del_flags & DEL_FOLDERS)
-			fprintf(stderr, "Quirk of using both -R+-t: Messages will be deleted but not the folders\n");
+		if (g_del_flags & DEL_FOLDERS) {
+			fprintf(stderr, "Combining -t and --nuke-folders is not supported; use two separate mbop calls.\n");
+			return EXIT_FAILURE;
+		}
 	}
 
 	int ret = EXIT_SUCCESS;
@@ -336,7 +343,7 @@ static int main(int argc, const char **argv)
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
 		}
-		if (g_cutoff_time != 0) {
+		if (g_cutoff_time != 0 || g_recurse) {
 			/* Deletion via client */
 			int ret = do_hierarchy(eid);
 			if (ret != EXIT_SUCCESS)

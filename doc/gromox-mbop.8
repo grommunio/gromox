@@ -77,7 +77,7 @@ This command deletes messages from a folder.
 \fB\-M\fP
 Exempt normal messages from deletion.
 .TP
-\fB-R\fP
+\fB\-R\fP
 Recurse into subfolders.
 .TP
 \fB\-a\fP
@@ -88,8 +88,15 @@ Select only messages which have a last modification timestamp older than
 \fItimespec\fP. (See further below near purge\-softdelete for a short
 explanation of timespec.)
 .TP
+\fB\-\-nuke\-folders\fP
+Rather than recursing into subfolders (to delete messages that match criteria
+like \-a,\-M,\-t), delete subfolders outright.
+.TP
 \fB\-\-soft\fP
-Perform a soft deletion. (This feature is experimental.) Default is hard.
+Perform soft deletion. More specifically, this sets the soft-delete flag (also
+called "hidden" in Exchange) on messages and/or folders. Softdeleted objects
+can be restored/unhidden by the user. The final deletion is possible also at
+the hands of the user, or by using mbop's purge\-softdelete subcommand.
 .SS Examples
 .IP \(bu 4
 Take out the trash ("Deleted Items") for a lazy user:
