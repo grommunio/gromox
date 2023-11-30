@@ -20,8 +20,6 @@
 #define HPM_RETRIEVE_WAIT			3
 #define HPM_RETRIEVE_DONE			4
 
-struct LIB_BUFFER;
-
 struct HPM_INTERFACE {
 	BOOL (*preproc)(int);
 	http_status (*proc)(int, const void*, uint64_t);
