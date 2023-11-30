@@ -14,6 +14,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
 #include <gromox/mapitags.hpp>
+#include <gromox/mysql_adaptor.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
@@ -69,6 +70,14 @@ struct rx_delete {
 	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
 };
 
+struct mr_policy {
+	unsigned int dtyp = 0, capacity = 0;
+	bool autoproc = true, accept_appts = false;
+	bool decline_overlap = false, decline_recurring = false;
+
+	constexpr bool is_resource() const { return dtyp == DT_ROOM || dtyp == DT_EQUIPMENT; }
+};
+
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 /**
@@ -106,6 +115,7 @@ struct rxparam {
 }
 
 unsigned int g_ruleproc_debug;
+static bool (*rp_getuserprops)(const char *, TPROPVAL_ARRAY &);
 
 rule_node::rule_node(rule_node &&o) :
 	seq(o.seq), state(o.state), extended(o.extended), rule_id(o.rule_id),
@@ -818,6 +828,27 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
+static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
+{
+	TPROPVAL_ARRAY uprop{};
+	if (!rp_getuserprops(ev_to, uprop))
+		return ecError;
+	auto flag = uprop.get<const uint8_t>(PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS);
+	pol.decline_overlap = flag != nullptr && *flag != 0;
+	flag = uprop.get<uint8_t>(PR_SCHDINFO_DISALLOW_RECURRING_APPTS);
+	pol.decline_recurring = flag != nullptr && *flag != 0;
+	auto value = uprop.get<uint32_t>(PR_EMS_AB_ROOM_CAPACITY);
+	pol.capacity = value != nullptr ? *value : 0;
+	value = uprop.get<uint32_t>(PR_DISPLAY_TYPE_EX);
+	pol.dtyp = value == nullptr ? 0 : *value & DTE_MASK_LOCAL;
+	flag = uprop.get<uint8_t>(PR_SCHDINFO_AUTO_ACCEPT_APPTS);
+	if (flag != nullptr)
+		pol.accept_appts = !!*flag;
+	else
+		pol.accept_appts = pol.dtyp == DT_ROOM || pol.dtyp == DT_EQUIPMENT;
+	return ecSuccess;
+}
+
 rxparam::rxparam(message_node &&x) : cur(std::move(x))
 {}
 
@@ -859,6 +890,12 @@ ec_error_t rxparam::run()
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 		return ecSuccess;
 	}
+
+	mr_policy res_policy;
+	err = mr_get_policy(ev_to, res_policy);
+	if (err != ecSuccess)
+		return err;
+
 	if (!exmdb_client::notify_new_mail(cur.dirc(), cur.fid, cur.mid))
 		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
 	return ecSuccess;
@@ -881,6 +918,8 @@ BOOL SVC_ruleproc(enum plugin_op reason, const struct dlfuncs &param)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 	LINK_SVC_API(param);
+	if (query_service2("get_user_properties", rp_getuserprops) == nullptr)
+		return false;
 	if (!register_service("rules_execute", exmdb_local_rules_execute))
 		return false;
 	return TRUE;

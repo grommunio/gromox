@@ -44,6 +44,7 @@ static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 static unsigned int g_continuous_mode;
 
 static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
 	{"libgxs_ruleproc.so", SVC_ruleproc},
 };
 

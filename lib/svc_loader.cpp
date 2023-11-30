@@ -99,8 +99,11 @@ static constexpr struct dlfuncs server_funcs = {
 
 int service_run_early() try
 {
-	if (g_config_file == nullptr)
+	if (g_config_file == nullptr) {
 		g_config_file = std::make_shared<config_file>();
+		g_config_file->set_value("config_file_path", PKGSYSCONFDIR);
+		g_config_file->set_value("data_file_path", PKGDATADIR);
+	}
 	g_config_dir = znul(g_config_file->get_value("config_file_path"));
 	g_data_dir = znul(g_config_file->get_value("data_file_path"));
 
