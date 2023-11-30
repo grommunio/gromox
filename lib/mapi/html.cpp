@@ -22,7 +22,6 @@
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/int_hash.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>

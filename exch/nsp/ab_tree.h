@@ -10,7 +10,6 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/ab_tree.hpp>
-#include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
 #define USER_MAIL_ADDRESS					0

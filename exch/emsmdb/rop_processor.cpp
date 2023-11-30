@@ -13,7 +13,6 @@
 #include <utility>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
-#include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "attachment_object.h"

@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/ab_tree.hpp>
-#include <gromox/int_hash.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/simple_tree.hpp>
 
