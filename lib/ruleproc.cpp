@@ -11,10 +11,13 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mail.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/freebusy.hpp>
 #include <gromox/mapierr.hpp>
 #include <gromox/mapitags.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
@@ -22,12 +25,31 @@
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
+#include <gromox/rop_util.hpp>
 
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 DECLARE_SVC_API(,);
 
 namespace {
+
+enum {
+	POLICY_DECLINE_RECURRING_MEETING_REQUESTS   = 0x2U,
+	POLICY_DECLINE_CONFLICTING_MEETING_REQUESTS = 0x4U,
+};
+
+/***
+ * proptag(l_recurring): object specifies a recurring series
+ * proptag(l_is_recurring): object (e.g. exception) is associated with a recurring series
+ */
+enum {
+	l_recurring = 0, l_response_status, l_busy_status, l_recurrence_pat,
+	l_appt_state_flags, l_appt_sub_type, l_meeting_type, l_finvited,
+	l_cleangoid, l_location, l_where, l_appt_seq, l_ownercritchg,
+	l_start_whole, l_end_whole, l_is_exception, l_tzstruct, l_apptrecur,
+	l_tzdefrecur, l_is_recurring, l_tz, l_tzdesc, l_goid,
+	l_attendeecritchg, l_is_silent,
+};
 
 /**
  * @rule_id:	if @extended, message id of the extrule, else rule id.
@@ -849,6 +871,128 @@ static ec_error_t mr_get_policy(const char *ev_to, mr_policy &pol)
 	return ecSuccess;
 }
 
+static const char *mr_get_class(const TPROPVAL_ARRAY &p)
+{
+	auto cls = p.get<const char>(PR_MESSAGE_CLASS);
+	if (cls != nullptr)
+		return cls;
+	cls = p.get<char>(PR_MESSAGE_CLASS_A);
+	return cls != nullptr ? cls : "IPM.Note";
+}
+
+/**
+ * Mark the inbox message that it was processed.
+ */
+static ec_error_t mr_mark_done(rxparam &par)
+{
+	static constexpr uint8_t v_yes = 1;
+	auto &prop = par.ctnt->proplist;
+	prop.erase(PR_CHANGE_KEY); /* assign new CK upon write */
+	if (prop.set(PR_PROCESSED, &v_yes) != 0 ||
+	    prop.set(PR_READ, &v_yes) != 0)
+		return ecServerOOM;
+	uint64_t cal_mid = par.cur.mid, cal_cn = 0;
+	ec_error_t err = ecSuccess;
+	if (!exmdb_client::write_message_v2(par.cur.dir.c_str(), CP_ACP,
+	    par.cur.fid, par.ctnt.get(), &cal_mid, &cal_cn, &err))
+		return ecRpcFailed;
+	return err;
+}
+
+static ec_error_t mr_do_request(rxparam &par, const PROPID_ARRAY &propids,
+    const mr_policy &policy)
+{
+	/* Reject recurring requests right away if so configured */
+	auto &rq_prop = par.ctnt->proplist;
+	auto recurring_ptr = rq_prop.get<const uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[l_recurring]));
+	auto recurring_flg = recurring_ptr != nullptr && *recurring_ptr != 0;
+	if (recurring_flg && policy.decline_recurring) {
+		return mr_mark_done(par);
+	}
+
+	/* Lookup conflict state */
+	bool res_in_use = false;
+	if (rq_prop.has(PR_START_DATE) && rq_prop.has(PR_END_DATE)) {
+		std::vector<freebusy_event> fbdata;
+		auto start_nt = rop_util_nttime_to_unix(*rq_prop.get<uint64_t>(PR_START_DATE));
+		auto end_nt   = rop_util_nttime_to_unix(*rq_prop.get<uint64_t>(PR_END_DATE));
+		/* XXX: May need PR_SENDER rather than Envelope-From */
+		if (!get_freebusy(par.ev_from, par.cur.dirc(), start_nt, end_nt, fbdata))
+			mlog(LV_ERR, "W-PREC: cannot retrieve freebusy %s", par.cur.dirc());
+
+		for (const freebusy_event &event : fbdata)
+			if ((event.start_time >= start_nt && event.start_time <= end_nt) ||
+			    (event.end_time   >= start_nt && event.end_time <= end_nt) ||
+			    (event.start_time < start_nt  && event.end_time > end_nt))
+				if (event.busy_status == olBusy) {
+					res_in_use = true;
+					break;
+				}
+	}
+
+	/* Decline double-booking if so configured */
+	if (res_in_use) {
+		if (policy.decline_overlap) {
+		}
+		/* else: no decline = request stays unanswered */
+		return mr_mark_done(par);
+	}
+	return ecSuccess;
+}
+
+/**
+ * @par.mprop:	message properties of meeting request
+ * @ev_from:	sender
+ * @policy:	metadata of user ev_to
+ */
+static ec_error_t mr_start(rxparam &par, const mr_policy &policy)
+{
+	if (!policy.autoproc)
+		return ecSuccess;
+
+	/* Obtain namedprop mappings to supplant @rq_prop */
+	const PROPERTY_NAME rq_propname1[] = {
+		/* Order as per enum */
+		{MNID_ID, PSETID_APPOINTMENT, PidLidRecurring},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidRecurrencePattern},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType},
+		{MNID_ID, PSETID_MEETING,     PidLidMeetingType},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidFInvited},
+		{MNID_ID, PSETID_MEETING,     PidLidCleanGlobalObjectId},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidLocation},
+		{MNID_ID, PSETID_MEETING,     PidLidWhere},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence},
+		{MNID_ID, PSETID_MEETING,     PidLidOwnerCriticalChange},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole},
+		{MNID_ID, PSETID_MEETING,     PidLidIsException},
+		{MNID_ID, PSETID_MEETING,     PidLidTimeZoneStruct},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentTimeZoneDefinitionRecur},
+		{MNID_ID, PSETID_MEETING,     PidLidIsRecurring},
+		{MNID_ID, PSETID_MEETING,     PidLidTimeZone},
+		{MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneDescription},
+		{MNID_ID, PSETID_MEETING,     PidLidGlobalObjectId},
+		{MNID_ID, PSETID_MEETING,     PidLidAttendeeCriticalChange},
+		{MNID_ID, PSETID_MEETING,     PidLidIsSilent},
+	};
+	static_assert(std::size(rq_propname1) == l_is_silent + 1);
+	const PROPNAME_ARRAY rq_propname = {std::size(rq_propname1), deconst(rq_propname1)};
+	PROPID_ARRAY propids;
+	if (!exmdb_client::get_named_propids(par.cur.dir.c_str(), false,
+	    &rq_propname, &propids))
+		return ecError;
+
+	auto &rq_prop = par.ctnt->proplist;
+	auto rq_class = mr_get_class(rq_prop);
+	if (class_match_prefix(rq_class, "IPM.Schedule.Meeting.Request") == 0)
+		return mr_do_request(par, propids, policy);
+	return ecSuccess;
+}
+
 rxparam::rxparam(message_node &&x) : cur(std::move(x))
 {}
 
@@ -893,6 +1037,9 @@ ec_error_t rxparam::run()
 
 	mr_policy res_policy;
 	err = mr_get_policy(ev_to, res_policy);
+	if (err != ecSuccess)
+		return err;
+	err = mr_start(*this, res_policy);
 	if (err != ecSuccess)
 		return err;
 
