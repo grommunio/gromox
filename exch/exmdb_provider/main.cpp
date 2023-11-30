@@ -46,7 +46,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_schema_upgrades", "auto"},
 	{"exmdb_search_nice", "0"},
 	{"exmdb_search_pacing", "250", CFG_SIZE},
-	{"exmdb_search_pacing_time", "2s", CFG_TIME_NS},
+	{"exmdb_search_pacing_time", "0.5s", CFG_TIME_NS},
 	{"exmdb_search_yield", "0", CFG_BOOL},
 	{"exrpc_debug", "0"},
 	{"listen_ip", "::1"},

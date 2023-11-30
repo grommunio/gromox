@@ -492,8 +492,17 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			break;
 		else if (ret != SQLITE_OK)
 			continue;
+		/*
+		 * Update other search folders (seems like it is allowed to
+		 * have a search folder have a scope containing another search
+		 * folder; exmdb_provider only does a descendant check).
+		 */
 		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::new_msg,
 			search_fid, pmessage_ids->pids[i], 0);
+		/*
+		 * Regular notifications
+		 */
+		db_engine_notify_link_creation(pdb, search_fid, pmessage_ids->pids[i]);
 	}
 	return TRUE;
 }
@@ -656,6 +665,7 @@ static void *mdpeng_thrwork(void *param)
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
+		/* Stop animation (does nothing else in OL really) */
 		db_engine_notify_search_completion(
 			pdb, psearch->folder_id);
 		db_engine_notify_folder_modification(pdb,
@@ -673,6 +683,10 @@ static void *mdpeng_thrwork(void *param)
 			    psearch->folder_id == t.folder_id)
 				table_ids.push_back(t.table_id);
 		pdb.reset();
+		/*
+		 * reload_ct triggers a table_change notification, and the
+		 * client eventually learns of the new message count.
+		 */
 		while (table_ids.size() > 0) {
 			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
 			table_ids.pop_back();
@@ -995,6 +1009,17 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 	}
 }
 
+/**
+ * This is the entry function called by most everything else to notify *search
+ * folders* of events that happened elsewhere.
+ *
+ * @id1:        event source folder
+ * @id2:        message involved in the event
+ *
+ * Caveat: id1 may be a regular folder like Inbox, but it also be a search
+ * folder itself (population/depopulation as a result of search criteria
+ * change).
+ */
 void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
     dynamic_event event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
@@ -1005,8 +1030,16 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
+	/* Iterate over all search folders (event sinks)... */
 	for (auto &dn : pdb->dynamic_list) {
 		auto pdynamic = &dn;
+		/*
+		 * Iterate over source folders (a.k.a. search scope; MS-OXCFOLD
+		 * v23.2 §1.1).
+		 *
+		 * [In conjunction with dynevt_1/2] if id1 is within the scope,
+		 * pdynamic gets the event.
+		 */
 		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
 			if (dynamic_event::move_folder == event_type) {
 				dbeng_dynevt_1(pdb, cpid, id1, id2, id3, folder_type, pdynamic, i);

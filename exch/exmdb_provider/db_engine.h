@@ -28,10 +28,10 @@ struct dynamic_node {
 	~dynamic_node();
 	dynamic_node &operator=(dynamic_node &&) noexcept;
 
-	uint64_t folder_id = 0;
+	uint64_t folder_id = 0; /* search folder ID */
 	uint32_t search_flags = 0;
 	RESTRICTION *prestriction = nullptr;
-	LONGLONG_ARRAY folder_ids{};
+	LONGLONG_ARRAY folder_ids{}; /* source folder IDs */
 };
 using DYNAMIC_NODE = dynamic_node;
 
