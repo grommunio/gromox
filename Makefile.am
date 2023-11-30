@@ -63,7 +63,7 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-vcf2mt
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-vcf2mt
 dist_pkglibexec_SCRIPTS = tools/cleaner tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
@@ -338,7 +338,7 @@ header_files += include/gromox/fileio.h include/gromox/flusher_common.h include/
 header_files += include/gromox/paths.h.in include/gromox/pcl.hpp include/gromox/plugin.hpp include/gromox/proc_common.h include/gromox/proptag_array.hpp include/gromox/propval.hpp include/gromox/range_set.hpp include/gromox/resource_pool.hpp include/gromox/restriction.hpp include/gromox/rop_util.hpp include/gromox/rpc_types.hpp include/gromox/rule_actions.hpp include/gromox/safeint.hpp include/gromox/scope.hpp include/gromox/simple_tree.hpp include/gromox/sortorder_set.hpp include/gromox/stream.hpp include/gromox/svc_common.h include/gromox/svc_loader.hpp include/gromox/textmaps.hpp include/gromox/threads_pool.hpp include/gromox/tie.hpp include/gromox/timezone.hpp include/gromox/tnef.hpp include/gromox/usercvt.hpp include/gromox/util.hpp include/gromox/vcard.hpp include/gromox/xarray2.hpp include/gromox/zcore_client.hpp include/gromox/zcore_rpc.hpp include/gromox/zz_ndr_stack.hpp
 dist_pkgdata_DATA = ${abkt_files} ${tzd_files}
 toolprogs = tools/defs2php.pl tools/defs2php.sh tools/duplogid tools/enumsort tools/exmidl.pl tools/exmidl.sh tools/includesort tools/proptagsort tools/stackusage tools/warncount tools/zcidl.pl tools/zcidl.sh
-EXTRA_DIST = ${header_files} ${toolprogs} default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php
+EXTRA_DIST = ${header_files} ${toolprogs} default.sym exch/bounce_exch.cpp exch/php/ews/thumbnail.php exch/php/lib/conf.php exch/php/lib/db.php tools/genmails
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}${MKDIR_P} include/gromox

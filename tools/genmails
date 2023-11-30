@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+# SPDX-License-Identifier: MIT
+#
+# Generate a bunch of emails, as mbox format.
+
+use strict;
+use warnings;
+
+sub read_dict
+{
+	my $fh;
+	if (!open($fh, "<", $_[0])) {
+		print STDERR "cannot read wordlist $_[0]: $!\n";
+		return;
+	}
+	<$fh>;
+	return <$fh>;
+}
+	
+my @dict = &read_dict("/usr/share/hunspell/en_US.dic");
+chomp(@dict);
+if (scalar(@dict) == 0) {
+	@dict = ("bweebol");
+}
+my $count = shift @ARGV;
+if (!defined($count)) {
+	$count = 1;
+}
+for (my $i = 0; $i < $count; ++$i) {
+	print "From user\@example.com ", scalar(localtime()), "\n";
+	print "From: <user\@example.com>\n";
+	print "To: <user\@example.com>\n";
+	my $word1 = $dict[int(rand() * scalar(@dict))];
+	my $word2 = $dict[int(rand() * scalar(@dict))];
+	my $word3 = $dict[int(rand() * scalar(@dict))];
+	$word1 =~ s{/.*}{};
+	$word2 =~ s{/.*}{};
+	$word3 =~ s{/.*}{};
+	print "Subject: $i $word1 $word2\n\n$word2 $word3\n\n";
+}

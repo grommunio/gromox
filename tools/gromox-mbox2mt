@@ -1,0 +1,2 @@
+#!/bin/sh
+exec gromox-eml2mt --mbox "$@"

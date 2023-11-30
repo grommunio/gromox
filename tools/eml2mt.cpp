@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2023 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -27,6 +27,7 @@
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
@@ -34,6 +35,7 @@ enum {
 	IMPORT_MAIL,
 	IMPORT_ICAL,
 	IMPORT_VCARD,
+	IMPORT_MBOX,
 };
 
 static unsigned int g_import_mode = IMPORT_MAIL;
@@ -44,6 +46,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{"ical", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_ICAL, "Treat input as iCalendar"},
 	{"mail", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_MAIL, "Treat input as Internet Mail"},
+	{"mbox", 0, HXTYPE_VAL, &g_import_mode, {}, {}, IMPORT_MBOX, "Treat input as Unix mbox"},
 	{"oneoff", 0, HXTYPE_NONE, &g_oneoff, nullptr, nullptr, 0, "Resolve addresses to ONEOFF rather than EX addresses"},
 	{"vcard", 0, HXTYPE_VAL, &g_import_mode, nullptr, nullptr, IMPORT_VCARD, "Treat input as vCard"},
 	HXOPT_AUTOHELP,
@@ -102,18 +105,11 @@ static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
 	return TRUE;
 }
 
-static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_mail(const char *file)
+static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
+do_mail(const char *file, char *data, size_t dsize)
 {
-	size_t slurp_len = 0;
-	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
-		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
-	if (slurp_data == nullptr) {
-		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
-		return nullptr;
-	}
-
 	MAIL imail;
-	if (!imail.load_from_str_move(slurp_data.get(), slurp_len)) {
+	if (!imail.load_from_str_move(data, dsize)) {
 		fprintf(stderr, "Unable to parse %s\n", file);
 		return nullptr;
 	}
@@ -122,6 +118,109 @@ static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_mail(const char *file)
 	if (msg == nullptr)
 		fprintf(stderr, "Failed to convert IM %s to MAPI\n", file);
 	return msg;
+}
+
+static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_eml(const char *file)
+{
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
+		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
+		return nullptr;
+	}
+	return do_mail(file, slurp_data.get(), slurp_len);
+}
+
+enum class mbox_rid { start, envelope_from, msghdr, msgbody, emit };
+
+struct mbox_rdstate {
+	std::vector<message_ptr> &msgvec;
+	std::string filename;
+	size_t fncut = 0;
+	unsigned int mail_count = 0;
+	enum mbox_rid rid = mbox_rid::start;
+	bool alpine_pseudo_msg = false;
+	std::string cbuf;
+};
+
+static void mbox_line(mbox_rdstate &rs, const char *line)
+{
+	switch (rs.rid) {
+	case mbox_rid::start:
+		if (line[0] == '\n' || (line[0] == '\r' && line[1] == '\n'))
+			return;
+		rs.rid = mbox_rid::envelope_from;
+		[[fallthrough]];
+	case mbox_rid::envelope_from:
+		rs.rid = mbox_rid::msghdr;
+		if (strncmp(line, "From ", 5) == 0)
+			return;
+		[[fallthrough]];
+	case mbox_rid::msghdr:
+		rs.cbuf += line;
+		if (line[0] == '\n' || (line[0] == '\r' && line[1] == '\n')) {
+			rs.rid = mbox_rid::msgbody;
+			return;
+		}
+		if (strncmp(line, "X-IMAP: ", 8) == 0)
+			rs.alpine_pseudo_msg = true;
+		return;
+	case mbox_rid::msgbody:
+		if (strncmp(line, "From ", 5) != 0) {
+			rs.cbuf += line;
+			return;
+		}
+		[[fallthrough]];
+	case mbox_rid::emit: {
+		if (rs.alpine_pseudo_msg) {
+			/* discard Alpine MAILER-DAEMON/X-IMAP pseudo message */
+			rs.alpine_pseudo_msg = false;
+			rs.cbuf = std::string();
+			rs.rid  = mbox_rid::msghdr;
+			return;
+		}
+		rs.filename.erase(rs.fncut);
+		rs.filename += std::to_string(++rs.mail_count);
+		auto mo = do_mail(rs.filename.c_str(), rs.cbuf.data(), rs.cbuf.size());
+		if (mo == nullptr)
+			throw std::bad_alloc();
+		rs.msgvec.push_back(std::move(mo));
+		rs.cbuf = std::string();
+		rs.rid  = mbox_rid::msghdr;
+		return;
+	}
+	default:
+		return;
+	}
+}
+
+static errno_t do_mbox(const char *file, std::vector<message_ptr> &msgvec)
+{
+	std::unique_ptr<FILE, stdlib_delete> extra_fp;
+	FILE *fp = nullptr;
+	if (strcmp(file, "-") == 0) {
+		fp = stdin;
+	} else {
+		extra_fp.reset(fopen(file, "r"));
+		if (extra_fp == nullptr) {
+			int se = errno;
+			fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
+			return se;
+		}
+		fp = extra_fp.get();
+	}
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	mbox_rdstate rs{msgvec};
+	rs.filename = file;
+	rs.filename += ":";
+	rs.fncut    = rs.filename.size();
+	while (HX_getl(&line, fp) != nullptr)
+		mbox_line(rs, line);
+	rs.rid = mbox_rid::emit;
+	mbox_line(rs, nullptr);
+	return 0;
 }
 
 static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
@@ -248,10 +347,13 @@ int main(int argc, const char **argv) try
 
 	for (int i = 1; i < argc; ++i) {
 		if (g_import_mode == IMPORT_MAIL) {
-			auto msg = do_mail(argv[i]);
+			auto msg = do_eml(argv[i]);
 			if (msg == nullptr)
 				continue;
 			msgs.push_back(std::move(msg));
+		} else if (g_import_mode == IMPORT_MBOX) {
+			if (do_mbox(argv[i], msgs) != 0)
+				continue;
 		} else if (g_import_mode == IMPORT_ICAL) {
 			if (do_ical(argv[i], msgs) != 0)
 				continue;

@@ -7,6 +7,8 @@ iCalendar and vCard objects
 .SH Synopsis
 \fBgromox\-eml2mt\fP [\fB\-Ppt\fP] \fIfile.eml\fP[...]
 .PP
+\fBgromox\-mbox2mt\fP [\fB\-Ppt\fP] \fIfile.vcf\fP[...]
+.PP
 \fBgromox\-ical2mt\fP [\fB\-Ppt\fP] \fIfile.ics\fP[...]
 .PP
 \fBgromox\-vcf2mt\fP [\fB\-Ppt\fP] \fIfile.vcf\fP[...]
@@ -14,8 +16,10 @@ iCalendar and vCard objects
 gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
 re-exports the data in a Gromox-specific mailbox transfer format to stdout for
 consumption by pipe by the gromox-mt2exm(8gx) program. Each file must contain
-at most one RFC5322 message; mailboxes of type Unix mbox are not supported at
-this time.
+at most one RFC5322 message.
+.PP
+When called as gromox\-mbox2mt, the input is treated as RFC4155-formatted Unix
+mailbox.
 .PP
 When called as gromox\-ical2mt, the input is treated as RFC5545-formatted
 calendaring and scheduling objects (.ics).
@@ -37,6 +41,11 @@ folder.
 Treat all file arguments as Internet Mail input. This is the default if the
 program was invoked as gromox\-eml2mt. Messages remain unanchored, and you can
 use the mt2exm \-B option.
+.TP
+\fB\-\-mbox\fP
+Treat all file arguments as Unix mboxes. This is the default if the program was
+invoked as gromox\-mbox2mt. Messages remain unanchored, and you can use the
+mt2exm \-B option.
 .TP
 \fB\-\-vcard\fP
 Treat all file arguments as vCard input. This is the default if the program was
