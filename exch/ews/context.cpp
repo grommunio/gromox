@@ -77,6 +77,19 @@ void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
+	m_ID(id),
+	m_orig(*get_request(id)),
+	m_auth_info(ai),
+	m_request(data, length),
+	m_plugin(p)
+{
+	tinyxml2::XMLElement* imp = nullptr;
+	if(m_request.header && (imp = m_request.header->FirstChildElement("ExchangeImpersonation")) &&
+	   (imp = imp->FirstChildElement("ConnectingSID")) && (imp = imp->FirstChildElement()))
+		impersonate(imp->Name(), imp->GetText());
+}
+
 double EWSContext::age() const
 {return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
 
@@ -553,6 +566,26 @@ sMailboxInfo EWSContext::getMailboxInfo(const std::string& dir, bool isDomain) c
 	if(!getId(dir.c_str(), &mbinfo.accountId))
 		throw EWSError::CannotFindUser(E3192(isDomain? "domain" : "user", dir));
 	return mbinfo;
+}
+
+/**
+ * @brief      Setup impersonation for user
+ *
+ * @param      addrtype    Adress type
+ * @param      addr        Smtp address of the user to impersonate
+ */
+void EWSContext::impersonate(const char* addrtype, const char* addr)
+{
+	if(!addrtype || !addr)
+		return;
+	if(strcmp(addrtype, "PrincipalName") && strcmp(addrtype, "PrimarySmtpAddres") && strcmp(addrtype, "SmtpAddress"))
+		throw EWSError::ImpersonationFailed(E3242);
+	impersonationMaildir = get_maildir(addr);
+	if(!(permissions(impersonationMaildir, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE)) & frightsGromoxStoreOwner))
+		throw EWSError::ImpersonateUserDenied(E3243);
+	impersonationUser = addr;
+	m_auth_info.username = impersonationUser.c_str();
+	m_auth_info.maildir = impersonationMaildir.c_str();
 }
 
 /**

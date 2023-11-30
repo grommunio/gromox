@@ -235,9 +235,7 @@ public:
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
-	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
-		m_ID(id), m_orig(*get_request(id)), m_auth_info(ai), m_request(data, length), m_plugin(p)
-	{}
+	EWSContext(int, HTTP_AUTH_INFO, const char*, uint64_t, EWSPlugin&);
 
 	EWSContext(const EWSContext&) = delete;
 	EWSContext(EWSContext&&) = delete;
@@ -336,6 +334,8 @@ private:
 		gromox::time_point expire;
 	};
 
+	void impersonate(const char*, const char*);
+
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
@@ -357,6 +357,8 @@ private:
 	SOAP::Envelope m_request;
 	SOAP::Envelope m_response;
 	EWSPlugin& m_plugin;
+	std::string impersonationUser; ///< Buffer to hold username of impersonated user
+	std::string impersonationMaildir; ///< Buffer to hold maildir of impersonated user
 	std::chrono::high_resolution_clock::time_point m_created = std::chrono::high_resolution_clock::now();
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;

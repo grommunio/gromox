@@ -369,9 +369,11 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	context.log(enableLog);
 	return http_status::ok;
 } catch (const Exceptions::InputError &err) {
-	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault("Client", err.what()));
+	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault("SOAP:Client", err.what()));
+} catch (const Exceptions::EWSError &err) {
+	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault(err.type.c_str(), err.what()));
 } catch (const std::exception &err) {
-	return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("Server", err.what()));
+	return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", err.what()));
 }
 
 /**

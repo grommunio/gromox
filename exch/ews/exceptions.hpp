@@ -73,6 +73,8 @@ public:
 	ERR(FolderPropertyRequestFailed) ///< Failed to retrieve item property
 	ERR(FolderSave) ///< Folder creation or updated
 	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
+	ERR(ImpersonateUserDenied) ///< Insufficient permissions to impersonate user
+	ERR(ImpersonationFailed) ///< Impersonation could not be setup properly
 	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
 	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
@@ -361,6 +363,8 @@ inline std::string E3238(const std::string_view& val) {return fmt::format("E-323
 inline std::string E3239(const std::string_view& val) {return fmt::format("E-3239: invalid boolean value '{}'", val);}
 inline std::string E3240(const std::string_view& val) {return fmt::format("E-3240: invalid i8 value '{}'", val);}
 inline std::string E3241(const char* type) {return fmt::format("E-3241: Constant Value of type {} is not supported", type);}
+E(3242, "unsupported ConnectingSID for impersonation");
+E(3243, "insufficient permissions to impersonate user");
 
 #undef E
 }
