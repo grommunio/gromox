@@ -1933,18 +1933,18 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 	mlog(LV_ERR, "E-2121: ENOMEM");
 }
 
-void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
+void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t srch_fld,
     uint64_t message_id) try
 {
-	uint64_t folder_id;
+	uint64_t anchor_fld;
 	DB_NOTIFY_DATAGRAM datagram;
 	
-	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &folder_id))
+	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &anchor_fld))
 		return;
 
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
-	               NF_OBJECT_CREATED, folder_id, 0);
+	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
@@ -1954,17 +1954,17 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		if (plinked_mail == nullptr)
 			return;
 		datagram.db_notify.pdata = plinked_mail;
-		plinked_mail->folder_id = folder_id;
+		plinked_mail->folder_id = anchor_fld;
 		plinked_mail->message_id = message_id;
-		plinked_mail->parent_id = parent_id;
+		plinked_mail->parent_id = srch_fld;
 		plinked_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_add_row(
-		pdb, parent_id, message_id);
+		pdb, srch_fld, message_id);
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
-		pdb->psqlite, parent_id), parent_id);
+		pdb->psqlite, srch_fld), srch_fld);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2122: ENOMEM");
 }
