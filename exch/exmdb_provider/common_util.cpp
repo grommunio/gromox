@@ -814,8 +814,9 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	if (ptotal == nullptr || qv_kb == nullptr)
 		return false;
 	auto qvbytes = static_cast<uint64_t>(*qv_kb) * 1024;
-	mlog(LV_DEBUG, "D-1680: storesize %llu <=> quota(%xh) %llu bytes",
-		LLU{*ptotal}, XUI{qtag}, LLU{qvbytes});
+	if (*ptotal >= qvbytes)
+		mlog(LV_DEBUG, "D-1680: storesize %llu <=> quota(%xh) %llu bytes",
+			LLU{*ptotal}, XUI{qtag}, LLU{qvbytes});
 	return *ptotal >= qvbytes;
 }
 
