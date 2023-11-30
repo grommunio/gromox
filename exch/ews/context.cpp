@@ -1032,7 +1032,8 @@ uint32_t EWSContext::permissions(const std::string& maildir, uint64_t folderId) 
 sFolderSpec EWSContext::resolveFolder(const tDistinguishedFolderId& fId) const
 {
 	sFolderSpec folder = sFolderSpec(fId);
-	folder.target = m_auth_info.username;
+	if(!folder.target)
+		folder.target = m_auth_info.username;
 	return folder;
 }
 
