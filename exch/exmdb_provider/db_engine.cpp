@@ -211,9 +211,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		++pdb->reference;
 		hhold.unlock();
 		if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
-			hhold.lock();
 			--pdb->reference;
-			hhold.unlock();
 			mlog(LV_DEBUG, "D-2207: rejecting access to %s because of DB contention", path);
 			return NULL;
 		}
@@ -236,9 +234,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	pdb->reference ++;
 	hhold.unlock();
 	if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
-		hhold.lock();
 		pdb->reference --;
-		hhold.unlock();
 		return NULL;
 	}
 	pdb->tables.last_id = 0;
@@ -267,7 +263,6 @@ void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
 	pdb->last_time = time(nullptr);
 	pdb->giant_lock.unlock();
-	std::lock_guard hhold(g_hash_lock);
 	pdb->reference --;
 }
 
