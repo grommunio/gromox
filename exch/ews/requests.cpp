@@ -967,16 +967,15 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
 	msgChanges.reserve(changes.count+deleted_fids.count);
-	sFolderSpec subfolder = folder;
 	for(TPROPVAL_ARRAY* folderProps = changes.pfldchgs; folderProps < changes.pfldchgs+changes.count; ++folderProps)
 	{
 		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
 		if(!folderId)
 			continue;
-		subfolder.folderId = *folderId;
-		if(!(ctx.permissions(dir, subfolder.folderId) & frightsVisible))
+		folder.folderId = *folderId;
+		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			continue;
-		auto folderData = ctx.loadFolder(dir, subfolder.folderId, shape);
+		auto folderData = ctx.loadFolder(dir, folder.folderId, shape);
 		if (syncState.given.contains(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
