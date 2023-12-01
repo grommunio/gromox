@@ -2577,7 +2577,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return ret;
 	auto num = xarray.get_capacity();
 	if (num == 0) {
-		imap_parser_echo_modify(pcontext, nullptr, REPORT_ALL);
+		imap_parser_echo_modify(pcontext, nullptr);
 		return 1726;
 	}
 	std::vector<MITEM *> exp_list;
@@ -2612,7 +2612,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
-	imap_parser_echo_modify(pcontext, &pcontext->stream, REPORT_ALL);
+	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170026: OK EXPUNGE completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
@@ -3221,7 +3221,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		return ret;
 	auto num = xarray.get_capacity();
 	if (0 == num) {
-		imap_parser_echo_modify(pcontext, nullptr, REPORT_ALL);
+		imap_parser_echo_modify(pcontext, nullptr);
 		return 1730;
 	}
 	auto pitem = xarray.get_item(num - 1);
@@ -3257,7 +3257,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
-	imap_parser_echo_modify(pcontext, &pcontext->stream, REPORT_ALL);
+	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
 	auto buf = fmt::format("{} {}", argv[0], resource_get_imap_code(1726, 1));
 	if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)

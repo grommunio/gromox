@@ -1248,8 +1248,7 @@ static void imap_parser_echo_expunges(imap_context &ctx, STREAM *stream,
 } catch (const std::bad_alloc &) {
 }
 
-void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
-    unsigned int report_what)
+void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream)
 {
 	if (pcontext->async_change_mask == 0)
 		return;
@@ -1260,17 +1259,13 @@ void imap_parser_echo_modify(imap_context *pcontext, STREAM *pstream,
 	decltype(pcontext->f_expunged_uids) f_expunged;
 	
 	std::unique_lock hl_hold(g_hash_lock);
-	if (report_what & REPORT_EXPUNGE) {
-		/* RFC 9051 §7.2.1 */
-		f_expunged = std::move(pcontext->f_expunged_uids);
-		pcontext->async_change_mask &= ~REPORT_EXPUNGE;
-	}
+	f_expunged = std::move(pcontext->f_expunged_uids);
+	pcontext->async_change_mask &= ~REPORT_EXPUNGE;
 	auto f_flags = std::move(pcontext->f_flags);
 	pcontext->async_change_mask &= ~(REPORT_FLAGS | REPORT_NEWMAIL);
 	hl_hold.unlock();
 
-	if (report_what & REPORT_EXPUNGE)
-		imap_parser_echo_expunges(*pcontext, pstream, f_expunged);
+	imap_parser_echo_expunges(*pcontext, pstream, f_expunged);
 	if (pcontext->contents.refresh(*pcontext, pcontext->selected_folder,
 	    f_expunged.size() > 0) == 0) {
 		auto outlen = gx_snprintf(buff, std::size(buff),
