@@ -393,7 +393,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 			shape.clean();
 			shape.properties(props);
 			sFolder& child = msg.RootFolder->Folders.emplace_back(tBaseFolderType::create(shape));
-			const auto& fid = std::visit([](auto&& f){return f.FolderId;}, child);
+			const auto& fid = std::visit([](auto&& f) -> std::optional<tFolderId>& {return f.FolderId;}, child);
 			if(shape.special && fid)
 				std::visit([&](auto& f) {ctx.loadSpecial(dir, sFolderEntryId(fid->Id.data(), fid->Id.size()).folderId(), f,
 						                                 shape.special);}, child);
