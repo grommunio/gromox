@@ -1917,7 +1917,7 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 		*static_cast<uint64_t*>(dest) = sTimePoint(constantNode->Attribute("Value")).toNT(); break;
 	case PT_STRING8:
 	case PT_UNICODE: {
-		size_t len = value? strlen(value) : 0;
+		size_t len = strlen(value);
 		dest = EWSContext::alloc(len+1);
 		memcpy(static_cast<char*>(dest), len? value : "", len+1);
 		break;
