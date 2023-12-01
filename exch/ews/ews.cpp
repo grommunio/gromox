@@ -729,10 +729,11 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 	auto it = subscriptions.find(key);
 	if(it == subscriptions.end())
 		return;
+	detail::SubscriptionKey subKey = it->second;
 	lock.unlock();
 	sptr<Subscription> sub;
 	try {
-		sub = std::get<sptr<Subscription>>(cache.get(it->second));
+		sub = std::get<sptr<Subscription>>(cache.get(subKey));
 	} catch (...) { // Key not found or type error
 	}
 	if(!sub)
