@@ -1136,6 +1136,8 @@ static BOOL oxcmail_parse_classid(const char *field, uint16_t *plast_propid,
 
 static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *pparam)
 {
+	if (*field == '\0')
+		return TRUE;
 	time_t tmp_time;
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
