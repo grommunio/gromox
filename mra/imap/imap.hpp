@@ -135,7 +135,7 @@ extern gromox::time_point imap_parser_get_context_timestamp(const schedule_conte
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 extern int imap_parser_threads_event_proc(int action);
 extern void imap_parser_bcast_touch(const imap_context *, const char *user, const char *folder);
-extern void imap_parser_echo_modify(imap_context *, STREAM *, unsigned int report = REPORT_NEWMAIL | REPORT_FLAGS);
+extern void imap_parser_echo_modify(imap_context *, STREAM *, unsigned int report = REPORT_NEWMAIL | REPORT_FLAGS | REPORT_EXPUNGE);
 extern void imap_parser_bcast_flags(const imap_context &, uint32_t uid);
 extern void imap_parser_add_select(IMAP_CONTEXT *);
 extern void imap_parser_bcast_expunge(const IMAP_CONTEXT &, const std::vector<MITEM *> &);
