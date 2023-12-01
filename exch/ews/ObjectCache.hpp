@@ -191,7 +191,7 @@ void ObjectCache<Key, Object>::scan()
 	auto now = std::chrono::steady_clock::now();
 	for(auto it = objects.begin(); it != objects.end();)
 		if(it->second.expires < now)
-			objects.erase(it++);
+			it = objects.erase(it);
 		else
 			++it;
 }
