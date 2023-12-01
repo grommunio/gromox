@@ -31,42 +31,6 @@ enum class mime_type {
 	none, single, single_obj, multiple,
 };
 
-struct GX_EXPORT LIB_BUFFER {
-	LIB_BUFFER(const char *n) : m_name(n) {}
-	LIB_BUFFER(LIB_BUFFER &&) noexcept = delete;
-	LIB_BUFFER(size_t size, size_t items, const char *name = nullptr, const char *hint = nullptr);
-	LIB_BUFFER &operator=(LIB_BUFFER &&) noexcept;
-	inline LIB_BUFFER *operator->() { return this; }
-	void *get_raw();
-	template<typename T> inline T *get()
-	{
-		auto p = get_raw();
-		if (p == nullptr)
-			return nullptr;
-		return new(p) T;
-	}
-	void put_raw(void *);
-	template<typename T> inline void put(T *i)
-	{
-		i->~T();
-		put_raw(i);
-	}
-
-	std::atomic<size_t> allocated_num{0};
-	size_t item_size = 0, max_items = 0;
-	const char *m_name = nullptr, *m_hint = nullptr;
-};
-
-template<typename T> struct GX_EXPORT alloc_limiter : private LIB_BUFFER {
-	constexpr alloc_limiter(const char *name) : LIB_BUFFER(name) {}
-	constexpr alloc_limiter(size_t max, const char *name = nullptr, const char *hint = nullptr) :
-		LIB_BUFFER(sizeof(T), max, name, hint) {}
-	inline T *get() { return LIB_BUFFER::get<T>(); }
-	inline void put(T *x) { LIB_BUFFER::put(x); }
-	alloc_limiter<T> *operator->() { return this; }
-	const LIB_BUFFER &internals() const { return *this; }
-};
-
 struct GX_EXPORT alloc_context {
 	alloc_context() = default;
 	NOMOVE(alloc_context);

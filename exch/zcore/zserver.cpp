@@ -23,7 +23,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/freebusy.hpp>
-#include <gromox/int_hash.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>

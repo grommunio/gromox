@@ -15,7 +15,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
-#include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"

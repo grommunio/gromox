@@ -279,57 +279,6 @@ const char *mapi_strerror(unsigned int e)
 #undef E
 }
 
-LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, const char *name,
-    const char *hint) :
-	item_size(isize), max_items(inum), m_name(name), m_hint(hint)
-{
-	if (isize == 0 || inum == 0)
-		mlog(LV_ERR, "E-1669: Invalid parameters passed to LIB_BUFFER ctor");
-}
-
-LIB_BUFFER &LIB_BUFFER::operator=(LIB_BUFFER &&o) noexcept
-{
-	allocated_num += o.allocated_num.load(); /* allow freeing previous takes */
-	o.allocated_num = 0;
-	item_size = o.item_size;
-	max_items = o.max_items;
-	m_name = o.m_name;
-	m_hint = o.m_hint;
-	return *this;
-}
-
-void *LIB_BUFFER::get_raw()
-{
-	do {
-		auto exp = allocated_num.load();
-		if (exp >= max_items) {
-			mlog(LV_ERR, "E-1992: The buffer pool \"%s\" is full. "
-			        "This either means a memory leak, or the pool sizes "
-			        "have been configured too low.",
-			        znul(m_name));
-			if (m_hint != nullptr)
-				mlog(LV_INFO, "I-1993: Config directives that could be tuned: %s", m_hint);
-			else
-				mlog(LV_INFO, "I-1994: Size is dynamic but not tunable.");
-			errno = ENOMEM;
-			return nullptr;
-		}
-		auto des = exp + 1;
-		if (allocated_num.compare_exchange_strong(exp, des))
-			break;
-	} while (true);
-	auto ptr = malloc(item_size);
-	if (ptr == nullptr)
-		--allocated_num;
-	return ptr;
-}
-
-void LIB_BUFFER::put_raw(void *item)
-{
-	free(item);
-	--allocated_num;
-}
-
 errno_t read_file_by_line(const char *file, std::vector<std::string> &out)
 {
 	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
