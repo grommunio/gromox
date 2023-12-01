@@ -211,9 +211,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		++pdb->reference;
 		hhold.unlock();
 		if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
-			hhold.lock();
 			--pdb->reference;
-			hhold.unlock();
 			mlog(LV_DEBUG, "D-2207: rejecting access to %s because of DB contention", path);
 			return NULL;
 		}
@@ -236,9 +234,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	pdb->reference ++;
 	hhold.unlock();
 	if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
-		hhold.lock();
 		pdb->reference --;
-		hhold.unlock();
 		return NULL;
 	}
 	pdb->tables.last_id = 0;
@@ -267,7 +263,6 @@ void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
 	pdb->last_time = time(nullptr);
 	pdb->giant_lock.unlock();
-	std::lock_guard hhold(g_hash_lock);
 	pdb->reference --;
 }
 
@@ -480,6 +475,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			if (!db_reload(pdb, dir))
 				return false;
 			count = 0;
+			t_start = tp_now();
 		}
 		if (!cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, pmessage_ids->pids[i], prestriction))
@@ -496,8 +492,17 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			break;
 		else if (ret != SQLITE_OK)
 			continue;
+		/*
+		 * Update other search folders (seems like it is allowed to
+		 * have a search folder have a scope containing another search
+		 * folder; exmdb_provider only does a descendant check).
+		 */
 		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::new_msg,
 			search_fid, pmessage_ids->pids[i], 0);
+		/*
+		 * Regular notifications
+		 */
+		db_engine_notify_link_creation(pdb, search_fid, pmessage_ids->pids[i]);
 	}
 	return TRUE;
 }
@@ -660,6 +665,7 @@ static void *mdpeng_thrwork(void *param)
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
+		/* Stop animation (does nothing else in OL really) */
 		db_engine_notify_search_completion(
 			pdb, psearch->folder_id);
 		db_engine_notify_folder_modification(pdb,
@@ -677,6 +683,10 @@ static void *mdpeng_thrwork(void *param)
 			    psearch->folder_id == t.folder_id)
 				table_ids.push_back(t.table_id);
 		pdb.reset();
+		/*
+		 * reload_ct triggers a table_change notification, and the
+		 * client eventually learns of the new message count.
+		 */
 		while (table_ids.size() > 0) {
 			exmdb_server::reload_content_table(psearch->dir.c_str(), table_ids.back());
 			table_ids.pop_back();
@@ -999,6 +1009,17 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 	}
 }
 
+/**
+ * This is the entry function called by most everything else to notify *search
+ * folders* of events that happened elsewhere.
+ *
+ * @id1:        event source folder
+ * @id2:        message involved in the event
+ *
+ * Caveat: id1 may be a regular folder like Inbox, but it also be a search
+ * folder itself (population/depopulation as a result of search criteria
+ * change).
+ */
 void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
     dynamic_event event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
@@ -1009,8 +1030,16 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
+	/* Iterate over all search folders (event sinks)... */
 	for (auto &dn : pdb->dynamic_list) {
 		auto pdynamic = &dn;
+		/*
+		 * Iterate over source folders (a.k.a. search scope; MS-OXCFOLD
+		 * v23.2 §1.1).
+		 *
+		 * [In conjunction with dynevt_1/2] if id1 is within the scope,
+		 * pdynamic gets the event.
+		 */
 		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
 			if (dynamic_event::move_folder == event_type) {
 				dbeng_dynevt_1(pdb, cpid, id1, id2, id3, folder_type, pdynamic, i);
@@ -1254,11 +1283,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    pdb->psqlite, PR_ASSOCIATED, &pvalue0))
 		return;	
-	bool b_optimize = false;
-	auto cl_0 = make_scope_exit([&]() {
-		if (b_optimize)
-			common_util_end_message_optimize();
-	});
+	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
 	for (auto &tnode : pdb->tables.table_list) {
 		auto ptable = &tnode;
@@ -1288,9 +1313,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row1->row_folder_id = folder_id;
 			padded_row1->row_instance = 0;
 			datagram1.db_notify.pdata = padded_row1;
-			if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
+			optim = pdb->begin_optim();
+			if (optim == nullptr)
 				return;
-			b_optimize = true;
 		}
 		datagram.id_array = {1, &ptable->table_id};
 		datagram1.id_array = datagram.id_array;
@@ -1941,18 +1966,18 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 	mlog(LV_ERR, "E-2121: ENOMEM");
 }
 
-void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
+void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t srch_fld,
     uint64_t message_id) try
 {
-	uint64_t folder_id;
+	uint64_t anchor_fld;
 	DB_NOTIFY_DATAGRAM datagram;
 	
-	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &folder_id))
+	if (!common_util_get_message_parent_folder(pdb->psqlite, message_id, &anchor_fld))
 		return;
 
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
-	               NF_OBJECT_CREATED, folder_id, 0);
+	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
 	if (parrays->count > 0) {
@@ -1962,17 +1987,17 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t parent_id,
 		if (plinked_mail == nullptr)
 			return;
 		datagram.db_notify.pdata = plinked_mail;
-		plinked_mail->folder_id = folder_id;
+		plinked_mail->folder_id = anchor_fld;
 		plinked_mail->message_id = message_id;
-		plinked_mail->parent_id = parent_id;
+		plinked_mail->parent_id = srch_fld;
 		plinked_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	db_engine_notify_content_table_add_row(
-		pdb, parent_id, message_id);
+		pdb, srch_fld, message_id);
 	db_engine_notify_folder_modification(
 		pdb, common_util_get_folder_parent_fid(
-		pdb->psqlite, parent_id), parent_id);
+		pdb->psqlite, srch_fld), srch_fld);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2122: ENOMEM");
 }

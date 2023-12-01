@@ -354,11 +354,11 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 		exmdb_server::set_public_username(username);
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
+	auto optim = pdb->begin_optim();
+	if (optim == nullptr)
 		return FALSE;
 	auto ret = instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
 	           reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent));
-	common_util_end_message_optimize();
 	if (!ret)
 		return FALSE;
 	if (sql_transact.commit() != 0)

@@ -3838,12 +3838,13 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
 	auto cl_0 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
+	auto optim = pdb->begin_optim();
+	if (optim == nullptr)
 		return FALSE;
 	auto ret = message_read_message(pdb->psqlite, cpid, mid_val, ppmsgctnt);
-	common_util_end_message_optimize();
 	if (!ret)
 		return FALSE;
+	optim.reset();
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 

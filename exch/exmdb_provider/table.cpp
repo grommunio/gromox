@@ -1702,9 +1702,9 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
+	auto optim = pdb->begin_optim();
+	if (optim == nullptr)
 		return FALSE;
-	auto cl_1 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 	while (pstmt.step() == SQLITE_ROW) {
 		auto inst_id = pstmt.col_uint64(3);
 		uint32_t row_type = pstmt.col_uint64(4);
@@ -1746,8 +1746,7 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 		}
 		++pset->count;
 	}
-	common_util_end_message_optimize();
-	cl_1.release();
+	optim.reset();
 	if (sql_transact.commit() != 0)
 		return false;
 	return TRUE;
@@ -2179,9 +2178,9 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	if (!common_util_begin_message_optimize(pdb->psqlite, __func__))
+	auto optim = pdb->begin_optim();
+	if (optim == nullptr)
 		return FALSE;
-	auto cl_0 = make_scope_exit([&]() { common_util_end_message_optimize(); });
 	while (pstmt.step() == SQLITE_ROW) {
 		CONTENT_ROW_PARAM content_param;
 
@@ -2236,8 +2235,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		}
 		break;
 	}
-	common_util_end_message_optimize();
-	cl_0.release();
+	optim.reset();
 	if (sql_transact.commit() != 0)
 		return false;
 	*pposition = idx - 1;
