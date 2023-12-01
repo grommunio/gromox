@@ -1,19 +1,36 @@
-Development 2.18.33
+Development 2.18.88
 ===================
 
 Fixes:
 
+* exmdb: send "object created" notifications as search folders re-populate
+* oxcmail: ignore zero-length From fields, which should help sending from
+  Windows Mail
 * imap placed eml files in the wrong spot.
   You may need to `mmv /var/lib/gromox/user/X/Y/eml1*
   /var/lib/gromox/user/X/Y/eml/1#1` for the various user directories.
-* imap: fix broken response for STATUS command to client
+* imap: the STATUS IMAP command did not cause any immediate response
 * http: resolve altnames and update user context after authentication success
   with krb
+* ews: resolve crash during CreateItem RPC
 
 Enhancements:
 
 * `gromox-mbop emptyfld` now recognizes a `-t` option to limit deletion to
   messages of certain age.
+* `gromox-mbop emptyfld` now recognizes a `--nuke-folders` option
+* gromox-eml2mt now recognizes a `--mbox` option to support RFC4155 Unix mboxes
+* exmdb: search pacing is now time-based, which should give more predictable
+  interactivity during background searches
+* emsmdb: do not treat the absence of the PR_LAST_MODIFICATION_TIME message
+  property during ICS downloads as an error any longer
+
+Behavioral changes:
+
+* oxcmail: zero-length headers are ignored altogether (inspired by Alpine's
+  behavior in that regard)
+* daemons: repeal the allocation limiter function from source code;
+  all "The buffer pool %s is full" messages should be gone now
 
 
 Gromox 2.18 (2023-11-27)
