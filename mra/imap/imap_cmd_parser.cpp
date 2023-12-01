@@ -2597,7 +2597,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 		return ret;
 
 	pcontext->stream.clear();
-	unsigned int del_num = 0;
 	for (size_t i = 0; i < xarray.get_capacity(); ++i) {
 		auto pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem))
@@ -2610,10 +2609,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 			mlog(LV_WARN, "W-2030: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
-		auto buf = fmt::format("* {} EXPUNGE\r\n", ct_item->id - del_num);
-		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
-			return 1922;
-		del_num ++;
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
@@ -3246,7 +3241,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 		return ret;
 
 	pcontext->stream.clear();
-	unsigned int del_num = 0;
 	for (size_t i = 0; i < xarray.get_capacity(); ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
@@ -3260,10 +3254,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 			mlog(LV_WARN, "W-2086: remove %s: %s",
 				eml_path.c_str(), strerror(errno));
 		imap_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted", eml_path.c_str());
-		auto buf = fmt::format("* {} EXPUNGE\r\n", ct_item->id - del_num);
-		if (pcontext->stream.write(buf.c_str(), buf.size()) != STREAM_WRITE_OK)
-			return 1922;
-		del_num ++;
 	}
 	if (!exp_list.empty())
 		imap_parser_bcast_expunge(*pcontext, exp_list);
