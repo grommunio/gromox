@@ -75,6 +75,13 @@ struct dcerpc_call {
 	dcerpc_call();
 	~dcerpc_call();
 	NOMOVE(dcerpc_call);
+	void output_pdus(STREAM &);
+	void move_pdus(DOUBLE_LIST &);
+	BOOL rts_conn_c2(uint32_t in_window_size);
+	BOOL rts_outr2_a2();
+	BOOL rts_outr2_a6();
+	BOOL rts_outr2_b3();
+	BOOL rts_ping();
 
 	DOUBLE_LIST_NODE node{};
 	PDU_PROCESSOR *pprocessor = nullptr;
@@ -105,14 +112,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint16_t length, DCERPC_CALL **ppcall);
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	DCERPC_CALL **ppcall);
-void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream);
-void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list);
 void pdu_processor_free_blob(BLOB_NODE *pbnode);
-BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size);
-BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall);
-BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall);
-BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall);
-BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall);
 void pdu_processor_rts_echo(char *pbuff);
 BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,

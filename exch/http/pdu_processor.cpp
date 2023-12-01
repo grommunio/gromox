@@ -391,8 +391,10 @@ static void pdu_processor_set_auth_length(DATA_BLOB *pblob, uint16_t v)
 		cpu_to_be16p(r, v);
 }
 
-void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
+void dcerpc_call::output_pdus(STREAM &stream)
 {
+	auto pcall = this;
+	auto pstream = &stream;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
@@ -403,10 +405,12 @@ void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 	}
 }
 
-void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list)
+void dcerpc_call::move_pdus(DOUBLE_LIST &pdu_list)
 {
+	auto pcall = this;
+	auto ppdu_list = &pdu_list;
 	DOUBLE_LIST_NODE *pnode;
-	
+
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr)
 		double_list_append_as_tail(ppdu_list, pnode);
 }
@@ -1888,8 +1892,9 @@ void pdu_processor_rts_echo(char *pbuff)
 	ndr.destroy();
 }
 
-BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall) try
+BOOL dcerpc_call::rts_ping() try
 {
+	auto pcall = this;
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 
 	pkt.call_id = pcall->pkt.call_id;
@@ -2118,8 +2123,9 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
 	return false;
 }
 
-BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size) try
+BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 {
+	auto pcall = this;
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
@@ -2198,8 +2204,9 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
 	return false;
 }
 
-BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall) try
+BOOL dcerpc_call::rts_outr2_a2() try
 {
+	auto pcall = this;
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
@@ -2235,8 +2242,9 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall) try
 	return false;
 }
 
-BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall) try
+BOOL dcerpc_call::rts_outr2_a6() try
 {
+	auto pcall = this;
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
@@ -2274,8 +2282,9 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall) try
 	return false;
 }
 
-BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall) try
+BOOL dcerpc_call::rts_outr2_b3() try
 {
+	auto pcall = this;
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
