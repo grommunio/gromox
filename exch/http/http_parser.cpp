@@ -1924,7 +1924,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 			pcontext->port, pchannel_in->connection_cookie);
 		if (pvconnection == nullptr) {
-			pdu_processor_free_call(pcall);
+			delete pcall;
 			pcontext->log(LV_DEBUG,
 				"cannot find virtual connection in hash table");
 			return tproc_status::runoff;
@@ -1934,7 +1934,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		    pcontext != pvconnection->pcontext_insucc)
 		    || NULL == pvconnection->pcontext_out) {
 			pvconnection.put();
-			pdu_processor_free_call(pcall);
+			delete pcall;
 			pcontext->log(LV_DEBUG,
 				"missing out channel in virtual connection");
 			return tproc_status::runoff;
@@ -1944,14 +1944,14 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 			pdu_processor_output_pdu(pcall, &hch->pdu_list);
 			pvconnection.put();
-			pdu_processor_free_call(pcall);
+			delete pcall;
 			return tproc_status::cont;
 		}
 		pdu_processor_output_pdu(pcall, &och->pdu_list);
 		pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 		contexts_pool_signal(pvconnection->pcontext_out);
 		pvconnection.put();
-		pdu_processor_free_call(pcall);
+		delete pcall;
 		return tproc_status::cont;
 	}
 	case PDU_PROCESSOR_TERMINATE:
@@ -2483,7 +2483,7 @@ RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
 	DOUBLE_LIST_NODE *pnode;
 
 	if (pcall != nullptr) {
-		pdu_processor_free_call(pcall);
+		delete pcall;
 		pcall = nullptr;
 	}
 	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {

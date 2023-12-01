@@ -73,6 +73,8 @@ struct DCERPC_CONTEXT {
 /* the state of an ongoing dcerpc call */
 struct dcerpc_call {
 	dcerpc_call();
+	~dcerpc_call();
+	NOMOVE(dcerpc_call);
 
 	DOUBLE_LIST_NODE node{};
 	PDU_PROCESSOR *pprocessor = nullptr;
@@ -106,7 +108,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream);
 void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list);
 void pdu_processor_free_blob(BLOB_NODE *pbnode);
-void pdu_processor_free_call(DCERPC_CALL *pcall);
 BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size);
 BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall);
 BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall);
