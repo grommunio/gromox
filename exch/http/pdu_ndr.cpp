@@ -1066,7 +1066,7 @@ static pack_result pdu_ndr_push_dcerpc_bind_ack(NDR_PUSH *pndr,
 }
 
 static pack_result pdu_ndr_push_dcerpc_bind_nak(NDR_PUSH *pndr,
-	DCERPC_BIND_NAK *r)
+    const DCERPC_BIND_NAK *r)
 {
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->reject_reason));
@@ -1272,7 +1272,7 @@ static pack_result pdu_ndr_push_dcerpc_rts(NDR_PUSH *pndr, const DCERPC_RTS *r)
 }
 
 static pack_result pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
-	DCERPC_PAYLOAD *r)
+    const DCERPC_PAYLOAD *r)
 {
 	TRY(pndr->union_align(4));
 	switch (pkt_type) {
