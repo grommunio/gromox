@@ -470,7 +470,7 @@ static DCERPC_AUTH_CONTEXT* pdu_processor_find_auth_context(
 }
 
 static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
-	DATA_BLOB *ptrailer, DCERPC_AUTH *pauth, uint32_t *pauth_length,
+    const DATA_BLOB *ptrailer, DCERPC_AUTH *pauth, uint32_t *pauth_length,
 	BOOL auth_data_only)
 {
 	NDR_PULL ndr;
@@ -504,13 +504,12 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	DCERPC_AUTH auth;
 	uint32_t auth_length;
 	DOUBLE_LIST_NODE *pnode;
-	DCERPC_REQUEST *prequest;
 	DCERPC_NCACN_PACKET *ppkt;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
 	
 	ppkt = &pcall->pkt;
-	prequest = &ppkt->payload.request;
+	auto prequest = static_cast<dcerpc_request *>(ppkt->payload);
 	hdr_size = DCERPC_REQUEST_LENGTH;
 	if (0 == ppkt->auth_length) {
 		if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) == 0)
@@ -551,7 +550,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		return FALSE;
 	}
 	
-	ppkt->payload.request.stub_and_verifier.cb -= auth_length;
+	prequest->stub_and_verifier.cb -= auth_length;
 
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
@@ -628,12 +627,14 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_FAULT;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.fault.alloc_hint = 0;
-	pkt.payload.fault.context_id = 0;
-	pkt.payload.fault.cancel_count = 0;
-	pkt.payload.fault.status = fault_code;
-	pkt.payload.fault.pad.pb = deconst(zeros);
-	pkt.payload.fault.pad.cb = sizeof(zeros);
+	auto fault = new dcerpc_fault;
+	pkt.payload = fault;
+	fault->alloc_hint = 0;
+	fault->context_id = 0;
+	fault->cancel_count = 0;
+	fault->status = fault_code;
+	fault->pad.pb = deconst(zeros);
+	fault->pad.cb = sizeof(zeros);
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -657,10 +658,9 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 */
 static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 {
-	DCERPC_BIND *pbind;
 	uint32_t auth_length;
 	DCERPC_NCACN_PACKET *ppkt = &pcall->pkt;
-	pbind = &ppkt->payload.bind;
+	auto pbind = static_cast<dcerpc_bind *>(ppkt->payload);
 	
 	if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) >
 		MAX_CONTEXTS_PER_CONNECTION) {
@@ -765,8 +765,10 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason) try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_BIND_NAK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.bind_nak.reject_reason = reason;
-	pkt.payload.bind_nak.num_versions = 0;
+	auto bind_nak = new dcerpc_bind_nak;
+	pkt.payload = bind_nak;
+	bind_nak->reject_reason = reason;
+	bind_nak->num_versions = 0;
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -793,15 +795,13 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	BOOL b_ndr64;
 	uint32_t reason;
 	uint32_t result;
-	DCERPC_BIND *pbind;
 	uint32_t context_id;
 	uint32_t if_version;
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext;
 	BOOL b_negotiate = FALSE;
-
-	pbind = &pcall->pkt.payload.bind;
+	auto pbind = static_cast<dcerpc_bind *>(pcall->pkt.payload);
 
 	if (pbind->num_contexts < 1 ||
 		pbind->ctx_list[0].num_transfer_syntaxes < 1) {
@@ -922,49 +922,50 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_BIND_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.payload.bind_ack.max_xmit_frag = pcall->pprocessor->cli_max_recv_frag;
-	pkt.payload.bind_ack.max_recv_frag = 0x2000;
-	pkt.payload.bind_ack.pad.pb = nullptr;
-	pkt.payload.bind_ack.pad.cb = 0;
-	pkt.payload.bind_ack.assoc_group_id = pcall->pcontext != nullptr ?
+	auto bind_ack = new dcerpc_bind_ack;
+	pkt.payload = bind_ack;
+	bind_ack->max_xmit_frag = pcall->pprocessor->cli_max_recv_frag;
+	bind_ack->max_recv_frag = 0x2000;
+	bind_ack->pad.pb = nullptr;
+	bind_ack->pad.cb = 0;
+	bind_ack->assoc_group_id = pcall->pcontext != nullptr ?
 		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
 	if (NULL != pinterface) {
 		auto port2 = pdu_processor_find_secondary(
 					pcall->pprocessor->pendpoint->host,
 					pcall->pprocessor->pendpoint->tcp_port,
 					&pinterface->uuid, pinterface->version);
-		snprintf(pkt.payload.bind_ack.secondary_address, 64, "%hu", port2);
+		snprintf(bind_ack->secondary_address, 64, "%hu", port2);
 	} else {
-		pkt.payload.bind_ack.secondary_address[0] = '\0';
+		bind_ack->secondary_address[0] = '\0';
 	}
 	if (!b_negotiate) {
-		pkt.payload.bind_ack.num_contexts = 1;
-		pkt.payload.bind_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
-		if (NULL == pkt.payload.bind_ack.ctx_list) {
+		bind_ack->num_contexts = 1;
+		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
+		if (bind_ack->ctx_list == nullptr) {
 			if (pcontext != nullptr)
 				pdu_processor_free_context(pcontext);
 			return pdu_processor_bind_nak(pcall, 0);
 		}
 	} else {
-		pkt.payload.bind_ack.num_contexts = 2;
-		pkt.payload.bind_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
-		if (NULL == pkt.payload.bind_ack.ctx_list) {
+		bind_ack->num_contexts = 2;
+		bind_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
+		if (bind_ack->ctx_list == nullptr) {
 			if (pcontext != nullptr)
 				pdu_processor_free_context(pcontext);
 			return pdu_processor_bind_nak(pcall, 0);
 		}
-		pkt.payload.bind_ack.ctx_list[1].result =
-				DCERPC_BIND_RESULT_NEGOTIATE_ACK;
+		bind_ack->ctx_list[1].result = DCERPC_BIND_RESULT_NEGOTIATE_ACK;
 		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
 		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
-		pkt.payload.bind_ack.ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
-		memset(&pkt.payload.bind_ack.ctx_list[1].syntax, 0, sizeof(SYNTAX_ID));
+		bind_ack->ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
+		memset(&bind_ack->ctx_list[1].syntax, 0, sizeof(SYNTAX_ID));
 	}
-	pkt.payload.bind_ack.ctx_list[0].result = result;
-	pkt.payload.bind_ack.ctx_list[0].reason = reason;
-	pkt.payload.bind_ack.ctx_list[0].syntax = g_transfer_syntax_ndr;
-	pkt.payload.bind_ack.auth_info.pb = nullptr;
-	pkt.payload.bind_ack.auth_info.cb = 0;
+	bind_ack->ctx_list[0].result = result;
+	bind_ack->ctx_list[0].reason = reason;
+	bind_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
+	bind_ack->auth_info.pb = nullptr;
+	bind_ack->auth_info.cb = 0;
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
@@ -1012,16 +1013,17 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if (pnode == nullptr)
 		return TRUE;
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-	/* can't work without an existing state, and a new blob to feed it */
+	const auto &auth3 = *static_cast<dcerpc_auth3 *>(ppkt->payload);
+	/* can't work without an existing state, and an new blob to feed it */
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
 	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
 		NULL == pauth_ctx->pntlmssp ||
-	    ppkt->payload.auth3.auth_info.cb == 0)
+	    auth3.auth_info.cb == 0)
 		goto AUTH3_FAIL;
 	
 	pauth_ctx->auth_info.clear();
 	if (!pdu_processor_pull_auth_trailer(ppkt,
-	    &ppkt->payload.auth3.auth_info, &pauth_ctx->auth_info,
+	    &auth3.auth_info, &pauth_ctx->auth_info,
 	    &auth_length, TRUE))
 		goto AUTH3_FAIL;
 	if (!pauth_ctx->pntlmssp->update(&pauth_ctx->auth_info.credentials))
@@ -1063,7 +1065,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
-	auto palter = &pcall->pkt.payload.bind;
+	auto palter = static_cast<dcerpc_bind *>(pcall->pkt.payload);
 	pprocessor = pcall->pprocessor;
 	
 	
@@ -1196,28 +1198,28 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_ALTER_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-#define alter_ack bind_ack
-	pkt.payload.alter_ack.max_xmit_frag = 0x2000;
-	pkt.payload.alter_ack.max_recv_frag = 0x2000;
-	pkt.payload.alter_ack.pad.pb = nullptr;
-	pkt.payload.alter_ack.pad.cb = 0;
-	pkt.payload.alter_ack.assoc_group_id = pcontext != nullptr ?
+	auto alter_ack = new dcerpc_bind_ack;
+	pkt.payload = alter_ack;
+	alter_ack->max_xmit_frag = 0x2000;
+	alter_ack->max_recv_frag = 0x2000;
+	alter_ack->pad.pb = nullptr;
+	alter_ack->pad.cb = 0;
+	alter_ack->assoc_group_id = pcontext != nullptr ?
 		pcall->pcontext->assoc_group_id : DUMMY_ASSOC_GROUP;
-	pkt.payload.alter_ack.secondary_address[0] = '\0';
+	alter_ack->secondary_address[0] = '\0';
 	
-	pkt.payload.alter_ack.num_contexts = 1;
-	pkt.payload.alter_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
-	if (NULL == pkt.payload.alter_ack.ctx_list) {
+	alter_ack->num_contexts = 1;
+	alter_ack->ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
+	if (alter_ack->ctx_list == nullptr) {
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		return FALSE;
 	}
-	pkt.payload.alter_ack.ctx_list[0].result = result;
-	pkt.payload.alter_ack.ctx_list[0].reason = reason;
-	pkt.payload.alter_ack.ctx_list[0].syntax = g_transfer_syntax_ndr;
-	pkt.payload.alter_ack.auth_info.pb = nullptr;
-	pkt.payload.alter_ack.auth_info.cb = 0;
-#undef alter_ack
+	alter_ack->ctx_list[0].result = result;
+	alter_ack->ctx_list[0].reason = reason;
+	alter_ack->ctx_list[0].syntax = g_transfer_syntax_ndr;
+	alter_ack->auth_info.pb = nullptr;
+	alter_ack->auth_info.cb = 0;
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
@@ -1291,12 +1293,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	ndr.init(ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
 	if (pdu_ndr_push_ncacnpkt(&ndr, ppkt) != pack_result::success)
 		return FALSE;
+	const auto &response = *static_cast<dcerpc_response *>(ppkt->payload);
 	pauth_ctx->auth_info.auth_pad_length =
-		(16 - (ppkt->payload.response.stub_and_verifier.cb & 15)) & 15;
+		(16 - (response.stub_and_verifier.cb & 15)) & 15;
 	if (ndr.p_zero(pauth_ctx->auth_info.auth_pad_length) != NDR_ERR_SUCCESS)
 		return FALSE;
 
-	payload_length = ppkt->payload.response.stub_and_verifier.cb +
+	payload_length = response.stub_and_verifier.cb +
 						pauth_ctx->auth_info.auth_pad_length;
 
 	/* start without signature, will be appended later */
@@ -1341,7 +1344,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 			"sig_size[%u] pad[%u] stub[%u]", creds2.cb,
 			static_cast<unsigned int>(sig_size),
 			pauth_ctx->auth_info.auth_pad_length,
-			ppkt->payload.response.stub_and_verifier.cb);
+			response.stub_and_verifier.cb);
 		pdu_processor_set_frag_length(pblob, pblob->cb + creds2.cb);
 		pdu_processor_set_auth_length(pblob, creds2.cb);
 	}
@@ -1370,16 +1373,13 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	size_t alloc_size;
 	uint32_t chunk_size;
 	uint32_t total_length;
-	DCERPC_REQUEST *prequest;
-	
 	
 	flags = 0;
 	if (pcall->b_bigendian)
 		flags |= NDR_FLAG_BIGENDIAN;
 	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	prequest = &pcall->pkt.payload.request;
-	
+	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload);
 	alloc_size = pdu_processor_ndr_stack_size(pstack_root, NDR_STACK_OUT);
 	alloc_size = 2 * alloc_size + 1024;
 	std::unique_ptr<uint8_t, stdlib_delete> pdata(me_alloc<uint8_t>(alloc_size));
@@ -1403,7 +1403,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	}
 	pdu_processor_free_stack_root(pstack_root);
 	DATA_BLOB stub;
-	stub.pb = ndr_push.data;
+	stub.pb = pdata.get();
 	stub.cb = ndr_push.offset;
 	total_length = stub.cb;
 	sig_size = 0;
@@ -1445,15 +1445,17 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_FIRST;
 		if (stub.cb == length)
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_LAST;
-		pkt.payload.response.alloc_hint = stub.cb;
-		pkt.payload.response.context_id = prequest->context_id;
-		pkt.payload.response.cancel_count = 0;
-		pkt.payload.response.pad.pb = prequest->pad.pb;
-		pkt.payload.response.pad.cb = prequest->pad.cb;
-		pkt.payload.response.stub_and_verifier.pb = stub.pb;
-		pkt.payload.response.stub_and_verifier.cb = length;
+		auto response = new dcerpc_response;
+		pkt.payload = response;
+		response->alloc_hint = stub.cb;
+		response->context_id = prequest->context_id;
+		response->cancel_count = 0;
+		response->pad.pb = prequest->pad.pb;
+		response->pad.cb = prequest->pad.cb;
+		response->stub_and_verifier.pb = stub.pb;
+		response->stub_and_verifier.cb = length;
 		/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
-		auto cl_0 = make_scope_exit([&]() { pkt.payload.response = {}; });
+		auto cl_0 = make_scope_exit([&]() { *response = {}; });
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
@@ -1686,14 +1688,13 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	uint64_t handle;
 	void *pin, *pout;
 	NDR_PULL ndr_pull;
-	DCERPC_REQUEST *prequest;
 	DCERPC_CONTEXT *pcontext;
 	PDU_PROCESSOR *pprocessor;
 	NDR_STACK_ROOT *pstack_root;
 	
 	
 	pprocessor = pcall->pprocessor;
-	prequest = &pcall->pkt.payload.request;
+	auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload);
 	pcontext = pdu_processor_find_context(pprocessor, prequest->context_id);
 	if (pcontext == nullptr)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_UNK_IF);
@@ -1831,10 +1832,11 @@ void pdu_processor_rts_echo(char *pbuff)
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.frag_length = 20;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_ECHO;
-	pkt.payload.rts.num = 0;
-	pkt.payload.rts.commands = NULL;
-	
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_ECHO;
+	rts->num = 0;
+	rts->commands = nullptr;
 	if (g_bigendian)
 		flags = NDR_FLAG_BIGENDIAN;
 	else
@@ -1852,9 +1854,11 @@ BOOL dcerpc_call::rts_ping() try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_PING;
-	pkt.payload.rts.num = 0;
-	pkt.payload.rts.commands = NULL;
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_PING;
+	rts->num = 0;
+	rts->commands = nullptr;
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -1880,7 +1884,7 @@ static BOOL pdu_processor_retrieve_conn_b1(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 6 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1906,7 +1910,7 @@ static BOOL pdu_processor_retrieve_conn_a1(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 4 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1927,7 +1931,7 @@ static BOOL pdu_processor_retrieve_inr2_a1(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 4 ||
 	    prts->commands[0].command_type != RTS_CMD_VERSION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
@@ -1947,7 +1951,7 @@ static BOOL pdu_processor_retrieve_inr2_a5(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 1 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1960,7 +1964,7 @@ static BOOL pdu_processor_retrieve_outr2_a7(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 3 ||
 	    prts->commands[0].command_type != RTS_CMD_DESTINATION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
@@ -1978,7 +1982,7 @@ static BOOL pdu_processor_retrieve_outr2_a3(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 5 ||
 	    prts->commands[0].command_type != RTS_CMD_VERSION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
@@ -2001,7 +2005,7 @@ static BOOL pdu_processor_retrieve_outr2_c1(const DCERPC_CALL *pcall)
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 1)
 		return FALSE;
 	if (prts->commands[0].command_type != RTS_CMD_EMPTY &&
@@ -2016,7 +2020,7 @@ static BOOL pdu_processor_retrieve_keep_alive(const DCERPC_CALL *pcall,
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 1 ||
 	    prts->commands[0].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
@@ -2028,7 +2032,7 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(const DCERPC_C
 {
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	auto prts = &pcall->pkt.payload.rts;
+	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (prts->num != 2)
 		return FALSE;
 	if (prts->commands[0].command_type != RTS_CMD_DESTINATION ||
@@ -2047,16 +2051,17 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_NONE;
-	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_NONE;
+	rts->num = 1;
+	rts->commands = me_alloc<RTS_CMD>(1);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_CONNECTION_TIMEOUT;
-	pkt.payload.rts.commands[0].command.connectiontimeout =
+	rts->commands[0].command_type = RTS_CMD_CONNECTION_TIMEOUT;
+	rts->commands[0].command.connectiontimeout =
 		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
@@ -2082,20 +2087,21 @@ BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_NONE;
-	pkt.payload.rts.num = 3;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(3);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_NONE;
+	rts->num = 3;
+	rts->commands = me_alloc<RTS_CMD>(3);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_VERSION;
-	pkt.payload.rts.commands[0].command.version = 1;
-	pkt.payload.rts.commands[1].command_type = RTS_CMD_RECEIVE_WINDOW_SIZE;
-	pkt.payload.rts.commands[1].command.receivewindowsize = in_window_size;
-	pkt.payload.rts.commands[2].command_type = RTS_CMD_CONNECTION_TIMEOUT;
-	pkt.payload.rts.commands[2].command.connectiontimeout =
+	rts->commands[0].command_type = RTS_CMD_VERSION;
+	rts->commands[0].command.version = 1;
+	rts->commands[1].command_type = RTS_CMD_RECEIVE_WINDOW_SIZE;
+	rts->commands[1].command.receivewindowsize = in_window_size;
+	rts->commands[2].command_type = RTS_CMD_CONNECTION_TIMEOUT;
+	rts->commands[2].command.connectiontimeout =
 		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
@@ -2121,16 +2127,18 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_NONE;
-	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_NONE;
+	rts->num = 1;
+	rts->commands = me_alloc<RTS_CMD>(1);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
 	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_DESTINATION;
-	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
+	rts->commands[0].command_type = RTS_CMD_DESTINATION;
+	rts->commands[0].command.destination = FD_CLIENT;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		delete pblob_node;
@@ -2155,16 +2163,18 @@ BOOL dcerpc_call::rts_outr2_a2() try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_RECYCLE_CHANNEL;
-	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_RECYCLE_CHANNEL;
+	rts->num = 1;
+	rts->commands = me_alloc<RTS_CMD>(1);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
 	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_DESTINATION;
-	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
+	rts->commands[0].command_type = RTS_CMD_DESTINATION;
+	rts->commands[0].command.destination = FD_CLIENT;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		delete pblob_node;
@@ -2189,18 +2199,20 @@ BOOL dcerpc_call::rts_outr2_a6() try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_NONE;
-	pkt.payload.rts.num = 2;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_NONE;
+	rts->num = 2;
+	rts->commands = me_alloc<RTS_CMD>(2);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
 	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_DESTINATION;
-	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
+	rts->commands[0].command_type = RTS_CMD_DESTINATION;
+	rts->commands[0].command.destination = FD_CLIENT;
 	
-	pkt.payload.rts.commands[1].command_type = RTS_CMD_ANCE;
+	rts->commands[1].command_type = RTS_CMD_ANCE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		delete pblob_node;
@@ -2225,15 +2237,17 @@ BOOL dcerpc_call::rts_outr2_b3() try
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_EOF;
-	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_EOF;
+	rts->num = 1;
+	rts->commands = me_alloc<RTS_CMD>(1);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
 	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_ANCE;
+	rts->commands[0].command_type = RTS_CMD_ANCE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		delete pblob_node;
@@ -2258,19 +2272,21 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
 	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
 	pkt.pkt_type = DCERPC_PKT_RTS;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.payload.rts.flags = RTS_FLAG_OTHER_CMD;
-	pkt.payload.rts.num = 2;
-	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
-	if (NULL == pkt.payload.rts.commands) {
+	auto rts = new dcerpc_rts;
+	pkt.payload = rts;
+	rts->flags = RTS_FLAG_OTHER_CMD;
+	rts->num = 2;
+	rts->commands = me_alloc<RTS_CMD>(2);
+	if (rts->commands == nullptr) {
 		delete pblob_node;
 		return FALSE;
 	}
 	
-	pkt.payload.rts.commands[0].command_type = RTS_CMD_DESTINATION;
-	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
+	rts->commands[0].command_type = RTS_CMD_DESTINATION;
+	rts->commands[0].command.destination = FD_CLIENT;
 	
-	pkt.payload.rts.commands[1].command_type = RTS_CMD_FLOW_CONTROL_ACK;
-	auto &fc = pkt.payload.rts.commands[1].command.flowcontrolack;
+	rts->commands[1].command_type = RTS_CMD_FLOW_CONTROL_ACK;
+	auto &fc = rts->commands[1].command.flowcontrolack;
 	fc.bytes_received = bytes_received;
 	fc.available_window = available_window;
 	if (!fc.channel_cookie.from_str(channel_cookie)) {
@@ -2327,6 +2343,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		return PDU_PROCESSOR_ERROR;
 	}
 	
+	auto rts = static_cast<const dcerpc_rts *>(pcall->pkt.payload);
 	if (pcontext->channel_type == hchannel_type::out) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (76 == length) {
@@ -2334,7 +2351,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (RTS_FLAG_NONE != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_NONE) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2361,7 +2378,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (RTS_FLAG_RECYCLE_CHANNEL != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_RECYCLE_CHANNEL) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2387,7 +2404,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (RTS_FLAG_PING != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_PING) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2405,8 +2422,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			
-			if (RTS_FLAG_NONE != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_NONE) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2431,8 +2447,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			
-			if (RTS_FLAG_RECYCLE_CHANNEL != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_RECYCLE_CHANNEL) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2461,7 +2476,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			*/
-			if (RTS_FLAG_OTHER_CMD != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_OTHER_CMD) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2486,8 +2501,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			
-			if (RTS_FLAG_NONE != pcall->pkt.payload.rts.flags) {
+			if (rts->flags != RTS_FLAG_NONE) {
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2507,18 +2521,17 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				delete pcall;
 				return PDU_PROCESSOR_ERROR;
 			}
-			
-			if (RTS_FLAG_OTHER_CMD == pcall->pkt.payload.rts.flags) {
+			if (rts->flags == RTS_FLAG_OTHER_CMD) {
 				if (!pdu_processor_retrieve_flowcontrolack_withdestination(pcall)) {
 					delete pcall;
 					return PDU_PROCESSOR_ERROR;
 				}
 				pcontext->set_outchannel_flowcontrol(
-					pcall->pkt.payload.rts.commands[1].command.flowcontrolack.bytes_received,
-					pcall->pkt.payload.rts.commands[1].command.flowcontrolack.available_window);
+					rts->commands[1].command.flowcontrolack.bytes_received,
+					rts->commands[1].command.flowcontrolack.available_window);
 				delete pcall;
 				return PDU_PROCESSOR_INPUT;
-			} else if (RTS_FLAG_OUT_CHANNEL == pcall->pkt.payload.rts.flags) {
+			} else if (rts->flags == RTS_FLAG_OUT_CHANNEL) {
 				char channel_cookie[GUIDSTR_SIZE];
 				if (!pdu_processor_retrieve_outr2_a7(pcall,
 				    channel_cookie, std::size(channel_cookie))) {
@@ -2533,8 +2546,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 		} else if (20 == length) {
-			if (RTS_FLAG_PING == pcall->pkt.payload.rts.flags &&
-				0 == pcall->pkt.payload.rts.num) {
+			if (rts->flags == RTS_FLAG_PING && rts->num == 0) {
 				delete pcall;
 				return PDU_PROCESSOR_INPUT;
 			}
@@ -2556,9 +2568,6 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	DATA_BLOB tmp_blob;
 	DCERPC_CALL *pcallx;
 	uint32_t alloc_size;
-	DCERPC_REQUEST *prequest;
-	DCERPC_REQUEST *prequestx;
-	
 	
 	flags = 0;
 	*ppcall = NULL;
@@ -2602,7 +2611,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	}
 	
 	if (DCERPC_PKT_REQUEST == pcall->pkt.pkt_type) {
-		prequest = &pcall->pkt.payload.request;
+		auto prequest = static_cast<dcerpc_request *>(pcall->pkt.payload);
 		tmp_blob.pc = const_cast<char *>(pbuff);
 		tmp_blob.cb = length;
 		if (!pdu_processor_auth_request(pcall, &tmp_blob)) {
@@ -2667,7 +2676,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				return PDU_PROCESSOR_OUTPUT;
 			}
 			
-			prequestx = &pcallx->pkt.payload.request;
+			auto prequestx = static_cast<dcerpc_request *>(pcallx->pkt.payload);
 			alloc_size = prequestx->stub_and_verifier.cb +
 			             prequest->stub_and_verifier.cb;
 			if (prequestx->alloc_hint > alloc_size) {
