@@ -87,7 +87,6 @@ struct dcerpc_call {
 	PDU_PROCESSOR *pprocessor = nullptr;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	DCERPC_AUTH_CONTEXT *pauth_ctx = nullptr;
-	BOOL pkt_loaded = false;
 	BOOL b_bigendian = false;
 	uint32_t alloc_size = 0; /* alloc size for request stub data */
 	uint32_t ptr_cnt = 0;

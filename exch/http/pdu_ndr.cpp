@@ -814,9 +814,9 @@ static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
 	return NDR_ERR_SUCCESS;
 }
 
-static void pdu_ndr_free_dcerpc_payload(uint8_t pkt_type,
-	DCERPC_PAYLOAD *r)
+dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
 {
+	auto r = &payload;
 	switch (pkt_type) {
 	case DCERPC_PKT_REQUEST:
 		pdu_ndr_free_dcerpc_request(&r->request);
@@ -895,11 +895,6 @@ pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt)
 	TRY(pndr->trailer_align(4));
 	
 	return NDR_ERR_SUCCESS;
-}
-
-void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt)
-{
-	pdu_ndr_free_dcerpc_payload(pkt->pkt_type, &pkt->payload);
 }
 
 static pack_result pdu_ndr_push_dcerpc_object(NDR_PUSH *pndr,

@@ -42,7 +42,7 @@ struct DCERPC_FAULT {
 	uint32_t alloc_hint;
 	uint16_t context_id;
 	uint8_t cancel_count;
-	int status;  /*dcerpc ncan status */
+	int status; /* dcerpc ncacn status */
 	DATA_BLOB pad;
 };
 
@@ -186,6 +186,8 @@ union DCERPC_PAYLOAD {
  * C706 §12.6.1 / RPCH v19 §2.2.3.6.1
  */
 struct dcerpc_ncacn_packet {
+	~dcerpc_ncacn_packet();
+
 	constexpr dcerpc_ncacn_packet(bool be)
 	{
 		drep[0] = be ? 0 : DCERPC_DREP_LE;
@@ -211,5 +213,4 @@ using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 extern pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *, DCERPC_AUTH *);
 extern pack_result pdu_ndr_push_dcerpc_auth(NDR_PUSH *, const DCERPC_AUTH *);
 extern pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *, DCERPC_NCACN_PACKET *);
-void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt);
 extern pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *, DCERPC_NCACN_PACKET *);

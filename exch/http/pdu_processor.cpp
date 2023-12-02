@@ -213,8 +213,6 @@ dcerpc_call::~dcerpc_call()
 	auto pcall = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (pcall->pkt_loaded)
-		pdu_ndr_free_ncacnpkt(&pcall->pkt);
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		auto pblob_node = static_cast<BLOB_NODE *>(pnode->pdata);
 		free(pblob_node->blob.pb);
@@ -971,7 +969,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
-		pdu_ndr_free_ncacnpkt(&pkt);
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		return pdu_processor_bind_nak(pcall, 0);
@@ -982,7 +979,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pblob_node = new BLOB_NODE();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2384: ENOMEM");
-		pdu_ndr_free_ncacnpkt(&pkt);
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		return pdu_processor_bind_nak(pcall, 0);
@@ -992,14 +988,11 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, &pauth_ctx->auth_info)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		return pdu_processor_bind_nak(pcall, 0);
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
 	if (pcontext != nullptr)
 		double_list_insert_as_head(&pcall->pprocessor->context_list,
 			&pcontext->node);
@@ -1229,7 +1222,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
 		mlog(LV_DEBUG, "Error in %s. Cannot get auth_context from list.", __PRETTY_FUNCTION__);
-		pdu_ndr_free_ncacnpkt(&pkt);
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		return FALSE;
@@ -1240,7 +1232,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		pblob_node = new BLOB_NODE();
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-2382: ENOMEM");
-		pdu_ndr_free_ncacnpkt(&pkt);
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		return FALSE;
@@ -1249,14 +1240,11 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pblob_node->b_rts = FALSE;
 	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, &pauth_ctx->auth_info)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		if (pcontext != nullptr)
 			pdu_processor_free_context(pcontext);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
 	if (pcontext != nullptr)
 		double_list_insert_as_head(&pprocessor->context_list, &pcontext->node);
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
@@ -1464,6 +1452,8 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		pkt.payload.response.pad.cb = prequest->pad.cb;
 		pkt.payload.response.stub_and_verifier.pb = stub.pb;
 		pkt.payload.response.stub_and_verifier.cb = length;
+		/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
+		auto cl_0 = make_scope_exit([&]() { pkt.payload.response = {}; });
 
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
@@ -2070,13 +2060,9 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
 		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2113,13 +2099,9 @@ BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2151,13 +2133,9 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
 	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2189,13 +2167,9 @@ BOOL dcerpc_call::rts_outr2_a2() try
 	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2229,13 +2203,9 @@ BOOL dcerpc_call::rts_outr2_a6() try
 	pkt.payload.rts.commands[1].command_type = RTS_CMD_ANCE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2266,13 +2236,9 @@ BOOL dcerpc_call::rts_outr2_b3() try
 	pkt.payload.rts.commands[0].command_type = RTS_CMD_ANCE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2308,19 +2274,14 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
 	fc.bytes_received = bytes_received;
 	fc.available_window = available_window;
 	if (!fc.channel_cookie.from_str(channel_cookie)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		pdu_ndr_free_ncacnpkt(&pkt);
 		delete pblob_node;
 		return FALSE;
 	}
-	
-	pdu_ndr_free_ncacnpkt(&pkt);
-	
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
 	
 	return TRUE;
@@ -2365,7 +2326,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 		delete pcall;
 		return PDU_PROCESSOR_ERROR;
 	}
-	pcall->pkt_loaded = TRUE;
 	
 	if (pcontext->channel_type == hchannel_type::out) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -2624,8 +2584,6 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		delete pcall;
 		return PDU_PROCESSOR_ERROR;
 	}
-	pcall->pkt_loaded = TRUE;
-	
 	if (pcall->pkt.frag_length != length) {
 		delete pcall;
 		return PDU_PROCESSOR_ERROR;
