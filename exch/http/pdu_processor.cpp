@@ -1916,16 +1916,14 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall) try
 	return false;
 }
 
-static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_conn_b1(const DCERPC_CALL *pcall,
     char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
     size_t chan_ck_size, uint32_t *plife_time, time_duration *pclient_keepalive,
     char *associationgroupid, size_t gid_size)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 6 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1945,15 +1943,13 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_conn_a1(const DCERPC_CALL *pcall,
     char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
     size_t chan_ck_size, uint32_t *pwindow_size)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 4 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1968,15 +1964,13 @@ static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_inr2_a1(const DCERPC_CALL *pcall,
     char *conn_cookie, size_t conn_ck_size, char *pred_cookie,
     size_t pred_ck_size, char *succ_cookie, size_t succ_ck_size)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 4 ||
 	    prts->commands[0].command_type != RTS_CMD_VERSION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
@@ -1991,14 +1985,12 @@ static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_inr2_a5(const DCERPC_CALL *pcall,
     char *succ_cookie, size_t succ_ck_size)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 1 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -2006,14 +1998,12 @@ static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_outr2_a7(const DCERPC_CALL *pcall,
     char *succ_cookie, size_t succ_ck_size)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 3 ||
 	    prts->commands[0].command_type != RTS_CMD_DESTINATION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
@@ -2024,16 +2014,14 @@ static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_outr2_a3(const DCERPC_CALL *pcall,
     char *conn_cookie, size_t conn_ck_size, char *pred_cookie,
     size_t pred_ck_size, char *succ_cookie, size_t succ_ck_size,
     uint32_t *pwindow_size)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 5 ||
 	    prts->commands[0].command_type != RTS_CMD_VERSION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
@@ -2052,13 +2040,11 @@ static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_outr2_c1(DCERPC_CALL *pcall)
+static BOOL pdu_processor_retrieve_outr2_c1(const DCERPC_CALL *pcall)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 1)
 		return FALSE;
 	if (prts->commands[0].command_type != RTS_CMD_EMPTY &&
@@ -2068,14 +2054,12 @@ static BOOL pdu_processor_retrieve_outr2_c1(DCERPC_CALL *pcall)
 	
 }
 
-static BOOL pdu_processor_retrieve_keep_alive(DCERPC_CALL *pcall,
+static BOOL pdu_processor_retrieve_keep_alive(const DCERPC_CALL *pcall,
     time_duration *pkeep_alive)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 1 ||
 	    prts->commands[0].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
@@ -2083,14 +2067,11 @@ static BOOL pdu_processor_retrieve_keep_alive(DCERPC_CALL *pcall,
 	return TRUE;
 }
 
-static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
-	DCERPC_CALL *pcall)
+static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(const DCERPC_CALL *pcall)
 {
-	DCERPC_RTS *prts;
-	
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
-	prts = &pcall->pkt.payload.rts;
+	auto prts = &pcall->pkt.payload.rts;
 	if (prts->num != 2)
 		return FALSE;
 	if (prts->commands[0].command_type != RTS_CMD_DESTINATION ||
