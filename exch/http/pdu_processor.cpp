@@ -592,12 +592,8 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 	DCERPC_NCACN_PACKET *ppkt, DCERPC_AUTH *pauth_info)
 {
-	void *pdata;
-	NDR_PUSH ndr;
 	uint32_t flags;
-	
-	
-	pdata = malloc(DCERPC_BASE_MARSHALL_SIZE);
+	std::unique_ptr<uint8_t, stdlib_delete> pdata(me_alloc<uint8_t>(DCERPC_BASE_MARSHALL_SIZE));
 	if (pdata == nullptr)
 		return FALSE;
 	flags = 0;
@@ -605,22 +601,21 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 		flags = NDR_FLAG_BIGENDIAN;
 	if (ppkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID)
 		flags |= NDR_FLAG_OBJECT_PRESENT;
-	ndr.init(pdata, DCERPC_BASE_MARSHALL_SIZE, flags);
+	NDR_PUSH ndr;
+	ndr.init(pdata.get(), DCERPC_BASE_MARSHALL_SIZE, flags);
 	ppkt->auth_length = pauth_info != nullptr ? pauth_info->credentials.cb : 0;
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
-		free(pdata);
 		return FALSE;
 	}
 
 	if (NULL != pauth_info) {
 		pauth_info->auth_pad_length = 0;
 		if (NDR_ERR_SUCCESS != pdu_ndr_push_dcerpc_auth(&ndr, pauth_info)) {
-			free(pdata);
 			return FALSE;
 		}
 	}
 	
-	pblob->pb = ndr.data;
+	pblob->pb = pdata.release(); /* ndr.data */
 	pblob->cb = ndr.offset;
 	/* fill in the frag length */
 	pdu_processor_set_frag_length(pblob, pblob->cb);
@@ -1381,13 +1376,10 @@ static DCERPC_CALL* pdu_processor_get_call()
 static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	NDR_STACK_ROOT *pstack_root, void *pout)
 {
-	void *pdata;
 	uint32_t flags;
-	DATA_BLOB stub;
 	uint32_t length;
 	size_t sig_size;
 	size_t alloc_size;
-	NDR_PUSH ndr_push;
 	uint32_t chunk_size;
 	uint32_t total_length;
 	DCERPC_REQUEST *prequest;
@@ -1402,14 +1394,15 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	
 	alloc_size = pdu_processor_ndr_stack_size(pstack_root, NDR_STACK_OUT);
 	alloc_size = 2 * alloc_size + 1024;
-	pdata = malloc(alloc_size);
+	std::unique_ptr<uint8_t, stdlib_delete> pdata(me_alloc<uint8_t>(alloc_size));
 	if (NULL == pdata) {
 		pdu_processor_free_stack_root(pstack_root);
 		mlog(LV_DEBUG, "pdu_processor: push fail on RPC call %u on %s",
 			prequest->opnum, pcall->pcontext->pinterface->name);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 	}
-	ndr_push.init(pdata, alloc_size, flags);
+	NDR_PUSH ndr_push;
+	ndr_push.init(pdata.get(), alloc_size, flags);
 	ndr_push.set_ptrcnt(pcall->ptr_cnt);
 	
 	/* marshaling the NDR out param data */
@@ -1417,11 +1410,11 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	if (ret != EXT_ERR_SUCCESS) {
 		mlog(LV_ERR, "E-1918: ndr_push failed with result code %u",
 			static_cast<unsigned int>(ret));
-		free(pdata);
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
 	}
 	pdu_processor_free_stack_root(pstack_root);
+	DATA_BLOB stub;
 	stub.pb = ndr_push.data;
 	stub.cb = ndr_push.offset;
 	total_length = stub.cb;
@@ -1449,7 +1442,6 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 			pblob_node = new BLOB_NODE();
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-2381: ENOMEM");
-			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
 		pblob_node->node.pdata = pblob_node;
@@ -1476,7 +1468,6 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
 			delete pblob_node;
-			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
 
@@ -1484,7 +1475,6 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		stub.pb += length;
 		stub.cb -= length;
 	} while (stub.cb != 0);
-	free(pdata);
 	return TRUE;
 }
 
