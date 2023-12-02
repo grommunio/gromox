@@ -155,21 +155,13 @@ struct DCERPC_RTS {
 
 union DCERPC_PAYLOAD {
 	DCERPC_REQUEST request;
-	char ping;
 	DCERPC_RESPONSE response;
 	DCERPC_FAULT fault;
-	char working;
-	DCERPC_FACK nocall;
-	DCERPC_FAULT reject;
-	char ack;
 	DCERPC_FACK fack;
 	DCERPC_CANCEL_ACK cancel_ack;
 	DCERPC_BIND bind;
 	DCERPC_BIND_ACK bind_ack;
 	DCERPC_BIND_NAK bind_nak;
-	DCERPC_BIND alter;
-	DCERPC_BIND_ACK alter_ack;
-	char shutdown;
 	DCERPC_CO_CANCEL co_cancel;
 	DCERPC_ORPHANED orphaned;
 	DCERPC_AUTH3 auth3;

@@ -767,39 +767,29 @@ static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
 	case DCERPC_PKT_REQUEST:
 		return pdu_ndr_pull_dcerpc_request(pndr, &r->request);
 	case DCERPC_PKT_PING:
-		/* do nothing */
+	case DCERPC_PKT_WORKING:
+	case DCERPC_PKT_ACK:
+	case DCERPC_PKT_SHUTDOWN:
+		/* TRY(pndr->g_uint8(&dummy)); */
 		break;
 	case DCERPC_PKT_RESPONSE:
 		return pdu_ndr_pull_dcerpc_response(pndr, &r->response);
 	case DCERPC_PKT_FAULT:
-		return pdu_ndr_pull_dcerpc_fault(pndr, &r->fault);
-	case DCERPC_PKT_WORKING:
-		/* do nothing */
-		break;
-	case DCERPC_PKT_NOCALL:
-		return pdu_ndr_pull_dcerpc_fack(pndr, &r->nocall);
 	case DCERPC_PKT_REJECT:
-		return pdu_ndr_pull_dcerpc_fault(pndr, &r->reject);
-	case DCERPC_PKT_ACK:
-		/* do nothing */
-		break;
+		return pdu_ndr_pull_dcerpc_fault(pndr, &r->fault);
+	case DCERPC_PKT_NOCALL:
 	case DCERPC_PKT_FACK:
 		return pdu_ndr_pull_dcerpc_fack(pndr, &r->fack);
 	case DCERPC_PKT_CANCEL_ACK:
 		return pdu_ndr_pull_dcerpc_cancel_ack(pndr, &r->cancel_ack);
 	case DCERPC_PKT_BIND:
+	case DCERPC_PKT_ALTER:
 		return pdu_ndr_pull_dcerpc_bind(pndr, &r->bind);
 	case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_ALTER_ACK:
 		return pdu_ndr_pull_dcerpc_bind_ack(pndr, &r->bind_ack);
 	case DCERPC_PKT_BIND_NAK:
 		return pdu_ndr_pull_dcerpc_bind_nak(pndr, &r->bind_nak);
-	case DCERPC_PKT_ALTER:
-		return pdu_ndr_pull_dcerpc_bind(pndr, &r->alter);
-	case DCERPC_PKT_ALTER_ACK:
-		return pdu_ndr_pull_dcerpc_bind_ack(pndr, &r->alter_ack);
-	case DCERPC_PKT_SHUTDOWN:
-		/* do nothing */
-		break;
 	case DCERPC_PKT_CO_CANCEL:
 		return pdu_ndr_pull_dcerpc_co_cancel(pndr, &r->co_cancel);
 	case DCERPC_PKT_ORPHANED:
@@ -822,49 +812,33 @@ dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
 		pdu_ndr_free_dcerpc_request(&r->request);
 		break;
 	case DCERPC_PKT_PING:
+	case DCERPC_PKT_WORKING:
+	case DCERPC_PKT_ACK:
+	case DCERPC_PKT_CANCEL_ACK:
+	case DCERPC_PKT_SHUTDOWN:
 		/* do nothing */
 		break;
 	case DCERPC_PKT_RESPONSE:
 		pdu_ndr_free_dcerpc_response(&r->response);
 		break;
 	case DCERPC_PKT_FAULT:
+	case DCERPC_PKT_REJECT:
 		pdu_ndr_free_dcerpc_fault(&r->fault);
 		break;
-	case DCERPC_PKT_WORKING:
-		/* do nothing */
-		break;
 	case DCERPC_PKT_NOCALL:
-		pdu_ndr_free_dcerpc_fack(&r->nocall);
-		break;
-	case DCERPC_PKT_REJECT:
-		pdu_ndr_free_dcerpc_fault(&r->reject);
-		break;
-	case DCERPC_PKT_ACK:
-		/* do nothing */
-		break;
 	case DCERPC_PKT_FACK:
 		pdu_ndr_free_dcerpc_fack(&r->fack);
 		break;
-	case DCERPC_PKT_CANCEL_ACK:
-		/* do nothing */
-		break;
 	case DCERPC_PKT_BIND:
+	case DCERPC_PKT_ALTER:
 		pdu_ndr_free_dcerpc_bind(&r->bind);
 		break;
 	case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_ALTER_ACK:
 		pdu_ndr_free_dcerpc_bind_ack(&r->bind_ack);
 		break;
 	case DCERPC_PKT_BIND_NAK:
 		pdu_ndr_free_dcerpc_bind_nak(&r->bind_nak);
-		break;
-	case DCERPC_PKT_ALTER:
-		pdu_ndr_free_dcerpc_bind(&r->alter);
-		break;
-	case DCERPC_PKT_ALTER_ACK:
-		pdu_ndr_free_dcerpc_bind_ack(&r->alter_ack);
-		break;
-	case DCERPC_PKT_SHUTDOWN:
-		/* do nothing */
 		break;
 	case DCERPC_PKT_CO_CANCEL:
 		pdu_ndr_free_dcerpc_co_cancel(&r->co_cancel);
@@ -1305,39 +1279,29 @@ static pack_result pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
 	case DCERPC_PKT_REQUEST:
 		return pdu_ndr_push_dcerpc_request(pndr, &r->request);
 	case DCERPC_PKT_PING:
+	case DCERPC_PKT_WORKING:
+	case DCERPC_PKT_ACK:
+	case DCERPC_PKT_SHUTDOWN:
 		/* do nothing */
 		break;
 	case DCERPC_PKT_RESPONSE:
 		return pdu_ndr_push_dcerpc_response(pndr, &r->response);
 	case DCERPC_PKT_FAULT:
-		return pdu_ndr_push_dcerpc_fault(pndr, &r->fault);
-	case DCERPC_PKT_WORKING:
-		/* do nothing */
-		break;
-	case DCERPC_PKT_NOCALL:
-		return pdu_ndr_push_dcerpc_fack(pndr, &r->nocall);
 	case DCERPC_PKT_REJECT:
-		return pdu_ndr_push_dcerpc_fault(pndr, &r->reject);
-	case DCERPC_PKT_ACK:
-		/* do nothing */
-		break;
+		return pdu_ndr_push_dcerpc_fault(pndr, &r->fault);
+	case DCERPC_PKT_NOCALL:
 	case DCERPC_PKT_FACK:
 		return pdu_ndr_push_dcerpc_fack(pndr, &r->fack);
 	case DCERPC_PKT_CANCEL_ACK:
 		return pdu_ndr_push_dcerpc_cancel_ack(pndr, &r->cancel_ack);
 	case DCERPC_PKT_BIND:
+	case DCERPC_PKT_ALTER:
 		return pdu_ndr_push_dcerpc_bind(pndr, &r->bind);
 	case DCERPC_PKT_BIND_ACK:
+	case DCERPC_PKT_ALTER_ACK:
 		return pdu_ndr_push_dcerpc_bind_ack(pndr, &r->bind_ack);
 	case DCERPC_PKT_BIND_NAK:
 		return pdu_ndr_push_dcerpc_bind_nak(pndr, &r->bind_nak);
-	case DCERPC_PKT_ALTER:
-		return pdu_ndr_push_dcerpc_bind(pndr, &r->alter);
-	case DCERPC_PKT_ALTER_ACK:
-		return pdu_ndr_push_dcerpc_bind_ack(pndr, &r->alter_ack);
-	case DCERPC_PKT_SHUTDOWN:
-		/* do nothing */
-		break;
 	case DCERPC_PKT_CO_CANCEL:
 		return pdu_ndr_push_dcerpc_co_cancel(pndr, &r->co_cancel);
 	case DCERPC_PKT_ORPHANED:

@@ -1059,13 +1059,11 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t result = 0, reason = 0;
 	uint32_t if_version;
 	uint32_t context_id;
-	DCERPC_BIND *palter;
 	uint32_t extra_flags;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
-	
-	palter = &pcall->pkt.payload.alter;
+	auto palter = &pcall->pkt.payload.bind;
 	pprocessor = pcall->pprocessor;
 	
 	
@@ -1198,6 +1196,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.call_id = pcall->pkt.call_id;
 	pkt.pkt_type = DCERPC_PKT_ALTER_ACK;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
+#define alter_ack bind_ack
 	pkt.payload.alter_ack.max_xmit_frag = 0x2000;
 	pkt.payload.alter_ack.max_recv_frag = 0x2000;
 	pkt.payload.alter_ack.pad.pb = nullptr;
@@ -1218,6 +1217,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.payload.alter_ack.ctx_list[0].syntax = g_transfer_syntax_ndr;
 	pkt.payload.alter_ack.auth_info.pb = nullptr;
 	pkt.payload.alter_ack.auth_info.cb = 0;
+#undef alter_ack
 	
 	pnode = double_list_get_tail(&pcall->pprocessor->auth_list);
 	if (NULL == pnode) {
