@@ -419,6 +419,9 @@ enum {
 	// PR_IPM_SENTMAIL_SEARCH_KEY = PROP_TAG(PT_BINARY, 0x3413),
 	PR_MDB_PROVIDER = PROP_TAG(PT_BINARY, 0x3414), /* PidTagStoreProvider */
 	// PR_RECEIVE_FOLDER_SETTINGS = PROP_TAG(PT_OBJECT, 0x3415), /* PidTagReceiveFolderSettings */
+	// PR_QUOTA_WARNING = PROP_TAG(PT_LONG, 0x3418), /* Cached Mode profile quotas */
+	// PR_QUOTA_SEND = PROP_TAG(PT_LONG, 0x3419),
+	// PR_QUOTA_RECEIVE = PROP_TAG(PT_LONG, 0x341A),
 	// ? = PROP_TAG(PT_BINARY, 0x35D8), /* entryid to root folder */
 	PR_VALID_FOLDER_MASK = PROP_TAG(PT_LONG, 0x35DF), /* PidTagValidFolderMask */
 	PR_IPM_SUBTREE_ENTRYID = PROP_TAG(PT_BINARY, 0x35E0), /* PidTagIpmSubtreeEntryId */
