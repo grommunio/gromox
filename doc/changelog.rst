@@ -1,15 +1,18 @@
-Development 2.18.88
-===================
+Gromox 2.19 (2023-12-04)
+========================
 
 Fixes:
 
 * exmdb: send "object created" notifications as search folders re-populate
 * oxcmail: ignore zero-length From fields, which should help sending from
   Windows Mail
+* Thunderbird/IMAP now picks up deletion events done by other clients
 * imap placed eml files in the wrong spot.
   You may need to `mmv /var/lib/gromox/user/X/Y/eml1*
   /var/lib/gromox/user/X/Y/eml/1#1` for the various user directories.
-* imap: the STATUS IMAP command did not cause any immediate response
+* imap: the IMAP STATUS command did not cause any immediate response
+* imap: announce EXPUNGE events on all typical commands
+* imap: avoid double-reporting EXPUNGE events on EXPUNGE command
 * http: resolve altnames and update user context after authentication success
   with krb
 * ews: resolve crash during CreateItem RPC
