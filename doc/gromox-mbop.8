@@ -156,14 +156,14 @@ potentially run for quite some time, during which the mailbox is inaccessible.
 \fIfolder_spec\fP can either be a numeric identifier, or a path-like
 specification into the folder hierarchy. If the name starts with the slash
 character '/', it is interpreted as starting from the root; otherwise, the
-first component must be a special name (CALENDAR, COMMON_VIEWS, CONFLICTS,
-CONTACTS, DEFERRED_ACTION, DELETED (TRASH, WASTEBASKET), DRAFT, FINDER, INBOX,
-IPM_SUBTREE, JOURNAL, JUNK, LOCAL_FAILURES, NOTES, OUTBOX, SENT,
-SERVER_FAILURES, SHORTCUTS, SYNC_ISSUES, TASKS, VIEWS). These special names can
-be used with private stores only; there are no names defined for public folder
-contents at this time. There is also no parsing support for slashes in folder
-names currently in mbop; the slash character is always treated as a hierarchy
-separator. Examples:
+first component must be a special fixed name (untranslated) (CALENDAR,
+COMMON_VIEWS, CONFLICTS, CONTACTS, DEFERRED_ACTION, DELETED (TRASH,
+WASTEBASKET), DRAFT, FINDER, INBOX, IPM_SUBTREE, JOURNAL, JUNK, LOCAL_FAILURES,
+NOTES, OUTBOX, SENT, SERVER_FAILURES, SHORTCUTS, SYNC_ISSUES, TASKS, VIEWS).
+These special names can be used with private stores only; there are no names
+defined for public folder contents at this time. There is also no parsing
+support for slashes in folder names currently in mbop; the slash character is
+always treated as a hierarchy separator. Examples:
 .IP \(bu 4
 /Top of Information Store/Sent Items/2022
 .IP \(bu 4
