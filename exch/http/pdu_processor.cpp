@@ -564,8 +564,8 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	/* check signature or unseal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
-		if (!ntlmssp_unseal_packet(pauth_ctx->pntlmssp,
-		    &pblob->pb[hdr_size], prequest->stub_and_verifier.cb,
+		if (!pauth_ctx->pntlmssp->unseal_packet(&pblob->pb[hdr_size],
+		    prequest->stub_and_verifier.cb,
 		    pblob->pb, pblob->cb - auth.credentials.cb,
 		    &auth.credentials)) {
 			return FALSE;
@@ -574,8 +574,7 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			prequest->stub_and_verifier.cb);
 		break;
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
-		if (!ntlmssp_check_packet(pauth_ctx->pntlmssp,
-		    prequest->stub_and_verifier.pb,
+		if (!pauth_ctx->pntlmssp->check_packet(prequest->stub_and_verifier.pb,
 		    prequest->stub_and_verifier.cb, pblob->pb,
 		    pblob->cb - auth.credentials.cb, &auth.credentials)) {
 			return FALSE;
@@ -758,15 +757,14 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 		return pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT ||
 		       pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_NONE;
 	case RPC_C_AUTHN_NTLMSSP:
-		if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
+		if (!pauth_ctx->pntlmssp->update(&pauth_ctx->auth_info.credentials))
 			return FALSE;
-		if (NTLMSSP_PROCESS_AUTH == ntlmssp_expected_state(pauth_ctx->pntlmssp)) {
+		if (pauth_ctx->pntlmssp->expected_state == NTLMSSP_PROCESS_AUTH) {
 			pauth_ctx->auth_info.auth_pad_length = 0;
 			pauth_ctx->auth_info.auth_reserved = 0;
 			return TRUE;
 		}
-		return ntlmssp_session_info(pauth_ctx->pntlmssp,
-		       &pauth_ctx->session_info) ? TRUE : false;
+		return pauth_ctx->pntlmssp->session_info(&pauth_ctx->session_info) ? TRUE : false;
 	default:
 		return false;
 	}
@@ -1044,9 +1042,9 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	    &ppkt->payload.auth3.auth_info, &pauth_ctx->auth_info,
 	    &auth_length, TRUE))
 		goto AUTH3_FAIL;
-	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
+	if (!pauth_ctx->pntlmssp->update(&pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
-	if (!ntlmssp_session_info(pauth_ctx->pntlmssp, &pauth_ctx->session_info)) {
+	if (!pauth_ctx->pntlmssp->session_info(&pauth_ctx->session_info)) {
 		mlog(LV_DEBUG, "pdu_processor: failed to establish session_info");
 		goto AUTH3_FAIL;
 	}
@@ -1347,15 +1345,13 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	/* sign or seal the packet */
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
-		if (!ntlmssp_seal_packet(pauth_ctx->pntlmssp,
-		    ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
-		    pblob->pb, pblob->cb, &creds2))
+		if (!pauth_ctx->pntlmssp->seal_packet(&ndr.data[DCERPC_REQUEST_LENGTH],
+		    payload_length, pblob->pb, pblob->cb, &creds2))
 			return FALSE;
 		break;
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
-		if (!ntlmssp_sign_packet(pauth_ctx->pntlmssp,
-		    ndr.data + DCERPC_REQUEST_LENGTH, payload_length,
-		    pblob->pb, pblob->cb, &creds2))
+		if (!pauth_ctx->pntlmssp->sign_packet(&ndr.data[DCERPC_REQUEST_LENGTH],
+		    payload_length, pblob->pb, pblob->cb, &creds2))
 			return FALSE;
 		break;
 
@@ -1444,7 +1440,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	    pcall->pauth_ctx->auth_info.auth_level != RPC_C_AUTHN_LEVEL_DEFAULT &&
 	    pcall->pauth_ctx->auth_info.auth_level != RPC_C_AUTHN_LEVEL_NONE &&
 		NULL != pcall->pauth_ctx->pntlmssp) {
-		sig_size = ntlmssp_sig_size();
+		sig_size = pcall->pauth_ctx->pntlmssp->sig_size();
 		if (0 != sig_size) {
 			chunk_size -= DCERPC_AUTH_TRAILER_LENGTH;
 			chunk_size -= sig_size;

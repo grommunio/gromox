@@ -28,9 +28,6 @@
 #define MSVAVDNSCOMPUTERNAME		3
 #define MSVAVDNSDOMAINNAME			4
 
-
-#define NTLMSSP_SIG_SIZE			16
-
 #define NTLMSSP_SIGN_VERSION		0x01
 
 #define NTLMSSP_DIRECTION_SEND		0
@@ -1369,8 +1366,9 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
+bool ntlmssp_ctx::update(DATA_BLOB *pblob)
 {
+	auto pntlmssp = this;
 	DATA_BLOB tmp_blob;
 	uint8_t blob_buff[1024];
 	uint32_t ntlmssp_command;
@@ -1413,16 +1411,6 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	}
 	pblob->cb = tmp_blob.cb;
 	return true;
-}
-
-uint32_t ntlmssp_expected_state(NTLMSSP_CTX *pntlmssp)
-{
-	return pntlmssp->expected_state;
-}
-
-size_t ntlmssp_sig_size()
-{
-	return NTLMSSP_SIG_SIZE;
 }
 
 static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
@@ -1478,14 +1466,15 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	cpu_to_le32p(&psig->pb[0], NTLMSSP_SIGN_VERSION);
 	memcpy(&psig->pb[4], digest, 8);
 	memcpy(&psig->pb[12], seq_num, 4);
-	psig->cb = NTLMSSP_SIG_SIZE;
+	psig->cb = NTLMSSP_CTX::SIG_SIZE;
 	return true;
 }
 
-bool ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
+bool ntlmssp_ctx::sign_packet(const uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
 	    pntlmssp->session_key.cb == 0)
@@ -1533,10 +1522,11 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-bool ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
+bool ntlmssp_ctx::check_packet(const uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	const DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, psig))
@@ -1544,9 +1534,10 @@ bool ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 	return true;
 }
 
-bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
+bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 	const uint8_t *pwhole_pdu, size_t pdu_length, DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	uint32_t crc;
 	
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SEAL))
@@ -1580,10 +1571,11 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 	return true;
 }
 	
-bool ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
+bool ntlmssp_ctx::unseal_packet(uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	const DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (pntlmssp->session_key.cb == 0) {
 		mlog(LV_DEBUG, "ntlm: no session key, cannot unseal packet");
@@ -1613,8 +1605,9 @@ static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)
 	return true;
 }
 
-bool ntlmssp_session_info(NTLMSSP_CTX *pntlmssp, NTLMSSP_SESSION_INFO *psession)
+bool ntlmssp_ctx::session_info(NTLMSSP_SESSION_INFO *psession)
 {
+	auto pntlmssp = this;
 	if (strchr(pntlmssp->user, '@') == nullptr)
 		snprintf(psession->username, std::size(psession->username),
 		         "%s@%s", pntlmssp->user, pntlmssp->domain);

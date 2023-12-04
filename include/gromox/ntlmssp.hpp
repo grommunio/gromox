@@ -63,7 +63,17 @@ union NTLMSSP_CRYPT_STATE {
 
 using NTLMSSP_GET_PASSWORD = bool (*)(const char *, char *);
 
-struct ntlmssp_ctx {
+struct GX_EXPORT ntlmssp_ctx {
+	static constexpr unsigned int SIG_SIZE = 16;
+
+	bool update(DATA_BLOB *);
+	static size_t sig_size() { return SIG_SIZE; }
+	bool sign_packet(const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
+	bool check_packet(const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
+	bool seal_packet(uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
+	bool unseal_packet(uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
+	bool session_info(NTLMSSP_SESSION_INFO *);
+
 	std::mutex lock;
 	uint32_t expected_state = NTLMSSP_PROCESS_NEGOTIATE;
 	bool unicode = false;
@@ -85,12 +95,4 @@ struct ntlmssp_ctx {
 using NTLMSSP_CTX = ntlmssp_ctx;
 
 extern GX_EXPORT NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name, const char *dns_domain, bool b_lm_key, uint32_t net_flags, NTLMSSP_GET_PASSWORD);
-extern GX_EXPORT bool ntlmssp_update(NTLMSSP_CTX *, DATA_BLOB *);
-extern size_t ntlmssp_sig_size();
-uint32_t ntlmssp_expected_state(NTLMSSP_CTX *pntlmssp);
-extern GX_EXPORT bool ntlmssp_sign_packet(NTLMSSP_CTX *, const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
-extern GX_EXPORT bool ntlmssp_check_packet(NTLMSSP_CTX *, const uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
-extern GX_EXPORT bool ntlmssp_seal_packet(NTLMSSP_CTX *, uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, DATA_BLOB *sig);
-extern GX_EXPORT bool ntlmssp_unseal_packet(NTLMSSP_CTX *, uint8_t *data, size_t len, const uint8_t *whole_pdu, size_t pdu_len, const DATA_BLOB *sig);
-extern GX_EXPORT bool ntlmssp_session_info(NTLMSSP_CTX *, NTLMSSP_SESSION_INFO *);
 void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp);
