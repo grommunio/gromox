@@ -1732,8 +1732,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 					pmime_enum->charset : "utf-8", std::size(mime_charset));
 			if (string_to_utf8(mime_charset, pcontent.get(),
 			    &pcontent[content_len+1], contallocsz - content_len - 1)) {
-				if (!utf8_valid(pcontent.get() + content_len + 1))
-					utf8_filter(pcontent.get() + content_len + 1);
+				utf8_filter(&pcontent[content_len+1]);
 				vcard vcard;
 				auto ret = vcard.load_single_from_str_move(pcontent.get() + content_len + 1);
 				if (ret == ecSuccess &&
@@ -2812,8 +2811,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 		    &pcontent[content_len+1], contoutsize - content_len - 1)) {
 			mime_enum.pcalendar = NULL;
 		} else {
-			if (!utf8_valid(&pcontent[content_len+1]))
-				utf8_filter(&pcontent[content_len+1]);
+			utf8_filter(&pcontent[content_len+1]);
 			ICAL ical;
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
