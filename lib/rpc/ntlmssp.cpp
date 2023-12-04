@@ -55,51 +55,6 @@ enum {
 
 namespace {
 
-struct NTLM_AUTH_CHALLENGE {
-	DATA_BLOB blob;
-	uint8_t blob_buff[8]; /* buffer for DATA_BLOB's data */
-};
-
-struct NTLMSSP_CRYPT_DIRECTION {
-	uint32_t seq_num;
-	uint8_t sign_key[16];
-	ARCFOUR_STATE seal_state;
-};
-
-struct NTLMSSP_CRYPT_DIRECTION_V2 {
-	NTLMSSP_CRYPT_DIRECTION sending;
-	NTLMSSP_CRYPT_DIRECTION receiving;
-};
-
-union NTLMSSP_CRYPT_STATE {
-	NTLMSSP_CRYPT_DIRECTION ntlm;     /* NTLM */
-	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
-};
-
-}
-
-struct NTLMSSP_CTX {
-	std::mutex lock;
-	uint32_t expected_state = NTLMSSP_PROCESS_NEGOTIATE;
-	bool unicode = false;
-	bool allow_lm_key = false; /* The LM_KEY code is not very secure... */
-	char user[128]{}, domain[128]{};
-	uint8_t *nt_hash = nullptr, *lm_hash = nullptr;
-	char netbios_name[128]{}, dns_name[128]{}, dns_domain[128]{};
-	DATA_BLOB internal_chal{}; /* Random challenge as supplied to the client for NTLM authentication */
-	uint8_t internal_chal_buff[32]{};
-	DATA_BLOB lm_resp{}, nt_resp{}, session_key{};
-	uint8_t lm_resp_buff[32]{}, nt_resp_buff[512]{}, session_key_buff[32];
-	uint32_t neg_flags = /* the current state of negotiation with the NTLMSSP partner */
-		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION |
-		NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL;
-	NTLMSSP_CRYPT_STATE crypt{};
-	NTLM_AUTH_CHALLENGE challenge{};
-	NTLMSSP_GET_PASSWORD get_password = nullptr;
-};
-
-namespace {
-
 struct NTLMSSP_SERVER_AUTH_STATE {
 	DATA_BLOB user_session_key;
 	uint8_t user_session_key_buff[32];
