@@ -98,7 +98,7 @@ BOOL utf8_truncate(char *str, int length)
 	return TRUE;
 }
 
-/* Strip all UTF-8 and replace by '?' */
+/* Strip invalid UTF-8 and replace by '?' */
 void utf8_filter(char *string)  
 {
 	int m;
@@ -108,7 +108,7 @@ void utf8_filter(char *string)
 	unsigned char *end = bytes + strlen(string);
   
 	while (bytes < end) {
-		if (bytes[0] > 0x7F) {
+		if (bytes[0] >= 0xF8) {
 			if (minus_s) {
 				m = count_s - minus_s + 1;
 				memset((bytes-m), '?', m);
