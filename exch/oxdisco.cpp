@@ -349,7 +349,7 @@ http_status OxdiscoPlugin::proc(int ctx_id, const void *content, uint64_t len) t
 
 	sql_meta_result mres{};
 	if (strncasecmp(email, public_folder_email, 19) != 0) {
-		auto err = mysql.meta(email, 0, mres);
+		auto err = mysql.meta(email, WANTPRIV_METAONLY, mres);
 		if (err != 0) {
 			mlog(LV_DEBUG, "oxdisco: unknown mailbox \"%s\": %s", email, strerror(err));
 			return die(ctx_id, 404, "Not Found");

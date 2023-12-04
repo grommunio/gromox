@@ -1,3 +1,11 @@
+Development 2.19.1
+==================
+
+Fixes:
+
+* oxdisco: allow autodiscover for room/equipment stores
+
+
 Gromox 2.19 (2023-12-04)
 ========================
 
