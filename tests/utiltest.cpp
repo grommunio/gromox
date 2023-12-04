@@ -54,13 +54,25 @@ static int t_extpp()
 	return EXIT_SUCCESS;
 }
 
-static void t_convert()
+static int t_convert()
 {
 	char out[1];
 	if (!string_to_utf8("cp1252", "foo", out, std::size(out)))
 		/* ignore */;
 	if (!string_from_utf8("cp1252", "foo", out, std::size(out)))
 		/* ignore */;
+	char largeout[1024] = "foo";
+	if (!string_to_utf8("utf-8", "utf-8", largeout, std::size(largeout)))
+		return EXIT_FAILURE;
+	strcpy(largeout, "\xef\xbb\xff foo \xef\xbb\xbf");
+	if (utf8_valid(&largeout[0]))
+		return EXIT_FAILURE;
+	if (!utf8_valid(&largeout[3]))
+		return EXIT_FAILURE;
+	utf8_filter(largeout);
+	if (strcmp(largeout, "??? foo \xef\xbb\xbf") != 0)
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
 
 static int t_emailaddr()
@@ -396,37 +408,42 @@ int main()
 	randstring(buf + 2, 0, "A");
 	randstring(buf, 1, "");
 
-	if (t_mcg() != 0)
+	auto ret = t_mcg();
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = t_extpp();
+	if (ret != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	if (t_extpp() != 0)
+	ret = t_convert();
+	if (ret != EXIT_SUCCESS)
+		return ret;
+	ret = t_emailaddr();
+	if (ret != EXIT_SUCCESS)
 		return EXIT_FAILURE;
-	t_convert();
-	if (t_emailaddr() != 0)
-		return EXIT_FAILURE;
-	if (t_base64() != 0)
+	ret = t_base64();
+	if (ret != 0)
 		return EXIT_FAILURE;
 	using fpt = decltype(&t_interval);
 	fpt fct[] = {t_interval, t_id1, t_id2, t_id3, t_id4, t_id5, t_id6,
 	             t_id7, t_id8, t_id9, t_seq};
 	for (auto f : fct) {
-		auto ret = f();
+		ret = f();
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
 	t_respool();
-	auto ret = t_cmp_binary();
-	if (ret != 0)
+	ret = t_cmp_binary();
+	if (ret != EXIT_SUCCESS)
 		return ret;
 	ret = t_cmp_guid();
-	if (ret != 0)
+	if (ret != EXIT_SUCCESS)
 		return ret;
 	ret = t_cmp_svreid();
-	if (ret != 0)
+	if (ret != EXIT_SUCCESS)
 		return ret;
 	ret = t_cmp_icaltime();
 	if (ret != 0)
 		return ret;
-	t_convert();
 	ret = t_wildcard();
 	if (ret != 0)
 		return ret;
