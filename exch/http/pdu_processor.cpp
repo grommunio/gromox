@@ -312,12 +312,6 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 	return NULL;
 }
 
-DCERPC_AUTH_CONTEXT::~DCERPC_AUTH_CONTEXT()
-{
-	if (pntlmssp != nullptr)
-		ntlmssp_destroy(pntlmssp);
-}
-
 PDU_PROCESSOR::~PDU_PROCESSOR()
 {
 	auto pprocessor = this;
@@ -708,7 +702,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 		return TRUE;
 	} else if (pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NTLMSSP) {
 		if (pauth_ctx->auth_info.auth_level <= RPC_C_AUTHN_LEVEL_CONNECT)
-			pauth_ctx->pntlmssp = ntlmssp_init(g_netbios_name,
+			pauth_ctx->pntlmssp = ntlmssp_ctx::create(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
 									NTLMSSP_NEGOTIATE_128|
 									NTLMSSP_NEGOTIATE_56|
@@ -716,7 +710,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 									NTLMSSP_NEGOTIATE_ALWAYS_SIGN,
 									http_parser_get_password);
 		else
-			pauth_ctx->pntlmssp = ntlmssp_init(g_netbios_name,
+			pauth_ctx->pntlmssp = ntlmssp_ctx::create(g_netbios_name,
 									g_dns_name, g_dns_domain, TRUE,
 									NTLMSSP_NEGOTIATE_128|
 									NTLMSSP_NEGOTIATE_56|

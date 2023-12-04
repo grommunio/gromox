@@ -603,11 +603,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 	NTLMSSP_NEGOTIATE_ALWAYS_SIGN
 	NTLMSSP_NEGOTIATE_NTLM2
 */
-NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name,
-    const char *dns_domain, bool allow_lm_key, uint32_t neg_flags,
-    NTLMSSP_GET_PASSWORD get_password) try
+std::unique_ptr<ntlmssp_ctx> ntlmssp_ctx::create(const char *netbios_name,
+    const char *dns_name, const char *dns_domain, bool allow_lm_key,
+    uint32_t neg_flags, NTLMSSP_GET_PASSWORD get_password) try
 {
-	auto pntlmssp = new NTLMSSP_CTX;
+	auto pntlmssp = std::make_unique<ntlmssp_ctx>();
 	pntlmssp->allow_lm_key = allow_lm_key;
 	pntlmssp->neg_flags |= neg_flags;
 	gx_strlcpy(pntlmssp->netbios_name, netbios_name, std::size(pntlmssp->netbios_name));
@@ -1615,9 +1615,4 @@ bool ntlmssp_ctx::session_info(NTLMSSP_SESSION_INFO *psession)
 		gx_strlcpy(psession->username, pntlmssp->user, std::size(psession->username));
 	psession->session_key.pb = psession->session_key_buff;
 	return ntlmssp_session_key(pntlmssp, &psession->session_key);
-}
-
-void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp)
-{
-	delete pntlmssp;
 }
