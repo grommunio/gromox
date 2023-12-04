@@ -22,8 +22,8 @@
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.h"
-#include "exmdb_listener.h"
-#include "exmdb_parser.h"
+#include "listener.h"
+#include "parser.h"
 
 using namespace std::string_literals;
 using namespace gromox;

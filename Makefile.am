@@ -67,10 +67,7 @@ dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-mbox2mt to
 dist_pkglibexec_SCRIPTS = tools/cleaner tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
-BUILT_SOURCES = include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h \
-	php_mapi/zrpc.cpp \
-	exch/exmdb_provider/exmdb_rpc.cpp \
-	lib/exmdb_rpc.cpp
+BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
 CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/cookie_parser.cpp lib/double_list.cpp lib/fopen.cpp lib/guid2.cpp lib/list_file.cpp lib/mail_func.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/stream.cpp lib/timezone.cpp lib/tzfile.hpp lib/tzprivate.hpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
@@ -135,7 +132,7 @@ midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/cmd_parser.h exch/midb/common_
 midb_LDADD = -lpthread ${libHX_LIBS} ${dl_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 zcore_SOURCES = exch/zcore/ab_tree.cpp exch/zcore/ab_tree.h exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.hpp exch/zcore/common_util.cpp exch/zcore/common_util.h exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_client.h exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/ics_state.h exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/object_tree.h exch/zcore/objects.hpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_ext.h exch/zcore/rpc_parser.cpp exch/zcore/rpc_parser.hpp exch/zcore/store_object.cpp exch/zcore/store_object.h exch/zcore/system_services.hpp exch/zcore/table_object.cpp exch/zcore/table_object.h exch/zcore/user_object.cpp exch/zcore/zserver.cpp exch/zcore/zserver.hpp lib/svc_loader.cpp
 zcore_LDADD = -lpthread ${libcrypto_LIBS} ${dl_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_cplus.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
-libgxs_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/bounce_producer.hpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/db_engine.h exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_listener.h exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_parser.h exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/notification_agent.h exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/store2.cpp exch/exmdb_provider/table.cpp
+libgxs_exmdb_provider_la_SOURCES = exch/exmdb/bounce_producer.cpp exch/exmdb/bounce_producer.hpp exch/exmdb/common_util.cpp exch/exmdb/db_engine.cpp exch/exmdb/db_engine.h exch/exmdb/client.cpp exch/exmdb/listener.cpp exch/exmdb/listener.h exch/exmdb/parser.cpp exch/exmdb/parser.h exch/exmdb/rpc.cpp exch/exmdb/notification_agent.cpp exch/exmdb/notification_agent.h exch/exmdb/server.cpp exch/exmdb/folder.cpp exch/exmdb/ics.cpp exch/exmdb/instance.cpp exch/exmdb/instbody.cpp exch/exmdb/main.cpp exch/exmdb/message.cpp exch/exmdb/names.cpp exch/exmdb/store.cpp exch/exmdb/store2.cpp exch/exmdb/table.cpp
 libgxs_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_exmdb_provider_la_LIBADD = -lpthread ${libcrypto_LIBS} ${fmt_LIBS} ${libHX_LIBS} ${iconv_LIBS} ${sqlite_LIBS} ${libxxhash_LIBS} libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 EXTRA_libgxs_exmdb_provider_la_DEPENDENCIES = ${default_sym}
@@ -375,7 +372,7 @@ include/exmdb_dispatch.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/
 	${AM_V_GEN}${MKDIR_P} include/gromox
 	${AM_V_at}${srcdir}/tools/exmidl.sh -d <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 
-exch/exmdb_provider/exmdb_rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
+exch/exmdb/rpc.cpp: include/gromox/exmdb_idef.hpp tools/exmidl.sh tools/exmidl.pl
 	${AM_V_GEN}${MKDIR_P} include/gromox
 	${AM_V_at}${srcdir}/tools/exmidl.sh -p <${srcdir}/include/gromox/exmdb_idef.hpp >"$@"
 

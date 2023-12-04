@@ -11,8 +11,8 @@
 #include <gromox/exmdb_ext.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
-#include "exmdb_parser.h"
 #include "notification_agent.h"
+#include "parser.h"
 
 void notification_agent_backward_notify(const char *remote_id,
     const DB_NOTIFY_DATAGRAM *pnotify)

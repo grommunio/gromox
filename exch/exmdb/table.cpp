@@ -30,7 +30,7 @@
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.h"
-#include "exmdb_parser.h"
+#include "parser.h"
 
 using LLU = unsigned long long;
 using namespace gromox;

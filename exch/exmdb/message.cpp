@@ -39,7 +39,7 @@
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.h"
-#include "exmdb_parser.h"
+#include "parser.h"
 #define MIN_BATCH_MESSAGE_NUM 20
 
 using XUI = unsigned int;

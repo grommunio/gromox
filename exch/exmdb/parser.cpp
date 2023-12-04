@@ -29,8 +29,8 @@
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
-#include "exmdb_parser.h"
 #include "notification_agent.h"
+#include "parser.h"
 #ifndef AI_V4MAPPED
 #	define AI_V4MAPPED 0
 #endif

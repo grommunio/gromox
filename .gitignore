@@ -58,6 +58,7 @@ Makefile.in
 /timer
 /zcore
 
+/exch/exmdb/rpc.cpp
 /include/gromox/paths.h
 /include/exmdb_dispatch.cpp
 /include/mapierr.cpp
@@ -65,7 +66,6 @@ Makefile.in
 /include/zrpc_dispatch.cpp
 /lib/exmdb_rpc.cpp
 /php_mapi/zrpc.cpp
-/exch/exmdb_provider/exmdb_rpc.cpp
 /system/*.service
 /tests/bdump
 /tests/bodyconv
