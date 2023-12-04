@@ -570,9 +570,9 @@ pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of auth except of auth itself */
-void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r)
+void DCERPC_AUTH::clear()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->credentials);
 }
 

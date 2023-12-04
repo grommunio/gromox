@@ -95,12 +95,13 @@ struct DCERPC_CO_CANCEL {
 };
 
 struct DCERPC_AUTH {
-	uint8_t auth_type;
-	uint8_t auth_level;
-	uint8_t auth_pad_length;
-	uint8_t auth_reserved;
-	uint32_t auth_context_id;
-	DATA_BLOB credentials;
+	~DCERPC_AUTH() { clear(); }
+	void clear();
+
+	uint8_t auth_type = 0, auth_level = 0, auth_pad_length = 0;
+	uint8_t auth_reserved = 0;
+	uint32_t auth_context_id = 0;
+	DATA_BLOB credentials{};
 };
 
 struct DCERPC_AUTH3 {
@@ -208,7 +209,6 @@ struct dcerpc_ncacn_packet {
 using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 
 extern pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *, DCERPC_AUTH *);
-extern void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r);
 extern pack_result pdu_ndr_push_dcerpc_auth(NDR_PUSH *, const DCERPC_AUTH *);
 extern pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *, DCERPC_NCACN_PACKET *);
 void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt);

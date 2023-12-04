@@ -312,6 +312,12 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 	return NULL;
 }
 
+DCERPC_AUTH_CONTEXT::~DCERPC_AUTH_CONTEXT()
+{
+	if (pntlmssp != nullptr)
+		ntlmssp_destroy(pntlmssp);
+}
+
 PDU_PROCESSOR::~PDU_PROCESSOR()
 {
 	auto pprocessor = this;
@@ -337,11 +343,6 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 	
 	while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
 		auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-		if (NULL != pauth_ctx->pntlmssp) {
-			ntlmssp_destroy(pauth_ctx->pntlmssp);
-			pauth_ctx->pntlmssp = NULL;
-		}
 		delete pauth_ctx;
 	}
 	double_list_free(&pprocessor->auth_list);
@@ -498,7 +499,6 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 	if (auth_data_only && data_and_pad != pauth->auth_pad_length) {
 		mlog(LV_DEBUG, "pdu_processor: WARNING: pad length mismatch, "
 			"calculated %u got %u\n", data_and_pad, pauth->auth_pad_length);
-		pdu_ndr_free_dcerpc_auth(pauth);
 		return FALSE;
 	}
 	
@@ -540,7 +540,6 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	pauth_ctx = pdu_processor_find_auth_context(
 				pcall->pprocessor, auth.auth_context_id);
 	if (NULL == pauth_ctx) {
-		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	}
 	pcall->pauth_ctx = pauth_ctx;
@@ -549,17 +548,14 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 	
 	switch (pauth_ctx->auth_info.auth_level) {
 	case RPC_C_AUTHN_LEVEL_DEFAULT:
-		pdu_ndr_free_dcerpc_auth(&auth);
 		return TRUE;
 	case RPC_C_AUTHN_LEVEL_PKT_PRIVACY:
 	case RPC_C_AUTHN_LEVEL_PKT_INTEGRITY:
 	case RPC_C_AUTHN_LEVEL_CONNECT:
 		break;
 	case RPC_C_AUTHN_LEVEL_NONE:
-		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	default:
-		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	}
 	
@@ -572,7 +568,6 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		    &pblob->pb[hdr_size], prequest->stub_and_verifier.cb,
 		    pblob->pb, pblob->cb - auth.credentials.cb,
 		    &auth.credentials)) {
-			pdu_ndr_free_dcerpc_auth(&auth);
 			return FALSE;
 		}
 		memcpy(prequest->stub_and_verifier.pb, &pblob->pb[hdr_size],
@@ -583,7 +578,6 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		    prequest->stub_and_verifier.pb,
 		    prequest->stub_and_verifier.cb, pblob->pb,
 		    pblob->cb - auth.credentials.cb, &auth.credentials)) {
-			pdu_ndr_free_dcerpc_auth(&auth);
 			return FALSE;
 		}
 		break;
@@ -591,17 +585,14 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 		/* ignore possible signatures here */
 		break;
 	default:
-		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	}
 	
 	/* remove the indicated amount of padding */
 	if (prequest->stub_and_verifier.cb < auth.auth_pad_length) {
-		pdu_ndr_free_dcerpc_auth(&auth);
 		return FALSE;
 	}
 	prequest->stub_and_verifier.cb -= auth.auth_pad_length;
-	pdu_ndr_free_dcerpc_auth(&auth);
 	return TRUE;
 }
 
@@ -691,7 +682,6 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 		return FALSE;
 	}
 	auto pauth_ctx = new DCERPC_AUTH_CONTEXT();
-	memset(pauth_ctx, 0, sizeof(DCERPC_AUTH_CONTEXT));
 	pauth_ctx->node.pdata = pauth_ctx;
 	
 	if (pbind->auth_info.cb == 0) {
@@ -709,7 +699,6 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 	
 	if (NULL != pdu_processor_find_auth_context(pcall->pprocessor,
 		pauth_ctx->auth_info.auth_context_id)) {
-		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 		delete pauth_ctx;
 		return FALSE;
 	}
@@ -737,7 +726,6 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 									NTLMSSP_NEGOTIATE_ALWAYS_SIGN,
 									http_parser_get_password);
 		if (NULL == pauth_ctx->pntlmssp) {
-			pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 			delete pauth_ctx;
 			return FALSE;
 		}
@@ -745,7 +733,6 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall) try
 			&pauth_ctx->node);
 		return TRUE;
 	}
-	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
 	delete pauth_ctx;
 	mlog(LV_DEBUG, "pdu_processor: unsupported authentication type");
 	return FALSE;
@@ -1045,14 +1032,14 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	if (pnode == nullptr)
 		return TRUE;
 	auto pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(pnode->pdata);
-	/* can't work without an existing state, and an new blob to feed it */
+	/* can't work without an existing state, and a new blob to feed it */
 	if ((pauth_ctx->auth_info.auth_type == RPC_C_AUTHN_NONE &&
 	    pauth_ctx->auth_info.auth_level == RPC_C_AUTHN_LEVEL_DEFAULT) ||
 		NULL == pauth_ctx->pntlmssp ||
 	    ppkt->payload.auth3.auth_info.cb == 0)
 		goto AUTH3_FAIL;
 	
-	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
+	pauth_ctx->auth_info.clear();
 	if (!pdu_processor_pull_auth_trailer(ppkt,
 	    &ppkt->payload.auth3.auth_info, &pauth_ctx->auth_info,
 	    &auth_length, TRUE))
@@ -1069,11 +1056,6 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	
  AUTH3_FAIL:
 	double_list_remove(&pcall->pprocessor->auth_list, pnode);
-	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-	if (NULL != pauth_ctx->pntlmssp) {
-		ntlmssp_destroy(pauth_ctx->pntlmssp);
-		pauth_ctx->pntlmssp = NULL;
-	}
 	delete pauth_ctx;
 	return TRUE;
 }

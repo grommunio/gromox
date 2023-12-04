@@ -52,11 +52,13 @@ struct PDU_PROCESSOR {
 };
 
 struct DCERPC_AUTH_CONTEXT {
-	DOUBLE_LIST_NODE node;
-	NTLMSSP_CTX *pntlmssp;
-	DCERPC_AUTH auth_info;	/* auth_context_id is inside this structure */
-	NTLMSSP_SESSION_INFO session_info;
-	BOOL is_login;
+	~DCERPC_AUTH_CONTEXT();
+
+	DOUBLE_LIST_NODE node{};
+	NTLMSSP_CTX *pntlmssp = nullptr;
+	DCERPC_AUTH auth_info{}; /* auth_context_id is inside this structure */
+	NTLMSSP_SESSION_INFO session_info{};
+	BOOL is_login = false;
 };
 
 struct DCERPC_CONTEXT {
