@@ -122,14 +122,12 @@ static pack_result pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK 
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of bind ack except of bind ack itself */
-static void pdu_ndr_free_dcerpc_bind_nak(DCERPC_BIND_NAK *r)
+dcerpc_bind_nak::~dcerpc_bind_nak()
 {
+	auto r = this;
 	if (NULL != r->versions) {
 		free(r->versions);
-		r->versions = NULL;
 	}
-	r->num_versions = 0;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
@@ -164,9 +162,9 @@ static pack_result pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of request except of request itself */
-static void pdu_ndr_free_dcerpc_request(DCERPC_REQUEST *r)
+dcerpc_request::~dcerpc_request()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->stub_and_verifier);
 	ndr_free_data_blob(&r->pad);
 }
@@ -203,9 +201,9 @@ static pack_result pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, DCERPC_RESPONSE 
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of response except of response itself */
-static void pdu_ndr_free_dcerpc_response(DCERPC_RESPONSE *r)
+dcerpc_response::~dcerpc_response()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->stub_and_verifier);
 	ndr_free_data_blob(&r->pad);
 }
@@ -236,9 +234,9 @@ static pack_result pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, DCERPC_FAULT *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of fault except of fault itself */
-static void pdu_ndr_free_dcerpc_fault(DCERPC_FAULT *r)
+dcerpc_fault::~dcerpc_fault()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->pad);
 }
 
@@ -285,14 +283,12 @@ static pack_result pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of fack except of fack itself */
-static void pdu_ndr_free_dcerpc_fack(DCERPC_FACK *r)
+dcerpc_fack::~dcerpc_fack()
 {
+	auto r = this;
 	if (NULL != r->selack) {
 		free(r->selack);
-		r->selack = NULL;
 	}
-	r->selack_size = 0;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_cancel_ack(NDR_PULL *pndr, DCERPC_CANCEL_ACK *r)
@@ -367,9 +363,9 @@ static pack_result pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of bind except of bind itself */
-static void pdu_ndr_free_dcerpc_bind(DCERPC_BIND *r)
+dcerpc_bind::~dcerpc_bind()
 {
+	auto r = this;
 	int i;
 	
 	ndr_free_data_blob(&r->auth_info);
@@ -378,9 +374,7 @@ static void pdu_ndr_free_dcerpc_bind(DCERPC_BIND *r)
 	}
 	if (NULL != r->ctx_list) {
 		free(r->ctx_list);
-		r->ctx_list = NULL;
 	}
-	r->num_contexts = 0;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
@@ -452,15 +446,13 @@ static pack_result pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK 
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of bind ack except of bind ack itself */
-static void pdu_ndr_free_dcerpc_bind_ack(DCERPC_BIND_ACK *r)
+dcerpc_bind_ack::~dcerpc_bind_ack()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->pad);
 	if (NULL != r->ctx_list) {
 		free(r->ctx_list);
-		r->ctx_list = NULL;
 	}
-	r->num_contexts = 0;
 	ndr_free_data_blob(&r->auth_info);
 }
 
@@ -484,9 +476,9 @@ static pack_result pdu_ndr_pull_dcerpc_co_cancel(NDR_PULL *pndr, DCERPC_CO_CANCE
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of co cancel except of co cancel itself */
-static void pdu_ndr_free_dcerpc_co_cancel(DCERPC_CO_CANCEL *r)
+dcerpc_co_cancel::~dcerpc_co_cancel()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->auth_info);
 }
 
@@ -509,9 +501,9 @@ static pack_result pdu_ndr_pull_dcerpc_orphaned(NDR_PULL *pndr, DCERPC_ORPHANED 
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of orphaned except of orphaned itself */
-static void pdu_ndr_free_dcerpc_orphaned(DCERPC_ORPHANED *r)
+dcerpc_orphaned::~dcerpc_orphaned()
 {
+	auto r = this;
 	ndr_free_data_blob(&r->auth_info);
 }
 
@@ -535,9 +527,9 @@ static pack_result pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, DCERPC_AUTH3 *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of auth3 except of auth3 itself */
-static void pdu_ndr_free_dcerpc_auth3(DCERPC_AUTH3 *r)
+dcerpc_auth3::~dcerpc_auth3()
 {	
+	auto r = this;
 	ndr_free_data_blob(&r->auth_info);
 }
 
@@ -749,14 +741,12 @@ static pack_result pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/* free memory internal of rts except of rts itself */
-static void pdu_ndr_free_dcerpc_rts(DCERPC_RTS *r)
+dcerpc_rts::~dcerpc_rts()
 {
+	auto r = this;
 	if (NULL != r->commands) {
 		free(r->commands);
-		r->commands = NULL;
 	}
-	r->num = 0;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
@@ -848,12 +838,9 @@ dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
 	if (payload == nullptr)
 		return;
 	switch (pkt_type) {
-	case DCERPC_PKT_REQUEST: {
-		auto r = static_cast<dcerpc_request *>(payload);
-		pdu_ndr_free_dcerpc_request(r);
-		delete r;
+	case DCERPC_PKT_REQUEST:
+		delete static_cast<dcerpc_request *>(payload);
 		break;
-	}
 	case DCERPC_PKT_PING:
 	case DCERPC_PKT_WORKING:
 	case DCERPC_PKT_ACK:
@@ -861,70 +848,40 @@ dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
 	case DCERPC_PKT_SHUTDOWN:
 		/* do nothing */
 		break;
-	case DCERPC_PKT_RESPONSE: {
-		auto r = static_cast<dcerpc_response *>(payload);
-		pdu_ndr_free_dcerpc_response(r);
-		delete r;
+	case DCERPC_PKT_RESPONSE:
+		delete static_cast<dcerpc_response *>(payload);
 		break;
-	}
 	case DCERPC_PKT_FAULT:
-	case DCERPC_PKT_REJECT: {
-		auto r = static_cast<dcerpc_fault *>(payload);
-		pdu_ndr_free_dcerpc_fault(r);
-		delete r;
+	case DCERPC_PKT_REJECT:
+		delete static_cast<dcerpc_fault *>(payload);
 		break;
-	}
 	case DCERPC_PKT_NOCALL:
-	case DCERPC_PKT_FACK: {
-		auto r = static_cast<dcerpc_fack *>(payload);
-		pdu_ndr_free_dcerpc_fack(r);
-		delete r;
+	case DCERPC_PKT_FACK:
+		delete static_cast<dcerpc_fack *>(payload);
 		break;
-	}
 	case DCERPC_PKT_BIND:
-	case DCERPC_PKT_ALTER: {
-		auto r = static_cast<dcerpc_bind *>(payload);
-		pdu_ndr_free_dcerpc_bind(r);
-		delete r;
+	case DCERPC_PKT_ALTER:
+		delete static_cast<dcerpc_bind *>(payload);
 		break;
-	}
 	case DCERPC_PKT_BIND_ACK:
-	case DCERPC_PKT_ALTER_ACK: {
-		auto r = static_cast<dcerpc_bind_ack *>(payload);
-		pdu_ndr_free_dcerpc_bind_ack(r);
-		delete r;
+	case DCERPC_PKT_ALTER_ACK:
+		delete static_cast<dcerpc_bind_ack *>(payload);
 		break;
-	}
-	case DCERPC_PKT_BIND_NAK: {
-		auto r = static_cast<dcerpc_bind_nak *>(payload);
-		pdu_ndr_free_dcerpc_bind_nak(r);
-		delete r;
+	case DCERPC_PKT_BIND_NAK:
+		delete static_cast<dcerpc_bind_nak *>(payload);
 		break;
-	}
-	case DCERPC_PKT_CO_CANCEL: {
-		auto r = static_cast<dcerpc_co_cancel *>(payload);
-		pdu_ndr_free_dcerpc_co_cancel(r);
-		delete r;
+	case DCERPC_PKT_CO_CANCEL:
+		delete static_cast<dcerpc_co_cancel *>(payload);
 		break;
-	}
-	case DCERPC_PKT_ORPHANED: {
-		auto r = static_cast<dcerpc_orphaned *>(payload);
-		pdu_ndr_free_dcerpc_orphaned(r);
-		delete r;
+	case DCERPC_PKT_ORPHANED:
+		delete static_cast<dcerpc_orphaned *>(payload);
 		break;
-	}
-	case DCERPC_PKT_AUTH3: {
-		auto r = static_cast<dcerpc_auth3 *>(payload);
-		pdu_ndr_free_dcerpc_auth3(r);
-		delete r;
+	case DCERPC_PKT_AUTH3:
+		delete static_cast<dcerpc_auth3 *>(payload);
 		break;
-	}
-	case DCERPC_PKT_RTS: {
-		auto r = static_cast<dcerpc_rts *>(payload);
-		pdu_ndr_free_dcerpc_rts(r);
-		delete r;
+	case DCERPC_PKT_RTS:
+		delete static_cast<dcerpc_rts *>(payload);
 		break;
-	}
 	}
 }
 
