@@ -789,12 +789,10 @@ enum class db_notify_type : uint8_t {
 	new_mail = 1, folder_created, message_created, link_created,
 	folder_deleted, message_deleted, link_deleted, folder_modified,
 	message_modified, folder_moved, message_moved, folder_copied,
-	message_copied, search_completed, hierarchy_table_changed,
-	content_table_changed, search_table_changed, hierarchy_table_row_added,
-	content_table_row_added, search_table_row_added,
-	hierarchy_table_row_deleted, content_table_row_deleted,
-	search_table_row_deleted, hierarchy_table_row_modified,
-	content_table_row_modified, search_table_row_modified,
+	message_copied, search_completed, hiertbl_changed, cttbl_changed,
+	srchtbl_changed, hiertbl_row_added, cttbl_row_added, srchtbl_row_added,
+	hiertbl_row_deleted, cttbl_row_deleted, srchtbl_row_deleted,
+	hiertbl_row_modified, cttbl_row_modified, srchtbl_row_modified,
 };
 
 struct DB_NOTIFY {

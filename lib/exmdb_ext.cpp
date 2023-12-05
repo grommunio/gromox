@@ -3845,10 +3845,10 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	TRY(ext_pull.g_uint8(&tmp_byte));
 	pnotify->db_notify.type = static_cast<db_notify_type>(tmp_byte);
 	switch (pnotify->db_notify.type) {
-	case db_notify_type::search_table_changed:
-	case db_notify_type::search_table_row_added:
-	case db_notify_type::search_table_row_deleted:
-	case db_notify_type::search_table_row_modified:
+	case db_notify_type::srchtbl_changed:
+	case db_notify_type::srchtbl_row_added:
+	case db_notify_type::srchtbl_row_deleted:
+	case db_notify_type::srchtbl_row_modified:
 		break;
 	case db_notify_type::new_mail: {
 		auto n = cu_alloc<DB_NOTIFY_NEW_MAIL>();
@@ -3977,10 +3977,10 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		pnotify->db_notify.pdata = n;
 		return ext_pull.g_uint64(&n->folder_id);
 	}
-	case db_notify_type::hierarchy_table_changed:
-	case db_notify_type::content_table_changed:
+	case db_notify_type::hiertbl_changed:
+	case db_notify_type::cttbl_changed:
 		return EXT_ERR_SUCCESS;
-	case db_notify_type::hierarchy_table_row_added: {
+	case db_notify_type::hiertbl_row_added: {
 		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 		if (n == nullptr)
 			return EXT_ERR_ALLOC;
@@ -3988,7 +3988,7 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		TRY(ext_pull.g_uint64(&n->row_folder_id));
 		return ext_pull.g_uint64(&n->after_folder_id);
 	}
-	case db_notify_type::content_table_row_added: {
+	case db_notify_type::cttbl_row_added: {
 		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>();
 		if (n == nullptr)
 			return EXT_ERR_ALLOC;
@@ -4000,14 +4000,14 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		TRY(ext_pull.g_uint64(&n->after_row_id));
 		return ext_pull.g_uint64(&n->after_instance);
 	}
-	case db_notify_type::hierarchy_table_row_deleted: {
+	case db_notify_type::hiertbl_row_deleted: {
 		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 		if (n == nullptr)
 			return EXT_ERR_ALLOC;
 		pnotify->db_notify.pdata = n;
 		return ext_pull.g_uint64(&n->row_folder_id);
 	}
-	case db_notify_type::content_table_row_deleted: {
+	case db_notify_type::cttbl_row_deleted: {
 		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
 		if (n == nullptr)
 			return EXT_ERR_ALLOC;
@@ -4016,7 +4016,7 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		TRY(ext_pull.g_uint64(&n->row_message_id));
 		return ext_pull.g_uint64(&n->row_instance);
 	}
-	case db_notify_type::hierarchy_table_row_modified: {
+	case db_notify_type::hiertbl_row_modified: {
 		auto n = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
 		if (n == nullptr)
 			return EXT_ERR_ALLOC;
@@ -4024,7 +4024,7 @@ pack_result exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		TRY(ext_pull.g_uint64(&n->row_folder_id));
 		return ext_pull.g_uint64(&n->after_folder_id);
 	}
-	case db_notify_type::content_table_row_modified: {
+	case db_notify_type::cttbl_row_modified: {
 		auto n = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
 		if (n == nullptr)
 			return EXT_ERR_ALLOC;
@@ -4050,10 +4050,10 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 	TRY(ext_push.p_uint8(static_cast<uint8_t>(pnotify->db_notify.type)));
 	auto ret = pack_result::success;
 	switch (pnotify->db_notify.type) {
-	case db_notify_type::search_table_changed:
-	case db_notify_type::search_table_row_added:
-	case db_notify_type::search_table_row_modified:
-	case db_notify_type::search_table_row_deleted:
+	case db_notify_type::srchtbl_changed:
+	case db_notify_type::srchtbl_row_added:
+	case db_notify_type::srchtbl_row_modified:
+	case db_notify_type::srchtbl_row_deleted:
 		ret = pack_result::bad_callid;
 		break;
 	case db_notify_type::new_mail: {
@@ -4153,16 +4153,16 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 		TRY(ext_push.p_uint64(n->folder_id));
 		break;
 	}
-	case db_notify_type::hierarchy_table_changed:
-	case db_notify_type::content_table_changed:
+	case db_notify_type::hiertbl_changed:
+	case db_notify_type::cttbl_changed:
 		break;
-	case db_notify_type::hierarchy_table_row_added: {
+	case db_notify_type::hiertbl_row_added: {
 		auto n = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->row_folder_id));
 		TRY(ext_push.p_uint64(n->after_folder_id));
 		break;
 	}
-	case db_notify_type::content_table_row_added: {
+	case db_notify_type::cttbl_row_added: {
 		auto n = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->row_folder_id));
 		TRY(ext_push.p_uint64(n->row_message_id));
@@ -4172,25 +4172,25 @@ static pack_result exmdb_ext_push_db_notify2(EXT_PUSH &ext_push,
 		TRY(ext_push.p_uint64(n->after_instance));
 		break;
 	}
-	case db_notify_type::hierarchy_table_row_deleted: {
+	case db_notify_type::hiertbl_row_deleted: {
 		auto n = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->row_folder_id));
 		break;
 	}
-	case db_notify_type::content_table_row_deleted: {
+	case db_notify_type::cttbl_row_deleted: {
 		auto n = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->row_folder_id));
 		TRY(ext_push.p_uint64(n->row_message_id));
 		TRY(ext_push.p_uint64(n->row_instance));
 		break;
 	}
-	case db_notify_type::hierarchy_table_row_modified: {
+	case db_notify_type::hiertbl_row_modified: {
 		auto n = static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->row_folder_id));
 		TRY(ext_push.p_uint64(n->after_folder_id));
 		break;
 	}
-	case db_notify_type::content_table_row_modified: {
+	case db_notify_type::cttbl_row_modified: {
 		auto n = static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(pnotify->db_notify.pdata);
 		TRY(ext_push.p_uint64(n->row_folder_id));
 		TRY(ext_push.p_uint64(n->row_message_id));
