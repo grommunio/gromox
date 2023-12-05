@@ -110,7 +110,7 @@ unsigned int g_exmdb_pvt_folder_softdel;
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
-static void db_engine_notify_content_table_modify_row(DB_ITEM *, uint64_t folder_id, uint64_t message_id);
+static void dbeng_notify_cttbl_modify_row(DB_ITEM *, uint64_t folder_id, uint64_t message_id);
 
 static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
 {
@@ -596,7 +596,7 @@ static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
 	}
 }
 
-static void db_engine_notify_search_completion(db_item_ptr &pdb,
+static void dbeng_notify_search_completion(db_item_ptr &pdb,
     uint64_t folder_id) try
 {
 	DB_NOTIFY_DATAGRAM datagram;
@@ -666,8 +666,7 @@ static void *mdpeng_thrwork(void *param)
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
 		/* Stop animation (does nothing else in OL really) */
-		db_engine_notify_search_completion(
-			pdb, psearch->folder_id);
+		dbeng_notify_search_completion(pdb, psearch->folder_id);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, psearch->folder_id),
 			psearch->folder_id);
@@ -962,7 +961,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
 		if (cu_eval_msg_restriction(
 			pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
 			if (b_exist) {
-				db_engine_notify_content_table_modify_row(
+				dbeng_notify_cttbl_modify_row(
 					pdb, pdynamic->folder_id, id2);
 				pdb->notify_folder_modification(
 					common_util_get_folder_parent_fid(
@@ -1259,7 +1258,7 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 	return mv;
 }
 
-static void db_engine_notify_content_table_add_row(DB_ITEM *pdb,
+static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
@@ -1918,7 +1917,7 @@ void DB_ITEM::notify_new_mail(uint64_t folder_id, uint64_t message_id) try
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_add_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
@@ -1947,8 +1946,7 @@ void DB_ITEM::notify_message_creation(uint64_t folder_id,
 		pcreated_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
@@ -1982,15 +1980,14 @@ void DB_ITEM::notify_link_creation(uint64_t srch_fld, uint64_t message_id) try
 		plinked_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, srch_fld, message_id);
+	dbeng_notify_cttbl_add_row(pdb, srch_fld, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, srch_fld), srch_fld);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2122: ENOMEM");
 }
 
-static void db_engine_notify_hierarchy_table_add_row(DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	uint32_t idx;
@@ -2157,7 +2154,7 @@ void DB_ITEM::notify_folder_creation(uint64_t parent_id, uint64_t folder_id) try
 		pcreated_folder->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_hierarchy_table_add_row(pdb, parent_id, folder_id);
+	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
@@ -2219,7 +2216,7 @@ static void *db_engine_get_extremum_value(DB_ITEM *pdb, cpid_t cpid,
 	return pvalue;
 }
 
-static void db_engine_notify_content_table_delete_row(DB_ITEM *pdb,
+static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	int result;
@@ -2686,8 +2683,7 @@ void DB_ITEM::notify_message_deletion(uint64_t folder_id, uint64_t message_id) t
 		pdeleted_mail->message_id = message_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_delete_row(
-		pdb, folder_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
@@ -2721,15 +2717,14 @@ void DB_ITEM::notify_link_deletion(uint64_t parent_id, uint64_t message_id) try
 		punlinked_mail->parent_id = parent_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_delete_row(
-		pdb, parent_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, parent_id, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2125: ENOMEM");
 }
 
-static void db_engine_notify_hierarchy_table_delete_row(DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
@@ -2813,12 +2808,12 @@ void DB_ITEM::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id) try
 		pdeleted_folder->folder_id = folder_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_hierarchy_table_delete_row(pdb, parent_id, folder_id);
+	dbeng_notify_hiertbl_delete_row(pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2126: ENOMEM");
 }
 
-static void db_engine_notify_content_table_modify_row(DB_ITEM *pdb,
+static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	int result;
@@ -3376,10 +3371,8 @@ static void db_engine_notify_content_table_modify_row(DB_ITEM *pdb,
 	if (tmp_list.empty())
 		return;
 	std::swap(pdb->tables.table_list, tmp_list);
-	db_engine_notify_content_table_delete_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
 	std::swap(pdb->tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
@@ -3423,15 +3416,14 @@ void DB_ITEM::notify_message_modification(uint64_t folder_id, uint64_t message_i
 		pmodified_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_modify_row(
-		pdb, folder_id, message_id);
+	dbeng_notify_cttbl_modify_row(pdb, folder_id, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2127: ENOMEM");
 }
 
-static void db_engine_notify_hierarchy_table_modify_row(DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_modify_row(DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
@@ -3604,8 +3596,7 @@ void DB_ITEM::notify_folder_modification(uint64_t parent_id, uint64_t folder_id)
 		pmodified_folder->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_hierarchy_table_modify_row(
-		pdb, parent_id, folder_id);
+	dbeng_notify_hiertbl_modify_row(pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2128: ENOMEM");
 }
@@ -3653,13 +3644,11 @@ void DB_ITEM::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
-		db_engine_notify_content_table_delete_row(
-			pdb, old_fid, old_mid);
+		dbeng_notify_cttbl_delete_row(pdb, old_fid, old_mid);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_fid), old_fid);
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 }
@@ -3708,13 +3697,11 @@ void DB_ITEM::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
-		db_engine_notify_hierarchy_table_delete_row(
-			pdb, old_pid, old_fid);
+		dbeng_notify_hiertbl_delete_row(pdb, old_pid, old_fid);
 		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_pid), old_pid);
 	}
-	db_engine_notify_hierarchy_table_add_row(
-		pdb, parent_id, folder_id);
+	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id);
 	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 }
