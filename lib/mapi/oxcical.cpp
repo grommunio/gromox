@@ -41,7 +41,7 @@ using uidxevent_list_t = std::unordered_map<std::string, event_list_t>;
 using message_ptr = std::unique_ptr<MESSAGE_CONTENT, mc_delete>;
 
 namespace gromox {
-bool g_oxcical_allday_ymd = true;
+bool g_oxcical_allday_ymd = true; /* MS-OXCICAL v13 §2.1.3.1.1.20.8 p. 49. */
 bool oxcmail_exchsched_compat = false;
 }
 
@@ -2021,6 +2021,10 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 
 	time_t start_time = 0, end_time = 0;
 	ICAL_TIME start_itime{}, end_itime{};
+	/*
+	 * EXC2019 treats iCalendar floating time as if it was specified with
+	 * UTC time. As a result, export of such MAPI objects can shift it.
+	 */
 	if (!oxcical_parse_dtvalue(ptz_component,
 	    *piline, &start_itime, &start_time))
 		return "E-2196: oxcical_parse_dtvalue returned an unspecified error";
@@ -3604,10 +3608,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 			return "E-2221";
 		char tmp_buff[1024];
-		if (ptz_component == nullptr)
-			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		else if (b_allday && g_oxcical_allday_ymd)
+		if (b_allday && g_oxcical_allday_ymd)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
+		else if (ptz_component == nullptr)
+			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 
@@ -3640,10 +3644,10 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return "E-2222";
 		char tmp_buff[1024];
-		if (ptz_component == nullptr)
-			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		else if (b_allday && g_oxcical_allday_ymd)
+		if (b_allday && g_oxcical_allday_ymd)
 			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
+		else if (ptz_component == nullptr)
+			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
 		else
 			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
 		auto &pilineDTE = pcomponent->append_line("DTEND", tmp_buff);
