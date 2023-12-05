@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 #include <tinyxml2.h>
+#include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
@@ -334,8 +335,8 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 			uint64_t hash = FNV()(data, len);
 			size_t count = debug->requestHashes[hash]++;
 			if(count > debug->loopThreshold)
-				mlog(LV_WARN, "[ews#%d]: Possible loop, request hash has been seen %zu time%s before", ctx_id, count,
-				count == 1? "" : "s");
+				mlog(LV_WARN, "[ews#%d]%s: Possible loop, request hash has been seen %zu time%s before", ctx_id,
+				     timestamp().c_str(), count, count == 1? "" : "s");
 		}
 	}
 
@@ -346,33 +347,43 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	if(!request)
 		return fault(ctx_id, http_status::bad_request, "Missing request node");
 	if(request->NextSibling())
-		mlog(LV_WARN, "[ews#%d] Additional request nodes found - ignoring", ctx_id);
+		mlog(LV_WARN, "[ews#%d]%s Additional request nodes found - ignoring", ctx_id, timestamp().c_str());
 	if(!rpc_new_stack())
-		mlog(LV_WARN, "[ews#%d] Failed to allocate stack, exmdb might not work", ctx_id);
+		mlog(LV_WARN, "[ews#%d]%s Failed to allocate stack, exmdb might not work", ctx_id, timestamp().c_str());
 	auto cl0 = make_scope_exit([]{rpc_free_stack();});
 	bool enableLog = logEnabled(request->Name());
 	if(enableLog && request_logging >= 2)
-		mlog(LV_DEBUG, "[ews#%d] Incoming data: %.*s", ctx_id,  len > INT_MAX ? INT_MAX : static_cast<int>(len),
-		     static_cast<const char *>(data));
+		mlog(LV_DEBUG, "[ews#%d]%s Incoming data: %.*s", ctx_id, timestamp().c_str(),
+		     len > INT_MAX ? INT_MAX : static_cast<int>(len), static_cast<const char *>(data));
 
 	XMLElement* responseContainer = context.response().body->InsertNewChildElement(request->Name());
 	responseContainer->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	responseContainer->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
-	if(request_logging)
-		mlog(LV_DEBUG, "[ews#%d] Processing %s", ctx_id,  request->Name());
+	if(enableLog && request_logging)
+		mlog(LV_DEBUG, "[ews#%d]%s Processing %s", ctx_id, timestamp().c_str(), request->Name());
 	auto handler = requestMap.find(request->Name());
-	if(handler == requestMap.end())
-		throw Exceptions::UnknownRequestError("Unknown request '"s+request->Name()+"'.");
-	else
+	if(handler == requestMap.end()) {
+		std::string msg = fmt::format("Unknown request '{}'.", request->Name());
+		if(response_logging && enableLog)
+			mlog(LV_WARN, "[ews#%d]%s Done, code 500: unknown request '%s'", ctx_id, timestamp().c_str(), request->Name());
+		return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", msg.c_str()));
+	}
+	else try {
 		handler->second(request, responseContainer, context);
+	} catch (const Exceptions::InputError &err) {
+		if(response_logging && enableLog)
+			mlog(LV_WARN, "[ews#%d]%s Done, code 200, input error: '%s'", ctx_id, timestamp().c_str(), err.what());
+		return fault(ctx_id, http_status::ok, SOAP::Envelope::fault("SOAP:Client", err.what()));
+	} catch (const Exceptions::EWSError &err) {
+		if(response_logging && enableLog)
+			mlog(LV_WARN, "[ews#%d]%s Done, code 200, uncaught ews error: '%s'", ctx_id, timestamp().c_str(), err.what());
+		return fault(ctx_id, http_status::ok, SOAP::Envelope::fault(err.type.c_str(), err.what()));
+	}
 
 	context.log(enableLog);
 	return http_status::ok;
-} catch (const Exceptions::InputError &err) {
-	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault("SOAP:Client", err.what()));
-} catch (const Exceptions::EWSError &err) {
-	return fault(ctx_id, http_status::ok, SOAP::Envelope::fault(err.type.c_str(), err.what()));
 } catch (const std::exception &err) {
+	mlog(LV_ERR, "[ews#%d]%s Error: %s", ctx_id, timestamp().c_str(), err.what());
 	return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", err.what()));
 }
 
@@ -451,6 +462,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_event_stream_interval", "45000"},
 	{"ews_experimental", "ews_beta", CFG_ALIAS},
 	{"ews_log_filter", "!"},
+	{"ews_log_timestamp", ""},
 	{"ews_max_user_photo_size", "5M", CFG_SIZE},
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
@@ -501,6 +513,10 @@ void EWSPlugin::loadConfig()
 			logFilters.emplace_back(logFilter);
 		std::sort(logFilters.begin(), logFilters.end());
 	}
+	timestampFormat += cfg->get_value("ews_log_timestamp"); // Initially contains one space (' ')
+	if(timestampFormat.size() == 1) // If nothing was configured
+		timestampFormat.clear();    // Completely disable logging timestamps
+
 	const char* debugOpts = cfg->get_value("ews_debug");
 	if(debugOpts)
 		debug = std::make_unique<DebugCtx>(debugOpts);
@@ -656,8 +672,8 @@ int EWSPlugin::retr(int ctx_id)
 		writecontent(ctx_id, {printer.CStr(), static_cast<size_t>(printer.CStrSize()-1)}, logResponse, loglevel);
 		context.state(EWSContext::S_DONE);
 		if(context.log() && response_logging)
-			mlog(loglevel, "[ews#%d] Done, code %d, %d bytes, %.3fms", ctx_id, int(context.code()), printer.CStrSize()-1,
-				 context.age()*1000);
+			mlog(loglevel, "[ews#%d]%s Done, code %d, %d bytes, %.3fms", ctx_id, timestamp().c_str(), int(context.code()),
+			     printer.CStrSize()-1, context.age()*1000);
 		return HPM_RETRIEVE_WRITE;
 	}
 	case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;
@@ -813,7 +829,7 @@ void EWSPlugin::event(const char* dir, BOOL, uint32_t ID, const DB_NOTIFY* notif
 		// Is still bound to the ObjectCache cleanup cycle and might take significantly longer than that.
 		cache.get(*sub->waitingContext, std::chrono::milliseconds(100));
 } catch(const std::exception& err)
-{mlog(LV_ERR, "Failed to process notification: %s", err.what());}
+{mlog(LV_ERR, "[ews#evt] %s:Failed to process notification: %s", err.what(), timestamp().c_str());}
 
 /**
  * @brief      Load message instance
@@ -948,6 +964,23 @@ std::shared_ptr<EWSPlugin::Subscription> EWSPlugin::subscription(detail::Subscri
 		return std::get<sptr<Subscription>>(cache.get(subscriptionKey, std::chrono::milliseconds(timeout*60'000)));
 	} catch (...) { // Key not found or type error
 		return nullptr;
+	}
+}
+
+/**
+ * @brief      Generate formatted timestamp according to timestampFormat
+ *
+ * @return     string containing the current time
+ */
+std::string EWSPlugin::timestamp() const
+{
+	try {
+		return timestampFormat.empty()? std::string() :
+		                                fmt::format(fmt::runtime(timestampFormat), std::chrono::system_clock::now());
+	} catch(fmt::format_error& err) {
+		mlog(LV_WARN, "ews: failed to format timestamp according to specification '%s': %s",
+		     timestampFormat.c_str(), err.what());
+		return std::string();
 	}
 }
 

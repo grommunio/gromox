@@ -169,6 +169,7 @@ public:
 	std::shared_ptr<Subscription> mksub(const Structures::tSubscriptionId&, const char*) const;
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
 	std::shared_ptr<Subscription> subscription(detail::SubscriptionKey, uint32_t) const;
+	std::string timestamp() const;
 	void unlinkSubscription(int) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
@@ -176,6 +177,7 @@ public:
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
+	std::string timestampFormat = " "; ///< format specification for log timestamps or empty to disable timestamps
 	uint16_t smtp_server_port = 25; ///< Port to send mail to, default `"25"`
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
