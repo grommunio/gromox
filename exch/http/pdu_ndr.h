@@ -21,96 +21,101 @@ struct DCERPC_ACK_CTX {
 	SYNTAX_ID syntax;
 };
 
-struct DCERPC_REQUEST {
-	uint32_t alloc_hint;
-	uint16_t context_id;
-	uint16_t opnum;
-	DCERPC_OBJECT object;
-	DATA_BLOB pad;
-	DATA_BLOB stub_and_verifier;
-};
+struct dcerpc_payload {};
 
-struct DCERPC_RESPONSE {
-	uint32_t alloc_hint;
-	uint16_t context_id;
-	uint8_t cancel_count;
-	DATA_BLOB pad;
-	DATA_BLOB stub_and_verifier;
+struct dcerpc_request final : public dcerpc_payload {
+	uint32_t alloc_hint = 0;
+	uint16_t context_id = 0, opnum = 0;
+	DCERPC_OBJECT object{};
+	DATA_BLOB pad{}, stub_and_verifier{};
 };
+using DCERPC_REQUEST = dcerpc_request;
 
-struct DCERPC_FAULT {
-	uint32_t alloc_hint;
-	uint16_t context_id;
-	uint8_t cancel_count;
-	int status;  /*dcerpc ncan status */
-	DATA_BLOB pad;
+struct dcerpc_response final : public dcerpc_payload {
+	uint32_t alloc_hint = 0;
+	uint16_t context_id = 0;
+	uint8_t cancel_count = 0;
+	DATA_BLOB pad{}, stub_and_verifier{};
 };
+using DCERPC_RESPONSE = dcerpc_response;
 
-struct DCERPC_FACK {
-	uint32_t version;
-	uint8_t pad;
-	uint16_t window_size;
-	uint32_t max_tdsu;
-	uint32_t max_frag_size;
-	uint16_t serial_no;
-	uint16_t selack_size;
-	uint32_t *selack;
+struct dcerpc_fault final : public dcerpc_payload {
+	uint32_t alloc_hint = 0;
+	uint16_t context_id = 0;
+	uint8_t cancel_count = 0;
+	int status = 0; /* dcerpc ncacn status */
+	DATA_BLOB pad{};
 };
+using DCERPC_FAULT = dcerpc_fault;
 
-struct DCERPC_CANCEL_ACK {
-	uint32_t version;
-	uint32_t id;
-	uint32_t server_is_accepting;
+struct dcerpc_fack final : public dcerpc_payload {
+	uint32_t version = 0;
+	uint8_t pad = 0;
+	uint16_t window_size = 0;
+	uint32_t max_tdsu = 0, max_frag_size = 0;
+	uint16_t serial_no = 0, selack_size = 0;
+	uint32_t *selack = nullptr;
 };
+using DCERPC_FACK = dcerpc_fack;
 
-struct DCERPC_BIND {
-	uint16_t max_xmit_frag;
-	uint16_t max_recv_frag;
-	uint32_t assoc_group_id;
-	uint8_t num_contexts;
-	DCERPC_CTX_LIST *ctx_list;
-	DATA_BLOB auth_info;
+struct dcerpc_cancel_ack final : public dcerpc_payload {
+	uint32_t version = 0, id = 0, server_is_accepting = 0;
 };
+using DCERPC_CANCEL_ACK = dcerpc_cancel_ack;
 
-struct DCERPC_BIND_ACK {
-	uint16_t max_xmit_frag;
-	uint16_t max_recv_frag;
-	uint32_t assoc_group_id;
-	uint16_t secondary_address_size;
-	char secondary_address[64];
-	DATA_BLOB pad;
-	uint8_t num_contexts;
-	DCERPC_ACK_CTX *ctx_list;
-	DATA_BLOB auth_info;
+struct dcerpc_bind final : public dcerpc_payload {
+	uint16_t max_xmit_frag = 0, max_recv_frag = 0;
+	uint32_t assoc_group_id = 0;
+	uint8_t num_contexts = 0;
+	DCERPC_CTX_LIST *ctx_list = nullptr;
+	DATA_BLOB auth_info{};
 };
+using DCERPC_BIND = dcerpc_bind;
 
-struct DCERPC_BIND_NAK {
-	uint16_t reject_reason;
-	uint32_t num_versions;
-	uint32_t *versions;
+struct dcerpc_bind_ack final : public dcerpc_payload {
+	uint16_t max_xmit_frag = 0, max_recv_frag = 0;
+	uint32_t assoc_group_id = 0;
+	uint16_t secondary_address_size = 0;
+	char secondary_address[64]{};
+	DATA_BLOB pad{};
+	uint8_t num_contexts = 0;
+	DCERPC_ACK_CTX *ctx_list = nullptr;
+	DATA_BLOB auth_info{};
 };
+using DCERPC_BIND_ACK = dcerpc_bind_ack;
 
-struct DCERPC_CO_CANCEL {
-	DATA_BLOB auth_info;
+struct dcerpc_bind_nak final : public dcerpc_payload {
+	uint16_t reject_reason = 0;
+	uint32_t num_versions = 0;
+	uint32_t *versions = nullptr;
 };
+using DCERPC_BIND_NAK = dcerpc_bind_nak;
+
+struct dcerpc_co_cancel final : public dcerpc_payload {
+	DATA_BLOB auth_info{};
+};
+using DCERPC_CO_CANCEL = dcerpc_co_cancel;
 
 struct DCERPC_AUTH {
-	uint8_t auth_type;
-	uint8_t auth_level;
-	uint8_t auth_pad_length;
-	uint8_t auth_reserved;
-	uint32_t auth_context_id;
-	DATA_BLOB credentials;
+	~DCERPC_AUTH() { clear(); }
+	void clear();
+
+	uint8_t auth_type = 0, auth_level = 0, auth_pad_length = 0;
+	uint8_t auth_reserved = 0;
+	uint32_t auth_context_id = 0;
+	DATA_BLOB credentials{};
 };
 
-struct DCERPC_AUTH3 {
-	uint32_t pad;
-	DATA_BLOB auth_info;
+struct dcerpc_auth3 final : public dcerpc_payload {
+	uint32_t pad = 0;
+	DATA_BLOB auth_info{};
 };
+using DCERPC_AUTH3 = dcerpc_auth3;
 
-struct DCERPC_ORPHANED {
-	DATA_BLOB auth_info;
+struct dcerpc_orphaned final : public dcerpc_payload {
+	DATA_BLOB auth_info{};
 };
+using DCERPC_ORPHANED = dcerpc_orphaned;
 
 struct RTS_FLOWCONTROLACK {
 	uint32_t bytes_received;
@@ -146,34 +151,11 @@ struct RTS_CMD {
 	RTS_CMDS command;
 };
 
-struct DCERPC_RTS {
-	uint16_t flags;
-	uint16_t num;
-	RTS_CMD *commands;
+struct dcerpc_rts final : public dcerpc_payload {
+	uint16_t flags = 0, num = 0;
+	RTS_CMD *commands = nullptr;
 };
-
-union DCERPC_PAYLOAD {
-	DCERPC_REQUEST request;
-	char ping;
-	DCERPC_RESPONSE response;
-	DCERPC_FAULT fault;
-	char working;
-	DCERPC_FACK nocall;
-	DCERPC_FAULT reject;
-	char ack;
-	DCERPC_FACK fack;
-	DCERPC_CANCEL_ACK cancel_ack;
-	DCERPC_BIND bind;
-	DCERPC_BIND_ACK bind_ack;
-	DCERPC_BIND_NAK bind_nak;
-	DCERPC_BIND alter;
-	DCERPC_BIND_ACK alter_ack;
-	char shutdown;
-	DCERPC_CO_CANCEL co_cancel;
-	DCERPC_ORPHANED orphaned;
-	DCERPC_AUTH3 auth3;
-	DCERPC_RTS rts;
-};
+using DCERPC_RTS = dcerpc_rts;
 
 /*
  * RTS PDU Header
@@ -185,6 +167,8 @@ union DCERPC_PAYLOAD {
  * C706 §12.6.1 / RPCH v19 §2.2.3.6.1
  */
 struct dcerpc_ncacn_packet {
+	~dcerpc_ncacn_packet();
+
 	constexpr dcerpc_ncacn_packet(bool be)
 	{
 		drep[0] = be ? 0 : DCERPC_DREP_LE;
@@ -203,13 +187,11 @@ struct dcerpc_ncacn_packet {
 	uint16_t auth_length = 0;
 	uint32_t call_id = 0;
 	uint8_t pkt_type = DCERPC_PKT_INVALID;
-	DCERPC_PAYLOAD payload{};
+	dcerpc_payload *payload = nullptr;
 };
 using DCERPC_NCACN_PACKET = dcerpc_ncacn_packet;
 
 extern pack_result pdu_ndr_pull_dcerpc_auth(NDR_PULL *, DCERPC_AUTH *);
-extern void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r);
 extern pack_result pdu_ndr_push_dcerpc_auth(NDR_PUSH *, const DCERPC_AUTH *);
 extern pack_result pdu_ndr_pull_ncacnpkt(NDR_PULL *, DCERPC_NCACN_PACKET *);
-void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt);
 extern pack_result pdu_ndr_push_ncacnpkt(NDR_PUSH *, DCERPC_NCACN_PACKET *);

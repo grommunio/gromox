@@ -1603,8 +1603,8 @@ static tproc_status htparse_wrrep(http_context *pcontext)
 		    pcontext->total_length - pcontext->bytes_rw <= MAX_RECLYING_REMAINING &&
 		    !hch->b_obsolete) {
 			/* begin of out channel recycling */
-			if (pdu_processor_rts_outr2_a2(hch->pcall)) {
-				pdu_processor_output_pdu(hch->pcall, &hch->pdu_list);
+			if (hch->pcall->rts_outr2_a2()) {
+				hch->pcall->move_pdus(hch->pdu_list);
 				hch->b_obsolete = TRUE;
 			}
 		} else {
@@ -1859,7 +1859,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 				/* if it is a fragment pdu, we must
 					make the flowcontrol output */
 				if (PDU_PROCESSOR_INPUT == result) {
-					pdu_processor_output_pdu(pcall, &och->pdu_list);
+					pcall->move_pdus(och->pdu_list);
 					pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 					contexts_pool_signal(pvconnection->pcontext_out);
 				}
@@ -1911,7 +1911,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length =
 				OUT_CHANNEL_MAX_LENGTH + response_len;
-			pdu_processor_output_stream(pcall, &pcontext->stream_out);
+			pcall->output_pdus(pcontext->stream_out);
 			/* never free this kind of pcall */
 			pchannel_out->pcall = pcall;
 			pcontext->bytes_rw = 0;
@@ -1924,7 +1924,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 			pcontext->port, pchannel_in->connection_cookie);
 		if (pvconnection == nullptr) {
-			pdu_processor_free_call(pcall);
+			delete pcall;
 			pcontext->log(LV_DEBUG,
 				"cannot find virtual connection in hash table");
 			return tproc_status::runoff;
@@ -1934,7 +1934,7 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		    pcontext != pvconnection->pcontext_insucc)
 		    || NULL == pvconnection->pcontext_out) {
 			pvconnection.put();
-			pdu_processor_free_call(pcall);
+			delete pcall;
 			pcontext->log(LV_DEBUG,
 				"missing out channel in virtual connection");
 			return tproc_status::runoff;
@@ -1942,16 +1942,16 @@ static tproc_status htparse_rdbody(http_context *pcontext)
 		auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 		if (och->b_obsolete) {
 			auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-			pdu_processor_output_pdu(pcall, &hch->pdu_list);
+			pcall->move_pdus(hch->pdu_list);
 			pvconnection.put();
-			pdu_processor_free_call(pcall);
+			delete pcall;
 			return tproc_status::cont;
 		}
-		pdu_processor_output_pdu(pcall, &och->pdu_list);
+		pcall->move_pdus(och->pdu_list);
 		pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 		contexts_pool_signal(pvconnection->pcontext_out);
 		pvconnection.put();
-		pdu_processor_free_call(pcall);
+		delete pcall;
 		return tproc_status::cont;
 	}
 	case PDU_PROCESSOR_TERMINATE:
@@ -1974,15 +1974,13 @@ static tproc_status htparse_waitinchannel(http_context *pcontext,
 			pchannel_in->bytes_received = 0;
 			pchannel_out->client_keepalive =
 				pchannel_in->client_keepalive;
-			if (!pdu_processor_rts_conn_c2(
-			    pchannel_out->pcall, pchannel_out->window_size)) {
+			if (!pchannel_out->pcall->rts_conn_c2(pchannel_out->window_size)) {
 				pvconnection.put();
 				pcontext->log(LV_DEBUG,
 					"pdu process error! fail to setup conn/c2");
 				return tproc_status::runoff;
 			}
-			pdu_processor_output_pdu(
-				pchannel_out->pcall, &pchannel_out->pdu_list);
+			pchannel_out->pcall->move_pdus(pchannel_out->pdu_list);
 			pcontext->sched_stat = hsched_stat::wrrep;
 			pchannel_out->channel_stat = hchannel_stat::opened;
 			return tproc_status::loop;
@@ -2059,15 +2057,14 @@ static tproc_status htparse_wait(http_context *pcontext)
 	if (current_time - pcontext->connection.last_timestamp <
 	    pchannel_out->client_keepalive / 2)
 		return tproc_status::idle;
-	if (!pdu_processor_rts_ping(pchannel_out->pcall))
+	if (!pchannel_out->pcall->rts_ping())
 		return tproc_status::idle;
 	/* stream_out is shared resource of vconnection,
 		lock it first before operating */
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
-	pdu_processor_output_pdu(
-		pchannel_out->pcall, &pchannel_out->pdu_list);
+	pchannel_out->pcall->move_pdus(pchannel_out->pdu_list);
 	pcontext->sched_stat = hsched_stat::wrrep;
 	return tproc_status::loop;
 }
@@ -2113,11 +2110,11 @@ void http_parser_vconnection_async_reply(const char *host,
 	if (och->b_obsolete) {
 		if (NULL != pvconnection->pcontext_in) {
 			auto ich = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
-			pdu_processor_output_pdu(pcall, &ich->pdu_list);
+			pcall->move_pdus(ich->pdu_list);
 			return;
 		}
 	} else {
-		pdu_processor_output_pdu(pcall, &och->pdu_list);
+		pcall->move_pdus(och->pdu_list);
 	}
 	pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(pvconnection->pcontext_out);
@@ -2375,9 +2372,9 @@ BOOL http_context::recycle_outchannel(const char *predecessor_cookie)
 	if (!och->b_obsolete)
 		return FALSE;
 	auto pcall = och->pcall;
-	if (!pdu_processor_rts_outr2_a6(pcall))
+	if (!pcall->rts_outr2_a6())
 		return FALSE;
-	pdu_processor_output_pdu(pcall, &och->pdu_list);
+	pcall->move_pdus(och->pdu_list);
 	pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(pvconnection->pcontext_out);
 	hch->client_keepalive = och->client_keepalive;
@@ -2424,14 +2421,13 @@ BOOL http_context::activate_outrecycling(const char *successor_cookie)
 	    strcmp(successor_cookie, static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_outsucc->pchannel)->channel_cookie) != 0)
 		return false;
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
-	if (!pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
+	if (!pchannel_out->pcall->rts_outr2_b3()) {
 		pvconnection.put();
 		pcontext->log(LV_DEBUG,
 			"pdu process error! fail to setup r2/b3");
 		return FALSE;
 	}
-	pdu_processor_output_pdu(
-		pchannel_out->pcall, &pchannel_out->pdu_list);
+	pchannel_out->pcall->move_pdus(pchannel_out->pdu_list);
 	pvconnection->pcontext_out->sched_stat = hsched_stat::wrrep;
 	contexts_pool_signal(pvconnection->pcontext_out);
 	pvconnection->pcontext_out = pvconnection->pcontext_outsucc;
@@ -2483,7 +2479,7 @@ RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
 	DOUBLE_LIST_NODE *pnode;
 
 	if (pcall != nullptr) {
-		pdu_processor_free_call(pcall);
+		delete pcall;
 		pcall = nullptr;
 	}
 	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {

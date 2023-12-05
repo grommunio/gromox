@@ -28,9 +28,6 @@
 #define MSVAVDNSCOMPUTERNAME		3
 #define MSVAVDNSDOMAINNAME			4
 
-
-#define NTLMSSP_SIG_SIZE			16
-
 #define NTLMSSP_SIGN_VERSION		0x01
 
 #define NTLMSSP_DIRECTION_SEND		0
@@ -51,51 +48,6 @@ enum {
 	NTLMSSP_WINDOWS_MINOR_VERSION_2 = 0x02,
 	NTLMSSP_REVISION_W2K3_RC10x0A = 0x0A,
 	NTLMSSP_REVISION_W2K3 = 0x0F,
-};
-
-namespace {
-
-struct NTLM_AUTH_CHALLENGE {
-	DATA_BLOB blob;
-	uint8_t blob_buff[8]; /* buffer for DATA_BLOB's data */
-};
-
-struct NTLMSSP_CRYPT_DIRECTION {
-	uint32_t seq_num;
-	uint8_t sign_key[16];
-	ARCFOUR_STATE seal_state;
-};
-
-struct NTLMSSP_CRYPT_DIRECTION_V2 {
-	NTLMSSP_CRYPT_DIRECTION sending;
-	NTLMSSP_CRYPT_DIRECTION receiving;
-};
-
-union NTLMSSP_CRYPT_STATE {
-	NTLMSSP_CRYPT_DIRECTION ntlm;     /* NTLM */
-	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
-};
-
-}
-
-struct NTLMSSP_CTX {
-	std::mutex lock;
-	uint32_t expected_state = NTLMSSP_PROCESS_NEGOTIATE;
-	bool unicode = false;
-	bool allow_lm_key = false; /* The LM_KEY code is not very secure... */
-	char user[128]{}, domain[128]{};
-	uint8_t *nt_hash = nullptr, *lm_hash = nullptr;
-	char netbios_name[128]{}, dns_name[128]{}, dns_domain[128]{};
-	DATA_BLOB internal_chal{}; /* Random challenge as supplied to the client for NTLM authentication */
-	uint8_t internal_chal_buff[32]{};
-	DATA_BLOB lm_resp{}, nt_resp{}, session_key{};
-	uint8_t lm_resp_buff[32]{}, nt_resp_buff[512]{}, session_key_buff[32];
-	uint32_t neg_flags = /* the current state of negotiation with the NTLMSSP partner */
-		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION |
-		NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL;
-	NTLMSSP_CRYPT_STATE crypt{};
-	NTLM_AUTH_CHALLENGE challenge{};
-	NTLMSSP_GET_PASSWORD get_password = nullptr;
 };
 
 namespace {
@@ -651,11 +603,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 	NTLMSSP_NEGOTIATE_ALWAYS_SIGN
 	NTLMSSP_NEGOTIATE_NTLM2
 */
-NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name,
-    const char *dns_domain, bool allow_lm_key, uint32_t neg_flags,
-    NTLMSSP_GET_PASSWORD get_password) try
+std::unique_ptr<ntlmssp_ctx> ntlmssp_ctx::create(const char *netbios_name,
+    const char *dns_name, const char *dns_domain, bool allow_lm_key,
+    uint32_t neg_flags, NTLMSSP_GET_PASSWORD get_password) try
 {
-	auto pntlmssp = new NTLMSSP_CTX;
+	auto pntlmssp = std::make_unique<ntlmssp_ctx>();
 	pntlmssp->allow_lm_key = allow_lm_key;
 	pntlmssp->neg_flags |= neg_flags;
 	gx_strlcpy(pntlmssp->netbios_name, netbios_name, std::size(pntlmssp->netbios_name));
@@ -1414,8 +1366,9 @@ static bool ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
+bool ntlmssp_ctx::update(DATA_BLOB *pblob)
 {
+	auto pntlmssp = this;
 	DATA_BLOB tmp_blob;
 	uint8_t blob_buff[1024];
 	uint32_t ntlmssp_command;
@@ -1458,16 +1411,6 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	}
 	pblob->cb = tmp_blob.cb;
 	return true;
-}
-
-uint32_t ntlmssp_expected_state(NTLMSSP_CTX *pntlmssp)
-{
-	return pntlmssp->expected_state;
-}
-
-size_t ntlmssp_sig_size()
-{
-	return NTLMSSP_SIG_SIZE;
 }
 
 static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
@@ -1523,14 +1466,15 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	cpu_to_le32p(&psig->pb[0], NTLMSSP_SIGN_VERSION);
 	memcpy(&psig->pb[4], digest, 8);
 	memcpy(&psig->pb[12], seq_num, 4);
-	psig->cb = NTLMSSP_SIG_SIZE;
+	psig->cb = NTLMSSP_CTX::SIG_SIZE;
 	return true;
 }
 
-bool ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
+bool ntlmssp_ctx::sign_packet(const uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
 	    pntlmssp->session_key.cb == 0)
@@ -1578,10 +1522,11 @@ static bool ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 	return true;
 }
 
-bool ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
+bool ntlmssp_ctx::check_packet(const uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	const DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, psig))
@@ -1589,9 +1534,10 @@ bool ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 	return true;
 }
 
-bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
+bool ntlmssp_ctx::seal_packet(uint8_t *pdata, size_t length,
 	const uint8_t *pwhole_pdu, size_t pdu_length, DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	uint32_t crc;
 	
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SEAL))
@@ -1625,10 +1571,11 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 	return true;
 }
 	
-bool ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
+bool ntlmssp_ctx::unseal_packet(uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	const DATA_BLOB *psig)
 {
+	auto pntlmssp = this;
 	std::lock_guard lk(pntlmssp->lock);
 	if (pntlmssp->session_key.cb == 0) {
 		mlog(LV_DEBUG, "ntlm: no session key, cannot unseal packet");
@@ -1658,8 +1605,9 @@ static bool ntlmssp_session_key(NTLMSSP_CTX *pntlmssp, DATA_BLOB *psession_key)
 	return true;
 }
 
-bool ntlmssp_session_info(NTLMSSP_CTX *pntlmssp, NTLMSSP_SESSION_INFO *psession)
+bool ntlmssp_ctx::session_info(NTLMSSP_SESSION_INFO *psession)
 {
+	auto pntlmssp = this;
 	if (strchr(pntlmssp->user, '@') == nullptr)
 		snprintf(psession->username, std::size(psession->username),
 		         "%s@%s", pntlmssp->user, pntlmssp->domain);
@@ -1667,9 +1615,4 @@ bool ntlmssp_session_info(NTLMSSP_CTX *pntlmssp, NTLMSSP_SESSION_INFO *psession)
 		gx_strlcpy(psession->username, pntlmssp->user, std::size(psession->username));
 	psession->session_key.pb = psession->session_key_buff;
 	return ntlmssp_session_key(pntlmssp, &psession->session_key);
-}
-
-void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp)
-{
-	delete pntlmssp;
 }
