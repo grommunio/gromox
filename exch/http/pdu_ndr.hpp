@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 #include <gromox/ndr.hpp>
 #include "pdu_ndr_ids.hpp"
 
@@ -158,15 +159,17 @@ union RTS_CMDS {
 	uint32_t pingtrafficsentnotify;
 };
 
-struct RTS_CMD {
+struct rts_cmd {
 	uint32_t command_type;
 	RTS_CMDS command;
 };
+using RTS_CMD = rts_cmd;
 
 struct dcerpc_rts final : public dcerpc_payload {
-	~dcerpc_rts();
-	uint16_t flags = 0, num = 0;
-	RTS_CMD *commands = nullptr;
+	uint16_t num() const { return commands.size(); }
+
+	uint16_t flags = 0;
+	std::vector<rts_cmd> commands;
 };
 using DCERPC_RTS = dcerpc_rts;
 

@@ -604,49 +604,23 @@ static pack_result pdu_ndr_pull_rts_cmd(NDR_PULL *pndr, RTS_CMD *r)
 		
 }
 
-static pack_result pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
+static pack_result pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, dcerpc_rts *r) try
 {
+	uint16_t num = 0;
+
 	TRY(pndr->align(4));
 	TRY(pndr->g_uint16(&r->flags));
-	TRY(pndr->g_uint16(&r->num));
-	r->num = std::min(r->num, static_cast<uint16_t>(r->num));
-	if (r->num > 0) {
-		r->commands = me_alloc<RTS_CMD>(r->num);
-		if (NULL == r->commands) {
-			r->num = 0;
-			return pack_result::alloc;
-		}
-		for (size_t i = 0; i < r->num; ++i) {
-			auto status = pdu_ndr_pull_rts_cmd(pndr, &r->commands[i]);
-			if (status != pack_result::ok) {
-				free(r->commands);
-				r->commands = NULL;
-				r->num = 0;
-				return status;
-			}
-		}
-	} else {
-		r->commands = NULL;
+	TRY(pndr->g_uint16(&num));
+	num = std::min(num, static_cast<uint16_t>(UINT16_MAX));
+	r->commands.resize(num);
+	for (auto &c : r->commands) {
+		auto status = pdu_ndr_pull_rts_cmd(pndr, &c);
+		if (status != pack_result::ok)
+			return status;
 	}
-	
-	auto status = pndr->trailer_align(4);
-	if (status != pack_result::ok) {
-		if (NULL != r->commands) {
-			free(r->commands);
-			r->commands = NULL;
-		}
-		r->num = 0;
-		return status;
-	}
-	return pack_result::ok;
-}
-
-dcerpc_rts::~dcerpc_rts()
-{
-	auto r = this;
-	if (NULL != r->commands) {
-		free(r->commands);
-	}
+	return pndr->trailer_align(4);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
@@ -1138,14 +1112,13 @@ static pack_result pdu_ndr_push_rts_cmd(NDR_PUSH *pndr, const RTS_CMD *r)
 
 static pack_result pdu_ndr_push_dcerpc_rts(NDR_PUSH *pndr, const DCERPC_RTS *r)
 {
-	int i;
-	
+	if (r->commands.size() > UINT16_MAX)
+		return pack_result::format;
 	TRY(pndr->align(4));
 	TRY(pndr->p_uint16(r->flags));
-	TRY(pndr->p_uint16(r->num));
-	for (i=0; i<r->num; i++) {
-		TRY(pdu_ndr_push_rts_cmd(pndr, &r->commands[i]));
-	}
+	TRY(pndr->p_uint16(r->commands.size()));
+	for (const auto &c : r->commands)
+		TRY(pdu_ndr_push_rts_cmd(pndr, &c));
 	return pndr->trailer_align(4);
 }
 

@@ -1726,8 +1726,7 @@ void pdu_processor_rts_echo(char *pbuff)
 	pkt.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(pkt.payload.get());
 	rts->flags = RTS_FLAG_ECHO;
-	rts->num = 0;
-	rts->commands = nullptr;
+	rts->commands.clear();
 	if (g_bigendian)
 		flags = NDR_FLAG_BIGENDIAN;
 	else
@@ -1748,8 +1747,7 @@ BOOL dcerpc_call::rts_ping() try
 	dnp.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(dnp.payload.get());
 	rts->flags = RTS_FLAG_PING;
-	rts->num = 0;
-	rts->commands = nullptr;
+	rts->commands.clear();
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
@@ -1776,7 +1774,7 @@ static BOOL pdu_processor_retrieve_conn_b1(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 6 ||
+	if (prts->num() != 6 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
@@ -1802,7 +1800,7 @@ static BOOL pdu_processor_retrieve_conn_a1(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 4 ||
+	if (prts->num() != 4 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
 	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
@@ -1823,7 +1821,7 @@ static BOOL pdu_processor_retrieve_inr2_a1(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 4 ||
+	if (prts->num() != 4 ||
 	    prts->commands[0].command_type != RTS_CMD_VERSION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1843,7 +1841,7 @@ static BOOL pdu_processor_retrieve_inr2_a5(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 1 ||
+	if (prts->num() != 1 ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
 	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
@@ -1856,7 +1854,7 @@ static BOOL pdu_processor_retrieve_outr2_a7(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 3 ||
+	if (prts->num() != 3 ||
 	    prts->commands[0].command_type != RTS_CMD_DESTINATION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1874,7 +1872,7 @@ static BOOL pdu_processor_retrieve_outr2_a3(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 5 ||
+	if (prts->num() != 5 ||
 	    prts->commands[0].command_type != RTS_CMD_VERSION ||
 	    prts->commands[1].command_type != RTS_CMD_COOKIE)
 		return FALSE;
@@ -1897,7 +1895,7 @@ static BOOL pdu_processor_retrieve_outr2_c1(const DCERPC_CALL *pcall)
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 1)
+	if (prts->num() != 1)
 		return FALSE;
 	if (prts->commands[0].command_type != RTS_CMD_EMPTY &&
 	    prts->commands[0].command_type != RTS_CMD_PADDING)
@@ -1912,7 +1910,7 @@ static BOOL pdu_processor_retrieve_keep_alive(const DCERPC_CALL *pcall,
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 1 ||
+	if (prts->num() != 1 ||
 	    prts->commands[0].command_type != RTS_CMD_CLIENT_KEEPALIVE)
 		return FALSE;
 	*pkeep_alive = std::chrono::milliseconds(prts->commands[0].command.clientkeepalive);
@@ -1924,7 +1922,7 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(const DCERPC_C
 	if (pcall->pkt.pkt_type != DCERPC_PKT_RTS)
 		return FALSE;
 	auto prts = static_cast<const dcerpc_rts *>(pcall->pkt.payload.get());
-	if (prts->num != 2)
+	if (prts->num() != 2)
 		return FALSE;
 	if (prts->commands[0].command_type != RTS_CMD_DESTINATION ||
 	    prts->commands[1].command_type != RTS_CMD_FLOW_CONTROL_ACK)
@@ -1945,9 +1943,9 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall) try
 	pkt.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(pkt.payload.get());
 	rts->flags = RTS_FLAG_NONE;
-	rts->num = 1;
-	rts->commands = me_alloc<RTS_CMD>(1);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(1);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -1981,9 +1979,9 @@ BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 	dnp.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(dnp.payload.get());
 	rts->flags = RTS_FLAG_NONE;
-	rts->num = 3;
-	rts->commands = me_alloc<RTS_CMD>(3);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(3);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2021,9 +2019,9 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall) try
 	pkt.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(pkt.payload.get());
 	rts->flags = RTS_FLAG_NONE;
-	rts->num = 1;
-	rts->commands = me_alloc<RTS_CMD>(1);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(1);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2057,9 +2055,9 @@ BOOL dcerpc_call::rts_outr2_a2() try
 	dnp.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(dnp.payload.get());
 	rts->flags = RTS_FLAG_RECYCLE_CHANNEL;
-	rts->num = 1;
-	rts->commands = me_alloc<RTS_CMD>(1);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(1);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2093,9 +2091,9 @@ BOOL dcerpc_call::rts_outr2_a6() try
 	dnp.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(dnp.payload.get());
 	rts->flags = RTS_FLAG_NONE;
-	rts->num = 2;
-	rts->commands = me_alloc<RTS_CMD>(2);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(2);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2131,9 +2129,9 @@ BOOL dcerpc_call::rts_outr2_b3() try
 	dnp.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(dnp.payload.get());
 	rts->flags = RTS_FLAG_EOF;
-	rts->num = 1;
-	rts->commands = me_alloc<RTS_CMD>(1);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(1);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2166,9 +2164,9 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(DCERPC_CALL *pcall,
 	pkt.payload = std::make_unique<dcerpc_rts>();
 	auto rts = static_cast<dcerpc_rts *>(pkt.payload.get());
 	rts->flags = RTS_FLAG_OTHER_CMD;
-	rts->num = 2;
-	rts->commands = me_alloc<RTS_CMD>(2);
-	if (rts->commands == nullptr) {
+	try {
+		rts->commands.resize(2);
+	} catch (const std::bad_alloc &) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2437,7 +2435,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 		} else if (length == 20) {
-			if (rts->flags == RTS_FLAG_PING && rts->num == 0) {
+			if (rts->flags == RTS_FLAG_PING && rts->num() == 0) {
 				delete pcall;
 				return PDU_PROCESSOR_INPUT;
 			}
