@@ -3146,8 +3146,25 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 	return nullptr;
 }
 
+static void append_dt(ical_component &com, const char *key,
+    const ICAL_TIME &itime, bool b_date, const char *tzid)
+{
+	char txt[64];
+	if (b_date)
+		sprintf_dt(txt, std::size(txt), itime);
+	else if (tzid == nullptr)
+		sprintf_dtutc(txt, std::size(txt), itime);
+	else
+		sprintf_dtlcl(txt, std::size(txt), itime);
+	auto line = &com.append_line(key, txt);
+	if (b_date)
+		line->append_param("VALUE", "DATE");
+	if (tzid != nullptr)
+		line->append_param("TZID", tzid);
+}
+
 static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
-    uint32_t proptag_xrt, bool b_exceptional, bool b_allday,
+    uint32_t proptag_xrt, bool b_exceptional, bool b_date,
     ical_component &com, const ical_component *ptz_component,
     const char *tzid, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
@@ -3199,21 +3216,9 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 	if (!itime_is_set) {
 		if (b_exceptional)
 			return "E-2220";
-	} else if (!b_allday) {
-		char tmp_buff[1024];
-		if (ptz_component == nullptr)
-			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		else
-			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		auto line = &com.append_line("RECURRENCE-ID", tmp_buff);
-		if (ptz_component != nullptr)
-			line->append_param("TZID", tzid);
 	} else {
-		char tmp_buff[1024];
-		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		auto &line = com.append_line("RECURRENCE-ID", tmp_buff);
-		if (ptz_component != nullptr)
-			line.append_param("TZID", tzid);
+		append_dt(com, "RECURRENCE-ID", itime, b_date,
+			ptz_component != nullptr ? tzid : nullptr);
 	}
 	return nullptr;
 }
@@ -3251,14 +3256,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 		ICAL_TIME itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
 			return "E-2221";
-		char txt[64];
-		if (tzcom == nullptr)
-			sprintf_dtutc(txt, sizeof(txt), itime);
-		else
-			sprintf_dtlcl(txt, sizeof(txt), itime);
-		auto &line = com.append_line("DUE", txt);
-		if (tzid != nullptr)
-			line.append_param("TZID", tzid);
+		append_dt(com, "DUE", itime, false, tzid);
 	}
 
 	propname = {MNID_ID, PSETID_TASK, PidLidTaskDateCompleted};
@@ -3269,14 +3267,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 		ICAL_TIME itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
 			return "E-2221";
-		char txt[64];
-		if (tzcom == nullptr)
-			sprintf_dtutc(txt, sizeof(txt), itime);
-		else
-			sprintf_dtlcl(txt, sizeof(txt), itime);
-		auto &line = com.append_line("COMPLETED", txt);
-		if (tzid != nullptr)
-			line.append_param("TZID", tzid);
+		append_dt(com, "COMPLETED", itime, false, tzid);
 	}
 
 	return nullptr;
@@ -3597,7 +3588,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	auto proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	err = oxcical_export_recid(*pmsg, proptag_xrt, b_exceptional,
-	      b_allday, *pcomponent, ptz_component, tzid, alloc, get_propids);
+	      b_allday && g_oxcical_allday_ymd, *pcomponent, ptz_component,
+	      tzid, alloc, get_propids);
 	if (err != nullptr)
 		return err;
 
@@ -3612,19 +3604,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		ICAL_TIME itime;
 		if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 			return "E-2221";
-		char tmp_buff[1024];
-		if (b_allday && g_oxcical_allday_ymd)
-			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (ptz_component == nullptr)
-			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		else
-			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-
-		auto &pilineDTS = pcomponent->append_line("DTSTART", tmp_buff);
-		if (ptz_component != nullptr)
-			pilineDTS.append_param("TZID", tzid);
-		if (b_allday && g_oxcical_allday_ymd)
-			pilineDTS.append_param("VALUE", "DATE");
+		append_dt(*pcomponent, "DTSTART", itime,
+			b_allday && g_oxcical_allday_ymd,
+			ptz_component != nullptr ? tzid : nullptr);
 	} else {
 		propname = {MNID_ID, PSETID_TASK, PidLidTaskStartDate};
 		if (!get_propids(&propnames, &propids))
@@ -3634,16 +3616,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			ICAL_TIME itime;
 			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
 				return "E-2221";
-			char txt[64];
-			if (ptz_component == nullptr)
-				sprintf_dtutc(txt, sizeof(txt), itime);
-			else
-				sprintf_dtlcl(txt, sizeof(txt), itime);
-			auto &line = pcomponent->append_line("DTSTART", txt);
-			if (b_allday && g_oxcical_allday_ymd)
-				line.append_param("VALUE", "DATE");
-			if (ptz_component != nullptr)
-				line.append_param("TZID", tzid);
+			append_dt(*pcomponent, "DTSTART", itime,
+				b_allday && g_oxcical_allday_ymd,
+				ptz_component != nullptr ? tzid : nullptr);
 		}
 	}
 	
@@ -3651,18 +3626,9 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		ICAL_TIME itime;
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return "E-2222";
-		char tmp_buff[1024];
-		if (b_allday && g_oxcical_allday_ymd)
-			sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		else if (ptz_component == nullptr)
-			sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
-		else
-			sprintf_dtlcl(tmp_buff, std::size(tmp_buff), itime);
-		auto &pilineDTE = pcomponent->append_line("DTEND", tmp_buff);
-		if (ptz_component != nullptr)
-			pilineDTE.append_param("TZID", tzid);
-		if (b_allday && g_oxcical_allday_ymd)
-			pilineDTE.append_param("VALUE", "DATE");
+		append_dt(*pcomponent, "DTEND", itime,
+			b_allday && g_oxcical_allday_ymd,
+			ptz_component != nullptr ? tzid : nullptr);
 	}
 
 	err = oxcical_export_task(*pmsg, *pcomponent, ptz_component,
