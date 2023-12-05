@@ -852,7 +852,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
 			                   {return static_cast<mItemInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
-		if(request.ReturnNewItemIds && *request.ReturnNewItemIds)
+		if(!request.ReturnNewItemIds || !*request.ReturnNewItemIds)
 			msg.Items.emplace_back(ctx.loadItem(dir, dstFolder.folderId, newItemId, shape));
 		msg.success();
 	} catch(const EWSError& err) {
