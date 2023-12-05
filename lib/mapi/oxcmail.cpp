@@ -219,7 +219,8 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 		return FALSE;
 	*pdomain++ = '\0';
 	enum display_type dtypx = DT_MAILUSER;
-	if (!oxcmail_get_user_ids(username, &user_id, &domain_id, &dtypx))
+	if (oxcmail_get_user_ids == nullptr ||
+	    !oxcmail_get_user_ids(username, &user_id, &domain_id, &dtypx))
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);

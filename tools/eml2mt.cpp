@@ -26,6 +26,7 @@
 #include <gromox/vcard.hpp>
 #include "genimport.hpp"
 #include "exch/midb/system_services.hpp"
+#include "staticnpmap.cpp"
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -67,42 +68,11 @@ static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_user_ids) system_services_get_user_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
-static gi_name_map name_map;
-static std::unordered_map<std::string, uint16_t> name_rev_map;
-static uint16_t name_id = 0x8000;
 
 static void terse_help()
 {
 	fprintf(stderr, "Usage: gromox-eml2mt file.eml[...] | gromox-mt2 ...\n");
 	fprintf(stderr, "Documentation: man gromox-eml2mt\n");
-}
-
-static BOOL ee_get_propids(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
-{
-	ids->ppropid = me_alloc<uint16_t>(names->count);
-	if (ids->ppropid == nullptr)
-		return false;
-	ids->count = names->count;
-	for (size_t i = 0; i < names->count; ++i) {
-		auto &name = names->ppropname[i];
-		char guid[GUIDSTR_SIZE], txt[NP_STRBUF_SIZE];
-		name.guid.to_str(guid, std::size(guid));
-		if (name.kind == MNID_ID)
-			snprintf(txt, std::size(txt), "GUID=%s,LID=%u", guid, name.lid);
-		else
-			snprintf(txt, std::size(txt), "GUID=%s,NAME=%s", guid, name.pname);
-		auto [iter, added] = name_rev_map.emplace(std::move(txt), name_id);
-		if (!added) {
-			ids->ppropid[i] = iter->second;
-			continue;
-		} else if (name_id == 0xffff) {
-			ids->ppropid[i] = 0;
-			continue;
-		}
-		name_map.emplace(PROP_TAG(PT_UNSPECIFIED, name_id), name);
-		ids->ppropid[i] = name_id++;
-	}
-	return TRUE;
 }
 
 static std::unique_ptr<MESSAGE_CONTENT, mc_delete>
