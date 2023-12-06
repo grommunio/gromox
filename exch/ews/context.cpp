@@ -90,6 +90,13 @@ EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t len
 		impersonate(imp->Name(), imp->GetText());
 }
 
+EWSContext::~EWSContext()
+{
+	if(m_notify)
+		for(const tSubscriptionId& sub : m_notify->subscriptions)
+			unsubscribe(sub);
+}
+
 double EWSContext::age() const
 {return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
 
