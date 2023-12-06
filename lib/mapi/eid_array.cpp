@@ -9,9 +9,8 @@ using namespace gromox;
 EID_ARRAY* eid_array_init()
 {
 	auto parray = me_alloc<EID_ARRAY>();
-	if (NULL == parray) {
+	if (parray == nullptr)
 		return NULL;
-	}
 	parray->count = 0;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	parray->pids = me_alloc<uint64_t>(count);
@@ -24,9 +23,7 @@ EID_ARRAY* eid_array_init()
 
 void eid_array_free(EID_ARRAY *parray)
 {
-	if (NULL != parray->pids) {
-		free(parray->pids);
-	}
+	free(parray->pids);
 	free(parray);
 }
 
@@ -36,9 +33,8 @@ bool eid_array_append(EID_ARRAY *parray, uint64_t id)
 	if (parray->count + 1 >= count) {
 		count += SR_GROW_EID_ARRAY;
 		auto pids = re_alloc<uint64_t>(parray->pids, count);
-		if (NULL == pids) {
+		if (pids == nullptr)
 			return false;
-		}
 		parray->pids = pids;
 	}
 	parray->pids[parray->count++] = id;
@@ -47,16 +43,14 @@ bool eid_array_append(EID_ARRAY *parray, uint64_t id)
 
 bool eid_array_batch_append(EID_ARRAY *parray, uint32_t id_count, uint64_t *pids)
 {
-	if (0 == id_count) {
+	if (id_count == 0)
 		return true;
-	}
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	if (parray->count + id_count >= count) {
 		count = strange_roundup(parray->count + id_count, SR_GROW_EID_ARRAY);
 		auto ptmp_ids = re_alloc<uint64_t>(parray->pids, count);
-		if (NULL == ptmp_ids) {
+		if (ptmp_ids == nullptr)
 			return false;
-		}
 		parray->pids = ptmp_ids;
 	}
 	memcpy(parray->pids + parray->count, pids, id_count*sizeof(uint64_t));
@@ -67,9 +61,8 @@ bool eid_array_batch_append(EID_ARRAY *parray, uint32_t id_count, uint64_t *pids
 EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 {
 	auto parray1 = me_alloc<EID_ARRAY>();
-	if (NULL == parray1) {
+	if (parray1 == nullptr)
 		return NULL;
-	}
 	parray1->count = parray->count;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	parray1->pids = me_alloc<uint64_t>(count);
@@ -96,13 +89,11 @@ void eid_array_remove(EID_ARRAY *parray, uint64_t eid)
 	for (size_t i = 0; i < parray->count; ) {
 		if (parray->pids[i] == eid) {
 			parray->count --;
-			if (i != parray->count) {
+			if (i != parray->count)
 				memmove(parray->pids + i, parray->pids + i + 1,
 						sizeof(uint64_t)*(parray->count - i));
-			}
 			continue;
 		}
 		i ++;
 	}
 }
-
