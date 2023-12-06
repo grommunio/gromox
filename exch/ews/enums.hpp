@@ -72,7 +72,7 @@ private:
 	{
 		dest += "[\"";
 		dest += Choices[0];
-		for(auto it = Choices.begin()+1; it != Choices.end(); ++it) {
+		for (auto it = Choices.begin() + 1; it != Choices.end(); ++it) {
 			dest += "\", \"";
 			dest += *it;
 		}

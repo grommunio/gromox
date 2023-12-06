@@ -130,7 +130,7 @@ template<typename KeyArg, typename... Args>
 bool ObjectCache<Key, Object>::emplace(std::chrono::milliseconds lifespan, KeyArg&& key, Args&&... args)
 {
 	auto guard = std::lock_guard(objectLock);
-	auto res = objects.try_emplace(Key(key), clock_t::now()+lifespan, std::forward<Args...>(args)...);
+	auto res = objects.try_emplace(Key(key), clock_t::now() + lifespan, std::forward<Args...>(args)...);
 	return res.second;
 }
 
@@ -165,7 +165,7 @@ Object ObjectCache<Key, Object>::get(const Key& key, std::chrono::milliseconds l
 {
 	auto guard = std::lock_guard(objectLock);
 	Container& cont = objects.at(key);
-	cont.expires = clock_t::now()+lifespan;
+	cont.expires = clock_t::now() + lifespan;
 	return cont.object;
 }
 

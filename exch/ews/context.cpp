@@ -722,7 +722,7 @@ std::string EWSContext::getDir(const sFolderSpec& folder) const
 	const char* at = strchr(target, '@');
 	bool isPublic = folder.location == sFolderSpec::AUTO? at == nullptr : folder.location == sFolderSpec::PUBLIC;
 	if(isPublic && at)
-		target = at+1;
+		target = at + 1;
 	if (isPublic) {
 		char targetDir[256];
 		if (!mysql_adaptor_get_homedir(target, targetDir, std::size(targetDir)))
@@ -1103,7 +1103,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 		uint8_t* data;
 		unsigned int size = STREAM_BLOCK_SIZE;
 		while((data = static_cast<uint8_t*>(tempStream.get_read_buf(&size))) != nullptr) {
-			mimeContent.insert(mimeContent.end(), data, data+size);
+			mimeContent.insert(mimeContent.end(), data, data + size);
 			size = STREAM_BLOCK_SIZE;
 		}
 	}
@@ -2167,8 +2167,8 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		STRING_ARRAY* categories = construct<STRING_ARRAY>(STRING_ARRAY{count, alloc<char*>(count)});
 		char** dest = categories->ppstr;
 		for(const std::string& category : *item.Categories) {
-			*dest = alloc<char>(category.size()+1);
-			HX_strlcpy(*dest++, category.c_str(), category.size()+1);
+			*dest = alloc<char>(category.size() + 1);
+			HX_strlcpy(*dest++, category.c_str(), category.size() + 1);
 		}
 		shape.write(NtCategories, TAGGED_PROPVAL{PT_MV_UNICODE, categories});
 	}

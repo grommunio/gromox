@@ -131,11 +131,11 @@ E(3002, "failed to resolve essdn - user not found");
 E(3003, "failed to resolve essdn - invalid user");
 E(3004, "failed to resolve essdn - username mismatch");
 E(3005, "failed to get user maildir");
-inline std::string E3006(const std::string& RoutingType) {return "E-3006: unrecognized RoutingType '"+RoutingType+"'";}
+inline std::string E3006(const std::string& RoutingType) {return "E-3006: unrecognized RoutingType '" + RoutingType + "'";}
 E(3007, "failed to get user maildir");
 //3008 removed
-inline std::string E3009(const std::string& ExAud) {return "E-3009: unrecognized ExternalAudience '"+ExAud+"'";}
-inline std::string E3010(const std::string& RoutingType) {return "E-3010: unrecognized RoutingType '"+RoutingType+"'";}
+inline std::string E3009(const std::string& ExAud) {return "E-3009: unrecognized ExternalAudience '" + ExAud + "'";}
+inline std::string E3010(const std::string& RoutingType) {return "E-3010: unrecognized RoutingType '" + RoutingType + "'";}
 E(3011, "cannot access OOF state of another user");
 E(3012, "cannot modify OOF state of another user");
 E(3013, "either \"FreeBusyViewOptions\" or \"SuggestionsViewOptions\" is required.");
@@ -239,7 +239,7 @@ E(3110, "Invalid recurrence type");
 E(3111, "failed to load freebusy information");
 E(3112, "cannot create message without ID");
 inline std::string E3113(const char* type, const std::string& name) {return fmt::format("E-3113: failed to get {} ID for '{}'", type, name);}
-inline std::string E3114(const std::string& RoutingType) {return "E-3114: unrecognized RoutingType '"+RoutingType+"'";}
+inline std::string E3114(const std::string& RoutingType) {return "E-3114: unrecognized RoutingType '" + RoutingType + "'";}
 E(3115, "missing recipients");
 E(3116, "failed to export message");
 inline std::string E3117(ec_error_t code) { return fmt::format("E-3117: failed to send mail ({})", mapi_strerror(code)); }

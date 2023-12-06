@@ -165,8 +165,8 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 	size_t start = 0;
 	for(size_t end = opts.find(',', start); start != std::string_view::npos; end = opts.find(',', start))
 	{
-		std::string_view opt = opts.substr(start, end-start);
-		start = end+(end != std::string_view::npos);
+		std::string_view opt = opts.substr(start, end - start);
+		start = end + (end != std::string_view::npos);
 		if(opt == "sequential")
 			flags |= FL_LOCK;
 		else if(opt.substr(0, 11) == "rate_limit=")
@@ -335,7 +335,7 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 		if(debug->flags & DebugCtx::FL_RATELIMIT)
 		{
 			auto now = tp_now();
-			std::this_thread::sleep_for(debug->last-now+debug->minRequestTime);
+			std::this_thread::sleep_for(debug->last - now + debug->minRequestTime);
 			debug->last = now;
 		}
 		if(debug->flags & DebugCtx::FL_LOOP_DETECT) {
@@ -533,7 +533,7 @@ void EWSPlugin::loadConfig()
 		invertFilter = *logFilter == '!';
 		logFilter += invertFilter;
 		for(const char* sep = strchr(logFilter, ','); sep != nullptr; logFilter = ++sep, sep = strchr(sep, ','))
-			logFilters.emplace_back(std::string_view(logFilter, sep-logFilter));
+			logFilters.emplace_back(std::string_view(logFilter, sep - logFilter));
 		if(*logFilter)
 			logFilters.emplace_back(logFilter);
 		std::sort(logFilters.begin(), logFilters.end());

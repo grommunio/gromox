@@ -253,7 +253,7 @@ void sTimePoint::serialize(XMLElement* xml) const
 	std::string dtstr = fmt::format("{:%FT%T}", t);
 	if(fsec)
 		dtstr += fmt::format(".{:09}", fsec);
-	dtstr += off? fmt::format("{:+03}{:02}", off/60, abs(off)%60) : "Z";
+	dtstr += off ? fmt::format("{:+03}{:02}", off / 60, abs(off) % 60) : "Z";
 	xml->SetText(dtstr.c_str());
 }
 
@@ -1361,7 +1361,7 @@ constexpr uint32_t tSubscriptionId::decode(const uint8_t*& s)
 {
 	uint32_t res = 0;
 	for(uint32_t offset = 0; offset < 6; ++s, ++offset)
-		res |= *s < 128 && i64[*s] >= 0? (i64[*s] << offset*6) : throw DeserializationError(E3112);
+		res |= *s < 128 && i64[*s] >= 0 ? (i64[*s] << offset * 6) : throw DeserializationError(E3112);
 	return res;
 }
 

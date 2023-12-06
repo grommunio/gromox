@@ -27,7 +27,7 @@ struct VersionInfo {
 class Envelope {
 	public:
 	explicit Envelope(const VersionInfo &);
-	explicit Envelope(const char*, size_t=static_cast< size_t >(-1));
+	explicit Envelope(const char *, size_t = static_cast<size_t>(-1));
 
 	tinyxml2::XMLDocument doc; ///< XML document containing the envelope
 	tinyxml2::XMLElement* body; ///< SOAP body element

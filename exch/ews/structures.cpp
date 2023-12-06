@@ -692,7 +692,7 @@ sFolderSpec& sFolderSpec::normalize()
 	size_t at = target->find('@');
 	if(at == std::string::npos)
 		return *this;
-	target->erase(0, at+1);
+	target->erase(0, at + 1);
 	return *this;
 }
 
@@ -1250,7 +1250,7 @@ sTimePoint sTimePoint::fromNT(uint64_t timestamp)
  * @brief     Convert time point to NT timestamp
  */
 uint64_t sTimePoint::toNT() const
-{return rop_util_unix_to_nttime(time+offset);}
+{ return rop_util_unix_to_nttime(time + offset); }
 
 /**
  * @brief     Whether it's necessary to calculate the offset from timezone
@@ -1358,7 +1358,7 @@ sFolder tBaseFolderType::create(const sShape& shape)
  */
 tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
 {
-	Id.reserve(fEntryID.size()+1); // Extra byte is appended for encoding during serialization, prevent reallocation
+	Id.reserve(fEntryID.size() + 1); // Extra byte is appended for encoding during serialization, prevent reallocation
 	Id = fEntryID;
 	if(type == ID_GUESS) {
 		switch(Id.size()) {
@@ -1626,7 +1626,7 @@ void tCalendarItem::update(const sShape& shape)
 	{
 		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
 		if(goid->cb > 0) {
-			std::string uid(goid->cb*2+1, 0);
+			std::string uid(goid->cb * 2 + 1, 0);
 			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size()));
 			UID.emplace(std::move(uid));
 		}
@@ -2091,7 +2091,7 @@ void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape&
 	STRING_ARRAY* categories = EWSContext::construct<STRING_ARRAY>(STRING_ARRAY{count, EWSContext::alloc<char*>(count)});
 	char** dest = categories->ppstr;
 	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
-		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText())+1), s->GetText());
+		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText()) + 1), s->GetText());
 	shape.write(TAGGED_PROPVAL{tag, categories});
 }
 
@@ -2710,8 +2710,8 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 	case PT_STRING8:
 	case PT_UNICODE: {
 		size_t len = strlen(value);
-		dest = EWSContext::alloc(len+1);
-		memcpy(static_cast<char*>(dest), len? value : "", len+1);
+		dest = EWSContext::alloc(len + 1);
+		memcpy(static_cast<char*>(dest), len? value : "", len + 1);
 		break;
 	}
 	default:
@@ -2881,7 +2881,7 @@ void tExtendedProperty::deserializeMV(const XMLElement* xml, uint16_t type, T* C
 		++container->count;
 	container->*values = EWSContext::alloc<T>(container->count);
 	const XMLElement* child = xml->FirstChildElement("Value");
-	for(T* value = container->*values; value < container->*values+container->count; ++value) {
+	for (T *value = container->*values; value < container->*values + container->count; ++value) {
 		deserialize(child, type&~MV_FLAG, value);
 		child = child->NextSiblingElement("Value");
 	}
@@ -2940,9 +2940,9 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		auto src = znul(xml->GetText());
 		size_t len = strlen(src);
 		if(!dest)
-			propval.pvalue = dest = EWSContext::alloc(len+1);
+			propval.pvalue = dest = EWSContext::alloc(len + 1);
 		else
-			dest = *static_cast<char**>(dest) = EWSContext::alloc<char>(len+1);
+			dest = *static_cast<char**>(dest) = EWSContext::alloc<char>(len + 1);
 		memcpy(static_cast<char*>(dest), src, len + 1);
 		break;
 	}
@@ -2982,7 +2982,7 @@ template<typename C, typename T>
 inline void tExtendedProperty::serializeMV(const void* data, uint16_t type, XMLElement* xml, T* C::*value) const
 {
 	const C* content = static_cast<const C*>(data);
-	for(T* val = content->*value; val < content->*value+content->count; ++val)
+	for (T *val = content->*value; val < content->*value + content->count; ++val)
 		if constexpr(std::is_same_v<T, char*>)
 			serialize(*val, type&~MV_FLAG, xml->InsertNewChildElement("t:Value"));
 		else
@@ -3317,7 +3317,7 @@ uint32_t tFractionalPageView::offset(uint32_t total) const
 
 void tFractionalPageView::update(tFindResponsePagingAttributes& attr, uint32_t count, uint32_t total) const
 {
-	attr.NumeratorOffset = offset(total)+count;
+	attr.NumeratorOffset = offset(total) + count;
 	attr.AbsoluteDenominator = total;
 }
 
@@ -3459,10 +3459,13 @@ uint32_t tIndexedFieldURI::tag(const sGetNameId& getId) const
 ///////////////////////////////////////////////////////////////////////////////
 
 uint32_t tIndexedPageView::offset(uint32_t total) const
-{return BasePoint == Enum::Beginning? Offset : total > Offset? total-Offset : 0;}
+{
+	return BasePoint == Enum::Beginning ? Offset :
+	       total > Offset ? total - Offset : 0;
+}
 
 void tIndexedPageView::update(tFindResponsePagingAttributes& attr, uint32_t count, uint32_t) const
-{attr.IndexedPagingOffset = Offset+count;}
+{ attr.IndexedPagingOffset = Offset + count; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -3993,7 +3996,7 @@ std::chrono::minutes tSerializableTimeZone::offset(time_point tp) const
 	                 second.Month * 2678400;
 
 	int bias = dStamp < fStamp || dStamp >= sStamp ? second.Bias : first.Bias;
-	return std::chrono::minutes(Bias+bias);
+	return std::chrono::minutes(Bias + bias);
 }
 
 /**
@@ -4004,8 +4007,9 @@ std::chrono::minutes tSerializableTimeZone::offset(time_point tp) const
  * @return     Adjusted time point
  */
 EWS::time_point tSerializableTimeZone::apply(EWS::time_point tp) const
-{return tp+offset(tp);}
-
+{
+	return tp + offset(tp);
+}
 
 /**
  * @brief      Convert from UTC to timezone
@@ -4015,7 +4019,9 @@ EWS::time_point tSerializableTimeZone::apply(EWS::time_point tp) const
  * @return     Adjusted time point
  */
 EWS::time_point tSerializableTimeZone::remove(EWS::time_point tp) const
-{return tp-offset(tp);}
+{
+	return tp - offset(tp);
+}
 
 /**
  * @brief      Check whether timezones change throughout the year

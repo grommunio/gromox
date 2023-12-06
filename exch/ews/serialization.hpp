@@ -490,7 +490,7 @@ static T fromXMLNodeVariant(const tinyxml2::XMLElement* child)
 		const char* tname = getName<Contained>();
 		if(tname == nullptr || !strcmp(tname, child->Name()))
 			return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
-		return fromXMLNodeVariant<T, I+1>(child);
+		return fromXMLNodeVariant<T, I + 1>(child);
 	}
 }
 
@@ -518,7 +518,7 @@ T fromXMLNodeVariantFind(const tinyxml2::XMLElement* parent)
 		const char* tname = getName<Contained>();
 		const tinyxml2::XMLElement* child;
 		if(!tname || !(child = parent->FirstChildElement(tname)))
-			return fromXMLNodeVariantFind<T, I+1>(parent);
+			return fromXMLNodeVariantFind<T, I + 1>(parent);
 		return T(std::in_place_index_t<I>(), fromXMLNodeDispatch<Contained>(child));
 	}
 }

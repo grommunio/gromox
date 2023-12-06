@@ -48,7 +48,7 @@ namespace
 std::string hexDecode(const std::string& hex)
 {
 	static auto charVal = [](int c) {
-		return (c >= '0' && c <= '9')? c-'0' : (c >= 'a' && c <= 'f')? c-'a'+10 : throw InputError(E3249(char(c)));
+		return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : throw InputError(E3249(char(c)));
 	};
 	if(hex.size() % 2)
 		throw InputError(E3250);
@@ -114,7 +114,7 @@ optional<string> readMessageBody(const std::string& path) try
 	if(ifs.eof())
 		return std::nullopt;
 	size_t headerLenght = ifs.tellg();
-	string content(totalLength-headerLenght, 0);
+	std::string content(totalLength - headerLenght, 0);
 	ifs.read(content.data(), content.size());
 	return content;
 } catch (const std::exception &e) {
@@ -137,7 +137,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 	static constexpr char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
 	auto& content = *reply->Message;
 	std::ofstream file(path, std::ios::binary); /* FMODE_PUBLIC */
-	file.write(header, std::size(header)-1);
+	file.write(header, std::size(header) - 1);
 	file.write(content.c_str(), content.size());
 	file.close();
 }
@@ -463,7 +463,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		PROPTAG_ARRAY tags = shape.proptags();
 		TARRAY_SET table;
 		uint32_t offset = paging? paging->offset(rowCount) : 0;
-		uint32_t results = maxResults? std::min(maxResults, rowCount-offset) : rowCount;
+		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
 		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset,
 			              results, &table);
 		mFindFolderResponseMessage msg;
@@ -479,7 +479,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		}
 		if(paging)
 			paging->update(*msg.RootFolder, results, rowCount);
-		msg.RootFolder->IncludesLastItemInRange = results+offset >= rowCount;
+		msg.RootFolder->IncludesLastItemInRange = results + offset >= rowCount;
 		msg.RootFolder->TotalItemsInView = rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
@@ -545,7 +545,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		PROPTAG_ARRAY tags = shape.proptags();
 		TARRAY_SET table;
 		uint32_t offset = paging? paging->offset(rowCount) : 0;
-		uint32_t results = maxResults? std::min(maxResults, rowCount-offset) : rowCount;
+		uint32_t results = maxResults ? std::min(maxResults, rowCount - offset) : rowCount;
 		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset, results, &table);
 		mFindItemResponseMessage msg;
 		msg.RootFolder.emplace().Items.reserve(rowCount);
@@ -561,7 +561,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		}
 		if(paging)
 			paging->update(*msg.RootFolder, results, rowCount);
-		msg.RootFolder->IncludesLastItemInRange = results+offset >= rowCount;
+		msg.RootFolder->IncludesLastItemInRange = results + offset >= rowCount;
 		msg.RootFolder->TotalItemsInView = rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
@@ -1179,7 +1179,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 
 	mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
-	msgChanges.reserve(changes.count+deleted_fids.count);
+	msgChanges.reserve(changes.count + deleted_fids.count);
 	for (const auto &folderProps : changes) {
 		auto folderId = folderProps.get<uint64_t>(PidTagFolderId);
 		if(!folderId)
@@ -1259,7 +1259,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 
 	try {
 		mSyncFolderItemsResponseMessage msg;
-		msg.Changes.reserve(min(chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count, maxItems));
+		msg.Changes.reserve(min(chg_mids.count + deleted_mids.count + read_mids.count + unread_mids.count, maxItems));
 		maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
 		for (auto mid : deleted_mids) {
 			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(mid).serialize()));
@@ -1286,15 +1286,15 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 		}
 		uint32_t readSynced = syncState.readOffset;
 		uint32_t skip = min(syncState.readOffset, read_mids.count);
-		read_mids.count = min(read_mids.count-skip, maxItems)+skip;
-		maxItems -= read_mids.count-skip;
-		clipped = clipped || read_mids.count-skip > maxItems;
+		read_mids.count = min(read_mids.count - skip, maxItems) + skip;
+		maxItems -= read_mids.count - skip;
+		clipped = clipped || read_mids.count - skip > maxItems;
 		for (auto mid : read_mids)
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), true});
-		readSynced += read_mids.count-skip;
-		skip = min(unread_mids.count, syncState.readOffset-read_mids.count+skip);
-		unread_mids.count = min(unread_mids.count-skip, maxItems)+skip;
-		clipped = clipped || unread_mids.count-skip > maxItems;
+		readSynced += read_mids.count - skip;
+		skip = min(unread_mids.count, syncState.readOffset - read_mids.count + skip);
+		unread_mids.count = min(unread_mids.count - skip, maxItems) + skip;
+		clipped = clipped || unread_mids.count - skip > maxItems;
 		for (auto mid : unread_mids)
 			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
 		if(!clipped)
@@ -1307,7 +1307,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 			syncState.readOffset = 0;
 		}
 		else
-			syncState.readOffset = readSynced+unread_mids.count-skip;
+			syncState.readOffset = readSynced + unread_mids.count - skip;
 		msg.SyncState = syncState.serialize();
 		msg.IncludesLastItemInRange = !clipped;
 		msg.success();
@@ -1376,7 +1376,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	mResolveNamesResponse data;
 
 	const char *unres = strchr(request.UnresolvedEntry.c_str(), ':'); /* CONST-STRCHR-MARKER */
-	unres = unres? unres+1 : request.UnresolvedEntry.c_str();
+	unres = unres ? unres + 1 : request.UnresolvedEntry.c_str();
 	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
 
 	TPROPVAL_ARRAY userProps{};
