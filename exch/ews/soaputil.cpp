@@ -93,7 +93,7 @@ string Envelope::fault(const char* code, const char* message)
 	                      " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\">"
 	          "<SOAP:Body>"
 	            "<SOAP:Fault>"
-	              "<faultcode xsi:type=\"xsd:string\">SOAP:{}</faultcode>"
+	              "<faultcode xsi:type=\"xsd:string\">{}</faultcode>"
 	              "<faultstring xsi:type=\"xsd:string\">{}</faultstring>"
 	            "</SOAP:Fault>"
 	          "</SOAP:Body>"

@@ -169,6 +169,7 @@ public:
 	std::shared_ptr<Subscription> mksub(const Structures::tSubscriptionId&, const char*) const;
 	detail::ExmdbSubscriptionKey subscribe(const std::string&, uint16_t, bool, uint64_t, detail::SubscriptionKey) const;
 	std::shared_ptr<Subscription> subscription(detail::SubscriptionKey, uint32_t) const;
+	std::string timestamp() const;
 	void unlinkSubscription(int) const;
 	bool unsubscribe(detail::SubscriptionKey, const char*) const;
 	void unsubscribe(const detail::ExmdbSubscriptionKey&) const;
@@ -176,6 +177,7 @@ public:
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
 	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
+	std::string timestampFormat = " "; ///< format specification for log timestamps or empty to disable timestamps
 	uint16_t smtp_server_port = 25; ///< Port to send mail to, default `"25"`
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
@@ -235,9 +237,7 @@ public:
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
-	inline EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
-		m_ID(id), m_orig(*get_request(id)), m_auth_info(ai), m_request(data, length), m_plugin(p)
-	{}
+	EWSContext(int, HTTP_AUTH_INFO, const char*, uint64_t, EWSPlugin&);
 
 	EWSContext(const EWSContext&) = delete;
 	EWSContext(EWSContext&&) = delete;
@@ -336,6 +336,8 @@ private:
 		gromox::time_point expire;
 	};
 
+	void impersonate(const char*, const char*);
+
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;
@@ -357,6 +359,8 @@ private:
 	SOAP::Envelope m_request;
 	SOAP::Envelope m_response;
 	EWSPlugin& m_plugin;
+	std::string impersonationUser; ///< Buffer to hold username of impersonated user
+	std::string impersonationMaildir; ///< Buffer to hold maildir of impersonated user
 	std::chrono::high_resolution_clock::time_point m_created = std::chrono::high_resolution_clock::now();
 	http_status m_code = http_status::ok;
 	State m_state = S_DEFAULT;

@@ -393,7 +393,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 			shape.clean();
 			shape.properties(props);
 			sFolder& child = msg.RootFolder->Folders.emplace_back(tBaseFolderType::create(shape));
-			const auto& fid = std::visit([](auto&& f){return f.FolderId;}, child);
+			const auto& fid = std::visit([](auto&& f) -> std::optional<tFolderId>& {return f.FolderId;}, child);
 			if(shape.special && fid)
 				std::visit([&](auto& f) {ctx.loadSpecial(dir, sFolderEntryId(fid->Id.data(), fid->Id.size()).folderId(), f,
 						                                 shape.special);}, child);
@@ -852,7 +852,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 		uint64_t newItemId = ctx.moveCopyItem(dir, meid, dstFolder.folderId, request.copy);
 		auto& msg = std::visit([&](auto& d) -> mItemInfoResponseMessage&
 			                   {return static_cast<mItemInfoResponseMessage&>(d.ResponseMessages.emplace_back());}, data);
-		if(request.ReturnNewItemIds && *request.ReturnNewItemIds)
+		if(!request.ReturnNewItemIds || !*request.ReturnNewItemIds)
 			msg.Items.emplace_back(ctx.loadItem(dir, dstFolder.folderId, newItemId, shape));
 		msg.success();
 	} catch(const EWSError& err) {
@@ -967,16 +967,15 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
 	msgChanges.reserve(changes.count+deleted_fids.count);
-	sFolderSpec subfolder = folder;
 	for(TPROPVAL_ARRAY* folderProps = changes.pfldchgs; folderProps < changes.pfldchgs+changes.count; ++folderProps)
 	{
 		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
 		if(!folderId)
 			continue;
-		subfolder.folderId = *folderId;
-		if(!(ctx.permissions(dir, subfolder.folderId) & frightsVisible))
+		folder.folderId = *folderId;
+		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			continue;
-		auto folderData = ctx.loadFolder(dir, subfolder.folderId, shape);
+		auto folderData = ctx.loadFolder(dir, folder.folderId, shape);
 		if (syncState.given.contains(*folderId))
 			msgChanges.emplace_back(tSyncFolderHierarchyUpdate(std::move(folderData)));
 		else
