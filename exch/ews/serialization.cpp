@@ -1277,6 +1277,7 @@ void mGetStreamingEventsResponse::serialize(tinyxml2::XMLElement* xml) const
 
 void mGetStreamingEventsResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 {
+	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Notifications);
 	XMLDUMPM(ErrorSubscriptionIds);
 	XMLDUMPM(ConnectionStatus);

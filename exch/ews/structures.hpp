@@ -466,7 +466,7 @@ struct tAttachment : public NS_EWS_Types
 /**
  * Types.xsd:2117
  */
-struct tBaseItemId
+struct tBaseItemId : public NS_EWS_Types
 {
 	enum IdType : uint8_t {
 		ID_UNKNOWN, ///< Unspecified
@@ -2242,7 +2242,7 @@ private:
 /**
  * Types.xsd:6067
  */
-struct tNotification
+struct tNotification : public NS_EWS_Messages
 {
 	static constexpr char NAME[] = "Notification";
 
@@ -2881,7 +2881,7 @@ struct mGetStreamingEventsRequest
  */
 struct mGetStreamingEventsResponseMessage : public mResponseMessageType
 {
-	static constexpr char NAME[] = "GetStreamingEvents";
+	static constexpr char NAME[] = "GetStreamingEventsResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
 
