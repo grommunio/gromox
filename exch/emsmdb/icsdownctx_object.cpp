@@ -185,19 +185,16 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
     const PROPTAG_ARRAY *pproptags, bool b_exclude)
 {
 	if (b_exclude) {
-		for (size_t i = 0; i < pfldchgs->count; ++i)
+		for (auto &chg : *pfldchgs)
 			for (size_t j = 0; j < pproptags->count; ++j)
-				common_util_remove_propvals(
-					pfldchgs->pfldchgs + i,
-					pproptags->pproptag[j]);
+				common_util_remove_propvals(&chg, pproptags->pproptag[j]);
 		return;
 	}
-	for (size_t i = 0; i < pfldchgs->count; ++i) {
+	for (auto &chg : *pfldchgs) {
 		size_t j = 0;
-		while (j < pfldchgs->pfldchgs[i].count) {
-			if (!pproptags->has(pfldchgs->pfldchgs[i].ppropval[j].proptag))
-				common_util_remove_propvals(pfldchgs->pfldchgs + i,
-					pfldchgs->pfldchgs[i].ppropval[j].proptag);
+		while (j < chg.count) {
+			if (!pproptags->has(chg.ppropval[j].proptag))
+				common_util_remove_propvals(&chg, chg.ppropval[j].proptag);
 			else
 				j++;
 		}
@@ -233,8 +230,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	for (size_t i = 0; i < given_folders.count; ++i)
 		if (!pctx->pstate->pgiven->append(given_folders.pids[i]))
 			return FALSE;	
-	for (size_t i = 0; i < fldchgs.count; ++i) {
-		auto &chg = fldchgs.pfldchgs[i];
+	for (auto &chg : fldchgs) {
 		static constexpr uint32_t tags[] = {
 			PR_FOLDER_PATHNAME, PR_NORMAL_MESSAGE_SIZE,
 			PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_MESSAGE_SIZE_EXTENDED,
@@ -325,27 +321,27 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		auto pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_DRAFTS_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_DRAFTS_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_CONTACT_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_CONTACT_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_APPOINTMENT_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_APPOINTMENT_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_JOURNAL_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_JOURNAL_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_NOTE_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_NOTE_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_TASK_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_TASK_ENTRYID, pvalue);
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS)) {
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
@@ -379,7 +375,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[4] = *pbin;
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS, ba);
+			cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS, ba);
 		}
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
 			auto bv = cu_alloc<BINARY>();
@@ -418,7 +414,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (bv->pv == nullptr)
 				return FALSE;
 			memcpy(bv->pv, ext_push.m_udata, bv->cb);
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS_EX, bv);
+			cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS_EX, bv);
 		}
 		if (!chg.has(PR_FREEBUSY_ENTRYIDS)) {
 			auto ba = cu_alloc<BINARY_ARRAY>();
@@ -439,7 +435,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[3] = *pbin;
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_FREEBUSY_ENTRYIDS, ba);
+			cu_set_propval(&chg, PR_FREEBUSY_ENTRYIDS, ba);
 		}
 	}
 	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags,

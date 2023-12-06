@@ -108,6 +108,10 @@ struct GX_EXPORT FOLDER_CONTENT {
 struct FOLDER_CHANGES {
 	uint32_t count;
 	TPROPVAL_ARRAY *pfldchgs;
+	inline TPROPVAL_ARRAY *begin() { return pfldchgs; }
+	inline TPROPVAL_ARRAY *end() { return pfldchgs + count; }
+	inline const TPROPVAL_ARRAY *begin() const { return pfldchgs; }
+	inline const TPROPVAL_ARRAY *end() const { return pfldchgs + count; }
 };
 
 extern ATTACHMENT_CONTENT *attachment_content_init();

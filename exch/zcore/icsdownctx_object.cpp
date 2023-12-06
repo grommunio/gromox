@@ -163,8 +163,8 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY &state,
 	pctx->pchg_eids = eid_array_init();
 	if (pctx->pchg_eids == nullptr)
 		return FALSE;
-	for (size_t i = 0; i < fldchgs.count; ++i) {
-		auto pvalue = fldchgs.pfldchgs[i].get<uint64_t>(PidTagFolderId);
+	for (const auto &chg : fldchgs) {
+		auto pvalue = chg.get<const uint64_t>(PidTagFolderId);
 		if (pvalue == nullptr)
 			return FALSE;
 		if (!eid_array_append(pctx->pchg_eids, *pvalue))

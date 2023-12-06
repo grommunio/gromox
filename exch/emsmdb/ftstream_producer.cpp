@@ -830,9 +830,8 @@ BOOL ftstream_producer::write_hierarchysync(
 	const TPROPVAL_ARRAY *pstate)
 {
 	auto pstream = this;
-	for (size_t i = 0; i < pfldchgs->count; ++i)
-		if (!ftstream_producer_write_folderchange(pstream,
-		    &pfldchgs->pfldchgs[i]))
+	for (const auto &chg : *pfldchgs)
+		if (!ftstream_producer_write_folderchange(pstream, &chg))
 			return FALSE;
 	if (pdels != nullptr && !write_deletions(pdels))
 		return FALSE;

@@ -1058,9 +1058,8 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	mSyncFolderHierarchyResponseMessage& msg = data.ResponseMessages.emplace_back();
 	auto& msgChanges = msg.Changes.emplace();
 	msgChanges.reserve(changes.count+deleted_fids.count);
-	for(TPROPVAL_ARRAY* folderProps = changes.pfldchgs; folderProps < changes.pfldchgs+changes.count; ++folderProps)
-	{
-		uint64_t* folderId = folderProps->get<uint64_t>(PidTagFolderId);
+	for (const auto &folderProps : changes) {
+		auto folderId = folderProps.get<uint64_t>(PidTagFolderId);
 		if(!folderId)
 			continue;
 		folder.folderId = *folderId;

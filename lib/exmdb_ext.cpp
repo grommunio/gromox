@@ -3563,8 +3563,8 @@ static pack_result exmdb_pull(EXT_PULL &x, exresp_get_hierarchy_sync &d)
 static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_hierarchy_sync &d)
 {
 	TRY(x.p_uint32(d.fldchgs.count));
-	for (size_t i = 0; i < d.fldchgs.count; ++i)
-		TRY(x.p_tpropval_a(d.fldchgs.pfldchgs[i]));
+	for (const auto &chg : d.fldchgs)
+		TRY(x.p_tpropval_a(chg));
 	TRY(x.p_uint64(d.last_cn));
 	TRY(x.p_eid_a(d.given_fids));
 	return x.p_eid_a(d.deleted_fids);
