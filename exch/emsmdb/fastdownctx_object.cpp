@@ -36,8 +36,8 @@ bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param)
 
 bool fxdown_flow_list::record_messagelist(EID_ARRAY *pmsglst)
 {
-	for (size_t i = 0; i < pmsglst->count; ++i)
-		if (!record_node(fxdown_flow_func::msg_id, pmsglst->pids[i]))
+	for (uint64_t mid : *pmsglst)
+		if (!record_node(fxdown_flow_func::msg_id, mid))
 			return false;
 	return true;
 }

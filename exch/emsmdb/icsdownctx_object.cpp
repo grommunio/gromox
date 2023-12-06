@@ -117,8 +117,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		return FALSE;
 	
 	pctx->pstate->pgiven->clear();
-	for (size_t i = 0; i < given_messages.count; ++i)
-		if (!pctx->pstate->pgiven->append(given_messages.pids[i]))
+	for (auto mid : given_messages)
+		if (!pctx->pstate->pgiven->append(mid))
 			return FALSE;	
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		pctx->pmessages = eid_array_dup(&chg_messages);
@@ -154,14 +154,14 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	    !pctx->flow_list.record_node(ics_flow_func::progress))
 		return FALSE;
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
-		for (size_t i = 0; i < pctx->pmessages->count; ++i) {
+		for (uint64_t i_mid : *pctx->pmessages) {
 			size_t j;
 			for (j = 0; j < updated_messages.count; ++j)
-				if (updated_messages.pids[j] == pctx->pmessages->pids[i])
+				if (updated_messages.pids[j] == i_mid)
 					break;
 			if (!pctx->flow_list.record_node(j < updated_messages.count ?
 			    ics_flow_func::upd_msg_id : ics_flow_func::new_msg_id,
-			    pctx->pmessages->pids[i]))
+			    i_mid))
 				return FALSE;	
 		}
 	}
@@ -227,8 +227,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	    &deleted_folders))
 		return FALSE;
 	pctx->pstate->pgiven->clear();
-	for (size_t i = 0; i < given_folders.count; ++i)
-		if (!pctx->pstate->pgiven->append(given_folders.pids[i]))
+	for (auto fid : given_folders)
+		if (!pctx->pstate->pgiven->append(fid))
 			return FALSE;	
 	for (auto &chg : fldchgs) {
 		static constexpr uint32_t tags[] = {
@@ -444,8 +444,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		pproplist_deletions = NULL;
 	} else {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < deleted_folders.count; ++i)
-			if (!xset.append(deleted_folders.pids[i]))
+		for (auto fid : deleted_folders)
+			if (!xset.append(fid))
 				return FALSE;
 		pbin = xset.serialize();
 		if (pbin == nullptr)
@@ -944,8 +944,8 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	pbin2 = NULL;
 	if (pctx->pdeleted_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pdeleted_messages->count; ++i)
-			if (!xset.append(pctx->pdeleted_messages->pids[i]))
+		for (auto mid : *pctx->pdeleted_messages)
+			if (!xset.append(mid))
 				return FALSE;
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
@@ -955,8 +955,8 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	if (!(pctx->sync_flags & SYNC_NO_SOFT_DELETIONS) &&
 	    pctx->pnolonger_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
-			if (!xset.append(pctx->pnolonger_messages->pids[i])) {
+		for (auto mid : *pctx->pnolonger_messages) {
+			if (!xset.append(mid)) {
 				if (pbin1 != nullptr)
 					rop_util_free_binary(pbin1);
 				return FALSE;
@@ -1003,8 +1003,8 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	proplist.ppropval = tmp_propvals;
 	if (pctx->pread_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pread_messages->count; ++i)
-			if (!xset.append(pctx->pread_messages->pids[i]))
+		for (auto mid : *pctx->pread_messages)
+			if (!xset.append(mid))
 				return FALSE;
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
@@ -1013,8 +1013,8 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	}
 	if (pctx->punread_messages->count > 0) {
 		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->punread_messages->count; ++i)
-			if (!xset.append(pctx->punread_messages->pids[i]))
+		for (auto mid : *pctx->punread_messages)
+			if (!xset.append(mid))
 				return FALSE;
 		pbin2 = xset.serialize();
 		if (pbin2 == nullptr)

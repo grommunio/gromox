@@ -725,8 +725,8 @@ sShape::sShape(const tItemChange& changes)
 sShape::sShape(const TPROPVAL_ARRAY& tp)
 {
 	props.reserve(tp.count);
-	for(const TAGGED_PROPVAL* prop = tp.ppropval; prop != tp.ppropval+tp.count; ++prop)
-		props.emplace(prop->proptag, PropInfo(FL_FIELD, prop));
+	for (const auto &prop : tp)
+		props.emplace(prop.proptag, PropInfo(FL_FIELD, &prop));
 }
 
 /**
@@ -967,8 +967,8 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
  */
 void sShape::properties(const TPROPVAL_ARRAY& properties)
 {
-	for(const TAGGED_PROPVAL* prop = properties.ppropval; prop != properties.ppropval+properties.count; ++prop)
-		props[prop->proptag].prop = prop;
+	for (const auto &prop : properties)
+		props[prop.proptag].prop = &prop;
 }
 
 /**
@@ -1028,27 +1028,27 @@ void sSyncState::init(const std::string& data64)
 	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, EXT_FLAG_WCOUNT);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
-	for (TAGGED_PROPVAL* propval = propvals.ppropval; propval < propvals.ppropval+propvals.count; ++propval)
-	{
-		switch (propval->proptag) {
+	for (const auto &pv : propvals) {
+		switch (pv.proptag) {
 		case MetaTagIdsetGiven1:
-			if (!given.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
+			if (!given.deserialize(*static_cast<const BINARY *>(pv.pvalue)))
 				throw EWSError::InvalidSyncStateData(E3053);
 			break;
 		case MetaTagCnsetSeen:
-			if (!seen.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
+			if (!seen.deserialize(*static_cast<const BINARY *>(pv.pvalue)))
 				throw EWSError::InvalidSyncStateData(E3054);
 			break;
 		case MetaTagCnsetRead:
-			if (!read.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
+			if (!read.deserialize(*static_cast<const BINARY *>(pv.pvalue)))
 				throw EWSError::InvalidSyncStateData(E3055);
 			break;
 		case MetaTagCnsetSeenFAI:
-			if (!seen_fai.deserialize(*static_cast<const BINARY *>(propval->pvalue)))
+			if (!seen_fai.deserialize(*static_cast<const BINARY *>(pv.pvalue)))
 				throw EWSError::InvalidSyncStateData(E3056);
 			break;
 		case MetaTagReadOffset: //PR_READ, but with long type -> number of read states already delivered
-			readOffset = *static_cast<uint32_t*>(propval->pvalue);
+			readOffset = *static_cast<uint32_t *>(pv.pvalue);
+			break;
 		}
 	}
 }
@@ -1070,10 +1070,10 @@ void sSyncState::convert()
  */
 void sSyncState::update(const EID_ARRAY& given_fids, const EID_ARRAY& deleted_fids, uint64_t lastCn)
 {
-	for(uint64_t* pid = deleted_fids.pids; pid < deleted_fids.pids+deleted_fids.count; ++pid)
-		given.remove(*pid);
-	for(uint64_t* pid = given_fids.pids; pid < given_fids.pids+given_fids.count; ++pid)
-		if(!given.append(*pid))
+	for (auto pid : deleted_fids)
+		given.remove(pid);
+	for (auto pid : given_fids)
+		if (!given.append(pid))
 			throw DispatchError(E3057);
 	seen.clear();
 	if(lastCn && !seen.append_range(1, 1, rop_util_get_gc_value(lastCn)))

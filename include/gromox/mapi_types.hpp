@@ -696,6 +696,10 @@ struct GLOBALOBJECTID {
 struct EID_ARRAY {
 	uint32_t count;
 	uint64_t *pids;
+	inline uint64_t *begin() { return pids; }
+	inline uint64_t *end() { return pids + count; }
+	inline const uint64_t *begin() const { return pids; }
+	inline const uint64_t *end() const { return pids + count; }
 };
 
 using INDEX_ARRAY = PROPTAG_ARRAY;

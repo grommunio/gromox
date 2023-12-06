@@ -1817,9 +1817,8 @@ ec_error_t cu_remote_copy_folder(store_object *src_store, uint64_t folder_id,
 						src_store, folder_id, username);
 	if (pmessage_ids == nullptr)
 		return ecError;
-	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		err = cu_remote_copy_message(src_store, pmessage_ids->pids[i],
-		           dst_store, new_fid);
+	for (auto mid : *pmessage_ids) {
+		err = cu_remote_copy_message(src_store, mid, dst_store, new_fid);
 		if (err != ecSuccess)
 			return err;
 	}

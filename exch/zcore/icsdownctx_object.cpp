@@ -183,8 +183,8 @@ BINARY *icsdownctx_object::get_state()
 		&& pctx->eid_pos >= pctx->pchg_eids->count && NULL ==
 		pctx->pdeleted_eids && NULL == pctx->pnolonger_messages) {
 		pctx->pstate->pgiven->clear();
-		for (size_t i = 0; i < pctx->pgiven_eids->count; ++i)
-			if (!pctx->pstate->pgiven->append(pctx->pgiven_eids->pids[i]))
+		for (auto eid : *pctx->pgiven_eids)
+			if (!pctx->pstate->pgiven->append(eid))
 				return nullptr;
 		pctx->pstate->pseen->clear();
 		if (pctx->last_changenum != 0 &&
@@ -440,15 +440,15 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 			return FALSE;
 		}
 		pstates->count = 0;
-		for (size_t i = 0; i < pctx->pread_messages->count; ++i) {
-			auto pbin = cu_mid_to_sk(pctx->pstore, pctx->pread_messages->pids[i]);
+		for (auto mid : *pctx->pread_messages) {
+			auto pbin = cu_mid_to_sk(pctx->pstore, mid);
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;
 			pstates->pstate[pstates->count++].message_flags = MSGFLAG_READ;
 		}
-		for (size_t i = 0; i < pctx->punread_messages->count; ++i) {
-			auto pbin = cu_mid_to_sk(pctx->pstore, pctx->punread_messages->pids[i]);
+		for (auto mid : *pctx->punread_messages) {
+			auto pbin = cu_mid_to_sk(pctx->pstore, mid);
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;

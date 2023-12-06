@@ -309,8 +309,8 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 	uint64_t fai_size = 0, normal_size = 0;
 	uint32_t del_count = 0, message_size = 0;
 	std::set<uint64_t> touched_folders;
-	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		auto tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
+	for (auto mid : *pmessage_ids) {
+		auto tmp_val = rop_util_get_gc_value(mid);
 		stm_find.bind_int64(1, tmp_val);
 		if (stm_find.step() != SQLITE_ROW) {
 			*pb_partial = TRUE;
@@ -466,7 +466,6 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	uint64_t tmp_cn;
 	uint64_t nt_time;
 	uint64_t src_val;
-	uint64_t tmp_val;
 	uint64_t fai_size;
 	uint32_t permission;
 	uint64_t parent_fid;
@@ -519,8 +518,8 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	fai_size = 0;
 	del_count = 0;
 	normal_size = 0;
-	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		tmp_val = rop_util_get_gc_value(pmessage_ids->pids[i]);
+	for (auto mid : *pmessage_ids) {
+		auto tmp_val = rop_util_get_gc_value(mid);
 		sqlite3_bind_int64(pstmt, 1, tmp_val);
 		if (pstmt.step() != SQLITE_ROW)
 			continue;

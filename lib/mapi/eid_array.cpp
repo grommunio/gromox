@@ -85,10 +85,9 @@ EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 
 bool eid_array_check(const EID_ARRAY *parray, uint64_t eid)
 {
-	for (size_t i = 0; i < parray->count; ++i)
-		if (eid == parray->pids[i]) {
+	for (auto elem : *parray)
+		if (eid == elem)
 			return true;
-		}
 	return false;
 }
 

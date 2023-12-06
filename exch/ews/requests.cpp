@@ -1071,12 +1071,8 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 		else
 			msgChanges.emplace_back(tSyncFolderHierarchyCreate(std::move(folderData)));
 	}
-
-	for(uint64_t* fid = deleted_fids.pids; fid < deleted_fids.pids+deleted_fids.count; ++fid)
-	{
-		TAGGED_PROPVAL entryID = ctx.getFolderEntryId(dir, *fid);
-		msgChanges.emplace_back(tSyncFolderHierarchyDelete(entryID));
-	}
+	for (auto fid : deleted_fids)
+		msgChanges.emplace_back(tSyncFolderHierarchyDelete(ctx.getFolderEntryId(dir, fid)));
 
 	syncState.update(given_fids, deleted_fids, lastCn);
 	msg.SyncState = syncState.serialize();
@@ -1145,30 +1141,27 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 		mSyncFolderItemsResponseMessage msg;
 		msg.Changes.reserve(min(chg_mids.count+deleted_mids.count+read_mids.count+unread_mids.count, maxItems));
 		maxItems -= deleted_mids.count = min(deleted_mids.count, maxItems);
-		for(uint64_t* mid = deleted_mids.pids; mid < deleted_mids.pids+deleted_mids.count; ++mid)
-		{
-			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(*mid).serialize()));
-			syncState.given.remove(*mid);
+		for (auto mid : deleted_mids) {
+			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(mid).serialize()));
+			syncState.given.remove(mid);
 		}
 		clipped = clipped || nolonger_mids.count > maxItems;
 		maxItems -= nolonger_mids.count = min(nolonger_mids.count, maxItems);
-		for(uint64_t* mid = nolonger_mids.pids; mid < nolonger_mids.pids+nolonger_mids.count; ++mid)
-		{
-			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(*mid).serialize()));
-			syncState.given.remove(*mid);
+		for (auto mid : nolonger_mids) {
+			msg.Changes.emplace_back(tSyncFolderItemsDelete(templId.messageId(mid).serialize()));
+			syncState.given.remove(mid);
 		}
 		clipped = clipped || chg_mids.count > maxItems;
 		maxItems -= chg_mids.count = min(chg_mids.count, maxItems);
-		for(uint64_t* mid = chg_mids.pids; mid < chg_mids.pids+chg_mids.count; ++mid)
-		{
-			const uint64_t* changeNum = ctx.getItemProp<uint64_t>(dir, *mid, PidTagChangeNumber);
+		for (auto mid : chg_mids) {
+			auto changeNum = ctx.getItemProp<const uint64_t>(dir, mid, PidTagChangeNumber);
 			if(!changeNum)
 				continue;
-			if(eid_array_check(&updated_mids, *mid))
-				msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
+			if(eid_array_check(&updated_mids, mid))
+				msg.Changes.emplace_back(tSyncFolderItemsUpdate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
 			else
-				msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, *mid, shape)}});
-			if(!syncState.given.append(*mid) || !syncState.seen.append(*changeNum))
+				msg.Changes.emplace_back(tSyncFolderItemsCreate{{{}, ctx.loadItem(dir, folder.folderId, mid, shape)}});
+			if(!syncState.given.append(mid) || !syncState.seen.append(*changeNum))
 				throw DispatchError(E3065);
 		}
 		uint32_t readSynced = syncState.readOffset;
@@ -1176,14 +1169,14 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 		read_mids.count = min(read_mids.count-skip, maxItems)+skip;
 		maxItems -= read_mids.count-skip;
 		clipped = clipped || read_mids.count-skip > maxItems;
-		for(uint64_t* mid = read_mids.pids+skip; mid < read_mids.pids+read_mids.count; ++mid)
-			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(*mid).serialize()), true});
+		for (auto mid : read_mids)
+			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), true});
 		readSynced += read_mids.count-skip;
 		skip = min(unread_mids.count, syncState.readOffset-read_mids.count+skip);
 		unread_mids.count = min(unread_mids.count-skip, maxItems)+skip;
 		clipped = clipped || unread_mids.count-skip > maxItems;
-		for(uint64_t* mid = unread_mids.pids+skip; mid < unread_mids.pids+unread_mids.count; ++mid)
-			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(*mid).serialize()), false});
+		for (auto mid : unread_mids)
+			msg.Changes.emplace_back(tSyncFolderItemsReadFlag{{}, tItemId(templId.messageId(mid).serialize()), false});
 		if(!clipped)
 		{
 			syncState.seen.clear();

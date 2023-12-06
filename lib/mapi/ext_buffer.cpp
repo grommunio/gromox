@@ -3253,8 +3253,8 @@ pack_result EXT_PUSH::p_persistdata_a(const PERSISTDATA_ARRAY &r)
 pack_result EXT_PUSH::p_eid_a(const EID_ARRAY &r)
 {
 	TRY(p_uint32(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(p_uint64(r.pids[i]));
+	for (auto eid : r)
+		TRY(p_uint64(eid));
 	return EXT_ERR_SUCCESS;
 }
 
