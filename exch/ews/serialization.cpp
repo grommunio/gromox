@@ -1059,10 +1059,6 @@ void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const
 void tSyncFolderItemsCU::serialize(XMLElement* xml) const
 {XMLDUMPT(item);}
 
-tSyncFolderItemsDelete::tSyncFolderItemsDelete(const TAGGED_PROPVAL& tp) : ItemId(tp)
-{}
-
-
 void tSyncFolderItemsDelete::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(ItemId);}
 

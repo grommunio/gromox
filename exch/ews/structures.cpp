@@ -557,6 +557,19 @@ eid_t sMessageEntryId::messageId() const
 {return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_global_counter));}
 
 /**
+ * @brief      Set message ID parrt of the entry ID
+ *
+ * @param      mid   Message ID
+ *
+ * @return     *this
+ */
+sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
+{
+	message_global_counter = rop_util_get_gc_array(mid);
+	return *this;
+}
+
+/**
  * @brief     Retrieve message type
  *
  * @return    true if message is private, false otherwise
@@ -2825,6 +2838,11 @@ tSubscriptionId::tSubscriptionId(uint32_t id, uint32_t t) : ID(++globcnt), timeo
 
 
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tSyncFolderItemsDelete::tSyncFolderItemsDelete(const sBase64Binary& meid) : ItemId(meid, tItemId::ID_ITEM)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

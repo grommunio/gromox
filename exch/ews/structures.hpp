@@ -166,6 +166,7 @@ struct sMessageEntryId : public MESSAGE_ENTRYID
 	uint32_t accountId() const;
 	uint64_t folderId() const;
 	eid_t messageId() const;
+	sMessageEntryId& messageId(eid_t);
 	bool isPrivate() const;
 
 	sBase64Binary serialize() const;
@@ -1998,7 +1999,7 @@ struct tSyncFolderItemsDelete : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Delete";
 
-	tSyncFolderItemsDelete(const TAGGED_PROPVAL&);
+	tSyncFolderItemsDelete(const sBase64Binary&);
 
 	tItemId ItemId;
 
