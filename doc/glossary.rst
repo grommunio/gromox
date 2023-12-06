@@ -88,10 +88,23 @@ GUID
 	and right end).
 
 Mailbox GUID
-	A value which is found in ``mdb01.edb`` in table ``Mailbox``, column
-	``MailboxGuid``. It is unclear why a distinction between mailbox and
-	store was necessary for Exchange. In Gromox, Mailbox GUID is the same
-	as Store GUID.
+	Randomly-generated value on mailbox creation.
+	It can found in ``mdb01.edb`` in table ``Mailbox``, column
+	``MailboxGuid``.
+	In the EWS protocol as spoken by Exchange Server, the "ItemId"
+	attribute contains the Mailbox GUID in ASCII from byte 4-28.
+	In shows up in MAPI store objects (MFCMAPI/OLSpy) in the 0x67070102
+	(MailboxDSGuid) property.
+
+Store GUID
+	Randomly-generated value on mailbox creation.
+	It can be found in ``mdb01.edb`` in table ``Mailbox``, column
+	``MailboxInstanceGuid``.
+	It can be found in ``exchange.sqlite3`` in table ``configurations``,
+	config_id 1.
+	It shows up in ``ropLogon`` responses in the ``MailboxGuid`` field.
+	It shows up in MAPI objects (MFCMAPI/OLSpy) in the
+	``PR_STORE_RECORD_KEY`` property.
 
 MAPIHTTP MailboxId
 	The MH request URI has a parameter ``MailboxId``. It is something like
@@ -102,12 +115,15 @@ MAPIHTTP MailboxId
 	because the user id is obtained from HTTP authentication headers.
 
 Database GUID
+	Randomly-generated value on mailbox creation.
 	A value which is found in ``mdb01.edb`` in table ``MailboxIdentity``,
 	column ``LocalIdGuid``.
 	In Exchange, dbguid is distinct from Store GUID.
 	In Gromox, dbguid is the same value as GABUID.
 	In Outlook Cached Mode, every OST file has its own dbguid. (Deleting
 	the OST file leads a new dbguid being generated.)
+	It MFCMAPI/OLSpy, the value shows up as part of Change Keys, PCLs,
+	entryids, etc.
 
 Folder Database GUID
 	Visible in EX entryids (with conditions) at bytes 22-38.
@@ -291,14 +307,6 @@ ropLogon ReplID, ReplGUID fields
 	ropLogon.ReplGUID is different for every store. Generally,
 	ropLogon.ReplGUID is filled with the value that is used for Named
 	Property mapping (PR_MAPPING_SIGNATURE).
-
-Store GUID
-	It can be found in ``mdb01.edb`` in table ``Mailbox``, column
-	``MailboxInstanceGuid``.
-	It can be found in ``exchange.sqlite3`` in table ``configurations``,
-	config_id 1.
-	It shows up in ``ropLogon`` responses in the ``MailboxGuid`` field.
-	It shows up in MAPI in the ``PR_STORE_RECORD_KEY`` property.
 
 property
 	Blurry term; can either refer to proptag or propid, and depending on
