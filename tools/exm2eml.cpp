@@ -198,12 +198,13 @@ int main(int argc, const char **argv) try
 			fprintf(stderr, "oxcical_export failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
 		}
-		auto buf = std::make_unique<char[]>(1048576);
-		if (!ic.serialize(buf.get(), 1048576)) {
-			fprintf(stderr, "vcard::serialize failed for an unspecified reason.\n");
+		std::string buf;
+		auto err = ic.serialize(buf);
+		if (err != ecSuccess) {
+			fprintf(stderr, "ical::serialize: %s\n", mapi_strerror(err));
 			return EXIT_FAILURE;
 		}
-		fputs(buf.get(), stdout);
+		fputs(buf.c_str(), stdout);
 	} else if (g_export_mode == EXPORT_VCARD) {
 		vcard vc;
 		if (!oxvcard_export(ctnt, vc, cu_get_propids)) {

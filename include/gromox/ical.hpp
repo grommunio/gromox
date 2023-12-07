@@ -88,7 +88,7 @@ using ICAL_COMPONENT = ical_component;
 struct GX_EXPORT ical : public ical_component {
 	ical() : ical_component("VCALENDAR") {}
 	bool load_from_str_move(char *in_buff);
-	bool serialize(char *out_buff, size_t maxlen) const;
+	ec_error_t serialize(std::string &out) const;
 };
 using ICAL = ical;
 

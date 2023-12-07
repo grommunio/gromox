@@ -46,9 +46,11 @@ static void t_ical()
 	v.append_subval("SUBVAL");
 	v.append_subval("SUBVAL");
 
-	char buf[4096];
-	ic.serialize(buf, std::size(buf));
-	printf("%s\n", buf);
+	std::string buf;
+	auto err = ic.serialize(buf);
+	printf("%s\n", buf.c_str());
+	if (err != ecSuccess)
+		fprintf(stderr, "%s\n", mapi_strerror(err));
 }
 
 int main()
