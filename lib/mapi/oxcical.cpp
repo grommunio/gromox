@@ -1038,7 +1038,7 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 			if (pnv2.empty())
 				continue;
 			memset(&itime, 0, sizeof(ICAL_TIME));
-			if (!ical_parse_date(pnv2.c_str(), &itime.year, &itime.month, &itime.day))
+			if (!ical_parse_date(pnv2.c_str(), &itime))
 				continue;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
 			pdates[*pcount] = rop_util_unix_to_rtime(tmp_time);
@@ -1092,9 +1092,8 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 		}
 	} else if (0 == strcasecmp(pvalue1, "DATE")) {
  PARSE_DATE_VALUE:
-		memset(pitime, 0, sizeof(ICAL_TIME));
-		if (!ical_parse_date(pvalue, &pitime->year,
-		    &pitime->month, &pitime->day))
+		*pitime = {};
+		if (!ical_parse_date(pvalue, pitime))
 			return FALSE;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return FALSE;

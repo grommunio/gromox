@@ -595,14 +595,15 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	return true;
 }
 
-bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday)
+bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 {
 	char tmp_buff[128];
 	
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
-	return sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) >= 3;
+	itime->hour = itime->minute = itime->second = itime->leap_second = 0;
+	return sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) >= 3;
 }
 
 bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitime)
@@ -1191,8 +1192,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			itime2.minute = 0;
 			itime2.second = 0;
 			itime2.leap_second = 0;
-			if (!ical_parse_date(pvalue, &itime2.year,
-			    &itime2.month, &itime2.day))
+			if (!ical_parse_date(pvalue, &itime2))
 				return nullptr;
 		} else {
 			if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
@@ -1453,13 +1453,8 @@ static bool ical_parse_until(const ical_component *ptz_component,
 	ICAL_TIME itime;
 	
 	if (!ical_parse_datetime(str_until, &b_utc, &itime)) {
-		if (!ical_parse_date(str_until, &itime.year,
-		    &itime.month, &itime.day))
+		if (!ical_parse_date(str_until, &itime))
 			return false;
-		itime.hour = 0;
-		itime.minute = 0;
-		itime.second = 0;
-		itime.leap_second = 0;
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	} else {
 		if (!b_utc)
