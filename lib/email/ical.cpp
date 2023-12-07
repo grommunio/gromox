@@ -603,6 +603,7 @@ bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	itime->hour = itime->minute = itime->second = itime->leap_second = 0;
+	itime->type = ICT_FLOAT_DAY;
 	return sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) >= 3;
 }
 

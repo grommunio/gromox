@@ -1098,7 +1098,8 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 		*pitime = {};
 		if (!ical_parse_date(pvalue, pitime))
 			return FALSE;
-		pitime->type = ptz_component != nullptr ? ICT_LOCAL : ICT_FLOAT;
+		if (pitime->type == ICT_FLOAT && ptz_component != nullptr)
+			pitime->type = ICT_LOCAL;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return FALSE;
 	} else {

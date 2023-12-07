@@ -15,7 +15,10 @@ template<> struct fmt::formatter<ICAL_TIME>
 	constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
 	format_context::iterator format(const ICAL_TIME &t, format_context &ctx) const
 	{
-		return fmt::format_to(ctx.out(), "{:04}{:02}{:02}T{:02}{:02}{:02}{}",
+		return t.type == ICT_FLOAT_DAY ?
+		       fmt::format_to(ctx.out(), "{:04}{:02}{:02}",
+		       t.year, t.month, t.day) :
+		       fmt::format_to(ctx.out(), "{:04}{:02}{:02}T{:02}{:02}{:02}{}",
 		       t.year, t.month, t.day, t.hour, t.minute, t.second,
 		       t.type == ICT_UTC ? "Z" : "");
 	}
