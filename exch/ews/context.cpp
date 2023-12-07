@@ -709,6 +709,8 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			item.Attachments->emplace_back(tAttachment::create(aid, props));
 		}
 	}
+	if(special & sShape::Permissions)
+		item.EffectiveRights.emplace(permissions(dir, fid));
 }
 
 /**
