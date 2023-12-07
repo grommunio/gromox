@@ -1046,14 +1046,22 @@ struct SHORT_ARRAY {
 	uint16_t *ps; // XXX: should be int16_t
 };
 
+/**
+ * @type:       Proptype. When the MV_INSTANCE bit is set, a multivalue property
+ *              will be presented as multiple rows.
+ * @table_sort: TBL_ASCEND / TBL_DESCEND
+ */
 struct SORT_ORDER {
-	uint16_t type; /* pay attention to the 0x2000 bit */
+	uint16_t type;
 	uint16_t propid;
 	uint8_t table_sort;
 
 	std::string repr() const;
 };
 
+/**
+ * https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/ssortorderset
+ */
 struct SORTORDER_SET {
 	uint16_t count;
 	uint16_t ccategories;
