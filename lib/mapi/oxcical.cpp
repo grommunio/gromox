@@ -116,6 +116,7 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 		return FALSE;
 	ICAL_TIME itime{};
 	if (!ical_parse_datetime(pvalue, &itime) || itime.type == ICT_UTC)
+		/* Z specifier should not be used with VTIMEZONE.DTSTART */
 		return FALSE;
 	*pyear = itime.year;
 	pdate->hour = itime.hour;
@@ -1015,8 +1016,10 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 			if (!ical_parse_datetime(pnv2.c_str(), &itime))
 				continue;
 			if (itime.type == ICT_UTC && ptz_component != nullptr) {
+				/* Adjust itime to be in local time */
 				ical_itime_to_utc(NULL, itime, &tmp_time);
 				ical_utc_to_datetime(ptz_component, tmp_time, &itime);
+				/* return value not checked -- could oddly be an ICT_FLOAT now */
 			}
 			itime.hour = 0;
 			itime.minute = 0;
@@ -1084,6 +1087,8 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 			if (!ical_itime_to_utc(nullptr, *pitime, putc_time))
 				return FALSE;
 		} else {
+			if (pitime->type == ICT_FLOAT && ptz_component != nullptr)
+				pitime->type = ICT_LOCAL;
 			if (!ical_itime_to_utc(ptz_component,
 			    *pitime, putc_time))
 				return FALSE;
@@ -1093,9 +1098,9 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 		*pitime = {};
 		if (!ical_parse_date(pvalue, pitime))
 			return FALSE;
+		pitime->type = ptz_component != nullptr ? ICT_LOCAL : ICT_FLOAT;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return FALSE;
-		pitime->type = ICT_FLOAT;
 	} else {
 		return FALSE;
 	}

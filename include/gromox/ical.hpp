@@ -96,6 +96,7 @@ enum { /* for ICAL_TIME::type */
 	ICT_UNSPEC,
 	ICT_UTC,
 	ICT_FLOAT,
+	ICT_LOCAL,
 };
 
 struct ICAL_TIME {
