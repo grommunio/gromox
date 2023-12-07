@@ -614,6 +614,13 @@ void tFindFolderParent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Folders);
 }
 
+void tFindItemParent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tFindResponsePagingAttributes::serialize(xml);
+	XMLDUMPT(Items);
+	XMLDUMPT(Groups);
+}
+
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(Entry.c_str());
@@ -711,6 +718,12 @@ void tFreeBusyView::serialize(XMLElement* xml) const
 tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
 	XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
 {}
+
+void tGroupedItems::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(GroupIndex);
+	XMLDUMPT(Items);
+}
 
 tGuid::tGuid(const XMLAttribute* xml)
 {
@@ -1184,6 +1197,22 @@ void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Folders);
 }
+
+mFindItemRequest::mFindItemRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(ItemShape),
+	XMLINIT(Restriction),
+	XMLINIT(ParentFolderIds),
+	XMLINITA(Traversal)
+{}
+
+void mFindItemResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(RootFolder);
+}
+
+void mFindItemResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
 
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)

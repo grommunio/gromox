@@ -896,6 +896,29 @@ struct tFindFolderParent : public tFindResponsePagingAttributes
 };
 
 /**
+ * Types.xsd:5777
+ */
+struct tGroupedItems : NS_EWS_Types
+{
+	std::string GroupIndex;
+	std::vector<sItem> Items;
+	// <xs:element name="GroupSummary" type="t:GroupSummaryType" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:2345
+ */
+struct tFindItemParent : public tFindResponsePagingAttributes
+{
+	std::vector<sItem> Items;
+	std::vector<tGroupedItems> Groups;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:2436
  */
 struct tFlagType
@@ -922,6 +945,7 @@ struct tFractionalPageView : public tBasePagingType
 	uint32_t offset(uint32_t) const override;
 	void update(tFindResponsePagingAttributes&, uint32_t, uint32_t total) const override;
 };
+
 
 /**
  * Types.xsd:1108
@@ -2832,6 +2856,57 @@ struct mFindFolderResponseMessage : public mResponseMessageType
 struct mFindFolderResponse
 {
 	std::vector<mFindFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1154
+ */
+struct mFindItemRequest
+{
+	explicit mFindItemRequest(const tinyxml2::XMLElement*);
+
+	tItemResponseShape ItemShape;
+	//<xs:choice minOccurs="0">
+	//  <xs:element name="IndexedPageItemView" type="t:IndexedPageViewType"/>
+	//  <xs:element name="FractionalPageItemView" type="t:FractionalPageViewType"/>
+	//  <xs:element name="SeekToConditionPageItemView" type="t:SeekToConditionPageViewType"/>
+	//  <xs:element name="CalendarView" type="t:CalendarViewType"/>
+	//  <xs:element name="ContactsView" type="t:ContactsViewType"/>
+	//</xs:choice>
+	//<xs:choice minOccurs="0">
+	//  <xs:element name="GroupBy" type="t:GroupByType"/>
+	//  <xs:element name="DistinguishedGroupBy" type="t:DistinguishedGroupByType"/>
+	//</xs:choice>
+	std::optional<tRestriction> Restriction;
+	//<xs:element name="SortOrder" type="t:NonEmptyArrayOfFieldOrdersType" minOccurs="0"/>
+	std::vector<sFolderId> ParentFolderIds;
+	//<xs:element name="QueryString" type="m:QueryStringType" minOccurs="0" maxOccurs="1"/>
+	Enum::FolderQueryTraversalType Traversal; // Attribute
+};
+
+/**
+ * Messages.xsd:1553
+ */
+struct mFindItemResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "FindItemResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tFindItemParent> RootFolder;
+	//<xs:element name="HighlightTerms" type="t:ArrayOfHighlightTermsType" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1563
+ */
+struct mFindItemResponse
+{
+	std::vector<mFindItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

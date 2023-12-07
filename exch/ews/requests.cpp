@@ -412,6 +412,66 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 }
 
 /**
+ * @brief      Process FindItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mFindItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental("FindItem");
+
+	response->SetName("m:FindItemResponse");
+
+	sShape shape(request.ItemShape);
+	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
+	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
+	const RESTRICTION* res = request.Restriction? request.Restriction->build() : nullptr;
+
+	auto& exmdb = ctx.plugin().exmdb;
+	mFindItemResponse data;
+	data.ResponseMessages.reserve(request.ParentFolderIds.size());
+
+	for(const sFolderId&  folderId : request.ParentFolderIds) try {
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+			throw EWSError::AccessDenied(E3244);
+		uint32_t tableId, rowCount;
+		if(!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, "", tableFlags, res, nullptr, &tableId, &rowCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if(!rowCount) {
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+		ctx.getNamedTags(dir, shape);
+		PROPTAG_ARRAY tags = shape.proptags();
+		TARRAY_SET table;
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, 0, rowCount, &table);
+		mFindItemResponseMessage msg;
+		msg.RootFolder.emplace().Items.reserve(rowCount);
+		for(const TPROPVAL_ARRAY& props : table) {
+			shape.clean();
+			shape.properties(props);
+			sItem& child = msg.RootFolder->Items.emplace_back(tItem::create(shape));
+			const auto& iid = std::visit([](auto&& i) -> std::optional<tItemId>& {return i.ItemId;}, child);
+			if(shape.special && iid) {
+				sMessageEntryId meid(iid->Id.data(), iid->Id.size());
+				std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+			}
+		}
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
  * @brief      Process GetAttachment
  *
  * @param      request   Request data
