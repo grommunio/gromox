@@ -33,7 +33,7 @@ struct STORE_ENTRYID {
 
 struct FOLDER_ENTRYID {
 	uint32_t flags;
-	FLATUID provider_uid;
+	FLATUID provider_uid; /* glossary.rst:Store GUID */
 	uint16_t folder_type;
 	GUID database_guid;
 	GLOBCNT global_counter;
@@ -42,7 +42,7 @@ struct FOLDER_ENTRYID {
 
 struct MESSAGE_ENTRYID {
 	uint32_t flags;
-	FLATUID provider_uid;
+	FLATUID provider_uid; /* glossary.rst:Store GUID */
 	uint16_t message_type;
 	GUID folder_database_guid;
 	GLOBCNT folder_global_counter;
