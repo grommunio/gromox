@@ -80,7 +80,6 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 	int minute;
 	int dayofweek;
 	int weekorder;
-	ICAL_TIME itime;
 	const char *pvalue;
 	const char *pvalue1;
 	const char *pvalue2;
@@ -115,8 +114,8 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return FALSE;
-	bool b_utc;
-	if (!ical_parse_datetime(pvalue, &b_utc, &itime) || b_utc)
+	ICAL_TIME itime{};
+	if (!ical_parse_datetime(pvalue, &itime) || itime.type == ICT_UTC)
 		return FALSE;
 	*pyear = itime.year;
 	pdate->hour = itime.hour;
@@ -998,8 +997,6 @@ static BOOL oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 static BOOL oxcical_parse_dates(const ical_component *ptz_component,
     const ical_line &iline, uint32_t *pcount, uint32_t *pdates)
 {
-	bool b_utc;
-	ICAL_TIME itime;
 	time_t tmp_time;
 	uint32_t tmp_date;
 	const char *pvalue;
@@ -1014,9 +1011,10 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 		for (const auto &pnv2 : pivalue.subval_list) {
 			if (pnv2.empty())
 				continue;
-			if (!ical_parse_datetime(pnv2.c_str(), &b_utc, &itime))
+			ICAL_TIME itime{};
+			if (!ical_parse_datetime(pnv2.c_str(), &itime))
 				continue;
-			if (b_utc && ptz_component != nullptr) {
+			if (itime.type == ICT_UTC && ptz_component != nullptr) {
 				ical_itime_to_utc(NULL, itime, &tmp_time);
 				ical_utc_to_datetime(ptz_component, tmp_time, &itime);
 			}
@@ -1037,7 +1035,7 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 		for (const auto &pnv2 : pivalue.subval_list) {
 			if (pnv2.empty())
 				continue;
-			memset(&itime, 0, sizeof(ICAL_TIME));
+			ICAL_TIME itime{};
 			if (!ical_parse_date(pnv2.c_str(), &itime))
 				continue;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
@@ -1065,7 +1063,7 @@ static BOOL oxcical_parse_duration(uint32_t minutes, namemap &phash,
 }
 
 static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
-    const ical_line &piline, bool *b_utc, ICAL_TIME *pitime,
+    const ical_line &piline, ICAL_TIME *pitime,
     time_t *putc_time)
 {
 	auto pvalue = piline.get_first_subvalue();
@@ -1077,12 +1075,12 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 		putc_time = &dummy_time;
 	auto pvalue1 = piline.get_first_paramval("VALUE");
 	if (NULL == pvalue1 || 0 == strcasecmp(pvalue1, "DATE-TIME")) {
-		if (!ical_parse_datetime(pvalue, b_utc, pitime)) {
+		if (!ical_parse_datetime(pvalue, pitime)) {
 			if (pvalue1 == nullptr)
 				goto PARSE_DATE_VALUE;
 			return FALSE;
 		}
-		if (*b_utc) {
+		if (pitime->type == ICT_UTC) {
 			if (!ical_itime_to_utc(nullptr, *pitime, putc_time))
 				return FALSE;
 		} else {
@@ -1097,7 +1095,7 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 			return FALSE;
 		if (!ical_itime_to_utc(ptz_component, *pitime, putc_time))
 			return FALSE;
-		*b_utc = false;
+		pitime->type = ICT_FLOAT;
 	} else {
 		return FALSE;
 	}
@@ -1456,12 +1454,11 @@ static BOOL oxcical_parse_recurrence_id(const ical_component *ptz_component,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	time_t tmp_time;
-	ICAL_TIME itime;
+	ICAL_TIME itime{};
 	uint64_t tmp_int64;
-	bool b_utc;
 	
 	if (!oxcical_parse_dtvalue(ptz_component,
-	    piline, &b_utc, &itime, &tmp_time))
+	    piline, &itime, &tmp_time))
 		return FALSE;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
@@ -2016,11 +2013,10 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			return "E-2195: oxcical_parse_tzdisplay returned an unspecified error";
 	}
 
-	bool b_utc, b_utc_start, b_utc_end;
 	time_t start_time = 0, end_time = 0;
-	ICAL_TIME start_itime, end_itime;
+	ICAL_TIME start_itime{}, end_itime{};
 	if (!oxcical_parse_dtvalue(ptz_component,
-	    *piline, &b_utc_start, &start_itime, &start_time))
+	    *piline, &start_itime, &start_time))
 		return "E-2196: oxcical_parse_dtvalue returned an unspecified error";
 	if (!oxcical_parse_start_end(TRUE, b_proposal,
 	    *pmain_event, start_time, phash, &last_propid, pmsg))
@@ -2037,7 +2033,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 		if (!parse_dtv)
 			return "E-2199: oxcical_import: TZID present but VTIMEZONE not (or vice-versa)";
 		if (!oxcical_parse_dtvalue(ptz_component,
-		    *piline, &b_utc_end, &end_itime, &end_time))
+		    *piline, &end_itime, &end_time))
 			return "E-2198: oxcical_parse_dtvalue returned an unspecified error";
 		if (end_time < start_time)
 			return "E-2795: ical not imported due to end_time < start_time";
@@ -2059,7 +2055,6 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			if (pvalue == nullptr ||
 			    !ical_parse_duration(pvalue, &duration) || duration < 0)
 				return "E-2700: ical_parse_duration returned an unspecified error";
-			b_utc_end = b_utc_start;
 			end_itime = start_itime;
 			end_time = start_time + duration;
 			end_itime.add_second(duration);
@@ -2078,7 +2073,8 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	if (!oxcical_parse_duration(duration_min, phash, &last_propid, pmsg))
 		return "E-2703: oxcical_parse_duration returned an unspecified error";
 	
-	if (!b_allday && !b_utc_start && !b_utc_end && start_itime.hour == 0 &&
+	if (!b_allday && start_itime.type != ICT_UTC &&
+	    start_itime.type != ICT_UTC && start_itime.hour == 0 &&
 	    start_itime.minute == 0 && start_itime.second == 0 &&
 	    end_itime.hour == 0 && end_itime.minute == 0 &&
 	    end_itime.second == 0 && end_itime.delta_day(start_itime) == 1)
@@ -2099,13 +2095,14 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			return "E-2707: Timezone mismatch on RECURRENCE-ID and TZID";
 		if (NULL != pvalue) { 
 			if (!oxcical_parse_dtvalue(ptz_component,
-			    *piline, &b_utc, &itime, nullptr))
+			    *piline, &itime, nullptr))
 				return "E-2708";
 		} else {
 			if (!oxcical_parse_dtvalue(nullptr,
-			    *piline, &b_utc, &itime, nullptr))
+			    *piline, &itime, nullptr))
 				return "E-2709";
-			if (!b_utc && (itime.hour != 0 || itime.minute != 0 ||
+			if (itime.type != ICT_UTC &&
+			    (itime.hour != 0 || itime.minute != 0 ||
 			    itime.second != 0 || itime.leap_second != 0))
 				return "E-2710";
 		}
@@ -2262,7 +2259,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 			piline = event->get_line("RECURRENCE-ID");
 			time_t tmp_time;
 			if (!oxcical_parse_dtvalue(ptz_component,
-			    *piline, &b_utc, &itime, &tmp_time))
+			    *piline, &itime, &tmp_time))
 				return "E-2730";
 			auto minutes = rop_util_unix_to_rtime(tmp_time);
 			size_t i;

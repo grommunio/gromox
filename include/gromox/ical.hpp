@@ -92,6 +92,12 @@ struct GX_EXPORT ical : public ical_component {
 };
 using ICAL = ical;
 
+enum { /* for ICAL_TIME::type */
+	ICT_UNSPEC,
+	ICT_UTC,
+	ICT_FLOAT,
+};
+
 struct ICAL_TIME {
 	int twcompare(const ICAL_TIME &other) const;
 	inline bool operator<(const ICAL_TIME &o) const { return twcompare(o) < 0; }
@@ -114,6 +120,7 @@ struct ICAL_TIME {
 	int minute;
 	int second;
 	int leap_second;
+	uint8_t type;
 };
 
 struct GX_EXPORT ical_rrule {
@@ -155,7 +162,7 @@ using ICAL_RRULE = ical_rrule;
 
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *in, ICAL_TIME *out);
-extern GX_EXPORT bool ical_parse_datetime(const char *str_datetime, bool *pb_utc, ICAL_TIME *pitime);
+extern GX_EXPORT bool ical_parse_datetime(const char *in, ICAL_TIME *out);
 extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);

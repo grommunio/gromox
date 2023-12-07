@@ -606,7 +606,7 @@ bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 	return sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) >= 3;
 }
 
-bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitime)
+bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 {
 	int len;
 	char tsep;
@@ -617,11 +617,11 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
-		*b_utc = true;
+		pitime->type = ICT_UTC;
 		len --;
 		tmp_buff[len] = '\0';
 	} else {
-		*b_utc = false;
+		pitime->type = ICT_FLOAT;
 	}
 	if (15 == len) {
 		if (sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d",
@@ -1145,15 +1145,12 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 	int month;
 	int minute;
 	int second;
-	bool b_utc;
 	int weekorder;
 	int dayofweek;
 	int dayofmonth;
 	time_t tmp_time;
 	BOOL b_standard;
 	BOOL b_daylight;
-	ICAL_TIME itime1;
-	ICAL_TIME itime2;
 	struct tm tmp_tm;
 	const char *pvalue;
 	const char *pvalue1;
@@ -1177,7 +1174,8 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
 			return NULL;
-		if (!ical_parse_datetime(pvalue, &b_utc, &itime1) || b_utc)
+		ICAL_TIME itime1{}, itime2{};
+		if (!ical_parse_datetime(pvalue, &itime1) || itime1.type == ICT_UTC)
 			return NULL;
 		if (itime < itime1)
 			continue;
@@ -1187,7 +1185,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		pvalue = piline->get_first_subvalue_by_name("UNTIL");
 		if (pvalue == nullptr)
 			goto FOUND_COMPONENT;
-		if (!ical_parse_datetime(pvalue, &b_utc, &itime2)) {
+		if (!ical_parse_datetime(pvalue, &itime2)) {
 			itime2.hour = 0;
 			itime2.minute = 0;
 			itime2.second = 0;
@@ -1362,6 +1360,7 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	 * change that. Because make_gmtime() pretends @tmp_tm was UTC, @*ptime
 	 * now has bias which needs to be corrected.
 	 */
+	//assert(itime.type != ICT_UTC);
 	auto str_offset = ical_get_datetime_offset(*ptz_component, itime);
 	if (str_offset == nullptr)
 		return false;
@@ -1374,14 +1373,13 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 bool ical_datetime_to_utc(const ical_component *ptz_component,
 	const char *str_datetime, time_t *ptime)
 {
-	bool b_utc;
-	ICAL_TIME itime;
+	ICAL_TIME itime{};
 	struct tm tmp_tm;
 	
-	if (!ical_parse_datetime(str_datetime, &b_utc, &itime))
+	if (!ical_parse_datetime(str_datetime, &itime))
 		return false;
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
-	if (!b_utc)
+	if (itime.type != ICT_UTC)
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	tmp_tm.tm_min = itime.minute;
 	tmp_tm.tm_hour = itime.hour;
@@ -1414,8 +1412,10 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->minute = tmp_tm.tm_min;
 		pitime->second = tmp_tm.tm_sec;
 		pitime->leap_second = 0;
+		pitime->type = ICT_UTC;
 		return true;
 	}
+	pitime->type = ICT_FLOAT;
 	for (const auto &comp : ptz_component->component_list) {
 		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
@@ -1449,17 +1449,16 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 static bool ical_parse_until(const ical_component *ptz_component,
 	const char *str_until, time_t *ptime)
 {
-	bool b_utc;
-	ICAL_TIME itime;
+	ICAL_TIME itime{};
 	
-	if (!ical_parse_datetime(str_until, &b_utc, &itime)) {
+	if (!ical_parse_datetime(str_until, &itime)) {
 		if (!ical_parse_date(str_until, &itime))
 			return false;
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	} else {
-		if (!b_utc)
-			return ical_itime_to_utc(ptz_component, itime, ptime);
-		return ical_datetime_to_utc(nullptr, str_until, ptime);
+		return itime.type == ICT_UTC ?
+		       ical_datetime_to_utc(nullptr, str_until, ptime) :
+		       ical_itime_to_utc(ptz_component, itime, ptime);
 	}
 }
 
