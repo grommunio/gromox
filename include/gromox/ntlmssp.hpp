@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <mutex>
 #include <gromox/arcfour.hpp>
 #include <gromox/common_types.hpp>
 #define NTLMSSP_PROCESS_NEGOTIATE		1
