@@ -2959,11 +2959,10 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	else
 		piline = &pcomponent.append_line("EXDATE");
 	auto &pivalue = piline->append_value();
-	if (b_date) {
+	if (b_date)
 		piline->append_param("VALUE", "DATE");
-	} else if (tzid != nullptr) {
+	if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
-	}
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
@@ -3021,11 +3020,10 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	
 	auto piline = &pcomponent.append_line("RDATE");
 	auto &pivalue = piline->append_value();
-	if (b_date) {
+	if (b_date)
 		piline->append_param("VALUE", "DATE");
-	} else if (tzid != nullptr) {
+	if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
-	}
 	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
@@ -3213,13 +3211,16 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
 	} else {
 		char tmp_buff[1024];
 		sprintf_dt(tmp_buff, std::size(tmp_buff), itime);
-		com.append_line("RECURRENCE-ID", tmp_buff);
+		auto &line = com.append_line("RECURRENCE-ID", tmp_buff);
+		if (ptz_component != nullptr)
+			line.append_param("TZID", tzid);
 	}
 	return nullptr;
 }
 
 static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
-    ical_component &com, const ical_component *tzcom, GET_PROPIDS get_propids)
+    ical_component &com, const ical_component *tzcom,
+    const char *tzid, GET_PROPIDS get_propids)
 {
 	PROPERTY_NAME propname = {MNID_ID, PSETID_TASK, PidLidTaskStatus};
 	const PROPNAME_ARRAY propnames = {1, deconst(&propname)};
@@ -3255,7 +3256,9 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 			sprintf_dtutc(txt, sizeof(txt), itime);
 		else
 			sprintf_dtlcl(txt, sizeof(txt), itime);
-		com.append_line("DUE", txt);
+		auto &line = com.append_line("DUE", txt);
+		if (tzid != nullptr)
+			line.append_param("TZID", tzid);
 	}
 
 	propname = {MNID_ID, PSETID_TASK, PidLidTaskDateCompleted};
@@ -3271,7 +3274,9 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 			sprintf_dtutc(txt, sizeof(txt), itime);
 		else
 			sprintf_dtlcl(txt, sizeof(txt), itime);
-		com.append_line("COMPLETED", txt);
+		auto &line = com.append_line("COMPLETED", txt);
+		if (tzid != nullptr)
+			line.append_param("TZID", tzid);
 	}
 
 	return nullptr;
@@ -3637,6 +3642,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			auto &line = pcomponent->append_line("DTSTART", txt);
 			if (b_allday && g_oxcical_allday_ymd)
 				line.append_param("VALUE", "DATE");
+			if (ptz_component != nullptr)
+				line.append_param("TZID", tzid);
 		}
 	}
 	
@@ -3658,7 +3665,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			pilineDTE.append_param("VALUE", "DATE");
 	}
 
-	err = oxcical_export_task(*pmsg, *pcomponent, ptz_component, get_propids);
+	err = oxcical_export_task(*pmsg, *pcomponent, ptz_component,
+	      tzid, get_propids);
 	if (err != nullptr)
 		return err;
 
