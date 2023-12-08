@@ -77,6 +77,10 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 
 static void term_handler(int signo);
 
+static constexpr cfg_directive gromox_cfg_defaults[] = {
+	{"http_remote_host_hdr", ""},
+	CFG_TABLE_END,
+};
 static constexpr cfg_directive http_cfg_defaults[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
 	{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
@@ -120,7 +124,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg,
+    std::shared_ptr<CONFIG_FILE> xcfg)
 {
 	if (cfg == nullptr)
 		cfg = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);
@@ -134,6 +139,16 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	g_msrpc_debug = cfg->get_ll("msrpc_debug");
 	g_oxcical_allday_ymd = cfg->get_ll("oxcical_allday_ymd");
 	g_http_php = cfg->get_ll("http_old_php_handler");
+
+	if (xcfg == nullptr)
+		xcfg = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && xcfg == nullptr) {
+		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
+		return false;
+	}
+	auto s = cfg->get_value("http_remote_host_hdr");
+	if (s != nullptr)
+		g_http_remote_host_hdr = s;
 	return true;
 }
 
@@ -168,7 +183,11 @@ int main(int argc, const char **argv)
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		mlog(LV_ERR, "resource: config_file_init %s: %s",
 			opt_config_file, strerror(errno));
-	if (g_config_file == nullptr || !http_reload_config(g_config_file))
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && gxconfig == nullptr)
+		mlog(LV_ERR, "resource: config_file_init %s: %s",
+			opt_config_file, strerror(errno));
+	if (g_config_file == nullptr || !http_reload_config(g_config_file, gxconfig))
 		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");
@@ -389,7 +408,7 @@ int main(int argc, const char **argv)
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
-			http_reload_config(nullptr);
+			http_reload_config(nullptr, nullptr);
 			service_trigger_all(PLUGIN_RELOAD);
 			hpm_processor_trigger(PLUGIN_RELOAD);
 			pdu_processor_trigger(PLUGIN_RELOAD);

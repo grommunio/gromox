@@ -40,8 +40,23 @@ Otherwise, the request is rejected.
 RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
 These requests can, similarly to HTTP CONNECT, be very long-lived. The RPC data
 stream is handled by the included exchange_emsmdb(4gx) plugin.
-.SH Configuration directives
-The usual config file location is /etc/gromox/http.cfg.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when reading from
+/etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
+.TP
+\fBhttp_remote_host_hdr\fP
+The name of the HTTP request header which contains the actual client IPv6/IPv4
+address. When a (reverse) proxy is placed in front of gromox-http, the address
+gxhttp normally sees is the proxy address (e.g. ::1). If the proxy sets a
+custom header to convey the actual client address, Gromox can pick this up for
+its own reporting, which in turn is useful for e.g. fail2ban setups.
+.br
+Default: (empty)
+.SH Configuration directives (http.cfg)
+The following directives are recognized when reading from etc/gromox/http.cfg,
+/or when the \fB\-c\fP option is used to specify a custom
+file:
 .TP
 \fBblock_interval_auths\fP
 The amount of time a user is blocked from connecting to the service after too

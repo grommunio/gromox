@@ -116,6 +116,7 @@ static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static time_duration g_timeout;
+std::string g_http_remote_host_hdr;
 unsigned int g_http_debug;
 size_t g_rqbody_flush_size, g_rqbody_max_size;
 bool g_http_php, g_enforce_auth;
@@ -695,6 +696,11 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 		if (!j.empty())
 			j += ", ";
 		j.append(ptoken, tmp_len);
+	} else if (g_http_remote_host_hdr.size() > 0 &&
+	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
+		auto &cn = pcontext->connection;
+		gx_strlcpy(cn.client_ip, ptoken, std::size(cn.client_ip));
+		cn.client_port = 0;
 	} else {
 		if (strcasecmp(field_name, "Connection") == 0 &&
 		    strncasecmp(ptoken, "keep-alive", tmp_len) == 0)
