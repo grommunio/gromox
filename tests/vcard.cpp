@@ -1,10 +1,64 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2023 grommunio GmbH
 // This file is part of Gromox.
+#include <cstdlib>
 #include <cstring>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <gromox/ical.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/oxcmail.hpp>
 #include <gromox/vcard.hpp>
+#include "../tools/staticnpmap.cpp"
+#include "../tools/genimport.hpp"
+
+using namespace std::string_literals;
+using namespace gromox;
+
+static constexpr char dt_head[] =
+"BEGIN:VCALENDAR\n"
+"PRODID:-//Google Inc//Google Calendar 70.9054//EN\n"
+"VERSION:2.0\n"
+"BEGIN:VTIMEZONE\n"
+"TZID:Line Islands Standard Time\n"
+"BEGIN:STANDARD\n"
+"DTSTART:16010101T000000\n"
+"TZOFFSETFROM:+1400\n"
+"TZOFFSETTO:+1400\n"
+"END:STANDARD\n"
+"END:VTIMEZONE\n"
+"CALSCALE:GREGORIAN\n"
+"METHOD:REQUEST\n"
+"BEGIN:VEVENT\n";
+
+static constexpr char dt_foot[] =
+"ORGANIZER;CN=source:mailto:source@googlemail.com\n"
+"ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=\n"
+" TRUE;CN=target@googlemail.com;X-NUM-GUESTS=0:mailto:target@googlemail.com\n"
+"ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=TRUE\n"
+" ;CN=sender;X-NUM-GUESTS=0:mailto:sender@googlemail.com\n"
+"X-MICROSOFT-CDO-OWNERAPPTID:1415721622\n"
+"CREATED:20231205T165627Z\n"
+"DESCRIPTION:\n"
+"LAST-MODIFIED:20231205T165627Z\n"
+"LOCATION:\n"
+"SEQUENCE:0\n"
+"STATUS:CONFIRMED\n"
+"TRANSP:TRANSPARENT\n"
+"END:VEVENT\n"
+"END:VCALENDAR\n"
+;
+
+static constexpr const char *dt_values[] = {
+	":20240101T000000Z",
+	";TZID=Line Islands Standard Time:20240101T000000Z",
+	":20240101T000000",
+	";TZID=Line Islands Standard Time:20240101T000000",
+	":20240101",
+	";VALUE=DATE:20240101",
+	";VALUE=DATE;TZID=Line Islands Standard Time:20240101",
+};
 
 static void t_card()
 {
@@ -46,14 +100,72 @@ static void t_ical()
 	v.append_subval("SUBVAL");
 	v.append_subval("SUBVAL");
 
-	char buf[4096];
-	ic.serialize(buf, std::size(buf));
-	printf("%s\n", buf);
+	std::string buf;
+	auto err = ic.serialize(buf);
+	printf("%s\n", buf.c_str());
+	if (err != ecSuccess)
+		fprintf(stderr, "%s\n", mapi_strerror(err));
+}
+
+static int t_ical_dt()
+{
+	unsigned int count = 0;
+	for (const auto s : dt_values) {
+		std::string input = dt_head;
+		input += "DTSTART"s + s + "\n";
+		std::string dtend = s;
+		auto pos = dtend.find("20240101");
+		if (pos != dtend.npos)
+			memcpy(&dtend[pos], "20240102", 8);
+		input += "DTEND"s + std::move(dtend) + "\n";
+		char buf[32];
+		snprintf(buf, std::size(buf), "DTSTAMP:20231205T%06uZ\n", ++count);
+		input += buf;
+		snprintf(buf, std::size(buf), "UID:%026u@googlemail.com\n", count);
+		input += buf;
+		snprintf(buf, std::size(buf), "SUMMARY:event%u\n", count);
+		input += dt_foot;
+
+		ICAL ical;
+		printf("\n\n<input>:: \e[32m%s\e[0m\n", s);
+		if (!ical.load_from_str_move(input.data())) {
+			fprintf(stderr, "ical_parse unsuccessful\n");
+			return EXIT_FAILURE;
+		}
+		auto mc = oxcical_import_single("UTC", ical, zalloc,
+		          ee_get_propids, oxcmail_username_to_entryid);
+		if (mc == nullptr) {
+			fprintf(stderr, "oxcical_import unsuccessful\n");
+			return EXIT_FAILURE;
+		}
+		ical = {};
+		auto id2user = [](int, std::string &) -> ec_error_t { return ecNotFound; };
+		if (!oxcical_export(mc.get(), ical, "x500", zalloc, ee_get_propids, id2user)) {
+			fprintf(stderr, "oxcical_export unsuccessful\n");
+			return EXIT_FAILURE;
+		}
+		std::string outbuf;
+		auto err = ical.serialize(outbuf);
+		if (err != ecSuccess) {
+			fprintf(stderr, "ical::serialize: %s\n", mapi_strerror(err));
+			return EXIT_FAILURE;
+		}
+		printf("<output>:\n\e[31m");
+		for (auto &line : gx_split(outbuf, '\n'))
+			if (strncmp(line.c_str(), "DTSTART", 7) == 0 ||
+			    strncmp(line.c_str(), "X-MICROSOFT-CDO-ALLDAYEVENT:", 28) == 0)
+				printf("%s\n", line.c_str());
+		printf("\e[0m\n");
+	}
+	return EXIT_SUCCESS;
 }
 
 int main()
 {
 	t_card();
 	t_ical();
+	auto ret = t_ical_dt();
+	if (ret != EXIT_SUCCESS)
+		return ret;
 	return EXIT_SUCCESS;
 }

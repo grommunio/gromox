@@ -17,6 +17,10 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
+/*
+ * This is a bit lower than the RFC-prescribed 75 so that we always have some
+ * room if suddenly a \\ needs to be placed.
+ */
 #define MAX_LINE							73
 
 using namespace gromox;
@@ -421,177 +425,94 @@ bool ical::load_from_str_move(char *in_buff)
 	return false;
 }
 
-static size_t ical_serialize_tag_string(char *pbuff,
-	size_t max_length, const char *string)
+static std::string ical_serialize_value_string(size_t &line_offset,
+    const std::string &s)
 {
-	size_t i;
-	BOOL b_quote;
-	size_t tmp_len;
-	
-	b_quote = FALSE;
-	tmp_len = strlen(string);
-	if (tmp_len > max_length)
-		return max_length;
-	for (i = 0; i < tmp_len; ++i)
-		if (string[i] == ',' || string[i] == ';' || string[i] == ':')
-			b_quote = TRUE;
-	if (b_quote) {
-		if (tmp_len + 2 >= max_length)
-			return max_length;
-		pbuff[0] = '"';
-		memcpy(pbuff + 1, string, tmp_len);
-		pbuff[tmp_len + 1] = '"';
-		return tmp_len + 2;
-	} else {
-		memcpy(pbuff, string, tmp_len);
-		return tmp_len;
-	}
-}
-
-static size_t ical_serialize_value_string(char *pbuff,
-	size_t max_length, int line_offset, const char *string)
-{
-	size_t i;
-	size_t offset;
-	size_t tmp_len;
-	
-	if (line_offset >= MAX_LINE)
-		line_offset %= MAX_LINE;
-	offset = 0;
-	tmp_len = strlen(string);
-	for (i=0; i<tmp_len; i++) {
-		if (offset >= max_length)
-			return offset;
+	std::string out;
+	for (size_t i = 0; i < s.size(); ++i) {
 		if (line_offset >= MAX_LINE) {
-			if (offset + 3 >= max_length)
-				return max_length;
-			memcpy(pbuff + offset, "\r\n ", 3);
-			offset += 3;
+			out += "\r\n ";
 			line_offset = 0;
 		}
-		if ('\\' == string[i] || ';' == string[i] || ',' == string[i]) {
-			if (offset + 1 >= max_length)
-				return max_length;
-			pbuff[offset++] = '\\';
-			if (line_offset >= 0)
-				line_offset ++;
-		} else if ('\n' == string[i] || ('\r' ==
-			string[i] && '\n' == string[i + 1])) {
-			if (offset + 1 >= max_length)
-				return max_length;
-			pbuff[offset++] = '\\';
-			pbuff[offset++] = 'n';
-			if (string[i] == '\r')
-				i ++;
-			if (line_offset >= 0)
-				line_offset += 2;
+		if (s[i] == '\n' || (s[i] == '\r' && s[i+1] == '\n')) {
+			out += "\\n";
+			line_offset += 2;
+			if (s[i] == '\r')
+				++i;
 			continue;
+		} else if (s[i] == '\\' || s[i] == ';' || s[i] == ',') {
+			out += '\\';
+			++line_offset;
 		}
-		pbuff[offset++] = string[i];
-		if (line_offset >= 0)
-			line_offset ++;
+		out += s[i];
+		++line_offset;
 	}
-	return offset;
+	return out;
 }
 
-static size_t ical_serialize_component(const ical_component &com,
-	char *out_buff, size_t max_length)
+static std::string ical_serialize_component(const ical_component &com)
 {
-	size_t offset1;
-	BOOL need_comma;
-	size_t line_begin;
-	BOOL need_semicolon;
-	
+	std::string out_buff;
 	auto pcomponent = &com;	
-	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n",
-	                pcomponent->m_name.c_str());
-	if (offset >= max_length)
-		return 0;
-	for (const auto &line : pcomponent->line_list) {
-		auto piline = &line;
-		line_begin = offset;
-		offset += gx_snprintf(out_buff + offset,
-		          max_length - offset, "%s", piline->m_name.c_str());
-		if (offset >= max_length)
-			return 0;
-		for (const auto &piparam : piline->param_list) {
-			if (offset + 1 >= max_length)
-				return 0;
-			out_buff[offset++] = ';';
-			offset += gx_snprintf(out_buff + offset,
-			          max_length - offset, "%s=", piparam.name.c_str());
-			if (offset >= max_length)
-				return 0;
-			need_comma = FALSE;
+	out_buff += "BEGIN:" + com.m_name + "\r\n";
+	for (const auto &line : com.line_list) {
+		std::string out_line = line.m_name;
+		for (const auto &piparam : line.param_list) {
+			out_line += ';';
+			out_line += piparam.name;
+			out_line += '=';
+			bool need_comma = false;
 			for (const auto &pdata2 : piparam.paramval_list) {
-				if (!need_comma) {
-					need_comma = TRUE;
-				} else {
-					if (offset + 1 >= max_length)
-						return 0;
-					out_buff[offset++] = ',';
-				}
-				offset += ical_serialize_tag_string(out_buff + offset,
-				          max_length - offset, pdata2.c_str());
-				if (offset >= max_length)
-					return 0;
+				if (need_comma)
+					out_line += ',';
+				need_comma = true;
+				if (strpbrk(pdata2.c_str(), ",:;") == nullptr)
+					out_line += pdata2;
+				else
+					out_line += "\"" + pdata2 + "\"";
 			}
 		}
-		out_buff[offset++] = ':';
-		if (offset >= max_length)
-			return 0;
-		need_semicolon = FALSE;
-		for (const auto &pivalue : piline->value_list) {
-			if (!need_semicolon) {
-				need_semicolon = TRUE;
-			} else {
-				if (offset + 1 >= max_length)
-					return 0;
-				out_buff[offset++] = ';';
+		out_line += ':';
+		bool need_semicolon = false;
+		auto line_length = out_line.size();
+		for (const auto &pivalue : line.value_list) {
+			if (need_semicolon) {
+				out_line += ';';
+				++line_length;
 			}
-			if (pivalue.name[0] != '\0') {
-				offset += gx_snprintf(out_buff + offset,
-				          max_length - offset, "%s=", pivalue.name.c_str());
-				if (offset >= max_length)
-					return 0;
+			need_semicolon = true;
+			if (pivalue.name.size() > 0) {
+				out_line += pivalue.name;
+				out_line += '=';
+				line_length += pivalue.name.size() + 1;
 			}
-			need_comma = FALSE;
+			bool need_comma = false;
 			for (const auto &pnv2 : pivalue.subval_list) {
-				if (!need_comma) {
-					need_comma = TRUE;
-				} else {
-					if (offset + 1 >= max_length)
-						return 0;
-					out_buff[offset++] = ',';
+				if (need_comma) {
+					out_line += ',';
+					++line_length;
 				}
+				need_comma = true;
 				if (pnv2.empty())
 					continue;
-				offset += ical_serialize_value_string(&out_buff[offset],
-				          max_length - offset,
-					  offset - line_begin, pnv2.c_str());
-				if (offset >= max_length)
-					return 0;
+				out_line += ical_serialize_value_string(line_length, pnv2);
 			}
 		}
-		if (offset + 2 >= max_length)
-			return 0;
-		out_buff[offset++] = '\r';
-		out_buff[offset++] = '\n';
+		out_buff += std::move(out_line);
+		out_buff += "\r\n";
 	}
-	for (const auto &comp : pcomponent->component_list) {
-		offset1 = ical_serialize_component(comp, &out_buff[offset], max_length - offset);
-		if (offset1 == 0)
-			return 0;
-		offset += offset1;
-	}
-	offset += gx_snprintf(out_buff + offset, max_length - offset,
-	          "END:%s\r\n", pcomponent->m_name.c_str());
-	return offset >= max_length ? 0 : offset;
+	for (const auto &comp : pcomponent->component_list)
+		out_buff += ical_serialize_component(comp);
+	out_buff += "END:" + pcomponent->m_name + "\r\n";
+	return out_buff;
 }
 
-bool ical::serialize(char *out_buff, size_t max_length) const
+ec_error_t ical::serialize(std::string &out) const try
 {
-	return ical_serialize_component(*this, out_buff, max_length) != 0;
+	out = ical_serialize_component(*this);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecMAPIOOM;
 }
 
 static const std::vector<std::string> *
@@ -674,17 +595,19 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	return true;
 }
 
-bool ical_parse_date(const char *str_date, int *pyear, int *pmonth, int *pday)
+bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 {
 	char tmp_buff[128];
 	
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
-	return sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) >= 3;
+	itime->hour = itime->minute = itime->second = itime->leap_second = 0;
+	itime->type = ICT_FLOAT_DAY;
+	return sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) >= 3;
 }
 
-bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitime)
+bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 {
 	int len;
 	char tsep;
@@ -695,11 +618,11 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
-		*b_utc = true;
+		pitime->type = ICT_UTC;
 		len --;
 		tmp_buff[len] = '\0';
 	} else {
-		*b_utc = false;
+		pitime->type = ICT_FLOAT;
 	}
 	if (15 == len) {
 		if (sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d",
@@ -1223,15 +1146,12 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 	int month;
 	int minute;
 	int second;
-	bool b_utc;
 	int weekorder;
 	int dayofweek;
 	int dayofmonth;
 	time_t tmp_time;
 	BOOL b_standard;
 	BOOL b_daylight;
-	ICAL_TIME itime1;
-	ICAL_TIME itime2;
 	struct tm tmp_tm;
 	const char *pvalue;
 	const char *pvalue1;
@@ -1255,7 +1175,8 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
 			return NULL;
-		if (!ical_parse_datetime(pvalue, &b_utc, &itime1) || b_utc)
+		ICAL_TIME itime1{}, itime2{};
+		if (!ical_parse_datetime(pvalue, &itime1) || itime1.type == ICT_UTC)
 			return NULL;
 		if (itime < itime1)
 			continue;
@@ -1265,13 +1186,12 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		pvalue = piline->get_first_subvalue_by_name("UNTIL");
 		if (pvalue == nullptr)
 			goto FOUND_COMPONENT;
-		if (!ical_parse_datetime(pvalue, &b_utc, &itime2)) {
+		if (!ical_parse_datetime(pvalue, &itime2)) {
 			itime2.hour = 0;
 			itime2.minute = 0;
 			itime2.second = 0;
 			itime2.leap_second = 0;
-			if (!ical_parse_date(pvalue, &itime2.year,
-			    &itime2.month, &itime2.day))
+			if (!ical_parse_date(pvalue, &itime2))
 				return nullptr;
 		} else {
 			if (!ical_datetime_to_utc(nullptr, pvalue, &tmp_time))
@@ -1441,6 +1361,7 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	 * change that. Because make_gmtime() pretends @tmp_tm was UTC, @*ptime
 	 * now has bias which needs to be corrected.
 	 */
+	//assert(itime.type != ICT_UTC);
 	auto str_offset = ical_get_datetime_offset(*ptz_component, itime);
 	if (str_offset == nullptr)
 		return false;
@@ -1453,14 +1374,13 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 bool ical_datetime_to_utc(const ical_component *ptz_component,
 	const char *str_datetime, time_t *ptime)
 {
-	bool b_utc;
-	ICAL_TIME itime;
+	ICAL_TIME itime{};
 	struct tm tmp_tm;
 	
-	if (!ical_parse_datetime(str_datetime, &b_utc, &itime))
+	if (!ical_parse_datetime(str_datetime, &itime))
 		return false;
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
-	if (!b_utc)
+	if (itime.type != ICT_UTC)
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	tmp_tm.tm_min = itime.minute;
 	tmp_tm.tm_hour = itime.hour;
@@ -1493,8 +1413,10 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pitime->minute = tmp_tm.tm_min;
 		pitime->second = tmp_tm.tm_sec;
 		pitime->leap_second = 0;
+		pitime->type = ICT_UTC;
 		return true;
 	}
+	pitime->type = ICT_FLOAT;
 	for (const auto &comp : ptz_component->component_list) {
 		auto pcomponent = &comp;
 		if (strcasecmp(pcomponent->m_name.c_str(), "STANDARD") != 0 &&
@@ -1528,22 +1450,16 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 static bool ical_parse_until(const ical_component *ptz_component,
 	const char *str_until, time_t *ptime)
 {
-	bool b_utc;
-	ICAL_TIME itime;
+	ICAL_TIME itime{};
 	
-	if (!ical_parse_datetime(str_until, &b_utc, &itime)) {
-		if (!ical_parse_date(str_until, &itime.year,
-		    &itime.month, &itime.day))
+	if (!ical_parse_datetime(str_until, &itime)) {
+		if (!ical_parse_date(str_until, &itime))
 			return false;
-		itime.hour = 0;
-		itime.minute = 0;
-		itime.second = 0;
-		itime.leap_second = 0;
 		return ical_itime_to_utc(ptz_component, itime, ptime);
 	} else {
-		if (!b_utc)
-			return ical_itime_to_utc(ptz_component, itime, ptime);
-		return ical_datetime_to_utc(nullptr, str_until, ptime);
+		return itime.type == ICT_UTC ?
+		       ical_datetime_to_utc(nullptr, str_until, ptime) :
+		       ical_itime_to_utc(ptz_component, itime, ptime);
 	}
 }
 

@@ -1967,7 +1967,6 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
     BINARY *pical_bin) try
 {
 	ICAL ical;
-	char tmp_buff[1024*1024];
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
@@ -1983,10 +1982,11 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 			pstore->get_dir(), LLU{message_id});
 		return FALSE;
 	}
-	if (!ical.serialize(tmp_buff, std::size(tmp_buff)))
+	std::string tmp_buff;
+	if (ical.serialize(tmp_buff) != ecSuccess)
 		return FALSE;	
-	pical_bin->cb = strlen(tmp_buff);
-	pical_bin->pc = common_util_dup(tmp_buff);
+	pical_bin->cb = tmp_buff.size();
+	pical_bin->pc = common_util_dup(tmp_buff.c_str());
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2183: ENOMEM");

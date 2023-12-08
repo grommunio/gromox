@@ -219,7 +219,8 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 		return FALSE;
 	*pdomain++ = '\0';
 	enum display_type dtypx = DT_MAILUSER;
-	if (!oxcmail_get_user_ids(username, &user_id, &domain_id, &dtypx))
+	if (oxcmail_get_user_ids == nullptr ||
+	    !oxcmail_get_user_ids(username, &user_id, &domain_id, &dtypx))
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
@@ -4446,8 +4447,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	}
 	
 	if (NULL != pcalendar) {
-		char tmp_buff[1024*1024];
-		
 		if (!oxcical_export(pmsg, ical, g_oxcmail_org_name, alloc,
 		    get_propids, oxcmail_id2user)) {
 			mlog(LV_WARN, "W-2186: oxcical_export failed for an unspecified reason");
@@ -4460,9 +4459,13 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			if (str != nullptr)
 				gx_strlcpy(tmp_method, str, std::size(tmp_method));
 		}
-		if (!ical.serialize(tmp_buff, std::size(tmp_buff)))
+		std::string tmp_buff;
+		auto err = ical.serialize(tmp_buff);
+		if (err != ecSuccess) {
+			mlog(LV_ERR, "E-2361: %s\n", mapi_strerror(err));
 			return exp_false;
-		if (!pcalendar->write_content(tmp_buff, strlen(tmp_buff),
+		}
+		if (!pcalendar->write_content(tmp_buff.c_str(), tmp_buff.size(),
 		    mime_encoding::automatic))
 			return exp_false;
 		if (!pcalendar->set_content_param("charset", "\"utf-8\""))
