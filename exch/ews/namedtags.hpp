@@ -22,3 +22,6 @@ static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_MEETING, PidLidGl
 static const PROPERTY_NAME NtLocation = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation};
 static const PROPERTY_NAME NtResponseStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus};
 static const PROPERTY_NAME NtExceptionReplaceTime = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime};
+static const PROPERTY_NAME NtReminderTime = {MNID_ID, PSETID_COMMON, PidLidReminderTime};
+static const PROPERTY_NAME NtReminderSet = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
+static const PROPERTY_NAME NtReminderDelta = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};

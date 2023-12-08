@@ -557,6 +557,19 @@ eid_t sMessageEntryId::messageId() const
 {return rop_util_make_eid_ex(1, rop_util_gc_to_value(message_global_counter));}
 
 /**
+ * @brief      Set message ID parrt of the entry ID
+ *
+ * @param      mid   Message ID
+ *
+ * @return     *this
+ */
+sMessageEntryId& sMessageEntryId::messageId(eid_t mid)
+{
+	message_global_counter = rop_util_get_gc_array(mid);
+	return *this;
+}
+
+/**
  * @brief     Retrieve message type
  *
  * @return    true if message is private, false otherwise
@@ -1262,6 +1275,7 @@ void tCalendarItem::update(const sShape& shape)
 
 	if((prop = shape.get(NtAppointmentRecur)))
 	{
+		CalendarItemType.emplace(Enum::RecurringMaster);
 		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
 		if(recurData->cb > 0) {
 			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecur(recurData);
@@ -1285,6 +1299,8 @@ void tCalendarItem::update(const sShape& shape)
 			}
 		}
 	}
+	else
+		CalendarItemType.emplace(Enum::Single); // TODO correct type
 
 	if ((prop = shape.get(NtAppointmentReplyTime)))
 		AppointmentReplyTime.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
@@ -1353,6 +1369,11 @@ void tCalendarItem::update(const sShape& shape)
 	// TODO: check if we should use some other property for RecurrenceId
 	if((prop = shape.get(NtExceptionReplaceTime)))
 		RecurrenceId.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+
+	if((prop = shape.get(PR_CREATION_TIME)))
+		fromProp(prop, DateTimeStamp);
+	else
+		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeStamp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2276,6 +2297,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
 	// {"calendar:EndTimeZone", },
+	{"calendar:DateTimeStamp", PR_CREATION_TIME},
 	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
@@ -2304,6 +2326,9 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
 	{"calendar:RecurrenceId", {{MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, const_cast<char*>("ExceptionReplaceTime")}, PT_SYSTIME}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
+	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
+	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
+	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -2313,6 +2338,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"folder:EffectiveRights", sShape::Permissions},
 	{"item:Attachments", sShape::Attachments},
 	{"item:Body", sShape::Body},
+	{"item:EffectiveRights", sShape::Permissions},
 	{"item:IsDraft", sShape::MessageFlags},
 	{"item:IsFromMe", sShape::MessageFlags},
 	{"item:IsResend", sShape::MessageFlags},
@@ -2541,6 +2567,11 @@ void tItem::update(const sShape& shape)
 		for(std::string& dest : *Categories)
 			dest = *src++;
 	}
+	if((prop = shape.get(NtReminderTime)))
+		ReminderDueBy.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+	fromProp(shape.get(NtReminderSet), ReminderIsSet);
+	fromProp(shape.get(NtReminderDelta), ReminderMinutesBeforeStart);
+
 	shape.putExtended(ExtendedProperty);
 };
 
@@ -2559,6 +2590,11 @@ sItem tItem::create(const sShape& shape)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefault = {{
+	{&NtCommonStart, PT_SYSTIME},
+	{&NtCommonEnd, PT_SYSTIME}
+}};
 
 /**
  * @brief     Collect property tags and names for folder shape
@@ -2590,6 +2626,13 @@ void tItemResponseShape::tags(sShape& shape) const
 	{
 		shape.add(PR_MESSAGE_FLAGS, sShape::FL_FIELD);
 		shape.special &= ~sShape::MessageFlags;
+	}
+	size_t baseShape = BaseShape.index();
+	if(baseShape >= 1) {
+		for(uint32_t tag : tagsDefault)
+			shape.add(tag, sShape::FL_FIELD);
+		for(const auto& named : namedTagsDefault)
+			shape.add(*named.first, named.second, sShape::FL_FIELD);
 	}
 }
 
@@ -2795,6 +2838,11 @@ tSubscriptionId::tSubscriptionId(uint32_t id, uint32_t t) : ID(++globcnt), timeo
 
 
 tSyncFolderHierarchyCU::tSyncFolderHierarchyCU(sFolder &&f) : folder(std::move(f))
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tSyncFolderItemsDelete::tSyncFolderItemsDelete(const sBase64Binary& meid) : ItemId(meid, tItemId::ID_ITEM)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

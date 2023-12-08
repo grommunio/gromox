@@ -166,6 +166,7 @@ struct sMessageEntryId : public MESSAGE_ENTRYID
 	uint32_t accountId() const;
 	uint64_t folderId() const;
 	eid_t messageId() const;
+	sMessageEntryId& messageId(eid_t);
 	bool isPrivate() const;
 
 	sBase64Binary serialize() const;
@@ -466,7 +467,7 @@ struct tAttachment : public NS_EWS_Types
 /**
  * Types.xsd:2117
  */
-struct tBaseItemId
+struct tBaseItemId : public NS_EWS_Types
 {
 	enum IdType : uint8_t {
 		ID_UNKNOWN, ///< Unspecified
@@ -846,7 +847,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 14> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 15> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -1487,17 +1488,17 @@ struct tItem : public NS_EWS_Types
 	std::optional<sTimePoint> DateTimeSent;
 	std::optional<sTimePoint> DateTimeCreated;
 	//<xs:element name="ResponseObjects" type="t:NonEmptyArrayOfResponseObjectsType" minOccurs="0" />
-	//std::optional<gromox::time_point> ReminderDueBy;
-	//std::optional<bool> ReminderIsSet;
+	std::optional<gromox::time_point> ReminderDueBy;
+	std::optional<bool> ReminderIsSet;
 	//std::optional<gromox::time_point> ReminderNextTime;
-	//<xs:element name="ReminderMinutesBeforeStart" type="t:ReminderMinutesBeforeStartType" minOccurs="0" />
+	std::optional<int32_t> ReminderMinutesBeforeStart;
 	std::optional<std::string> DisplayCc;
 	std::optional<std::string> DisplayTo;
 	std::optional<std::string> DisplayBcc;
 	std::optional<bool> HasAttachments;
 	std::vector<tExtendedProperty> ExtendedProperty;
 	std::optional<std::string> Culture;
-	//<xs:element name="EffectiveRights" type="t:EffectiveRightsType" minOccurs="0" />
+	std::optional<tEffectiveRights> EffectiveRights;
 	std::optional<std::string> LastModifiedName;
 	std::optional<sTimePoint> LastModifiedTime;
 	std::optional<bool> IsAssociated;
@@ -1561,7 +1562,7 @@ struct tCalendarItem : public tItem
 	//<!-- iCalendar properties -->
 	std::optional<std::string> UID;
 	std::optional<gromox::time_point> RecurrenceId;
-	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
+	std::optional<sTimePoint> DateTimeStamp;
 
 	// <!-- Single and Occurrence only -->
 	std::optional<gromox::time_point> Start;
@@ -1578,7 +1579,7 @@ struct tCalendarItem : public tItem
 	std::optional<bool> IsRecurring;
 	std::optional<bool> MeetingRequestWasSent;
 	std::optional<bool> IsResponseRequested;
-	// <xs:element name="CalendarItemType" type="t:CalendarItemTypeType" minOccurs="0" />
+	std::optional<Enum::CalendarItemTypeType> CalendarItemType;
 	std::optional<Enum::ResponseTypeType> MyResponseType;
 	std::optional<tSingleRecipient> Organizer;
 	std::optional<std::vector<tAttendee>> RequiredAttendees;
@@ -1775,7 +1776,7 @@ struct tItemResponseShape
 
 	void tags(sShape&) const;
 
-	//Enum::DefaultShapeNamesType BaseShape;
+	Enum::DefaultShapeNamesType BaseShape;
 	std::optional<bool> IncludeMimeContent;
 	std::optional<Enum::BodyTypeResponseType> BodyType;
 	//std::optional<Enum::BodyTypeResponseType> UniqueBodyType;
@@ -1789,6 +1790,10 @@ struct tItemResponseShape
 
 	static constexpr std::array<uint32_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
 	static constexpr std::array<uint32_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
+	static constexpr std::array<uint32_t, 7> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
+		PR_LOCAL_COMMIT_TIME};
+	static const std::array<std::pair<const PROPERTY_NAME*, uint16_t>, 2> namedTagsDefault;
 };
 
 /**
@@ -1994,7 +1999,7 @@ struct tSyncFolderItemsDelete : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Delete";
 
-	tSyncFolderItemsDelete(const TAGGED_PROPVAL&);
+	tSyncFolderItemsDelete(const sBase64Binary&);
 
 	tItemId ItemId;
 
@@ -2238,7 +2243,7 @@ private:
 /**
  * Types.xsd:6067
  */
-struct tNotification
+struct tNotification : public NS_EWS_Messages
 {
 	static constexpr char NAME[] = "Notification";
 
@@ -2877,7 +2882,7 @@ struct mGetStreamingEventsRequest
  */
 struct mGetStreamingEventsResponseMessage : public mResponseMessageType
 {
-	static constexpr char NAME[] = "GetStreamingEvents";
+	static constexpr char NAME[] = "GetStreamingEventsResponseMessage";
 
 	using mResponseMessageType::mResponseMessageType;
 

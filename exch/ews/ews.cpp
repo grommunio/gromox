@@ -612,6 +612,8 @@ int EWSContext::notify()
 	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
 	SOAP::Envelope envelope;
 	tinyxml2::XMLElement* response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
+	response->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
+	response->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);
 	auto flush = [&]() {
 		data.serialize(response);
 		envelope.doc.Print(&printer);

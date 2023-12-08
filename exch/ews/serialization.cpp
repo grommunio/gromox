@@ -474,6 +474,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 
 	XMLDUMPT(UID);
 	XMLDUMPT(RecurrenceId);
+	XMLDUMPT(DateTimeStamp);
 	XMLDUMPT(Start);
 	XMLDUMPT(End);
 	XMLDUMPT(IsAllDayEvent);
@@ -484,6 +485,7 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(IsRecurring);
 	XMLDUMPT(MeetingRequestWasSent);
 	XMLDUMPT(IsResponseRequested);
+	XMLDUMPT(CalendarItemType);
 	XMLDUMPT(MyResponseType);
 	XMLDUMPT(Organizer);
 	XMLDUMPT(RequiredAttendees);
@@ -795,10 +797,14 @@ void tItem::serialize(XMLElement* xml) const
 	XMLDUMPT(InternetMessageHeaders);
 	XMLDUMPT(DateTimeSent);
 	XMLDUMPT(DateTimeCreated);
+	XMLDUMPT(ReminderDueBy);
+	XMLDUMPT(ReminderIsSet);
+	XMLDUMPT(ReminderMinutesBeforeStart);
 	XMLDUMPT(DisplayCc);
 	XMLDUMPT(DisplayTo);
 	XMLDUMPT(DisplayBcc);
 	XMLDUMPT(HasAttachments);
+	XMLDUMPT(EffectiveRights);
 	XMLDUMPT(LastModifiedName);
 	XMLDUMPT(LastModifiedTime);
 	XMLDUMPT(IsAssociated);
@@ -814,6 +820,7 @@ tItemChange::tItemChange(const XMLElement* xml) :
 {}
 
 tItemResponseShape::tItemResponseShape(const XMLElement* xml) :
+	XMLINIT(BaseShape),
 	XMLINIT(IncludeMimeContent),
 	XMLINIT(BodyType),
 	XMLINIT(AdditionalProperties)
@@ -1052,10 +1059,6 @@ void tSyncFolderHierarchyDelete::serialize(XMLElement* xml) const
 void tSyncFolderItemsCU::serialize(XMLElement* xml) const
 {XMLDUMPT(item);}
 
-tSyncFolderItemsDelete::tSyncFolderItemsDelete(const TAGGED_PROPVAL& tp) : ItemId(tp)
-{}
-
-
 void tSyncFolderItemsDelete::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(ItemId);}
 
@@ -1270,6 +1273,7 @@ void mGetStreamingEventsResponse::serialize(tinyxml2::XMLElement* xml) const
 
 void mGetStreamingEventsResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 {
+	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Notifications);
 	XMLDUMPM(ErrorSubscriptionIds);
 	XMLDUMPM(ConnectionStatus);

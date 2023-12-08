@@ -149,6 +149,7 @@ struct Enum
 	STR(End);
 	STR(Error);
 	STR(Excellent); // Smithers
+	STR(Exception);
 	STR(ExternalMemberCount);
 	STR(Fair);
 	STR(February);
@@ -221,6 +222,7 @@ struct Enum
 	STR(OOF);
 	STR(Object);
 	STR(ObjectArray);
+	STR(Occurrence);
 	STR(October);
 	STR(OfficeIntegrationConfiguration);
 	STR(OK);
@@ -245,6 +247,7 @@ struct Enum
 	STR(PublicStrings);
 	STR(RadioPhone);
 	STR(RecipientSuggestions);
+	STR(RecurringMaster);
 	STR(Required);
 	STR(Resource);
 	STR(Room);
@@ -264,6 +267,7 @@ struct Enum
 	STR(Sharing); //=Caring
 	STR(Short);
 	STR(ShortArray);
+	STR(Single);
 	STR(SoftDelete);
 	STR(SoftDeleted);
 	STR(Store);
@@ -366,6 +370,7 @@ struct Enum
 	using BodyTypeResponseType = StrEnum<Best, HTML, Text>; ///< Types.xsd:1265
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
 	using CalendarItemCreateOrDeleteOperationType = StrEnum<SendToNone, SendOnlyToAll, SendToAllAndSaveCopy>; ///<< Types.xsd:4005
+	using CalendarItemTypeType = StrEnum<Single, Occurrence, Exception, RecurringMaster>; ///< Types.xsd:4363
 	using ConnectionStatusType = StrEnum<OK, Closed>; ///< Types.xsd:6182
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
