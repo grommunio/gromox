@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <json/value.h>
+#include <gromox/defs.h>
 
 struct MITEM {
 	std::string mid;

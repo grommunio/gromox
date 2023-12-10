@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <gromox/defs.h>
 
 #define PROP_ID(x) static_cast<uint16_t>((x) >> 16)
