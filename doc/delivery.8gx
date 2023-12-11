@@ -16,8 +16,24 @@ Display option summary.
 .SH Plugins
 The delivery daemon can be extended by a number of plugins. In Gromox, their
 filenames begin with libmtahook_.
-.SH Configuration directives
-The usual config file location is /etc/gromox/delivery.cfg.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when reading from
+/etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
+.TP
+\fBdaemons_fd_limit\fP
+In gromox-delivery, this is treated as an alias for lmtp_fd_limit.
+.TP
+\fBlmtp_fd_limit\fP
+Request that the file descriptor table be at least this large. The magic value
+0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
+should be used.
+.br
+Default: \fI0\fP
+.SH Configuration directives (delivery.cfg)
+The following directives are recognized when reading from
+/etc/gromox/delivery.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
 .TP
 \fBadmin_mailbox\fP
 An e-mail address where to send reports from the "net_failure" code component.

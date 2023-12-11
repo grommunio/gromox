@@ -24,8 +24,23 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration directives
-The usual config file location is /etc/gromox/imap.cfg.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when reading from
+/etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
+.TP
+\fBdaemons_fd_limit\fP
+In gromox-imap, this is treated as an alias for imap_fd_limit.
+.TP
+\fBimap_fd_limit\fP
+Request that the file descriptor table be at least this large. The magic value
+0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
+should be used.
+.br
+Default: \fI0\fP
+.SH Configuration directives (imap.cfg)
+The following directives are recognized when reading from /etc/gromox/imap.cfg,
+or when the \fB\-c\fP option is used to specify a custom file:
 .TP
 \fBblock_interval_auths\fP
 The amount of time a user is blocked from connecting to the service after too

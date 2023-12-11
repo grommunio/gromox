@@ -106,8 +106,8 @@ static constexpr const cfg_directive dq_gxcfg_dflt[] = {
 	CFG_TABLE_END,
 };
 
-static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
-    std::shared_ptr<CONFIG_FILE> pconfig)
+static bool dq_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
+    std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
 {
 	if (gxcfg == nullptr)
 		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", dq_gxcfg_dflt);
@@ -349,7 +349,10 @@ int main(int argc, const char **argv)
 			opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	if (!dq_reload_config(nullptr, g_config_file))
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", dq_gxcfg_dflt);
+	if (opt_config_file != nullptr && gxconfig == nullptr)
+		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (!dq_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 
 	mlog_init(g_config_file->get_value("lda_log_file"), g_config_file->get_ll("lda_log_level"));
@@ -465,7 +468,7 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
-	filedes_limit_bump(scfg.context_num + 128);
+	filedes_limit_bump(gxconfig->get_ll("lmtp_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
@@ -534,7 +537,7 @@ int main(int argc, const char **argv)
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
-			dq_reload_config(nullptr, nullptr);
+			dq_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}

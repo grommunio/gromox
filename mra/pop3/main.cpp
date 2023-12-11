@@ -80,6 +80,12 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_user_filter.so",
 };
 
+static constexpr cfg_directive gromox_cfg_defaults[] = {
+	{"daemons_fd_limit", "pop3_fd_limit", CFG_ALIAS},
+	{"pop3_fd_limit", "0", CFG_SIZE},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
 	{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
@@ -117,7 +123,8 @@ static void term_handler(int signo)
 	g_notify_stop = true;
 }
 
-static bool pop3_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
+static bool pop3_reload_config(std::shared_ptr<config_file> gxcfg = nullptr,
+    std::shared_ptr<config_file> pconfig = nullptr)
 {
 	if (pconfig == nullptr)
 		pconfig = config_file_prg(opt_config_file, "pop3.cfg",
@@ -411,7 +418,10 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-	if (!pop3_reload_config(g_config_file))
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && gxconfig == nullptr)
+		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (!pop3_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");
@@ -516,7 +526,7 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
-	filedes_limit_bump(2 * context_num + 128);
+	filedes_limit_bump(gxconfig->get_ll("pop3_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
@@ -590,7 +600,7 @@ int main(int argc, const char **argv)
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
-			pop3_reload_config(nullptr);
+			pop3_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}

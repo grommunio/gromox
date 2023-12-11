@@ -47,6 +47,12 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_authmgr.so",
 };
 
+static constexpr cfg_directive gromox_cfg_defaults[] = {
+	{"daemons_fd_limit", "lmtp_fd_limit", CFG_ALIAS},
+	{"lmtp_fd_limit", "0", CFG_SIZE},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive delivery_cfg_defaults[] = {
 	{"admin_mailbox", ""},
 	{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
@@ -122,6 +128,9 @@ int main(int argc, const char **argv)
 	                delivery_cfg_defaults);
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		mlog(LV_ERR, "resource: config_file_init %s: %s", opt_config_file, strerror(errno));
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && gxconfig == nullptr)
+		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr || !delivery_reload_config(g_config_file))
 		return EXIT_FAILURE;
 
@@ -156,6 +165,7 @@ int main(int argc, const char **argv)
 	HX_unit_size(temp_buff, std::size(temp_buff), max_mem, 1024, 0);
 	mlog(LV_INFO, "message_dequeue: maximum allocated memory is %s", temp_buff);
     
+	filedes_limit_bump(gxconfig->get_ll("lmtp_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

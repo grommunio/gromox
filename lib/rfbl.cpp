@@ -1517,24 +1517,30 @@ size_t utf8_printable_prefix(const void *vinput, size_t max)
 	return p - begin;
 }
 
-errno_t filedes_limit_bump(unsigned int max)
+errno_t filedes_limit_bump(size_t max)
 {
 	struct rlimit rl;
 	if (getrlimit(RLIMIT_NOFILE, &rl) != 0) {
 		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
 		return EXIT_FAILURE;
 	}
-	if (rl.rlim_cur < max) {
+	if (max == 0)
+		max = rl.rlim_max;
+	if (static_cast<size_t>(rl.rlim_cur) < max) {
 		rl.rlim_cur = max;
 		rl.rlim_max = max;
 		if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
-			mlog(LV_WARN, "setrlimit RLIMIT_NFILE %lu: %s",
-				static_cast<unsigned long>(rl.rlim_max), strerror(errno));
+			mlog(LV_WARN, "setrlimit RLIMIT_NOFILE %zu: %s",
+				max, strerror(errno));
 			return errno;
 		}
 	}
-	mlog(LV_NOTICE, "system: maximum file descriptors: %lu",
-		static_cast<unsigned long>(rl.rlim_cur));
+	if (getrlimit(RLIMIT_NOFILE, &rl) != 0) {
+		mlog(LV_ERR, "getrlimit: %s", strerror(errno));
+		return EXIT_FAILURE;
+	}
+	mlog(LV_NOTICE, "system: maximum file descriptors: %zu",
+		static_cast<size_t>(rl.rlim_cur));
 	return 0;
 }
 

@@ -16,9 +16,23 @@ specified, /etc/gromox/smtp.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration directives
-The usual config file location is /etc/gromox/\fBsmtp.cfg\fP. (Deviation from
-the process name due to compatibility with older installations.)
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when reading from
+/etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
+.TP
+\fBdaemons_fd_limit\fP
+In gromox-delivery-queue, this is treated as an alias for lmtp_fd_limit.
+.TP
+\fBlmtp_fd_limit\fP
+Request that the file descriptor table be at least this large. The magic value
+0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
+should be used.
+.br
+Default: \fI0\fP
+.SH Configuration directives (smtp.cfg)
+The following directives are recognized when reading from /etc/gromox/smtp.cfg,
+or when the \fB\-c\fP option is used to specify a custom file:
 .TP
 \fBcommand_protocol\fP
 Selects what kind of hello command is accepted of clients. Can be \fIlmtp\fP,

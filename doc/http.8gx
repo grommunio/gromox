@@ -45,6 +45,16 @@ The following directives are recognized when reading from
 /etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
 custom file:
 .TP
+\fBdaemons_fd_limit\fP
+In gromox-http, this is treated as an alias for http_fd_limit.
+.TP
+\fBhttp_fd_limit\fP
+Request that the file descriptor table be at least this large. The magic value
+0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
+should be used.
+.br
+Default: \fI0\fP
+.TP
 \fBhttp_remote_host_hdr\fP
 The name of the HTTP request header which contains the actual client IPv6/IPv4
 address. When a (reverse) proxy is placed in front of gromox-http, the address
@@ -54,9 +64,8 @@ its own reporting, which in turn is useful for e.g. fail2ban setups.
 .br
 Default: (empty)
 .SH Configuration directives (http.cfg)
-The following directives are recognized when reading from etc/gromox/http.cfg,
-/or when the \fB\-c\fP option is used to specify a custom
-file:
+The following directives are recognized when reading from /etc/gromox/http.cfg,
+or when the \fB\-c\fP option is used to specify a custom file:
 .TP
 \fBblock_interval_auths\fP
 The amount of time a user is blocked from connecting to the service after too

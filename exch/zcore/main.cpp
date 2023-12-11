@@ -104,6 +104,8 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 
 static constexpr cfg_directive zcore_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
+	{"daemons_fd_limit", "zcore_fd_limit", CFG_ALIAS},
+	{"zcore_fd_limit", "0", CFG_SIZE},
 	CFG_TABLE_END,
 };
 
@@ -144,8 +146,8 @@ static void term_handler(int signo)
 	g_main_notify_stop = true;
 }
 
-static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg,
-    std::shared_ptr<CONFIG_FILE> pconfig)
+static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> gxcfg = nullptr,
+    std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
 {
 	if (gxcfg == nullptr)
 		gxcfg = config_file_prg(opt_config_file, "gromox.cfg", zcore_gxcfg_dflt);
@@ -330,12 +332,16 @@ int main(int argc, const char **argv)
 			opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	if (!zcore_reload_config(nullptr, pconfig))
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", zcore_gxcfg_dflt);
+	if (opt_config_file != nullptr && gxconfig == nullptr)
+		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (!zcore_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
 
 	unsigned int threads_num = pconfig->get_ll("zcore_threads_num");
 	mlog(LV_INFO, "system: connection threads number is %d", threads_num);
 
+	filedes_limit_bump(gxconfig->get_ll("zcore_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
@@ -462,7 +468,7 @@ int main(int argc, const char **argv)
 	while (!g_main_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
-			zcore_reload_config(nullptr, nullptr);
+			zcore_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 			ab_tree_invalidate_cache();
 		}

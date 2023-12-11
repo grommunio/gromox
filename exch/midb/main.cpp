@@ -79,6 +79,12 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_authmgr.so",
 };
 
+static constexpr cfg_directive gromox_cfg_defaults[] = {
+	{"daemons_fd_limit", "midb_fd_limit", CFG_ALIAS},
+	{"midb_fd_limit", "0", CFG_SIZE},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
@@ -107,7 +113,8 @@ static void term_handler(int signo)
 	g_main_notify_stop = true;
 }
 
-static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
+static bool midb_reload_config(std::shared_ptr<config_file> gxconfig = nullptr,
+    std::shared_ptr<config_file> pconfig = nullptr)
 {
 	if (pconfig == nullptr)
 		pconfig = config_file_prg(opt_config_file, "midb.cfg",
@@ -320,7 +327,10 @@ int main(int argc, const char **argv)
 		mlog(LV_ERR, "system: config_file_init %s: %s", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	if (!midb_reload_config(pconfig))
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
+	if (opt_config_file != nullptr && gxconfig == nullptr)
+		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (!midb_reload_config(gxconfig, pconfig))
 		return EXIT_FAILURE;
 
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
@@ -344,7 +354,7 @@ int main(int argc, const char **argv)
 	HX_unit_seconds(temp_buff, std::size(temp_buff), cache_interval, 0);
 	mlog(LV_INFO, "system: cache interval is %s", temp_buff);
 	
-	filedes_limit_bump(5 * table_size);
+	filedes_limit_bump(gxconfig->get_ll("midb_fd_limit"));
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file->get_value("config_file_path"),
@@ -411,7 +421,7 @@ int main(int argc, const char **argv)
 	while (!g_main_notify_stop) {
 		sleep(1);
 		if (g_hup_signalled.exchange(false)) {
-			midb_reload_config(nullptr);
+			midb_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 		}
 	}

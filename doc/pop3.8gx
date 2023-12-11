@@ -18,8 +18,23 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
-.SH Configuration directives
-The usual config file location is /etc/gromox/pop3.cfg.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when reading from
+/etc/gromox/gromox.cfg, or when the \fB\-c\fP option is used to specify a
+custom file:
+.TP
+\fBdaemons_fd_limit\fP
+In gromox-pop3, this is treated as an alias for pop3_fd_limit.
+.TP
+\fBpop3_fd_limit\fP
+Request that the file descriptor table be at least this large. The magic value
+0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
+should be used.
+.br
+Default: \fI0\fP
+.SH Configuration directives (pop3.cfg)
+The following directives are recognized when reading from /etc/gromox/pop3.cfg,
+or when the \fB\-c\fP option is used to specify a custom file:
 .TP
 \fBblock_interval_auths\fP
 The amount of time a user is blocked from connecting to the service after too

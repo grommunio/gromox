@@ -78,9 +78,12 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 static void term_handler(int signo);
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
+	{"daemons_fd_limit", "http_fd_limit", CFG_ALIAS},
+	{"http_fd_limit", "0", CFG_SIZE},
 	{"http_remote_host_hdr", ""},
 	CFG_TABLE_END,
 };
+
 static constexpr cfg_directive http_cfg_defaults[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
 	{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
@@ -124,8 +127,8 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
-static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg,
-    std::shared_ptr<CONFIG_FILE> xcfg)
+static bool http_reload_config(std::shared_ptr<CONFIG_FILE> xcfg = nullptr,
+    std::shared_ptr<CONFIG_FILE> cfg = nullptr)
 {
 	if (cfg == nullptr)
 		cfg = config_file_prg(opt_config_file, "http.cfg", http_cfg_defaults);
@@ -183,9 +186,8 @@ int main(int argc, const char **argv)
 			opt_config_file, strerror(errno));
 	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
-		mlog(LV_ERR, "resource: config_file_init %s: %s",
-			opt_config_file, strerror(errno));
-	if (g_config_file == nullptr || !http_reload_config(g_config_file, gxconfig))
+		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr || !http_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");
@@ -300,7 +302,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	filedes_limit_bump(5 * context_num + 256);
+	filedes_limit_bump(gxconfig->get_ll("http_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
@@ -406,7 +408,7 @@ int main(int argc, const char **argv)
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
-			http_reload_config(nullptr, nullptr);
+			http_reload_config();
 			service_trigger_all(PLUGIN_RELOAD);
 			hpm_processor_trigger(PLUGIN_RELOAD);
 			pdu_processor_trigger(PLUGIN_RELOAD);
