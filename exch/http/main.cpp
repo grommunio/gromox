@@ -146,9 +146,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg,
 		mlog(LV_ERR, "config_file_init %s: %s", opt_config_file, strerror(errno));
 		return false;
 	}
-	auto s = cfg->get_value("http_remote_host_hdr");
-	if (s != nullptr)
-		g_http_remote_host_hdr = s;
+	g_http_remote_host_hdr = znul(xcfg->get_value("http_remote_host_hdr"));
 	return true;
 }
 
