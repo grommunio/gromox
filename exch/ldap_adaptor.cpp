@@ -234,14 +234,14 @@ static BOOL ldaplogin_dpool(const char *username, const char *password)
 
 BOOL ldap_adaptor_login3(const char *user, const char *pass, const sql_meta_result &m)
 {
-	auto z = g_conn_pool.capacity();
-	if (m.ldap_uri.empty() && z > 0)
+	bool pooling_enabled = g_conn_pool.capacity() > 0;
+	if (m.ldap_uri.empty() && pooling_enabled)
 		return ldaplogin_dpool(user, pass);
 	/*
 	 * Keeping a pool per LDAP server can quickly exhaust file descriptors,
 	 * so don't even go there when multiple LDAP servers are in use.
 	 */
-	if (z > 0) {
+	if (pooling_enabled) {
 		mlog(LV_NOTICE, "ldap_adaptor: Pooling is now disabled (would use too many resources in multi-LDAP)");
 		g_conn_pool.resize(0);
 		g_conn_pool.clear();

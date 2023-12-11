@@ -243,14 +243,25 @@ static void t_respool()
 	struct M {
 		M() = default;
 		M(int z) : zz(z) {}
+		~M() { printf("~M\n"); }
 		NOMOVE(M);
 		int zz = 21;
 	};
 	resource_pool<M> m;
 	resource_pool<S> s;
-	m.resize(2);
-	auto mt = m.get_wait(44);
-	printf("%d\n", mt->zz);
+	m.resize(5);
+	auto mt3 = m.get_wait(45);
+	{
+		auto mt = m.get_wait(44);
+		printf("%d\n", mt->zz);
+		auto mt2 = m.get_wait(45);
+		printf("%d\n", mt2->zz);
+		/* mt, mt2 get returned to the pool... */
+	}
+	/* Pool now has capacity=4 available=2 (inflight=1), so two ~M are expected now */
+	m.resize(0);
+	printf("Pool shrinkage complete\n");
+	/* Now the third ~M */
 }
 
 static int t_cmp_binary()
