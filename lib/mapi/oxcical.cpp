@@ -2785,7 +2785,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 	return false;
 }
 
-static BOOL oxcical_export_rrule(const ical_component &ptz_component,
+static BOOL oxcical_export_rrule(const ical_component *ptz_component,
     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	ICAL_TIME itime;
@@ -2905,7 +2905,7 @@ static BOOL oxcical_export_rrule(const ical_component &ptz_component,
 		apr->recur_pat.endtype) {
 		auto unix_time = rop_util_rtime_to_unix(apr->recur_pat.enddate + apr->starttimeoffset);
 		ical_utc_to_datetime(NULL, unix_time, &itime);
-		if (!ical_itime_to_utc(&ptz_component, itime, &unix_time))
+		if (!ical_itime_to_utc(ptz_component, itime, &unix_time))
 			return FALSE;
 		ical_utc_to_datetime(NULL, unix_time, &itime);
 		char tmp_buff[1024];
@@ -3567,7 +3567,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	/* IPM.Activity is RTF-only in Outlook, nothing in PR_BODY */
 	
 	if (!b_exceptional && b_recurrence) {
-		if (!oxcical_export_rrule(*ptz_component, *pcomponent, &apprecurr))
+		if (!oxcical_export_rrule(ptz_component, *pcomponent, &apprecurr))
 			return "E-2212: export_rrule - unspecified error";
 		if (oxcical_check_exdate(&apprecurr) &&
 		    !oxcical_export_exdate(tzid, b_allday && g_oxcical_allday_ymd,

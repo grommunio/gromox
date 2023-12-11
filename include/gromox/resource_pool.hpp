@@ -17,6 +17,11 @@ namespace gromox {
  * of sense to construct them a-priori, so the API only supports lazy
  * construction. For this, get_wait() needs to know some ctor args for when a
  * new T needs construction.
+ *
+ * @m_numslots: number of remaining tokens the pool will give
+ * @m_max:      maximum number of tokens the pool will give
+ *              (used to determine whether putback or discard an object)
+ * @m_list:     reusable objects
  */
 template<typename Tp> class resource_pool {
 	public:
@@ -52,36 +57,46 @@ template<typename Tp> class resource_pool {
 		unsigned int m_gen = 0;
 	};
 
+	resource_pool(size_t z = 0) : m_numslots(z), m_max(z) {}
 	template<typename... A> std::optional<token> get(A &&...args) {
 		std::list<Tp> holder;
 		std::unique_lock<std::mutex> lk(m_mtx);
 		if (m_numslots == 0)
 			return {};
-		--m_numslots;
 		if (m_list.size() > 0)
 			holder.splice(holder.end(), m_list, m_list.begin());
 		else
 			holder.emplace_back(std::forward<A>(args)...);
-		return {std::in_place_t{}, *this, std::move(holder), m_gen};
+		std::optional<token> tk{std::in_place_t{}, *this, std::move(holder), m_gen};
+		--m_numslots;
+		return tk;
 	}
 	template<typename... A> token get_wait(A &&...args) {
 		std::list<Tp> holder;
 		std::unique_lock<std::mutex> lk(m_mtx);
 		m_cv.wait(lk, [this]() { return m_numslots > 0; });
-		--m_numslots;
 		if (m_list.size() > 0)
 			holder.splice(holder.end(), m_list, m_list.begin());
 		else
 			holder.emplace_back(std::forward<A>(args)...);
-		return {*this, std::move(holder), m_gen};
-	}
-	void put_slot() noexcept {
-		++m_numslots;
-		m_cv.notify_one();
+		token tk{*this, std::move(holder), m_gen};
+		--m_numslots;
+		return tk;
 	}
 
 	private:
+	void put_slot() noexcept {
+		if (m_numslots >= m_max)
+			return;
+		++m_numslots;
+		m_cv.notify_one();
+	}
 	void put(std::list<Tp> &&holder, unsigned int gen) {
+		if (m_numslots >= m_max) {
+			/* Avoid returning object to pool when pool shrank */
+			holder.clear();
+			return;
+		}
 		std::unique_lock<std::mutex> lk(m_mtx);
 		if (m_gen == gen)
 			m_list.splice(m_list.end(), holder, holder.begin());
@@ -92,12 +107,17 @@ template<typename Tp> class resource_pool {
 
 	public:
 	void resize(size_t n) {
-		if (m_numslots < n)
-			m_numslots = n;
+		std::lock_guard lk(m_mtx);
+		m_max = m_numslots = n;
+		while (m_list.size() > m_numslots)
+			m_list.pop_front();
+		m_cv.notify_one();
 	}
-	void clear() { m_list.clear(); }
-	size_t available() const { return m_list.size(); }
-	size_t capacity() const { return m_numslots; }
+	void clear() {
+		std::lock_guard lk(m_mtx);
+		m_list.clear();
+	}
+	size_t capacity() const { return m_max; }
 	void bump() {
 		std::unique_lock lk(m_mtx);
 		m_list.clear();
@@ -105,7 +125,7 @@ template<typename Tp> class resource_pool {
 	}
 
 	private:
-	std::atomic<size_t> m_numslots{0};
+	std::atomic<size_t> m_numslots{0}, m_max{0};
 	std::mutex m_mtx;
 	std::condition_variable m_cv;
 	std::list<Tp> m_list;
