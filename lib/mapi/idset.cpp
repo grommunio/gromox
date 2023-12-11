@@ -592,7 +592,7 @@ void idset::dump() const
 	fprintf(stderr, "idset@%p={\n", this);
 	for (const auto &repl_node : repl_list) {
 		for (const auto &range : repl_node.range_list) {
-			if (repl_type == REPL_TYPE_GUID)
+			if (repl_type == REPL_TYPE_GUID && !b_serialize)
 				fprintf(stderr, "\t%s ", gromox::bin2hex(repl_node.replguid).c_str());
 			else
 				fprintf(stderr, "\t#%u ", repl_node.replid);
