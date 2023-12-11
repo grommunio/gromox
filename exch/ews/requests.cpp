@@ -442,6 +442,10 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindItemResponse data;
 	data.ResponseMessages.reserve(request.ParentFolderIds.size());
+	tBasePagingType* paging = request.IndexedPageItemView? &*request.IndexedPageItemView :
+	                          request.FractionalPageItemView? &*request.FractionalPageItemView :
+	                          static_cast<tBasePagingType*>(nullptr);
+	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
 
 	for(const sFolderId&  folderId : request.ParentFolderIds) try {
 		sFolderSpec folder = ctx.resolveFolder(folderId);
@@ -465,7 +469,9 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		ctx.getNamedTags(dir, shape);
 		PROPTAG_ARRAY tags = shape.proptags();
 		TARRAY_SET table;
-		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, 0, rowCount, &table);
+		uint32_t offset = paging? paging->offset(rowCount) : 0;
+		uint32_t results = maxResults? std::min(maxResults, rowCount-offset) : rowCount;
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset, results, &table);
 		mFindItemResponseMessage msg;
 		msg.RootFolder.emplace().Items.reserve(rowCount);
 		for(const TPROPVAL_ARRAY& props : table) {
@@ -478,6 +484,10 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 				std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
 			}
 		}
+		if(paging)
+			paging->update(*msg.RootFolder, results, rowCount);
+		msg.RootFolder->IncludesLastItemInRange = results+offset >= rowCount;
+		msg.RootFolder->TotalItemsInView = rowCount;
 		msg.success();
 		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {

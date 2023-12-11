@@ -2886,8 +2886,8 @@ struct mFindItemRequest
 
 	tItemResponseShape ItemShape;
 	//<xs:choice minOccurs="0">
-	//  <xs:element name="IndexedPageItemView" type="t:IndexedPageViewType"/>
-	//  <xs:element name="FractionalPageItemView" type="t:FractionalPageViewType"/>
+	std::optional<tIndexedPageView> IndexedPageItemView;
+	std::optional<tFractionalPageView> FractionalPageItemView;
 	//  <xs:element name="SeekToConditionPageItemView" type="t:SeekToConditionPageViewType"/>
 	//  <xs:element name="CalendarView" type="t:CalendarViewType"/>
 	//  <xs:element name="ContactsView" type="t:ContactsViewType"/>

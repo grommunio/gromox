@@ -1205,6 +1205,8 @@ void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 
 mFindItemRequest::mFindItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(ItemShape),
+	XMLINIT(IndexedPageItemView),
+	XMLINIT(FractionalPageItemView),
 	XMLINIT(Restriction),
 	XMLINIT(SortOrder),
 	XMLINIT(ParentFolderIds),
