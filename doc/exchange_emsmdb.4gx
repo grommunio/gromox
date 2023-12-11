@@ -142,10 +142,10 @@ and multiple HTTP connections may exercise one session.
 .IP \(bu 4
 DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open
 Group, 1997
-.PP
+.IP \(bu 4
 MS-OXCRPC: Wire Format Protocol. This is the document for the EMSMDB RPC
 interface.
-.PP
+.IP \(bu 4
 MS-OXCROPS: Remote Operations List and Encoding Protocol.
 .SH See also
 \fBgromox\fP(7), \fBhttp\fP(8gx)
