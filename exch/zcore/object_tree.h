@@ -6,6 +6,11 @@
 #define ROOT_HANDLE						0
 #define INVALID_HANDLE					0xFFFFFFFF
 
+static inline ec_error_t zh_error(uint32_t h)
+{
+	return h < 0x80000000 ? ecSuccess : static_cast<ec_error_t>(h);
+}
+
 struct object_node {
 	object_node() = default;
 	object_node(zs_objtype t, void *p) : type(t), pobject(p) {}

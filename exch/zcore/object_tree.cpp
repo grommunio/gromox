@@ -216,22 +216,22 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, object_node &&obnode)
 	
 	if (zcore_max_obh_per_session &&
 	    pobjtree->tree.get_nodes_num() > zcore_max_obh_per_session)
-		return INVALID_HANDLE;
+		return ecZOutOfHandles;
 	if (parent_handle < 0) {
 		if (pobjtree->tree.get_root() != nullptr)
-			return INVALID_HANDLE;
+			return ecZNullObject;
 		parent_ptr = nullptr;
 	} else {
 		auto i = pobjtree->m_hash.find(parent_handle);
 		if (i == pobjtree->m_hash.end())
-			return INVALID_HANDLE;
+			return ecZNullObject;
 		parent_ptr = i->second;
 	}
 	OBJECT_NODE *pobjnode;
 	try {
 		pobjnode = new object_node(std::move(obnode));
 	} catch (const std::bad_alloc &) {
-		return INVALID_HANDLE;
+		return ecMAPIOOM;
 	}
 	if (parent_handle < 0) {
 		pobjnode->handle = ROOT_HANDLE;
@@ -246,7 +246,7 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, object_node &&obnode)
 		pobjtree->m_hash.try_emplace(pobjnode->handle, pobjnode);
 	} catch (const std::bad_alloc &) {
 		delete pobjnode;
-		return INVALID_HANDLE;
+		return ecMAPIOOM;
 	}
 	if (parent_ptr == nullptr)
 		pobjtree->tree.set_root(&pobjnode->node);
@@ -269,7 +269,7 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 	if (prootobj == nullptr)
 		return NULL;
 	auto handle = pobjtree->add_object_handle(-1, {zs_objtype::root, std::move(prootobj)});
-	if (handle == INVALID_HANDLE)
+	if (zh_error(handle))
 		return nullptr;
 	return pobjtree;
 }
@@ -383,7 +383,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	
 	auto pnode = pobjtree->tree.get_root();
 	if (pnode == nullptr)
-		return INVALID_HANDLE;
+		return ecZNullObject;
 	pnode = pnode->get_child();
 	if (NULL != pnode) {
 		do {
@@ -405,20 +405,20 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 			if (!system_services_get_username_from_id(account_id,
 			    account, std::size(account)) ||
 			    !system_services_get_maildir(account, dir, std::size(dir)))
-				return INVALID_HANDLE;	
+				return ecZNullObject;
 		}
 	} else {
 		if (account_id != pinfo->domain_id)
-			return INVALID_HANDLE;
+			return ecZNullObject;
 		gx_strlcpy(dir, pinfo->get_homedir(), std::size(dir));
 		auto pdomain = strchr(pinfo->get_username(), '@');
 		if (pdomain == nullptr)
-			return INVALID_HANDLE;
+			return ecZNullObject;
 		pdomain ++;
 		gx_strlcpy(account, pdomain, std::size(account));
 	}
 	auto pstore = store_object::create(b_private, account_id, account, dir);
 	if (pstore == nullptr)
-		return INVALID_HANDLE;
+		return ecMAPIOOM;
 	return add_object_handle(ROOT_HANDLE, {zs_objtype::store, std::move(pstore)});
 }

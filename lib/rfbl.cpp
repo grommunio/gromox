@@ -172,6 +172,8 @@ static const char *mapi_errname(unsigned int e)
 	E(ecInvalidEntryId)
 	E(ecTableEmpty)
 	E(ecTimeSkew)
+	E(ecZNullObject)
+	E(ecZOutOfHandles)
 	default: {
 		thread_local char xbuf[32];
 		snprintf(xbuf, std::size(xbuf), "%xh", e);
@@ -270,6 +272,8 @@ const char *mapi_strerror(unsigned int e)
 	E(ecComputed, "The property is a computed property and read-only")
 	E(ecNPQuotaExceeded, "The maximum number of named properties was reached in the store")
 	E(ecSendAsDenied, "Not enough permissions to utilize Send-As impersonation")
+	E(ecZNullObject, "Bad input handle")
+	E(ecZOutOfHandles, "Too many object handles open")
 	default: {
 		thread_local char xbuf[40];
 		snprintf(xbuf, sizeof(xbuf), "Unknown MAPI error code %xh", e);

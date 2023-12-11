@@ -833,8 +833,8 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		    &b_private, &account_id, &folder_id))
 			break;
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
-		if (handle == INVALID_HANDLE)
-			return ecNullObject;
+		if (zh_error(handle))
+			return zh_error(handle);
 		pinfo.reset();
 		return zs_openstoreentry(hsession,
 			handle, entryid, flags, pmapi_type, phobject);
@@ -845,8 +845,8 @@ ec_error_t zs_openentry(GUID hsession, BINARY entryid,
 		    &b_private, &account_id, &folder_id, &message_id))
 			break;
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
-		if (handle == INVALID_HANDLE)
-			return ecNullObject;
+		if (zh_error(handle))
+			return zh_error(handle);
 		pinfo.reset();
 		return zs_openstoreentry(hsession,
 			handle, entryid, flags, pmapi_type, phobject);
@@ -1021,8 +1021,8 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (pmessage == nullptr)
 			return ecError;
 		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::message, std::move(pmessage)});
-		if (*phobject == INVALID_HANDLE)
-			return ecError;
+		if (zh_error(*phobject))
+			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::message;
 	} else {
 		if (!exmdb_client::check_folder_id(pstore->get_dir(),
@@ -1075,8 +1075,8 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 		if (pfolder == nullptr)
 			return ecError;
 		*phobject = pinfo->ptree->add_object_handle(hobject, {zs_objtype::folder, std::move(pfolder)});
-		if (*phobject == INVALID_HANDLE)
-			return ecError;
+		if (zh_error(*phobject))
+			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::folder;
 	}
 	return ecSuccess;
@@ -1098,7 +1098,7 @@ static ec_error_t zs_openab_oop(USER_INFO_REF &&info, BINARY bin,
 		return ecServerOOM;
 	*zmg_type = zs_objtype::oneoff;
 	*objh = info->ptree->add_object_handle(ROOT_HANDLE, {*zmg_type, std::move(u)});
-	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
+	return zh_error(*objh);
 }
 
 ec_error_t zs_openabentry(GUID hsession,
@@ -1117,8 +1117,8 @@ ec_error_t zs_openabentry(GUID hsession,
 			return ecError;
 		*pmapi_type = zs_objtype::abcont;
 		*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {*pmapi_type, std::move(contobj)});
-		if (*phobject == INVALID_HANDLE)
-			return ecError;
+		if (zh_error(*phobject))
+			return zh_error(*phobject);
 		return ecSuccess;
 	}
 	if (entryid.cb < 20)
@@ -1229,8 +1229,8 @@ static ec_error_t zs_openab_emsab(USER_INFO_REF &&pinfo, BINARY entryid,
 	} else {
 		return ecInvalidParam;
 	}
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
+	if (zh_error(*phobject))
+		return zh_error(*phobject);
 	return ecSuccess;
 }
 
@@ -1257,7 +1257,7 @@ static ec_error_t zs_openab_zcsab(USER_INFO_REF &&info, BINARY entryid,
 		return ecError;
 	*zmg_type = zs_objtype::abcont;
 	*objh = info->ptree->add_object_handle(ROOT_HANDLE, {*zmg_type, std::move(contobj)});
-	return *objh != INVALID_HANDLE ? ecSuccess : ecError;
+	return zh_error(*objh);
 }
 
 ec_error_t zs_resolvename(GUID hsession,
@@ -1421,9 +1421,7 @@ ec_error_t zs_loadstoretable(GUID hsession, uint32_t *phobject)
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {zs_objtype::table, std::move(ptable)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
@@ -1443,13 +1441,13 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	if (store_entryid.wrapped_provider_uid == g_muidStorePublic) {
 		/* pserver_name or ESSDN is ignored; can only ever open PF of own domain */
 		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
-		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
+		return zh_error(*phobject);
 	}
 	if (!common_util_essdn_to_uid(store_entryid.pmailbox_dn, &user_id))
 		return ecNotFound;
 	if (pinfo->user_id == user_id) {
 		*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
-		return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
+		return zh_error(*phobject);
 	}
 	if (!system_services_get_username_from_id(user_id,
 	    username, std::size(username)) ||
@@ -1474,7 +1472,7 @@ ec_error_t zs_openstore(GUID hsession, BINARY entryid, uint32_t *phobject)
 	} catch (const std::bad_alloc &) {
 	}
 	*phobject = pinfo->ptree->get_store_handle(TRUE, user_id);
-	return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_openprofilesec(GUID hsession,
@@ -1493,9 +1491,7 @@ ec_error_t zs_openprofilesec(GUID hsession,
 	if (ppropvals == nullptr)
 		return ecNotFound;
 	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, {zs_objtype::profproperty, ppropvals});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_loadhierarchytable(GUID hsession,
@@ -1526,9 +1522,7 @@ ec_error_t zs_loadhierarchytable(GUID hsession,
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hfolder, {zs_objtype::table, std::move(ptable)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_loadcontenttable(GUID hsession,
@@ -1572,9 +1566,7 @@ ec_error_t zs_loadcontenttable(GUID hsession,
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hfolder, {zs_objtype::table, std::move(ptable)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_loadrecipienttable(GUID hsession,
@@ -1594,9 +1586,7 @@ ec_error_t zs_loadrecipienttable(GUID hsession,
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::table, std::move(ptable)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_loadruletable(GUID hsession, uint32_t hfolder, uint32_t *phobject)
@@ -1615,9 +1605,7 @@ ec_error_t zs_loadruletable(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hfolder, {zs_objtype::table, std::move(ptable)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_createmessage(GUID hsession,
@@ -1642,8 +1630,8 @@ ec_error_t zs_createmessage(GUID hsession,
 	auto folder_id = pfolder->folder_id;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (hstore == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(hstore))
+		return zh_error(hstore);
 	if (!pstore->owner_mode()) {
 		if (!exmdb_client::get_folder_perm(pstore->get_dir(),
 		    pfolder->folder_id, pinfo->get_username(), &permission))
@@ -1692,9 +1680,7 @@ ec_error_t zs_createmessage(GUID hsession,
 		because the caller normally will not keep the
 		handle of folder */
 	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::message, std::move(pmessage)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
@@ -2154,15 +2140,13 @@ ec_error_t zs_createfolder(GUID hsession, uint32_t hparent_folder,
 			because the caller normally will not keep the
 			handle of parent folder */
 		auto hstore = pinfo->ptree->get_store_handle(TRUE, pstore->account_id);
-		if (hstore == INVALID_HANDLE)
-			return ecError;
+		if (zh_error(hstore))
+			return zh_error(hstore);
 		*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::folder, std::move(pfolder)});
 	} else {
 		*phobject = pinfo->ptree->add_object_handle(hparent_folder, {zs_objtype::folder, std::move(pfolder)});
 	}
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_deletefolder(GUID hsession,
@@ -3515,9 +3499,7 @@ ec_error_t zs_loadattachmenttable(GUID hsession,
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::table, std::move(ptable)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_openattachment(GUID hsession,
@@ -3538,9 +3520,7 @@ ec_error_t zs_openattachment(GUID hsession,
 	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::attach, std::move(pattachment)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_createattachment(GUID hsession,
@@ -3565,9 +3545,7 @@ ec_error_t zs_createattachment(GUID hsession,
 	if (!pattachment->init_attachment())
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, {zs_objtype::attach, std::move(pattachment)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_deleteattachment(GUID hsession,
@@ -3841,8 +3819,8 @@ ec_error_t zs_openembedded(GUID hsession,
 		return ecNotSupported;
 	auto pstore = pattachment->get_store();
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (hstore == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(hstore))
+		return zh_error(hstore);
 	auto b_writable = pattachment->writable();
 	auto tag_access = pattachment->get_tag_access();
 	if ((flags & MAPI_CREATE) && !b_writable)
@@ -3867,9 +3845,7 @@ ec_error_t zs_openembedded(GUID hsession,
 		because the caller normally will not keep the
 		handle of attachment */
 	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::message, std::move(pmessage)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_getnamedpropids(GUID hsession, uint32_t hstore,
@@ -4073,15 +4049,13 @@ ec_error_t zs_hierarchysync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (hstore == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(hstore))
+		return zh_error(hstore);
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsdownctx, std::move(pctx)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
@@ -4097,15 +4071,13 @@ ec_error_t zs_contentsync(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (hstore == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(hstore))
+		return zh_error(hstore);
 	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsdownctx, std::move(pctx)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
@@ -4233,15 +4205,13 @@ ec_error_t zs_hierarchyimport(GUID hsession,
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (hstore == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(hstore))
+		return zh_error(hstore);
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsupctx, std::move(pctx)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_contentimport(GUID hsession, uint32_t hfolder, uint32_t *phobject)
@@ -4257,15 +4227,13 @@ ec_error_t zs_contentimport(GUID hsession, uint32_t hfolder, uint32_t *phobject)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
-	if (hstore == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(hstore))
+		return zh_error(hstore);
 	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, {zs_objtype::icsupctx, std::move(pctx)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_configimport(GUID hsession,
@@ -4406,9 +4374,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 	if (b_new && pmessage->init_message(b_fai, pinfo->cpid) != 0)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hctx, {zs_objtype::message, std::move(pmessage)});
-	if (*phobject == INVALID_HANDLE)
-		return ecError;
-	return ecSuccess;
+	return zh_error(*phobject);
 }
 
 ec_error_t zs_importfolder(GUID hsession,
@@ -5159,8 +5125,8 @@ ec_error_t zs_linkmessage(GUID hsession,
 	if (pinfo == nullptr)
 		return ecError;
 	auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
-	if (handle == INVALID_HANDLE)
-		return ecNullObject;
+	if (zh_error(handle))
+		return zh_error(handle);
 	if (pinfo->user_id < 0)
 		return ecAccessDenied;
 	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);

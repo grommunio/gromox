@@ -425,4 +425,6 @@ enum ec_error_t {
 	// ErrorInsufficientBuffer = 0x8007007a,
 	// ErrorCanNotComplete = 0x800703eb,
 	// ErrorCanceled = 0x800704c7,
+	ecZNullObject = 0xfffffc00,
+	ecZOutOfHandles = 0xfffffc04,
 };
