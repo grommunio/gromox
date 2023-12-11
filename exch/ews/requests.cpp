@@ -115,7 +115,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
  */
 void process(mCreateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("CreateFolder");
 
 	response->SetName("m:CreateFolderResponse");
 
@@ -147,7 +147,7 @@ void process(mCreateFolderRequest&& request, XMLElement* response, const EWSCont
  */
 void process(mCreateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("CreateItem");
 
 	response->SetName("m:CreateItemResponse");
 
@@ -201,7 +201,7 @@ void process(mCreateItemRequest&& request, XMLElement* response, const EWSContex
  */
 void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("DeleteFolder");
 
 	response->SetName("m:DeleteFolderResponse");
 
@@ -252,7 +252,7 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
  */
 void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("DeleteItem");
 
 	response->SetName("m:DeleteItemResponse");
 
@@ -311,7 +311,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
  */
 void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("EmptyFolder");
 
 	response->SetName("m:EmptyFolderResponse");
 
@@ -350,7 +350,7 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
  */
 void process(mFindFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("FindFolder");
 
 	response->SetName("m:FindFolderResponse");
 
@@ -420,7 +420,7 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
  */
 void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("GetAttachment");
 
 	response->SetName("m:GetAttachmentResponse");
 
@@ -454,7 +454,7 @@ void process(mGetAttachmentRequest&& request, XMLElement* response, const EWSCon
  */
 void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("GetEvents");
 
 	response->SetName("m:GetEventsResponse");
 
@@ -487,7 +487,7 @@ void process(mGetEventsRequest&& request, XMLElement* response, const EWSContext
  */
 void process(mGetFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("GetFolder");
 
 	response->SetName("m:GetFolderResponse");
 
@@ -632,7 +632,7 @@ void process(mGetUserAvailabilityRequest&& request, XMLElement* response, const 
  */
 void process(mGetStreamingEventsRequest&& request, XMLElement* response, EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("GetStreamingEvents");
 
 	response->SetName("m:GetStreamingEventsResponse");
 
@@ -739,7 +739,7 @@ void process(mGetUserOofSettingsRequest&& request, XMLElement* response, const E
  */
 void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("GetUserPhoto");
 
 	response->SetName("m:GetUserPhotoResponse");
 
@@ -780,7 +780,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 {
 	response->SetName(request.copy? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
-	ctx.experimental();
+	ctx.experimental(request.copy? "CopyFolder" : "m:MoveFolder");
 
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
@@ -824,7 +824,7 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 {
 	response->SetName(request.copy? "m:CopyItemResponse" : "m:MoveItemResponse");
 
-	ctx.experimental();
+	ctx.experimental(request.copy? "m:CopyItem" : "m:MoveItem");
 
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
@@ -929,7 +929,7 @@ void process(mSetUserOofSettingsRequest&& request, XMLElement* response, const E
  */
 void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("SyncFolderHierarchy");
 
 	response->SetName("m:SyncFolderHierarchyResponse");
 
@@ -1005,7 +1005,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
  */
 void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("SyncFolderItems");
 
 	response->SetName("m:SyncFolderItemsResponse");
 
@@ -1126,7 +1126,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
  */
 void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("GetItem");
 
 	response->SetName("m:GetItemResponse");
 
@@ -1170,7 +1170,7 @@ void process(mGetItemRequest&& request, XMLElement* response, const EWSContext& 
  */
 void process(mResolveNamesRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("ResolveNames");
 
 	response->SetName("m:ResolveNamesResponse");
 
@@ -1219,7 +1219,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
  */
 void process(mSendItemRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("SentItem");
 
 	response->SetName("m:SendItemResponse");
 
@@ -1273,7 +1273,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
  */
 void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("UpdateFolder");
 
 	response->SetName("m:UpdateFolderResponse");
 
@@ -1320,7 +1320,7 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
  */
 void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("Subscribe");
 
 	response->SetName("m:SubscribeResponse");
 
@@ -1341,7 +1341,7 @@ void process(mSubscribeRequest&& request, XMLElement* response, const EWSContext
  */
 void process(mUnsubscribeRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("Unsubscribe");
 
 	response->SetName("m:UnsubscribeResponse");
 
@@ -1366,7 +1366,7 @@ void process(mUnsubscribeRequest&& request, XMLElement* response, const EWSConte
  */
 void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContext& ctx)
 {
-	ctx.experimental();
+	ctx.experimental("UpdateItem");
 
 	response->SetName("m:UpdateItemResponse");
 

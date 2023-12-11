@@ -294,7 +294,7 @@ public:
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 
 	double age() const;
-	void experimental() const;
+	void experimental(const char*) const;
 
 	inline int ID() const {return m_ID;}
 	inline const HTTP_AUTH_INFO& auth_info() const {return m_auth_info;}
