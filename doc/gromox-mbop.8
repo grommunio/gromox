@@ -25,6 +25,8 @@ clear\-rwz: delete IPM.RuleOrganizer FAI messages from the inbox
 .IP \(bu 4
 delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
+emptyfld: remove objects from folders
+.IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
 purge\-softdelete: remove soft-deleted items from a folder
@@ -71,7 +73,10 @@ Perform a soft deletion.
 \fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-MRa\fP] [\fB\-t\fP
 \fIage\fP] [\fB\-\-soft\fP] \fIfolder_spec\fP...
 .SS Description
-This command deletes messages from a folder.
+This command deletes objects from one or more folders. (This was originally
+implemented with just the "empty_folder" RPC, but more options for selective
+deletion were added later. Thus, emptyfld may not completely \fIempty\fP a
+folder.)
 .SS Subcommand options
 .TP
 \fB\-M\fP
