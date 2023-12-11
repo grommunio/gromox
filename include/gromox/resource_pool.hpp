@@ -57,23 +57,25 @@ template<typename Tp> class resource_pool {
 		std::unique_lock<std::mutex> lk(m_mtx);
 		if (m_numslots == 0)
 			return {};
-		--m_numslots;
 		if (m_list.size() > 0)
 			holder.splice(holder.end(), m_list, m_list.begin());
 		else
 			holder.emplace_back(std::forward<A>(args)...);
-		return {std::in_place_t{}, *this, std::move(holder), m_gen};
+		std::optional<token> tk{std::in_place_t{}, *this, std::move(holder), m_gen};
+		--m_numslots;
+		return tk;
 	}
 	template<typename... A> token get_wait(A &&...args) {
 		std::list<Tp> holder;
 		std::unique_lock<std::mutex> lk(m_mtx);
 		m_cv.wait(lk, [this]() { return m_numslots > 0; });
-		--m_numslots;
 		if (m_list.size() > 0)
 			holder.splice(holder.end(), m_list, m_list.begin());
 		else
 			holder.emplace_back(std::forward<A>(args)...);
-		return {*this, std::move(holder), m_gen};
+		token tk{*this, std::move(holder), m_gen};
+		--m_numslots;
+		return tk;
 	}
 	void put_slot() noexcept {
 		++m_numslots;
