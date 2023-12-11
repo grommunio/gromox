@@ -2901,7 +2901,7 @@ struct mFindItemRequest
 	//<xs:element name="SortOrder" type="t:NonEmptyArrayOfFieldOrdersType" minOccurs="0"/>
 	std::vector<sFolderId> ParentFolderIds;
 	//<xs:element name="QueryString" type="m:QueryStringType" minOccurs="0" maxOccurs="1"/>
-	Enum::FolderQueryTraversalType Traversal; // Attribute
+	Enum::ItemQueryTraversalType Traversal; // Attribute
 };
 
 /**

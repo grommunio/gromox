@@ -102,6 +102,7 @@ struct Enum
 	STR(April);
 	STR(Ascending);
 	STR(AssistantPhone);
+	STR(Associated);
 	STR(August);
 	STR(Beginning);
 	STR(Best);
@@ -389,6 +390,7 @@ struct Enum
 	using LegacyFreeBusyType = StrEnum<Free, Tentative, Busy, OOF, WorkingElsewhere, NoData>; ///< Types.xsd:4352
 	using ImportanceChoicesType = StrEnum<Low, Normal, High>; ///< Types.xsd:1708
 	using IndexBasePointType = StrEnum<Beginning, End>; ///< Types.xsd:4196
+	using ItemQueryTraversalType = StrEnum<Shallow, SoftDeleted, Associated>; ///< Types.xsd:1234
 	using MailboxTypeType = StrEnum<Unknown, OneOff, Mailbox, PublicDL, PrivateDL, Contact, PublicFolder, GroupMailbox, ImplicitContact, User>; ///< Types.xsd:253
 	using MailTipTypes = StrEnum<All, OutOfOfficeMessage, MailboxFullStatus, CustomMailTip, ExternalMemberCount, TotalMemberCount, MaxMessageSize, DeliveryRestriction, ModerationStatus, InvalidRecipient, Scope, RecipientSuggestions, PreferAccessibleContent>; ///< Types.xsd:6947
 	using MapiPropertyTypeType = StrEnum<ApplicationTime, ApplicationTimeArray, Binary, BinaryArray, Boolean, CLSID, CLSIDArray, Currency, CurrencyArray, Double, DoubleArray, Error, Float, FloatArray, Integer, IntegerArray, Long, LongArray, Null, Object, ObjectArray, Short, ShortArray, SystemTime, SystemTimeArray, String, StringArray>; ///< Types.xsd:1060

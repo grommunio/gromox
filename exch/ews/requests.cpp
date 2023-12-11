@@ -432,9 +432,9 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	response->SetName("m:FindItemResponse");
 
 	sShape shape(request.ItemShape);
-	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
-	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
-
+	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES :
+	                     request.Traversal == Enum::Associated? TABLE_FLAG_ASSOCIATED :
+	                     request.Traversal == Enum::Shallow? 0 : TABLE_FLAG_DEPTH;
 	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
 	const SORTORDER_SET* sort = nullptr; // Lol same
 	std::string lastDir; // Simple restriction caching
