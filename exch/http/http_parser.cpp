@@ -699,7 +699,7 @@ static tproc_status htparse_rdhead_mt(http_context *pcontext, char *line,
 	} else if (g_http_remote_host_hdr.size() > 0 &&
 	    strcasecmp(field_name, g_http_remote_host_hdr.c_str()) == 0) {
 		auto &cn = pcontext->connection;
-		gx_strlcpy(cn.client_ip, ptoken, std::size(cn.client_ip));
+		snprintf(cn.client_ip, std::size(cn.client_ip), "%.*s", static_cast<int>(tmp_len), ptoken);
 		cn.client_port = 0;
 	} else {
 		if (strcasecmp(field_name, "Connection") == 0 &&
