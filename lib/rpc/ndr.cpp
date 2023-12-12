@@ -72,10 +72,9 @@ pack_result NDR_PULL::align(size_t size)
 	}
 	
 	if (!(pndr->flags & NDR_FLAG_NOALIGN)) {
-		if (pndr->flags & NDR_FLAG_PAD_CHECK) {
-			if (!ndr_pull_check_padding(pndr, size))
-				return NDR_ERR_PADDING;
-		}
+		if (pndr->flags & NDR_FLAG_PAD_CHECK &&
+		    !ndr_pull_check_padding(pndr, size))
+			return NDR_ERR_PADDING;
 		pndr->offset = (pndr->offset + (size - 1)) & ~(size - 1);
 	}
 	if (pndr->offset > pndr->data_size) {
@@ -337,12 +336,7 @@ static bool ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 	uint32_t size;
 	
 	size = extra_size + pndr->offset;
-	if (size > pndr->alloc_size) {
-		/* overflow */
-		return false;
-	}
-	/* not overflow */
-	return true;
+	return size <= pndr->alloc_size;
 }
 
 pack_result NDR_PUSH::p_uint8_a(const uint8_t *pdata, uint32_t n)
