@@ -127,7 +127,9 @@ struct EXT_PULL {
 	pack_result g_guid(GUID *);
 	pack_result g_guid(FLATUID *v) { return g_bytes(v, sizeof(*v)); }
 	pack_result g_str(char **);
+	pack_result g_str(std::string *);
 	pack_result g_wstr(char **);
+	pack_result g_wstr(std::string *);
 	pack_result g_blob(DATA_BLOB *);
 	pack_result g_bin(BINARY *);
 	pack_result g_sbin(BINARY *);

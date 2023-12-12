@@ -162,6 +162,21 @@ pack_result EXT_PULL::g_str(char **ppstr)
 	return advance(len);
 }
 
+pack_result EXT_PULL::g_str(std::string *out) try
+{
+	if (m_offset >= m_data_size)
+		return pack_result::bufsize;
+	auto len = strnlen(&m_cdata[m_offset], m_data_size - m_offset);
+	if (len + 1 > m_data_size - m_offset)
+		return pack_result::bufsize;
+	out->resize(len);
+	/* Copy with, and advance over, NUL */
+	memcpy(out->data(), &m_udata[m_offset], len + 1);
+	return advance(len + 1);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
+}
+
 pack_result EXT_PULL::g_wstr(char **ppstr)
 {
 	/* Everything is measured in octets */
@@ -185,6 +200,33 @@ pack_result EXT_PULL::g_wstr(char **ppstr)
 	if (!utf16le_to_utf8(&m_cdata[m_offset], len, *ppstr, bufsize))
 		return EXT_ERR_CHARCNV;
 	return advance(len);
+}
+
+pack_result EXT_PULL::g_wstr(std::string *out) try
+{
+	/* Everything is measured in octets */
+	size_t i;
+	
+	if (!(m_flags & EXT_FLAG_UTF16))
+		return g_str(out);
+	if (m_offset >= m_data_size)
+		return pack_result::bufsize;
+	size_t max_len = m_data_size - m_offset;
+	for (i = 0; i < max_len - 1; i += 2)
+		if (m_udata[m_offset+i] == '\0' && m_udata[m_offset+i+1] == '\0')
+			break;
+	if (i >= max_len - 1)
+		return pack_result::bufsize;
+	auto len = i + 2;
+	auto bufsize = utf16_to_utf8_len(len);
+	/* bufsize has NUL included, good enough for now */
+	out->resize(bufsize);
+	if (!utf16le_to_utf8(&m_cdata[m_offset], len, out->data(), bufsize))
+		return pack_result::charconv;
+	out->resize(strlen(out->c_str()));
+	return advance(len);
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 pack_result EXT_PULL::g_blob(DATA_BLOB *pblob)
