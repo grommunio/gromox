@@ -1392,21 +1392,21 @@ tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 		default:                 BusyType = "NoData"; break;
 	}
 
-	if (!fb_event.details.has_value())
+	if (!fb_event.has_details)
 		return;
 
 	auto &details = CalendarEventDetails.emplace();
-	if (fb_event.details->id != nullptr)
-		details.ID = fb_event.details->id;
-	if (fb_event.details->subject != nullptr)
-		details.Subject = fb_event.details->subject;
-	if (fb_event.details->location != nullptr)
-		details.Location = fb_event.details->location;
-	details.IsMeeting     = fb_event.details->is_meeting;
-	details.IsRecurring   = fb_event.details->is_recurring;
-	details.IsException   = fb_event.details->is_exception;
-	details.IsReminderSet = fb_event.details->is_reminderset;
-	details.IsPrivate     = fb_event.details->is_private;
+	if (fb_event.id != nullptr)
+		details.ID = fb_event.id;
+	if (fb_event.subject != nullptr)
+		details.Subject = fb_event.subject;
+	if (fb_event.location != nullptr)
+		details.Location = fb_event.location;
+	details.IsMeeting     = fb_event.is_meeting;
+	details.IsRecurring   = fb_event.is_recurring;
+	details.IsException   = fb_event.is_exception;
+	details.IsReminderSet = fb_event.is_reminderset;
+	details.IsPrivate     = fb_event.is_private;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1419,7 +1419,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
 	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
-		[](freebusy_event fb_event) { return fb_event.details.has_value(); }) ?
+		[](freebusy_event fb_event) { return fb_event.has_details; }) ?
 		"Detailed" : "FreeBusy";
 
 	auto &cal_events = CalendarEventArray.emplace();

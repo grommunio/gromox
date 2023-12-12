@@ -862,20 +862,16 @@ struct DOUBLE_ARRAY {
 	double *mval;
 };
 
-struct freebusy_event_details {
-	freebusy_event_details(char *, char *, char *, bool, bool, bool, bool, bool);
-
-	char *id, *subject, *location;
-	bool is_meeting, is_recurring, is_exception, is_reminderset, is_private;
-};
-
 struct freebusy_event {
 	freebusy_event(time_t, time_t, uint32_t, char *, char *, char *,
 		bool, bool, bool, bool, bool, bool);
 
-	time_t start_time, end_time;
-	uint32_t busy_status;
-	std::optional<freebusy_event_details> details;
+	time_t start_time = 0, end_time = 0;
+	uint32_t busy_status = 0;
+	bool has_details = false, is_meeting = false, is_recurring = false;
+	bool is_exception = false, is_reminderset = false, is_private = false;
+	char *id = nullptr, *subject = nullptr; /* in practice cannot be nullptr (cf. p_fbevent()) */
+	char *location = nullptr; /* null allowed */
 };
 
 struct FB_ARRAY {

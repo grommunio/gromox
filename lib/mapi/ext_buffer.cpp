@@ -2118,18 +2118,21 @@ pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 	TRY(g_uint32(&fb_event->busy_status));
 	BOOL b;
 	TRY(g_bool(&b));
+	fb_event->has_details = b;
 
 	if (b) {
-		TRY(g_str(&fb_event->details->id));
-		TRY(g_str(&fb_event->details->subject));
+		TRY(g_str(&fb_event->id));
+		TRY(g_str(&fb_event->subject));
 		TRY(g_bool(&b));
 		if (b)
-			TRY(g_str(&fb_event->details->location));
-		TRY(g_bool(&b)); fb_event->details->is_meeting     = b;
-		TRY(g_bool(&b)); fb_event->details->is_recurring   = b;
-		TRY(g_bool(&b)); fb_event->details->is_exception   = b;
-		TRY(g_bool(&b)); fb_event->details->is_reminderset = b;
-		TRY(g_bool(&b)); fb_event->details->is_private     = b;
+			TRY(g_str(&fb_event->location));
+		else
+			fb_event->location = nullptr;
+		TRY(g_bool(&b)); fb_event->is_meeting     = b;
+		TRY(g_bool(&b)); fb_event->is_recurring   = b;
+		TRY(g_bool(&b)); fb_event->is_exception   = b;
+		TRY(g_bool(&b)); fb_event->is_reminderset = b;
+		TRY(g_bool(&b)); fb_event->is_private     = b;
 	}
 
 	return EXT_ERR_SUCCESS;
@@ -3543,18 +3546,18 @@ pack_result EXT_PUSH::p_fbevent(const freebusy_event &r)
 	TRY(p_int64(r.start_time));
 	TRY(p_int64(r.end_time));
 	TRY(p_uint32(r.busy_status));
-	TRY(p_bool(r.details.has_value()));
-	if (r.details.has_value()) {
-		TRY(p_str(r.details->id));
-		TRY(p_str(r.details->subject));
-		TRY(p_bool(r.details->location != nullptr));
-		if (r.details->location != nullptr)
-			TRY(p_str(r.details->location));
-		TRY(p_bool(r.details->is_meeting));
-		TRY(p_bool(r.details->is_recurring));
-		TRY(p_bool(r.details->is_exception));
-		TRY(p_bool(r.details->is_reminderset));
-		TRY(p_bool(r.details->is_private));
+	TRY(p_bool(r.has_details));
+	if (r.has_details) {
+		TRY(p_str(r.id));
+		TRY(p_str(r.subject));
+		TRY(p_bool(r.location != nullptr));
+		if (r.location != nullptr)
+			TRY(p_str(r.location));
+		TRY(p_bool(r.is_meeting));
+		TRY(p_bool(r.is_recurring));
+		TRY(p_bool(r.is_exception));
+		TRY(p_bool(r.is_reminderset));
+		TRY(p_bool(r.is_private));
 	}
 	return pack_result::ok;
 }
