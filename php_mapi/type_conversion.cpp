@@ -113,6 +113,10 @@ ec_error_t fb_array_to_php(const FB_ARRAY *pfbs, zval *pzval)
 		add_assoc_long(&pzvalfbevent, "start", e.start_time);
 		add_assoc_long(&pzvalfbevent, "end", e.end_time);
 		add_assoc_long(&pzvalfbevent, "busystatus", e.busy_status);
+		if (!e.details.has_value()) {
+			add_next_index_zval(pzval, &pzvalfbevent);
+			continue;
+		}
 		if (e.details->id != nullptr)
 			add_assoc_string(&pzvalfbevent, "id", e.details->id);
 		if (e.details->subject != nullptr)
