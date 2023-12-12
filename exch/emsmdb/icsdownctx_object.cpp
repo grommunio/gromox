@@ -441,7 +441,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	if ((pctx->sync_flags & SYNC_NO_DELETIONS) || deleted_folders.count == 0) {
 		pproplist_deletions = NULL;
 	} else {
-		idset xset(true, REPL_TYPE_ID);
+		idset xset(idset::type::id_loose);
 		for (auto fid : deleted_folders)
 			if (!xset.append(fid))
 				return FALSE;
@@ -941,7 +941,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	pbin1 = NULL;
 	pbin2 = NULL;
 	if (pctx->pdeleted_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
+		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pdeleted_messages)
 			if (!xset.append(mid))
 				return FALSE;
@@ -952,7 +952,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	}
 	if (!(pctx->sync_flags & SYNC_NO_SOFT_DELETIONS) &&
 	    pctx->pnolonger_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
+		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pnolonger_messages) {
 			if (!xset.append(mid)) {
 				if (pbin1 != nullptr)
@@ -1000,7 +1000,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	proplist.count = 0;
 	proplist.ppropval = tmp_propvals;
 	if (pctx->pread_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
+		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->pread_messages)
 			if (!xset.append(mid))
 				return FALSE;
@@ -1010,7 +1010,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		proplist.emplace_back(MetaTagIdsetRead, pbin1);
 	}
 	if (pctx->punread_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
+		idset xset(idset::type::id_loose);
 		for (auto mid : *pctx->punread_messages)
 			if (!xset.append(mid))
 				return FALSE;
@@ -1224,7 +1224,7 @@ BOOL icsdownctx_object::end_state_stream()
 		return FALSE;
 	if (pctx->state_property == 0)
 		return FALSE;
-	auto pset = idset::create(false, REPL_TYPE_GUID);
+	auto pset = idset::create(idset::type::guid_packed);
 	if (pset == nullptr)
 		return FALSE;
 	auto saved_state_property = pctx->state_property;

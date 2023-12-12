@@ -87,7 +87,7 @@ BOOL icsupctx_object::end_state_stream()
 		pctx->state_property = 0;
 		return TRUE;
 	}
-	auto pset = idset::create(false, REPL_TYPE_GUID);
+	auto pset = idset::create(idset::type::guid_packed);
 	if (pset == nullptr)
 		return FALSE;
 	tmp_bin.pv = f_state_stream.data();

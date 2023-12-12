@@ -1899,7 +1899,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 	if (tmp_byte != 0)
 		TRY(x.g_str(&d.username));
 	TRY(x.g_bin_ex(&tmp_bin));
-	d.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
+	d.pgiven = new(std::nothrow) idset(idset::type::id_packed);
 	if (d.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
 	if (!d.pgiven->deserialize(tmp_bin)) {
@@ -1913,7 +1913,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		status = x.g_bin_ex(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, d);
-		d.pseen = new(std::nothrow) idset(false, REPL_TYPE_ID);
+		d.pseen = new(std::nothrow) idset(idset::type::id_packed);
 		if (d.pseen == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, d);
 		if (!d.pseen->deserialize(tmp_bin))
@@ -1926,7 +1926,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		status = x.g_bin_ex(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, d);
-		d.pseen_fai = new(std::nothrow) idset(false, REPL_TYPE_ID);
+		d.pseen_fai = new(std::nothrow) idset(idset::type::id_packed);
 		if (d.pseen_fai == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, d);
 		if (!d.pseen_fai->deserialize(tmp_bin))
@@ -1939,7 +1939,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_content_sync &d)
 		status = x.g_bin_ex(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, d);
-		d.pread = new(std::nothrow) idset(false, REPL_TYPE_ID);
+		d.pread = new(std::nothrow) idset(idset::type::id_packed);
 		if (d.pread == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, d);
 		if (!d.pread->deserialize(tmp_bin))
@@ -2046,7 +2046,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 	if (tmp_byte != 0)
 		TRY(x.g_str(&d.username));
 	TRY(x.g_bin_ex(&tmp_bin));
-	d.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
+	d.pgiven = new(std::nothrow) idset(idset::type::id_packed);
 	if (d.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
 	if (!d.pgiven->deserialize(tmp_bin)) {
@@ -2064,7 +2064,7 @@ static pack_result exmdb_pull(EXT_PULL &x, exreq_get_hierarchy_sync &d)
 			delete d.pgiven;
 			return status;
 		}
-		d.pseen = new(std::nothrow) idset(false, REPL_TYPE_ID);
+		d.pseen = new(std::nothrow) idset(idset::type::id_packed);
 		if (d.pseen == nullptr) {
 			delete d.pgiven;
 			return EXT_ERR_ALLOC;

@@ -999,10 +999,10 @@ void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
  * Initializes given and seen member for deserialization
  */
 sSyncState::sSyncState() :
-    given(false, REPL_TYPE_ID),
-    seen(false, REPL_TYPE_ID),
-    read(false, REPL_TYPE_ID),
-    seen_fai(false, REPL_TYPE_ID)
+	given(idset::type::id_packed),
+	seen(idset::type::id_packed),
+	read(idset::type::id_packed),
+	seen_fai(idset::type::id_packed)
 {}
 
 /**

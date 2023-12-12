@@ -28,13 +28,9 @@ struct mdel {
 };
 }
 
-idset::idset(bool ser, uint8_t type) :
-	b_serialize(ser), repl_type(type)
-{}
-
-std::unique_ptr<idset> idset::create(bool ser, uint8_t type) try
+std::unique_ptr<idset> idset::create(idset::type t) try
 {
-	return std::make_unique<idset>(ser, type);
+	return std::make_unique<idset>(t);
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
@@ -60,9 +56,7 @@ BOOL idset::append(uint64_t eid)
 BOOL idset::append_range(uint16_t replid,
     uint64_t low_value, uint64_t high_value) try
 {
-	auto pset = this;
-	
-	if (!pset->b_serialize || low_value > high_value)
+	if (packed() || low_value > high_value)
 		return FALSE;
 	auto prepl_node = std::find_if(repl_list.begin(), repl_list.end(),
 	                  [&](const repl_node &n) { return n.replid == replid; });
@@ -77,9 +71,7 @@ BOOL idset::append_range(uint16_t replid,
 
 void idset::remove(uint64_t eid) try
 {
-	auto pset = this;
-	
-	if (!pset->b_serialize)
+	if (packed())
 		return;
 	auto replid = rop_util_get_replid(eid);
 	auto value = rop_util_get_gc_value(eid);
@@ -94,9 +86,7 @@ void idset::remove(uint64_t eid) try
 
 BOOL idset::concatenate(const IDSET *pset_src)
 {
-	auto pset_dst = this;
-	
-	if (!pset_dst->b_serialize || !pset_src->b_serialize)
+	if (packed() || pset_src->packed())
 		return FALSE;
 	auto &src_list = pset_src->repl_list;
 	for (auto prepl_node = src_list.begin();
@@ -112,7 +102,7 @@ bool idset::contains(uint64_t eid) const
 {
 	auto pset = this;
 	
-	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID)
+	if (pset->repl_type == idset::type::guid_packed)
 		return FALSE;	
 	auto replid = rop_util_get_replid(eid);
 	auto value = rop_util_get_gc_value(eid);
@@ -271,9 +261,7 @@ static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
 
 BINARY *idset::serialize_replid() const
 {
-	auto pset = this;
-	
-	if (!pset->b_serialize)
+	if (packed())
 		return NULL;
 	auto pbin = idset_init_binary();
 	if (pbin == nullptr)
@@ -293,7 +281,7 @@ BINARY *idset::serialize_replguid()
 	auto pset = this;
 	GUID tmp_guid;
 	
-	if (!pset->b_serialize || pset->mapping == nullptr)
+	if (packed() || pset->mapping == nullptr)
 		return NULL;
 	auto pbin = idset_init_binary();
 	if (pbin == nullptr)
@@ -312,7 +300,11 @@ BINARY *idset::serialize_replguid()
 
 BINARY *idset::serialize()
 {
-	return repl_type == REPL_TYPE_ID ? serialize_replid() : serialize_replguid();
+	switch (repl_type) {
+	case type::id_loose:   return serialize_replid();
+	case type::guid_loose: return serialize_replguid();
+	default: return nullptr;
+	}
 }
 
 static uint32_t idset_decode_globset(const BINARY *pbin, repl_node::range_list_t &globset) try
@@ -455,12 +447,12 @@ BOOL idset::deserialize(const BINARY &bin) try
 	auto pset = this;
 	uint32_t offset = 0;
 	
-	if (pset->b_serialize)
+	if (!pset->packed())
 		return FALSE;
 	while (offset < pbin->cb) {
 		repl_node repl_node;
 
-		if (REPL_TYPE_ID == pset->repl_type) {
+		if (pset->repl_type == idset::type::id_packed) {
 			repl_node.replid = le16p_to_cpu(&pbin->pb[offset]);
 			offset += sizeof(uint16_t);
 		} else {
@@ -489,9 +481,13 @@ BOOL idset::convert() try
 	auto pset = this;
 	std::vector<repl_node> temp_list;
 	
-	if (pset->b_serialize)
+	if (pset->repl_type == idset::type::id_loose ||
+	    pset->repl_type == idset::type::guid_loose) {
 		return FALSE;
-	if (REPL_TYPE_GUID == pset->repl_type) {
+	} else if (pset->repl_type == idset::type::id_packed) {
+		pset->repl_type = idset::type::id_loose;
+		return TRUE;
+	} else if (pset->repl_type == idset::type::guid_packed) {
 		if (pset->mapping == nullptr)
 			return FALSE;
 		for (auto &replguid_node : repl_list) {
@@ -505,8 +501,8 @@ BOOL idset::convert() try
 			temp_list.push_back(std::move(repl_node));
 		}
 		repl_list = std::move(temp_list);
+		pset->repl_type = idset::type::guid_loose;
 	}
-	pset->b_serialize = true;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1619: ENOMEM");
@@ -516,7 +512,7 @@ BOOL idset::convert() try
 std::pair<bool, repl_node::range_list_t *> idset::get_range_by_id(uint16_t replid)
 {
 	auto &set = *this;
-	if (set.b_serialize || set.repl_type != REPL_TYPE_GUID) {
+	if (set.repl_type != idset::type::guid_packed) {
 		for (auto &repl_node : set.repl_list)
 			if (replid == repl_node.replid)
 				return {true, &repl_node.range_list};
@@ -554,7 +550,7 @@ BOOL idset::enum_replist(void *p, REPLIST_ENUM replist_enum)
 {
 	auto pset = this;
 	
-	if (pset->b_serialize || pset->repl_type != REPL_TYPE_GUID) {
+	if (pset->repl_type != idset::type::guid_packed) {
 		for (const auto &repl_node : repl_list)
 			replist_enum(p, repl_node.replid);
 		return TRUE;
@@ -592,7 +588,7 @@ void idset::dump() const
 	fprintf(stderr, "idset@%p={\n", this);
 	for (const auto &repl_node : repl_list) {
 		for (const auto &range : repl_node.range_list) {
-			if (repl_type == REPL_TYPE_GUID && !b_serialize)
+			if (repl_type == idset::type::guid_packed)
 				fprintf(stderr, "\t%s ", gromox::bin2hex(repl_node.replguid).c_str());
 			else
 				fprintf(stderr, "\t#%u ", repl_node.replid);

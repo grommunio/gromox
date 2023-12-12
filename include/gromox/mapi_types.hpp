@@ -725,9 +725,6 @@ struct EXTENDED_ERROR {
 	BINARY *paux_bytes;
 };
 
-#define	REPL_TYPE_ID								0
-#define REPL_TYPE_GUID								1
-
 using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
@@ -747,8 +744,14 @@ struct repl_node {
 
 class idset {
 	public:
-	idset(bool serialize, uint8_t type);
-	static std::unique_ptr<idset> create(bool serialize, uint8_t type);
+	enum class type : uint8_t {
+		id_packed   = 0x41, id_loose   = 0x42,
+		guid_packed = 0x81, guid_loose = 0x82,
+	};
+
+	idset(idset::type t) : repl_type(t) {}
+	static std::unique_ptr<idset> create(idset::type);
+	bool packed() const { return static_cast<uint8_t>(repl_type) & 0x1; }
 
 	BOOL register_mapping(void *logon_obj, REPLICA_MAPPING);
 	void clear() { repl_list.clear(); }
@@ -784,12 +787,8 @@ class idset {
 
 	void *pparam = nullptr;
 	REPLICA_MAPPING mapping = nullptr;
-	/*
-	 * If @b_serialize is false and @repl_type is REPL_TYPE_GUID,
-	 * nodes in repl_list is REPLGUID_NODE.
-	 */
-	bool b_serialize = false;
-	uint8_t repl_type = 0;
+	idset::type repl_type = idset::type::id_packed;
+	/* If @repl_type is guid_packed, repl_nodes are REPLGUID_NODE. */
 	std::vector<repl_node> repl_list;
 };
 using IDSET = idset;
