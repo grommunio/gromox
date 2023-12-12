@@ -3024,7 +3024,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		piline->append_param("VALUE", "DATE");
 	if (tzid != nullptr)
 		piline->append_param("TZID", tzid);
-	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
+	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
 		b_found = FALSE;
 		for (size_t j = 0; j < apr->exceptioncount; ++j) {
 			if (apr->recur_pat.pmodifiedinstancedates[i]
