@@ -108,124 +108,124 @@ struct zcreq {
 	zcore_callid call_id;
 };
 
-struct zcreq_logon_token : public zcreq {
+struct zcreq_logon_token final : public zcreq {
 	char *token;
 };
 
-struct zcreq_logon : public zcreq {
+struct zcreq_logon final : public zcreq {
 	char *username;
 	char *password;
 	uint32_t flags;
 };
 
-struct zcreq_checksession : public zcreq {
+struct zcreq_checksession final : public zcreq {
 	GUID hsession;
 };
 
-struct zcreq_uinfo : public zcreq {
+struct zcreq_uinfo final : public zcreq {
 	char *username;
 };
 
-struct zcreq_unloadobject : public zcreq {
+struct zcreq_unloadobject final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 };
 
-struct zcreq_openentry : public zcreq {
+struct zcreq_openentry final : public zcreq {
 	GUID hsession;
 	BINARY entryid;
 	uint32_t flags;
 };
 
-struct zcreq_openstoreentry : public zcreq {
+struct zcreq_openstoreentry final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 	BINARY entryid;
 	uint32_t flags;
 };
 
-struct zcreq_openabentry : public zcreq {
+struct zcreq_openabentry final : public zcreq {
 	GUID hsession;
 	BINARY entryid;
 };
 
-struct zcreq_resolvename : public zcreq {
+struct zcreq_resolvename final : public zcreq {
 	GUID hsession;
 	TARRAY_SET *pcond_set;
 };
 
-struct zcreq_getpermissions : public zcreq {
+struct zcreq_getpermissions final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 };
 
-struct zcreq_modifypermissions : public zcreq {
+struct zcreq_modifypermissions final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	PERMISSION_SET *pset;
 };
 
-struct zcreq_modifyrules : public zcreq {
+struct zcreq_modifyrules final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 	RULE_LIST *plist;
 };
 
-struct zcreq_getabgal : public zcreq {
+struct zcreq_getabgal final : public zcreq {
 	GUID hsession;
 };
 
-struct zcreq_loadstoretable : public zcreq {
+struct zcreq_loadstoretable final : public zcreq {
 	GUID hsession;
 };
 
-struct zcreq_openstore : public zcreq {
+struct zcreq_openstore final : public zcreq {
 	GUID hsession;
 	BINARY entryid;
 };
 
-struct zcreq_openprofilesec : public zcreq {
+struct zcreq_openprofilesec final : public zcreq {
 	GUID hsession;
 	const FLATUID *puid;
 };
 
-struct zcreq_loadhierarchytable : public zcreq {
+struct zcreq_loadhierarchytable final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct zcreq_loadcontenttable : public zcreq {
+struct zcreq_loadcontenttable final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct zcreq_loadrecipienttable : public zcreq {
+struct zcreq_loadrecipienttable final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct zcreq_loadruletable : public zcreq {
+struct zcreq_loadruletable final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 };
 	
-struct zcreq_createmessage : public zcreq {
+struct zcreq_createmessage final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct zcreq_deletemessages : public zcreq {
+struct zcreq_deletemessages final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
 };
 
-struct zcreq_copymessages : public zcreq {
+struct zcreq_copymessages final : public zcreq {
 	GUID hsession;
 	uint32_t hsrcfolder;
 	uint32_t hdstfolder;
@@ -233,14 +233,14 @@ struct zcreq_copymessages : public zcreq {
 	uint32_t flags;
 };
 
-struct zcreq_setreadflags : public zcreq {
+struct zcreq_setreadflags final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
 };
 
-struct zcreq_createfolder : public zcreq {
+struct zcreq_createfolder final : public zcreq {
 	GUID hsession;
 	uint32_t hparent_folder;
 	uint32_t folder_type;
@@ -249,20 +249,20 @@ struct zcreq_createfolder : public zcreq {
 	uint32_t flags;
 };
 
-struct zcreq_deletefolder : public zcreq {
+struct zcreq_deletefolder final : public zcreq {
 	GUID hsession;
 	uint32_t hparent_folder;
 	BINARY entryid;
 	uint32_t flags;
 };
 
-struct zcreq_emptyfolder : public zcreq {
+struct zcreq_emptyfolder final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 };
 
-struct zcreq_copyfolder : public zcreq {
+struct zcreq_copyfolder final : public zcreq {
 	GUID hsession;
 	uint32_t hsrc_folder;
 	BINARY entryid;
@@ -271,36 +271,36 @@ struct zcreq_copyfolder : public zcreq {
 	uint32_t flags;
 };
 
-struct zcreq_getstoreentryid : public zcreq {
+struct zcreq_getstoreentryid final : public zcreq {
 	char *mailbox_dn;
 };
 
-struct zcreq_entryidfromsourcekey : public zcreq {
+struct zcreq_entryidfromsourcekey final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
 	BINARY folder_key;
 	BINARY *pmessage_key;
 };
 
-struct zcreq_storeadvise : public zcreq {
+struct zcreq_storeadvise final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
 	BINARY *pentryid;
 	uint32_t event_mask;
 };
 
-struct zcreq_unadvise : public zcreq {
+struct zcreq_unadvise final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
 	uint32_t sub_id;
 };
 
-struct zcreq_notifdequeue : public zcreq {
+struct zcreq_notifdequeue final : public zcreq {
 	NOTIF_SINK *psink;
 	uint32_t timeval;
 };
 
-struct zcreq_queryrows : public zcreq {
+struct zcreq_queryrows final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t start;
@@ -309,39 +309,39 @@ struct zcreq_queryrows : public zcreq {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct zcreq_setcolumns : public zcreq {
+struct zcreq_setcolumns final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t flags;
 };
 
-struct zcreq_seekrow : public zcreq {
+struct zcreq_seekrow final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
 	int32_t seek_rows;
 };
 
-struct zcreq_sorttable : public zcreq {
+struct zcreq_sorttable final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	SORTORDER_SET *psortset;
 };
 
-struct zcreq_getrowcount : public zcreq {
+struct zcreq_getrowcount final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 };
 
-struct zcreq_restricttable : public zcreq {
+struct zcreq_restricttable final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	RESTRICTION *prestriction;
 	uint32_t flags;
 };
 
-struct zcreq_findrow : public zcreq {
+struct zcreq_findrow final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
@@ -349,100 +349,100 @@ struct zcreq_findrow : public zcreq {
 	uint32_t flags;
 };
 
-struct zcreq_createbookmark : public zcreq {
+struct zcreq_createbookmark final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 };
 
-struct zcreq_freebookmark : public zcreq {
+struct zcreq_freebookmark final : public zcreq {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
 };
 
-struct zcreq_getreceivefolder : public zcreq {
+struct zcreq_getreceivefolder final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
 	char *pstrclass;
 };
 
-struct zcreq_modifyrecipients : public zcreq {
+struct zcreq_modifyrecipients final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t flags;
 	TARRAY_SET *prcpt_list;
 };
 
-struct zcreq_submitmessage : public zcreq {
+struct zcreq_submitmessage final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct zcreq_loadattachmenttable : public zcreq {
+struct zcreq_loadattachmenttable final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct zcreq_openattachment : public zcreq {
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t attach_id;
-};
-
-struct zcreq_createattachment : public zcreq {
-	GUID hsession;
-	uint32_t hmessage;
-};
-
-struct zcreq_deleteattachment : public zcreq {
+struct zcreq_openattachment final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t attach_id;
 };
 
-struct zcreq_setpropvals : public zcreq {
+struct zcreq_createattachment final : public zcreq {
+	GUID hsession;
+	uint32_t hmessage;
+};
+
+struct zcreq_deleteattachment final : public zcreq {
+	GUID hsession;
+	uint32_t hmessage;
+	uint32_t attach_id;
+};
+
+struct zcreq_setpropvals final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 	TPROPVAL_ARRAY *ppropvals;
 };
 
-struct zcreq_getpropvals : public zcreq {
+struct zcreq_getpropvals final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct zcreq_deletepropvals : public zcreq {
+struct zcreq_deletepropvals final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct zcreq_setmessagereadflag : public zcreq {
+struct zcreq_setmessagereadflag final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t flags;
 };
 
-struct zcreq_openembedded : public zcreq {
+struct zcreq_openembedded final : public zcreq {
 	GUID hsession;
 	uint32_t hattachment;
 	uint32_t flags;
 };
 
-struct zcreq_getnamedpropids : public zcreq {
+struct zcreq_getnamedpropids final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
 	PROPNAME_ARRAY *ppropnames;
 };
 
-struct zcreq_getpropnames : public zcreq {
+struct zcreq_getpropnames final : public zcreq {
 	GUID hsession;
 	uint32_t hstore;
 	PROPID_ARRAY *ppropids;
 };
 
-struct zcreq_copyto : public zcreq {
+struct zcreq_copyto final : public zcreq {
 	GUID hsession;
 	uint32_t hsrcobject;
 	PROPTAG_ARRAY *pexclude_proptags;
@@ -450,22 +450,22 @@ struct zcreq_copyto : public zcreq {
 	uint32_t flags;
 };
 
-struct zcreq_savechanges : public zcreq {
+struct zcreq_savechanges final : public zcreq {
 	GUID hsession;
 	uint32_t hobject;
 };
 
-struct zcreq_hierarchysync : public zcreq {
+struct zcreq_hierarchysync final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct zcreq_contentsync : public zcreq {
+struct zcreq_contentsync final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct zcreq_configsync : public zcreq {
+struct zcreq_configsync final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
@@ -473,86 +473,86 @@ struct zcreq_configsync : public zcreq {
 	RESTRICTION *prestriction;
 };
 
-struct zcreq_statesync : public zcreq {
+struct zcreq_statesync final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct zcreq_syncmessagechange : public zcreq {
+struct zcreq_syncmessagechange final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct zcreq_syncfolderchange : public zcreq {
+struct zcreq_syncfolderchange final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct zcreq_syncreadstatechanges : public zcreq {
+struct zcreq_syncreadstatechanges final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct zcreq_syncdeletions : public zcreq {
+struct zcreq_syncdeletions final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 };
 
-struct zcreq_hierarchyimport : public zcreq {
+struct zcreq_hierarchyimport final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct zcreq_contentimport : public zcreq {
+struct zcreq_contentimport final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 };
 
-struct zcreq_configimport : public zcreq {
+struct zcreq_configimport final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	uint8_t sync_type;
 	BINARY *pstate;
 };
 	
-struct zcreq_stateimport : public zcreq {
+struct zcreq_stateimport final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 };
 
-struct zcreq_importmessage : public zcreq {
+struct zcreq_importmessage final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	TPROPVAL_ARRAY *pproplist;
 };
 	
-struct zcreq_importfolder : public zcreq {
+struct zcreq_importfolder final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	TPROPVAL_ARRAY *pproplist;
 };
 
-struct zcreq_importdeletion : public zcreq {
+struct zcreq_importdeletion final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	BINARY_ARRAY *pbins;
 };
 
-struct zcreq_importreadstates : public zcreq {
+struct zcreq_importreadstates final : public zcreq {
 	GUID hsession;
 	uint32_t hctx;
 	STATE_ARRAY *pstates;
 };
 
-struct zcreq_getsearchcriteria : public zcreq {
+struct zcreq_getsearchcriteria final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 };
 	
-struct zcreq_setsearchcriteria : public zcreq {
+struct zcreq_setsearchcriteria final : public zcreq {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
@@ -560,23 +560,23 @@ struct zcreq_setsearchcriteria : public zcreq {
 	RESTRICTION *prestriction;
 };
 
-struct zcreq_messagetorfc822 : public zcreq {
+struct zcreq_messagetorfc822 final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct zcreq_rfc822tomessage : public zcreq {
+struct zcreq_rfc822tomessage final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage, mxf_flags;
 	BINARY *peml_bin;
 };
 
-struct zcreq_messagetoical : public zcreq {
+struct zcreq_messagetoical final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct zcreq_icaltomessage : public zcreq {
+struct zcreq_icaltomessage final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *pical_bin;
@@ -587,49 +587,49 @@ enum imtomessage2_type {
 	IMTOMESSAGE_VCARD,
 };
 
-struct zcreq_imtomessage2 : public zcreq {
+struct zcreq_imtomessage2 final : public zcreq {
 	GUID session;
 	uint32_t folder;
 	uint32_t data_type;
 	char *im_data;
 };
 
-struct zcreq_messagetovcf : public zcreq {
+struct zcreq_messagetovcf final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 };
 
-struct zcreq_vcftomessage : public zcreq {
+struct zcreq_vcftomessage final : public zcreq {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *pvcf_bin;
 };
 
-struct zcreq_setpasswd : public zcreq {
+struct zcreq_setpasswd final : public zcreq {
 	char *username;
 	char *passwd;
 	char *new_passwd;
 };
 
-struct zcreq_linkmessage : public zcreq {
+struct zcreq_linkmessage final : public zcreq {
 	GUID hsession;
 	BINARY search_entryid;
 	BINARY message_entryid;
 };
 
-struct zcreq_savesession : public zcreq {
+struct zcreq_savesession final : public zcreq {
 	GUID hsession;
 };
 
-struct zcreq_restoresession : public zcreq {
+struct zcreq_restoresession final : public zcreq {
 	BINARY *pdata_bin;
 };
 
-struct zcreq_essdn_to_username : public zcreq {
+struct zcreq_essdn_to_username final : public zcreq {
 	char *essdn;
 };
 
-struct zcreq_getuserfreebusy : public zcreq {
+struct zcreq_getuserfreebusy final : public zcreq {
 	GUID hsession;
 	BINARY entryid;
 	int64_t starttime;
@@ -641,236 +641,236 @@ struct zcresp {
 	ec_error_t result;
 };
 
-struct zcresp_logon : public zcresp {
+struct zcresp_logon final : public zcresp {
 	GUID hsession;
 };
 
-struct zcresp_logon_token : public zcresp {
+struct zcresp_logon_token final : public zcresp {
 	GUID hsession;
 };
 
-struct zcresp_uinfo : public zcresp {
+struct zcresp_uinfo final : public zcresp {
 	BINARY entryid;
 	char *pdisplay_name;
 	char *px500dn;
 	uint32_t privilege_bits;
 };
 
-struct zcresp_openentry : public zcresp {
+struct zcresp_openentry final : public zcresp {
 	zs_objtype mapi_type;
 	uint32_t hobject;
 };
 
-struct zcresp_openstoreentry : public zcresp {
+struct zcresp_openstoreentry final : public zcresp {
 	zs_objtype mapi_type;
 	uint32_t hxobject;
 };
 
-struct zcresp_openabentry : public zcresp {
+struct zcresp_openabentry final : public zcresp {
 	zs_objtype mapi_type;
 	uint32_t hobject;
 };
 
-struct zcresp_resolvename : public zcresp {
+struct zcresp_resolvename final : public zcresp {
 	TARRAY_SET result_set;
 };
 
-struct zcresp_getpermissions : public zcresp {
+struct zcresp_getpermissions final : public zcresp {
 	PERMISSION_SET perm_set;
 };
 
-struct zcresp_getabgal : public zcresp {
+struct zcresp_getabgal final : public zcresp {
 	BINARY entryid;
 };
 
-struct zcresp_loadstoretable : public zcresp {
+struct zcresp_loadstoretable final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_openstore : public zcresp {
+struct zcresp_openstore final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_openprofilesec : public zcresp {
+struct zcresp_openprofilesec final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_loadhierarchytable : public zcresp {
+struct zcresp_loadhierarchytable final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_loadcontenttable : public zcresp {
+struct zcresp_loadcontenttable final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_loadrecipienttable : public zcresp {
+struct zcresp_loadrecipienttable final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_loadruletable : public zcresp {
+struct zcresp_loadruletable final : public zcresp {
 	uint32_t hobject;
 };
 	
-struct zcresp_createmessage : public zcresp {
+struct zcresp_createmessage final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_createfolder : public zcresp {
+struct zcresp_createfolder final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_getstoreentryid : public zcresp {
+struct zcresp_getstoreentryid final : public zcresp {
 	BINARY entryid;
 };
 
-struct zcresp_entryidfromsourcekey : public zcresp {
+struct zcresp_entryidfromsourcekey final : public zcresp {
 	BINARY entryid;
 };
 
-struct zcresp_storeadvise : public zcresp {
+struct zcresp_storeadvise final : public zcresp {
 	uint32_t sub_id;
 };
 
-struct zcresp_notifdequeue : public zcresp {
+struct zcresp_notifdequeue final : public zcresp {
 	ZNOTIFICATION_ARRAY notifications;
 };
 
-struct zcresp_queryrows : public zcresp {
+struct zcresp_queryrows final : public zcresp {
 	TARRAY_SET rowset;
 };
 
-struct zcresp_setcolumns : public zcresp {
+struct zcresp_setcolumns final : public zcresp {
 	GUID hsession;
 	uint32_t htable;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t flags;
 };
 
-struct zcresp_seekrow : public zcresp {
+struct zcresp_seekrow final : public zcresp {
 	int32_t sought_rows;
 };
 
-struct zcresp_getrowcount : public zcresp {
+struct zcresp_getrowcount final : public zcresp {
 	uint32_t count;
 };
 
-struct zcresp_findrow : public zcresp {
+struct zcresp_findrow final : public zcresp {
 	uint32_t row_idx;
 };
 
-struct zcresp_createbookmark : public zcresp {
+struct zcresp_createbookmark final : public zcresp {
 	uint32_t bookmark;
 };
 
-struct zcresp_getreceivefolder : public zcresp {
+struct zcresp_getreceivefolder final : public zcresp {
 	BINARY entryid;
 };
 
-struct zcresp_loadattachmenttable : public zcresp {
+struct zcresp_loadattachmenttable final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_openattachment : public zcresp {
+struct zcresp_openattachment final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_createattachment : public zcresp {
+struct zcresp_createattachment final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_getpropvals : public zcresp {
+struct zcresp_getpropvals final : public zcresp {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct zcresp_openembedded : public zcresp {
+struct zcresp_openembedded final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_getnamedpropids : public zcresp {
+struct zcresp_getnamedpropids final : public zcresp {
 	PROPID_ARRAY propids;
 };
 
-struct zcresp_getpropnames : public zcresp {
+struct zcresp_getpropnames final : public zcresp {
 	PROPNAME_ARRAY propnames;
 };
 
-struct zcresp_hierarchysync : public zcresp {
+struct zcresp_hierarchysync final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_contentsync : public zcresp {
+struct zcresp_contentsync final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_configsync : public zcresp {
+struct zcresp_configsync final : public zcresp {
 	uint8_t b_changed;
 	uint32_t count;
 };
 
-struct zcresp_statesync : public zcresp {
+struct zcresp_statesync final : public zcresp {
 	BINARY state;
 };
 
-struct zcresp_syncmessagechange : public zcresp {
+struct zcresp_syncmessagechange final : public zcresp {
 	uint8_t b_new;
 	TPROPVAL_ARRAY proplist;
 };
 
-struct zcresp_syncfolderchange : public zcresp {
+struct zcresp_syncfolderchange final : public zcresp {
 	TPROPVAL_ARRAY proplist;
 };
 
-struct zcresp_syncreadstatechanges : public zcresp {
+struct zcresp_syncreadstatechanges final : public zcresp {
 	STATE_ARRAY states;
 };
 
-struct zcresp_syncdeletions : public zcresp {
+struct zcresp_syncdeletions final : public zcresp {
 	BINARY_ARRAY bins;
 };
 
-struct zcresp_hierarchyimport : public zcresp {
+struct zcresp_hierarchyimport final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_contentimport : public zcresp {
+struct zcresp_contentimport final : public zcresp {
 	uint32_t hobject;
 };
 	
-struct zcresp_stateimport : public zcresp {
+struct zcresp_stateimport final : public zcresp {
 	BINARY state;
 };
 
-struct zcresp_importmessage : public zcresp {
+struct zcresp_importmessage final : public zcresp {
 	uint32_t hobject;
 };
 
-struct zcresp_getsearchcriteria : public zcresp {
+struct zcresp_getsearchcriteria final : public zcresp {
 	BINARY_ARRAY folder_array;
 	RESTRICTION *prestriction;
 	uint32_t search_stat;
 };
 
-struct zcresp_messagetorfc822 : public zcresp {
+struct zcresp_messagetorfc822 final : public zcresp {
 	BINARY eml_bin;
 };
 
-struct zcresp_messagetoical : public zcresp {
+struct zcresp_messagetoical final : public zcresp {
 	BINARY ical_bin;
 };
 
-struct zcresp_messagetovcf : public zcresp {
+struct zcresp_messagetovcf final : public zcresp {
 	BINARY vcf_bin;
 };
 
-struct zcresp_imtomessage2 : public zcresp {
+struct zcresp_imtomessage2 final : public zcresp {
 	LONG_ARRAY msg_handles;
 };
 
-struct zcresp_essdn_to_username : public zcresp {
+struct zcresp_essdn_to_username final : public zcresp {
 	char *username;
 };
 
-struct zcresp_getuserfreebusy : public zcresp {
+struct zcresp_getuserfreebusy final : public zcresp {
 	FB_ARRAY fb_events;
 };
 
