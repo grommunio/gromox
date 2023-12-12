@@ -299,6 +299,7 @@ BOOL string_to_utf8(const char *charset, const char *in_string,
 	snprintf(tmp_charset, std::size(tmp_charset), "%s//IGNORE", replace_iconv_charset(charset));
 	conv_id = iconv_open("UTF-8", tmp_charset);
 	if (conv_id == iconv_t(-1)) {
+		/* EINVAL could happen as a result of EMFILE... */
 		mlog(LV_ERR, "E-2108: iconv_open %s: %s",
 		        tmp_charset, strerror(errno));
 		return FALSE;
