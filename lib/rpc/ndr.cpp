@@ -22,15 +22,13 @@ pack_result NDR_PULL::advance(uint32_t size)
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 {
-	if (new_flags & NDR_ALIGN_FLAGS) {
+	if (new_flags & NDR_ALIGN_FLAGS)
 		/* Ensure we only have the passed-in
 		   align flag set in the new_flags,
 		   remove any old align flag. */
 		(*pflags) &= ~NDR_ALIGN_FLAGS;
-	}
-	if (new_flags & NDR_FLAG_NO_RELATIVE_REVERSE) {
+	if (new_flags & NDR_FLAG_NO_RELATIVE_REVERSE)
 		(*pflags) &= ~NDR_FLAG_RELATIVE_REVERSE;
-	}
 	(*pflags) |= new_flags;
 }
 
@@ -65,11 +63,10 @@ static bool ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 pack_result NDR_PULL::align(size_t size)
 {
 	auto pndr = this;
-	if (5 == size) {
+	if (size == 5)
 		size = (pndr->flags & NDR_FLAG_NDR64) ? 8 : 4;
-	} else if (3 == size) {
+	else if (size == 3)
 		size = (pndr->flags & NDR_FLAG_NDR64) ? 4 : 2;
-	}
 	
 	if (!(pndr->flags & NDR_FLAG_NOALIGN)) {
 		if (pndr->flags & NDR_FLAG_PAD_CHECK &&
@@ -77,9 +74,8 @@ pack_result NDR_PULL::align(size_t size)
 			return NDR_ERR_PADDING;
 		pndr->offset = (pndr->offset + (size - 1)) & ~(size - 1);
 	}
-	if (pndr->offset > pndr->data_size) {
+	if (pndr->offset > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	return NDR_ERR_SUCCESS;
 }
 
@@ -102,12 +98,8 @@ pack_result NDR_PULL::g_str(char *buff, uint32_t inbytes)
 		buff[0] = '\0';
 		return NDR_ERR_SUCCESS;
 	}
-
-	if (pndr->data_size < inbytes ||
-		pndr->offset + inbytes > pndr->data_size) {
+	if (pndr->data_size < inbytes || pndr->offset + inbytes > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
-	
 	memcpy(buff, pndr->data + pndr->offset, inbytes);
 	buff[inbytes] = '\0';
 	return pndr->advance(inbytes);
@@ -116,9 +108,8 @@ pack_result NDR_PULL::g_str(char *buff, uint32_t inbytes)
 pack_result NDR_PULL::g_uint8(uint8_t *v)
 {
 	auto pndr = this;
-	if (pndr->data_size < 1 || pndr->offset + 1 > pndr->data_size) {
+	if (pndr->data_size < 1 || pndr->offset + 1 > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	*v = pndr->data[pndr->offset];
 	pndr->offset += 1;
 	return NDR_ERR_SUCCESS;
@@ -128,9 +119,8 @@ pack_result NDR_PULL::g_uint16(uint16_t *v)
 {
 	auto pndr = this;
 	TRY(pndr->align(2));
-	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size) {
+	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	auto r = &pndr->data[pndr->offset];
 	*v = NDR_BE(pndr) ? be16p_to_cpu(r) : le16p_to_cpu(r);
 	pndr->offset += 2;
@@ -147,9 +137,8 @@ pack_result NDR_PULL::g_uint32(uint32_t *v)
 {
 	auto pndr = this;
 	TRY(pndr->align(4));
-	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
+	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	auto r = &pndr->data[pndr->offset];
 	*v = NDR_BE(pndr) ? be32p_to_cpu(r) : le32p_to_cpu(r);
 	pndr->offset += 4;
@@ -160,9 +149,8 @@ pack_result NDR_PULL::g_uint64(uint64_t *v)
 {
 	auto pndr = this;
 	TRY(pndr->align(8));
-	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size) {
+	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	auto r = &pndr->data[pndr->offset];
 	*v = NDR_BE(pndr) ? be64p_to_cpu(r) : le64p_to_cpu(r);
 	pndr->offset += 8;
@@ -177,9 +165,8 @@ pack_result NDR_PULL::g_ulong(uint32_t *v)
 	if (pndr->flags & NDR_FLAG_NDR64) {
 		TRY(pndr->g_uint64(&v64));
 		*v = v64;
-		if (v64 != *v) {
+		if (v64 != *v)
 			return NDR_ERR_NDR64;
-		}
 		return NDR_ERR_SUCCESS;
 	}
 	return pndr->g_uint32(v);
@@ -188,9 +175,8 @@ pack_result NDR_PULL::g_ulong(uint32_t *v)
 pack_result NDR_PULL::g_uint8_a(uint8_t *d, uint32_t n)
 {
 	auto pndr = this;
-	if (pndr->data_size < n || pndr->offset + n > pndr->data_size) {
+	if (pndr->data_size < n || pndr->offset + n > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	memcpy(d, &pndr->data[pndr->offset], n);
 	pndr->offset += n;
 	return NDR_ERR_SUCCESS;
@@ -228,23 +214,19 @@ pack_result NDR_PULL::g_blob(DATA_BLOB *pblob)
 	if (pndr->flags & NDR_FLAG_REMAINING) {
 		length = pndr->data_size - pndr->offset;
 	} else if (pndr->flags & (NDR_ALIGN_FLAGS & ~NDR_FLAG_NOALIGN)) {
-		if (pndr->flags & NDR_FLAG_ALIGN2) {
+		if (pndr->flags & NDR_FLAG_ALIGN2)
 			length = ndr_align_size(pndr->offset, 2);
-		} else if (pndr->flags & NDR_FLAG_ALIGN4) {
+		else if (pndr->flags & NDR_FLAG_ALIGN4)
 			length = ndr_align_size(pndr->offset, 4);
-		} else if (pndr->flags & NDR_FLAG_ALIGN8) {
+		else if (pndr->flags & NDR_FLAG_ALIGN8)
 			length = ndr_align_size(pndr->offset, 8);
-		}
-		if (pndr->data_size - pndr->offset < length) {
+		if (pndr->data_size - pndr->offset < length)
 			length = pndr->data_size - pndr->offset;
-		}
 	} else {
 		TRY(pndr->g_uint32(&length));
 	}
-	if (pndr->data_size < length ||
-		pndr->offset + length > pndr->data_size) {
+	if (pndr->data_size < length || pndr->offset + length > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	pblob->pb = gromox::me_alloc<uint8_t>(length);
 	if (pblob->pb == nullptr)
 		return NDR_ERR_ALLOC;
@@ -273,9 +255,8 @@ pack_result NDR_PULL::check_str(uint32_t count, uint32_t element_size)
 	saved_offset = pndr->offset;
 	TRY(pndr->advance((count - 1) * element_size));
 	if (pndr->data_size < element_size ||
-		pndr->offset + element_size > pndr->data_size) {
+	    pndr->offset + element_size > pndr->data_size)
 		return NDR_ERR_BUFSIZE;
-	}
 	for (i=0; i<element_size; i++) {
 		if (0 != pndr->data[pndr->offset + i]) {
 			pndr->offset = saved_offset;
@@ -369,16 +350,14 @@ pack_result NDR_PUSH::align(size_t size)
 	auto pndr = this;
 	uint32_t pad;
 	
-	if (size == 5) {
+	if (size == 5)
 		size = (pndr->flags & NDR_FLAG_NDR64) ? 8 : 4;
-	} else if (size == 3) {
+	else if (size == 3)
 		size = (pndr->flags & NDR_FLAG_NDR64) ? 4 : 2;
-	}
 	if (!(pndr->flags & NDR_FLAG_NOALIGN)) {
 		pad = ((pndr->offset + (size - 1)) & ~(size - 1)) - pndr->offset;
-		while (pad--) {
+		while (pad--)
 			TRY(pndr->p_uint8(0));
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -454,13 +433,12 @@ pack_result NDR_PUSH::p_blob(DATA_BLOB blob)
 	if (pndr->flags & NDR_FLAG_REMAINING) {
 		/* nothing to do */
 	} else if (pndr->flags & (NDR_ALIGN_FLAGS & ~NDR_FLAG_NOALIGN)) {
-		if (pndr->flags & NDR_FLAG_ALIGN2) {
+		if (pndr->flags & NDR_FLAG_ALIGN2)
 			length = ndr_align_size(pndr->offset, 2);
-		} else if (pndr->flags & NDR_FLAG_ALIGN4) {
+		else if (pndr->flags & NDR_FLAG_ALIGN4)
 			length = ndr_align_size(pndr->offset, 4);
-		} else if (pndr->flags & NDR_FLAG_ALIGN8) {
+		else if (pndr->flags & NDR_FLAG_ALIGN8)
 			length = ndr_align_size(pndr->offset, 8);
-		}
 		memset(buff, 0, length);
 		return pndr->p_uint8_a(buff, length);
 	} else {
