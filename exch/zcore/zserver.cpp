@@ -5077,14 +5077,14 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 		return ecSuccess;
 
 	std::vector<freebusy_event> fb_data;
-	get_freebusy(pinfo->get_username(), maildir, starttime, endtime, fb_data);
+	if (!get_freebusy(pinfo->get_username(), maildir, starttime, endtime, fb_data))
+		return ecError;
 	pinfo.reset();
 
 	fb_events->count = 0;
 	fb_events->fb_events = cu_alloc<freebusy_event>(fb_data.size());
-	for (const auto &fb_event: fb_data) {
+	for (const auto &fb_event: fb_data)
 		fb_events->fb_events[fb_events->count++] = fb_event;
-	}
 	fb_data.clear();
 
 	return ecSuccess;
