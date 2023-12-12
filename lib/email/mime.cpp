@@ -913,9 +913,13 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
 			*plength = 0;
 			return false;
 		}
-		memcpy(out_buff, pmime->head_begin, pmime->head_length);
-		memcpy(out_buff + pmime->head_length, "\r\n", 2);
-		*plength = pmime->head_length + 2;
+		*plength = 0;
+		if (pmime->head_begin != nullptr) {
+			memcpy(out_buff, pmime->head_begin, pmime->head_length);
+			*plength += pmime->head_length;
+		}
+		memcpy(&out_buff[*plength], "\r\n", 2);
+		*plength += 2;
 		return true;
 	}
 	offset = 0;

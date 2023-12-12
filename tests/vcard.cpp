@@ -8,6 +8,7 @@
 #include <utility>
 #include <gromox/ical.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/mime.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/vcard.hpp>
 #include "../tools/staticnpmap.cpp"
@@ -59,6 +60,16 @@ static constexpr const char *dt_values[] = {
 	";VALUE=DATE:20240101",
 	";VALUE=DATE;TZID=Line Islands Standard Time:20240101",
 };
+
+static int t_mime()
+{
+	MIME m{};
+	m.mime_type = mime_type::single;
+	char b[4];
+	size_t bsize = sizeof(b);
+	m.read_head(b, &bsize);
+	return EXIT_SUCCESS;
+}
 
 static void t_card()
 {
@@ -162,6 +173,7 @@ static int t_ical_dt()
 
 int main()
 {
+	t_mime();
 	t_card();
 	t_ical();
 	auto ret = t_ical_dt();
