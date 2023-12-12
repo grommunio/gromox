@@ -1,9 +1,37 @@
-Development 2.19.1
-==================
+Development 2.19.87
+===================
 
 Fixes:
 
 * oxdisco: allow autodiscover for room/equipment stores
+* oxcical: allday events are now emitted (pursuant to the
+  ``oxcical_allday_ymd`` config directive) as "floating time" per the OXCICAL
+  spec recommendations
+* oxcical: resolve integer underflow that botched weekorder
+  computation in weekly-recurring events
+* oxcical: resolve out-of-bounds access during generation of iCal RDATE lines
+* ews: avoid a heap-use-after-free during freebusy retrieval
+* zcore: zs_getuserfreebusy had failed to resolve usernames
+  and display freebusy status in the scheduling matrix view
+* ldap_adaptor: resolve data race with double-free when per-organization LDAP
+  settings were used
+
+Enhancements:
+
+* ews: improve calendar item coverage for mac calendar app
+* all daemons: add various config directives to set file descriptor table
+  limits
+* zcore: add new error code and string for when the MAPI object handles have
+  been exhausted by a user (as will normally happen when importing a
+  multi-vCard/multi-iCal file with 400+ contacts/events, due to config
+  directive ``zcore_max_obh_per_session``)
+
+Behavioral changes:
+
+* http: the file descriptor table limit is by default set to the environment
+  hard limit (instead of 2256 fds, one will have 512K in Linux-systemd
+  environments now)
+* php_mapi: do not convert freebusy_event_details fields which are not available
 
 
 Gromox 2.19 (2023-12-04)
