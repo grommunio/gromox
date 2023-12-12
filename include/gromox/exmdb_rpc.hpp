@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/element_data.hpp>
@@ -169,6 +170,7 @@ enum class exmdb_callid : uint8_t {
 
 struct exreq {
 	exreq() = default; /* Prevent use of direct-list-init */
+	virtual ~exreq() = default;
 	exmdb_callid call_id{};
 	char *dir = nullptr;
 };
@@ -860,6 +862,7 @@ struct exreq_recalc_store_size final : public exreq {
 
 struct exresp {
 	exresp() = default; /* Prevent use of direct-init-list */
+	virtual ~exresp() = default;
 	exmdb_callid call_id{};
 };
 
@@ -1347,9 +1350,9 @@ struct DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify{};
 };
 
-extern GX_EXPORT pack_result exmdb_ext_pull_request(const BINARY *, exreq *&);
+extern GX_EXPORT pack_result exmdb_ext_pull_request(const BINARY *, std::unique_ptr<exreq> &alloc_by_callee);
 extern GX_EXPORT pack_result exmdb_ext_push_request(const exreq *, BINARY *);
-extern GX_EXPORT pack_result exmdb_ext_pull_response(const BINARY *, exresp *);
+extern GX_EXPORT pack_result exmdb_ext_pull_response(const BINARY *, exresp *partial_fill_by_caller);
 extern GX_EXPORT pack_result exmdb_ext_push_response(const exresp *presponse, BINARY *);
 extern GX_EXPORT pack_result exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
 extern GX_EXPORT pack_result exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);

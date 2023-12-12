@@ -85,7 +85,7 @@ static BOOL exmdb_parser_check_local(const char *prefix, BOOL *pb_private)
 	return TRUE;
 }
 
-static BOOL exmdb_parser_dispatch3(const exreq *q0, exresp *&r0)
+static BOOL exmdb_parser_dispatch3(const exreq *q0, std::unique_ptr<exresp> &r0)
 {
 	switch (q0->call_id) {
 #include <exmdb_dispatch.cpp>
@@ -94,7 +94,7 @@ static BOOL exmdb_parser_dispatch3(const exreq *q0, exresp *&r0)
 	}
 }
 
-static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
+static BOOL exmdb_parser_dispatch2(const exreq *prequest, std::unique_ptr<exresp> &r0) try
 {
 	/*
 	 * Special handling for a few RPCs in lieu of the default code provided
@@ -103,10 +103,7 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 	switch (prequest->call_id) {
 	case exmdb_callid::get_content_sync: {
 		auto &q = *static_cast<const exreq_get_content_sync *>(prequest);
-		auto r1 = cu_alloc<exresp_get_content_sync>();
-		r0 = r1;
-		if (r1 == nullptr)
-			return false;
+		auto r1 = std::make_unique<exresp_get_content_sync>();
 		auto &r = *r1;
 		auto b_return = exmdb_server::get_content_sync(prequest->dir,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
@@ -120,14 +117,12 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 		delete q.pseen;
 		delete q.pseen_fai;
 		delete q.pread;
+		r0 = std::move(r1);
 		return b_return;
 	}
 	case exmdb_callid::get_hierarchy_sync: {
 		auto &q = *static_cast<const exreq_get_hierarchy_sync *>(prequest);
-		auto r1 = cu_alloc<exresp_get_hierarchy_sync>();
-		r0 = r1;
-		if (r1 == nullptr)
-			return false;
+		auto r1 = std::make_unique<exresp_get_hierarchy_sync>();
 		auto &r = *r1;
 		auto b_return = exmdb_server::get_hierarchy_sync(prequest->dir,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
@@ -135,14 +130,17 @@ static BOOL exmdb_parser_dispatch2(const exreq *prequest, exresp *&r0)
 		           &r.deleted_fids);
 		delete q.pgiven;
 		delete q.pseen;
+		r0 = std::move(r1);
 		return b_return;
 	}
 	default:
 		return exmdb_parser_dispatch3(prequest, r0);
 	}
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
-static BOOL exmdb_parser_dispatch(const exreq *prequest, exresp *&presponse)
+static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp> &presponse)
 {
 	if (access(prequest->dir, R_OK | X_OK) < 0)
 		mlog(LV_DEBUG, "exmdb rpc %s accessing %s: %s",
@@ -239,17 +237,17 @@ static void *mdpps_thrwork(void *pparam)
 		exmdb_server::build_env(b_private ? EM_PRIVATE : 0, nullptr);
 		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
-		exreq *request = nullptr;
+		std::unique_ptr<exreq> request;
 		auto status = exmdb_ext_pull_request(&tmp_bin, request);
 		free(pbuff);
 		pbuff = NULL;
 		exmdb_response tmp_byte;
-		exresp *response = nullptr;
+		std::unique_ptr<exresp> response;
 		if (EXT_ERR_SUCCESS != status) {
 			tmp_byte = exmdb_response::pull_error;
 		} else if (!is_connected) {
 			if (request->call_id == exmdb_callid::connect) {
-				auto &q = *static_cast<const exreq_connect *>(request);
+				auto &q = *static_cast<const exreq_connect *>(request.get());
 				if (!exmdb_parser_check_local(q.prefix, &b_private)) {
 					tmp_byte = exmdb_response::misconfig_prefix;
 				} else if (b_private != q.b_private) {
@@ -266,7 +264,7 @@ static void *mdpps_thrwork(void *pparam)
 					continue;
 				}
 			} else if (request->call_id == exmdb_callid::listen_notification) {
-				auto &q = *static_cast<const exreq_listen_notification *>(request);
+				auto &q = *static_cast<const exreq_listen_notification *>(request.get());
 				std::shared_ptr<ROUTER_CONNECTION> prouter;
 				try {
 					prouter = std::make_shared<ROUTER_CONNECTION>();
@@ -300,9 +298,9 @@ static void *mdpps_thrwork(void *pparam)
 			} else {
 				tmp_byte = exmdb_response::connect_incomplete;
 			}
-		} else if (!exmdb_parser_dispatch(request, response)) {
+		} else if (!exmdb_parser_dispatch(request.get(), response)) {
 			tmp_byte = exmdb_response::dispatch_error;
-		} else if (EXT_ERR_SUCCESS != exmdb_ext_push_response(response, &tmp_bin)) {
+		} else if (exmdb_ext_push_response(response.get(), &tmp_bin) != pack_result::success) {
 			tmp_byte = exmdb_response::push_error;
 		} else {
 			exmdb_server::free_env();

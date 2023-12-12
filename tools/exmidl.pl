@@ -49,16 +49,16 @@ while (<STDIN>) {
 		if (scalar(@$iargs) > 0) {
 			print "\tauto &q = *static_cast<const exreq_$func *>(q0);\n";
 		}
-		print "\tauto r1 = cu_alloc<exresp_$func>();\n";
-		print "\tr0 = r1;\n";
-		print "\tif (r1 == nullptr) return false;\n";
+		print "\tauto r1 = std::make_unique<exresp_$func>();\n";
 		if (scalar(@$oargs) > 0) {
 			print "\tauto &r = *r1;\n";
 		}
-		print "\treturn exmdb_server::$func(", join(", ", "q0->dir",
+		print "\tauto ret = exmdb_server::$func(", join(", ", "q0->dir",
 			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "*" : "")."q.$field"; } @$iargs),
 			(map { my($type, $field) = @$_; (substr($type, -1, 1) eq "&" ? "" : "&")."r.$field"; } @$oargs),
-		), ");\n}\n";
+		), ");\n";
+		print "\tr0 = std::move(r1);\n";
+		print "\treturn ret;\n}\n";
 		next;
 	}
 

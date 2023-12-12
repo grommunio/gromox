@@ -3,10 +3,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <new>
 #include <poll.h>
 #include <type_traits>
 #include <unistd.h>
+#include <utility>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -2370,7 +2372,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
  * This uses *& because we do not know which request type we are going to get
  * (cf. exmdb_ext_pull_response).
  */
-pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
+pack_result exmdb_ext_pull_request(const BINARY *pbin_in,
+    std::unique_ptr<exreq> &prequest) try
 {
 	EXT_PULL ext_pull;
 	uint8_t raw_call_id;
@@ -2379,19 +2382,15 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 	TRY(ext_pull.g_uint8(&raw_call_id));
 	auto call_id = static_cast<exmdb_callid>(raw_call_id);
 	if (call_id == exmdb_callid::connect) {
-		auto r = cu_alloc<exreq_connect>();
-		prequest = r;
-		if (r == nullptr)
-			return EXT_ERR_ALLOC;
+		auto r = std::make_unique<exreq_connect>();
 		auto xret = exmdb_pull(ext_pull, *r);
+		prequest = std::move(r);
 		prequest->call_id = call_id;
 		return xret;
 	} else if (call_id == exmdb_callid::listen_notification) {
-		auto r = cu_alloc<exreq_listen_notification>();
-		prequest = r;
-		if (r == nullptr)
-			return EXT_ERR_ALLOC;
+		auto r = std::make_unique<exreq_listen_notification>();
 		auto xret = exmdb_pull(ext_pull, *r);
+		prequest = std::move(r);
 		prequest->call_id = call_id;
 		return xret;
 	}
@@ -2412,18 +2411,14 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 	case exmdb_callid::vacuum:
 	case exmdb_callid::unload_store:
 	case exmdb_callid::purge_datafiles: {
-		prequest = cu_alloc<exreq>();
-		if (prequest == nullptr)
-			return EXT_ERR_ALLOC;
+		prequest = std::make_unique<exreq>();
 		xret = EXT_ERR_SUCCESS;
 		break;
 	}
 #define E(t) case exmdb_callid::t: { \
-		auto r = cu_alloc<exreq_ ## t >(); \
-		prequest = r; \
-		if (r == nullptr) \
-			return EXT_ERR_ALLOC; \
+		auto r = std::make_unique<exreq_ ## t >(); \
 		xret = exmdb_pull(ext_pull, *r); \
+		prequest = std::move(r); \
 		break; \
 	}
 	RQ_WITH_ARGS
@@ -2432,6 +2427,8 @@ pack_result exmdb_ext_pull_request(const BINARY *pbin_in, exreq *&prequest)
 	prequest->call_id = call_id;
 	prequest->dir = dir;
 	return xret;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 pack_result exmdb_ext_push_request(const exreq *prequest, BINARY *pbin_out)
