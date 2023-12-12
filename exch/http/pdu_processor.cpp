@@ -635,6 +635,8 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code) try
 	fault->status = fault_code;
 	fault->pad.pb = deconst(zeros);
 	fault->pad.cb = sizeof(zeros);
+	/* Avoid non-owning pointers from being consumed by ~ncacn_packet */
+	auto cl_0 = make_scope_exit([&]() { *fault = {}; });
 
 	auto pblob_node = new BLOB_NODE();
 	pblob_node->node.pdata = pblob_node;
