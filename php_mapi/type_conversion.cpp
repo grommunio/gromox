@@ -108,21 +108,22 @@ ec_error_t fb_array_to_php(const FB_ARRAY *pfbs, zval *pzval)
 	zval pzvalfbevent;
 	zarray_init(pzval);
 	for (size_t i = 0; i < pfbs->count; ++i) {
+		auto &e = pfbs->fb_events[i];
 		zarray_init(&pzvalfbevent);
-		add_assoc_long(&pzvalfbevent, "start", pfbs->fb_events[i].start_time);
-		add_assoc_long(&pzvalfbevent, "end", pfbs->fb_events[i].end_time);
-		add_assoc_long(&pzvalfbevent, "busystatus", pfbs->fb_events[i].busy_status);
-		if (pfbs->fb_events[i].details->id != nullptr)
-			add_assoc_string(&pzvalfbevent, "id", pfbs->fb_events[i].details->id);
-		if (pfbs->fb_events[i].details->subject != nullptr)
-			add_assoc_string(&pzvalfbevent, "subject", pfbs->fb_events[i].details->subject);
-		if (pfbs->fb_events[i].details->location != nullptr)
-			add_assoc_string(&pzvalfbevent, "location", pfbs->fb_events[i].details->location);
-		add_assoc_bool(&pzvalfbevent, "meeting", pfbs->fb_events[i].details->is_meeting);
-		add_assoc_bool(&pzvalfbevent, "recurring", pfbs->fb_events[i].details->is_recurring);
-		add_assoc_bool(&pzvalfbevent, "exception", pfbs->fb_events[i].details->is_exception);
-		add_assoc_bool(&pzvalfbevent, "reminderset", pfbs->fb_events[i].details->is_reminderset);
-		add_assoc_bool(&pzvalfbevent, "private", pfbs->fb_events[i].details->is_private);
+		add_assoc_long(&pzvalfbevent, "start", e.start_time);
+		add_assoc_long(&pzvalfbevent, "end", e.end_time);
+		add_assoc_long(&pzvalfbevent, "busystatus", e.busy_status);
+		if (e.details->id != nullptr)
+			add_assoc_string(&pzvalfbevent, "id", e.details->id);
+		if (e.details->subject != nullptr)
+			add_assoc_string(&pzvalfbevent, "subject", e.details->subject);
+		if (e.details->location != nullptr)
+			add_assoc_string(&pzvalfbevent, "location", e.details->location);
+		add_assoc_bool(&pzvalfbevent, "meeting", e.details->is_meeting);
+		add_assoc_bool(&pzvalfbevent, "recurring", e.details->is_recurring);
+		add_assoc_bool(&pzvalfbevent, "exception", e.details->is_exception);
+		add_assoc_bool(&pzvalfbevent, "reminderset", e.details->is_reminderset);
+		add_assoc_bool(&pzvalfbevent, "private", e.details->is_private);
 		add_next_index_zval(pzval, &pzvalfbevent);
 	}
 	return ecSuccess;
