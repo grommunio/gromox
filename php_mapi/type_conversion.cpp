@@ -103,12 +103,11 @@ ec_error_t binary_array_to_php(const BINARY_ARRAY *pbins, zval *pzval)
 	return ecSuccess;
 }
 
-ec_error_t fb_array_to_php(const FB_ARRAY *pfbs, zval *pzval)
+ec_error_t fb_array_to_php(const std::vector<freebusy_event> &fbs, zval *pzval)
 {
 	zval pzvalfbevent;
 	zarray_init(pzval);
-	for (size_t i = 0; i < pfbs->count; ++i) {
-		auto &e = pfbs->fb_events[i];
+	for (const auto &e : fbs) {
 		zarray_init(&pzvalfbevent);
 		add_assoc_long(&pzvalfbevent, "start", e.start_time);
 		add_assoc_long(&pzvalfbevent, "end", e.end_time);

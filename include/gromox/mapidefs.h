@@ -863,8 +863,10 @@ struct DOUBLE_ARRAY {
 };
 
 struct freebusy_event {
+	freebusy_event() = default;
 	freebusy_event(time_t, time_t, uint32_t, char *, char *, char *,
 		bool, bool, bool, bool, bool, bool);
+	freebusy_event(const freebusy_event &) = default;
 
 	time_t start_time = 0, end_time = 0;
 	uint32_t busy_status = 0;
@@ -872,11 +874,6 @@ struct freebusy_event {
 	bool is_exception = false, is_reminderset = false, is_private = false;
 	char *id = nullptr, *subject = nullptr; /* in practice cannot be nullptr (cf. p_fbevent()) */
 	char *location = nullptr; /* null allowed */
-};
-
-struct FB_ARRAY {
-	uint32_t count;
-	freebusy_event *fb_events;
 };
 
 /**

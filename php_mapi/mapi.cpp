@@ -3209,7 +3209,6 @@ static ZEND_FUNCTION(mapi_getuserfreebusy)
 	BINARY entryid;
 	size_t eid_size = 0;
 	zval pzfbevents, *pzresource;
-	FB_ARRAY fb_events;
 	MAPI_RESOURCE *psession;
 
 	ZVAL_NULL(&pzfbevents);
@@ -3222,11 +3221,13 @@ static ZEND_FUNCTION(mapi_getuserfreebusy)
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (psession->type != zs_objtype::session)
 		pthrow(ecInvalidObject);
+	std::vector<freebusy_event> fb_events;
 	auto result = zclient_getuserfreebusy(psession->hsession, entryid, starttime,
 		endtime, &fb_events);
 	if (result != ecSuccess)
 		pthrow(result);
-	if (auto err = fb_array_to_php(&fb_events, &pzfbevents); err != ecSuccess)
+	auto err = fb_array_to_php(fb_events, &pzfbevents);
+	if (err != ecSuccess)
 		pthrow(err);
 	zarray_init(return_value);
 	add_assoc_zval(return_value, "fbevents", &pzfbevents);

@@ -1539,9 +1539,10 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_getuserfreebusy &d)
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getuserfreebusy &d)
 {
-	QRF(x.p_uint32(d.fb_events.count));
-	for (size_t i = 0; i < d.fb_events.count; ++i)
-		QRF(x.p_fbevent(d.fb_events.fb_events[i]));
+	uint32_t count = d.fb_events.size();
+	QRF(x.p_uint32(count));
+	for (const auto &e : d.fb_events)
+		QRF(x.p_fbevent(e));
 	return pack_result::ok;
 }
 

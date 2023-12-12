@@ -5069,7 +5069,7 @@ ec_error_t zs_vcftomessage(GUID hsession,
 }
 
 ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
-    time_t starttime, time_t endtime, FB_ARRAY *fb_events)
+    time_t starttime, time_t endtime, std::vector<freebusy_event> *fb_data)
 {
 	char maildir[256];
 	char username[UADDR_SIZE];
@@ -5081,19 +5081,8 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	    username, std::size(username)) ||
 	    !system_services_get_maildir(username, maildir, std::size(maildir)))
 		return ecSuccess;
-
-	std::vector<freebusy_event> fb_data;
-	if (!get_freebusy(pinfo->get_username(), maildir, starttime, endtime, fb_data))
-		return ecError;
-	pinfo.reset();
-
-	fb_events->count = 0;
-	fb_events->fb_events = cu_alloc<freebusy_event>(fb_data.size());
-	for (const auto &fb_event: fb_data)
-		fb_events->fb_events[fb_events->count++] = fb_event;
-	fb_data.clear();
-
-	return ecSuccess;
+	return get_freebusy(pinfo->get_username(), maildir, starttime, endtime,
+	       *fb_data) ? ecSuccess : ecError;
 }
 
 ec_error_t zs_setpasswd(const char *username,

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
@@ -192,7 +193,7 @@ struct EXT_PULL {
 	pack_result g_goid(GLOBALOBJECTID *);
 	pack_result g_msgctnt(MESSAGE_CONTENT *);
 	pack_result g_fb(freebusy_event *);
-	pack_result g_fb_a(FB_ARRAY *);
+	pack_result g_fb_a(std::vector<freebusy_event> *);
 
 	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
 	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }

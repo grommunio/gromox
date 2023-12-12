@@ -2121,13 +2121,12 @@ pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 	fb_event->has_details = b;
 
 	if (b) {
-		TRY(g_str(&fb_event->id));
-		TRY(g_str(&fb_event->subject));
+		std::string id, subj, loc;
+		TRY(g_str(&id));
+		TRY(g_str(&subj));
 		TRY(g_bool(&b));
 		if (b)
-			TRY(g_str(&fb_event->location));
-		else
-			fb_event->location = nullptr;
+			TRY(g_str(&loc));
 		TRY(g_bool(&b)); fb_event->is_meeting     = b;
 		TRY(g_bool(&b)); fb_event->is_recurring   = b;
 		TRY(g_bool(&b)); fb_event->is_exception   = b;
@@ -2138,22 +2137,20 @@ pack_result EXT_PULL::g_fb(freebusy_event *fb_event)
 	return EXT_ERR_SUCCESS;
 }
 
-pack_result EXT_PULL::g_fb_a(FB_ARRAY *r)
+pack_result EXT_PULL::g_fb_a(std::vector<freebusy_event> *r) try
 {
-	TRY(g_uint32(&r->count));
-	if (r->count == 0) {
-		r->fb_events = NULL;
+	uint32_t count = 0;
+	TRY(g_uint32(&count));
+	if (count == 0) {
+		r->clear();
 		return EXT_ERR_SUCCESS;
 	}
-	r->fb_events = anew<freebusy_event>(r->count);
-	if (r->fb_events == nullptr) {
-		r->count = 0;
-		return EXT_ERR_ALLOC;
-	}
-
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(g_fb(&r->fb_events[i]));
+	r->resize(count);
+	for (size_t i = 0; i < count; ++i)
+		TRY(g_fb(&(*r)[i]));
 	return EXT_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 BOOL EXT_PUSH::init(void *pdata, uint32_t alloc_size,

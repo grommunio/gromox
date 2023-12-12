@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 #include <gromox/mapidefs.h>
 
 enum class zcore_response : uint8_t {
@@ -875,7 +876,7 @@ struct zcresp_essdn_to_username final : public zcresp {
 };
 
 struct zcresp_getuserfreebusy final : public zcresp {
-	FB_ARRAY fb_events;
+	std::vector<freebusy_event> fb_events;
 };
 
 using zcresp_checksession = zcresp;
