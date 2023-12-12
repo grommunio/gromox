@@ -711,7 +711,7 @@ int ical_get_monthweekorder(int day)
 int ical_get_negative_monthweekorder(
 	int year, int month, int day)
 {
-	return (day - ical_get_monthdays(year, month))/7 - 1;
+	return (day - static_cast<int>(ical_get_monthdays(year, month))) / 7 - 1;
 }
 
 int ical_get_yearweekorder(int year, int month, int day)
@@ -723,7 +723,7 @@ int ical_get_negative_yearweekorder(
 	int year, int month, int day)
 {
 	int yearday;
-	auto yeardays = 365 + ical_is_leap_year(year);
+	int yeardays = 365 + ical_is_leap_year(year);
 	yearday = ical_get_dayofyear(year, month, day);
 	return (yearday - yeardays)/7 - 1;
 }
