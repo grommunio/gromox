@@ -1419,7 +1419,7 @@ tFreeBusyView::tFreeBusyView(const char *username, const char *dir,
 		throw EWSError::FreeBusyGenerationFailed(E3144);
 
 	FreeBusyViewType = std::all_of(fb_data.begin(), fb_data.end(),
-		[](freebusy_event fb_event) { return fb_event.has_details; }) ?
+		[](const freebusy_event &fb_event) { return fb_event.has_details; }) ?
 		"Detailed" : "FreeBusy";
 
 	auto &cal_events = CalendarEventArray.emplace();
