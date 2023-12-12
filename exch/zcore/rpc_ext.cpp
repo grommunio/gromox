@@ -1588,7 +1588,8 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_essdn_to_username &d)
 	return pack_result::ok;
 }
 
-pack_result rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
+pack_result rpc_ext_pull_request(const BINARY *pbin_in,
+    std::unique_ptr<zcreq> &prequest) try
 {
 	EXT_PULL ext_pull;
 	uint8_t call_id;
@@ -1598,11 +1599,9 @@ pack_result rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
 	QRF(ext_pull.g_uint8(&call_id));
 	switch (static_cast<zcore_callid>(call_id)) {
 #define E(t) case zcore_callid::t: { \
-		auto r = cu_alloc<zcreq_ ## t>(); \
-		prequest = r; \
-		if (r == nullptr) \
-			return pack_result::alloc; \
-		b_ret = zrpc_pull(ext_pull, *r); \
+		auto r0 = std::make_unique<zcreq_ ## t>(); \
+		b_ret = zrpc_pull(ext_pull, *r0); \
+		prequest = std::move(r0); \
 		break; \
 	}
 	E(logon)
@@ -1698,6 +1697,8 @@ pack_result rpc_ext_pull_request(const BINARY *pbin_in, zcreq *&prequest)
 	}
 	prequest->call_id = static_cast<zcore_callid>(call_id);
 	return b_ret;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)

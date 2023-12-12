@@ -105,6 +105,8 @@ enum class zcore_callid : uint8_t {
 };
 
 struct zcreq {
+	zcreq() = default; /* Prevent use of direct-init-list */
+	virtual ~zcreq() = default;
 	zcore_callid call_id;
 };
 
@@ -637,6 +639,8 @@ struct zcreq_getuserfreebusy final : public zcreq {
 };
 
 struct zcresp {
+	zcresp() = default; /* Prevent use of direct-init-list */
+	virtual ~zcresp() = default;
 	zcore_callid call_id;
 	ec_error_t result;
 };
