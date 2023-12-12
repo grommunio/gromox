@@ -58,19 +58,6 @@ freebusy_tags::freebusy_tags(const char *dir)
 	}
 }
 
-freebusy_event::freebusy_event(time_t start, time_t end, uint32_t b_status,
-    char *ev_id, char *ev_subject, char *ev_location, bool ev_meeting,
-    bool ev_recurring, bool ev_exception, bool ev_reminderset, bool ev_private,
-    bool detailed) :
-	start_time(start), end_time(end), busy_status(b_status),
-	has_details(detailed), is_meeting(ev_meeting),
-	is_recurring(ev_recurring), is_exception(ev_exception),
-	is_reminderset(ev_reminderset), is_private(ev_private),
-	id(detailed ? ev_id : nullptr),
-	subject(detailed ? ev_subject : nullptr),
-	location(detailed ? ev_location : nullptr)
-{}
-
 static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
     int from_bias, int to_bias, bool dstmonth)
 {

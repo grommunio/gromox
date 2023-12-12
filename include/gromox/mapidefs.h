@@ -862,18 +862,19 @@ struct DOUBLE_ARRAY {
 	double *mval;
 };
 
-struct freebusy_event {
+struct GX_EXPORT freebusy_event {
 	freebusy_event() = default;
-	freebusy_event(time_t, time_t, uint32_t, char *, char *, char *,
-		bool, bool, bool, bool, bool, bool);
-	freebusy_event(const freebusy_event &) = default;
+	freebusy_event(time_t, time_t, uint32_t, const char *, const char *, const char *, bool, bool, bool, bool, bool, bool);
+	freebusy_event(const freebusy_event &);
+	void operator=(freebusy_event &&) = delete;
 
 	time_t start_time = 0, end_time = 0;
 	uint32_t busy_status = 0;
 	bool has_details = false, is_meeting = false, is_recurring = false;
 	bool is_exception = false, is_reminderset = false, is_private = false;
-	char *id = nullptr, *subject = nullptr; /* in practice cannot be nullptr (cf. p_fbevent()) */
-	char *location = nullptr; /* null allowed */
+	std::string m_id, m_subject, m_location;
+	/* location is optional, but id/subject normally are not. */
+	const char *id = nullptr, *subject = nullptr, *location = nullptr;
 };
 
 /**
