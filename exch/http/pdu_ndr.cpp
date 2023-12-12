@@ -760,7 +760,7 @@ static void pdu_ndr_free_dcerpc_rts(DCERPC_RTS *r)
 }
 
 static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
-    dcerpc_payload **r)
+    dcerpc_payload **r) try
 {
 	TRY(pndr->union_align(4));
 	*r = nullptr;
@@ -839,6 +839,8 @@ static pack_result pdu_ndr_pull_dcerpc_payload(NDR_PULL *pndr, uint8_t pkt_type,
 		return NDR_ERR_BAD_SWITCH;
 	}
 	return NDR_ERR_SUCCESS;
+} catch (const std::bad_alloc &) {
+	return pack_result::alloc;
 }
 
 dcerpc_ncacn_packet::~dcerpc_ncacn_packet()
