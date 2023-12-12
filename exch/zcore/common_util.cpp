@@ -654,7 +654,7 @@ BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
 	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return FALSE;
 	return cvt_essdn_to_username(tmp_entryid.px500dn, g_org_name,
-	       cu_id2user, username, ulen);
+	       cu_id2user, username, ulen) == ecSuccess ? TRUE : false;
 }
 
 BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
