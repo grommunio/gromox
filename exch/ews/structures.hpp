@@ -69,6 +69,10 @@ struct tItemChange;
 struct tItemResponseShape;
 struct tPath;
 struct tMessage;
+struct tMeetingMessage;
+struct tMeetingRequestMessage;
+struct tMeetingResponseMessage;
+struct tMeetingCancellationMessage;
 struct tModifiedEvent;
 struct tReferenceAttachment;
 struct tSearchFolderType;
@@ -256,7 +260,8 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 		<PostItem/>
 	</Items>
 	*/
-using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
+using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
+	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact>;
 
 /**
  * c.f. Types.xsd:1502
@@ -1969,6 +1974,150 @@ struct tMessage : public tItem
 	//<xs:element name="PublishedCalendarItemName" type="xs:string" minOccurs="0" />
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:5026
+ */
+struct tMeetingMessage : public tMessage
+{
+	static constexpr char NAME[] = "MeetingMessage";
+
+	using tMessage::tMessage;
+
+	// <xs:element name="AssociatedCalendarItemId" type="t:ItemIdType" minOccurs="0"/>
+	// <xs:element name="IsDelegated" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsOutOfDate" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="HasBeenProcessed" type="xs:boolean" minOccurs="0" />
+
+	// <!-- Meeting response related properties -->
+
+	// <xs:element name="ResponseType" type="t:ResponseTypeType" minOccurs="0" />
+
+	// <!-- iCalendar properties -->
+
+	// <xs:element name="UID" type="xs:string" minOccurs="0" />
+	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
+
+	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+};
+
+/**
+ * Types.xsd:5064
+ */
+struct tMeetingRequestMessage : public tMeetingMessage
+{
+	static constexpr char NAME[] = "MeetingRequest";
+
+	using tMeetingMessage::tMeetingMessage;
+
+	// <!--- MeetingRequest properties -->
+
+	// <xs:element name="MeetingRequestType" type="t:MeetingRequestTypeType" minOccurs="0" />
+	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+
+	// <!-- Calendar Properties of the associated meeting request -->
+
+	// <!-- Single and Occurrence only -->
+
+	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+
+	// <!-- Occurrence only -->
+
+	// <xs:element name="OriginalStart" type="xs:dateTime" minOccurs="0" />
+
+	// <xs:element name="IsAllDayEvent" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="LegacyFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	// <xs:element name="IsMeeting" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsCancelled" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsRecurring" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="MeetingRequestWasSent" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="CalendarItemType" type="t:CalendarItemTypeType" minOccurs="0" />
+	// <xs:element name="MyResponseType" type="t:ResponseTypeType" minOccurs="0" />
+	// <xs:element name="Organizer" type="t:SingleRecipientType" minOccurs="0" />
+	// <xs:element name="RequiredAttendees" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+	// <xs:element name="OptionalAttendees" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+	// <xs:element name="Resources" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+
+	// <!-- Conflicting and adjacent meetings -->
+
+	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+
+	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
+	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
+
+	// <xs:element name="AppointmentReplyTime" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="AppointmentSequenceNumber" type="xs:int" minOccurs="0" />
+	// <xs:element name="AppointmentState" type="xs:int" minOccurs="0" />
+
+	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
+
+	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="DeletedOccurrences" type="t:NonEmptyArrayOfDeletedOccurrencesType" minOccurs="0" />
+	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0" />
+	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+
+	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
+	// <xs:element name="AllowNewTimeProposal" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+	// <xs:element name="ChangeHighlights" type="t:ChangeHighlightsType" minOccurs="0" />
+
+	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="StartTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:5142
+ */
+struct tMeetingResponseMessage : public tMeetingMessage
+{
+	static constexpr char NAME[] = "MeetingResponse";
+
+	using tMeetingMessage::tMeetingMessage;
+
+	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	// <xs:element name="CalendarItemType" type="xs:string" minOccurs="0" />
+	// <xs:element name="ProposedStart" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="ProposedEnd" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+};
+
+/**
+ * Types.xsd:5159
+ */
+struct tMeetingCancellationMessage : public tMeetingMessage
+{
+	static constexpr char NAME[] = "MeetingCancellation";
+
+	using tMeetingMessage::tMeetingMessage;
+
+	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	// <xs:element name="CalendarItemType" type="xs:string" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
 /**

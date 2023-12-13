@@ -2586,6 +2586,12 @@ sItem tItem::create(const sShape& shape)
 		return tCalendarItem(shape);
 	else if(!strcasecmp(itemClass, "IPM.Contact"))
 		return tContact(shape);
+	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Canceled"))
+		return tMeetingCancellationMessage(shape);
+	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Request"))
+		return tMeetingRequestMessage(shape);
+	else if(!strncasecmp(itemClass, "IPM.Schedule.Meeting.Resp", 25))
+		return tMeetingResponseMessage(shape);
 	return tItem(shape);
 }
 
@@ -2608,14 +2614,14 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.add(tag);
 	for(uint32_t tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
-	if(IncludeMimeContent && *IncludeMimeContent)
+	std::string_view type = BodyType? *BodyType : Enum::Best;
+	if((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
 		shape.special |= sShape::MimeContent;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
 			additional.tags(shape);
 	if(shape.special & sShape::Body)
 	{
-		std::string_view type = BodyType? *BodyType : Enum::Best;
 		if(type == Enum::Best || type == Enum::Text)
 			shape.add(PR_BODY, sShape::FL_FIELD);
 		if(type == Enum::Best || type == Enum::HTML)
