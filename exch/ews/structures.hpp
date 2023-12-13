@@ -517,12 +517,13 @@ ALIAS(tBaseNotificationEvent, StatusEvent);
 struct tBasePagingType
 {
 	explicit tBasePagingType(const tinyxml2::XMLElement* xml);
-	virtual ~tBasePagingType();
+	virtual ~tBasePagingType() = default;
 
 	std::optional<int32_t> MaxEntriesReturned; // Attribute
 
-	virtual uint32_t offset(uint32_t) const = 0;
-	virtual void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const = 0;
+	virtual RESTRICTION* restriction() const;
+	virtual uint32_t offset(uint32_t) const;
+	virtual void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const;
 };
 
 /**
@@ -600,6 +601,18 @@ struct tCalendarEvent : public NS_EWS_Types
 	sTimePoint EndTime;
 	Enum::LegacyFreeBusyType BusyType;
 	std::optional<tCalendarEventDetails> CalendarEventDetails;
+};
+
+struct tContactsView : public tBasePagingType
+{
+	explicit tContactsView(const tinyxml2::XMLElement*);
+
+	std::optional<std::string> InitialName; // Attribute
+	std::optional<std::string> FinalName; // Attribute
+
+	RESTRICTION* restriction() const override;
+
+	static RESTRICTION* namefilter(const std::string&, relop);
 };
 
 /**
@@ -2532,7 +2545,8 @@ class tRestriction
 public:
 	explicit tRestriction(const tinyxml2::XMLElement*);
 
-	const RESTRICTION* build(const sGetNameId&) const;
+	RESTRICTION* build(const sGetNameId&) const;
+	static RESTRICTION* all(RESTRICTION*, RESTRICTION*);
 private:
 	const tinyxml2::XMLElement* source = nullptr;  ///< XMLElement of the contained restriction
 
@@ -2890,7 +2904,7 @@ struct mFindItemRequest
 	std::optional<tFractionalPageView> FractionalPageItemView;
 	//  <xs:element name="SeekToConditionPageItemView" type="t:SeekToConditionPageViewType"/>
 	//  <xs:element name="CalendarView" type="t:CalendarViewType"/>
-	//  <xs:element name="ContactsView" type="t:ContactsViewType"/>
+	std::optional<tContactsView> ContactsView;
 	//</xs:choice>
 	//<xs:choice minOccurs="0">
 	//  <xs:element name="GroupBy" type="t:GroupByType"/>

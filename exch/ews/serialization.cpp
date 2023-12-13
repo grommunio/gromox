@@ -547,6 +547,12 @@ void tContact::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Surname);
 }
 
+tContactsView::tContactsView(const tinyxml2::XMLElement* xml) :
+	tBasePagingType(xml),
+	XMLINITA(InitialName),
+	XMLINITA(FinalName)
+{}
+
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Mailbox),
 	XMLINITA(ChangeKey),
@@ -1207,6 +1213,7 @@ mFindItemRequest::mFindItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(IndexedPageItemView),
 	XMLINIT(FractionalPageItemView),
+	XMLINIT(ContactsView),
 	XMLINIT(Restriction),
 	XMLINIT(SortOrder),
 	XMLINIT(ParentFolderIds),

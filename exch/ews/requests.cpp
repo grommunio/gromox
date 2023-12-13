@@ -444,6 +444,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	data.ResponseMessages.reserve(request.ParentFolderIds.size());
 	tBasePagingType* paging = request.IndexedPageItemView? &*request.IndexedPageItemView :
 	                          request.FractionalPageItemView? &*request.FractionalPageItemView :
+	                          request.ContactsView? &*request.ContactsView :
 	                          static_cast<tBasePagingType*>(nullptr);
 	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
 
@@ -454,7 +455,9 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 			throw EWSError::AccessDenied(E3244);
 		if(dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
-			res = request.Restriction? request.Restriction->build(getId) : nullptr;
+			RESTRICTION* res1 = request.Restriction? request.Restriction->build(getId) : nullptr;
+			RESTRICTION* res2 = paging? paging->restriction() : nullptr;
+			res = tRestriction::all(res1, res2);
 			sort = request.SortOrder? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
 			lastDir = dir;
 		}

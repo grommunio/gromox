@@ -1221,8 +1221,28 @@ tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::vari
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//We have to put the vtable somewhere...
-tBasePagingType::~tBasePagingType() {}
+/**
+ * @brief      Default implementation for paging offset
+ *
+ * @return     Always 0
+ */
+uint32_t tBasePagingType::offset(uint32_t) const
+{return 0;}
+
+/**
+ * @brief      Default implementation for paging restriction
+ *
+ * @return     Always nullptr.
+ */
+RESTRICTION* tBasePagingType::restriction() const
+{return nullptr;}
+
+/**
+ * @brief      Default implementation for paging update. Does nothing.
+ */
+void tBasePagingType::update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const
+{}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1636,6 +1656,42 @@ void tContact::update(const sShape& shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Generate name restriction
+ *
+ * @param      name    Name to filter by
+ * @param      op      Name comparator
+ *
+ * @return     Restriction filtering by name
+ */
+RESTRICTION* tContactsView::namefilter(const std::string& name, relop op)
+{
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::property;
+	res->prop = EWSContext::alloc<RESTRICTION_PROPERTY>();
+	res->prop->relop = op;
+	res->prop->propval.proptag = res->prop->proptag = PR_DISPLAY_NAME;
+	res->prop->propval.pvalue = EWSContext::alloc(name.size()+1);
+	strcpy(static_cast<char*>(res->prop->propval.pvalue), name.c_str());
+	return res;
+}
+
+/**
+ * @brief      Generate restriction to filter by names
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @return     Pointer to restriction or nullptr if no condition is set
+ */
+RESTRICTION* tContactsView::restriction() const
+{
+	RESTRICTION *initialRes = InitialName? namefilter(*InitialName, relop::ge) : nullptr;
+	RESTRICTION* finalRes = FinalName? namefilter(*FinalName, relop::le) : nullptr;
+	return tRestriction::all(initialRes, finalRes);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 tDistinguishedFolderId::tDistinguishedFolderId(const std::string_view& name) :
     Id(name)
 {}
@@ -1748,16 +1804,48 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
 	Entry(std::move(phone)), Key(std::move(pnkt))
 {}
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Combine restrictions into an AND restriction
+ *
+ * If at least one restriction is a nullptr, the other is returned unchanged,
+ * otherwise the restrictions are *moved* into the new parent restriction.
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @param      r1    First restriction
+ * @param      r2    Second restriction
+ *
+ * @return Pointer to combined restriction or nullptr if both inputs are nullptr
+ */
+RESTRICTION* tRestriction::all(RESTRICTION* r1, RESTRICTION* r2)
+{
+	if(!r1 || !r2)
+		return r1? r1 : r2;
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::r_and;
+	res->andor = EWSContext::construct<RESTRICTION_AND_OR>();
+	res->andor->count = 2;
+	res->andor->pres = EWSContext::alloc<RESTRICTION>(2);
+	res->andor->pres[0] = std::move(*r1);
+	res->andor->pres[1] = std::move(*r2);
+	return res;
+}
+
+
 /**
  * @brief      Build restriction from XML data
  *
  * Automatically tries to resolve named properties to the correct tag.
  *
+ * New restriction is stack allocated and must not be freed manually.
+ *
  * @param      getId   Function to resolve property name
  *
  * @return     RESTRICTION* or nullptr if empty
  */
-const RESTRICTION* tRestriction::build(const sGetNameId& getId) const
+RESTRICTION* tRestriction::build(const sGetNameId& getId) const
 {
 	if(!source)
 		return nullptr;
