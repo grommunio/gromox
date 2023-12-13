@@ -64,7 +64,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-vcf2mt
-dist_pkglibexec_SCRIPTS = tools/cleaner tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
+dist_pkglibexec_SCRIPTS = tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
@@ -288,7 +288,7 @@ tools_tzdump_LDADD = ${libHX_LIBS} libgromox_common.la
 dist_man_MANS = \
 	doc/alias_resolve.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
-	doc/cgkrepair.8gx doc/cleaner.8gx doc/gromox-compress.8 \
+	doc/cgkrepair.8gx doc/gromox-compress.8 \
 	doc/delivery.8gx doc/delivery-queue.8gx doc/dnsbl_filter.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/ews.4gx doc/exchange_emsmdb.4gx \
