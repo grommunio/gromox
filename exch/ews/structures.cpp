@@ -1234,7 +1234,7 @@ uint32_t tBasePagingType::offset(uint32_t) const
  *
  * @return     Always nullptr.
  */
-RESTRICTION* tBasePagingType::restriction() const
+RESTRICTION* tBasePagingType::restriction(const sGetNameId&) const
 {return nullptr;}
 
 /**
@@ -1427,6 +1427,46 @@ tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 	details.IsException   = fb_event.is_exception;
 	details.IsReminderSet = fb_event.is_reminderset;
 	details.IsPrivate     = fb_event.is_private;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Cerate restriction to filter by date
+ *
+ * @param      time      Timestamp to filter by
+ * @param      isStart   Whether timestamp marks beginning of the time range
+ * @param      getId     Function to retrieve named property IDs
+ *
+ * @return     Pointer to restriction or nullptr if no condition is set
+ */
+RESTRICTION* tCalendarView::datefilter(const sTimePoint& time, bool isStart, const sGetNameId& getId)
+{
+	static const PROPERTY_NAME startName = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole, nullptr},
+		endName = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole, nullptr};
+	// Counterintuitive: isStart == true -> check if end of event is after start, invert for isStart == false
+	const PROPERTY_NAME& tagName = isStart? endName : startName;
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::property;
+	res->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+	res->prop->relop = isStart? relop::ge : relop::le;
+	res->prop->proptag = res->prop->propval.proptag = PROP_TAG(PT_SYSTIME, getId(tagName));
+	res->prop->propval.pvalue = EWSContext::construct<uint64_t>(time.toNT());
+	return res;
+}
+
+/**
+ * @brief      Generate restriction to filter by event time
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @return     Pointer to restriction or nullptr if no condition is set
+ */
+RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
+{
+	RESTRICTION *startRes = StartDate? datefilter(*StartDate, true, getId) : nullptr;
+	RESTRICTION* endRes = EndDate? datefilter(*EndDate, false, getId) : nullptr;
+	return tRestriction::all(startRes, endRes);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1683,7 +1723,7 @@ RESTRICTION* tContactsView::namefilter(const std::string& name, relop op)
  *
  * @return     Pointer to restriction or nullptr if no condition is set
  */
-RESTRICTION* tContactsView::restriction() const
+RESTRICTION* tContactsView::restriction(const sGetNameId&) const
 {
 	RESTRICTION *initialRes = InitialName? namefilter(*InitialName, relop::ge) : nullptr;
 	RESTRICTION* finalRes = FinalName? namefilter(*FinalName, relop::le) : nullptr;

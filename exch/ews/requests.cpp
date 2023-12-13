@@ -442,8 +442,10 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindItemResponse data;
 	data.ResponseMessages.reserve(request.ParentFolderIds.size());
+	// Specified as variant, so as long as at most one is given everything works as expected
 	tBasePagingType* paging = request.IndexedPageItemView? &*request.IndexedPageItemView :
 	                          request.FractionalPageItemView? &*request.FractionalPageItemView :
+	                          request.CalendarView? &*request.CalendarView :
 	                          request.ContactsView? &*request.ContactsView :
 	                          static_cast<tBasePagingType*>(nullptr);
 	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
@@ -456,7 +458,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		if(dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
 			RESTRICTION* res1 = request.Restriction? request.Restriction->build(getId) : nullptr;
-			RESTRICTION* res2 = paging? paging->restriction() : nullptr;
+			RESTRICTION* res2 = paging? paging->restriction(getId) : nullptr;
 			res = tRestriction::all(res1, res2);
 			sort = request.SortOrder? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
 			lastDir = dir;

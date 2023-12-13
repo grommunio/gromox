@@ -231,6 +231,9 @@ sTime::sTime(const XMLElement* xml)
 		throw DeserializationError(E3042(xml->Name(), xml->GetText()));
 }
 
+sTimePoint::sTimePoint(const tinyxml2::XMLAttribute* xml) : sTimePoint(xml->Value())
+{}
+
 void sTimePoint::serialize(XMLElement* xml) const
 {
 	tm t;
@@ -499,6 +502,12 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(DeletedOccurrences);
 	XMLDUMPT(AllowNewTimeProposal);
 }
+
+tCalendarView::tCalendarView(const tinyxml2::XMLElement* xml) :
+	tBasePagingType(xml),
+	XMLINITA(StartDate),
+	XMLINITA(EndDate)
+{}
 
 tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
 	fieldURI(fromXMLNodeVariantFind<tPath::Base>(xml))
@@ -1213,6 +1222,7 @@ mFindItemRequest::mFindItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(IndexedPageItemView),
 	XMLINIT(FractionalPageItemView),
+	XMLINIT(CalendarView),
 	XMLINIT(ContactsView),
 	XMLINIT(Restriction),
 	XMLINIT(SortOrder),

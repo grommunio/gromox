@@ -438,6 +438,7 @@ struct sTimePoint
 	explicit sTimePoint(const gromox::time_point&);
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
+	explicit sTimePoint(const tinyxml2::XMLAttribute*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -521,7 +522,7 @@ struct tBasePagingType
 
 	std::optional<int32_t> MaxEntriesReturned; // Attribute
 
-	virtual RESTRICTION* restriction() const;
+	virtual RESTRICTION* restriction(const sGetNameId&) const;
 	virtual uint32_t offset(uint32_t) const;
 	virtual void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const;
 };
@@ -610,7 +611,7 @@ struct tContactsView : public tBasePagingType
 	std::optional<std::string> InitialName; // Attribute
 	std::optional<std::string> FinalName; // Attribute
 
-	RESTRICTION* restriction() const override;
+	RESTRICTION* restriction(const sGetNameId&) const override;
 
 	static RESTRICTION* namefilter(const std::string&, relop);
 };
@@ -1682,6 +1683,21 @@ struct tCalendarItem : public tItem
 	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="CalendarActivityData" type="t:CalendarActivityDataType" minOccurs="0" maxOccurs="1"/>
 	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:4232
+ */
+struct tCalendarView : public tBasePagingType
+{
+	explicit tCalendarView(const tinyxml2::XMLElement*);
+
+	std::optional<sTimePoint> StartDate; // Attribute
+	std::optional<sTimePoint> EndDate; // Attribute
+
+	RESTRICTION* restriction(const sGetNameId&) const override;
+
+	static RESTRICTION* datefilter(const sTimePoint&, bool, const sGetNameId&);
 };
 
 /**
@@ -2899,13 +2915,10 @@ struct mFindItemRequest
 	explicit mFindItemRequest(const tinyxml2::XMLElement*);
 
 	tItemResponseShape ItemShape;
-	//<xs:choice minOccurs="0">
 	std::optional<tIndexedPageView> IndexedPageItemView;
 	std::optional<tFractionalPageView> FractionalPageItemView;
-	//  <xs:element name="SeekToConditionPageItemView" type="t:SeekToConditionPageViewType"/>
-	//  <xs:element name="CalendarView" type="t:CalendarViewType"/>
+	std::optional<tCalendarView> CalendarView;
 	std::optional<tContactsView> ContactsView;
-	//</xs:choice>
 	//<xs:choice minOccurs="0">
 	//  <xs:element name="GroupBy" type="t:GroupByType"/>
 	//  <xs:element name="DistinguishedGroupBy" type="t:DistinguishedGroupByType"/>
