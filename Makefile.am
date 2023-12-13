@@ -64,7 +64,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-vcf2mt
-dist_pkglibexec_SCRIPTS = tools/create_queue.sh tools/kdb-uidextract tools/kdb-uidextract-limited
+dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
