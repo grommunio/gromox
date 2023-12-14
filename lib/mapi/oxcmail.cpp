@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <vmime/mailboxList.hpp>
@@ -4188,8 +4189,14 @@ static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
 		return false;
 	if (!sec->get_field("Content-Type", buf, std::size(buf)))
 		return false;
-	if (strncasecmp(buf, "multipart/signed", 16) != 0)
-		return false;
+	if (strncasecmp(buf, "multipart/signed", 16) != 0) {
+		origmime.mime_type = mime_type::single;
+		auto s = fmt::format("[Message is not a valid OXOSMIME message. "
+			 "The attachment object is not of type multipart/signed.]");
+		origmime.write_content(s.c_str(), s.size(), mime_encoding::none);
+		origmime.set_content_type("text/plain");
+		return TRUE;
+	}
 	if (buf[16] != '\0' && buf[16] != ';')
 		return false;
 	origmime.f_type_params.insert(origmime.f_type_params.end(),
@@ -4358,30 +4365,29 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 	    get_propids, get_propname, phead))
 		return exp_false;
 	
-	if (mime_skeleton.mail_type == oxcmail_type::encrypted) {
-		if (!pmime->set_content_type("application/pkcs7-mime"))
+	if (mime_skeleton.mail_type == oxcmail_type::encrypted ||
+	    mime_skeleton.mail_type == oxcmail_type::xsigned) {
+		if (mime_skeleton.mail_type == oxcmail_type::encrypted &&
+		    !pmime->set_content_type("application/pkcs7-mime"))
 			return exp_false;
-		if (NULL == pmsg->children.pattachments ||
-		    pmsg->children.pattachments->count != 1)
-			return exp_false;
-		auto pbin = pmsg->children.pattachments->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
-		if (pbin != nullptr && !pmime->write_content(pbin->pc,
-		    pbin->cb, mime_encoding::base64))
-			return exp_false;
-		return TRUE;
-	} else if (mime_skeleton.mail_type == oxcmail_type::xsigned) {
 		auto a = pmsg->children.pattachments;
-		if (a == nullptr || a->count == 0) {
-			/* No idea what gives. But oh well, emit just the header then. */
+		if (a == nullptr || a->count != 1) {
 			pmime->mime_type = mime_type::single;
+			auto s = fmt::format("[Message is not a valid OXOSMIME message. "
+			         "Found {} attachment objects, but exactly one is required.]", a->count);
+			pmime->write_content(s.c_str(), s.size(), mime_encoding::none);
+			pmime->set_content_type("text/plain");
 			return TRUE;
-		} else if (a->count != 1) {
-			mlog(LV_DEBUG, "Signed SMIME mail with more than one attachment, what is this?!");
-			return exp_false;
 		}
 		auto pbin = a->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
-		if (!smime_signed_writeout(*pmail, *pmime, pbin, mime_field))
-			return exp_false;
+		if (mime_skeleton.mail_type == oxcmail_type::encrypted) {
+			if (pbin != nullptr && !pmime->write_content(pbin->pc,
+			    pbin->cb, mime_encoding::base64))
+				return exp_false;
+		} else {
+			if (!smime_signed_writeout(*pmail, *pmime, pbin, mime_field))
+				return false;
+		}
 		return TRUE;
 	}
 	
