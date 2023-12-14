@@ -1819,6 +1819,8 @@ struct tSerializableTimeZoneTime
 	int32_t Month;
 	Enum::DayOfWeekType DayOfWeek;
 	std::optional<int32_t> Year;
+
+	bool valid() const;
 };
 
 /**
@@ -1863,6 +1865,8 @@ struct tSerializableTimeZone
 	std::chrono::minutes offset(const gromox::time_point&) const;
 	gromox::time_point apply(const gromox::time_point&) const;
 	gromox::time_point remove(const gromox::time_point&) const;
+
+	bool hasDst() const;
 };
 
 /**

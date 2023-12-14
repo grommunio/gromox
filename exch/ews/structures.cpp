@@ -2718,6 +2718,8 @@ uint32_t tPath::tag() const
  */
 std::chrono::minutes tSerializableTimeZone::offset(const time_point& tp) const
 {
+	if(!hasDst())
+		return std::chrono::minutes(Bias);
 	time_t temp = time_point::clock::to_time_t(tp)-Bias*60;
 	tm datetime;
 	gmtime_r(&temp, &datetime);
@@ -2766,6 +2768,28 @@ gromox::time_point tSerializableTimeZone::apply(const gromox::time_point& tp) co
  */
 gromox::time_point tSerializableTimeZone::remove(const gromox::time_point& tp) const
 {return tp-offset(tp);}
+
+/**
+ * @brief      Check whether timezones change throughout the year
+ *
+ * @return     true iff both specifications are valid
+ */
+bool tSerializableTimeZone::hasDst() const
+{return StandardTime.valid() && DaylightTime.valid();}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief     Check if all contained values are in the correct range
+ *
+ * @return    true iff specification is valid
+ */
+bool tSerializableTimeZoneTime::valid() const
+{
+	return Time.hour < 24 && Time.minute < 60 && Time.second < 60 && DayOrder >= 1 && DayOrder <= 5 &&
+	       Month >= 1 && Month <= 12;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
