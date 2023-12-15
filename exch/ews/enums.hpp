@@ -100,6 +100,7 @@ struct Enum
 	STR(ApplicationTimeArray);
 	STR(Appointment);
 	STR(April);
+	STR(Ascending);
 	STR(AssistantPhone);
 	STR(August);
 	STR(Beginning);
@@ -137,6 +138,7 @@ struct Enum
 	STR(Default);
 	STR(DeletedEvent);
 	STR(DeliveryRestriction);
+	STR(Descending);
 	STR(Detailed);
 	STR(DetailedMerged);
 	STR(Disabled);
@@ -401,6 +403,7 @@ struct Enum
 	using OofState = StrEnum<Disabled, Enabled, Scheduled>; ///< Types.xsd:6522
 	using SensitivityChoicesType = StrEnum<Normal, Personal, Private, Confidential>; ///< Types.xsd:1698
 	using ServiceConfigurationType = StrEnum<MailTips, UnifiedMessagingConfiguration, ProtectionRules, PolicyNudges, SharePointURLs, OfficeIntegrationConfiguration>; ///< Types.xsd:7019
+	using SortDirectionType = StrEnum<Ascending, Descending>; ///< Types.xsd:5986, in sync with TABLE_SORT_(ASCEND|DESCEND)
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
 	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
 };

@@ -1015,6 +1015,19 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 };
 
 /**
+ * Messages.xsd:5992
+ */
+struct tFieldOrder
+{
+	explicit tFieldOrder(const tinyxml2::XMLElement*);
+
+	static SORTORDER_SET* build(const std::vector<tFieldOrder>&, const sGetNameId&);
+
+	tPath fieldURI;
+	Enum::SortDirectionType Order; //Attribute;
+};
+
+/**
  * Types.xsd:2019
  */
 struct tFolderType : public tBaseFolderType
@@ -2884,6 +2897,7 @@ struct mFindItemRequest
 	//  <xs:element name="DistinguishedGroupBy" type="t:DistinguishedGroupByType"/>
 	//</xs:choice>
 	std::optional<tRestriction> Restriction;
+	std::optional<std::vector<tFieldOrder>> SortOrder;
 	//<xs:element name="SortOrder" type="t:NonEmptyArrayOfFieldOrdersType" minOccurs="0"/>
 	std::vector<sFolderId> ParentFolderIds;
 	//<xs:element name="QueryString" type="m:QueryStringType" minOccurs="0" maxOccurs="1"/>

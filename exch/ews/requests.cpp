@@ -436,6 +436,7 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
 
 	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
+	const SORTORDER_SET* sort = nullptr; // Lol same
 	std::string lastDir; // Simple restriction caching
 
 	auto& exmdb = ctx.plugin().exmdb;
@@ -450,10 +451,11 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		if(dir != lastDir) {
 			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
 			res = request.Restriction? request.Restriction->build(getId) : nullptr;
+			sort = request.SortOrder? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
 			lastDir = dir;
 		}
 		uint32_t tableId, rowCount;
-		if(!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, "", tableFlags, res, nullptr, &tableId, &rowCount))
+		if(!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, "", tableFlags, res, sort, &tableId, &rowCount))
 			throw EWSError::ItemPropertyRequestFailed(E3245);
 		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if(!rowCount) {

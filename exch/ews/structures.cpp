@@ -2269,6 +2269,38 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Generate SORTORDER_SET from FieldOrder list
+ *
+ * Result is stack allocated and must not be manually freed.
+ *
+ * @param      sorts   List of field orders
+ * @param      getId   @param      getId
+ *
+ * @return     Pointer to SORTORDER_SET structure or nullptr if input array is empty
+ */
+SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const sGetNameId& getId)
+{
+	if(sorts.empty())
+		return nullptr;
+	if(sorts.size() > std::numeric_limits<decltype(SORTORDER_SET::count)>::max())
+		throw InputError(E3247);
+	SORTORDER_SET* sset = EWSContext::construct<SORTORDER_SET>();
+	sset->count = uint16_t(sorts.size());
+	sset->ccategories = sset->cexpanded = 0;
+	sset->psort = EWSContext::alloc<SORT_ORDER>(sset->count);
+	SORT_ORDER* current = sset->psort;
+	for(const tFieldOrder& sort : sorts) {
+		uint32_t tag = sort.fieldURI.tag(getId);
+		current->type = PROP_TYPE(tag);
+		current->propid = PROP_ID(tag);
+		current->table_sort = sort.Order.index();
+	}
+	return sset;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
 	{"folder:DisplayName", PR_DISPLAY_NAME},

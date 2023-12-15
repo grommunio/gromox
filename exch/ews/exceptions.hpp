@@ -368,6 +368,7 @@ E(3243, "insufficient permissions to impersonate user");
 E(3244, "cannot access target folder");
 E(3245, "failed to load content table");
 E(3246, "failed to get named property id");
+E(3247, "too many sort fields");
 
 #undef E
 }

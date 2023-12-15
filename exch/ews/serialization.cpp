@@ -679,6 +679,11 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	serialize(data, PROP_TYPE(propval.proptag), value);
 }
 
+tFieldOrder::tFieldOrder(const tinyxml2::XMLElement* xml) :
+	fieldURI(fromXMLNodeVariantFind<tPath::Base>(xml)),
+	XMLINITA(Order)
+{}
+
 tFieldURI::tFieldURI(const XMLElement* xml) :
 	XMLINITA(FieldURI)
 {}
@@ -1201,6 +1206,7 @@ void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 mFindItemRequest::mFindItemRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(ItemShape),
 	XMLINIT(Restriction),
+	XMLINIT(SortOrder),
 	XMLINIT(ParentFolderIds),
 	XMLINITA(Traversal)
 {}
