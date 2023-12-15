@@ -100,11 +100,13 @@ static void filter_folder_map(gi_folder_map_t &fmap)
 		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
 }
 
-static void exm_read_base_maps()
+static int exm_read_base_maps()
 {
 	errno = 0;
 	char magic[8];
 	auto ret = HXio_fullread(STDIN_FILENO, magic, std::size(magic));
+	if (ret == 0)
+		return 0;
 	if (ret < 0 || static_cast<size_t>(ret) != std::size(magic))
 		throw YError("PG-1126: %s", strerror_eof(errno));
 	if (memcmp(magic, "GXMT0003", 8) != 0)
@@ -151,6 +153,7 @@ static void exm_read_base_maps()
 		throw YError("PG-1004: %s", strerror_eof(errno));
 	gi_name_map_read(buf.get(), xsize, g_src_name_map);
 	gi_dump_name_map(g_src_name_map);
+	return 1;
 }
 
 static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
@@ -450,7 +453,8 @@ int main(int argc, const char **argv) try
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	gi_setup_early(g_username);
-	exm_read_base_maps();
+	if (exm_read_base_maps() == 0)
+		return EXIT_SUCCESS;
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_0 = make_scope_exit(gi_shutdown);

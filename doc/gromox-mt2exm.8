@@ -62,6 +62,10 @@ only.
 .TP
 \fB\-\-skip\-rules\fP
 Skip executing rules (when \-D is used).
+.SH Exit status notes
+An input stream of length zero is treated as an invalid GXMT stream (rather
+than a stream that is valid but has no commands in it), and leads to a non-zero
+exit status.
 .SH Examples
 PFF import to a private mailbox:
 .PP
