@@ -1507,8 +1507,8 @@ int main(int argc, const char **argv)
 		terse_help();
 		return EXIT_FAILURE;
 	} else if (g_atxdir == nullptr) {
-		fprintf(stderr, "You need to specify the --src-at option.\n");
-		fprintf(stderr, "(To skip importing file-based attachments, use --src-at \"\".)\n");
+		fprintf(stderr, "You need to specify the --src-attach option.\n");
+		fprintf(stderr, "(To skip importing file-based attachments, use --src-attach \"\".)\n");
 		terse_help();
 		return EXIT_FAILURE;
 	}
