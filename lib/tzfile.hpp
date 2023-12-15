@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Public-Domain
-// From tzdata 2022a tzfile.h
+// From tzdata 2022a tzdir.h, tzfile.h
 #pragma once
 
 /*
@@ -19,13 +19,12 @@
 ** Information about time zone files.
 */
 
-#ifndef TZDIR
-# define TZDIR "/usr/share/zoneinfo" /* Time zone object file directory */
-#endif /* !defined TZDIR */
-
 #ifndef TZDEFAULT
-# define TZDEFAULT "/etc/localtime"
-#endif /* !defined TZDEFAULT */
+# define TZDEFAULT "/etc/localtime" /* default zone */
+#endif
+#ifndef TZDIR
+# define TZDIR "/usr/share/zoneinfo" /* TZif directory */
+#endif
 
 #ifndef TZDEFRULES
 # define TZDEFRULES "posixrules"
@@ -101,19 +100,23 @@ struct tzhead {
 */
 
 #ifndef TZ_MAX_TIMES
+/* This must be at least 242 for Europe/London with 'zic -b fat'.  */
 # define TZ_MAX_TIMES 2000
 #endif /* !defined TZ_MAX_TIMES */
 
 #ifndef TZ_MAX_TYPES
-/* This must be at least 17 for Europe/Samara and Europe/Vilnius.  */
+/* This must be at least 18 for Europe/Vilnius with 'zic -b fat'.  */
 # define TZ_MAX_TYPES 256 /* Limited by what (unsigned char)'s can hold */
 #endif /* !defined TZ_MAX_TYPES */
 
 #ifndef TZ_MAX_CHARS
+/* This must be at least 40 for America/Anchorage.  */
 # define TZ_MAX_CHARS 50	/* Maximum number of abbreviation characters */
 				/* (limited by what unsigned chars can hold) */
 #endif /* !defined TZ_MAX_CHARS */
 
 #ifndef TZ_MAX_LEAPS
+/* This must be at least 27 for leap seconds from 1972 through mid-2023.
+   There's a plan to discontinue leap seconds by 2035.  */
 # define TZ_MAX_LEAPS 50	/* Maximum number of leap second corrections */
 #endif /* !defined TZ_MAX_LEAPS */
