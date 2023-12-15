@@ -1473,20 +1473,20 @@ int main(int argc, const char **argv)
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	if (g_acl_map_file != nullptr) {
-		fprintf(stderr, "The --acl-map option is no longer valid.\n");
-		fprintf(stderr, "Use --user-map from now on; this is a new file format. See manpage for details.\n");
+		fprintf(stderr, "kdb2mt: The --acl-map option is no longer valid.\n");
+		fprintf(stderr, "kdb2mt: Use --user-map from now on; this is a new file format. See manpage for details.\n");
 		return EXIT_FAILURE;
 	}
 	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
-		fprintf(stderr, "--acl=convert requires --user-map\n");
+		fprintf(stderr, "kdb2mt: The --acl=convert option also requires the use of --user-map.\n");
 		exit(EXIT_FAILURE);
 	} else if (g_acl_conv == aclconv::automatic) {
 		if (g_user_map_file == nullptr) {
 			g_acl_conv = aclconv::noextract;
-			fprintf(stderr, "No ACLs will be extracted\n");
+			fprintf(stderr, "kdb2mt: No ACLs will be extracted.\n");
 		} else {
 			g_acl_conv = aclconv::convert;
-			fprintf(stderr, "ACLs will be extracted and converted\n");
+			fprintf(stderr, "kdb2mt: ACLs will be extracted and converted.\n");
 		}
 	}
 	if (g_user_map_file != nullptr) {
@@ -1498,18 +1498,16 @@ int main(int argc, const char **argv)
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if (g_srcmbox != nullptr && g_user_map_file == nullptr) {
-		fprintf(stderr, "--mbox-name requires --user-map\n");
+		fprintf(stderr, "kdb2mt: The --mbox-name option also requires the use of --user-map.\n");
 		return EXIT_FAILURE;
 	}
 	if ((g_srcguid != nullptr) + (g_srcmbox != nullptr) +
 	    (g_srcmro != nullptr) != 1) {
-		fprintf(stderr, "Exactly one of --mbox-guid, --mbox-name or --mbox-mro must be specified.\n");
-		terse_help();
+		fprintf(stderr, "kdb2mt: Exactly one of --mbox-guid, --mbox-name or --mbox-mro must be specified.\n");
 		return EXIT_FAILURE;
 	} else if (g_atxdir == nullptr) {
-		fprintf(stderr, "You need to specify the --src-attach option.\n");
-		fprintf(stderr, "(To skip importing file-based attachments, use --src-attach \"\".)\n");
-		terse_help();
+		fprintf(stderr, "kdb2mt: You must specify the --src-attach option at all times.\n");
+		fprintf(stderr, "kdb2mt: (To skip the import of file-based attachments, use --src-attach \"\".)\n");
 		return EXIT_FAILURE;
 	}
 	if (argc != 1) {
@@ -1543,11 +1541,11 @@ int main(int argc, const char **argv)
 		else if (g_srcmbox != nullptr)
 			ret = drv->open_by_user(g_srcmbox);
 		if (ret != 0) {
-			fprintf(stderr, "Problem?!\n");
+			fprintf(stderr, "kdb2mt: unexpected problem with user lookup\n");
 			return EXIT_FAILURE;
 		}
 		if (isatty(STDOUT_FILENO)) {
-			fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+			fprintf(stderr, "kdb2mt: Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
 				"You probably wanted to redirect output into a file or pipe.\n");
 			return EXIT_FAILURE;
 		}
