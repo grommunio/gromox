@@ -367,6 +367,7 @@ E(3242, "unsupported ConnectingSID for impersonation");
 E(3243, "insufficient permissions to impersonate user");
 E(3244, "cannot access target folder");
 E(3245, "failed to load content table");
+E(3246, "failed to get named property id");
 
 #undef E
 }

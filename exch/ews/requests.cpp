@@ -357,7 +357,9 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 	sShape shape(request.FolderShape);
 	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
 	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
-	const RESTRICTION* res = request.Restriction? request.Restriction->build() : nullptr;
+
+	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
+	std::string lastDir; // Simple restriction caching
 
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindFolderResponse data;
@@ -372,6 +374,11 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		std::string dir = ctx.getDir(folder);
 		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3218);
+		if(dir != lastDir) {
+			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
+			res = request.Restriction? request.Restriction->build(getId) : nullptr;
+			lastDir = dir;
+		}
 		uint32_t tableId, rowCount;
 		if(!exmdb.load_hierarchy_table(dir.c_str(), folder.folderId, nullptr, tableFlags, res, &tableId, &rowCount))
 			throw EWSError::FolderPropertyRequestFailed(E3219);
@@ -427,7 +434,9 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 	sShape shape(request.ItemShape);
 	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
 	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
-	const RESTRICTION* res = request.Restriction? request.Restriction->build() : nullptr;
+
+	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
+	std::string lastDir; // Simple restriction caching
 
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindItemResponse data;
@@ -438,6 +447,11 @@ void process(mFindItemRequest&& request, XMLElement* response, const EWSContext&
 		std::string dir = ctx.getDir(folder);
 		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3244);
+		if(dir != lastDir) {
+			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
+			res = request.Restriction? request.Restriction->build(getId) : nullptr;
+			lastDir = dir;
+		}
 		uint32_t tableId, rowCount;
 		if(!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, "", tableFlags, res, nullptr, &tableId, &rowCount))
 			throw EWSError::ItemPropertyRequestFailed(E3245);

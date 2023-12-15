@@ -245,6 +245,24 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
  *
  * @return     Array of property IDs
  */
+uint16_t EWSContext::getNamedPropId(const std::string& dir, const PROPERTY_NAME& propName, bool create) const
+{
+	PROPNAME_ARRAY propNames{1, const_cast<PROPERTY_NAME*>(&propName)};
+	PROPID_ARRAY namedIds{};
+	if(!m_plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds) || namedIds.count != 1)
+		throw DispatchError(E3246);
+	return *namedIds.ppropid;
+}
+
+/**
+ * @brief      Get named property IDs
+ *
+ * @param      dir       Home directory of user or domain
+ * @param      propNames List of property names to retrieve
+ * @param      create Whether to create requested names if necessary
+ *
+ * @return     Array of property IDs
+ */
 PROPID_ARRAY EWSContext::getNamedPropIds(const std::string& dir, const PROPNAME_ARRAY& propNames, bool create) const
 {
 	PROPID_ARRAY namedIds{};

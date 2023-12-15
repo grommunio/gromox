@@ -1751,38 +1751,42 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
 /**
  * @brief      Build restriction from XML data
  *
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
+ *
  * @return     RESTRICTION* or nullptr if empty
  */
-const RESTRICTION* tRestriction::build() const
+const RESTRICTION* tRestriction::build(const sGetNameId& getId) const
 {
 	if(!source)
 		return nullptr;
 	RESTRICTION* restriction = EWSContext::alloc<RESTRICTION>();
-	deserialize(*restriction, source);
+	deserialize(*restriction, source, getId);
 	return restriction;
 }
 
-void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	const char* name = src->Name();
 	if(!strcmp(name, "And") || !strcmp(name, "Or"))
-		build_andor(dst, src);
+		build_andor(dst, src, getId);
 	else if(!strcmp(name, "Contains"))
-		build_contains(dst, src);
+		build_contains(dst, src, getId);
 	else if(!strcmp(name, "Excludes"))
-		build_excludes(dst, src);
+		build_excludes(dst, src, getId);
 	else if(!strcmp(name, "Exists"))
-		build_exists(dst, src);
+		build_exists(dst, src, getId);
 	else if(!strcmp(name, "Not"))
-		build_not(dst, src);
+		build_not(dst, src, getId);
 	else try {
-		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()));
+		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
 	} catch(EnumError&) { // The name of the node could not be mapped to a relop
 		throw EWSError::InvalidRestriction(E3220(name));
 	}
 }
 
-void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = strcmp(src->Name(), "And")? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
@@ -1791,12 +1795,12 @@ void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src
 		++dst.andor->count;
 	RESTRICTION* res = dst.andor->pres = EWSContext::alloc<RESTRICTION>(dst.andor->count);
 	for(const tinyxml2::XMLElement* child = src->FirstChildElement(); child; child = child->NextSiblingElement())
-		deserialize(*res++, child);
+		deserialize(*res++, child, getId);
 }
 
-void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op)
+void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op, const sGetNameId& getId)
 {
-	uint32_t tag = getTag(src);
+	uint32_t tag = getTag(src, getId);
 	const tinyxml2::XMLElement* cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if(!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
@@ -1811,17 +1815,17 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 		dst.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>();
 		dst.pcmp->relop = op;
 		dst.pcmp->proptag1 = tag;
-		dst.pcmp->proptag2 = getTag(cmptarget);
+		dst.pcmp->proptag2 = getTag(cmptarget, getId);
 		if(!dst.pcmp->comparable())
 			throw EWSError::InvalidRestriction(E3223(dst.pcmp->proptag1, dst.pcmp->proptag2));
 	}
 }
 
-void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-	if(!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src)))
+	if(!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3224);
 	if(!dst.cont->comparable())
 			throw EWSError::InvalidRestriction(E3225);
@@ -1859,12 +1863,12 @@ void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* 
 		throw EWSError::InvalidRestriction(E3228(comp));
 }
 
-void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = mapi_rtype::bitmask;
 	dst.bm = EWSContext::construct<RESTRICTION_BITMASK>();
 	dst.bm->bitmask_relop = bm_relop::nez;
-	if(!(dst.bm->proptag = getTag(src)))
+	if(!(dst.bm->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3229);
 	if(!dst.bm->comparable())
 		throw EWSError::InvalidRestriction(E3230(tExtendedFieldURI::typeName(PROP_TYPE(dst.bm->proptag)), dst.bm->proptag));
@@ -1874,22 +1878,22 @@ void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* 
 	dst.bm->mask = bitmask->UnsignedAttribute("Value");
 }
 
-void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = mapi_rtype::exist;
 	dst.exist = EWSContext::construct<RESTRICTION_EXIST>();
-	if(!(dst.exist->proptag = getTag(src)))
+	if(!(dst.exist->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3232);
 }
 
-void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	const tinyxml2::XMLElement* child = src->FirstChildElement();
 	if(!child)
 		throw EWSError::InvalidRestriction(E3233);
 	dst.rt = mapi_rtype::r_not;
 	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
-	deserialize(dst.xnot->res, child);
+	deserialize(dst.xnot->res, child, getId);
 }
 
 void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t type)
@@ -1972,6 +1976,18 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
  */
 uint32_t tExtendedFieldURI::tag() const
 {return PropertyTag? PROP_TAG(type(), *PropertyTag) : 0;}
+
+/**
+ * @brief      Get Tag ID
+ *
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
+ *
+ * @return     Tag ID
+ */
+uint32_t tExtendedFieldURI::tag(const sGetNameId& getId) const
+{return PROP_TAG(type(), PropertyTag? *PropertyTag : getId(name()));}
 
 /**
  * @brief      Get property name
@@ -2349,6 +2365,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"message:ToRecipients", sShape::ToRecipients},
 }};
 
+
 void tFieldURI::tags(sShape& shape, bool add) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
@@ -2369,13 +2386,19 @@ void tFieldURI::tags(sShape& shape, bool add) const
  * @brief      Return tag of the field
  *
  * If a field is mapped to multiple tags, only the first tag is returned.
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
  *
  * @return    Tag or 0 if not found
  */
-uint32_t tFieldURI::tag() const
+uint32_t tFieldURI::tag(const sGetNameId& getId) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
-	return tags.first == tags.second? 0 : tags.first->second;
+	if(tags.first != tagMap.end())
+		return tags.first->second;
+	auto names = nameMap.equal_range(FieldURI);
+	return names.first == nameMap.end()? 0 : PROP_TAG(names.first->second.second, getId(names.first->second.first));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2450,7 +2473,7 @@ void tIndexedFieldURI::tags(sShape&, bool) const
 /**
  * TODO: Implement tag mapping
  */
-uint32_t tIndexedFieldURI::tag() const
+uint32_t tIndexedFieldURI::tag(const sGetNameId&) const
 {return 0;}
 
 
@@ -2707,11 +2730,15 @@ void tPath::tags(sShape& shape, bool add) const
  *
  * In most cases a path maps to exactly one tag,
  * for the other cases only the first mapped tag is returned.
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
  *
  * @return    Tag or 0 if not found
  */
-uint32_t tPath::tag() const
-{return std::visit([&](auto&& v){return v.tag();}, asVariant());};
+uint32_t tPath::tag(const sGetNameId& getId) const
+{return std::visit([&](auto&& v){return v.tag(getId);}, asVariant());};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -934,10 +934,10 @@ tRestriction::tRestriction(const tinyxml2::XMLElement* xml) :
 	source(xml->FirstChildElement())
 {}
 
-uint32_t tRestriction::getTag(const tinyxml2::XMLElement* parent)
+uint32_t tRestriction::getTag(const tinyxml2::XMLElement* parent, const sGetNameId& getId)
 {
 	tPath path(fromXMLNodeVariantFind<tPath::Base>(parent));
-	return path.tag();
+	return path.tag(getId);
 }
 
 tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement* xml) :

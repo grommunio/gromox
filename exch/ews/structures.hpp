@@ -156,6 +156,9 @@ private:
 
 using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
 
+/// Function to get tag id from property name
+using sGetNameId = std::function<uint16_t(const PROPERTY_NAME&)>;
+
 /**
  * @brief     Message entry ID extension
  *
@@ -772,6 +775,7 @@ struct tExtendedFieldURI
 	uint16_t type() const;
 
 	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 	PROPERTY_NAME name() const;
 
 	static const char* typeName(uint16_t);
@@ -845,7 +849,7 @@ struct tFieldURI
 	tFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 
 	std::string FieldURI; //Attribute
 
@@ -957,7 +961,7 @@ struct tIndexedFieldURI
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
@@ -1005,7 +1009,7 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	explicit inline tPath(Base &&b) : Base(std::move(b)) {}
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 
 	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
 };
@@ -2515,20 +2519,20 @@ class tRestriction
 public:
 	explicit tRestriction(const tinyxml2::XMLElement*);
 
-	const RESTRICTION* build() const;
+	const RESTRICTION* build(const sGetNameId&) const;
 private:
 	const tinyxml2::XMLElement* source = nullptr;  ///< XMLElement of the contained restriction
 
-	static void build_andor(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_compare(RESTRICTION&, const tinyxml2::XMLElement*, relop);
-	static void build_contains(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_excludes(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_exists(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_not(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*);  // Implemented in serialization.cpp
+	static void build_andor(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_compare(RESTRICTION&, const tinyxml2::XMLElement*, relop, const sGetNameId&);
+	static void build_contains(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_excludes(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_exists(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_not(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
 
 	static void* loadConstant(const tinyxml2::XMLElement*, uint16_t);
-	static uint32_t getTag(const tinyxml2::XMLElement*);
+	static uint32_t getTag(const tinyxml2::XMLElement*, const sGetNameId&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
