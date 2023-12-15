@@ -129,7 +129,7 @@ static int t_ical_dt()
 		if (pos != dtend.npos)
 			memcpy(&dtend[pos], "20240102", 8);
 		input += "DTEND"s + std::move(dtend) + "\n";
-		char buf[32];
+		char buf[64];
 		snprintf(buf, std::size(buf), "DTSTAMP:20231205T%06uZ\n", ++count);
 		input += buf;
 		snprintf(buf, std::size(buf), "UID:%026u@googlemail.com\n", count);
