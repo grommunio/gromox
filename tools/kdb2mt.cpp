@@ -140,7 +140,7 @@ using LR_map = std::map<std::string, std::string>;
 static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
-static char *g_srcguid, *g_srcmbox, *g_srcmro, *g_acl_map_file, *g_user_map_file;
+static char *g_srcguid, *g_srcmbox, *g_srcmro, *g_user_map_file;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static enum aclconv g_acl_conv = aclconv::automatic;
 static int g_with_hidden = -1;
@@ -184,13 +184,7 @@ static constexpr HXoption g_options_table[] = {
 	{"sql-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
 	{"sql-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
 	{"sql-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
-	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Old name and alias for --sql-host", "HOST"},
-	{"src-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Old name and alias for --sql-port", "PORT"},
-	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Old name and alias for --sql-db", "NAME"},
-	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Old name and alias for --sql-user", "USER"},
 	{"src-attach", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
-	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Old name and alias for --mbox-guid", "GUID"},
-	{"src-mbox", 0, HXTYPE_STRING, &g_srcmro, nullptr, nullptr, 0, "Old name and alias for --mbox-mro", "NAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
 	{"user-map", 0, HXTYPE_STRING, &g_user_map_file, nullptr, nullptr, 0, "User resolution map", "FILE"},
 	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
@@ -1472,11 +1466,6 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
-	if (g_acl_map_file != nullptr) {
-		fprintf(stderr, "kdb2mt: The --acl-map option is no longer valid.\n");
-		fprintf(stderr, "kdb2mt: Use --user-map from now on; this is a new file format. See manpage for details.\n");
-		return EXIT_FAILURE;
-	}
 	if (g_acl_conv == aclconv::convert && g_user_map_file == nullptr) {
 		fprintf(stderr, "kdb2mt: The --acl=convert option also requires the use of --user-map.\n");
 		exit(EXIT_FAILURE);
