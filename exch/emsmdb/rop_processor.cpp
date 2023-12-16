@@ -199,13 +199,17 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	auto plogitem = plogmap->p[logon_id].get();
 	if (plogitem == nullptr)
 		return -EINVAL;
+	auto root = plogitem->root.get();
+	const char *target = "";
+	if (root != nullptr && root->type == ems_objtype::logon) {
+		auto lo = static_cast<logon_object *>(root->pobject);
+		if (lo != nullptr)
+			target = lo->account;
+	}
 	if (emsmdb_max_obh_per_session > 0 &&
 	    plogitem->phash.size() >= emsmdb_max_obh_per_session) {
-		auto root = plogitem->root.get();
-		auto lo = root != nullptr && root->type == ems_objtype::logon ?
-		          static_cast<logon_object *>(root->pobject) : nullptr;
 		mlog(LV_NOTICE, "emsmdb: max_obh_per_session %u reached by <%s> accessing <%s>",
-			emsmdb_max_obh_per_session, eiuser, znul(lo->account));
+			emsmdb_max_obh_per_session, eiuser, target);
 		return -EMFILE;
 	}
 
