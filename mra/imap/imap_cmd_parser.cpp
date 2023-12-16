@@ -211,7 +211,12 @@ static inline bool special_folder(const char *name)
 	return false;
 }
 
-static BOOL icp_hint_seq(const imap_seq_list &list,
+/**
+ * @list:    rangeset to inspect
+ * @num:     number to test for
+ * @max_uid: meaning of the star when found in @list
+ */
+static bool iseq_contains(const imap_seq_list &list,
 	unsigned int num, unsigned int max_uid)
 {
 	for (const auto &seq : list) {
@@ -3230,7 +3235,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	for (size_t i = 0; i < num; ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
-		    !icp_hint_seq(list_seq, pitem->uid, max_uid))
+		    !iseq_contains(list_seq, pitem->uid, max_uid))
 			continue;
 		exp_list.push_back(pitem);
 	}
@@ -3244,7 +3249,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	for (size_t i = 0; i < xarray.get_capacity(); ++i) {
 		pitem = xarray.get_item(i);
 		if (zero_uid_bit(*pitem) ||
-		    !icp_hint_seq(list_seq, pitem->uid, max_uid))
+		    !iseq_contains(list_seq, pitem->uid, max_uid))
 			continue;
 		auto ct_item = pcontext->contents.get_itemx(pitem->uid);
 		if (ct_item == nullptr)
