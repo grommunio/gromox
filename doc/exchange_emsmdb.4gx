@@ -23,12 +23,6 @@ The usual config file location is /etc/gromox/exchange_emsmdb.cfg.
 \fBasync_threads_num\fP
 Default: \fI4\fP
 .TP
-\fBaverage_handles\fP
-Default: \fI1000\fP
-.TP
-\fBaverage_mem\fP
-Default: \fI4K\fP
-.TP
 \fBems_max_active_notifh\fP
 Maximum number of concurrently active notify handles.
 .br

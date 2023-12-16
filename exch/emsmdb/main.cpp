@@ -45,7 +45,6 @@ static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 
 static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"async_threads_num", "4", CFG_SIZE, "1", "20"},
-	{"average_handles", "1000", CFG_SIZE, "100"},
 	{"average_mem", "4K", CFG_SIZE, "4K"},
 	{"ems_max_active_notifh", "0", CFG_SIZE, "0"},
 	{"ems_max_active_sessions", "0", CFG_SIZE, "0"},
@@ -127,9 +126,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	int max_rule_len;
 	char smtp_ip[40];
 	int ping_interval;
-	int average_blocks;
 	char org_name[256];
-	int average_handles;
 	char submit_command[1024];
 	
 	/* path contains the config files directory */
@@ -153,8 +150,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		if (!exch_emsmdb_reload(nullptr, pfile))
 			return false;
 		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), std::size(org_name));
-		average_handles = pfile->get_ll("average_handles");
-		average_blocks = pfile->get_ll("average_mem") / 256;
 		max_rcpt = pfile->get_ll("max_rcpt_num");
 		max_mail = pfile->get_ll("max_mail_num");
 		char max_length_s[32], max_rule_len_s[32], ping_int_s[32];
@@ -169,11 +164,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		gx_strlcpy(submit_command, pfile->get_value("submit_command"), std::size(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
 
-		mlog(LV_INFO, "emsmdb: x500=\"%s\", "
-		        "avg_handles=%d, avgmem_per_ctx=%d*256, max_rcpt=%d, "
+		mlog(LV_INFO, "emsmdb: x500=\"%s\", max_rcpt=%d, "
 		        "max_mail=%d, max_mail_len=%s, max_ext_rule_len=%s, "
 		        "ping_int=%s, async_threads=%d, smtp=[%s]:%hu",
-		       org_name, average_handles, average_blocks, max_rcpt,
+		       org_name, max_rcpt,
 		       max_mail, max_length_s, max_rule_len_s, ping_int_s,
 		       async_num, smtp_ip, smtp_port);
 		
@@ -201,9 +195,9 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			mlog(LV_ERR, "emsmdb: failed to register emsmdb interface");
 			return FALSE;
 		}
-		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
+		common_util_init(org_name, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
-		rop_processor_init(average_handles, ping_interval);
+		rop_processor_init(ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
 		if (bounce_gen_init(get_config_path(), get_data_path(),

@@ -39,7 +39,6 @@ using namespace gromox;
 
 static int g_scan_interval;
 static pthread_t g_scan_id;
-static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, uint32_t> g_logon_hash;
@@ -325,9 +324,8 @@ static void *emsrop_scanwork(void *param)
 	return nullptr;
 }
 
-void rop_processor_init(int average_handles, int scan_interval)
+void rop_processor_init(int scan_interval)
 {
-	g_average_handles = average_handles;
 	g_scan_interval = scan_interval;
 }
 

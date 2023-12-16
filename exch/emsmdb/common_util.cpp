@@ -64,7 +64,6 @@ unsigned int emsmdb_backfill_transporthdr;
 static uint16_t g_smtp_port;
 static char g_smtp_ip[40];
 char g_emsmdb_org_name[256];
-static int g_average_blocks;
 static thread_local const char *g_dir_key;
 static char g_submit_command[1024];
 static constexpr char EMSMDB_UA[] = PACKAGE_NAME "-emsmdb " PACKAGE_VERSION;
@@ -1642,13 +1641,12 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	return ecSuccess;
 }
 
-void common_util_init(const char *org_name, int average_blocks,
+void common_util_init(const char *org_name,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *submit_command)
 {
 	gx_strlcpy(g_emsmdb_org_name, org_name, std::size(g_emsmdb_org_name));
-	g_average_blocks = average_blocks;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
