@@ -317,7 +317,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	std::unique_lock gl_hold(g_lock);
 	if (ems_max_active_sessions > 0 &&
 	    g_handle_hash.size() >= ems_max_active_sessions) {
-		mlog(LV_WARN, "W-2300: g_handle_hash full (%zu handles)",
+		mlog(LV_WARN, "W-2300: The global limit exchange_emsmdb.cfg:ems_max_active_sessions (%zu) has been reached.",
 			ems_max_active_sessions);
 		return FALSE;
 	}
@@ -339,7 +339,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	if (uh_iter == g_user_hash.end()) {
 		if (ems_max_active_users > 0 &&
 		    g_user_hash.size() >= ems_max_active_users) {
-			mlog(LV_WARN, "W-2301: g_user_hash full (%zu handles)",
+			mlog(LV_WARN, "W-2301: The global limit exchange_emsmdb.cfg:ems_max_active_users (%zu) has been reached.",
 				ems_max_active_users);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
@@ -358,7 +358,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	} else {
 		if (emsmdb_max_cxh_per_user > 0 &&
 		    uh_iter->second.size() >= emsmdb_max_cxh_per_user) {
-			mlog(LV_WARN, "W-1580: user %s reached maximum CXH (%u)",
+			mlog(LV_WARN, "W-1580: \"%s\" has reached the limit exchange_emsmdb.cfg:emsmdb_max_cxh_per_user (%u)",
 			        phandle->username, emsmdb_max_cxh_per_user);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();

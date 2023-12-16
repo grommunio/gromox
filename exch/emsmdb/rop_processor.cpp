@@ -207,26 +207,26 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	}
 	if (emsmdb_max_obh_per_session > 0 &&
 	    plogitem->phash.size() >= emsmdb_max_obh_per_session) {
-		mlog(LV_NOTICE, "emsmdb: max_obh_per_session %u reached by <%s> accessing <%s>",
-			emsmdb_max_obh_per_session, eiuser, target);
+		mlog(LV_NOTICE, "W-2357: \"%s\" accessing \"%s\": limit exchange_emsmdb.cfg:max_obh_per_session (%u) reached",
+			eiuser, target, emsmdb_max_obh_per_session);
 		return -EMFILE;
 	}
 
 	std::shared_ptr<object_node> parent;
 	if (parent_handle < 0) {
 		if (plogitem->root != nullptr) {
-			mlog(LV_NOTICE, "emsmdb: attempted duplicate root object assignment by <%s>", eiuser);
+			mlog(LV_ERR, "E-2356: \"%s\" on \"%s\": duplicate root object", eiuser, target);
 			return -EEXIST;
 		}
 	} else if (parent_handle >= 0 && parent_handle < INT32_MAX) {
 		auto i = plogitem->phash.find(parent_handle);
 		if (i == plogitem->phash.end()) {
-			mlog(LV_NOTICE, "emsmdb: attempted invalid child object assignment by <%s>", eiuser);
+			mlog(LV_NOTICE, "E-2355: \"%s\" on \"%s\": invalid child object assignment", eiuser, target);
 			return -ESRCH;
 		}
 		parent = i->second;
 	} else {
-		mlog(LV_NOTICE, "emsmdb: attempted use of invalid parent object handle by <%s>", eiuser);
+		mlog(LV_NOTICE, "E-2354: \"%s\" on \"%s\": use of invalid parent object", eiuser, target);
 		return -EINVAL;
 	}
 	auto pobjnode = std::make_shared<object_node>(std::move(in_object));

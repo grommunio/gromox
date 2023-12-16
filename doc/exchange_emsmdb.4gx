@@ -29,32 +29,42 @@ Maximum number of concurrently active notify handles.
 Default: (unlimited)
 .TP
 \fBems_max_active_sessions\fP
-Maximum number of concurrently active EMSMDB session handles.
+Maximum number of concurrently active EMSMDB sessions. The special value 0
+indicates unlimited. The special value 0 indicates unlimited. EMSMDB sessions
+are not tied to any particular TCP connection; sessions terminate by means of
+an explicit "ecDoDisconnect" request, or by an inactivity timer (currently 2000
+seconds). MFCMAPI sends ecDoDisconnect, but Outlook just breaks off TCP
+connections, so sessions can pile up.
 .br
 Default: (unlimited)
 .TP
 \fBems_max_active_users\fP
-Maximum number of concurrently active mailbox identities.
+Maximum number of concurrently active EMSMDB session owners (users). The
+special value 0 indicates unlimited.
 .br
 Default: (unlimited)
 .TP
 \fBems_max_pending_sesnotif\fP
-Maximum number of pending notifications for an EMSMDB session. (If a client
-accrues too many pending notifications, there may be something wrong with the
-client.)
+Maximum number of pending notifications for an EMSMDB session. [Content tables
+on search folders can rack up enormous amounts of notifications, so worry not
+upon seeing W-2305 warnings in the log.]
 .br
 Default: \fI1K\fP
 .TP
 \fBemsmdb_max_cxh_per_user\fP
-The maximum number of RPC context handles any one \fBmailbox\fP can have at any
-one time. Use 0 to indicate unlimited.
+The maximum number of EMSMDB sessions (CXH = RPC context handle) for one user.
+The special value 0 indicates unlimited. EMSMDB sessions are not tied to any
+particular TCP connection; sessions terminate by means of an explicit
+"ecDoDisconnect" request, or by an inactivity timer (currently 2000 seconds).
+Outlook does not send ecDoDisconnect (MFCMAPI does), so sessions can pile up.
 .br
 Default: \fI100\fP
 .TP
 \fBemsmdb_max_obh_per_session\fP
-The maximum number of object handles each session can have at any one time
-(e.g. folders/messages/etc. open simultaneously). Use 0 to indicate unlimited.
-There is one session for each time a mailbox is opened.
+The maximum number of object handles (e.g. folders/messages/etc.) each ROP
+logon (contrary to the name, not EMSMDB session) can have at any one time
+concurrently. Use 0 to indicate unlimited. On average, Outlook creates six ROP
+logons per mailbox that it opens.
 .br
 Default: \fI500\fP
 .TP
