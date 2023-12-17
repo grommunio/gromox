@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021–2022 grommunio GmbH
 // This file is part of Gromox.
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <libHX/string.h>
@@ -202,12 +203,39 @@ static int t_id8()
 
 static int t_id9()
 {
+	printf("\n== t_id9: range_set\n");
 	gromox::range_set<int> s;
 	s.insert(61, 63);
 	s.insert(51, 53);
 	for (int i = 50; i <= 64; ++i)
 		printf("%d: %d\n", i, s.contains(i));
-	return 0;
+	assert(!s.contains(50));
+	assert(s.contains(51));
+	assert(s.contains(52));
+	assert(s.contains(53));
+	assert(!s.contains(54));
+	assert(!s.contains(60));
+	assert(s.contains(61));
+	assert(s.contains(62));
+	assert(s.contains(63));
+	assert(!s.contains(64));
+	s.insert(100, INT_MAX);
+	for (int i = 50; i <= 64; ++i)
+		printf("%d: %d\n", i, s.contains(i));
+	assert(!s.contains(50));
+	assert(s.contains(51));
+	assert(s.contains(52));
+	assert(s.contains(53));
+	assert(!s.contains(54));
+	assert(!s.contains(60));
+	assert(s.contains(61));
+	assert(s.contains(62));
+	assert(s.contains(63));
+	assert(!s.contains(64));
+	assert(!s.contains(99));
+	assert(s.contains(100));
+	assert(s.contains(INT_MAX));
+	return EXIT_SUCCESS;
 }
 
 static int t_seq()
@@ -411,7 +439,7 @@ static int t_mcg()
 	return 0;
 }
 
-int main()
+static int runner()
 {
 	if (t_utf7() != 0)
 		return EXIT_FAILURE;
@@ -462,4 +490,12 @@ int main()
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;
+}
+
+int main()
+{
+	auto ret = runner();
+	if (ret != EXIT_SUCCESS)
+		printf("FAILED\n");
+	return ret;
 }

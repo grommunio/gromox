@@ -72,15 +72,15 @@ template<typename T> class GX_EXPORT range_set : private std::vector<gromox::ran
 		bool merge = false;
 		auto i = begin();
 		for (; i != end(); ++i) {
-			bool nr_is_before = hi + 1 < i->lo;
-			bool i_is_after   = lo > i->hi + 1;
-			merge = !i_is_after && !nr_is_before;
+			bool left_gap  = hi < i->lo && i->lo - hi > 1;
+			bool right_gap = lo > i->hi && lo - i->hi > 1;
+			merge = !left_gap && !right_gap;
 			if (merge) {
 				i->lo = i->lo < lo ? i->lo : lo;
 				i->hi = i->hi > hi ? i->hi : hi;
 				break;
 			}
-			if (nr_is_before)
+			if (left_gap)
 				break;
 		}
 		if (!merge) {

@@ -217,7 +217,6 @@ BOOL check_message_owner(const char *dir, uint64_t message_id,
 {
 	BINARY *pbin;
 	EXT_PULL ext_pull;
-	char tmp_name[UADDR_SIZE];
 	EMSAB_ENTRYID ab_entryid;
 	
 	if (!exmdb_client::get_message_property(dir, nullptr, CP_ACP,
@@ -238,7 +237,7 @@ BOOL check_message_owner(const char *dir, uint64_t message_id,
 		*pb_owner = false;
 		return TRUE;
 	}
-	*pb_owner = strcasecmp(es_result.c_str(), tmp_name) == 0 ? TRUE : false;
+	*pb_owner = strcasecmp(username, es_result.c_str()) == 0 ? TRUE : false;
 	return TRUE;
 }
 
