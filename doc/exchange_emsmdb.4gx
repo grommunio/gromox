@@ -17,8 +17,20 @@ wrapping is given in the OXCRPC spec. MAPIHTTP runs OXCROPS directly without
 the extra EMSMDB framing.
 .PP
 OXCROPS consists of 130 calls that make up the mailbox protocol.
-.SH Configuration directives
-The usual config file location is /etc/gromox/exchange_emsmdb.cfg.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when they appear in
+/etc/gromox/gromox.cfg.
+.TP
+\fBoutgoing_smtp_url\fP
+The SMTP server to use for outgoing mails. To use the local maildrop queue, set
+the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
+SMTP server is offline, submissions will be rejected (and mails stick around in
+Outbox or whatever folder they were submitted from).
+.br
+Default: \fIsmtp://%3a%3a1:25/\fP
+.SH Configuration directives (exchange_emsmdb.cfg)
+The following directives are recognized when they appear in
+/etc/gromox/exchange_emsmdb.cfg.
 .TP
 \fBasync_threads_num\fP
 Default: \fI4\fP
@@ -112,14 +124,10 @@ all ROPs. Note the daemon log level needs to be "debug" (6), too.
 Default: \fI0\fP
 .TP
 \fBsmtp_server_ip\fP
-SMTP server hostname or address to contact for outgoing mail.
-.br
-Default: \fI::1\fP
+Deprecated in favor of gromox.cfg:outgoing_smtp_url.
 .TP
 \fBsmtp_server_port\fP
-SMTP server TCP port number to connect to for outgoing mail.
-.br
-Default: \fI25\fP
+Deprecated in favor of gromox.cfg:outgoing_smtp_url.
 .TP
 \fBsubmit_command\fP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php

@@ -31,6 +31,14 @@ custom file:
 \fBdaemons_fd_limit\fP
 In gromox-zcore, this is treated as an alias for zcore_fd_limit.
 .TP
+\fBoutgoing_smtp_url\fP
+The SMTP server to use for outgoing mails. To use the local maildrop queue, set
+the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
+SMTP server is offline, submissions will be rejected (and mails stick around in
+Outbox or whatever folder they were submitted from).
+.br
+Default: \fIsmtp://%3a%3a1:25/\fP
+.TP
 \fBzcore_fd_limit\fP
 Request that the file descriptor table be at least this large. The magic value
 0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
@@ -97,16 +105,6 @@ For every exmdb server in exmdb_list.txt, establish and keep this many number
 of outbound connections for sending commands.
 .br
 Default: \fI10\fP
-.TP
-\fBsmtp_server_ip\fP
-SMTP server hostname or address to contact for outgoing mail.
-.br
-Default: \fI::1\fP
-.TP
-\fBsmtp_server_port\fP
-SMTP server TCP port number to contact for outgoing mail.
-.br
-Default: \fI25\fP
 .TP
 \fBstate_path\fP
 Directory for runtime variadic data.

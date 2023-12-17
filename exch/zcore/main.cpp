@@ -125,8 +125,8 @@ static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
 	{"oxcical_allday_ymd", "1", CFG_BOOL},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-	{"smtp_server_ip", "::1"},
-	{"smtp_server_port", "25"},
+	{"smtp_server_ip", "::1", CFG_DEPRECATED},
+	{"smtp_server_port", "25", CFG_DEPRECATED},
 	{"state_path", PKGSTATEDIR},
 	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
@@ -374,8 +374,27 @@ int main(int argc, const char **argv)
 	HX_unit_size(temp_buff, std::size(temp_buff), max_rule_len, 1024, 0);
 	mlog(LV_INFO, "system: maximum extended rule length is %s", temp_buff);
 	
-	auto smtp_url = static_cast<std::string>(vmime::utility::url("smtp",
-		pconfig->get_value("smtp_server_ip"), pconfig->get_ll("smtp_server_port")));
+	auto str = gxconfig->get_value("outgoing_smtp_url");
+	std::string smtp_url;
+	if (str != nullptr) {
+		try {
+			smtp_url = vmime::utility::url(str);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str, e.what());
+			return EXIT_FAILURE;
+		}
+	} else {
+		str = pconfig->get_value("smtp_server_ip");
+		uint16_t port = pconfig->get_ll("smtp_server_port");
+		try {
+			smtp_url = vmime::utility::url("smtp", str, port);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
+				str, port, e.what());
+			return EXIT_FAILURE;
+		}
+	}
 	mlog(LV_NOTICE, "system: SMTP server is %s", smtp_url.c_str());
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),

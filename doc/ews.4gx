@@ -5,9 +5,20 @@
 ews \(em http(8gx) processing plugin for EWS requests
 .SH Description
 The ews(4gx) plugin handles all requests to the \fB/EWS/Exchange.asmx\fP
-URI.
-.SH Configuration directives
-The usual config file location is /etc/gromox/ews.cfg.
+URI path.
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when they appear in
+/etc/gromox/gromox.cfg.
+.TP
+\fBoutgoing_smtp_url\fP
+The SMTP server to use for outgoing mails. To use the local maildrop queue, set
+the value to \fIsendmail://localhost\fP. smtp:// is unqueued(!), and if the
+SMTP server is offline, submissions will be rejected (and mails stick around in
+Outbox or whatever folder they were submitted from).
+.br
+Default: \fIsmtp://%3a%3a1:25/\fP
+.SH Configuration directives (ews.cfg)
+The following directives are recognized when they appear in etc/gromox/ews.cfg.
 .TP
 \fBews_experimental\fP
 Default: \fI0\fP
@@ -25,16 +36,6 @@ Default: \fIno\fP
 Log all requests (further restricted by log_filter).
 .br
 Default: \fIno\fP
-.TP
-\fBsmtp_server_ip\fP
-Hostname of the SMTP service to utilize for outgoing mails.
-.br
-Default: \fI::1\fP
-.TP
-\fBsmtp_server_port\fP
-Port number for the same.
-.br
-Default: \fI25\fP
 .SH Normative references
 .IP \(bu 4
 OXWAVLS, OXWOOF, OXWSPHOTO

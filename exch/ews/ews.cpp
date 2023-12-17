@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
 // This file is part of Gromox.
-
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <functional>
 #include <iostream>
 #include <limits>
 #include <string>
 #include <thread>
-#include <unordered_map>
-
 #include <tinyxml2.h>
+#include <unordered_map>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <vmime/utility/url.hpp>
@@ -468,8 +467,8 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	{"ews_pretty_response", "0", CFG_BOOL},
 	{"ews_request_logging", "0"},
 	{"ews_response_logging", "0"},
-	{"smtp_server_ip", "::1"},
-	{"smtp_server_port", "25"},
+	{"smtp_server_ip", "::1", CFG_DEPRECATED},
+	{"smtp_server_port", "25", CFG_DEPRECATED},
 	CFG_TABLE_END,
 };
 
@@ -478,6 +477,12 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
  */
 void EWSPlugin::loadConfig()
 {
+	auto gxcfg = config_file_initd("gromox.cfg", get_config_path(), nullptr);
+	if (gxcfg == nullptr) {
+		mlog(LV_INFO, "[ews]: Failed to load gromox.cfg: %s", strerror(errno));
+		return;
+	}
+
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
 	if(!cfg)
 	{
@@ -500,7 +505,27 @@ void EWSPlugin::loadConfig()
 	cache_embedded_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_embedded_instance_lifetime"));
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 
-	smtp_url = static_cast<std::string>(vmime::utility::url("smtp", cfg->get_value("smtp_server_ip"), cfg->get_ll("smtp_server_port")));
+	auto str = gxcfg->get_value("outgoing_smtp_url");
+	std::string smtp_url;
+	if (str != nullptr) {
+		try {
+			smtp_url = vmime::utility::url(str);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed URL: outgoing_smtp_url=\"%s\": %s",
+				str, e.what());
+			return;
+		}
+	} else {
+		str = cfg->get_value("smtp_server_ip");
+		uint16_t port = cfg->get_ll("smtp_server_port");
+		try {
+			smtp_url = vmime::utility::url("smtp", str, port);
+		} catch (const vmime::exceptions::malformed_url &e) {
+			mlog(LV_ERR, "Malformed outgoing SMTP: [%s]:%hu: %s",
+				str, port, e.what());
+			return;
+		}
+	}
 
 	const char* logFilter = cfg->get_value("ews_log_filter");
 	if(logFilter && strlen(logFilter))
