@@ -79,8 +79,7 @@ struct LANGMAP_ITEM {
 
 unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 unsigned int g_max_rule_len, g_max_extrule_len, zcore_backfill_transporthdr;
-static uint16_t g_smtp_port;
-static char g_smtp_ip[40];
+static std::string g_smtp_url;
 char g_org_name[256];
 static thread_local const char *g_dir_key;
 static thread_local unsigned int g_env_refcount;
@@ -354,8 +353,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 
 void common_util_init(const char *org_name, const char *default_charset,
     unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
-    unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
-    const char *submit_command)
+    unsigned int max_rule_len, std::string &&smtp_url, const char *submit_command)
 {
 	gx_strlcpy(g_org_name, org_name, std::size(g_org_name));
 	gx_strlcpy(g_default_charset, default_charset, std::size(g_default_charset));
@@ -363,8 +361,7 @@ void common_util_init(const char *org_name, const char *default_charset,
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = g_max_extrule_len = max_rule_len;
-	gx_strlcpy(g_smtp_ip, smtp_ip, std::size(g_smtp_ip));
-	g_smtp_port = smtp_port;
+	g_smtp_url = std::move(smtp_url);
 	gx_strlcpy(g_submit_command, submit_command, std::size(g_submit_command));
 }
 
@@ -1356,7 +1353,7 @@ BOOL cu_send_message(store_object *pstore, message_object *msg, BOOL b_submit)
 			}
 		}
 
-		auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
+		auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
 		           pstore->get_account(), rcpt_list);
 		if (ret != ecSuccess) {
 			mlog(LV_ERR, "E-1194: cu_send_mail: %s", mapi_strerror(ret));
@@ -1412,7 +1409,7 @@ void common_util_notify_receipt(const char *username, int type,
 	    username, pbrief, bounce_type, &imail))
 		return;
 	imail.set_header("X-Mailer", ZCORE_UA);
-	auto ret = cu_send_mail(imail, "smtp", g_smtp_ip, g_smtp_port,
+	auto ret = cu_send_mail(imail, g_smtp_url.c_str(),
 	           username, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1193: cu_send_mail: %xh\n", ret);

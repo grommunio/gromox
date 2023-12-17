@@ -15,8 +15,7 @@
 
 namespace gromox {
 
-ec_error_t cu_send_mail(MAIL &mail, const char *smtpprot,
-    const char *smtphost, uint16_t smtpport, const char *sender,
+ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
     const std::vector<std::string> &rcpt_list) try
 {
 	if (*sender == '\0') {
@@ -25,7 +24,7 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtpprot,
 	} else if (rcpt_list.size() == 0) {
 		mlog(LV_ERR, "cu_send_mail: empty envelope-rcpt\n");
 		return MAPI_W_CANCEL_MESSAGE;
-	} else if (*smtpprot == '\0' || *smtphost == '\0') {
+	} else if (*smtp_url == '\0') {
 		mlog(LV_ERR, "cu_send_mail: no SMTP target given\n");
 		return MAPI_W_NO_SERVICE;
 	}
@@ -49,13 +48,12 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtpprot,
 	}
 	vmime::utility::inputStreamStringAdapter ct_adap(content); /* copies */
 	content.clear();
-	auto xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtpprot, smtphost, smtpport));
+	auto xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
 	try {
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {
-		mlog(LV_ERR, "vmime.connect %s:[%s]:%hu: %s", smtpprot,
-			smtphost, smtpport, e.what());
+		mlog(LV_ERR, "vmime.connect %s: %s", smtp_url, e.what());
 		return MAPI_W_NO_SERVICE;
 	}
 	try {

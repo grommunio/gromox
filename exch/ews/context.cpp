@@ -1176,8 +1176,8 @@ void EWSContext::send(const std::string& dir, const MESSAGE_CONTENT& content) co
 		normalize(addr);
 		rcpts.emplace_back(*addr.EmailAddress);
 	}
-	ec_error_t err = cu_send_mail(mail, "smtp", m_plugin.smtp_server_ip.c_str(), m_plugin.smtp_server_port, m_auth_info.username,
-	                              rcpts);
+	auto err = cu_send_mail(mail, m_plugin.smtp_url.c_str(),
+	           m_auth_info.username, rcpts);
 	if(err != ecSuccess)
 		throw DispatchError(E3117(err));
 }

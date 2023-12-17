@@ -14,6 +14,7 @@
 #include <tinyxml2.h>
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+#include <vmime/utility/url.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/hpm_common.h>
@@ -499,8 +500,7 @@ void EWSPlugin::loadConfig()
 	cache_embedded_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_embedded_instance_lifetime"));
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 
-	smtp_server_ip = cfg->get_value("smtp_server_ip");
-	smtp_server_port = cfg->get_ll("smtp_server_port");
+	smtp_url = static_cast<std::string>(vmime::utility::url("smtp", cfg->get_value("smtp_server_ip"), cfg->get_ll("smtp_server_port")));
 
 	const char* logFilter = cfg->get_value("ews_log_filter");
 	if(logFilter && strlen(logFilter))

@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vmime/utility/url.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/authmgr.hpp>
 #include <gromox/bounce_gen.hpp>
@@ -373,14 +374,13 @@ int main(int argc, const char **argv)
 	HX_unit_size(temp_buff, std::size(temp_buff), max_rule_len, 1024, 0);
 	mlog(LV_INFO, "system: maximum extended rule length is %s", temp_buff);
 	
-	uint16_t smtp_port = pconfig->get_ll("smtp_server_port");
-	mlog(LV_NOTICE, "system: SMTP server is [%s]:%hu",
-	       g_config_file->get_value("smtp_server_ip"), smtp_port);
+	auto smtp_url = static_cast<std::string>(vmime::utility::url("smtp",
+		pconfig->get_value("smtp_server_ip"), pconfig->get_ll("smtp_server_port")));
+	mlog(LV_NOTICE, "system: SMTP server is %s", smtp_url.c_str());
 	
 	common_util_init(g_config_file->get_value("x500_org_name"),
 		g_config_file->get_value("default_charset"),
-		max_rcpt, max_mail, max_length, max_rule_len,
-		g_config_file->get_value("smtp_server_ip"), smtp_port,
+		max_rcpt, max_mail, max_length, max_rule_len, std::move(smtp_url),
 		g_config_file->get_value("submit_command"));
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");

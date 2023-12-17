@@ -176,9 +176,8 @@ public:
 	void wakeContext(int, std::chrono::milliseconds) const;
 
 	std::string x500_org_name; ///< organization name or empty string if not configured
-	std::string smtp_server_ip = "::1"; ///< Host to send mail to, default `"::1"`
+	std::string smtp_url;
 	std::string timestampFormat = " "; ///< format specification for log timestamps or empty to disable timestamps
-	uint16_t smtp_server_port = 25; ///< Port to send mail to, default `"25"`
 	int request_logging = 0; ///< 0 = none, 1 = request names, 2 = request data
 	int response_logging = 0; ///< 0 = none, 1 = response names, 2 = response data
 	int pretty_response = 0; ///< 0 = compact output, 1 = pretty printed response

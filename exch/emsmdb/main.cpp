@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <libHX/string.h>
+#include <vmime/utility/url.hpp>
 #include <gromox/bounce_gen.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
@@ -121,10 +122,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	int max_mail;
 	int max_rcpt;
 	int async_num;
-	uint16_t smtp_port;
 	int max_length;
 	int max_rule_len;
-	char smtp_ip[40];
 	int ping_interval;
 	char org_name[256];
 	char submit_command[1024];
@@ -159,17 +158,16 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		ping_interval = pfile->get_ll("mailbox_ping_interval");
 		HX_unit_seconds(ping_int_s, std::size(ping_int_s), ping_interval, 0);
 		HX_unit_size(max_length_s, std::size(max_length_s), max_length, 1024, 0);
-		gx_strlcpy(smtp_ip, pfile->get_value("smtp_server_ip"), std::size(smtp_ip));
-		smtp_port = pfile->get_ll("smtp_server_port");
+		auto smtp_url = static_cast<std::string>(vmime::utility::url("smtp", pfile->get_value("smtp_server_ip"), pfile->get_ll("smtp_server_port")));
 		gx_strlcpy(submit_command, pfile->get_value("submit_command"), std::size(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
 
 		mlog(LV_INFO, "emsmdb: x500=\"%s\", max_rcpt=%d, "
 		        "max_mail=%d, max_mail_len=%s, max_ext_rule_len=%s, "
-		        "ping_int=%s, async_threads=%d, smtp=[%s]:%hu",
+		        "ping_int=%s, async_threads=%d, smtp=%s",
 		       org_name, max_rcpt,
 		       max_mail, max_length_s, max_rule_len_s, ping_int_s,
-		       async_num, smtp_ip, smtp_port);
+		       async_num, smtp_url.c_str());
 		
 #define regsvr(f) register_service(#f, f)
 		if (!regsvr(asyncemsmdb_interface_async_wait) ||
@@ -195,8 +193,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			mlog(LV_ERR, "emsmdb: failed to register emsmdb interface");
 			return FALSE;
 		}
-		common_util_init(org_name, max_rcpt, max_mail,
-			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
+		common_util_init(org_name, max_rcpt, max_mail, max_length,
+			max_rule_len, std::move(smtp_url), submit_command);
 		rop_processor_init(ping_interval);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
