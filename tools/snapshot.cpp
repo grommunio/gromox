@@ -14,8 +14,17 @@
 #include <unistd.h>
 #include <libHX/proc.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_IOCTL_H
+#	include <sys/ioctl.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
+#	include <sys/statfs.h>
+#endif
 #include <gromox/config_file.hpp>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
+
+using namespace gromox;
 
 static unsigned int g_keep_months, g_keep_weeks, g_keep_days, g_keep_hours;
 static std::string g_subvolume_root, g_snapshot_archive;
@@ -29,6 +38,24 @@ static constexpr cfg_directive snapshot_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
+static errno_t reflink_supported(const std::string &src, const std::string &dst)
+{
+#ifdef __linux__
+	gromox::tmpfile stf, dtf;
+	wrapfd sfd(stf.open_anon(src.c_str(), O_RDWR, 0600));
+	if (sfd.get() < 0)
+		return errno;
+	wrapfd dfd(dtf.open_anon(dst.c_str(), O_RDWR, 0600));
+	if (dfd.get() < 0)
+		return errno;
+	if (ioctl(dfd.get(), _IOW(0x94, 9, int), sfd.get()) != 0)
+		return errno;
+	return 0;
+#else
+	return EOPNOTSUPP;
+#endif
+}
+
 static int do_snap(const std::string &grpdir, const char *today)
 {
 	auto sndir = grpdir + "/" + today;
@@ -41,11 +68,38 @@ static int do_snap(const std::string &grpdir, const char *today)
 		fprintf(stderr, "stat %s: %s\n", sndir.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
-	const char *const args_1[] = {
-		"btrfs", "subvolume", "snapshot", "-r",
+#ifdef __linux__
+	struct statfs sb;
+	if (statfs(g_subvolume_root.c_str(), &sb) != 0) {
+		fprintf(stderr, "statfs %s: %s\n",
+			g_subvolume_root.c_str(), strerror(errno));
+		return EXIT_FAILURE;
+	}
+	static constexpr unsigned int btrfs_magic = 0x9123683e;
+	if (sb.f_type == btrfs_magic) {
+		const char *const a_btrfs[] = {
+			"btrfs", "subvolume", "snapshot", "-r",
+			g_subvolume_root.c_str(), sndir.c_str(), nullptr,
+		};
+		return HXproc_run_sync(a_btrfs, HXPROC_NULL_STDIN) == 0 ?
+		       EXIT_SUCCESS : EXIT_FAILURE;
+	}
+	auto err = reflink_supported(g_subvolume_root, grpdir);
+	if (err != 0) {
+		fprintf(stderr, "FICLONE support %s & %s: %s\n",
+			g_subvolume_root.c_str(), grpdir.c_str(), strerror(err));
+		return EXIT_FAILURE;
+	}
+	const char *const a_reflink[] = {
+		"cp", "-a", "--reflink=always",
 		g_subvolume_root.c_str(), sndir.c_str(), nullptr,
 	};
-	return HXproc_run_sync(args_1, HXPROC_NULL_STDIN) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+	return HXproc_run_sync(a_reflink, HXPROC_NULL_STDIN) == 0 ?
+	       EXIT_SUCCESS : EXIT_FAILURE;
+#else
+	fprintf(stderr, "Don't know how to perform snapshots on this OS\n");
+	return EXIT_FAILURE;
+#endif
 }
 
 static int do_purge(const char *grpdir, unsigned int mtime, unsigned int mmin)

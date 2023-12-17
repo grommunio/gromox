@@ -145,7 +145,7 @@ PKG_CHECK_MODULES([zlib], [zlib])
 dnl Linux-PAM only gained a .pc file in v1.5.1-41-gb4f0e2e1 (2021)
 have_pamheader=""
 AC_CHECK_HEADERS([crypt.h endian.h syslog.h])
-AC_CHECK_HEADERS([sys/endian.h sys/epoll.h sys/event.h sys/random.h sys/xattr.h])
+AC_CHECK_HEADERS([sys/endian.h sys/epoll.h sys/event.h sys/ioctl.h sys/random.h sys/vfs.h sys/xattr.h])
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_ESEDB], [test "$have_esedb" = 1])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
