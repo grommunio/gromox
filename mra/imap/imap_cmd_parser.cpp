@@ -219,21 +219,11 @@ static inline bool special_folder(const char *name)
 static bool iseq_contains(const imap_seq_list &list,
 	unsigned int num, unsigned int max_uid)
 {
-	for (const auto &seq : list) {
-		if (seq.hi == SEQ_STAR) {
-			if (seq.lo == SEQ_STAR) {
-				if (num == max_uid)
-					return TRUE;
-			} else {
-				if (num >= seq.lo)
-					return TRUE;
-			}
-		} else {
-			if (seq.hi >= num && seq.lo <= num)
-				return TRUE;
-		}
-	}
-	return FALSE;
+	auto i = std::lower_bound(list.cbegin(), list.cend(), num,
+	         [](const range_node<uint32_t> &rn, uint32_t vv) { return rn.hi < vv; });
+	if (i == list.cend())
+		return false;
+	return i->lo <= num && num <= i->hi && num <= max_uid;
 }
 
 static std::string quote_encode(const char *u7)
