@@ -48,8 +48,8 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
-	{"daemons_fd_limit", "lmtp_fd_limit", CFG_ALIAS},
-	{"lmtp_fd_limit", "0", CFG_SIZE},
+	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
+	{"lda_fd_limit", "0", CFG_SIZE},
 	CFG_TABLE_END,
 };
 
@@ -165,7 +165,7 @@ int main(int argc, const char **argv)
 	HX_unit_size(temp_buff, std::size(temp_buff), max_mem, 1024, 0);
 	mlog(LV_INFO, "message_dequeue: maximum allocated memory is %s", temp_buff);
     
-	filedes_limit_bump(gxconfig->get_ll("lmtp_fd_limit"));
+	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),

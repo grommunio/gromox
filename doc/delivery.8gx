@@ -22,9 +22,9 @@ The following directives are recognized when reading from
 custom file:
 .TP
 \fBdaemons_fd_limit\fP
-In gromox-delivery, this is treated as an alias for lmtp_fd_limit.
+In gromox-delivery, this is treated as an alias for lda_fd_limit.
 .TP
-\fBlmtp_fd_limit\fP
+\fBlda_fd_limit\fP
 Request that the file descriptor table be at least this large. The magic value
 0 indicates that the system default hard limit (rlim_max, cf. setrlimit(2))
 should be used.

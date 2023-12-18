@@ -468,7 +468,7 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
-	filedes_limit_bump(gxconfig->get_ll("lmtp_fd_limit"));
+	filedes_limit_bump(gxconfig->get_ll("lda_fd_limit"));
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
