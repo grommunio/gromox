@@ -1,3 +1,22 @@
+Development 2.20.28
+===================
+
+Fixes:
+
+* exch: fix nonsensical compare operation in check_message_owner
+* lib: guard against an integer overflow when inserting last element in range_set
+
+Enhancements:
+
+* Support for outgoing message submission via postdrop. Use the new config
+  directive ``outgoing_smtp_url=sendmail://localhost`` in gromox.cfg.
+* gromox-snapshot: Support snapshots on XFS
+
+Behavioral changes:
+
+* kdb2mt: remove option aliases that have been deprecated for a year
+
+
 Gromox 2.20 (2023-12-15)
 ========================
 
