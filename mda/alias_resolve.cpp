@@ -204,7 +204,9 @@ static hook_result xa_alias_subst(MESSAGE_CONTEXT *ctx) try
 			 * extension removal to our own domains.
 			 */
 			size_t atpos = at - todo[i].c_str();
-			auto expos = todo[i].find_first_of(g_rcpt_delimiter.c_str(), 0, atpos);
+			auto sv = atpos == todo[i].npos ? std::string_view(todo[i]) :
+			          std::string_view(todo[i].c_str(), atpos);
+			auto expos = sv.find_first_of(g_rcpt_delimiter);
 			if (expos != todo[i].npos && expos < atpos)
 				todo[i].erase(expos, atpos - expos);
 		}
