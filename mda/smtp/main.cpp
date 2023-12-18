@@ -71,6 +71,12 @@ static std::vector<std::string> g_dfl_svc_plugins = {
 	"libgxs_user_filter.so",
 };
 
+static constexpr cfg_directive gromox_cfg_defaults[] = {
+	{"daemons_fd_limit", "lda_fd_limit", CFG_ALIAS},
+	{"lda_fd_limit", "0", CFG_SIZE},
+	CFG_TABLE_END,
+};
+
 static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"command_protocol", "both"},
 	{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
@@ -347,11 +353,11 @@ int main(int argc, const char **argv)
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		mlog(LV_ERR, "resource: config_file_init %s: %s",
 			opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
-		return EXIT_FAILURE;
-	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", dq_gxcfg_dflt);
+	auto gxconfig = config_file_prg(opt_config_file, "gromox.cfg", gromox_cfg_defaults);
 	if (opt_config_file != nullptr && gxconfig == nullptr)
 		mlog(LV_ERR, "%s: %s", opt_config_file, strerror(errno));
+	if (g_config_file == nullptr)
+		return EXIT_FAILURE;
 	if (!dq_reload_config(gxconfig, g_config_file))
 		return EXIT_FAILURE;
 
