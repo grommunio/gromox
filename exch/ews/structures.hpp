@@ -604,8 +604,7 @@ struct tCalendarEvent : public NS_EWS_Types
 	std::optional<tCalendarEventDetails> CalendarEventDetails;
 };
 
-struct tContactsView : public tBasePagingType
-{
+struct tContactsView final : public tBasePagingType {
 	explicit tContactsView(const tinyxml2::XMLElement*);
 
 	std::optional<std::string> InitialName; // Attribute
@@ -953,8 +952,7 @@ struct tFlagType
 /**
  * Types.xsd:4212
  */
-struct tFractionalPageView : public tBasePagingType
-{
+struct tFractionalPageView final : public tBasePagingType {
 	tFractionalPageView(const tinyxml2::XMLElement*);
 
 	int Numerator; // Attribute
@@ -989,8 +987,7 @@ struct tIndexedFieldURI
 /**
  * Types.xsd:4203
  */
-struct tIndexedPageView : public tBasePagingType
-{
+struct tIndexedPageView final : public tBasePagingType {
 	explicit tIndexedPageView(const tinyxml2::XMLElement*);
 
 	uint32_t Offset; // Attribute
@@ -1693,8 +1690,7 @@ struct tCalendarItem : public tItem
 /**
  * Types.xsd:4232
  */
-struct tCalendarView : public tBasePagingType
-{
+struct tCalendarView final : public tBasePagingType {
 	explicit tCalendarView(const tinyxml2::XMLElement*);
 
 	std::optional<sTimePoint> StartDate; // Attribute
