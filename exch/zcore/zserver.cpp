@@ -174,7 +174,7 @@ static void *zcorezs_scanwork(void *param)
 	struct pollfd fdpoll;
 	
 	count = 0;
-	zcresp_notifdequeue response;
+	zcresp_notifdequeue response{};
 	response.call_id = zcore_callid::notifdequeue;
 	response.result = ecSuccess;
 	while (!g_notify_stop) {
@@ -578,7 +578,7 @@ static void zs_notification_proc(const char *dir,
 				continue;
 			std::list<sink_node> holder;
 			holder.splice(holder.end(), pinfo->sink_list, psink_node);
-			zcresp_notifdequeue response;
+			zcresp_notifdequeue response{};
 			response.call_id = zcore_callid::notifdequeue;
 			response.result  = ecSuccess;
 			response.notifications.count = 1;
