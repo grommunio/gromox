@@ -12,7 +12,6 @@ enum cfg_flags {
 	CFG_TIME = 0x4U,
 	CFG_ALIAS = 0x8U,
 	CFG_TIME_NS = 0x10U,
-	CFG_TOUCHED = 0x80U,
 };
 
 /**
@@ -36,6 +35,7 @@ class GX_EXPORT config_file {
 	BOOL save();
 
 	std::string m_filename;
+	bool m_touched = false;
 
 	private:
 	struct GX_EXPORT cfg_entry {
