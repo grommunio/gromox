@@ -40,9 +40,6 @@ namespace gromox::EWS::Exceptions
 EWSError::EWSError(const char* t, const std::string& m) : DispatchError(m), type(t)
 {}
 
-void DispatchError::unused() {}
-void EWSError::unused() {}
-
 } // gromox::EWS::Exceptions
 
 using namespace gromox;

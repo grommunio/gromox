@@ -39,7 +39,6 @@ class UnknownRequestError : public std::runtime_error
 class DispatchError : public std::runtime_error
 {
 	using std::runtime_error::runtime_error;
-	virtual void unused(); ///< Used to define vtable location
 };
 
 /**
@@ -53,7 +52,6 @@ class DispatchError : public std::runtime_error
  */
 class EWSError : public DispatchError
 {
-	virtual void unused() override; ///< Used to define vtable location
 public:
 	EWSError(const char*, const std::string&);
 
