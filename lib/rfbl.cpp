@@ -1730,6 +1730,7 @@ void config_file::set_value(const char *sk, const char *sv) try
 		if (i == m_vars.end()) {
 //			printf("\e[32m\t%s = \e[1m%s\e[0m\n", key, sv);
 			m_vars.emplace(key, cfg_entry{sv});
+			m_touched = true;
 			return;
 		} else if (i->second.m_flags & CFG_ALIAS) {
 //			printf("\e[32m\t%s ...\e[0m\n", key, sv);
@@ -1737,6 +1738,7 @@ void config_file::set_value(const char *sk, const char *sv) try
 		} else {
 //			printf("\e[32m\t%s = \e[1m%s\e[0m\n", key, sv);
 			i->second.set(sv);
+			m_touched = true;
 			return;
 		}
 	}
@@ -1746,8 +1748,7 @@ void config_file::set_value(const char *sk, const char *sv) try
 
 BOOL config_file::save()
 {
-	if (std::none_of(m_vars.cbegin(), m_vars.cend(),
-	    [&](const value_type &kv) { return kv.second.m_flags & CFG_TOUCHED; }))
+	if (!m_touched)
 		return TRUE;
 	std::unique_ptr<FILE, file_deleter> fp(fopen(m_filename.c_str(), "w"));
 	if (fp == nullptr) {
@@ -1791,6 +1792,7 @@ std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename,
 		*key_end = '\0';
 		cfg->set_value(key_begin, p);
 	}
+	cfg->m_touched = false;
 	return cfg;
 } catch (const std::bad_alloc &) {
 	return nullptr;
