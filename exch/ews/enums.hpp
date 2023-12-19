@@ -128,6 +128,7 @@ struct Enum
 	STR(CompanyMainPhone);
 	STR(Complete);
 	STR(Common);
+	STR(Completed);
 	STR(Confidential);
 	STR(Contact);
 	STR(Contacts);
@@ -142,6 +143,7 @@ struct Enum
 	STR(Decline);
 	STR(Deep);
 	STR(Default);
+	STR(Deferred);
 	STR(DeletedEvent);
 	STR(DeliveryRestriction);
 	STR(Descending);
@@ -186,6 +188,7 @@ struct Enum
 	STR(HomePhone2);
 	STR(IdOnly);
 	STR(ImplicitContact);
+	STR(InProgress);
 	STR(Integer);
 	STR(IntegerArray);
 	STR(InternetHeaders);
@@ -239,6 +242,7 @@ struct Enum
 	STR(NormalAndAssociatedItems);
 	STR(NormalItems);
 	STR(NotFlagged);
+	STR(NotStarted);
 	STR(November);
 	STR(Null);
 	STR(OOF);
@@ -312,6 +316,7 @@ struct Enum
 	STR(UnifiedMessagingConfiguration);
 	STR(Unknown);
 	STR(User);
+	STR(WaitingOnOthers);
 	STR(Wednesday);
 	STR(Weekday);
 	STR(Weekendday);
@@ -430,6 +435,7 @@ struct Enum
 	using SortDirectionType = StrEnum<Ascending, Descending>; ///< Types.xsd:5986, in sync with TABLE_SORT_(ASCEND|DESCEND)
 	using SuggestionQuality = StrEnum<Excellent, Good, Fair, Poor>; ///< Types.xsd:6423
 	using SyncFolderItemsScopeType = StrEnum<NormalItems, NormalAndAssociatedItems>; ///< Types.xsd:6256
+	using TaskStatusType = StrEnum<NotStarted, InProgress, Completed, WaitingOnOthers, Deferred>; ///< Types.xsd:4072
 };
 
 }

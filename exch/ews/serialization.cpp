@@ -330,6 +330,36 @@ void tBody::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPA(IsTruncated);
 }
 
+tTask::tTask(const tinyxml2::XMLElement* xml) :
+	tItem(xml)
+{}
+
+void tTask::serialize(tinyxml2::XMLElement* xml) const
+{
+	tItem::serialize(xml);
+
+	XMLDUMPT(ActualWork);
+	XMLDUMPT(AssignedTime);
+	XMLDUMPT(BillingInformation);
+	XMLDUMPT(ChangeCount);
+	XMLDUMPT(Companies);
+	XMLDUMPT(CompleteDate);
+	XMLDUMPT(Contacts);
+	XMLDUMPT(Delegator);
+	XMLDUMPT(DueDate);
+	XMLDUMPT(IsAssignmentEditable);
+	XMLDUMPT(IsComplete);
+	XMLDUMPT(IsRecurring);
+	XMLDUMPT(IsTeamTask);
+	XMLDUMPT(Mileage);
+	XMLDUMPT(Owner);
+	// XMLDUMPT(PercentComplete);
+	XMLDUMPT(StartDate);
+	XMLDUMPT(Status);
+	XMLDUMPT(StatusDescription);
+	XMLDUMPT(TotalWork);
+}
+
 void tCalendarEventDetails::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(ID);
