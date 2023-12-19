@@ -69,6 +69,10 @@ struct tItemChange;
 struct tItemResponseShape;
 struct tPath;
 struct tMessage;
+struct tMeetingMessage;
+struct tMeetingRequestMessage;
+struct tMeetingResponseMessage;
+struct tMeetingCancellationMessage;
 struct tModifiedEvent;
 struct tReferenceAttachment;
 struct tSearchFolderType;
@@ -151,6 +155,9 @@ private:
 };
 
 using sFolderId = std::variant<tFolderId, tDistinguishedFolderId>;
+
+/// Function to get tag id from property name
+using sGetNameId = std::function<uint16_t(const PROPERTY_NAME&)>;
 
 /**
  * @brief     Message entry ID extension
@@ -256,7 +263,8 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 		<PostItem/>
 	</Items>
 	*/
-using sItem = std::variant<tItem, tMessage, tCalendarItem, tContact>;
+using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
+	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact>;
 
 /**
  * c.f. Types.xsd:1502
@@ -430,6 +438,7 @@ struct sTimePoint
 	explicit sTimePoint(const gromox::time_point&);
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
+	explicit sTimePoint(const tinyxml2::XMLAttribute*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -509,12 +518,13 @@ ALIAS(tBaseNotificationEvent, StatusEvent);
 struct tBasePagingType
 {
 	explicit tBasePagingType(const tinyxml2::XMLElement* xml);
-	virtual ~tBasePagingType();
+	virtual ~tBasePagingType() = default;
 
 	std::optional<int32_t> MaxEntriesReturned; // Attribute
 
-	virtual uint32_t offset(uint32_t) const = 0;
-	virtual void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const = 0;
+	virtual RESTRICTION* restriction(const sGetNameId&) const;
+	virtual uint32_t offset(uint32_t) const;
+	virtual void update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const;
 };
 
 /**
@@ -592,6 +602,18 @@ struct tCalendarEvent : public NS_EWS_Types
 	sTimePoint EndTime;
 	Enum::LegacyFreeBusyType BusyType;
 	std::optional<tCalendarEventDetails> CalendarEventDetails;
+};
+
+struct tContactsView : public tBasePagingType
+{
+	explicit tContactsView(const tinyxml2::XMLElement*);
+
+	std::optional<std::string> InitialName; // Attribute
+	std::optional<std::string> FinalName; // Attribute
+
+	RESTRICTION* restriction(const sGetNameId&) const override;
+
+	static RESTRICTION* namefilter(const std::string&, relop);
 };
 
 /**
@@ -767,6 +789,7 @@ struct tExtendedFieldURI
 	uint16_t type() const;
 
 	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 	PROPERTY_NAME name() const;
 
 	static const char* typeName(uint16_t);
@@ -840,7 +863,7 @@ struct tFieldURI
 	tFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 
 	std::string FieldURI; //Attribute
 
@@ -891,6 +914,29 @@ struct tFindFolderParent : public tFindResponsePagingAttributes
 };
 
 /**
+ * Types.xsd:5777
+ */
+struct tGroupedItems : NS_EWS_Types
+{
+	std::string GroupIndex;
+	std::vector<sItem> Items;
+	// <xs:element name="GroupSummary" type="t:GroupSummaryType" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:2345
+ */
+struct tFindItemParent : public tFindResponsePagingAttributes
+{
+	std::vector<sItem> Items;
+	std::vector<tGroupedItems> Groups;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Types.xsd:2436
  */
 struct tFlagType
@@ -918,6 +964,7 @@ struct tFractionalPageView : public tBasePagingType
 	void update(tFindResponsePagingAttributes&, uint32_t, uint32_t total) const override;
 };
 
+
 /**
  * Types.xsd:1108
  */
@@ -928,10 +975,15 @@ struct tIndexedFieldURI
 	tIndexedFieldURI(const tinyxml2::XMLElement*);
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 
 	std::string FieldURI; //Attribute
 	std::string FieldIndex; //Attribute
+
+	using UIKey = std::pair<std::string, std::string>;
+	//Types.xsd:988
+	static std::array<std::pair<UIKey, uint32_t>, 28> tagMap;
+	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 4> nameMap;
 };
 
 /**
@@ -976,9 +1028,22 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 	explicit inline tPath(Base &&b) : Base(std::move(b)) {}
 
 	void tags(sShape&, bool=true) const;
-	uint32_t tag() const;
+	uint32_t tag(const sGetNameId&) const;
 
 	inline const Base& asVariant() const {return static_cast<const Base&>(*this);}
+};
+
+/**
+ * Messages.xsd:5992
+ */
+struct tFieldOrder
+{
+	explicit tFieldOrder(const tinyxml2::XMLElement*);
+
+	static SORTORDER_SET* build(const std::vector<tFieldOrder>&, const sGetNameId&);
+
+	tPath fieldURI;
+	Enum::SortDirectionType Order; //Attribute;
 };
 
 /**
@@ -1626,6 +1691,63 @@ struct tCalendarItem : public tItem
 };
 
 /**
+ * Types.xsd:4232
+ */
+struct tCalendarView : public tBasePagingType
+{
+	explicit tCalendarView(const tinyxml2::XMLElement*);
+
+	std::optional<sTimePoint> StartDate; // Attribute
+	std::optional<sTimePoint> EndDate; // Attribute
+
+	RESTRICTION* restriction(const sGetNameId&) const override;
+
+	static RESTRICTION* datefilter(const sTimePoint&, bool, const sGetNameId&);
+};
+
+/**
+ * Types.xsd:5317
+ */
+struct tCompleteName : public NS_EWS_Types
+{
+	static constexpr char NAME[] = "CompleteName";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	tCompleteName() = default;
+
+	std::optional<std::string> Title;
+	std::optional<std::string> FirstName;
+	std::optional<std::string> MiddleName;
+	std::optional<std::string> LastName;
+	std::optional<std::string> Suffix;
+	std::optional<std::string> Initials;
+	std::optional<std::string> FullName;
+	std::optional<std::string> Nickname;
+	std::optional<std::string> YomiFirstName;
+	std::optional<std::string> YomiLastName;
+};
+
+/**
+ * Types.xsd:5379
+ */
+struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
+{
+	static constexpr char NAME[] = "Entry";
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	Enum::PhysicalAddressKeyType Key; // Attribute
+
+	std::optional<std::string> Street;
+	std::optional<std::string> City;
+	std::optional<std::string> State;
+	std::optional<std::string> CountryOrRegion;
+	std::optional<std::string> PostalCode;
+
+};
+
+/**
  * Types.xsd:5541
  */
 struct tContact : public tItem
@@ -1639,17 +1761,17 @@ struct tContact : public tItem
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::string> FileAs;
-	// <xs:element name="FileAsMapping" type="t:FileAsMappingType" minOccurs="0" />
+	std::optional<Enum::FileAsMappingType> FileAsMapping;
 	std::optional<std::string> DisplayName;
 	std::optional<std::string> GivenName;
 	std::optional<std::string> Initials;
 	std::optional<std::string> MiddleName;
 	std::optional<std::string> Nickname;
-	// <xs:element name="CompleteName" type="t:CompleteNameType" minOccurs="0" />
+	std::optional<tCompleteName> CompleteName;
 	std::optional<std::string> CompanyName;
 	std::optional<std::vector<tEmailAddressDictionaryEntry>> EmailAddresses;
 	// <xs:element name="AbchEmailAddresses" type="t:AbchEmailAddressDictionaryType" minOccurs="0" />
-	// <xs:element name="PhysicalAddresses" type="t:PhysicalAddressDictionaryType" minOccurs="0" />
+	std::optional<std::vector<tPhysicalAddressDictionaryEntry>> PhysicalAddresses;
 	std::optional<std::vector<tPhoneNumberDictionaryEntry>> PhoneNumbers;
 	std::optional<std::string> AssistantName;
 	// <xs:element name="Birthday" type="xs:dateTime" minOccurs="0" />
@@ -1790,10 +1912,16 @@ struct tItemResponseShape
 
 	static constexpr std::array<uint32_t, 1> tagsStructural = {PR_MESSAGE_CLASS};
 	static constexpr std::array<uint32_t, 2> tagsIdOnly = {PR_ENTRYID, PR_CHANGE_KEY};
-	static constexpr std::array<uint32_t, 7> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
+	static constexpr std::array<uint32_t, 29> tagsDefault = {PR_SUBJECT, PR_HASATTACH,
 		PR_ASSOCIATED, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS, PR_SENDER_NAME,
-		PR_LOCAL_COMMIT_TIME};
-	static const std::array<std::pair<const PROPERTY_NAME*, uint16_t>, 2> namedTagsDefault;
+		PR_LOCAL_COMMIT_TIME, PR_DISPLAY_NAME_PREFIX, PR_GIVEN_NAME, PR_MIDDLE_NAME,
+		PR_SURNAME, PR_GENERATION, PR_INITIALS, PR_DISPLAY_NAME, PR_NICKNAME,
+		PR_BUSINESS_TELEPHONE_NUMBER, PR_HOME_TELEPHONE_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER,
+		PR_BUSINESS2_TELEPHONE_NUMBER, PR_MOBILE_TELEPHONE_NUMBER, PR_PAGER_TELEPHONE_NUMBER,
+		PR_BUSINESS_FAX_NUMBER, PR_ASSISTANT_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
+		PR_COMPANY_MAIN_PHONE_NUMBER, PR_HOME_FAX_NUMBER, PR_OTHER_TELEPHONE_NUMBER,
+		PR_CALLBACK_TELEPHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER};
+	static const std::array<std::pair<const PROPERTY_NAME*, uint16_t>, 5> namedTagsDefault;
 };
 
 /**
@@ -1969,6 +2097,150 @@ struct tMessage : public tItem
 	//<xs:element name="PublishedCalendarItemName" type="xs:string" minOccurs="0" />
 
 	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:5026
+ */
+struct tMeetingMessage : public tMessage
+{
+	static constexpr char NAME[] = "MeetingMessage";
+
+	using tMessage::tMessage;
+
+	// <xs:element name="AssociatedCalendarItemId" type="t:ItemIdType" minOccurs="0"/>
+	// <xs:element name="IsDelegated" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsOutOfDate" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="HasBeenProcessed" type="xs:boolean" minOccurs="0" />
+
+	// <!-- Meeting response related properties -->
+
+	// <xs:element name="ResponseType" type="t:ResponseTypeType" minOccurs="0" />
+
+	// <!-- iCalendar properties -->
+
+	// <xs:element name="UID" type="xs:string" minOccurs="0" />
+	// <xs:element name="RecurrenceId" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="DateTimeStamp" type="xs:dateTime" minOccurs="0" />
+
+	// <xs:element name="IsOrganizer" type="xs:boolean" minOccurs="0" />
+};
+
+/**
+ * Types.xsd:5064
+ */
+struct tMeetingRequestMessage : public tMeetingMessage
+{
+	static constexpr char NAME[] = "MeetingRequest";
+
+	using tMeetingMessage::tMeetingMessage;
+
+	// <!--- MeetingRequest properties -->
+
+	// <xs:element name="MeetingRequestType" type="t:MeetingRequestTypeType" minOccurs="0" />
+	// <xs:element name="IntendedFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+
+	// <!-- Calendar Properties of the associated meeting request -->
+
+	// <!-- Single and Occurrence only -->
+
+	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+
+	// <!-- Occurrence only -->
+
+	// <xs:element name="OriginalStart" type="xs:dateTime" minOccurs="0" />
+
+	// <xs:element name="IsAllDayEvent" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="LegacyFreeBusyStatus" type="t:LegacyFreeBusyType" minOccurs="0" />
+	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	// <xs:element name="When" type="xs:string" minOccurs="0" />
+	// <xs:element name="IsMeeting" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsCancelled" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsRecurring" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="MeetingRequestWasSent" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="CalendarItemType" type="t:CalendarItemTypeType" minOccurs="0" />
+	// <xs:element name="MyResponseType" type="t:ResponseTypeType" minOccurs="0" />
+	// <xs:element name="Organizer" type="t:SingleRecipientType" minOccurs="0" />
+	// <xs:element name="RequiredAttendees" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+	// <xs:element name="OptionalAttendees" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+	// <xs:element name="Resources" type="t:NonEmptyArrayOfAttendeesType" minOccurs="0" />
+
+	// <!-- Conflicting and adjacent meetings -->
+
+	// <xs:element name="ConflictingMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="AdjacentMeetingCount" type="xs:int" minOccurs="0" />
+	// <xs:element name="ConflictingMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+	// <xs:element name="AdjacentMeetings" type="t:NonEmptyArrayOfAllItemsType" minOccurs="0" />
+
+	// <xs:element name="Duration" type="xs:string" minOccurs="0" />
+	// <xs:element name="TimeZone" type="xs:string" minOccurs="0" />
+
+	// <xs:element name="AppointmentReplyTime" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="AppointmentSequenceNumber" type="xs:int" minOccurs="0" />
+	// <xs:element name="AppointmentState" type="xs:int" minOccurs="0" />
+
+	// <!-- Recurrence specific data, only valid if CalendarItemType is RecurringMaster -->
+
+	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	// <xs:element name="FirstOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="LastOccurrence" type="t:OccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="ModifiedOccurrences" type="t:NonEmptyArrayOfOccurrenceInfoType" minOccurs="0" />
+	// <xs:element name="DeletedOccurrences" type="t:NonEmptyArrayOfDeletedOccurrencesType" minOccurs="0" />
+	// <xs:element name="MeetingTimeZone" type="t:TimeZoneType" minOccurs="0" />
+	// <xs:element name="StartTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZone" type="t:TimeZoneDefinitionType" minOccurs="0" maxOccurs="1" />
+
+	// <xs:element name="ConferenceType" type="xs:int" minOccurs="0" />
+	// <xs:element name="AllowNewTimeProposal" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="IsOnlineMeeting" type="xs:boolean" minOccurs="0" />
+	// <xs:element name="MeetingWorkspaceUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="NetShowUrl" type="xs:string" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+	// <xs:element name="ChangeHighlights" type="t:ChangeHighlightsType" minOccurs="0" />
+
+	// <xs:element name="StartWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndWallClock" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="StartTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="EndTimeZoneId" type="xs:string" minOccurs="0" maxOccurs="1" />
+	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
+};
+
+/**
+ * Types.xsd:5142
+ */
+struct tMeetingResponseMessage : public tMeetingMessage
+{
+	static constexpr char NAME[] = "MeetingResponse";
+
+	using tMeetingMessage::tMeetingMessage;
+
+	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	// <xs:element name="CalendarItemType" type="xs:string" minOccurs="0" />
+	// <xs:element name="ProposedStart" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="ProposedEnd" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+};
+
+/**
+ * Types.xsd:5159
+ */
+struct tMeetingCancellationMessage : public tMeetingMessage
+{
+	static constexpr char NAME[] = "MeetingCancellation";
+
+	using tMeetingMessage::tMeetingMessage;
+
+	// <xs:element name="Start" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="End" type="xs:dateTime" minOccurs="0" />
+	// <xs:element name="Location" type="xs:string" minOccurs="0" />
+	// <xs:element name="Recurrence" type="t:RecurrenceType" minOccurs="0" />
+	// <xs:element name="CalendarItemType" type="xs:string" minOccurs="0" />
+	// <xs:element name="EnhancedLocation" type="t:EnhancedLocationType" minOccurs="0" />
+	// <xs:element name="DoNotForwardMeeting" type="xs:boolean" minOccurs="0"/>
 };
 
 /**
@@ -2342,20 +2614,21 @@ class tRestriction
 public:
 	explicit tRestriction(const tinyxml2::XMLElement*);
 
-	const RESTRICTION* build() const;
+	RESTRICTION* build(const sGetNameId&) const;
+	static RESTRICTION* all(RESTRICTION*, RESTRICTION*);
 private:
 	const tinyxml2::XMLElement* source = nullptr;  ///< XMLElement of the contained restriction
 
-	static void build_andor(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_compare(RESTRICTION&, const tinyxml2::XMLElement*, relop);
-	static void build_contains(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_excludes(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_exists(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void build_not(RESTRICTION&, const tinyxml2::XMLElement*);
-	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*);  // Implemented in serialization.cpp
+	static void build_andor(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_compare(RESTRICTION&, const tinyxml2::XMLElement*, relop, const sGetNameId&);
+	static void build_contains(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_excludes(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_exists(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void build_not(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
+	static void deserialize(RESTRICTION&, const tinyxml2::XMLElement*, const sGetNameId&);
 
 	static void* loadConstant(const tinyxml2::XMLElement*, uint16_t);
-	static uint32_t getTag(const tinyxml2::XMLElement*);
+	static uint32_t getTag(const tinyxml2::XMLElement*, const sGetNameId&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2683,6 +2956,55 @@ struct mFindFolderResponseMessage : public mResponseMessageType
 struct mFindFolderResponse
 {
 	std::vector<mFindFolderResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1154
+ */
+struct mFindItemRequest
+{
+	explicit mFindItemRequest(const tinyxml2::XMLElement*);
+
+	tItemResponseShape ItemShape;
+	std::optional<tIndexedPageView> IndexedPageItemView;
+	std::optional<tFractionalPageView> FractionalPageItemView;
+	std::optional<tCalendarView> CalendarView;
+	std::optional<tContactsView> ContactsView;
+	//<xs:choice minOccurs="0">
+	//  <xs:element name="GroupBy" type="t:GroupByType"/>
+	//  <xs:element name="DistinguishedGroupBy" type="t:DistinguishedGroupByType"/>
+	//</xs:choice>
+	std::optional<tRestriction> Restriction;
+	std::optional<std::vector<tFieldOrder>> SortOrder;
+	//<xs:element name="SortOrder" type="t:NonEmptyArrayOfFieldOrdersType" minOccurs="0"/>
+	std::vector<sFolderId> ParentFolderIds;
+	//<xs:element name="QueryString" type="m:QueryStringType" minOccurs="0" maxOccurs="1"/>
+	Enum::ItemQueryTraversalType Traversal; // Attribute
+};
+
+/**
+ * Messages.xsd:1553
+ */
+struct mFindItemResponseMessage : mResponseMessageType
+{
+	static constexpr char NAME[] = "FindItemResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<tFindItemParent> RootFolder;
+	//<xs:element name="HighlightTerms" type="t:ArrayOfHighlightTermsType" minOccurs="0" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:1563
+ */
+struct mFindItemResponse
+{
+	std::vector<mFindItemResponseMessage> ResponseMessages;
 
 	void serialize(tinyxml2::XMLElement*) const;
 };

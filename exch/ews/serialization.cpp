@@ -231,6 +231,9 @@ sTime::sTime(const XMLElement* xml)
 		throw DeserializationError(E3042(xml->Name(), xml->GetText()));
 }
 
+sTimePoint::sTimePoint(const tinyxml2::XMLAttribute* xml) : sTimePoint(xml->Value())
+{}
+
 void sTimePoint::serialize(XMLElement* xml) const
 {
 	tm t;
@@ -500,12 +503,41 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(AllowNewTimeProposal);
 }
 
+tCalendarView::tCalendarView(const tinyxml2::XMLElement* xml) :
+	tBasePagingType(xml),
+	XMLINITA(StartDate),
+	XMLINITA(EndDate)
+{}
+
 tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
 	fieldURI(fromXMLNodeVariantFind<tPath::Base>(xml))
 {}
 
 void tConflictResults::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(Count);}
+
+void tCompleteName::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(Title);
+	XMLDUMPT(FirstName);
+	XMLDUMPT(MiddleName);
+	XMLDUMPT(LastName);
+	XMLDUMPT(Suffix);
+	XMLDUMPT(Initials);
+	XMLDUMPT(FullName);
+	XMLDUMPT(Nickname);
+	XMLDUMPT(YomiFirstName);
+	XMLDUMPT(YomiLastName);
+}
+void tPhysicalAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPA(Key);
+	XMLDUMPT(Street);
+	XMLDUMPT(City);
+	XMLDUMPT(State);
+	XMLDUMPT(CountryOrRegion);
+	XMLDUMPT(PostalCode);
+}
 
 tContact::tContact(const tinyxml2::XMLElement* xml) :
 	tItem(xml),
@@ -536,8 +568,10 @@ void tContact::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Initials);
 	XMLDUMPT(MiddleName);
 	XMLDUMPT(Nickname);
+	XMLDUMPT(CompleteName);
 	XMLDUMPT(CompanyName);
 	XMLDUMPT(EmailAddresses);
+	XMLDUMPT(PhysicalAddresses);
 	XMLDUMPT(PhoneNumbers);
 	XMLDUMPT(AssistantName);
 	XMLDUMPT(Department);
@@ -546,6 +580,12 @@ void tContact::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(OfficeLocation);
 	XMLDUMPT(Surname);
 }
+
+tContactsView::tContactsView(const tinyxml2::XMLElement* xml) :
+	tBasePagingType(xml),
+	XMLINITA(InitialName),
+	XMLINITA(FinalName)
+{}
 
 tDistinguishedFolderId::tDistinguishedFolderId(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Mailbox),
@@ -614,6 +654,13 @@ void tFindFolderParent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Folders);
 }
 
+void tFindItemParent::serialize(tinyxml2::XMLElement* xml) const
+{
+	tFindResponsePagingAttributes::serialize(xml);
+	XMLDUMPT(Items);
+	XMLDUMPT(Groups);
+}
+
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(Entry.c_str());
@@ -641,6 +688,7 @@ void tExtendedFieldURI::serialize(XMLElement* xml) const
 		xml->SetAttribute("PropertyTag", fmt::format("0x{:x}", *PropertyTag).c_str());
 	XMLDUMPA(PropertyId);
 	XMLDUMPA(PropertySetId);
+	XMLDUMPA(DistinguishedPropertySetId);
 	XMLDUMPA(PropertyName);
 }
 
@@ -671,6 +719,11 @@ void tExtendedProperty::serialize(XMLElement* xml) const
 	XMLElement* value = xml->InsertNewChildElement(ismv? "t:Values" : "t:Value");
 	serialize(data, PROP_TYPE(propval.proptag), value);
 }
+
+tFieldOrder::tFieldOrder(const tinyxml2::XMLElement* xml) :
+	fieldURI(fromXMLNodeVariantFind<tPath::Base>(xml)),
+	XMLINITA(Order)
+{}
 
 tFieldURI::tFieldURI(const XMLElement* xml) :
 	XMLINITA(FieldURI)
@@ -711,6 +764,12 @@ void tFreeBusyView::serialize(XMLElement* xml) const
 tFreeBusyViewOptions::tFreeBusyViewOptions(const tinyxml2::XMLElement* xml) :
 	XMLINIT(TimeWindow), XMLINIT(MergedFreeBusyIntervalInMinutes), XMLINIT(RequestedView)
 {}
+
+void tGroupedItems::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(GroupIndex);
+	XMLDUMPT(Items);
+}
 
 tGuid::tGuid(const XMLAttribute* xml)
 {
@@ -921,10 +980,10 @@ tRestriction::tRestriction(const tinyxml2::XMLElement* xml) :
 	source(xml->FirstChildElement())
 {}
 
-uint32_t tRestriction::getTag(const tinyxml2::XMLElement* parent)
+uint32_t tRestriction::getTag(const tinyxml2::XMLElement* parent, const sGetNameId& getId)
 {
 	tPath path(fromXMLNodeVariantFind<tPath::Base>(parent));
-	return path.tag();
+	return path.tag(getId);
 }
 
 tSerializableTimeZoneTime::tSerializableTimeZoneTime(const tinyxml2::XMLElement* xml) :
@@ -1184,6 +1243,27 @@ void mFolderInfoResponseMessage::serialize(tinyxml2::XMLElement* xml) const
 	mResponseMessageType::serialize(xml);
 	XMLDUMPM(Folders);
 }
+
+mFindItemRequest::mFindItemRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(ItemShape),
+	XMLINIT(IndexedPageItemView),
+	XMLINIT(FractionalPageItemView),
+	XMLINIT(CalendarView),
+	XMLINIT(ContactsView),
+	XMLINIT(Restriction),
+	XMLINIT(SortOrder),
+	XMLINIT(ParentFolderIds),
+	XMLINITA(Traversal)
+{}
+
+void mFindItemResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(RootFolder);
+}
+
+void mFindItemResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
 
 mGetAttachmentRequest::mGetAttachmentRequest(const XMLElement* xml) :
 	XMLINIT(AttachmentIds)

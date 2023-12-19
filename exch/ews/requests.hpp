@@ -21,6 +21,7 @@ EWSFUNC(mDeleteFolderRequest);
 EWSFUNC(mDeleteItemRequest);
 EWSFUNC(mEmptyFolderRequest);
 EWSFUNC(mFindFolderRequest);
+EWSFUNC(mFindItemRequest);
 EWSFUNC(mGetAttachmentRequest);
 EWSFUNC(mGetEventsRequest);
 EWSFUNC(mGetFolderRequest);

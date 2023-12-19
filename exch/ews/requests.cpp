@@ -357,7 +357,9 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 	sShape shape(request.FolderShape);
 	uint8_t tableFlags = request.Traversal == Enum::Deep? TABLE_FLAG_DEPTH :
 	                     request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES : 0;
-	const RESTRICTION* res = request.Restriction? request.Restriction->build() : nullptr;
+
+	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
+	std::string lastDir; // Simple restriction caching
 
 	auto& exmdb = ctx.plugin().exmdb;
 	mFindFolderResponse data;
@@ -372,6 +374,11 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 		std::string dir = ctx.getDir(folder);
 		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
 			throw EWSError::AccessDenied(E3218);
+		if(dir != lastDir) {
+			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
+			res = request.Restriction? request.Restriction->build(getId) : nullptr;
+			lastDir = dir;
+		}
 		uint32_t tableId, rowCount;
 		if(!exmdb.load_hierarchy_table(dir.c_str(), folder.folderId, nullptr, tableFlags, res, &tableId, &rowCount))
 			throw EWSError::FolderPropertyRequestFailed(E3219);
@@ -397,6 +404,90 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 			if(shape.special && fid)
 				std::visit([&](auto& f) {ctx.loadSpecial(dir, sFolderEntryId(fid->Id.data(), fid->Id.size()).folderId(), f,
 						                                 shape.special);}, child);
+		}
+		if(paging)
+			paging->update(*msg.RootFolder, results, rowCount);
+		msg.RootFolder->IncludesLastItemInRange = results+offset >= rowCount;
+		msg.RootFolder->TotalItemsInView = rowCount;
+		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
+
+/**
+ * @brief      Process FindItem
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mFindItemRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental("FindItem");
+
+	response->SetName("m:FindItemResponse");
+
+	sShape shape(request.ItemShape);
+	uint8_t tableFlags = request.Traversal == Enum::SoftDeleted? TABLE_FLAG_SOFTDELETES :
+	                     request.Traversal == Enum::Associated? TABLE_FLAG_ASSOCIATED :
+	                     request.Traversal == Enum::Shallow? 0 : TABLE_FLAG_DEPTH;
+	const RESTRICTION* res = nullptr; // Must be built for every store individually (named properties)
+	const SORTORDER_SET* sort = nullptr; // Lol same
+	std::string lastDir; // Simple restriction caching
+
+	auto& exmdb = ctx.plugin().exmdb;
+	mFindItemResponse data;
+	data.ResponseMessages.reserve(request.ParentFolderIds.size());
+	// Specified as variant, so as long as at most one is given everything works as expected
+	tBasePagingType* paging = request.IndexedPageItemView? &*request.IndexedPageItemView :
+	                          request.FractionalPageItemView? &*request.FractionalPageItemView :
+	                          request.CalendarView? &*request.CalendarView :
+	                          request.ContactsView? &*request.ContactsView :
+	                          static_cast<tBasePagingType*>(nullptr);
+	uint32_t maxResults = paging && paging->MaxEntriesReturned? *paging->MaxEntriesReturned : 0;
+
+	for(const sFolderId&  folderId : request.ParentFolderIds) try {
+		sFolderSpec folder = ctx.resolveFolder(folderId);
+		std::string dir = ctx.getDir(folder);
+		if(!(ctx.permissions(dir, folder.folderId) & frightsVisible))
+			throw EWSError::AccessDenied(E3244);
+		if(dir != lastDir) {
+			auto getId = [&](const PROPERTY_NAME& name){return ctx.getNamedPropId(dir, name);};
+			RESTRICTION* res1 = request.Restriction? request.Restriction->build(getId) : nullptr;
+			RESTRICTION* res2 = paging? paging->restriction(getId) : nullptr;
+			res = tRestriction::all(res1, res2);
+			sort = request.SortOrder? tFieldOrder::build(*request.SortOrder, getId) : nullptr;
+			lastDir = dir;
+		}
+		uint32_t tableId, rowCount;
+		if(!exmdb.load_content_table(dir.c_str(), CP_UTF8, folder.folderId, "", tableFlags, res, sort, &tableId, &rowCount))
+			throw EWSError::ItemPropertyRequestFailed(E3245);
+		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+		if(!rowCount) {
+			data.ResponseMessages.emplace_back().success();
+			continue;
+		}
+		ctx.getNamedTags(dir, shape);
+		PROPTAG_ARRAY tags = shape.proptags();
+		TARRAY_SET table;
+		uint32_t offset = paging? paging->offset(rowCount) : 0;
+		uint32_t results = maxResults? std::min(maxResults, rowCount-offset) : rowCount;
+		exmdb.query_table(dir.c_str(), ctx.auth_info().username, CP_UTF8, tableId, &tags, offset, results, &table);
+		mFindItemResponseMessage msg;
+		msg.RootFolder.emplace().Items.reserve(rowCount);
+		for(const TPROPVAL_ARRAY& props : table) {
+			shape.clean();
+			shape.properties(props);
+			sItem& child = msg.RootFolder->Items.emplace_back(tItem::create(shape));
+			const auto& iid = std::visit([](auto&& i) -> std::optional<tItemId>& {return i.ItemId;}, child);
+			if(shape.special && iid) {
+				sMessageEntryId meid(iid->Id.data(), iid->Id.size());
+				std::visit([&](auto& i) {ctx.loadSpecial(dir, meid.folderId(), meid.messageId(), i, shape.special);}, child);
+			}
 		}
 		if(paging)
 			paging->update(*msg.RootFolder, results, rowCount);

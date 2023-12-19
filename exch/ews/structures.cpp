@@ -1221,8 +1221,28 @@ tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::vari
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//We have to put the vtable somewhere...
-tBasePagingType::~tBasePagingType() {}
+/**
+ * @brief      Default implementation for paging offset
+ *
+ * @return     Always 0
+ */
+uint32_t tBasePagingType::offset(uint32_t) const
+{return 0;}
+
+/**
+ * @brief      Default implementation for paging restriction
+ *
+ * @return     Always nullptr.
+ */
+RESTRICTION* tBasePagingType::restriction(const sGetNameId&) const
+{return nullptr;}
+
+/**
+ * @brief      Default implementation for paging update. Does nothing.
+ */
+void tBasePagingType::update(tFindResponsePagingAttributes&, uint32_t, uint32_t) const
+{}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1407,6 +1427,46 @@ tCalendarEvent::tCalendarEvent(const freebusy_event& fb_event) :
 	details.IsException   = fb_event.is_exception;
 	details.IsReminderSet = fb_event.is_reminderset;
 	details.IsPrivate     = fb_event.is_private;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Cerate restriction to filter by date
+ *
+ * @param      time      Timestamp to filter by
+ * @param      isStart   Whether timestamp marks beginning of the time range
+ * @param      getId     Function to retrieve named property IDs
+ *
+ * @return     Pointer to restriction or nullptr if no condition is set
+ */
+RESTRICTION* tCalendarView::datefilter(const sTimePoint& time, bool isStart, const sGetNameId& getId)
+{
+	static const PROPERTY_NAME startName = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole, nullptr},
+		endName = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole, nullptr};
+	// Counterintuitive: isStart == true -> check if end of event is after start, invert for isStart == false
+	const PROPERTY_NAME& tagName = isStart? endName : startName;
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::property;
+	res->prop = EWSContext::construct<RESTRICTION_PROPERTY>();
+	res->prop->relop = isStart? relop::ge : relop::le;
+	res->prop->proptag = res->prop->propval.proptag = PROP_TAG(PT_SYSTIME, getId(tagName));
+	res->prop->propval.pvalue = EWSContext::construct<uint64_t>(time.toNT());
+	return res;
+}
+
+/**
+ * @brief      Generate restriction to filter by event time
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @return     Pointer to restriction or nullptr if no condition is set
+ */
+RESTRICTION* tCalendarView::restriction(const sGetNameId& getId) const
+{
+	RESTRICTION *startRes = StartDate? datefilter(*StartDate, true, getId) : nullptr;
+	RESTRICTION* endRes = EndDate? datefilter(*EndDate, false, getId) : nullptr;
+	return tRestriction::all(startRes, endRes);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1601,18 +1661,12 @@ tContact::tContact(const sShape& shape) : tItem(shape)
 
 void tContact::update(const sShape& shape)
 {
-	fromProp(shape.get(PR_DISPLAY_NAME), DisplayName);
-	fromProp(shape.get(PR_GIVEN_NAME), GivenName);
-	// TODO Initials
-	fromProp(shape.get(PR_MIDDLE_NAME), MiddleName);
-	fromProp(shape.get(PR_NICKNAME), Nickname);
 	fromProp(shape.get(PR_COMPANY_NAME), CompanyName);
 	// TODO ContactSource
 	fromProp(shape.get(PR_ASSISTANT), AssistantName);
 	fromProp(shape.get(PR_DEPARTMENT_NAME), Department);
 	fromProp(shape.get(PR_TITLE), JobTitle);
 	fromProp(shape.get(PR_OFFICE_LOCATION), OfficeLocation);
-	fromProp(shape.get(PR_SURNAME), Surname);
 	const char* val;
 	if((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
@@ -1626,12 +1680,93 @@ void tContact::update(const sShape& shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::MobilePhone));
 	if((val = shape.get<char>(PR_PAGER_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Pager));
-	if((val = shape.get<char>(PR_PRIMARY_FAX_NUMBER)))
+	if((val = shape.get<char>(PR_BUSINESS_FAX_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessFax));
 	if((val = shape.get<char>(PR_ASSISTANT_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::AssistantPhone));
 	if((val = shape.get<char>(PR_HOME2_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomePhone2));
+	if((val = shape.get<char>(PR_COMPANY_MAIN_PHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::CompanyMainPhone));
+	if((val = shape.get<char>(PR_HOME_FAX_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::HomeFax));
+	if((val = shape.get<char>(PR_OTHER_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::OtherTelephone));
+	if((val = shape.get<char>(PR_CALLBACK_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Callback));
+	if((val = shape.get<char>(PR_RADIO_TELEPHONE_NUMBER)))
+		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::RadioPhone));
+	const TAGGED_PROPVAL* prop;
+	if((prop = shape.get(PR_DISPLAY_NAME_PREFIX)))
+		fromProp(prop, defaulted(CompleteName).Title);
+	if((prop = shape.get(PR_GIVEN_NAME))){
+		fromProp(prop, GivenName);
+		fromProp(prop, defaulted(CompleteName).FirstName);
+	}
+	if((prop = shape.get(PR_MIDDLE_NAME))){
+		fromProp(prop, MiddleName);
+		fromProp(prop, defaulted(CompleteName).MiddleName);
+	}
+	if((prop = shape.get(PR_SURNAME))){
+		fromProp(prop, Surname);
+		fromProp(prop, defaulted(CompleteName).LastName);
+	}
+	if((prop = shape.get(PR_GENERATION)))
+		fromProp(prop, defaulted(CompleteName).Suffix);
+	if((prop = shape.get(PR_INITIALS))){
+		fromProp(prop, Initials);
+		fromProp(prop, defaulted(CompleteName).Initials);
+	}
+	if((prop = shape.get(PR_DISPLAY_NAME))){
+		fromProp(prop, DisplayName);
+		fromProp(prop, defaulted(CompleteName).FullName);
+	}
+	if((prop = shape.get(PR_NICKNAME))){
+		fromProp(prop, Nickname);
+		fromProp(prop, defaulted(CompleteName).Nickname);
+	}
+	if((prop = shape.get(NtEmailAddress1)))
+		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress1);
+	if((prop = shape.get(NtEmailAddress2)))
+		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress2);
+	if((prop = shape.get(NtEmailAddress3)))
+		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress3);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Generate name restriction
+ *
+ * @param      name    Name to filter by
+ * @param      op      Name comparator
+ *
+ * @return     Restriction filtering by name
+ */
+RESTRICTION* tContactsView::namefilter(const std::string& name, relop op)
+{
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::property;
+	res->prop = EWSContext::alloc<RESTRICTION_PROPERTY>();
+	res->prop->relop = op;
+	res->prop->propval.proptag = res->prop->proptag = PR_DISPLAY_NAME;
+	res->prop->propval.pvalue = EWSContext::alloc(name.size()+1);
+	strcpy(static_cast<char*>(res->prop->propval.pvalue), name.c_str());
+	return res;
+}
+
+/**
+ * @brief      Generate restriction to filter by names
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @return     Pointer to restriction or nullptr if no condition is set
+ */
+RESTRICTION* tContactsView::restriction(const sGetNameId&) const
+{
+	RESTRICTION *initialRes = InitialName? namefilter(*InitialName, relop::ge) : nullptr;
+	RESTRICTION* finalRes = FinalName? namefilter(*FinalName, relop::le) : nullptr;
+	return tRestriction::all(initialRes, finalRes);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1748,41 +1883,77 @@ tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(std::string phone,
 	Entry(std::move(phone)), Key(std::move(pnkt))
 {}
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Combine restrictions into an AND restriction
+ *
+ * If at least one restriction is a nullptr, the other is returned unchanged,
+ * otherwise the restrictions are *moved* into the new parent restriction.
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @param      r1    First restriction
+ * @param      r2    Second restriction
+ *
+ * @return Pointer to combined restriction or nullptr if both inputs are nullptr
+ */
+RESTRICTION* tRestriction::all(RESTRICTION* r1, RESTRICTION* r2)
+{
+	if(!r1 || !r2)
+		return r1? r1 : r2;
+	RESTRICTION* res = EWSContext::construct<RESTRICTION>();
+	res->rt = mapi_rtype::r_and;
+	res->andor = EWSContext::construct<RESTRICTION_AND_OR>();
+	res->andor->count = 2;
+	res->andor->pres = EWSContext::alloc<RESTRICTION>(2);
+	res->andor->pres[0] = std::move(*r1);
+	res->andor->pres[1] = std::move(*r2);
+	return res;
+}
+
+
 /**
  * @brief      Build restriction from XML data
  *
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * New restriction is stack allocated and must not be freed manually.
+ *
+ * @param      getId   Function to resolve property name
+ *
  * @return     RESTRICTION* or nullptr if empty
  */
-const RESTRICTION* tRestriction::build() const
+RESTRICTION* tRestriction::build(const sGetNameId& getId) const
 {
 	if(!source)
 		return nullptr;
 	RESTRICTION* restriction = EWSContext::alloc<RESTRICTION>();
-	deserialize(*restriction, source);
+	deserialize(*restriction, source, getId);
 	return restriction;
 }
 
-void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::deserialize(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	const char* name = src->Name();
 	if(!strcmp(name, "And") || !strcmp(name, "Or"))
-		build_andor(dst, src);
+		build_andor(dst, src, getId);
 	else if(!strcmp(name, "Contains"))
-		build_contains(dst, src);
+		build_contains(dst, src, getId);
 	else if(!strcmp(name, "Excludes"))
-		build_excludes(dst, src);
+		build_excludes(dst, src, getId);
 	else if(!strcmp(name, "Exists"))
-		build_exists(dst, src);
+		build_exists(dst, src, getId);
 	else if(!strcmp(name, "Not"))
-		build_not(dst, src);
+		build_not(dst, src, getId);
 	else try {
-		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()));
+		build_compare(dst, src, relop(Enum::RestrictionRelop(name).index()), getId);
 	} catch(EnumError&) { // The name of the node could not be mapped to a relop
 		throw EWSError::InvalidRestriction(E3220(name));
 	}
 }
 
-void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = strcmp(src->Name(), "And")? mapi_rtype::r_or : mapi_rtype::r_and;
 	dst.andor = EWSContext::alloc<RESTRICTION_AND_OR>();
@@ -1791,12 +1962,12 @@ void tRestriction::build_andor(RESTRICTION& dst, const tinyxml2::XMLElement* src
 		++dst.andor->count;
 	RESTRICTION* res = dst.andor->pres = EWSContext::alloc<RESTRICTION>(dst.andor->count);
 	for(const tinyxml2::XMLElement* child = src->FirstChildElement(); child; child = child->NextSiblingElement())
-		deserialize(*res++, child);
+		deserialize(*res++, child, getId);
 }
 
-void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op)
+void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* src, relop op, const sGetNameId& getId)
 {
-	uint32_t tag = getTag(src);
+	uint32_t tag = getTag(src, getId);
 	const tinyxml2::XMLElement* cmptarget = src->FirstChildElement("FieldURIOrConstant");
 	if(!cmptarget)
 		throw EWSError::InvalidRestriction(E3221);
@@ -1811,17 +1982,17 @@ void tRestriction::build_compare(RESTRICTION& dst, const tinyxml2::XMLElement* s
 		dst.pcmp = EWSContext::construct<RESTRICTION_PROPCOMPARE>();
 		dst.pcmp->relop = op;
 		dst.pcmp->proptag1 = tag;
-		dst.pcmp->proptag2 = getTag(cmptarget);
+		dst.pcmp->proptag2 = getTag(cmptarget, getId);
 		if(!dst.pcmp->comparable())
 			throw EWSError::InvalidRestriction(E3223(dst.pcmp->proptag1, dst.pcmp->proptag2));
 	}
 }
 
-void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = mapi_rtype::content;
 	dst.cont = EWSContext::construct<RESTRICTION_CONTENT>();
-	if(!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src)))
+	if(!(dst.cont->propval.proptag = dst.cont->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3224);
 	if(!dst.cont->comparable())
 			throw EWSError::InvalidRestriction(E3225);
@@ -1859,12 +2030,12 @@ void tRestriction::build_contains(RESTRICTION& dst, const tinyxml2::XMLElement* 
 		throw EWSError::InvalidRestriction(E3228(comp));
 }
 
-void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = mapi_rtype::bitmask;
 	dst.bm = EWSContext::construct<RESTRICTION_BITMASK>();
 	dst.bm->bitmask_relop = bm_relop::nez;
-	if(!(dst.bm->proptag = getTag(src)))
+	if(!(dst.bm->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3229);
 	if(!dst.bm->comparable())
 		throw EWSError::InvalidRestriction(E3230(tExtendedFieldURI::typeName(PROP_TYPE(dst.bm->proptag)), dst.bm->proptag));
@@ -1874,22 +2045,22 @@ void tRestriction::build_excludes(RESTRICTION& dst, const tinyxml2::XMLElement* 
 	dst.bm->mask = bitmask->UnsignedAttribute("Value");
 }
 
-void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_exists(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	dst.rt = mapi_rtype::exist;
 	dst.exist = EWSContext::construct<RESTRICTION_EXIST>();
-	if(!(dst.exist->proptag = getTag(src)))
+	if(!(dst.exist->proptag = getTag(src, getId)))
 		throw EWSError::InvalidRestriction(E3232);
 }
 
-void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src)
+void tRestriction::build_not(RESTRICTION& dst, const tinyxml2::XMLElement* src, const sGetNameId& getId)
 {
 	const tinyxml2::XMLElement* child = src->FirstChildElement();
 	if(!child)
 		throw EWSError::InvalidRestriction(E3233);
 	dst.rt = mapi_rtype::r_not;
 	dst.xnot = EWSContext::construct<RESTRICTION_NOT>();
-	deserialize(dst.xnot->res, child);
+	deserialize(dst.xnot->res, child, getId);
 }
 
 void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t type)
@@ -1963,6 +2134,11 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
 		PropertyId = propname.lid;
 	else if(propname.kind == MNID_STRING)
 		PropertyName = propname.pname;
+
+	auto it = std::find_if(std::begin(propsetIds), std::end(propsetIds),
+	                       [&](const auto& propsetId){ return propsetId->compare(propname.guid) == 0; });
+	if(it != std::end(propsetIds))
+		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(uint8_t(std::distance(std::begin(propsetIds), it)));
 }
 
 /**
@@ -1972,6 +2148,18 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
  */
 uint32_t tExtendedFieldURI::tag() const
 {return PropertyTag? PROP_TAG(type(), *PropertyTag) : 0;}
+
+/**
+ * @brief      Get Tag ID
+ *
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
+ *
+ * @return     Tag ID
+ */
+uint32_t tExtendedFieldURI::tag(const sGetNameId& getId) const
+{return PROP_TAG(type(), PropertyTag? *PropertyTag : getId(name()));}
 
 /**
  * @brief      Get property name
@@ -2253,6 +2441,38 @@ void tExtendedProperty::serialize(const void* data, uint16_t type, XMLElement* x
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Generate SORTORDER_SET from FieldOrder list
+ *
+ * Result is stack allocated and must not be manually freed.
+ *
+ * @param      sorts   List of field orders
+ * @param      getId   @param      getId
+ *
+ * @return     Pointer to SORTORDER_SET structure or nullptr if input array is empty
+ */
+SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const sGetNameId& getId)
+{
+	if(sorts.empty())
+		return nullptr;
+	if(sorts.size() > std::numeric_limits<decltype(SORTORDER_SET::count)>::max())
+		throw InputError(E3247);
+	SORTORDER_SET* sset = EWSContext::construct<SORTORDER_SET>();
+	sset->count = uint16_t(sorts.size());
+	sset->ccategories = sset->cexpanded = 0;
+	sset->psort = EWSContext::alloc<SORT_ORDER>(sset->count);
+	SORT_ORDER* current = sset->psort;
+	for(const tFieldOrder& sort : sorts) {
+		uint32_t tag = sort.fieldURI.tag(getId);
+		current->type = PROP_TYPE(tag);
+		current->propid = PROP_ID(tag);
+		current->table_sort = sort.Order.index();
+	}
+	return sset;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
 	{"folder:DisplayName", PR_DISPLAY_NAME},
@@ -2302,6 +2522,14 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
+	{"contacts:CompleteName", PR_DISPLAY_NAME_PREFIX},
+	{"contacts:CompleteName", PR_GIVEN_NAME},
+	{"contacts:CompleteName", PR_MIDDLE_NAME},
+	{"contacts:CompleteName", PR_SURNAME},
+	{"contacts:CompleteName", PR_GENERATION},
+	{"contacts:CompleteName", PR_INITIALS},
+	{"contacts:CompleteName", PR_DISPLAY_NAME},
+	{"contacts:CompleteName", PR_NICKNAME}, // TODO: YomiFirstName, YomiLastName;
 	// {"calendar:OriginalStart", },
 	// {"calendar:StartTimeZone", },
 };
@@ -2349,6 +2577,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"message:ToRecipients", sShape::ToRecipients},
 }};
 
+
 void tFieldURI::tags(sShape& shape, bool add) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
@@ -2369,13 +2598,19 @@ void tFieldURI::tags(sShape& shape, bool add) const
  * @brief      Return tag of the field
  *
  * If a field is mapped to multiple tags, only the first tag is returned.
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
  *
  * @return    Tag or 0 if not found
  */
-uint32_t tFieldURI::tag() const
+uint32_t tFieldURI::tag(const sGetNameId& getId) const
 {
 	auto tags = tagMap.equal_range(FieldURI);
-	return tags.first == tags.second? 0 : tags.first->second;
+	if(tags.first != tagMap.end())
+		return tags.first->second;
+	auto names = nameMap.equal_range(FieldURI);
+	return names.first == nameMap.end()? 0 : PROP_TAG(names.first->second.second, getId(names.first->second.first));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2440,17 +2675,62 @@ std::string tGuid::serialize() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
+	{{"contacts:PhoneNumber", "BusinessPhone"}, PR_BUSINESS_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "BusinessPhone2"}, PR_BUSINESS2_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
+	{{"contacts:PhoneNumber", "CompanyMainPhone"}, PR_COMPANY_MAIN_PHONE_NUMBER},
+	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "MobilePhone"}, PR_MOBILE_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
+	{{"contacts:PhoneNumber", "HomePhone2"}, PR_HOME2_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
+	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Callback"}, PR_CALLBACK_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "RadioPhone"}, PR_RADIO_TELEPHONE_NUMBER},
+	{{"contacts:PhysicalAddress:Street", "Home"}, PR_HOME_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Home"}, PR_HOME_ADDRESS_CITY},
+	{{"contacts:PhysicalAddress:State", "Home"}, PR_HOME_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, PR_HOME_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Home"}, PR_HOME_ADDRESS_POSTAL_CODE},
+	{{"contacts:PhysicalAddress:Street", "Business"}, PR_BUSINESS_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Business"}, PR_BUSINESS_ADDRESS_CITY},
+	{{"contacts:PhysicalAddress:State", "Business"}, PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, PR_BUSINESS_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Business"}, PR_BUSINESS_ADDRESS_POSTAL_CODE},
+	{{"contacts:PhysicalAddress:Street", "Other"}, PR_OTHER_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Other"}, PR_OTHER_ADDRESS_CITY},
+	{{"contacts:PhysicalAddress:State", "Other"}, PR_OTHER_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Other"}, PR_OTHER_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Other"}, PR_OTHER_ADDRESS_POSTAL_CODE},
+}};
+
+decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
+	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, const_cast<char*>("InstantMessagingAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, const_cast<char*>("Email1EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, const_cast<char*>("Email2EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, const_cast<char*>("Email3EmailAddress")}, PT_UNICODE}},
+}};
+
+void tIndexedFieldURI::tags(sShape& shape, bool add) const
+{
+	static auto compval1 = [](const std::pair<UIKey, uint32_t>& v1, const char* const v2){return strcmp(v1.first.first.c_str(), v2) < 0;};
+
+	auto tags = std::lower_bound(tagMap.begin(), tagMap.end(), FieldURI.c_str(), compval1);
+	if(tags != tagMap.end() && tags->first.first == FieldURI && tags->first.second == FieldIndex)
+		shape.add(tags->second, add? sShape::FL_FIELD : sShape::FL_RM);
+
+	static auto compval2 = [](const std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>& v1, const char* const v2){return strcmp(v1.first.first.c_str(), v2) < 0;};
+	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), FieldURI.c_str(), compval2);
+	if(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex)
+		shape.add(names->second.first, names->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
+}
 
 /**
  * TODO: Implement tag mapping
  */
-void tIndexedFieldURI::tags(sShape&, bool) const
-{}
-
-/**
- * TODO: Implement tag mapping
- */
-uint32_t tIndexedFieldURI::tag() const
+uint32_t tIndexedFieldURI::tag(const sGetNameId&) const
 {return 0;}
 
 
@@ -2586,6 +2866,12 @@ sItem tItem::create(const sShape& shape)
 		return tCalendarItem(shape);
 	else if(!strcasecmp(itemClass, "IPM.Contact"))
 		return tContact(shape);
+	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Canceled"))
+		return tMeetingCancellationMessage(shape);
+	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Request"))
+		return tMeetingRequestMessage(shape);
+	else if(!strncasecmp(itemClass, "IPM.Schedule.Meeting.Resp", 25))
+		return tMeetingResponseMessage(shape);
 	return tItem(shape);
 }
 
@@ -2593,7 +2879,10 @@ sItem tItem::create(const sShape& shape)
 
 decltype(tItemResponseShape::namedTagsDefault) tItemResponseShape::namedTagsDefault = {{
 	{&NtCommonStart, PT_SYSTIME},
-	{&NtCommonEnd, PT_SYSTIME}
+	{&NtCommonEnd, PT_SYSTIME},
+	{&NtEmailAddress1, PT_UNICODE},
+	{&NtEmailAddress2, PT_UNICODE},
+	{&NtEmailAddress3, PT_UNICODE},
 }};
 
 /**
@@ -2608,14 +2897,14 @@ void tItemResponseShape::tags(sShape& shape) const
 		shape.add(tag);
 	for(uint32_t tag : tagsIdOnly)
 		shape.add(tag, sShape::FL_FIELD);
-	if(IncludeMimeContent && *IncludeMimeContent)
+	std::string_view type = BodyType? *BodyType : Enum::Best;
+	if((IncludeMimeContent && *IncludeMimeContent) || (BodyType && type == Enum::Best))
 		shape.special |= sShape::MimeContent;
 	if(AdditionalProperties)
 		for(const auto& additional : *AdditionalProperties)
 			additional.tags(shape);
 	if(shape.special & sShape::Body)
 	{
-		std::string_view type = BodyType? *BodyType : Enum::Best;
 		if(type == Enum::Best || type == Enum::Text)
 			shape.add(PR_BODY, sShape::FL_FIELD);
 		if(type == Enum::Best || type == Enum::HTML)
@@ -2701,11 +2990,15 @@ void tPath::tags(sShape& shape, bool add) const
  *
  * In most cases a path maps to exactly one tag,
  * for the other cases only the first mapped tag is returned.
+ * Automatically tries to resolve named properties to the correct tag.
+ *
+ * @param      getId   Function to resolve property name
  *
  * @return    Tag or 0 if not found
  */
-uint32_t tPath::tag() const
-{return std::visit([&](auto&& v){return v.tag();}, asVariant());};
+uint32_t tPath::tag(const sGetNameId& getId) const
+{return std::visit([&](auto&& v){return v.tag(getId);}, asVariant());};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

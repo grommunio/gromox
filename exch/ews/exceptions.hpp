@@ -365,6 +365,10 @@ inline std::string E3240(const std::string_view& val) {return fmt::format("E-324
 inline std::string E3241(const char* type) {return fmt::format("E-3241: Constant Value of type {} is not supported", type);}
 E(3242, "unsupported ConnectingSID for impersonation");
 E(3243, "insufficient permissions to impersonate user");
+E(3244, "cannot access target folder");
+E(3245, "failed to load content table");
+E(3246, "failed to get named property id");
+E(3247, "too many sort fields");
 
 #undef E
 }
