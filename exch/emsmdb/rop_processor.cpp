@@ -49,13 +49,6 @@ unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;
 
-std::unique_ptr<LOGMAP> rop_processor_create_logmap() try
-{
-	return std::make_unique<LOGMAP>();
-} catch (const std::bad_alloc &) {
-	return nullptr;
-}
-
 object_node::object_node(object_node &&o) noexcept :
 	handle(std::move(o.handle)),
 	type(std::move(o.type)), pobject(std::move(o.pobject))
@@ -504,7 +497,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		uint32_t last_offset = ext_push.m_offset;
 		auto pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
 		ems_objtype type;
-		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap.get(), pnotify->logon_id, pnotify->handle, &type);
+		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (type == ems_objtype::table &&
 			    pnotify->nflags & NF_TABLE_MODIFIED &&

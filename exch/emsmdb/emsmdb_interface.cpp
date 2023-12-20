@@ -122,8 +122,8 @@ void emsmdb_report()
 			ei.cpid, ei.lcid_string, pn);
 		++sessions;
 		pend_notif += pn;
-		for (unsigned int i = 0; i < std::size(ei.plogmap->p); ++i) {
-			auto li = ei.plogmap->p[i].get();
+		for (unsigned int i = 0; i < std::size(ei.logmap.p); ++i) {
+			auto li = ei.logmap.p[i].get();
 			if (li == nullptr)
 				continue;
 			auto root = li->root.get();
@@ -152,7 +152,7 @@ void emsmdb_report()
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
 	cpid(o.cpid), lcid_string(o.lcid_string), lcid_sort(o.lcid_sort),
-	client_mode(o.client_mode), plogmap(std::move(o.plogmap)),
+	client_mode(o.client_mode), logmap(std::move(o.logmap)),
 	upctx_ref(o.upctx_ref.load())
 {
 	memcpy(client_version, o.client_version, sizeof(client_version));
@@ -321,9 +321,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			ems_max_active_sessions);
 		return FALSE;
 	}
-	temp_handle.info.plogmap = rop_processor_create_logmap();
-	if (temp_handle.info.plogmap == nullptr)
-		return false;
 
 	HANDLE_DATA *phandle;
 
@@ -415,7 +412,8 @@ static void emsmdb_interface_remove_handle(const CXH &cxh)
 		free(pnode->pdata);
 		free(pnode);
 	}
-	auto plogmap = std::move(phandle->info.plogmap);
+	/* Destroy logmap after gl_hold is released */
+	auto logmap = std::move(phandle->info.logmap);
 	g_handle_hash.erase(pcxh->guid);
 	gl_hold.unlock();
 }

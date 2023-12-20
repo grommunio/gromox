@@ -32,7 +32,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 	if (prequest->hindex >= hnum)
 		return ecInvalidObject;
 	if (prequest->rop_id == ropRelease) {
-		rop_release(pemsmdb_info->plogmap.get(),
+		rop_release(&pemsmdb_info->logmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		return ecSuccess;
 	}
@@ -66,7 +66,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 				&pmb->replid, &pmb->replguid,
 				&pmb->logon_time, &pmb->gwart_time,
 				&pmb->store_stat,
-				pemsmdb_info->plogmap.get(), prequest->logon_id, &phandles[prequest->hindex]);
+				&pemsmdb_info->logmap, prequest->logon_id, &phandles[prequest->hindex]);
 		} else {
 			auto pfr = cu_alloc<LOGON_PF_RESPONSE>();
 			rshead->ppayload = pfr;
@@ -78,7 +78,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 				rdr->pserver_name, pfr->folder_ids,
 				&pfr->replid, &pfr->replguid,
 				&pfr->per_user_guid,
-				pemsmdb_info->plogmap.get(), prequest->logon_id, &phandles[prequest->hindex]);
+				&pemsmdb_info->logmap, prequest->logon_id, &phandles[prequest->hindex]);
 		}
 		if (rshead->result == ecWrongServer) {
 			rdr->logon_flags = rq->logon_flags;
@@ -95,7 +95,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getreceivefolder(rq->pstr_class,
 			&rsp->folder_id, &rsp->pstr_class,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetReceiveFolder: {
@@ -103,7 +103,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setreceivefolder(
 			rq->folder_id, rq->pstr_class,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetReceiveFolderTable: {
@@ -113,7 +113,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getreceivefoldertable(&rsp->rows,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetStoreState: {
@@ -123,7 +123,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getstorestat(&rsp->stat,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetOwningServers: {
@@ -135,7 +135,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getowningservers(
 			rq->folder_id, &rsp->ghost,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropPublicFolderIsGhosted: {
@@ -147,7 +147,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_publicfolderisghosted(
 			rq->folder_id, &rsp->pghost,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropLongTermIdFromId: {
@@ -159,7 +159,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_longtermidfromid(
 			rq->id, &rsp->long_term_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropIdFromLongTermId: {
@@ -171,7 +171,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_idfromlongtermid(
 			&rq->long_term_id, &rsp->id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPerUserLongTermIds: {
@@ -183,7 +183,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getperuserlongtermids(
 			&rq->guid, &rsp->ids,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPerUserGuid: {
@@ -195,7 +195,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getperuserguid(
 			&rq->long_term_id, &rsp->guid,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropReadPerUserInformation: {
@@ -208,7 +208,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_readperuserinformation(
 			&rq->long_folder_id, rq->reserved, rq->data_offset,
 			rq->max_data_size, &rsp->has_finished, &rsp->data,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropWritePerUserInformation: {
@@ -217,7 +217,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_writeperuserinformation(
 			&rq->long_folder_id, rq->has_finished,
 			rq->offset, &rq->data, rq->pguid,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropOpenFolder: {
@@ -231,7 +231,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openfolder(rq->folder_id,
 			rq->open_flags, &rsp->has_rules, &rsp->pghost,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -249,7 +249,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			rq->pfolder_name, rq->pfolder_comment,
 			&rsp->folder_id, &rsp->is_existing, &rsp->has_rules,
 			&rsp->pghost,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -262,7 +262,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deletefolder(rq->flags,
 			rq->folder_id, &rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetSearchCriteria: {
@@ -270,7 +270,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setsearchcriteria(rq->pres,
 			&rq->folder_ids, rq->search_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetSearchCriteria: {
@@ -284,7 +284,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_getsearchcriteria(rq->use_unicode,
 			rq->include_restriction, rq->include_folders,
 			&rsp->pres, &rsp->folder_ids, &rsp->search_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropMoveCopyMessages: {
@@ -299,7 +299,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_movecopymessages(&rq->message_ids,
 			rq->want_asynchronous, rq->want_copy,
 			&rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if (rshead->result != ecDstNullObject)
 			break;
@@ -323,7 +323,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_movefolder(rq->want_asynchronous,
 			rq->use_unicode, rq->folder_id, rq->pnew_name,
 			&rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if (rshead->result != ecDstNullObject)
 			break;
@@ -347,7 +347,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_copyfolder(rq->want_asynchronous,
 			rq->want_recursive, rq->use_unicode, rq->folder_id,
 			rq->pnew_name, &rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if (rshead->result != ecDstNullObject)
 			break;
@@ -368,7 +368,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_emptyfolder(rq->want_asynchronous,
 			rq->want_delete_associated, &rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropHardDeleteMessagesAndSubfolders: {
@@ -381,7 +381,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_harddeletemessagesandsubfolders(
 			rq->want_asynchronous, rq->want_delete_associated,
 			&rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropDeleteMessages: {
@@ -394,7 +394,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_deletemessages(rq->want_asynchronous,
 			rq->notify_non_read, &rq->message_ids,
 			&rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropHardDeleteMessages: {
@@ -407,7 +407,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_harddeletemessages(
 			rq->want_asynchronous, rq->notify_non_read,
 			&rq->message_ids, &rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetHierarchyTable: {
@@ -421,7 +421,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_gethierarchytable(
 			rq->table_flags, &rsp->row_count,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -436,7 +436,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_getcontentstable(rq->table_flags,
 			&rsp->row_count,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -449,7 +449,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setcolumns(rq->table_flags,
 			&rq->proptags, &rsp->table_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSortTable: {
@@ -461,7 +461,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_sorttable(rq->table_flags,
 			&rq->sort_criteria, &rsp->table_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropRestrict: {
@@ -473,7 +473,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_restrict(rq->res_flags, rq->pres,
 			&rsp->table_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryRows: {
@@ -494,7 +494,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_queryrows(rq->flags,
 			rq->forward_read, rq->row_count, &rsp->seek_pos,
 			&rsp->count,
-			&ext_push, pemsmdb_info->plogmap.get(), prequest->logon_id,
+			&ext_push, &pemsmdb_info->logmap, prequest->logon_id,
 			phandles[prequest->hindex]);
 		if (rshead->result != ecSuccess)
 			break;
@@ -509,7 +509,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_abort(&rsp->table_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetStatus: {
@@ -519,7 +519,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getstatus(&rsp->table_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryPosition: {
@@ -530,7 +530,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_queryposition(
 			&rsp->numerator, &rsp->denominator,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSeekRow: {
@@ -543,7 +543,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_seekrow(rq->seek_pos, rq->offset,
 			rq->want_moved_count, &rsp->has_soughtless,
 			&rsp->offset_sought,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSeekRowBookmark: {
@@ -556,14 +556,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_seekrowbookmark(&rq->bookmark,
 			rq->offset, rq->want_moved_count, &rsp->row_invisible,
 			&rsp->has_soughtless, &rsp->offset_sought,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSeekRowFractional: {
 		auto rq = static_cast<const SEEKROWFRACTIONAL_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_seekrowfractional(rq->numerator, rq->denominator,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropCreateBookmark: {
@@ -573,7 +573,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_createbookmark(&rsp->bookmark,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryColumnsAll: {
@@ -583,7 +583,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_querycolumnsall(&rsp->proptags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropFindRow: {
@@ -596,19 +596,19 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_findrow(rq->flags, rq->pres,
 			rq->seek_pos, &rq->bookmark, &rsp->bookmark_invisible,
 			&rsp->prow, &rsp->pcolumns,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropFreeBookmark: {
 		auto rq = static_cast<const FREEBOOKMARK_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_freebookmark(&rq->bookmark,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropResetTable:
 		rshead->hindex = prequest->hindex;
-		rshead->result = rop_resettable(pemsmdb_info->plogmap.get(),
+		rshead->result = rop_resettable(&pemsmdb_info->logmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	case ropExpandRow: {
@@ -629,7 +629,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_expandrow(rq->max_count,
 			rq->category_id, &rsp->expanded_count,
 			&rsp->count, &ext_push,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		if (rshead->result != ecSuccess)
 			break;
 		rsp->bin_rows.pv = pdata;
@@ -645,7 +645,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_collapserow(
 			rq->category_id, &rsp->collapsed_count,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetCollapseState: {
@@ -657,7 +657,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getcollapsestate(rq->row_id,
 			rq->row_instance, &rsp->collapse_state,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetCollapseState: {
@@ -669,7 +669,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setcollapsestate(
 			&rq->collapse_state, &rsp->bookmark,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropOpenMessage: {
@@ -687,7 +687,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->normalized_subject, &rsp->recipient_count,
 			&rsp->recipient_columns, &rsp->row_count,
 			&rsp->precipient_row,
-			 pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			 &pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			 phandles + rshead->hindex);
 		break;
 	}
@@ -702,7 +702,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_createmessage(rq->cpid,
 			rq->folder_id, rq->associated_flag, &rsp->pmessage_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -716,7 +716,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_savechangesmessage(rq->save_flags,
 			&rsp->message_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->ihindex2]);
 		break;
 	}
@@ -724,7 +724,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const REMOVEALLRECIPIENTS_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_removeallrecipients(rq->reserved,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropModifyRecipients: {
@@ -732,7 +732,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_modifyrecipients(&rq->proptags,
 			rq->count, rq->prow,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropReadRecipients: {
@@ -752,7 +752,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_readrecipients(rq->row_id,
 			rq->reserved, &rsp->count,
-			&ext_push, pemsmdb_info->plogmap.get(), prequest->logon_id,
+			&ext_push, &pemsmdb_info->logmap, prequest->logon_id,
 			phandles[prequest->hindex]);
 		if (rshead->result != ecSuccess)
 			break;
@@ -772,7 +772,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->normalized_subject, &rsp->recipient_count,
 			&rsp->recipient_columns, &rsp->row_count,
 			&rsp->precipient_row,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetMessageStatus: {
@@ -785,7 +785,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_setmessagestatus(rq->message_id,
 			rq->message_status, rq->status_mask,
 			&rsp->message_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetMessageStatus: {
@@ -797,7 +797,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getmessagestatus(
 			rq->message_id, &rsp->message_status,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetReadFlags: {
@@ -810,7 +810,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_setreadflags(rq->want_asynchronous,
 			rq->read_flags, &rq->message_ids,
 			&rsp->partial_completion,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetMessageReadFlag: {
@@ -826,7 +826,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setmessagereadflag(
 			rq->flags, rq->pclient_data, &rsp->read_changed,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->ihindex2]);
 		break;
 	}
@@ -837,7 +837,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openattachment(
 			rq->flags, rq->attachment_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -852,7 +852,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_createattachment(
 			&rsp->attachment_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -860,7 +860,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const DELETEATTACHMENT_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deleteattachment(rq->attachment_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSaveChangesAttachment: {
@@ -870,7 +870,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_savechangesattachment(
 			rq->save_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->ihindex2]);
 		break;
 	}
@@ -889,7 +889,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->subject_prefix, &rsp->normalized_subject,
 			&rsp->recipient_count, &rsp->recipient_columns,
 			&rsp->row_count, &rsp->precipient_row,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -899,7 +899,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_getattachmenttable(rq->table_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -910,14 +910,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getvalidattachments(&rsp->attachment_ids,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSubmitMessage: {
 		auto rq = static_cast<const SUBMITMESSAGE_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_submitmessage(rq->submit_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropAbortSubmit: {
@@ -925,7 +925,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_abortsubmit(
 			rq->folder_id, rq->message_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetAddressTypes: {
@@ -935,20 +935,20 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getaddresstypes(&rsp->address_types,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetSpooler:
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setspooler(
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	case ropSpoolerLockMessage: {
 		auto rq = static_cast<const SPOOLERLOCKMESSAGE_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_spoolerlockmessage(
 			rq->message_id, rq->lock_stat,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropTransportSend: {
@@ -958,7 +958,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_transportsend(&rsp->ppropvals,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropTransportNewMail: {
@@ -966,7 +966,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_transportnewmail(rq->message_id,
 			rq->folder_id, rq->pstr_class, rq->message_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetTransportFolder: {
@@ -976,7 +976,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_gettransportfolder(&rsp->folder_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropOptionsData: {
@@ -989,7 +989,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_optionsdata(rq->paddress_type,
 			rq->want_win32, &rsp->reserved, &rsp->options_info,
 			&rsp->help_file, &rsp->pfile_name,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertyIdsFromNames: {
@@ -1001,7 +1001,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertyidsfromnames(
 			rq->flags, &rq->propnames, &rsp->propids,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetNamesFromPropertyIds: {
@@ -1013,7 +1013,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getnamesfrompropertyids(
 			&rq->propids, &rsp->propnames,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertiesSpecific: {
@@ -1026,7 +1026,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertiesspecific(
 			rq->size_limit, rq->want_unicode, &rq->proptags, &rsp->row,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertiesAll: {
@@ -1038,7 +1038,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertiesall(rq->size_limit,
 			rq->want_unicode, &rsp->propvals,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPropertiesList: {
@@ -1048,7 +1048,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getpropertieslist(&rsp->proptags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetProperties: {
@@ -1060,7 +1060,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setproperties(
 			&rq->propvals, &rsp->problems,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetPropertiesNoReplicate: {
@@ -1072,7 +1072,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setpropertiesnoreplicate(
 			&rq->propvals, &rsp->problems,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropDeleteProperties: {
@@ -1084,7 +1084,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deleteproperties(
 			&rq->proptags, &rsp->problems,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropDeletePropertiesNoReplicate: {
@@ -1096,7 +1096,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_deletepropertiesnoreplicate(
 			&rq->proptags, &rsp->problems,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryNamedProperties: {
@@ -1108,7 +1108,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_querynamedproperties(
 			rq->query_flags, rq->pguid, &rsp->propidnames,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropCopyProperties: {
@@ -1123,7 +1123,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_copyproperties(
 			rq->want_asynchronous, rq->copy_flags, &rq->proptags,
 			&rsp->problems,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if (rshead->result != ecDstNullObject)
 			break;
@@ -1146,7 +1146,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_copyto(rq->want_asynchronous,
 			rq->want_subobjects, rq->copy_flags,
 			&rq->excluded_proptags, &rsp->problems,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if (rshead->result != ecDstNullObject)
 			break;
@@ -1167,7 +1167,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_progress(rq->want_cancel,
 			&rsp->completed_count, &rsp->total_count,
-			&rop_id, &partial_completion, pemsmdb_info->plogmap.get(),
+			&rop_id, &partial_completion, &pemsmdb_info->logmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
@@ -1182,7 +1182,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_openstream(rq->proptag,
 			rq->flags, &rsp->stream_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1195,7 +1195,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_readstream(rq->byte_count,
 			rq->max_byte_count, &rsp->data,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropWriteStream: {
@@ -1207,13 +1207,13 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_writestream(
 			&rq->data, &rsp->written_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropCommitStream:
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_commitstream(
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	case ropGetStreamSize: {
 		auto rsp = cu_alloc<GETSTREAMSIZE_RESPONSE>();
@@ -1222,14 +1222,14 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecServerOOM;
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getstreamsize(&rsp->stream_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetStreamSize: {
 		auto rq = static_cast<const SETSTREAMSIZE_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setstreamsize(rq->stream_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSeekStream: {
@@ -1241,7 +1241,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_seekstream(rq->seek_pos,
 			rq->offset, &rsp->new_pos,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropCopyToStream: {
@@ -1255,7 +1255,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_copytostream(rq->byte_count,
 			&rsp->read_bytes, &rsp->written_bytes,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->dhindex]);
 		if (rshead->result != ecDstNullObject)
 			break;
@@ -1273,7 +1273,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_lockregionstream(rq->region_offset,
 			rq->region_size, rq->lock_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropUnlockRegionStream: {
@@ -1281,7 +1281,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_unlockregionstream(
 			rq->region_offset, rq->region_size, rq->lock_flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropWriteAndCommitStream: {
@@ -1293,7 +1293,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_writeandcommitstream(
 			&rq->data, &rsp->written_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropCloneStream: {
@@ -1301,7 +1301,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		if (rq->ohindex >= hnum)
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
-		rshead->result = rop_clonestream(pemsmdb_info->plogmap.get(),
+		rshead->result = rop_clonestream(&pemsmdb_info->logmap,
 			prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
@@ -1311,7 +1311,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_modifypermissions(
 			rq->flags, rq->count, rq->prow,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetPermissionsTable: {
@@ -1320,7 +1320,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_getpermissionstable(rq->flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1329,7 +1329,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_modifyrules(
 			rq->flags, rq->count, rq->prow,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetRulesTable: {
@@ -1338,7 +1338,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_getrulestable(rq->flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1347,7 +1347,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_updatedeferredactionmessages(
 			&rq->server_entry_id, &rq->client_entry_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropFastTransferDestinationConfigure: {
@@ -1357,7 +1357,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_fasttransferdestconfigure(
 			rq->source_operation, rq->flags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1372,7 +1372,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rq->transfer_data, &rsp->transfer_status,
 			&rsp->in_progress_count, &rsp->total_step_count,
 			&rsp->reserved, &rsp->used_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropFastTransferSourceGetBuffer: {
@@ -1387,7 +1387,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rsp->transfer_status, &rsp->in_progress_count,
 			&rsp->total_step_count, &rsp->reserved,
 			&rsp->transfer_data,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		if (rshead->result == ecBufferTooSmall)
 			return ecBufferTooSmall;
 		break;
@@ -1399,7 +1399,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result =	rop_fasttransfersourcecopyfolder(
 			rq->flags, rq->send_options,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1410,7 +1410,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_fasttransfersourcecopymessages(
 			&rq->message_ids, rq->flags, rq->send_options,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1421,7 +1421,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result =	rop_fasttransfersourcecopyto(
 			rq->level, rq->flags, rq->send_options, &rq->proptags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1432,7 +1432,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result =	rop_fasttransfersourcecopyproperties(
 			rq->level, rq->flags, rq->send_options, &rq->proptags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1440,7 +1440,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		auto rq = static_cast<const TELLVERSION_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_tellversion(rq->version,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationConfigure: {
@@ -1451,7 +1451,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_syncconfigure(rq->sync_type,
 			rq->send_options, rq->sync_flags, rq->pres,
 			rq->extra_flags, &rq->proptags,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1466,7 +1466,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_syncimportmessagechange(
 			rq->import_flags, &rq->propvals, &rsp->message_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1475,7 +1475,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncimportreadstatechanges(
 			rq->count, rq->pread_stat,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationImportHierarchyChange: {
@@ -1487,7 +1487,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncimporthierarchychange(
 			&rq->hichyvals, &rq->propvals, &rsp->folder_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationImportDeletes: {
@@ -1495,7 +1495,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncimportdeletes(
 			rq->flags, &rq->propvals,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationImportMessageMove: {
@@ -1509,7 +1509,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			&rq->src_folder_id, &rq->src_message_id,
 			&rq->change_list, &rq->dst_message_id,
 			&rq->change_number, &rsp->message_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationOpenCollector: {
@@ -1519,7 +1519,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_syncopencollector(
 			rq->is_content_collector,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1529,7 +1529,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			return ecInvalidObject;
 		rshead->hindex = rq->ohindex;
 		rshead->result = rop_syncgettransferstate(
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}
@@ -1538,27 +1538,27 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncuploadstatestreambegin(
 			rq->proptag_stat, rq->buffer_size,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationUploadStateStreamContinue: {
 		auto rq = static_cast<const SYNCUPLOADSTATESTREAMCONTINUE_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncuploadstatestreamcontinue(&rq->stream_data,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSynchronizationUploadStateStreamEnd:
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_syncuploadstatestreamend(
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	case ropSetLocalReplicaMidsetDeleted: {
 		auto rq = static_cast<const SETLOCALREPLICAMIDSETDELETED_REQUEST *>(prequest->ppayload);
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_setlocalreplicamidsetdeleted(
 			rq->count, rq->prange,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetLocalReplicaIds: {
@@ -1570,7 +1570,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->hindex = prequest->hindex;
 		rshead->result = rop_getlocalreplicaids(
 			rq->count, &rsp->replguid, &rsp->global_count,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex]);
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropRegisterNotification: {
@@ -1581,7 +1581,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 		rshead->result = rop_registernotification(
 			rq->notification_types, rq->reserved,
 			rq->want_whole_store, rq->pfolder_id, rq->pmessage_id,
-			pemsmdb_info->plogmap.get(), prequest->logon_id, phandles[prequest->hindex],
+			&pemsmdb_info->logmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + rshead->hindex);
 		break;
 	}

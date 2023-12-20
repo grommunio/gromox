@@ -43,7 +43,6 @@ struct object_node {
 };
 using OBJECT_NODE = object_node;
 
-extern std::unique_ptr<LOGMAP> rop_processor_create_logmap();
 extern void rop_processor_init(int scan_interval);
 extern int rop_processor_run();
 extern void rop_processor_stop();
