@@ -563,16 +563,13 @@ const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name) con
  *
  * Split str_offset and validate hour/minute pair for being in range.
  */
-bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
+bool ical_parse_utc_offset(const char *str_zone, int *phour, int *pminute)
 {
 	int factor;
-	char tmp_buff[8];
-	char str_zone[16];
 	
 	*phour = *pminute = 0;
-	gx_strlcpy(str_zone, str_offset, std::size(str_zone));
-	HX_strrtrim(str_zone);
-	HX_strltrim(str_zone);
+	while (HX_isspace(*str_zone))
+		++str_zone;
 	if (*str_zone == '-')
 		factor = 1;
 	else if (*str_zone == '+')
@@ -582,19 +579,9 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
 	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
 		return false;
-	tmp_buff[0] = str_zone[1];
-	tmp_buff[1] = str_zone[2];
-	tmp_buff[2] = '\0';
-	// Use base 10 because for base 0 strtol interprets prefix 0
-	// as an octal number, so e.g. '08' will result in 0.
-	int hour = strtol(tmp_buff, nullptr, 10);
-	if (hour < 0 || hour > 23)
-		return false;
-	tmp_buff[0] = str_zone[3];
-	tmp_buff[1] = str_zone[4];
-	tmp_buff[2] = '\0';
-	int minute = strtol(tmp_buff, nullptr, 10);
-	if (minute < 0 || minute > 59)
+	int hour   = (str_zone[1] - '0') * 10 + (str_zone[2] - '0');
+	int minute = (str_zone[3] - '0') * 10 + (str_zone[4] - '0');
+	if (hour < 0 || hour > 23 || minute < 0 || minute > 59)
 		return false;
 	*phour = factor * hour;
 	*pminute = factor * minute;
@@ -603,11 +590,11 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 
 bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 {
-	char tmp_buff[128];
+	char tmp_buff[10];
 	
+	while (HX_isspace(*str_date))
+		++str_date;
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
 	*itime = {};
 	itime->type = ICT_FLOAT_DAY;
 	return strlen(tmp_buff) == 8 &&
@@ -617,12 +604,12 @@ bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 {
 	int len;
-	char tsep;
-	char tmp_buff[128];
+	char tmp_buff[20];
 	
+	while (HX_isspace(*str_datetime))
+		++str_datetime;
 	gx_strlcpy(tmp_buff, str_datetime, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
 		pitime->type = ICT_UTC;
@@ -632,22 +619,20 @@ bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 		pitime->type = ICT_FLOAT;
 	}
 	if (15 == len) {
-		if (sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d",
-		    &pitime->year, &pitime->month, &pitime->day, &tsep,
-		    &pitime->hour, &pitime->minute, &pitime->second) != 7)
+		if (sscanf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		    &pitime->year, &pitime->month, &pitime->day,
+		    &pitime->hour, &pitime->minute, &pitime->second) != 6)
 			return false;
 		pitime->leap_second = 0;
+		return true;
 	} else if (17 == len) {
-		if (sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d%02d",
-		    &pitime->year, &pitime->month, &pitime->day, &tsep,
+		return sscanf(tmp_buff, "%04d%02d%02dT%02d%02d%02d%02d",
+		    &pitime->year, &pitime->month, &pitime->day,
 		    &pitime->hour, &pitime->minute, &pitime->second,
-		    &pitime->leap_second) != 8)
-			return false;
-	} else {
-		mlog(LV_DEBUG, "W-1200: Unparsable datetime: \"%s\"", tmp_buff);
-		return false;
+		    &pitime->leap_second) == 7;
 	}
-	return tsep == 'T';
+	mlog(LV_DEBUG, "W-1200: Unparsable datetime: \"%s\"", tmp_buff);
+	return false;
 }
 
 int ICAL_TIME::twcompare(const ICAL_TIME &o) const
