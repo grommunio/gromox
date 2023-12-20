@@ -409,8 +409,12 @@ union input_buffer {
 	   + 4 * TZ_MAX_TIMES];
 };
 
-/* TZDIR with a trailing '/' rather than a trailing '\0'.  */
+/* beware of bullshit string games in original tz */
+#if 0
+static char const tzdirslash[sizeof TZDIR] = TZDIR "/";
+#endif
 static char const tzdirslash[] = TZDIR "/";
+static constexpr size_t sizeof_tzdirslash = sizeof(tzdirslash) - 1;
 
 /* Local storage needed for 'tzloadbody'.  */
 union local_storage {
@@ -429,7 +433,7 @@ union local_storage {
      However, there is no need for this to be smaller than struct
      file_analysis as that struct is allocated anyway, as the other
      union member.  */
-  char fullname[max(sizeof(struct file_analysis), sizeof tzdirslash + 1024)];
+  char fullname[max(sizeof(struct file_analysis), sizeof_tzdirslash + 1024)];
 };
 
 /* Load tz data from the file named NAME into *SP.  Read extended
@@ -466,14 +470,14 @@ tzloadbody(char const *name, struct state *sp, bool doextend,
 #endif
 	if (!doaccess) {
 		char const *dot;
-		if (sizeof lsp->fullname - sizeof tzdirslash <= strlen(name))
+		if (sizeof lsp->fullname - sizeof_tzdirslash <= strlen(name))
 		  return ENAMETOOLONG;
 
 		/* Create a string "TZDIR/NAME".  Using sprintf here
 		   would pull in stdio (and would fail if the
 		   resulting string length exceeded INT_MAX!).  */
-		memcpy(lsp->fullname, tzdirslash, sizeof tzdirslash);
-		strcpy(lsp->fullname + sizeof tzdirslash, name);
+		memcpy(lsp->fullname, tzdirslash, sizeof_tzdirslash);
+		strcpy(lsp->fullname + sizeof_tzdirslash, name);
 
 		/* Set doaccess if NAME contains a ".." file name
 		   component, as such a name could read a file outside
