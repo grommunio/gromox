@@ -58,6 +58,9 @@ enum {
 
 enum cpid_t : uint32_t {
 	CP_ACP = 0,
+	CP_OEMCP = 1,
+	CP_MACCP = 2,
+	CP_SYMBOL = 42,
 	CP_UTF16 = 1200,
 	CP_WINUNICODE = CP_UTF16,
 	CP_UTF16BE = 1201,

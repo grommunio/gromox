@@ -436,9 +436,9 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 {
     switch (num) {
 		case 0: return 1252;
-		case 1: return 0;
-		case 2: return 42; 
-		case 77: return 10000;
+		case 1: return CP_ACP;
+		case 2: return CP_SYMBOL;
+		case 77: return /*CP_MACCP*/ 10000;
 		case 78: return 10001;
 		case 79: return 10003;
 		case 80: return 10008;
@@ -465,6 +465,7 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 		case 222: return 874;
 		case 238: return 1250;
 		case 254: return 437;
+		//case 255: return CP_OEMCP;
     }
 	return 1252;
 }
