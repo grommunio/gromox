@@ -1151,7 +1151,11 @@ enum {
 	PidLidTaskStartDate = 0x8104,
 	PidLidTaskDueDate = 0x8105,
 	PidLidTaskDateCompleted = 0x810F,
+	PidLidTaskActualEffort = 0x8110,
+	PidLidTaskEstimatedEffort = 0x8111,
 	PidLidTaskComplete = 0x811C,
+	PidLidTaskOwner = 0x811F,
+	PidLidTaskFRecurring = 0x8126,
 
 	/* PSETID_Appointment */
 	PidLidAppointmentSequence = 0x8201,
@@ -1192,6 +1196,9 @@ enum {
 	PidLidCommonStart = 0x8516,
 	PidLidCommonEnd = 0x8517,
 	PidLidFlagRequest = 0x8530,
+	PidLidMileage = 0x8534, // not in ms-oxprops
+	PidLidBilling = 0x8535,
+	PidLidCompanies = 0x8539,
 	PidLidReminderSignalTime = 0x8560,
 	PidLidToDoTitle = 0x85A4,
 	PidLidInfoPathFromName = 0x85B1,

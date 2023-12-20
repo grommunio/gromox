@@ -86,6 +86,7 @@ struct tSyncFolderItemsCreate;
 struct tSyncFolderItemsUpdate;
 struct tSyncFolderItemsDelete;
 struct tSyncFolderItemsReadFlag;
+struct tTask;
 struct tTasksFolderType;
 
 
@@ -264,7 +265,7 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 	</Items>
 	*/
 using sItem = std::variant<tItem, tMessage, tMeetingMessage, tMeetingRequestMessage,
-	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact>;
+	tMeetingResponseMessage, tMeetingCancellationMessage, tCalendarItem, tContact, tTask>;
 
 /**
  * c.f. Types.xsd:1502
@@ -1604,6 +1605,43 @@ struct tItem : public NS_EWS_Types
 
 	static sItem create(const sShape&);
 	void update(const sShape&);
+};
+
+/**
+ * Types.xsd:4093
+ */
+struct tTask : public tItem
+{
+	static constexpr char NAME[] = "Task";
+
+	explicit tTask(const sShape&);
+	explicit tTask(const tinyxml2::XMLElement*);
+	void update(const sShape&);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::optional<int> ActualWork; // 0 <= ActualWork < 0x5AE980DF
+	std::optional<gromox::time_point> AssignedTime;
+	std::optional<std::string> BillingInformation;
+	std::optional<int> ChangeCount;
+	std::optional<std::vector<std::string>> Companies;
+	std::optional<gromox::time_point> CompleteDate;
+	std::optional<std::vector<std::string>> Contacts;
+	// <xs:element name="DelegationState" type="t:TaskDelegateStateType" minOccurs="0" />
+	std::optional<std::string> Delegator;
+	std::optional<gromox::time_point> DueDate;
+	std::optional<int> IsAssignmentEditable;
+	std::optional<bool> IsComplete;
+	std::optional<bool> IsRecurring;
+	std::optional<bool> IsTeamTask;
+	std::optional<std::string> Mileage;
+	std::optional<std::string> Owner;
+	std::optional<double> PercentComplete;
+	// <xs:element name="Recurrence" type="t:TaskRecurrenceType" minOccurs="0" />
+	std::optional<gromox::time_point> StartDate;
+	std::optional<Enum::TaskStatusType> Status;
+	std::optional<std::string> StatusDescription;
+	std::optional<int> TotalWork; // 0 <= TotalWork < 0x5AE980DF
 };
 
 /**

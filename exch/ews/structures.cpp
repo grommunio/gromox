@@ -1275,6 +1275,51 @@ uint16_t tBaseSubscriptionRequest::eventMask() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+tTask::tTask(const sShape& shape) : tItem(shape)
+{tTask::update(shape);}
+
+void tTask::update(const sShape& shape)
+{
+	tItem::update(shape);
+	const TAGGED_PROPVAL* prop;
+	fromProp(shape.get(NtTaskActualEffort), ActualWork);
+	fromProp(shape.get(NtBilling), BillingInformation);
+	if((prop = shape.get(NtCompanies)) && PROP_TYPE(prop->proptag) == PT_MV_UNICODE)
+	{
+		const STRING_ARRAY* companies = static_cast<const STRING_ARRAY*>(prop->pvalue);
+		Companies.emplace(companies->count);
+		char** src = companies->ppstr;
+		for(std::string& dest : *Companies)
+			dest = *src++;
+	}
+	if((prop = shape.get(NtTaskDateCompleted)))
+		CompleteDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+	if((prop = shape.get(NtTaskDueDate)))
+		DueDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+	if((prop = shape.get(NtTaskStartDate)))
+		StartDate.emplace(rop_util_nttime_to_unix2(*static_cast<const uint64_t*>(prop->pvalue)));
+	fromProp(shape.get(NtTaskComplete), IsComplete);
+	fromProp(shape.get(NtTaskFRecurring), IsRecurring);
+	fromProp(shape.get(NtMileage), Mileage);
+	fromProp(shape.get(NtTaskOwner), Owner);
+	fromProp(shape.get(NtPercentComplete), PercentComplete);
+	if((prop = shape.get(NtTaskStatus)))
+	{
+		const uint32_t* taskStatus = static_cast<const uint32_t*>(prop->pvalue);
+		Enum::TaskStatusType statusType = Enum::NotStarted;
+		switch (*taskStatus)
+		{
+			case tsvInProgress: statusType = Enum::InProgress; break;
+			case tsvComplete:   statusType = Enum::Completed; break;
+			case tsvWaiting:    statusType = Enum::WaitingOnOthers; break;
+			case tsvDeferred:   statusType = Enum::Deferred; break;
+		}
+		Status.emplace(statusType);
+	}
+	fromProp(shape.get(NtTaskEstimatedEffort), TotalWork);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 tCalendarItem::tCalendarItem(const sShape& shape) : tItem(shape)
 {tCalendarItem::update(shape);}
 
@@ -2494,6 +2539,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"item:ItemClass", PR_MESSAGE_CLASS},
 	{"item:LastModifiedName", PR_LAST_MODIFIER_NAME},
 	{"item:LastModifiedTime", PR_LAST_MODIFICATION_TIME},
+	{"item:ParentFolderId", PR_PARENT_ENTRYID},
 	{"item:Sensitivity", PR_SENSITIVITY},
 	{"item:Size", PR_MESSAGE_SIZE},
 	{"item:Subject", PR_SUBJECT},
@@ -2557,6 +2603,28 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
 	{"item:ReminderMinutesBeforeStart", {NtReminderDelta, PT_LONG}},
+	{"task:ActualWork", {NtTaskActualEffort, PT_LONG}},
+	// {"task:AssignedTime", {}},
+	{"task:BillingInformation", {NtBilling, PT_UNICODE}},
+	// {"task:ChangeCount", {}},
+	{"task:Companies", {NtCompanies, PT_MV_UNICODE}},
+	{"task:CompleteDate", {NtTaskDateCompleted, PT_SYSTIME}},
+	// {"task:Contacts", {}},
+	// {"task:DelegationState", {}},
+	// {"task:Delegator", {}},
+	{"task:DueDate", {NtTaskDueDate, PT_SYSTIME}},
+	// {"task:IsAssignmentEditable", {}},
+	{"task:IsComplete", {NtTaskComplete, PT_BOOLEAN}},
+	{"task:IsRecurring", {NtTaskFRecurring, PT_BOOLEAN}},
+	// {"task:IsTeamTask", {}},
+	{"task:Mileage", {NtMileage, PT_UNICODE}},
+	{"task:Owner", {NtTaskOwner, PT_UNICODE}},
+	{"task:PercentComplete", {NtPercentComplete, PT_DOUBLE}},
+	// {"task:Recurrence", {}},
+	{"task:StartDate", {NtTaskStartDate, PT_SYSTIME}},
+	{"task:Status", {NtTaskStatus, PT_LONG}},
+	// {"task:StatusDescription", {}},
+	{"task:TotalWork", {NtTaskEstimatedEffort, PT_LONG}},
 };
 
 decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
@@ -2866,6 +2934,8 @@ sItem tItem::create(const sShape& shape)
 		return tCalendarItem(shape);
 	else if(!strcasecmp(itemClass, "IPM.Contact"))
 		return tContact(shape);
+	else if(!strcasecmp(itemClass, "IPM.Task"))
+		return tTask(shape);
 	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Canceled"))
 		return tMeetingCancellationMessage(shape);
 	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Request"))
