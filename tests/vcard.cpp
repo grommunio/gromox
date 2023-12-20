@@ -13,6 +13,8 @@
 #include <gromox/vcard.hpp>
 #include "../tools/staticnpmap.cpp"
 #include "../tools/genimport.hpp"
+#undef assert
+#define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -101,6 +103,37 @@ static void t_card()
 	C.load_single_from_str_move(buf);
 }
 
+static int t_ical_api()
+{
+	int hour = -99, min = -99;
+	assert(ical_parse_utc_offset("+0100", &hour, &min));
+	assert(hour == -1 && min == 0);
+	assert(ical_parse_utc_offset("-0100", &hour, &min));
+	assert(hour == 1 && min == 0);
+	assert(!ical_parse_utc_offset("0100", &hour, &min));
+	assert(hour == 0 && min == 0);
+
+	ICAL_TIME it;
+	assert(ical_parse_datetime("20231224T123456Z", &it));
+	assert(it.year == 2023 && it.month == 12 && it.day == 24 &&
+	       it.hour == 12 && it.minute == 34 && it.second == 56 &&
+	       it.type == ICT_UTC);
+	assert(ical_parse_datetime("20101010T101010", &it));
+	assert(it.year == 2010 && it.month == 10 && it.day == 10 &&
+	       it.hour == 10 && it.minute == 10 && it.second == 10 &&
+	       it.type == ICT_FLOAT);
+	assert(!ical_parse_datetime("20231224T1234567", &it));
+	assert(!ical_parse_datetime("20231224X123456", &it));
+	assert(!ical_parse_datetime("20231224T12345", &it));
+
+	assert(ical_parse_date("20211221", &it));
+	assert(it.year == 2021 && it.month == 12 && it.day == 21 &&
+	       it.hour == 0 && it.minute == 0 && it.second == 0 &&
+	       it.type == ICT_FLOAT_DAY);
+	assert(!ical_parse_date("202112211", &it));
+	return EXIT_SUCCESS;
+}
+
 static void t_ical()
 {
 	printf("ical:\n");
@@ -173,10 +206,14 @@ static int t_ical_dt()
 
 int main()
 {
+	auto ret = t_ical_api();
+	if (ret != EXIT_SUCCESS)
+		return ret;
+
 	t_mime();
 	t_card();
 	t_ical();
-	auto ret = t_ical_dt();
+	ret = t_ical_dt();
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	return EXIT_SUCCESS;

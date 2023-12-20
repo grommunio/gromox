@@ -558,12 +558,18 @@ const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name) con
 	return ical_get_subval_list_internal(&value_list, name);
 }
 
+/**
+ * @str_offset: "-HHMM" or "+HHMM"
+ *
+ * Split str_offset and validate hour/minute pair for being in range.
+ */
 bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 {
 	int factor;
 	char tmp_buff[8];
 	char str_zone[16];
 	
+	*phour = *pminute = 0;
 	gx_strlcpy(str_zone, str_offset, std::size(str_zone));
 	HX_strrtrim(str_zone);
 	HX_strltrim(str_zone);
@@ -602,9 +608,10 @@ bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
-	itime->hour = itime->minute = itime->second = itime->leap_second = 0;
+	*itime = {};
 	itime->type = ICT_FLOAT_DAY;
-	return sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) >= 3;
+	return strlen(tmp_buff) == 8 &&
+	       sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) == 3;
 }
 
 bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
@@ -637,7 +644,7 @@ bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 		    &pitime->leap_second) != 8)
 			return false;
 	} else {
-		mlog(LV_DEBUG, "W-1200: Unparsable date: \"%s\"", tmp_buff);
+		mlog(LV_DEBUG, "W-1200: Unparsable datetime: \"%s\"", tmp_buff);
 		return false;
 	}
 	return tsep == 'T';
