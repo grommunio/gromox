@@ -51,6 +51,7 @@
 	parsing email object into message object!
 */
 
+using namespace std::string_literals;
 using namespace gromox;
 using namemap = std::unordered_map<int, PROPERTY_NAME>;
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
@@ -2967,50 +2968,52 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 
 BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY &props,
     const addr_tags *ptags, const char *org, cvt_id2user id2user,
-    char *username, size_t ulen)
+    std::string &username) try
 {
 	auto pproplist = &props;
 	const auto &tags = ptags != nullptr ? *ptags : tags_self;
 	auto s = pproplist->get<const char>(tags.pr_smtpaddr);
 	if (s != nullptr) {
-		gx_strlcpy(username, s, ulen);
+		username = s;
 		return TRUE;
 	}
 	auto addrtype = pproplist->get<const char>(tags.pr_addrtype);
 	auto emaddr   = pproplist->get<const char>(tags.pr_emaddr);
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, org,
-		           id2user, username, ulen);
+		           id2user, username);
 		if (ret == ecSuccess)
 			return TRUE;
 		else if (ret != ecNullObject)
 			return false;
 	}
 	auto ret = cvt_entryid_to_smtpaddr(pproplist->get<const BINARY>(tags.pr_entryid),
-	           org, std::move(id2user), username, ulen);
+	           org, std::move(id2user), username);
 	return ret == ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2348: ENOMEM");
+	return false;
 }
 
 /**
  * Only useful for DSN generation.
  */
 static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
-    const addr_tags &tags, const char *org,
-    cvt_id2user id2user, char *username, size_t ulen)
+    const addr_tags &tags, const char *org, cvt_id2user id2user,
+    std::string &username) try
 {
 	auto em = props.get<const char>(tags.pr_smtpaddr);
 	if (em != nullptr) {
-		snprintf(username, ulen, "rfc822;%s", em);
+		username = "rfc822;"s + em;
 		return true;
 	}
 	auto at = props.get<const char>(tags.pr_addrtype);
 	em = props.get<char>(tags.pr_emaddr);
 	if (at != nullptr) {
-		std::string es_result;
 		auto ret = cvt_genaddr_to_smtpaddr(at, em, org,
-		           id2user, es_result);
+		           id2user, username);
 		if (ret == ecSuccess) {
-			snprintf(username, ulen, "rfc822;%s", es_result.c_str());
+			username.insert(0, "rfc822;");
 			return true;
 		} else if (ret != ecNullObject) {
 			return false;
@@ -3018,20 +3021,21 @@ static bool oxcmail_get_rcpt_address(const TPROPVAL_ARRAY &props,
 	}
 	auto v = props.get<const BINARY>(tags.pr_entryid);
 	if (v != nullptr) {
-		auto ret = cvt_entryid_to_smtpaddr(v, org, std::move(id2user),
-		           &username[7], ulen > 8 ? ulen - 7 : 0);
+		auto ret = cvt_entryid_to_smtpaddr(v, org, std::move(id2user), username);
 		if (ret == ecSuccess) {
-			memcpy(username, "rfc822;", 7);
-			username[7] = '\0';
+			username.insert(0, "rfc822;");
 			return true;
 		} else if (ret != ecNullObject) {
 			return false;
 		}
 	}
 	if (at != nullptr) {
-		snprintf(username, ulen, "%s;%s", at, znul(em));
+		username = at + ";"s + znul(em);
 		return true;
 	}
+	return false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2349: ENOMEM");
 	return false;
 }
 
@@ -3039,7 +3043,6 @@ static BOOL oxcmail_export_addresses(const char *charset,
     const TARRAY_SET *prcpts, uint32_t rcpt_type, char *field, size_t fdsize)
 {
 	size_t offset = 0;
-	char username[UADDR_SIZE];
 	
 	for (const auto &rcpt : *prcpts) {
 		auto pvalue = rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
@@ -3066,10 +3069,12 @@ static BOOL oxcmail_export_addresses(const char *charset,
 			if (offset >= fdsize)
 				return FALSE;
 		}
+		std::string username;
 		if (oxcmail_get_smtp_address(rcpt, &tags_self, g_oxcmail_org_name,
-		    oxcmail_id2user, username, std::size(username)))
+		    oxcmail_id2user, username))
 			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
-			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
+			          pdisplay_name != nullptr ? " <%s>" : "<%s>",
+			          username.c_str()));
 	}
 	if (0 == offset || offset >= fdsize)
 		return FALSE;
@@ -3136,13 +3141,10 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
     const addr_tags &tags, const char *charset, char *field, size_t fdsize)
 {
 	int offset;
-	char address[UADDR_SIZE];
 	
 	offset = 0;
 	auto pvalue = pmsg->proplist.get<char>(tags.pr_name);
 	if (pvalue != nullptr && *pvalue != '\0') {
-		if (strlen(pvalue) >= std::size(address))
-			goto EXPORT_ADDRESS;
 		field[offset++] = '"';
 		offset += oxcmail_encode_mime_string(charset,
 		          pvalue, field + offset, fdsize - offset);
@@ -3150,10 +3152,10 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		field[offset++] = ' ';
 		field[offset] = '\0';
 	}
- EXPORT_ADDRESS:
+	std::string address;
 	if (oxcmail_get_smtp_address(pmsg->proplist, &tags, g_oxcmail_org_name,
-	    oxcmail_id2user, address, std::size(address)))
-		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address);
+	    oxcmail_id2user, address))
+		offset += gx_snprintf(field + offset, fdsize - offset, "<%s>", address.c_str());
 	else if (offset > 0)
 		/*
 		 * RFC 5322 §3.4's ABNF mandates an address at all times.
@@ -3834,7 +3836,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
     cvt_id2user id2user, char *pdsn_content, int max_length)
 {
 	char action[16];
-	char tmp_buff[1024];
 	static constexpr const char status_strings1[][6] =
 		{"5.4.0", "5.1.0", "5.6.5", "5.6.5", "5.2.0", "5.3.0", "4.4.3"};
 	static constexpr const char status_strings2[][6] =
@@ -3852,6 +3853,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 	auto pdsn_fields = dsn.get_message_fields();
 	auto str = pmsg->proplist.get<const char>(PidTagReportingMessageTransferAgent);
 	if (str == nullptr) {
+		char tmp_buff[5+UDOM_SIZE+1];
 		strcpy(tmp_buff, "dns; ");
 		gethostname(tmp_buff + 5, sizeof(tmp_buff) - 5);
 		tmp_buff[std::size(tmp_buff)-1] = '\0';
@@ -3880,10 +3882,10 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		pdsn_fields = dsn.new_rcpt_fields();
 		if (pdsn_fields == nullptr)
 			return FALSE;
-		if (!oxcmail_get_rcpt_address(rcpt, tags_self, org, id2user,
-		    tmp_buff, std::size(tmp_buff)))
-			*tmp_buff = '\0';
-		if (!dsn.append_field(pdsn_fields, "Final-Recipient", tmp_buff))
+		std::string username;
+		if (!oxcmail_get_rcpt_address(rcpt, tags_self, org, id2user, username))
+			username.clear();
+		if (!dsn.append_field(pdsn_fields, "Final-Recipient", username.c_str()))
 			return FALSE;
 		if (*action != '\0' &&
 		    !dsn.append_field(pdsn_fields, "Action", action))
@@ -3892,20 +3894,14 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		if (num != nullptr) {
 			if (*num == MAPI_DIAG_NO_DIAGNOSTIC) {
 				num = rcpt.get<uint32_t>(PR_NDR_REASON_CODE);
-				if (num != nullptr) {
-					strcpy(tmp_buff, *num > 6 ? "5.4.0" :
-					       status_strings1[*num]);
-					if (!dsn.append_field(pdsn_fields, "Status", tmp_buff))
-						return FALSE;
-				}
+				if (num != nullptr && !dsn.append_field(pdsn_fields,
+				    "Status", *num > 6 ? "5.4.0" : status_strings1[*num]))
+					return FALSE;
 			} else {
 				num = rcpt.get<uint32_t>(PR_NDR_REASON_CODE);
-				if (num != nullptr) {
-					strcpy(tmp_buff, *num > 48 ? "5.0.0" :
-					       status_strings2[*num]);
-					if (!dsn.append_field(pdsn_fields, "Status", tmp_buff))
-						return FALSE;
-				}
+				if (num != nullptr && !dsn.append_field(pdsn_fields,
+				    "Status", *num > 48 ? "5.0.0" : status_strings2[*num]))
+					return FALSE;
 			}
 		}
 		str = rcpt.get<char>(PR_DSN_REMOTE_MTA);
@@ -3917,6 +3913,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 		    "X-Supplementary-Info", str))
 			return FALSE;
 		str = rcpt.get<char>(PR_DISPLAY_NAME);
+		char tmp_buff[1024];
 		if (str != nullptr && oxcmail_encode_mime_string(charset,
 		    str, tmp_buff, std::size(tmp_buff)) > 0 &&
 		    !dsn.append_field(pdsn_fields, "X-Display-Name", tmp_buff))
