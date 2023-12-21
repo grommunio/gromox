@@ -1448,9 +1448,9 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
-			if (common_util_addressbook_entryid_to_username(pbin,
-			    tmp_buff, std::size(tmp_buff)) &&
-			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
+			std::string es_result;
+			if (cu_abkeid_to_username(pbin, es_result) &&
+			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, es_result.c_str()) != 0)
 				return FALSE;
 		}
 	}
@@ -1471,9 +1471,9 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
-			if (common_util_addressbook_entryid_to_username(pbin,
-			    tmp_buff, std::size(tmp_buff)) &&
-			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
+			std::string es_result;
+			if (cu_abkeid_to_username(pbin, es_result) &&
+			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, es_result.c_str()) != 0)
 				return FALSE;
 		}
 	}
