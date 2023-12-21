@@ -2585,10 +2585,10 @@ static ec_error_t message_bounce_message(const char *from_address,
 template<typename T> static bool msg_rcpt_blocks_to_list(const T &fwd,
     std::vector<std::string> &rcpt_list)
 {
-	for (size_t i = 0; i < fwd.count; ++i) {
+	for (auto &rcptprops : fwd) {
 		TPROPVAL_ARRAY pv;
-		pv.count = fwd.pblock[i].count;
-		pv.ppropval = fwd.pblock[i].ppropval;
+		pv.count = rcptprops.count;
+		pv.ppropval = rcptprops.ppropval;
 		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
 			return false;
 	}
@@ -2966,7 +2966,7 @@ static ec_error_t op_forward(const rulexec_in &rp, seen_list &seen,
 {
 	if (!exmdb_server::is_private())
 		return ecSuccess;
-	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
+	auto pfwddlgt = static_cast<const FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_dem(rp.ev_to, rp.sqlite, rp.folder_id,
 			rp.message_id, rule.id, RULE_ERROR_TOO_MANY_RCPTS,
@@ -2982,7 +2982,7 @@ static ec_error_t op_forward(const rulexec_in &rp, seen_list &seen,
 static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
     const rule_node &rule, const ACTION_BLOCK &block, size_t act_idx) try
 {
-	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
+	auto pfwddlgt = static_cast<const FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server::is_private() || !rp.digest.has_value() ||
 	    pfwddlgt->count == 0)
 		return ecSuccess;
@@ -3310,7 +3310,7 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
     const EXT_ACTION_BLOCK &block) try
 {
-	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
+	auto pextfwddlgt = static_cast<const EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (!exmdb_server::is_private() || !rp.digest.has_value() ||
 	    pextfwddlgt->count == 0)
 		return ecSuccess;
@@ -3423,7 +3423,7 @@ static ec_error_t opx_switch(const rulexec_in &rp,
 		break;
 	}
 	case OP_FORWARD: {
-		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
+		auto pextfwddlgt = static_cast<const EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 			return message_disable_rule(rp.sqlite, TRUE, rule.id);
 		std::vector<std::string> rcpt_list;

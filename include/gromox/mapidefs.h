@@ -1214,6 +1214,10 @@ struct RECIPIENT_BLOCK {
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 
+	TAGGED_PROPVAL *begin() { return ppropval; }
+	TAGGED_PROPVAL *end() { return ppropval + count; }
+	const TAGGED_PROPVAL *begin() const { return ppropval; }
+	const TAGGED_PROPVAL *end() const { return ppropval + count; }
 	std::string repr() const;
 };
 
@@ -1393,6 +1397,10 @@ struct FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 
+	RECIPIENT_BLOCK *begin() { return pblock; }
+	RECIPIENT_BLOCK *end() { return pblock + count; }
+	const RECIPIENT_BLOCK *begin() const { return pblock; }
+	const RECIPIENT_BLOCK *end() const { return pblock + count; }
 	std::string repr() const;
 };
 

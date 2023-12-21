@@ -2701,8 +2701,8 @@ static pack_result ext_buffer_push_recipient_block(EXT_PUSH *pext,
 		return EXT_ERR_FORMAT;
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_tagged_pv(r->ppropval[i]));
+	for (const auto &p : *r)
+		TRY(pext->p_tagged_pv(p));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2712,8 +2712,8 @@ static pack_result ext_buffer_push_forwarddelegate_action(EXT_PUSH *pext,
 	if (r->count == 0)
 		return EXT_ERR_FORMAT;
 	TRY(pext->p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_recipient_block(pext, &r->pblock[i]));
+	for (const auto &rcpt : *r)
+		TRY(ext_buffer_push_recipient_block(pext, &rcpt));
 	return EXT_ERR_SUCCESS;
 }
 

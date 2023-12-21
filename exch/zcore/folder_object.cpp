@@ -735,29 +735,28 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 }
 
 static BOOL folder_object_flush_delegates(int fd,
-	FORWARDDELEGATE_ACTION *paction)
+    const FORWARDDELEGATE_ACTION &action)
 {
-	int i, j;
 	int tmp_len;
 	char *ptype;
 	char *paddress;
 	BINARY *pentryid;
 	char address_buff[UADDR_SIZE];
 
-	for (i=0; i<paction->count; i++) {
+	for (const auto &dlgt : action) {
 		ptype = NULL;
 		paddress = NULL;
 		pentryid = NULL;
-		for (j=0; j<paction->pblock[i].count; j++) {
-			switch (paction->pblock[i].ppropval[j].proptag) {
+		for (const auto &p : dlgt) {
+			switch (p.proptag) {
 			case PR_ADDRTYPE:
-				ptype = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
+				ptype = static_cast<char *>(p.pvalue);
 				break;
 			case PR_ENTRYID:
-				pentryid = static_cast<BINARY *>(paction->pblock[i].ppropval[j].pvalue);
+				pentryid = static_cast<BINARY *>(p.pvalue);
 				break;
 			case PR_EMAIL_ADDRESS:
-				paddress = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
+				paddress = static_cast<char *>(p.pvalue);
 				break;
 			}
 		}
@@ -827,7 +826,7 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist)
 			if (b_delegate) {
 				for (const auto &a : *pactions) {
 					if (a.type == OP_DELEGATE &&
-					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(a.pdata))) {
+					    !folder_object_flush_delegates(fd, *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata))) {
 						close(fd);
 						return FALSE;
 					}

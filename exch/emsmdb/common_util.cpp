@@ -1245,8 +1245,8 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 static BOOL common_util_convert_recipient_block(
 	BOOL to_unicode, RECIPIENT_BLOCK *prcpt)
 {
-	for (unsigned int i = 0; i < prcpt->count; ++i)
-		if (!common_util_convert_tagged_propval(to_unicode, &prcpt->ppropval[i]))
+	for (auto &prop : *prcpt)
+		if (!common_util_convert_tagged_propval(to_unicode, &prop))
 			return FALSE;	
 	return TRUE;
 }
@@ -1254,8 +1254,8 @@ static BOOL common_util_convert_recipient_block(
 static BOOL common_util_convert_forwarddelegate_action(
 	BOOL to_unicode, FORWARDDELEGATE_ACTION *pfwd)
 {
-	for (unsigned int i = 0; i < pfwd->count; ++i)
-		if (!common_util_convert_recipient_block(to_unicode, &pfwd->pblock[i]))
+	for (auto &a : *pfwd)
+		if (!common_util_convert_recipient_block(to_unicode, &a))
 			return FALSE;	
 	return TRUE;
 }

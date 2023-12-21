@@ -133,12 +133,8 @@ static BOOL recipient_block_dup_internal(
 
 static void recipient_block_free_internal(RECIPIENT_BLOCK *pblock)
 {
-	int i;
-	
-	for (i=0; i<pblock->count; i++) {
-		propval_free(PROP_TYPE(pblock->ppropval[i].proptag),
-								pblock->ppropval[i].pvalue);
-	}
+	for (auto &p : *pblock)
+		propval_free(PROP_TYPE(p.proptag), p.pvalue);
 	free(pblock->ppropval);
 }
 
@@ -176,11 +172,8 @@ static FORWARDDELEGATE_ACTION* forwarddelegate_action_dup(
 
 static void forwarddelegate_action_free(FORWARDDELEGATE_ACTION *paction)
 {
-	int i;
-	
-	for (i=0; i<paction->count; i++) {
-		recipient_block_free_internal(paction->pblock + i);
-	}
+	for (auto &a : *paction)
+		recipient_block_free_internal(&a);
 	free(paction->pblock);
 	free(paction);
 }
@@ -349,27 +342,22 @@ static uint32_t reply_action_size(const REPLY_ACTION *r)
 
 static uint32_t recipient_block_size(const RECIPIENT_BLOCK *r)
 {
-	int i;
 	uint32_t size;
 	
 	size = sizeof(uint8_t) + sizeof(uint32_t);
-	for (i=0; i<r->count; i++) {
-		size += propval_size(PROP_TYPE(r->ppropval[i].proptag),
-					r->ppropval[i].pvalue) + sizeof(uint32_t);
-	}
+	for (const auto &p : *r)
+		size += propval_size(PROP_TYPE(p.proptag), p.pvalue) + sizeof(uint32_t);
 	return size;
 }
 
 static uint32_t forwarddelegate_action_size(
 	const FORWARDDELEGATE_ACTION *r)
 {
-	int i;
 	uint32_t size;
 	
 	size = sizeof(uint16_t);
-	for (i=0; i<r->count; i++) {
-		size += recipient_block_size(r->pblock + i);
-	}
+	for (const auto &act : *r)
+		size += recipient_block_size(&act);
 	return size;
 }
 
