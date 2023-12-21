@@ -22,9 +22,8 @@ ec_error_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	uint32_t permission;
 	
 	/* MS-OXORULE 3.2.5.2 */
-	if (flags & ~MODIFY_RULES_FLAG_REPLACE) {
+	if (flags & ~MODIFY_RULES_FLAG_REPLACE)
 		return ecInvalidParam;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)
 		return ecError;
@@ -152,9 +151,8 @@ ec_error_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
-		if (NULL == pmid) {
+		if (pmid == nullptr)
 			continue;
-		}
 		exmdb_client::set_message_properties(dir, nullptr, CP_ACP,
 			*pmid, &propvals, &problems);
 	}
