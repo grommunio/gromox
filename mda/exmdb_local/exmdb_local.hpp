@@ -3,13 +3,8 @@
 #include <gromox/common_types.hpp>
 #include <gromox/hook_common.h>
 
-enum {
-	DELIVERY_NO_USER,
-	DELIVERY_MAILBOX_FULL,
-	DELIVERY_OPERATION_ERROR,
-	DELIVERY_OPERATION_FAILURE,
-	DELIVERY_OPERATION_OK,
-	DELIVERY_OPERATION_DELIVERED
+enum class delivery_status {
+	ok, no_user, mailbox_full, error, failure, bounce_sent,
 };
 
 struct MAIL;
@@ -35,7 +30,7 @@ extern int cache_queue_put(MESSAGE_CONTEXT *, const char *rcpt, time_t orig_time
 extern void exmdb_local_init(const char *org_name, const char *default_charset);
 extern int exmdb_local_run();
 extern gromox::hook_result exmdb_local_hook(MESSAGE_CONTEXT *);
-int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);
+extern delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);
 extern void exmdb_local_log_info(const CONTROL_INFO &, const char *rcpt, int level, const char *format, ...);
 
 extern unsigned int autoreply_silence_window;
