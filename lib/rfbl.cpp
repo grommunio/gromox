@@ -1121,6 +1121,13 @@ errno_t tmpfile::link_to(const char *newpath)
 	if (m_fd < 0)
 		return EBADF;
 	/*
+	 * write()+rename() could succeed and only close() could return ENOSPC.
+	 * This breaks the tmpfile class's goal for atomic placement of
+	 * files-with-content. Call fsync as a remedy.
+	 */
+	if (fsync(m_fd) < 0)
+		return errno;
+	/*
 	 * The use of renameat2(RENAME_NOREPLACE) to speed up the CID writer in
 	 * one particular edge case was evaluated, but it is not worth it.
 	 */
