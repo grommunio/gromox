@@ -72,7 +72,7 @@ struct folder_object {
 	BOOL remove_properties(const PROPTAG_ARRAY *);
 	BOOL get_permissions(PERMISSION_SET *);
 	BOOL set_permissions(const PERMISSION_SET *);
-	BOOL updaterules(uint32_t flags, const RULE_LIST *);
+	BOOL updaterules(uint32_t flags, RULE_LIST *);
 
 	store_object *pstore = nullptr;
 	uint64_t folder_id = 0;

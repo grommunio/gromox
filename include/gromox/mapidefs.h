@@ -1361,6 +1361,11 @@ struct RULE_DATA {
 struct RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
+
+	RULE_DATA *begin() { return prule; }
+	RULE_DATA *end() { return prule + count; }
+	const RULE_DATA *begin() const { return prule; }
+	const RULE_DATA *end() const { return prule + count; }
 };
 
 struct ZMOVECOPY_ACTION {

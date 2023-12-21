@@ -789,9 +789,8 @@ static BOOL folder_object_flush_delegates(int fd,
 }
 
 
-BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
+BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist)
 {
-	int i;
 	BOOL b_exceed;
 	BOOL b_delegate;
 	const RULE_ACTIONS *pactions = nullptr;
@@ -801,14 +800,14 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 	    !exmdb_client::empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
 		return FALSE;	
 	b_delegate = FALSE;
-	for (i=0; i<plist->count; i++) {
-		if (!common_util_convert_from_zrule(&plist->prule[i].propvals))
+	for (auto &rule : *plist) {
+		if (!common_util_convert_from_zrule(&rule.propvals))
 			return FALSE;	
-		auto pprovider = plist->prule[i].propvals.get<char>(PR_RULE_PROVIDER);
+		auto pprovider = rule.propvals.get<char>(PR_RULE_PROVIDER);
 		if (pprovider == nullptr ||
 		    strcasecmp(pprovider, "Schedule+ EMS Interface") != 0)
 			continue;	
-		auto act = plist->prule[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
+		auto act = rule.propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 		if (act != nullptr) {
 			b_delegate = TRUE;
 			pactions = act;

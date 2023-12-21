@@ -1377,8 +1377,8 @@ ec_error_t zs_modifypermissions(GUID hsession,
 	return pfolder->set_permissions(pset) ? ecSuccess : ecError;
 }
 
-ec_error_t zs_modifyrules(GUID hsession,
-	uint32_t hfolder, uint32_t flags, const RULE_LIST *plist)
+ec_error_t zs_modifyrules(GUID hsession, uint32_t hfolder, uint32_t flags,
+    RULE_LIST *plist)
 {
 	zs_objtype mapi_type;
 	
@@ -1391,8 +1391,8 @@ ec_error_t zs_modifyrules(GUID hsession,
 	if (mapi_type != zs_objtype::folder)
 		return ecNotSupported;
 	if (flags & MODIFY_RULES_FLAG_REPLACE)
-		for (size_t i = 0; i < plist->count; ++i)
-			if (plist->prule[i].flags != ROW_ADD)
+		for (const auto &rule : *plist)
+			if (rule.flags != ROW_ADD)
 				return ecInvalidParam;
 	if (!pfolder->pstore->owner_mode()) {
 		uint32_t permission = 0;
