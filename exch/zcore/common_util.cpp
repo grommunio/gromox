@@ -1483,23 +1483,21 @@ static REPLY_ACTION *cu_cvt_from_zreply(const ZREPLY_ACTION &src)
 
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	
 	auto pactions = ppropvals->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 	if (pactions == nullptr)
 		return TRUE;
-	for (i=0; i<pactions->count; i++) {
-		switch (pactions->pblock[i].type) {
+	for (auto &act : *pactions) {
+		switch (act.type) {
 		case OP_MOVE:
 		case OP_COPY:
-			pactions->pblock[i].pdata = cu_cvt_from_zmovecopy(*static_cast<const ZMOVECOPY_ACTION *>(pactions->pblock[i].pdata));
-			if (pactions->pblock[i].pdata == nullptr)
+			act.pdata = cu_cvt_from_zmovecopy(*static_cast<const ZMOVECOPY_ACTION *>(act.pdata));
+			if (act.pdata == nullptr)
 				return FALSE;
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
-			pactions->pblock[i].pdata = cu_cvt_from_zreply(*static_cast<const ZREPLY_ACTION *>(pactions->pblock[i].pdata));
-			if (pactions->pblock[i].pdata == nullptr)
+			act.pdata = cu_cvt_from_zreply(*static_cast<const ZREPLY_ACTION *>(act.pdata));
+			if (act.pdata == nullptr)
 				return FALSE;
 			break;
 		}
@@ -1587,23 +1585,21 @@ static ZREPLY_ACTION *cu_cvt_to_zreply(store_object *pstore, const REPLY_ACTION 
 
 BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	
 	auto pactions = ppropvals->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 	if (pactions == nullptr)
 		return TRUE;
-	for (i=0; i<pactions->count; i++) {
-		switch (pactions->pblock[i].type) {
+	for (auto &act : *pactions) {
+		switch (act.type) {
 		case OP_MOVE:
 		case OP_COPY:
-			pactions->pblock[i].pdata = cu_cvt_to_zmovecopy(pstore, *static_cast<const MOVECOPY_ACTION *>(pactions->pblock[i].pdata));
-			if (pactions->pblock[i].pdata == nullptr)
+			act.pdata = cu_cvt_to_zmovecopy(pstore, *static_cast<const MOVECOPY_ACTION *>(act.pdata));
+			if (act.pdata == nullptr)
 				return FALSE;
 			break;
 		case OP_REPLY:
 		case OP_OOF_REPLY:
-			pactions->pblock[i].pdata = cu_cvt_to_zreply(pstore, *static_cast<const REPLY_ACTION *>(pactions->pblock[i].pdata));
-			if (pactions->pblock[i].pdata == nullptr)
+			act.pdata = cu_cvt_to_zreply(pstore, *static_cast<const REPLY_ACTION *>(act.pdata));
+			if (act.pdata == nullptr)
 				return FALSE;
 			break;
 		}

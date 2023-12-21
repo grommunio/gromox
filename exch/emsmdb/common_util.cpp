@@ -1295,8 +1295,8 @@ static BOOL common_util_convert_action_block(
 
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 {
-	for (unsigned int i = 0; i < pactions->count; ++i)
-		if (!common_util_convert_action_block(to_unicode, &pactions->pblock[i]))
+	for (auto &a : *pactions)
+		if (!common_util_convert_action_block(to_unicode, &a))
 			return FALSE;	
 	return TRUE;
 }

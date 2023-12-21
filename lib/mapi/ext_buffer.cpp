@@ -2772,8 +2772,8 @@ pack_result EXT_PUSH::p_rule_actions(const RULE_ACTIONS &r)
 	if (r.count == 0)
 		return EXT_ERR_FORMAT;
 	TRY(p_uint16(r.count));
-	for (size_t i = 0; i < r.count; ++i)
-		TRY(ext_buffer_push_action_block(this, &r.pblock[i]));
+	for (const auto &act : r)
+		TRY(ext_buffer_push_action_block(this, &act));
 	return EXT_ERR_SUCCESS;
 }
 

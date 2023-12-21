@@ -116,6 +116,11 @@ struct EXT_ACTION_BLOCK {
 struct EXT_RULE_ACTIONS {
 	uint32_t count;
 	EXT_ACTION_BLOCK *pblock;
+
+	EXT_ACTION_BLOCK *begin() { return pblock; }
+	EXT_ACTION_BLOCK *end() { return pblock + count; }
+	const EXT_ACTION_BLOCK *begin() const { return pblock; }
+	const EXT_ACTION_BLOCK *end() const { return pblock + count; }
 };
 
 enum {

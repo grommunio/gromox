@@ -317,11 +317,8 @@ RULE_ACTIONS* rule_actions_dup(const RULE_ACTIONS *prule)
 
 void rule_actions_free(RULE_ACTIONS *prule)
 {
-	int i;
-	
-	for (i=0; i<prule->count; i++) {
-		action_block_free_internal(prule->pblock + i);
-	}
+	for (auto &blk : *prule)
+		action_block_free_internal(&blk);
 	free(prule->pblock);
 	free(prule);
 }
@@ -412,12 +409,10 @@ static uint32_t action_block_size(const ACTION_BLOCK *r)
 
 uint32_t rule_actions_size(const RULE_ACTIONS *r)
 {
-	int i;
 	uint32_t size;
 	
 	size = sizeof(uint16_t);
-	for (i=0; i<r->count; i++) {
-		size += action_block_size(r->pblock + i);
-	}
+	for (const auto &a : *r)
+		size += action_block_size(&a);
 	return size;
 }

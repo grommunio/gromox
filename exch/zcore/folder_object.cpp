@@ -794,7 +794,7 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 	int i;
 	BOOL b_exceed;
 	BOOL b_delegate;
-	RULE_ACTIONS *pactions = nullptr;
+	const RULE_ACTIONS *pactions = nullptr;
 	auto pfolder = this;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE &&
@@ -826,9 +826,9 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 		}
 		if (-1 != fd) {
 			if (b_delegate) {
-				for (i=0; i<pactions->count; i++) {
-					if (pactions->pblock[i].type == OP_DELEGATE &&
-					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
+				for (const auto &a : *pactions) {
+					if (a.type == OP_DELEGATE &&
+					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(a.pdata))) {
 						close(fd);
 						return FALSE;
 					}

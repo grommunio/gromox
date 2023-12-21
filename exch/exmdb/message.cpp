@@ -2238,10 +2238,10 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 {
 	BOOL b_replaced;
 	
-	for (size_t i = 0; i < pactions->count; ++i)
-		if (pactions->pblock[i].type == OP_TAG &&
+	for (auto &a : *pactions)
+		if (a.type == OP_TAG &&
 		    !message_get_real_propid(psqlite, ppropname_info,
-		    &static_cast<TAGGED_PROPVAL *>(pactions->pblock[i].pdata)->proptag,
+		    &static_cast<TAGGED_PROPVAL *>(a.pdata)->proptag,
 		    &b_replaced))
 			return FALSE;
 	return TRUE;

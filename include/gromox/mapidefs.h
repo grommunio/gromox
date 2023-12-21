@@ -1346,6 +1346,10 @@ struct RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
 
+	ACTION_BLOCK *begin() { return pblock; }
+	ACTION_BLOCK *end() { return pblock + count; }
+	const ACTION_BLOCK *begin() const { return pblock; }
+	const ACTION_BLOCK *end() const { return pblock + count; }
 	std::string repr() const;
 };
 
