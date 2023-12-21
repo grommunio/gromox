@@ -12,9 +12,8 @@ using namespace gromox;
 static STORE_ENTRYID* store_entryid_dup(STORE_ENTRYID *peid)
 {
 	auto pstore = me_alloc<STORE_ENTRYID>();
-	if (NULL == pstore) {
+	if (pstore == nullptr)
 		return NULL;
-	}
 	*pstore = *peid;
 	pstore->pserver_name = strdup(peid->pserver_name);
 	if (NULL == pstore->pserver_name) {
@@ -40,9 +39,8 @@ static void store_entryid_free(STORE_ENTRYID *peid)
 static MOVECOPY_ACTION* movecopy_action_dup(const MOVECOPY_ACTION *paction)
 {
 	auto pmovecopy = me_alloc<MOVECOPY_ACTION>();
-	if (NULL == pmovecopy) {
+	if (pmovecopy == nullptr)
 		return NULL;
-	}
 	pmovecopy->same_store = paction->same_store;
 	if (NULL != paction->pstore_eid) {
 		pmovecopy->pstore_eid = store_entryid_dup(paction->pstore_eid);
@@ -54,17 +52,15 @@ static MOVECOPY_ACTION* movecopy_action_dup(const MOVECOPY_ACTION *paction)
 		pmovecopy->pstore_eid = NULL;
 	}
 	
-	if (1 == paction->same_store) {
+	if (paction->same_store == 1)
 		pmovecopy->pfolder_eid =
 			propval_dup(PT_SVREID, paction->pfolder_eid);
-	} else {
+	else
 		pmovecopy->pfolder_eid =
 			propval_dup(PT_BINARY, paction->pfolder_eid);
-	}
 	if (NULL == pmovecopy->pfolder_eid) {
-		if (NULL != pmovecopy->pstore_eid) {
+		if (pmovecopy->pstore_eid != nullptr)
 			store_entryid_free(pmovecopy->pstore_eid);
-		}
 		free(pmovecopy);
 		return NULL;
 	}
@@ -73,23 +69,20 @@ static MOVECOPY_ACTION* movecopy_action_dup(const MOVECOPY_ACTION *paction)
 
 static void movecopy_action_free(MOVECOPY_ACTION *paction)
 {
-	if (NULL != paction->pstore_eid) {
+	if (paction->pstore_eid != nullptr)
 		store_entryid_free(paction->pstore_eid);
-	}
-	if (1 == paction->same_store) {
+	if (paction->same_store == 1)
 		propval_free(PT_SVREID, paction->pfolder_eid);
-	} else {
+	else
 		propval_free(PT_BINARY, paction->pfolder_eid);
-	}
 	free(paction);
 }
 
 static REPLY_ACTION* reply_action_dup(const REPLY_ACTION *paction)
 {
 	auto preply = me_alloc<REPLY_ACTION>();
-	if (NULL == preply) {
+	if (preply == nullptr)
 		return NULL;
-	}
 	preply->template_folder_id = paction->template_folder_id;
 	preply->template_message_id = paction->template_message_id;
 	memcpy(&preply->template_guid, &paction->template_guid, sizeof(GUID));
@@ -104,26 +97,21 @@ static void reply_action_free(REPLY_ACTION *paction)
 static BOOL recipient_block_dup_internal(
 	const RECIPIENT_BLOCK *pblock, RECIPIENT_BLOCK *precipient)
 {
-	int i;
-	
-	if (0 == pblock->count) {
+	if (pblock->count == 0)
 		return FALSE;
-	}
 	precipient->reserved = pblock->reserved;
 	precipient->count = pblock->count;
 	precipient->ppropval = me_alloc<TAGGED_PROPVAL>(pblock->count);
-	if (NULL == pblock->ppropval) {
+	if (pblock->ppropval == nullptr)
 		return FALSE;
-	}
-	for (i=0; i<pblock->count; i++) {
+	for (int i = 0; i < pblock->count; ++i) {
 		precipient->ppropval[i].proptag = pblock->ppropval[i].proptag;
 		precipient->ppropval[i].pvalue = propval_dup(PROP_TYPE(pblock->ppropval[i].proptag),
 								pblock->ppropval[i].pvalue);
 		if (NULL == precipient->ppropval[i].pvalue) {
-			for (i-=1; i>=0; i--) {
+			for (i -= 1; i >= 0; --i)
 				propval_free(PROP_TYPE(precipient->ppropval[i].proptag),
 					precipient->ppropval[i].pvalue);
-			}
 			free(precipient->ppropval);
 			return FALSE;
 		}
@@ -141,28 +129,23 @@ static void recipient_block_free_internal(RECIPIENT_BLOCK *pblock)
 static FORWARDDELEGATE_ACTION* forwarddelegate_action_dup(
 	const FORWARDDELEGATE_ACTION *paction)
 {
-	int i;
-	
-	if (0 == paction->count) {
+	if (paction->count == 0)
 		return NULL;
-	}
 	auto pblock = me_alloc<FORWARDDELEGATE_ACTION>();
-	if (NULL == pblock) {
+	if (pblock == nullptr)
 		return NULL;
-	}
 	pblock->count = paction->count;
 	pblock->pblock = me_alloc<RECIPIENT_BLOCK>(pblock->count);
 	if (NULL == pblock->pblock) {
 		free(pblock);
 		return NULL;
 	}
-	for (i=0; i<paction->count; i++) {
+	for (int i = 0; i < paction->count; ++i) {
 		if (recipient_block_dup_internal(&paction->pblock[i], &pblock->pblock[i]))
 			continue;
-		for (i -= 1; i >= 0; i--) {
+		for (i -= 1; i >= 0; --i)
 			recipient_block_free_internal(
 				pblock->pblock + i);
-		}
 		free(pblock->pblock);
 		free(pblock);
 		return NULL;
@@ -327,11 +310,10 @@ static uint32_t movecopy_action_size(const MOVECOPY_ACTION *r)
 						strlen(r->pstore_eid->pmailbox_dn);
 	}
 	
-	if (0 == r->same_store) {
+	if (r->same_store == 0)
 		size += sizeof(uint16_t) + 21;
-	} else {
+	else
 		size += sizeof(uint16_t) + static_cast<BINARY *>(r->pfolder_eid)->cb;
-	}
 	return size;
 }
 
