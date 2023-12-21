@@ -124,10 +124,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 		}
 		switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
 		case DELIVERY_OPERATION_OK:
-			net_failure_statistic(1, 0, 0, 0);
 			break;
 		case DELIVERY_OPERATION_DELIVERED:
-			net_failure_statistic(1, 0, 0, 0);
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -153,7 +151,6 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_NO_USER:
-			net_failure_statistic(0, 0, 0, 1);
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -203,7 +200,6 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			break;
 		case DELIVERY_OPERATION_ERROR:
 			had_error = true;
-			net_failure_statistic(0, 0, 1, 0);
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -230,7 +226,6 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			break;
 		case DELIVERY_OPERATION_FAILURE:
 			had_error = true;
-			net_failure_statistic(0, 1, 0, 0);
 			cache_ID = cache_queue_put(pcontext, rcpt_buff, time(nullptr));
 			if (cache_ID >= 0) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_INFO,
@@ -483,7 +478,7 @@ DECLARE_HOOK_API();
 static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
 	char charset[32], org_name[256], temp_buff[45], cache_path[256];
-	int cache_interval, retrying_times, alarm_interval, times, interval;
+	int cache_interval, retrying_times;
 	int response_capacity, response_interval, conn_num;
 
 	/* path contains the config files directory */
@@ -536,34 +531,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		mlog(LV_INFO, "exmdb_local: retrying times on temporary failure is %d",
 			retrying_times);
 
-		str_value = pfile->get_value("FAILURE_TIMES_FOR_ALARM");
-		times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
-		if (times <= 0)
-			times = 10;
-		mlog(LV_INFO, "exmdb_local: failure count for alarm is %d", times);
-
-		str_value = pfile->get_value("INTERVAL_FOR_FAILURE_STATISTIC");
-		if (str_value == nullptr) {
-			interval = 3600;
-		} else {
-			interval = HX_strtoull_sec(str_value, nullptr);
-			if (interval <= 0)
-				interval = 3600;
-		}
-		HX_unit_seconds(temp_buff, std::size(temp_buff), interval, 0);
-		mlog(LV_INFO, "exmdb_local: interval for failure alarm is %s", temp_buff);
-
-		str_value = pfile->get_value("ALARM_INTERVAL");
-		if (str_value == nullptr) {
-			alarm_interval = 1800;
-		} else {
-			alarm_interval = HX_strtoull_sec(str_value, nullptr);
-			if (alarm_interval <= 0)
-				alarm_interval = 1800;
-		}
-		HX_unit_seconds(temp_buff, std::size(temp_buff), alarm_interval, 0);
-		mlog(LV_INFO, "exmdb_local: alarms interval is %s", temp_buff);
-
 		str_value = pfile->get_value("RESPONSE_AUDIT_CAPACITY");
 		response_capacity = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000;
 		if (response_capacity < 0)
@@ -584,16 +551,11 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 
 		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));
 
-		net_failure_init(times, interval, alarm_interval);
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client_init(conn_num, 0);
 		exmdb_local_init(org_name, charset);
 
-		if (net_failure_run() != 0) {
-			mlog(LV_ERR, "exmdb_local: failed to start net_failure component");
-			return FALSE;
-		}
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "local_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
@@ -621,7 +583,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		exmdb_client_stop();
 		cache_queue_stop();
 		cache_queue_free();
-		net_failure_free();
 		return TRUE;
 	}
 	return TRUE;

@@ -404,19 +404,16 @@ static void *mdl_thrwork(void *arg)
 			case DELIVERY_OPERATION_OK:
 				need_bounce = FALSE;
 				need_remove = TRUE;
-				net_failure_statistic(1, 0, 0, 0);
 				break;
 			case DELIVERY_OPERATION_DELIVERED:
 				bounce_type = "BOUNCE_MAIL_DELIVERED";
 				need_bounce = TRUE;
 				need_remove = TRUE;
-				net_failure_statistic(1, 0, 0, 0);
 				break;
 			case DELIVERY_NO_USER:
 				bounce_type = "BOUNCE_NO_USER";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
-				net_failure_statistic(0, 0, 0, 1);
 				break;
 			case DELIVERY_MAILBOX_FULL:
 				bounce_type = "BOUNCE_MAILBOX_FULL";
@@ -427,10 +424,8 @@ static void *mdl_thrwork(void *arg)
 				bounce_type = "BOUNCE_OPERATION_ERROR";
 				need_bounce = TRUE;
 				need_remove = TRUE;
-				net_failure_statistic(0, 0, 1, 0);
 				break;
 			case DELIVERY_OPERATION_FAILURE:
-				net_failure_statistic(0, 1, 0, 0);
 				break;
 			}
 			if (!need_remove) {
