@@ -2877,7 +2877,10 @@ void tItem::update(const sShape& shape)
 		fromProp(prop, defaulted(ConversationId).Id);
 		ConversationId->type = tItemId::ID_GENERIC;
 	}
-	fromProp(shape.get(PR_CREATION_TIME), DateTimeCreated);
+	if((prop = shape.get(PR_CREATION_TIME)))
+		fromProp(prop, DateTimeCreated);
+	else
+		fromProp(shape.get(PR_LOCAL_COMMIT_TIME), DateTimeCreated);
 	fromProp(shape.get(PR_DISPLAY_BCC), DisplayBcc);
 	fromProp(shape.get(PR_DISPLAY_CC), DisplayCc);
 	fromProp(shape.get(PR_DISPLAY_TO),DisplayTo);
@@ -2928,7 +2931,7 @@ sItem tItem::create(const sShape& shape)
 	const char* itemClass = shape.get<char>(PR_MESSAGE_CLASS, sShape::FL_ANY);
 	if(!itemClass)
 		return tItem(shape);
-	if(!strcasecmp(itemClass, "IPM.Note"))
+	if(!strcasecmp(itemClass, "IPM.Note") || !strcasecmp(itemClass, "IPM.StickyNote"))
 		return tMessage(shape);
 	else if(!strcasecmp(itemClass, "IPM.Appointment"))
 		return tCalendarItem(shape);

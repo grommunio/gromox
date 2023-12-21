@@ -256,11 +256,6 @@ using sFolderChangeDescription = std::variant<tAppendToFolderField, tSetFolderFi
 	/*
 	<Items>
 		<DistributionList/>
-		<MeetingMessage/>
-		<MeetingRequest/>
-		<MeetingResponse/>
-		<MeetingCancellation/>
-		<Task/>
 		<PostItem/>
 	</Items>
 	*/
