@@ -738,25 +738,21 @@ static BOOL folder_object_flush_delegates(int fd,
     const FORWARDDELEGATE_ACTION &action)
 {
 	int tmp_len;
-	char *ptype;
-	char *paddress;
-	BINARY *pentryid;
 	char address_buff[UADDR_SIZE];
 
 	for (const auto &dlgt : action) {
-		ptype = NULL;
-		paddress = NULL;
-		pentryid = NULL;
+		const char *ptype = nullptr, *paddress = nullptr;
+		const BINARY *pentryid = nullptr;
 		for (const auto &p : dlgt) {
 			switch (p.proptag) {
 			case PR_ADDRTYPE:
-				ptype = static_cast<char *>(p.pvalue);
+				ptype = static_cast<const char *>(p.pvalue);
 				break;
 			case PR_ENTRYID:
-				pentryid = static_cast<BINARY *>(p.pvalue);
+				pentryid = static_cast<const BINARY *>(p.pvalue);
 				break;
 			case PR_EMAIL_ADDRESS:
-				paddress = static_cast<char *>(p.pvalue);
+				paddress = static_cast<const char *>(p.pvalue);
 				break;
 			}
 		}
