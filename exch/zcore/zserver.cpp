@@ -3337,13 +3337,12 @@ static ec_error_t rectify_message(message_object *pmessage,
 	return pmessage->save();
 }
 
-ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
+ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 {
 	int timer_id;
 	BOOL b_marked;
 	zs_objtype mapi_type;
 	uint16_t rcpt_num;
-	char username[UADDR_SIZE];
 	char command_buff[1024];
 	uint32_t proptag_buff[6];
 	PROPTAG_ARRAY tmp_proptags;
@@ -3386,22 +3385,23 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	/* FAI message cannot be sent */
 	if (flag != nullptr && *flag != 0)
 		return ecAccessDenied;
-	if (!cu_extract_delegate(pmessage, username, std::size(username)))
+	std::string username;
+	if (!cu_extract_delegate(pmessage, username))
 		return ecSendAsDenied;
 	auto account = pstore->get_account();
 	repr_grant repr_grant;
-	if ('\0' == username[0]) {
-		gx_strlcpy(username, account, std::size(username));
+	if (username.empty()) {
+		username = account;
 		repr_grant = repr_grant::send_as;
 	} else {
-		repr_grant = cu_get_delegate_perm_AA(account, username);
+		repr_grant = cu_get_delegate_perm_AA(account, username.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
 		mlog(LV_INFO, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.",
-		        account, username);
+		        account, username.c_str());
 		return ecAccessDenied;
 	}
-	auto err = rectify_message(pmessage, username,
+	auto err = rectify_message(pmessage, username.c_str(),
 	           repr_grant >= repr_grant::send_as);
 	if (err != ecSuccess)
 		return err;
@@ -3486,6 +3486,9 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage)
 	else
 		pmessage->clear_unsent();
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2351: ENOMEM");
+	return ecServerOOM;
 }
 
 ec_error_t zs_loadattachmenttable(GUID hsession,

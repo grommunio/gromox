@@ -738,9 +738,6 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 static BOOL folder_object_flush_delegates(int fd,
     const FORWARDDELEGATE_ACTION &action)
 {
-	int tmp_len;
-	char address_buff[UADDR_SIZE];
-
 	for (const auto &dlgt : action) {
 		const char *ptype = nullptr, *paddress = nullptr;
 		const BINARY *pentryid = nullptr;
@@ -757,28 +754,26 @@ static BOOL folder_object_flush_delegates(int fd,
 				break;
 			}
 		}
-		address_buff[0] = '\0';
+		std::string address_buff;
 		if (ptype != nullptr) {
 			auto ret = cvt_genaddr_to_smtpaddr(ptype, paddress,
-			           g_org_name, cu_id2user, address_buff,
-			           std::size(address_buff));
+			           g_org_name, cu_id2user, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
 				return false;
 		}
-		if (*address_buff == '\0' && pentryid != nullptr) {
+		if (address_buff.empty() && pentryid != nullptr) {
 			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
-			           cu_id2user, address_buff, std::size(address_buff));
+			           cu_id2user, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
 				return false;
 		}
-		if ('\0' != address_buff[0]) {
-			tmp_len = strlen(address_buff);
-			address_buff[tmp_len++] = '\n';
-			write(fd, address_buff, tmp_len);
+		if (address_buff.size() > 0) {
+			address_buff += '\n';
+			write(fd, address_buff.c_str(), address_buff.size());
 		}
 	}
 	return TRUE;

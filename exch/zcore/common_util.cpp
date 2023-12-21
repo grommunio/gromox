@@ -111,7 +111,7 @@ BOOL common_util_verify_columns_and_sorts(
 }
 
 /* Cf. oxomsg_extract_delegate for comments */
-bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
+bool cu_extract_delegate(message_object *pmessage, std::string &username)
 {
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -126,14 +126,14 @@ bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
-		username[0] = '\0';
+		username.clear();
 		return TRUE;
 	}
 	auto addrtype = tmp_propvals.get<const char>(PR_ADDRTYPE);
 	auto emaddr   = tmp_propvals.get<const char>(PR_EMAIL_ADDRESS);
 	if (addrtype != nullptr) {
 		auto ret = cvt_genaddr_to_smtpaddr(addrtype, emaddr, g_org_name,
-		           cu_id2user, username, ulen);
+		           cu_id2user, username);
 		if (ret == ecSuccess)
 			return true;
 		else if (ret != ecNullObject)
@@ -141,15 +141,15 @@ bool cu_extract_delegate(message_object *pmessage, char *username, size_t ulen)
 	}
 	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (str != nullptr) {
-		gx_strlcpy(username, str, ulen);
+		username = str;
 		return TRUE;
 	}
 	auto ret = cvt_entryid_to_smtpaddr(tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID),
-		   g_org_name, cu_id2user, username, ulen);
+		   g_org_name, cu_id2user, username);
 	if (ret == ecSuccess)
 		return TRUE;
 	if (ret == ecNullObject) {
-		*username = '\0';
+		username.clear();
 		return TRUE;
 	}
 	mlog(LV_WARN, "W-1643: rejecting submission of msgid %llxh because "
