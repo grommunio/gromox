@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
@@ -783,8 +784,7 @@ static BOOL folder_object_flush_delegates(int fd,
 	return TRUE;
 }
 
-
-BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist)
+BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 {
 	BOOL b_exceed;
 	BOOL b_delegate;
@@ -811,27 +811,23 @@ BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist)
 	if (pfolder->pstore->b_private &&
 	    rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_INBOX &&
 	    ((flags & MODIFY_RULES_FLAG_REPLACE) || b_delegate)) {
-		int fd = -1;
-		try {
-			auto dlg_path = pfolder->pstore->get_dir() + "/config/delegates.txt"s;
-			fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1491: ENOMEM");
-		}
-		if (-1 != fd) {
-			if (b_delegate) {
-				for (const auto &a : *pactions) {
-					if (a.type == OP_DELEGATE &&
-					    !folder_object_flush_delegates(fd, *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata))) {
-						close(fd);
-						return FALSE;
-					}
-				}
-			}
-			close(fd);
-		}
+		auto dlg_dir  = pfolder->pstore->get_dir() + "/config"s;
+		auto dlg_path = dlg_dir + "/delegates.txt";
+		gromox::tmpfile fd;
+		if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) >= 0 &&
+		    b_delegate)
+			for (const auto &a : *pactions)
+				if (a.type == OP_DELEGATE &&
+				    !folder_object_flush_delegates(fd,
+				    *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata)))
+					return FALSE;
+		if (fd.link_to(dlg_path.c_str()) != 0)
+			mlog(LV_ERR, "E-2350: write %s: %s", dlg_path.c_str(), strerror(errno));
 	}
 	return exmdb_client::update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1491: ENOMEM");
+	return false;
 }
