@@ -3712,9 +3712,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 				return FALSE;
 		}
 	}
-	mlog(LV_DEBUG, "user=%s host=unknown  "
-		"Message %llu is delivered into folder "
-		"%llu%s", account, LLU{message_id}, LLU{fid_val},
+	mlog(LV_DEBUG, "to=%s from=%s fid=%llu delivery mid=%llu (%s)", account,
+		znul(from_address), LLU{fid_val}, LLU{message_id},
 		partial ? " (partial only)" : "");
 	if (dlflags & DELIVERY_DO_RULES) {
 		auto ec = message_rule_new_message({from_address, account, cpid, b_oof,
