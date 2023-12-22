@@ -131,6 +131,40 @@ static int t_ical_api()
 	       it.hour == 0 && it.minute == 0 && it.second == 0 &&
 	       it.type == ICT_FLOAT_DAY);
 	assert(!ical_parse_date("202112211", &it));
+
+	int dow = -99, weekord = -99;
+	assert(ical_parse_byday("MO", &dow, &weekord));
+	assert(weekord == 0 && dow == 1);
+	assert(ical_parse_byday("-1TU", &dow, &weekord));
+	assert(weekord == -1 && dow == 2);
+	assert(ical_parse_byday("+2WE", &dow, &weekord));
+	assert(weekord == 2 && dow == 3);
+	assert(ical_parse_byday("3TH", &dow, &weekord));
+	assert(weekord == 3 && dow == 4);
+	assert(ical_parse_byday("5FR", &dow, &weekord));
+	assert(weekord == 5 && dow == 5);
+	assert(ical_parse_byday("-5SA", &dow, &weekord));
+	assert(weekord == -5 && dow == 6);
+	assert(ical_parse_byday("53SU", &dow, &weekord));
+	assert(weekord == 53 && dow == 0);
+	assert(!ical_parse_byday("54SU", &dow, &weekord));
+	assert(!ical_parse_byday("SAT", &dow, &weekord));
+
+	long sec = -1;
+	assert(ical_parse_duration("PT0S", &sec));
+	assert(sec == 0);
+	assert(ical_parse_duration("-P9DT3H4M5S", &sec));
+	assert(sec == -(86400 * 9 + 3600 * 3 + 4 * 60 + 5));
+	assert(!ical_parse_duration("P1M", &sec));
+	assert(!ical_parse_duration("P1Y", &sec));
+	/*
+	 * Parser is too lax.
+	//assert(!ical_parse_duration("P", &sec));
+	 * Durations ought to be strictly ordered
+	//assert(!ical_parse_duration("PT1S1H", &sec));
+	 * RFC 5545 §3.3.6 does not allow combining weeks and days
+	//assert(!ical_parse_duration("PT1W2D", &sec));
+	 */
 	return EXIT_SUCCESS;
 }
 
