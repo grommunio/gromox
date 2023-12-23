@@ -252,7 +252,7 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 		tmp_tm = {};
 	if (strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm) == nullptr)
 		return FALSE;	
-	*pmtime = make_gmtime(&tmp_tm);
+	*pmtime = mktime(&tmp_tm);
 	return TRUE;
 }
 
