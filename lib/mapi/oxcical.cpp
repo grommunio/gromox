@@ -3465,10 +3465,8 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	
 	struct tm tmp_tm;
 	unsigned int year = 1601;
-	if (has_start_time) {
-		gmtime_r(&start_time, &tmp_tm);
+	if (has_start_time && gmtime_r(&start_time, &tmp_tm) != nullptr)
 		year = tmp_tm.tm_year + 1900;
-	}
 	
 	tzid = NULL;
 	if (b_recurrence) {

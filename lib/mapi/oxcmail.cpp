@@ -4087,17 +4087,17 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	}
 	if (pctime != nullptr) {
 		auto tmp_time = rop_util_nttime_to_unix(*pctime);
-		gmtime_r(&tmp_time, &time_buff);
-		tmp_len += strftime(tmp_field + tmp_len, 1024 - tmp_len,
-			"creation-date=\"%a, %d %b %Y %H:%M:%S GMT\";\r\n\t",
-			&time_buff);
+		if (gmtime_r(&tmp_time, &time_buff) != nullptr)
+			tmp_len += strftime(&tmp_field[tmp_len], std::size(tmp_field) - tmp_len,
+				"creation-date=\"%a, %d %b %Y %H:%M:%S GMT\";\r\n\t",
+				&time_buff);
 	}
 	if (pmtime != nullptr) {
 		auto tmp_time = rop_util_nttime_to_unix(*pmtime);
-		gmtime_r(&tmp_time, &time_buff);
-		tmp_len += strftime(tmp_field + tmp_len, 1024 - tmp_len,
-			"modification-date=\"%a, %d %b %Y %H:%M:%S GMT\"",
-			&time_buff);
+		if (gmtime_r(&tmp_time, &time_buff) != nullptr)
+			tmp_len += strftime(&tmp_field[tmp_len], std::size(tmp_field) - tmp_len,
+				"modification-date=\"%a, %d %b %Y %H:%M:%S GMT\"",
+				&time_buff);
 	}
 	tmp_field[tmp_len] = '\0';
 	if (!pmime->set_field("Content-Disposition", tmp_field))

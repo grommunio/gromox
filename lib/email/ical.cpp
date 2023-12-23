@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <new>
 #include <optional>
@@ -1168,7 +1169,8 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			if (!ical_parse_utc_offset(pvalue, &hour, &minute))
 				return nullptr;
 			tmp_time -= 60*60*hour + 60*minute;
-			gmtime_r(&tmp_time, &tmp_tm);
+			if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
+				return nullptr;
 			itime2.year = tmp_tm.tm_year + 1900;
 			itime2.month = tmp_tm.tm_mon + 1;
 			itime2.day = tmp_tm.tm_mday;
@@ -1368,7 +1370,8 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 	
 	if (NULL == ptz_component) {
 		/* UTC time */
-		gmtime_r(&utc_time, &tmp_tm);
+		if (gmtime_r(&utc_time, &tmp_tm) == nullptr)
+			return false;
 		pitime->year = tmp_tm.tm_year + 1900;
 		pitime->month = tmp_tm.tm_mon + 1;
 		pitime->day = tmp_tm.tm_mday;
@@ -1394,7 +1397,8 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		if (!ical_parse_utc_offset(pvalue, &hour, &minute))
 			return false;
 		tmp_time = utc_time - 60*60*hour - 60*minute;
-		gmtime_r(&tmp_time, &tmp_tm);
+		if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
+			return false;
 		pitime->year = tmp_tm.tm_year + 1900;
 		pitime->month = tmp_tm.tm_mon + 1;
 		pitime->day = tmp_tm.tm_mday;
