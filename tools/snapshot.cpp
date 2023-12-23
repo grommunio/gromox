@@ -121,12 +121,25 @@ static int do_purge(const char *grpdir, unsigned int mtime, unsigned int mmin)
 	const char *time_type = mtime > 0 ? "-mtime" : "-mmin";
 	char time_va[32];
 	snprintf(time_va, sizeof(time_va), "+%u", mmin > 0 ? mmin : mtime);
-	const char *const args_2[] = {
+	auto mode = snapshot_type(g_subvolume_root, grpdir);
+	if (mode == snapshot_mode::error)
+		return EXIT_FAILURE;
+	if (mode == snapshot_mode::btrfs) {
+		const char *const a_btrfs[] = {
+			"find", grpdir, "-mindepth", "1", "-maxdepth", "1",
+			"-type", "d", time_type, time_va, "-print", "-exec",
+			"btrfs", "subvolume", "delete", "{}", "+", nullptr,
+		};
+		return HXproc_run_sync(a_btrfs, HXPROC_NULL_STDIN) == 0 ?
+		       EXIT_SUCCESS : EXIT_FAILURE;
+	}
+	const char *const a_reflink[] = {
 		"find", grpdir, "-mindepth", "1", "-maxdepth", "1",
 		"-type", "d", time_type, time_va, "-print", "-exec",
-		"btrfs", "subvolume", "delete", "{}", "+", nullptr,
+		"rm", "-Rf", "{}", "+", nullptr,
 	};
-	return HXproc_run_sync(args_2, HXPROC_NULL_STDIN) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+	return HXproc_run_sync(a_reflink, HXPROC_NULL_STDIN) == 0 ?
+	       EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 static int do_group(const char *gname, const char *today, unsigned int mtime,
