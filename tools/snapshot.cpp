@@ -26,6 +26,10 @@
 
 using namespace gromox;
 
+enum class snapshot_mode {
+	error, reflink, btrfs,
+};
+
 static unsigned int g_keep_months, g_keep_weeks, g_keep_days, g_keep_hours;
 static std::string g_subvolume_root, g_snapshot_archive;
 static constexpr cfg_directive snapshot_cfg_defaults[] = {
@@ -56,6 +60,31 @@ static errno_t reflink_supported(const std::string &src, const std::string &dst)
 #endif
 }
 
+static enum snapshot_mode
+snapshot_type(const std::string &root, const std::string &grpdir)
+{
+#ifdef __linux__
+	struct statfs sb;
+	if (statfs(root.c_str(), &sb) != 0) {
+		fprintf(stderr, "statfs %s: %s\n", root.c_str(), strerror(errno));
+		return snapshot_mode::error;
+	}
+	static constexpr unsigned int btrfs_magic = 0x9123683e;
+	if (sb.f_type == btrfs_magic)
+		return snapshot_mode::btrfs;
+	auto err = reflink_supported(root, grpdir);
+	if (err != 0) {
+		fprintf(stderr, "FICLONE support %s & %s: %s\n",
+			root.c_str(), grpdir.c_str(), strerror(err));
+		return snapshot_mode::error;
+	}
+	return snapshot_mode::reflink;
+#else
+	fprintf(stderr, "Don't know how to perform snapshots on this OS\n");
+	return snapshot_mode::error;
+#endif
+}
+
 static int do_snap(const std::string &grpdir, const char *today)
 {
 	auto sndir = grpdir + "/" + today;
@@ -68,15 +97,10 @@ static int do_snap(const std::string &grpdir, const char *today)
 		fprintf(stderr, "stat %s: %s\n", sndir.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
-#ifdef __linux__
-	struct statfs sb;
-	if (statfs(g_subvolume_root.c_str(), &sb) != 0) {
-		fprintf(stderr, "statfs %s: %s\n",
-			g_subvolume_root.c_str(), strerror(errno));
+	auto mode = snapshot_type(g_subvolume_root, grpdir);
+	if (mode == snapshot_mode::error)
 		return EXIT_FAILURE;
-	}
-	static constexpr unsigned int btrfs_magic = 0x9123683e;
-	if (sb.f_type == btrfs_magic) {
+	if (mode == snapshot_mode::btrfs) {
 		const char *const a_btrfs[] = {
 			"btrfs", "subvolume", "snapshot", "-r",
 			g_subvolume_root.c_str(), sndir.c_str(), nullptr,
@@ -84,22 +108,12 @@ static int do_snap(const std::string &grpdir, const char *today)
 		return HXproc_run_sync(a_btrfs, HXPROC_NULL_STDIN) == 0 ?
 		       EXIT_SUCCESS : EXIT_FAILURE;
 	}
-	auto err = reflink_supported(g_subvolume_root, grpdir);
-	if (err != 0) {
-		fprintf(stderr, "FICLONE support %s & %s: %s\n",
-			g_subvolume_root.c_str(), grpdir.c_str(), strerror(err));
-		return EXIT_FAILURE;
-	}
 	const char *const a_reflink[] = {
 		"cp", "-a", "--reflink=always",
 		g_subvolume_root.c_str(), sndir.c_str(), nullptr,
 	};
 	return HXproc_run_sync(a_reflink, HXPROC_NULL_STDIN) == 0 ?
 	       EXIT_SUCCESS : EXIT_FAILURE;
-#else
-	fprintf(stderr, "Don't know how to perform snapshots on this OS\n");
-	return EXIT_FAILURE;
-#endif
 }
 
 static int do_purge(const char *grpdir, unsigned int mtime, unsigned int mmin)
