@@ -18,7 +18,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;

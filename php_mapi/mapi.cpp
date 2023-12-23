@@ -13,7 +13,6 @@
 #include <gromox/paths.h>
 #include <gromox/safeint.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zcore_client.hpp>
 #include <gromox/zcore_rpc.hpp>

@@ -35,7 +35,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>

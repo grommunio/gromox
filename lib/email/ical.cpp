@@ -15,7 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 /*
  * This is a bit lower than the RFC-prescribed 75 so that we always have some
