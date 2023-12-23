@@ -989,35 +989,21 @@ const char *weekday_to_str(unsigned int n)
 	}
 }
 
-bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
+bool ical_parse_byday(const char *pbegin, int *pdayofweek, int *pweekorder)
 {
-	char *pbegin;
-	BOOL b_negative;
-	char tmp_num[3];
-	char tmp_buff[16];
-	
-	gx_strlcpy(tmp_buff, str_byday, std::size(tmp_buff));
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
-	if ('-' == tmp_buff[0]) {
-		b_negative = TRUE;
-		pbegin = tmp_buff + 1;
-	} else if ('+' == tmp_buff[0]) {
-		b_negative = FALSE;
-		pbegin = tmp_buff + 1;
-	} else {
-		b_negative = FALSE;
-		pbegin = tmp_buff;
-	}
-	if (!HX_isdigit(*pbegin)) {
-		*pweekorder = 0;
-	} else {
+	while (HX_isspace(*pbegin))
+		++pbegin;
+	bool b_negative = *pbegin == '-';
+	if (b_negative)
+		++pbegin;
+	else if (*pbegin == '+')
+		++pbegin;
+	*pweekorder = 0;
+	if (HX_isdigit(*pbegin)) {
+		char tmp_num[3]{};
 		tmp_num[0] = *pbegin++;
-		tmp_num[1] = '\0';
-		if (HX_isdigit(*pbegin)) {
+		if (HX_isdigit(*pbegin))
 			tmp_num[1] = *pbegin++;
-			tmp_num[2] = '\0';
-		}
 		*pweekorder = strtol(tmp_num, nullptr, 0);
 		if (*pweekorder < 1 || *pweekorder > 53)
 			return false;
@@ -1031,42 +1017,28 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	return true;
 }
 
-bool ical_parse_duration(const char *str_duration, long *pseconds)
+bool ical_parse_duration(const char *ptoken, long *pseconds)
 {
-	int day;
-	int week;
-	int hour;
-	int minute;
-	int second;
-	int factor;
-	BOOL b_time;
-	char *ptoken;
-	char *ptoken1;
 	char tmp_buff[128];
 	
-	gx_strlcpy(tmp_buff, str_duration, std::size(tmp_buff));
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
-	ptoken = tmp_buff;
+	while (HX_isspace(*ptoken))
+		++ptoken;
+	int factor = 1;
 	if ('+' == *ptoken) {
-		factor = 1;
 		ptoken ++;
 	} else if ('-' == *ptoken) {
 		factor = -1;
 		ptoken ++;
-	} else {
-		factor = 1;
 	}
 	if (*ptoken != 'P')
 		return false;
 	ptoken ++;
-	b_time = FALSE;
-	week = -1;
-	day = -1;
-	hour = -1;
-	minute = -1;
-	second = -1;
-	for (ptoken1=ptoken; '\0'!=*ptoken1; ptoken1++) {
+
+	bool b_time = false;
+	int week = -1, day = -1, hour = -1, minute = -1, second = -1;
+	gx_strlcpy(tmp_buff, ptoken, std::size(tmp_buff));
+	ptoken = tmp_buff;
+	for (char *ptoken1 = tmp_buff; *ptoken1 != '\0'; ++ptoken1) {
 		switch (*ptoken1) {
 		case 'W':
 			if (ptoken1 == ptoken || week != -1 || b_time)
