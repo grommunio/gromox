@@ -2724,7 +2724,6 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
     const char *org_name, cvt_id2user id2user, EXT_BUFFER_ALLOC alloc,
     const char *partstat, const MESSAGE_CONTENT *pmsg) try
 {
-	char username[UADDR_SIZE];
 	char tmp_value[334];
 	
 	if (pmsg->children.prcpts == nullptr)
@@ -2772,9 +2771,10 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 		auto name = rcpt.get<const char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
 			piline->append_param("CN", name);
+		std::string username;
 		if (oxcmail_get_smtp_address(rcpt, nullptr /* tags_self */, org_name,
-		    id2user, username, std::size(username))) {
-			snprintf(tmp_value, std::size(tmp_value), "MAILTO:%s", username);
+		    id2user, username)) {
+			snprintf(tmp_value, std::size(tmp_value), "MAILTO:%s", username.c_str());
 			piline->append_value(nullptr, tmp_value);
 		}
 	}

@@ -1930,18 +1930,19 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 }
 
 static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
-    bool b_freebusy, uint64_t fid_val, xstmt &pstmt)
+    bool b_freebusy, uint64_t fid_val, xstmt &pstmt) try
 {
 	auto bin = propvals.get<const BINARY>(PR_ENTRYID);
-	char username[UADDR_SIZE];
+	std::string ustg;
+	const char *username = nullptr;
 	if (bin != nullptr) {
-		if (!common_util_addressbook_entryid_to_username(bin, username, std::size(username)))
+		if (!cu_abkeid_to_username(bin, ustg))
 			return true;
+		username = ustg.c_str();
 	} else {
-		auto str = propvals.get<const char>(PR_SMTP_ADDRESS);
-		if (str == nullptr)
+		username = propvals.get<const char>(PR_SMTP_ADDRESS);
+		if (username == nullptr)
 			return true;
-		gx_strlcpy(username, str, std::size(username));
 	}
 	auto num = propvals.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if (num == nullptr)
@@ -1973,6 +1974,9 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		return false;
 	sqlite3_reset(pstmt);
 	return true;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2348: ENOMEM");
+	return false;
 }
 
 static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,

@@ -1375,50 +1375,51 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 			break;
 		}
 		case PT_ACTIONS: {
-			auto prule = static_cast<RULE_ACTIONS *>(ppropval->pvalue);
+			auto prulelist = static_cast<const RULE_ACTIONS *>(ppropval->pvalue);
+			size_t j = 0;
 			zarray_init(&pzactarray);
-			for (size_t j = 0; j < prule->count; ++j) {
+			for (const auto &act : *prulelist) {
 				zarray_init(&pzactval);
-				add_assoc_long(&pzactval, "action", prule->pblock[j].type);
-				add_assoc_long(&pzactval, "flags", prule->pblock[j].flags);
-				add_assoc_long(&pzactval, "flavor", prule->pblock[j].flavor);
-				switch (prule->pblock[j].type) {
+				add_assoc_long(&pzactval, "action", act.type);
+				add_assoc_long(&pzactval, "flags", act.flags);
+				add_assoc_long(&pzactval, "flavor", act.flavor);
+				switch (act.type) {
 				case OP_MOVE:
 				case OP_COPY: {
-					auto xq = static_cast<ZMOVECOPY_ACTION *>(prule->pblock[j].pdata);
+					auto xq = static_cast<const ZMOVECOPY_ACTION *>(act.pdata);
 					add_assoc_stringl(&pzactval, "storeentryid",
-						reinterpret_cast<char *>(xq->store_eid.pb),
+						reinterpret_cast<const char *>(xq->store_eid.pb),
 						xq->store_eid.cb);
 					add_assoc_stringl(&pzactval, "folderentryid",
-						reinterpret_cast<char *>(xq->folder_eid.pb),
+						reinterpret_cast<const char *>(xq->folder_eid.pb),
 						xq->folder_eid.cb);
 					break;
 				}
 				case OP_REPLY:
 				case OP_OOF_REPLY: {
-					auto xq = static_cast<ZREPLY_ACTION *>(prule->pblock[j].pdata);
+					auto xq = static_cast<const ZREPLY_ACTION *>(act.pdata);
 					add_assoc_stringl(&pzactval, "replyentryid",
-						reinterpret_cast<char *>(xq->message_eid.pb),
+						reinterpret_cast<const char *>(xq->message_eid.pb),
 						xq->message_eid.cb);
 					add_assoc_stringl(
 						&pzactval, "replyguid",
-						reinterpret_cast<char *>(&xq->template_guid),
+						reinterpret_cast<const char *>(&xq->template_guid),
 						sizeof(GUID));
 					break;
 				}
 				case OP_DEFER_ACTION:
 					add_assoc_stringl(&pzactval, "dam",
-						static_cast<const char *>(prule->pblock[j].pdata), prule->pblock[j].length
+						static_cast<const char *>(act.pdata), act.length
 						- sizeof(uint8_t) - 2*sizeof(uint32_t));
 					break;
 				case OP_BOUNCE:
 					add_assoc_long(&pzactval, "code",
-						*static_cast<uint32_t *>(prule->pblock[j].pdata));
+						*static_cast<uint32_t *>(act.pdata));
 					break;
 				case OP_FORWARD:
 				case OP_DELEGATE: {
 					zarray_init(&pzalist);
-					auto xq = static_cast<FORWARDDELEGATE_ACTION *>(prule->pblock[j].pdata);
+					auto xq = static_cast<const FORWARDDELEGATE_ACTION *>(act.pdata);
 					for (size_t k = 0; k < xq->count; ++k) {
 						tmp_propvals.count = xq->pblock[k].count;
 						tmp_propvals.ppropval = xq->pblock[k].ppropval;
@@ -1433,7 +1434,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 				}
 				case OP_TAG: {
 					tmp_propvals.count = 1;
-					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(prule->pblock[j].pdata);
+					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(act.pdata);
 					auto err = tpropval_array_to_php(&tmp_propvals, &pzalist);
 					if (err != ecSuccess)
 						return err;
@@ -1446,7 +1447,7 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 				default:
 					return ecInvalidParam;
 				};
-				add_assoc_zval(&pzactarray, itoa(j, key), &pzactval);
+				add_assoc_zval(&pzactarray, itoa(j++, key), &pzactval);
 			}
 			add_assoc_zval(pzret, pts.c_str(), &pzactarray);
 			break;

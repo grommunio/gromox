@@ -84,7 +84,7 @@ extern int common_util_run(const char *data_path);
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
-extern bool cu_extract_delegate(message_object *, char *username, size_t);
+extern bool cu_extract_delegate(message_object *, std::string &dlgt);
 extern repr_grant cu_get_delegate_perm_MD(const char *account, const char *maildir);
 extern repr_grant cu_get_delegate_perm_AA(const char *account, const char *account_representing);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

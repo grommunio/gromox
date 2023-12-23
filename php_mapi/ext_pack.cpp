@@ -264,12 +264,9 @@ pack_result PUSH_CTX::p_rule_data(const RULE_DATA *r)
 
 pack_result PUSH_CTX::p_rule_list(const RULE_LIST *r)
 {
-	int i;
-	
 	TRY(p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
-		TRY(p_rule_data(&r->prule[i]));
-	}
+	for (const auto &rule : *r)
+		TRY(p_rule_data(&rule));
 	return EXT_ERR_SUCCESS;
 }
 

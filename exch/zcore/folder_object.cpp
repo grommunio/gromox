@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/usercvt.hpp>
@@ -735,80 +736,68 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 }
 
 static BOOL folder_object_flush_delegates(int fd,
-	FORWARDDELEGATE_ACTION *paction)
+    const FORWARDDELEGATE_ACTION &action)
 {
-	int i, j;
-	int tmp_len;
-	char *ptype;
-	char *paddress;
-	BINARY *pentryid;
-	char address_buff[UADDR_SIZE];
-
-	for (i=0; i<paction->count; i++) {
-		ptype = NULL;
-		paddress = NULL;
-		pentryid = NULL;
-		for (j=0; j<paction->pblock[i].count; j++) {
-			switch (paction->pblock[i].ppropval[j].proptag) {
+	for (const auto &dlgt : action) {
+		const char *ptype = nullptr, *paddress = nullptr;
+		const BINARY *pentryid = nullptr;
+		for (const auto &p : dlgt) {
+			switch (p.proptag) {
 			case PR_ADDRTYPE:
-				ptype = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
+				ptype = static_cast<const char *>(p.pvalue);
 				break;
 			case PR_ENTRYID:
-				pentryid = static_cast<BINARY *>(paction->pblock[i].ppropval[j].pvalue);
+				pentryid = static_cast<const BINARY *>(p.pvalue);
 				break;
 			case PR_EMAIL_ADDRESS:
-				paddress = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
+				paddress = static_cast<const char *>(p.pvalue);
 				break;
 			}
 		}
-		address_buff[0] = '\0';
+		std::string address_buff;
 		if (ptype != nullptr) {
 			auto ret = cvt_genaddr_to_smtpaddr(ptype, paddress,
-			           g_org_name, cu_id2user, address_buff,
-			           std::size(address_buff));
+			           g_org_name, cu_id2user, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
 				return false;
 		}
-		if (*address_buff == '\0' && pentryid != nullptr) {
+		if (address_buff.empty() && pentryid != nullptr) {
 			auto ret = cvt_entryid_to_smtpaddr(pentryid, g_org_name,
-			           cu_id2user, address_buff, std::size(address_buff));
+			           cu_id2user, address_buff);
 			if (ret == ecSuccess)
 				/* ok */;
 			else if (ret != ecNullObject)
 				return false;
 		}
-		if ('\0' != address_buff[0]) {
-			tmp_len = strlen(address_buff);
-			address_buff[tmp_len++] = '\n';
-			write(fd, address_buff, tmp_len);
+		if (address_buff.size() > 0) {
+			address_buff += '\n';
+			write(fd, address_buff.c_str(), address_buff.size());
 		}
 	}
 	return TRUE;
 }
 
-
-BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
+BOOL folder_object::updaterules(uint32_t flags, RULE_LIST *plist) try
 {
-	int i;
 	BOOL b_exceed;
 	BOOL b_delegate;
-	RULE_ACTIONS *pactions = nullptr;
+	const RULE_ACTIONS *pactions = nullptr;
 	auto pfolder = this;
 	
 	if (flags & MODIFY_RULES_FLAG_REPLACE &&
 	    !exmdb_client::empty_folder_rule(pfolder->pstore->get_dir(), pfolder->folder_id))
 		return FALSE;	
 	b_delegate = FALSE;
-	for (i=0; i<plist->count; i++) {
-		if (!common_util_convert_from_zrule(&plist->prule[i].propvals))
+	for (auto &rule : *plist) {
+		if (!common_util_convert_from_zrule(&rule.propvals))
 			return FALSE;	
-		auto pprovider = plist->prule[i].propvals.get<char>(PR_RULE_PROVIDER);
+		auto pprovider = rule.propvals.get<char>(PR_RULE_PROVIDER);
 		if (pprovider == nullptr ||
 		    strcasecmp(pprovider, "Schedule+ EMS Interface") != 0)
 			continue;	
-		auto act = plist->prule[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
+		auto act = rule.propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 		if (act != nullptr) {
 			b_delegate = TRUE;
 			pactions = act;
@@ -817,27 +806,23 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 	if (pfolder->pstore->b_private &&
 	    rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_INBOX &&
 	    ((flags & MODIFY_RULES_FLAG_REPLACE) || b_delegate)) {
-		int fd = -1;
-		try {
-			auto dlg_path = pfolder->pstore->get_dir() + "/config/delegates.txt"s;
-			fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1491: ENOMEM");
-		}
-		if (-1 != fd) {
-			if (b_delegate) {
-				for (i=0; i<pactions->count; i++) {
-					if (pactions->pblock[i].type == OP_DELEGATE &&
-					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
-						close(fd);
-						return FALSE;
-					}
-				}
-			}
-			close(fd);
-		}
+		auto dlg_dir  = pfolder->pstore->get_dir() + "/config"s;
+		auto dlg_path = dlg_dir + "/delegates.txt";
+		gromox::tmpfile fd;
+		if (fd.open_linkable(dlg_dir.c_str(), O_CREAT | O_TRUNC | O_WRONLY, FMODE_PUBLIC) >= 0 &&
+		    b_delegate)
+			for (const auto &a : *pactions)
+				if (a.type == OP_DELEGATE &&
+				    !folder_object_flush_delegates(fd,
+				    *static_cast<const FORWARDDELEGATE_ACTION *>(a.pdata)))
+					return FALSE;
+		if (fd.link_to(dlg_path.c_str()) != 0)
+			mlog(LV_ERR, "E-2350: write %s: %s", dlg_path.c_str(), strerror(errno));
 	}
 	return exmdb_client::update_folder_rule(pfolder->pstore->get_dir(),
 		pfolder->folder_id, plist->count,
 		plist->prule, &b_exceed);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1491: ENOMEM");
+	return false;
 }

@@ -91,6 +91,11 @@ struct EXT_RECIPIENT_BLOCK {
 struct EXT_FORWARDDELEGATE_ACTION {
 	uint32_t count;
 	EXT_RECIPIENT_BLOCK *pblock;
+
+	EXT_RECIPIENT_BLOCK *begin() { return pblock; }
+	EXT_RECIPIENT_BLOCK *end() { return pblock + count; }
+	const EXT_RECIPIENT_BLOCK *begin() const { return pblock; }
+	const EXT_RECIPIENT_BLOCK *end() const { return pblock + count; }
 };
 
 enum { /* ACTION_BLOCK::flavor for OP_FORWARD */
@@ -116,6 +121,11 @@ struct EXT_ACTION_BLOCK {
 struct EXT_RULE_ACTIONS {
 	uint32_t count;
 	EXT_ACTION_BLOCK *pblock;
+
+	EXT_ACTION_BLOCK *begin() { return pblock; }
+	EXT_ACTION_BLOCK *end() { return pblock + count; }
+	const EXT_ACTION_BLOCK *begin() const { return pblock; }
+	const EXT_ACTION_BLOCK *end() const { return pblock + count; }
 };
 
 enum {

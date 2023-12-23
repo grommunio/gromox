@@ -174,7 +174,6 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	uint32_t row_num;
 	uint32_t table_id;
 	zs_objtype mapi_type;
-	char username[UADDR_SIZE];
 	TARRAY_SET tmp_set;
 	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
@@ -274,22 +273,27 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			auto paddress = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+2]);
 			if (paddress == nullptr || paddress_type == nullptr)
 				continue;
+			std::string username;
 			if (0 == strcasecmp(paddress_type, "EX")) {
 				if (cvt_essdn_to_username(paddress, g_org_name,
-				    cu_id2user, username, std::size(username)) != ecSuccess)
+				    cu_id2user, username) != ecSuccess)
 					continue;
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
-				gx_strlcpy(username, paddress, std::size(username));
+				try {
+					username = paddress;
+				} catch (const std::bad_alloc &) {
+					continue;
+				}
 			} else {
 				continue;
 			}
 			tpropval_array_ptr ppropvals(tpropval_array_init());
 			if (ppropvals == nullptr)
 				return FALSE;
-			if (ppropvals->set(PR_SMTP_ADDRESS, username) != 0 ||
-			    ppropvals->set(PR_ACCOUNT, username) != 0 ||
+			if (ppropvals->set(PR_SMTP_ADDRESS, username.c_str()) != 0 ||
+			    ppropvals->set(PR_ACCOUNT, username.c_str()) != 0 ||
 			    ppropvals->set(PR_ADDRTYPE, "SMTP") != 0 ||
-			    ppropvals->set(PR_EMAIL_ADDRESS, username) != 0)
+			    ppropvals->set(PR_EMAIL_ADDRESS, username.c_str()) != 0)
 				return FALSE;
 			if (NULL != pdisplayname) {
 				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != 0 ||

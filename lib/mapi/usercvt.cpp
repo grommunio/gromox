@@ -146,14 +146,4 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
 	return ecUnknownUser;
 }
 
-ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
-    cvt_id2user id2user, char *addr, size_t alen)
-{
-	std::string es_result;
-	auto ret = cvt_entryid_to_smtpaddr(bin, org, std::move(id2user), es_result);
-	if (ret == ecSuccess)
-		gx_strlcpy(addr, es_result.c_str(), alen);
-	return ret;
-}
-
 }

@@ -1214,6 +1214,10 @@ struct RECIPIENT_BLOCK {
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 
+	TAGGED_PROPVAL *begin() { return ppropval; }
+	TAGGED_PROPVAL *end() { return ppropval + count; }
+	const TAGGED_PROPVAL *begin() const { return ppropval; }
+	const TAGGED_PROPVAL *end() const { return ppropval + count; }
 	std::string repr() const;
 };
 
@@ -1346,6 +1350,10 @@ struct RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
 
+	ACTION_BLOCK *begin() { return pblock; }
+	ACTION_BLOCK *end() { return pblock + count; }
+	const ACTION_BLOCK *begin() const { return pblock; }
+	const ACTION_BLOCK *end() const { return pblock + count; }
 	std::string repr() const;
 };
 
@@ -1357,6 +1365,11 @@ struct RULE_DATA {
 struct RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
+
+	RULE_DATA *begin() { return prule; }
+	RULE_DATA *end() { return prule + count; }
+	const RULE_DATA *begin() const { return prule; }
+	const RULE_DATA *end() const { return prule + count; }
 };
 
 struct ZMOVECOPY_ACTION {
@@ -1384,6 +1397,10 @@ struct FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 
+	RECIPIENT_BLOCK *begin() { return pblock; }
+	RECIPIENT_BLOCK *end() { return pblock + count; }
+	const RECIPIENT_BLOCK *begin() const { return pblock; }
+	const RECIPIENT_BLOCK *end() const { return pblock + count; }
 	std::string repr() const;
 };
 
