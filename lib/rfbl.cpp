@@ -734,8 +734,10 @@ void rfc1123_dstring(char *buf, size_t z, time_t ts)
 	if (ts == 0)
 		ts = time(nullptr);
 	struct tm tm;
-	gmtime_r(&ts, &tm);
-	return rfc1123_dstring(buf, z, tm);
+	if (gmtime_r(&ts, &tm) != nullptr)
+		rfc1123_dstring(buf, z, tm);
+	else
+		*buf = '\0';
 }
 
 void startup_banner(const char *prog)

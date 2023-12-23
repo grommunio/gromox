@@ -8,6 +8,7 @@
  * of (de-)serialization functions was moved to serialization.cpp.
  */
 #include <algorithm>
+#include <ctime>
 #include <iterator>
 #include <set>
 #include <utility>
@@ -3088,7 +3089,8 @@ std::chrono::minutes tSerializableTimeZone::offset(const time_point& tp) const
 		return std::chrono::minutes(Bias);
 	time_t temp = time_point::clock::to_time_t(tp)-Bias*60;
 	tm datetime;
-	gmtime_r(&temp, &datetime);
+	if (gmtime_r(&temp, &datetime) == nullptr)
+		datetime = {};
 
 	auto &first  = StandardTime.Month < DaylightTime.Month? StandardTime : DaylightTime;
 	auto &second = StandardTime.Month < DaylightTime.Month? DaylightTime : StandardTime;

@@ -4,6 +4,7 @@
 /**
  * @brief      Implementation of EWS structure (de-)serialization
  */
+#include <ctime>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
@@ -238,7 +239,8 @@ void sTimePoint::serialize(XMLElement* xml) const
 {
 	tm t;
 	time_t timestamp = gromox::time_point::clock::to_time_t(time-offset);
-	gmtime_r(&timestamp, &t);
+	if (gmtime_r(&timestamp, &t) == nullptr)
+		t = {};
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
 	long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
 	int off = -int(offset.count());

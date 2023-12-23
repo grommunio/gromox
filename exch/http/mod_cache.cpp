@@ -248,7 +248,8 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 {
 	struct tm tmp_tm;
 	auto cur_time = time(nullptr);
-	gmtime_r(&cur_time, &tmp_tm);
+	if (gmtime_r(&cur_time, &tmp_tm) == nullptr)
+		tmp_tm = {};
 	if (strptime(dstring, "%a, %d %b %Y %T GMT", &tmp_tm) == nullptr)
 		return FALSE;	
 	*pmtime = make_gmtime(&tmp_tm);
@@ -267,7 +268,8 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	rfc1123_dstring(date_string, std::size(date_string));
-	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
+	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
+		tmp_tm = {};
 	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	auto pcontent_type = pcontext->pitem->content_type;
@@ -346,7 +348,8 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	
 	pcontext = mod_cache_get_cache_context(phttp);
 	rfc1123_dstring(date_string, std::size(date_string));
-	gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm);
+	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
+		tmp_tm = {};
 	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
 	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	content_length =  mod_cache_calculate_content_length(pcontext);	
