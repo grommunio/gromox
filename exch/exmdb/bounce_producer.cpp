@@ -26,7 +26,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 
@@ -63,31 +62,12 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     size_t content_size) try
 {
 	void *pvalue;
-	char charset[32];
-	char date_buff[128];
-	struct tm time_buff;
-	int len;
-	char lang[32], time_zone[64];
-	auto cur_time = time(nullptr);
+	char charset[32], date_buff[128], lang[32];
 
 	charset[0] = '\0';
-	time_zone[0] = '\0';
-	if (common_util_get_user_lang(from, lang, std::size(lang))) {
+	if (common_util_get_user_lang(from, lang, std::size(lang)))
 		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-		common_util_get_timezone(from, time_zone, std::size(time_zone));
-	}
-	if('\0' != time_zone[0]) {
-		auto sp = tz::tzalloc(time_zone);
-		if (sp == nullptr)
-			return FALSE;
-		tz::localtime_rz(sp, &cur_time, &time_buff);
-		tz::tzfree(sp);
-	} else {
-		localtime_r(&cur_time, &time_buff);
-	}
-	len = strftime(date_buff, 128, "%x %X", &time_buff);
-	if (*time_zone != '\0')
-		snprintf(date_buff + len, 128 - len, " %s", time_zone);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;

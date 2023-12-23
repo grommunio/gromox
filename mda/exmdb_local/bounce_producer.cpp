@@ -22,7 +22,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include "exmdb_local.hpp"
 
@@ -39,38 +38,17 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail) try
 {
 	MIME *pmime;
-	char charset[32];
-	char tmp_buff[1024];
-	char date_buff[128];
-	struct tm time_buff;
-	int len;
-	char lang[32], time_zone[64];
+	char charset[32], tmp_buff[1024], date_buff[128], lang[32];
 
 	charset[0] = '\0';
-	time_zone[0] = '\0';
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
-		if (exmdb_local_check_domain(pdomain) >= 1) {
-			if (exmdb_local_get_lang(from, lang, std::size(lang)))
-				gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-			exmdb_local_get_timezone(from, time_zone, std::size(time_zone));
-		}
+		if (exmdb_local_check_domain(pdomain) >= 1 &&
+		    exmdb_local_get_lang(from, lang, std::size(lang)))
+			gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 	}
-	
-	if('\0' != time_zone[0]) {
-		auto sp = tz::tzalloc(time_zone);
-		if (sp == nullptr)
-			return false;
-		tz::localtime_rz(sp, &original_time, &time_buff);
-		tz::tzfree(sp);
-	} else {
-		localtime_r(&original_time, &time_buff);
-	}
-	len = strftime(date_buff, 128, "%x %X", &time_buff);
-	if (*time_zone != '\0')
-		snprintf(date_buff + len, 128 - len, " %s", time_zone);
-	
+	rfc1123_dstring(date_buff, std::size(date_buff), original_time);
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if (*charset == '\0')
 		gx_strlcpy(charset, mcharset.c_str(), std::size(charset));

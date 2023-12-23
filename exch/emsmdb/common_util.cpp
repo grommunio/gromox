@@ -1319,8 +1319,7 @@ void common_util_notify_receipt(const char *username, int type,
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!exch_bouncer_make(common_util_get_user_displayname,
-	    common_util_get_user_lang, common_util_get_timezone,
-	    username, pbrief, bounce_type, &imail))
+	    common_util_get_user_lang, username, pbrief, bounce_type, &imail))
 		return;
 	auto ret = ems_send_mail(&imail, username, rcpt_list);
 	if (ret != ecSuccess)
