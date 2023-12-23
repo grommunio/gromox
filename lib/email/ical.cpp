@@ -1011,20 +1011,19 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	}
 	if (!HX_isdigit(*pbegin)) {
 		*pweekorder = 0;
-		goto PARSE_WEEKDAY;
+	} else {
+		tmp_num[0] = *pbegin++;
+		tmp_num[1] = '\0';
+		if (HX_isdigit(*pbegin)) {
+			tmp_num[1] = *pbegin++;
+			tmp_num[2] = '\0';
+		}
+		*pweekorder = strtol(tmp_num, nullptr, 0);
+		if (*pweekorder < 1 || *pweekorder > 53)
+			return false;
+		if (b_negative)
+			*pweekorder *= -1;
 	}
-	tmp_num[0] = *pbegin++;
-	tmp_num[1] = '\0';
-	if (HX_isdigit(*pbegin)) {
-		tmp_num[1] = *pbegin++;
-		tmp_num[2] = '\0';
-	}
-	*pweekorder = strtol(tmp_num, nullptr, 0);
-	if (*pweekorder < 1 || *pweekorder > 53)
-		return false;
-	if (b_negative)
-		*pweekorder *= -1;
- PARSE_WEEKDAY:
 	auto dow = weekday_to_int(pbegin);
 	if (dow < 0)
 		return false;
