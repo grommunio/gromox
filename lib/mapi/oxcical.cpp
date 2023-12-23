@@ -22,7 +22,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
-#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
@@ -3467,7 +3466,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	struct tm tmp_tm;
 	unsigned int year = 1601;
 	if (has_start_time) {
-		make_gmtm(start_time, &tmp_tm);
+		gmtime_r(&start_time, &tmp_tm);
 		year = tmp_tm.tm_year + 1900;
 	}
 	

@@ -926,18 +926,6 @@ time_t make_gmtime(struct tm *ptm)
 	return tz::mktime_z(sp, ptm);
 }
 
-void make_gmtm(time_t gm_time, struct tm *ptm)
-{
-	static tz::timezone_t sp;
-	
-	if (NULL == sp) {
-		sp = tz::tzalloc("UTC");
-		if (sp == nullptr)
-			return;
-	}
-	tz::localtime_rz(sp, &gm_time, ptm);
-}
-
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 {
 	int hour;
