@@ -126,9 +126,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	pmime->set_field("To", tmp_buff);
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	auto cur_time = time(nullptr);
-	localtime_r(&cur_time, &time_buff);
-	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", tp.subject.c_str());
 	
@@ -151,8 +149,7 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	auto pdsn_fields = dsn.get_message_fields();
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
-	localtime_r(&original_time, &time_buff);
-	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), original_time);
 	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn.new_rcpt_fields();
 	if (pdsn_fields == nullptr)

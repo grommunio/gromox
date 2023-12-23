@@ -158,8 +158,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	snprintf(tmp_buff, 256, "<%s>", from);
 	pmime->set_field("To", tmp_buff);
 	pmime->set_field("MIME-Version", "1.0");
-	localtime_r(&cur_time, &time_buff);
-	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", tp.subject.c_str());
 	
