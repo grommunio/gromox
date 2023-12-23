@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <ctime>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
@@ -113,14 +114,17 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 	auto cur_time = time(nullptr);
 	ptm = gmtime_r(&cur_time, &tmp_tm);
-	plogon_time->second = ptm->tm_sec;
-	plogon_time->minute = ptm->tm_min;
-	plogon_time->hour = ptm->tm_hour;
-	plogon_time->day_of_week = ptm->tm_wday;
-	plogon_time->day = ptm->tm_mday;
-	plogon_time->month = ptm->tm_mon + 1;
-	plogon_time->year = ptm->tm_year + 1900;
-	
+	if (ptm != nullptr) {
+		plogon_time->second = ptm->tm_sec;
+		plogon_time->minute = ptm->tm_min;
+		plogon_time->hour = ptm->tm_hour;
+		plogon_time->day_of_week = ptm->tm_wday;
+		plogon_time->day = ptm->tm_mday;
+		plogon_time->month = ptm->tm_mon + 1;
+		plogon_time->year = ptm->tm_year + 1900;
+	} else {
+		*plogon_time = {};
+	}
 	*pgwart_time = rop_util_unix_to_nttime(cur_time);
 	
 	*pstore_stat = 0;

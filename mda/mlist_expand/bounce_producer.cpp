@@ -17,7 +17,6 @@
 #include <gromox/mime.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -34,7 +33,6 @@ using namespace gromox;
 
 int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
-bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 
 int mlex_bounce_init(const char *cfg_path,
     const char *data_path, const char *bounce_grp)
@@ -49,7 +47,6 @@ int mlex_bounce_init(const char *cfg_path,
 
 	E(bounce_producer_check_domain, "domain_list_query");
 	E(bounce_producer_get_lang, "get_user_lang");
-	E(bounce_producer_get_timezone, "get_timezone");
 #undef E
 	return bounce_gen_init(cfg_path, data_path, bounce_grp) == 0 ? 0 : -1;
 }
@@ -64,18 +61,9 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
     MAIL *pmail_original, const char *bounce_type, MAIL *pmail) try
 {
 	MIME *pmime;
-	time_t cur_time;
-	char charset[32];
-	char tmp_buff[1024];
-	char date_buff[128];
-	struct tm time_buff;
-	int len;
-	char lang[32], time_zone[64];
+	char charset[32], tmp_buff[1024], date_buff[128], lang[32];
 	
-	
-	time(&cur_time);
 	charset[0] = '\0';
-	time_zone[0] = '\0';
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
@@ -85,25 +73,11 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 			        strerror(-lcldom));
 			return false;
 		}
-		if (lcldom > 0) {
-			if (bounce_producer_get_lang(from, lang, std::size(lang)))
-				gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-			bounce_producer_get_timezone(from, time_zone, std::size(time_zone));
-		}
+		if (lcldom > 0 &&
+		    bounce_producer_get_lang(from, lang, std::size(lang)))
+			gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
 	}
-	
-	if('\0' != time_zone[0]) {
-		auto sp = tz::tzalloc(time_zone);
-		if (sp == nullptr)
-			return false;
-		tz::localtime_rz(sp, &cur_time, &time_buff);
-		tz::tzfree(sp);
-	} else {
-		localtime_r(&cur_time, &time_buff);
-	}
-	len = strftime(date_buff, 128, "%x %X", &time_buff);
-	if (*time_zone != '\0')
-		snprintf(date_buff + len, 128 - len, " %s", time_zone);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	auto mcharset = bounce_gen_charset(*pmail_original);
 	if (*charset == '\0')
 		gx_strlcpy(charset, mcharset.c_str(), std::size(charset));
@@ -158,8 +132,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	snprintf(tmp_buff, 256, "<%s>", from);
 	pmime->set_field("To", tmp_buff);
 	pmime->set_field("MIME-Version", "1.0");
-	localtime_r(&cur_time, &time_buff);
-	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", tp.subject.c_str());
 	

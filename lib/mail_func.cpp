@@ -18,7 +18,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 
 using namespace gromox;
@@ -914,30 +913,6 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	return argc;
 }
 
-time_t make_gmtime(struct tm *ptm)
-{
-	static tz::timezone_t sp;
-	
-	if (NULL == sp) {
-		sp = tz::tzalloc("UTC");
-		if (sp == nullptr)
-			return 0;
-	}
-	return tz::mktime_z(sp, ptm);
-}
-
-void make_gmtm(time_t gm_time, struct tm *ptm)
-{
-	static tz::timezone_t sp;
-	
-	if (NULL == sp) {
-		sp = tz::tzalloc("UTC");
-		if (sp == nullptr)
-			return;
-	}
-	tz::localtime_rz(sp, &gm_time, ptm);
-}
-
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 {
 	int hour;
@@ -1040,7 +1015,7 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		return FALSE;
 	}
 	
-	tmp_time = make_gmtime(&tmp_tm);
+	tmp_time = mktime(&tmp_tm);
 	tmp_time += factor*(60*60*hour + 60*minute);
 	*ptime = tmp_time;
 	return TRUE;

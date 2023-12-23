@@ -26,7 +26,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 
 namespace {
@@ -35,36 +34,21 @@ using namespace std::string_literals;
 using namespace gromox;
 using buff_t = bool (*)(const char *, char *, size_t);
 
-static bool bounce_producer_make_content(buff_t gul, buff_t gutz,
+static bool bounce_producer_make_content(buff_t gul,
     const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
     char *subject, char *content_type, char *pcontent, size_t content_size) try
 {
-	char charset[32], date_buff[128], lang[32], time_zone[64];
-	struct tm time_buff;
+	char charset[32], date_buff[128], lang[32];
 
 	charset[0] = '\0';
-	time_zone[0] = '\0';
 	auto tsptr = pbrief->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
 	auto ts = tsptr == nullptr ? time(nullptr) : rop_util_nttime_to_unix(*tsptr);
 	auto from = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (from == nullptr)
 		from = "";
-	if (gul(from, lang, std::size(lang))) {
+	if (gul(from, lang, std::size(lang)))
 		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-		gutz(from, time_zone, std::size(time_zone));
-	}
-	if (*time_zone != '\0') {
-		auto sp = tz::tzalloc(time_zone);
-		if (sp == nullptr)
-			return false;
-		tz::localtime_rz(sp, &ts, &time_buff);
-		tz::tzfree(sp);
-	} else {
-		localtime_r(&ts, &time_buff);
-	}
-	auto len = strftime(date_buff, std::size(date_buff), "%x %X", &time_buff);
-	if (*time_zone != '\0')
-		snprintf(&date_buff[len], std::size(date_buff) - len, " %s", time_zone);
+	rfc1123_dstring(date_buff, std::size(date_buff), ts);
 	auto message_size = pbrief->proplist.get<const uint32_t>(PR_MESSAGE_SIZE);
 	if (message_size == nullptr)
 		return false;
@@ -122,14 +106,13 @@ static bool bounce_producer_make_content(buff_t gul, buff_t gutz,
 	return false;
 }
 
-bool exch_bouncer_make(buff_t gudn, buff_t gul, buff_t gutz,
+bool exch_bouncer_make(buff_t gudn, buff_t gul,
     const char *username, MESSAGE_CONTENT *pbrief,
     const char *bounce_type, MAIL *pmail)
 {
 	size_t out_len;
 	char mime_to[1024], subject[1024], tmp_buff[1024], date_buff[128];
 	char mime_from[1024], content_type[128], content_buff[256*1024];
-	struct tm time_buff;
 	
 	if (gudn(username, tmp_buff, std::size(tmp_buff)) && *tmp_buff != '\0') {
 		strcpy(mime_from, "=?utf-8?b?");
@@ -139,7 +122,7 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul, buff_t gutz,
 	} else {
 		*mime_from = '\0';
 	}
-	if (!bounce_producer_make_content(gul, gutz, username, pbrief,
+	if (!bounce_producer_make_content(gul, username, pbrief,
 	    bounce_type, subject, content_type, content_buff,
 	    std::size(content_buff)))
 		return false;
@@ -182,9 +165,7 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul, buff_t gutz,
 		pmime->set_field("To", mime_to);
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	auto cur_time = time(nullptr);
-	localtime_r(&cur_time, &time_buff);
-	strftime(date_buff, std::size(date_buff), "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", subject);
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);

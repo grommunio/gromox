@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <ctime>
 #include <functional>
 #include <optional>
 #include <string>
@@ -170,7 +171,8 @@ struct ExplicitConvert<gromox::time_point>
 	{
 		tm t;
 		time_t timestamp = gromox::time_point::clock::to_time_t(value);
-		gmtime_r(&timestamp, &t);
+		if (gmtime_r(&timestamp, &t) == nullptr)
+			t = {};
 		auto frac = value.time_since_epoch() % std::chrono::seconds(1);
 		long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
 		setter(fmt::format("{:%FT%T}.{:06}Z", t, fsec).c_str());

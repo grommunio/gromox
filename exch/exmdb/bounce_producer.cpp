@@ -26,7 +26,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 
@@ -63,31 +62,12 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     size_t content_size) try
 {
 	void *pvalue;
-	char charset[32];
-	char date_buff[128];
-	struct tm time_buff;
-	int len;
-	char lang[32], time_zone[64];
-	auto cur_time = time(nullptr);
+	char charset[32], date_buff[128], lang[32];
 
 	charset[0] = '\0';
-	time_zone[0] = '\0';
-	if (common_util_get_user_lang(from, lang, std::size(lang))) {
+	if (common_util_get_user_lang(from, lang, std::size(lang)))
 		gx_strlcpy(charset, znul(lang_to_charset(lang)), std::size(charset));
-		common_util_get_timezone(from, time_zone, std::size(time_zone));
-	}
-	if('\0' != time_zone[0]) {
-		auto sp = tz::tzalloc(time_zone);
-		if (sp == nullptr)
-			return FALSE;
-		tz::localtime_rz(sp, &cur_time, &time_buff);
-		tz::tzfree(sp);
-	} else {
-		localtime_r(&cur_time, &time_buff);
-	}
-	len = strftime(date_buff, 128, "%x %X", &time_buff);
-	if (*time_zone != '\0')
-		snprintf(date_buff + len, 128 - len, " %s", time_zone);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	if (!cu_get_property(MAPI_MESSAGE, message_id, CP_ACP,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;
@@ -154,7 +134,6 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 {
 	MIME *pmime;
 	char subject[1024];
-	struct tm time_buff;
 	char mime_from[UADDR_SIZE];
 	char tmp_buff[1024];
 	char date_buff[128];
@@ -176,9 +155,7 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime->set_field("To", tmp_buff);
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	auto cur_time = time(nullptr);
-	localtime_r(&cur_time, &time_buff);
-	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	pmime->set_field("Date", date_buff);
 	pmime->set_field("Subject", subject);
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
@@ -194,8 +171,7 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	auto pdsn_fields = dsn.get_message_fields();
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn.append_field(pdsn_fields, "Reporting-MTA", tmp_buff);
-	localtime_r(&cur_time, &time_buff);
-	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
+	rfc1123_dstring(date_buff, std::size(date_buff), 0);
 	dsn.append_field(pdsn_fields, "Arrival-Date", date_buff);
 	pdsn_fields = dsn.new_rcpt_fields();
 	if (pdsn_fields == nullptr)

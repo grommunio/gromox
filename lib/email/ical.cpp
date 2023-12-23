@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <new>
 #include <optional>
@@ -14,8 +15,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
-#include <gromox/mail_func.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 /*
  * This is a bit lower than the RFC-prescribed 75 so that we always have some
@@ -558,15 +557,18 @@ const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name) con
 	return ical_get_subval_list_internal(&value_list, name);
 }
 
-bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
+/**
+ * @str_offset: "-HHMM" or "+HHMM"
+ *
+ * Split str_offset and validate hour/minute pair for being in range.
+ */
+bool ical_parse_utc_offset(const char *str_zone, int *phour, int *pminute)
 {
 	int factor;
-	char tmp_buff[8];
-	char str_zone[16];
 	
-	gx_strlcpy(str_zone, str_offset, std::size(str_zone));
-	HX_strrtrim(str_zone);
-	HX_strltrim(str_zone);
+	*phour = *pminute = 0;
+	while (HX_isspace(*str_zone))
+		++str_zone;
 	if (*str_zone == '-')
 		factor = 1;
 	else if (*str_zone == '+')
@@ -576,19 +578,9 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
 	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
 		return false;
-	tmp_buff[0] = str_zone[1];
-	tmp_buff[1] = str_zone[2];
-	tmp_buff[2] = '\0';
-	// Use base 10 because for base 0 strtol interprets prefix 0
-	// as an octal number, so e.g. '08' will result in 0.
-	int hour = strtol(tmp_buff, nullptr, 10);
-	if (hour < 0 || hour > 23)
-		return false;
-	tmp_buff[0] = str_zone[3];
-	tmp_buff[1] = str_zone[4];
-	tmp_buff[2] = '\0';
-	int minute = strtol(tmp_buff, nullptr, 10);
-	if (minute < 0 || minute > 59)
+	int hour   = (str_zone[1] - '0') * 10 + (str_zone[2] - '0');
+	int minute = (str_zone[3] - '0') * 10 + (str_zone[4] - '0');
+	if (hour < 0 || hour > 23 || minute < 0 || minute > 59)
 		return false;
 	*phour = factor * hour;
 	*pminute = factor * minute;
@@ -597,25 +589,26 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 
 bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 {
-	char tmp_buff[128];
+	char tmp_buff[10];
 	
+	while (HX_isspace(*str_date))
+		++str_date;
 	gx_strlcpy(tmp_buff, str_date, std::size(tmp_buff));
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
-	itime->hour = itime->minute = itime->second = itime->leap_second = 0;
+	*itime = {};
 	itime->type = ICT_FLOAT_DAY;
-	return sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) >= 3;
+	return strlen(tmp_buff) == 8 &&
+	       sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) == 3;
 }
 
 bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 {
 	int len;
-	char tsep;
-	char tmp_buff[128];
+	char tmp_buff[20];
 	
+	while (HX_isspace(*str_datetime))
+		++str_datetime;
 	gx_strlcpy(tmp_buff, str_datetime, std::size(tmp_buff));
 	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
 		pitime->type = ICT_UTC;
@@ -625,22 +618,20 @@ bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 		pitime->type = ICT_FLOAT;
 	}
 	if (15 == len) {
-		if (sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d",
-		    &pitime->year, &pitime->month, &pitime->day, &tsep,
-		    &pitime->hour, &pitime->minute, &pitime->second) != 7)
+		if (sscanf(tmp_buff, "%04d%02d%02dT%02d%02d%02d",
+		    &pitime->year, &pitime->month, &pitime->day,
+		    &pitime->hour, &pitime->minute, &pitime->second) != 6)
 			return false;
 		pitime->leap_second = 0;
+		return true;
 	} else if (17 == len) {
-		if (sscanf(tmp_buff, "%04d%02d%02d%c%02d%02d%02d%02d",
-		    &pitime->year, &pitime->month, &pitime->day, &tsep,
+		return sscanf(tmp_buff, "%04d%02d%02dT%02d%02d%02d%02d",
+		    &pitime->year, &pitime->month, &pitime->day,
 		    &pitime->hour, &pitime->minute, &pitime->second,
-		    &pitime->leap_second) != 8)
-			return false;
-	} else {
-		mlog(LV_DEBUG, "W-1200: Unparsable date: \"%s\"", tmp_buff);
-		return false;
+		    &pitime->leap_second) == 7;
 	}
-	return tsep == 'T';
+	mlog(LV_DEBUG, "W-1200: Unparsable datetime: \"%s\"", tmp_buff);
+	return false;
 }
 
 int ICAL_TIME::twcompare(const ICAL_TIME &o) const
@@ -997,42 +988,27 @@ const char *weekday_to_str(unsigned int n)
 	}
 }
 
-bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
+bool ical_parse_byday(const char *pbegin, int *pdayofweek, int *pweekorder)
 {
-	char *pbegin;
-	BOOL b_negative;
-	char tmp_num[3];
-	char tmp_buff[16];
-	
-	gx_strlcpy(tmp_buff, str_byday, std::size(tmp_buff));
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
-	if ('-' == tmp_buff[0]) {
-		b_negative = TRUE;
-		pbegin = tmp_buff + 1;
-	} else if ('+' == tmp_buff[0]) {
-		b_negative = FALSE;
-		pbegin = tmp_buff + 1;
-	} else {
-		b_negative = FALSE;
-		pbegin = tmp_buff;
-	}
-	if (!HX_isdigit(*pbegin)) {
-		*pweekorder = 0;
-		goto PARSE_WEEKDAY;
-	}
-	tmp_num[0] = *pbegin++;
-	tmp_num[1] = '\0';
-	if (HX_isdigit(*pbegin)) {
-		tmp_num[1] = *pbegin++;
-		tmp_num[2] = '\0';
-	}
-	*pweekorder = strtol(tmp_num, nullptr, 0);
-	if (*pweekorder < 1 || *pweekorder > 53)
-		return false;
+	while (HX_isspace(*pbegin))
+		++pbegin;
+	bool b_negative = *pbegin == '-';
 	if (b_negative)
-		*pweekorder *= -1;
- PARSE_WEEKDAY:
+		++pbegin;
+	else if (*pbegin == '+')
+		++pbegin;
+	*pweekorder = 0;
+	if (HX_isdigit(*pbegin)) {
+		char tmp_num[3]{};
+		tmp_num[0] = *pbegin++;
+		if (HX_isdigit(*pbegin))
+			tmp_num[1] = *pbegin++;
+		*pweekorder = strtol(tmp_num, nullptr, 0);
+		if (*pweekorder < 1 || *pweekorder > 53)
+			return false;
+		if (b_negative)
+			*pweekorder *= -1;
+	}
 	auto dow = weekday_to_int(pbegin);
 	if (dow < 0)
 		return false;
@@ -1040,42 +1016,28 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	return true;
 }
 
-bool ical_parse_duration(const char *str_duration, long *pseconds)
+bool ical_parse_duration(const char *ptoken, long *pseconds)
 {
-	int day;
-	int week;
-	int hour;
-	int minute;
-	int second;
-	int factor;
-	BOOL b_time;
-	char *ptoken;
-	char *ptoken1;
 	char tmp_buff[128];
 	
-	gx_strlcpy(tmp_buff, str_duration, std::size(tmp_buff));
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
-	ptoken = tmp_buff;
+	while (HX_isspace(*ptoken))
+		++ptoken;
+	int factor = 1;
 	if ('+' == *ptoken) {
-		factor = 1;
 		ptoken ++;
 	} else if ('-' == *ptoken) {
 		factor = -1;
 		ptoken ++;
-	} else {
-		factor = 1;
 	}
 	if (*ptoken != 'P')
 		return false;
 	ptoken ++;
-	b_time = FALSE;
-	week = -1;
-	day = -1;
-	hour = -1;
-	minute = -1;
-	second = -1;
-	for (ptoken1=ptoken; '\0'!=*ptoken1; ptoken1++) {
+
+	bool b_time = false;
+	int week = -1, day = -1, hour = -1, minute = -1, second = -1;
+	gx_strlcpy(tmp_buff, ptoken, std::size(tmp_buff));
+	ptoken = tmp_buff;
+	for (char *ptoken1 = tmp_buff; *ptoken1 != '\0'; ++ptoken1) {
 		switch (*ptoken1) {
 		case 'W':
 			if (ptoken1 == ptoken || week != -1 || b_time)
@@ -1205,7 +1167,8 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			if (!ical_parse_utc_offset(pvalue, &hour, &minute))
 				return nullptr;
 			tmp_time -= 60*60*hour + 60*minute;
-			make_gmtm(tmp_time, &tmp_tm);
+			if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
+				return nullptr;
 			itime2.year = tmp_tm.tm_year + 1900;
 			itime2.month = tmp_tm.tm_mon + 1;
 			itime2.day = tmp_tm.tm_mday;
@@ -1353,12 +1316,12 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	tmp_tm.tm_wday = 0;
 	tmp_tm.tm_yday = 0;
 	tmp_tm.tm_isdst = 0;
-	*ptime = make_gmtime(&tmp_tm);
+	*ptime = mktime(&tmp_tm);
 	if (ptz_component == nullptr)
 		return true;
 	/*
 	 * @itime is anchored to @ptz_component. Conversion to tmp_tm did not
-	 * change that. Because make_gmtime() pretends @tmp_tm was UTC, @*ptime
+	 * change that. Because mktime() pretends @tmp_tm was UTC, @*ptime
 	 * now has bias which needs to be corrected.
 	 */
 	//assert(itime.type != ICT_UTC);
@@ -1390,7 +1353,7 @@ bool ical_datetime_to_utc(const ical_component *ptz_component,
 	tmp_tm.tm_wday = 0;
 	tmp_tm.tm_yday = 0;
 	tmp_tm.tm_isdst = 0;
-	*ptime = make_gmtime(&tmp_tm);
+	*ptime = mktime(&tmp_tm);
 	return true;
 }
 
@@ -1405,7 +1368,8 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 	
 	if (NULL == ptz_component) {
 		/* UTC time */
-		make_gmtm(utc_time, &tmp_tm);
+		if (gmtime_r(&utc_time, &tmp_tm) == nullptr)
+			return false;
 		pitime->year = tmp_tm.tm_year + 1900;
 		pitime->month = tmp_tm.tm_mon + 1;
 		pitime->day = tmp_tm.tm_mday;
@@ -1431,7 +1395,8 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		if (!ical_parse_utc_offset(pvalue, &hour, &minute))
 			return false;
 		tmp_time = utc_time - 60*60*hour - 60*minute;
-		make_gmtm(tmp_time, &tmp_tm);
+		if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
+			return false;
 		pitime->year = tmp_tm.tm_year + 1900;
 		pitime->month = tmp_tm.tm_mon + 1;
 		pitime->day = tmp_tm.tm_mday;

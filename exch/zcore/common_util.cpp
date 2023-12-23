@@ -35,7 +35,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/vcard.hpp>
@@ -1405,8 +1404,7 @@ void common_util_notify_receipt(const char *username, int type,
 	auto bounce_type = type == NOTIFY_RECEIPT_READ ?
 	                   "BOUNCE_NOTIFY_READ" : "BOUNCE_NOTIFY_NON_READ";
 	if (!exch_bouncer_make(system_services_get_user_displayname,
-	    system_services_get_user_lang, system_services_get_timezone,
-	    username, pbrief, bounce_type, &imail))
+	    system_services_get_user_lang, username, pbrief, bounce_type, &imail))
 		return;
 	imail.set_header("X-Mailer", ZCORE_UA);
 	auto ret = cu_send_mail(imail, g_smtp_url.c_str(),

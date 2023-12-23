@@ -18,7 +18,6 @@ extern bool exml_bouncer_make(const char *from, const char *rcpt, MAIL *orig, ti
 
 extern int (*exmdb_local_check_domain)(const char *domainname);
 extern bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
-extern bool (*exmdb_local_get_timezone)(const char *username, char *timezone, size_t);
 extern BOOL (*exmdb_local_check_same_org2)(const char *domainname1, const char *domainname2);
 
 extern void cache_queue_init(const char *path, int scan_interval, int retrying_times);

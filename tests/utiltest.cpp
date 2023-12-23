@@ -15,7 +15,6 @@
 #include <gromox/propval.hpp>
 #include <gromox/resource_pool.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
 #undef assert
 #define assert(x) do { if (!(x)) { printf("%s failed\n", #x); return EXIT_FAILURE; } } while (false)

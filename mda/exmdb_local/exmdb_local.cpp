@@ -44,7 +44,6 @@ int (*exmdb_local_check_domain)(const char *domainname);
 
 static bool (*exmdb_local_get_user_info)(const char *username, char *home_dir, size_t dsize, char *lang, size_t lsize, char *timezone, size_t tsize);
 bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
-bool (*exmdb_local_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*exmdb_local_check_same_org2)(
 	const char *domainname1, const char *domainname2);
 static BOOL (*exmdb_local_get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
@@ -80,7 +79,6 @@ int exmdb_local_run() try
 	E(exmdb_local_check_domain, "domain_list_query");
 	E(exmdb_local_get_user_info, "get_user_info");
 	E(exmdb_local_get_lang, "get_user_lang");
-	E(exmdb_local_get_timezone, "get_timezone");
 	E(exmdb_local_check_same_org2, "check_same_org2");
 	E(exmdb_local_get_user_ids, "get_user_ids");
 	E(exmdb_local_get_username, "get_username_from_id");

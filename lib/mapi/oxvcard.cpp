@@ -1007,31 +1007,34 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, vcard &vcard, GET_PROPIDS get_propids
 	auto lnum = pmsg->proplist.get<uint64_t>(PR_BIRTHDAY);
 	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
-		gmtime_r(&unix_time, &tmp_tm);
-		strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
-		auto &day_line = vcard.append_line("BDAY");
-		day_line.append_param("VALUE", "DATE");
-		day_line.append_value(tmp_buff);
+		if (gmtime_r(&unix_time, &tmp_tm) != nullptr) {
+			strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
+			auto &day_line = vcard.append_line("BDAY");
+			day_line.append_param("VALUE", "DATE");
+			day_line.append_value(tmp_buff);
+		}
 	}
 	
 	lnum = pmsg->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
-		gmtime_r(&unix_time, &tmp_tm);
-		strftime(tmp_buff, 1024, "%Y-%m-%dT%H:%M:%SZ", &tmp_tm);
-		auto &day_line = vcard.append_line("REV");
-		day_line.append_param("VALUE", "DATE-TIME");
-		day_line.append_value(tmp_buff);
+		if (gmtime_r(&unix_time, &tmp_tm) != nullptr) {
+			strftime(tmp_buff, 1024, "%Y-%m-%dT%H:%M:%SZ", &tmp_tm);
+			auto &day_line = vcard.append_line("REV");
+			day_line.append_param("VALUE", "DATE-TIME");
+			day_line.append_value(tmp_buff);
+		}
 	}
 	
 	lnum = pmsg->proplist.get<uint64_t>(PR_WEDDING_ANNIVERSARY);
 	if (lnum != nullptr) {
 		auto unix_time = rop_util_nttime_to_unix(*lnum);
-		gmtime_r(&unix_time, &tmp_tm);
-		strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
-		auto &day_line = vcard.append_line("X-MS-ANNIVERSARY");
-		day_line.append_param("VALUE", "DATE");
-		day_line.append_value(tmp_buff);
+		if (gmtime_r(&unix_time, &tmp_tm) != nullptr) {
+			strftime(tmp_buff, 1024, "%Y-%m-%d", &tmp_tm);
+			auto &day_line = vcard.append_line("X-MS-ANNIVERSARY");
+			day_line.append_param("VALUE", "DATE");
+			day_line.append_value(tmp_buff);
+		}
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
