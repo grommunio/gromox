@@ -381,10 +381,10 @@ static void *mdl_thrwork(void *arg)
 				mlog(LV_WARN, "W-1590: garbage in %s; review and delete", temp_path.c_str());
 			zlen = strnlen(ptr, size);
 			/* Need \0 for going on */
-			int deliv_ret;
+			delivery_status deliv_ret;
 			if (zlen == size) {
 				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
-				deliv_ret = DELIVERY_OPERATION_ERROR;
+				deliv_ret = delivery_status::error;
 			} else {
 				pcontext->ctrl.rcpt.clear();
 				pcontext->ctrl.rcpt.emplace_back(ptr);
@@ -401,36 +401,31 @@ static void *mdl_thrwork(void *arg)
 				deliv_ret = exmdb_local_deliverquota(pcontext, ptr);
 			}
 			switch (deliv_ret) {
-			case DELIVERY_OPERATION_OK:
+			case delivery_status::ok:
 				need_bounce = FALSE;
 				need_remove = TRUE;
-				net_failure_statistic(1, 0, 0, 0);
 				break;
-			case DELIVERY_OPERATION_DELIVERED:
+			case delivery_status::bounce_sent:
 				bounce_type = "BOUNCE_MAIL_DELIVERED";
 				need_bounce = TRUE;
 				need_remove = TRUE;
-				net_failure_statistic(1, 0, 0, 0);
 				break;
-			case DELIVERY_NO_USER:
+			case delivery_status::no_user:
 				bounce_type = "BOUNCE_NO_USER";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
-				net_failure_statistic(0, 0, 0, 1);
 				break;
-			case DELIVERY_MAILBOX_FULL:
+			case delivery_status::mailbox_full:
 				bounce_type = "BOUNCE_MAILBOX_FULL";
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    break;
-			case DELIVERY_OPERATION_ERROR:
+			case delivery_status::error:
 				bounce_type = "BOUNCE_OPERATION_ERROR";
 				need_bounce = TRUE;
 				need_remove = TRUE;
-				net_failure_statistic(0, 0, 1, 0);
 				break;
-			case DELIVERY_OPERATION_FAILURE:
-				net_failure_statistic(0, 1, 0, 0);
+			case delivery_status::failure:
 				break;
 			}
 			if (!need_remove) {

@@ -10,9 +10,6 @@ connecting to a exmdb_provider(4gx) service.
 .SH Configuration directives
 The usual config file location is /etc/gromox/exmdb_local.cfg.
 .TP
-\fBalarm_interval\fP
-Default: \fI30min\fP
-.TP
 \fBautoreply_silence_window\fP
 -> See gromox.cfg(5) manpage instead!
 .TP
@@ -26,12 +23,6 @@ Default: \fIwindows-1252\fP
 .TP
 \fBexmdb_connection_num\fP
 Default: \fI5\fP
-.TP
-\fBfailure_times_for_alarm\fP
-Default: \fI10\fP
-.TP
-\fBinterval_for_failure_statistic\fP
-Default: \fI1hour\fP
 .TP
 \fBlda_twostep_ruleproc\fP
 If set to \fI1\fP, an alternate rule processor codebase will be used which

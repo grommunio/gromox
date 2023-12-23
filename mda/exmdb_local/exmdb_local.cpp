@@ -123,11 +123,9 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			continue;
 		}
 		switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
-		case DELIVERY_OPERATION_OK:
-			net_failure_statistic(1, 0, 0, 0);
+		case delivery_status::ok:
 			break;
-		case DELIVERY_OPERATION_DELIVERED:
-			net_failure_statistic(1, 0, 0, 0);
+		case delivery_status::bounce_sent:
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -142,7 +140,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			    rcpt_buff, &pcontext->mail, time(nullptr),
 			    "BOUNCE_MAIL_DELIVERED", &pbounce_context->mail)) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_ERR,
-					"DELIVERY_OPERATION_DELIVERED %s", rcpt_buff);
+					"delivery_status::bounce_sent %s", rcpt_buff);
 				put_context(pbounce_context);
 				break;
 			}
@@ -152,8 +150,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
-		case DELIVERY_NO_USER:
-			net_failure_statistic(0, 0, 0, 1);
+		case delivery_status::no_user:
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -178,7 +175,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
-		case DELIVERY_MAILBOX_FULL:
+		case delivery_status::mailbox_full:
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -201,9 +198,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
-		case DELIVERY_OPERATION_ERROR:
+		case delivery_status::error:
 			had_error = true;
-			net_failure_statistic(0, 0, 1, 0);
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
 				break;
@@ -228,9 +224,8 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
-		case DELIVERY_OPERATION_FAILURE:
+		case delivery_status::failure:
 			had_error = true;
-			net_failure_statistic(0, 1, 0, 0);
 			cache_ID = cache_queue_put(pcontext, rcpt_buff, time(nullptr));
 			if (cache_ID >= 0) {
 				exmdb_local_log_info(pcontext->ctrl, rcpt_buff, LV_INFO,
@@ -278,7 +273,8 @@ static bool exmdb_local_lang_to_charset(const char *lang, char (&charset)[32])
 	return true;
 }
 
-int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
+delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
+    const char *address) try
 {
 	size_t mess_len;
 	int sequence_ID;
@@ -292,7 +288,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	    lang, std::size(lang), tmzone, std::size(tmzone))) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
-		return DELIVERY_OPERATION_FAILURE;
+		return delivery_status::failure;
 	}
 
 	if (*lang == '\0' ||
@@ -301,7 +297,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	if ('\0' == home_dir[0]) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"<%s> has no mailbox here", address);
-		return DELIVERY_NO_USER;
+		return delivery_status::no_user;
 	}
 	if (tmzone[0] == '\0')
 		strcpy(tmzone, GROMOX_FALLBACK_TIMEZONE);
@@ -324,7 +320,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"open WR %s: %s", eml_path.c_str(), strerror(se));
 		errno = se;
-		return DELIVERY_OPERATION_FAILURE;
+		return delivery_status::failure;
 	}
 	
 	if (!pmail->to_file(fd.get())) {
@@ -334,7 +330,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
-		return DELIVERY_OPERATION_FAILURE;
+		return delivery_status::failure;
 	}
 	auto ret = fd.close_wr();
 	if (ret < 0)
@@ -348,7 +344,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"permanent failure getting mail digest");
-		return DELIVERY_OPERATION_ERROR;
+		return delivery_status::error;
 	}
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
@@ -365,7 +361,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");
-		return DELIVERY_OPERATION_ERROR;
+		return delivery_status::error;
 	}
 	g_alloc_key = nullptr;
 
@@ -387,7 +383,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	if (!exmdb_client_remote::deliver_message(home_dir,
 	    pcontext->ctrl.from, address, CP_ACP, flags,
 	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
-		return DELIVERY_OPERATION_ERROR;
+		return delivery_status::error;
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	if (dm_status == deliver_message_result::result_ok) {
@@ -417,37 +413,37 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address) try
 	case deliver_message_result::partial_completion:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"server could not store message in full to %s", home_dir);
-		return DELIVERY_OPERATION_ERROR;
+		return delivery_status::error;
 	case deliver_message_result::result_error:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
-		return DELIVERY_OPERATION_FAILURE;
+		return delivery_status::failure;
 	case deliver_message_result::mailbox_full_bysize:
 		exmdb_local_log_info(pcontext->ctrl, address,
 			LV_NOTICE, "user's mailbox has reached quota limit");
-		return DELIVERY_MAILBOX_FULL;
+		return delivery_status::mailbox_full;
 	case deliver_message_result::mailbox_full_bymsg:
 		exmdb_local_log_info(pcontext->ctrl, address,
 			LV_NOTICE, "user's mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
-		return DELIVERY_MAILBOX_FULL;
+		return delivery_status::mailbox_full;
 	default:
-		return DELIVERY_OPERATION_FAILURE;
+		return delivery_status::failure;
 	}
 
 	if (!g_lda_twostep) {
 		if (b_bounce_delivered)
-			return DELIVERY_OPERATION_DELIVERED;
-		return DELIVERY_OPERATION_OK;
+			return delivery_status::bounce_sent;
+		return delivery_status::ok;
 	}
 	auto err = exmdb_local_rules_execute(home_dir, pcontext->ctrl.from,
 	           address, folder_id, message_id);
 	if (err != ecSuccess)
 		mlog(LV_ERR, "TWOSTEP ruleproc unsuccessful: %s\n", mapi_strerror(err));
-	return DELIVERY_OPERATION_OK;
+	return delivery_status::ok;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1472: ENOMEM");
-	return DELIVERY_OPERATION_FAILURE;
+	return delivery_status::failure;
 }
 
 void exmdb_local_log_info(const CONTROL_INFO &ctrl,
@@ -483,7 +479,7 @@ DECLARE_HOOK_API();
 static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
 	char charset[32], org_name[256], temp_buff[45], cache_path[256];
-	int cache_interval, retrying_times, alarm_interval, times, interval;
+	int cache_interval, retrying_times;
 	int response_capacity, response_interval, conn_num;
 
 	/* path contains the config files directory */
@@ -536,34 +532,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		mlog(LV_INFO, "exmdb_local: retrying times on temporary failure is %d",
 			retrying_times);
 
-		str_value = pfile->get_value("FAILURE_TIMES_FOR_ALARM");
-		times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
-		if (times <= 0)
-			times = 10;
-		mlog(LV_INFO, "exmdb_local: failure count for alarm is %d", times);
-
-		str_value = pfile->get_value("INTERVAL_FOR_FAILURE_STATISTIC");
-		if (str_value == nullptr) {
-			interval = 3600;
-		} else {
-			interval = HX_strtoull_sec(str_value, nullptr);
-			if (interval <= 0)
-				interval = 3600;
-		}
-		HX_unit_seconds(temp_buff, std::size(temp_buff), interval, 0);
-		mlog(LV_INFO, "exmdb_local: interval for failure alarm is %s", temp_buff);
-
-		str_value = pfile->get_value("ALARM_INTERVAL");
-		if (str_value == nullptr) {
-			alarm_interval = 1800;
-		} else {
-			alarm_interval = HX_strtoull_sec(str_value, nullptr);
-			if (alarm_interval <= 0)
-				alarm_interval = 1800;
-		}
-		HX_unit_seconds(temp_buff, std::size(temp_buff), alarm_interval, 0);
-		mlog(LV_INFO, "exmdb_local: alarms interval is %s", temp_buff);
-
 		str_value = pfile->get_value("RESPONSE_AUDIT_CAPACITY");
 		response_capacity = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000;
 		if (response_capacity < 0)
@@ -584,16 +552,11 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 
 		g_lda_twostep = parse_bool(pfile->get_value("lda_twostep_ruleproc"));
 
-		net_failure_init(times, interval, alarm_interval);
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
 		exmdb_client_init(conn_num, 0);
 		exmdb_local_init(org_name, charset);
 
-		if (net_failure_run() != 0) {
-			mlog(LV_ERR, "exmdb_local: failed to start net_failure component");
-			return FALSE;
-		}
 		if (bounce_gen_init(get_config_path(), get_data_path(),
 		    "local_bounce") != 0) {
 			mlog(LV_ERR, "exmdb_local: failed to start bounce producer");
@@ -621,7 +584,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		exmdb_client_stop();
 		cache_queue_stop();
 		cache_queue_free();
-		net_failure_free();
 		return TRUE;
 	}
 	return TRUE;
