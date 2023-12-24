@@ -1101,20 +1101,20 @@ sTimePoint::sTimePoint(const char* dtstr)
 	if(!dtstr)
 		throw EWSError::SchemaValidation(E3150);
 	tm t{};
-	float seconds = 0, unused;
+	double seconds = 0;
 	int tz_hour = 0, tz_min = 0;
-	if(sscanf(dtstr, "%4d-%02d-%02dT%02d:%02d:%f%03d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min,
-	          &seconds, &tz_hour, &tz_min) < 6) //Timezone info is optional, date and time values mandatory
+	/* Timezone info is optional, date and time values mandatory */
+	if (sscanf(dtstr, "%4d-%02d-%02dT%02d:%02d:%lf%03d:%02d", &t.tm_year,
+	    &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min, &seconds, &tz_hour,
+	    &tz_min) < 6)
 		throw EWSError::SchemaValidation(E3151);
-	t.tm_sec = int(seconds);
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
 	time_t timestamp = mktime(&t)-timezone;
 	if(timestamp == time_t(-1))
 		throw EWSError::ValueOutOfRange(E3152);
 	time = gromox::time_point::clock::from_time_t(timestamp);
-	seconds = std::modf(seconds, &unused);
-	time += std::chrono::microseconds(int(seconds*1000000));
+	time += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
 	offset = std::chrono::minutes(60*tz_hour+(tz_hour < 0? -tz_min : tz_min));
 }
 

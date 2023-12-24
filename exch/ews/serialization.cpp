@@ -55,12 +55,13 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	if(!data)
 		return tinyxml2::XML_NO_TEXT_NODE;
 	tm t{};
-	float seconds = 0, unused;
+	double seconds = 0;
 	int tz_hour = 0, tz_min = 0;
-	if(std::sscanf(data, "%4d-%02d-%02dT%02d:%02d:%f%03d:%02d", &t.tm_year, &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min,
-	               &seconds, &tz_hour, &tz_min) < 6) //Timezone info is optional, date and time values mandatory
+	/* Timezone info is optional, date and time values mandatory */
+	if (std::sscanf(data, "%4d-%02d-%02dT%02d:%02d:%lf%03d:%02d", &t.tm_year,
+	    &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min, &seconds, &tz_hour,
+	    &tz_min) < 6)
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
-	t.tm_sec = int(seconds);
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
 	t.tm_hour -= tz_hour;
@@ -69,8 +70,7 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	if(timestamp == time_t(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
 	value = gromox::time_point::clock::from_time_t(timestamp);
-	seconds = std::modf(seconds, &unused);
-	value += std::chrono::microseconds(int(seconds*1000000));
+	value += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
 	return tinyxml2::XML_SUCCESS;
 }
 
@@ -242,11 +242,11 @@ void sTimePoint::serialize(XMLElement* xml) const
 	if (gmtime_r(&timestamp, &t) == nullptr)
 		t = {};
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
-	long fsec = std::chrono::duration_cast<std::chrono::microseconds>(frac).count();
+	unsigned long long fsec = std::chrono::duration_cast<std::chrono::nanoseconds>(frac).count();
 	int off = -int(offset.count());
 	std::string dtstr = fmt::format("{:%FT%T}", t);
 	if(fsec)
-		dtstr += fmt::format(".{:06}", fsec);
+		dtstr += fmt::format(".{:09}", fsec);
 	dtstr += off? fmt::format("{:+03}{:02}", off/60, abs(off)%60) : "Z";
 	xml->SetText(dtstr.c_str());
 }
