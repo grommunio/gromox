@@ -1447,7 +1447,8 @@ ec_error_t tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret) t
 				default:
 					return ecInvalidParam;
 				};
-				add_assoc_zval(&pzactarray, itoa(j++, key), &pzactval);
+				add_assoc_zval(&pzactarray, itoa(j, key), &pzactval);
+				++j;
 			}
 			add_assoc_zval(pzret, pts.c_str(), &pzactarray);
 			break;
