@@ -100,6 +100,7 @@ static int do_snap(const std::string &grpdir, const char *today)
 	auto mode = snapshot_type(g_subvolume_root, grpdir);
 	if (mode == snapshot_mode::error)
 		return EXIT_FAILURE;
+	printf("Creating %s\n", sndir.c_str());
 	if (mode == snapshot_mode::btrfs) {
 		const char *const a_btrfs[] = {
 			"btrfs", "subvolume", "snapshot", "-r",
@@ -156,7 +157,7 @@ static int do_group(const char *gname, const char *today, unsigned int mtime,
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
-	fprintf(stderr, "Purging %s...\n", gname);
+	printf("Purging %s...\n", gname);
 	return do_purge(grpdir.c_str(), mtime, mmin);
 }
 
