@@ -7,7 +7,8 @@
 
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon_token &d)
 {
-	return x.p_str(d.token);
+	TRY(x.p_str(d.token));
+	return x.p_str(d.rhost);
 }
 
 static pack_result zrpc_pull(PULL_CTX &x, zcresp_logon_token &d)
@@ -24,6 +25,7 @@ static pack_result zrpc_push(PUSH_CTX &x, const zcreq_logon &d)
 		TRY(x.p_uint8(1));
 		TRY(x.p_str(d.password));
 	}
+	TRY(x.p_str(d.rhost));
 	TRY(x.p_uint32(d.flags));
 	return pack_result::ok;
 }
@@ -33,6 +35,7 @@ static pack_result zrpc_pull(PULL_CTX &x, zcresp_logon &d)
 	TRY(x.g_guid(&d.hsession));
 	return pack_result::ok;
 }
+
 static pack_result zrpc_push(PUSH_CTX &x, const zcreq_checksession &d)
 {
 	TRY(x.p_guid(d.hsession));

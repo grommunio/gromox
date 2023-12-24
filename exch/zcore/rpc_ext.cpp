@@ -376,7 +376,8 @@ static pack_result rpc_ext_push_znotification_array(
 
 static pack_result zrpc_pull(EXT_PULL &x, zcreq_logon_token &d)
 {
-	return x.g_str(&d.token);
+	QRF(x.g_str(&d.token));
+	return x.g_str(&d.rhost);
 }
 
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_logon_token &d)
@@ -394,6 +395,7 @@ static pack_result zrpc_pull(EXT_PULL &x, zcreq_logon &d)
 		d.password = nullptr;
 	else
 		QRF(x.g_str(&d.password));
+	QRF(x.g_str(&d.rhost));
 	QRF(x.g_uint32(&d.flags));
 	return pack_result::ok;
 }

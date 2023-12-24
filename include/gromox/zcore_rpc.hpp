@@ -113,11 +113,13 @@ struct zcreq {
 
 struct zcreq_logon_token final : public zcreq {
 	char *token;
+	char *rhost;
 };
 
 struct zcreq_logon final : public zcreq {
 	char *username;
 	char *password;
+	char *rhost;
 	uint32_t flags;
 };
 

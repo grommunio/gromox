@@ -20,7 +20,7 @@ extern uint32_t zclient_getpropval(GUID hsession, uint32_t hobject, uint32_t pro
 #define IDLOUT
 #define ZCIDL(n, p) extern uint32_t zclient_ ## n p;
 /* When calling these functions, none of the IDLOUT parameters may be NULL */
-ZCIDL(logon, (const char *username, const char *password, uint32_t flags, IDLOUT GUID *hsession))
+ZCIDL(logon, (const char *username, const char *password, const char *rhost, uint32_t flags, IDLOUT GUID *hsession))
 ZCIDL(uinfo, (const char *username, IDLOUT BINARY *entryid, char **pdisplay_name, char **px500dn, uint32_t *privilege_bits))
 ZCIDL(unloadobject, (GUID hsession, uint32_t hobject))
 ZCIDL(openentry, (GUID hsession, BINARY entryid, uint32_t flags, IDLOUT zs_objtype *mapi_type, uint32_t *hobject))
@@ -105,7 +105,7 @@ ZCIDL(linkmessage, (GUID hsession, BINARY search_entryid, BINARY message_entryid
 ZCIDL(checksession, (GUID hsession))
 ZCIDL(imtomessage2, (GUID session, uint32_t folder, uint32_t data_type, const char *im_data, IDLOUT LONG_ARRAY *msg_handles))
 ZCIDL(essdn_to_username, (const char *essdn, IDLOUT char **username))
-ZCIDL(logon_token, (const char *token, IDLOUT GUID *hsession))
+ZCIDL(logon_token, (const char *token, const char *rhost, IDLOUT GUID *hsession))
 ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT std::vector<freebusy_event> *fb_events))
 #undef ZCIDL
 #undef IDLOUT

@@ -648,8 +648,6 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 	char *server, *sslcert, *sslpass, *username, *password;
 	char *wa_version, *misc_version;
 	MAPI_RESOURCE *presource;
-	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
-	zstrplus str_user(zend_string_init(ZEND_STRL("REMOTE_USER"), 0));
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|ssslss",
 		&username, &username_len, &password, &password_len, &server,
@@ -658,10 +656,24 @@ static ZEND_FUNCTION(mapi_logon_zarafa)
 		== FAILURE || NULL == username || '\0' == username[0] ||
 		NULL == password)
 		pthrow(ecInvalidParam);
+
+	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
+	zstrplus str_rhost(zend_string_init(ZEND_STRL("REMOTE_ADDR"), 0));
+	if (PG(auto_globals_jit))
+		zend_is_auto_global(str_server.get());
+	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
+	const char *rhost = nullptr;
+	if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
+		auto v = zend_hash_find(Z_ARRVAL_P(server_vars), str_rhost.get());
+		if (v != nullptr && Z_TYPE_P(v) == IS_STRING)
+			rhost = Z_STRVAL_P(v);
+	}
+
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource)
 		pthrow(ecMAPIOOM);
-	auto result = zclient_logon(username, password, 0, &presource->hsession);
+	auto result = zclient_logon(username, password, znul(rhost), 0,
+	              &presource->hsession);
 	if (result != ecSuccess)
 		pthrow(result);
 	presource->type = zs_objtype::session;
@@ -683,15 +695,23 @@ static ZEND_FUNCTION(mapi_logon_ex)
 		== FAILURE || NULL == username || '\0' == username[0] ||
 		NULL == password)
 		pthrow(ecInvalidParam);
+
+	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
+	zstrplus str_rhost(zend_string_init(ZEND_STRL("REMOTE_ADDR"), 0));
+	if (PG(auto_globals_jit))
+		zend_is_auto_global(str_server.get());
+	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
+	const char *rhost = nullptr;
+	if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
+		auto v = zend_hash_find(Z_ARRVAL_P(server_vars), str_rhost.get());
+		if (v != nullptr && Z_TYPE_P(v) == IS_STRING)
+			rhost = Z_STRVAL_P(v);
+	}
+
 	if ('\0' == password[0]) {
 		/* enable empty password only when php is running under cli mode */
-		zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
 		zstrplus str_reqm(zend_string_init(ZEND_STRL("REQUEST_METHOD"), 0));
 
-		if (PG(auto_globals_jit))
-			zend_is_auto_global(str_server.get());
-
-		auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
 		if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
 			auto method = zend_hash_find(Z_ARRVAL_P(server_vars), str_reqm.get());
 			if (method != nullptr && Z_TYPE_P(method) == IS_STRING &&
@@ -703,8 +723,8 @@ static ZEND_FUNCTION(mapi_logon_ex)
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource)
 		pthrow(ecMAPIOOM);
-	auto result = zclient_logon(username,
-		password, flags, &presource->hsession);
+	auto result = zclient_logon(username, password, znul(rhost), flags,
+	              &presource->hsession);
 	if (result != ecSuccess)
 		pthrow(result);
 	presource->type = zs_objtype::session;
@@ -722,10 +742,23 @@ static ZEND_FUNCTION(mapi_logon_token)
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &token, &token_len) == FAILURE ||
 	    token == nullptr)
 		pthrow(ecInvalidParam);
+
+	zstrplus str_server(zend_string_init(ZEND_STRL("_SERVER"), 0));
+	zstrplus str_rhost(zend_string_init(ZEND_STRL("REMOTE_ADDR"), 0));
+	if (PG(auto_globals_jit))
+		zend_is_auto_global(str_server.get());
+	auto server_vars = zend_hash_find(&EG(symbol_table), str_server.get());
+	const char *rhost = nullptr;
+	if (server_vars != nullptr && Z_TYPE_P(server_vars) == IS_ARRAY) {
+		auto v = zend_hash_find(Z_ARRVAL_P(server_vars), str_rhost.get());
+		if (v != nullptr && Z_TYPE_P(v) == IS_STRING)
+			rhost = Z_STRVAL_P(v);
+	}
+
 	auto rsrc = st_malloc<MAPI_RESOURCE>();
 	if (rsrc == nullptr)
 		pthrow(ecMAPIOOM);
-	auto result = zclient_logon_token(token, &rsrc->hsession);
+	auto result = zclient_logon_token(token, znul(rhost), &rsrc->hsession);
 	if (result != ecSuccess)
 		pthrow(result);
 	rsrc->type = zs_objtype::session;
