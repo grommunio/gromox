@@ -1336,8 +1336,7 @@ static int imap_cmd_parser_username2(int argc, char **argv, IMAP_CONTEXT *pconte
 {
 	size_t temp_len;
 	
-	if (strlen(argv[0]) == 0 ||
-	    decode64_ex(argv[0], strlen(argv[0]),
+	if (decode64_ex(argv[0], strlen(argv[0]),
 	    pcontext->username, std::size(pcontext->username),
 	    &temp_len) != 0) {
 		pcontext->proto_stat = iproto_stat::noauth;
@@ -1381,7 +1380,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 	char temp_password[256];
 	
 	pcontext->proto_stat = iproto_stat::noauth;
-	if (strlen(argv[0]) == 0 || decode64_ex(argv[0], strlen(argv[0]),
+	if (decode64_ex(argv[0], strlen(argv[0]),
 	    temp_password, std::size(temp_password), &temp_len) != 0)
 		return 1820 | DISPATCH_TAG;
 
