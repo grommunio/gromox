@@ -147,7 +147,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	HX_strltrim(temp_password);
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_POP3, mres_auth)) {
-		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s",
+		pop3_parser_log_info(pcontext, LV_WARN, "login rejected: %s",
 			mres_auth.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= g_max_auth_times) {
@@ -166,7 +166,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			return 1715 | DISPATCH_CONTINUE;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {
-			pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s",
+			pop3_parser_log_info(pcontext, LV_WARN, "login rejected: %s",
 				mres_auth.errstr.c_str());
 			pcontext->auth_times ++;
 			if (pcontext->auth_times >= g_max_auth_times) {
@@ -213,7 +213,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	    pcontext->msg_array.size() != static_cast<size_t>(pcontext->total_mail))
 		return 1722;
 	pcontext->is_login = TRUE;
-	pop3_parser_log_info(pcontext, LV_DEBUG, "login success");
+	pop3_parser_log_info(pcontext, LV_DEBUG, "login ok");
 	return 1700;
 }
 

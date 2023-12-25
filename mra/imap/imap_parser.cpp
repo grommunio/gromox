@@ -1532,7 +1532,7 @@ static void *imps_thrwork(void *argp)
 	return nullptr;
 }
 
-void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...)
+void imap_parser_log_info(imap_context *ctx, int level, const char *format, ...)
 {
 	char log_buf[2048];
 	va_list ap;
@@ -1541,8 +1541,9 @@ void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format,
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	mlog(level, "user=%s, host=[%s]  %s",
-		pcontext->username, pcontext->connection.client_ip, log_buf);
+	const auto &co = ctx->connection;
+	mlog(level, "rhost=[%s]:%hu user=%s %s", co.client_ip, co.client_port,
+		ctx->username, log_buf);
 
 }
 

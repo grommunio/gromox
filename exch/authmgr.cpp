@@ -156,17 +156,15 @@ static bool login_token(const char *token,
 {
 	std::string ex_user;
 	if (!verify_token(token, ex_user)) {
-		mres.errstr = "Authentication rejected";
+		mres.errstr = "Token did not validate";
 		return false;
 	}
-	bool auth = true;
 	auto err = fptr_mysql_meta(ex_user.c_str(), wantpriv, mres);
-	auth = auth && err == 0;
-	if (!auth && mres.errstr.empty()) {
-		mres.errstr = "Authentication rejected";
+	if (err != 0 && mres.errstr.empty()) {
+		mres.errstr = "meta: "s + strerror(err);
 		return false;
 	}
-	return auth;
+	return err == 0;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1701: ENOMEM");
 	return false;

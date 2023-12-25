@@ -1390,15 +1390,14 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 		*target_mbox++ = '\0';
 	HX_strltrim(pcontext->username);
 	if (!system_services_judge_user(pcontext->username)) {
-		imap_parser_log_info(pcontext, LV_NOTICE, "user %s is "
-			"denied by user filter", pcontext->username);
+		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase2 rejected: denied by user filter");
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
 	sql_meta_result mres_auth, mres /* target */;
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres_auth)) {
 		safe_memset(temp_password, 0, std::size(temp_password));
-		imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s",
+		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase2 rejected: %s",
 			mres_auth.errstr.c_str());
 		pcontext->auth_times ++;
 		if (pcontext->auth_times < g_max_auth_times)
@@ -1415,7 +1414,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {
-			imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s", mres.errstr.c_str());
+			imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase2 rejected: %s", mres.errstr.c_str());
 			++pcontext->auth_times;
 			if (pcontext->auth_times < g_max_auth_times)
 				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
@@ -1433,7 +1432,7 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
 	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(pcontext->lang), std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
-	imap_parser_log_info(pcontext, LV_DEBUG, "login success");
+	imap_parser_log_info(pcontext, LV_DEBUG, "LOGIN ok");
 	char caps[128];
 	capability_list(caps, std::size(caps), pcontext);
 	auto buf = fmt::format("{} OK [CAPABILITY {}] Logged in\r\n",
@@ -1467,8 +1466,8 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	gx_strlcpy(pcontext->username, argv[2], std::size(pcontext->username));
 	HX_strltrim(pcontext->username);
 	if (!system_services_judge_user(pcontext->username)) {
-		imap_parser_log_info(pcontext, LV_WARN, "user %s is "
-			"denied by user filter", pcontext->username);
+		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase0 rejected: denied by user filter",
+			pcontext->username);
 		return 1901 | DISPATCH_SHOULD_CLOSE;
     }
 	strcpy(temp_password, argv[3]);
@@ -1477,7 +1476,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	sql_meta_result mres_auth, mres /* target */;
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres_auth)) {
-		imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", mres.errstr.c_str());
+		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase1 rejected: %s", mres.errstr.c_str());
 		pcontext->auth_times++;
 		if (pcontext->auth_times < g_max_auth_times) {
 			gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));
@@ -1495,7 +1494,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return 1902 | DISPATCH_CONTINUE | DISPATCH_TAG;
 		if (!store_owner_over(mres_auth.username.c_str(), mres.username.c_str(),
 		    mres.maildir.c_str())) {
-			imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", mres.errstr.c_str());
+			imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase1 rejected: %s", mres.errstr.c_str());
 			++pcontext->auth_times;
 			if (pcontext->auth_times < g_max_auth_times)
 				return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
@@ -1513,7 +1512,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		gx_strlcpy(pcontext->lang, znul(g_config_file->get_value("default_lang")), sizeof(pcontext->lang));
 	gx_strlcpy(pcontext->defcharset, resource_get_default_charset(pcontext->lang), std::size(pcontext->defcharset));
 	pcontext->proto_stat = iproto_stat::auth;
-	imap_parser_log_info(pcontext, LV_DEBUG, "login success");
+	imap_parser_log_info(pcontext, LV_DEBUG, "LOGIN ok");
 	return 1705;
 }
 

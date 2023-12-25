@@ -751,8 +751,7 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 	}
 
 	pcontext->auth_status = http_status::unauthorized;
-	pcontext->log(LV_ERR, "login failed: \"%s\": %s",
-		pcontext->username, mres.errstr.c_str());
+	pcontext->log(LV_WARN, "HTTP auth rejected: %s", mres.errstr.c_str());
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= g_max_auth_times)
 		system_services_add_user_into_temp_list(
@@ -2217,11 +2216,11 @@ void http_context::log(int level, const char *format, ...) const
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	if (*username == '\0')
-		mlog(level, "ctxid=%u, host=[%s]:%hu  %s", context_id,
-			connection.client_ip, connection.client_port, log_buf);
+		mlog(level, "rhost=[%s]:%hu ctxid=%u %s", connection.client_ip,
+			connection.client_port, context_id, log_buf);
 	else
-		mlog(level, "user=%s, host=[%s]:%hu  %s", username,
-			connection.client_ip, connection.client_port, log_buf);
+		mlog(level, "rhost=[%s]:%hu user=%s %s", connection.client_ip,
+			connection.client_port, username, log_buf);
 
 }
 

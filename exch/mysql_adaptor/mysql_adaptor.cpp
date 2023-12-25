@@ -92,10 +92,10 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	}
 	conn.finish();
 	if (pmyres.num_rows() > 1) {
-		mres.errstr = fmt::format("login \"{}\" is ambiguous", username);
+		mres.errstr = fmt::format("Login name is ambiguous", username);
 		return ENOENT;
 	} else if (pmyres.num_rows() != 1) {
-		mres.errstr = fmt::format("user \"{}\" does not exist", username);
+		mres.errstr = fmt::format("No such user", username);
 		return ENOENT;
 	}
 	
@@ -107,26 +107,25 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	}
 	dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 	if (dtypx != DT_MAILUSER && !(wantpriv & WANTPRIV_METAONLY)) {
-		mres.errstr = "User is not a real user";
+		mres.errstr = "Object is not a DT_MAILUSER";
 		return EACCES;
 	}
 	auto address_status = strtoul(myrow[2], nullptr, 0);
 	if (!afuser_login_allowed(address_status) && !(wantpriv & WANTPRIV_METAONLY)) {
 		auto uval = address_status & AF_USER__MASK;
 		if (address_status & AF_DOMAIN__MASK)
-			mres.errstr = fmt::format("Domain of user \"{}\" is disabled!", username);
+			mres.errstr = "User's domain is disabled";
 		else if (uval == AF_USER_SHAREDMBOX)
-			mres.errstr = fmt::format("\"{}\" is a shared mailbox with no login", username);
+			mres.errstr = "Login operation disabled for shared mailboxes";
 		else if (uval != 0)
-			mres.errstr = fmt::format("User \"{}\" is disabled", username);
+			mres.errstr = "User account is disabled";
 		return EACCES;
 	}
 	wantpriv &= ~WANTPRIV_METAONLY;
 
 	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
 	if (wantpriv != 0 && !(allowedsvc & wantpriv)) {
-		mres.errstr = fmt::format("\"{}\" is not authorized to use service(s) {:x}h",
-		              username, wantpriv);
+		mres.errstr = fmt::format("Not authorized to use service(s) {:x}h", wantpriv);
 		return EACCES;
 	}
 	mres.maildir    = myrow[4];
@@ -173,7 +172,7 @@ static BOOL verify_password(const char *username, const char *password,
 	if (strcmp(crypt_estar(password, encrypt_passwd), encrypt_passwd) == 0)
 		return TRUE;
 	cr_hold.unlock();
-	errstr = "password error, please check it and retry";
+	errstr = "Incorrect password";
 	return FALSE;
 }
 
