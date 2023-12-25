@@ -48,5 +48,5 @@ struct fastdownctx_object final {
 	EID_ARRAY *pmsglst = nullptr;
 	std::unique_ptr<FOLDER_CONTENT> pfldctnt;
 	fxdown_flow_list flow_list;
-	uint32_t total_steps = 0, progress_steps = 0, divisor = 1;
+	size_t total_steps = 0, progress_steps = 0, divisor = 1;
 };
