@@ -1,16 +1,19 @@
-Development 2.20.28
+Development 2.20.97
 ===================
 
 Fixes:
 
 * exch: fix nonsensical compare operation in check_message_owner
 * lib: guard against an integer overflow when inserting last element in range_set
+* imap: do not flag zero-length usernames/passwords as a syntax error
 
 Enhancements:
 
 * Support for outgoing message submission via postdrop. Use the new config
   directive ``outgoing_smtp_url=sendmail://localhost`` in gromox.cfg.
 * gromox-snapshot: Support snapshots on XFS
+* zcore: log REMOTE_ADDR on authentication failure for fail2ban
+* ews: improve contact item and task item support
 
 Behavioral changes:
 
