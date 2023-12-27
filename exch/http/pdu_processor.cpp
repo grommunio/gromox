@@ -1774,7 +1774,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 	}
 }
 
-static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
+static void pdu_processor_process_cancel(const dcerpc_call *pcall)
 {
 	int async_id;
 	BOOL b_cancel;
@@ -1818,7 +1818,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	}
 }
 
-static void pdu_processor_process_orphaned(DCERPC_CALL *pcall)
+static void pdu_processor_process_orphaned(const dcerpc_call *pcall)
 {
 	DCERPC_CALL *pcallx;
 	
