@@ -16,6 +16,7 @@
 #include <gromox/exmdb_provider_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/svc_common.h>
 #include <gromox/textmaps.hpp>
@@ -31,6 +32,11 @@ using namespace gromox;
 DECLARE_SVC_API();
 
 static std::shared_ptr<CONFIG_FILE> g_config_during_init;
+
+static constexpr cfg_directive exmdb_gromox_cfg_defaults[] = {
+	{"exmdb_ics_log_file", ""},
+	CFG_TABLE_END,
+};
 
 static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
@@ -70,13 +76,22 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 unsigned int g_dbg_synth_content;
 unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
-static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
+static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
+    std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
 {
 	if (pconfig == nullptr)
 		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path(),
 		          exmdb_cfg_defaults);
 	if (pconfig == nullptr) {
 		mlog(LV_ERR, "exmdb_provider: config_file_initd exmdb_provider.cfg: %s",
+		       strerror(errno));
+		return false;
+	}
+	if (gxcfg == nullptr)
+		gxcfg = config_file_initd("gromox.cfg", get_config_path(),
+		        exmdb_gromox_cfg_defaults);
+	if (gxcfg == nullptr) {
+		mlog(LV_ERR, "exmdb_provider: config_file_initd gromox.cfg: %s",
 		       strerror(errno));
 		return false;
 	}
@@ -94,7 +109,10 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
-	auto s = pconfig->get_value("exmdb_schema_upgrades");
+	auto s = gxcfg->get_value("exmdb_ics_log_file");
+	if (s != nullptr)
+		g_exmdb_ics_log_file = s;
+	s = pconfig->get_value("exmdb_schema_upgrades");
 	if (strcmp(s, "auto") == 0)
 		g_exmdb_schema_upgrades = EXMDB_UPGRADE_AUTO;
 	else if (strcmp(s, "yes") == 0)
@@ -108,7 +126,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:
-		exmdb_provider_reload(nullptr);
+		exmdb_provider_reload();
 		return TRUE;
 	case PLUGIN_EARLY_INIT: {
 		LINK_SVC_API(ppdata);
@@ -122,7 +140,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 				strerror(errno));
 			return FALSE;
 		}
-		if (!exmdb_provider_reload(pconfig))
+		if (!exmdb_provider_reload(nullptr, pconfig))
 			return false;
 
 		auto listen_ip = pconfig->get_value("listen_ip");

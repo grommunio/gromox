@@ -3,6 +3,7 @@
 #	include <cassert>
 #endif
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <memory>
@@ -772,7 +773,7 @@ class idset {
 	BOOL enum_replist(void *param, REPLIST_ENUM);
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
 	inline const std::vector<repl_node> &get_repl_list() const { return repl_list; }
-	void dump() const;
+	void dump(FILE * = nullptr) const;
 #ifdef COMPILE_DIAG
 	inline size_t nelem() const {
 		size_t x = 0;

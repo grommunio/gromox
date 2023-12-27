@@ -583,18 +583,20 @@ BOOL idset::enum_repl(uint16_t replid, void *p, REPLICA_ENUM repl_enum)
 	return TRUE;
 }
 
-void idset::dump() const
+void idset::dump(FILE *fh) const
 {
-	fprintf(stderr, "idset@%p={\n", this);
+	if (fh == nullptr)
+		fh = stderr;
+	fprintf(fh, "idset@%p={\n", this);
 	for (const auto &repl_node : repl_list) {
 		for (const auto &range : repl_node.range_list) {
 			if (repl_type == idset::type::guid_packed)
-				fprintf(stderr, "\t%s ", gromox::bin2hex(repl_node.replguid).c_str());
+				fprintf(fh, "\t%s ", gromox::bin2hex(repl_node.replguid).c_str());
 			else
-				fprintf(stderr, "\t#%u ", repl_node.replid);
+				fprintf(fh, "\t#%u ", repl_node.replid);
 			using LLU = unsigned long long;
-			fprintf(stderr, "%llxh--%llxh\n", LLU{range.lo}, LLU{range.hi});
+			fprintf(fh, "%llxh--%llxh\n", LLU{range.lo}, LLU{range.hi});
 		}
 	}
-	fprintf(stderr, "}\n");
+	fprintf(fh, "}\n");
 }

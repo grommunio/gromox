@@ -4,11 +4,13 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <vector>
 #include <gromox/database.h>
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -32,6 +34,9 @@ struct REPLID_ARRAY {
 };
 
 }
+
+static std::mutex ics_log_mtx;
+std::string g_exmdb_ics_log_file;
 
 static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 {
@@ -503,6 +508,41 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		punread_mids->count = 0;
 		punread_mids->pids = NULL;
 	} /* section 5 */
+
+	if (g_exmdb_ics_log_file.empty())
+		return TRUE;
+	std::lock_guard lk(ics_log_mtx);
+	std::unique_ptr<FILE, file_deleter> fh;
+	if (g_exmdb_ics_log_file != "-")
+		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
+	if (fh == nullptr)
+		return TRUE;
+	fprintf(fh.get(), "-------------\n");
+	fprintf(fh.get(), "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
+		dir, znul(username), static_cast<unsigned long long>(folder_id));
+	pgiven->dump(fh.get());
+	fprintf(fh.get(), " read=");
+	pread->dump(fh.get());
+	fprintf(fh.get(), " rst=");
+	if (prestriction != nullptr)
+		fprintf(fh.get(), "%s", prestriction->repr().c_str());
+	fprintf(fh.get(), " Out: Msg+FAI=%u+%u upd={",
+		*pnormal_count, *pfai_count);
+	for (unsigned long long mid : *pupdated_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\nchg={");
+	for (unsigned long long mid : *pchg_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\ngiven={");
+	for (unsigned long long mid : *pgiven_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\ndel={");
+	for (unsigned long long mid : *pdeleted_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\nnolonger={");
+	for (unsigned long long mid : *pnolonger_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }
 
@@ -757,5 +797,25 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		sizeof(uint64_t)*pdeleted_fids->count);
 	eid_array_free(enum_param.pdeleted_eids);
 	} /* section 5 */
+
+	if (g_exmdb_ics_log_file.empty())
+		return TRUE;
+	std::lock_guard lk(ics_log_mtx);
+	std::unique_ptr<FILE, file_deleter> fh;
+	if (g_exmdb_ics_log_file != "-")
+		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
+	if (fh == nullptr)
+		return TRUE;
+	fprintf(fh.get(), "-------------\n");
+	fprintf(fh.get(), "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
+		dir, znul(username), static_cast<unsigned long long>(folder_id));
+	pgiven->dump(fh.get());
+	fprintf(fh.get(), " Out: given={");
+	for (unsigned long long fid : *pgiven_fids)
+		fprintf(fh.get(), "%llxh,", fid);
+	fprintf(fh.get(), "}\ndel={");
+	for (unsigned long long fid : *pdeleted_fids)
+		fprintf(fh.get(), "%llxh,", fid);
+	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }

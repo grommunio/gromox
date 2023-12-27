@@ -168,3 +168,4 @@ extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 extern unsigned long long g_exmdb_search_pacing_time;
 extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 extern unsigned int g_exmdb_pvt_folder_softdel;
+extern std::string g_exmdb_ics_log_file;
