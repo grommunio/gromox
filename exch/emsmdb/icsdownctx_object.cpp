@@ -155,13 +155,11 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		return FALSE;
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		for (uint64_t i_mid : *pctx->pmessages) {
-			size_t j;
-			for (j = 0; j < updated_messages.count; ++j)
-				if (updated_messages.pids[j] == i_mid)
-					break;
-			if (!pctx->flow_list.record_node(j < updated_messages.count ?
-			    ics_flow_func::upd_msg_id : ics_flow_func::new_msg_id,
-			    i_mid))
+			auto type = std::find(updated_messages.begin(),
+			            updated_messages.end(), i_mid) !=
+			            updated_messages.end() ?
+			            ics_flow_func::upd_msg_id : ics_flow_func::new_msg_id;
+			if (!pctx->flow_list.record_node(type, i_mid))
 				return FALSE;	
 		}
 	}
