@@ -115,7 +115,7 @@ bool fxdown_flow_list::record_subfolder(const FOLDER_CONTENT *pfldctnt)
 	       record_tag(ENDFOLDER);
 }
 
-BOOL fastdownctx_object::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
+BOOL fastdownctx_object::make_messagecontent(const message_content *pmsgctnt)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_messagecontent(false, pmsgctnt))
@@ -126,7 +126,7 @@ BOOL fastdownctx_object::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
 	return TRUE;
 }
 
-BOOL fastdownctx_object::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
+BOOL fastdownctx_object::make_attachmentcontent(const attachment_content *pattachment)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_attachmentcontent(false, pattachment))
