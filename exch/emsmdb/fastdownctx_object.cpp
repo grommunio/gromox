@@ -306,9 +306,8 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 		}
 	}
 	len1 = *plen - len;
-	while (pctx->flow_list.size() > 0) {
-		auto [func_id, param] = pctx->flow_list.front();
-		pctx->flow_list.pop_front();
+	size_t funcs_processed = 0;
+	for (auto [func_id, param] : pctx->flow_list) {
 		switch (func_id) {
 		case fxdown_flow_func::immed32:
 			if (!pctx->pstream->write_uint32(param))
@@ -354,9 +353,11 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 		default:
 			return FALSE;
 		}
+		++funcs_processed;
 		if (pctx->pstream->total_length() > len1)
 			break;
 	}
+	pctx->flow_list.erase(pctx->flow_list.begin(), pctx->flow_list.begin() + funcs_processed);
 	if (!pctx->pstream->read_buffer(static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;
 	*plen = len + len1;

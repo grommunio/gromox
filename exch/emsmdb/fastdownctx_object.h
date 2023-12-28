@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <list>
 #include <memory>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 
 struct attachment_content;
@@ -19,7 +19,7 @@ enum class fxdown_flow_func : uint8_t {
 
 using fxdown_flow_node = std::pair<fxdown_flow_func, uint64_t>;
 
-struct fxdown_flow_list : public std::list<fxdown_flow_node> {
+struct fxdown_flow_list : public std::vector<fxdown_flow_node> {
 	bool record_node(fxdown_flow_func, uint64_t = 0);
 	bool record_node(fxdown_flow_func, const void *);
 	bool record_tag(uint32_t t) { return record_node(fxdown_flow_func::immed32, t); }

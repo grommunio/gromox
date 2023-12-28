@@ -1095,9 +1095,8 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 	}
 	partial_count = 0;
 	len1 = *plen - len;
-	while (pctx->flow_list.size() > 0) {
-		auto [func_id, obj_id] = pctx->flow_list.front();
-		pctx->flow_list.pop_front();
+	size_t funcs_processed = 0;
+	for (auto [func_id, obj_id] : pctx->flow_list) {
 		pctx->progress_steps = pctx->next_progress_steps;
 		switch (func_id) {
 		case ics_flow_func::immed32:
@@ -1133,9 +1132,11 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 		default:
 			return FALSE;
 		}
+		++funcs_processed;
 		if (pctx->pstream->total_length() > len1)
 			break;
 	}
+	pctx->flow_list.erase(pctx->flow_list.begin(), pctx->flow_list.begin() + funcs_processed);
 	if (!pctx->pstream->read_buffer(static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;	
 	*plen = len + len1;

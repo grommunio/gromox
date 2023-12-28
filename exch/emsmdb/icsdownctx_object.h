@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -24,7 +23,7 @@ enum class ics_flow_func : uint8_t {
 
 using ics_flow_node = std::pair<ics_flow_func, uint64_t>;
 
-struct ics_flow_list : public std::list<ics_flow_node> {
+struct ics_flow_list : public std::vector<ics_flow_node> {
 	bool record_node(ics_flow_func, uint64_t = 0);
 	bool record_node(ics_flow_func, const void *);
 	bool record_tag(uint32_t t) { return record_node(ics_flow_func::immed32, t); }
