@@ -15,18 +15,19 @@ struct logon_object;
 enum class ics_flow_func : uint8_t {
 	immed32,
 	progress,
-	upd_msg_ptr,
-	new_msg_ptr,
+	upd_msg_id,
+	new_msg_id,
 	deletions,
 	read_state_chg,
 	state,
 };
 
-using ics_flow_node = std::pair<ics_flow_func, const void *>;
+using ics_flow_node = std::pair<ics_flow_func, uint64_t>;
 
 struct ics_flow_list : public std::list<ics_flow_node> {
-	bool record_node(ics_flow_func, const void * = nullptr);
-	bool record_tag(uint32_t);
+	bool record_node(ics_flow_func, uint64_t = 0);
+	bool record_node(ics_flow_func, const void *);
+	bool record_tag(uint32_t t) { return record_node(ics_flow_func::immed32, t); }
 };
 
 struct icsdownctx_object final {

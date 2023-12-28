@@ -19,7 +19,7 @@
 
 using namespace gromox;
 
-bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param) try
+bool fxdown_flow_list::record_node(fxdown_flow_func func_id, uint64_t param) try
 {
 	emplace_back(func_id, param);
 	return true;
@@ -28,16 +28,16 @@ bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param) 
 	return false;
 }
 
-bool fxdown_flow_list::record_tag(uint32_t tag)
+bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param)
 {
-	static_assert(sizeof(void *) >= sizeof(tag));
-	return record_node(fxdown_flow_func::immed32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
+	static_assert(sizeof(void *) <= sizeof(uint64_t));
+	return record_node(func_id, reinterpret_cast<uintptr_t>(param));
 }
 
 bool fxdown_flow_list::record_messagelist(EID_ARRAY *pmsglst)
 {
 	for (size_t i = 0; i < pmsglst->count; ++i)
-		if (!record_node(fxdown_flow_func::msg_ptr, &pmsglst->pids[i]))
+		if (!record_node(fxdown_flow_func::msg_id, pmsglst->pids[i]))
 			return false;
 	return true;
 }
@@ -150,7 +150,7 @@ BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
 
 static bool is_message(const fxdown_flow_node &n)
 {
-	return n.first == fxdown_flow_func::msg_ptr;
+	return n.first == fxdown_flow_func::msg_id;
 }
 
 static bool fxs_tagcmp_fld(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
@@ -311,20 +311,20 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 		pctx->flow_list.pop_front();
 		switch (func_id) {
 		case fxdown_flow_func::immed32:
-			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(param)))
+			if (!pctx->pstream->write_uint32(param))
 				return FALSE;
 			break;
 		case fxdown_flow_func::proplist_ptr:
 			/* Property sorting done by make_foldercontent. */
-			if (!pctx->pstream->write_proplist(static_cast<const TPROPVAL_ARRAY *>(param)))
+			if (!pctx->pstream->write_proplist(static_cast<const TPROPVAL_ARRAY *>(reinterpret_cast<const void *>(static_cast<uintptr_t>(param)))))
 				return FALSE;
 			break;
-		case fxdown_flow_func::msg_ptr: {
+		case fxdown_flow_func::msg_id: {
 			MESSAGE_CONTENT *pmsgctnt = nullptr;
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			auto dir = pctx->pstream->plogon->get_dir();
 			if (!exmdb_client::read_message(dir, pctx->pstream->plogon->readstate_user(),
-			    pinfo->cpid, *static_cast<const uint64_t *>(param), &pmsgctnt))
+			    pinfo->cpid, param, &pmsgctnt))
 				return FALSE;
 			if (pmsgctnt == nullptr)
 				continue;

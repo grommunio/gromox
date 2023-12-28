@@ -32,7 +32,7 @@ using LLU = unsigned long long;
 
 #define MAX_PARTIAL_ON_ROP		100	/* for limit of memory accumulation */
 
-bool ics_flow_list::record_node(ics_flow_func func_id, const void *param) try
+bool ics_flow_list::record_node(ics_flow_func func_id, uint64_t param) try
 {
 	emplace_back(func_id, param);
 	return true;
@@ -41,10 +41,10 @@ bool ics_flow_list::record_node(ics_flow_func func_id, const void *param) try
 	return false;
 }
 
-bool ics_flow_list::record_tag(uint32_t tag)
+bool ics_flow_list::record_node(ics_flow_func func_id, const void *param)
 {
-	static_assert(sizeof(void *) >= sizeof(tag));
-	return record_node(ics_flow_func::immed32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
+	static_assert(sizeof(void *) <= sizeof(uint64_t));
+	return record_node(func_id, reinterpret_cast<uintptr_t>(param));
 }
 
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
@@ -160,7 +160,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 				if (updated_messages.pids[j] == pctx->pmessages->pids[i])
 					break;
 			if (!pctx->flow_list.record_node(j < updated_messages.count ?
-			    ics_flow_func::upd_msg_ptr : ics_flow_func::new_msg_ptr, &pctx->pmessages->pids[i]))
+			    ics_flow_func::upd_msg_id : ics_flow_func::new_msg_id,
+			    pctx->pmessages->pids[i]))
 				return FALSE;	
 		}
 	}
@@ -1095,32 +1096,28 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 	partial_count = 0;
 	len1 = *plen - len;
 	while (pctx->flow_list.size() > 0) {
-		auto [func_id, pparam] = pctx->flow_list.front();
+		auto [func_id, obj_id] = pctx->flow_list.front();
 		pctx->flow_list.pop_front();
 		pctx->progress_steps = pctx->next_progress_steps;
 		switch (func_id) {
 		case ics_flow_func::immed32:
-			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(pparam)))
+			if (!pctx->pstream->write_uint32(obj_id))
 				return FALSE;
 			break;
 		case ics_flow_func::progress:
 			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal))
 				return FALSE;
 			break;
-		case ics_flow_func::upd_msg_ptr: {
-			auto message_id = *static_cast<const uint64_t *>(pparam);
+		case ics_flow_func::upd_msg_id:
 			if (!icsdownctx_object_write_message_change(pctx,
-			    message_id, TRUE, &partial_count))
+			    obj_id, TRUE, &partial_count))
 				return FALSE;
 			break;
-		}
-		case ics_flow_func::new_msg_ptr: {
-			auto message_id = *static_cast<const uint64_t *>(pparam);
+		case ics_flow_func::new_msg_id:
 			if (!icsdownctx_object_write_message_change(pctx,
-			    message_id, FALSE, &partial_count))
+			    obj_id, FALSE, &partial_count))
 				return FALSE;
 			break;
-		}
 		case ics_flow_func::deletions:
 			if (!icsdownctx_object_write_deletions(pctx))
 				return FALSE;

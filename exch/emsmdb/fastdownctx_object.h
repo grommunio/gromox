@@ -14,14 +14,15 @@ struct message_content;
 using MESSAGE_CONTENT = message_content;
 
 enum class fxdown_flow_func : uint8_t {
-	immed32, proplist_ptr, msg_ptr,
+	immed32, proplist_ptr, msg_id,
 };
 
-using fxdown_flow_node = std::pair<fxdown_flow_func, const void *>;
+using fxdown_flow_node = std::pair<fxdown_flow_func, uint64_t>;
 
 struct fxdown_flow_list : public std::list<fxdown_flow_node> {
-	bool record_node(fxdown_flow_func, const void * = nullptr);
-	bool record_tag(uint32_t);
+	bool record_node(fxdown_flow_func, uint64_t = 0);
+	bool record_node(fxdown_flow_func, const void *);
+	bool record_tag(uint32_t t) { return record_node(fxdown_flow_func::immed32, t); }
 	bool record_messagelist(EID_ARRAY *);
 	bool record_foldermessages(const FOLDER_MESSAGES *);
 	bool record_foldermessagesnodelprops(const FOLDER_MESSAGES *);
