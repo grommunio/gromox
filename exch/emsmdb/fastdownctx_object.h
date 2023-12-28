@@ -12,10 +12,15 @@ struct ics_state;
 struct logon_object;
 struct message_content;
 using MESSAGE_CONTENT = message_content;
-using flow_node = std::pair<uint8_t, const void *>;
 
-struct fxdown_flow_list : public std::list<flow_node> {
-	bool record_node(uint8_t, const void * = nullptr);
+enum class fxdown_flow_func : uint8_t {
+	immed32, proplist_ptr, msg_ptr,
+};
+
+using fxdown_flow_node = std::pair<fxdown_flow_func, const void *>;
+
+struct fxdown_flow_list : public std::list<fxdown_flow_node> {
+	bool record_node(fxdown_flow_func, const void * = nullptr);
 	bool record_tag(uint32_t);
 	bool record_messagelist(EID_ARRAY *);
 	bool record_foldermessages(const FOLDER_MESSAGES *);

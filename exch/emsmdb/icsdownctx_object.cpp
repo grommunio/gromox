@@ -30,19 +30,9 @@
 using namespace gromox;
 using LLU = unsigned long long;
 
-enum {
-	FUNC_ID_UINT32,
-	FUNC_ID_PROGRESSTOTAL,
-	FUNC_ID_UPDATED_MESSAGE,
-	FUNC_ID_NEW_MESSAGE,
-	FUNC_ID_DELETIONS,
-	FUNC_ID_READSTATECHANGES,
-	FUNC_ID_STATE
-};
-
 #define MAX_PARTIAL_ON_ROP		100	/* for limit of memory accumulation */
 
-bool ics_flow_list::record_node(uint8_t func_id, const void *param) try
+bool ics_flow_list::record_node(ics_flow_func func_id, const void *param) try
 {
 	emplace_back(func_id, param);
 	return true;
@@ -54,7 +44,7 @@ bool ics_flow_list::record_node(uint8_t func_id, const void *param) try
 bool ics_flow_list::record_tag(uint32_t tag)
 {
 	static_assert(sizeof(void *) >= sizeof(tag));
-	return record_node(FUNC_ID_UINT32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
+	return record_node(ics_flow_func::immed32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
 }
 
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
@@ -161,7 +151,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
-	    !pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
+	    !pctx->flow_list.record_node(ics_flow_func::progress))
 		return FALSE;
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		for (size_t i = 0; i < pctx->pmessages->count; ++i) {
@@ -170,17 +160,17 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 				if (updated_messages.pids[j] == pctx->pmessages->pids[i])
 					break;
 			if (!pctx->flow_list.record_node(j < updated_messages.count ?
-			    FUNC_ID_UPDATED_MESSAGE : FUNC_ID_NEW_MESSAGE, &pctx->pmessages->pids[i]))
+			    ics_flow_func::upd_msg_ptr : ics_flow_func::new_msg_ptr, &pctx->pmessages->pids[i]))
 				return FALSE;	
 		}
 	}
 	if (!(pctx->sync_flags & SYNC_NO_DELETIONS) &&
-	    !pctx->flow_list.record_node(FUNC_ID_DELETIONS))
+	    !pctx->flow_list.record_node(ics_flow_func::deletions))
 		return FALSE;
 	if (pctx->sync_flags & SYNC_READ_STATE &&
-	    !pctx->flow_list.record_node(FUNC_ID_READSTATECHANGES))
+	    !pctx->flow_list.record_node(ics_flow_func::read_state_chg))
 		return FALSE;
-	if (!pctx->flow_list.record_node(FUNC_ID_STATE) ||
+	if (!pctx->flow_list.record_node(ics_flow_func::state) ||
 	    !pctx->flow_list.record_tag(INCRSYNCEND))
 		return FALSE;	
 	pctx->progress_steps = 0;
@@ -1109,37 +1099,37 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 		pctx->flow_list.pop_front();
 		pctx->progress_steps = pctx->next_progress_steps;
 		switch (func_id) {
-		case FUNC_ID_UINT32:
+		case ics_flow_func::immed32:
 			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(pparam)))
 				return FALSE;
 			break;
-		case FUNC_ID_PROGRESSTOTAL:
+		case ics_flow_func::progress:
 			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal))
 				return FALSE;
 			break;
-		case FUNC_ID_UPDATED_MESSAGE: {
+		case ics_flow_func::upd_msg_ptr: {
 			auto message_id = *static_cast<const uint64_t *>(pparam);
 			if (!icsdownctx_object_write_message_change(pctx,
 			    message_id, TRUE, &partial_count))
 				return FALSE;
 			break;
 		}
-		case FUNC_ID_NEW_MESSAGE: {
+		case ics_flow_func::new_msg_ptr: {
 			auto message_id = *static_cast<const uint64_t *>(pparam);
 			if (!icsdownctx_object_write_message_change(pctx,
 			    message_id, FALSE, &partial_count))
 				return FALSE;
 			break;
 		}
-		case FUNC_ID_DELETIONS:
+		case ics_flow_func::deletions:
 			if (!icsdownctx_object_write_deletions(pctx))
 				return FALSE;
 			break;
-		case FUNC_ID_READSTATECHANGES:
+		case ics_flow_func::read_state_chg:
 			if (!icsdownctx_object_write_readstate_changes(pctx))
 				return FALSE;
 			break;
-		case FUNC_ID_STATE:
+		case ics_flow_func::state:
 			if (!icsdownctx_object_write_state(pctx))
 				return FALSE;
 			break;

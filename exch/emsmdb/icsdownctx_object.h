@@ -11,10 +11,21 @@ struct folder_object;
 struct fxstream_producer;
 struct ics_state;
 struct logon_object;
-using flow_node = std::pair<uint8_t, const void *>;
 
-struct ics_flow_list : public std::list<flow_node> {
-	bool record_node(uint8_t, const void * = nullptr);
+enum class ics_flow_func : uint8_t {
+	immed32,
+	progress,
+	upd_msg_ptr,
+	new_msg_ptr,
+	deletions,
+	read_state_chg,
+	state,
+};
+
+using ics_flow_node = std::pair<ics_flow_func, const void *>;
+
+struct ics_flow_list : public std::list<ics_flow_node> {
+	bool record_node(ics_flow_func, const void * = nullptr);
 	bool record_tag(uint32_t);
 };
 
