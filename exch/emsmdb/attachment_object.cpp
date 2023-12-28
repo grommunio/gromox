@@ -357,11 +357,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
-		unsigned int j;
-		for (j = 0; j < pproblems->count; ++j)
-			if (i == pproblems->pproblem[j].index)
-				break;
-		if (j >= pproblems->count) {
+		if (!pproblems->have_index(i)) {
 			pattachment->b_touched = TRUE;
 			break;
 		}
@@ -409,11 +405,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	tmp_problems.transform(poriginal_indices);
 	*pproblems += std::move(tmp_problems);
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		unsigned int j;
-		for (j = 0; j < pproblems->count; ++j)
-			if (i == pproblems->pproblem[j].index)
-				break;
-		if (j >= pproblems->count) {
+		if (!pproblems->have_index(i)) {
 			pattachment->b_touched = TRUE;
 			break;
 		}

@@ -243,6 +243,11 @@ struct PROBLEM_ARRAY {
 	uint16_t count;
 	PROPERTY_PROBLEM *pproblem;
 
+	inline PROPERTY_PROBLEM *begin() { return pproblem; }
+	inline PROPERTY_PROBLEM *end() { return pproblem + count; }
+	inline const PROPERTY_PROBLEM *begin() const { return pproblem; }
+	inline const PROPERTY_PROBLEM *end() const { return pproblem + count; }
+	bool have_index(unsigned int) const;
 	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
 	void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
 		pproblem[count++] = PROPERTY_PROBLEM{static_cast<uint16_t>(i), tag, err};

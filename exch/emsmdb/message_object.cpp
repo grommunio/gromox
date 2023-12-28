@@ -1133,11 +1133,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		return TRUE;
 	}
 	for (unsigned int i = 0; i < ppropvals->count; ++i) {
-		unsigned int j;
-		for (j=0; j<pproblems->count; ++j)
-			if (i == pproblems->pproblem[j].index)
-				break;
-		if (j < pproblems->count)
+		if (pproblems->have_index(i))
 			continue;
 		pmessage->b_touched = TRUE;
 		auto u_tag = message_object_rectify_proptag(ppropvals->ppropval[i].proptag);
@@ -1201,11 +1197,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	}
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
-		unsigned int j;
-		for (j = 0; j < pproblems->count; ++j)
-			if (i == pproblems->pproblem[j].index)
-				break;
-		if (j < pproblems->count)
+		if (pproblems->have_index(i))
 			continue;
 		pmessage->b_touched = TRUE;
 		auto u_tag = message_object_rectify_proptag(pproptags->pproptag[i]);
