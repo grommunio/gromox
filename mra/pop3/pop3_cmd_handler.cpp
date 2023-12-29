@@ -17,6 +17,7 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
+#include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>

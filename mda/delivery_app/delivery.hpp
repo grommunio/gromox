@@ -12,7 +12,7 @@ enum {
 	MESSAGE_DEQUEUE_HOLDING,
 };
 
-struct config_file;
+class config_file;
 
 /* message struct for dequeuing from mail queue */
 struct MESSAGE {

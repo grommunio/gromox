@@ -9,6 +9,7 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
+class config_file;
 struct FLUSH_ENTITY;
 struct smtp_context;
 using CANCEL_FUNCTION = void (*)(FLUSH_ENTITY *);
@@ -25,8 +26,6 @@ extern void flusher_set_flush_ID(int);
 extern BOOL FLH_LibMain(int);
 
 extern uint16_t g_listener_ssl_port;
-
-struct config_file;
 
 extern int resource_run();
 extern void resource_stop();

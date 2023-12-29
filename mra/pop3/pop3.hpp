@@ -32,7 +32,7 @@ enum {
 	POP3_RETRIEVE_ERROR
 };
 
-struct config_file;
+class config_file;
 
 struct pop3_context final : public schedule_context {
 	pop3_context() = default;
