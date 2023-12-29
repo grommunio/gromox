@@ -55,10 +55,11 @@ static std::string currency_repr(int64_t v)
 static std::string systime_repr(mapitime_t v)
 {
 	auto ut = rop_util_nttime_to_unix(v);
-	char buf[80]{};
-	auto tm = localtime(&ut);
-	if (tm != nullptr)
-		strftime(buf, std::size(buf), "%FT%T", tm);
+	char buf[26]{};
+	struct tm tm{};
+	auto tp = localtime_r(&ut, &tm);
+	if (tp != nullptr)
+		strftime(buf, std::size(buf), "%FT%T%z", tp);
 	return fmt::format("{} (raw=0x{:x})", buf, v);
 }
 

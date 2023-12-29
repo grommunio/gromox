@@ -19,6 +19,14 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+namespace {
+struct tzsel_init {
+	tzsel_init();
+	ical_component lineisl;
+};
+}
+
+
 static constexpr char dt_head[] =
 "BEGIN:VCALENDAR\n"
 "PRODID:-//Google Inc//Google Calendar 70.9054//EN\n"
@@ -62,6 +70,17 @@ static constexpr const char *dt_values[] = {
 	";VALUE=DATE:20240101",
 	";VALUE=DATE;TZID=Line Islands Standard Time:20240101",
 };
+
+static tzsel_init tzsel;
+
+tzsel_init::tzsel_init() : lineisl("VTIMEZONE")
+{
+	lineisl.append_line("TZID", "Line Islands Standard Time");
+	auto &c = lineisl.append_comp("STANDARD");
+	c.append_line("DTSTART", "16010101T000000");
+	c.append_line("TZOFFSETFROM", "+1400");
+	c.append_line("TZOFFSETTO", "+1400");
+}
 
 static int t_mime()
 {
@@ -165,6 +184,15 @@ static int t_ical_api()
 	 * RFC 5545 §3.3.6 does not allow combining weeks and days
 	//assert(!ical_parse_duration("PT1W2D", &sec));
 	 */
+
+	assert(ical_parse_datetime("20231229T090000", &it));
+	time_t uxtime = 0;
+	assert(ical_itime_to_utc(&tzsel.lineisl, it, &uxtime));
+	assert(uxtime == 1703790000U);
+	assert(rop_util_unix_to_nttime(uxtime) == 0x1da39c00e767800ULL);
+	assert(ical_datetime_to_utc(&tzsel.lineisl, "20231229T090000", &uxtime));
+	assert(uxtime == 1703790000U);
+	assert(rop_util_unix_to_nttime(uxtime) == 0x1da39c00e767800ULL);
 	return EXIT_SUCCESS;
 }
 
