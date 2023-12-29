@@ -146,7 +146,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			       strerror(errno));
 			return FALSE;
 		}
-		auto gxcfg = config_file_initd("gromox.cfg", get_config_path(), nullptr);
+		auto gxcfg = config_file_initd("gromox.cfg", get_config_path(), emsmdb_gxcfg_dflt);
 		if (gxcfg == nullptr) {
 			mlog(LV_ERR, "emsmdb: config_file_initd gromox.cfg: %s",
 			       strerror(errno));
