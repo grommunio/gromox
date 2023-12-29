@@ -291,10 +291,10 @@ static int do_hierarchy(eid_t fid)
 		return EXIT_FAILURE;
 	}
 	static constexpr uint32_t ftags[] = {PidTagFolderId};
-	static constexpr PROPTAG_ARRAY ftaghdr[] = {std::size(ftags), deconst(ftags)};
+	static constexpr PROPTAG_ARRAY ftaghdr = {std::size(ftags), deconst(ftags)};
 	tarray_set rowset{};
 	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    ftaghdr, 0, row_count, &rowset)) {
+	    &ftaghdr, 0, row_count, &rowset)) {
 		fprintf(stderr, "fid %llxh query_table failed\n", LLU{fid});
 		exmdb_client::unload_table(g_storedir, table_id);
 		return EXIT_FAILURE;
@@ -538,10 +538,10 @@ static errno_t clear_rwz()
 	}
 
 	static constexpr uint32_t qtags1[] = {PidTagMid};
-	static constexpr PROPTAG_ARRAY qtags[] = {std::size(qtags1), deconst(qtags1)};
+	static constexpr PROPTAG_ARRAY qtags = {std::size(qtags1), deconst(qtags1)};
 	TARRAY_SET rowset{};
 	if (!exmdb_client::query_table(g_storedir, nullptr, CP_ACP, table_id,
-	    qtags, 0, rowcount, &rowset))
+	    &qtags, 0, rowcount, &rowset))
 		return EIO;
 	std::vector<uint64_t> ids;
 	for (unsigned int i = 0; i < rowset.count; ++i) {

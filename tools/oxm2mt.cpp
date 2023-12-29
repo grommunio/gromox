@@ -209,7 +209,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 		return -EIO;
 	}
 	if (unitsize != 0) {
-		GEN_ARRAY mv{pte.v_ui4 / unitsize, blob->pv};
+		GEN_ARRAY mv{pte.v_ui4 / unitsize, {blob->pv}};
 		return proplist.set(pte.proptag, &mv);
 	}
 	if (pte.v_ui4 != blob->cb)
@@ -225,7 +225,7 @@ static int ptemv_to_prop(const struct pte &pte, const char *cset,
 		}
 		bvec[i] = *bdata[i];
 	}
-	GEN_ARRAY mv{static_cast<uint32_t>(bvec.size()), bvec.data()};
+	GEN_ARRAY mv{static_cast<uint32_t>(bvec.size()), {bvec.data()}};
 	return proplist.set(pte.proptag, &mv);
 }
 
