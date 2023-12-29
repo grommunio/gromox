@@ -66,9 +66,10 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	t.tm_mon -= 1;
 	t.tm_hour -= tz_hour;
 	t.tm_min -= tz_hour < 0? -tz_min : tz_min;
-	time_t timestamp = mktime(&t)-timezone;
+	auto timestamp = mktime(&t);
 	if(timestamp == time_t(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
+	timestamp -= timezone;
 	value = gromox::time_point::clock::from_time_t(timestamp);
 	value += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
 	return tinyxml2::XML_SUCCESS;

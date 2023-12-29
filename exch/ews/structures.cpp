@@ -1110,9 +1110,10 @@ sTimePoint::sTimePoint(const char* dtstr)
 		throw EWSError::SchemaValidation(E3151);
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
-	time_t timestamp = mktime(&t)-timezone;
+	auto timestamp = mktime(&t);
 	if(timestamp == time_t(-1))
 		throw EWSError::ValueOutOfRange(E3152);
+	timestamp -= timezone;
 	time = gromox::time_point::clock::from_time_t(timestamp);
 	time += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
 	offset = std::chrono::minutes(60*tz_hour+(tz_hour < 0? -tz_min : tz_min));
