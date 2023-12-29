@@ -368,6 +368,10 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	}
 	else try {
 		handler->second(request, responseContainer, context);
+	} catch (const Exceptions::UnknownRequestError &err) {
+		if ((request_logging || response_logging) && enableLog)
+			mlog(LV_WARN, "[ews#%d]%s Error: %s", ctx_id, timestamp().c_str(), err.what());
+		return fault(ctx_id, http_status::server_error, SOAP::Envelope::fault("SOAP:Server", err.what()));
 	} catch (const Exceptions::InputError &err) {
 		if(response_logging && enableLog)
 			mlog(LV_WARN, "[ews#%d]%s Done, code 200, input error: '%s'", ctx_id, timestamp().c_str(), err.what());
