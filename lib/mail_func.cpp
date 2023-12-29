@@ -1015,7 +1015,7 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		return FALSE;
 	}
 	
-	tmp_time = mktime(&tmp_tm);
+	tmp_time = timegm(&tmp_tm);
 	tmp_time += factor*(60*60*hour + 60*minute);
 	*ptime = tmp_time;
 	return TRUE;

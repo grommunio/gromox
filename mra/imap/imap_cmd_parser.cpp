@@ -1071,7 +1071,7 @@ static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime
 	int minute = strtol(tmp_buff, nullptr, 0);
 	if (minute < 0 || minute > 59)
 		return FALSE;
-	tmp_time = mktime(&tmp_tm);
+	tmp_time = timegm(&tmp_tm);
 	tmp_time += factor*(60*60*hour + 60*minute);
 	*ptime = tmp_time;
 	return TRUE;
