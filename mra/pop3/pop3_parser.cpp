@@ -15,6 +15,7 @@
 #include <libHX/io.h>
 #include <libHX/string.h>
 #include <openssl/err.h>
+#include <gromox/config_file.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/mail_func.hpp>

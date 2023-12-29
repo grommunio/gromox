@@ -21,8 +21,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
-#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/http.hpp>
 #include <gromox/list_file.hpp>

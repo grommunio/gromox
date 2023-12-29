@@ -7,7 +7,6 @@
 #include <gromox/authmgr.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/common_types.hpp>
-#include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/msg_unit.hpp>

@@ -18,7 +18,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/defs.h>
+#include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>

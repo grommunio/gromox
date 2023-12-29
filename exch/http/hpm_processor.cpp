@@ -14,7 +14,7 @@
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <gromox/defs.h>
+#include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/svc_loader.hpp>

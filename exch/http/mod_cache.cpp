@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
-#include <gromox/defs.h>
+#include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/http.hpp>
 #include <gromox/list_file.hpp>
