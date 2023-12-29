@@ -1316,12 +1316,12 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	tmp_tm.tm_wday = 0;
 	tmp_tm.tm_yday = 0;
 	tmp_tm.tm_isdst = 0;
-	*ptime = mktime(&tmp_tm);
+	*ptime = timegm(&tmp_tm);
 	if (ptz_component == nullptr)
 		return true;
 	/*
 	 * @itime is anchored to @ptz_component. Conversion to tmp_tm did not
-	 * change that. Because mktime() pretends @tmp_tm was UTC, @*ptime
+	 * change that. Because timegm() assumes @tmp_tm was UTC, @*ptime
 	 * now has bias which needs to be corrected.
 	 */
 	//assert(itime.type != ICT_UTC);
@@ -1353,7 +1353,7 @@ bool ical_datetime_to_utc(const ical_component *ptz_component,
 	tmp_tm.tm_wday = 0;
 	tmp_tm.tm_yday = 0;
 	tmp_tm.tm_isdst = 0;
-	*ptime = mktime(&tmp_tm);
+	*ptime = timegm(&tmp_tm);
 	return true;
 }
 
