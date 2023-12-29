@@ -91,7 +91,7 @@ static int t_emailaddr()
 
 static int t_id1()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	/* right-side half overlap */
 	s.append_range(1, 1, 17);
 	s.append_range(1, 14, 21);
@@ -103,7 +103,7 @@ static int t_id1()
 
 static int t_id2()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	/* left-side half overlap */
 	s.append_range(1, 14, 21);
 	s.append_range(1, 1, 17);
@@ -115,7 +115,7 @@ static int t_id2()
 
 static int t_id3()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	/* right-side adjacency */
 	s.append_range(1, 1, 19);
 	s.append_range(1, 20, 29);
@@ -127,7 +127,7 @@ static int t_id3()
 
 static int t_id4()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	/* left-side adjacency */
 	s.append_range(1, 20, 29);
 	s.append_range(1, 1, 19);
@@ -139,7 +139,7 @@ static int t_id4()
 
 static int t_id5()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	/* inner overlap */
 	s.append_range(1, 1, 40);
 	s.append_range(1, 15, 19);
@@ -151,7 +151,7 @@ static int t_id5()
 
 static int t_id6()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	/* outer overlap */
 	s.append_range(1, 15, 19);
 	s.append_range(1, 1, 40);
@@ -163,7 +163,7 @@ static int t_id6()
 
 static int t_id7()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	s.append_range(1, 11, 19);
 	s.append_range(1, 71, 79);
 	auto &l = s.get_repl_list().front().range_list;
@@ -188,7 +188,7 @@ static int t_id7()
 
 static int t_id8()
 {
-	idset s(true, REPL_TYPE_ID);
+	idset s(idset::type::id_loose);
 	unsigned int cnt = 0;
 	do {
 		unsigned int lo = cnt += 0x10, hi = cnt += 0x10;

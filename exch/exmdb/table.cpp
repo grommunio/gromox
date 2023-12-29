@@ -1109,7 +1109,7 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
 			&row_count);
-	db_engine_notify_content_table_reload(pdb, table_id);
+	pdb->notify_cttbl_reload(table_id);
 	return b_result;
 }
 

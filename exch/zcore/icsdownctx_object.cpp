@@ -163,8 +163,8 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY &state,
 	pctx->pchg_eids = eid_array_init();
 	if (pctx->pchg_eids == nullptr)
 		return FALSE;
-	for (size_t i = 0; i < fldchgs.count; ++i) {
-		auto pvalue = fldchgs.pfldchgs[i].get<uint64_t>(PidTagFolderId);
+	for (const auto &chg : fldchgs) {
+		auto pvalue = chg.get<const uint64_t>(PidTagFolderId);
 		if (pvalue == nullptr)
 			return FALSE;
 		if (!eid_array_append(pctx->pchg_eids, *pvalue))
@@ -183,8 +183,8 @@ BINARY *icsdownctx_object::get_state()
 		&& pctx->eid_pos >= pctx->pchg_eids->count && NULL ==
 		pctx->pdeleted_eids && NULL == pctx->pnolonger_messages) {
 		pctx->pstate->pgiven->clear();
-		for (size_t i = 0; i < pctx->pgiven_eids->count; ++i)
-			if (!pctx->pstate->pgiven->append(pctx->pgiven_eids->pids[i]))
+		for (auto eid : *pctx->pgiven_eids)
+			if (!pctx->pstate->pgiven->append(eid))
 				return nullptr;
 		pctx->pstate->pseen->clear();
 		if (pctx->last_changenum != 0 &&
@@ -440,15 +440,15 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 			return FALSE;
 		}
 		pstates->count = 0;
-		for (size_t i = 0; i < pctx->pread_messages->count; ++i) {
-			auto pbin = cu_mid_to_sk(pctx->pstore, pctx->pread_messages->pids[i]);
+		for (auto mid : *pctx->pread_messages) {
+			auto pbin = cu_mid_to_sk(pctx->pstore, mid);
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;
 			pstates->pstate[pstates->count++].message_flags = MSGFLAG_READ;
 		}
-		for (size_t i = 0; i < pctx->punread_messages->count; ++i) {
-			auto pbin = cu_mid_to_sk(pctx->pstore, pctx->punread_messages->pids[i]);
+		for (auto mid : *pctx->punread_messages) {
+			auto pbin = cu_mid_to_sk(pctx->pstore, mid);
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;

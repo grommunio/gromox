@@ -384,6 +384,14 @@ size_t PROBLEM_ARRAY::indexof(uint32_t tag) const
 	return npos;
 }
 
+bool PROBLEM_ARRAY::have_index(unsigned int i) const
+{
+	for (size_t j = 0; j < count; ++j)
+		if (pproblem[i].index == i)
+			return true;
+	return false;
+}
+
 PROBLEM_ARRAY &PROBLEM_ARRAY::operator+=(PROBLEM_ARRAY &&other)
 {
 	std::move(other.pproblem, other.pproblem + other.count, pproblem + count);

@@ -19,13 +19,7 @@
 
 using namespace gromox;
 
-enum {
-	FUNC_ID_UINT32,
-	FUNC_ID_PROPLIST,
-	FUNC_ID_MESSAGE
-};
-
-bool fxdown_flow_list::record_node(uint8_t func_id, const void *param) try
+bool fxdown_flow_list::record_node(fxdown_flow_func func_id, uint64_t param) try
 {
 	emplace_back(func_id, param);
 	return true;
@@ -34,16 +28,16 @@ bool fxdown_flow_list::record_node(uint8_t func_id, const void *param) try
 	return false;
 }
 
-bool fxdown_flow_list::record_tag(uint32_t tag)
+bool fxdown_flow_list::record_node(fxdown_flow_func func_id, const void *param)
 {
-	static_assert(sizeof(void *) >= sizeof(tag));
-	return record_node(FUNC_ID_UINT32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
+	static_assert(sizeof(void *) <= sizeof(uint64_t));
+	return record_node(func_id, reinterpret_cast<uintptr_t>(param));
 }
 
 bool fxdown_flow_list::record_messagelist(EID_ARRAY *pmsglst)
 {
-	for (size_t i = 0; i < pmsglst->count; ++i)
-		if (!record_node(FUNC_ID_MESSAGE, &pmsglst->pids[i]))
+	for (uint64_t mid : *pmsglst)
+		if (!record_node(fxdown_flow_func::msg_id, mid))
 			return false;
 	return true;
 }
@@ -79,8 +73,8 @@ bool fxdown_flow_list::record_foldermessagesnodelprops(const FOLDER_MESSAGES *pf
 bool fxdown_flow_list::record_foldercontent(const FOLDER_CONTENT *pfldctnt)
 {
 	if (pfldctnt->proplist.has(MetaTagNewFXFolder))
-		return record_node(FUNC_ID_PROPLIST, &pfldctnt->proplist);
-	if (!record_node(FUNC_ID_PROPLIST, &pfldctnt->proplist) ||
+		return record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist);
+	if (!record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist) ||
 	    !record_foldermessages(&pfldctnt->fldmsgs) ||
 	    !record_tag(MetaTagFXDelProp) ||
 	    !record_tag(PR_CONTAINER_HIERARCHY))
@@ -93,7 +87,7 @@ bool fxdown_flow_list::record_foldercontent(const FOLDER_CONTENT *pfldctnt)
 
 bool fxdown_flow_list::record_foldercontentnodelprops(const FOLDER_CONTENT *pfldctnt)
 {
-	if (!record_node(FUNC_ID_PROPLIST, &pfldctnt->proplist) ||
+	if (!record_node(fxdown_flow_func::proplist_ptr, &pfldctnt->proplist) ||
 	    !record_foldermessagesnodelprops(&pfldctnt->fldmsgs))
 		return false;
 	for (const auto &f : pfldctnt->psubflds)
@@ -115,7 +109,7 @@ bool fxdown_flow_list::record_subfolder(const FOLDER_CONTENT *pfldctnt)
 	       record_tag(ENDFOLDER);
 }
 
-BOOL fastdownctx_object::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
+BOOL fastdownctx_object::make_messagecontent(const message_content *pmsgctnt)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_messagecontent(false, pmsgctnt))
@@ -126,7 +120,7 @@ BOOL fastdownctx_object::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
 	return TRUE;
 }
 
-BOOL fastdownctx_object::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
+BOOL fastdownctx_object::make_attachmentcontent(const attachment_content *pattachment)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_attachmentcontent(false, pattachment))
@@ -154,7 +148,10 @@ BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
 	return TRUE;
 }
 
-static bool is_message(const flow_node &n) { return n.first == FUNC_ID_MESSAGE; }
+static bool is_message(const fxdown_flow_node &n)
+{
+	return n.first == fxdown_flow_func::msg_id;
+}
 
 static bool fxs_tagcmp_fld(const TAGGED_PROPVAL &a, const TAGGED_PROPVAL &b)
 {
@@ -234,7 +231,7 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 	auto pctx = this;
 	
 	fxs_propsort(*fc);
-	if (!flow_list.record_node(FUNC_ID_PROPLIST, &fc->proplist) ||
+	if (!flow_list.record_node(fxdown_flow_func::proplist_ptr, &fc->proplist) ||
 	    !flow_list.record_foldermessages(&fc->fldmsgs))
 		return FALSE;	
 	if (b_subfolders) {
@@ -309,25 +306,24 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 		}
 	}
 	len1 = *plen - len;
-	while (pctx->flow_list.size() > 0) {
-		auto [func_id, param] = pctx->flow_list.front();
-		pctx->flow_list.pop_front();
+	size_t funcs_processed = 0;
+	for (auto [func_id, param] : pctx->flow_list) {
 		switch (func_id) {
-		case FUNC_ID_UINT32:
-			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(param)))
+		case fxdown_flow_func::immed32:
+			if (!pctx->pstream->write_uint32(param))
 				return FALSE;
 			break;
-		case FUNC_ID_PROPLIST:
+		case fxdown_flow_func::proplist_ptr:
 			/* Property sorting done by make_foldercontent. */
-			if (!pctx->pstream->write_proplist(static_cast<const TPROPVAL_ARRAY *>(param)))
+			if (!pctx->pstream->write_proplist(static_cast<const TPROPVAL_ARRAY *>(reinterpret_cast<const void *>(static_cast<uintptr_t>(param)))))
 				return FALSE;
 			break;
-		case FUNC_ID_MESSAGE: {
+		case fxdown_flow_func::msg_id: {
 			MESSAGE_CONTENT *pmsgctnt = nullptr;
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			auto dir = pctx->pstream->plogon->get_dir();
 			if (!exmdb_client::read_message(dir, pctx->pstream->plogon->readstate_user(),
-			    pinfo->cpid, *static_cast<const uint64_t *>(param), &pmsgctnt))
+			    pinfo->cpid, param, &pmsgctnt))
 				return FALSE;
 			if (pmsgctnt == nullptr)
 				continue;
@@ -357,9 +353,11 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 		default:
 			return FALSE;
 		}
+		++funcs_processed;
 		if (pctx->pstream->total_length() > len1)
 			break;
 	}
+	pctx->flow_list.erase(pctx->flow_list.begin(), pctx->flow_list.begin() + funcs_processed);
 	if (!pctx->pstream->read_buffer(static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;
 	*plen = len + len1;

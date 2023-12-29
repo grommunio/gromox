@@ -110,7 +110,7 @@ unsigned int g_exmdb_pvt_folder_softdel;
 static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
-static void db_engine_notify_content_table_modify_row(db_item_ptr &, uint64_t folder_id, uint64_t message_id);
+static void dbeng_notify_cttbl_modify_row(DB_ITEM *, uint64_t folder_id, uint64_t message_id);
 
 static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
 {
@@ -497,12 +497,12 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		 * have a search folder have a scope containing another search
 		 * folder; exmdb_provider only does a descendant check).
 		 */
-		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::new_msg,
+		pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 			search_fid, pmessage_ids->pids[i], 0);
 		/*
 		 * Regular notifications
 		 */
-		db_engine_notify_link_creation(pdb, search_fid, pmessage_ids->pids[i]);
+		pdb->notify_link_creation(search_fid, pmessage_ids->pids[i]);
 	}
 	return TRUE;
 }
@@ -571,7 +571,7 @@ db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return {};
 }
 
-static std::optional<ID_ARRAYS> db_engine_classify_id_array(db_item_ptr &pdb,
+static std::optional<ID_ARRAYS> db_engine_classify_id_array(DB_ITEM *pdb,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;
@@ -596,12 +596,12 @@ static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
 	}
 }
 
-static void db_engine_notify_search_completion(db_item_ptr &pdb,
+static void dbeng_notify_search_completion(db_item_ptr &pdb,
     uint64_t folder_id) try
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(pdb.get(),
 	               NF_SEARCH_COMPLETE, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -666,10 +666,8 @@ static void *mdpeng_thrwork(void *param)
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
 		/* Stop animation (does nothing else in OL really) */
-		db_engine_notify_search_completion(
-			pdb, psearch->folder_id);
-		db_engine_notify_folder_modification(pdb,
-			common_util_get_folder_parent_fid(
+		dbeng_notify_search_completion(pdb, psearch->folder_id);
+		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, psearch->folder_id),
 			psearch->folder_id);
 		std::vector<uint32_t> table_ids;
@@ -802,10 +800,10 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 	return false;
 }
 
-void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
-    uint32_t search_flags, const RESTRICTION *prestriction,
-    const LONGLONG_ARRAY *pfolder_ids) try
+void DB_ITEM::update_dynamic(uint64_t folder_id, uint32_t search_flags,
+    const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids) try
 {
+	auto pdb = this;
 	dynamic_node dn;
 	
 	dn.folder_id    = folder_id;
@@ -828,13 +826,14 @@ void db_engine_update_dynamic(db_item_ptr &pdb, uint64_t folder_id,
 	mlog(LV_ERR, "E-1143: ENOMEM");
 }
 
-void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
+void DB_ITEM::delete_dynamic(uint64_t folder_id)
 {
+	auto pdb = this;
 	gromox::erase_first_if(pdb->dynamic_list,
 		[=](const dynamic_node &n) { return n.folder_id == folder_id; });
 }
 
-static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
+static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
     uint64_t id2, uint64_t id3, uint32_t folder_type,
     const DYNAMIC_NODE *pdynamic, size_t i)
 {
@@ -870,10 +869,8 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
 		if (b_included != b_exist)
 			return;
 		if (b_included) {
-			db_engine_notify_link_deletion(pdb,
-				pdynamic->folder_id, message_id);
-			db_engine_proc_dynamic_event(pdb, cpid,
-				dynamic_event::del_msg,
+			pdb->notify_link_deletion(pdynamic->folder_id, message_id);
+			pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 				pdynamic->folder_id, message_id, 0);
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
@@ -889,16 +886,14 @@ static void dbeng_dynevt_1(db_item_ptr &pdb, cpid_t cpid, uint64_t id1,
 			"(folder_id, message_id) VALUES (%llu, %llu)",
 			LLU{pdynamic->folder_id}, LLU{message_id});
 		if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
-			db_engine_notify_link_creation(pdb,
-				pdynamic->folder_id, message_id);
-			db_engine_proc_dynamic_event(pdb,
-				cpid, dynamic_event::new_msg,
+			pdb->notify_link_creation(pdynamic->folder_id, message_id);
+			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 				pdynamic->folder_id, message_id, 0);
 		}
 	}
 }
 
-static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_type,
+static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
     uint64_t id1, uint64_t id2, const DYNAMIC_NODE *pdynamic, size_t i)
 {
 	BOOL b_exist;
@@ -933,10 +928,8 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 			"(folder_id, message_id) VALUES (%llu, %llu)",
 			LLU{pdynamic->folder_id}, LLU{id2});
 		if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
-			db_engine_notify_link_creation(pdb,
-				pdynamic->folder_id, id2);
-			db_engine_proc_dynamic_event(pdb,
-				cpid, dynamic_event::new_msg,
+			pdb->notify_link_creation(pdynamic->folder_id, id2);
+			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 				pdynamic->folder_id, id2, 0);
 		} else {
 			mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
@@ -950,9 +943,8 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 		}
 		if (!b_exist)
 			return;
-		db_engine_notify_link_deletion(pdb,
-			pdynamic->folder_id, id2);
-		db_engine_proc_dynamic_event(pdb, cpid, dynamic_event::del_msg,
+		pdb->notify_link_deletion(pdynamic->folder_id, id2);
+		pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 			pdynamic->folder_id, id2, 0);
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result "
 			"WHERE folder_id=%llu AND message_id=%llu",
@@ -969,9 +961,9 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 		if (cu_eval_msg_restriction(
 			pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
 			if (b_exist) {
-				db_engine_notify_content_table_modify_row(
+				dbeng_notify_cttbl_modify_row(
 					pdb, pdynamic->folder_id, id2);
-				db_engine_notify_folder_modification(pdb,
+				pdb->notify_folder_modification(
 					common_util_get_folder_parent_fid(
 					pdb->psqlite, pdynamic->folder_id),
 					pdynamic->folder_id);
@@ -981,10 +973,8 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 				"(folder_id, message_id) VALUES (%llu, %llu)",
 				LLU{pdynamic->folder_id}, LLU{id2});
 			if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
-				db_engine_notify_link_creation(pdb,
-					pdynamic->folder_id, id2);
-				db_engine_proc_dynamic_event(pdb,
-					cpid, dynamic_event::new_msg,
+				pdb->notify_link_creation(pdynamic->folder_id, id2);
+				pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 					pdynamic->folder_id, id2, 0);
 			} else {
 				mlog(LV_DEBUG, "db_engine: failed to insert into search_result");
@@ -992,10 +982,8 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
 		} else {
 			if (!b_exist)
 				return;
-			db_engine_notify_link_deletion(pdb,
-				pdynamic->folder_id, id2);
-			db_engine_proc_dynamic_event(pdb, cpid,
-				dynamic_event::del_msg,
+			pdb->notify_link_deletion(pdynamic->folder_id, id2);
+			pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 				pdynamic->folder_id, id2, 0);
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
@@ -1020,9 +1008,10 @@ static void dbeng_dynevt_2(db_item_ptr &pdb, cpid_t cpid, dynamic_event event_ty
  * folder itself (population/depopulation as a result of search criteria
  * change).
  */
-void db_engine_proc_dynamic_event(db_item_ptr &pdb, cpid_t cpid,
-    dynamic_event event_type, uint64_t id1, uint64_t id2, uint64_t id3)
+void DB_ITEM::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
+    uint64_t id1, uint64_t id2, uint64_t id3)
 {
+	auto pdb = this;
 	uint32_t folder_type;
 	
 	if (event_type == dynamic_event::move_folder &&
@@ -1269,7 +1258,7 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 	return mv;
 }
 
-static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
+static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
@@ -1363,8 +1352,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			    padded_row->after_row_id, &padded_row->after_folder_id))
 				continue;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_added :
-			                          db_notify_type::content_table_row_added;
+			                          db_notify_type::srchtbl_row_added :
+			                          db_notify_type::cttbl_row_added;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -1468,8 +1457,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row->row_instance = 0;
 			padded_row->after_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_added :
-			                          db_notify_type::content_table_row_added;
+			                          db_notify_type::srchtbl_row_added :
+			                          db_notify_type::cttbl_row_added;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -1794,8 +1783,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			continue;
 		if (b_resorted) {
 			datagram1.db_notify.type = ptable->b_search ?
-						   db_notify_type::search_table_changed :
-						   db_notify_type::content_table_changed;
+						   db_notify_type::srchtbl_changed :
+						   db_notify_type::cttbl_changed;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			continue;
@@ -1844,8 +1833,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
 				datagram1.db_notify.type = ptable->b_search ?
-							   db_notify_type::search_table_row_modified :
-							   db_notify_type::content_table_row_modified;
+							   db_notify_type::srchtbl_row_modified :
+							   db_notify_type::cttbl_row_modified;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 			} else if (stm_sel_tx.col_int64(4) == CONTENT_ROW_HEADER) {
@@ -1854,8 +1843,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row1->after_folder_id = inst_folder_id;
 				padded_row1->after_instance = inst_num;
 				datagram1.db_notify.type = ptable->b_search ?
-				                           db_notify_type::search_table_row_added :
-				                           db_notify_type::content_table_row_added;
+				                           db_notify_type::srchtbl_row_added :
+				                           db_notify_type::cttbl_row_added;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 			} else {
@@ -1864,8 +1853,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row->after_folder_id = inst_folder_id;
 				padded_row->after_instance = inst_num;
 				datagram.db_notify.type = ptable->b_search ?
-				                          db_notify_type::search_table_row_added :
-				                          db_notify_type::content_table_row_added;
+				                          db_notify_type::srchtbl_row_added :
+				                          db_notify_type::cttbl_row_added;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram);
 			}
@@ -1874,9 +1863,10 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
-    uint64_t message_id, uint32_t message_flags, const char *pstr_class) try
+void DB_ITEM::transport_new_mail(uint64_t folder_id, uint64_t message_id,
+    uint32_t message_flags, const char *pstr_class) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -1898,9 +1888,9 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	mlog(LV_ERR, "E-2119: ENOMEM");
 }
 	
-void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
-    uint64_t message_id) try
+void DB_ITEM::notify_new_mail(uint64_t folder_id, uint64_t message_id) try
 {
+	auto pdb = this;
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
@@ -1927,18 +1917,17 @@ void db_engine_notify_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2120: ENOMEM");
 }
 
-void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
+void DB_ITEM::notify_message_creation(uint64_t folder_id,
     uint64_t message_id) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -1957,18 +1946,16 @@ void db_engine_notify_message_creation(db_item_ptr &pdb, uint64_t folder_id,
 		pcreated_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2121: ENOMEM");
 }
 
-void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t srch_fld,
-    uint64_t message_id) try
+void DB_ITEM::notify_link_creation(uint64_t srch_fld, uint64_t message_id) try
 {
+	auto pdb = this;
 	uint64_t anchor_fld;
 	DB_NOTIFY_DATAGRAM datagram;
 	
@@ -1993,16 +1980,14 @@ void db_engine_notify_link_creation(db_item_ptr &pdb, uint64_t srch_fld,
 		plinked_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, srch_fld, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_add_row(pdb, srch_fld, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, srch_fld), srch_fld);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2122: ENOMEM");
 }
 
-static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
+static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	uint32_t idx;
@@ -2034,7 +2019,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 		    folder_id, ptable->prestriction))
 			continue;
 		if (NULL == padded_row) {
-			datagram.db_notify.type = db_notify_type::hierarchy_table_row_added;
+			datagram.db_notify.type = db_notify_type::hiertbl_row_added;
 			padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 			if (padded_row == nullptr)
 				return;
@@ -2148,9 +2133,9 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
-    uint64_t folder_id) try
+void DB_ITEM::notify_folder_creation(uint64_t parent_id, uint64_t folder_id) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -2169,10 +2154,8 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb, uint64_t parent_id,
 		pcreated_folder->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_hierarchy_table_add_row(
-		pdb, parent_id, folder_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2123: ENOMEM");
@@ -2193,7 +2176,7 @@ static void db_engine_update_prev_id(DOUBLE_LIST *plist,
 	}
 }
 
-static void *db_engine_get_extremum_value(db_item_ptr &pdb, cpid_t cpid,
+static void *db_engine_get_extremum_value(DB_ITEM *pdb, cpid_t cpid,
     uint32_t table_id, uint32_t extremum_tag, uint64_t parent_id,
     uint8_t table_sort)
 {
@@ -2233,7 +2216,7 @@ static void *db_engine_get_extremum_value(db_item_ptr &pdb, cpid_t cpid,
 	return pvalue;
 }
 
-static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
+static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	int result;
@@ -2341,8 +2324,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pdeleted_row->row_message_id = message_id;
 			pdeleted_row->row_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_deleted :
-			                          db_notify_type::content_table_row_deleted;
+			                          db_notify_type::srchtbl_row_deleted :
+			                          db_notify_type::cttbl_row_deleted;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -2599,8 +2582,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			continue;
 		if (b_resorted) {
 			datagram1.db_notify.type = ptable->b_search ?
-			                           db_notify_type::search_table_changed :
-			                           db_notify_type::content_table_changed;
+			                           db_notify_type::srchtbl_changed :
+			                           db_notify_type::cttbl_changed;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			continue;
@@ -2623,8 +2606,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pdeleted_row->row_message_id = pdelnode->inst_id;
 			pdeleted_row->row_instance = pdelnode->inst_num;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_deleted :
-			                          db_notify_type::content_table_row_deleted;
+			                          db_notify_type::srchtbl_row_deleted :
+			                          db_notify_type::cttbl_row_deleted;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		}
@@ -2671,8 +2654,8 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pmodified_row->after_row_id = inst_id;
 			pmodified_row->after_instance = inst_num;
 			datagram1.db_notify.type = ptable->b_search ?
-			                           db_notify_type::search_table_row_modified :
-			                           db_notify_type::content_table_row_modified;
+			                           db_notify_type::srchtbl_row_modified :
+			                           db_notify_type::cttbl_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 			sqlite3_reset(pstmt1);
@@ -2680,9 +2663,9 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
-    uint64_t message_id) try
+void DB_ITEM::notify_message_deletion(uint64_t folder_id, uint64_t message_id) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -2700,18 +2683,16 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb, uint64_t folder_id,
 		pdeleted_mail->message_id = message_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_delete_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2124: ENOMEM");
 }
 
-void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
-    uint64_t message_id) try
+void DB_ITEM::notify_link_deletion(uint64_t parent_id, uint64_t message_id) try
 {
+	auto pdb = this;
 	uint64_t folder_id;
 	DB_NOTIFY_DATAGRAM datagram;
 	
@@ -2736,16 +2717,14 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		punlinked_mail->parent_id = parent_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_delete_row(
-		pdb, parent_id, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_delete_row(pdb, parent_id, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2125: ENOMEM");
 }
 
-static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
+static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
@@ -2796,7 +2775,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 				continue;
 		}
 		if (NULL == pdeleted_row) {
-			datagram.db_notify.type = db_notify_type::hierarchy_table_row_deleted;
+			datagram.db_notify.type = db_notify_type::hiertbl_row_deleted;
 			pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 			if (pdeleted_row == nullptr)
 				return;
@@ -2809,9 +2788,9 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 	}
 }	
 
-void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
-    uint64_t folder_id) try
+void DB_ITEM::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -2829,13 +2808,12 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb, uint64_t parent_id,
 		pdeleted_folder->folder_id = folder_id;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_hierarchy_table_delete_row(
-		pdb, parent_id, folder_id);
+	dbeng_notify_hiertbl_delete_row(pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2126: ENOMEM");
 }
 
-static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
+static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	int result;
@@ -2921,8 +2899,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			}
 			pmodified_row->after_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_modified :
-			                          db_notify_type::content_table_row_modified;
+			                          db_notify_type::srchtbl_row_modified :
+			                          db_notify_type::cttbl_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -3015,8 +2993,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				continue;
 			pmodified_row->after_instance = 0;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_modified :
-			                          db_notify_type::content_table_row_modified;
+			                          db_notify_type::srchtbl_row_modified :
+			                          db_notify_type::cttbl_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -3371,8 +3349,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			}
 			pmodified_row->after_instance = inst_num;
 			datagram.db_notify.type = ptable->b_search ?
-			                          db_notify_type::search_table_row_modified :
-			                          db_notify_type::content_table_row_modified;
+			                          db_notify_type::srchtbl_row_modified :
+			                          db_notify_type::cttbl_row_modified;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			sqlite3_reset(pstmt1);
@@ -3393,10 +3371,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	if (tmp_list.empty())
 		return;
 	std::swap(pdb->tables.table_list, tmp_list);
-	db_engine_notify_content_table_delete_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
+	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
 	std::swap(pdb->tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
@@ -3410,8 +3386,8 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			    (ptnode->table_flags & TABLE_FLAG_NONOTIFICATIONS))
 				break;
 			datagram.db_notify.type = ptnode->b_search ?
-			                          db_notify_type::search_table_changed :
-			                          db_notify_type::content_table_changed;
+			                          db_notify_type::srchtbl_changed :
+			                          db_notify_type::cttbl_changed;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			break;
@@ -3419,9 +3395,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
-    uint64_t message_id) try
+void DB_ITEM::notify_message_modification(uint64_t folder_id, uint64_t message_id) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -3440,16 +3416,14 @@ void db_engine_notify_message_modification(db_item_ptr &pdb, uint64_t folder_id,
 		pmodified_mail->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_content_table_modify_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_modify_row(pdb, folder_id, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2127: ENOMEM");
 }
 
-static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
+static void dbeng_notify_hiertbl_modify_row(DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
@@ -3493,7 +3467,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			    cu_eval_folder_restriction(
 				pdb->psqlite, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
-					datagram2.db_notify.type = db_notify_type::hierarchy_table_row_added;
+					datagram2.db_notify.type = db_notify_type::hiertbl_row_added;
 					padded_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED>();
 					if (padded_row == nullptr)
 						return;
@@ -3556,7 +3530,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 					continue;
 			}
 			if (NULL == pdeleted_row) {
-				datagram1.db_notify.type = db_notify_type::hierarchy_table_row_deleted;
+				datagram1.db_notify.type = db_notify_type::hiertbl_row_deleted;
 				pdeleted_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED>();
 				if (pdeleted_row == nullptr)
 					return;
@@ -3575,7 +3549,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				continue;
 		}
 		if (NULL == pmodified_row) {
-			datagram.db_notify.type = db_notify_type::hierarchy_table_row_modified;
+			datagram.db_notify.type = db_notify_type::hiertbl_row_modified;
 			pmodified_row = cu_alloc<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED>();
 			if (pmodified_row == nullptr)
 				return;
@@ -3599,9 +3573,9 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 	}
 }
 
-void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
-    uint64_t folder_id) try
+void DB_ITEM::notify_folder_modification(uint64_t parent_id, uint64_t folder_id) try
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	auto parrays = db_engine_classify_id_array(pdb,
@@ -3622,16 +3596,15 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb, uint64_t parent_id,
 		pmodified_folder->proptags.count = 0;
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
-	db_engine_notify_hierarchy_table_modify_row(
-		pdb, parent_id, folder_id);
+	dbeng_notify_hiertbl_modify_row(pdb, parent_id, folder_id);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2128: ENOMEM");
 }
 
-void db_engine_notify_message_movecopy(db_item_ptr &pdb,
-	BOOL b_copy, uint64_t folder_id, uint64_t message_id,
-	uint64_t old_fid, uint64_t old_mid)
+void DB_ITEM::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
+    uint64_t message_id, uint64_t old_fid, uint64_t old_mid)
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
@@ -3671,23 +3644,19 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
-		db_engine_notify_content_table_delete_row(
-			pdb, old_fid, old_mid);
-		db_engine_notify_folder_modification(
-			pdb, common_util_get_folder_parent_fid(
+		dbeng_notify_cttbl_delete_row(pdb, old_fid, old_mid);
+		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_fid), old_fid);
 	}
-	db_engine_notify_content_table_add_row(
-		pdb, folder_id, message_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, folder_id), folder_id);
 }
 
-void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
-	BOOL b_copy, uint64_t parent_id, uint64_t folder_id, 
-	uint64_t old_pid, uint64_t old_fid)
+void DB_ITEM::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
+    uint64_t folder_id, uint64_t old_pid, uint64_t old_fid)
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
@@ -3728,21 +3697,18 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		dg_notify(std::move(datagram), std::move(*parrays));
 	}
 	if (!b_copy) {
-		db_engine_notify_hierarchy_table_delete_row(
-			pdb, old_pid, old_fid);
-		db_engine_notify_folder_modification(
-			pdb, common_util_get_folder_parent_fid(
+		dbeng_notify_hiertbl_delete_row(pdb, old_pid, old_fid);
+		pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 			pdb->psqlite, old_pid), old_pid);
 	}
-	db_engine_notify_hierarchy_table_add_row(
-		pdb, parent_id, folder_id);
-	db_engine_notify_folder_modification(
-		pdb, common_util_get_folder_parent_fid(
+	dbeng_notify_hiertbl_add_row(pdb, parent_id, folder_id);
+	pdb->notify_folder_modification(common_util_get_folder_parent_fid(
 		pdb->psqlite, parent_id), parent_id);
 }
 
-void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
+void DB_ITEM::notify_cttbl_reload(uint32_t table_id)
 {
+	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	
 	const auto &list = pdb->tables.table_list;
@@ -3752,8 +3718,8 @@ void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 		return;
 	datagram.dir = deconst(exmdb_server::get_dir());
 	datagram.db_notify.type = !ptable->b_search ?
-		db_notify_type::content_table_changed :
-		db_notify_type::search_table_changed;
+		db_notify_type::cttbl_changed :
+		db_notify_type::srchtbl_changed;
 	datagram.db_notify.pdata = NULL;
 	datagram.b_table = TRUE;
 	datagram.id_array = {1, &table_id};
@@ -3761,12 +3727,13 @@ void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 		ptable->remote_id, &datagram);
 }
 
-void db_engine_begin_batch_mode(db_item_ptr &pdb)
+void DB_ITEM::begin_batch_mode()
 {
+	auto pdb = this;
 	pdb->tables.b_batch = TRUE;
 }
 
-void db_engine_commit_batch_mode(db_item_ptr &&pdb)
+void DB_ITEM::commit_batch_mode_release(db_item_ptr &&pdb)
 {
 	auto table_num = pdb->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
@@ -3786,8 +3753,9 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
 }
 
-void db_engine_cancel_batch_mode(db_item_ptr &pdb)
+void DB_ITEM::cancel_batch_mode()
 {
+	auto pdb = this;
 	for (auto &t : pdb->tables.table_list)
 		t.b_hint = false;
 	pdb->tables.b_batch = FALSE;

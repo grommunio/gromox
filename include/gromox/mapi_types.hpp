@@ -3,6 +3,7 @@
 #	include <cassert>
 #endif
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <memory>
@@ -243,6 +244,11 @@ struct PROBLEM_ARRAY {
 	uint16_t count;
 	PROPERTY_PROBLEM *pproblem;
 
+	inline PROPERTY_PROBLEM *begin() { return pproblem; }
+	inline PROPERTY_PROBLEM *end() { return pproblem + count; }
+	inline const PROPERTY_PROBLEM *begin() const { return pproblem; }
+	inline const PROPERTY_PROBLEM *end() const { return pproblem + count; }
+	bool have_index(unsigned int) const;
 	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
 	void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
 		pproblem[count++] = PROPERTY_PROBLEM{static_cast<uint16_t>(i), tag, err};
@@ -696,6 +702,10 @@ struct GLOBALOBJECTID {
 struct EID_ARRAY {
 	uint32_t count;
 	uint64_t *pids;
+	inline uint64_t *begin() { return pids; }
+	inline uint64_t *end() { return pids + count; }
+	inline const uint64_t *begin() const { return pids; }
+	inline const uint64_t *end() const { return pids + count; }
 };
 
 using INDEX_ARRAY = PROPTAG_ARRAY;
@@ -716,9 +726,6 @@ struct EXTENDED_ERROR {
 	BINARY *paux_bytes;
 };
 
-#define	REPL_TYPE_ID								0
-#define REPL_TYPE_GUID								1
-
 using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
@@ -738,8 +745,14 @@ struct repl_node {
 
 class idset {
 	public:
-	idset(bool serialize, uint8_t type);
-	static std::unique_ptr<idset> create(bool serialize, uint8_t type);
+	enum class type : uint8_t {
+		id_packed   = 0x41, id_loose   = 0x42,
+		guid_packed = 0x81, guid_loose = 0x82,
+	};
+
+	idset(idset::type t) : repl_type(t) {}
+	static std::unique_ptr<idset> create(idset::type);
+	bool packed() const { return static_cast<uint8_t>(repl_type) & 0x1; }
 
 	BOOL register_mapping(void *logon_obj, REPLICA_MAPPING);
 	void clear() { repl_list.clear(); }
@@ -760,7 +773,7 @@ class idset {
 	BOOL enum_replist(void *param, REPLIST_ENUM);
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
 	inline const std::vector<repl_node> &get_repl_list() const { return repl_list; }
-	void dump() const;
+	void dump(FILE * = nullptr) const;
 #ifdef COMPILE_DIAG
 	inline size_t nelem() const {
 		size_t x = 0;
@@ -775,12 +788,8 @@ class idset {
 
 	void *pparam = nullptr;
 	REPLICA_MAPPING mapping = nullptr;
-	/*
-	 * If @b_serialize is false and @repl_type is REPL_TYPE_GUID,
-	 * nodes in repl_list is REPLGUID_NODE.
-	 */
-	bool b_serialize = false;
-	uint8_t repl_type = 0;
+	idset::type repl_type = idset::type::id_packed;
+	/* If @repl_type is guid_packed, repl_nodes are REPLGUID_NODE. */
 	std::vector<repl_node> repl_list;
 };
 using IDSET = idset;
@@ -789,12 +798,10 @@ enum class db_notify_type : uint8_t {
 	new_mail = 1, folder_created, message_created, link_created,
 	folder_deleted, message_deleted, link_deleted, folder_modified,
 	message_modified, folder_moved, message_moved, folder_copied,
-	message_copied, search_completed, hierarchy_table_changed,
-	content_table_changed, search_table_changed, hierarchy_table_row_added,
-	content_table_row_added, search_table_row_added,
-	hierarchy_table_row_deleted, content_table_row_deleted,
-	search_table_row_deleted, hierarchy_table_row_modified,
-	content_table_row_modified, search_table_row_modified,
+	message_copied, search_completed, hiertbl_changed, cttbl_changed,
+	srchtbl_changed, hiertbl_row_added, cttbl_row_added, srchtbl_row_added,
+	hiertbl_row_deleted, cttbl_row_deleted, srchtbl_row_deleted,
+	hiertbl_row_modified, cttbl_row_modified, srchtbl_row_modified,
 };
 
 struct DB_NOTIFY {

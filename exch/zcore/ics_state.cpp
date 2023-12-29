@@ -19,17 +19,17 @@ static void ics_state_clear(ICS_STATE *pstate)
 
 static BOOL ics_state_init(ICS_STATE *pstate)
 {
-	pstate->pgiven = idset::create(true, REPL_TYPE_ID);
+	pstate->pgiven = idset::create(idset::type::id_loose);
 	if (pstate->pgiven == nullptr)
 		return FALSE;
-	pstate->pseen = idset::create(true, REPL_TYPE_ID);
+	pstate->pseen = idset::create(idset::type::id_loose);
 	if (pstate->pseen == nullptr)
 		return FALSE;
 	if (ICS_TYPE_CONTENTS == pstate->type) {
-		pstate->pseen_fai = idset::create(true, REPL_TYPE_ID);
+		pstate->pseen_fai = idset::create(idset::type::id_loose);
 		if (pstate->pseen_fai == nullptr)
 			return FALSE;
-		pstate->pread = idset::create(true, REPL_TYPE_ID);
+		pstate->pread = idset::create(idset::type::id_loose);
 		if (pstate->pread == nullptr)
 			return FALSE;
 	}
@@ -131,7 +131,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 		const auto &pv = propvals.ppropval[i];
 		switch (pv.proptag) {
 		case MetaTagIdsetGiven1: {
-			auto pset = idset::create(false, REPL_TYPE_ID);
+			auto pset = idset::create(idset::type::id_packed);
 			if (pset == nullptr)
 				return FALSE;
 			if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
@@ -141,7 +141,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 			break;
 		}
 		case MetaTagCnsetSeen: {
-			auto pset = idset::create(false, REPL_TYPE_ID);
+			auto pset = idset::create(idset::type::id_packed);
 			if (pset == nullptr)
 				return FALSE;
 			if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
@@ -152,7 +152,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 		}
 		case MetaTagCnsetSeenFAI:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
-				auto pset = idset::create(false, REPL_TYPE_ID);
+				auto pset = idset::create(idset::type::id_packed);
 				if (pset == nullptr)
 					return FALSE;
 				if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||
@@ -163,7 +163,7 @@ BOOL ics_state::deserialize(const BINARY &bin)
 			break;
 		case MetaTagCnsetRead:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
-				auto pset = idset::create(false, REPL_TYPE_ID);
+				auto pset = idset::create(idset::type::id_packed);
 				if (pset == nullptr)
 					return FALSE;
 				if (!pset->deserialize(*static_cast<const BINARY *>(pv.pvalue)) ||

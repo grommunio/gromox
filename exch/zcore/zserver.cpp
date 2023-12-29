@@ -1759,10 +1759,10 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 	ids1.pids  = cu_alloc<uint64_t>(ids.count);
 	if (ids1.pids == nullptr)
 		return ecError;
-	for (size_t i = 0; i < ids.count; ++i) {
+	for (auto i_eid : ids) {
 		if (username != STORE_OWNER_GRANTED) {
 			if (!exmdb_client_check_message_owner(pstore->get_dir(),
-			    ids.pids[i], username, &b_owner))
+			    i_eid, username, &b_owner))
 				return ecError;
 			if (!b_owner)
 				continue;
@@ -1772,7 +1772,7 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
-		    nullptr, CP_ACP, ids.pids[i], &tmp_proptags, &tmp_propvals))
+		    nullptr, CP_ACP, i_eid, &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
 		auto flag = tmp_propvals.get<const uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
@@ -1780,10 +1780,10 @@ ec_error_t zs_deletemessages(GUID hsession, uint32_t hfolder,
 			flag = tmp_propvals.get<uint8_t>(PR_READ);
 			if ((flag == nullptr || *flag == 0) &&
 			    !exmdb_client::get_message_brief(pstore->get_dir(),
-			    pinfo->cpid, ids.pids[i], &pbrief))
+			    pinfo->cpid, i_eid, &pbrief))
 				return ecError;
 		}
-		ids1.pids[ids1.count++] = ids.pids[i];
+		ids1.pids[ids1.count++] = i_eid;
 		if (pbrief != nullptr)
 			common_util_notify_receipt(pstore->get_account(),
 				NOTIFY_RECEIPT_NON_READ, pbrief);

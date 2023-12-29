@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <list>
 #include <memory>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 
 struct attachment_content;
@@ -12,11 +12,17 @@ struct ics_state;
 struct logon_object;
 struct message_content;
 using MESSAGE_CONTENT = message_content;
-using flow_node = std::pair<uint8_t, const void *>;
 
-struct fxdown_flow_list : public std::list<flow_node> {
-	bool record_node(uint8_t, const void * = nullptr);
-	bool record_tag(uint32_t);
+enum class fxdown_flow_func : uint8_t {
+	immed32, proplist_ptr, msg_id,
+};
+
+using fxdown_flow_node = std::pair<fxdown_flow_func, uint64_t>;
+
+struct fxdown_flow_list : public std::vector<fxdown_flow_node> {
+	bool record_node(fxdown_flow_func, uint64_t = 0);
+	bool record_node(fxdown_flow_func, const void *);
+	bool record_tag(uint32_t t) { return record_node(fxdown_flow_func::immed32, t); }
 	bool record_messagelist(EID_ARRAY *);
 	bool record_foldermessages(const FOLDER_MESSAGES *);
 	bool record_foldermessagesnodelprops(const FOLDER_MESSAGES *);
@@ -35,8 +41,8 @@ struct fastdownctx_object final {
 	~fastdownctx_object();
 	static std::unique_ptr<fastdownctx_object> create(logon_object *, uint8_t string_option);
 	/* make_xxx function can be invoked only once on the object */
-	BOOL make_messagecontent(MESSAGE_CONTENT *);
-	BOOL make_attachmentcontent(attachment_content *);
+	BOOL make_messagecontent(const message_content *);
+	BOOL make_attachmentcontent(const attachment_content *);
 	BOOL make_foldercontent(BOOL subfolders, std::unique_ptr<FOLDER_CONTENT> &&);
 	BOOL make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&);
 	BOOL make_messagelist(BOOL chginfo, EID_ARRAY *msglst);

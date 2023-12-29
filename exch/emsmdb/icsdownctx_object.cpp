@@ -30,19 +30,9 @@
 using namespace gromox;
 using LLU = unsigned long long;
 
-enum {
-	FUNC_ID_UINT32,
-	FUNC_ID_PROGRESSTOTAL,
-	FUNC_ID_UPDATED_MESSAGE,
-	FUNC_ID_NEW_MESSAGE,
-	FUNC_ID_DELETIONS,
-	FUNC_ID_READSTATECHANGES,
-	FUNC_ID_STATE
-};
-
 #define MAX_PARTIAL_ON_ROP		100	/* for limit of memory accumulation */
 
-bool ics_flow_list::record_node(uint8_t func_id, const void *param) try
+bool ics_flow_list::record_node(ics_flow_func func_id, uint64_t param) try
 {
 	emplace_back(func_id, param);
 	return true;
@@ -51,10 +41,10 @@ bool ics_flow_list::record_node(uint8_t func_id, const void *param) try
 	return false;
 }
 
-bool ics_flow_list::record_tag(uint32_t tag)
+bool ics_flow_list::record_node(ics_flow_func func_id, const void *param)
 {
-	static_assert(sizeof(void *) >= sizeof(tag));
-	return record_node(FUNC_ID_UINT32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
+	static_assert(sizeof(void *) <= sizeof(uint64_t));
+	return record_node(func_id, reinterpret_cast<uintptr_t>(param));
 }
 
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
@@ -127,8 +117,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 		return FALSE;
 	
 	pctx->pstate->pgiven->clear();
-	for (size_t i = 0; i < given_messages.count; ++i)
-		if (!pctx->pstate->pgiven->append(given_messages.pids[i]))
+	for (auto mid : given_messages)
+		if (!pctx->pstate->pgiven->append(mid))
 			return FALSE;	
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
 		pctx->pmessages = eid_array_dup(&chg_messages);
@@ -161,26 +151,25 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_PROGRESS_MODE &&
-	    !pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
+	    !pctx->flow_list.record_node(ics_flow_func::progress))
 		return FALSE;
 	if (pctx->sync_flags & (SYNC_ASSOCIATED | SYNC_NORMAL)) {
-		for (size_t i = 0; i < pctx->pmessages->count; ++i) {
-			size_t j;
-			for (j = 0; j < updated_messages.count; ++j)
-				if (updated_messages.pids[j] == pctx->pmessages->pids[i])
-					break;
-			if (!pctx->flow_list.record_node(j < updated_messages.count ?
-			    FUNC_ID_UPDATED_MESSAGE : FUNC_ID_NEW_MESSAGE, &pctx->pmessages->pids[i]))
+		for (uint64_t i_mid : *pctx->pmessages) {
+			auto type = std::find(updated_messages.begin(),
+			            updated_messages.end(), i_mid) !=
+			            updated_messages.end() ?
+			            ics_flow_func::upd_msg_id : ics_flow_func::new_msg_id;
+			if (!pctx->flow_list.record_node(type, i_mid))
 				return FALSE;	
 		}
 	}
 	if (!(pctx->sync_flags & SYNC_NO_DELETIONS) &&
-	    !pctx->flow_list.record_node(FUNC_ID_DELETIONS))
+	    !pctx->flow_list.record_node(ics_flow_func::deletions))
 		return FALSE;
 	if (pctx->sync_flags & SYNC_READ_STATE &&
-	    !pctx->flow_list.record_node(FUNC_ID_READSTATECHANGES))
+	    !pctx->flow_list.record_node(ics_flow_func::read_state_chg))
 		return FALSE;
-	if (!pctx->flow_list.record_node(FUNC_ID_STATE) ||
+	if (!pctx->flow_list.record_node(ics_flow_func::state) ||
 	    !pctx->flow_list.record_tag(INCRSYNCEND))
 		return FALSE;	
 	pctx->progress_steps = 0;
@@ -194,19 +183,16 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
     const PROPTAG_ARRAY *pproptags, bool b_exclude)
 {
 	if (b_exclude) {
-		for (size_t i = 0; i < pfldchgs->count; ++i)
+		for (auto &chg : *pfldchgs)
 			for (size_t j = 0; j < pproptags->count; ++j)
-				common_util_remove_propvals(
-					pfldchgs->pfldchgs + i,
-					pproptags->pproptag[j]);
+				common_util_remove_propvals(&chg, pproptags->pproptag[j]);
 		return;
 	}
-	for (size_t i = 0; i < pfldchgs->count; ++i) {
+	for (auto &chg : *pfldchgs) {
 		size_t j = 0;
-		while (j < pfldchgs->pfldchgs[i].count) {
-			if (!pproptags->has(pfldchgs->pfldchgs[i].ppropval[j].proptag))
-				common_util_remove_propvals(pfldchgs->pfldchgs + i,
-					pfldchgs->pfldchgs[i].ppropval[j].proptag);
+		while (j < chg.count) {
+			if (!pproptags->has(chg.ppropval[j].proptag))
+				common_util_remove_propvals(&chg, chg.ppropval[j].proptag);
 			else
 				j++;
 		}
@@ -239,11 +225,10 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	    &deleted_folders))
 		return FALSE;
 	pctx->pstate->pgiven->clear();
-	for (size_t i = 0; i < given_folders.count; ++i)
-		if (!pctx->pstate->pgiven->append(given_folders.pids[i]))
+	for (auto fid : given_folders)
+		if (!pctx->pstate->pgiven->append(fid))
 			return FALSE;	
-	for (size_t i = 0; i < fldchgs.count; ++i) {
-		auto &chg = fldchgs.pfldchgs[i];
+	for (auto &chg : fldchgs) {
 		static constexpr uint32_t tags[] = {
 			PR_FOLDER_PATHNAME, PR_NORMAL_MESSAGE_SIZE,
 			PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_MESSAGE_SIZE_EXTENDED,
@@ -334,27 +319,27 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		auto pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_DRAFTS_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_DRAFTS_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_CONTACT_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_CONTACT_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_APPOINTMENT_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_APPOINTMENT_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_JOURNAL_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_JOURNAL_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_NOTES));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_NOTE_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_NOTE_ENTRYID, pvalue);
 		pvalue = cu_fid_to_entryid(pctx->pstream->plogon, rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		if (pvalue == nullptr)
 			return FALSE;
-		cu_set_propval(&fldchgs.pfldchgs[i], PR_IPM_TASK_ENTRYID, pvalue);
+		cu_set_propval(&chg, PR_IPM_TASK_ENTRYID, pvalue);
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS)) {
 			auto ba = cu_alloc<BINARY_ARRAY>();
 			if (ba == nullptr)
@@ -388,7 +373,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[4] = *pbin;
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS, ba);
+			cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS, ba);
 		}
 		if (!chg.has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
 			auto bv = cu_alloc<BINARY>();
@@ -427,7 +412,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (bv->pv == nullptr)
 				return FALSE;
 			memcpy(bv->pv, ext_push.m_udata, bv->cb);
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS_EX, bv);
+			cu_set_propval(&chg, PR_ADDITIONAL_REN_ENTRYIDS_EX, bv);
 		}
 		if (!chg.has(PR_FREEBUSY_ENTRYIDS)) {
 			auto ba = cu_alloc<BINARY_ARRAY>();
@@ -448,7 +433,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (pbin == nullptr)
 				return FALSE;
 			ba->pbin[3] = *pbin;
-			cu_set_propval(&fldchgs.pfldchgs[i], PR_FREEBUSY_ENTRYIDS, ba);
+			cu_set_propval(&chg, PR_FREEBUSY_ENTRYIDS, ba);
 		}
 	}
 	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags,
@@ -456,9 +441,9 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	if ((pctx->sync_flags & SYNC_NO_DELETIONS) || deleted_folders.count == 0) {
 		pproplist_deletions = NULL;
 	} else {
-		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < deleted_folders.count; ++i)
-			if (!xset.append(deleted_folders.pids[i]))
+		idset xset(idset::type::id_loose);
+		for (auto fid : deleted_folders)
+			if (!xset.append(fid))
 				return FALSE;
 		pbin = xset.serialize();
 		if (pbin == nullptr)
@@ -956,9 +941,9 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	pbin1 = NULL;
 	pbin2 = NULL;
 	if (pctx->pdeleted_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pdeleted_messages->count; ++i)
-			if (!xset.append(pctx->pdeleted_messages->pids[i]))
+		idset xset(idset::type::id_loose);
+		for (auto mid : *pctx->pdeleted_messages)
+			if (!xset.append(mid))
 				return FALSE;
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
@@ -967,9 +952,9 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	}
 	if (!(pctx->sync_flags & SYNC_NO_SOFT_DELETIONS) &&
 	    pctx->pnolonger_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
-			if (!xset.append(pctx->pnolonger_messages->pids[i])) {
+		idset xset(idset::type::id_loose);
+		for (auto mid : *pctx->pnolonger_messages) {
+			if (!xset.append(mid)) {
 				if (pbin1 != nullptr)
 					rop_util_free_binary(pbin1);
 				return FALSE;
@@ -1015,9 +1000,9 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	proplist.count = 0;
 	proplist.ppropval = tmp_propvals;
 	if (pctx->pread_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->pread_messages->count; ++i)
-			if (!xset.append(pctx->pread_messages->pids[i]))
+		idset xset(idset::type::id_loose);
+		for (auto mid : *pctx->pread_messages)
+			if (!xset.append(mid))
 				return FALSE;
 		pbin1 = xset.serialize();
 		if (pbin1 == nullptr)
@@ -1025,9 +1010,9 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		proplist.emplace_back(MetaTagIdsetRead, pbin1);
 	}
 	if (pctx->punread_messages->count > 0) {
-		idset xset(true, REPL_TYPE_ID);
-		for (size_t i = 0; i < pctx->punread_messages->count; ++i)
-			if (!xset.append(pctx->punread_messages->pids[i]))
+		idset xset(idset::type::id_loose);
+		for (auto mid : *pctx->punread_messages)
+			if (!xset.append(mid))
 				return FALSE;
 		pbin2 = xset.serialize();
 		if (pbin2 == nullptr)
@@ -1104,51 +1089,48 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 	}
 	partial_count = 0;
 	len1 = *plen - len;
-	while (pctx->flow_list.size() > 0) {
-		auto [func_id, pparam] = pctx->flow_list.front();
-		pctx->flow_list.pop_front();
+	size_t funcs_processed = 0;
+	for (auto [func_id, obj_id] : pctx->flow_list) {
 		pctx->progress_steps = pctx->next_progress_steps;
 		switch (func_id) {
-		case FUNC_ID_UINT32:
-			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(pparam)))
+		case ics_flow_func::immed32:
+			if (!pctx->pstream->write_uint32(obj_id))
 				return FALSE;
 			break;
-		case FUNC_ID_PROGRESSTOTAL:
+		case ics_flow_func::progress:
 			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal))
 				return FALSE;
 			break;
-		case FUNC_ID_UPDATED_MESSAGE: {
-			auto message_id = *static_cast<const uint64_t *>(pparam);
+		case ics_flow_func::upd_msg_id:
 			if (!icsdownctx_object_write_message_change(pctx,
-			    message_id, TRUE, &partial_count))
+			    obj_id, TRUE, &partial_count))
 				return FALSE;
 			break;
-		}
-		case FUNC_ID_NEW_MESSAGE: {
-			auto message_id = *static_cast<const uint64_t *>(pparam);
+		case ics_flow_func::new_msg_id:
 			if (!icsdownctx_object_write_message_change(pctx,
-			    message_id, FALSE, &partial_count))
+			    obj_id, FALSE, &partial_count))
 				return FALSE;
 			break;
-		}
-		case FUNC_ID_DELETIONS:
+		case ics_flow_func::deletions:
 			if (!icsdownctx_object_write_deletions(pctx))
 				return FALSE;
 			break;
-		case FUNC_ID_READSTATECHANGES:
+		case ics_flow_func::read_state_chg:
 			if (!icsdownctx_object_write_readstate_changes(pctx))
 				return FALSE;
 			break;
-		case FUNC_ID_STATE:
+		case ics_flow_func::state:
 			if (!icsdownctx_object_write_state(pctx))
 				return FALSE;
 			break;
 		default:
 			return FALSE;
 		}
+		++funcs_processed;
 		if (pctx->pstream->total_length() > len1)
 			break;
 	}
+	pctx->flow_list.erase(pctx->flow_list.begin(), pctx->flow_list.begin() + funcs_processed);
 	if (!pctx->pstream->read_buffer(static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;	
 	*plen = len + len1;
@@ -1242,7 +1224,7 @@ BOOL icsdownctx_object::end_state_stream()
 		return FALSE;
 	if (pctx->state_property == 0)
 		return FALSE;
-	auto pset = idset::create(false, REPL_TYPE_GUID);
+	auto pset = idset::create(idset::type::guid_packed);
 	if (pset == nullptr)
 		return FALSE;
 	auto saved_state_property = pctx->state_property;

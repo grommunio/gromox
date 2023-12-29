@@ -9,26 +9,26 @@
 
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {
-	pstate->pseen = idset::create(true, REPL_TYPE_GUID);
+	pstate->pseen = idset::create(idset::type::guid_loose);
 	if (pstate->pseen == nullptr)
 		return NULL;
 	if (!pstate->pseen->register_mapping(plogon, common_util_mapping_replica))
 		return NULL;
 	switch (type) {
 	case ICS_STATE_CONTENTS_DOWN:
-		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
+		pstate->pgiven = idset::create(idset::type::guid_loose);
 		if (pstate->pgiven == nullptr)
 			return NULL;
 		if (!pstate->pgiven->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pseen_fai = idset::create(true, REPL_TYPE_GUID);
+		pstate->pseen_fai = idset::create(idset::type::guid_loose);
 		if (pstate->pseen_fai == nullptr)
 			return NULL;
 		if (!pstate->pseen_fai->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pread = idset::create(true, REPL_TYPE_GUID);
+		pstate->pread = idset::create(idset::type::guid_loose);
 		if (pstate->pread == nullptr)
 			return NULL;
 		if (!pstate->pread->register_mapping(plogon,
@@ -36,7 +36,7 @@ static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int ty
 			return NULL;
 		break;
 	case ICS_STATE_HIERARCHY_DOWN:
-		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
+		pstate->pgiven = idset::create(idset::type::guid_loose);
 		if (pstate->pgiven == nullptr)
 			return NULL;
 		if (!pstate->pgiven->register_mapping(plogon,
@@ -44,19 +44,19 @@ static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int ty
 			return NULL;
 		break;
 	case ICS_STATE_CONTENTS_UP:
-		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
+		pstate->pgiven = idset::create(idset::type::guid_loose);
 		if (pstate->pgiven == nullptr)
 			return NULL;
 		if (!pstate->pgiven->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pseen_fai = idset::create(true, REPL_TYPE_GUID);
+		pstate->pseen_fai = idset::create(idset::type::guid_loose);
 		if (pstate->pseen_fai == nullptr)
 			return NULL;
 		if (!pstate->pseen_fai->register_mapping(plogon,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pread = idset::create(true, REPL_TYPE_GUID);
+		pstate->pread = idset::create(idset::type::guid_loose);
 		if (pstate->pread == nullptr)
 			return NULL;
 		if (!pstate->pread->register_mapping(plogon,

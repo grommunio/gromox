@@ -4,11 +4,13 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <vector>
 #include <gromox/database.h>
 #include <gromox/eid_array.hpp>
 #include <gromox/exmdb_common_util.hpp>
 #include <gromox/exmdb_server.hpp>
+#include <gromox/fileio.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
@@ -32,6 +34,9 @@ struct REPLID_ARRAY {
 };
 
 }
+
+static std::mutex ics_log_mtx;
+std::string g_exmdb_ics_log_file;
 
 static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 {
@@ -82,7 +87,12 @@ static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
 }
 
 /**
- * @username:   Used for retrieving public store readstates
+ * @username:     Used for retrieving public store readstates
+ * @pgiven:       Set of MIDs the client has
+ * @pseen:        Set of CNs the client has
+ * @prestriction: Used by the client to limit the timeframe to synchronize ("most recent x days")
+ * @b_ordered:    Request that messages be ordered by delivery_time (fallback: lastmod_time)
+ *                (else: no specific order; MS-OXCFXICS §3.2.5.9.1.1)
  */
 BOOL exmdb_server::get_content_sync(const char *dir,
     uint64_t folder_id, const char *username, const IDSET *pgiven,
@@ -102,7 +112,12 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	*pnormal_total = 0;
 	auto b_private = exmdb_server::is_private();
 
-	/* Setup of scratch space db */
+	/*
+	 * Setup of scratch space db.
+	 *
+	 * All three tables are implicitly ordered by MID (due to PK)
+	 * SELECTs on those three should use ORDER BY if explicit order is desired.
+	 */
 	if (sqlite3_open_v2(":memory:", &psqlite,
 	    SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		return FALSE;
@@ -133,7 +148,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 
-	/* Query section 1 */
+	/*
+	 * #1:
+	 * Determine message counts, bytesize totals, and maximum CNs.
+	 * (The result is dependent on prestriction.)
+	 */
 	{
 	auto transact1 = gx_sql_begin_trans(psqlite);
 	if (!transact1)
@@ -304,7 +323,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		return false;
 	} /* section 1 */
 
-	/* Query section 2a */
+	/*
+	 * section #2a: exact-allocate pupdated_mids, pchg_mids
+	 */
 	{
 	ssize_t count;
 	{
@@ -326,7 +347,9 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	} /* section 2a */
 
-	/* Query section 2b */
+	/*
+	 * #2b: compute pchg_mids, pupdated_mids
+	 */
 	{
 	auto stm_select_chg = gx_sql_prep(psqlite, b_ordered ?
 	                      "SELECT message_id FROM changes ORDER BY delivery_time DESC, mod_time DESC" :
@@ -345,7 +368,10 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	} /* section 2b */
 	}
 
-	/* Query section 3 */
+	/*
+	 * #3: Build nolonger_mids, which is the set of MIDs that the client
+	 * has but the server has deleted (and server is more recent).
+	 */
 	{
 	ENUM_PARAM enum_param;
 	enum_param.stm_exist = gx_sql_prep(psqlite,
@@ -410,7 +436,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 
 	pdb.reset();
 
-	/* Query section 4 */
+	/* Query section 4 - pgiven_mids: what the server has */
 	{
 	auto stm_select_exist = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (stm_select_exist == nullptr ||
@@ -436,7 +462,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	} /* section 4 */
 
-	/* Query section 5 */
+	/* Query section 5 - Determine MIDs for unread and read sets */
 	if (NULL != pread) {
 		auto stm_select_rd = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
 		if (stm_select_rd == nullptr ||
@@ -482,6 +508,41 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		punread_mids->count = 0;
 		punread_mids->pids = NULL;
 	} /* section 5 */
+
+	if (g_exmdb_ics_log_file.empty())
+		return TRUE;
+	std::lock_guard lk(ics_log_mtx);
+	std::unique_ptr<FILE, file_deleter> fh;
+	if (g_exmdb_ics_log_file != "-")
+		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
+	if (fh == nullptr)
+		return TRUE;
+	fprintf(fh.get(), "-------------\n");
+	fprintf(fh.get(), "dir=%s actor=%s CONTENT_SYNC folder_id=%llxh given=",
+		dir, znul(username), static_cast<unsigned long long>(folder_id));
+	pgiven->dump(fh.get());
+	fprintf(fh.get(), " read=");
+	pread->dump(fh.get());
+	fprintf(fh.get(), " rst=");
+	if (prestriction != nullptr)
+		fprintf(fh.get(), "%s", prestriction->repr().c_str());
+	fprintf(fh.get(), " Out: Msg+FAI=%u+%u upd={",
+		*pnormal_count, *pfai_count);
+	for (unsigned long long mid : *pupdated_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\nchg={");
+	for (unsigned long long mid : *pchg_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\ngiven={");
+	for (unsigned long long mid : *pgiven_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\ndel={");
+	for (unsigned long long mid : *pdeleted_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\nnolonger={");
+	for (unsigned long long mid : *pnolonger_mids)
+		fprintf(fh.get(), "%llxh,", mid);
+	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }
 
@@ -736,5 +797,25 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		sizeof(uint64_t)*pdeleted_fids->count);
 	eid_array_free(enum_param.pdeleted_eids);
 	} /* section 5 */
+
+	if (g_exmdb_ics_log_file.empty())
+		return TRUE;
+	std::lock_guard lk(ics_log_mtx);
+	std::unique_ptr<FILE, file_deleter> fh;
+	if (g_exmdb_ics_log_file != "-")
+		fh.reset(fopen(g_exmdb_ics_log_file.c_str(), "a"));
+	if (fh == nullptr)
+		return TRUE;
+	fprintf(fh.get(), "-------------\n");
+	fprintf(fh.get(), "* dir=%s actor=%s HIER_SYNC folder_id=%llxh given=",
+		dir, znul(username), static_cast<unsigned long long>(folder_id));
+	pgiven->dump(fh.get());
+	fprintf(fh.get(), " Out: given={");
+	for (unsigned long long fid : *pgiven_fids)
+		fprintf(fh.get(), "%llxh,", fid);
+	fprintf(fh.get(), "}\ndel={");
+	for (unsigned long long fid : *pdeleted_fids)
+		fprintf(fh.get(), "%llxh,", fid);
+	fprintf(fh.get(), "}\nlastcn=%llxh\n", static_cast<unsigned long long>(*plast_cn));
 	return TRUE;
 }

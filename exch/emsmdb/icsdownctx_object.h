@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,11 +10,23 @@ struct folder_object;
 struct fxstream_producer;
 struct ics_state;
 struct logon_object;
-using flow_node = std::pair<uint8_t, const void *>;
 
-struct ics_flow_list : public std::list<flow_node> {
-	bool record_node(uint8_t, const void * = nullptr);
-	bool record_tag(uint32_t);
+enum class ics_flow_func : uint8_t {
+	immed32,
+	progress,
+	upd_msg_id,
+	new_msg_id,
+	deletions,
+	read_state_chg,
+	state,
+};
+
+using ics_flow_node = std::pair<ics_flow_func, uint64_t>;
+
+struct ics_flow_list : public std::vector<ics_flow_node> {
+	bool record_node(ics_flow_func, uint64_t = 0);
+	bool record_node(ics_flow_func, const void *);
+	bool record_tag(uint32_t t) { return record_node(ics_flow_func::immed32, t); }
 };
 
 struct icsdownctx_object final {

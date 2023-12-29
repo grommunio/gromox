@@ -405,7 +405,7 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	db_engine_transport_new_mail(pdb, rop_util_get_gc_value(folder_id),
+	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), message_flags, pstr_class);
 	return TRUE;
 }

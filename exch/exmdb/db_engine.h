@@ -102,10 +102,31 @@ struct prepared_statements {
 	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 
+class db_item_deleter;
 struct DB_ITEM {
 	DB_ITEM() = default;
 	~DB_ITEM();
 	NOMOVE(DB_ITEM);
+	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
+	void delete_dynamic(uint64_t folder_id);
+	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3);
+	void notify_new_mail(uint64_t folder_id, uint64_t msg_id);
+	void notify_message_creation(uint64_t folder_id, uint64_t msg_id);
+	void notify_link_creation(uint64_t parent_id, uint64_t msg_id);
+	void notify_folder_creation(uint64_t parent_id, uint64_t folder_id);
+	void notify_message_deletion(uint64_t folder_id, uint64_t msg_id);
+	void notify_link_deletion(uint64_t parent_id, uint64_t msg_id);
+	void notify_folder_deletion(uint64_t parent_id, uint64_t folder_id);
+	void notify_message_modification(uint64_t folder_id, uint64_t msg_id);
+	void notify_folder_modification(uint64_t parent_id, uint64_t folder_id);
+	void notify_message_movecopy(BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid);
+	void notify_folder_movecopy(BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid);
+	void notify_cttbl_reload(uint32_t table_id);
+	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass);
+	void begin_batch_mode();
+	/* pdb will also be put */
+	static void commit_batch_mode_release(std::unique_ptr<DB_ITEM, db_item_deleter> &&pdb);
+	void cancel_batch_mode();
 	std::unique_ptr<prepared_statements> begin_optim();
 
 	/* client reference count, item can be flushed into file system only count is 0 */
@@ -142,28 +163,9 @@ extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
 extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
-extern void db_engine_update_dynamic(db_item_ptr &, uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
-extern void db_engine_delete_dynamic(db_item_ptr &, uint64_t folder_id);
-extern void db_engine_proc_dynamic_event(db_item_ptr &, cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3);
-extern void db_engine_notify_new_mail(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
-extern void db_engine_notify_message_creation(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
-extern void db_engine_notify_link_creation(db_item_ptr &, uint64_t parent_id, uint64_t msg_id);
-extern void db_engine_notify_folder_creation(db_item_ptr &, uint64_t parent_id, uint64_t folder_id);
-extern void db_engine_notify_message_deletion(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
-extern void db_engine_notify_link_deletion(db_item_ptr &, uint64_t parent_id, uint64_t msg_id);
-extern void db_engine_notify_folder_deletion(db_item_ptr &, uint64_t parent_id, uint64_t folder_id);
-extern void db_engine_notify_message_modification(db_item_ptr &, uint64_t folder_id, uint64_t msg_id);
-extern void db_engine_notify_folder_modification(db_item_ptr &, uint64_t parent_id, uint64_t folder_id);
-extern void db_engine_notify_message_movecopy(db_item_ptr &, BOOL b_copy, uint64_t folder_id, uint64_t msg_id, uint64_t old_fid, uint64_t old_mid);
-extern void db_engine_notify_folder_movecopy(db_item_ptr &, BOOL b_copy, uint64_t parent_id, uint64_t folder_id, uint64_t old_pid, uint64_t old_fid);
-extern void db_engine_notify_content_table_reload(db_item_ptr &, uint32_t table_id);
-extern void db_engine_transport_new_mail(db_item_ptr &, uint64_t folder_id, uint64_t msg_id, uint32_t message_flags, const char *pstr_class);
-extern void db_engine_begin_batch_mode(db_item_ptr &);
-/* pdb will also be put */
-extern void db_engine_commit_batch_mode(db_item_ptr &&);
-extern void db_engine_cancel_batch_mode(db_item_ptr &);
 
 extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 extern unsigned long long g_exmdb_search_pacing_time;
 extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 extern unsigned int g_exmdb_pvt_folder_softdel;
+extern std::string g_exmdb_ics_log_file;

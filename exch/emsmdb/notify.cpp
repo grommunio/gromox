@@ -341,29 +341,29 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 	}
 	case db_notify_type::search_completed:
 		return cvt_fld_search_completed(n, *static_cast<const DB_NOTIFY_SEARCH_COMPLETED *>(dbn.pdata));
-	case db_notify_type::hierarchy_table_changed:
+	case db_notify_type::hiertbl_changed:
 		return cvt_hiertbl_changed(n);
-	case db_notify_type::content_table_changed:
+	case db_notify_type::cttbl_changed:
 		return cvt_cttbl_changed(n);
-	case db_notify_type::search_table_changed:
+	case db_notify_type::srchtbl_changed:
 		return cvt_srchtbl_changed(n);
-	case db_notify_type::hierarchy_table_row_added:
+	case db_notify_type::hiertbl_row_added:
 		return cvt_hierrow_added(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *>(dbn.pdata));
-	case db_notify_type::content_table_row_added:
+	case db_notify_type::cttbl_row_added:
 		return cvt_ctrow_added(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(dbn.pdata));
-	case db_notify_type::search_table_row_added:
+	case db_notify_type::srchtbl_row_added:
 		return cvt_srchrow_added(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *>(dbn.pdata));
-	case db_notify_type::hierarchy_table_row_deleted:
+	case db_notify_type::hiertbl_row_deleted:
 		return cvt_hierrow_deleted(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *>(dbn.pdata));
-	case db_notify_type::content_table_row_deleted:
+	case db_notify_type::cttbl_row_deleted:
 		return cvt_ctrow_deleted(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(dbn.pdata));
-	case db_notify_type::search_table_row_deleted:
+	case db_notify_type::srchtbl_row_deleted:
 		return cvt_srchrow_deleted(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_DELETED *>(dbn.pdata));
-	case db_notify_type::hierarchy_table_row_modified:
+	case db_notify_type::hiertbl_row_modified:
 		return cvt_hierrow_modified(n, *static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(dbn.pdata));
-	case db_notify_type::content_table_row_modified:
+	case db_notify_type::cttbl_row_modified:
 		return cvt_ctrow_modified(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(dbn.pdata));
-	case db_notify_type::search_table_row_modified:
+	case db_notify_type::srchtbl_row_modified:
 		return cvt_srchrow_modified(n, *static_cast<const DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *>(dbn.pdata));
 	}
 	return ecInvalidParam;

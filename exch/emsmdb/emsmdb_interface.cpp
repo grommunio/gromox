@@ -1056,12 +1056,12 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	if (phandle == nullptr)
 		return;
 	switch (pdb_notify->type) {
-	case db_notify_type::content_table_row_deleted:
+	case db_notify_type::cttbl_row_deleted:
 		if (!emsmdb_interface_merge_content_row_deleted(obj_handle, logon_id, &phandle->notify_list))
 			break;
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
-	case db_notify_type::hierarchy_table_row_modified:
+	case db_notify_type::hiertbl_row_modified:
 		if (!emsmdb_interface_merge_hierarchy_row_modified(
 		    static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list))
