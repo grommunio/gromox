@@ -9,6 +9,9 @@ LT_INIT([disable-static])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_PROG_CXX
+AM_CONDITIONAL([WITH_GNU_LD], [test "$with_gnu_ld" = yes])
+AS_IF([test -n "$LD" && $LD -z help >/dev/null 2>/dev/null], [with_sun_ld=yes], [with_sun_ld=no])
+AM_CONDITIONAL([WITH_SUN_LD], [test "$with_sun_ld" = yes])
 
 saved_CPPFLAGS="$CPPFLAGS"
 saved_CFLAGS="$CFLAGS"

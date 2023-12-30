@@ -19,8 +19,8 @@ dependencies are needed:
 * libvmime >= 0.9.2+git160 (commit c6904bd7cf03f6cca92cf0d15aec02e7850e0276)
 * libxml2 (we use this for HTML parsing)
 * libzstd >= 1.4
-* MariaDB Connector/C or compatible
-* OpenLDAP or similar headers
+* MariaDB Connector/C or mariadb-client or compatible API
+* OpenLDAP
 * OpenSSL-compatible libssl
 * OpenSSL-compatible libcrypto
   (must have SHA-3 *if* libxxhash is not used)
