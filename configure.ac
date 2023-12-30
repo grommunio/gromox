@@ -218,7 +218,6 @@ AC_MSG_RESULT([$mysql_CFLAGS])
 AC_MSG_CHECKING([for MySQL libs])
 AC_MSG_RESULT([$mysql_LIBS])
 
-unitdir=$("$PKG_CONFIG" systemd --variable systemd_system_unit_dir 2>/dev/null)
 sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
 tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)
 AC_ARG_WITH([dcprefix],
