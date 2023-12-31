@@ -151,8 +151,9 @@ This would also need to be purged \(em but there is no RPC for such action at
 this time.] unload will fail to succeed if there is still a client connected to
 the mailbox via a notification channel.
 .SH vacuum
-The "vacuum" RPC makes exmdb_provider issue the SQLite "vacuum" command on
-exchange.sqlite3, which rebuilds and compacts the database file.
+Issue the SQLite ".vacuum" command on the user's exchange.sqlite3 file in an
+attempt to reclaim unused disk space and shrink it. This operation can
+potentially run for quite some time, during which the mailbox is inaccessible.
 .SH Folder specification
 \fIfolder_spec\fP can either be a numeric identifier, or a path-like
 specification into the folder hierarchy. If the name starts with the slash
