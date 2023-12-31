@@ -4483,25 +4483,36 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 
 static errno_t copy_eml_ext(const char *old_midstr) try
 {
+	struct stat sb;
 	auto basedir = exmdb_server::get_dir();
 	auto new_midstr = fmt::format("{}.{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
 	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
+	if (stat(old_eml.c_str(), &sb) != 0 && errno == ENOENT)
+		/* Avoid propagating faulty mid_str into copied message */
+		return ENOENT;
 	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
 	/*
 	 * Partial mailboxes (without cid/-like directories) are
 	 * normal for debugging, don't warn in that case.
 	 */
 	if (link(old_eml.c_str(), new_eml.c_str()) < 0 &&
-	    (errno != ENOENT || g_dbg_synth_content == 0))
+	    (errno != ENOENT || g_dbg_synth_content == 0)) {
+		int se = errno;
 		mlog(LV_ERR, "E-5310: link %s -> %s: %s",
 			old_eml.c_str(), new_eml.c_str(), strerror(errno));
-
+		return se;
+	}
 	auto old_ext = fmt::format("{}/ext/{}", basedir, old_midstr);
+	if (stat(old_ext.c_str(), &sb) != 0 && errno == ENOENT)
+		return ENOENT;
 	auto new_ext = fmt::format("{}/ext/{}", basedir, new_midstr);
 	if (link(old_ext.c_str(), new_ext.c_str()) < 0 &&
-	    (errno != ENOENT || g_dbg_synth_content == 0))
+	    (errno != ENOENT || g_dbg_synth_content == 0)) {
+		int se = errno;
 		mlog(LV_ERR, "E-5311: link %s -> %s: %s",
 			old_ext.c_str(), new_ext.c_str(), strerror(errno));
+		return se;
+	}
 	return 0;
 } catch (const std::bad_alloc &) {
 	return ENOMEM;
