@@ -26,6 +26,7 @@
 #	include <xxh3.h>
 #	include <xxhash.h>
 #endif
+#include <fmt/core.h>
 #include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/string.h>
@@ -4480,6 +4481,32 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	return TRUE;
 }
 
+static errno_t copy_eml_ext(const char *old_midstr) try
+{
+	auto basedir = exmdb_server::get_dir();
+	auto new_midstr = fmt::format("{}.{}.{}", time(nullptr), common_util_sequence_ID(), get_host_ID());
+	auto old_eml = fmt::format("{}/eml/{}", basedir, old_midstr);
+	auto new_eml = fmt::format("{}/eml/{}", basedir, new_midstr);
+	/*
+	 * Partial mailboxes (without cid/-like directories) are
+	 * normal for debugging, don't warn in that case.
+	 */
+	if (link(old_eml.c_str(), new_eml.c_str()) < 0 &&
+	    (errno != ENOENT || g_dbg_synth_content == 0))
+		mlog(LV_ERR, "E-5310: link %s -> %s: %s",
+			old_eml.c_str(), new_eml.c_str(), strerror(errno));
+
+	auto old_ext = fmt::format("{}/ext/{}", basedir, old_midstr);
+	auto new_ext = fmt::format("{}/ext/{}", basedir, new_midstr);
+	if (link(old_ext.c_str(), new_ext.c_str()) < 0 &&
+	    (errno != ENOENT || g_dbg_synth_content == 0))
+		mlog(LV_ERR, "E-5311: link %s -> %s: %s",
+			old_ext.c_str(), new_ext.c_str(), strerror(errno));
+	return 0;
+} catch (const std::bad_alloc &) {
+	return ENOMEM;
+}
+
 static BOOL common_util_copy_message_internal(sqlite3 *psqlite, 
 	BOOL b_embedded, uint64_t message_id, uint64_t parent_id,
 	uint64_t *pdst_mid, BOOL *pb_result, uint64_t *pchange_num,
@@ -4490,14 +4517,11 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	uint64_t tmp_mid;
 	uint64_t last_id;
 	int is_associated, read_state = 0;
-	char tmp_path[256];
-	char tmp_path1[256];
 	uint64_t change_num;
 	char sql_string[512];
-	char mid_string[128];
-	char mid_string1[128];
 	uint32_t message_size;
 	auto b_private = exmdb_server::is_private();
+	std::string mid_string;
 	
 	if (!b_embedded) {
 		if (*pdst_mid == 0 &&
@@ -4530,34 +4554,11 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	message_size = sqlite3_column_int64(pstmt, 1);
 	if (b_private) {
 		read_state = sqlite3_column_int64(pstmt, 2);
-		if (SQLITE_NULL == sqlite3_column_type(pstmt, 3)) {
-			mid_string[0] = '\0';
-		} else {
-			gx_strlcpy(mid_string1, pstmt.col_text(3), std::size(mid_string1));
-			snprintf(mid_string, std::size(mid_string), "%lld.%u.%s",
-			         LLD{time(nullptr)}, common_util_sequence_ID(), get_host_ID());
-			snprintf(tmp_path, std::size(tmp_path), "%s/eml/%s",
-			         exmdb_server::get_dir(), mid_string);
-			snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
-			         exmdb_server::get_dir(), mid_string1);
-			/*
-			 * Partial mailboxes (without cid/-like directories) are
-			 * normal for debugging, don't warn in that case.
-			 */
-			if (link(tmp_path1, tmp_path) < 0 &&
-			    (errno != ENOENT || g_dbg_synth_content == 0))
-				mlog(LV_ERR, "E-5310: link %s -> %s: %s",
-					tmp_path1, tmp_path, strerror(errno));
-			snprintf(tmp_path, std::size(tmp_path), "%s/ext/%s",
-			         exmdb_server::get_dir(), mid_string);
-			snprintf(tmp_path1, std::size(tmp_path1), "%s/ext/%s",
-			         exmdb_server::get_dir(), mid_string1);
-			if (link(tmp_path1, tmp_path) < 0 &&
-			    (errno != ENOENT || g_dbg_synth_content == 0))
-				mlog(LV_ERR, "E-5311: link %s -> %s: %s",
-					tmp_path1, tmp_path, strerror(errno));
-		}
+		if (sqlite3_column_type(pstmt, 3) == SQLITE_NULL ||
+		    copy_eml_ext(pstmt.col_text(3)) != 0)
+			mid_string.clear();
 	}
+
 	if (pmessage_size != nullptr)
 		*pmessage_size = message_size;
 	pstmt.finalize();
@@ -4577,10 +4578,10 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		if (*mid_string == '\0')
+		if (mid_string.empty())
 			sqlite3_bind_null(pstmt, 1);
 		else
-			sqlite3_bind_text(pstmt, 1, mid_string, -1, SQLITE_STATIC);
+			sqlite3_bind_text(pstmt, 1, mid_string.c_str(), -1, SQLITE_STATIC);
 		if (pstmt.step() != SQLITE_DONE)
 			return FALSE;
 		pstmt.finalize();
