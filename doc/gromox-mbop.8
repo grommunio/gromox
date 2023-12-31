@@ -54,7 +54,7 @@ a new one will implicitly be created when PHP-MAPI/zcore is used.
 Deletes IPM.RuleOrganizer FAI messages from the inbox.
 .SH delmsg
 .SS Synopsis
-\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBdelmsg \-f\fP \fIfolder_spec\fP
+\fBdelmsg \-f\fP \fIfolder_spec\fP
 [\fImsgid\fP...]
 .SS Description
 This command hard-deletes messages from a store, including issuing proper
@@ -73,8 +73,8 @@ will not be deleted.)
 Perform a soft deletion.
 .SH emptyfld
 .SS Synopsis
-\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBemptyfld\fP [\fB\-MRa\fP] [\fB\-t\fP
-\fIage\fP] [\fB\-\-soft\fP] \fIfolder_spec\fP...
+\fBemptyfld\fP [\fB\-MRa\fP] [\fB\-t\fP \fIage\fP] [\fB\-\-soft\fP]
+\fIfolder_spec\fP...
 .SS Description
 This command deletes objects from one or more folders. (This was originally
 implemented with just the "empty_folder" RPC, but more options for selective
@@ -114,8 +114,8 @@ The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.
 .SH purge\-softdelete
 .SS Synopsis
-\fBgromox\-mbop \-u\fP \fIa@b.de\fP \fBpurge-softdelete\fP [\fB\-r\fP]
-[\fB\-t\fP \fItimespec\fP] \fIfolder_spec\fP...
+\fBpurge-softdelete\fP [\fB\-r\fP] [\fB\-t\fP \fItimespec\fP]
+\fIfolder_spec\fP...
 .SS Description
 This command hard-deletes all messages from a folder which are marked as
 soft-deleted. (The entire mailbox can be processed by specifying the root
