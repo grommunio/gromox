@@ -88,7 +88,7 @@ using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
 
 }
 
-static unsigned int g_ruleproc_debug;
+unsigned int g_ruleproc_debug;
 
 rule_node::rule_node(rule_node &&o) :
 	seq(o.seq), state(o.state), extended(o.extended), rule_id(o.rule_id),

@@ -1363,6 +1363,7 @@ extern GX_EXPORT ec_error_t exmdb_local_rules_execute(const char *dir, const cha
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);
+extern GX_EXPORT unsigned int g_ruleproc_debug;
 
 namespace exmdb_client_remote {
 #define IDLOUT
