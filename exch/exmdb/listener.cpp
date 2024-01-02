@@ -47,6 +47,7 @@ static void *mdpls_thrwork(void *param)
 		NULL == common_util_get_timezone ||
 		NULL == common_util_get_maildir ||
 	    common_util_get_homedir == nullptr ||
+	    common_util_get_homedir_by_id == nullptr ||
 		NULL == common_util_get_id_from_username ||
 		NULL == common_util_get_domain_ids ||
 	    ems_send_mail == nullptr) {

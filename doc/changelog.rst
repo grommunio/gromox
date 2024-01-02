@@ -1,3 +1,12 @@
+Development 2.21.8
+==================
+
+Enhancements:
+
+* twostep_ruleproc: support OL-style public folder references in
+  store_eid_to_user RPC
+
+
 Gromox 2.21 (2024-01-08)
 ========================
 
