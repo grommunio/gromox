@@ -95,7 +95,7 @@ static errno_t mcg_loadfile(const char *file_path, uint32_t group_id)
 		if (tag_list == nullptr)
 			return EINVAL;
 		tag_entry tag;
-		auto err = mcg_parse(line, tag);
+		err = mcg_parse(line, tag);
 		if (err != 0)
 			return err;
 		tag_list->push_back(std::move(tag));

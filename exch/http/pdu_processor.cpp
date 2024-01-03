@@ -1851,13 +1851,13 @@ void pdu_processor_rts_echo(char *pbuff)
 BOOL dcerpc_call::rts_ping() try
 {
 	auto pcall = this;
-	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
+	dcerpc_ncacn_packet dnp(pcall->b_bigendian);
 
-	pkt.call_id = pcall->pkt.call_id;
-	pkt.pkt_type = DCERPC_PKT_RTS;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	dnp.call_id = pcall->pkt.call_id;
+	dnp.pkt_type = DCERPC_PKT_RTS;
+	dnp.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	auto rts = new dcerpc_rts;
-	pkt.payload = rts;
+	dnp.payload = rts;
 	rts->flags = RTS_FLAG_PING;
 	rts->num = 0;
 	rts->commands = nullptr;
@@ -1866,7 +1866,7 @@ BOOL dcerpc_call::rts_ping() try
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
-		&pkt, NULL)) {
+	    &dnp, nullptr)) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2085,12 +2085,12 @@ BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
-	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
-	pkt.call_id = pcall->pkt.call_id;
-	pkt.pkt_type = DCERPC_PKT_RTS;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	dcerpc_ncacn_packet dnp(pcall->b_bigendian);
+	dnp.call_id = pcall->pkt.call_id;
+	dnp.pkt_type = DCERPC_PKT_RTS;
+	dnp.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	auto rts = new dcerpc_rts;
-	pkt.payload = rts;
+	dnp.payload = rts;
 	rts->flags = RTS_FLAG_NONE;
 	rts->num = 3;
 	rts->commands = me_alloc<RTS_CMD>(3);
@@ -2106,7 +2106,7 @@ BOOL dcerpc_call::rts_conn_c2(uint32_t in_window_size) try
 	rts->commands[2].command.connectiontimeout =
 		http_parser_get_param(HTTP_SESSION_TIMEOUT) * 1000;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
-		&pkt, NULL)) {
+	    &dnp, nullptr)) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2161,12 +2161,12 @@ BOOL dcerpc_call::rts_outr2_a2() try
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
-	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
-	pkt.call_id = pcall->pkt.call_id;
-	pkt.pkt_type = DCERPC_PKT_RTS;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	dcerpc_ncacn_packet dnp(pcall->b_bigendian);
+	dnp.call_id = pcall->pkt.call_id;
+	dnp.pkt_type = DCERPC_PKT_RTS;
+	dnp.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	auto rts = new dcerpc_rts;
-	pkt.payload = rts;
+	dnp.payload = rts;
 	rts->flags = RTS_FLAG_RECYCLE_CHANNEL;
 	rts->num = 1;
 	rts->commands = me_alloc<RTS_CMD>(1);
@@ -2178,7 +2178,7 @@ BOOL dcerpc_call::rts_outr2_a2() try
 	rts->commands[0].command_type = RTS_CMD_DESTINATION;
 	rts->commands[0].command.destination = FD_CLIENT;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
-		&pkt, NULL)) {
+	    &dnp, nullptr)) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2197,12 +2197,12 @@ BOOL dcerpc_call::rts_outr2_a6() try
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
-	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
-	pkt.call_id = pcall->pkt.call_id;
-	pkt.pkt_type = DCERPC_PKT_RTS;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	dcerpc_ncacn_packet dnp(pcall->b_bigendian);
+	dnp.call_id = pcall->pkt.call_id;
+	dnp.pkt_type = DCERPC_PKT_RTS;
+	dnp.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	auto rts = new dcerpc_rts;
-	pkt.payload = rts;
+	dnp.payload = rts;
 	rts->flags = RTS_FLAG_NONE;
 	rts->num = 2;
 	rts->commands = me_alloc<RTS_CMD>(2);
@@ -2216,7 +2216,7 @@ BOOL dcerpc_call::rts_outr2_a6() try
 	
 	rts->commands[1].command_type = RTS_CMD_ANCE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
-		&pkt, NULL)) {
+	    &dnp, nullptr)) {
 		delete pblob_node;
 		return FALSE;
 	}
@@ -2235,12 +2235,12 @@ BOOL dcerpc_call::rts_outr2_b3() try
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
 
-	dcerpc_ncacn_packet pkt(pcall->b_bigendian);
-	pkt.call_id = pcall->pkt.call_id;
-	pkt.pkt_type = DCERPC_PKT_RTS;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	dcerpc_ncacn_packet dnp(pcall->b_bigendian);
+	dnp.call_id = pcall->pkt.call_id;
+	dnp.pkt_type = DCERPC_PKT_RTS;
+	dnp.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	auto rts = new dcerpc_rts;
-	pkt.payload = rts;
+	dnp.payload = rts;
 	rts->flags = RTS_FLAG_EOF;
 	rts->num = 1;
 	rts->commands = me_alloc<RTS_CMD>(1);
@@ -2251,7 +2251,7 @@ BOOL dcerpc_call::rts_outr2_b3() try
 	
 	rts->commands[0].command_type = RTS_CMD_ANCE;
 	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
-		&pkt, NULL)) {
+	    &dnp, nullptr)) {
 		delete pblob_node;
 		return FALSE;
 	}

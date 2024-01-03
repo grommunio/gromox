@@ -1493,7 +1493,6 @@ ec_error_t cu_send_message(logon_object *plogon, message_object *msg, bool b_sub
 	uint64_t new_id;
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;
-	using LLU = unsigned long long;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto dir = plogon->get_dir();

@@ -508,7 +508,6 @@ void EWSPlugin::loadConfig()
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 
 	auto str = gxcfg->get_value("outgoing_smtp_url");
-	std::string smtp_url;
 	if (str != nullptr) {
 		try {
 			smtp_url = vmime::utility::url(str);

@@ -345,7 +345,7 @@ static int main(int argc, const char **argv)
 		}
 		if (g_cutoff_time != 0 || g_recurse) {
 			/* Deletion via client */
-			int ret = do_hierarchy(eid);
+			ret = do_hierarchy(eid);
 			if (ret != EXIT_SUCCESS)
 				return ret;
 			continue;
