@@ -3584,7 +3584,6 @@ struct mResolveNamesResponse
 };
 
 /**
-<<<<<<< HEAD
  * Messages.xsd:1121
  */
 struct mSendItemRequest

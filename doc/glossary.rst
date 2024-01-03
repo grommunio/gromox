@@ -342,7 +342,6 @@ Folder Associated Item, FAI
 Limits
 ======
 
-<<<<<<< HEAD
 Global user count
 	Gromox limit: 2^31 - 16, based on ab_tree minid limits.
 	Upper theoretical limit: 2^32 - 16.
