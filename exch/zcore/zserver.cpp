@@ -5092,6 +5092,27 @@ ec_error_t zs_getuserfreebusy(GUID hsession, BINARY entryid,
 	       *fb_data) ? ecSuccess : ecError;
 }
 
+ec_error_t zs_getuserfreebusyical(GUID hsession, BINARY entryid,
+    time_t starttime, time_t endtime, BINARY *bin)
+{
+	char maildir[256];
+	char username[UADDR_SIZE];
+
+	auto pinfo = zs_query_session(hsession);
+	if (pinfo == nullptr)
+		return ecError;
+	if (!common_util_addressbook_entryid_to_username(entryid,
+	    username, std::size(username)) ||
+	    !system_services_get_maildir(username, maildir, std::size(maildir)))
+		return ecSuccess;
+	std::vector<freebusy_event> fb_data;
+	if (!get_freebusy(pinfo->get_username(), maildir, starttime, endtime,
+	    fb_data))
+		return ecError;
+	return cu_fbdata_to_ical(pinfo->get_username(), username, starttime,
+	       endtime, fb_data, bin);
+}
+
 ec_error_t zs_setpasswd(const char *username,
 	const char *passwd, const char *new_passwd)
 {

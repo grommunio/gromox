@@ -2153,3 +2153,26 @@ ec_error_t cu_id2user(int id, std::string &user) try
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
 }
+
+ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
+    time_t starttime, time_t endtime, const std::vector<freebusy_event> &fbdata,
+    BINARY *bin) try
+{
+	ICAL ical;
+	if (!oxcical_export_freebusy(user, fbuser, starttime, endtime,
+	    fbdata, ical)) {
+		mlog(LV_DEBUG, "D-2203: oxcical_export_freebusy for %s failed", fbuser);
+		return ecError;
+	}
+	std::string tmp_buff;
+	if (ical.serialize(tmp_buff) != ecSuccess)
+		return ecError;
+	bin->cb = tmp_buff.size();
+	bin->pc = common_util_dup(tmp_buff.c_str());
+	if (bin->pc == nullptr)
+		return ecServerOOM;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2188: ENOMEM");
+	return ecServerOOM;
+}

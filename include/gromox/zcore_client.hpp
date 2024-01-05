@@ -107,5 +107,6 @@ ZCIDL(imtomessage2, (GUID session, uint32_t folder, uint32_t data_type, const ch
 ZCIDL(essdn_to_username, (const char *essdn, IDLOUT char **username))
 ZCIDL(logon_token, (const char *token, const char *rhost, IDLOUT GUID *hsession))
 ZCIDL(getuserfreebusy, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT std::vector<freebusy_event> *fb_events))
+ZCIDL(getuserfreebusyical, (GUID hsession, BINARY entryid, time_t starttime, time_t endtime, IDLOUT BINARY *ical_bin))
 #undef ZCIDL
 #undef IDLOUT

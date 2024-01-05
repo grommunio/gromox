@@ -137,3 +137,4 @@ extern ec_error_t zs_setpasswd(const char *username, const char *passwd, const c
 extern ec_error_t zs_linkmessage(GUID ses, BINARY search_eid, BINARY msg_eid);
 extern ec_error_t zs_essdn_to_username(const char *essdn, char **username);
 extern ec_error_t zs_getuserfreebusy(GUID ses, BINARY entryid, time_t starttime, time_t endtime, std::vector<freebusy_event> *fb_events);
+extern ec_error_t zs_getuserfreebusyical(GUID ses, BINARY entryid, time_t starttime, time_t endtime, BINARY *ical);

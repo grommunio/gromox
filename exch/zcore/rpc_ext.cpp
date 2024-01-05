@@ -1548,6 +1548,24 @@ static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getuserfreebusy &d)
 	return pack_result::ok;
 }
 
+static pack_result zrpc_pull(EXT_PULL &x, zcreq_getuserfreebusyical &d)
+{
+	QRF(x.g_guid(&d.hsession));
+	QRF(x.g_bin(&d.entryid));
+	int64_t t;
+	QRF(x.g_int64(&t));
+	d.starttime = t;
+	QRF(x.g_int64(&t));
+	d.endtime = t;
+	return pack_result::ok;
+}
+
+static pack_result zrpc_push(EXT_PUSH &x, const zcresp_getuserfreebusyical &d)
+{
+	QRF(x.p_bin(d.ical_bin));
+	return pack_result::ok;
+}
+
 static pack_result zrpc_push(EXT_PUSH &x, const zcresp_imtomessage2 &d)
 {
 	QRF(x.p_uint32_a(d.msg_handles));
@@ -1694,6 +1712,7 @@ pack_result rpc_ext_pull_request(const BINARY *pbin_in,
 	E(essdn_to_username)
 	E(logon_token)
 	E(getuserfreebusy)
+	E(getuserfreebusyical)
 #undef E
 	default:
 		return pack_result::bad_switch;
@@ -1812,6 +1831,7 @@ pack_result rpc_ext_push_response(const zcresp *presponse, BINARY *pbin_out)
 	E(essdn_to_username)
 	E(logon_token)
 	E(getuserfreebusy)
+	E(getuserfreebusyical)
 #undef E
 	default:
 		return pack_result::bad_switch;

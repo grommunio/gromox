@@ -52,8 +52,8 @@ static constexpr char EncodedGlobalId_hex[] =
 	"040000008200E00074C5B7101A82E008"; /* s_rgbSPlus */
 static constexpr uint32_t indet_rendering_pos = UINT32_MAX;
 static constexpr char fmt_date[] = "%04d%02d%02d",
-	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",
-	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ";
+	fmt_datetimelcl[] = "%04d%02d%02dT%02d%02d%02d",  /* needs buf[16] */
+	fmt_datetimeutc[] = "%04d%02d%02dT%02d%02d%02dZ"; /* needs buf[17] */
 
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
@@ -3772,6 +3772,58 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 	if (err.size() > 0) {
 		mlog(LV_ERR, "%s", err.c_str());
 		return false;
+	}
+	return TRUE;
+}
+
+BOOL oxcical_export_freebusy(const char *user, const char *fbuser,
+    time_t starttime, const time_t endtime,
+    const std::vector<freebusy_event> &fbdata, ICAL &ic)
+{
+	ic.append_line("METHOD", "PUBLISH");
+	ic.append_line("PRODID", "gromox-oxcical");
+	ic.append_line("VERSION", "2.0");
+	auto com = ic.append_comp("VFREEBUSY");
+	com.append_line("ORGANIZER", user);
+	auto line = &com.append_line("ATTENDEE");
+	line->append_param("PARTSTAT", "ACCEPTED");
+	line->append_param("CUTYPE", "INDIVIDUAL");
+	char tmp_value[334];
+	snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", fbuser);
+	line->append_value(nullptr, tmp_value);
+	ICAL_TIME itime1, itime2;
+	if (!ical_utc_to_datetime(nullptr, starttime, &itime1))
+		return false;
+	append_dt(com, "DTSTART", itime1, false, nullptr);
+	if (!ical_utc_to_datetime(nullptr, endtime, &itime1))
+		return false;
+	append_dt(com, "DTEND", itime1, false, nullptr);
+	time_t nowtime = time(nullptr);
+	if (!ical_utc_to_datetime(nullptr, nowtime, &itime1))
+		return false;
+	append_dt(com, "DTSTAMP", itime1, false, nullptr);
+	if (fbdata.size() == 0)
+		return TRUE;
+	for (const auto &event : fbdata) {
+		line = &com.append_line("FREEBUSY");
+		switch (event.busy_status) {
+		case olFree:
+			line->append_param("FBTYPE", "FREE");
+			break;
+		case olTentative:
+			line->append_param("FBTYPE", "BUSY-TENTATIVE");
+			break;
+		default:
+			line->append_param("FBTYPE", "BUSY");
+			break;
+		}
+		if (!ical_utc_to_datetime(nullptr, event.start_time, &itime1) ||
+		    !ical_utc_to_datetime(nullptr, event.end_time, &itime2))
+			return false;
+		char start[17], end[17];
+		sprintf_dtutc(start, std::size(start), itime1);
+		sprintf_dtutc(end, std::size(end), itime2);
+		line->append_value(nullptr, start + "/"s + end);
 	}
 	return TRUE;
 }

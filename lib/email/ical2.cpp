@@ -61,6 +61,9 @@ void ical_line::append_value(const char *tag, const char *s)
 	append_value(std::move(v));
 }
 
+/**
+ * @tag may be nullptr.
+ */
 void ical_line::append_value(const char *tag, std::string &&s)
 {
 	ical_value v(tag);

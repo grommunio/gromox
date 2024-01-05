@@ -102,6 +102,7 @@ enum class zcore_callid : uint8_t {
 	essdn_to_username = 0x59,
 	logon_token = 0x5a,
 	getuserfreebusy = 0x5b,
+	getuserfreebusyical = 0x5c,
 	/* update exch/zcore/names.cpp! */
 };
 
@@ -641,6 +642,13 @@ struct zcreq_getuserfreebusy final : public zcreq {
 	int64_t endtime;
 };
 
+struct zcreq_getuserfreebusyical final : public zcreq {
+	GUID hsession;
+	BINARY entryid;
+	int64_t starttime;
+	int64_t endtime;
+};
+
 struct zcresp {
 	zcresp() = default; /* Prevent use of direct-init-list */
 	virtual ~zcresp() = default;
@@ -879,6 +887,10 @@ struct zcresp_essdn_to_username final : public zcresp {
 
 struct zcresp_getuserfreebusy final : public zcresp {
 	std::vector<freebusy_event> fb_events;
+};
+
+struct zcresp_getuserfreebusyical final : public zcresp {
+	BINARY ical_bin;
 };
 
 using zcresp_checksession = zcresp;

@@ -36,6 +36,7 @@ extern GX_EXPORT unsigned int g_oxvcard_pedantic;
 extern GX_EXPORT ec_error_t oxcical_import_multi(const char *zone, const ical &, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
 extern GX_EXPORT std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> oxcical_import_single(const char *zone, const ical &, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID);
 extern GX_EXPORT BOOL oxcical_export(const MESSAGE_CONTENT *, ical &, const char *org, EXT_BUFFER_ALLOC, GET_PROPIDS, gromox::cvt_id2user);
+extern GX_EXPORT BOOL oxcical_export_freebusy(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, ical &);
 
 extern BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_USERNAME);
 extern MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *timezone, const MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS);

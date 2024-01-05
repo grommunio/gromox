@@ -162,6 +162,7 @@ extern ec_error_t cu_id2user(int, std::string &);
 extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
 extern BINARY *cu_read_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype);
 extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype, const void *buf, size_t);
+extern ec_error_t cu_fbdata_to_ical(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, BINARY *);
 
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;
