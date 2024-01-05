@@ -3266,6 +3266,32 @@ static ZEND_FUNCTION(mapi_getuserfreebusy)
 	MAPI_G(hr) = ecSuccess;
 }
 
+static ZEND_FUNCTION(mapi_getuserfreebusyical)
+{
+	ZCL_MEMORY;
+	zend_long starttime, endtime;
+	BINARY entryid, bin;
+	size_t eid_size = 0;
+	zval *reso;
+	MAPI_RESOURCE *ses;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rsll", &reso, &entryid.pb,
+	    &eid_size, &starttime, &endtime) == FAILURE || reso == nullptr ||
+	    entryid.pb == nullptr || eid_size == 0)
+		pthrow(ecInvalidParam);
+	entryid.cb = eid_size;
+	ZEND_FETCH_RESOURCE(ses, MAPI_RESOURCE *,
+		&reso, -1, name_mapi_session, le_mapi_session);
+	if (ses->type != zs_objtype::session)
+		pthrow(ecInvalidObject);
+	auto result = zclient_getuserfreebusyical(ses->hsession, entryid,
+	              starttime, endtime, &bin);
+	if (result != ecSuccess)
+		pthrow(result);
+	RETVAL_STRINGL(bin.pc, bin.cb);
+	MAPI_G(hr) = ecSuccess;
+}
+
 static ZEND_FUNCTION(mapi_exportchanges_config)
 {
 	ZCL_MEMORY;
@@ -4488,6 +4514,7 @@ static zend_function_entry mapi_functions[] = {
 	F(mapi_zarafa_getpermissionrules)
 	F(mapi_zarafa_setpermissionrules)
 	F(mapi_getuserfreebusy)
+	F(mapi_getuserfreebusyical)
 	F(mapi_exportchanges_config)
 	F(mapi_exportchanges_synchronize)
 	F(mapi_exportchanges_updatestate)

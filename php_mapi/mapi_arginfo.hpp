@@ -423,6 +423,13 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getuserfreebusy, 0, 4, MAY_
 	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_mapi_getuserfreebusyical, 0, 4, MAY_BE_STRING|MAY_BE_FALSE)
+	ZEND_ARG_OBJ_INFO(0, ses, resource, 0)
+	ZEND_ARG_TYPE_INFO(0, entryid, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_mapi_exportchanges_config, 0, 8, _IS_BOOL, 0)
 	ZEND_ARG_OBJ_INFO(0, e, resource, 0)
 	ZEND_ARG_OBJ_INFO(0, stream, resource, 0)
