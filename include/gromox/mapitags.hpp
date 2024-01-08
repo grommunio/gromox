@@ -1153,6 +1153,7 @@ enum {
 	PidLidTaskDateCompleted = 0x810F,
 	PidLidTaskActualEffort = 0x8110,
 	PidLidTaskEstimatedEffort = 0x8111,
+	PidLidTaskRecurrence = 0x8116,
 	PidLidTaskComplete = 0x811C,
 	PidLidTaskOwner = 0x811F,
 	PidLidTaskFRecurring = 0x8126,

@@ -25,6 +25,7 @@ static const PROPERTY_NAME NtTaskDueDate = {MNID_ID, PSETID_TASK, PidLidTaskDueD
 static const PROPERTY_NAME NtTaskDateCompleted = {MNID_ID, PSETID_TASK, PidLidTaskDateCompleted};
 static const PROPERTY_NAME NtTaskActualEffort = {MNID_ID, PSETID_TASK, PidLidTaskActualEffort};
 static const PROPERTY_NAME NtTaskEstimatedEffort = {MNID_ID, PSETID_TASK, PidLidTaskEstimatedEffort};
+static const PROPERTY_NAME NtTaskRecurrence = {MNID_ID, PSETID_TASK, PidLidTaskRecurrence};
 static const PROPERTY_NAME NtTaskComplete = {MNID_ID, PSETID_TASK, PidLidTaskComplete};
 static const PROPERTY_NAME NtTaskOwner = {MNID_ID, PSETID_TASK, PidLidTaskOwner};
 static const PROPERTY_NAME NtTaskFRecurring = {MNID_ID, PSETID_TASK, PidLidTaskFRecurring};

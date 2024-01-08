@@ -257,12 +257,12 @@ void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 }
 
 /**
- * @brief Get the recurrence pattern structure
+ * @brief Get the appointment recurrence pattern structure
  *
  * @param recurData    Recurrence data
  * @return APPOINTMENT_RECUR_PAT Appointment recurrence pattern
  */
-APPOINTMENT_RECUR_PAT getAppointmentRecur(const BINARY* recurData)
+APPOINTMENT_RECUR_PAT getAppointmentRecurPattern(const BINARY* recurData)
 {
 	EXT_PULL ext_pull;
 	APPOINTMENT_RECUR_PAT apprecurr;
@@ -273,24 +273,44 @@ APPOINTMENT_RECUR_PAT getAppointmentRecur(const BINARY* recurData)
 }
 
 /**
+ * @brief Get the recurrence pattern structure
+ *
+ * @param recurData    Recurrence data
+ * @return RECURRENCE_PATTERN Recurrence pattern
+ */
+RECURRENCE_PATTERN getRecurPattern(const BINARY* recurData)
+{
+	EXT_PULL ext_pull;
+	RECURRENCE_PATTERN recurr;
+	ext_pull.init(recurData->pb, recurData->cb, gromox::zalloc, EXT_FLAG_UTF16);
+	if(ext_pull.g_recpat(&recurr) != EXT_ERR_SUCCESS)
+		throw InputError(E3248);
+	return recurr;
+}
+
+/**
  * @brief Get the Recurrence Pattern object
  *
- * @param apprecurr    Appointment recurrence pattern
+ * @param recur_pat    Recurrence pattern
  * @return tRecurrencePattern
  */
-tRecurrencePattern get_recurrence_pattern(const APPOINTMENT_RECUR_PAT& apprecurr)
+tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 {
 	ICAL_TIME itime;
 	std::string daysofweek("");
-	switch (apprecurr.recur_pat.patterntype)
+	switch (recur_pat.patterntype)
 	{
 	case PATTERNTYPE_DAY:
-		return tDailyRecurrencePattern(apprecurr.recur_pat.period / 1440);
+		if(recur_pat.slidingflag)
+			return tDailyRegeneratingPattern(recur_pat.period / 1440);
+		return tDailyRecurrencePattern(recur_pat.period / 1440);
 	case PATTERNTYPE_WEEK:
 	{
-		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
-		return tWeeklyRecurrencePattern(apprecurr.recur_pat.period, daysofweek,
-			Enum::DayOfWeekType(uint8_t(apprecurr.recur_pat.firstdow)));
+		daysofweek_to_str(recur_pat.pts.weekrecur, daysofweek);
+		if(recur_pat.slidingflag)
+			return tWeeklyRegeneratingPattern(recur_pat.period);
+		return tWeeklyRecurrencePattern(recur_pat.period, daysofweek,
+				Enum::DayOfWeekType(uint8_t(recur_pat.firstdow)));
 	}
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_MONTHEND:
@@ -298,26 +318,38 @@ tRecurrencePattern get_recurrence_pattern(const APPOINTMENT_RECUR_PAT& apprecurr
 	case PATTERNTYPE_HJMONTHEND:
 	{
 		ical_get_itime_from_yearday(1601,
-			apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
-		if(apprecurr.recur_pat.period % 12 != 0)
-			return tAbsoluteMonthlyRecurrencePattern(apprecurr.recur_pat.period,
-				apprecurr.recur_pat.pts.dayofmonth);
-		return tAbsoluteYearlyRecurrencePattern(apprecurr.recur_pat.pts.dayofmonth,
-			Enum::MonthNamesType(uint8_t(itime.month - 1)));
+			recur_pat.firstdatetime / 1440 + 1, &itime);
+		if(recur_pat.period % 12 != 0)
+		{
+			if(recur_pat.slidingflag)
+				return tMonthlyRegeneratingPattern(recur_pat.period);
+			return tAbsoluteMonthlyRecurrencePattern(recur_pat.period,
+				recur_pat.pts.dayofmonth);
+		}
+		if(recur_pat.slidingflag)
+			return tYearlyRegeneratingPattern(recur_pat.period);
+		return tAbsoluteYearlyRecurrencePattern(recur_pat.pts.dayofmonth,
+				Enum::MonthNamesType(uint8_t(itime.month - 1)));
 	}
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
 	{
 		ical_get_itime_from_yearday(1601,
-			apprecurr.recur_pat.firstdatetime / 1440 + 1, &itime);
-		daysofweek_to_str(apprecurr.recur_pat.pts.weekrecur, daysofweek);
+			recur_pat.firstdatetime / 1440 + 1, &itime);
+		daysofweek_to_str(recur_pat.pts.weekrecur, daysofweek);
 		Enum::DayOfWeekIndexType dayofweekindex(uint8_t(
-			apprecurr.recur_pat.pts.monthnth.recurnum - 1));
-		if(apprecurr.recur_pat.period % 12 != 0)
-			return tRelativeMonthlyRecurrencePattern(apprecurr.recur_pat.period,
-				daysofweek, dayofweekindex);
+			recur_pat.pts.monthnth.recurnum - 1));
+		if(recur_pat.period % 12 != 0)
+		{
+			if(recur_pat.slidingflag)
+				return tMonthlyRegeneratingPattern(recur_pat.period);
+			return tRelativeMonthlyRecurrencePattern(recur_pat.period,
+					daysofweek, dayofweekindex);
+		}
+		if(recur_pat.slidingflag)
+			return tYearlyRegeneratingPattern(recur_pat.period);
 		return tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex,
-			Enum::MonthNamesType(uint8_t(itime.month - 1)));
+				Enum::MonthNamesType(uint8_t(itime.month - 1)));
 	}
 	default:
 		throw InputError(E3110);
@@ -327,19 +359,19 @@ tRecurrencePattern get_recurrence_pattern(const APPOINTMENT_RECUR_PAT& apprecurr
 /**
  * @brief Get the Recurrence Range object
  *
- * @param apprecurr    Appointment recurrence pattern
+ * @param recur_pat    Recurrence pattern
  * @return tRecurrenceRange
  */
-tRecurrenceRange get_recurrence_range(const APPOINTMENT_RECUR_PAT& apprecurr)
+tRecurrenceRange get_recurrence_range(const RECURRENCE_PATTERN& recur_pat)
 {
-	auto startdate = rop_util_rtime_to_unix2(apprecurr.recur_pat.startdate);
-	switch (apprecurr.recur_pat.endtype)
+	auto startdate = rop_util_rtime_to_unix2(recur_pat.startdate);
+	switch (recur_pat.endtype)
 	{
 	case ENDTYPE_AFTER_N_OCCURRENCES:
-		return tNumberedRecurrenceRange(startdate, apprecurr.recur_pat.occurrencecount);
+		return tNumberedRecurrenceRange(startdate, recur_pat.occurrencecount);
 	case ENDTYPE_AFTER_DATE:
 		return tEndDateRecurrenceRange(startdate,
-			rop_util_rtime_to_unix2(apprecurr.recur_pat.enddate));
+			rop_util_rtime_to_unix2(recur_pat.enddate));
 	default:
 		return tNoEndRecurrenceRange(startdate);
 	}
@@ -1318,6 +1350,17 @@ void tTask::update(const sShape& shape)
 		Status.emplace(statusType);
 	}
 	fromProp(shape.get(NtTaskEstimatedEffort), TotalWork);
+	if((prop = shape.get(NtTaskRecurrence)))
+	{
+		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
+		if(recurData->cb > 0)
+		{
+			RECURRENCE_PATTERN recurr = getRecurPattern(recurData);
+			auto& rec = Recurrence.emplace();
+			rec.TaskRecurrencePattern = get_recurrence_pattern(recurr);
+			rec.RecurrenceRange = get_recurrence_range(recurr);
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1344,11 +1387,11 @@ void tCalendarItem::update(const sShape& shape)
 		CalendarItemType.emplace(Enum::RecurringMaster);
 		const BINARY* recurData = static_cast<BINARY*>(prop->pvalue);
 		if(recurData->cb > 0) {
-			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecur(recurData);
+			APPOINTMENT_RECUR_PAT apprecurr = getAppointmentRecurPattern(recurData);
 
 			auto& rec = Recurrence.emplace();
-			rec.RecurrencePattern = get_recurrence_pattern(apprecurr);
-			rec.RecurrenceRange = get_recurrence_range(apprecurr);
+			rec.RecurrencePattern = get_recurrence_pattern(apprecurr.recur_pat);
+			rec.RecurrenceRange = get_recurrence_range(apprecurr.recur_pat);
 
 			// The count of the exceptions (modified and deleted occurrences)
 			// is summed in deletedinstancecount
@@ -2621,7 +2664,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"task:Mileage", {NtMileage, PT_UNICODE}},
 	{"task:Owner", {NtTaskOwner, PT_UNICODE}},
 	{"task:PercentComplete", {NtPercentComplete, PT_DOUBLE}},
-	// {"task:Recurrence", {}},
+	{"task:Recurrence", {NtTaskRecurrence, PT_BINARY}},
 	{"task:StartDate", {NtTaskStartDate, PT_SYSTIME}},
 	{"task:Status", {NtTaskStatus, PT_LONG}},
 	// {"task:StatusDescription", {}},

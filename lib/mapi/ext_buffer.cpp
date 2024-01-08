@@ -1778,49 +1778,6 @@ static pack_result ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 	}
 }
 
-static pack_result ext_buffer_pull_recurrencepattern(EXT_PULL *pext,
-    RECURRENCE_PATTERN *r)
-{
-	TRY(pext->g_uint16(&r->readerversion));
-	TRY(pext->g_uint16(&r->writerversion));
-	TRY(pext->g_uint16(&r->recurfrequency));
-	TRY(pext->g_uint16(&r->patterntype));
-	TRY(pext->g_uint16(&r->calendartype));
-	TRY(pext->g_uint32(&r->firstdatetime));
-	TRY(pext->g_uint32(&r->period));
-	TRY(pext->g_uint32(&r->slidingflag));
-	TRY(ext_buffer_pull_patterntypespecific(pext, r->patterntype, &r->pts));
-	TRY(pext->g_uint32(&r->endtype));
-	TRY(pext->g_uint32(&r->occurrencecount));
-	TRY(pext->g_uint32(&r->firstdow));
-	TRY(pext->g_uint32(&r->deletedinstancecount));
-	if (r->deletedinstancecount == 0) {
-		r->pdeletedinstancedates = NULL;
-	} else {
-		r->pdeletedinstancedates = pext->anew<uint32_t>(r->deletedinstancecount);
-		if (r->pdeletedinstancedates == nullptr) {
-			r->deletedinstancecount = 0;
-			return EXT_ERR_ALLOC;
-		}
-	}
-	for (size_t i = 0; i < r->deletedinstancecount; ++i)
-		TRY(pext->g_uint32(&r->pdeletedinstancedates[i]));
-	TRY(pext->g_uint32(&r->modifiedinstancecount));
-	if (r->modifiedinstancecount == 0) {
-		r->pmodifiedinstancedates = NULL;
-	} else {
-		r->pmodifiedinstancedates = pext->anew<uint32_t>(r->modifiedinstancecount);
-		if (r->pmodifiedinstancedates == nullptr) {
-			r->modifiedinstancecount = 0;
-			return EXT_ERR_ALLOC;
-		}
-	}
-	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
-		TRY(pext->g_uint32(&r->pmodifiedinstancedates[i]));
-	TRY(pext->g_uint32(&r->startdate));
-	return pext->g_uint32(&r->enddate);
-}
-
 static pack_result ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 {
 	uint16_t tmp_len;
@@ -1967,9 +1924,51 @@ static pack_result ext_buffer_pull_extendedexception(EXT_PULL *pext,
 	return EXT_ERR_SUCCESS;
 }
 
+pack_result EXT_PULL::g_recpat(RECURRENCE_PATTERN *r)
+{
+	TRY(g_uint16(&r->readerversion));
+	TRY(g_uint16(&r->writerversion));
+	TRY(g_uint16(&r->recurfrequency));
+	TRY(g_uint16(&r->patterntype));
+	TRY(g_uint16(&r->calendartype));
+	TRY(g_uint32(&r->firstdatetime));
+	TRY(g_uint32(&r->period));
+	TRY(g_uint32(&r->slidingflag));
+	TRY(ext_buffer_pull_patterntypespecific(this, r->patterntype, &r->pts));
+	TRY(g_uint32(&r->endtype));
+	TRY(g_uint32(&r->occurrencecount));
+	TRY(g_uint32(&r->firstdow));
+	TRY(g_uint32(&r->deletedinstancecount));
+	if (r->deletedinstancecount == 0) {
+		r->pdeletedinstancedates = NULL;
+	} else {
+		r->pdeletedinstancedates = anew<uint32_t>(r->deletedinstancecount);
+		if (r->pdeletedinstancedates == nullptr) {
+			r->deletedinstancecount = 0;
+			return EXT_ERR_ALLOC;
+		}
+	}
+	for (size_t i = 0; i < r->deletedinstancecount; ++i)
+		TRY(g_uint32(&r->pdeletedinstancedates[i]));
+	TRY(g_uint32(&r->modifiedinstancecount));
+	if (r->modifiedinstancecount == 0) {
+		r->pmodifiedinstancedates = NULL;
+	} else {
+		r->pmodifiedinstancedates = anew<uint32_t>(r->modifiedinstancecount);
+		if (r->pmodifiedinstancedates == nullptr) {
+			r->modifiedinstancecount = 0;
+			return EXT_ERR_ALLOC;
+		}
+	}
+	for (size_t i = 0; i < r->modifiedinstancecount; ++i)
+		TRY(g_uint32(&r->pmodifiedinstancedates[i]));
+	TRY(g_uint32(&r->startdate));
+	return g_uint32(&r->enddate);
+}
+
 pack_result EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 {
-	TRY(ext_buffer_pull_recurrencepattern(this, &r->recur_pat));
+	TRY(g_recpat(&r->recur_pat));
 	TRY(g_uint32(&r->readerversion2));
 	TRY(g_uint32(&r->writerversion2));
 	TRY(g_uint32(&r->starttimeoffset));

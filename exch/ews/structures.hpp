@@ -1393,7 +1393,67 @@ struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase
 };
 
 /**
+ * Types.xsd:4545
+ * <xs:complexType name="RegeneratingPatternBaseType" abstract="true">
+ */
+struct tRegeneratingPatternBase : public tIntervalRecurrencePatternBase
+{
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+};
+
+/**
+ * Types.xsd:4551
+ */
+struct tDailyRegeneratingPattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "DailyRegeneration";
+
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+};
+
+/**
+ * Types.xsd:4551
+ */
+struct tWeeklyRegeneratingPattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "WeeklyRegeneration";
+
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+};
+
+/**
+ * Types.xsd:4551
+ */
+struct tMonthlyRegeneratingPattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "MonthlyRegeneration";
+
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+};
+
+/**
+ * Types.xsd:4551
+ */
+struct tYearlyRegeneratingPattern : public tIntervalRecurrencePatternBase
+{
+	static constexpr char NAME[] = "YearlyRegeneration";
+
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+};
+/**
  * Types.xsd:4848
+ */
+// using tRecurrencePattern = std::variant<
+// 	tRelativeYearlyRecurrencePattern,
+// 	tAbsoluteYearlyRecurrencePattern,
+// 	tRelativeMonthlyRecurrencePattern,
+// 	tAbsoluteMonthlyRecurrencePattern,
+// 	tWeeklyRecurrencePattern,
+// 	tDailyRecurrencePattern
+// >;
+
+/**
+ * Types.xsd:4861
  */
 using tRecurrencePattern = std::variant<
 	tRelativeYearlyRecurrencePattern,
@@ -1401,7 +1461,11 @@ using tRecurrencePattern = std::variant<
 	tRelativeMonthlyRecurrencePattern,
 	tAbsoluteMonthlyRecurrencePattern,
 	tWeeklyRecurrencePattern,
-	tDailyRecurrencePattern
+	tDailyRecurrencePattern,
+	tDailyRegeneratingPattern,
+	tWeeklyRegeneratingPattern,
+	tMonthlyRegeneratingPattern,
+	tYearlyRegeneratingPattern
 >;
 
 /**
@@ -1512,6 +1576,18 @@ struct tDeletedOccurrenceInfoType : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tDeletedOccurrenceInfoType(const gromox::time_point s) : Start(s) {};
+};
+
+/**
+ * Types.xsd:4895
+ */
+struct tTaskRecurrence
+{
+	// tTaskRecurrencePattern TaskRecurrencePattern;
+	tRecurrencePattern TaskRecurrencePattern;
+	tRecurrenceRange RecurrenceRange;
+
+	void serialize(tinyxml2::XMLElement*) const;
 };
 
 /**
@@ -1632,7 +1708,7 @@ struct tTask : public tItem
 	std::optional<std::string> Mileage;
 	std::optional<std::string> Owner;
 	std::optional<double> PercentComplete;
-	// <xs:element name="Recurrence" type="t:TaskRecurrenceType" minOccurs="0" />
+	std::optional<tTaskRecurrence> Recurrence;
 	std::optional<gromox::time_point> StartDate;
 	std::optional<Enum::TaskStatusType> Status;
 	std::optional<std::string> StatusDescription;
