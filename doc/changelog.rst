@@ -1,11 +1,12 @@
-Development 2.20.97
-===================
+Gromox 2.21 (2024-01-08)
+========================
 
 Fixes:
 
 * exch: fix nonsensical compare operation in check_message_owner
 * lib: guard against an integer overflow when inserting last element in range_set
 * imap: do not flag zero-length usernames/passwords as a syntax error
+* exmdb: avoid showing E-5310/5311 for absent files
 
 Enhancements:
 
@@ -14,6 +15,9 @@ Enhancements:
 * gromox-snapshot: Support snapshots on XFS
 * zcore: log REMOTE_ADDR on authentication failure for fail2ban
 * ews: improve contact item and task item support
+* php-mapi: add ``mapi_getuserfreebusyical`` function
+* exmdb: add ICS request dumper (config directive
+  gromox.cfg:``exmdb_ics_log_file``)
 
 Behavioral changes:
 
