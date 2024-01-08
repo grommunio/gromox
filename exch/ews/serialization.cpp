@@ -355,7 +355,8 @@ void tTask::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(IsTeamTask);
 	XMLDUMPT(Mileage);
 	XMLDUMPT(Owner);
-	// XMLDUMPT(PercentComplete);
+	XMLDUMPT(PercentComplete);
+	XMLDUMPT(Recurrence);
 	XMLDUMPT(StartDate);
 	XMLDUMPT(Status);
 	XMLDUMPT(StatusDescription);
@@ -475,6 +476,12 @@ void tOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
 void tDeletedOccurrenceInfoType::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(Start);
+}
+
+void tTaskRecurrence::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(TaskRecurrencePattern);
+	XMLDUMPT(RecurrenceRange);
 }
 
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :

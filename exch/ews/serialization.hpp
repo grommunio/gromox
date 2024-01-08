@@ -212,6 +212,21 @@ struct ExplicitConvert<gromox::EWS::Structures::StrEnum<Cs...>>
 	{setter(value);}
 };
 
+/**
+ * @brief      Conversion specialization for float
+ */
+template<>
+struct ExplicitConvert<double>
+{
+	static constexpr uint8_t value = EC_IN | EC_IMP_OUT;
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLElement* xml, double& value)
+	{return xml->QueryDoubleText(&value);}
+
+	static tinyxml2::XMLError deserialize(const tinyxml2::XMLAttribute* xml, double& value)
+	{return xml->QueryDoubleValue(&value);}
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 //Type unpacking
 

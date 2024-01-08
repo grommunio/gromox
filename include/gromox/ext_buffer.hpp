@@ -194,6 +194,7 @@ struct EXT_PULL {
 	pack_result g_msgctnt(MESSAGE_CONTENT *);
 	pack_result g_fb(freebusy_event *);
 	pack_result g_fb_a(std::vector<freebusy_event> *);
+	pack_result g_recpat(RECURRENCE_PATTERN *);
 
 	template<typename T> inline T *anew() { return static_cast<T *>(m_alloc(sizeof(T))); }
 	template<typename T> inline T *anew(size_t elem) { return static_cast<T *>(m_alloc(sizeof(T) * elem)); }

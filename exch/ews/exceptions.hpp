@@ -367,6 +367,7 @@ E(3244, "cannot access target folder");
 E(3245, "failed to load content table");
 E(3246, "failed to get named property id");
 E(3247, "too many sort fields");
+E(3248, "PidLidTaskRecurrence contents not recognized");
 
 #undef E
 }
