@@ -2717,7 +2717,7 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 	case PT_UNICODE: {
 		size_t len = strlen(value);
 		dest = EWSContext::alloc(len + 1);
-		memcpy(static_cast<char*>(dest), len? value : "", len + 1);
+		memcpy(static_cast<char *>(dest), value, len + 1);
 		break;
 	}
 	default:
