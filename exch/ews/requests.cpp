@@ -971,8 +971,8 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 	bool dstAccess = ctx.permissions(dir, dstFolder.folderId);
 
 	using MCResponse = std::variant<mCopyFolderResponse, mMoveFolderResponse>;
-	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<1>{});};
-	MCResponse data = mkData();
+	auto data = request.copy ? MCResponse(std::in_place_index_t<0>{}) :
+	            MCResponse(std::in_place_index_t<1>{});
 	std::visit([&](auto& d){d.ResponseMessages.reserve(request.FolderIds.size());}, data);
 
 	sShape shape = sShape(tFolderResponseShape());
@@ -1014,8 +1014,8 @@ void process(const mBaseMoveCopyItem& request, XMLElement* response, const EWSCo
 	bool dstAccess = ctx.permissions(dir, dstFolder.folderId);
 
 	using MCResponse = std::variant<mCopyItemResponse, mMoveItemResponse>;
-	auto mkData = [&]{return request.copy? MCResponse(std::in_place_index_t<0>{}) : MCResponse(std::in_place_index_t<1>{});};
-	MCResponse data = mkData();
+	auto data = request.copy ? MCResponse(std::in_place_index_t<0>{}) :
+	            MCResponse(std::in_place_index_t<1>{});
 	std::visit([&](auto& d){d.ResponseMessages.reserve(request.ItemIds.size());}, data);
 
 	sShape shape = sShape(tItemResponseShape());
