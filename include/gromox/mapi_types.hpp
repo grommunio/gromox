@@ -13,6 +13,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/range_set.hpp>
 
+/* https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/wrapstoreentryid */
 struct STORE_ENTRYID {
 	uint32_t flags;
 	uint8_t version;
