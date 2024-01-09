@@ -1791,8 +1791,7 @@ void tChangeDescription::convEnumIndex(uint32_t tag, const XMLElement* v, sShape
  */
 void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& shape)
 {
-	const char* text = v->GetText();
-	shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(text? text : "")});
+	shape.write(TAGGED_PROPVAL{tag, deconst(znul(v->GetText()))});
 }
 
 void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
@@ -2489,12 +2488,13 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		*static_cast<uint64_t*>(dest) = sTimePoint(xml->GetText()).toNT(); break;
 	case PT_STRING8:
 	case PT_UNICODE: {
-		size_t len = xml->GetText()? strlen(xml->GetText()) : 0;
+		auto src = znul(xml->GetText());
+		size_t len = strlen(src);
 		if(!dest)
 			propval.pvalue = dest = EWSContext::alloc(len+1);
 		else
 			dest = *static_cast<char**>(dest) = EWSContext::alloc<char>(len+1);
-		memcpy(static_cast<char*>(dest), len? xml->GetText() : "", len+1);
+		memcpy(static_cast<char*>(dest), src, len + 1);
 		break;
 	}
 	case PT_MV_SHORT:
