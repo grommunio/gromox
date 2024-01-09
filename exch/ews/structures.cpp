@@ -295,7 +295,7 @@ RECURRENCE_PATTERN getRecurPattern(const BINARY* recurData)
 tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 {
 	ical_time itime;
-	std::string daysofweek("");
+	std::string daysofweek;
 	switch (recur_pat.patterntype)
 	{
 	case rptMinute:
