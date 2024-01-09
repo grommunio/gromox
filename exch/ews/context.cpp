@@ -1407,7 +1407,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if(item.Sensitivity)
 		shape.write(TAGGED_PROPVAL{PR_SENSITIVITY, construct<uint32_t>(item.Sensitivity->index())});
 	if(item.Categories && item.Categories->size() && item.Categories->size() <= std::numeric_limits<uint32_t>::max()) {
-		uint32_t count = uint32_t(item.Categories->size());
+		uint32_t count = item.Categories->size();
 		STRING_ARRAY* categories = construct<STRING_ARRAY>(STRING_ARRAY{count, alloc<char*>(count)});
 		char** dest = categories->ppstr;
 		for(const std::string& category : *item.Categories) {
@@ -1720,7 +1720,8 @@ void EWSContext::ext_error(pack_result code, const char* msg, const char* respon
 		if(responseCode && msg)
 			throw Exceptions::EWSError(responseCode, msg);
 		else
-			throw DispatchError(code == EXT_ERR_BUFSIZE? E3145 : Exceptions::E3028(int(code)));
+			throw DispatchError(code == EXT_ERR_BUFSIZE ? E3145 :
+			      Exceptions::E3028(static_cast<int>(code)));
 	}
 }
 

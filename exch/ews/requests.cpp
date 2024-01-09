@@ -76,8 +76,8 @@ std::string hexEncode(const std::string& bin)
 	std::string hex(bin.size()*2, 0);
 	auto it = hex.begin();
 	for(char in : bin) {
-		*(it++) = digits[uint8_t(in) >> 4];
-		*(it++) = digits[uint8_t(in) & 0xf];
+		*it++ = digits[static_cast<uint8_t>(in) >> 4];
+		*it++ = digits[static_cast<uint8_t>(in) & 0xf];
 	}
 	return hex;
 }
@@ -1380,7 +1380,7 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	if(!ctx.plugin().mysql.get_user_aliases(request.UnresolvedEntry.c_str(), aliases))
 		throw DispatchError(E3068);
 	if (aliases.size() > 0) {
-		aliases.resize(min(aliases.size(), size_t(3)));
+		aliases.resize(min(aliases.size(), static_cast<size_t>(3)));
 		cnt.EmailAddresses.emplace().reserve(aliases.size());
 		uint8_t index = 0;
 		for (auto& alias : aliases)

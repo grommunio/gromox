@@ -67,7 +67,7 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	t.tm_hour -= tz_hour;
 	t.tm_min -= tz_hour < 0? -tz_min : tz_min;
 	auto timestamp = timegm(&t);
-	if(timestamp == time_t(-1))
+	if (timestamp == static_cast<time_t>(-1))
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
 	value = gromox::time_point::clock::from_time_t(timestamp);
 	value += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
@@ -243,7 +243,7 @@ void sTimePoint::serialize(XMLElement* xml) const
 		t = {};
 	auto frac = time.time_since_epoch() % std::chrono::seconds(1);
 	unsigned long long fsec = std::chrono::duration_cast<std::chrono::nanoseconds>(frac).count();
-	int off = -int(offset.count());
+	int off = -static_cast<int>(offset.count());
 	std::string dtstr = fmt::format("{:%FT%T}", t);
 	if(fsec)
 		dtstr += fmt::format(".{:09}", fsec);

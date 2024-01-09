@@ -98,7 +98,7 @@ void writeheader(int ctx_id, http_status code, size_t content_length)
 	default: break;
 	}
 	std::string rs = content_length ? fmt::format(templ, static_cast<int>(code), status, content_length) :
-	              fmt::format(templ_nolen, int(code), status);
+	                 fmt::format(templ_nolen, static_cast<int>(code), status);
 	write_response(ctx_id, rs.c_str(), rs.size());
 }
 
@@ -112,7 +112,7 @@ void writeheader(int ctx_id, http_status code, size_t content_length)
  */
 void writecontent(int ctx_id, const std::string_view& data, bool log, gx_loglevel loglevel)
 {
-	write_response(ctx_id, data.data(), int(data.size()));
+	write_response(ctx_id, data.data(), static_cast<int>(data.size()));
 	if(log)
 		mlog(loglevel, "[ews#%d] Response: %s", ctx_id, data.data());
 }
@@ -165,7 +165,7 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 			flags |= FL_LOCK;
 		else if(opt.substr(0, 11) == "rate_limit=")
 		{
-			unsigned long rateLimit = uint32_t(std::stoul(std::string(opt.substr(11))));
+			unsigned long rateLimit = static_cast<uint32_t>(std::stoul(std::string(opt.substr(11))));
 			if(rateLimit)
 			{
 				flags |= FL_RATELIMIT | FL_LOCK;
@@ -175,7 +175,7 @@ EWSPlugin::DebugCtx::DebugCtx(const std::string_view& opts)
 			flags |= FL_LOOP_DETECT;
 		else if(opt.substr(0, 12) == "loop_detect=") {
 			flags |= FL_LOOP_DETECT;
-			loopThreshold = uint32_t(std::stoul(std::string(opt.substr(12))));
+			loopThreshold = static_cast<uint32_t>(std::stoul(std::string(opt.substr(12))));
 		}
 		else
 			mlog(LV_WARN, "[ews] Ignoring unknown debug directive '%s'", std::string(opt).c_str());
@@ -316,7 +316,7 @@ http_status EWSPlugin::proc(int ctx_id, const void* content, uint64_t len)
  */
 http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const void* data, uint64_t len) try
 {
-	if(ctx_id < 0 || size_t(ctx_id) >= contexts.size())
+	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size())
 		return fault(ctx_id, http_status::server_error, "Invalid context ID");
 	std::unique_ptr<std::lock_guard<std::mutex>> lockProxy;
 	if(debug)
@@ -687,7 +687,7 @@ int EWSContext::notify()
 
 int EWSPlugin::retr(int ctx_id)
 {
-	if(ctx_id < 0 || size_t(ctx_id) >= contexts.size() || !contexts[ctx_id])
+	if(ctx_id < 0 || static_cast<size_t>(ctx_id) >= contexts.size() || !contexts[ctx_id])
 		return HPM_RETRIEVE_DONE;
 	EWSContext& context = *contexts[ctx_id];
 	switch(context.state()) {
@@ -701,8 +701,10 @@ int EWSPlugin::retr(int ctx_id)
 		writecontent(ctx_id, {printer.CStr(), static_cast<size_t>(printer.CStrSize()-1)}, logResponse, loglevel);
 		context.state(EWSContext::S_DONE);
 		if(context.log() && response_logging)
-			mlog(loglevel, "[ews#%d]%s Done, code %d, %d bytes, %.3fms", ctx_id, timestamp().c_str(), int(context.code()),
-			     printer.CStrSize()-1, context.age()*1000);
+			mlog(loglevel, "[ews#%d]%s Done, code %d, %d bytes, %.3fms",
+				ctx_id, timestamp().c_str(),
+				static_cast<int>(context.code()),
+				printer.CStrSize() - 1, context.age() * 1000);
 		return HPM_RETRIEVE_WRITE;
 	}
 	case EWSContext::S_DONE: return HPM_RETRIEVE_DONE;
@@ -713,8 +715,10 @@ int EWSPlugin::retr(int ctx_id)
 }
 
 void EWSPlugin::term(int ctx)
-{if(ctx >= 0 && size_t(ctx) < contexts.size()) contexts[ctx].reset();}
-
+{
+	if (ctx >= 0 && static_cast<size_t>(ctx) < contexts.size())
+		contexts[ctx].reset();
+}
 
 static void ews_event_proc(const char* dir, BOOL table, uint32_t ID, const DB_NOTIFY* notification)
 {

@@ -305,7 +305,7 @@ void* MhEmsmdbPlugin::scanWork(void* ptr)
 			    response_pending_period - std::chrono::seconds(3)) {
 				ctx->pending_time = now;
 				ctx->pending_status = PENDING_STATUS_KEEPALIVE;
-				wakeup_context(int(ctx-plugin.status.data()));
+				wakeup_context(static_cast<int>(ctx-plugin.status.data()));
 			}
 		}
 		ll_hold.unlock();

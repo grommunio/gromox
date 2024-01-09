@@ -310,7 +310,7 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		if(recur_pat.slidingflag)
 			return tWeeklyRegeneratingPattern(recur_pat.period);
 		return tWeeklyRecurrencePattern(recur_pat.period, daysofweek,
-				Enum::DayOfWeekType(uint8_t(recur_pat.firstdow)));
+				Enum::DayOfWeekType(static_cast<uint8_t>(recur_pat.firstdow)));
 	}
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_MONTHEND:
@@ -329,7 +329,7 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		if(recur_pat.slidingflag)
 			return tYearlyRegeneratingPattern(recur_pat.period);
 		return tAbsoluteYearlyRecurrencePattern(recur_pat.pts.dayofmonth,
-				Enum::MonthNamesType(uint8_t(itime.month - 1)));
+				Enum::MonthNamesType(static_cast<uint8_t>(itime.month - 1)));
 	}
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
@@ -337,7 +337,7 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		ical_get_itime_from_yearday(1601,
 			recur_pat.firstdatetime / 1440 + 1, &itime);
 		daysofweek_to_str(recur_pat.pts.weekrecur, daysofweek);
-		Enum::DayOfWeekIndexType dayofweekindex(uint8_t(
+		Enum::DayOfWeekIndexType dayofweekindex(static_cast<uint8_t>(
 			recur_pat.pts.monthnth.recurnum - 1));
 		if(recur_pat.period % 12 != 0)
 		{
@@ -349,7 +349,7 @@ tRecurrencePattern get_recurrence_pattern(const RECURRENCE_PATTERN& recur_pat)
 		if(recur_pat.slidingflag)
 			return tYearlyRegeneratingPattern(recur_pat.period);
 		return tRelativeYearlyRecurrencePattern(daysofweek, dayofweekindex,
-				Enum::MonthNamesType(uint8_t(itime.month - 1)));
+				Enum::MonthNamesType(static_cast<uint8_t>(itime.month - 1)));
 	}
 	default:
 		throw InputError(E3110);
@@ -468,7 +468,7 @@ sAttachmentId::sAttachmentId(const void* data, uint64_t size)
 	EXT_PULL ext_pull;
 	if(size > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidAttachmentId(E3081);
-	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3146, "ErrorInvalidAttachmentId");
 	TRY(ext_pull.g_uint32(&attachment_num), E3147,"ErrorInvalidAttachmentId");
 }
@@ -487,7 +487,7 @@ sOccurrenceId::sOccurrenceId(const void* data, uint64_t size)
 	EXT_PULL ext_pull;
 	if(size > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidOccurrenceId(E3205);
-	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3206, "ErrorInvalidOccurrenceId");
 	TRY(ext_pull.g_uint32(&basedate), E3207, "ErrorInvalidOccurrenceId");
 }
@@ -512,7 +512,7 @@ void sFolderEntryId::init(const void* data, uint64_t size)
 	EXT_PULL ext_pull;
 	if(size >	std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidFolderId(E3050);
-	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_folder_eid(this), E3148, "ErrorInvalidFolderId");
 }
 
@@ -571,7 +571,7 @@ void sMessageEntryId::init(const void* data, uint64_t size)
 	EXT_PULL ext_pull;
 	if(size >	std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidId(E3050);
-	ext_pull.init(data, uint32_t(size), EWSContext::alloc, 0);
+	ext_pull.init(data, size, EWSContext::alloc, 0);
 	TRY(ext_pull.g_msg_eid(this), E3149, "ErrorInvalidId");
 }
 
@@ -954,7 +954,7 @@ template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
  * @return     The propname array
  */
 PROPNAME_ARRAY sShape::namedProperties() const
-{return PROPNAME_ARRAY{uint16_t(names.size()), deconst(names.data())};}
+{ return PROPNAME_ARRAY{static_cast<uint16_t>(names.size()), deconst(names.data())}; }
 
 /**
  * @brief      Set named property IDs
@@ -1019,7 +1019,7 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
  * @return     Tag ID array
  */
 PROPTAG_ARRAY sShape::proptags() const
-{return PROPTAG_ARRAY{uint16_t(tags.size()), deconst(tags.data())};}
+{ return PROPTAG_ARRAY{static_cast<uint16_t>(tags.size()), deconst(tags.data())}; }
 
 /**
  * @brief      Store extended properties
@@ -1067,7 +1067,7 @@ void sSyncState::init(const std::string& data64)
 		return;
 	if(data.size() > std::numeric_limits<uint32_t>::max())
 		throw EWSError::InvalidSyncStateData(E3052);
-	ext_pull.init(data.data(), uint32_t(data.size()), EWSContext::alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(data.data(), data.size(), EWSContext::alloc, EXT_FLAG_WCOUNT);
 	if(ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS)
 		return;
 	for (const auto &pv : propvals) {
@@ -1153,7 +1153,7 @@ sTimePoint::sTimePoint(const char* dtstr)
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
 	auto timestamp = timegm(&t);
-	if(timestamp == time_t(-1))
+	if (timestamp == static_cast<time_t>(-1))
 		throw EWSError::ValueOutOfRange(E3152);
 	time = gromox::time_point::clock::from_time_t(timestamp);
 	time += std::chrono::duration_cast<gromox::time_point::duration>(std::chrono::duration<double>(seconds));
@@ -1534,7 +1534,7 @@ void tCalendarItem::update(const sShape& shape)
 		const BINARY* goid = static_cast<BINARY*>(prop->pvalue);
 		if(goid->cb > 0) {
 			std::string uid(goid->cb*2+1, 0);
-			encode_hex_binary(goid->pb, goid->cb, uid.data(), int(uid.size()));
+			encode_hex_binary(goid->pb, goid->cb, uid.data(), static_cast<int>(uid.size()));
 			UID.emplace(std::move(uid));
 		}
 	}
@@ -1763,7 +1763,7 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 	bool value;
 	if(v->QueryBoolText(&value))
 		throw EWSError::InvalidExtendedPropertyValue(E3100(v->GetText()? v->GetText() : "(nil)"));
-	shape.write(mkProp(tag, uint8_t(value? TRUE : false)));
+	shape.write(mkProp(tag, static_cast<uint8_t>(value ? TRUE : false)));
 }
 
 /**
@@ -1780,7 +1780,7 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
  */
 template<typename ET, typename PT>
 void tChangeDescription::convEnumIndex(uint32_t tag, const XMLElement* v, sShape& shape)
-{shape.write(mkProp(tag, PT(ET(v->GetText()).index())));}
+{shape.write(mkProp(tag, PT{ET{v->GetText()}.index()}));}
 
 /**
  * @brief      Property conversion function for boolean fields
@@ -2231,7 +2231,7 @@ void* tRestriction::loadConstant(const tinyxml2::XMLElement* parent, uint16_t ty
 		XMLError res = constantNode->QueryIntAttribute("Value", &temp);
 		if(res != XML_SUCCESS || temp & ~0xFFFF)
 			throw EWSError::InvalidRestriction(E3235(value));
-		*static_cast<uint16_t*>(dest) = uint16_t(temp);
+		*static_cast<uint16_t *>(dest) = temp;
 		break;
 	}
 	case PT_ERROR:
@@ -2290,7 +2290,7 @@ tExtendedFieldURI::tExtendedFieldURI(uint16_t type, const PROPERTY_NAME& propnam
 	auto it = std::find_if(std::begin(propsetIds), std::end(propsetIds),
 	                       [&](const auto& propsetId){ return propsetId->compare(propname.guid) == 0; });
 	if(it != std::end(propsetIds))
-		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(uint8_t(std::distance(std::begin(propsetIds), it)));
+		DistinguishedPropertySetId = Enum::DistinguishedPropertySetType(static_cast<uint8_t>(std::distance(std::begin(propsetIds), it)));
 }
 
 /**
@@ -2458,7 +2458,7 @@ void tExtendedProperty::deserialize(const XMLElement* xml, uint16_t type, void* 
 		XMLError res = xml->QueryIntText(&temp);
 		if(res != XML_SUCCESS || temp & ~0xFFFF)
 			throw EWSError::InvalidExtendedPropertyValue(E3101(content? content : "(nil)"));
-		*static_cast<uint16_t*>(dest) = uint16_t(temp);
+		*static_cast<uint16_t *>(dest) = temp;
 		break;
 	}
 	case PT_ERROR:
@@ -2611,7 +2611,7 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 	if(sorts.size() > std::numeric_limits<decltype(SORTORDER_SET::count)>::max())
 		throw InputError(E3247);
 	SORTORDER_SET* sset = EWSContext::construct<SORTORDER_SET>();
-	sset->count = uint16_t(sorts.size());
+	sset->count = sorts.size();
 	sset->ccategories = sset->cexpanded = 0;
 	sset->psort = EWSContext::alloc<SORT_ORDER>(sset->count);
 	SORT_ORDER* current = sset->psort;
@@ -2830,7 +2830,7 @@ tFolderType::tFolderType(const sShape& shape) : tBaseFolderType(shape)
 ///////////////////////////////////////////////////////////////////////////////
 
 uint32_t tFractionalPageView::offset(uint32_t total) const
-{return uint32_t(size_t(total)*Numerator/Denominator);}
+{ return static_cast<size_t>(total) * Numerator / Denominator; }
 
 void tFractionalPageView::update(tFindResponsePagingAttributes& attr, uint32_t count, uint32_t total) const
 {
@@ -3202,20 +3202,20 @@ std::chrono::minutes tSerializableTimeZone::offset(const time_point& tp) const
 	auto &first  = StandardTime.Month < DaylightTime.Month? StandardTime : DaylightTime;
 	auto &second = StandardTime.Month < DaylightTime.Month? DaylightTime : StandardTime;
 
-	int firstDO    = first.DayOrder == 5 ? -1 : int(first.DayOrder);
-	int secondDO   = second.DayOrder == 5 ? -1 : int(second.DayOrder);
+	int firstDO    = first.DayOrder == 5 ? -1 : static_cast<int>(first.DayOrder);
+	int secondDO   = second.DayOrder == 5 ? -1 : static_cast<int>(second.DayOrder);
 	int firstMday  = ical_get_dayofmonth(datetime.tm_year + 1900,
-	                 first.Month, firstDO, int(first.DayOfWeek.index()));
+	                 first.Month, firstDO, static_cast<int>(first.DayOfWeek.index()));
 	int secondMday = ical_get_dayofmonth(datetime.tm_year + 1900,
-	                 second.Month, secondDO, int(second.DayOfWeek.index()));
+	                 second.Month, secondDO, static_cast<int>(second.DayOfWeek.index()));
 
-	int64_t dStamp = int64_t(datetime.tm_sec) + datetime.tm_min * 60 +
+	int64_t dStamp = static_cast<int64_t>(datetime.tm_sec) + datetime.tm_min * 60 +
 	                 datetime.tm_hour * 3600 + datetime.tm_mday * 86400 +
 	                 (datetime.tm_mon + 1) * 2678400;
-	int64_t fStamp = int64_t(first.Time.second) + first.Time.minute * 60 +
+	int64_t fStamp = static_cast<int64_t>(first.Time.second) + first.Time.minute * 60 +
 	                 first.Time.hour * 3600 + firstMday * 86400 +
 	                 first.Month * 2678400;
-	int64_t sStamp = int64_t(second.Time.second) + second.Time.minute * 60 +
+	int64_t sStamp = static_cast<int64_t>(second.Time.second) + second.Time.minute * 60 +
 	                 second.Time.hour * 3600 + secondMday * 86400 +
 	                 second.Month * 2678400;
 
