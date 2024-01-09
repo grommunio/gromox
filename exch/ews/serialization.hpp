@@ -440,8 +440,12 @@ static T fromXMLNode(const tinyxml2::XMLElement* child)
 template<typename T>
 static T fromXMLNodeOpt(const tinyxml2::XMLElement* child)
 {
-	return child && (!child->NoChildren() || child->FirstAttribute())? // Completely empty tags might as well not be there.
-	           T(fromXMLNodeDispatch<BaseType_t<T>>(child)) : std::nullopt;
+	if (child == nullptr)
+		return std::nullopt;
+	// Completely empty tags might as well not be there.
+	if (child->NoChildren() && !child->FirstAttribute())
+		return std::nullopt;
+	return T(fromXMLNodeDispatch<BaseType_t<T>>(child));
 }
 
 /**

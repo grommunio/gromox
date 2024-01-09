@@ -424,7 +424,10 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	const tBaseFolderType& baseFolder = std::visit([](const auto& f) -> const tBaseFolderType&
 	                                                 {return static_cast<const tBaseFolderType&>(f);}, folder);
 	for(const tExtendedProperty& prop : baseFolder.ExtendedProperty)
-		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+		if (prop.ExtendedFieldURI.tag())
+			shape.write(prop.propval);
+		else
+			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
 	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, deconst(&parent.folderId)});
 	const char* fclass = "IPF.Note";
 	mapi_folder_type type = FOLDER_GENERIC;
@@ -2182,7 +2185,10 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, now});
 
 	for(const tExtendedProperty& prop : item.ExtendedProperty)
-		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);
+		if (prop.ExtendedFieldURI.tag())
+			shape.write(prop.propval);
+		else
+			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
 }
 
 /**

@@ -780,7 +780,10 @@ sShape& sShape::add(uint32_t tag, uint8_t flags)
 {
 	auto it = props.find(tag);
 	if(it == props.end()) {
-		((flags & FL_RM)? dTags : tags).emplace_back(tag);
+		if (flags & FL_RM)
+			dTags.emplace_back(tag);
+		else
+			tags.emplace_back(tag);
 		it = props.emplace(tag, flags).first;
 	}
 	it->second.flags |= flags;
@@ -1021,7 +1024,10 @@ bool sShape::namedProperties(const PROPID_ARRAY& ids)
 		auto it = props.find(tag);
 		if(it == props.end())
 			continue;
-		++((it->second.flags & FL_RM)? namedRm : namedAdd);
+		if (it->second.flags & FL_RM)
+			++namedRm;
+		else
+			++namedAdd;
 		props.erase(it);
 	}
 	if(tags.size() >= namedAdd)
@@ -3801,7 +3807,14 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
  */
 PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 {
-	auto updateIf = [&](const std::optional<bool>& s, uint32_t f) {if(s) *s? rights |= f : rights &= ~f;};
+	auto updateIf = [&](const std::optional<bool>& s, uint32_t f) {
+	                	if (!s)
+	                		return;
+	                	if (*s)
+	                		rights |= f;
+	                	else
+	                		rights &= ~f;
+	                };
 	updateIf(CanCreateItems, frightsCreate);
 	updateIf(CanCreateSubFolders, frightsCreateSubfolder);
 	updateIf(IsFolderOwner, frightsOwner);
@@ -3849,7 +3862,10 @@ tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePer
 	                  *rights & frightsFreeBusySimple? Enum::TimeOnly :Enum::None);
 	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
 	size_t index = std::distance(profileTable.begin(), it);
-	index < calendarProfiles? CalendarPermissionLevel = uint8_t(index) : CalendarPermissionLevel = Enum::Custom;
+	if (index < calendarProfiles)
+		CalendarPermissionLevel = static_cast<uint8_t>(index);
+	else
+		CalendarPermissionLevel = Enum::Custom;
 }
 
 
@@ -3883,7 +3899,10 @@ tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails : Enum::None);
 	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
 	size_t index = std::distance(profileTable.begin(), it);
-	index < profiles? PermissionLevel = uint8_t(index) : PermissionLevel = Enum::Custom;
+	if (index < profiles)
+		PermissionLevel = static_cast<uint8_t>(index);
+	else
+		PermissionLevel = Enum::Custom;
 }
 
 /**
