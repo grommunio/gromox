@@ -455,7 +455,9 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 
 	bool isPublic = parent.location == parent.PUBLIC;
 	uint32_t accountId = getAccountId(*parent.target, isPublic);
-	XID xid((parent.location == parent.PRIVATE? rop_util_make_user_guid : rop_util_make_domain_guid)(accountId), changeNumber);
+	XID xid{parent.location == parent.PRIVATE ?
+		rop_util_make_user_guid(accountId) :
+		rop_util_make_domain_guid(accountId), changeNumber};
 
 	BINARY ckey = serialize(xid);
 	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, &ckey});
@@ -1680,7 +1682,9 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 
 		bool isPublic = parent.location == parent.PUBLIC;
 		uint32_t accountId = getAccountId(*parent.target, isPublic);
-		XID xid((parent.location == parent.PRIVATE? rop_util_make_user_guid : rop_util_make_domain_guid)(accountId), changeNumber);
+		XID xid{parent.location == parent.PRIVATE ?
+			rop_util_make_user_guid(accountId) :
+			rop_util_make_domain_guid(accountId), changeNumber};
 
 		ckey = construct<BINARY>(serialize(xid));
 
@@ -2252,7 +2256,9 @@ void EWSContext::updated(const std::string& dir, const sFolderSpec& folder) cons
 		throw DispatchError(E3171);
 	bool isPublic = folder.location == folder.PUBLIC;
 	uint32_t accountId = getAccountId(*folder.target, isPublic);
-	XID changeKey{(isPublic? rop_util_make_domain_guid : rop_util_make_user_guid)(accountId), changeNum};
+	XID changeKey{isPublic ?
+		rop_util_make_domain_guid(accountId) :
+		rop_util_make_user_guid(accountId), changeNum};
 	BINARY ckeyBin = serialize(changeKey);
 	auto ppcl = mkPCL(changeKey, std::move(pclOld));
 	uint64_t now = rop_util_current_nttime();
@@ -2385,7 +2391,9 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	BINARY* abEidContainer = construct<BINARY>(BINARY{wAbEid.m_offset, {abEidBuff}});
 	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_ENTRYID, abEidContainer});
 
-	XID changeKey{(mid.isPrivate()? rop_util_make_user_guid : rop_util_make_domain_guid)(mid.accountId()), changeNum};
+	XID changeKey{mid.isPrivate() ?
+		rop_util_make_user_guid(mid.accountId()) :
+		rop_util_make_domain_guid(mid.accountId()), changeNum};
 	BINARY* changeKeyContainer = construct<BINARY>(serialize(changeKey));
 	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, changeKeyContainer});
 
