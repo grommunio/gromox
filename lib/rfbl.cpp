@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -33,6 +33,9 @@
 #include <utility>
 #include <vector>
 #include <zstd.h>
+#ifdef HAVE_IDN
+#	include <idn2.h>
+#endif
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
@@ -1624,6 +1627,22 @@ std::string base64_decode(const std::string_view &x)
 		out.resize(final_size);
 	return out;
 }
+
+#ifdef HAVE_IDN
+std::string gx_utf8_to_punycode(const char *addr)
+{
+	auto at = strchr(addr, '@');
+	if (at == nullptr)
+		return addr;
+	++at;
+	std::unique_ptr<char[], stdlib_delete> puny;
+	auto ret = idn2_to_ascii_8z(at, &unique_tie(puny),
+	           IDN2_NONTRANSITIONAL | IDN2_NFC_INPUT);
+	if (ret != IDN2_OK)
+		return addr;
+	return std::string(addr, at - addr) + puny.get();
+}
+#endif
 
 }
 

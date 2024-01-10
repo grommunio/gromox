@@ -1522,7 +1522,7 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	return FALSE;
 }
 
-bool ab_tree_resolvename(AB_BASE *pbase, cpid_t codepage, char *pstr,
+bool ab_tree_resolvename(AB_BASE *pbase, cpid_t codepage, const char *pstr,
     stn_list_t &result_list) try
 {
 	result_list.clear();

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <cassert>
 #include <climits>
 #include <csignal>
@@ -1284,12 +1287,16 @@ ec_error_t zs_resolvename(GUID hsession,
 		return ecError;
 	stn_list_t result_list;
 	for (size_t i = 0; i < pcond_set->count; ++i) {
-		auto pstring = pcond_set->pparray[i]->get<char>(PR_DISPLAY_NAME);
+		auto pstring = pcond_set->pparray[i]->get<const char>(PR_DISPLAY_NAME);
 		if (NULL == pstring) {
 			presult_set->count = 0;
 			presult_set->pparray = NULL;
 			return ecSuccess;
 		}
+#ifdef HAVE_IDN
+		std::string idn_deco = gx_utf8_to_punycode(pstring);
+		pstring = idn_deco.c_str();
+#endif
 		stn_list_t temp_list;
 		if (!ab_tree_resolvename(pbase.get(), pinfo->cpid, pstring, temp_list))
 			return ecError;

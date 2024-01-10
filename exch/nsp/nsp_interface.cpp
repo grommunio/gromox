@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -2261,7 +2264,7 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 }
 
 static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const AB_BASE &base,
-    cpid_t codepage, char *pstr, BOOL *pb_ambiguous)
+    cpid_t codepage, const char *pstr, BOOL *pb_ambiguous)
 {
 	const SIMPLE_TREE_NODE *ptnode = nullptr;
 	
@@ -2289,7 +2292,6 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
 	int base_id;
-	char *ptoken;
 	uint32_t result;
 	BOOL b_ambiguous;
 	uint32_t start_pos, total;
@@ -2349,11 +2351,15 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				continue;
 			}
 			/* =SMTP:user@company.com */
-			ptoken = strchr(pstrs->ppstr[i], ':');
+			const char *ptoken = strchr(pstrs->ppstr[i], ':');
 			if (ptoken != nullptr)
 				ptoken ++;
 			else
 				ptoken = pstrs->ppstr[i];
+#ifdef HAVE_IDN
+			std::string idn_deco = gx_utf8_to_punycode(ptoken);
+			ptoken = idn_deco.c_str();
+#endif
 			auto pnode = nsp_interface_resolve_gal(*pbase,
 						pstat->codepage, ptoken, &b_ambiguous);
 			if (NULL == pnode) {
@@ -2390,11 +2396,15 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			continue;
 		}
 		/* =SMTP:user@company.com */
-		ptoken = strchr(pstrs->ppstr[i], ':');
+		const char *ptoken = strchr(pstrs->ppstr[i], ':');
 		if (ptoken != nullptr)
 			ptoken++;
 		else
 			ptoken = pstrs->ppstr[i];
+#ifdef HAVE_IDN
+		std::string idn_deco = gx_utf8_to_punycode(ptoken);
+		ptoken = idn_deco.c_str();
+#endif
 		*pproptag = MID_UNRESOLVED;
 		size_t j;
 		const SIMPLE_TREE_NODE *pnode1, *pnode2 = nullptr;
