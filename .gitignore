@@ -72,6 +72,7 @@ Makefile.in
 /tests/compress
 /tests/cryptest
 /tests/epv_unpack
+/tests/exrpctest
 /tests/gxl-383
 /tests/jsontest
 /tests/lzxpress

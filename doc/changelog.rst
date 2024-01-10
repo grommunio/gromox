@@ -1,5 +1,9 @@
-Development 2.21.10
+Development 2.21.13
 ===================
+
+Fixes:
+
+* exmdb_client: discard connections when EOF is detected
 
 Enhancements:
 

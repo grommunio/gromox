@@ -37,7 +37,7 @@ static constexpr unsigned int mdcl_ping_timeout = 2;
 static_assert(SOCKET_TIMEOUT >= mdcl_ping_timeout);
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
-static std::mutex mdcl_server_lock;
+static std::mutex mdcl_server_lock; /* he protecc mdcl_server_list+mdcl_agent_list */
 static atomic_bool mdcl_notify_stop;
 static unsigned int mdcl_conn_max, mdcl_threads_max;
 static pthread_t mdcl_scan_id;
@@ -332,6 +332,7 @@ static int launch_notify_listener(remote_svr &srv) try
 	if (mdcl_event_proc == nullptr)
 		return 0;
 	mdcl_agent_list.emplace_back();
+	/* Notification thread creates its own socket. */
 	auto &ag = mdcl_agent_list.back();
 	ag.pserver = &srv;
 	ag.sockd = -1;
@@ -442,6 +443,16 @@ bool exmdb_client_check_local(const char *prefix, BOOL *pvt)
 	return true;
 }
 
+static bool sock_ready_for_write(int fd)
+{
+	struct pollfd pfd = {fd, POLLIN};
+	/*
+	 * If there was already data to read (poll returns 1) or EOF was hit
+	 * (poll returns 1), the socket is not ready for write.
+	 */
+	return poll(&pfd, 1, 0) == 0;
+}
+
 static remote_conn_ref exmdb_client_get_connection(const char *dir)
 {
 	remote_conn_ref fc;
@@ -452,9 +463,12 @@ static remote_conn_ref exmdb_client_get_connection(const char *dir)
 		mlog(LV_ERR, "exmdb_client: cannot find remote server for %s", dir);
 		return fc;
 	}
-	if (i->conn_list.size() > 0) {
-		fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
-		return fc;
+	while (i->conn_list.size() > 0) {
+		if (sock_ready_for_write(i->conn_list.front().sockd)) {
+			fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
+			return fc;
+		}
+		i->conn_list.pop_front();
 	}
 	if (i->active_handles >= mdcl_conn_max) {
 		mlog(LV_ERR, "exmdb_client: reached maximum connections (%u) to [%s]:%hu/%s",
@@ -496,20 +510,24 @@ BOOL exmdb_client_do_rpc(const exreq *rq, exresp *rsp)
 	if (!exmdb_client_read_socket(conn->sockd, bin, mdcl_rpc_timeout))
 		return false;
 	conn->last_time = time(nullptr);
-	conn.reset();
 	if (bin.pb == nullptr)
 		return false;
 	if (bin.cb == 1) {
-		fprintf(stderr, "%s(%s): %s\n", __func__, znul(rq->dir),
-			exmdb_rpc_strerror(static_cast<exmdb_response>(bin.pb[0])));
 		exmdb_rpc_free(bin.pb);
+		/* Connection is still good in principle. */
+		conn.reset();
 		return false;
 	}
 	if (bin.cb < 5) {
-		/* Malformed packet? */
 		exmdb_rpc_free(bin.pb);
+		/*
+		 * Malformed packet? Let connection die
+		 * (~exmdb_connection_ref), lest the next response might pick
+		 * up garbage from the current response.
+		 */
 		return false;
 	}
+	conn.reset();
 	rsp->call_id = rq->call_id;
 	bin.cb -= 5;
 	bin.pb += 5;
