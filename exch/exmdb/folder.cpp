@@ -15,6 +15,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.h"
 #define MAXIMUM_RECIEVE_FOLDERS				2000
@@ -1920,7 +1921,8 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	std::string ustg;
 	const char *username = nullptr;
 	if (bin != nullptr) {
-		if (!cu_abkeid_to_username(bin, ustg))
+		if (cvt_entryid_to_smtpaddr(bin, g_exmdb_org_name,
+		    cu_id2user, ustg) != ecSuccess)
 			return true;
 		username = ustg.c_str();
 	} else {
