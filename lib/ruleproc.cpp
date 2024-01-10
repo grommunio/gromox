@@ -571,8 +571,8 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	if (!exmdb_client::allocate_message_id(newdir, dst_fid, &dst_mid) ||
 	    !exmdb_client::allocate_cn(newdir, &dst_cn))
 		return ecRpcFailed;
-	XID zxid{tgt_public ? rop_util_make_domain_guid(user_id) :
-	         rop_util_make_user_guid(domain_id), dst_cn};
+	XID zxid{tgt_public ? rop_util_make_domain_guid(domain_id) :
+	         rop_util_make_user_guid(user_id), dst_cn};
 	char xidbuf[22];
 	BINARY xidbin;
 	EXT_PUSH ep;
