@@ -640,19 +640,6 @@ void common_util_free_znotification(ZNOTIFICATION *pnotification)
 	free(pnotification);
 }
 
-BOOL common_util_addressbook_entryid_to_username(BINARY entryid_bin,
-    char *username, size_t ulen)
-{
-	EXT_PULL ext_pull;
-	EMSAB_ENTRYID tmp_entryid;
-
-	ext_pull.init(entryid_bin.pb, entryid_bin.cb, common_util_alloc, EXT_FLAG_UTF16);
-	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	return cvt_essdn_to_username(tmp_entryid.px500dn, g_org_name,
-	       cu_id2user, username, ulen) == ecSuccess ? TRUE : false;
-}
-
 BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
     char *pessdn, size_t dsize)
 {

@@ -122,7 +122,6 @@ extern int common_util_get_clifd();
 char* common_util_dup(const char *pstr);
 extern ZNOTIFICATION *common_util_dup_znotification(const ZNOTIFICATION *, BOOL temp);
 void common_util_free_znotification(ZNOTIFICATION *pnotification);
-extern BOOL common_util_addressbook_entryid_to_username(BINARY eid, char *username, size_t);
 extern BOOL common_util_parse_addressbook_entryid(BINARY, uint32_t *type, char *essdn, size_t);
 uint16_t common_util_get_messaging_entryid_type(BINARY bin);
 extern BOOL cu_entryid_to_fid(BINARY bin, BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);

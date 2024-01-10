@@ -253,6 +253,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		E(common_util_get_domain_ids, "get_domain_ids");
 		E(common_util_get_maildir, "get_maildir");
 		E(common_util_get_homedir, "get_homedir");
+		E(common_util_get_homedir_by_id, "get_homedir_by_id");
 		E(common_util_get_id_from_maildir, "get_id_from_maildir");
 		E(common_util_get_id_from_homedir, "get_id_from_homedir");
 		E(common_util_get_id_from_username, "get_id_from_username");

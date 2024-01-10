@@ -90,6 +90,7 @@ E(get_user_lang)
 E(get_timezone)
 E(get_maildir)
 E(get_homedir)
+E(get_homedir_by_id)
 E(get_id_from_username)
 E(get_user_ids)
 E(get_domain_ids)
@@ -3754,31 +3755,6 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		break;
 	}
 	}
-	return TRUE;
-}
-
-BOOL cu_abkeid_to_username(const BINARY *pentryid_bin, std::string &username)
-{
-	EXT_PULL ext_pull;
-	EMSAB_ENTRYID tmp_entryid;
-
-	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
-	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	return cvt_essdn_to_username(tmp_entryid.px500dn, g_exmdb_org_name,
-	       cu_id2user, username) == ecSuccess ? TRUE : false;
-}
-
-BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
-    char *pessdn, size_t dnmax)
-{
-	EXT_PULL ext_pull;
-	EMSAB_ENTRYID tmp_entryid;
-
-	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
-	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	gx_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
 	return TRUE;
 }
 

@@ -87,24 +87,46 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 	return ret;
 }
 
-bool emsab_to_email(EXT_PULL &ser, const char *org, cvt_id2user id2user,
-    char *addr, size_t asize)
-{
-	EMSAB_ENTRYID eid;
-	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
-		return false;
-	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user),
-	       addr, asize) == ecSuccess;
-}
-
 static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,
     std::string &smtpaddr)
 {
 	EMSAB_ENTRYID eid{};
 	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
-	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
+	if (ser.g_abk_eid(&eid) != pack_result::success)
 		return ecInvalidParam;
+	/*
+	 * The preconditions to get here are convoluted: an object must have no
+	 * usable $pr_smtpaddr, no usable $pr_addrtype/$pr_emaddr, but must
+	 * have $pr_entryid. Message recipients have no PR_ENTRYID at least in
+	 * exmdb, which leaves e.g. sender (PR_SENDER_ENTRYID), sent_repr and
+	 * PR_READ_RECEIPT_ENTRYID.
+	 *
+	 * The entryid type (EMSAB_ENTRYID::type) is set based on the
+	 * NSP-provided PR_DISPLAY_TYPE value. Even though PR_DISPLAY_TYPE_EX
+	 * may be DT_ROOM, rooms have PR_DISPLAY_TYPE=DT_MAILUSER. This might
+	 * explain the historic DT_MAILUSER check.
+	 */
+	/*
+	if (eid.type != DT_MAILUSER)
+		return ecInvalidParam;
+	*/
 	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user), smtpaddr);
+}
+
+ec_error_t cvt_emsab_to_essdn(const BINARY *bin, std::string &essdn) try
+{
+	if (bin == nullptr)
+		return ecInvalidParam;
+	EXT_PULL ep;
+	EMSAB_ENTRYID eid{};
+	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
+	ep.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+	if (ep.g_abk_eid(&eid) != pack_result::success)
+		return ecInvalidParam;
+	essdn = eid.px500dn;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,

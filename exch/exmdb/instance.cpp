@@ -24,6 +24,7 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "db_engine.h"
 
@@ -1443,13 +1444,14 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
-			if (common_util_addressbook_entryid_to_essdn(pbin,
-			    tmp_buff, std::size(tmp_buff)) &&
-			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
+			std::string es_result;
+			if (cvt_emsab_to_essdn(pbin, es_result) == ecSuccess &&
+			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, es_result.c_str()) != 0)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			std::string es_result;
-			if (cu_abkeid_to_username(pbin, es_result) &&
+			if (cvt_entryid_to_smtpaddr(pbin, g_exmdb_org_name,
+			    cu_id2user, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, es_result.c_str()) != 0)
 				return FALSE;
 		}
@@ -1466,13 +1468,14 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 			}
 		} else if (strcasecmp(sr_addrtype, "EX") == 0) {
-			if (common_util_addressbook_entryid_to_essdn(pbin,
-			    tmp_buff, std::size(tmp_buff)) &&
-			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
+			std::string es_result;
+			if (cvt_emsab_to_essdn(pbin, es_result) == ecSuccess &&
+			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, es_result.c_str()) != 0)
 				return FALSE;
 		} else if (strcasecmp(sr_addrtype, "SMTP") == 0) {
 			std::string es_result;
-			if (cu_abkeid_to_username(pbin, es_result) &&
+			if (cvt_entryid_to_smtpaddr(pbin, g_exmdb_org_name,
+			    cu_id2user, es_result) == ecSuccess &&
 			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, es_result.c_str()) != 0)
 				return FALSE;
 		}

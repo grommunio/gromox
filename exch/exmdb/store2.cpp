@@ -26,6 +26,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/tie.hpp>
+#include <gromox/usercvt.hpp>
 #include "db_engine.h"
 
 using LLU = unsigned long long;
@@ -62,19 +63,23 @@ BOOL exmdb_server::store_eid_to_user(const char *, const STORE_ENTRYID *store_ei
     char **maildir, uint32_t *user_id, uint32_t *domain_id)
 {
 	unsigned int uid = 0, domid = 0;
+	enum display_type dt;
 	char md[256];
 	if (store_eid == nullptr || store_eid->pserver_name == nullptr)
 		return false;
 	if (store_eid->wrapped_provider_uid == g_muidStorePrivate) {
-		enum display_type dt;
 		if (!common_util_get_user_ids(store_eid->pserver_name, &uid, &domid, &dt) ||
 		    !common_util_get_maildir(store_eid->pserver_name, md, std::size(md)))
 			return false;
-	} else {
-		unsigned int orgid;
-		if (!common_util_get_domain_ids(store_eid->pserver_name, &domid, &orgid) ||
-		    !common_util_get_homedir(store_eid->pserver_name, md, std::size(md)))
+	} else if (store_eid->wrapped_provider_uid == g_muidStorePublic) {
+		std::string es_result;
+		if (cvt_essdn_to_username(store_eid->pmailbox_dn,
+		    g_exmdb_org_name, cu_id2user, es_result) != ecSuccess ||
+		    !common_util_get_user_ids(es_result.c_str(), &uid, &domid, &dt) ||
+		    !common_util_get_homedir_by_id(domid, md, std::size(md)))
 			return false;
+	} else {
+		return false;
 	}
 	*maildir = common_util_dup(md);
 	*user_id = uid;
