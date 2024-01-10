@@ -3769,19 +3769,6 @@ BOOL cu_abkeid_to_username(const BINARY *pentryid_bin, std::string &username)
 	       cu_id2user, username) == ecSuccess ? TRUE : false;
 }
 
-BOOL common_util_addressbook_entryid_to_essdn(const BINARY *pentryid_bin,
-    char *pessdn, size_t dnmax)
-{
-	EXT_PULL ext_pull;
-	EMSAB_ENTRYID tmp_entryid;
-
-	ext_pull.init(pentryid_bin->pb, pentryid_bin->cb, common_util_alloc, 0);
-	if (ext_pull.g_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
-		return FALSE;
-	gx_strlcpy(pessdn, tmp_entryid.px500dn, dnmax);
-	return TRUE;
-}
-
 BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
     char *address_type, size_t atsize, char *email_address, size_t emsize)
 {

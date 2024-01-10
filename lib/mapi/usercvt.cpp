@@ -113,6 +113,22 @@ static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id
 	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user), smtpaddr);
 }
 
+ec_error_t cvt_emsab_to_essdn(const BINARY *bin, std::string &essdn) try
+{
+	if (bin == nullptr)
+		return ecInvalidParam;
+	EXT_PULL ep;
+	EMSAB_ENTRYID eid{};
+	auto cl_0 = make_scope_exit([&]() { free(eid.px500dn); });
+	ep.init(bin->pb, bin->cb, malloc, EXT_FLAG_UTF16);
+	if (ep.g_abk_eid(&eid) != pack_result::success)
+		return ecInvalidParam;
+	essdn = eid.px500dn;
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
 static ec_error_t cvt_oneoff_to_smtpaddr(EXT_PULL &ser, const char *org,
     cvt_id2user id2user, std::string &smtpaddr)
 {
