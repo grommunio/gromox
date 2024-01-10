@@ -87,16 +87,6 @@ ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
 	return ret;
 }
 
-bool emsab_to_email(EXT_PULL &ser, const char *org, cvt_id2user id2user,
-    char *addr, size_t asize)
-{
-	EMSAB_ENTRYID eid;
-	if (ser.g_abk_eid(&eid) != pack_result::success || eid.type != DT_MAILUSER)
-		return false;
-	return cvt_essdn_to_username(eid.px500dn, org, std::move(id2user),
-	       addr, asize) == ecSuccess;
-}
-
 static ec_error_t emsab_to_email2(EXT_PULL &ser, const char *org, cvt_id2user id2user,
     std::string &smtpaddr)
 {
