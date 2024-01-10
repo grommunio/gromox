@@ -1,8 +1,9 @@
-Development 2.21.8
-==================
+Development 2.21.10
+===================
 
 Enhancements:
 
+* nsp,ab: support name resolution of IDN addresses
 * twostep_ruleproc: support OL-style public folder references in
   store_eid_to_user RPC
 

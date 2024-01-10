@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
-
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <algorithm>
 #include <fstream>
 #include <variant>
@@ -14,7 +16,7 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-
+#include <gromox/util.hpp>
 #include "exceptions.hpp"
 #include "requests.hpp"
 
@@ -1268,6 +1270,10 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 		++unres;
 	else
 		unres = request.UnresolvedEntry.c_str();
+#ifdef HAVE_IDN
+	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
+	unres = request.UnresolvedEntry.c_str();
+#endif
 	if(!ctx.plugin().mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
 		throw DispatchError(E3067);
 	TAGGED_PROPVAL* displayName = userProps.find(PR_DISPLAY_NAME);

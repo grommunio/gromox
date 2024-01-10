@@ -95,6 +95,7 @@ libldap_LIBS=""
 pam_LIBS=""
 resolv_LIBS=""
 AH_TEMPLATE([HAVE_ESEDB], [])
+AH_TEMPLATE([HAVE_IDN], [])
 AH_TEMPLATE([HAVE_GSSAPI], [])
 AH_TEMPLATE([HAVE_LIBHX4_18], [])
 AH_TEMPLATE([HAVE_XXHASH], [])
@@ -111,6 +112,9 @@ PKG_CHECK_MODULES([libHX_4_18], [libHX >= 4.18], [AC_DEFINE([HAVE_LIBHX4_18], [1
 PKG_CHECK_MODULES([libcrypto], [libcrypto])
 PKG_CHECK_MODULES([libcurl], [libcurl])
 PKG_CHECK_MODULES([libesedb], [libesedb], [have_esedb=1], [have_esedb=0])
+PKG_CHECK_MODULES([libidn2], [libidn2], [
+	AC_DEFINE([HAVE_IDN], [1])
+], [:])
 PKG_CHECK_MODULES([libldap], [ldap], [], [
 	AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
 	AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""], [AC_MSG_ERROR([libldap is required])])

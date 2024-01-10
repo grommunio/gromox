@@ -71,7 +71,7 @@ extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
 extern gromox::abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
 extern BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *);
 extern BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *, const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals);
-extern bool ab_tree_resolvename(AB_BASE *, cpid_t codepage, char *str, stn_list_t &result);
+extern bool ab_tree_resolvename(AB_BASE *, cpid_t codepage, const char *str, stn_list_t &result);
 extern BOOL ab_tree_match_minids(AB_BASE *, uint32_t container_id, cpid_t codepage, const RESTRICTION *filter, LONG_ARRAY *minids);
 extern void ab_tree_invalidate_cache();
 extern uint32_t ab_tree_hidden(const tree_node *);
