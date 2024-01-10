@@ -1263,6 +1263,11 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 
 	TPROPVAL_ARRAY userProps{};
+	auto unres = request.UnresolvedEntry.c_str();
+	if (strchr(unres, ':') != nullptr)
+		++unres;
+	else
+		unres = request.UnresolvedEntry.c_str();
 	if(!ctx.plugin().mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
 		throw DispatchError(E3067);
 	TAGGED_PROPVAL* displayName = userProps.find(PR_DISPLAY_NAME);
