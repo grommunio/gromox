@@ -291,7 +291,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete? TRUE : false;
 			BOOL partial;
-			if(!ctx.plugin().exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.auth_info().username, fid, &eids,
+			if(!ctx.plugin().exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, nullptr, fid, &eids,
 			                                     hardDelete, &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3134);
 			else
