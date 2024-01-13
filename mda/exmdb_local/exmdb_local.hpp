@@ -4,7 +4,7 @@
 #include <gromox/hook_common.h>
 
 enum class delivery_status {
-	ok, no_user, mailbox_full, error, failure, bounce_sent,
+	ok, no_user, mailbox_full, perm_fail, temp_fail, bounce_sent,
 };
 
 struct MAIL;

@@ -384,7 +384,7 @@ static void *mdl_thrwork(void *arg)
 			delivery_status deliv_ret;
 			if (zlen == size) {
 				mlog(LV_WARN, "W-1591: garbage in %s; review and delete", temp_path.c_str());
-				deliv_ret = delivery_status::error;
+				deliv_ret = delivery_status::perm_fail;
 			} else {
 				pcontext->ctrl.rcpt.clear();
 				pcontext->ctrl.rcpt.emplace_back(ptr);
@@ -420,12 +420,12 @@ static void *mdl_thrwork(void *arg)
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    break;
-			case delivery_status::error:
+			case delivery_status::perm_fail:
 				bounce_type = "BOUNCE_OPERATION_ERROR";
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				break;
-			case delivery_status::failure:
+			case delivery_status::temp_fail:
 				break;
 			}
 			if (!need_remove) {

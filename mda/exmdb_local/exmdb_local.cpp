@@ -196,7 +196,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
-		case delivery_status::error:
+		case delivery_status::perm_fail:
 			had_error = true;
 			if (!pcontext->ctrl.need_bounce ||
 			    strcasecmp(pcontext->ctrl.from, ENVELOPE_FROM_NULL) == 0)
@@ -222,7 +222,7 @@ hook_result exmdb_local_hook(MESSAGE_CONTEXT *pcontext) try
 			pbounce_context->ctrl.rcpt.emplace_back(pcontext->ctrl.from);
 			enqueue_context(pbounce_context);
 			break;
-		case delivery_status::failure:
+		case delivery_status::temp_fail:
 			had_error = true;
 			cache_ID = cache_queue_put(pcontext, rcpt_buff, time(nullptr));
 			if (cache_ID >= 0) {
@@ -286,7 +286,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	    lang, std::size(lang), tmzone, std::size(tmzone))) {
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail"
 			"to get user information from data source!");
-		return delivery_status::failure;
+		return delivery_status::temp_fail;
 	}
 
 	if (*lang == '\0' ||
@@ -318,7 +318,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"open WR %s: %s", eml_path.c_str(), strerror(se));
 		errno = se;
-		return delivery_status::failure;
+		return delivery_status::temp_fail;
 	}
 	
 	if (!pmail->to_file(fd.get())) {
@@ -328,7 +328,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
-		return delivery_status::failure;
+		return delivery_status::temp_fail;
 	}
 	auto ret = fd.close_wr();
 	if (ret < 0)
@@ -342,7 +342,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"permanent failure getting mail digest");
-		return delivery_status::error;
+		return delivery_status::perm_fail;
 	}
 	digest["file"] = std::move(mid_string);
 	auto djson = json_to_str(digest);
@@ -359,7 +359,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR, "fail "
 			"to convert rfc5322 into MAPI message object");
-		return delivery_status::error;
+		return delivery_status::perm_fail;
 	}
 	g_alloc_key = nullptr;
 
@@ -381,7 +381,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	if (!exmdb_client_remote::deliver_message(home_dir,
 	    pcontext->ctrl.from, address, CP_ACP, flags,
 	    pmsg, djson.c_str(), &folder_id, &message_id, &r32))
-		return delivery_status::error;
+		return delivery_status::perm_fail;
 
 	auto dm_status = static_cast<deliver_message_result>(r32);
 	if (dm_status == deliver_message_result::result_ok) {
@@ -411,12 +411,12 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	case deliver_message_result::partial_completion:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"server could not store message in full to %s", home_dir);
-		return delivery_status::error;
+		return delivery_status::perm_fail;
 	case deliver_message_result::result_error:
 		exmdb_local_log_info(pcontext->ctrl, address, LV_ERR,
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
-		return delivery_status::failure;
+		return delivery_status::temp_fail;
 	case deliver_message_result::mailbox_full_bysize:
 		exmdb_local_log_info(pcontext->ctrl, address,
 			LV_NOTICE, "user's mailbox has reached quota limit");
@@ -426,7 +426,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 			LV_NOTICE, "user's mailbox has reached maximum message count (cf. exmdb_provider.cfg:max_store_message_count)");
 		return delivery_status::mailbox_full;
 	default:
-		return delivery_status::failure;
+		return delivery_status::temp_fail;
 	}
 
 	if (!g_lda_twostep) {
@@ -441,7 +441,7 @@ delivery_status exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext,
 	return delivery_status::ok;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1472: ENOMEM");
-	return delivery_status::failure;
+	return delivery_status::temp_fail;
 }
 
 void exmdb_local_log_info(const CONTROL_INFO &ctrl,
