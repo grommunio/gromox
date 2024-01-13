@@ -380,7 +380,6 @@ static void *dxp_thrwork(void *arg)
 {
 	char *ptr;
 	int len, cannot_served_times;
-	BOOL b_self;
 	MESSAGE *pmessage;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTEXT *pcontext;
@@ -433,7 +432,6 @@ static void *dxp_thrwork(void *arg)
 				continue;
 			}
 			cannot_served_times = 0;
-			b_self = TRUE;
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->mctx;
@@ -460,7 +458,6 @@ static void *dxp_thrwork(void *arg)
 				pcontext->ctrl.rcpt.emplace_back(ptr);
 				ptr += len;
 			}
-			b_self = FALSE;
 		}
 		pthr_data->last_hook = NULL;
 		pthr_data->last_thrower = NULL;
@@ -468,7 +465,7 @@ static void *dxp_thrwork(void *arg)
 		if (pass_result == hook_result::xcontinue) {
 			transporter_log_info(pcontext->ctrl, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
-			if (!b_self) {
+			if (pmessage != nullptr) {
 				auto ret = message_dequeue_save(pmessage);
 				if (ret != 0) {
 					mlog(LV_ERR, "E-1227: QID %d: Failed to convert from /mes to /save: %s",
@@ -477,7 +474,7 @@ static void *dxp_thrwork(void *arg)
 				}
 			}
 		}
-		if (!b_self) {
+		if (pmessage != nullptr) {
 			pcontext->ctrl.rcpt.clear();
 			pcontext->mail.clear();
 			if (pass_result == hook_result::proc_error)
