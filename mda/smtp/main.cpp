@@ -82,6 +82,7 @@ static constexpr cfg_directive smtp_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
 	{"context_average_mem", "256K", CFG_SIZE, "64K"},
 	{"context_max_mem", "2M", CFG_SIZE},
+	{"context_num", "0", CFG_SIZE},
 	{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
 	{"lda_listen_addr", "::"},
 	{"lda_listen_port", "25"},
