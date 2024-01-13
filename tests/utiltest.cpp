@@ -493,6 +493,18 @@ static int runner()
 
 int main()
 {
+	static_assert(sizeof(cpu_to_le16(0)) == sizeof(uint16_t));
+	static_assert(sizeof(cpu_to_le32(0)) == sizeof(uint32_t));
+	static_assert(sizeof(cpu_to_le64(0)) == sizeof(uint64_t));
+	static_assert(sizeof(cpu_to_be16(0)) == sizeof(uint16_t));
+	static_assert(sizeof(cpu_to_be32(0)) == sizeof(uint32_t));
+	static_assert(sizeof(cpu_to_be64(0)) == sizeof(uint64_t));
+	static_assert(sizeof(le16_to_cpu(0)) == sizeof(uint16_t));
+	static_assert(sizeof(le32_to_cpu(0)) == sizeof(uint32_t));
+	static_assert(sizeof(le64_to_cpu(0)) == sizeof(uint64_t));
+	static_assert(sizeof(be16_to_cpu(0)) == sizeof(uint16_t));
+	static_assert(sizeof(be32_to_cpu(0)) == sizeof(uint32_t));
+	static_assert(sizeof(be64_to_cpu(0)) == sizeof(uint64_t));
 	auto ret = runner();
 	if (ret != EXIT_SUCCESS)
 		printf("FAILED\n");
