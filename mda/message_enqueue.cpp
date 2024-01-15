@@ -269,9 +269,12 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 			tmp_buff[size++] = '\r';
 			tmp_buff[size++] = '\n';
 		}
+		if (size == 0)
+			continue;
 		/* RFC 5321 §4.5.2 dot (un-)stuffing */
-		write_len = fwrite(&tmp_buff[*tmp_buff == '.'], 1, size, fp);
-		if (write_len != size)
+		auto unstuff = *tmp_buff == '.';
+		write_len = fwrite(&tmp_buff[unstuff], 1, size - unstuff, fp);
+		if (write_len != size - unstuff)
 			goto REMOVE_MESS;
 	}
 	if (STREAM_COPY_TERM == copy_result) {
