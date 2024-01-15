@@ -2,7 +2,7 @@
 
 ACLOCAL_AMFLAGS = -I build-aux
 AM_CPPFLAGS = ${my_CPPFLAGS} -Iinclude -I${top_srcdir}/include ${fmt_CFLAGS} ${gss_CFLAGS} ${iconv_CPPFLAGS} ${jsoncpp_CFLAGS} ${libHX_CFLAGS} ${libcrypto_CFLAGS} ${libcurl_CFLAGS} ${libesedb_CFLAGS} ${libidn2_CFLAGS} ${libldap_CFLAGS} ${libolecf_CFLAGS} ${libpff_CFLAGS} ${libssl_CFLAGS} ${libxml2_CFLAGS} ${libxxhash_CFLAGS} ${libzstd_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${tinyxml2_CFLAGS} ${vmime_CFLAGS} ${zlib_CFLAGS}
-AM_CFLAGS   = ${my_CFLAGS} -fvisibility=default
+AM_CFLAGS   = ${my_CFLAGS}
 AM_CXXFLAGS = ${my_CXXFLAGS}
 AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
@@ -74,7 +74,7 @@ noinst_DATA = dldcheck.stamp
 
 BUILT_SOURCES = exch/exmdb/rpc.cpp include/exmdb_dispatch.cpp include/mapierr.cpp include/mapitags.cpp include/zrpc_dispatch.cpp include/gromox/paths.h lib/exmdb_rpc.cpp php_mapi/zrpc.cpp
 CLEANFILES = ${BUILT_SOURCES} dldcheck.stamp
-libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
+libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS}
 libgromox_common_la_SOURCES = lib/bounce_gen.cpp lib/cookie_parser.cpp lib/cryptoutil.cpp lib/dbhelper.cpp lib/double_list.cpp lib/fopen.cpp lib/guid2.cpp lib/list_file.cpp lib/mail_func.cpp lib/oxoabkt.cpp lib/rfbl.cpp lib/simple_tree.cpp lib/stream.cpp lib/textmaps.cpp lib/util.cpp lib/wintz.cpp lib/mapi/ext_buffer.cpp
 libgromox_common_la_LIBADD = -lpthread ${crypt_LIBS} ${libcrypto_LIBS} ${libHX_LIBS} ${libidn_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} ${libssl_LIBS} ${tinyxml2_LIBS} ${vmime_LIBS} ${libzstd_LIBS}
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
