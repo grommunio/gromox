@@ -242,36 +242,6 @@ DOUBLE_LIST_NODE *double_list_pop_front(DOUBLE_LIST *plist)
 }
 
 /*
- *	  popup a node from tail
- *	  @param
- *		  plist [in]	indicate the list object
- *	  @return
- *		  the pointer to the poped node
- */
-DOUBLE_LIST_NODE *double_list_pop_back(DOUBLE_LIST *plist)
-{
-	DOUBLE_LIST_NODE* pnode;
-#ifdef _DEBUG_UMTA
-	if (NULL == plist) {
-		mlog(LV_DEBUG, "double_list: double_list_pop_back, param NULL");
-		return NULL;
-	}
-#endif
-	if (NULL == plist->phead) {
-		return NULL;
-	}
-	if (plist->phead == plist->phead->pnext) {
-		pnode = plist->phead;
-		plist->phead = NULL;
-		plist->nodes_num = 0;
-		return pnode;
-	}
-	pnode = plist->phead->pprev;
-	double_list_remove(plist, pnode);
-	return pnode;
-}
-
-/*
  *	  merge two lists into one
  *	  @param
  *		  plist_des [in,out]   indicate the destination list
@@ -392,79 +362,6 @@ DOUBLE_LIST_NODE* double_list_get_after(DOUBLE_LIST *plist,
 }
 
 /*
- *	  get the nth node after pbase_node
- *	  @param
- *		  plist [in]	   indicate the list object
- *		  pbase_node [in]  the node to be compared with
- *		  num [in, out]	   the number to forward and the actual number forwarded
- *	  @return
- *		  the pointer of node got
- */
-DOUBLE_LIST_NODE* double_list_forward(DOUBLE_LIST *plist, 
-	DOUBLE_LIST_NODE *pbase_node, size_t *num)
-{	 
-	size_t i;
-	DOUBLE_LIST_NODE *pnode, *pnode_prev;
-#ifdef _DEBUG_UMTA
-	if (NULL == plist || NULL == pbase_node || NULL == num) {
-		mlog(LV_DEBUG, "double_list: double_list_forward, param NULL");
-		return NULL;
-	}
-#endif
-	if (NULL == plist->phead) {
-		*num = 0;
-		return NULL;
-	}
-	pnode = pbase_node;
-	for (i=0; i<*num; i++) {
-		pnode_prev = pnode;
-		pnode = double_list_get_after(plist, pnode);
-		if (NULL == pnode) {
-			*num = i;
-			return pnode_prev;
-		}		 
-	}
-	return pnode; 
-}
-
-/*
- *	  get the nth node before pbase_node
- *	  @param
- *		  plist [in]	 indicate the list object
- *		pbase_node [in]	 the node to be compared with
- *		num [in, out]	 the number to backward and the actual number backwarded
- *	  @return
- *		  the pointer of node got
- */
-DOUBLE_LIST_NODE* double_list_backward(DOUBLE_LIST *plist, 
-	DOUBLE_LIST_NODE *pbase_node, size_t *num)
-{	 
-	size_t i;
-	DOUBLE_LIST_NODE *pnode, *pnode_prev;
-#ifdef _DEBUG_UMTA
-	if (NULL == plist || NULL == pbase_node || NULL == num) {
-		mlog(LV_DEBUG, "double_list: double_list_backward, param NULL");
-		return NULL;
-	}
-#endif
-	if (NULL == plist->phead) {
-		*num = 0;
-		return NULL;
-	}
-	pnode = pbase_node;
-	for (i=0; i<*num; i++) {
-		pnode_prev = pnode;
-		pnode = double_list_get_before(plist, pnode);
-		if (NULL == pnode) {
-			*num = i;
-			return pnode_prev;
-		}
-	}
-
-	return pnode;
-}
-
-/*
  *	  get number of nodes in list
  *	  @param
  *		  plist [in]	indicate the list object
@@ -529,16 +426,6 @@ const DOUBLE_LIST_NODE *double_list_get_before(const DOUBLE_LIST *l, const DOUBL
 const DOUBLE_LIST_NODE *double_list_get_after(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n)
 {
 	return double_list_get_after(deconst(l), deconst(n));
-}
-
-const DOUBLE_LIST_NODE *double_list_forward(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n, size_t *z)
-{
-	return double_list_forward(deconst(l), deconst(n), z);
-}
-
-const DOUBLE_LIST_NODE *double_list_backward(const DOUBLE_LIST *l, const DOUBLE_LIST_NODE *n, size_t *z)
-{
-	return double_list_backward(deconst(l), deconst(n), z);
 }
 
 const DOUBLE_LIST_NODE *double_list_get_head(const DOUBLE_LIST *l)

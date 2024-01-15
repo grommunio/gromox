@@ -30,8 +30,6 @@ void double_list_append_after(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pbase_node,
 void double_list_remove(DOUBLE_LIST *plist, DOUBLE_LIST_NODE *pnode);
 /* get head node and remove it from list */
 extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_front(DOUBLE_LIST *);
-/* get tail node and remove it from list */
-extern GX_EXPORT DOUBLE_LIST_NODE *double_list_pop_back(DOUBLE_LIST *);
 /* merge the plist into plist_des */
 void double_list_append_list(DOUBLE_LIST *plist_des, DOUBLE_LIST *plist);
 
@@ -50,22 +48,6 @@ returned.
 DOUBLE_LIST_NODE* double_list_get_after(DOUBLE_LIST *plist, 
     DOUBLE_LIST_NODE *pbase_node);
 extern GX_EXPORT const DOUBLE_LIST_NODE *double_list_get_after(const DOUBLE_LIST *, const DOUBLE_LIST_NODE *);
-
-/*
-get the nth node after the pbase_node, if tail is reached within the number, 
-the atual number forwarded will be filled in "num"
-*/
-DOUBLE_LIST_NODE* double_list_forward(DOUBLE_LIST *plist, 
-    DOUBLE_LIST_NODE *pbase_node, size_t *num);
-extern GX_EXPORT const DOUBLE_LIST_NODE *double_list_forward(const DOUBLE_LIST *, const DOUBLE_LIST_NODE *, size_t *);
-
-/*
-get the nth node before the pbase_node, if tail is reached within the number,
-the atual number backwarded will be filled in "num"
-*/
-DOUBLE_LIST_NODE* double_list_backward(DOUBLE_LIST *plist, 
-    DOUBLE_LIST_NODE *pbase_node, size_t *num);
-extern GX_EXPORT const DOUBLE_LIST_NODE *double_list_backward(const DOUBLE_LIST *, const DOUBLE_LIST_NODE *, size_t *);
 
 /* get the actual number of nodes in the double list */
 size_t double_list_get_nodes_num(const DOUBLE_LIST *);
