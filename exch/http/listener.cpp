@@ -185,7 +185,10 @@ static void *htls_thrwork(void *arg)
 		auto pcontext = static_cast<HTTP_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
-			mlog(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
+			mlog(LV_NOTICE, "Rejecting connection from [%s]:%hu: "
+				"reached %d connections (http.cfg:context_num)",
+				client_hostip, client_port,
+				contexts_pool_get_param(MAX_CONTEXTS_NUM));
 			auto len = gx_snprintf(buff, std::size(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
