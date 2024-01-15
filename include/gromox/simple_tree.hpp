@@ -22,7 +22,10 @@ struct GX_EXPORT tree_node {
 	tree_node *pnode_sibling, *pnode_child, *pnode_parent;
 	size_t						node_depth;
 	size_t						node_children;
-	void						*pdata;
+	union {
+		void *pdata;
+		char *cdata;
+	};
 };
 using SIMPLE_TREE_NODE = tree_node;
 

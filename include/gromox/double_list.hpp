@@ -4,7 +4,10 @@
 
 /* double list is composed by the base unit DOUBLE_LIST_NODE */
 struct DOUBLE_LIST_NODE {
-    void*    pdata;    /* pointer for recording the actual data */
+	union {
+		void *pdata;    /* pointer for recording the actual data */
+		char *cdata;
+	};
 	DOUBLE_LIST_NODE *pnext, *pprev;
 };
 

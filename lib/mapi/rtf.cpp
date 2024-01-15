@@ -1292,7 +1292,6 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	int num;
 	int param;
 	char *ptoken;
-	char *string;
 	char name[1024];
 	FONTENTRY tmp_entry;
 	char tmp_buff[1024];
@@ -1303,7 +1302,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (pword2 == nullptr || pword2->pdata == nullptr)
 			return true;
 		do {
-			if (rtf_parse_control(static_cast<char *>(pword2->pdata) + 1,
+			if (rtf_parse_control(&pword2->cdata[1],
 			    tmp_name, MAX_CONTROL_LEN, &num) > 0 &&
 			    strcmp(tmp_name, "f") == 0)
 				break;
@@ -1320,7 +1319,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		while ((pword2 = pword2->get_sibling()) != nullptr) {
 			if (pword2->pdata == nullptr)
 				continue;
-			string = static_cast<char *>(pword2->pdata);
+			auto string = pword2->cdata;
 			if ('\\' != string[0]) {
 				auto tmp_len = strlen(string);
 				if (tmp_len + tmp_offset > sizeof(tmp_buff) - 1) {
@@ -1419,7 +1418,6 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	int month;
 	int minute;
 	int tmp_len;
-	char *string;
 	char tmp_buff[32];
 	
 	day = 0;
@@ -1430,7 +1428,7 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 	do {
 		if (pword->pdata == nullptr)
 			return false;
-		string = static_cast<char *>(pword->pdata);
+		auto string = pword->cdata;
 		if ('\\' == *string) {
 			string ++;
 			if (0 == strncmp(string, "yr", 2) && HX_isdigit(string[2]))
@@ -1462,66 +1460,66 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			continue;
 		if (pchild->pdata == nullptr)
 			return true;
-		if (strcmp(static_cast<char *>(pchild->pdata), "\\title") == 0) {
+		if (strcmp(pchild->cdata, "\\title") == 0) {
 			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_BEGIN, sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1));
 			for (auto pword2 = pchild->get_sibling();
 			     pword2 != nullptr; pword2 = pword2->get_sibling()) {
 				if (pword2->pdata == nullptr)
 					continue;
-				if (static_cast<char *>(pword2->pdata)[0] != '\\') {
+				if (pword2->cdata[0] != '\\') {
 					if (!rtf_flush_iconv_cache(preader))
 						return false;
-					if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
+					if (!rtf_escape_output(preader, pword2->cdata))
 						return false;
-				} else if (static_cast<char *>(pword2->pdata)[1] == '\'') {
-					ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
+				} else if (pword2->cdata[1] == '\'') {
+					ch = rtf_decode_hex_char(&pword2->cdata[2]);
 					QRF(preader->iconv_push.p_uint8(ch));
 				}
 			}
 			if (!rtf_flush_iconv_cache(preader))
 				return false;
 			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_END, sizeof(TAG_DOCUMENT_TITLE_END) - 1));
-		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\author") == 0) {
+		} else if (strcmp(pchild->cdata, "\\author") == 0) {
 			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_BEGIN, sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1));
 			for (auto pword2 = pchild->get_sibling();
 			     pword2 != nullptr; pword2 = pword2->get_sibling()) {
 				if (pword2->pdata == nullptr)
 					continue;
-				if (static_cast<char *>(pword2->pdata)[0] != '\\') {
+				if (pword2->cdata[0] != '\\') {
 					if (!rtf_flush_iconv_cache(preader))
 						return false;
-					if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
+					if (!rtf_escape_output(preader, pword2->cdata))
 						return false;
-				} else if (static_cast<char *>(pword2->pdata)[1] == '\'') {
-					ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
+				} else if (pword2->cdata[1] == '\'') {
+					ch = rtf_decode_hex_char(&pword2->cdata[2]);
 					QRF(preader->iconv_push.p_uint8(ch));
 				}
 			}
 			if (!rtf_flush_iconv_cache(preader))
 				return false;
 			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_END, sizeof(TAG_DOCUMENT_AUTHOR_END) - 1));
-		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\creatim") == 0) {
+		} else if (strcmp(pchild->cdata, "\\creatim") == 0) {
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
 			QRF(preader->ext_push.p_bytes("creation date: ", 15));
 			if (pchild->get_sibling() != nullptr &&
 			    !rtf_word_output_date(preader, pchild->get_sibling()))
 				return false;
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
-		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\printim") == 0) {
+		} else if (strcmp(pchild->cdata, "\\printim") == 0) {
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
 			QRF(preader->ext_push.p_bytes("last print date: ", 17));
 			if (pchild->get_sibling() != nullptr &&
 			    !rtf_word_output_date(preader, pchild->get_sibling()))
 				return false;
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
-		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\buptim") == 0) {
+		} else if (strcmp(pchild->cdata, "\\buptim") == 0) {
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
 			QRF(preader->ext_push.p_bytes("last backup date: ", 18));
 			if (pchild->get_sibling() != nullptr &&
 			    !rtf_word_output_date(preader, pchild->get_sibling()))
 					return false;
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
-		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\revtim") == 0) {
+		} else if (strcmp(pchild->cdata, "\\revtim") == 0) {
 			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
 			QRF(preader->ext_push.p_bytes("modified date: ", 15));
 			if (pchild->get_sibling() != nullptr &&
@@ -1547,19 +1545,19 @@ static void rtf_process_color_table(
 	do {
 		if (pword->pdata == nullptr || preader->total_colors >= MAX_COLORS)
 			break;
-		if (strncmp("\\red", static_cast<char *>(pword->pdata), 4) == 0) {
-			r = strtol(static_cast<char *>(pword->pdata) + 4, nullptr, 0);
+		if (strncmp("\\red", pword->cdata, 4) == 0) {
+			r = strtol(&pword->cdata[4], nullptr, 0);
 			while (r > 255)
 				r >>= 8;
-		} else if (strncmp("\\green", static_cast<char *>(pword->pdata), 6) == 0) {
-			g = strtol(static_cast<char *>(pword->pdata) + 6, nullptr, 0);
+		} else if (strncmp("\\green", pword->cdata, 6) == 0) {
+			g = strtol(&pword->cdata[6], nullptr, 0);
 			while (g > 255)
 				g >>= 8;
-		} else if (strncmp("\\blue", static_cast<char *>(pword->pdata), 5) == 0) {
-			b = strtol(static_cast<char *>(pword->pdata) + 5, nullptr, 0);
+		} else if (strncmp("\\blue", pword->cdata, 5) == 0) {
+			b = strtol(&pword->cdata[5], nullptr, 0);
 			while (b > 255)
 				b >>= 8;
-		} else if (strcmp(static_cast<char *>(pword->pdata), ";") == 0) {
+		} else if (strcmp(pword->cdata, ";") == 0) {
 			preader->color_table[preader->total_colors++] =
 				(r << 16) | (g << 8) | b;
 			if (preader->total_colors >= MAX_COLORS)
@@ -1620,24 +1618,24 @@ static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 		auto pchild = pword->get_child();
 		if (pchild == nullptr || pchild->pdata == nullptr)
 			return CMD_RESULT_IGNORE_REST;
-		if (strcmp(static_cast<char *>(pchild->pdata), "\\fldrslt") == 0)
+		if (strcmp(pchild->cdata, "\\fldrslt") == 0)
 			return CMD_RESULT_CONTINUE;
-		if (strcmp(static_cast<char *>(pchild->pdata), "\\*") != 0)
+		if (strcmp(pchild->cdata, "\\*") != 0)
 			continue;
 		for (auto pword2 = pchild->get_sibling(); pword2 != nullptr;
 		     pword2 = pword2->get_sibling()) {
 			if (pword2->pdata == nullptr ||
-			    strcmp(static_cast<char *>(pword2->pdata), "\\fldinst") != 0)
+			    strcmp(pword2->cdata, "\\fldinst") != 0)
 				continue;
 			auto pword3 = pword2->get_sibling();
 			if (pword3 != nullptr && pword3->pdata != nullptr &&
-			    strcmp(static_cast<char *>(pword3->pdata), "SYMBOL") == 0) {
+			    strcmp(pword3->cdata, "SYMBOL") == 0) {
 				auto pword4 = pword3->get_sibling();
 				while (pword4 != nullptr && pword4->pdata != nullptr &&
-				    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
+				    strcmp(pword4->cdata, " ") == 0)
 					pword4 = pword4->get_sibling();
 				if (NULL != pword4 && NULL != pword4->pdata) {
-					int ch = strtol(static_cast<char *>(pword4->pdata), nullptr, 0);
+					int ch = strtol(pword4->cdata, nullptr, 0);
 					if (!rtf_attrstack_push_express(preader,
 					    ATTR_FONTFACE, -7))
 						return CMD_RESULT_ERROR;
@@ -1655,21 +1653,21 @@ static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 			for (; pword3 != nullptr; pword3 = pword3->get_sibling()) {
 				if (pword3->pdata == nullptr)
 					return CMD_RESULT_CONTINUE;
-				if (strcmp(static_cast<char *>(pword3->pdata), "EN.CITE") == 0) {
+				if (strcmp(pword3->cdata, "EN.CITE") == 0) {
 					b_endnotecitations = true;
 					continue;
-				} else if (strcmp(static_cast<char *>(pword3->pdata), "HYPERLINK") != 0) {
+				} else if (strcmp(pword3->cdata, "HYPERLINK") != 0) {
 					continue;
 				}
 				if (b_endnotecitations)
 					continue;
 				auto pword4 = pword3->get_sibling();
 				while (pword4 != nullptr && pword4->pdata != nullptr &&
-				    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
+				    strcmp(pword4->cdata, " ") == 0)
 					pword4 = pword4->get_sibling();
 				if (NULL != pword4 && NULL != pword4->pdata) {
 					tmp_len = gx_snprintf(tmp_buff, std::size(tmp_buff),
-						  TAG_HYPERLINK_BEGIN, static_cast<const char *>(pword4->pdata));
+						  TAG_HYPERLINK_BEGIN, pword4->cdata);
 					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
 						return CMD_RESULT_ERROR;
 					return CMD_RESULT_HYPERLINKED;
@@ -2363,9 +2361,9 @@ static int rtf_cmd_maybe_ignore(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 	
 	pword = pword->get_sibling();
 	if (pword == nullptr || pword->pdata == nullptr ||
-	    static_cast<char *>(pword->pdata)[0] == '\\')
+	    pword->cdata[0] == '\\')
 		return CMD_RESULT_IGNORE_REST;
-	if (rtf_parse_control(static_cast<char *>(pword->pdata) + 1,
+	if (rtf_parse_control(&pword->cdata[1],
 	    name, MAX_CONTROL_LEN, &param) < 0)
 		return CMD_RESULT_ERROR;
 	if (rtf_find_cmd_function(name) != nullptr)
@@ -2580,7 +2578,6 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	int ch;
 	int num;
 	int ret_val;
-	char *string;
 	char cid_name[64];
 	CMD_PROC_FUNC func;
 	int paragraph_align;
@@ -2606,10 +2603,10 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	while (NULL != pnode) {    
 		if (NULL != pnode->pdata) {
 			if (preader->have_fromhtml) {
-				if (strcasecmp(static_cast<char *>(pnode->pdata), "\\htmlrtf") == 0 ||
-				    strcasecmp(static_cast<char *>(pnode->pdata), "\\htmlrtf1") == 0) {
+				if (strcasecmp(pnode->cdata, "\\htmlrtf") == 0 ||
+				    strcasecmp(pnode->cdata, "\\htmlrtf1") == 0) {
 					preader->is_within_htmlrtf = true;
-				} else if (strcasecmp(static_cast<char *>(pnode->pdata), "\\htmlrtf0") == 0) {
+				} else if (strcasecmp(pnode->cdata, "\\htmlrtf0") == 0) {
 					preader->is_within_htmlrtf = false;
 				}
 				if (preader->is_within_htmlrtf) {
@@ -2617,10 +2614,10 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 					continue;
 				}
 			}
-			if (strncmp(static_cast<char *>(pnode->pdata), "\\'", 2) != 0 &&
+			if (strncmp(pnode->cdata, "\\'", 2) != 0 &&
 			    !rtf_flush_iconv_cache(preader))
 				return -EINVAL;
-			string = static_cast<char *>(pnode->pdata);
+			auto string = pnode->cdata;
 			if (*string == ' ' && preader->is_within_header) {
 				/* do nothing  */
 			} else if ('\\' != string[0]) {
@@ -2796,7 +2793,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	for (pnode = proot->get_child(), i = 1; i <= 10 && pnode != nullptr; ++i) {
 		if (pnode->pdata == nullptr)
 			break;
-		if (strcmp(static_cast<char *>(pnode->pdata), "\\fromhtml1") == 0)
+		if (strcmp(pnode->cdata, "\\fromhtml1") == 0)
 			reader.have_fromhtml = true;
 		pnode = pnode->get_sibling();
 	}

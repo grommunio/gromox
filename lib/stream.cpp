@@ -112,7 +112,7 @@ unsigned int STREAM::readline(char **ppline)
 	if (has_newline() != STREAM_LINE_AVAILABLE)
 		return 0;
 	distance = pstream->block_line_pos - pstream->rd_block_pos;
-	*ppline = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
+	*ppline = &pnode_rd->cdata[rd_block_pos];
 	pstream->rd_block_pos = pstream->block_line_parse;
 	pstream->rd_total_pos = pstream->block_line_parse;
 	pstream->line_result = STREAM_LINE_UNAVAILABLE;
@@ -129,7 +129,6 @@ void STREAM::try_mark_line()
 {
 	auto pstream = this;
 	int i, end;
-	char temp1, temp2;
 	DOUBLE_LIST_NODE *pnode;
 
 	auto lr = has_newline();
@@ -147,14 +146,14 @@ void STREAM::try_mark_line()
 	}
 	end = pnode == pstream->pnode_wr ? pstream->wr_block_pos : STREAM_BLOCK_SIZE;
 	for (i=pstream->block_line_parse; i<end; i++) {
-		temp1 = *((char*)pnode->pdata + i);
+		auto temp1 = pnode->cdata[i];
 		switch (temp1) {
-		case '\r':
+		case '\r': {
 			if(i > STREAM_BLOCK_SIZE - 2) {
 				pstream->line_result = STREAM_LINE_FAIL;
 				return;
 			}
-			temp2 = *((char*)pnode->pdata + i + 1);
+			auto temp2 = pnode->cdata[i+1];
 			if (temp2 == '\n') {
 				pstream->block_line_parse = i + 2;
 				pstream->block_line_pos = i;
@@ -164,6 +163,7 @@ void STREAM::try_mark_line()
 			}
 			pstream->line_result = STREAM_LINE_AVAILABLE;
 			return;
+		}
 		case '\n':
 			if (i > STREAM_BLOCK_SIZE - 2) {
 				pstream->line_result = STREAM_LINE_FAIL;
@@ -294,7 +294,7 @@ void *STREAM::get_write_buf(unsigned int *psize)
 	}
 	if (*psize > STREAM_BLOCK_SIZE - pstream->wr_block_pos)
 		*psize = STREAM_BLOCK_SIZE - pstream->wr_block_pos;
-	return (char*)pstream->pnode_wr->pdata + pstream->wr_block_pos;
+	return &pnode_wr->cdata[wr_block_pos];
 }
 
 /*
@@ -401,7 +401,6 @@ unsigned int STREAM::rewind_read_ptr(unsigned int offset)
 void *STREAM::get_read_buf(unsigned int *psize)
 {
 	auto pstream = this;
-	char *ret_ptr;
 #ifdef _DEBUG_UMTA
 	if (psize == nullptr) {
 		mlog(LV_DEBUG, "stream: stream_get_rdbuf, param NULL");
@@ -409,7 +408,7 @@ void *STREAM::get_read_buf(unsigned int *psize)
 	}
 #endif
 	if (pstream->pnode_wr != pstream->pnode_rd) {
-		ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
+		auto ret_ptr = &pnode_rd->cdata[rd_block_pos];
 		if (*psize >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
 			*psize = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
 			pstream->rd_block_pos = 0;
@@ -426,15 +425,17 @@ void *STREAM::get_read_buf(unsigned int *psize)
 		return NULL;
 	} else if (pstream->wr_block_pos - pstream->rd_block_pos < *psize) {
 		*psize = pstream->wr_block_pos - pstream->rd_block_pos;
-		ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
+		auto ret_ptr = &pnode_rd->cdata[rd_block_pos];
 		pstream->rd_block_pos = pstream->wr_block_pos;
 		pstream->rd_total_pos = pstream->wr_total_pos;
+		return ret_ptr;
 	} else {
-		ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
+		auto ret_ptr = &pnode_rd->cdata[rd_block_pos];
 		pstream->rd_block_pos += *psize;
 		pstream->rd_total_pos += *psize;
+		return ret_ptr;
 	}
-	return ret_ptr;
+	return nullptr;
 }
 
 /*
@@ -502,8 +503,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	}
 
 	/* skip the '\n' at the beginning of the stream */
-	if (0 == pstream->rd_total_pos && *((char*)pstream->pnode_rd->pdata)
-				== '\n') {
+	if (0 == pstream->rd_total_pos && *pnode_rd->cdata == '\n') {
 		mlog(LV_DEBUG, "stream: skip \\n at the leading position of the stream "
 				"in stream_copyline");
 		pstream->rd_block_pos	= 1;
@@ -516,7 +516,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		size_t i, end = pstream->wr_total_pos % STREAM_BLOCK_SIZE;
 		auto pnode = pstream->pnode_rd;
 		for (i=pstream->rd_block_pos; i<end; i++) {
-			auto tmp = *((char*)pnode->pdata + i);
+			auto tmp = pnode->cdata[i];
 			if (tmp == '\n') {
 				state = LF;
 				break;
@@ -532,7 +532,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		if (actual_size > buf_size) {
 			actual_size = buf_size;
 			*psize = actual_size;
-			memcpy(pbuff, (char*)pnode->pdata + pstream->rd_block_pos,
+			memcpy(pbuff, &pnode->cdata[rd_block_pos],
 				actual_size);
 			pbuff[actual_size] = '\0';
 			pstream->rd_block_pos += actual_size;
@@ -540,7 +540,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 			return scopy_result::part;
 		}
 		*psize = actual_size;
-		memcpy(pbuff, (char*)pnode->pdata + pstream->rd_block_pos, actual_size);
+		memcpy(pbuff, &pnode->cdata[rd_block_pos], actual_size);
 		pbuff[actual_size] = '\0';
 
 		/* if the end of the stream is not terminated with \r\n */
@@ -555,8 +555,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 			pstream->rd_total_pos += actual_size + 1;
 			return scopy_result::ok;
 		}
-
-		if (*((char*)pnode->pdata + i + 1) == '\n') {
+		if (pnode->cdata[i+1] == '\n') {
 			pstream->rd_block_pos += actual_size + 2;
 			pstream->rd_total_pos += actual_size + 2;
 		} else {
@@ -569,7 +568,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	auto pnode = pstream->pnode_rd;
 	size_t i;
 	for (i = pstream->rd_block_pos; i < STREAM_BLOCK_SIZE; i++) {
-		auto tmp = *((char *)pnode->pdata + i);
+		auto tmp = pnode->cdata[i];
 		if (tmp == '\n') {
 			state = LF;
 			break;
@@ -584,7 +583,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		if (actual_size > buf_size) {
 			actual_size = buf_size;
 			*psize = actual_size;
-			memcpy(pbuff, (char *)pnode->pdata + pstream->rd_block_pos,
+			memcpy(pbuff, &pnode->cdata[rd_block_pos],
 				actual_size);
 			pbuff[actual_size] = '\0';
 			pstream->rd_block_pos += actual_size;
@@ -593,7 +592,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		}
 
 		*psize = actual_size;
-		memcpy(pbuff, (char *)pnode->pdata + pstream->rd_block_pos, actual_size);
+		memcpy(pbuff, &pnode->cdata[rd_block_pos], actual_size);
 		pbuff[actual_size] = '\0';
 
 		if (state == LF) {
@@ -613,13 +612,13 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 				&pstream->list, pstream->pnode_rd);
 			pstream->rd_block_pos = 0;
 
-			if (*((char *)pstream->pnode_rd->pdata) == '\n') {
+			if (*pnode_rd->cdata == '\n') {
 				pstream->rd_block_pos = 1;
 				pstream->rd_total_pos += actual_size + 2;
 			} else {
 				pstream->rd_total_pos += actual_size + 1;
 			}
-		} else if (static_cast<char *>(pnode->pdata)[i+1] != '\n') {
+		} else if (pnode->cdata[i+1] != '\n') {
 			pstream->rd_block_pos += actual_size + 1;
 			pstream->rd_total_pos += actual_size + 1;
 		} else {
@@ -640,7 +639,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	unsigned int end = pnode != pstream->pnode_wr ? STREAM_BLOCK_SIZE :
 	                   pstream->wr_total_pos % STREAM_BLOCK_SIZE;
 	for (i = 0; i < end; i++) {
-		auto tmp = *((char*)pnode->pdata + i);
+		auto tmp = pnode->cdata[i];
 		if (tmp == '\n') {
 			state = LF;
 			break;
@@ -657,18 +656,16 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		if (actual_size >= 0 && static_cast<size_t>(actual_size) >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
 			i = actual_size - (STREAM_BLOCK_SIZE -
 					pstream->rd_block_pos);
-			memcpy(pbuff, (char *)pstream->pnode_rd->pdata +
-				pstream->rd_block_pos, STREAM_BLOCK_SIZE -
+			memcpy(pbuff, &pnode_rd->cdata[rd_block_pos], STREAM_BLOCK_SIZE -
 				pstream->rd_block_pos);
 			pstream->pnode_rd = double_list_get_after(&pstream->list,
 				pstream->pnode_rd);
 			memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos,
-			       (char *)pstream->pnode_rd->pdata, i);
+			       pnode_rd->cdata, i);
 			pstream->rd_block_pos = i;
 			pstream->rd_total_pos += actual_size;
 		} else {
-			memcpy(pbuff, (char *)pstream->pnode_rd->pdata +
-				pstream->rd_block_pos, actual_size);
+			memcpy(pbuff, &pnode_rd->cdata[rd_block_pos], actual_size);
 			pstream->rd_block_pos += actual_size;
 			pstream->rd_total_pos += actual_size;
 		}
@@ -677,12 +674,11 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	}
 
 	*psize = actual_size;
-	memcpy(pbuff, (char*)pstream->pnode_rd->pdata +
-		   pstream->rd_block_pos, STREAM_BLOCK_SIZE -
+	memcpy(pbuff, &pnode_rd->cdata[rd_block_pos], STREAM_BLOCK_SIZE -
 		   pstream->rd_block_pos);
 	pstream->pnode_rd = double_list_get_after(&pstream->list, pstream->pnode_rd);
 	memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos,
-	       (char *)pstream->pnode_rd->pdata, i);
+	       pnode_rd->cdata, i);
 	pbuff[actual_size] = '\0';
 
 	if (i == end) {
@@ -694,7 +690,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		pstream->rd_total_pos += actual_size + 1;
 		return scopy_result::ok;
 	}
-	if (*((char *)pstream->pnode_rd->pdata + i + 1) == '\n') {
+	if (pnode_rd->cdata[i+1] == '\n') {
 		pstream->rd_block_pos = i + 2;
 		pstream->rd_total_pos += actual_size + 2;
 	} else {
@@ -739,18 +735,18 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 	/* if the read node is the last node of the mem file */
 	if (pstream->pnode_rd == pstream->pnode_wr) {
 		if (actual_size >= size) {
-			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
+			memcpy(pbuff, &pnode->cdata[rd_total_pos], size);
 			return size;
 		}
-		memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, actual_size);
+		memcpy(pbuff, &pnode->cdata[rd_total_pos], actual_size);
 		return actual_size;
 	}
 	unsigned int tmp_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
 	if (tmp_size >= size) {
-		memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
+		memcpy(pbuff, &pnode->cdata[rd_total_pos], size);
 		return size;
 	}
-	memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, tmp_size);
+	memcpy(pbuff, &pnode->cdata[rd_total_pos], tmp_size);
 	while ((pnode = double_list_get_after(&pstream->list,
 		pnode)) != pstream->pnode_wr) {
 		if (tmp_size + STREAM_BLOCK_SIZE >= size) {
@@ -892,7 +888,6 @@ void STREAM::try_mark_eom()
 	int until_pos;
 	int block_deep;
 	int block_offset;
-	char *pbuff, temp_buff[6];
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
@@ -907,21 +902,22 @@ void STREAM::try_mark_eom()
 		until_pos = i == block_deep ? block_offset : 0;
 		from_pos  = i == 0 ? pstream->wr_block_pos - 1 : STREAM_BLOCK_SIZE - 1;
 		for (j=from_pos; j>=until_pos; j--) {
-			pbuff = (char*)pnode->pdata;
+			auto pbuff = pnode->cdata;
 			if (pbuff[j] != '.')
 				continue;
+			char temp_buff[6];
 			if (0 == j) {
 				pnode1 = double_list_get_before(&pstream->list, pnode);
 				if (pnode1 == nullptr)
 					goto NONE_EOM;
-				temp_buff[0] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 2];
-				temp_buff[1] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 1];
+				temp_buff[0] = pnode1->cdata[STREAM_BLOCK_SIZE-2];
+				temp_buff[1] = pnode1->cdata[STREAM_BLOCK_SIZE-1];
 				temp_buff[2] = '.';
 			} else if (1 == j) {
 				pnode1 = double_list_get_before(&pstream->list, pnode);
 				if (pnode1 == nullptr)
 					goto NONE_EOM;
-				temp_buff[0] = ((char *)pnode1->pdata)[STREAM_BLOCK_SIZE-1];
+				temp_buff[0] = pnode1->cdata[STREAM_BLOCK_SIZE-1];
 				temp_buff[1] = pbuff[0];
 				temp_buff[2] = '.';
 			} else {
@@ -936,7 +932,7 @@ void STREAM::try_mark_eom()
 					temp_buff[4] = '\0';
 				} else {
 					pnode1 = double_list_get_after(&pstream->list, pnode);
-					temp_buff[4] = pnode1 == nullptr ? '\0' : *static_cast<const char *>(pnode1->pdata);
+					temp_buff[4] = pnode1 == nullptr ? '\0' : *pnode1->cdata;
 				}
 			} else if (from_pos == j) {
 				if (0 == i) {
@@ -945,8 +941,8 @@ void STREAM::try_mark_eom()
 				pnode1 = double_list_get_after(&pstream->list, pnode);
 				if (pnode1 == nullptr)
 					continue;
-				temp_buff[3] = ((char *)pnode1->pdata)[0];
-				temp_buff[4] = ((char *)pnode1->pdata)[1];
+				temp_buff[3] = pnode1->cdata[0];
+				temp_buff[4] = pnode1->cdata[1];
 			} else {
 				temp_buff[3] = pbuff[j + 1];
 				temp_buff[4] = pbuff[j + 2];
