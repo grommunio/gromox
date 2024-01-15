@@ -9,6 +9,7 @@
 #include <iconv.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -211,11 +212,10 @@ struct COLLECTION_NODE {
 	char *text;
 };
 
-struct ATTRSTACK_NODE {
-	DOUBLE_LIST_NODE node;
-	uint8_t attr_stack[MAX_ATTRS];
-	int attr_params[MAX_ATTRS];
-	int tos;
+struct attrstack_node {
+	uint8_t attr_stack[MAX_ATTRS]{};
+	int attr_params[MAX_ATTRS]{};
+	int tos = -1;
 };
 
 struct FONTENTRY {
@@ -248,7 +248,7 @@ struct RTF_READER {
 	char html_charset[32]{};
 	int default_font_number = 0;
 	std::unordered_map<int, FONTENTRY> pfont_hash;
-	DOUBLE_LIST attr_stack_list{};
+	std::vector<attrstack_node> attr_stack_list;
 	EXT_PULL ext_pull{};
 	EXT_PUSH ext_push{};
 	int ungot_chars[3] = {-1, -1, -1}, last_returned_ch = 0;
@@ -542,7 +542,7 @@ static void rtf_free_collection(DOUBLE_LIST *plist)
 static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
     uint32_t rtf_length, ATTACHMENT_LIST *pattachments)
 {
-	double_list_init(&preader->attr_stack_list);
+	preader->attr_stack_list.clear();
 	preader->ext_pull.init(prtf_buff, rtf_length, [](size_t) -> void * { return nullptr; }, 0);
 	if (!preader->ext_push.init(nullptr, 0, 0) ||
 	    !preader->iconv_push.init(nullptr, 0, 0))
@@ -566,13 +566,6 @@ static void rtf_delete_tree_node(SIMPLE_TREE_NODE *pnode)
 RTF_READER::~RTF_READER()
 {
 	auto preader = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&preader->attr_stack_list)) != nullptr) {
-		auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
-		free(pattrstack);
-	}
-	double_list_free(&preader->attr_stack_list);
 	auto proot = preader->element_tree.get_root();
 	if (proot != nullptr)
 		preader->element_tree.destroy_node(proot, rtf_delete_tree_node);
@@ -746,17 +739,16 @@ static bool rtf_express_attr_begin(RTF_READER *preader, int attr, int param)
 
 static const int *rtf_stack_list_find_attr(const RTF_READER *preader, int attr)
 {
-	auto pnode = double_list_get_tail(&preader->attr_stack_list);
-	auto pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
+	if (preader->attr_stack_list.empty())
+		return nullptr;
+	auto pattrstack = preader->attr_stack_list.crbegin();
 	for (int i = pattrstack->tos - 1; i >= 0; --i)
 		if (attr == pattrstack->attr_stack[i])
 			return &pattrstack->attr_params[i];
-	while ((pnode = double_list_get_before(&preader->attr_stack_list, pnode)) != NULL) {
-		pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
+	for (++pattrstack; pattrstack != preader->attr_stack_list.crend(); ++pattrstack)
 		for (int i = pattrstack->tos; i >= 0; --i)
 			if (attr == pattrstack->attr_stack[i])
 				return &pattrstack->attr_params[i];
-	}
 	return NULL;
 }
 
@@ -856,14 +848,11 @@ static bool rtf_express_attr_end(RTF_READER *preader, int attr, int param)
 
 static bool rtf_attrstack_express_all(RTF_READER *preader)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (NULL == pnode) {
+	if (preader->attr_stack_list.empty()) {
 		mlog(LV_DEBUG, "rtf: no stack to express all attribute from");
 		return true;
 	}
-	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
+	auto pattrstack = &*preader->attr_stack_list.crbegin();
 	for (int i = 0; i <= pattrstack->tos; ++i)
 		if (!rtf_express_attr_begin(preader, pattrstack->attr_stack[i],
 		    pattrstack->attr_params[i]))
@@ -873,14 +862,11 @@ static bool rtf_attrstack_express_all(RTF_READER *preader)
 
 static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (NULL == pnode) {
+	if (preader->attr_stack_list.empty()) {
 		mlog(LV_DEBUG, "rtf: cannot find stack node for pushing attribute");
 		return false;
 	}
-	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
+	auto pattrstack = &*preader->attr_stack_list.rbegin();
 	if (pattrstack->tos >= MAX_ATTRS - 1) {
 		mlog(LV_DEBUG, "rtf: too many attributes");
 		return false;
@@ -893,28 +879,11 @@ static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
 	return rtf_express_attr_begin(preader, attr, param);
 }
 
-static bool rtf_stack_list_new_node(RTF_READER *preader)
-{
-	auto pattrstack = me_alloc<ATTRSTACK_NODE>();
-	if (pattrstack == nullptr)
-		return false;
-	memset(pattrstack, 0, sizeof(ATTRSTACK_NODE));
-	pattrstack->node.pdata = pattrstack;
-	pattrstack->tos = -1;
-	double_list_append_as_tail(
-		&preader->attr_stack_list,
-		&pattrstack->node);
-	return true;
-}
-
 static bool rtf_attrstack_pop_express(RTF_READER *preader, int attr)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (pnode == nullptr)
+	if (preader->attr_stack_list.empty())
 		return true;
-	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
+	auto pattrstack = preader->attr_stack_list.rbegin();
 	if (pattrstack->tos < 0 || pattrstack->attr_stack[pattrstack->tos] != attr)
 		return true;
 	if (!rtf_express_attr_end(preader, attr,
@@ -926,30 +895,19 @@ static bool rtf_attrstack_pop_express(RTF_READER *preader, int attr)
 
 static int rtf_attrstack_peek(const RTF_READER *preader)
 {
-	auto pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (NULL == pnode) {
+	if (preader->attr_stack_list.empty()) {
 		mlog(LV_DEBUG, "rtf: cannot find stack node for peeking attribute");
 		return ATTR_NONE;
 	}
-	auto pattrstack = static_cast<const ATTRSTACK_NODE *>(pnode->pdata);
+	auto pattrstack = &*preader->attr_stack_list.rbegin();
 	return pattrstack->tos >= 0 ? pattrstack->attr_stack[pattrstack->tos] : ATTR_NONE;
-}
-
-static void rtf_stack_list_free_node(RTF_READER *preader) 
-{
-	auto pnode = double_list_pop_back(&preader->attr_stack_list);
-	if (pnode != nullptr)
-		free(pnode->pdata);
 }
 
 static bool rtf_attrstack_pop_express_all(RTF_READER *preader)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (pnode == nullptr)
+	if (preader->attr_stack_list.empty())
 		return true;
-	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
+	auto pattrstack = &*preader->attr_stack_list.rbegin();
 	for (; pattrstack->tos>=0; pattrstack->tos--)
 		if (!rtf_express_attr_end(preader,
 		    pattrstack->attr_stack[pattrstack->tos],
@@ -962,12 +920,11 @@ static bool rtf_attrstack_find_pop_express(RTF_READER *preader, int attr)
 {
 	int i;
 	
-	auto pnode = double_list_get_tail(&preader->attr_stack_list);
-	if (NULL == pnode) {
+	if (preader->attr_stack_list.empty()) {
 		mlog(LV_DEBUG, "rtf: cannot find stack node for finding attribute");
 		return true;
 	}
-	auto pattrstack = static_cast<ATTRSTACK_NODE *>(pnode->pdata);
+	auto pattrstack = &*preader->attr_stack_list.rbegin();
 	bool b_found = false;
 	for (i=0; i<=pattrstack->tos; i++) {
 		if (pattrstack->attr_stack[i] == attr) {
@@ -1384,17 +1341,20 @@ static bool rtf_ending_paragraph_align(RTF_READER *preader, int align)
 	return true;
 }
 
-static bool rtf_begin_table(RTF_READER *preader)
+static bool rtf_begin_table(RTF_READER *preader) try
 {
 	preader->is_within_table = true;
 	preader->b_printed_row_begin = false;
 	preader->b_printed_cell_begin = false;
 	preader->b_printed_row_end = false;
 	preader->b_printed_cell_end = false;
-	if (!rtf_stack_list_new_node(preader) || !rtf_starting_body(preader))
+	preader->attr_stack_list.emplace_back();
+	if (!rtf_starting_body(preader))
 		return false;
 	QRF(preader->ext_push.p_bytes(TAG_TABLE_BEGIN, sizeof(TAG_TABLE_BEGIN) - 1));
 	return true;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 static bool rtf_end_table(RTF_READER *preader)
@@ -2746,8 +2706,13 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		mlog(LV_DEBUG, "rtf: max group depth reached");
 		return -ELOOP;
 	}
-	if (!rtf_check_for_table(preader) || !rtf_stack_list_new_node(preader))
+	if (!rtf_check_for_table(preader))
 		return -EINVAL;
+	try {
+		preader->attr_stack_list.emplace_back();
+	} catch (const std::bad_alloc &) {
+		return -ENOMEM;
+	}
 	while (NULL != pnode) {    
 		if (NULL != pnode->pdata) {
 			if (preader->have_fromhtml) {
@@ -2917,7 +2882,8 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		return -EINVAL;
 	if (b_paragraph_begun && !rtf_ending_paragraph_align(preader, paragraph_align))
 		return -EINVAL;
-	rtf_stack_list_free_node(preader);
+	if (preader->attr_stack_list.size() > 0)
+		preader->attr_stack_list.pop_back();
 	return 0;
 }
 
