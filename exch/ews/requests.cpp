@@ -875,7 +875,7 @@ void process(const mBaseMoveCopyFolder& request, XMLElement* response, const EWS
 {
 	response->SetName(request.copy? "m:CopyFolderResponse" : "m:MoveFolderResponse");
 
-	ctx.experimental(request.copy? "CopyFolder" : "m:MoveFolder");
+	ctx.experimental(request.copy? "CopyFolder" : "MoveFolder");
 
 	sFolderSpec dstFolder = ctx.resolveFolder(request.ToFolderId.folderId);
 	std::string dir = ctx.getDir(dstFolder);
