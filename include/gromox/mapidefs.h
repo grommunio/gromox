@@ -820,7 +820,7 @@ struct eid_t {
 	uint64_t m_value;
 };
 
-struct ACTION_BLOCK {
+struct GX_EXPORT ACTION_BLOCK {
 	uint16_t length;
 	uint8_t type;
 	uint32_t flavor;
@@ -838,7 +838,7 @@ struct ADVISE_INFO {
 /*
  * @pv:		may legitimately be nullptr (only if cb==0)
  */
-struct BINARY {
+struct GX_EXPORT BINARY {
 	uint32_t cb;
 	union {
 		uint8_t *pb;
@@ -915,7 +915,7 @@ struct GLOBCNT {
  *  - to_str, produces a big-endian text representation
  *  - and their reverse functions
  */
-struct GUID {
+struct GX_EXPORT GUID {
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);
 	int compare_4_12(const GUID &) const;
@@ -994,7 +994,7 @@ struct PERMISSION_SET {
 	PERMISSION_ROW *prows;
 };
 
-struct PROPERTY_NAME {
+struct GX_EXPORT PROPERTY_NAME {
 	uint8_t kind;
 	GUID guid;
 	uint32_t lid;
@@ -1004,7 +1004,7 @@ struct PROPERTY_NAME {
 	{return kind == o.kind && guid == o.guid && (kind == MNID_STRING? !strcmp(pname, o.pname) : lid == o.lid);}
 };
 
-struct PROPERTY_XNAME {
+struct GX_EXPORT PROPERTY_XNAME {
 	PROPERTY_XNAME() = default;
 	PROPERTY_XNAME(const PROPERTY_NAME &);
 	explicit operator PROPERTY_NAME() const;
@@ -1025,7 +1025,7 @@ struct PROPNAME_ARRAY {
 	PROPERTY_NAME *ppropname;
 };
 
-struct PROPTAG_ARRAY {
+struct GX_EXPORT PROPTAG_ARRAY {
 	size_t indexof(uint32_t tag) const;
 	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
 	void emplace_back(uint32_t tag) { pproptag[count++] = tag; }
@@ -1046,7 +1046,7 @@ struct SHORT_ARRAY {
  *              will be presented as multiple rows.
  * @table_sort: TBL_ASCEND / TBL_DESCEND
  */
-struct SORT_ORDER {
+struct GX_EXPORT SORT_ORDER {
 	uint16_t type;
 	uint16_t propid;
 	uint8_t table_sort;
@@ -1057,7 +1057,7 @@ struct SORT_ORDER {
 /**
  * https://learn.microsoft.com/en-us/office/client-developer/outlook/mapi/ssortorderset
  */
-struct SORTORDER_SET {
+struct GX_EXPORT SORTORDER_SET {
 	uint16_t count;
 	uint16_t ccategories;
 	uint16_t cexpanded;
@@ -1076,7 +1076,7 @@ struct STRING_ARRAY {
 	char **ppstr;
 };
 
-struct SVREID {
+struct GX_EXPORT SVREID {
 	BINARY *pbin;
 	uint64_t folder_id;
 	uint64_t message_id;
@@ -1086,7 +1086,7 @@ struct SVREID {
 	std::string repr(bool verbose = true) const;
 };
 
-struct TAGGED_PROPVAL {
+struct GX_EXPORT TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
 
@@ -1119,7 +1119,7 @@ struct GEN_ARRAY {
 	};
 };
 
-struct TPROPVAL_ARRAY {
+struct GX_EXPORT TPROPVAL_ARRAY {
 	TAGGED_PROPVAL *find(uint32_t tag) {
 		for (size_t i = 0; i < count; ++i)
 			if (ppropval[i].proptag == tag)
@@ -1175,7 +1175,7 @@ struct LTPROPVAL_ARRAY {
 };
 
 /* Better known as rowset/row_set in MSMAPI */
-struct tarray_set {
+struct GX_EXPORT tarray_set {
 	void erase(uint32_t index);
 	TPROPVAL_ARRAY *emplace();
 	inline TPROPVAL_ARRAY *back() { return pparray[count-1]; }
@@ -1209,7 +1209,7 @@ struct OBJECT_ZNOTIFICATION {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct RECIPIENT_BLOCK {
+struct GX_EXPORT RECIPIENT_BLOCK {
 	uint8_t reserved;
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
@@ -1233,7 +1233,7 @@ struct RESTRICTION_SUBOBJ;
 struct RESTRICTION_COMMENT;
 struct RESTRICTION_COUNT;
 
-struct RESTRICTION {
+struct GX_EXPORT RESTRICTION {
 	enum mapi_rtype rt;
 	union {
 		void *pres;
@@ -1253,20 +1253,20 @@ struct RESTRICTION {
 	std::string repr() const;
 };
 
-struct RESTRICTION_AND_OR {
+struct GX_EXPORT RESTRICTION_AND_OR {
 	uint32_t count;
 	RESTRICTION *pres;
 
 	std::string repr() const;
 };
 
-struct RESTRICTION_NOT {
+struct GX_EXPORT RESTRICTION_NOT {
 	RESTRICTION res;
 
 	std::string repr() const;
 };
 
-struct RESTRICTION_CONTENT {
+struct GX_EXPORT RESTRICTION_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
@@ -1276,7 +1276,7 @@ struct RESTRICTION_CONTENT {
 	std::string repr() const;
 };
 
-struct RESTRICTION_PROPERTY {
+struct GX_EXPORT RESTRICTION_PROPERTY {
 	enum relop relop;
 	uint32_t proptag;
 	/*
@@ -1290,7 +1290,7 @@ struct RESTRICTION_PROPERTY {
 	std::string repr() const;
 };
 
-struct RESTRICTION_PROPCOMPARE {
+struct GX_EXPORT RESTRICTION_PROPCOMPARE {
 	enum relop relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
@@ -1299,7 +1299,7 @@ struct RESTRICTION_PROPCOMPARE {
 	std::string repr() const;
 };
 
-struct RESTRICTION_BITMASK {
+struct GX_EXPORT RESTRICTION_BITMASK {
 	enum bm_relop bitmask_relop;
 	uint32_t proptag;
 	uint32_t mask;
@@ -1309,7 +1309,7 @@ struct RESTRICTION_BITMASK {
 	std::string repr() const;
 };
 
-struct RESTRICTION_SIZE {
+struct GX_EXPORT RESTRICTION_SIZE {
 	enum relop relop;
 	uint32_t proptag;
 	uint32_t size;
@@ -1318,20 +1318,20 @@ struct RESTRICTION_SIZE {
 	std::string repr() const;
 };
 
-struct RESTRICTION_EXIST {
+struct GX_EXPORT RESTRICTION_EXIST {
 	uint32_t proptag;
 
 	std::string repr() const;
 };
 
-struct RESTRICTION_SUBOBJ {
+struct GX_EXPORT RESTRICTION_SUBOBJ {
 	uint32_t subobject;
 	RESTRICTION res;
 
 	std::string repr() const;
 };
 
-struct RESTRICTION_COMMENT {
+struct GX_EXPORT RESTRICTION_COMMENT {
 	uint8_t count;
 	TAGGED_PROPVAL *ppropval;
 	RESTRICTION *pres;
@@ -1339,14 +1339,14 @@ struct RESTRICTION_COMMENT {
 	std::string repr() const;
 };
 
-struct RESTRICTION_COUNT {
+struct GX_EXPORT RESTRICTION_COUNT {
 	uint32_t count;
 	RESTRICTION sub_res;
 
 	std::string repr() const;
 };
 
-struct RULE_ACTIONS {
+struct GX_EXPORT RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
 
@@ -1362,7 +1362,7 @@ struct RULE_DATA {
 	TPROPVAL_ARRAY propvals;
 };
 
-struct RULE_LIST {
+struct GX_EXPORT RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
 
@@ -1393,7 +1393,7 @@ struct ZREPLY_ACTION {
 	GUID template_guid;
 };
 
-struct FORWARDDELEGATE_ACTION {
+struct GX_EXPORT FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 
@@ -1515,13 +1515,13 @@ enum { /* for PidLidResponseStatus */
  */
 #define MAPI_ASSOCIATED 0x40U
 
-extern const FLATUID
+extern GX_EXPORT const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
 	muidECSAB, muidZCSAB, EncodedGlobalId, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
-extern const GUID
+extern GX_EXPORT const GUID
 	GUID_NONE, PSETID_ADDRESS, PSETID_APPOINTMENT,
 	PSETID_BUSINESSCARDVIEW, PSETID_CALENDARASSISTANT, PSETID_COMMON,
 	PSETID_GROMOX, PSETID_KC, PSETID_KCARCHIVE, PSETID_LOG, PSETID_MEETING,
@@ -1530,4 +1530,4 @@ extern const GUID
 	PS_INTERNET_HEADERS, PS_MAPI,
 	PS_PUBLIC_STRINGS,
 	gx_dbguid_store_private, gx_dbguid_store_public;
-extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];
+extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];

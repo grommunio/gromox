@@ -38,9 +38,9 @@ using THREADS_EVENT_PROC = int (*)(int);
 struct schedule_context;
 
 extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, tproc_status (*process_func)(schedule_context *));
-extern int threads_pool_run(const char *hint = nullptr);
-extern void threads_pool_stop();
-int threads_pool_get_param(int type);
-THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc);
-extern void threads_pool_wakeup_thread();
-extern void threads_pool_wakeup_all_threads();
+extern GX_EXPORT int threads_pool_run(const char *hint = nullptr);
+extern GX_EXPORT void threads_pool_stop();
+extern GX_EXPORT int threads_pool_get_param(int type);
+extern GX_EXPORT THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc);
+extern GX_EXPORT void threads_pool_wakeup_thread();
+extern GX_EXPORT void threads_pool_wakeup_all_threads();

@@ -49,31 +49,31 @@ struct GX_EXPORT alloc_context {
 };
 using ALLOC_CONTEXT = alloc_context;
 
-extern bool utf8_valid(const char *str);
-BOOL utf8_truncate(char *str, int length);
-void utf8_filter(char *string);
-extern void wchar_to_utf8(uint32_t wchar, char *string);
-const char* replace_iconv_charset(const char *charset);
+extern GX_EXPORT bool utf8_valid(const char *str);
+extern GX_EXPORT BOOL utf8_truncate(char *str, int length);
+extern GX_EXPORT void utf8_filter(char *string);
+extern GX_EXPORT void wchar_to_utf8(uint32_t wchar, char *string);
+extern GX_EXPORT const char *replace_iconv_charset(const char *charset);
 extern GX_EXPORT BOOL string_to_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
-extern BOOL string_from_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
-extern ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len);
-extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
-char* search_string(const char *haystack, const char *needle, 
+extern GX_EXPORT BOOL string_from_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
+extern GX_EXPORT ssize_t utf8_to_utf16le(const char *src, void *dst, size_t len);
+extern GX_EXPORT BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
+extern GX_EXPORT char *search_string(const char *haystack, const char *needle,
     size_t haystacklen);
 extern GX_EXPORT const char *crypt_estar(const char *, const char *);
 extern GX_EXPORT const char *crypt_wrapper(const char *);
-int wildcard_match(const char *data, const char *mask, BOOL icase);
+extern GX_EXPORT int wildcard_match(const char *data, const char *mask, BOOL icase);
 extern GX_EXPORT void randstring(char *out, size_t len, const char *pool = nullptr);
-extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
-extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
+extern GX_EXPORT int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
+extern GX_EXPORT int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 #define decode64 decode64_ex
-extern int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
+extern GX_EXPORT int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
 extern GX_EXPORT ssize_t qp_decode_ex(void *output, size_t out_len, const char *input, size_t length, unsigned int qp_flags = 0);
 extern GX_EXPORT ssize_t qp_encode_ex(void *output, size_t outlen, const char *input, size_t length);
-void encode_hex_int(int id, char *out);
-int decode_hex_int(const char *in);
-extern BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
-extern BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
+extern GX_EXPORT void encode_hex_int(int id, char *out);
+extern GX_EXPORT int decode_hex_int(const char *in);
+extern GX_EXPORT BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
+extern GX_EXPORT BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
 
 namespace gromox {
 

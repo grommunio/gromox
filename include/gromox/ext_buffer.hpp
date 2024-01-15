@@ -107,7 +107,7 @@ struct TYPED_PROPVAL;
 struct TYPED_STRING;
 struct XID;
 
-struct EXT_PULL {
+struct GX_EXPORT EXT_PULL {
 	EXT_BUFFER_ALLOC m_alloc{};
 	void init(const void *, uint32_t, EXT_BUFFER_ALLOC, uint32_t) __attribute__((nonnull(4)));
 	pack_result advance(uint32_t);
@@ -206,7 +206,7 @@ struct EXT_PULL {
 	uint32_t m_data_size = 0, m_offset = 0, m_flags = 0;
 };
 
-struct EXT_PUSH {
+struct GX_EXPORT EXT_PUSH {
 	EXT_PUSH() = default;
 	~EXT_PUSH();
 	NOMOVE(EXT_PUSH);
@@ -299,5 +299,5 @@ struct EXT_PUSH {
 	EXT_BUFFER_MGT m_mgt{};
 };
 
-extern bool emsab_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
-extern bool oneoff_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
+extern GX_EXPORT bool emsab_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
+extern GX_EXPORT bool oneoff_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);

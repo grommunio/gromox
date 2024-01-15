@@ -6,7 +6,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 
-struct LIST_FILE {
+struct GX_EXPORT LIST_FILE {
 	LIST_FILE() = default;
 	~LIST_FILE();
 	NOMOVE(LIST_FILE);

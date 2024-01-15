@@ -40,11 +40,11 @@ struct schedule_context {
 using SCHEDULE_CONTEXT = schedule_context;
 
 extern GX_EXPORT void contexts_pool_init(schedule_context **, unsigned int context_num, int (*get_socket)(const schedule_context *), gromox::time_point (*get_ts)(const schedule_context *), unsigned int contexts_per_thr, gromox::time_duration timeout);
-extern int contexts_pool_run();
-extern void contexts_pool_stop();
-SCHEDULE_CONTEXT* contexts_pool_get_context(int type);
-void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type);
-BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type);
-void context_pool_activate_context(SCHEDULE_CONTEXT *);
-void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext);
-int contexts_pool_get_param(int type);
+extern GX_EXPORT int contexts_pool_run();
+extern GX_EXPORT void contexts_pool_stop();
+extern GX_EXPORT schedule_context *contexts_pool_get_context(int type);
+extern GX_EXPORT void contexts_pool_put_context(schedule_context *, int type);
+extern GX_EXPORT BOOL contexts_pool_wakeup_context(schedule_context *, int type);
+extern GX_EXPORT void context_pool_activate_context(schedule_context *);
+extern GX_EXPORT void contexts_pool_signal(schedule_context *);
+extern GX_EXPORT int contexts_pool_get_param(int type);

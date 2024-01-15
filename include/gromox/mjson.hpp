@@ -8,7 +8,7 @@
 struct MJSON_MIME;
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
-struct MJSON_MIME {
+struct GX_EXPORT MJSON_MIME {
 	SIMPLE_TREE_NODE stree{};
 	enum mime_type mime_type = mime_type::none;
 	std::string id, ctype, encoding, charset, filename, cid, cntl, cntdspn;

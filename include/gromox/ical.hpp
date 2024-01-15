@@ -100,7 +100,7 @@ enum { /* for ICAL_TIME::type */
 	ICT_LOCAL,
 };
 
-struct ICAL_TIME {
+struct GX_EXPORT ICAL_TIME {
 	int twcompare(const ICAL_TIME &other) const;
 	inline bool operator<(const ICAL_TIME &o) const { return twcompare(o) < 0; }
 	inline bool operator<=(const ICAL_TIME &o) const { return twcompare(o) <= 0; }
@@ -168,9 +168,9 @@ extern GX_EXPORT bool ical_parse_datetime(const char *in, ICAL_TIME *out);
 extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);
-int ical_get_monthweekorder(int day);
-int ical_get_dayofmonth(int year, int month, int order, int dayofweek);
-void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime);
+extern GX_EXPORT int ical_get_monthweekorder(int day);
+extern GX_EXPORT int ical_get_dayofmonth(int year, int month, int order, int dayofweek);
+extern GX_EXPORT void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime);
 extern GX_EXPORT bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder);
 extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *pseconds);
 extern GX_EXPORT bool ical_itime_to_utc(const ical_component *, ICAL_TIME, time_t *);

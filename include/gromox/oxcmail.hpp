@@ -38,8 +38,8 @@ extern GX_EXPORT std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> oxcical_imp
 extern GX_EXPORT BOOL oxcical_export(const MESSAGE_CONTENT *, ical &, const char *org, EXT_BUFFER_ALLOC, GET_PROPIDS, gromox::cvt_id2user);
 extern GX_EXPORT BOOL oxcical_export_freebusy(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, ical &);
 
-extern BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_USERNAME);
-extern MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *timezone, const MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS);
+extern GX_EXPORT BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS, GET_USERNAME);
+extern GX_EXPORT message_content *oxcmail_import(const char *charset, const char *timezone, const MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS);
 extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, BOOL tnef, enum oxcmail_body, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
 extern GX_EXPORT BOOL oxcmail_username_to_entryid(const char *user, const char *disp, BINARY *, enum display_type *);
 extern GX_EXPORT enum oxcmail_body get_override_format(const MESSAGE_CONTENT &);

@@ -14,7 +14,7 @@
 /**
  * All fields are always UTF-8 for consistency.
  */
-struct EMAIL_ADDR {
+struct GX_EXPORT EMAIL_ADDR {
 	inline bool has_dispname() const { return *display_name != '\0'; }
 	inline bool has_addr() const { return *local_part != '\0' && *domain != '\0'; }
 	inline bool has_value() const { return has_dispname() || has_addr(); }
@@ -34,19 +34,19 @@ struct ENCODE_STRING {
 };
 
 struct MAIL;
-void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
-void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);
-BOOL parse_uri(const char *uri_buff, char *parsed_uri);
+extern GX_EXPORT void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
+extern GX_EXPORT void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);
+extern GX_EXPORT BOOL parse_uri(const char *uri_buff, char *parsed_uri);
 extern GX_EXPORT size_t parse_mime_field(const char *, size_t, MIME_FIELD *);
 extern GX_EXPORT void parse_field_value(const char *in_buff, long buff_len, char *value, long val_len, std::vector<kvpair> &);
-void parse_mime_encode_string(char *in_buff, long buff_len,
+extern GX_EXPORT void parse_mime_encode_string(char *in_buff, long buff_len,
 	ENCODE_STRING *encode_string);
 extern GX_EXPORT int mutf7_to_utf8(const char *u7, size_t u7len, char *u8, size_t u8len);
 extern GX_EXPORT int utf8_to_mutf7(const char *u8, size_t u8len, char *u7, size_t u7len);
-int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax);
-BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime);
+extern GX_EXPORT int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax);
+extern GX_EXPORT BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime);
 extern GX_EXPORT BOOL mime_string_to_utf8(const char *charset, const char *mime_string, char *out_string, size_t out_len);
-void enriched_to_html(const char *enriched_txt,
+extern GX_EXPORT void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 extern GX_EXPORT int html_to_plain(const void *inbuf, size_t inlen, std::string &outbuf);
 extern GX_EXPORT char *plain_to_html(const char *rbuf);

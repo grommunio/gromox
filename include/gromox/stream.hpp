@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
 #define STREAM_ALLOC_SIZE    (STREAM_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
@@ -38,7 +39,7 @@ enum {
 	STREAM_WRITE_OK
 };
 
-struct STREAM {
+struct GX_EXPORT STREAM {
 	STREAM();
 	STREAM(STREAM &&) = delete;
 	STREAM &operator=(STREAM &&);
@@ -79,4 +80,3 @@ struct STREAM {
 	bool is_clone = false;
 	friend void stream_split_eom(STREAM *, STREAM *);
 };
-

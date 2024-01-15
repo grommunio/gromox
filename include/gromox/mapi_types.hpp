@@ -53,7 +53,7 @@ struct MESSAGE_ENTRYID {
 	uint8_t pad2[2];
 };
 
-struct MOVECOPY_ACTION {
+struct GX_EXPORT MOVECOPY_ACTION {
 	uint8_t same_store;
 	STORE_ENTRYID *pstore_eid;
 	void *pfolder_eid; /* SVREID or BINARY */
@@ -66,7 +66,7 @@ struct EXT_MOVECOPY_ACTION {
 };
 
 /* reply or OOF action */
-struct REPLY_ACTION {
+struct GX_EXPORT REPLY_ACTION {
 	uint64_t template_folder_id;
 	uint64_t template_message_id;
 	GUID template_guid;
@@ -89,7 +89,7 @@ struct EXT_RECIPIENT_BLOCK {
 	TAGGED_PROPVAL *ppropval;
 };
 
-struct EXT_FORWARDDELEGATE_ACTION {
+struct GX_EXPORT EXT_FORWARDDELEGATE_ACTION {
 	uint32_t count;
 	EXT_RECIPIENT_BLOCK *pblock;
 
@@ -119,7 +119,7 @@ struct EXT_ACTION_BLOCK {
 	void *pdata;
 };
 
-struct EXT_RULE_ACTIONS {
+struct GX_EXPORT EXT_RULE_ACTIONS {
 	uint32_t count;
 	EXT_ACTION_BLOCK *pblock;
 
@@ -190,7 +190,7 @@ struct LONG_TERM_ID_RANGE {
 	LONG_TERM_ID max;
 };
 
-struct XID {
+struct GX_EXPORT XID {
 	XID() = default;
 	XID(GUID, eid_t cn);
 	GLOBCNT local_to_gc() const { GLOBCNT r; memcpy(r.ab, local_id, 6); return r; }
@@ -240,7 +240,7 @@ struct PROPERTY_PROBLEM {
 	inline bool operator<(const PROPERTY_PROBLEM &o) const { return index < o.index; }
 };
 
-struct PROBLEM_ARRAY {
+struct GX_EXPORT PROBLEM_ARRAY {
 	uint16_t count;
 	PROPERTY_PROBLEM *pproblem;
 
@@ -699,7 +699,7 @@ struct GLOBALOBJECTID {
 	bool unparsed;
 };
 
-struct EID_ARRAY {
+struct GX_EXPORT EID_ARRAY {
 	uint32_t count;
 	uint64_t *pids;
 	inline uint64_t *begin() { return pids; }
@@ -743,7 +743,7 @@ struct repl_node {
 	range_list_t range_list; /* GLOBSET */
 };
 
-class idset {
+class GX_EXPORT idset {
 	public:
 	enum class type : uint8_t {
 		id_packed   = 0x41, id_loose   = 0x42,

@@ -2,6 +2,6 @@
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
 
-void restriction_free(RESTRICTION *prestriction);
-RESTRICTION* restriction_dup(const RESTRICTION *prestriction);
-uint32_t restriction_size(const RESTRICTION *r);
+extern GX_EXPORT void restriction_free(RESTRICTION *);
+extern GX_EXPORT RESTRICTION *restriction_dup(const RESTRICTION *);
+extern GX_EXPORT uint32_t restriction_size(const RESTRICTION *);

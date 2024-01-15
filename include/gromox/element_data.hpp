@@ -20,7 +20,7 @@ struct GX_EXPORT property_groupinfo {
 };
 using PROPERTY_GROUPINFO = property_groupinfo;
 
-struct attachment_list {
+struct GX_EXPORT attachment_list {
 	void remove(uint16_t index);
 	BOOL append_internal(attachment_content *);
 	attachment_list *dup() const;
@@ -65,7 +65,7 @@ struct PROGRESS_INFORMATION {
 	uint64_t normal_size;
 };
 
-struct message_content {
+struct GX_EXPORT message_content {
 	TPROPVAL_ARRAY *get_proplist() { return &proplist; }
 	void set_rcpts_internal(TARRAY_SET *);
 	void set_attachments_internal(ATTACHMENT_LIST *);
@@ -76,7 +76,7 @@ struct message_content {
 };
 using MESSAGE_CONTENT = message_content;
 
-struct attachment_content {
+struct GX_EXPORT attachment_content {
 	void set_embedded_internal(message_content *);
 	attachment_content *dup() const;
 
@@ -105,7 +105,7 @@ struct GX_EXPORT FOLDER_CONTENT {
 	std::vector<FOLDER_CONTENT> psubflds;
 };
 
-struct FOLDER_CHANGES {
+struct GX_EXPORT FOLDER_CHANGES {
 	uint32_t count;
 	TPROPVAL_ARRAY *pfldchgs;
 	inline TPROPVAL_ARRAY *begin() { return pfldchgs; }
@@ -114,18 +114,18 @@ struct FOLDER_CHANGES {
 	inline const TPROPVAL_ARRAY *end() const { return pfldchgs + count; }
 };
 
-extern ATTACHMENT_CONTENT *attachment_content_init();
-void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
-extern ATTACHMENT_LIST *attachment_list_init();
-void attachment_list_free(ATTACHMENT_LIST *plist);
+extern GX_EXPORT attachment_content *attachment_content_init();
+extern GX_EXPORT void attachment_content_free(attachment_content *);
+extern GX_EXPORT attachment_list *attachment_list_init();
+extern GX_EXPORT void attachment_list_free(attachment_list *);
 extern GX_EXPORT std::unique_ptr<FOLDER_CONTENT> folder_content_init();
-extern MESSAGE_CONTENT *message_content_init();
-BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt);
-void message_content_free_internal(MESSAGE_CONTENT *pmsgctnt);
-void message_content_free(MESSAGE_CONTENT *pmsgctnt);
+extern GX_EXPORT message_content *message_content_init();
+extern GX_EXPORT BOOL message_content_init_internal(message_content *);
+extern GX_EXPORT void message_content_free_internal(message_content *);
+extern GX_EXPORT void message_content_free(message_content *);
 
 namespace gromox {
-struct mc_delete {
+struct GX_EXPORT mc_delete {
 	inline void operator()(ATTACHMENT_LIST *x) { attachment_list_free(x); }
 	inline void operator()(MESSAGE_CONTENT *x) { message_content_free(x); }
 };

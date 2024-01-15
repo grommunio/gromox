@@ -44,7 +44,7 @@ struct DIR_mp {
  * linkto():	make the temporary permannt using a given name
  * 		[requires open_link to be used]
  */
-class tmpfile {
+class GX_EXPORT tmpfile {
 	public:
 	~tmpfile() { close(); }
 	operator int() const { return m_fd; }
@@ -60,7 +60,7 @@ class tmpfile {
 	int open_impl(const char *dir, unsigned int flags, unsigned int mode, bool anon);
 };
 
-class wrapfd {
+class GX_EXPORT wrapfd {
 	public:
 	wrapfd(int z) : m_fd{z} {}
 	wrapfd(wrapfd &&) noexcept = delete;

@@ -38,8 +38,8 @@
 struct NDR_PULL;
 struct NDR_PUSH;
 
-void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
-void ndr_free_data_blob(DATA_BLOB *pblob);
+extern GX_EXPORT void ndr_set_flags(uint32_t *flags, uint32_t new_flags);
+extern GX_EXPORT void ndr_free_data_blob(DATA_BLOB *);
 
 struct GX_EXPORT NDR_PULL {
 	void init(const void *d, uint32_t z, uint32_t f);
