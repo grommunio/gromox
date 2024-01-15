@@ -203,6 +203,20 @@ void EWSContext::disableEventStream()
 }
 
 /**
+ * @brief      Get effective username for exmdb operations
+ *
+ * Some exmdb calls do implicit access checks for public folders, in which case
+ * a username has to be supplied. For private stores, nullptr has to be given
+ * instead.
+ *
+ * @param       Folder to access
+ *
+ * @return      username if public folder, nullptr if
+ */
+const char* EWSContext::effectiveUser(const sFolderSpec& folder) const
+{return folder.location == sFolderSpec::PUBLIC? m_auth_info.username : nullptr;}
+
+/**
  * @brief      Initialize notification context
  *
  * @param      timeout   Stream timeout (minutes)
@@ -1572,8 +1586,9 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	_props[props.count].proptag = PidTagChangeNumber;
 	_props[props.count++].pvalue = &changeNum;
 
+	const char* username = mid.isPrivate()? nullptr : m_auth_info.username;
 	PROBLEM_ARRAY problems;
-	if(!m_plugin.exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+	if(!m_plugin.exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
 		throw DispatchError(E3089);
 }
 
