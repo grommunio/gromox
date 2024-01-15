@@ -3783,7 +3783,7 @@ BOOL oxcical_export_freebusy(const char *user, const char *fbuser,
 	ic.append_line("METHOD", "PUBLISH");
 	ic.append_line("PRODID", "gromox-oxcical");
 	ic.append_line("VERSION", "2.0");
-	auto com = ic.append_comp("VFREEBUSY");
+	auto &com = ic.append_comp("VFREEBUSY");
 	com.append_line("ORGANIZER", user);
 	auto line = &com.append_line("ATTENDEE");
 	line->append_param("PARTSTAT", "ACCEPTED");
