@@ -13,8 +13,6 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
@@ -250,10 +248,6 @@ struct RTF_READER {
 	EXT_PUSH iconv_push{};
 	SIMPLE_TREE element_tree{};
 	ATTACHMENT_LIST *pattachments = nullptr;
-};
-
-struct GROUP_NODE {
-	SIMPLE_TREE_NODE node;
 };
 
 }
@@ -1105,32 +1099,26 @@ static char* rtf_read_element(RTF_READER *preader)
 static bool rtf_load_element_tree(RTF_READER *preader)
 {
 	char *input_word;
-	GROUP_NODE *pgroup;
-	SIMPLE_TREE_NODE *pword;
-	GROUP_NODE *plast_group;
-	SIMPLE_TREE_NODE *plast_node;
+	tree_node *plast_group = nullptr, *plast_node = nullptr;
 	
-	plast_group = NULL;
-	plast_node = NULL;
 	while ((input_word = rtf_read_element(preader)) != NULL) {
 		if (input_word[0] == '{') {
 			free(input_word);
-			pgroup = me_alloc<GROUP_NODE>();
+			auto pgroup = me_alloc<tree_node>();
 			if (NULL == pgroup) {
 				mlog(LV_DEBUG, "rtf: out of memory");
 				return false;
 			}
-			pgroup->node.pdata = NULL;
+			pgroup->pdata = nullptr;
 			if (plast_group == nullptr)
-				preader->element_tree.set_root(&pgroup->node);
+				preader->element_tree.set_root(pgroup);
 			else if (plast_node != nullptr)
 				preader->element_tree.insert_sibling(
-					plast_node, &pgroup->node,
+					plast_node, pgroup,
 					SIMPLE_TREE_INSERT_AFTER);
 			else
-				preader->element_tree.add_child(
-					&plast_group->node,
-					&pgroup->node, SIMPLE_TREE_ADD_LAST);
+				preader->element_tree.add_child(plast_group,
+					pgroup, SIMPLE_TREE_ADD_LAST);
 			plast_group = pgroup;
 			plast_node = NULL;
 			continue;
@@ -1140,8 +1128,8 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
 				return false;
 			}
-			plast_node = &plast_group->node;
-			plast_group = containerof(plast_group->node.get_parent(), GROUP_NODE, node);
+			plast_node  = plast_group;
+			plast_group = plast_group->get_parent();
 			if (plast_group == nullptr)
 				return true;
 			continue;
@@ -1152,7 +1140,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
 			return false;
 		}
-		pword = me_alloc<SIMPLE_TREE_NODE>();
+		auto pword = me_alloc<tree_node>();
 		if (NULL == pword) {
 			free(input_word);
 			mlog(LV_DEBUG, "rtf: out of memory");
@@ -1160,8 +1148,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 		}
 		pword->pdata = input_word;
 		if (plast_node == nullptr)
-			preader->element_tree.add_child(
-				&plast_group->node, pword,
+			preader->element_tree.add_child(plast_group, pword,
 				SIMPLE_TREE_ADD_LAST);
 		else
 			preader->element_tree.insert_sibling(plast_node,
