@@ -699,19 +699,17 @@ int ical_get_monthweekorder(int day)
 	return (day - 1)/7 + 1;
 }
 
-int ical_get_negative_monthweekorder(
-	int year, int month, int day)
+static int ical_get_negative_monthweekorder(int year, int month, int day)
 {
 	return (day - static_cast<int>(ical_get_monthdays(year, month))) / 7 - 1;
 }
 
-int ical_get_yearweekorder(int year, int month, int day)
+static int ical_get_yearweekorder(int year, int month, int day)
 {
 	return (ical_get_dayofyear(year, month, day) - 1)/7 + 1;
 }
 
-int ical_get_negative_yearweekorder(
-	int year, int month, int day)
+static int ical_get_negative_yearweekorder(int year, int month, int day)
 {
 	int yearday;
 	int yeardays = 365 + ical_is_leap_year(year);

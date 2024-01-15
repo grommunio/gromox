@@ -169,9 +169,6 @@ extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);
 int ical_get_monthweekorder(int day);
-int ical_get_negative_monthweekorder(int year, int month, int day);
-int ical_get_yearweekorder(int year, int month, int day);
-int ical_get_negative_yearweekorder(int year, int month, int day);
 int ical_get_dayofmonth(int year, int month, int order, int dayofweek);
 void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime);
 extern GX_EXPORT bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder);
