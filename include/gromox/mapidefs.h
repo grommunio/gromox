@@ -1182,10 +1182,10 @@ struct tarray_set {
 	inline const TPROPVAL_ARRAY *back() const { return pparray[count-1]; }
 	gromox::errno_t append_move(tpropval_array_ptr &&);
 	tarray_set *dup() const;
-	gromox::deref_iterator<TPROPVAL_ARRAY> begin() { return pparray; }
-	gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray + count; }
-	gromox::const_deref_iterator<TPROPVAL_ARRAY> begin() const { return pparray; }
-	gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray + count; }
+	inline gromox::deref_iterator<TPROPVAL_ARRAY> begin() { return pparray; }
+	inline gromox::deref_iterator<TPROPVAL_ARRAY> end() { return pparray + count; }
+	inline gromox::const_deref_iterator<TPROPVAL_ARRAY> begin() const { return pparray; }
+	inline gromox::const_deref_iterator<TPROPVAL_ARRAY> end() const { return pparray + count; }
 
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
@@ -1214,10 +1214,10 @@ struct RECIPIENT_BLOCK {
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 
-	TAGGED_PROPVAL *begin() { return ppropval; }
-	TAGGED_PROPVAL *end() { return ppropval + count; }
-	const TAGGED_PROPVAL *begin() const { return ppropval; }
-	const TAGGED_PROPVAL *end() const { return ppropval + count; }
+	inline TAGGED_PROPVAL *begin() { return ppropval; }
+	inline TAGGED_PROPVAL *end() { return ppropval + count; }
+	inline const TAGGED_PROPVAL *begin() const { return ppropval; }
+	inline const TAGGED_PROPVAL *end() const { return ppropval + count; }
 	std::string repr() const;
 };
 
@@ -1350,10 +1350,10 @@ struct RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
 
-	ACTION_BLOCK *begin() { return pblock; }
-	ACTION_BLOCK *end() { return pblock + count; }
-	const ACTION_BLOCK *begin() const { return pblock; }
-	const ACTION_BLOCK *end() const { return pblock + count; }
+	inline ACTION_BLOCK *begin() { return pblock; }
+	inline ACTION_BLOCK *end() { return pblock + count; }
+	inline const ACTION_BLOCK *begin() const { return pblock; }
+	inline const ACTION_BLOCK *end() const { return pblock + count; }
 	std::string repr() const;
 };
 
@@ -1366,10 +1366,10 @@ struct RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
 
-	RULE_DATA *begin() { return prule; }
-	RULE_DATA *end() { return prule + count; }
-	const RULE_DATA *begin() const { return prule; }
-	const RULE_DATA *end() const { return prule + count; }
+	inline RULE_DATA *begin() { return prule; }
+	inline RULE_DATA *end() { return prule + count; }
+	inline const RULE_DATA *begin() const { return prule; }
+	inline const RULE_DATA *end() const { return prule + count; }
 };
 
 struct ZMOVECOPY_ACTION {
@@ -1397,10 +1397,10 @@ struct FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 
-	RECIPIENT_BLOCK *begin() { return pblock; }
-	RECIPIENT_BLOCK *end() { return pblock + count; }
-	const RECIPIENT_BLOCK *begin() const { return pblock; }
-	const RECIPIENT_BLOCK *end() const { return pblock + count; }
+	inline RECIPIENT_BLOCK *begin() { return pblock; }
+	inline RECIPIENT_BLOCK *end() { return pblock + count; }
+	inline const RECIPIENT_BLOCK *begin() const { return pblock; }
+	inline const RECIPIENT_BLOCK *end() const { return pblock + count; }
 	std::string repr() const;
 };
 

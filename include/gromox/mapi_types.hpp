@@ -93,10 +93,10 @@ struct EXT_FORWARDDELEGATE_ACTION {
 	uint32_t count;
 	EXT_RECIPIENT_BLOCK *pblock;
 
-	EXT_RECIPIENT_BLOCK *begin() { return pblock; }
-	EXT_RECIPIENT_BLOCK *end() { return pblock + count; }
-	const EXT_RECIPIENT_BLOCK *begin() const { return pblock; }
-	const EXT_RECIPIENT_BLOCK *end() const { return pblock + count; }
+	inline EXT_RECIPIENT_BLOCK *begin() { return pblock; }
+	inline EXT_RECIPIENT_BLOCK *end() { return pblock + count; }
+	inline const EXT_RECIPIENT_BLOCK *begin() const { return pblock; }
+	inline const EXT_RECIPIENT_BLOCK *end() const { return pblock + count; }
 };
 
 enum { /* ACTION_BLOCK::flavor for OP_FORWARD */
@@ -123,10 +123,10 @@ struct EXT_RULE_ACTIONS {
 	uint32_t count;
 	EXT_ACTION_BLOCK *pblock;
 
-	EXT_ACTION_BLOCK *begin() { return pblock; }
-	EXT_ACTION_BLOCK *end() { return pblock + count; }
-	const EXT_ACTION_BLOCK *begin() const { return pblock; }
-	const EXT_ACTION_BLOCK *end() const { return pblock + count; }
+	inline EXT_ACTION_BLOCK *begin() { return pblock; }
+	inline EXT_ACTION_BLOCK *end() { return pblock + count; }
+	inline const EXT_ACTION_BLOCK *begin() const { return pblock; }
+	inline const EXT_ACTION_BLOCK *end() const { return pblock + count; }
 };
 
 enum {
@@ -250,7 +250,7 @@ struct PROBLEM_ARRAY {
 	inline const PROPERTY_PROBLEM *end() const { return pproblem + count; }
 	bool have_index(unsigned int) const;
 	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
-	void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
+	inline void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
 		pproblem[count++] = PROPERTY_PROBLEM{static_cast<uint16_t>(i), tag, err};
 	}
 	void transform(const uint16_t *);
