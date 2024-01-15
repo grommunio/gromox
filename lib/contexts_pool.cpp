@@ -196,17 +196,15 @@ static void *ctxp_thrwork(void *pparam)
 {
 	while (!g_notify_stop) {
 		auto num = g_poll_ctx.wait();
-		if (num <= 0) {
+		if (num <= 0)
 			continue;
-		}
 		for (unsigned int i = 0; i < static_cast<unsigned int>(num); ++i) {
 			auto pcontext = g_poll_ctx.get_data(i);
 			std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
-			if (CONTEXT_POLLING != pcontext->type) {
+			if (pcontext->type != CONTEXT_POLLING)
 				/* context may be waked up and modified by
 				scan_work_func or context_pool_activate_context */
 				continue;
-			}
 			if (!pcontext->b_waiting) {
 				mlog(LV_DEBUG, "contexts_pool: error in context"
 					" queue! b_waiting mismatch in thread_work_func"
@@ -219,11 +217,10 @@ static void *ctxp_thrwork(void *pparam)
 			poll_hold.unlock();
 			contexts_pool_put_context(pcontext, CONTEXT_TURNING);
 		}
-		if (1 == num) {
+		if (num == 1)
 			threads_pool_wakeup_thread();
-		} else {
+		else
 			threads_pool_wakeup_all_threads();
-		}
 	}
 	return nullptr;
 }
@@ -262,9 +259,8 @@ static void *ctxp_scanwork(void *pparam)
 			double_list_append_as_tail(
 				&g_context_lists[CONTEXT_POLLING], pnode);
  CHECK_TAIL:
-			if (pnode == ptail) {
+			if (pnode == ptail)
 				break;
-			}
 		}
 		poll_hold.unlock();
 		std::unique_lock idle_hold(g_context_locks[CONTEXT_IDLING]);
@@ -283,11 +279,10 @@ static void *ctxp_scanwork(void *pparam)
 			num ++;
 		}
 		turn_hold.unlock();
-		if (1 == num) {
+		if (num == 1)
 			threads_pool_wakeup_thread();
-		} else if (num > 1) {
+		else if (num > 1)
 			threads_pool_wakeup_all_threads();
-		}
 		sleep(1);
 	}
 	double_list_free(&temp_list);
@@ -375,9 +370,8 @@ void contexts_pool_stop()
 SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
 {
 	DOUBLE_LIST_NODE *pnode;
-	if (CONTEXT_FREE != type && CONTEXT_TURNING != type) {
+	if (type != CONTEXT_FREE && type != CONTEXT_TURNING)
 		return NULL;
-	}
 	std::lock_guard xhold(g_context_locks[type]);
 	pnode = double_list_pop_front(&g_context_lists[type]);
 	/* do not change context type under this circumstance */
@@ -393,10 +387,8 @@ SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
  */
 void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 {
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return;
-	}
-	
 	switch(type) {
 	case CONTEXT_FREE:
 	case CONTEXT_IDLING:
@@ -447,9 +439,8 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
 {
 	std::unique_lock idle_hold(g_context_locks[CONTEXT_IDLING]);
-	if (CONTEXT_IDLING != pcontext->type) {
+	if (pcontext->type != CONTEXT_IDLING)
 		return;
-	}
 	double_list_remove(&g_context_lists[CONTEXT_IDLING], &pcontext->node);
 	pcontext->type = CONTEXT_SWITCHING;
 	idle_hold.unlock();
@@ -469,14 +460,11 @@ void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext)
  */
 BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 {
-	if (NULL == pcontext) {
+	if (pcontext == nullptr)
 		return FALSE;
-	}
-	if (CONTEXT_POLLING != type &&
-		CONTEXT_IDLING != type &&
-		CONTEXT_TURNING != type) {
+	if (type != CONTEXT_POLLING && type != CONTEXT_IDLING &&
+	    type != CONTEXT_TURNING)
 		return FALSE;
-	}
 	while (CONTEXT_SLEEPING != pcontext->type) {
 		usleep(100000);
 		mlog(LV_DEBUG, "contexts_pool: waiting context %p to be CONTEXT_SLEEPING", pcontext);
@@ -486,9 +474,8 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 	sleep_hold.unlock();
 	/* put the context into waiting queue */
 	contexts_pool_put_context(pcontext, type);
-	if (CONTEXT_TURNING == type) {
+	if (type == CONTEXT_TURNING)
 		threads_pool_wakeup_thread();
-	}
 	return TRUE;
 }
 
@@ -501,9 +488,8 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
 {
 	std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
-	if (CONTEXT_POLLING != pcontext->type) {
+	if (pcontext->type != CONTEXT_POLLING)
 		return;
-	}
 	double_list_remove(&g_context_lists[CONTEXT_POLLING], &pcontext->node);
 	pcontext->type = CONTEXT_SWITCHING;
 	poll_hold.unlock();
