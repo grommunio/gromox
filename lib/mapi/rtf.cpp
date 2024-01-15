@@ -206,12 +206,6 @@ enum {
 
 namespace {
 
-struct COLLECTION_NODE {
-	DOUBLE_LIST_NODE node;
-	int nr;
-	char *text;
-};
-
 struct attrstack_node {
 	uint8_t attr_stack[MAX_ATTRS]{};
 	int attr_params[MAX_ATTRS]{};
@@ -260,7 +254,6 @@ struct RTF_READER {
 
 struct GROUP_NODE {
 	SIMPLE_TREE_NODE node;
-	DOUBLE_LIST collection_list;
 };
 
 }
@@ -484,61 +477,6 @@ static const FONTENTRY *rtf_lookup_font(const RTF_READER *preader, int num)
 	return i != preader->pfont_hash.cend() ? &i->second : nullptr;
 }
 
-static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)
-{
-	char *ptext;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pcollection = static_cast<COLLECTION_NODE *>(pnode->pdata);
-		if (nr == pcollection->nr) {
-			ptext = strdup(text);
-			if (ptext == nullptr)
-				return false;
-			free(pcollection->text);
-			pcollection->text = ptext;
-			return true;
-		}
-	}
-	auto pcollection = me_alloc<COLLECTION_NODE>();
-	if (pcollection == nullptr)
-		return false;
-	pcollection->node.pdata = pcollection;
-	pcollection->nr = nr;
-	pcollection->text = strdup(text);
-	if (NULL == pcollection->text) {
-		free(pcollection->text);
-		return false;
-	}
-	double_list_append_as_tail(plist, &pcollection->node);
-	return true;
-}
-
-static const char *rtf_get_from_collection(const DOUBLE_LIST *plist, int nr)
-{
-	const DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
-		pnode=double_list_get_after(plist, pnode)) {
-		auto pcollection = static_cast<const COLLECTION_NODE *>(pnode->pdata);
-		if (nr == pcollection->nr)
-			return pcollection->text;
-	}
-	return NULL;
-}
-
-static void rtf_free_collection(DOUBLE_LIST *plist)
-{
-	DOUBLE_LIST_NODE *pnode;
-
-	while ((pnode = double_list_pop_front(plist)) != nullptr) {
-		auto pcollection = static_cast<COLLECTION_NODE *>(pnode->pdata);
-		free(pcollection->text);
-		free(pcollection);
-	}
-}
-
 static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
     uint32_t rtf_length, ATTACHMENT_LIST *pattachments)
 {
@@ -553,13 +491,8 @@ static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
 
 static void rtf_delete_tree_node(SIMPLE_TREE_NODE *pnode)
 {
-	if (NULL != pnode->pdata) {
+	if (pnode->pdata != nullptr)
 		free(pnode->pdata);
-	} else {
-		auto gn = containerof(pnode, GROUP_NODE, node);
-		rtf_free_collection(&gn->collection_list);
-		double_list_free(&gn->collection_list);
-	}
 	free(pnode);
 }
 
@@ -1169,30 +1102,6 @@ static char* rtf_read_element(RTF_READER *preader)
 	return input_str;
 }
 
-static bool rtf_optimize_element(DOUBLE_LIST *pcollection_list,
-    const char *str_word)
-{
-	const char *text;
-	static constexpr char opt_tags[][4] = {"\\fs", "\\f"};
-	
-	for (size_t i = 0; i < std::size(opt_tags); ++i) {
-		auto len = strlen(opt_tags[i]);
-		if (strncmp(opt_tags[i], str_word, len) != 0)
-			continue;
-		if (!HX_isdigit(str_word[len]) && str_word[len] != '-')
-			continue;
-		text = rtf_get_from_collection(pcollection_list, i);
-		if (NULL == text) {
-			continue;
-		}
-		if (strcmp(text, str_word) == 0)
-			return true;
-		rtf_add_to_collection(pcollection_list, i, str_word);
-		break;
-	}
-	return false;
-}
-
 static bool rtf_load_element_tree(RTF_READER *preader)
 {
 	char *input_word;
@@ -1212,7 +1121,6 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				return false;
 			}
 			pgroup->node.pdata = NULL;
-			double_list_init(&pgroup->collection_list);
 			if (plast_group == nullptr)
 				preader->element_tree.set_root(&pgroup->node);
 			else if (plast_node != nullptr)
@@ -1232,7 +1140,6 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
 				return false;
 			}
-			rtf_free_collection(&plast_group->collection_list);
 			plast_node = &plast_group->node;
 			plast_group = containerof(plast_group->node.get_parent(), GROUP_NODE, node);
 			if (plast_group == nullptr)
@@ -1244,10 +1151,6 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			free(input_word);
 			mlog(LV_DEBUG, "rtf: rtf format error, missing first '{'");
 			return false;
-		}
-		if (rtf_optimize_element(&plast_group->collection_list, input_word)) {
-			free(input_word);
-			return true;
 		}
 		pword = me_alloc<SIMPLE_TREE_NODE>();
 		if (NULL == pword) {
