@@ -245,6 +245,7 @@ public:
 	Structures::sFolder create(const std::string&, const Structures::sFolderSpec&, const Structures::sFolder&) const;
 	Structures::sItem create(const std::string&, const Structures::sFolderSpec&, const MESSAGE_CONTENT&) const;
 	void disableEventStream();
+	const char* effectiveUser(const Structures::sFolderSpec&) const;
 	void enableEventStream(int);
 	std::string essdn_to_username(const std::string&) const;
 	std::string get_maildir(const Structures::tMailbox&) const;

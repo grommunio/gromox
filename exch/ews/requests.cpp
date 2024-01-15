@@ -291,7 +291,7 @@ void process(mDeleteItemRequest&& request, XMLElement* response, const EWSContex
 			EID_ARRAY eids{1, &eid};
 			BOOL hardDelete = request.DeleteType == Enum::HardDelete? TRUE : false;
 			BOOL partial;
-			if(!ctx.plugin().exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, nullptr, fid, &eids,
+			if(!ctx.plugin().exmdb.delete_messages(dir.c_str(), accountId, CP_ACP, ctx.effectiveUser(parent), fid, &eids,
 			                                     hardDelete, &partial) || partial)
 				throw EWSError::CannotDeleteObject(E3134);
 			else
@@ -330,8 +330,9 @@ void process(mEmptyFolderRequest&& request, XMLElement* response, const EWSConte
 		std::string dir = ctx.getDir(folder);
 		if(!(ctx.permissions(dir, folder.folderId) & frightsDeleteAny))
 			throw EWSError::AccessDenied(E3179);
+		const char* username = ctx.effectiveUser(folder);
 		BOOL partial;
-		if(!ctx.plugin().exmdb.empty_folder(dir.c_str(), CP_ACP, nullptr, folder.folderId, deleteFlags, &partial)
+		if(!ctx.plugin().exmdb.empty_folder(dir.c_str(), CP_ACP, username, folder.folderId, deleteFlags, &partial)
 		   || partial)
 			throw EWSError::CannotEmptyFolder(E3180);
 		data.ResponseMessages.emplace_back().success();
@@ -382,7 +383,8 @@ void process(mFindFolderRequest&& request, XMLElement* response, const EWSContex
 			lastDir = dir;
 		}
 		uint32_t tableId, rowCount;
-		if(!exmdb.load_hierarchy_table(dir.c_str(), folder.folderId, nullptr, tableFlags, res, &tableId, &rowCount))
+		const char* username = ctx.effectiveUser(folder);
+		if(!exmdb.load_hierarchy_table(dir.c_str(), folder.folderId, username, tableFlags, res, &tableId, &rowCount))
 			throw EWSError::FolderPropertyRequestFailed(E3219);
 		auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
 		if(!rowCount) {
@@ -1051,7 +1053,7 @@ void process(mSyncFolderHierarchyRequest&& request, XMLElement* response, const 
 	FOLDER_CHANGES changes;
 	uint64_t lastCn;
 	EID_ARRAY given_fids, deleted_fids;
-	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, nullptr,
+	if(!exmdb.get_hierarchy_sync(dir.c_str(), folder.folderId, ctx.effectiveUser(folder),
 	                             &syncState.given, &syncState.seen, &changes, &lastCn, &given_fids, &deleted_fids))
 		throw DispatchError(E3030);
 
@@ -1122,7 +1124,7 @@ void process(mSyncFolderItemsRequest&& request, XMLElement* response, const EWSC
 	EID_ARRAY updated_mids, chg_mids, given_mids, deleted_mids, nolonger_mids, read_mids, unread_mids;
 	bool getFai = request.SyncScope && *request.SyncScope == Enum::NormalAndAssociatedItems;
 	idset* pseen_fai = getFai? &syncState.seen : nullptr;
-	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, nullptr,
+	if (!exmdb.get_content_sync(dir.c_str(), folder.folderId, ctx.effectiveUser(folder),
 	    &syncState.given, &syncState.seen, pseen_fai, &syncState.read,
 	    CP_ACP, nullptr, TRUE, &fai_count, &fai_total, &normal_count,
 	    &normal_total, &updated_mids, &chg_mids, &last_cn, &given_mids,
@@ -1343,7 +1345,7 @@ void process(mSendItemRequest&& request, XMLElement* response, const EWSContext&
 			throw EWSError::AccessDenied(E3142);
 
 		MESSAGE_CONTENT* content;
-		if(!ctx.plugin().exmdb.read_message(dir.c_str(), nullptr, CP_ACP, meid.messageId(), &content))
+		if(!ctx.plugin().exmdb.read_message(dir.c_str(), ctx.effectiveUser(folder), CP_ACP, meid.messageId(), &content))
 			throw EWSError::ItemNotFound(E3143);
 		ctx.send(dir, *content);
 
@@ -1483,10 +1485,11 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			if (std::holds_alternative<tSetItemField>(update))
 				std::get<tSetItemField>(update).put(shape);
 		}
+		const char* username = ctx.effectiveUser(parentFolder);
 		TPROPVAL_ARRAY props = shape.write();
 		PROPTAG_ARRAY tagsRm = shape.remove();
 		PROBLEM_ARRAY problems;
-		if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), nullptr, CP_ACP, mid.messageId(), &props, &problems))
+		if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
 			throw EWSError::ItemSave(E3092);
 		if(!ctx.plugin().exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
 			throw EWSError::ItemSave(E3093);
