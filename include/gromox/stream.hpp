@@ -1,8 +1,7 @@
 #pragma once
+#include <list>
 #include <gromox/defs.h>
-#include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
-#define STREAM_ALLOC_SIZE    (STREAM_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 
 /**
  * %STREAM_LINE_FAIL: mail envelope lines overflow the first buffer of stream
@@ -35,11 +34,12 @@ enum {
 	STREAM_WRITE_OK
 };
 
+struct stream_block {
+	char cdata[STREAM_BLOCK_SIZE];
+};
+
 struct GX_EXPORT STREAM {
 	STREAM();
-	STREAM(STREAM &&) = delete;
-	STREAM &operator=(STREAM &&);
-	~STREAM();
 
 	int has_newline() const { return line_result; }
 	unsigned int readline(char **);
@@ -61,18 +61,15 @@ struct GX_EXPORT STREAM {
 	int dump(int fd);
 	int write(const void *buf, size_t);
 
-	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
+	std::list<stream_block>::iterator pnode_rd{}, pnode_wr{};
 	int line_result = 0, eom_result = 0;
 	size_t rd_block_pos = 0, wr_block_pos = 0;
 	size_t rd_total_pos = 0, wr_total_pos = 0;
 	size_t last_eom_parse = 0;
 	size_t block_line_parse = 0, block_line_pos = 0;
-	DOUBLE_LIST list{};
+	/* shared_ptr is used so copies of STREAM are effectively data clones with their own cursors */
+	std::shared_ptr<std::list<stream_block>> list;
 
 	protected:
-	STREAM(const STREAM &);
-	void operator=(const STREAM &) = delete;
-	void xcopy(const STREAM &);
-	bool is_clone = false;
 	friend void stream_split_eom(STREAM *, STREAM *);
 };

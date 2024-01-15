@@ -22,31 +22,12 @@ enum {
 	STREAM_EOM_CRORLF,
 };
 
-namespace {
-struct stream_block {
-	DOUBLE_LIST_NODE list_node;
-	char buf[STREAM_BLOCK_SIZE];
-};
-}
-
-static void stream_free(STREAM *);
 static BOOL stream_append_node(STREAM *pstream); 
 
-STREAM::STREAM()
+STREAM::STREAM() : list(std::make_shared<std::list<stream_block>>())
 {
 	auto pstream = this;
 	BOOL bappend;
-#ifdef _DEBUG_UMTA
-	if (palloc == nullptr)
-		throw std::invalid_parameter("[stream]: stream_init, param NULL");
-#endif
-	double_list_init(&pstream->list);
-
-#ifdef _DEBUG_UMTA
-	if (palloc->item_size - sizeof(DOUBLE_LIST_NODE) < STREAM_BLOCK_SIZE)
-		throw std::invalid_parameter("[stream]: item size in stream allocator is too "
-					"small in stream_init");
-#endif
 	/* allocate the first node in initialization */
 	bappend = stream_append_node(pstream);
 	if (!bappend) {
@@ -54,40 +35,6 @@ STREAM::STREAM()
 		throw std::bad_alloc();
 	}
 	pstream->pnode_rd = pstream->pnode_wr;
-}
-
-STREAM::STREAM(const STREAM &o) :
-	pnode_rd(o.pnode_rd), pnode_wr(o.pnode_wr), line_result(o.line_result),
-	eom_result(o.eom_result), rd_block_pos(o.rd_block_pos),
-	wr_block_pos(o.wr_block_pos), rd_total_pos(o.rd_total_pos),
-	wr_total_pos(o.wr_total_pos), last_eom_parse(o.last_eom_parse),
-	block_line_parse(o.block_line_parse), block_line_pos(o.block_line_pos),
-	list(o.list), is_clone(true)
-{}
-
-STREAM &STREAM::operator=(STREAM &&o)
-{
-	stream_free(this);
-	xcopy(o);
-	double_list_init(&o.list);
-	double_list_free(&o.list);
-	return *this;
-}
-
-void STREAM::xcopy(const STREAM &o)
-{
-	pnode_rd = o.pnode_rd;
-	pnode_wr = o.pnode_wr;
-	line_result = o.line_result;
-	eom_result = o.eom_result;
-	rd_block_pos = o.rd_block_pos;
-	wr_block_pos = o.wr_block_pos;
-	rd_total_pos = o.rd_total_pos;
-	wr_total_pos = o.wr_total_pos;
-	last_eom_parse = o.last_eom_parse;
-	block_line_parse = o.block_line_parse;
-	block_line_pos = o.block_line_pos;
-	list = o.list;
 }
 
 /*
@@ -129,7 +76,6 @@ void STREAM::try_mark_line()
 {
 	auto pstream = this;
 	int i, end;
-	DOUBLE_LIST_NODE *pnode;
 
 	auto lr = has_newline();
 	if (lr == STREAM_LINE_AVAILABLE || lr == STREAM_LINE_FAIL)
@@ -138,7 +84,8 @@ void STREAM::try_mark_line()
 		pstream->line_result = STREAM_LINE_FAIL;
 		return;
 	}
-	pnode = double_list_get_head(&pstream->list);
+	auto &rlist = *pstream->list;
+	auto pnode = rlist.begin();
 	/* lines should not overflow in the first block */
 	if (pstream->pnode_rd != pnode) {
 		pstream->line_result = STREAM_LINE_FAIL;
@@ -188,23 +135,14 @@ void STREAM::try_mark_line()
  */
 void STREAM::clear()
 {
+	auto &rlist = *list;
 	auto pstream = this;
-	DOUBLE_LIST_NODE *pnode, *phead;
-	phead = double_list_get_head(&pstream->list);
-	if (phead == nullptr)
-		goto CLEAR_RETRUN;
-	pnode = double_list_get_tail(&pstream->list);
-	if (double_list_get_nodes_num(&pstream->list) == 1)
-		goto CLEAR_RETRUN;
-	while (true) {
-		if (pnode == phead)
-			break;
-		double_list_remove(&pstream->list, pnode);
-		delete containerof(pnode, stream_block, list_node);
-		pnode = double_list_get_tail(&pstream->list);
+	if (rlist.size() > 1) {
+		std::list<stream_block> keep;
+		keep.splice(keep.end(), rlist, rlist.begin());
+		rlist = std::move(keep);
 	}
-
- CLEAR_RETRUN:
+	auto phead = rlist.begin();
 	pstream->wr_block_pos		  = 0;
 	pstream->wr_total_pos		  = 0;
 	pstream->rd_block_pos		  = 0;
@@ -218,26 +156,6 @@ void STREAM::clear()
 	pstream->pnode_rd			  = phead;
 }
 
-STREAM::~STREAM()
-{
-	if (!is_clone)
-		stream_free(this);
-}
-
-void stream_free(STREAM *pstream)
-{
-	DOUBLE_LIST_NODE *phead;
-#ifdef _DEBUG_UMTA
-	if (pstream == nullptr || pstream->allocator == nullptr)
-		return;
-#endif
-	pstream->clear();
-	phead = double_list_pop_front(&pstream->list);
-	if (phead != nullptr)
-		delete containerof(phead, stream_block, list_node);
-	double_list_free(&pstream->list);
-}
-
 /*
  *	Append one block in stream list. Caution: This function should be invoked
  *	when the last block is fully written. a new block is needed.
@@ -249,21 +167,21 @@ void stream_free(STREAM *pstream)
  */
 static BOOL stream_append_node(STREAM *pstream) try
 {
-	DOUBLE_LIST_NODE *pnode;
+	std::list<stream_block>::iterator pnode;
 #ifdef _DEBUG_UMTA
 	if (pstream == nullptr)
 		return FALSE;
 #endif
-	if (pstream->pnode_wr != double_list_get_tail(&pstream->list)) {
-		pnode = double_list_get_after(&pstream->list,
-			pstream->pnode_wr);
+	auto &rlist = *pstream->list;
+	if (rlist.size() > 0 && &*pstream->pnode_wr != &*rlist.rbegin()) {
+		pnode = std::next(pstream->pnode_wr);
 	} else {
-		auto blk = new stream_block;
-		if (blk == nullptr)
-			return FALSE;
-		pnode = &blk->list_node;
-		pnode->pdata = blk->buf;
-		double_list_append_as_tail(&pstream->list, pnode);
+		try {
+			rlist.emplace_back();
+			pnode = std::prev(rlist.end());
+		} catch (const std::bad_alloc &) {
+			return false;
+		}
 	}
 	pstream->pnode_wr = pnode;
 	pstream->wr_block_pos = 0;
@@ -335,13 +253,15 @@ unsigned int STREAM::fwd_write_ptr(unsigned int offset)
 unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 {
 	auto pstream = this;
+	auto &rlist = *list;
+
 	if (offset > pstream->wr_total_pos)
 		offset = pstream->wr_total_pos;
 	if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
 	if (offset > pstream->wr_block_pos) {
-		pstream->pnode_wr = double_list_get_before(&pstream->list, pstream->pnode_wr);
-		assert(pstream->pnode_wr != nullptr);
+		assert(pnode_wr != rlist.begin());
+		--pnode_wr;
 		pstream->wr_block_pos = STREAM_BLOCK_SIZE - (offset - pstream->wr_block_pos);
 	} else {
 		pstream->wr_block_pos -= offset;
@@ -371,13 +291,15 @@ unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 unsigned int STREAM::rewind_read_ptr(unsigned int offset)
 {
 	auto pstream = this;
+	auto &rlist = *list;
+
 	if (offset > pstream->rd_total_pos)
 		offset = pstream->rd_total_pos;
 	if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
 	if (offset > pstream->rd_block_pos) {
-		pstream->pnode_rd = double_list_get_before(&pstream->list, pstream->pnode_rd);
-		assert(pstream->pnode_rd != nullptr);
+		assert(pnode_rd != rlist.begin());
+		--pnode_rd;
 		pstream->rd_block_pos = STREAM_BLOCK_SIZE - (offset - pstream->rd_block_pos);
 	} else {
 		pstream->rd_block_pos -= offset;
@@ -412,8 +334,7 @@ void *STREAM::get_read_buf(unsigned int *psize)
 		if (*psize >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
 			*psize = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
 			pstream->rd_block_pos = 0;
-			pstream->pnode_rd = double_list_get_after(&pstream->list, 
-								pstream->pnode_rd);
+			++pnode_rd;
 		} else {
 			pstream->rd_block_pos += *psize;
 		}
@@ -447,7 +368,7 @@ void *STREAM::get_read_buf(unsigned int *psize)
 void STREAM::reset_reading()
 {
 	auto pstream = this;
-	pstream->pnode_rd = double_list_get_head(&pstream->list);
+	pnode_rd = list->begin();
 	pstream->rd_block_pos = 0;
 	pstream->rd_total_pos = 0;
 }
@@ -599,8 +520,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 			pstream->rd_block_pos += actual_size + 1;
 			pstream->rd_total_pos += actual_size + 1;
 			if (pstream->rd_block_pos == STREAM_BLOCK_SIZE) {
-				pstream->pnode_rd = double_list_get_after(
-					&pstream->list, pstream->pnode_rd);
+				++pnode_rd;
 				pstream->rd_block_pos = 0;
 			}
 			return scopy_result::ok;
@@ -608,8 +528,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		if (state != CR)
 			return scopy_result::ok;
 		if (i + 1 == STREAM_BLOCK_SIZE) {
-			pstream->pnode_rd = double_list_get_after(
-				&pstream->list, pstream->pnode_rd);
+			++pnode_rd;
 			pstream->rd_block_pos = 0;
 
 			if (*pnode_rd->cdata == '\n') {
@@ -624,8 +543,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 		} else {
 			pstream->rd_total_pos += actual_size + 2;
 			if (i + 2 == STREAM_BLOCK_SIZE) {
-				pstream->pnode_rd = double_list_get_after(
-					&pstream->list, pstream->pnode_rd);
+				++pnode_rd;
 				pstream->rd_block_pos = 0;
 			} else {
 				pstream->rd_block_pos += actual_size + 2;
@@ -635,7 +553,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	}
 	/* span two blocks */
 	auto actual_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
-	pnode = double_list_get_after(&pstream->list, pstream->pnode_rd);
+	pnode = std::next(pstream->pnode_rd);
 	unsigned int end = pnode != pstream->pnode_wr ? STREAM_BLOCK_SIZE :
 	                   pstream->wr_total_pos % STREAM_BLOCK_SIZE;
 	for (i = 0; i < end; i++) {
@@ -658,8 +576,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 					pstream->rd_block_pos);
 			memcpy(pbuff, &pnode_rd->cdata[rd_block_pos], STREAM_BLOCK_SIZE -
 				pstream->rd_block_pos);
-			pstream->pnode_rd = double_list_get_after(&pstream->list,
-				pstream->pnode_rd);
+			++pstream->pnode_rd;
 			memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos,
 			       pnode_rd->cdata, i);
 			pstream->rd_block_pos = i;
@@ -676,7 +593,7 @@ scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 	*psize = actual_size;
 	memcpy(pbuff, &pnode_rd->cdata[rd_block_pos], STREAM_BLOCK_SIZE -
 		   pstream->rd_block_pos);
-	pstream->pnode_rd = double_list_get_after(&pstream->list, pstream->pnode_rd);
+	++pstream->pnode_rd;
 	memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos,
 	       pnode_rd->cdata, i);
 	pbuff[actual_size] = '\0';
@@ -730,7 +647,7 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 		return 0;
 	
 	actual_size = pstream->wr_total_pos - pstream->rd_total_pos;
-	const DOUBLE_LIST_NODE *pnode = pstream->pnode_rd;
+	auto pnode = pstream->pnode_rd;
 	
 	/* if the read node is the last node of the mem file */
 	if (pstream->pnode_rd == pstream->pnode_wr) {
@@ -747,20 +664,19 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 		return size;
 	}
 	memcpy(pbuff, &pnode->cdata[rd_total_pos], tmp_size);
-	while ((pnode = double_list_get_after(&pstream->list,
-		pnode)) != pstream->pnode_wr) {
+	while (++pnode != pstream->pnode_wr) {
 		if (tmp_size + STREAM_BLOCK_SIZE >= size) {
-			memcpy(pbuff + tmp_size, pnode->pdata, size - tmp_size);
+			memcpy(&pbuff[tmp_size], pnode->cdata, size - tmp_size);
 			return size;
 		}
-		memcpy(pbuff + tmp_size, pnode->pdata, STREAM_BLOCK_SIZE);
+		memcpy(&pbuff[tmp_size], pnode->cdata, STREAM_BLOCK_SIZE);
 		tmp_size += STREAM_BLOCK_SIZE;
 	}
 	if (tmp_size + pstream->wr_block_pos >= size) {
-		memcpy(pbuff + tmp_size, pnode->pdata, size - tmp_size);
+		memcpy(&pbuff[tmp_size], pnode->cdata, size - tmp_size);
 		return size;
 	}
-	memcpy(pbuff + tmp_size, pnode->pdata, pstream->wr_block_pos);
+	memcpy(&pbuff[tmp_size], pnode->cdata, pstream->wr_block_pos);
 	return actual_size;
 }
 
@@ -807,8 +723,7 @@ unsigned int STREAM::fwd_read_ptr(unsigned int offset)
 	else if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
 	if (offset > STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
-		pstream->pnode_rd = double_list_get_after(&pstream->list,
-			pstream->pnode_rd);
+		++pstream->pnode_rd;
 		pstream->rd_block_pos = offset - (STREAM_BLOCK_SIZE -
 			pstream->rd_block_pos);
 	} else {
@@ -883,13 +798,12 @@ int STREAM::has_eom()
 void STREAM::try_mark_eom()
 {
 	auto pstream = this;
+	auto &rlist = *list;
 	int i, j;
 	int from_pos;
 	int until_pos;
 	int block_deep;
 	int block_offset;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
 	
 	if (eom_result != STREAM_EOM_WAITING)
 		return;
@@ -897,7 +811,7 @@ void STREAM::try_mark_eom()
 	block_deep = pstream->wr_total_pos / STREAM_BLOCK_SIZE - 
 				 pstream->last_eom_parse / STREAM_BLOCK_SIZE;
 	
-	pnode = pstream->pnode_wr;
+	auto pnode = pstream->pnode_wr;
 	for (i=0; i<=block_deep; i++) {
 		until_pos = i == block_deep ? block_offset : 0;
 		from_pos  = i == 0 ? pstream->wr_block_pos - 1 : STREAM_BLOCK_SIZE - 1;
@@ -907,16 +821,16 @@ void STREAM::try_mark_eom()
 				continue;
 			char temp_buff[6];
 			if (0 == j) {
-				pnode1 = double_list_get_before(&pstream->list, pnode);
-				if (pnode1 == nullptr)
+				if (pnode == rlist.begin())
 					goto NONE_EOM;
+				auto pnode1 = std::prev(pnode);
 				temp_buff[0] = pnode1->cdata[STREAM_BLOCK_SIZE-2];
 				temp_buff[1] = pnode1->cdata[STREAM_BLOCK_SIZE-1];
 				temp_buff[2] = '.';
 			} else if (1 == j) {
-				pnode1 = double_list_get_before(&pstream->list, pnode);
-				if (pnode1 == nullptr)
+				if (pnode == rlist.begin())
 					goto NONE_EOM;
+				auto pnode1 = std::prev(pnode);
 				temp_buff[0] = pnode1->cdata[STREAM_BLOCK_SIZE-1];
 				temp_buff[1] = pbuff[0];
 				temp_buff[2] = '.';
@@ -931,15 +845,15 @@ void STREAM::try_mark_eom()
 				if (0 == i) {
 					temp_buff[4] = '\0';
 				} else {
-					pnode1 = double_list_get_after(&pstream->list, pnode);
-					temp_buff[4] = pnode1 == nullptr ? '\0' : *pnode1->cdata;
+					auto pnode1 = std::next(pnode);
+					temp_buff[4] = pnode1 == pstream->list->cend() ? '\0' : *pnode1->cdata;
 				}
 			} else if (from_pos == j) {
 				if (0 == i) {
 					continue;
 				}
-				pnode1 = double_list_get_after(&pstream->list, pnode);
-				if (pnode1 == nullptr)
+				auto pnode1 = std::next(pnode);
+				if (pnode1 == rlist.end())
 					continue;
 				temp_buff[3] = pnode1->cdata[0];
 				temp_buff[4] = pnode1->cdata[1];
@@ -963,9 +877,9 @@ void STREAM::try_mark_eom()
 				return;
 			}
 		}
-		pnode = double_list_get_before(&pstream->list, pnode);
-		if (pnode == nullptr)
+		if (pnode == rlist.begin())
 			goto NONE_EOM;
+		--pnode;
 	}
  NONE_EOM:
 	pstream->last_eom_parse = pstream->wr_total_pos >= 2 ? pstream->wr_total_pos - 2 : 0;
@@ -981,10 +895,10 @@ void STREAM::try_mark_eom()
 void STREAM::split_eom(STREAM *pstream_second)
 {
 	auto pstream = this;
+	auto &rlist = *list;
 	size_t blocks, i, fake_pos;
 	unsigned int size;
 	void *pbuff;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (eom_result == STREAM_EOM_WAITING)
 		return;
@@ -997,12 +911,11 @@ void STREAM::split_eom(STREAM *pstream_second)
 
 	blocks = pstream->wr_total_pos / STREAM_BLOCK_SIZE -
 				fake_pos / STREAM_BLOCK_SIZE;
-	pnode = pstream->pnode_wr;
-
+	auto pnode = pstream->pnode_wr;
 	for (i=0; i<blocks; i++) {
-		pnode = double_list_get_before(&pstream->list, pnode);
-		if (pnode == nullptr)
+		if (pnode == rlist.begin())
 			return;
+		--pnode;
 	}
 
 	if (NULL != pstream_second) {
@@ -1024,9 +937,9 @@ void STREAM::split_eom(STREAM *pstream_second)
 	pnode = pstream->pnode_wr;
 
 	for (i=0; i<blocks; i++) {
-		pnode = double_list_get_before(&pstream->list, pnode);
-		if (pnode == nullptr)
+		if (pnode == rlist.begin())
 			return;
+		--pnode;
 	}
 	pstream->pnode_wr = pnode;
 	pstream->wr_total_pos = pstream->last_eom_parse;
