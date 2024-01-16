@@ -649,7 +649,6 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
 static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 {
 	BOOL ret_val;
-	HOOK_FUNCTION last_thrower, last_hook;
 
 	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
 	    reinterpret_cast<uintptr_t>(pcontext) > reinterpret_cast<uintptr_t>(g_free_ptr.get() + g_free_num)) {
@@ -677,7 +676,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
         return FALSE;
 	}
 	try {
-		pthr_data->anti_loop.push_back(last_hook);
+		pthr_data->anti_loop.push_back(pthr_data->last_hook);
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "transporter: exceed the maximum depth that one thread "
 			"can throw");
@@ -685,8 +684,8 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		return false;
 	}
 	/* save the last hook and last thrower, like function's call operation */
-	last_hook = pthr_data->last_hook;
-	last_thrower = pthr_data->last_thrower;
+	auto last_hook = pthr_data->last_hook;
+	auto last_thrower = pthr_data->last_thrower;
 	pthr_data->last_thrower = pthr_data->last_hook;
 	auto pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (pass_result == hook_result::xcontinue) {
