@@ -656,7 +656,3 @@ if [[ $MailboxesImportFailed -ne 0 ]]; then
 	Write-MLog "Affected mailboxes: $ImportErrorsMBX " red
 fi
 Write-MLog "Kopano 2 grommunio migration done." cyan
-#
-# --- the end ---
-#
-# vim: syntax=bash ts=4 sw=4 sts=4 sr et :
