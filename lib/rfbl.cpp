@@ -491,7 +491,7 @@ pid_t popenfd(const char *const *argv, int *fdinp, int *fdoutp,
 	return pid;
 }
 
-ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
+int feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 {
 	std::string filename;
 	auto tmpdir = getenv("TMPDIR");
@@ -519,7 +519,12 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	char fbuf[4096];
 	while ((ret = read(fout, fbuf, std::size(fbuf))) > 0)
 		outbuf.append(fbuf, ret);
-	return WIFEXITED(status) ? outbuf.size() : -1;
+	if (!WIFEXITED(status))
+		return -1;
+	if (outbuf.empty())
+		return 0;
+	/* The caller can just look at outbuf.size() */
+	return 1;
 } catch (...) {
 	return -1;
 }
