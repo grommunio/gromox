@@ -448,3 +448,27 @@ Operation texts can be "HTTP auth rejected" (http), "zs_logon rejected"
 (zcore), "zs_logon_token rejected" (zcore), "LOGIN phase0 rejected" (imap),
 "LOGIN phase1 rejected" (imap), "LOGIN phase2 rejeceted" (imap), "login
 rejected" (pop3).
+.SH Duration specifications
+Duration strings must be of the form:
+.PP
+duration := quantum [ quantum ]*
+.PP
+quantum := number unit
+.PP
+# "number" can be whatever strtol(3) accepts. If a period is detected, parsing
+switches to strtod(3).
+.PP
+unit := "ns" | "nsec" | "µs" | "µsec" | "ms" | "msec" | "s" | "sec" | "second"
+| "seconds" | "min" | "minute" | "minutes" | "h" | "hour" | "hours" | "d" |
+"day" | "days" | "week" | "weeks" | "month" | "months" | "y" | "year" | "years"
+.PP
+Whitespace is ignored whereever it appears (so use as much as you need). Quanta
+with the same unit may be used; they are simply added together. Per this
+syntax, numbers can be positive or negative, integral or fractional (be mindful
+of precision limits of computers' floating-point math).
+.PP
+Examples: \fI1d1h1m1s\fP, \fI3.5 hours\fP, \fI1 hour 1 hour\fP (2 hours),
+\fI1 hour 60 minutes\fP (2 hours)
+.PP
+Note that Gromox may impose additional restrictions on specific configuration
+directives after the basic parse to enforce certain minimum and maximum values.

@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# A Shell migration script for Kopano 2 grommunio migration.
+# A bash script for Kopano 2 grommunio migration.
 #
-# Copyright 2022-2023 Walter Hofstaedtler
+# Copyright 2022-2024 Walter Hofstaedtler
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Authors: grommunio <dev@grommunio.com>
 #          Walter Hofstaedtler <walter@hofstaedtler.com>
@@ -14,43 +14,44 @@
 #
 # Notice:
 #
-# This script assumes a correct setup with grommunio attached to the LDAP/AD.
-# Script is compatible with any Linux target source.
-# Important, this script was written for GNU Bash and isn't POSIX-compliant.
-# The script requires at least Gromox 1.37.
+# * This script assumes a correct setup of grommunio attached to LDAP/AD.
+# * Script is compatible with any Linux target source.
+# * Importantly, this script was written for GNU bash and is not POSIX compliant.
+# * Script requires at least Gromox 2.21.
+#
 #
 # Instructions:
 #
 # 1. The mailboxes that will be migrated should already exist on the grommunio
 #    side or should be automatically created by the parameter CreateGrommunioMailbox=1.
 #
-# 2. This script needs an ssh login to mount the Kopano attachment store on grommunio
-#    Password and key-based logins are supported
+# 2. This script needs an SSH login to mount the Kopano attachment store on grommunio.
+#    Password and key-based logins are supported.
 #
-# 2.1. install sshfs on grommunio server
+# 2.1. Install sshfs on the grommunio server:
 #      grommunio Appliance / SUSE: zypper in sshfs
 #      Debian / Ubuntu: apt-get install sshfs
 #
-# 2.2. verify fuse kernel driver is available
+# 2.2. Verify that the FUSE kernel driver is available and loaded:
 #      ls -l /dev/fuse
 #
-# 2.3. create mount directory
+# 2.3. Create the mount directory:
 #      mkdir -p /mnt/kopano/
 #
-# 3. The migration tool needs a MySQL connection to the Kopano database server
-#    Create Maria DB migration user on Kopano database server
-#    KopanoMySqlServer - the database server, typically the same server as the Kopano server itself
-#    KopanoMySqlUser   - this user loges in from grommunio server
-#    KopanoMySqlPWD    - password for KopanoMySqlUser
-#    GrommunioIP       - IP address of grommunio server
+# 3. The migration tool needs a MySQL connection to the Kopano database server.
+#    Create a Maria DB migration user on Kopano database server.
+#    KopanoMySqlServer - the database server, typically the same server as the Kopano server itself.
+#    KopanoMySqlUser   - this user logs in from grommunio server.
+#    KopanoMySqlPWD    - password for KopanoMySqlUser.
+#    GrommunioIP       - IP address of grommunio server.
 #
-#    This have to be done on Kopano database server:
+#    This has to be done on the Kopano database server:
 #       mysql -u root -p
 #
 #    Create user:
 #       CREATE USER '<KopanoMySqlUser>'@'<GrommunioAddr>' IDENTIFIED BY '<KopanoMySqlPWD>';
 #
-#    Grant read only access to database kopano or zarafa:
+#    Grant read-only access to database kopano or zarafa:
 #       GRANT SELECT ON kopano.* TO '<KopanoMySqlUser>'@'<GrommunioAddr>';
 #
 #    Save and exit:
@@ -58,22 +59,30 @@
 #       quit;
 #
 #    Note: If the database is named zarafa, the migration supports migrations of the databases
-#          with ZCP version 7.1+ (schema version 61)
+#          with ZCP version 7.1+ (schema version 61).
 #          Validation is possible by checking the versions table: SELECT * FROM versions;
 #
-#    Change bind-address = <Kopano_Server_Addr> and restart MariaDB
-#    the bind-address is a config directive in the MySQL config file and
+#    Change bind-address = <Kopano_Server_Addr> and restart MariaDB.
+#    The bind-address is a config directive in the MySQL config file and
 #    looks like this:
 #
 #       bind-address = 192.168.10.2
 #
-#    Test from grommunio server:
+#    Test from the grommunio server:
 #
 #       mysql -h <KopanoMySqlServer> -u <KopanoMySqlUser> -p
 #
-# 4. Provide a text file that lists the grommunio mail addresses and the Kopano login, separated by colons,
-#    every line is one mailbox to migrate. lines starting with # are remarks/comments and not evaluated
-#    A sample file can be created when setting: CreateSampleMigrationList=1
+# 4. Provide a text file that lists the grommunio mail addresses and the Kopano login.
+#    We provide the script: "create_k2g_migration_lists.sh" to create the raw
+#    migration list on the Kopano server. Configure and launch "create_k2g_migration_lists.sh"
+#    on the Kopano server and transfer the created mailbox list to the grommunio server.
+#
+#    * You may sort the list on priority: High-priority users first, low-priority mailboxes last.
+#    * Do you decide to migrate the Public Store as the first or last item?
+#
+#    Structure of the migration list: separated by colons, every line is one mailbox to migrate.
+#    Lines starting with # are remarks/comments and not evaluated.
+#    A sample file can be created whit setting: CreateSampleMigrationList=1.
 #    Sample file:
 #
 #    # sample user file for Kopano 2 grommunio migration
@@ -87,12 +96,12 @@
 #    user3@domain.com,<User 3 store GUID>,1
 #
 #    How to find the Public Store GUID?
-#    On the Kopano server version 8.7 or newer execute this command:
+#    On the Kopano server (version 8.7 or newer), execute the command:
 #
 #       kopano-storeadm -M | grep -A 1 'Public Folders'
 #
 #    Get the GUID and populate the text file.
-#    For Kopano versions 8.6 and older, you need a MySQL query to read the Public Store GUID
+#    For Kopano versions 8.6 and older, you need a MySQL query to read the Public Store GUID.
 #    Log on to the MySQL database and select the kopano or zarafa database.
 #
 #       mysql -u root -p
@@ -101,9 +110,11 @@
 #
 #    The GUID for Everyone is the Public Store GUID.
 #
-#    In some rare cases, the migration tool cannot find a Kopano store for a given login name,
-#    in this case, we need to specify the Kopano Store GIUD for this user.
-#    This issue may occur if the store have been renamed a few times.
+#    Errors and quirks:
+#    In some rare cases, the migration tool cannot find a Kopano store for a
+#    given login name. In this case, we need to specify the Kopano Store GIUD
+#    for this user. This issue may occur if the store have been renamed a few
+#    times or unhooked and hooked onto another account.
 #
 #    How to find the Kopano Store GUID?
 #    On the Kopano Server execute this command:
@@ -112,22 +123,36 @@
 #
 #    Get the GUID and populate the text file.
 #    In the migration text file, mark the GIUD with type:1 after the GUID like:
-#    user3@domain.com,<User 3 store GUID>,1
 #
-#    We provide the script: create_k2g_migration_lists.sh to create the raw migration list on Kopano server.
+#	user3@domain.com,<User 3 store GUID>,1
 #
 #    A command to show all Kopano Store GUIDs as seen by the migration tool:
-#       SQLPASS=<KopanoMySqlPWD> gromox-kdb2mt --sql-host <KopanoServer> --sql-port=3306 --sql-db=<KopanoDB> --sql-user=GrommunioUser --src-attach "" --mbox-mro "" 2>&1|less -SX
+#       SQLPASS=<KopanoMySqlPWD> gromox-kdb2mt --sql-host <KopanoServer> --sql-port=3306 --sql-db=<KopanoDB> --sql-user=GrommunioUser --src-attach "" --mbox-mro "" 2>&1 | less -SX
 #
 #    Important:
-#    Verify the store GUIDs match the store GUIDs found in the list created by create_k2g_migration_lists.sh.
-#    If the store GUIDs do *not* match, migrate this mailbox with the store GUID fond with create_k2g_migration_lists.sh.
-#    A store GUID mismatch might happen, if an Kopano store was unhooked and hooked onto another account.
-#    Please note, the script can only create mailboxes if the source is an LDAP directory.
-#    Mailboxes that do not come from an LDAP directory must first be created manually in the Admin UI.
+#    * Verify that the store GUIDs match the store GUIDs found in the list created by create_k2g_migration_lists.sh.
+#    * If the store GUIDs do *not* match, migrate this mailbox with the store GUID found with create_k2g_migration_lists.sh.
+#    * A store GUID mismatch might happen if a Kopano store was unhooked and hooked onto another account or renamed.
+#    * Note that this script can only create mailboxes if the source is an LDAP directory.
+#    * Mailboxes that do not come from an LDAP directory must first be created manually in the Admin UI.
 #
-# 5. Set the variables - how should the migration proceed
-#    Here you have to decide if the mailboxes should be created by the script and when the mailboxes should be created.
+# 5. Create the Zarafa to MAPI mapping/ACL file on the Kopano server.
+#    grommunio provides two scripts to map Zarafa addressing/ACLs to MAPI addressing:
+#
+#    1. "kdb-uidextract" for multi-server installations and
+#    2. "kdb-uidextract-limited" for single server installations - we focus an this script.
+#
+#    Launch kdb-uidextract-limited on the Kopano server and transfer the mapping file to the grommunio server.
+#    A sample command line how to launch kdb-uidextract-limited and create the mapping file:
+#
+#	./kdb-uidextract-limited > kdb-uidextract.map
+#
+#    Populate parameter KdbUidMap="/path/kdb-uidextract.map" with the copied mapping file.
+#    Note that, if you need the script "kdb-uidextract", this will be a huge migration, so
+#    consider to contact grommunio Professional Services and ask for help.
+#
+# 6. Set the variables - how should the migration proceed
+#    Here, you have to decide if the mailboxes should be created by the script and when the mailboxes should be created.
 #
 #    If the mailboxes are already created or there is no LDAP source:
 #      CreateGrommunioMailbox=0
@@ -141,95 +166,129 @@
 #    then creates the next mailbox and imports the Kopano data, and so on.
 #
 #    If the mailboxes should be created by the script before the actual migration.
-#    This is a 2 pass migration, first all mailboxes are created and in the 2nd pass the Kopano data is migrated:
+#    This is a two-pass migration. First, all mailboxes are created, and in the 2nd pass, the Kopano data is migrated:
 #      CreateGrommunioMailbox=1
 #      OnlyCreateGrommunioMailbox=1
-#    This is especially useful for large migrations, the mailboxes are created in advance,
-#    the users work with Grommunio immediately but still have empty mailboxes,
+#    This is especially useful for large migrations. The mailboxes are created in advance,
+#    the users work with Grommunio immediately, but still have empty mailboxes,
 #    new mails arrive in the mailboxes and the old mails are migrated one by one.
-#    For the 2nd pass set the variables like this:
+#    For the second pass, set the variables like this:
 #      CreateGrommunioMailbox=0
 #      OnlyCreateGrommunioMailbox=0
 #
 #    When the migration is running unattended:
-#      StopOnError=0
-#    Otherwise the script waits for a command from the admin in case of an error and that
-#    the whole night long. Thereby valuable migration time is destroyed.
+#	StopOnError=0
+#    Otherwise, the script waits for a command from the admin in case of an error and that
+#    the whole night long, thereby destroying valuable migration time.
 #
 #    The other settings are explained in the variables.
 #
-# 6. Test the migration
-#    Run the migration in a screen to avoid broken migrations to do lost connections.
+# 7. Test the migration
+#    Run the migration in GNU screen (/usr/bin/screen) to avoid broken migrations due to lost connections.
 #
-# 7. If you delete all mailboxes and Public Store on grommunio,
-#    restart the grommunio server or its services before starting the migration to clear all caches
+# 8. If you delete all mailboxes and Public Store on grommunio,
+#    restart the grommunio server or its services before starting the migration again, to clear all caches.
+#
+# 9. clean up the grommunio server
+#
+# 9.1. remove sshfs from grommunio server
+#      grommunio Appliance / SUSE: zypper remove sshfs
+#      Debian / Ubuntu: apt-get remove --purge sshfs
+#
+# 9.2. remove the mount directory
+#      rmdir /mnt/kopano/
+#
+#
+# Scripts and tools for Kopano to grommunio migration:
+#
+# The main migration script - this script
+# https://github.com/grommunio/gromox/blob/master/tools/kopano2grommunio.sh
+#
+# Mailbox/user list creation script for Kopano server
+# https://github.com/grommunio/gromox/blob/master/tools/create_k2g_migration_lists.sh
+#
+# kdb-uidextract-limited - create the mapping file, single server environment
+# https://github.com/grommunio/gromox/blob/master/tools/kdb-uidextract-limited
+# https://docs.grommunio.com/man/kdb-uidextract-limited.8.html
+#
+# kdb-uidextract - create the mapping file, multi-server environment
+# https://github.com/grommunio/gromox/blob/master/tools/kdb-uidextract
+# https://docs.grommunio.com/man/kdb-uidextract.8.html
+#
+# gromox-kdb2mt - Utility for analysis/import of Kopano mailboxes
+# https://docs.grommunio.com/man/gromox-kdb2mt.8.html
+#
+# gromox-mt2exm — Utility for importing various mail items
+# https://docs.grommunio.com/man/gromox-mt2exm.8.html
 #
 #
 # Variables to be set by the user of this script
 #
-# The Kopano server, we mount the attachment store from this server
+# The Kopano server of which we mount the attachment store from this server
 KopanoServer="kopano.example.com"
 #
 # Login for the Kopano server
 KopanoUser="root"
 
-# The KopanoUser password, leave empty to use certificate based authentication
+# The KopanoUser password. Leave empty to use certificate-based authentication.
 KopanoUserPWD="Secret_root_Password"
 KopanoUserPWD=""
 
-# Path on Kopano server to the Kopano attachment store
+# Path on the Kopano server to the Kopano attachment store
 KopanoAttachments="/srv/kopano/attachments/"
 
 # Normal operation, ssh mount the store =1, use 0 if the store is already mounted like an S3 bucket
-# 0 also disable the verification of the store directories
 # Make sure that the attachments are accessible at $GrommunioMount
 MountKopanoAttachments=1
 
-# Path on grommunio server where the Kopano attachments are mounted
+# Path on the grommunio server where the Kopano attachments are mounted
 GrommunioMount="/mnt/kopano/"
 
-# MSYQL server für Kopano database, typically the same server as the Kopano server
+# MSYQL server for Kopano database. Typically the same server as the Kopano server.
 KopanoMySqlServer=$KopanoServer
 
 # MYSQL user for Kopano database
 KopanoMySqlUser="GrommunioUser"
 
-# Passwort for MYSQL user for Kopano database
-KopanoMySqlPWD="Secret_mysql_Password"
+# Password for MySQL user for Kopano database
+KopanoMySqlPWD="Secret_MySQL_Password"
 
-# The Kopano MySQL database, usually "kopano" but on older installations "zarafa"
+# The Kopano MySQL database, usually "kopano" but, on older installations, possibly "zarafa"
 #KopanoDB="zarafa"
 KopanoDB="kopano"
 
 # The migration list containing the grommunio mailbox names and the Kopano login names or store IDs
 MigrationList="/tmp/k2g_list.txt"
 
-# Create a sample $MigrationList file, an existing $MigrationList will not be overwritten
-# For normal migration set this variable to 0
+# The mapping file contains mappings for Zarafa addresses to MAPI addresses
+KdbUidMap="/tmp/kdb-uidextract.map"
+
+# Create a sample $MigrationList file. An existing $MigrationList will not be overwritten.
+# For normal migration, set this variable to 0.
 CreateSampleMigrationList=0
 
-# Create the grommunio mailbox before migration, 1=yes, 0=no
-# This only works with an LDAP user source
+# Create the grommunio mailbox before migration. 1=yes, 0=no.
+# This only works with an LDAP user source.
 CreateGrommunioMailbox=1
 
-# Create only the mailboxes, but do not migrate data, 1=yes, 0=no
-# This sets CreateGrommunioMailbox=1
+# Only create mailboxes without data migration. 1=yes, 0=no.
+# This sets CreateGrommunioMailbox=1.
 OnlyCreateGrommunioMailbox=0
 
-# Wait after each mailbox migration and allow exiting, 1=wait, 0=continue
-# See $STOP_MARKER how to interrupt migration
-# It is also possible to interrupt migration with 'X' after every mailbox
+# Wait after each mailbox migration and allow exiting. 1=wait, 0=continue.
+# See $STOP_MARKER how to interrupt migration.
+# It is also possible to interrupt migration with 'X' after every mailbox.
 WaitAfterImport=0
 
-# Stops the script if a mailbox creation or migration error occurs, 1=stop, 0=continue
-# For unattended migrations WaitAfterImport=0 and StopOnError=0 must be set.
+# Stops the script if a mailbox creation or migration error occurs. 1=stop, 0=continue.
+# For unattended migrations, WaitAfterImport=0 and StopOnError=0 must be set.
 StopOnError=1
 
-# The language with which all mailboxes are created.
+# The language for mailbox folders.
 # The languages can be found in: /usr/share/grommunio-admin-api/res/storelangs.json
 MailboxLanguage="de_DE"
 
-# Stop marker, if $WaitAfterImport=0, create this file and migration will be interrupted after current mailbox
+# Stop marker. If $WaitAfterImport=0, create this file and migration will be interrupted after current mailbox.
 STOP_MARKER="/tmp/kopano2grommunio.STOP"
 
 # Migration log file
@@ -237,10 +296,11 @@ LOG="/tmp/kopano2grommunio.log"
 
 # From here on, no code or variables need changing by the user of this script.
 #
-# Trap function for Clean Up
+# Trap function for cleanup
 finish ()
 {
 	# Your cleanup code here
+	echo ""
 	echo "$(tput setaf 7)Kill ssh-agent in ERROR TRAP!$(tput sgr 0)"
 	# kill the ssh-agent and unset variables
 	ssh-agent -k > /dev/null
@@ -296,31 +356,14 @@ Write-MLog ()
 	echo "$(date +"%d.%m.%Y %H:%M:%S") $LEVEL $1">>$LOG
 }
 
-# Main migration logic
-
-# find required commands
-SSHFS="$(which sshfs)"
-# OpenSuse 15.4 provides fusermount3
-FUSERMOUNT="$(which fusermount3 2>/dev/null)"
-if [[ -z $FUSERMOUNT ]];then
-	# OpenSuse 15.3 and Debian 11 provides fusermount
-	FUSERMOUNT="$(which fusermount 2>/dev/null)"
-fi
-#
-for File in "$SSHFS" "$FUSERMOUNT";
-do
-	if [[ ! -f $File ]]; then
-		# VERBOSE=1
-		Write-MLog "Error: command $File not found, aborting." red
-		exit 1 # terminate and indicate error
-	fi
-done
+# main code starts here
+Write-MLog "" white
 
 # create sample migration list file
 if [[ $CreateSampleMigrationList -eq 1 ]]; then
 	if [[ -f "$MigrationList" ]]; then
-		echo "The file $MigrationList exists, we will *not* overwrite $MigrationList."
-		echo "Please rename or remove $MigrationList and try again."
+		Write-MLog "The file $MigrationList exists, we will *not* overwrite $MigrationList." red
+		Write-MLog "Rename or remove $MigrationList and try again." red
 		exit 1
 	fi
 	# sample content
@@ -339,15 +382,43 @@ if [[ $CreateSampleMigrationList -eq 1 ]]; then
 		echo "user3@domain.com,<User 3 store GUID>,1"
 	} > $MigrationList
 
-	echo "Sample $MigrationList have been created."
-	echo "Populate the mail addresses, login names and types."
-	echo "Last, set \$CreateSampleMigrationList=0 and start the migration."
-	echo ""
+	Write-MLog "" white
+	Write-MLog "Sample $MigrationList have been created." green
+	Write-MLog "Populate the mail addresses, login names and types." green
+	Write-MLog "Last, set \$CreateSampleMigrationList=0 and start the migration." green
+	#Write-MLog "" white
 	#echo "sed -i s/^CreateSampleMigrationList=1/CreateSampleMigrationList=0/ $0"
 	sed -i "s/^CreateSampleMigrationList=1/CreateSampleMigrationList=0/" "$0"
-	echo ""
 	exit 0
 fi
+
+# find and check the required commands
+SSHFS="$(which sshfs 2>/dev/null)"
+# openSUSE 15.4 provides fusermount3
+FUSERMOUNT="$(which fusermount3 2>/dev/null)"
+if [[ -z $FUSERMOUNT ]];then
+	# openSUSE 15.3 and Debian 11 provide fusermount
+	FUSERMOUNT="$(which fusermount 2>/dev/null)"
+fi
+#
+for File in "$SSHFS" "$FUSERMOUNT";
+do
+	if [[ -z $File ]]; then
+		Write-MLog "Error: command SSHFS or FUSERMOUNT not found, aborting." red
+		exit 1 # terminate and indicate error
+	fi
+done
+
+# check for required data files
+for File in "$MigrationList" "$KdbUidMap";
+do
+	if [[ ! -f $File ]]; then
+		Write-MLog "Error: data file: $File not found, aborting." red
+		exit 1 # terminate and indicate error
+	fi
+done
+
+# Main migration logic
 
 # Statistics:
 MailboxesTotal=0
@@ -373,7 +444,7 @@ Write-MLog "Kopano 2 grommunio migration start" cyan
 #Write-MLog "MSG white  " "white"
 #Write-MLog "MSG unknown" "unkn"
 
-# create mount directory if not exists
+# create mount directory if it does not exist
 if [[ ! -d "$GrommunioMount" ]]; then
 	mkdir -p $GrommunioMount | tee -a $LOG
 	Write-MLog "Create mount directory $GrommunioMount" white
@@ -385,7 +456,7 @@ if [[ MountKopanoAttachments -eq 1 ]]; then
 	# mount the attachment directory
 	if [[ -z "$KopanoUserPWD" ]]; then
 		# certificate login
-		Write-MLog "Please Enter Public Server Key Pass Phrase in next Line" yellow
+		Write-MLog "Enter Public Server Key Pass Phrase in next Line" yellow
 		# read -sp 'Pass Phrase:' PASS_PHRASE
 		ssh-agent -k > /dev/null
 		sleep 2
@@ -412,7 +483,7 @@ if [[ $OnlyCreateGrommunioMailbox -eq 1 ]]; then
 	CreateGrommunioMailbox=1
 fi
 
-Write-MLog "" "white"
+Write-MLog "" white
 #
 # $MigMBox    - is the grommunio mailbox
 # $KopanoUser - the Kopano login name
@@ -446,6 +517,8 @@ while IFS= read -r line; do
 			Write-MLog "Try to create the mailbox: $MigMBox" yellow
 			grommunio-admin ldap downsync -l $MailboxLanguage "$MigMBox" | tee -a $LOG
 			ExitCode=${PIPESTATUS[0]}
+			# currently (Jan. 2024) grommunio-admin always return error code 0 = success,
+			# this prevents the error detection in this step. [DESK-1609]
 			if [[ $ExitCode -eq 0 ]]; then
 				# OK
 				MailboxesCreated=$((MailboxesCreated+1))
@@ -467,18 +540,18 @@ while IFS= read -r line; do
 		#
 		if [[ $MigMBox =~ ^@.* ]]; then
 			Write-MLog "This is the Kopano public store (GUID: $KopanoUser) for domain: $MigMBox" yellow
-			(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-attach "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+			(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --user-map "$KdbUidMap" --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-attach "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
 			ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
 		else
 			if [[ $IsID -eq 0 ]]; then
 				Write-MLog "Migration of mailbox $MigMBox with Kopano login $KopanoUser start" yellow
 				# add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
-				(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-mro "$KopanoUser" --src-attach "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+				(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --user-map "$KdbUidMap" --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-mro "$KopanoUser" --src-attach "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
 				ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
 			else
 				Write-MLog "Migration of mailbox $MigMBox with Kopano GUID $KopanoUser start" yellow
 				# add parameter -s to import into correct folders. eg: gromox-kdb2mt -s ....
-				(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-attach "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
+				(SQLPASS="$KopanoMySqlPWD" gromox-kdb2mt -s --user-map "$KdbUidMap" --sql-host "$KopanoMySqlServer" --sql-user "$KopanoMySqlUser" --sql-db "$KopanoDB" --mbox-guid "$KopanoUser" --src-attach "$GrommunioMount" | gromox-mt2exm -u "$MigMBox") 2>&1 | tee -a "$LOG"
 				ExitCode=$(( PIPESTATUS[0] + PIPESTATUS[1] ))
 			fi
 		fi
@@ -583,7 +656,3 @@ if [[ $MailboxesImportFailed -ne 0 ]]; then
 	Write-MLog "Affected mailboxes: $ImportErrorsMBX " red
 fi
 Write-MLog "Kopano 2 grommunio migration done." cyan
-#
-# --- the end ---
-#
-# vim: syntax=bash ts=4 sw=4 sts=4 sr et :
