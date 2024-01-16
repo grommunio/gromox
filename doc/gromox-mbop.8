@@ -127,10 +127,8 @@ Recurse into subfolders.
 .TP
 \fB\-t\fP \fItimespec\fP
 Specifies the minimum time to the last modification that soft-deleted messages
-must have before they are hard-deleted. timespec can be something like
-\fI1d12h\fP. A number of units are recognized (short and long forms):
-s/sec/second(s), min/minute(s), h/hour(s), d/day(s), week(s), month(s),
-y/year(s).
+must have before they are hard-deleted. See gromox(7), section "Duration
+specification" for timespec's syntax.
 .br
 Default: \fI0\fP (immediate deletion)
 .SS Examples

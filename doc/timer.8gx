@@ -22,6 +22,10 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.PP
+All time-based command-line options and configuration file directives are
+subject to the syntax described in gromox(7), section "Duration
+specifications".
 .SH Files
 .IP \(bu 4
 /var/lib/gromox/timer.txt: This file is used to save the state of timer(8gx)
