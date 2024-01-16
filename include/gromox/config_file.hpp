@@ -43,7 +43,7 @@ class GX_EXPORT config_file {
 		cfg_entry() = default;
 		cfg_entry(const char *s) __attribute__((nonnull(2))) : m_val(s) {}
 		cfg_entry(const cfg_directive &d);
-		void set(const char *s) __attribute__((nonnull(2)));
+		void set(const char *k, const char *s) __attribute__((nonnull(3)));
 		std::string m_val, m_min, m_max;
 		unsigned int m_flags = 0;
 	};

@@ -1671,15 +1671,16 @@ void XARRAY::clear()
 config_file::cfg_entry::cfg_entry(const cfg_directive &d) :
 	m_min(znul(d.min)), m_max(znul(d.max)), m_flags(d.flags)
 {
-	set(d.deflt);
+	set(nullptr, d.deflt);
 }
 
-void config_file::cfg_entry::set(const char *sv)
+void config_file::cfg_entry::set(const char *k, const char *sv)
 {
+	char *end = nullptr;
 	if (m_flags & CFG_BOOL) {
 		m_val = parse_bool(sv) ? "1" : "0";
 	} else if (m_flags & CFG_TIME) {
-		auto nv = HX_strtoull_sec(sv, nullptr);
+		auto nv = HX_strtoull_sec(sv, &end);
 		if (m_min.size() > 0)
 			nv = std::max(nv, HX_strtoull_sec(m_min.c_str(), nullptr));
 		if (m_max.size() > 0)
@@ -1687,13 +1688,13 @@ void config_file::cfg_entry::set(const char *sv)
 		m_val = std::to_string(nv);
 	} else if (m_flags & CFG_TIME_NS) {
 #ifdef HAVE_LIBHX4_18
-		auto nv = HX_strtoull_nsec(sv, nullptr);
+		auto nv = HX_strtoull_nsec(sv, &end);
 		if (m_min.size() > 0)
 			nv = std::max(nv, HX_strtoull_nsec(m_min.c_str(), nullptr));
 		if (m_max.size() > 0)
 			nv = std::min(nv, HX_strtoull_nsec(m_max.c_str(), nullptr));
 #else
-		auto nv = HX_strtoull_sec(sv, nullptr);
+		auto nv = HX_strtoull_sec(sv, &end);
 		if (m_min.size() > 0)
 			nv = std::max(nv, HX_strtoull_sec(m_min.c_str(), nullptr));
 		if (m_max.size() > 0)
@@ -1702,7 +1703,7 @@ void config_file::cfg_entry::set(const char *sv)
 #endif
 		m_val = std::to_string(nv);
 	} else if (m_flags & CFG_SIZE) {
-		auto nv = HX_strtoull_unit(sv, nullptr, 1024);
+		auto nv = HX_strtoull_unit(sv, &end, 1024);
 		if (m_min.size() > 0)
 			nv = std::max(nv, HX_strtoull_unit(m_min.c_str(), nullptr, 1024));
 		if (m_max.size() > 0)
@@ -1711,6 +1712,9 @@ void config_file::cfg_entry::set(const char *sv)
 	} else {
 		m_val = sv;
 	}
+	if (k != nullptr && end != nullptr && *end != '\0')
+		mlog(LV_ERR, "Config key \"%s\" value \"%s\" not fully accepted: "
+			"error reportedly near >\"%s\"", k, sv, end);
 }
 
 config_file::config_file(const cfg_directive *kd)
@@ -1765,7 +1769,7 @@ void config_file::set_value(const char *sk, const char *sv) try
 			key = i->second.m_val.c_str();
 		} else {
 //			printf("\e[32m\t%s = \e[1m%s\e[0m\n", key, sv);
-			i->second.set(sv);
+			i->second.set(sk, sv);
 			m_touched = true;
 			return;
 		}
