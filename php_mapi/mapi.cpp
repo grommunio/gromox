@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <gromox/defs.h>
+#include <gromox/element_data.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>

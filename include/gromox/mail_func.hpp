@@ -6,10 +6,11 @@
 #include <ctime>
 #include <string>
 #include <vector>
-#include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #define MIME_NAME_LEN 80U
 #define MIME_FIELD_LEN (64U * 1024)
+
+struct attachment_list;
 
 /**
  * All fields are always UTF-8 for consistency.
@@ -53,7 +54,7 @@ extern GX_EXPORT char *plain_to_html(const char *rbuf);
 extern GX_EXPORT ec_error_t html_init_library();
 extern GX_EXPORT ec_error_t html_to_rtf(const void *in, size_t inlen, cpid_t, char **outp, size_t *outlen);
 extern GX_EXPORT bool rtf_init_library();
-extern GX_EXPORT bool rtf_to_html(const char *in, size_t inlen, const char *charset, std::string &out, ATTACHMENT_LIST *);
+extern GX_EXPORT bool rtf_to_html(const char *in, size_t inlen, const char *charset, std::string &out, attachment_list *);
 extern GX_EXPORT bool rtfcp_uncompress(const BINARY *rtf, char *out, size_t *outlen);
 extern GX_EXPORT BINARY *rtfcp_compress(const char *in, size_t in_len);
 extern GX_EXPORT ssize_t rtfcp_uncompressed_size(const BINARY *);

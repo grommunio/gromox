@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <libHX/string.h>
+#include <gromox/element_data.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/ical.hpp>

@@ -10,6 +10,7 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/propval.hpp>

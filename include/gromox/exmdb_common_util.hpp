@@ -7,7 +7,6 @@
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <gromox/element_data.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mysql_adaptor.hpp>
 #define MAXIMUM_PROPNAME_NUMBER								0x7000
@@ -166,10 +165,8 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 BOOL common_util_indexing_sub_contents(
 	uint32_t step, sqlite3_stmt *pstmt,
 	sqlite3_stmt *pstmt1, uint32_t *pidx);
-uint32_t common_util_calculate_message_size(
-	const MESSAGE_CONTENT *pmsgctnt);
-uint32_t common_util_calculate_attachment_size(
-	const ATTACHMENT_CONTENT *pattachment);
+extern uint32_t common_util_calculate_message_size(const message_content *);
+extern uint32_t common_util_calculate_attachment_size(const attachment_content *);
 extern const char *exmdb_rpc_idtoname(exmdb_callid);
 extern int need_msg_perm_check(sqlite3 *, const char *user, uint64_t fid);
 extern int have_delete_perm(sqlite3 *, const char *user, uint64_t fid, uint64_t mid = 0);
