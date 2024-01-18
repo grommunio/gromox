@@ -556,7 +556,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	return -1;
 }
 
-static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext, MJSON *pjson,
+static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *temp_tag, size_t offset, ssize_t length,
     const char *storage_path) try
@@ -716,7 +716,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext, MJSON *pjson,
 	return -1;
 }
 
-static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
+static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
     BOOL b_data, MITEM *pitem, int item_id, mdi_list &pitem_list) try
 {
 	int errnum;
@@ -972,7 +972,7 @@ static int imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 }
 
 static void imap_cmd_parser_store_flags(const char *cmd, const std::string &mid,
-	int id, unsigned int uid, int flag_bits, IMAP_CONTEXT *pcontext)
+    int id, unsigned int uid, int flag_bits, imap_context *pcontext)
 {
 	int errnum;
 	char buff[1024];
@@ -1286,7 +1286,7 @@ int imap_cmd_parser_id(int argc, char **argv, imap_context *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_noop(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_noop(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
@@ -1305,7 +1305,7 @@ int imap_cmd_parser_logout(int argc, char **argv, imap_context *ctx) try
 	return 1918;
 }
 
-int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_starttls(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->connection.ssl != nullptr)
 		return 1800;
@@ -1317,7 +1317,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1704;
 }
 
-int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_authenticate(int argc, char **argv, imap_context *pcontext)
 {
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1802;
@@ -1332,7 +1332,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
     return DISPATCH_CONTINUE;
 }
 
-static int imap_cmd_parser_username2(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_cmd_parser_username2(int argc, char **argv, imap_context *pcontext)
 {
 	size_t temp_len;
 	
@@ -1348,7 +1348,7 @@ static int imap_cmd_parser_username2(int argc, char **argv, IMAP_CONTEXT *pconte
     return DISPATCH_CONTINUE;
 }
 
-int imap_cmd_parser_username(int argc, char **argv, IMAP_CONTEXT *ctx)
+int imap_cmd_parser_username(int argc, char **argv, imap_context *ctx)
 {
 	return imap_cmd_parser_dval(argc, argv, ctx,
 	       imap_cmd_parser_username2(argc, argv, ctx));
@@ -1442,13 +1442,13 @@ static int imap_cmd_parser_password2(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
+int imap_cmd_parser_password(int argc, char **argv, imap_context *ctx)
 {
 	return imap_cmd_parser_dval(argc, argv, ctx,
 	       imap_cmd_parser_password2(argc, argv, ctx));
 }
 
-int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 {
 	char temp_password[256];
     
@@ -1515,7 +1515,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1705;
 }
 
-int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_idle(int argc, char **argv, imap_context *pcontext)
 {
 	if (!pcontext->is_authed())
 		return 1804;
@@ -1589,7 +1589,7 @@ int content_array::refresh(imap_context &ctx, const char *folder,
 }
 
 static int imap_cmd_parser_selex(int argc, char **argv,
-    IMAP_CONTEXT *pcontext, bool readonly) try
+    imap_context *pcontext, bool readonly) try
 {
 	int errnum;
 	char temp_name[1024];
@@ -1652,12 +1652,12 @@ static int imap_cmd_parser_selex(int argc, char **argv,
 	return 1915;
 }
 
-int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_select(int argc, char **argv, imap_context *pcontext)
 {
 	return imap_cmd_parser_selex(argc, argv, pcontext, false);
 }
 
-int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_examine(int argc, char **argv, imap_context *pcontext)
 {
 	return imap_cmd_parser_selex(argc, argv, pcontext, true);
 }
@@ -1671,7 +1671,7 @@ static void writefolderlines(std::vector<std::string> &file) try
 	mlog(LV_ERR, "E-1813: ENOMEM");
 }
 
-int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_create(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	char temp_name[1024];
@@ -1734,7 +1734,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1706;
 }
 
-int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_delete(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	char encoded_name[1024];
@@ -1774,7 +1774,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1707;
 }
 
-int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_rename(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	char encoded_name[1024];
@@ -1801,7 +1801,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1708;
 }
 
-int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_subscribe(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	char temp_name[1024];
@@ -1821,7 +1821,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1709;
 }
 
-int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_unsubscribe(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	char temp_name[1024];
@@ -1841,7 +1841,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1710;
 }
 
-int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_list(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -1958,7 +1958,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_xlist(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -2031,7 +2031,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_lsub(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -2091,7 +2091,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	return 1915;
 }
 
-int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_status(int argc, char **argv, imap_context *pcontext) try
 {
 	int i;
 	int errnum;
@@ -2368,7 +2368,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 	return 1918 | DISPATCH_BREAK;
 }
 
-int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *ctx)
+int imap_cmd_parser_append_begin(int argc, char **argv, imap_context *ctx)
 {
 	return imap_cmd_parser_dval(argc, argv, ctx,
 	       imap_cmd_parser_append_begin2(argc, argv, ctx));
@@ -2527,13 +2527,13 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *ctx)
+int imap_cmd_parser_append_end(int argc, char **argv, imap_context *ctx)
 {
 	return imap_cmd_parser_dval(argc, argv, ctx,
 	       imap_cmd_parser_append_end2(argc, argv, ctx));
 }
 
-int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_check(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -2541,7 +2541,7 @@ int imap_cmd_parser_check(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1716;
 }
 
-int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_close(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -2554,7 +2554,7 @@ static bool zero_uid_bit(const MITEM &i)
 	return i.uid == 0 || !(i.flag_bits & FLAG_DELETED);
 }
 
-int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_expunge(int argc, char **argv, imap_context *pcontext) try
 {
 	int errnum;
 	
@@ -2618,7 +2618,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_unselect(int argc, char **argv, imap_context *pcontext)
 {
 	if (pcontext->proto_stat != iproto_stat::select)
 		return 1805;
@@ -2628,7 +2628,7 @@ int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1718;
 }
 
-int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_search(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum;
 	
@@ -2712,7 +2712,7 @@ static int fetch_trivial_uid(imap_context &ctx, const imap_seq_list &range_list,
 	return MIDB_LOCAL_ENOMEM;
 }
 
-int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_fetch(int argc, char **argv, imap_context *pcontext)
 {
 	int i, num, errnum = 0;
 	BOOL b_data;
@@ -2779,7 +2779,7 @@ static bool store_flagkeyword(const char *str)
 	return false;
 }
 
-int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_store(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum, i;
 	int flag_bits;
@@ -2840,7 +2840,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1721;
 }
 
-int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_copy(int argc, char **argv, imap_context *pcontext) try
 {
 	unsigned int uid;
 	int errnum;
@@ -3038,7 +3038,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv,
 	return 1918;
 }
 
-int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
+int imap_cmd_parser_uid_store(int argc, char **argv, imap_context *pcontext)
 {
 	int errnum, i, flag_bits, temp_argc;
 	char *temp_argv[8];
@@ -3097,7 +3097,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return 1724;
 }
 
-int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 {
 	unsigned int uid;
 	int errnum;
@@ -3194,7 +3194,8 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext) try
 	return 1918;
 }
 
-int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) try
+int imap_cmd_parser_uid_expunge(int argc, char **argv,
+    imap_context *pcontext) try
 {
 	int errnum;
 	int max_uid;
@@ -3263,7 +3264,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext) t
 	return 1918;
 }
 
-void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
+void imap_cmd_parser_clsfld(imap_context *pcontext) try
 {
 	int errnum, result, i;
 	BOOL b_deleted;
@@ -3367,7 +3368,8 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext) try
  * (imap_cmd_parser.h), "unpacks" it, possibly sends a response line to the
  * client before yielding the unpacked dispatch action.
  */
-int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int ret)
+int imap_cmd_parser_dval(int argc, char **argv, imap_context *ctx,
+    unsigned int ret)
 {
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)

@@ -55,11 +55,9 @@ static void *imps_scanwork(void *);
 static void imap_parser_event_proc(char *event);
 static void imap_parser_event_touch(const char *user, const char *folder);
 static void imap_parser_event_flag(const char *username, const char *folder, uint32_t uid);
-
-static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontext);
-
-static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
-static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
+static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context *);
+static void imap_parser_context_clear(imap_context *);
+static int imap_parser_wrdat_retrieve(imap_context *);
 
 unsigned int g_imapcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
@@ -71,7 +69,7 @@ static time_duration g_timeout, g_autologout_time;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
-static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
+static std::unique_ptr<imap_context[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static std::unordered_map<std::string, std::vector<imap_context *>> g_select_hash; /* username=>context */
 static std::mutex g_hash_lock, g_list_lock;
@@ -181,7 +179,7 @@ int imap_parser_run()
 #endif
 	}
 	try {
-		g_context_list = std::make_unique<IMAP_CONTEXT[]>(g_context_num);
+		g_context_list = std::make_unique<imap_context[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
 		for (size_t i = 0; i < g_context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -954,7 +952,7 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 	return tproc_status::close;
 }
 
-static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
+static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 {
 	int len;
 	int read_len;
@@ -1335,10 +1333,11 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pcontext)
+static int imap_parser_dispatch_cmd2(int argc, char **argv,
+    imap_context *pcontext)
 {
 	char reply_buff[1024];
-	static constexpr std::pair<const char *, int (*)(int, char **, IMAP_CONTEXT *)> proc[] = {
+	static constexpr std::pair<const char *, int (*)(int, char **, imap_context *)> proc[] = {
 		{"APPEND", imap_cmd_parser_append},
 		{"AUTHENTICATE", imap_cmd_parser_authenticate},
 		{"CAPABILITY", imap_cmd_parser_capability},
@@ -1392,7 +1391,7 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 	return DISPATCH_CONTINUE;
 }
 
-static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx) try
+static int imap_parser_dispatch_cmd(int argc, char **argv, imap_context *ctx) try
 {
 	/* cmd2 can/will further tokenize and thus modify argv */
 	std::vector<std::string> argv_copy;
@@ -1429,7 +1428,7 @@ imap_context::imap_context()
     pcontext->connection.sockd = -1;
 }
 
-static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
+static void imap_parser_context_clear(imap_context *pcontext)
 {
     if (NULL == pcontext) {
         return;
@@ -1569,7 +1568,7 @@ static void imap_parser_event_proc(char *line)
 }
 
 
-void imap_parser_add_select(IMAP_CONTEXT *pcontext)
+void imap_parser_add_select(imap_context *pcontext)
 {
 	char temp_string[UADDR_SIZE];
 	
@@ -1594,7 +1593,7 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	system_services_broadcast_select(pcontext->username, pcontext->selected_folder);
 }
 
-void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
+void imap_parser_remove_select(imap_context *pcontext)
 {
 	BOOL should_remove;
 	char temp_string[UADDR_SIZE];
@@ -1678,7 +1677,7 @@ int imap_parser_get_sequence_ID()
 	return nu;
 }
 
-void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t count)
+void imap_parser_safe_write(imap_context *pcontext, const void *pbuff, size_t count)
 {
 	int opt;
 	

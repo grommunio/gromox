@@ -288,7 +288,7 @@ static void *imls_thrwork(void *arg)
 		static constexpr int flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1417: setsockopt: %s", strerror(errno));
-		auto ctx = static_cast<IMAP_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
+		auto ctx = static_cast<imap_context *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
 			/* IMAP_CODE_2180015: BAD Service not available */
@@ -413,7 +413,7 @@ static void listener_stop_accept()
 	}
 }
 
-char *capability_list(char *dst, size_t z, IMAP_CONTEXT *ctx)
+char *capability_list(char *dst, size_t z, imap_context *ctx)
 {
 	gx_strlcpy(dst, "IMAP4rev1 XLIST SPECIAL-USE UNSELECT UIDPLUS IDLE AUTH=LOGIN LITERAL+ LITERAL-", z);
 	bool offer_tls = g_support_tls;
