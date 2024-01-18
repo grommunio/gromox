@@ -58,16 +58,16 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
 	g_ssl_mutex_buf         = NULL;
-	if (support_tls) {
-		g_force_tls = force_tls;
-		gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-		} else {
-			g_certificate_passwd[0] = '\0';
-		}
-		gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
+	if (!support_tls)
+		return;
+	g_force_tls = force_tls;
+	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
+	if (NULL != cb_passwd) {
+		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
+	} else {
+		g_certificate_passwd[0] = '\0';
 	}
+	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
 }
 
 #ifdef OLD_SSL

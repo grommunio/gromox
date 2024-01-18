@@ -86,24 +86,23 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
     /* command error, cannot be recognized by system */
     if (cmd_line[4] != ' ') {
 		return 1703;
-	} else {
-		if (pcontext->is_login)
-			return 1720;
-		auto umx = std::min(static_cast<size_t>(line_length - 5), std::size(pcontext->username) - 1);
-		memcpy(pcontext->username, cmd_line + 5, umx);
-		pcontext->username[umx] = '\0';
-		HX_strltrim(pcontext->username);
-		if (!system_services_judge_user(pcontext->username)) {
-			string_length = sprintf(buff, "%s%s%s",
-			                resource_get_pop3_code(1717, 1, &string_length),
-			                pcontext->username,
-			                resource_get_pop3_code(1717, 2, &string_length));
-			pcontext->connection.write(buff, string_length);
-			pop3_parser_log_info(pcontext, LV_WARN, "user %s is denied by user filter",
-					pcontext->username);
-			return DISPATCH_SHOULD_CLOSE;
-		}
-    }
+	}
+	if (pcontext->is_login)
+		return 1720;
+	auto umx = std::min(static_cast<size_t>(line_length - 5), std::size(pcontext->username) - 1);
+	memcpy(pcontext->username, cmd_line + 5, umx);
+	pcontext->username[umx] = '\0';
+	HX_strltrim(pcontext->username);
+	if (!system_services_judge_user(pcontext->username)) {
+		string_length = sprintf(buff, "%s%s%s",
+				resource_get_pop3_code(1717, 1, &string_length),
+				pcontext->username,
+				resource_get_pop3_code(1717, 2, &string_length));
+		pcontext->connection.write(buff, string_length);
+		pop3_parser_log_info(pcontext, LV_WARN, "user %s is denied by user filter",
+				pcontext->username);
+		return DISPATCH_SHOULD_CLOSE;
+	}
 	return 1700;
 }    
 
@@ -368,34 +367,33 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	int n = strtol(temp_command + 5, nullptr, 0);
 	pcontext->cur_line = -1;
 	pcontext->until_line = 0x7FFFFFFF;
-	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
-		auto punit = sa_get_item(pcontext->msg_array, n - 1);
-		std::string eml_path;
-		pcontext->message_fd = -1;
-		try {
-			eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
-			pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1469: ENOMEM");
-		}
-		if (-1 == pcontext->message_fd) {
-			pop3_parser_log_info(pcontext, LV_WARN,
-				"failed to open message %s: %s",
-				eml_path.c_str(), strerror(errno));
-			return 1709;
-		}
-		pcontext->stream.clear();
-		if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
-			return 1729;
-		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
-			pcontext->stream.clear();
-			return 1719;
-		}
-		pop3_parser_log_info(pcontext, LV_DEBUG,
-			"message %s is going to be retrieved", eml_path.c_str());
-		return DISPATCH_DATA;
+	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
+		return 1707;
+	auto punit = sa_get_item(pcontext->msg_array, n - 1);
+	std::string eml_path;
+	pcontext->message_fd = -1;
+	try {
+		eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
+		pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-1469: ENOMEM");
 	}
-	return 1707;
+	if (-1 == pcontext->message_fd) {
+		pop3_parser_log_info(pcontext, LV_WARN,
+			"failed to open message %s: %s",
+			eml_path.c_str(), strerror(errno));
+		return 1709;
+	}
+	pcontext->stream.clear();
+	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
+		return 1729;
+	if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
+		pcontext->stream.clear();
+		return 1719;
+	}
+	pop3_parser_log_info(pcontext, LV_DEBUG,
+		"message %s is going to be retrieved", eml_path.c_str());
+	return DISPATCH_DATA;
 }
 
 int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
@@ -418,18 +416,17 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 		return 1708;
 	
 	int n = strtol(temp_command + 5, nullptr, 0);
-	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
-		auto punit = sa_get_item(pcontext->msg_array, n - 1);
-		if (!punit->b_deleted) try {
-			punit->b_deleted = TRUE;
-			pcontext->delmsg_list.push_back(punit);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1961: ENOMEM");
-			return 1915;
-		}
-		return 1700;
+	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
+		return 1707;
+	auto punit = sa_get_item(pcontext->msg_array, n - 1);
+	if (!punit->b_deleted) try {
+		punit->b_deleted = TRUE;
+		pcontext->delmsg_list.push_back(punit);
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-1961: ENOMEM");
+		return 1915;
 	}
-	return 1707;
+	return 1700;
 }
 
 int pop3_cmd_handler_top(const char* cmd_line, int line_length,
@@ -466,28 +463,27 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		pcontext->until_line = strtol(ptoken + 1, nullptr, 0);
 	}
 	pcontext->cur_line = -1;
-	if (n > 0 && static_cast<size_t>(n) <= pcontext->msg_array.size()) {
-		auto punit = &pcontext->msg_array.at(n - 1);
-		pcontext->message_fd = -1;
-		try {
-			auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
-			pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
-		} catch (const std::bad_alloc &) {
-			mlog(LV_ERR, "E-1470: ENOMEM");
-		}
-		if (-1 == pcontext->message_fd) {
-			return 1709;
-		}
-		pcontext->stream.clear();
-		if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
-			return 1729;
-		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
-			pcontext->stream.clear();
-			return 1719;
-		}
-		return DISPATCH_DATA;
+	if (n <= 0 || static_cast<size_t>(n) > pcontext->msg_array.size())
+		return 1707;
+	auto punit = &pcontext->msg_array.at(n - 1);
+	pcontext->message_fd = -1;
+	try {
+		auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
+		pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+	} catch (const std::bad_alloc &) {
+		mlog(LV_ERR, "E-1470: ENOMEM");
 	}
-	return 1707;
+	if (-1 == pcontext->message_fd) {
+		return 1709;
+	}
+	pcontext->stream.clear();
+	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
+		return 1729;
+	if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
+		pcontext->stream.clear();
+		return 1719;
+	}
+	return DISPATCH_DATA;
 }
 
 int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
