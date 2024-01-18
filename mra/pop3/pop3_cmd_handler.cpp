@@ -35,7 +35,7 @@ template<typename T> static inline T *sa_get_item(std::vector<T> &arr, size_t id
 }
 
 int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
-	POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	char buff[256];
 
@@ -57,7 +57,7 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
-	POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	if (NULL != pcontext->connection.ssl) {
 		return 1703;
@@ -72,7 +72,7 @@ int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 
 
 int pop3_cmd_handler_user(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char buff[1024];
@@ -122,7 +122,7 @@ static bool store_owner_over(const char *actor, const char *mbox, const char *mb
 }
 
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	char temp_password[256];
     
@@ -220,7 +220,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -238,7 +238,7 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -293,7 +293,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_list(const char* cmd_line, int line_length,
-	POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -347,7 +347,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
-	POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	char temp_command[256];
 	
@@ -399,7 +399,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
-	POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	char temp_command[256];
 	
@@ -433,7 +433,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_top(const char* cmd_line, int line_length,
-	POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	int n;
 	char *ptoken;
@@ -491,7 +491,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	size_t string_length = 0;
 	char temp_buff[1024];
@@ -542,7 +542,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 }
 
 int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	if (4 != line_length) {
 		return 1704;
@@ -554,7 +554,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 }    
 
 int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
 	if (4 != line_length) {
 		return 1704;
@@ -564,7 +564,7 @@ int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
 
 
 int pop3_cmd_handler_else(const char* cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
     /* command not implement*/
 	return 1703;
