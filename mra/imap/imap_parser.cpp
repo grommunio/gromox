@@ -96,15 +96,15 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_ssl_mutex_buf         = NULL;
 	g_notify_stop = true;
 	g_sequence_id = 0;
-	if (support_tls) {
-		g_force_tls = force_tls;
-		gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-		if (cb_passwd != nullptr)
-			gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-		else
-			g_certificate_passwd[0] = '\0';
-		gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
-	}
+	if (!support_tls)
+		return;
+	g_force_tls = force_tls;
+	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
+	if (cb_passwd != nullptr)
+		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
+	else
+		g_certificate_passwd[0] = '\0';
+	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
 }
 
 #ifdef OLD_SSL
