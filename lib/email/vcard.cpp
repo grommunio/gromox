@@ -255,7 +255,7 @@ static vcard_line vcard_retrieve_tag(char *ptag)
 	return pvline;
 }
 
-static void vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
+static void vcard_retrieve_value(vcard_line *pvline, char *pvalue)
 {
 	char *ptr;
 	char *ptr1;

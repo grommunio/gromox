@@ -64,7 +64,7 @@ static constexpr uint32_t g_ufld_proptags[] =
 static constexpr uint32_t g_fbl_proptag = 0x8010001F;
 static constexpr uint32_t g_vcarduid_proptag = 0x8011001F;
 
-static BOOL oxvcard_check_compatible(const VCARD *pvcard)
+static BOOL oxvcard_check_compatible(const vcard *pvcard)
 {
 	BOOL b_version;
 	
@@ -174,7 +174,7 @@ static std::nullptr_t xlog_null(const char *func, unsigned int line)
 }
 
 #define imp_null xlog_null(__func__, __LINE__)
-MESSAGE_CONTENT *oxvcard_import(const VCARD *pvcard, GET_PROPIDS get_propids) try
+message_content *oxvcard_import(const vcard *pvcard, GET_PROPIDS get_propids) try
 {
 	int i;
 	int count;
