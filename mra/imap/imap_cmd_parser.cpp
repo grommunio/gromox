@@ -253,9 +253,8 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 	char* tmp_argv1[128];
 
 	if ('(' == string[0]) {
-		if (')' != string[strlen(string) - 1]) {
+		if (string[strlen(string)-1] != ')')
 			return FALSE;
-		}
 		tmp_argc = parse_imap_args(string + 1,
 			strlen(string) - 2, argv, argc);
 	} else {
@@ -393,9 +392,8 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 			plist.emplace_back("RFC822.SIZE");
 			if (strcasecmp(kw, "ALL") == 0 || strcasecmp(kw, "FULL") == 0) {
 				plist.emplace_back("ENVELOPE");
-				if(0 == strcasecmp(kw, "FULL")) {
+				if (strcasecmp(kw, "FULL") == 0)
 					plist.emplace_back("BODY");
-				}
 			}
 			*pb_detail = TRUE;
 			kw = "FLAGS";
@@ -444,43 +442,38 @@ static void imap_cmd_parser_convert_flags_string(int flag_bits, char *flags_stri
 		b_first = TRUE;
 	}
 	if (flag_bits & FLAG_ANSWERED) {
-		if (b_first) {
+		if (b_first)
 			flags_string[len++] = ' ';
-		} else {
+		else
 			b_first = TRUE;
-		}
 		len += sprintf(flags_string + len, "\\Answered");
 	}
 	if (flag_bits & FLAG_FLAGGED) {
-		if (b_first) {
+		if (b_first)
 			flags_string[len++] = ' ';
-		} else {
+		else
 			b_first = TRUE;
-		}
 		len += sprintf(flags_string + len, "\\Flagged");
 	}
 	if (flag_bits & FLAG_DELETED) {
-		if (b_first) {
+		if (b_first)
 			flags_string[len++] = ' ';
-		} else {
+		else
 			b_first = TRUE;
-		}
 		len += sprintf(flags_string + len, "\\Deleted");
 	}
 	if (flag_bits & FLAG_SEEN) {
-		if (b_first) {
+		if (b_first)
 			flags_string[len++] = ' ';
-		} else {
+		else
 			b_first = TRUE;
-		}
 		len += sprintf(flags_string + len, "\\Seen");
 	}
 	if (flag_bits & FLAG_DRAFT) {
-		if (b_first) {
+		if (b_first)
 			flags_string[len++] = ' ';
-		} else {
+		else
 			b_first = TRUE;
-		}
 		len += sprintf(flags_string + len, "\\Draft");
 	}
 	flags_string[len] = ')';
@@ -539,9 +532,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	}
 	buff1 += "\r\n";
 	const auto len1 = buff1.size();
-	if (-1 == length1) {
+	if (length1 == -1)
 		length1 = len1;
-	}
 	int l2;
 	if (offset1 >= len1) {
 		l2 = gx_snprintf(value, val_len, "BODY%s NIL", pbody);
@@ -736,11 +728,10 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 	buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
 	            "* %d FETCH (", item_id);
 	for (auto &kwss : pitem_list) {
-		if (!b_first) {
+		if (!b_first)
 			b_first = TRUE;
-		} else {
+		else
 			buff[buff_len++] = ' ';
-		}
 		auto kw = kwss.data();
 		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
@@ -1272,14 +1263,13 @@ int imap_cmd_parser_id(int argc, char **argv, imap_context *pcontext) try
 	if (pcontext->proto_stat == iproto_stat::select)
 		imap_parser_echo_modify(pcontext, NULL);
 	std::string buf;
-	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands"))) {
+	if (parse_bool(g_config_file->get_value("enable_rfc2971_commands")))
 		/* IMAP_CODE_2170029: OK ID completed */
 		buf = fmt::format("* ID (\"name\" \"gromox-imap\" "
 		      "version \"{}\")\r\n{} {}", PACKAGE_VERSION,
 		      argv[0], resource_get_imap_code(1729, 1));
-	} else {
+	else
 		buf = argv[0] + " "s + resource_get_imap_code(1800, 1);
-	}
 	imap_parser_safe_write(pcontext, buf.c_str(), buf.size());
 	return DISPATCH_CONTINUE;
 } catch (const std::bad_alloc &) {
@@ -3144,11 +3134,10 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, imap_context *pcontext) try
 				usleep(500000);
 				continue;
 			}
-			if (b_first) {
+			if (b_first)
 				uid_string += ',';
-			} else {
+			else
 				b_first =  TRUE;
-			}
 			uid_string += std::to_string(uid);
 			break;
 		}
