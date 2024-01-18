@@ -232,7 +232,7 @@ static int t_ical_dt()
 		snprintf(buf, std::size(buf), "SUMMARY:event%u\n", count);
 		input += dt_foot;
 
-		ICAL ical;
+		ical ical;
 		printf("\n\n<input>:: \e[32m%s\e[0m\n", s);
 		if (!ical.load_from_str_move(input.data())) {
 			fprintf(stderr, "ical_parse unsuccessful\n");

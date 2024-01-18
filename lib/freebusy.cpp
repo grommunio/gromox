@@ -125,7 +125,7 @@ static std::optional<ical_component> tz_to_vtimezone(int year,
 }
 
 static bool recurrencepattern_to_rrule(const ical_component *tzcom,
-    time_t start_whole, const APPOINTMENT_RECUR_PAT &apr, ICAL_RRULE *irrule)
+    time_t start_whole, const APPOINTMENT_RECUR_PAT &apr, ical_rrule *irrule)
 {
 	auto &rpat = apr.recur_pat;
 	ICAL_TIME itime;
@@ -204,7 +204,7 @@ static bool find_recur_times(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr,
     time_t start_time, time_t end_time, std::vector<event> &evlist)
 {
-	ICAL_RRULE irrule;
+	ical_rrule irrule;
 
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;

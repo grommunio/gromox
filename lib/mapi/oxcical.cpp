@@ -318,7 +318,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 {
 	time_t tmp_time;
 	ICAL_TIME itime1;
-	ICAL_RRULE irrule;
+	ical_rrule irrule;
 	const char *pvalue;
 	uint32_t patterntype = 0;
 	const ICAL_TIME *pitime;
@@ -3273,7 +3273,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 }
 
 static void busystatus_to_line(ol_busy_status status, const char *key,
-    ICAL_COMPONENT *com)
+    ical_component *com)
 {
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
@@ -3778,7 +3778,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 
 BOOL oxcical_export_freebusy(const char *user, const char *fbuser,
     time_t starttime, const time_t endtime,
-    const std::vector<freebusy_event> &fbdata, ICAL &ic)
+    const std::vector<freebusy_event> &fbdata, ical &ic)
 {
 	ic.append_line("METHOD", "PUBLISH");
 	ic.append_line("PRODID", "gromox-oxcical");

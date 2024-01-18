@@ -202,7 +202,7 @@ static errno_t do_ical(const char *file, std::vector<message_ptr> &mv)
 		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
 		return errno;
 	}
-	ICAL ical;
+	ical ical;
 	if (!ical.load_from_str_move(slurp_data.get())) {
 		fprintf(stderr, "ical_parse %s unsuccessful\n", file);
 		return EIO;

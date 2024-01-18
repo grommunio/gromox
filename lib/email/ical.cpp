@@ -120,7 +120,7 @@ static char *ical_get_value_sep(char *pstring, char sep)
 	return NULL;
 }
 
-static void ical_clear_component(ICAL_COMPONENT *pcomponent)
+static void ical_clear_component(ical_component *pcomponent)
 {
 	pcomponent->component_list.clear();
 }
@@ -264,14 +264,14 @@ static ical_line ical_retrieve_tag(char *ptag)
 	return piline;
 }
 
-static bool ical_check_base64(ICAL_LINE *piline)
+static bool ical_check_base64(ical_line *piline)
 {
 	return std::find_if(piline->param_list.cbegin(), piline->param_list.cend(),
 	       [](const auto &e) { return strcasecmp(e.name.c_str(), "ENCODING") == 0; }) !=
 	       piline->param_list.cend();
 }
 
-static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue) try
+static BOOL ical_retrieve_value(ical_line *piline, char *pvalue) try
 {
 	char *ptr;
 	char *ptr1;
@@ -537,12 +537,12 @@ static const char *ical_get_first_subvalue_by_name_internal(
 	return plist->size() == 1 ? plist->front().c_str() : nullptr;
 }
 
-const char *ICAL_LINE::get_first_subvalue_by_name(const char *name) const
+const char *ical_line::get_first_subvalue_by_name(const char *name) const
 {
 	return ical_get_first_subvalue_by_name_internal(&value_list, name);
 }
 
-const char *ICAL_LINE::get_first_subvalue() const
+const char *ical_line::get_first_subvalue() const
 {
 	if (value_list.size() == 0)
 		return NULL;
@@ -552,7 +552,7 @@ const char *ICAL_LINE::get_first_subvalue() const
 	return pivalue.subval_list.front().c_str();
 }
 
-const std::vector<std::string> *ICAL_LINE::get_subval_list(const char *name) const
+const std::vector<std::string> *ical_line::get_subval_list(const char *name) const
 {
 	return ical_get_subval_list_internal(&value_list, name);
 }
@@ -1450,7 +1450,7 @@ static void ical_set_bitmap(unsigned char *pbitmap, unsigned int index)
 	pbitmap[bytes] |= mask;
 }
 
-static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
+static int ical_hint_rrule(ical_rrule *pirrule, ICAL_TIME itime)
 {
 	int yearday;
 	int yeardays;
@@ -1521,7 +1521,7 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 	return 0;
 }
 
-static bool ical_hint_setpos(ICAL_RRULE *pirrule)
+static bool ical_hint_setpos(ical_rrule *pirrule)
 {
 	if (!ical_hint_bitmap(pirrule->setpos_bitmap, pirrule->cur_setpos - 1) &&
 	    !ical_hint_bitmap(pirrule->nsetpos_bitmap, pirrule->setpos_count - pirrule->cur_setpos))
@@ -1529,7 +1529,7 @@ static bool ical_hint_setpos(ICAL_RRULE *pirrule)
 	return true;
 }
 
-static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
+static ICAL_TIME ical_next_rrule_itime(ical_rrule *pirrule,
 	int hint_result, ICAL_TIME itime)
 {
 	int dayofweek;
@@ -1727,7 +1727,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 	return itime;
 }
 	
-static void ical_calculate_setpos(ICAL_RRULE *pirrule)
+static void ical_calculate_setpos(ical_rrule *pirrule)
 {
 	int hint_result;
 	 ICAL_TIME itime;
@@ -1743,7 +1743,7 @@ static void ical_calculate_setpos(ICAL_RRULE *pirrule)
 	}
 }
 
-static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
+static void ical_next_rrule_base_itime(ical_rrule *pirrule)
 {
 	pirrule->next_base_itime = pirrule->base_itime;
 	switch (pirrule->frequency) {
@@ -1774,7 +1774,7 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 /* ptz_component can be NULL, represents UTC */
 bool ical_parse_rrule(const ical_component *ptz_component,
     time_t start_time, const std::vector<ical_value> *pvalue_list,
-    ICAL_RRULE *pirrule)
+    ical_rrule *pirrule)
 {
 	int i;
 	int tmp_int;
@@ -1787,7 +1787,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	const char *pvalue;
 	ICAL_TIME base_itime;
 	
-	memset(pirrule, 0, sizeof(ICAL_RRULE));
+	*pirrule = {};
 	pvalue = ical_get_first_subvalue_by_name_internal(
 								pvalue_list, "FREQ");
 	if (pvalue == nullptr)

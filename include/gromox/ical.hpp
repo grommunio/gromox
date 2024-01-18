@@ -31,7 +31,6 @@ struct GX_EXPORT ical_param {
 	std::string name;
 	std::vector<std::string> paramval_list;
 };
-using ICAL_PARAM = ical_param;
 
 struct GX_EXPORT ical_value {
 	public:
@@ -43,7 +42,6 @@ struct GX_EXPORT ical_value {
 	std::string name;
 	std::vector<std::string> subval_list;
 };
-using ICAL_VALUE = ical_value;
 
 struct GX_EXPORT ical_line {
 	public:
@@ -66,7 +64,6 @@ struct GX_EXPORT ical_line {
 	std::vector<ical_param> param_list;
 	std::vector<ical_value> value_list;
 };
-using ICAL_LINE = ical_line;
 
 struct GX_EXPORT ical_component {
 	public:
@@ -83,14 +80,12 @@ struct GX_EXPORT ical_component {
 	/* Be wary of iterator/pointer invalidation */
 	std::list<ical_component> component_list;
 };
-using ICAL_COMPONENT = ical_component;
 
 struct GX_EXPORT ical : public ical_component {
 	ical() : ical_component("VCALENDAR") {}
 	bool load_from_str_move(char *in_buff);
 	ec_error_t serialize(std::string &out) const;
 };
-using ICAL = ical;
 
 enum { /* for ICAL_TIME::type */
 	ICT_UNSPEC,
@@ -160,7 +155,6 @@ struct GX_EXPORT ical_rrule {
 	unsigned char setpos_bitmap[46];
 	unsigned char nsetpos_bitmap[46];
 };
-using ICAL_RRULE = ical_rrule;
 
 extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT bool ical_parse_date(const char *in, ICAL_TIME *out);
@@ -176,6 +170,6 @@ extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *psecon
 extern GX_EXPORT bool ical_itime_to_utc(const ical_component *, ICAL_TIME, time_t *);
 extern GX_EXPORT bool ical_datetime_to_utc(const ical_component *, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(const ical_component *, time_t utc_time, ICAL_TIME *);
-extern GX_EXPORT bool ical_parse_rrule(const ical_component *, time_t start, const std::vector<ical_value> *, ICAL_RRULE *);
+extern GX_EXPORT bool ical_parse_rrule(const ical_component *, time_t start, const std::vector<ical_value> *, ical_rrule *);
 extern GX_EXPORT int weekday_to_int(const char *);
 extern GX_EXPORT const char *weekday_to_str(unsigned int);

@@ -1943,7 +1943,7 @@ MESSAGE_CONTENT *cu_rfc822_to_message(store_object *pstore,
 BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
     BINARY *pical_bin) try
 {
-	ICAL ical;
+	ical ical;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zs_get_info();
@@ -1971,7 +1971,7 @@ BOOL common_util_message_to_ical(store_object *pstore, uint64_t message_id,
 
 message_ptr cu_ical_to_message(store_object *pstore, const BINARY *pical_bin) try
 {
-	ICAL ical;
+	ical ical;
 	char tmzone[64];
 	
 	auto pinfo = zs_get_info();
@@ -2002,7 +2002,7 @@ ec_error_t cu_ical_to_message2(store_object *store, char *ical_data,
 	    std::size(tmzone)) || tmzone[0] == '\0')
 		gx_strlcpy(tmzone, common_util_get_default_timezone(), std::size(tmzone));
 
-	ICAL icobj;
+	ical icobj;
 	if (!icobj.load_from_str_move(ical_data))
 		return ecError;
 	common_util_set_dir(store->get_dir());
@@ -2145,7 +2145,7 @@ ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
     time_t starttime, time_t endtime, const std::vector<freebusy_event> &fbdata,
     BINARY *bin) try
 {
-	ICAL ical;
+	ical ical;
 	if (!oxcical_export_freebusy(user, fbuser, starttime, endtime,
 	    fbdata, ical)) {
 		mlog(LV_DEBUG, "D-2203: oxcical_export_freebusy for %s failed", fbuser);

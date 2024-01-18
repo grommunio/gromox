@@ -2816,7 +2816,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			mime_enum.pcalendar = NULL;
 		} else {
 			utf8_filter(&pcontent[content_len+1]);
-			ICAL ical;
+			ical ical;
 			if (!ical.load_from_str_move(&pcontent[content_len+1])) {
 				mime_enum.pcalendar = nullptr;
 			} else {
@@ -4185,7 +4185,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
     GET_PROPNAME get_propname) try
 {
 	int i;
-	ICAL ical;
+	ical ical;
 	MIME *phtml;
 	MIME *pmime;
 	MIME *pplain;
