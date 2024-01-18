@@ -397,11 +397,11 @@ static int t_base64()
 
 static int t_cmp_icaltime()
 {
-	ICAL_TIME a{}, b{};
+	ical_time a{}, b{};
 	a.second = b.second = 59;
 	a.leap_second = 60;
 	if (a.twcompare(b) != -b.twcompare(a))
-		return printf("ICAL_TIME::compare failed\n");
+		return printf("ical_time::compare failed\n");
 	return 0;
 }
 

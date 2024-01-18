@@ -66,10 +66,10 @@ static bool fill_tzcom(ical_component &tzcom, const SYSTEMTIME &sys, int year,
 		str = "16010101T000000";
 	} else if (sys.year == 0) {
 		int day = ical_get_dayofmonth(year, sys.month, sys.day,	sys.dayofweek);
-		str = fmt::format("{}", ICAL_TIME{year, sys.month, day,
+		str = fmt::format("{}", ical_time{year, sys.month, day,
 		      sys.hour, sys.minute, sys.second});
 	} else if (sys.year == 1) {
-		str = fmt::format("{}", ICAL_TIME{year, sys.month, sys.day,
+		str = fmt::format("{}", ical_time{year, sys.month, sys.day,
 		      sys.hour, sys.minute, sys.second});
 	} else {
 		return false;
@@ -128,7 +128,7 @@ static bool recurrencepattern_to_rrule(const ical_component *tzcom,
     time_t start_whole, const APPOINTMENT_RECUR_PAT &apr, ical_rrule *irrule)
 {
 	auto &rpat = apr.recur_pat;
-	ICAL_TIME itime;
+	ical_time itime;
 	ical_line line("RRULE");
 
 	switch (rpat.patterntype) {
@@ -209,7 +209,7 @@ static bool find_recur_times(const ical_component *tzcom,
 	if (!recurrencepattern_to_rrule(tzcom, start_whole, apr, &irrule))
 		return false;
 	do {
-		ICAL_TIME itime = irrule.instance_itime;
+		ical_time itime = irrule.instance_itime;
 		time_t ut{}, utnz{};
 		if (!ical_itime_to_utc(tzcom, itime, &ut))
 			break;
@@ -229,7 +229,7 @@ static bool find_recur_times(const ical_component *tzcom,
 	} while (irrule.iterate());
 	for (unsigned int i = 0; i < apr.exceptioncount; ++i) {
 		auto ut = rop_util_rtime_to_unix(apr.pexceptioninfo[i].startdatetime);
-		ICAL_TIME itime;
+		ical_time itime;
 		if (!ical_utc_to_datetime(nullptr, ut, &itime) ||
 		    !ical_itime_to_utc(tzcom, itime, &ut) ||
 		    ut < start_time || ut > end_time)

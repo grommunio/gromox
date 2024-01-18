@@ -587,7 +587,7 @@ bool ical_parse_utc_offset(const char *str_zone, int *phour, int *pminute)
 	return true;
 }
 
-bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
+bool ical_parse_date(const char *str_date, ical_time *itime)
 {
 	char tmp_buff[10];
 	
@@ -600,7 +600,7 @@ bool ical_parse_date(const char *str_date, ICAL_TIME *itime)
 	       sscanf(tmp_buff, "%04d%02d%02d", &itime->year, &itime->month, &itime->day) == 3;
 }
 
-bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
+bool ical_parse_datetime(const char *str_datetime, ical_time *pitime)
 {
 	int len;
 	char tmp_buff[20];
@@ -634,7 +634,7 @@ bool ical_parse_datetime(const char *str_datetime, ICAL_TIME *pitime)
 	return false;
 }
 
-int ICAL_TIME::twcompare(const ICAL_TIME &o) const
+int ical_time::twcompare(const ical_time &o) const
 {
 	auto r = three_way_compare(year, o.year);
 	if (r != 0)
@@ -740,7 +740,7 @@ int ical_get_dayofmonth(int year, int month, int order, int dayofweek)
 	return day;
 }
 
-void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime)
+void ical_get_itime_from_yearday(int year, int yearday, ical_time *pitime)
 {
 	static const int days[2][13] = {
 		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
@@ -828,7 +828,7 @@ static int ical_get_negative_weekofyear(int year, int month,
 	return weeknumber - yearweeks - 1;
 }
 
-void ICAL_TIME::add_year(int years)
+void ical_time::add_year(int years)
 {
 	auto pitime = this;
 	pitime->year += years;
@@ -838,7 +838,7 @@ void ICAL_TIME::add_year(int years)
 		pitime->day = 28;
 }
 
-void ICAL_TIME::add_month(int months)
+void ical_time::add_month(int months)
 {
 	auto pitime = this;
 	int monthdays;
@@ -854,7 +854,7 @@ void ICAL_TIME::add_month(int months)
 		pitime->day = monthdays;
 }
 
-void ICAL_TIME::add_day(int days)
+void ical_time::add_day(int days)
 {
 	auto pitime = this;
 	int yearday;
@@ -874,7 +874,7 @@ void ICAL_TIME::add_day(int days)
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
 }
 
-void ICAL_TIME::subtract_day(int days)
+void ical_time::subtract_day(int days)
 {
 	auto pitime = this;
 	int yearday;
@@ -892,15 +892,15 @@ void ICAL_TIME::subtract_day(int days)
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
 }
 
-int ICAL_TIME::delta_day(ICAL_TIME itime2) const
+int ical_time::delta_day(ical_time itime2) const
 {
-	const ICAL_TIME &itime1 = *this;
+	const ical_time &itime1 = *this;
 	int yearday;
 	int monthdays;
 	int delta_days;
 
 	if (month < 1 || month > 12 || day < 1 || day > 31) {
-		mlog(LV_ERR, "E-2052: illegal parameters to ICAL_TIME::delta_day (%u,%u)", month, day);
+		mlog(LV_ERR, "E-2052: illegal parameters to ical_time::delta_day (%u,%u)", month, day);
 		return 0;
 	}
 	if (itime1 < itime2)
@@ -923,7 +923,7 @@ int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 	return delta_days;
 }
 
-void ICAL_TIME::add_hour(int hours)
+void ical_time::add_hour(int hours)
 {
 	auto pitime = this;
 	if (hours > 23)
@@ -935,7 +935,7 @@ void ICAL_TIME::add_hour(int hours)
 	}
 }
 
-void ICAL_TIME::add_minute(int minutes)
+void ical_time::add_minute(int minutes)
 {
 	auto pitime = this;
 	if (minutes > 59)
@@ -947,7 +947,7 @@ void ICAL_TIME::add_minute(int minutes)
 	}
 }
 
-void ICAL_TIME::add_second(int seconds)
+void ical_time::add_second(int seconds)
 {
 	auto pitime = this;
 	if (seconds > 59)
@@ -1100,7 +1100,7 @@ bool ical_parse_duration(const char *ptoken, long *pseconds)
 }
 
 static const char *ical_get_datetime_offset(const ical_component &ptz_component,
-    ICAL_TIME itime)
+    ical_time itime)
 {
 	int hour;
 	int month;
@@ -1116,8 +1116,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 	const char *pvalue;
 	const char *pvalue1;
 	const char *pvalue2;
-	ICAL_TIME itime_standard;
-	ICAL_TIME itime_daylight;
+	ical_time itime_standard, itime_daylight;
 	const char *standard_offset = nullptr, *daylight_offset = nullptr;
 	
 	b_standard = FALSE;
@@ -1135,7 +1134,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
 			return NULL;
-		ICAL_TIME itime1{}, itime2{};
+		ical_time itime1{}, itime2{};
 		if (!ical_parse_datetime(pvalue, &itime1) || itime1.type == ICT_UTC)
 			return NULL;
 		if (itime < itime1)
@@ -1299,7 +1298,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 }
 
 bool ical_itime_to_utc(const ical_component *ptz_component,
-    ICAL_TIME itime, time_t *ptime)
+    ical_time itime, time_t *ptime)
 {
 	int hour_offset;
 	struct tm tmp_tm;
@@ -1335,7 +1334,7 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 bool ical_datetime_to_utc(const ical_component *ptz_component,
 	const char *str_datetime, time_t *ptime)
 {
-	ICAL_TIME itime{};
+	ical_time itime{};
 	struct tm tmp_tm;
 	
 	if (!ical_parse_datetime(str_datetime, &itime))
@@ -1356,7 +1355,7 @@ bool ical_datetime_to_utc(const ical_component *ptz_component,
 }
 
 bool ical_utc_to_datetime(const ical_component *ptz_component,
-	time_t utc_time, ICAL_TIME *pitime)
+    time_t utc_time, ical_time *pitime)
 {
 	int hour;
 	int minute;
@@ -1413,7 +1412,7 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 static bool ical_parse_until(const ical_component *ptz_component,
 	const char *str_until, time_t *ptime)
 {
-	ICAL_TIME itime{};
+	ical_time itime{};
 	
 	if (!ical_parse_datetime(str_until, &itime)) {
 		if (!ical_parse_date(str_until, &itime))
@@ -1450,7 +1449,7 @@ static void ical_set_bitmap(unsigned char *pbitmap, unsigned int index)
 	pbitmap[bytes] |= mask;
 }
 
-static int ical_hint_rrule(ical_rrule *pirrule, ICAL_TIME itime)
+static int ical_hint_rrule(ical_rrule *pirrule, ical_time itime)
 {
 	int yearday;
 	int yeardays;
@@ -1529,8 +1528,8 @@ static bool ical_hint_setpos(ical_rrule *pirrule)
 	return true;
 }
 
-static ICAL_TIME ical_next_rrule_itime(ical_rrule *pirrule,
-	int hint_result, ICAL_TIME itime)
+static ical_time ical_next_rrule_itime(ical_rrule *pirrule,
+    int hint_result, ical_time itime)
 {
 	int dayofweek;
 	
@@ -1730,7 +1729,7 @@ static ICAL_TIME ical_next_rrule_itime(ical_rrule *pirrule,
 static void ical_calculate_setpos(ical_rrule *pirrule)
 {
 	int hint_result;
-	 ICAL_TIME itime;
+	ical_time itime;
 	
 	pirrule->cur_setpos = 0;
 	pirrule->setpos_count = 0;
@@ -1782,10 +1781,9 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 	int weekorder;
 	int cmp_result;
 	int hint_result;
-	ICAL_TIME itime;
+	ical_time itime, base_itime;
 	time_t until_time;
 	const char *pvalue;
-	ICAL_TIME base_itime;
 	
 	*pirrule = {};
 	pvalue = ical_get_first_subvalue_by_name_internal(
@@ -2189,7 +2187,7 @@ bool ical_parse_rrule(const ical_component *ptz_component,
 bool ical_rrule::iterate()
 {
 	auto pirrule = this;
-	ICAL_TIME itime;
+	ical_time itime;
 	int hint_result;
 	
 	if (pirrule->total_count != 0 &&

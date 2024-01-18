@@ -132,7 +132,7 @@ static int t_ical_api()
 	assert(!ical_parse_utc_offset("0100", &hour, &min));
 	assert(hour == 0 && min == 0);
 
-	ICAL_TIME it;
+	ical_time it;
 	assert(ical_parse_datetime("20231224T123456Z", &it));
 	assert(it.year == 2023 && it.month == 12 && it.day == 24 &&
 	       it.hour == 12 && it.minute == 34 && it.second == 56 &&
