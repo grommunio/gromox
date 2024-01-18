@@ -59,9 +59,8 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
     pop3_context *pcontext)
 {
-	if (NULL != pcontext->connection.ssl) {
+	if (pcontext->connection.ssl != nullptr)
 		return 1703;
-	}
 	if (!g_support_tls)
 		return 1703;
 	if (pcontext->is_login)
@@ -79,14 +78,12 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
     
 	if (g_support_tls && g_force_tls && pcontext->connection.ssl == nullptr)
 		return 1726;
-	if (line_length <= 5 || line_length > 255 + 1 + 4) {
+	if (line_length <= 5 || line_length > 255 + 1 + 4)
 		return 1704;
-	}
 	
     /* command error, cannot be recognized by system */
-    if (cmd_line[4] != ' ') {
+	if (cmd_line[4] != ' ')
 		return 1703;
-	}
 	if (pcontext->is_login)
 		return 1720;
 	auto umx = std::min(static_cast<size_t>(line_length - 5), std::size(pcontext->username) - 1);
@@ -125,22 +122,18 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 {
 	char temp_password[256];
     
-	if (line_length <= 5 || line_length > 255 + 1 + 4) {
+	if (line_length <= 5 || line_length > 255 + 1 + 4)
 		return 1704;
-	}
-	
     /* command error, cannot be recognized by system */
-    if (cmd_line[4] != ' ') {
+	if (cmd_line[4] != ' ')
 		return 1703;
-	}
 	if (pcontext->is_login)
 		return 1720;
 	auto target_mbox = strchr(pcontext->username, '!');
 	if (target_mbox != nullptr)
 		*target_mbox++ = '\0';
-	if ('\0' == pcontext->username[0]) {
+	if (*pcontext->username == '\0')
 		return 1705;
-	}
 	
 	sql_meta_result mres_auth, mres /* target */;
     memcpy(temp_password, cmd_line + 5, line_length - 5);
@@ -182,10 +175,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));
 	pcontext->msg_array.clear();
 	pcontext->total_size = 0;
-
-	if ('\0' == pcontext->maildir[0]) {
+	if (*pcontext->maildir == '\0')
 		return 1715;
-	}
 
 	switch (system_services_list_mail(pcontext->maildir, "inbox",
 		pcontext->msg_array, &pcontext->total_mail,
@@ -224,9 +215,8 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 	size_t string_length = 0;
 	char temp_buff[1024];
     
-	if (4 != line_length) {
+	if (line_length != 4)
 		return 1704;
-	}
 	if (!pcontext->is_login)
 		return 1708;
 	snprintf(temp_buff, sizeof(temp_buff), "+OK %d %llu\r\n",
@@ -274,9 +264,8 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		return DISPATCH_LIST;
 	}
 	
-	if (temp_command[4] != ' ') {
+	if (temp_command[4] != ' ')
 		return 1703;
-	}
 	if (!pcontext->is_login)
 		return 1708;
 	
@@ -329,9 +318,8 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		return DISPATCH_LIST;
 	}
 	
-	if (temp_command[4] != ' ') {
+	if (temp_command[4] != ' ')
 		return 1703;
-	}
 	if (!pcontext->is_login)
 		return 1708;
 	
@@ -354,13 +342,10 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	temp_command[line_length] = '\0';
 	HX_strrtrim(temp_command);
 	
-	if (strlen(temp_command) <= 5) {
+	if (strlen(temp_command) <= 5)
 		return 1704;
-	}
-	
-	if (temp_command[4] != ' ') {
+	if (temp_command[4] != ' ')
 		return 1703;
-	}
 	if (!pcontext->is_login)
 		return 1708;
 	
@@ -405,13 +390,10 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	temp_command[line_length] = '\0';
 	HX_strrtrim(temp_command);
 	
-	if (strlen(temp_command) <= 5) {
+	if (strlen(temp_command) <= 5)
 		return 1704;
-	}
-	
-	if (temp_command[4] != ' ') {
+	if (temp_command[4] != ' ')
 		return 1703;
-	}
 	if (!pcontext->is_login)
 		return 1708;
 	
@@ -441,13 +423,10 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	temp_command[line_length] = '\0';
 	HX_strrtrim(temp_command);
 	
-	if (strlen(temp_command) <= 4) {
+	if (strlen(temp_command) <= 4)
 		return 1704;
-	}
-	
-	if (temp_command[3] != ' ') {
+	if (temp_command[3] != ' ')
 		return 1703;
-	}
 	if (!pcontext->is_login)
 		return 1708;
 	
@@ -473,9 +452,8 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	} catch (const std::bad_alloc &) {
 		mlog(LV_ERR, "E-1470: ENOMEM");
 	}
-	if (-1 == pcontext->message_fd) {
+	if (pcontext->message_fd == -1)
 		return 1709;
-	}
 	pcontext->stream.clear();
 	if (pcontext->stream.write("+OK\r\n", 5) != STREAM_WRITE_OK)
 		return 1729;
@@ -492,9 +470,8 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	size_t string_length = 0;
 	char temp_buff[1024];
     
-	if (4 != line_length) {
+	if (line_length != 4)
 		return 1704;
-	}
 	if (pcontext->is_login && pcontext->delmsg_list.size() > 0) {
 		switch (system_services_delete_mail(pcontext->maildir, "inbox",
 			pcontext->delmsg_list)) {
@@ -540,9 +517,8 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
     pop3_context *pcontext)
 {
-	if (4 != line_length) {
+	if (line_length != 4)
 		return 1704;
-	}
 	if (pcontext->is_login)
 		for (auto m : pcontext->delmsg_list)
 			m->b_deleted = false;
@@ -552,12 +528,10 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 int pop3_cmd_handler_noop(const char* cmd_line, int line_length,
     pop3_context *pcontext)
 {
-	if (4 != line_length) {
+	if (line_length != 4)
 		return 1704;
-	}
 	return 1700;
 }
-
 
 int pop3_cmd_handler_else(const char* cmd_line, int line_length,
     pop3_context *pcontext)
