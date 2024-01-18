@@ -64,6 +64,7 @@ public:
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
 	ERR(CannotUseFolderIdForItemId) ///< Used folder id where item id was expected
 	ERR(CannotUseItemIdForFolderId) ///< Used item id where folder id was expected
+	ERR(CorruptData) ///< Generic error for corrupt input data
 	ERR(CrossMailboxMoveCopy) ///< Attempted move or copy operation across different stores
 	ERR(DeleteDistinguishedFolder) ///< Attempt to delete distinguished folder (Wait. That's illegal.)
 	ERR(FolderExists) ///< Creating a folder with a name that already exists
@@ -73,6 +74,7 @@ public:
 	ERR(FreeBusyGenerationFailed) ///< Something went wrong when trying to retrieve freebusy data
 	ERR(ImpersonateUserDenied) ///< Insufficient permissions to impersonate user
 	ERR(ImpersonationFailed) ///< Impersonation could not be setup properly
+	ERR(InternalServerError) ///< Generic error
 	ERR(InvalidAttachmentId) ///< Cannot deserialize attachment ID
 	ERR(InvalidFolderId) ///< Cannot deserialize folder ID
 	ERR(InvalidFreeBusyViewType) ///< Requested free busy view type is invalid
@@ -368,6 +370,11 @@ E(3245, "failed to load content table");
 E(3246, "failed to get named property id");
 E(3247, "too many sort fields");
 E(3248, "PidLidTaskRecurrence contents not recognized");
+inline std::string E3249(char c) {return fmt::format("E-3249: invalid hex string character '{}'", c);}
+E(3250, "invalid hex string size");
+E(3251, "public folder IDs are currently not supported");
+E(3252, "invalid input id");
+E(3253, "output format not supported");
 
 #undef E
 }

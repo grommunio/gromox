@@ -41,6 +41,48 @@ namespace
 {
 
 /**
+ * @brief      Decode hex string
+ *
+ * @param      hex         Hex encoded input string
+ *
+ * @throw      InputError  Input string is not properly hex-encoded
+ *
+ * @return     String containing decoded binary data
+ */
+std::string hexDecode(const std::string& hex)
+{
+	static auto charVal = [](int c) {
+		return (c >= '0' && c <= '9')? c-'0' : (c >= 'a' && c <= 'f')? c-'a'+10 : throw InputError(E3249(char(c)));
+	};
+	if(hex.size() % 2)
+		throw InputError(E3250);
+	std::string bin(hex.size()/2, 0);
+	auto it = hex.begin();
+	for(char& out : bin)
+		out = char(charVal(tolower(*it++)) << 4 | charVal(tolower(*it++)));
+	return bin;
+}
+
+/**
+ * @brief      Encode hex string
+ *
+ * @param      bin         Binary data
+ *
+ * @return     String containing hex encoded data
+ */
+std::string hexEncode(const std::string& bin)
+{
+	static constexpr char digits[] = "0123456789abcdef";
+	std::string hex(bin.size()*2, 0);
+	auto it = hex.begin();
+	for(char in : bin) {
+		*(it++) = digits[uint8_t(in) >> 4];
+		*(it++) = digits[uint8_t(in) & 0xf];
+	}
+	return hex;
+}
+
+/**
  * @brief      Convert string to lower case
  *
  * @param      str     String to convert
@@ -107,6 +149,51 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 } //anonymous namespace
 ///////////////////////////////////////////////////////////////////////
 //Request implementations
+
+/**
+ * @brief      Process ConvertId
+ *
+ * @param      request   Request data
+ * @param      response  XMLElement to store response in
+ * @param      ctx       Request context
+ */
+void process(mConvertIdRequest&& request, XMLElement* response, const EWSContext& ctx)
+{
+	ctx.experimental("ConvertId");
+
+	response->SetName("m:ConvertIdResponse");
+
+	mConvertIdResponse data;
+	data.ResponseMessages.reserve(request.SourceIds.size());
+
+	for(auto& sourceId : request.SourceIds) try {
+		if(!std::holds_alternative<tAlternateId>(sourceId))
+			throw EWSError::InternalServerError(E3251);
+		tAlternateId& aid = std::get<tAlternateId>(sourceId);
+		if(aid.Format == request.DestinationFormat)
+			data.ResponseMessages.emplace_back().AlternateId = std::move(aid);
+		else {
+			std::string dir = ctx.get_maildir(aid.Mailbox);
+			tBaseItemId id(sBase64Binary(aid.Format == Enum::HexEntryId? hexDecode(aid.Id) : base64_decode(aid.Id)),
+				           tBaseItemId::ID_GUESS);
+			if(id.type == tBaseItemId::ID_UNKNOWN)
+				throw EWSError::CorruptData(E3252);
+			mConvertIdResponseMessage msg;
+			if(request.DestinationFormat == Enum::EwsId || request.DestinationFormat == Enum::EwsLegacyId)
+				msg.AlternateId = tAlternateId(request.DestinationFormat, base64_encode(id.serializeId()), aid.Mailbox);
+			else if(request.DestinationFormat == Enum::HexEntryId)
+				msg.AlternateId = tAlternateId(request.DestinationFormat, hexEncode(id.Id), aid.Mailbox);
+			else
+				throw EWSError::InternalServerError(E3253);
+			data.ResponseMessages.emplace_back(std::move(msg));
+		}
+		data.ResponseMessages.back().success();
+	} catch(const EWSError& err) {
+		data.ResponseMessages.emplace_back(err);
+	}
+
+	data.serialize(response);
+}
 
 /**
  * @brief      Process CreateFolder

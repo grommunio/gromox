@@ -159,10 +159,13 @@ struct Enum
 	STR(Empty);
 	STR(Enabled);
 	STR(End);
+	STR(EntryId);
 	STR(Error);
 	STR(Excellent); // Smithers
 	STR(Exception);
 	STR(ExternalMemberCount);
+	STR(EwsId);
+	STR(EwsLegacyId);
 	STR(Fair);
 	STR(February);
 	STR(First);
@@ -181,6 +184,7 @@ struct Enum
 	STR(GroupMailbox);
 	STR(HTML);
 	STR(HardDelete);
+	STR(HexEntryId);
 	STR(High);
 	STR(Home);
 	STR(HomeFax);
@@ -259,6 +263,7 @@ struct Enum
 	STR(OtherFax);
 	STR(OtherTelephone);
 	STR(OutOfOfficeMessage);
+	STR(OwaId);
 	STR(Pager);
 	STR(Personal);
 	STR(PcxPeopleSearch);
@@ -298,6 +303,7 @@ struct Enum
 	STR(SoftDelete);
 	STR(SoftDeleted);
 	STR(Store);
+	STR(StoreId);
 	STR(String);
 	STR(StringArray);
 	STR(Sunday);
@@ -414,6 +420,7 @@ struct Enum
 	using FolderQueryTraversalType = StrEnum<Shallow, Deep, SoftDeleted>; ///< Types.xsd:1212
 	using FreeBusyViewType = StrEnum<None, MergedOnly, FreeBusy, FreeBusyMerged, Detailed, DetailedMerged>; ///< Types.xsd:6333
 	using LegacyFreeBusyType = StrEnum<Free, Tentative, Busy, OOF, WorkingElsewhere, NoData>; ///< Types.xsd:4352
+	using IdFormatType = StrEnum<EwsLegacyId, EwsId, EntryId, HexEntryId, StoreId, OwaId>; ///< Types.xsd:6645
 	using ImportanceChoicesType = StrEnum<Low, Normal, High>; ///< Types.xsd:1708
 	using IndexBasePointType = StrEnum<Beginning, End>; ///< Types.xsd:4196
 	using ItemQueryTraversalType = StrEnum<Shallow, SoftDeleted, Associated>; ///< Types.xsd:1234

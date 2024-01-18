@@ -434,6 +434,16 @@ sBase64Binary::sBase64Binary(const TAGGED_PROPVAL& tp)
 	assign(*static_cast<const BINARY *>(tp.pvalue));
 }
 
+/**
+ * @brief     Create from (binary) string
+ *
+ * Does not decode the input but copies it directly.
+ *
+ * @param    data   Binary data to copy
+ */
+sBase64Binary::sBase64Binary(std::string data) : std::string(std::move(data))
+{}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define TRY(expr, msg, rc) EWSContext::ext_error(expr, msg, rc)
@@ -1165,6 +1175,15 @@ uint64_t sTimePoint::toNT() const
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Types implementation
 
+tAlternateIdBase::tAlternateIdBase(Enum::IdFormatType format) : Format(format)
+{}
+
+tAlternateId::tAlternateId(Enum::IdFormatType format, std::string id, std::string mailbox) :
+	tAlternateIdBase(format),
+	Id(std::move(id)),
+	Mailbox(std::move(mailbox))
+{}
+
 tAttachment::tAttachment(const sAttachmentId& aid, const TPROPVAL_ARRAY& props)
 {
 	AttachmentId.emplace(aid);
@@ -1242,11 +1261,56 @@ sFolder tBaseFolderType::create(const sShape& shape)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief      Create item id from binary data
+ *
+ * When providing the special IdType `ID_GUESS`, attempts to guess the correct
+ * id type from the data. If guessing fails, the type is set to `ID_UNKNOWN`.
+ *
+ * @param      fEntryID
+ * @param t
+ */
 tBaseItemId::tBaseItemId(const sBase64Binary& fEntryID, IdType t) : type(t)
 {
 	Id.reserve(fEntryID.size()+1); // Extra byte is appended for encoding during serialization, prevent reallocation
 	Id = fEntryID;
+	if(type == ID_GUESS) {
+		switch(Id.size()) {
+		case 46: // Size of folder entry ids
+			type = ID_FOLDER; break;
+		case 70: // Size of message entry ids
+			type = ID_ITEM; break;
+		case 47: // Tagged folder entry id
+		case 71: // Tagged message entry id
+		case 75: { // Tagged attachment or occurence id
+			char temp = Id.back();
+			type = (temp < 0 || temp > ID_OCCURRENCE)? ID_UNKNOWN : IdType(temp);
+			Id.pop_back();
+			break;
+		}
+		default:
+			type = ID_UNKNOWN;
+		}
+	}
 }
+
+/**
+ * @brief     Generate serialized string
+ *
+ * @return    String containing the Id including type marker
+ */
+std::string tBaseItemId::serializeId() const
+{
+	IdType t = type;
+	if(t == ID_UNKNOWN)  // try to guess from entry id size, if that fails, someone forgot to mark the correct type
+		t = Id.size() == 46? ID_FOLDER : Id.size() == 70? ID_ITEM : throw DispatchError(E3212);
+	std::string data;
+	data.reserve(Id.size()+1);
+	data = Id;
+	data.append(1, type);
+	return data;
+}
+
 
 tBaseObjectChangedEvent::tBaseObjectChangedEvent(const sTimePoint& ts, std::variant<tFolderId, tItemId>&& oid, tFolderId&& fid) :
     TimeStamp(ts), objectId(std::move(oid)), ParentFolderId(std::move(fid))

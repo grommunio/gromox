@@ -253,6 +253,48 @@ void sTimePoint::serialize(XMLElement* xml) const
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+tAlternateId::tAlternateId(const tinyxml2::XMLElement* xml) :
+	tAlternateIdBase(xml),
+	XMLINITA(Id),
+	XMLINITA(Mailbox)
+{}
+
+void tAlternateId::serialize(tinyxml2::XMLElement* xml) const
+{
+	tAlternateIdBase::serialize(xml);
+	XMLDUMPA(Id);
+	XMLDUMPA(Mailbox);
+}
+
+tAlternateIdBase::tAlternateIdBase(const tinyxml2::XMLElement* xml) :
+	XMLINITA(Format)
+{}
+
+void tAlternateIdBase::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPA(Format);}
+
+tAlternatePublicFolderId::tAlternatePublicFolderId(const tinyxml2::XMLElement* xml) :
+	tAlternateIdBase(xml),
+	XMLINITA(FolderId)
+{}
+
+void tAlternatePublicFolderId::serialize(tinyxml2::XMLElement* xml) const
+{
+	tAlternateIdBase::serialize(xml);
+	XMLDUMPA(FolderId);
+}
+
+tAlternatePublicFolderItemId::tAlternatePublicFolderItemId(const tinyxml2::XMLElement* xml) :
+	tAlternatePublicFolderId(xml),
+	XMLINITA(ItemId)
+{}
+
+void tAlternatePublicFolderItemId::serialize(tinyxml2::XMLElement* xml) const
+{
+	tAlternatePublicFolderId::serialize(xml);
+	XMLDUMPA(ItemId);
+}
+
 void tAttachment::serialize(XMLElement* xml) const
 {
 	XMLDUMPT(AttachmentId);
@@ -1201,6 +1243,20 @@ mBaseMoveCopyItem::mBaseMoveCopyItem(const tinyxml2::XMLElement* xml, bool c) :
 	XMLINIT(ReturnNewItemIds),
 	copy(c)
 {}
+
+mConvertIdRequest::mConvertIdRequest(const tinyxml2::XMLElement* xml) :
+	XMLINIT(SourceIds),
+	XMLINITA(DestinationFormat)
+{}
+
+void mConvertIdResponse::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPM(ResponseMessages);}
+
+void mConvertIdResponseMessage::serialize(tinyxml2::XMLElement* xml) const
+{
+	mResponseMessageType::serialize(xml);
+	XMLDUMPM(AlternateId);
+}
 
 mCopyFolderRequest::mCopyFolderRequest(const tinyxml2::XMLElement* xml) :
 	mBaseMoveCopyFolder(xml, true)

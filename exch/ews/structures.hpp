@@ -128,6 +128,7 @@ struct sBase64Binary : public std::string {
 	sBase64Binary() = default;
 	sBase64Binary(const TAGGED_PROPVAL&);
 	sBase64Binary(const BINARY*);
+	explicit sBase64Binary(std::string);
 	explicit sBase64Binary(const tinyxml2::XMLElement*);
 	explicit sBase64Binary(const tinyxml2::XMLAttribute*);
 
@@ -448,6 +449,67 @@ struct sTimePoint
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Types.xsd:6659
+ */
+struct tAlternateIdBase
+{
+	tAlternateIdBase() = default;
+	explicit tAlternateIdBase(Enum::IdFormatType);
+	explicit tAlternateIdBase(const tinyxml2::XMLElement*);
+
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	Enum::IdFormatType Format; //Attribute
+};
+
+/**
+ * Types.xsd:6668
+ */
+struct tAlternateId : public tAlternateIdBase
+{
+	static constexpr char NAME[] = "AlternateId";
+
+	explicit tAlternateId(const tinyxml2::XMLElement*);
+	tAlternateId(Enum::IdFormatType, std::string, std::string);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::string Id; //Attribute
+	std::string Mailbox; //Attribute
+};
+
+/**
+ * Types.xsd:6683
+ */
+struct tAlternatePublicFolderId : public tAlternateIdBase
+{
+	static constexpr char NAME[] = "AlternatePublicFolderId";
+
+	explicit tAlternatePublicFolderId(const tinyxml2::XMLElement*);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::string FolderId; //Attribute
+};
+
+/**
+ * Types.xsd:6696
+ */
+struct tAlternatePublicFolderItemId : public tAlternatePublicFolderId
+{
+	static constexpr char NAME[] = "AlternatePublicFolderItemId";
+
+	explicit tAlternatePublicFolderItemId(const tinyxml2::XMLElement*);
+
+	void serialize(tinyxml2::XMLElement*) const;
+
+	std::string ItemId; //Attribute
+};
+
+using sAlternateId = std::variant<tAlternateId, tAlternatePublicFolderId, tAlternatePublicFolderItemId>;
+
+/**
  * Types.xsd:1611
  */
 struct tAttachment : public NS_EWS_Types
@@ -481,6 +543,7 @@ struct tBaseItemId : public NS_EWS_Types
 		ID_ITEM, ///< 70 byte message entry id
 		ID_ATTACHMENT, ///< 70 byte message entry id + 4 byte attachment index
 		ID_OCCURRENCE, ///< 70 byte message entry id + 4 byte occurrence day
+		ID_GUESS, ///< Special marker to tell constructor to guess id type
 	};
 
 	mutable sBase64Binary Id; //Attribute
@@ -492,6 +555,7 @@ struct tBaseItemId : public NS_EWS_Types
 	tBaseItemId(const sBase64Binary&, IdType=ID_UNKNOWN);
 
 	void serialize(tinyxml2::XMLElement*) const;
+	std::string serializeId() const;
 };
 
 /**
@@ -2789,6 +2853,42 @@ struct mBaseMoveCopyItem
 
 	bool copy;
 };
+
+/**
+ * Messages.xsd:2265
+ */
+struct mConvertIdRequest
+{
+	explicit mConvertIdRequest(const tinyxml2::XMLElement*);
+
+	std::vector<sAlternateId> SourceIds;
+	Enum::IdFormatType DestinationFormat; //Attribute
+};
+
+/**
+ * Messages.xsd:2293
+ */
+struct mConvertIdResponseMessage : public mResponseMessageType
+{
+	static constexpr char NAME[] = "ConvertIdResponseMessage";
+
+	using mResponseMessageType::mResponseMessageType;
+
+	std::optional<sAlternateId> AlternateId;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Messages.xsd:2283
+ */
+struct mConvertIdResponse
+{
+	std::vector<mConvertIdResponseMessage> ResponseMessages;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
 
 /**
  * Messages.xsd:799

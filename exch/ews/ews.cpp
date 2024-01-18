@@ -222,6 +222,7 @@ static void process(const XMLElement* request, XMLElement* response, EWSContext&
  */
 const std::unordered_map<std::string, EWSPlugin::Handler> EWSPlugin::requestMap =
 {
+	{"ConvertId", process<Structures::mConvertIdRequest>},
 	{"CopyFolder", process<Structures::mCopyFolderRequest>},
 	{"CopyItem", process<Structures::mCopyItemRequest>},
 	{"CreateFolder", process<Structures::mCreateFolderRequest>},
