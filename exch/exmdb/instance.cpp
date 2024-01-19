@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
@@ -377,7 +377,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	return false;
 }
 
-static INSTANCE_NODE* instance_get_instance(db_item_ptr &pdb, uint32_t instance_id)
+static instance_node *instance_get_instance(db_item_ptr &pdb, uint32_t instance_id)
 {
 	for (auto &i : pdb->instance_list)
 		if (i.instance_id == instance_id)
@@ -385,7 +385,7 @@ static INSTANCE_NODE* instance_get_instance(db_item_ptr &pdb, uint32_t instance_
 	return NULL;
 }
 
-static const INSTANCE_NODE *instance_get_instance_c(db_item_ptr &pdb, uint32_t id)
+static const instance_node *instance_get_instance_c(db_item_ptr &pdb, uint32_t id)
 {
 	return instance_get_instance(pdb, id);
 }
@@ -2183,7 +2183,7 @@ static BOOL xns_set_msg_subj(TPROPVAL_ARRAY &msgprop,
 	return TRUE;
 }
 
-static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
+static BOOL set_xns_props_msg(instance_node *pinstance,
     const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
 	static constexpr uint8_t one_byte = 1;
@@ -2340,7 +2340,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 	return TRUE;
 }
 
-static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
+static BOOL set_xns_props_atx(instance_node *pinstance,
     const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
 	pproblems->count = 0;

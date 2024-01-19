@@ -33,7 +33,6 @@ struct dynamic_node {
 	RESTRICTION *prestriction = nullptr;
 	LONGLONG_ARRAY folder_ids{}; /* source folder IDs */
 };
-using DYNAMIC_NODE = dynamic_node;
 
 enum class table_type : uint8_t {
 	hierarchy, content, permission, rule,
@@ -64,7 +63,6 @@ struct table_node {
 	BOOL b_search = false;
 	BOOL b_hint = false; /* is table touched in batch-mode */
 };
-using TABLE_NODE = table_node;
 
 struct nsub_node {
 	char *remote_id = nullptr;
@@ -73,7 +71,6 @@ struct nsub_node {
 	BOOL b_whole = false;
 	uint64_t folder_id = 0, message_id = 0;
 };
-using NSUB_NODE = nsub_node;
 
 #define CHANGE_MASK_HTML						0x01
 #define CHANGE_MASK_BODY						0x02
@@ -93,7 +90,6 @@ struct instance_node {
 	std::string username;
 	void *pcontent = nullptr;
 };
-using INSTANCE_NODE = instance_node;
 
 struct prepared_statements {
 	~prepared_statements();
