@@ -1009,7 +1009,6 @@ struct rop_request {
 	void *ppayload;
 	BINARY rq_bookmark;
 };
-using ROP_REQUEST = rop_request;
 
 struct rop_response {
 	uint8_t rop_id;
@@ -1018,7 +1017,6 @@ struct rop_response {
 	uint32_t result;
 	void *ppayload;
 };
-using ROP_RESPONSE = rop_response;
 
 /**
  * @hnum:	amount of room in the phandles array in this

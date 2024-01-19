@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cstdint>
@@ -15,7 +15,7 @@
 
 using namespace gromox;
 
-NOTIFY_RESPONSE *notify_response::create(uint32_t handle, uint8_t logon_id) try
+notify_response *notify_response::create(uint32_t handle, uint8_t logon_id) try
 {
 	return new notify_response{handle, logon_id};
 } catch (const std::bad_alloc &) {
@@ -371,7 +371,7 @@ ec_error_t notify_response::cvt_from_dbnotify(BOOL b_cache, const DB_NOTIFY &dbn
 
 void notify_response::ctrow_event_to_change()
 {
-	*this       = NOTIFY_RESPONSE{handle, logon_id};
+	*this       = notify_response{handle, logon_id};
 	nflags      = NF_TABLE_MODIFIED | NF_BY_MESSAGE;
 	table_event = TABLE_EVENT_TABLE_CHANGED;
 }

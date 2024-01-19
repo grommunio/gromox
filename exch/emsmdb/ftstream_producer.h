@@ -16,7 +16,6 @@ struct attachment_content;
 struct FOLDER_CHANGES;
 struct logon_object;
 struct message_content;
-using MESSAGE_CONTENT = message_content;
 struct MSGCHG_PARTIAL;
 struct PROGRESS_INFORMATION;
 struct PROGRESS_MESSAGE;
@@ -42,11 +41,11 @@ struct fxstream_producer {
 	BOOL write_uint32(uint32_t);
 	BOOL write_proplist(const TPROPVAL_ARRAY *);
 	BOOL write_attachmentcontent(BOOL delprop, const attachment_content *);
-	BOOL write_messagecontent(BOOL delprop, const MESSAGE_CONTENT *);
-	BOOL write_message(const MESSAGE_CONTENT *);
+	BOOL write_messagecontent(BOOL delprop, const message_content *);
+	BOOL write_message(const message_content *);
 	BOOL write_progresstotal(const PROGRESS_INFORMATION *);
 	BOOL write_progresspermessage(const PROGRESS_MESSAGE *);
-	BOOL write_messagechangefull(const TPROPVAL_ARRAY *chgheader, MESSAGE_CONTENT *);
+	BOOL write_messagechangefull(const TPROPVAL_ARRAY *chgheader, message_content *);
 	BOOL write_messagechangepartial(const TPROPVAL_ARRAY *chgheader, const MSGCHG_PARTIAL *msg);
 	BOOL write_deletions(const TPROPVAL_ARRAY *);
 	BOOL write_readstatechanges(const TPROPVAL_ARRAY *);
@@ -63,5 +62,3 @@ struct fxstream_producer {
 	std::list<point_node> bp_list;
 	BOOL b_read = false;
 };
-using FTSTREAM_PRODUCER = fxstream_producer;
-using ftstream_producer = fxstream_producer;

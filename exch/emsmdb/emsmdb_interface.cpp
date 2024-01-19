@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cassert>
 #include <algorithm>
 #include <chrono>
@@ -408,7 +410,7 @@ static void emsmdb_interface_remove_handle(const CXH &cxh)
 			g_user_hash.erase(phandle->username);
 	}
 	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
-		delete static_cast<notify_response *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		delete static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -727,7 +729,7 @@ const GUID* emsmdb_interface_get_handle()
 	return phandle != nullptr ? &phandle->guid : nullptr;
 }
 
-EMSMDB_INFO* emsmdb_interface_get_emsmdb_info()
+emsmdb_info *emsmdb_interface_get_emsmdb_info()
 {
 	auto phandle = g_handle_key;
 	return phandle != nullptr ? &phandle->info : nullptr;
@@ -932,12 +934,11 @@ static BOOL emsmdb_interface_merge_content_row_deleted(
 {
 	int count;
 	DOUBLE_LIST_NODE *pnode;
-	NOTIFY_RESPONSE *pnotify;
 	
 	count = 1;
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
@@ -960,12 +961,11 @@ static BOOL emsmdb_interface_merge_hierarchy_row_modified(
 	uint32_t obj_handle, uint8_t logon_id, DOUBLE_LIST *pnotify_list)
 {
 	DOUBLE_LIST_NODE *pnode;
-	NOTIFY_RESPONSE *pnotify;
 	auto row_folder_id = rop_util_nfid_to_eid(pmodified_row->row_folder_id);
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (!(pnotify->nflags & NF_TABLE_MODIFIED))
@@ -988,7 +988,6 @@ static BOOL emsmdb_interface_merge_message_modified(
 	uint64_t folder_id;
 	uint64_t message_id;
 	DOUBLE_LIST_NODE *pnode;
-	NOTIFY_RESPONSE *pnotify;
 	
 	folder_id = rop_util_make_eid_ex(
 		1, pmodified_message->folder_id);
@@ -996,7 +995,7 @@ static BOOL emsmdb_interface_merge_message_modified(
 		1, pmodified_message->message_id);
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotify->nflags == (NF_OBJECT_MODIFIED | NF_BY_MESSAGE) &&
@@ -1014,12 +1013,11 @@ static BOOL emsmdb_interface_merge_folder_modified(
 	DOUBLE_LIST *pnotify_list)
 {
 	DOUBLE_LIST_NODE *pnode;
-	NOTIFY_RESPONSE *pnotify;
 	auto folder_id = rop_util_nfid_to_eid(pmodified_folder->folder_id);
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		if (pnotify->handle != obj_handle || pnotify->logon_id != logon_id)
 			continue;
 		if (pnotify->nflags == NF_OBJECT_MODIFIED &&
@@ -1107,13 +1105,13 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		emsmdb_interface_put_handle_notify_list(phandle);
 		return;
 	}
-	pnode->pdata = me_alloc<ROP_RESPONSE>();
+	pnode->pdata = me_alloc<rop_response>();
 	if (NULL == pnode->pdata) {
 		emsmdb_interface_put_handle_notify_list(phandle);
 		free(pnode);
 		return;
 	}
-	auto rsp = static_cast<ROP_RESPONSE *>(pnode->pdata);
+	auto rsp = static_cast<rop_response *>(pnode->pdata);
 	rsp->rop_id = ropNotify;
 	rsp->hindex = 0; /* ignore by system */
 	rsp->result = 0; /* ignore by system */

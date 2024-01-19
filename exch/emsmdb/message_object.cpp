@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -77,7 +79,7 @@ static uint32_t message_object_rectify_proptag(uint32_t proptag)
 
 std::unique_ptr<message_object> message_object::create(logon_object *plogon,
     BOOL b_new, cpid_t cpid, uint64_t message_id, void *pparent,
-    uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ICS_STATE> pstate)
+    uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ics_state> pstate)
 {
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY tmp_columns;

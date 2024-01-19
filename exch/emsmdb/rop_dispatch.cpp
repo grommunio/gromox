@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <libHX/string.h>
@@ -24,11 +26,10 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 	uint8_t rop_id;
 	uint16_t max_rop;
 	EXT_PUSH ext_push;
-	EMSMDB_INFO *pemsmdb_info;
 	uint8_t partial_completion;
 	
 	*ppresponse = NULL;
-	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+	auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 	if (prequest->hindex >= hnum)
 		return ecInvalidObject;
 	if (prequest->rop_id == ropRelease) {
@@ -36,7 +37,7 @@ ec_error_t rop_dispatch(const rop_request &request, rop_response *&rshead,
 			prequest->logon_id, phandles[prequest->hindex]);
 		return ecSuccess;
 	}
-	*ppresponse = cu_alloc<ROP_RESPONSE>();
+	*ppresponse = cu_alloc<rop_response>();
 	if (*ppresponse == nullptr)
 		return ecServerOOM;
 	rshead->rop_id = prequest->rop_id;

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -131,7 +133,7 @@ BOOL fastdownctx_object::make_attachmentcontent(const attachment_content *pattac
 	return TRUE;
 }
 
-BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
+BOOL fastdownctx_object::make_state(ics_state *pstate)
 {
 	auto pproplist = pstate->serialize();
 	if (pproplist == nullptr)
@@ -389,7 +391,7 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 		mlog(LV_ERR, "E-1453: ENOMEM");
 		return NULL;
 	}
-	pctx->pstream = ftstream_producer::create(plogon, string_option);
+	pctx->pstream = fxstream_producer::create(plogon, string_option);
 	if (pctx->pstream == nullptr)
 		return NULL;
 	return pctx;

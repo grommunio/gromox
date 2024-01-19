@@ -22,4 +22,3 @@ struct ics_state {
 	int type = 0;
 	std::unique_ptr<idset> pgiven, pseen, pseen_fai, pread;
 };
-using ICS_STATE = ics_state;

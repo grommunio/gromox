@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -25,7 +27,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static void ftstream_producer_try_recode_nbp(FTSTREAM_PRODUCER *pstream) try
+static void ftstream_producer_try_recode_nbp(fxstream_producer *pstream) try
 {
 	auto last_seek = pstream->bp_list.size() == 0 ? 0 : pstream->bp_list.back().offset;
 	if (pstream->offset - last_seek < FTSTREAM_PRODUCER_POINT_LENGTH)
@@ -36,7 +38,7 @@ static void ftstream_producer_try_recode_nbp(FTSTREAM_PRODUCER *pstream) try
 	mlog(LV_WARN, "W-1601: ENOMEM");
 }
 
-static void ftstream_producer_record_nbp(FTSTREAM_PRODUCER *pstream,
+static void ftstream_producer_record_nbp(fxstream_producer *pstream,
     uint32_t nbp) try
 {
 	if (pstream->bp_list.size() > 0 && nbp <= pstream->bp_list.back().offset)
@@ -47,7 +49,7 @@ static void ftstream_producer_record_nbp(FTSTREAM_PRODUCER *pstream,
 	mlog(LV_WARN, "W-1602: ENOMEM");
 }
 
-static void ftstream_producer_record_lvp(FTSTREAM_PRODUCER *pstream,
+static void ftstream_producer_record_lvp(fxstream_producer *pstream,
      uint32_t position, uint32_t length) try
 {
 	auto pnode = pstream->bp_list.rbegin();
@@ -64,7 +66,7 @@ static void ftstream_producer_record_lvp(FTSTREAM_PRODUCER *pstream,
 	mlog(LV_WARN, "W-1603: ENOMEM");
 }
 
-static void ftstream_producer_record_wsp(FTSTREAM_PRODUCER *pstream,
+static void ftstream_producer_record_wsp(fxstream_producer *pstream,
     uint32_t position, uint32_t length) try
 {
 	auto pnode = pstream->bp_list.rbegin();
@@ -94,8 +96,7 @@ static bool fxstream_producer_open(fxstream_producer &p)
 	return false;
 }
 
-static BOOL ftstream_producer_write_internal(
-	FTSTREAM_PRODUCER *pstream,
+static BOOL ftstream_producer_write_internal(fxstream_producer *pstream,
 	const void *pbuff, uint32_t size)
 {	
 	if (size >= FTSTREAM_PRODUCER_BUFFER_LENGTH
@@ -122,8 +123,7 @@ static BOOL ftstream_producer_write_internal(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_uint16(
-	FTSTREAM_PRODUCER *pstream, uint16_t v)
+static BOOL ftstream_producer_write_uint16(fxstream_producer *pstream, uint16_t v)
 {
 	v = cpu_to_le16(v);
 	if (!ftstream_producer_write_internal(pstream, &v, sizeof(v)))
@@ -132,7 +132,7 @@ static BOOL ftstream_producer_write_uint16(
 	return TRUE;
 }
 
-BOOL ftstream_producer::write_uint32(uint32_t v)
+BOOL fxstream_producer::write_uint32(uint32_t v)
 {
 	auto pstream = this;
 	v = cpu_to_le32(v);
@@ -142,8 +142,7 @@ BOOL ftstream_producer::write_uint32(uint32_t v)
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_uint64(
-	FTSTREAM_PRODUCER *pstream, uint64_t v)
+static BOOL ftstream_producer_write_uint64(fxstream_producer *pstream, uint64_t v)
 {
 	v = cpu_to_le64(v);
 	if (!ftstream_producer_write_internal(pstream, &v, sizeof(v)))
@@ -152,8 +151,7 @@ static BOOL ftstream_producer_write_uint64(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_float(
-	FTSTREAM_PRODUCER *pstream, float v)
+static BOOL ftstream_producer_write_float(fxstream_producer *pstream, float v)
 {
 	if (!ftstream_producer_write_internal(pstream, &v, sizeof(float)))
 		return FALSE;	
@@ -161,8 +159,7 @@ static BOOL ftstream_producer_write_float(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_double(
-	FTSTREAM_PRODUCER *pstream, double v)
+static BOOL ftstream_producer_write_double(fxstream_producer *pstream, double v)
 {
 	if (!ftstream_producer_write_internal(pstream, &v, sizeof(double)))
 		return FALSE;	
@@ -170,8 +167,7 @@ static BOOL ftstream_producer_write_double(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_wstring(
-	FTSTREAM_PRODUCER *pstream, const char *pstr)
+static BOOL ftstream_producer_write_wstring(fxstream_producer *pstream, const char *pstr)
 {
 	uint32_t position;
 	auto len = utf8_to_utf16_len(pstr);
@@ -203,8 +199,7 @@ static BOOL ftstream_producer_write_wstring(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_string(
-	FTSTREAM_PRODUCER *pstream, const char *pstr)
+static BOOL ftstream_producer_write_string(fxstream_producer *pstream, const char *pstr)
 {
 	uint32_t len;
 	uint32_t position;
@@ -222,8 +217,7 @@ static BOOL ftstream_producer_write_string(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_guid(
-	FTSTREAM_PRODUCER *pstream, const GUID *pguid)
+static BOOL ftstream_producer_write_guid(fxstream_producer *pstream, const GUID *pguid)
 {
 	BINARY *pbin;
 	
@@ -236,8 +230,7 @@ static BOOL ftstream_producer_write_guid(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_binary(
-	FTSTREAM_PRODUCER *pstream, const BINARY *pbin)
+static BOOL ftstream_producer_write_binary(fxstream_producer *pstream, const BINARY *pbin)
 {
 	uint32_t position;
 	
@@ -254,7 +247,7 @@ static BOOL ftstream_producer_write_binary(
 	return TRUE;
 }
 
-static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
+static int ftstream_producer_write_propdef(fxstream_producer *pstream,
 	uint16_t proptype, uint16_t propid)
 {
 	uint16_t tmp_val;
@@ -305,8 +298,8 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 	return 0;
 }
 
-static BOOL ftstream_producer_write_propvalue(
-	FTSTREAM_PRODUCER *pstream, TAGGED_PROPVAL *ppropval)
+static BOOL ftstream_producer_write_propvalue(fxstream_producer *pstream,
+    TAGGED_PROPVAL *ppropval)
 {
 	uint16_t propid;
 	uint16_t proptype;
@@ -491,7 +484,7 @@ static BOOL ftstream_producer_write_propvalue(
 	return FALSE;
 }
 
-BOOL ftstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
+BOOL fxstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
 {
 	auto pstream = this;
 	for (size_t i = 0; i < pproplist->count; ++i)
@@ -500,9 +493,8 @@ BOOL ftstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_embeddedmessage(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
-	const MESSAGE_CONTENT *pmessage)
+static BOOL ftstream_producer_write_embeddedmessage(fxstream_producer *pstream,
+    BOOL b_delprop, const message_content *pmessage)
 {
 	if (!pstream->write_uint32(STARTEMBED))
 		return FALSE;	
@@ -513,7 +505,7 @@ static BOOL ftstream_producer_write_embeddedmessage(
 	return TRUE;
 }
 
-BOOL ftstream_producer::write_attachmentcontent(BOOL b_delprop,
+BOOL fxstream_producer::write_attachmentcontent(BOOL b_delprop,
 	const ATTACHMENT_CONTENT *pattachment)
 {
 	auto pstream = this;
@@ -526,8 +518,8 @@ BOOL ftstream_producer::write_attachmentcontent(BOOL b_delprop,
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_recipient(
-	FTSTREAM_PRODUCER *pstream, const TPROPVAL_ARRAY *prcpt)
+static BOOL ftstream_producer_write_recipient(fxstream_producer *pstream,
+    const TPROPVAL_ARRAY *prcpt)
 {
 	if (!pstream->write_uint32(STARTRECIP))
 		return FALSE;
@@ -538,9 +530,8 @@ static BOOL ftstream_producer_write_recipient(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_attachment(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
-	const ATTACHMENT_CONTENT *pattachment)
+static BOOL ftstream_producer_write_attachment(fxstream_producer *pstream,
+    BOOL b_delprop, const attachment_content *pattachment)
 {
 	if (!pstream->write_uint32(NEWATTACH))
 		return FALSE;
@@ -551,9 +542,8 @@ static BOOL ftstream_producer_write_attachment(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_messagechildren(
-	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
-	const MESSAGE_CHILDREN *pchildren)
+static BOOL ftstream_producer_write_messagechildren(fxstream_producer *pstream,
+    BOOL b_delprop, const MESSAGE_CHILDREN *pchildren)
 {
 	if (b_delprop) {
 		if (!pstream->write_uint32(MetaTagFXDelProp))
@@ -579,7 +569,7 @@ static BOOL ftstream_producer_write_messagechildren(
 	return TRUE;
 }
 
-BOOL ftstream_producer::write_messagecontent(BOOL b_delprop,
+BOOL fxstream_producer::write_messagecontent(BOOL b_delprop,
 	const MESSAGE_CONTENT *pmessage)
 {	
 	auto pstream = this;
@@ -589,7 +579,7 @@ BOOL ftstream_producer::write_messagecontent(BOOL b_delprop,
 			pstream, b_delprop, &pmessage->children);
 }
 
-BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
+BOOL fxstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 {
 	auto pbool = pmessage->proplist.get<uint8_t>(PR_ASSOCIATED);
 	uint32_t marker = pbool == nullptr || *pbool == 0 ? STARTMESSAGE : STARTFAIMSG;
@@ -602,13 +592,13 @@ BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 	return TRUE;
 }	
 
-static BOOL ftstream_producer_write_messagechangeheader(
-	FTSTREAM_PRODUCER *pstream,	const TPROPVAL_ARRAY *pheader)
+static BOOL ftstream_producer_write_messagechangeheader(fxstream_producer *pstream,
+    const TPROPVAL_ARRAY *pheader)
 {
 	return pstream->write_proplist(pheader);
 }
 
-BOOL ftstream_producer::write_messagechangefull(
+BOOL fxstream_producer::write_messagechangefull(
 	const TPROPVAL_ARRAY *pchgheader,
 	MESSAGE_CONTENT *pmessage)
 {
@@ -625,8 +615,7 @@ BOOL ftstream_producer::write_messagechangefull(
 				pstream, TRUE, &pmessage->children);
 }
 
-static BOOL ftstream_producer_write_groupinfo(
-	FTSTREAM_PRODUCER *pstream,
+static BOOL ftstream_producer_write_groupinfo(fxstream_producer *pstream,
 	const PROPERTY_GROUPINFO *pginfo)
 {
 	uint16_t propid;
@@ -686,7 +675,7 @@ static BOOL ftstream_producer_write_groupinfo(
 	return ftstream_producer_write_binary(pstream, &tmp_bin);
 }
 
-BOOL ftstream_producer::write_messagechangepartial(
+BOOL fxstream_producer::write_messagechangepartial(
 	const TPROPVAL_ARRAY *pchgheader,
 	const MSGCHG_PARTIAL *pmsg)
 {
@@ -742,8 +731,7 @@ BOOL ftstream_producer::write_messagechangepartial(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_folderchange(
-	FTSTREAM_PRODUCER *pstream,
+static BOOL ftstream_producer_write_folderchange(fxstream_producer *pstream,
 	const TPROPVAL_ARRAY *pproplist)
 {
 	if (!pstream->write_uint32(INCRSYNCCHG))
@@ -751,14 +739,14 @@ static BOOL ftstream_producer_write_folderchange(
 	return pstream->write_proplist(pproplist);
 }
 
-BOOL ftstream_producer::write_deletions(const TPROPVAL_ARRAY *pproplist)
+BOOL fxstream_producer::write_deletions(const TPROPVAL_ARRAY *pproplist)
 {
 	if (!write_uint32(INCRSYNCDEL))
 		return FALSE;
 	return write_proplist(pproplist);
 }
 
-BOOL ftstream_producer::write_state(const TPROPVAL_ARRAY *pproplist)
+BOOL fxstream_producer::write_state(const TPROPVAL_ARRAY *pproplist)
 {
 	if (!write_uint32(INCRSYNCSTATEBEGIN))
 		return FALSE;
@@ -769,7 +757,7 @@ BOOL ftstream_producer::write_state(const TPROPVAL_ARRAY *pproplist)
 	return TRUE;
 }
 
-BOOL ftstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogmsg)
+BOOL fxstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogmsg)
 {
 	auto pstream = this;
 	if (!write_uint32(INCRSYNCPROGRESSPERMSG))
@@ -786,7 +774,7 @@ BOOL ftstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogms
 	return TRUE;
 }
 
-BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtotal)
+BOOL fxstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtotal)
 {
 	/*
 	 * We are sending 64-bit values. It's Outlook's fault for not
@@ -817,14 +805,14 @@ BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 			pstream, pprogtotal->normal_size);
 }
 
-BOOL ftstream_producer::write_readstatechanges(const TPROPVAL_ARRAY *pproplist)
+BOOL fxstream_producer::write_readstatechanges(const TPROPVAL_ARRAY *pproplist)
 {
 	if (!write_uint32(INCRSYNCREAD))
 		return FALSE;
 	return write_proplist(pproplist);
 }
 
-BOOL ftstream_producer::write_hierarchysync(
+BOOL fxstream_producer::write_hierarchysync(
 	const FOLDER_CHANGES *pfldchgs,
 	const TPROPVAL_ARRAY *pdels,
 	const TPROPVAL_ARRAY *pstate)
@@ -842,15 +830,15 @@ BOOL ftstream_producer::write_hierarchysync(
 	return TRUE;
 }
 
-std::unique_ptr<ftstream_producer>
-ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
+std::unique_ptr<fxstream_producer>
+fxstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 		mlog(LV_ERR, "E-1422: mkdir %s: %s", path, strerror(errno));
 		return nullptr;
 	}
-	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
+	std::unique_ptr<fxstream_producer> pstream(new fxstream_producer);
 	pstream->plogon = plogon;
 	pstream->string_option = string_option;
 	return pstream;
@@ -859,7 +847,7 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	return nullptr;
 }
 
-BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
+BOOL fxstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
 	auto pstream = this;
 	uint32_t cur_offset;
