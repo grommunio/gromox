@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -9,7 +11,7 @@
 #include "common_util.h"
 #include "ics_state.h"
 
-static void ics_state_clear(ICS_STATE *pstate)
+static void ics_state_clear(ics_state *pstate)
 {
 	pstate->pgiven.reset();
 	pstate->pseen.reset();
@@ -17,7 +19,7 @@ static void ics_state_clear(ICS_STATE *pstate)
 	pstate->pread.reset();
 }
 
-static BOOL ics_state_init(ICS_STATE *pstate)
+static BOOL ics_state_init(ics_state *pstate)
 {
 	pstate->pgiven = idset::create(idset::type::id_loose);
 	if (pstate->pgiven == nullptr)

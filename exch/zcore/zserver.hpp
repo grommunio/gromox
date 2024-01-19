@@ -21,7 +21,6 @@ struct sink_node {
 	time_t until_time = 0;
 	NOTIF_SINK sink{};
 };
-using SINK_NODE = sink_node;
 
 struct USER_INFO {
 	USER_INFO() = default;

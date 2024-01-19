@@ -32,7 +32,6 @@ struct domain_node {
 	int domain_id = -1;
 	SIMPLE_TREE tree{};
 };
-using DOMAIN_NODE = domain_node;
 
 using stn_list_t = std::vector<SIMPLE_TREE_NODE *>;
 struct ZAB_NODE;
