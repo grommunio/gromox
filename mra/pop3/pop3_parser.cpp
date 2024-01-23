@@ -30,17 +30,15 @@
 
 using namespace gromox;
 
-static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length, 
-    POP3_CONTEXT *pcontext);
-
-static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
+static int pop3_parser_dispatch_cmd(const char *cm, int len, pop3_context *);
+static void pop3_parser_context_clear(pop3_context *);
 
 unsigned int g_popcmd_debug;
 int g_max_auth_times, g_block_auth_fail;
 bool g_support_tls, g_force_tls;
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
-static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
+static std::unique_ptr<pop3_context[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
@@ -60,16 +58,16 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_tls       = support_tls;
 	g_ssl_mutex_buf         = NULL;
-	if (support_tls) {
-		g_force_tls = force_tls;
-		gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
-		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
-		} else {
-			g_certificate_passwd[0] = '\0';
-		}
-		gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
+	if (!support_tls)
+		return;
+	g_force_tls = force_tls;
+	gx_strlcpy(g_certificate_path, certificate_path, std::size(g_certificate_path));
+	if (NULL != cb_passwd) {
+		gx_strlcpy(g_certificate_passwd, cb_passwd, std::size(g_certificate_passwd));
+	} else {
+		g_certificate_passwd[0] = '\0';
 	}
+	gx_strlcpy(g_private_key_path, key_path, std::size(g_private_key_path));
 }
 
 #ifdef OLD_SSL
@@ -149,7 +147,7 @@ int pop3_parser_run()
 	}
 
 	try {
-		g_context_list = std::make_unique<POP3_CONTEXT[]>(g_context_num);
+		g_context_list = std::make_unique<pop3_context[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
 		for (size_t i = 0; i < g_context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -436,7 +434,7 @@ tproc_status pop3_parser_process(schedule_context *vcontext)
 
 }
 
-int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
+int pop3_parser_retrieve(pop3_context *pcontext)
 {
 	unsigned int size, line_length;
 	int read_len;
@@ -558,7 +556,7 @@ SCHEDULE_CONTEXT **pop3_parser_get_contexts_list()
  *         DISPATCH_LIST			need to respond list
  */
 static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
-    POP3_CONTEXT *pcontext)
+    pop3_context *pcontext)
 {
     if (0 == strncasecmp(cmd_line, "CAPA", 4)) {
         return pop3_cmd_handler_capa(cmd_line, line_length, pcontext);    
@@ -591,7 +589,7 @@ static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
     }
 }
 
-static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx)
+static int pop3_parser_dispatch_cmd(const char *line, int len, pop3_context *ctx)
 {
 	auto ret = pop3_parser_dispatch_cmd2(line, len, ctx);
 	auto code = ret & DISPATCH_VALMASK;
@@ -613,7 +611,7 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 	return ret & DISPATCH_ACTMASK;
 }
 
-static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
+static void pop3_parser_context_clear(pop3_context *pcontext)
 {
     if (NULL == pcontext) {
         return;

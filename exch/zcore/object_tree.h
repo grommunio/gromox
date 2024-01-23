@@ -28,7 +28,6 @@ struct object_node {
 	zs_objtype type = zs_objtype::invalid;
 	void *pobject = nullptr;
 };
-using OBJECT_NODE = object_node;
 
 struct OBJECT_TREE {
 	OBJECT_TREE() = default;
@@ -47,9 +46,9 @@ struct OBJECT_TREE {
 	uint32_t get_store_handle(BOOL b_private, int account_id);
 
 	uint32_t last_handle = 0;
-	SIMPLE_TREE /* <OBJECT_NODE> */ tree{};
+	SIMPLE_TREE /* <object_node> */ tree{};
 	/* index into @tree elements */
-	std::unordered_map<int, OBJECT_NODE *> m_hash;
+	std::unordered_map<int, object_node *> m_hash;
 };
 
 extern std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir);

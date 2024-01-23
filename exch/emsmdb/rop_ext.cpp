@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
 #include <gromox/defs.h>
@@ -1532,10 +1535,8 @@ pack_result rop_ext_push(EXT_PUSH &x, const PENDING_RESPONSE &r)
 	return x.p_uint16(r.session_index);
 }
 
-static pack_result rop_ext_pull(EXT_PULL &x, ROP_REQUEST &r)
+static pack_result rop_ext_pull(EXT_PULL &x, rop_request &r)
 {
-	EMSMDB_INFO *pemsmdb_info;
-	
 	r.rq_bookmark.pb = deconst(x.m_udata) + x.m_offset;
 	r.rq_bookmark.cb = x.m_data_size - x.m_offset;
 	TRY(x.g_uint8(&r.rop_id));
@@ -1565,7 +1566,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, ROP_REQUEST &r)
 		r.ppayload = x.anew<WRITEPERUSERINFORMATION_REQUEST>();
 		if (r.ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, r.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
@@ -1613,7 +1614,7 @@ static pack_result rop_ext_pull(EXT_PULL &x, ROP_REQUEST &r)
 		r.ppayload = x.anew<SETMESSAGEREADFLAG_REQUEST>();
 		if (r.ppayload == nullptr)
 			return EXT_ERR_ALLOC;
-		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, r.logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
@@ -1705,10 +1706,8 @@ static pack_result rop_ext_pull(EXT_PULL &x, ROP_REQUEST &r)
 }
 
 /* not including ropNotify, ropPending, ropBackoff, ropBufferTooSmall */
-pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const ROP_RESPONSE &r)
+pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const rop_response &r)
 {
-	EMSMDB_INFO *pemsmdb_info;
-	
 	TRY(x.p_uint8(r.rop_id != ropGetMessageStatus ? r.rop_id : ropSetMessageStatus));
 	TRY(x.p_uint8(r.hindex));
 	TRY(x.p_uint32(r.result));
@@ -1756,7 +1755,7 @@ pack_result rop_ext_push(EXT_PUSH &x, uint8_t logon_id, const ROP_RESPONSE &r)
 
 	switch (r.rop_id) {
 	case ropLogon: {
-		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		auto plogon = rop_processor_get_logon_object(&pemsmdb_info->logmap, logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
@@ -1941,10 +1940,10 @@ pack_result rop_ext_pull(EXT_PULL &x, ROP_BUFFER &r)
 		pnode = x.anew<DOUBLE_LIST_NODE>();
 		if (pnode == nullptr)
 			return EXT_ERR_ALLOC;
-		pnode->pdata = x.anew<ROP_REQUEST>();
+		pnode->pdata = x.anew<rop_request>();
 		if (pnode->pdata == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(rop_ext_pull(subext, *static_cast<ROP_REQUEST *>(pnode->pdata)));
+		TRY(rop_ext_pull(subext, *static_cast<rop_request *>(pnode->pdata)));
 		double_list_append_as_tail(&r.rop_list, pnode);
 	}
 	tmp_num = (rpc_header_ext.size_actual - size) / sizeof(uint32_t);

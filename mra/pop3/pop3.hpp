@@ -64,23 +64,21 @@ struct pop3_context final : public schedule_context {
 	char username[UADDR_SIZE]{};
 	char maildir[256]{};
 };
-using POP3_CONTEXT = pop3_context;
 
-extern int pop3_cmd_handler_capa(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_stls(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_user(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_pass(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_stat(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_uidl(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_list(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_retr(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_rset(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_noop(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_dele(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_top(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_quit(const char *cmd_line, int line_length, POP3_CONTEXT *);
-extern int pop3_cmd_handler_else(const char *cmd_line, int line_length, POP3_CONTEXT *);
-
+extern int pop3_cmd_handler_capa(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_stls(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_user(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_pass(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_stat(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_uidl(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_list(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_retr(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_rset(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_noop(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_dele(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_top(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_quit(const char *cm, int len, pop3_context *);
+extern int pop3_cmd_handler_else(const char *cm, int len, pop3_context *);
 extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, bool support_tls, bool force_tls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int pop3_parser_run();
 extern tproc_status pop3_parser_process(schedule_context *);
@@ -89,8 +87,8 @@ extern int pop3_parser_get_context_socket(const schedule_context *);
 extern gromox::time_point pop3_parser_get_context_timestamp(const schedule_context *);
 extern SCHEDULE_CONTEXT **pop3_parser_get_contexts_list();
 extern int pop3_parser_threads_event_proc(int action);
-extern int pop3_parser_retrieve(POP3_CONTEXT *);
-extern void pop3_parser_log_info(POP3_CONTEXT *, int level, const char *format, ...);
+extern int pop3_parser_retrieve(pop3_context *);
+extern void pop3_parser_log_info(pop3_context *, int level, const char *format, ...);
 
 extern int resource_run();
 extern void resource_stop();

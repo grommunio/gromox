@@ -132,7 +132,7 @@ static int t_ical_api()
 	assert(!ical_parse_utc_offset("0100", &hour, &min));
 	assert(hour == 0 && min == 0);
 
-	ICAL_TIME it;
+	ical_time it;
 	assert(ical_parse_datetime("20231224T123456Z", &it));
 	assert(it.year == 2023 && it.month == 12 && it.day == 24 &&
 	       it.hour == 12 && it.minute == 34 && it.second == 56 &&
@@ -232,7 +232,7 @@ static int t_ical_dt()
 		snprintf(buf, std::size(buf), "SUMMARY:event%u\n", count);
 		input += dt_foot;
 
-		ICAL ical;
+		ical ical;
 		printf("\n\n<input>:: \e[32m%s\e[0m\n", s);
 		if (!ical.load_from_str_move(input.data())) {
 			fprintf(stderr, "ical_parse unsuccessful\n");

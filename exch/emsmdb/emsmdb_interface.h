@@ -25,7 +25,6 @@ struct emsmdb_info {
 	LOGMAP logmap;
 	std::atomic<int> upctx_ref{0};
 };
-using EMSMDB_INFO = emsmdb_info;
 
 extern void emsmdb_interface_init();
 extern int emsmdb_interface_run();
@@ -45,7 +44,7 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh);
 extern void emsmdb_interface_touch_handle(const CXH &);
 extern const char *emsmdb_interface_get_username();
 extern const GUID *emsmdb_interface_get_handle();
-extern EMSMDB_INFO *emsmdb_interface_get_emsmdb_info();
+extern emsmdb_info *emsmdb_interface_get_emsmdb_info();
 extern DOUBLE_LIST *emsmdb_interface_get_notify_list();
 extern void emsmdb_interface_put_notify_list();
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr);

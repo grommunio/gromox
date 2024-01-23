@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -34,8 +36,7 @@ enum {
 };
 
 
-static BOOL ftstream_parser_read_uint16(
-	FTSTREAM_PARSER *pstream, uint16_t *pv)
+static BOOL ftstream_parser_read_uint16(fxstream_parser *pstream, uint16_t *pv)
 {
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
@@ -44,8 +45,7 @@ static BOOL ftstream_parser_read_uint16(
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_uint32(
-	FTSTREAM_PARSER *pstream, uint32_t *pv)
+static BOOL ftstream_parser_read_uint32(fxstream_parser *pstream, uint32_t *pv)
 {
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
@@ -54,8 +54,7 @@ static BOOL ftstream_parser_read_uint32(
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_uint64(
-	FTSTREAM_PARSER *pstream, uint64_t *pv)
+static BOOL ftstream_parser_read_uint64(fxstream_parser *pstream, uint64_t *pv)
 {
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
@@ -64,7 +63,7 @@ static BOOL ftstream_parser_read_uint64(
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_float(FTSTREAM_PARSER *pstream, float *pv)
+static BOOL ftstream_parser_read_float(fxstream_parser *pstream, float *pv)
 {
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
@@ -73,7 +72,7 @@ static BOOL ftstream_parser_read_float(FTSTREAM_PARSER *pstream, float *pv)
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_double(FTSTREAM_PARSER *pstream, double *pv)
+static BOOL ftstream_parser_read_double(fxstream_parser *pstream, double *pv)
 {
 	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
 		return FALSE;
@@ -81,8 +80,7 @@ static BOOL ftstream_parser_read_double(FTSTREAM_PARSER *pstream, double *pv)
 	return TRUE;
 }
 
-static char* ftstream_parser_read_wstring(
-	FTSTREAM_PARSER *pstream, BOOL *pb_continue)
+static char *ftstream_parser_read_wstring(fxstream_parser *pstream, BOOL *pb_continue)
 {
 	uint32_t len;
 	uint32_t tmp_len;
@@ -128,8 +126,7 @@ static char* ftstream_parser_read_wstring(
 	return pbuff1;
 }
 
-static char* ftstream_parser_read_string(
-	FTSTREAM_PARSER *pstream, BOOL *pb_continue)
+static char *ftstream_parser_read_string(fxstream_parser *pstream, BOOL *pb_continue)
 {
 	uint32_t len;
 	uint32_t origin_offset;
@@ -158,8 +155,7 @@ static char* ftstream_parser_read_string(
 	return pbuff;
 }
 
-static char* ftstream_parser_read_naked_wstring(
-	FTSTREAM_PARSER *pstream)
+static char *ftstream_parser_read_naked_wstring(fxstream_parser *pstream)
 {
 	uint32_t len;
 	char buff[1024];
@@ -185,8 +181,7 @@ static char* ftstream_parser_read_naked_wstring(
 	return pbuff;
 }
 
-static BOOL ftstream_parser_read_guid(
-	FTSTREAM_PARSER *pstream, GUID *pguid)
+static BOOL ftstream_parser_read_guid(fxstream_parser *pstream, GUID *pguid)
 {
 	if (!ftstream_parser_read_uint32(pstream, &pguid->time_low))
 		return FALSE;
@@ -203,8 +198,7 @@ static BOOL ftstream_parser_read_guid(
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_svreid(
-	FTSTREAM_PARSER *pstream,
+static BOOL ftstream_parser_read_svreid(fxstream_parser *pstream,
 	SVREID *psvreid, BOOL *pb_continue)
 {
 	uint32_t len;
@@ -254,8 +248,7 @@ static BOOL ftstream_parser_read_svreid(
 	return TRUE;
 }
 
-static BOOL ftstream_parser_read_binary(
-	FTSTREAM_PARSER *pstream, BINARY *pbin,
+static BOOL ftstream_parser_read_binary(fxstream_parser *pstream, BINARY *pbin,
 	BOOL *pb_continue)
 {
 	uint32_t origin_offset;
@@ -285,8 +278,7 @@ static BOOL ftstream_parser_read_binary(
 	return TRUE;
 }
 
-static PROPERTY_NAME* ftstream_parser_read_property_name(
-	FTSTREAM_PARSER *pstream)
+static PROPERTY_NAME *ftstream_parser_read_property_name(fxstream_parser *pstream)
 {
 	auto pname = cu_alloc<PROPERTY_NAME>();
 	if (pname == nullptr)
@@ -312,7 +304,7 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 	return NULL;
 }
 
-static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
+static int ftstream_parser_read_element(fxstream_parser &stream,
     uint32_t &marker, TAGGED_PROPVAL &propval)
 {
 	auto pstream = &stream;
@@ -744,7 +736,7 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 	return FTSTREAM_PARSER_READ_CONTINUE;
 }
 
-BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
+BOOL fxstream_parser::write_buffer(const BINARY *ptransfer_data)
 {
 	auto pstream = this;
 	lseek(pstream->fd, 0, SEEK_END);
@@ -755,7 +747,7 @@ BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
 	return TRUE;
 }
 
-static BOOL ftstream_parser_truncate_fd(FTSTREAM_PARSER *pstream) try
+static BOOL ftstream_parser_truncate_fd(fxstream_parser *pstream) try
 {
 	if (pstream->offset == 0)
 		return TRUE;
@@ -836,14 +828,14 @@ ec_error_t fxstream_parser::process(fastupctx_object &upctx)
 	}
 }
 
-std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) try
+std::unique_ptr<fxstream_parser> fxstream_parser::create(logon_object *plogon) try
 {
 	auto path = LOCAL_DISK_TMPDIR;
 	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
 		mlog(LV_ERR, "E-1428: mkdir %s: %s", path, strerror(errno));
 		return nullptr;
 	}
-	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
+	std::unique_ptr<fxstream_parser> pstream(new fxstream_parser);
 	auto ret = pstream->fd.open_anon(path, O_RDWR | O_TRUNC);
 	if (ret < 0) {
 		mlog(LV_ERR, "E-1668: open_anon(%s)[%s]: %s", path,

@@ -10,7 +10,7 @@
 #include <gromox/defs.h>
 #include <gromox/ical.hpp>
 
-const char *ICAL_LINE::get_first_paramval(const char *name) const
+const char *ical_line::get_first_paramval(const char *name) const
 {
 	auto it = std::find_if(param_list.cbegin(), param_list.cend(),
 	          [=](const auto &e) { return strcasecmp(e.name.c_str(), name) == 0; });

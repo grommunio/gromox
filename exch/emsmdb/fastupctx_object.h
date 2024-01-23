@@ -16,13 +16,12 @@ struct attachment_content;
 struct fxstream_parser;
 struct logon_object;
 struct message_content;
-using MESSAGE_CONTENT = message_content;
 struct TPROPVAL_ARRAY;
 
 struct fxup_marker_node {
 	uint32_t marker;
 	union {
-		MESSAGE_CONTENT *msg;
+		message_content *msg;
 		attachment_content *atx;
 		TPROPVAL_ARRAY *props;
 		uint32_t instance_id;
@@ -47,6 +46,6 @@ struct fastupctx_object final {
 	BOOL b_ended = false;
 	int root_element = 0;
 	TPROPVAL_ARRAY *m_props = nullptr;
-	MESSAGE_CONTENT *m_content = nullptr;
+	message_content *m_content = nullptr;
 	std::list<fxup_marker_node> marker_stack;
 };

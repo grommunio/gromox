@@ -75,7 +75,6 @@ enum class repr_grant {
 
 struct MAIL;
 struct message_content;
-using MESSAGE_CONTENT = message_content;
 struct message_object;
 struct store_object;
 
@@ -137,8 +136,7 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-void common_util_notify_receipt(const char *username,
-	int type, MESSAGE_CONTENT *pbrief);
+extern void common_util_notify_receipt(const char *username, int type, message_content *brief);
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 extern BOOL common_util_convert_to_zrule_data(store_object *, TPROPVAL_ARRAY *);
@@ -146,19 +144,19 @@ extern ec_error_t cu_remote_copy_message(store_object *s0, uint64_t message_id, 
 extern ec_error_t cu_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
 extern BOOL cu_send_message(store_object *, message_object *, BOOL submit);
 extern BOOL common_util_message_to_rfc822(store_object *, uint64_t inst_id, BINARY *eml);
-extern MESSAGE_CONTENT *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
+extern message_content *cu_rfc822_to_message(store_object *, unsigned int mxf_flags, BINARY *eml);
 extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
-extern std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
-extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
+extern std::unique_ptr<message_content, gromox::mc_delete> cu_ical_to_message(store_object *, const BINARY *ical);
+extern ec_error_t cu_ical_to_message2(store_object *, char *ical_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
 extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
-extern MESSAGE_CONTENT *common_util_vcf_to_message(store_object *, const BINARY *vcf);
-extern ec_error_t cu_vcf_to_message2(store_object *, char *vcf_data, std::vector<std::unique_ptr<MESSAGE_CONTENT, gromox::mc_delete>> &);
+extern message_content *common_util_vcf_to_message(store_object *, const BINARY *vcf);
+extern ec_error_t cu_vcf_to_message2(store_object *, char *vcf_data, std::vector<std::unique_ptr<message_content, gromox::mc_delete>> &);
 extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(zcore_callid);
 extern ec_error_t cu_id2user(int, std::string &);
-extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
+extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
 extern BINARY *cu_read_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype);
 extern gromox::errno_t cu_write_storenamedprop(const char *, const GUID &, const char *, uint16_t proptype, const void *buf, size_t);
 extern ec_error_t cu_fbdata_to_ical(const char *, const char *, time_t, time_t, const std::vector<freebusy_event> &, BINARY *);

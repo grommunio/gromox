@@ -95,8 +95,8 @@ static ec_error_t delete_impossible_mids(const idset &given, EID_ARRAY &del)
  *                (else: no specific order; MS-OXCFXICS §3.2.5.9.1.1)
  */
 BOOL exmdb_server::get_content_sync(const char *dir,
-    uint64_t folder_id, const char *username, const IDSET *pgiven,
-    const IDSET *pseen, const IDSET *pseen_fai, const IDSET *pread,
+    uint64_t folder_id, const char *username, const idset *pgiven,
+    const idset *pseen, const idset *pseen_fai, const idset *pread,
     cpid_t cpid, const RESTRICTION *prestriction, BOOL b_ordered,
 	uint32_t *pfai_count, uint64_t *pfai_total, uint32_t *pnormal_count,
 	uint64_t *pnormal_total, EID_ARRAY *pupdated_mids, EID_ARRAY *pchg_mids,
@@ -393,7 +393,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	if (delete_impossible_mids(*pgiven, *enum_param.pdeleted_eids) != ecSuccess)
 		return false;
-	if (!const_cast<IDSET *>(pgiven)->enum_repl(1, &enum_param,
+	if (!const_cast<idset *>(pgiven)->enum_repl(1, &enum_param,
 	    ics_enum_content_idset)) {
 		eid_array_free(enum_param.pdeleted_eids);
 		eid_array_free(enum_param.pnolonger_mids);
@@ -577,7 +577,7 @@ static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
  * @username:   Used for permission checking and retrieving public store readstates
  */
 static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
-    const char *username, const IDSET *pgiven, const IDSET *pseen,
+    const char *username, const idset *pgiven, const idset *pseen,
     sqlite3_stmt *pstmt, sqlite3_stmt *stm_insert_chg,
     sqlite3_stmt *stm_insert_exist, uint64_t *plast_cn) try
 {
@@ -626,8 +626,8 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite, uint64_t folder_id,
  * @username:   Passed through to ics_load_folder_changes(), see there
  */
 BOOL exmdb_server::get_hierarchy_sync(const char *dir,
-	uint64_t folder_id, const char *username, const IDSET *pgiven,
-	const IDSET *pseen, FOLDER_CHANGES *pfldchgs, uint64_t *plast_cn,
+    uint64_t folder_id, const char *username, const idset *pgiven,
+    const idset *pseen, FOLDER_CHANGES *pfldchgs, uint64_t *plast_cn,
 	EID_ARRAY *pgiven_fids, EID_ARRAY *pdeleted_fids)
 {
 	sqlite3 *psqlite;
@@ -767,7 +767,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	{
 	REPLID_ARRAY replids;
 	replids.count = 0;
-	const_cast<IDSET *>(pgiven)->enum_replist(&replids, ics_enum_hierarchy_replist);
+	const_cast<idset *>(pgiven)->enum_replist(&replids, ics_enum_hierarchy_replist);
 	ENUM_PARAM enum_param;
 	enum_param.stm_exist = gx_sql_prep(psqlite, "SELECT folder_id"
 	                       " FROM existence WHERE folder_id=?");
@@ -778,7 +778,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	if (enum_param.pdeleted_eids == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < replids.count; ++i) {
-		if (!const_cast<IDSET *>(pgiven)->enum_repl(replids.replids[i],
+		if (!const_cast<idset *>(pgiven)->enum_repl(replids.replids[i],
 		    &enum_param, ics_enum_hierarchy_idset)) {
 			eid_array_free(enum_param.pdeleted_eids);
 			return FALSE;	

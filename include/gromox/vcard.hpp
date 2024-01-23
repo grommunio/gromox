@@ -14,13 +14,11 @@ struct GX_EXPORT vcard_param {
 	std::string m_name;
 	std::vector<std::string> m_paramvals;
 };
-using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
 	void append_subval(const char *s) { m_subvals.emplace_back(gromox::znul(s)); }
 	std::vector<std::string> m_subvals;
 };
-using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
 	vcard_line(const char *n) : m_name(n) {}
@@ -37,7 +35,6 @@ struct GX_EXPORT vcard_line {
 	std::vector<vcard_value> m_values;
 	unsigned int m_lnum = 0;
 };
-using VCARD_LINE = vcard_line;
 
 struct GX_EXPORT vcard {
 	inline void clear() { m_lines.clear(); }
@@ -49,6 +46,5 @@ struct GX_EXPORT vcard {
 
 	std::vector<vcard_line> m_lines;
 };
-using VCARD = vcard;
 
 extern GX_EXPORT ec_error_t vcard_load_multi_from_str_move(char *input, std::vector<vcard> &, size_t limit = 0);

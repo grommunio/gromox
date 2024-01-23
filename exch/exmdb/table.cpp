@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -1571,7 +1571,7 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 		strcpy(pstring, tmp_buff);
 }
 
-static const TABLE_NODE *find_table(db_item_ptr &pdb, uint32_t table_id)
+static const table_node *find_table(db_item_ptr &pdb, uint32_t table_id)
 {
 	for (const auto &t : pdb->tables.table_list)
 		if (t.table_id == table_id)
@@ -2142,7 +2142,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
     int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb,
-    const TABLE_NODE *ptnode)
+    const table_node *ptnode)
 {
 	char sql_string[1024];
 	int row_type, idx = 0;
@@ -2457,7 +2457,7 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 
 static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
-    TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const TABLE_NODE *ptnode)
+    TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const table_node *ptnode)
 {
 	int row_type;
 	char sql_string[1024];

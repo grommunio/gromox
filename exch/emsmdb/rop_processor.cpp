@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cassert>
 #include <climits>
 #include <csignal>
@@ -185,8 +187,6 @@ ec_error_t aoh_to_error(int x)
 int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
     int32_t parent_handle, object_node &&in_object) try
 {
-	EMSMDB_INFO *pemsmdb_info;
-
 	auto eiuser = znul(emsmdb_interface_get_username());
 	auto plogitem = plogmap->p[logon_id].get();
 	if (plogitem == nullptr)
@@ -233,7 +233,7 @@ int32_t rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	else if (g_emsmdb_full_parenting || object_dep(parent->type, pobjnode->type))
 		pobjnode->parent = std::move(parent);
 	if (pobjnode->type == ems_objtype::icsupctx) {
-		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref ++;
 	}
 	return pobjnode->handle;
@@ -260,8 +260,6 @@ void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
 void rop_processor_release_object_handle(LOGMAP *plogmap,
 	uint8_t logon_id, uint32_t obj_handle)
 {
-	EMSMDB_INFO *pemsmdb_info;
-	
 	if (obj_handle >= INT32_MAX)
 		return;
 	auto &plogitem = plogmap->p[logon_id];
@@ -272,7 +270,7 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 		return;
 	auto objnode = i->second;
 	if (objnode->type == ems_objtype::icsupctx) {
-		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+		auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 		pemsmdb_info->upctx_ref --;
 	}
 	plogitem->phash.erase(objnode->handle);
@@ -365,7 +363,6 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	auto ext_buff1 = std::make_unique<uint8_t[]>(ext_buff_size);
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
-	EMSMDB_INFO *pemsmdb_info;
 	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
 	
@@ -385,7 +382,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 	rop_num = double_list_get_nodes_num(&prop_buff->rop_list);
 	emsmdb_interface_set_rop_num(rop_num);
 	b_icsup = FALSE;
-	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
+	auto pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 	size_t rop_count = double_list_get_nodes_num(&prop_buff->rop_list), rop_idx = 0;
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
@@ -393,7 +390,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (pnode1 == nullptr)
 			return ecServerOOM;
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.m_offset);
-		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
+		auto req = static_cast<rop_request *>(pnode->pdata);
 		/*
 		 * One RPC may contain multiple ROPs and if one ROP fails,
 		 * subsequent ROPs may still be invoked, albeit with
@@ -495,7 +492,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		if (pnode == nullptr)
 			break;
 		uint32_t last_offset = ext_push.m_offset;
-		auto pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		auto pnotify = static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		ems_objtype type;
 		auto pobject = rop_processor_get_object(&pemsmdb_info->logmap, pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
@@ -536,7 +533,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			}
 		}
  NEXT_NOTIFY:
-		delete static_cast<notify_response *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		delete static_cast<notify_response *>(static_cast<rop_response *>(pnode->pdata)->ppayload);
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -605,8 +602,8 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 		*pcb_out = offset;
 		return ecSuccess;
 	}
-	auto prequest = static_cast<const ROP_REQUEST *>(pnode->pdata);
-	auto presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
+	auto prequest = static_cast<const rop_request *>(pnode->pdata);
+	auto presponse = static_cast<const rop_response *>(pnode1->pdata);
 	if (prequest->rop_id != presponse->rop_id) {
 		rop_ext_set_rhe_flag_last(pout, last_offset);
 		*pcb_out = offset;
@@ -649,7 +646,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			pnode1 = double_list_pop_front(&response_list);
 			if (pnode1 == nullptr)
 				break;
-			presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
+			presponse = static_cast<const rop_response *>(pnode1->pdata);
 			if (presponse->rop_id != ropQueryRows ||
 			    presponse->result != ecSuccess)
 				break;
@@ -674,7 +671,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			pnode1 = double_list_pop_front(&response_list);
 			if (pnode1 == nullptr)
 				break;
-			presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
+			presponse = static_cast<const rop_response *>(pnode1->pdata);
 			if (presponse->rop_id != ropReadStream ||
 			    presponse->result != ecSuccess)
 				break;
@@ -700,7 +697,7 @@ ec_error_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			pnode1 = double_list_pop_front(&response_list);
 			if (pnode1 == nullptr)
 				break;
-			presponse = static_cast<const ROP_RESPONSE *>(pnode1->pdata);
+			presponse = static_cast<const rop_response *>(pnode1->pdata);
 			if (presponse->rop_id != ropFastTransferSourceGetBuffer ||
 			    presponse->result != ecSuccess)
 				break;

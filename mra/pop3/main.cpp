@@ -221,7 +221,7 @@ static void *p3ls_thrwork(void *arg)
 		static constexpr int flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
 			mlog(LV_WARN, "W-1339: setsockopt: %s", strerror(errno));
-		auto ctx = static_cast<POP3_CONTEXT *>(contexts_pool_get_context(CONTEXT_FREE));
+		auto ctx = static_cast<pop3_context *>(contexts_pool_get_context(CONTEXT_FREE));
 		/* there's no context available in contexts pool, close the connection*/
 		if (ctx == nullptr) {
 			/* 421 <domain> Service not available */

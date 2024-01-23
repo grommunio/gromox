@@ -113,7 +113,7 @@ static BOOL oxcical_parse_vtsubcomponent(const ical_component &sub,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return FALSE;
-	ICAL_TIME itime{};
+	ical_time itime{};
 	if (!ical_parse_datetime(pvalue, &itime) || itime.type == ICT_UTC)
 		/* Z specifier should not be used with VTIMEZONE.DTSTART */
 		return FALSE;
@@ -317,11 +317,11 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
     uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
 	time_t tmp_time;
-	ICAL_TIME itime1;
-	ICAL_RRULE irrule;
+	ical_time itime1;
+	ical_rrule irrule;
 	const char *pvalue;
 	uint32_t patterntype = 0;
-	const ICAL_TIME *pitime;
+	const ical_time *pitime;
 	
 	auto piline = &iline;
 	if (piline->get_subval_list("BYYEARDAY") != nullptr ||
@@ -346,8 +346,7 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 	auto b_exceptional = irrule.b_start_exceptional;
 	if (b_exceptional && !irrule.iterate())
 		return FALSE;
-	ICAL_TIME itime_base = irrule.base_itime;
-	ICAL_TIME itime_first = irrule.instance_itime;
+	ical_time itime_base = irrule.base_itime, itime_first = irrule.instance_itime;
 	apr->readerversion2 = 0x3006;
 	apr->writerversion2 = 0x3009;
 	apr->recur_pat.readerversion = 0x3004;
@@ -452,14 +451,14 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		if (irrule.interval > 99)
 			return FALSE;
 		apr->recur_pat.period = irrule.interval;
-		memset(&itime, 0, sizeof(ICAL_TIME));
+		itime = {};
 		itime.year = 1601;
 		itime.month = ((itime_base.year - 1601) * 12 + itime_base.month - 1) %
 		              irrule.interval + 1;
 		itime.year += itime.month/12;
 		itime.month = (itime.month - 1) % 12 + 1;
 		itime.day = 1;
-		memset(&itime1, 0, sizeof(ICAL_TIME));
+		itime1 = {};
 		itime1.year = 1601;
 		itime1.month = 1;
 		itime1.day = 1;
@@ -507,13 +506,13 @@ static BOOL oxcical_parse_rrule(const ical_component &tzcom,
 		if (irrule.interval > 8)
 			return FALSE;
 		apr->recur_pat.period = 12 * irrule.interval;
-		memset(&itime, 0, sizeof(ICAL_TIME));
+		itime = {};
 		itime.year = 1601;
 		itime.month = (itime_first.month - 1) % (12 * irrule.interval);
 		itime.year += itime.month/12;
 		itime.month = itime.month % 12 + 1;
 		itime.day = 1;
-		memset(&itime1, 0, sizeof(ICAL_TIME));
+		itime1 = {};
 		itime1.year = 1601;
 		itime1.month = 1;
 		itime1.day = 1;
@@ -1011,7 +1010,7 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 		for (const auto &pnv2 : pivalue.subval_list) {
 			if (pnv2.empty())
 				continue;
-			ICAL_TIME itime{};
+			ical_time itime{};
 			if (!ical_parse_datetime(pnv2.c_str(), &itime))
 				continue;
 			if (itime.type == ICT_UTC && ptz_component != nullptr) {
@@ -1037,7 +1036,7 @@ static BOOL oxcical_parse_dates(const ical_component *ptz_component,
 		for (const auto &pnv2 : pivalue.subval_list) {
 			if (pnv2.empty())
 				continue;
-			ICAL_TIME itime{};
+			ical_time itime{};
 			if (!ical_parse_date(pnv2.c_str(), &itime))
 				continue;
 			ical_itime_to_utc(NULL, itime, &tmp_time);
@@ -1065,8 +1064,7 @@ static BOOL oxcical_parse_duration(uint32_t minutes, namemap &phash,
 }
 
 static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
-    const ical_line &piline, ICAL_TIME *pitime,
-    time_t *putc_time)
+    const ical_line &piline, ical_time *pitime, time_t *putc_time)
 {
 	auto pvalue = piline.get_first_subvalue();
 	if (pvalue == nullptr)
@@ -1108,7 +1106,7 @@ static BOOL oxcical_parse_dtvalue(const ical_component *ptz_component,
 }
 
 static BOOL oxcical_parse_uid(const ical_component &main_event,
-    ICAL_TIME effective_itime, EXT_BUFFER_ALLOC alloc, namemap &phash,
+    ical_time effective_itime, EXT_BUFFER_ALLOC alloc, namemap &phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	auto piline = main_event.get_line("UID");
@@ -1459,7 +1457,7 @@ static BOOL oxcical_parse_recurrence_id(const ical_component *ptz_component,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	time_t tmp_time;
-	ICAL_TIME itime{};
+	ical_time itime{};
 	uint64_t tmp_int64;
 	
 	if (!oxcical_parse_dtvalue(ptz_component,
@@ -1623,8 +1621,8 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 }
 
 static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment,
-    const ical_component &, ICAL_TIME start_itime,
-    ICAL_TIME end_itime, MESSAGE_CONTENT *pmsg)
+    const ical_component &, ical_time start_itime, ical_time end_itime,
+    message_content *pmsg)
 {
 	BINARY tmp_bin;
 	time_t tmp_time;
@@ -1970,7 +1968,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
     BOOL b_proposal, uint16_t calendartype, const ical &pical,
     const event_list_t &pevent_list, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid,
-    MESSAGE_CONTENT *pmsg, ICAL_TIME *pstart_itime, ICAL_TIME *pend_itime,
+    message_content *pmsg, ical_time *pstart_itime, ical_time *pend_itime,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
 	const char *mev_error;
@@ -2019,7 +2017,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	}
 
 	time_t start_time = 0, end_time = 0;
-	ICAL_TIME start_itime{}, end_itime{};
+	ical_time start_itime{}, end_itime{};
 	/*
 	 * EXC2019 treats iCalendar floating time as if it was specified with
 	 * UTC time. As a result, export of such MAPI objects can shift it.
@@ -2091,7 +2089,7 @@ static const char *oxcical_import_internal(const char *str_zone, const char *met
 	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception))
 		return "E-2704: oxcical_parse_subtype returned an unspecified error";
 	
-	ICAL_TIME itime{};
+	ical_time itime{};
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (NULL != piline) {
 		if (pexception != nullptr && pext_exception != nullptr &&
@@ -2575,18 +2573,18 @@ message_ptr oxcical_import_single(const char *str_zone,
 	return cmsg;
 }
 
-static int sprintf_dt(char *b, size_t z, const ICAL_TIME &t)
+static int sprintf_dt(char *b, size_t z, const ical_time &t)
 {
 	return snprintf(b, z, fmt_date, t.year, t.month, t.day);
 }
 
-static int sprintf_dtlcl(char *b, size_t z, const ICAL_TIME &t)
+static int sprintf_dtlcl(char *b, size_t z, const ical_time &t)
 {
 	return snprintf(b, z, fmt_datetimelcl, t.year, t.month, t.day, t.hour,
 	       t.minute, t.second);
 }
 
-static int sprintf_dtutc(char *b, size_t z, const ICAL_TIME &t)
+static int sprintf_dtutc(char *b, size_t z, const ical_time &t)
 {
 	return snprintf(b, z, fmt_datetimeutc, t.year, t.month, t.day, t.hour,
 	       t.minute, t.second);
@@ -2787,7 +2785,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 static BOOL oxcical_export_rrule(const ical_component *ptz_component,
     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
-	ICAL_TIME itime;
+	ical_time itime;
 	const char *str_tag;
 	
 	str_tag = NULL;
@@ -2947,7 +2945,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
     ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	BOOL b_found;
-	ICAL_TIME itime;
+	ical_time itime;
 	char tmp_buff[1024];
 	ical_line *piline;
 	
@@ -3014,7 +3012,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
      ical_component &pcomponent, APPOINTMENT_RECUR_PAT *apr) try
 {
 	BOOL b_found;
-	ICAL_TIME itime;
+	ical_time itime;
 	char tmp_buff[1024];
 	
 	auto piline = &pcomponent.append_line("RDATE");
@@ -3146,7 +3144,7 @@ static const char *oxcical_export_uid(const MESSAGE_CONTENT &msg,
 }
 
 static void append_dt(ical_component &com, const char *key,
-    const ICAL_TIME &itime, bool b_date, const char *tzid)
+    const ical_time &itime, bool b_date, const char *tzid)
 {
 	char txt[64];
 	if (b_date)
@@ -3167,7 +3165,7 @@ static const char *oxcical_export_recid(const MESSAGE_CONTENT &msg,
     ical_component &com, const ical_component *ptz_component,
     const char *tzid, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
 {
-	ICAL_TIME itime{};
+	ical_time itime{};
 	bool itime_is_set = false;
 
 	auto lnum = msg.proplist.get<uint64_t>(proptag_xrt);
@@ -3252,7 +3250,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 		return E_2201;
 	auto lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
-		ICAL_TIME itime;
+		ical_time itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
 			return "E-2221";
 		append_dt(com, "DUE", itime, false, tzid);
@@ -3263,7 +3261,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 		return E_2201;
 	lnum = msg.proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
-		ICAL_TIME itime;
+		ical_time itime;
 		if (!ical_utc_to_datetime(tzcom, rop_util_nttime_to_unix(*lnum), &itime))
 			return "E-2221";
 		append_dt(com, "COMPLETED", itime, false, tzid);
@@ -3273,7 +3271,7 @@ static const char *oxcical_export_task(const MESSAGE_CONTENT &msg,
 }
 
 static void busystatus_to_line(ol_busy_status status, const char *key,
-    ICAL_COMPONENT *com)
+    ical_component *com)
 {
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
@@ -3598,7 +3596,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (has_start_time) {
-		ICAL_TIME itime;
+		ical_time itime;
 		if (!ical_utc_to_datetime(ptz_component, start_time, &itime))
 			return "E-2221";
 		append_dt(*pcomponent, "DTSTART", itime,
@@ -3610,7 +3608,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			return E_2201;
 		lnum = pmsg->proplist.get<const uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 		if (lnum != nullptr) {
-			ICAL_TIME itime;
+			ical_time itime;
 			if (!ical_utc_to_datetime(ptz_component, rop_util_nttime_to_unix(*lnum), &itime))
 				return "E-2221";
 			append_dt(*pcomponent, "DTSTART", itime,
@@ -3620,7 +3618,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (has_start_time && start_time != end_time) {
-		ICAL_TIME itime;
+		ical_time itime;
 		if (!ical_utc_to_datetime(ptz_component, end_time, &itime))
 			return "E-2222";
 		append_dt(*pcomponent, "DTEND", itime,
@@ -3657,7 +3655,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 		return E_2201;
 	lnum = pmsg->proplist.get<uint64_t>(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	if (lnum != nullptr) {
-		ICAL_TIME itime;
+		ical_time itime;
 		char tmp_buff[1024];
 		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(*lnum), &itime);
 		sprintf_dtutc(tmp_buff, std::size(tmp_buff), itime);
@@ -3778,7 +3776,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ical &pical,
 
 BOOL oxcical_export_freebusy(const char *user, const char *fbuser,
     time_t starttime, const time_t endtime,
-    const std::vector<freebusy_event> &fbdata, ICAL &ic)
+    const std::vector<freebusy_event> &fbdata, ical &ic)
 {
 	ic.append_line("METHOD", "PUBLISH");
 	ic.append_line("PRODID", "gromox-oxcical");
@@ -3791,7 +3789,7 @@ BOOL oxcical_export_freebusy(const char *user, const char *fbuser,
 	char tmp_value[334];
 	snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", fbuser);
 	line->append_value(nullptr, tmp_value);
-	ICAL_TIME itime1, itime2;
+	ical_time itime1, itime2;
 	if (!ical_utc_to_datetime(nullptr, starttime, &itime1))
 		return false;
 	append_dt(com, "DTSTART", itime1, false, nullptr);

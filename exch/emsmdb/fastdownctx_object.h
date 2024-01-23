@@ -11,7 +11,6 @@ struct fxstream_producer;
 struct ics_state;
 struct logon_object;
 struct message_content;
-using MESSAGE_CONTENT = message_content;
 
 enum class fxdown_flow_func : uint8_t {
 	immed32, proplist_ptr, msg_id,

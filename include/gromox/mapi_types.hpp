@@ -793,7 +793,6 @@ class GX_EXPORT idset {
 	/* If @repl_type is guid_packed, repl_nodes are REPLGUID_NODE. */
 	std::vector<repl_node> repl_list;
 };
-using IDSET = idset;
 
 enum class db_notify_type : uint8_t {
 	new_mail = 1, folder_created, message_created, link_created,

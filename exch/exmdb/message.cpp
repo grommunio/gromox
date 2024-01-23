@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdint>
@@ -58,7 +58,6 @@ struct rule_node {
 
 	bool operator<(const rule_node &o) const { return sequence < o.sequence; }
 };
-using RULE_NODE = rule_node;
 
 struct DAM_NODE {
 	uint64_t rule_id = 0, folder_id = 0, message_id = 0;
@@ -2052,7 +2051,7 @@ static BOOL message_load_folder_rules(const rulexec_in &rp,
 		}
 		uint64_t msg_id = sqlite3_column_int64(pstmt, 1);
 		int32_t seq = pstmt.col_int64(2);
-		plist.push_back(RULE_NODE{seq, state, msg_id, pstmt.col_text(3)});
+		plist.push_back(rule_node{seq, state, msg_id, pstmt.col_text(3)});
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -2097,7 +2096,7 @@ static BOOL message_load_folder_ext_rules(const rulexec_in &rp,
 			continue;
 		}
 		int32_t seq = pstmt.col_int64(2);
-		plist.push_back(RULE_NODE{seq, state, message_id, pstmt.col_text(3), true});
+		plist.push_back(rule_node{seq, state, message_id, pstmt.col_text(3), true});
 		if (++num_rules >= g_max_extrule_num)
 			break;
 	}

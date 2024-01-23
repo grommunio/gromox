@@ -10,10 +10,9 @@
 
 using namespace gromox;
 
-template<> struct fmt::formatter<ICAL_TIME>
-{
+template<> struct fmt::formatter<ical_time> {
 	constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
-	format_context::iterator format(const ICAL_TIME &t, format_context &ctx) const
+	format_context::iterator format(const ical_time &t, format_context &ctx) const
 	{
 		return t.type == ICT_FLOAT_DAY ?
 		       fmt::format_to(ctx.out(), "{:04}{:02}{:02}",

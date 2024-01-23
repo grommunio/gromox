@@ -3,8 +3,6 @@
 #include <gromox/mapi_types.hpp>
 
 struct DB_NOTIFY;
-struct notify_response;
-using NOTIFY_RESPONSE = notify_response;
 
 struct notify_response {
 	static notify_response *create(uint32_t, uint8_t);
@@ -29,4 +27,3 @@ struct notify_response {
 	char *msg_class = nullptr;
 	BINARY *row_data = nullptr;
 };
-using NOTIFY_RESPONSE = notify_response;

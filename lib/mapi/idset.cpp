@@ -84,7 +84,7 @@ void idset::remove(uint64_t eid) try
 	mlog(LV_ERR, "E-1615: ENOMEM");
 }
 
-BOOL idset::concatenate(const IDSET *pset_src)
+BOOL idset::concatenate(const idset *pset_src)
 {
 	if (packed() || pset_src->packed())
 		return FALSE;

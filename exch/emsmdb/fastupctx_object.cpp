@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -34,7 +34,7 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 	}
 	pctx->pobject = pobject;
 	pctx->root_element = root_element;
-	pctx->pstream = ftstream_parser::create(plogon);
+	pctx->pstream = fxstream_parser::create(plogon);
 	if (pctx->pstream == nullptr)
 		return NULL;
 	switch (root_element) {

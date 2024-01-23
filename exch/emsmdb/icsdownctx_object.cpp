@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <climits>
 #include <cstdint>
@@ -79,7 +81,7 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 		if (pctx->prestriction == nullptr)
 			return NULL;
 	}
-	pctx->pstream = ftstream_producer::create(plogon, send_options & 0x0F);
+	pctx->pstream = fxstream_producer::create(plogon, send_options & 0x0F);
 	if (pctx->pstream == nullptr)
 		return NULL;
 	return pctx;

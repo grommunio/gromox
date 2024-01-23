@@ -41,7 +41,6 @@ struct object_node {
 	void *pobject = nullptr;
 	std::shared_ptr<object_node> parent;
 };
-using OBJECT_NODE = object_node;
 
 extern void rop_processor_init(int scan_interval);
 extern int rop_processor_run();

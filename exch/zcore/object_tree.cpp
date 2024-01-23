@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -189,14 +189,13 @@ object_node::~object_node()
 	}
 }
 
-static void object_tree_release_objnode(
-	OBJECT_TREE *pobjtree, OBJECT_NODE *pobjnode)
+static void object_tree_release_objnode(OBJECT_TREE *pobjtree, object_node *pobjnode)
 {	
 	simple_tree_enum_from_node(&pobjnode->node, [&](const tree_node *n, unsigned int) {
-		pobjtree->m_hash.erase(static_cast<const OBJECT_NODE *>(n->pdata)->handle);
+		pobjtree->m_hash.erase(static_cast<const object_node *>(n->pdata)->handle);
 	});
 	pobjtree->tree.destroy_node(&pobjnode->node, [](SIMPLE_TREE_NODE *n) {
-		delete static_cast<OBJECT_NODE *>(n->pdata);
+		delete static_cast<object_node *>(n->pdata);
 	});
 }
 
@@ -205,14 +204,14 @@ OBJECT_TREE::~OBJECT_TREE()
 	auto pobjtree = this;
 	auto proot = tree.get_root();
 	if (proot != nullptr)
-		object_tree_release_objnode(pobjtree, static_cast<OBJECT_NODE *>(proot->pdata));
+		object_tree_release_objnode(pobjtree, static_cast<object_node *>(proot->pdata));
 	pobjtree->tree.clear();
 }
 
 uint32_t OBJECT_TREE::add_object_handle(int parent_handle, object_node &&obnode)
 {
 	auto pobjtree = this;
-	OBJECT_NODE *parent_ptr = nullptr;
+	object_node *parent_ptr = nullptr;
 	
 	if (zcore_max_obh_per_session &&
 	    pobjtree->tree.get_nodes_num() > zcore_max_obh_per_session)
@@ -227,7 +226,7 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, object_node &&obnode)
 			return ecZNullObject;
 		parent_ptr = i->second;
 	}
-	OBJECT_NODE *pobjnode;
+	object_node *pobjnode;
 	try {
 		pobjnode = new object_node(std::move(obnode));
 	} catch (const std::bad_alloc &) {
@@ -305,7 +304,7 @@ void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 	auto proot = pobjtree->tree.get_root();
 	if (proot == nullptr)
 		return NULL;
-	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	return prootobj->pprivate_proplist->getval(proptag);
 }
 
@@ -315,7 +314,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 	auto proot = pobjtree->tree.get_root();
 	if (proot == nullptr)
 		return FALSE;
-	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	auto ret = prootobj->pprivate_proplist->set(*ppropval);
 	if (ret != 0)
@@ -335,7 +334,7 @@ void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 	auto proot = pobjtree->tree.get_root();
 	if (proot == nullptr)
 		return;
-	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	prootobj->pprivate_proplist->erase(proptag);
 	object_tree_write_root(prootobj);
@@ -347,7 +346,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	auto proot = pobjtree->tree.get_root();
 	if (proot == nullptr)
 		return NULL;
-	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	for (size_t i = 0; i < prootobj->pprof_set->count; ++i) {
 		auto pguid = prootobj->pprof_set->pparray[i]->get<GUID>(PROP_TAG_PROFILESCLSID);
 		if (pguid == nullptr)
@@ -370,7 +369,7 @@ void OBJECT_TREE::touch_profile_sec()
 	auto proot = pobjtree->tree.get_root();
 	if (proot == nullptr)
 		return;
-	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<object_node *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	object_tree_write_root(prootobj);
 }
@@ -387,7 +386,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	pnode = pnode->get_child();
 	if (NULL != pnode) {
 		do {
-			auto pobjnode = static_cast<OBJECT_NODE *>(pnode->pdata);
+			auto pobjnode = static_cast<object_node *>(pnode->pdata);
 			if (pobjnode->type != zs_objtype::store)
 				continue;
 			auto store = static_cast<store_object *>(pobjnode->pobject);

@@ -21,5 +21,3 @@ struct fxstream_parser {
 	uint32_t offset = 0, st_size = 0;
 	logon_object *plogon = nullptr; /* plogon is a protected member */
 };
-using FTSTREAM_PARSER = fxstream_parser;
-using ftstream_parser = fxstream_parser;

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -835,7 +837,7 @@ void DB_ITEM::delete_dynamic(uint64_t folder_id)
 
 static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
     uint64_t id2, uint64_t id3, uint32_t folder_type,
-    const DYNAMIC_NODE *pdynamic, size_t i)
+    const dynamic_node *pdynamic, size_t i)
 {
 	BOOL b_exist, b_included, b_included1;
 	uint64_t message_id;
@@ -894,7 +896,7 @@ static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
 }
 
 static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
-    uint64_t id1, uint64_t id2, const DYNAMIC_NODE *pdynamic, size_t i)
+    uint64_t id1, uint64_t id2, const dynamic_node *pdynamic, size_t i)
 {
 	BOOL b_exist;
 	BOOL b_included;

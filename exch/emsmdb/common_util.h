@@ -17,7 +17,6 @@ struct logon_object;
 struct MAIL;
 struct message_content;
 struct message_object;
-using MESSAGE_CONTENT = message_content;
 
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()
@@ -84,13 +83,12 @@ BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval);
 BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions);
-void common_util_notify_receipt(const char *username,
-	int type, MESSAGE_CONTENT *pbrief);
+extern void common_util_notify_receipt(const char *username, int type, message_content *brief);
 extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
 extern ec_error_t ems_send_mail(MAIL *, const char *sender, const std::vector<std::string> &rcpts);
 extern ec_error_t cu_send_message(logon_object *, message_object *, bool submit);
 extern ec_error_t cu_id2user(int, std::string &);
-extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, MESSAGE_CONTENT *, const char *bounce_type, MAIL *);
+extern bool bounce_producer_make(bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), bool (*)(const char *, char *, size_t), const char *user, message_content *, const char *bounce_type, MAIL *);
 
 #define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
 E(check_mlist_include)
@@ -116,7 +114,7 @@ extern void common_util_init(const char *org_name, unsigned int max_rcpt, unsign
 extern int common_util_run();
 extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
-extern void fxs_propsort(MESSAGE_CONTENT &);
+extern void fxs_propsort(message_content &);
 extern ec_error_t replid_to_replguid(const logon_object &, uint16_t, GUID &);
 extern ec_error_t replguid_to_replid(const logon_object &, const GUID &, uint16_t &);
 
