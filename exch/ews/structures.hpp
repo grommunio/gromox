@@ -379,6 +379,7 @@ public:
 
 	uint64_t special = 0; ///< Fields that are not directly accessible by properties
 	std::string store; ///< For which store the named properties are valid
+	std::optional<std::string> mimeContent; ///< MimeContent to write
 };
 
 /**

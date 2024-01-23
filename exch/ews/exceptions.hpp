@@ -211,7 +211,7 @@ E(3085, "failed to serialize address book entry id");
 //3086 removed
 E(3087, "failed to load predecessor change list");
 //3088 removed
-E(3089, "failed to update message");
+//3089 removed
 inline std::string E3090(const std::string_view& username) {return fmt::format("E-3090: invalid username '{}'", username);}
 inline std::string E3091(const std::string_view& username) {return fmt::format("E-3091: failed to get user info for '{}'", username);}
 E(3092, "failed to set item properties");
@@ -375,6 +375,8 @@ E(3250, "invalid hex string size");
 E(3251, "public folder IDs are currently not supported");
 E(3252, "invalid input id");
 E(3253, "output format not supported");
+E(3254, "failed to set item properties");
+E(3255, "failed to set item properties");
 
 #undef E
 }

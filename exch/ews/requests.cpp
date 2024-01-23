@@ -1569,18 +1569,32 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 				std::get<tSetItemField>(update).put(shape);
 		}
 		const char* username = ctx.effectiveUser(parentFolder);
-		TPROPVAL_ARRAY props = shape.write();
-		PROPTAG_ARRAY tagsRm = shape.remove();
-		PROBLEM_ARRAY problems;
-		if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
-			throw EWSError::ItemSave(E3092);
-		if(!ctx.plugin().exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
-			throw EWSError::ItemSave(E3093);
-		ctx.updated(dir, mid);
-		mUpdateItemResponseMessage& msg = data.ResponseMessages.emplace_back();
+		ctx.updated(dir, mid, shape);
+		mUpdateItemResponseMessage msg;
+		if(shape.mimeContent) {
+			EWSContext::MCONT_PTR content = ctx.toContent(dir, *shape.mimeContent);
+			for(uint32_t tag : shape.remove())
+				content->proplist.erase(tag);
+			for(const TAGGED_PROPVAL& prop : shape.write())
+				content->proplist.set(prop);
+			content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
+			ec_error_t error;
+			if(!ctx.plugin().exmdb.write_message(dir.c_str(), ctx.auth_info().username, CP_ACP, parentFolder.folderId,
+				                                 content.get(), &error) || error)
+				throw EWSError::ItemSave(E3255);
+		} else {
+			TPROPVAL_ARRAY props = shape.write();
+			PROPTAG_ARRAY tagsRm = shape.remove();
+			PROBLEM_ARRAY problems;
+			if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
+				throw EWSError::ItemSave(E3092);
+			if(!ctx.plugin().exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
+				throw EWSError::ItemSave(E3093);
+			msg.ConflictResults.Count = problems.count;
+		}
 		msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));
-		msg.ConflictResults.Count = problems.count;
 		msg.success();
+		data.ResponseMessages.emplace_back(std::move(msg));
 	} catch(const EWSError& err) {
 		data.ResponseMessages.emplace_back(err);
 	}

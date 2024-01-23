@@ -288,12 +288,13 @@ public:
 	void send(const std::string&, const MESSAGE_CONTENT&) const;
 	BINARY serialize(const XID&) const;
 	bool streamEvents(const Structures::tSubscriptionId&) const;
+	MCONT_PTR toContent(const std::string&, std::string&) const;
 	MCONT_PTR toContent(const std::string&, const Structures::sFolderSpec&, Structures::sItem&, bool) const;
-	void updated(const std::string&, const Structures::sFolderSpec&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tPullSubscriptionRequest&) const;
 	Structures::tSubscriptionId subscribe(const Structures::tStreamingSubscriptionRequest&) const;
 	bool unsubscribe(const Structures::tSubscriptionId&) const;
-	void updated(const std::string&, const Structures::sMessageEntryId&) const;
+	void updated(const std::string&, const Structures::sFolderSpec&) const;
+	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
 	std::string username_to_essdn(const std::string&) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
 
