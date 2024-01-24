@@ -1035,6 +1035,13 @@ struct GX_EXPORT PROPTAG_ARRAY {
 	uint16_t count;
 	uint32_t *pproptag;
 	static constexpr size_t npos = -1;
+
+	using iterator = uint32_t*;
+	using const_iterator = const uint32_t*;
+	inline iterator begin() {return pproptag;}
+	inline iterator end() {return pproptag+count;}
+	inline const_iterator begin() const {return pproptag;}
+	inline const_iterator end() const {return pproptag+count;}
 };
 
 struct SHORT_ARRAY {
