@@ -2855,53 +2855,53 @@ std::string tGuid::serialize() const
 
 ///////////////////////////////////////////////////////////////////////////////
 decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
+	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessPhone"}, PR_BUSINESS_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessPhone2"}, PR_BUSINESS2_TELEPHONE_NUMBER},
-	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
-	{{"contacts:PhoneNumber", "CompanyMainPhone"}, PR_COMPANY_MAIN_PHONE_NUMBER},
-	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
-	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
-	{{"contacts:PhoneNumber", "MobilePhone"}, PR_MOBILE_TELEPHONE_NUMBER},
-	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
-	{{"contacts:PhoneNumber", "HomePhone2"}, PR_HOME2_TELEPHONE_NUMBER},
-	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
-	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "Callback"}, PR_CALLBACK_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "CompanyMainPhone"}, PR_COMPANY_MAIN_PHONE_NUMBER},
+	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
+	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "HomePhone2"}, PR_HOME2_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "MobilePhone"}, PR_MOBILE_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
 	{{"contacts:PhoneNumber", "RadioPhone"}, PR_RADIO_TELEPHONE_NUMBER},
-	{{"contacts:PhysicalAddress:Street", "Home"}, PR_HOME_ADDRESS_STREET},
-	{{"contacts:PhysicalAddress:City", "Home"}, PR_HOME_ADDRESS_CITY},
-	{{"contacts:PhysicalAddress:State", "Home"}, PR_HOME_ADDRESS_STATE_OR_PROVINCE},
-	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, PR_HOME_ADDRESS_COUNTRY},
-	{{"contacts:PhysicalAddress:PostalCode", "Home"}, PR_HOME_ADDRESS_POSTAL_CODE},
-	{{"contacts:PhysicalAddress:Street", "Business"}, PR_BUSINESS_ADDRESS_STREET},
 	{{"contacts:PhysicalAddress:City", "Business"}, PR_BUSINESS_ADDRESS_CITY},
-	{{"contacts:PhysicalAddress:State", "Business"}, PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE},
-	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, PR_BUSINESS_ADDRESS_COUNTRY},
-	{{"contacts:PhysicalAddress:PostalCode", "Business"}, PR_BUSINESS_ADDRESS_POSTAL_CODE},
-	{{"contacts:PhysicalAddress:Street", "Other"}, PR_OTHER_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:City", "Home"}, PR_HOME_ADDRESS_CITY},
 	{{"contacts:PhysicalAddress:City", "Other"}, PR_OTHER_ADDRESS_CITY},
-	{{"contacts:PhysicalAddress:State", "Other"}, PR_OTHER_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, PR_BUSINESS_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, PR_HOME_ADDRESS_COUNTRY},
 	{{"contacts:PhysicalAddress:CountryOrRegion", "Other"}, PR_OTHER_ADDRESS_COUNTRY},
+	{{"contacts:PhysicalAddress:PostalCode", "Business"}, PR_BUSINESS_ADDRESS_POSTAL_CODE},
+	{{"contacts:PhysicalAddress:PostalCode", "Home"}, PR_HOME_ADDRESS_POSTAL_CODE},
 	{{"contacts:PhysicalAddress:PostalCode", "Other"}, PR_OTHER_ADDRESS_POSTAL_CODE},
+	{{"contacts:PhysicalAddress:State", "Business"}, PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:State", "Home"}, PR_HOME_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:State", "Other"}, PR_OTHER_ADDRESS_STATE_OR_PROVINCE},
+	{{"contacts:PhysicalAddress:Street", "Business"}, PR_BUSINESS_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:Street", "Home"}, PR_HOME_ADDRESS_STREET},
+	{{"contacts:PhysicalAddress:Street", "Other"}, PR_OTHER_ADDRESS_STREET},
 }};
 
 decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
-	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, deconst("InstantMessagingAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, deconst("Email1EmailAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, deconst("Email2EmailAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, deconst("Email3EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, const_cast<char*>("Email1EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, const_cast<char*>("Email2EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, const_cast<char*>("Email3EmailAddress")}, PT_UNICODE}},
+	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, const_cast<char*>("InstantMessagingAddress")}, PT_UNICODE}},
 }};
 
 void tIndexedFieldURI::tags(sShape& shape, bool add) const
 {
-	static auto compval1 = [](const std::pair<UIKey, uint32_t>& v1, const char* const v2){return strcmp(v1.first.first.c_str(), v2) < 0;};
+	static auto compval = [](const auto& v1, const tIndexedFieldURI& v2)
+	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
 
-	auto tags = std::lower_bound(tagMap.begin(), tagMap.end(), FieldURI.c_str(), compval1);
-	if(tags != tagMap.end() && tags->first.first == FieldURI && tags->first.second == FieldIndex)
-		shape.add(tags->second, add? sShape::FL_FIELD : sShape::FL_RM);
+	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
+	if(tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
+		shape.add(tagIt->second, add? sShape::FL_FIELD : sShape::FL_RM);
 
-	static auto compval2 = [](const std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>& v1, const char* const v2){return strcmp(v1.first.first.c_str(), v2) < 0;};
-	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), FieldURI.c_str(), compval2);
+	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
 	if(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex)
 		shape.add(names->second.first, names->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
 }
