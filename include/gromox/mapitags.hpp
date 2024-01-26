@@ -1121,6 +1121,7 @@ enum {
 	PidLidCategories = 0x2328,
 
 	/* PSETID_Address */
+	PidLidPostalAddressIndex = 0x8022,
 	dispidEmailList = 0x8027,
 	PidLidBusinessCardDisplayDefinition = 0x8040,
 	PidLidWorkAddressStreet = 0x8045,

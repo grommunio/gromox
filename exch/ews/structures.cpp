@@ -1947,6 +1947,8 @@ void tContact::update(const sShape& shape)
 		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress2);
 	if((prop = shape.get(NtEmailAddress3)))
 		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress3);
+	if((prop = shape.get(NtPostalAddressIndex)))
+		PostalAddressIndex.emplace(*static_cast<uint32_t*>(prop->pvalue));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2771,6 +2773,7 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
+	{"contacts:PostalAddressIndex", {NtPostalAddressIndex, PT_LONG}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
@@ -2926,6 +2929,7 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "HomePhone2"}, PR_HOME2_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "MobilePhone"}, PR_MOBILE_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "OtherFax"}, PR_PRIMARY_FAX_NUMBER},
 	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
 	{{"contacts:PhoneNumber", "RadioPhone"}, PR_RADIO_TELEPHONE_NUMBER},

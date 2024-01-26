@@ -636,6 +636,7 @@ tContact::tContact(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Department),
 	XMLINIT(JobTitle),
 	XMLINIT(OfficeLocation),
+	XMLINIT(PostalAddressIndex),
 	XMLINIT(Surname)
 {}
 
@@ -659,6 +660,7 @@ void tContact::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(ContactSource);
 	XMLDUMPT(JobTitle);
 	XMLDUMPT(OfficeLocation);
+	XMLDUMPT(PostalAddressIndex);
 	XMLDUMPT(Surname);
 }
 

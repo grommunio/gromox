@@ -20,6 +20,7 @@ static const PROPERTY_NAME NtEmailAddress1 = {MNID_ID, PSETID_ADDRESS, PidLidEma
 static const PROPERTY_NAME NtEmailAddress2 = {MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, nullptr};
 static const PROPERTY_NAME NtEmailAddress3 = {MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, nullptr};
 static const PROPERTY_NAME NtImAddress1 = {MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, nullptr};
+static const PROPERTY_NAME NtPostalAddressIndex = {MNID_ID, PSETID_ADDRESS, PidLidPostalAddressIndex, nullptr};
 
 /* PSETID_Task */
 static const PROPERTY_NAME NtTaskStatus = {MNID_ID, PSETID_TASK, PidLidTaskStatus, nullptr};

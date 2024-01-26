@@ -1042,7 +1042,7 @@ struct tIndexedFieldURI
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, uint32_t>, 23> tagMap;
+	static std::array<std::pair<UIKey, uint32_t>, 24> tagMap;
 	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 9> nameMap;
 };
 
@@ -1934,7 +1934,7 @@ struct tContact : public tItem
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::string> FileAs;
-	std::optional<Enum::FileAsMappingType> FileAsMapping;
+	//std::optional<Enum::FileAsMappingType> FileAsMapping;
 	std::optional<std::string> DisplayName;
 	std::optional<std::string> GivenName;
 	std::optional<std::string> Initials;
@@ -1959,7 +1959,7 @@ struct tContact : public tItem
 	// <xs:element name="Manager" type="xs:string" minOccurs="0" />
 	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
 	std::optional<std::string> OfficeLocation;
-	// <xs:element name="PostalAddressIndex" type="t:PhysicalAddressIndexType" minOccurs="0" />
+	std::optional<Enum::PhysicalAddressIndexType> PostalAddressIndex;
 	// <xs:element name="Profession" type="xs:string" minOccurs="0" />
 	// <xs:element name="SpouseName" type="xs:string" minOccurs="0" />
 	std::optional<std::string> Surname;
