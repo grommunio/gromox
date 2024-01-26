@@ -929,7 +929,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 
 	try {
 		std::string dir = ctx.get_maildir(request.Email);
-		PROPERTY_NAME photo{MNID_STRING, PSETID_GROMOX, 0, const_cast<char*>("photo")};
+		PROPERTY_NAME photo{MNID_STRING, PSETID_GROMOX, 0, deconst("photo")};
 		PROPNAME_ARRAY propNames{1, &photo};
 		PROPID_ARRAY propIds = ctx.getNamedPropIds(dir, propNames);
 		if(propIds.count != 1)

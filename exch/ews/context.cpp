@@ -119,7 +119,7 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 	                                                 {return static_cast<const tBaseFolderType&>(f);}, folder);
 	for(const tExtendedProperty& prop : baseFolder.ExtendedProperty)
 		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);
-	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, const_cast<uint64_t*>(&parent.folderId)});
+	shape.write(TAGGED_PROPVAL{PidTagParentFolderId, deconst(&parent.folderId)});
 	const char* fclass = "IPF.Note";
 	mapi_folder_type type = FOLDER_GENERIC;
 	if(baseFolder.FolderClass)
@@ -136,9 +136,9 @@ sFolder EWSContext::create(const std::string& dir, const sFolderSpec& parent, co
 			fclass = "IPF.Task"; break;
 		}
 	shape.write(TAGGED_PROPVAL{PR_FOLDER_TYPE, &type});
-	shape.write(TAGGED_PROPVAL{PR_CONTAINER_CLASS, const_cast<char*>(fclass)});
+	shape.write(TAGGED_PROPVAL{PR_CONTAINER_CLASS, deconst(fclass)});
 	if(baseFolder.DisplayName)
-		shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, const_cast<char*>(baseFolder.DisplayName->c_str())});
+		shape.write(TAGGED_PROPVAL{PR_DISPLAY_NAME, deconst(baseFolder.DisplayName->c_str())});
 	uint64_t now = rop_util_current_nttime();
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, &now});
 	shape.write({PR_LAST_MODIFICATION_TIME, &now});
@@ -261,7 +261,7 @@ uint32_t EWSContext::getAccountId(const std::string& name, bool isDomain) const
  */
 uint16_t EWSContext::getNamedPropId(const std::string& dir, const PROPERTY_NAME& propName, bool create) const
 {
-	PROPNAME_ARRAY propNames{1, const_cast<PROPERTY_NAME*>(&propName)};
+	PROPNAME_ARRAY propNames{1, deconst(&propName)};
 	PROPID_ARRAY namedIds{};
 	if(!m_plugin.exmdb.get_named_propids(dir.c_str(), create? TRUE : false, &propNames, &namedIds) || namedIds.count != 1)
 		throw DispatchError(E3246);
@@ -470,7 +470,7 @@ std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubs
 TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t folderId) const
 {
 	static constexpr uint32_t propids[] = {PR_ENTRYID};
-	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
+	PROPTAG_ARRAY proptags{1, deconst(propids)};
 	TPROPVAL_ARRAY props = getFolderProps(dir, folderId, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
 		throw EWSError::FolderPropertyRequestFailed(E3022);
@@ -506,7 +506,7 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folde
 TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) const
 {
 	static const uint32_t propids[] = {PR_ENTRYID};
-	PROPTAG_ARRAY proptags{1, const_cast<uint32_t*>(propids)};
+	PROPTAG_ARRAY proptags{1, deconst(propids)};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
 		throw EWSError::ItemPropertyRequestFailed(E3024);
@@ -577,7 +577,7 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
 GUID EWSContext::getMailboxGuid(const std::string& dir) const
 {
 	static const uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
-	static constexpr PROPTAG_ARRAY recordKeyTags{1, const_cast<uint32_t*>(&recordKeyTag)};
+	static constexpr PROPTAG_ARRAY recordKeyTags{1, deconst(&recordKeyTag)};
 	TPROPVAL_ARRAY recordKeyProp;
 	if(!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
 	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
@@ -1322,7 +1322,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	toContent(dir, static_cast<tItem&>(item), shape, content);
 	// TODO: goid, recurrences
 	if(!item.ItemClass)
-		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>("IPM.Appointment")});
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	if(item.Start) {
 		auto ntstart = rop_util_unix_to_nttime(item.Start.value());
 		auto start = EWSContext::construct<uint64_t>(ntstart);
@@ -1354,7 +1354,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	else
 		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(0)});
 	if(item.Location)
-		shape.write(NtLocation, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(item.Location.value().c_str())});
+		shape.write(NtLocation, TAGGED_PROPVAL{PT_UNICODE, deconst(item.Location.value().c_str())});
 }
 
 /**
@@ -1403,7 +1403,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 		content = std::move(cnt);
 	}
 	if(item.ItemClass)
-		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>(item.ItemClass->c_str())});
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
 	if(item.Sensitivity)
 		shape.write(TAGGED_PROPVAL{PR_SENSITIVITY, construct<uint32_t>(item.Sensitivity->index())});
 	if(item.Categories && item.Categories->size() && item.Categories->size() <= std::numeric_limits<uint32_t>::max()) {
@@ -1419,7 +1419,7 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if(item.Importance)
 		shape.write(TAGGED_PROPVAL{PR_IMPORTANCE, construct<uint32_t>(item.Importance->index())});
 	if(item.Subject)
-		shape.write(TAGGED_PROPVAL{PR_SUBJECT, const_cast<char*>(item.Subject->c_str())});
+		shape.write(TAGGED_PROPVAL{PR_SUBJECT, deconst(item.Subject->c_str())});
 
 	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
 	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
@@ -1601,7 +1601,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) con
 	if(!m_plugin.mysql.get_user_displayname(m_auth_info.username, displayName, std::size(displayName)) || !*displayName)
 		_props[props.count++].pvalue = displayName;
 	else
-		_props[props.count++].pvalue = const_cast<char*>(m_auth_info.username);
+		_props[props.count++].pvalue = deconst(m_auth_info.username);
 
 	uint8_t abEidBuff[1280];
 	EXT_PUSH wAbEid;

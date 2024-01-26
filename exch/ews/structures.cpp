@@ -160,7 +160,7 @@ inline C mkArray(const std::vector<T>& data)
 {
 	if(data.size() > max_count<C>())
 		throw DispatchError(E3099);
-	return C{count_t<C>(data.size()), const_cast<T*>(data.data())};
+	return C{count_t<C>(data.size()), deconst(data.data())};
 }
 
 /**
@@ -954,7 +954,7 @@ template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
  * @return     The propname array
  */
 PROPNAME_ARRAY sShape::namedProperties() const
-{return PROPNAME_ARRAY{uint16_t(names.size()), const_cast<PROPERTY_NAME*>(names.data())};}
+{return PROPNAME_ARRAY{uint16_t(names.size()), deconst(names.data())};}
 
 /**
  * @brief      Set named property IDs
@@ -1019,7 +1019,7 @@ void sShape::properties(const TPROPVAL_ARRAY& properties)
  * @return     Tag ID array
  */
 PROPTAG_ARRAY sShape::proptags() const
-{return PROPTAG_ARRAY{uint16_t(tags.size()), const_cast<uint32_t*>(tags.data())};}
+{return PROPTAG_ARRAY{uint16_t(tags.size()), deconst(tags.data())};}
 
 /**
  * @brief      Store extended properties
@@ -2327,7 +2327,7 @@ PROPERTY_NAME tExtendedFieldURI::name() const
 	name.guid = PropertySetId? *PropertySetId : *propsetIds[DistinguishedPropertySetId->index()];
 	if(PropertyName) {
 		name.kind = MNID_STRING;
-		name.pname = const_cast<char*>(PropertyName->c_str());
+		name.pname = deconst(PropertyName->c_str());
 	} else if(PropertyId) {
 		name.kind = MNID_ID;
 		name.lid = *PropertyId;
@@ -2883,10 +2883,10 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 }};
 
 decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
-	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, const_cast<char*>("InstantMessagingAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, const_cast<char*>("Email1EmailAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, const_cast<char*>("Email2EmailAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, const_cast<char*>("Email3EmailAddress")}, PT_UNICODE}},
+	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, deconst("InstantMessagingAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, deconst("Email1EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, deconst("Email2EmailAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, deconst("Email3EmailAddress")}, PT_UNICODE}},
 }};
 
 void tIndexedFieldURI::tags(sShape& shape, bool add) const

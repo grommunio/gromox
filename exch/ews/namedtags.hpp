@@ -7,8 +7,8 @@
 #include <gromox/mapidefs.h>
 
 // Follow the order in mapitags.hpp
-static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")};
-static const PROPERTY_NAME NtCategories = {MNID_STRING, PS_PUBLIC_STRINGS, 0, const_cast<char*>("Keywords")};
+static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, deconst("GlobalObjectId")};
+static const PROPERTY_NAME NtCategories = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
 
 
 /* PSETID_Address */
@@ -31,27 +31,27 @@ static const PROPERTY_NAME NtTaskOwner = {MNID_ID, PSETID_TASK, PidLidTaskOwner}
 static const PROPERTY_NAME NtTaskFRecurring = {MNID_ID, PSETID_TASK, PidLidTaskFRecurring};
 
 /* PSETID_Appointment */
-static const PROPERTY_NAME NtAppointmentSequence = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence, const_cast<char*>("AppointmentSequence")};
-static const PROPERTY_NAME NtBusyStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus, const_cast<char*>("BusyStatus")};
-static const PROPERTY_NAME NtLocation = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation, const_cast<char*>("Location")};
-static const PROPERTY_NAME NtAppointmentReplyTime = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentReplyTime, const_cast<char*>("AppointmentReplyTime")};
+static const PROPERTY_NAME NtAppointmentSequence = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence, deconst("AppointmentSequence")};
+static const PROPERTY_NAME NtBusyStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus, deconst("BusyStatus")};
+static const PROPERTY_NAME NtLocation = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation, deconst("Location")};
+static const PROPERTY_NAME NtAppointmentReplyTime = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentReplyTime, deconst("AppointmentReplyTime")};
 static const PROPERTY_NAME NtAppointmentStartWhole = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole};
 static const PROPERTY_NAME NtAppointmentEndWhole = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole};
-static const PROPERTY_NAME NtAppointmentSubType = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType, const_cast<char*>("AppointmentSubType")};
-static const PROPERTY_NAME NtAppointmentRecur = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")};
-static const PROPERTY_NAME NtAppointmentStateFlags = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")};
-static const PROPERTY_NAME NtExceptionReplaceTime = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, const_cast<char*>("ExceptionReplaceTime")};
-static const PROPERTY_NAME NtFInvited = {MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, const_cast<char*>("FInvited")};
-static const PROPERTY_NAME NtResponseStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus, const_cast<char*>("ResponseStatus")};
-static const PROPERTY_NAME NtRecurring = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurring, const_cast<char*>("Recurring")};
-static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose, const_cast<char*>("AppointmentNotAllowPropose")};
+static const PROPERTY_NAME NtAppointmentSubType = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType, deconst("AppointmentSubType")};
+static const PROPERTY_NAME NtAppointmentRecur = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, deconst("AppointmentRecur")};
+static const PROPERTY_NAME NtAppointmentStateFlags = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, deconst("AppointmentStateFlags")};
+static const PROPERTY_NAME NtExceptionReplaceTime = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, deconst("ExceptionReplaceTime")};
+static const PROPERTY_NAME NtFInvited = {MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, deconst("FInvited")};
+static const PROPERTY_NAME NtResponseStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus, deconst("ResponseStatus")};
+static const PROPERTY_NAME NtRecurring = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurring, deconst("Recurring")};
+static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose, deconst("AppointmentNotAllowPropose")};
 
 /* PSETID_Common */
 static const PROPERTY_NAME NtReminderDelta = {MNID_ID, PSETID_COMMON, PidLidReminderDelta};
 static const PROPERTY_NAME NtReminderTime = {MNID_ID, PSETID_COMMON, PidLidReminderTime};
 static const PROPERTY_NAME NtReminderSet = {MNID_ID, PSETID_COMMON, PidLidReminderSet};
-static const PROPERTY_NAME NtCommonStart = {MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")};
-static const PROPERTY_NAME NtCommonEnd = {MNID_ID, PSETID_COMMON, PidLidCommonEnd, const_cast<char*>("CommonEnd")};
+static const PROPERTY_NAME NtCommonStart = {MNID_ID, PSETID_COMMON, PidLidCommonStart, deconst("CommonStart")};
+static const PROPERTY_NAME NtCommonEnd = {MNID_ID, PSETID_COMMON, PidLidCommonEnd, deconst("CommonEnd")};
 static const PROPERTY_NAME NtMileage = {MNID_ID, PSETID_COMMON, PidLidMileage};
 static const PROPERTY_NAME NtBilling = {MNID_ID, PSETID_COMMON, PidLidBilling};
 static const PROPERTY_NAME NtCompanies = {MNID_ID, PSETID_COMMON, PidLidCompanies};
