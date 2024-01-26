@@ -69,8 +69,8 @@ snapshot_type(const std::string &root, const std::string &grpdir)
 		fprintf(stderr, "statfs %s: %s\n", root.c_str(), strerror(errno));
 		return snapshot_mode::error;
 	}
-	static constexpr int btrfs_magic = 0x9123683e;
-	if (sb.f_type == btrfs_magic)
+	static constexpr auto btrfs_magic = 0x9123683eU;
+	if (std::make_unsigned_t<decltype(sb.f_type)>(sb.f_type) == btrfs_magic)
 		return snapshot_mode::btrfs;
 	auto err = reflink_supported(root, grpdir);
 	if (err != 0) {
