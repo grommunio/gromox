@@ -1353,6 +1353,8 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(item.IsRecurring.value())});
 	else
 		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(0)});
+	if(item.Location)
+		shape.write(NtLocation, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(item.Location.value().c_str())});
 }
 
 /**
@@ -1419,10 +1421,9 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	if(item.Subject)
 		shape.write(TAGGED_PROPVAL{PR_SUBJECT, const_cast<char*>(item.Subject->c_str())});
 
-	uint64_t ntnow = rop_util_current_nttime();
-	auto now = EWSContext::construct<uint64_t>(ntnow);
-	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, &now});
-	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, &now});
+	auto now = EWSContext::construct<uint64_t>(rop_util_current_nttime());
+	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, now});
+	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, now});
 
 	for(const tExtendedProperty& prop : item.ExtendedProperty)
 		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);
