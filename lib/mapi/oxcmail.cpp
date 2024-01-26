@@ -3052,7 +3052,7 @@ static BOOL oxcmail_export_addresses(const TARRAY_SET &rcpt_list,
 		if (pdisplay_name != nullptr)
 			mb->setName(vmime::text(pdisplay_name, vmime::charsets::UTF_8));
 		std::string username;
-		if (!oxcmail_get_smtp_address(rcpt, &tags_self,
+		if (oxcmail_get_smtp_address(rcpt, &tags_self,
 		    g_oxcmail_org_name, oxcmail_id2user, username))
 			mb->setEmail(username);
 		mblist.appendMailbox(mb);
