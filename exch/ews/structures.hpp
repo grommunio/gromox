@@ -1163,7 +1163,10 @@ struct tChangeDescription
 	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
+	template<typename ET, typename PT=uint32_t>
+	static void convEnumIndex(const PROPERTY_NAME&,  const tinyxml2::XMLElement*, sShape&);
 	static void convCategories(const tinyxml2::XMLElement*, sShape&);
+	static void convBody(const tinyxml2::XMLElement*, sShape&);
 
 	static std::array<const char*, 15> itemTypes;
 	static std::array<const char*, 5> folderTypes;

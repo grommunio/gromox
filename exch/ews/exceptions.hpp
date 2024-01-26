@@ -377,6 +377,7 @@ E(3252, "invalid input id");
 E(3253, "output format not supported");
 E(3254, "failed to set item properties");
 E(3255, "failed to set item properties");
+E(3256, "input body size too large");
 
 #undef E
 }

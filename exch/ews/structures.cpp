@@ -1711,15 +1711,24 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
+	{"Body", {tChangeDescription::convBody}},
 	{"Categories", {tChangeDescription::convCategories}},
+	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
+	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
+	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
 	{"IsDeliveryReceiptRequested", {[](auto&&... args){convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
+	{"JobTitle", {[](auto&&... args){convText(PR_TITLE, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
 	{"MimeContent", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.mimeContent = base64_decode(xml->GetText());}}},
+	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
+	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
 	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
+	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
+	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
 }};
 
 
@@ -1787,6 +1796,29 @@ void tChangeDescription::convProp(const char* type, const char* name, const tiny
 }
 
 /**
+ * @brief      Convert Body tag to property
+ *
+ * @param      xml     XML node containing the body
+ * @param      shape   Shape to store the data in
+ */
+void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape)
+{
+	const char* bodyType = xml->Attribute("BodyType");
+	Enum::BodyTypeType type = bodyType? bodyType : Enum::Text;
+	const char* text = xml->GetText()? xml->GetText() : "";
+	if(type == Enum::Text)
+		shape.write(TAGGED_PROPVAL{PR_BODY, const_cast<char*>(text)});
+	else {
+		size_t len = strlen(text);
+		if(len > std::numeric_limits<uint32_t>::max())
+			throw InputError(E3256);
+		BINARY* html = EWSContext::construct<BINARY>(BINARY{uint32_t(strlen(text)),
+		                                                    {reinterpret_cast<uint8_t*>(const_cast<char*>(text))}});
+		shape.write(TAGGED_PROPVAL{PR_HTML, html});
+	}
+}
+
+/**
  * @brief      Property conversion function for boolean fields
  *
  * @param      tag    Tag ID
@@ -1816,6 +1848,22 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 template<typename ET, typename PT>
 void tChangeDescription::convEnumIndex(uint32_t tag, const XMLElement* v, sShape& shape)
 {shape.write(mkProp(tag, PT{ET{v->GetText()}.index()}));}
+
+/**
+ * @brief      Property coversion function for enumerations
+ *
+ * Converts string to corresponding index and stores it in a numeric property.
+ *
+ * @param      name   Property name
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ *
+ * @tparam     ET     Enumeration type
+ * @tparam     PT     Numeric property type
+ */
+template<typename ET, typename PT>
+void tChangeDescription::convEnumIndex(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+{shape.write(mkProp(shape.tag(name), PT(ET(v->GetText()).index())));}
 
 /**
  * @brief      Property conversion function for boolean fields
