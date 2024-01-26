@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -1318,7 +1318,42 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
  * @todo Map remaining fields
  */
 void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
-{toContent(dir, static_cast<tItem&>(item), shape, content);}
+{
+	toContent(dir, static_cast<tItem&>(item), shape, content);
+	// TODO: goid, recurrences
+	if(!item.ItemClass)
+		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>("IPM.Appointment")});
+	if(item.Start) {
+		auto ntstart = rop_util_unix_to_nttime(item.Start.value());
+		auto start = EWSContext::construct<uint64_t>(ntstart);
+		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
+		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
+	}
+	if(item.End) {
+		auto ntend = rop_util_unix_to_nttime(item.End.value());
+		auto end = EWSContext::construct<uint64_t>(ntend);
+		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
+		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
+	}
+	if(item.IsAllDayEvent)
+		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(item.IsAllDayEvent.value())});
+	else
+		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(0)});
+	if(item.LegacyFreeBusyStatus)
+		shape.write(NtBusyStatus, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.LegacyFreeBusyStatus->index())});
+	else
+		shape.write(NtBusyStatus, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(olBusy)});
+	if(item.IsResponseRequested)
+		shape.write(TAGGED_PROPVAL{PR_RESPONSE_REQUESTED, EWSContext::construct<uint32_t>(item.IsResponseRequested.value())});
+	if(item.AllowNewTimeProposal)
+		shape.write(NtAppointmentNotAllowPropose, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(!item.AllowNewTimeProposal.value())});
+	if(item.IsRecurring)
+		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(item.IsRecurring.value())});
+	else
+		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(0)});
+}
 
 /**
  * @brief      Write contact item properties to shape
@@ -1381,6 +1416,13 @@ void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, M
 	}
 	if(item.Importance)
 		shape.write(TAGGED_PROPVAL{PR_IMPORTANCE, construct<uint32_t>(item.Importance->index())});
+	if(item.Subject)
+		shape.write(TAGGED_PROPVAL{PR_SUBJECT, const_cast<char*>(item.Subject->c_str())});
+
+	uint64_t ntnow = rop_util_current_nttime();
+	auto now = EWSContext::construct<uint64_t>(ntnow);
+	shape.write(TAGGED_PROPVAL{PR_CREATION_TIME, &now});
+	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, &now});
 
 	for(const tExtendedProperty& prop : item.ExtendedProperty)
 		prop.ExtendedFieldURI.tag()? shape.write(prop.propval) : shape.write(prop.ExtendedFieldURI.name(), prop.propval);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 /**
  * @brief      Implementation of EWS structure methods
@@ -2689,24 +2689,24 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
-	{"calendar:AllowNewTimeProposal", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose, const_cast<char*>("AppointmentSubType")}, PT_BOOLEAN}},
-	{"calendar:AppointmentReplyTime", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentReplyTime, const_cast<char*>("AppointmentReplyTime")}, PT_SYSTIME}},
-	{"calendar:AppointmentState", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")}, PT_LONG}},
-	{"calendar:AppointmentSequenceNumber", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSequence, const_cast<char*>("AppointmentSequence")}, PT_LONG}},
-	{"calendar:End", {{MNID_ID, PSETID_COMMON, PidLidCommonEnd, const_cast<char*>("CommonEnd")}, PT_SYSTIME}},
-	{"calendar:IsAllDayEvent", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType, const_cast<char*>("AppointmentSubType")}, PT_BOOLEAN}},
-	{"calendar:IsCancelled", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")}, PT_LONG}},
-	{"calendar:IsMeeting", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, const_cast<char*>("AppointmentStateFlags")}, PT_LONG}},
-	{"calendar:IsRecurring", {{MNID_ID, PSETID_APPOINTMENT, PidLidRecurring, const_cast<char*>("Recurring")}, PT_BOOLEAN}},
-	{"calendar:LegacyFreeBusyStatus", {{MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus, const_cast<char*>("BusyStatus")}, PT_LONG}},
-	{"calendar:Location", {{MNID_ID, PSETID_APPOINTMENT, PidLidLocation, const_cast<char*>("Location")}, PT_UNICODE}},
-	{"calendar:MeetingRequestWasSent", {{MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, const_cast<char*>("FInvited")}, PT_BOOLEAN}},
-	{"calendar:MyResponseType", {{MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus, const_cast<char*>("ResponseStatus")}, PT_LONG}},
-	{"calendar:Recurrence", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
-	{"calendar:DeletedOccurrences", {{MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, const_cast<char*>("AppointmentRecur")}, PT_BINARY}},
-	{"calendar:Start", {{MNID_ID, PSETID_COMMON, PidLidCommonStart, const_cast<char*>("CommonStart")}, PT_SYSTIME}},
-	{"calendar:UID", {{MNID_ID, PSETID_MEETING, PidLidGlobalObjectId, const_cast<char*>("GlobalObjectId")}, PT_BINARY}},
-	{"calendar:RecurrenceId", {{MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, const_cast<char*>("ExceptionReplaceTime")}, PT_SYSTIME}},
+	{"calendar:AllowNewTimeProposal", {NtAppointmentNotAllowPropose, PT_BOOLEAN}},
+	{"calendar:AppointmentReplyTime", {NtAppointmentReplyTime, PT_SYSTIME}},
+	{"calendar:AppointmentState", {NtAppointmentStateFlags, PT_LONG}},
+	{"calendar:AppointmentSequenceNumber", {NtAppointmentSequence, PT_LONG}},
+	{"calendar:End", {NtCommonEnd, PT_SYSTIME}},
+	{"calendar:IsAllDayEvent", {NtAppointmentSubType, PT_BOOLEAN}},
+	{"calendar:IsCancelled", {NtAppointmentStateFlags, PT_LONG}},
+	{"calendar:IsMeeting", {NtAppointmentStateFlags, PT_LONG}},
+	{"calendar:IsRecurring", {NtRecurring, PT_BOOLEAN}},
+	{"calendar:LegacyFreeBusyStatus", {NtBusyStatus, PT_LONG}},
+	{"calendar:Location", {NtLocation, PT_UNICODE}},
+	{"calendar:MeetingRequestWasSent", {NtFInvited, PT_BOOLEAN}},
+	{"calendar:MyResponseType", {NtResponseStatus, PT_LONG}},
+	{"calendar:Recurrence", {NtAppointmentRecur, PT_BINARY}},
+	{"calendar:DeletedOccurrences", {NtAppointmentRecur, PT_BINARY}},
+	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
+	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
+	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
 	{"item:ReminderIsSet", {NtReminderSet, PT_BOOLEAN}},
