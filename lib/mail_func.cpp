@@ -268,7 +268,7 @@ BOOL parse_uri(const char *uri_buff, char *parsed_uri)
  */
 void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
 {
-	vmime::mailbox mb;
+	vmime::mailbox mb("");
 	mb.parse(input);
 
 	gx_strlcpy(e_addr->display_name, mb.getName().getConvertedText("utf-8").c_str(), std::size(e_addr->display_name));

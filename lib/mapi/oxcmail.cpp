@@ -3047,7 +3047,7 @@ static BOOL oxcmail_export_addresses(const TARRAY_SET &rcpt_list,
 		auto pvalue = rcpt.get<uint32_t>(PR_RECIPIENT_TYPE);
 		if (pvalue == nullptr || *pvalue != rcpt_type)
 			continue;
-		auto mb = vmime::make_shared<vmime::mailbox>();
+		auto mb = vmime::make_shared<vmime::mailbox>("");
 		auto pdisplay_name = rcpt.get<char>(PR_DISPLAY_NAME);
 		if (pdisplay_name != nullptr)
 			mb->setName(vmime::text(pdisplay_name, vmime::charsets::UTF_8));
@@ -3099,7 +3099,7 @@ static bool oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 			mlog(LV_WARN, "W-1964: skipping non-SMTP reply-to entry");
 			continue;
 		}
-		auto mb = vmime::make_shared<vmime::mailbox>();
+		auto mb = vmime::make_shared<vmime::mailbox>("");
 		if (oo.pdisplay_name != nullptr && *oo.pdisplay_name != '\0')
 			mb->setName(vmime::text(oo.pdisplay_name, vmime::charsets::UTF_8));
 		if (*oo.pmail_address != '\0')
@@ -3356,7 +3356,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 	if (str != nullptr && str1 != nullptr) {
 		if (strcasecmp(str, str1) == 0)
 			return true; /* field not needed */
-		auto mb = vmime::make_shared<vmime::mailbox>();
+		auto mb = vmime::make_shared<vmime::mailbox>("");
 		if (!oxcmail_export_address(pmsg, tags_sender, *mb))
 			return true; /* not present */
 		if (!phead->set_field("Sender", mb->generate().c_str()))
@@ -3372,7 +3372,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 	str1 = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 	if (str == nullptr || str1 == nullptr || strcasecmp(str, str1) == 0)
 		return true;
-	auto mb = vmime::make_shared<vmime::mailbox>();
+	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (oxcmail_export_address(pmsg, tags_sender, *mb))
 		if (!phead->set_field("Sender", mb->generate().c_str()))
 			return false;
@@ -3384,7 +3384,7 @@ static bool oxcmail_export_sender(const MESSAGE_CONTENT *pmsg,
 static bool oxcmail_export_fromsender(const MESSAGE_CONTENT *pmsg,
     MIME *phead, bool sched) try
 {
-	auto mb = vmime::make_shared<vmime::mailbox>();
+	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (sched) {
 		if (oxcmail_export_address(pmsg, tags_sender, *mb))
 			if (!phead->set_field("From", mb->generate().c_str()))
@@ -3409,7 +3409,7 @@ static bool oxcmail_export_receiptto(const MESSAGE_CONTENT *pmsg,
 	auto flag = pmsg->proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return true;
-	auto mb = vmime::make_shared<vmime::mailbox>();
+	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (oxcmail_export_address(pmsg, tags_read_rcpt, *mb))
 		/* ok */;
 	else if (oxcmail_export_address(pmsg, tags_sender, *mb))
@@ -3429,7 +3429,7 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 	auto flag = pmsg->proplist.get<uint8_t>(PR_READ_RECEIPT_REQUESTED);
 	if (flag == nullptr || *flag == 0)
 		return true;
-	auto mb = vmime::make_shared<vmime::mailbox>();
+	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (oxcmail_export_address(pmsg, tags_read_rcpt, *mb))
 		/* ok */;
 	else if (sched && oxcmail_export_address(pmsg, tags_sent_repr, *mb))
