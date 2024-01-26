@@ -3057,7 +3057,7 @@ static BOOL oxcmail_export_addresses(const TARRAY_SET &rcpt_list,
 			mb->setEmail(username);
 		mblist.appendMailbox(mb);
 	}
-	return true;
+	return !mblist.isEmpty();
 } catch (...) {
 	return false;
 }
