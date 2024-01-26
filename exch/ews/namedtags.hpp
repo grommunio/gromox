@@ -11,10 +11,15 @@ static const PROPERTY_NAME NtGlobalObjectId = {MNID_ID, PSETID_MEETING, PidLidGl
 static const PROPERTY_NAME NtCategories = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst("Keywords")};
 
 /* PSETID_Address */
-static const PROPERTY_NAME NtImAddress1 = {MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, nullptr};
+static const PROPERTY_NAME NtBusinessAddressCity = {MNID_ID, PSETID_ADDRESS, PidLidWorkAddressCity, nullptr};
+static const PROPERTY_NAME NtBusinessAddressCountry = {MNID_ID, PSETID_ADDRESS, PidLidWorkAddressStreet, nullptr};
+static const PROPERTY_NAME NtBusinessAddressPostalCode = {MNID_ID, PSETID_ADDRESS, PidLidWorkAddressPostalCode, nullptr};
+static const PROPERTY_NAME NtBusinessAddressState = {MNID_ID, PSETID_ADDRESS, PidLidWorkAddressState, nullptr};
+static const PROPERTY_NAME NtBusinessAddressStreet = {MNID_ID, PSETID_ADDRESS, PidLidWorkAddressStreet, nullptr};
 static const PROPERTY_NAME NtEmailAddress1 = {MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, nullptr};
 static const PROPERTY_NAME NtEmailAddress2 = {MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, nullptr};
 static const PROPERTY_NAME NtEmailAddress3 = {MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, nullptr};
+static const PROPERTY_NAME NtImAddress1 = {MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, nullptr};
 
 /* PSETID_Task */
 static const PROPERTY_NAME NtTaskStatus = {MNID_ID, PSETID_TASK, PidLidTaskStatus, nullptr};

@@ -374,6 +374,7 @@ public:
 	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
 	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
+	template<typename T> const T* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
 
 
@@ -1041,8 +1042,8 @@ struct tIndexedFieldURI
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, uint32_t>, 28> tagMap;
-	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 4> nameMap;
+	static std::array<std::pair<UIKey, uint32_t>, 23> tagMap;
+	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 9> nameMap;
 };
 
 /**
@@ -1906,6 +1907,8 @@ struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
 	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
+
+	explicit inline tPhysicalAddressDictionaryEntry(Enum::PhysicalAddressKeyType pak) : Key(pak) {}
 
 	Enum::PhysicalAddressKeyType Key; // Attribute
 

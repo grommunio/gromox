@@ -949,6 +949,25 @@ template<typename T> const T* sShape::get(uint32_t tag, uint8_t mask) const
 }
 
 /**
+ * @brief      Get property data
+ *
+ * @param      name  Property name
+ * @param      mask  Mask of flags or FL_ANY
+ *
+ * @tparam     T     Property value type
+ *
+ * @return     Pointer to property value or nullptr if not found
+ */
+template<typename T> const T* sShape::get(const PROPERTY_NAME& name, uint8_t mask) const
+{
+	auto it = std::find(names.begin(), names.end(), name);
+	if(it == names.end())
+		return nullptr;
+	auto index = std::distance(names.begin(), it);
+	return get<T>(namedTags[index], mask);
+}
+
+/**
  * @brief      Wrap requested property names
  *
  * @return     The propname array
@@ -1851,6 +1870,48 @@ void tContact::update(const sShape& shape)
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::Callback));
 	if((val = shape.get<char>(PR_RADIO_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::RadioPhone));
+
+	std::optional<tPhysicalAddressDictionaryEntry> bAddr, hAddr, oAddr; // "Business", "Home", and "Other" address
+	if((val = shape.get<char>(NtBusinessAddressCity)))
+		defaulted(bAddr, Enum::Business).City = val;
+	if((val = shape.get<char>(NtBusinessAddressCountry)))
+		defaulted(bAddr, Enum::Business).CountryOrRegion = val;
+	if((val = shape.get<char>(NtBusinessAddressPostalCode)))
+		defaulted(bAddr, Enum::Business).PostalCode = val;
+	if((val = shape.get<char>(NtBusinessAddressState)))
+		defaulted(bAddr, Enum::Business).State = val;
+	if((val = shape.get<char>(NtBusinessAddressStreet)))
+		defaulted(bAddr, Enum::Business).Street = val;
+	if((val = shape.get<char>(PR_HOME_ADDRESS_CITY)))
+		defaulted(hAddr, Enum::Home).City = val;
+	if((val = shape.get<char>(PR_HOME_ADDRESS_COUNTRY)))
+		defaulted(hAddr, Enum::Home).CountryOrRegion = val;
+	if((val = shape.get<char>(PR_HOME_ADDRESS_POSTAL_CODE)))
+		defaulted(hAddr, Enum::Home).PostalCode = val;
+	if((val = shape.get<char>(PR_HOME_ADDRESS_STATE_OR_PROVINCE)))
+		defaulted(hAddr, Enum::Home).State = val;
+	if((val = shape.get<char>(PR_HOME_ADDRESS_STREET)))
+		defaulted(hAddr, Enum::Home).Street = val;
+	if((val = shape.get<char>(PR_OTHER_ADDRESS_CITY)))
+		defaulted(oAddr, Enum::Other).City = val;
+	if((val = shape.get<char>(PR_OTHER_ADDRESS_COUNTRY)))
+		defaulted(oAddr, Enum::Other).CountryOrRegion = val;
+	if((val = shape.get<char>(PR_OTHER_ADDRESS_POSTAL_CODE)))
+		defaulted(oAddr, Enum::Other).PostalCode = val;
+	if((val = shape.get<char>(PR_OTHER_ADDRESS_STATE_OR_PROVINCE)))
+		defaulted(oAddr, Enum::Other).State = val;
+	if((val = shape.get<char>(PR_OTHER_ADDRESS_STREET)))
+		defaulted(oAddr, Enum::Other).Street = val;
+	if(bAddr || hAddr || oAddr) {
+		PhysicalAddresses.emplace().reserve(bAddr.has_value()+hAddr.has_value()+oAddr.has_value());
+		if(bAddr)
+			PhysicalAddresses->emplace_back(std::move(*bAddr));
+		if(hAddr)
+			PhysicalAddresses->emplace_back(std::move(*hAddr));
+		if(oAddr)
+			PhysicalAddresses->emplace_back(std::move(*oAddr));
+	}
+
 	const TAGGED_PROPVAL* prop;
 	if((prop = shape.get(PR_DISPLAY_NAME_PREFIX)))
 		fromProp(prop, defaulted(CompleteName).Title);
@@ -2868,28 +2929,28 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "OtherTelephone"}, PR_OTHER_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "Pager"}, PR_PAGER_TELEPHONE_NUMBER}, // same as PR_BEEPER_TELEPHONE_NUMBER
 	{{"contacts:PhoneNumber", "RadioPhone"}, PR_RADIO_TELEPHONE_NUMBER},
-	{{"contacts:PhysicalAddress:City", "Business"}, PR_BUSINESS_ADDRESS_CITY},
 	{{"contacts:PhysicalAddress:City", "Home"}, PR_HOME_ADDRESS_CITY},
 	{{"contacts:PhysicalAddress:City", "Other"}, PR_OTHER_ADDRESS_CITY},
-	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, PR_BUSINESS_ADDRESS_COUNTRY},
 	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, PR_HOME_ADDRESS_COUNTRY},
 	{{"contacts:PhysicalAddress:CountryOrRegion", "Other"}, PR_OTHER_ADDRESS_COUNTRY},
-	{{"contacts:PhysicalAddress:PostalCode", "Business"}, PR_BUSINESS_ADDRESS_POSTAL_CODE},
 	{{"contacts:PhysicalAddress:PostalCode", "Home"}, PR_HOME_ADDRESS_POSTAL_CODE},
 	{{"contacts:PhysicalAddress:PostalCode", "Other"}, PR_OTHER_ADDRESS_POSTAL_CODE},
-	{{"contacts:PhysicalAddress:State", "Business"}, PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE},
 	{{"contacts:PhysicalAddress:State", "Home"}, PR_HOME_ADDRESS_STATE_OR_PROVINCE},
 	{{"contacts:PhysicalAddress:State", "Other"}, PR_OTHER_ADDRESS_STATE_OR_PROVINCE},
-	{{"contacts:PhysicalAddress:Street", "Business"}, PR_BUSINESS_ADDRESS_STREET},
 	{{"contacts:PhysicalAddress:Street", "Home"}, PR_HOME_ADDRESS_STREET},
 	{{"contacts:PhysicalAddress:Street", "Other"}, PR_OTHER_ADDRESS_STREET},
 }};
 
 decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
-	{{"contacts:EmailAddress", "EmailAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail1EmailAddress, const_cast<char*>("Email1EmailAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress2"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail2EmailAddress, const_cast<char*>("Email2EmailAddress")}, PT_UNICODE}},
-	{{"contacts:EmailAddress", "EmailAddress3"}, {{MNID_ID, PSETID_ADDRESS, PidLidEmail3EmailAddress, const_cast<char*>("Email3EmailAddress")}, PT_UNICODE}},
-	{{"contacts:ImAddress", "ImAddress1"}, {{MNID_ID, PSETID_ADDRESS, PidLidInstantMessagingAddress, const_cast<char*>("InstantMessagingAddress")}, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress1"}, {NtEmailAddress1, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress2"}, {NtEmailAddress2, PT_UNICODE}},
+	{{"contacts:EmailAddress", "EmailAddress3"}, {NtEmailAddress3, PT_UNICODE}},
+	{{"contacts:ImAddress", "ImAddress1"}, {NtImAddress1, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:City", "Business"}, {NtBusinessAddressCity, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, {NtBusinessAddressCountry, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:PostalCode", "Business"}, {NtBusinessAddressPostalCode, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:State", "Business"}, {NtBusinessAddressState, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:Street", "Business"}, {NtBusinessAddressStreet, PT_UNICODE}},
 }};
 
 void tIndexedFieldURI::tags(sShape& shape, bool add) const
