@@ -1052,6 +1052,19 @@ void sShape::putExtended(std::vector<tExtendedProperty>& extprops) const
 			extprops.emplace_back(*prop.second.prop, prop.second.name? *prop.second.name : NONAME);
 }
 
+/**
+ * @brief      Get tag ID from name
+ *
+ * @param      name  Name to resolve
+ *
+ * @return     Property tag or 0 if unknown
+ */
+uint32_t sShape::tag(const PROPERTY_NAME& name) const
+{
+	auto it = std::find(names.begin(), names.end(), name);
+	return it == names.end()? 0 : namedTags[std::distance(names.begin(), it)];
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -2972,10 +2985,31 @@ void tIndexedFieldURI::tags(sShape& shape, bool add) const
 }
 
 /**
- * TODO: Implement tag mapping
+ * @brief      Get tag represented by indexed field URI
+ *
+ * If an indexed field URI corresponds to multiple tags, only the first match
+ * is returned.
+ *
+ * @param      getId   Function to resolve named property
+ *
+ * @return
  */
-uint32_t tIndexedFieldURI::tag(const sGetNameId&) const
-{return 0;}
+uint32_t tIndexedFieldURI::tag(const sGetNameId& getId) const
+{
+	static auto compval = [](const auto& v1, const tIndexedFieldURI& v2)
+	{return std::tie(v1.first.first, v1.first.second) < std::tie(v2.FieldURI, v2.FieldIndex);};
+
+	auto tagIt = std::lower_bound(tagMap.begin(), tagMap.end(), *this, compval);
+	if(tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
+		return tagIt->second;
+
+	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
+	if(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
+		uint16_t tagid =  getId(names->second.first);
+		return tagid? PROP_TAG(names->second.second, tagid) : 0;
+	}
+	return 0;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3375,8 +3409,24 @@ void tSetItemField::put(sShape& shape) const
 			shape.write(prop.propval);
 		else
 			shape.write(prop.ExtendedFieldURI.name(), prop.propval);
-	}
-	else
+	} else if(std::holds_alternative<tIndexedFieldURI>(fieldURI.asVariant())) {
+		const tIndexedFieldURI& uri = std::get<tIndexedFieldURI>(fieldURI.asVariant());
+		auto getId = [&shape](const PROPERTY_NAME& name){return PROP_ID(shape.tag(name));};
+		uint32_t tag = uri.tag(getId);
+		if(!tag) {
+			mlog(LV_WARN, "ews: failed to resolve indexed property %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
+			return;
+		} else if(PROP_TYPE(tag) != PT_UNICODE) { // All currently known indexed fields are text
+			mlog(LV_WARN, "ews: unsupported indexed property type for %s/%s", uri.FieldURI.c_str(), uri.FieldIndex.c_str());
+			return;
+		}
+		const tinyxml2::XMLElement* value = item;
+		// The value is contained in the lower most text node. The XML path is ignored.
+		for(const tinyxml2::XMLElement* temp= item->FirstChildElement(); temp; temp = temp->FirstChildElement())
+			value = temp;
+		const char*	text = value->GetText(); // Life time of the XML node exceeds shape, no need to copy value
+		shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(text? text : "")});
+	} else
 		convProp(item->Name(), child->Name(), child, shape);
 }
 

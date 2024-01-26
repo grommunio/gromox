@@ -359,6 +359,7 @@ public:
 	PROPNAME_ARRAY namedProperties() const;
 	void properties(const TPROPVAL_ARRAY&);
 	PROPTAG_ARRAY proptags() const;
+	uint32_t tag(const PROPERTY_NAME&) const;
 
 	sShape& add(uint32_t, uint8_t=0);
 	sShape& add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
