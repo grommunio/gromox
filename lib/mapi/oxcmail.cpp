@@ -1483,7 +1483,7 @@ static BOOL oxcmail_parse_transport_message_header(const MIME *pmime,
 	tmp_len = sizeof(tmp_buff) - 1;
 	if (!pmime->read_head(tmp_buff, &tmp_len))
 		return TRUE;
-	tmp_buff[tmp_len + 1] = '\0';
+	tmp_buff[tmp_len] = '\0';
 	uint32_t tag = oxcmail_is_ascii(tmp_buff) ?
 	               PR_TRANSPORT_MESSAGE_HEADERS :
 	               PR_TRANSPORT_MESSAGE_HEADERS_A;
