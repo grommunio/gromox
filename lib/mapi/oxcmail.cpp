@@ -3432,7 +3432,9 @@ static bool oxcmail_export_receiptflg(const MESSAGE_CONTENT *pmsg,
 	auto mb = vmime::make_shared<vmime::mailbox>("");
 	if (oxcmail_export_address(pmsg, tags_read_rcpt, *mb))
 		/* ok */;
-	else if (sched && oxcmail_export_address(pmsg, tags_sent_repr, *mb))
+	else if (oxcmail_export_address(pmsg, tags_sender, *mb))
+		/* ok */;
+	else if (!sched && oxcmail_export_address(pmsg, tags_sent_repr, *mb))
 		/* ok */;
 	else
 		return true; /* No recipient */
