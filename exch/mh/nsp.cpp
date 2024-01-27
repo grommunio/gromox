@@ -18,6 +18,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
@@ -114,7 +115,9 @@ struct MhNspContext : public MhContext
 	template<size_t I> using Request_t = std::variant_alternative_t<I, NspRequest>;	///< Request type by index
 	template<size_t I> using Response_t = std::variant_alternative_t<I, NspResponse>; ///< Response type by index
 
-	explicit MhNspContext(int contextId) : MhContext(contextId) {
+	explicit MhNspContext(int contextId, const std::string &excver) :
+		MhContext(contextId, excver)
+	{
 		ext_push.init(push_buff.get(), static_cast<uint32_t>(push_buff_size), EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
 	}
@@ -128,8 +131,7 @@ struct MhNspContext : public MhContext
 	nsp_ext_push ext_push{};
 };
 
-class MhNspPlugin
-{
+class MhNspPlugin {
 public:
 
 	explicit MhNspPlugin(void**);
@@ -160,6 +162,7 @@ private:
 	std::mutex hashLock;
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
+	std::string m_server_version;
 
 	static constexpr std::pair<const char *, MhNspPlugin::ProcRes(MhNspPlugin::*)(MhNspContext&)> reqProcessors[19] = {
 		{"bind", &MhNspPlugin::bind},
@@ -206,6 +209,11 @@ void* MhNspPlugin::scanWork(void* ptr)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static constexpr struct cfg_directive mhnsp_gxcfg_deflt[] = {
+	{"reported_server_version", "15.00.0847.4040"},
+	CFG_TABLE_END,
+};
+
 /**
  * @brief	Initialize NSP plugin
  *
@@ -236,6 +244,9 @@ MhNspPlugin::MhNspPlugin(void** ppdata)
 	    !query_service1(nsp_interface_unbind) ||
 	    !query_service1(nsp_interface_update_stat))
 		throw std::runtime_error("exchange_nsp not loaded\n");
+	auto cfg = config_file_initd("gromox.cfg", get_config_path(), mhnsp_gxcfg_deflt);
+	if (cfg != nullptr)
+		m_server_version = cfg->get_value("reported_server_version");
 	size_t context_num = get_context_num();
 	users.reserve(AVERAGE_SESSION_PER_CONTEXT*context_num);
 	sessions.reserve(AVERAGE_SESSION_PER_CONTEXT*context_num);
@@ -301,7 +312,7 @@ MhNspPlugin::SessionIterator MhNspPlugin::removeSession(const char* sessionID)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static std::unique_ptr<MhNspPlugin> plugin; ///< Global plugin
+static std::unique_ptr<MhNspPlugin> g_mhnsp_plugin; ///< Global plugin
 
 static BOOL nsp_preproc(int);
 static int nsp_retr(int);
@@ -339,11 +350,11 @@ static BOOL hpm_mh_nsp(int reason, void **plugdata)
 		interface.term = nullptr;
 		if (!register_interface(&interface))
 			return false;
-		plugin = std::move(created);
+		g_mhnsp_plugin = std::move(created);
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		plugin.reset();
+		g_mhnsp_plugin.reset();
 		return TRUE;
 	}
 	return false;
@@ -604,7 +615,7 @@ MhNspPlugin::ProcRes MhNspPlugin::getAddressBookUrl(MhNspContext& ctx)
 http_status MhNspPlugin::process(int context_id, const void *content,
     uint64_t length)
 {
-	auto heapctx = std::make_unique<MhNspContext>(context_id); /* huge object */
+	auto heapctx = std::make_unique<MhNspContext>(context_id, m_server_version); /* huge object */
 	MhNspContext &ctx = *heapctx;
 	if (ctx.auth_info.auth_status != http_status::ok)
 		return http_status::unauthorized;
@@ -640,5 +651,5 @@ static int nsp_retr(int)
 
 static http_status nsp_proc(int context_id, const void *content, uint64_t length)
 {
-	return plugin != nullptr ? plugin->process(context_id, content, length) : http_status::none;
+	return g_mhnsp_plugin != nullptr ? g_mhnsp_plugin->process(context_id, content, length) : http_status::none;
 }

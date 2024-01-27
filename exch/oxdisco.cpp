@@ -69,7 +69,7 @@ class OxdiscoPlugin {
 	uint server_id; // Hash of the name of the mail server
 	std::string RedirectAddr; // Domain to perform Autodiscover
 	std::string RedirectUrl; // URL for a subsequent Autodiscover request
-	std::string host_id;
+	std::string host_id, m_server_version;
 	int request_logging = 0; // 0 = none, 1 = request data
 	int response_logging = 0; // 0 = none, 1 = response data
 	int pretty_response = 0; // 0 = compact output, 1 = pretty printed response
@@ -105,7 +105,6 @@ DECLARE_HPM_API();
 static constexpr char
 	response_xmlns[] = "http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006",
 	response_outlook_xmlns[] = "http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a",
-	oxd_server_version[] = "73C0834F", /* 15.00.0847.4040 */
 	response_mobile_xmlns[] = "http://schemas.microsoft.com/exchange/autodiscover/mobilesync/responseschema/2006",
 	msas_base_url[] = "https://{}/Microsoft-Server-ActiveSync",
 	mailbox_base_url[] = "https://{}/mapi/{}/?MailboxId={}@{}",
@@ -380,6 +379,7 @@ static constexpr cfg_directive autodiscover_cfg_defaults[] = {
 	{"oxdisco_request_logging", "0", CFG_BOOL},
 	{"oxdisco_response_logging", "0", CFG_BOOL},
 	{"oxdisco_validate_scndrequest", "yes", CFG_BOOL},
+	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
 };
 
@@ -392,6 +392,15 @@ static enum adv_setting parse_adv(const char *s)
 	else if (strcasecmp(s, "new_mso_only") == 0)
 		return adv_setting::new_mso_only;
 	return adv_setting::yes;
+}
+
+static std::string exver_dotted_to_hex(const char *s)
+{
+	unsigned int v[4]{};
+	sscanf(s, "%u.%u.%u.%u", &v[0], &v[1], &v[2], &v[3]);
+	uint32_t w = 0x70008000 | ((v[0] & 0x3F) << 22) | ((v[1] & 0x3F) << 16) | ((v[2] & 0x7FFFF));
+	// struct v7_format { unsigned int magic:4 = 7, major:6, minor:6, a_flag_to_ignore:1, build:15; };
+	return fmt::format("{:08X}", w);
 }
 
 /**
@@ -447,6 +456,7 @@ void OxdiscoPlugin::loadConfig()
 	auto s = c->get_value("oxdisco_exonym");
 	if (s != nullptr)
 		host_id = s;
+	m_server_version = exver_dotted_to_hex(c->get_value("reported_server_version"));
 }
 
 /**
@@ -782,7 +792,7 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
 
 	auto depl_server = fmt::format("{}@{}", deploymentid, domain);
 	add_child(resp_prt, "Server", depl_server);
-	add_child(resp_prt, "ServerVersion", oxd_server_version);
+	add_child(resp_prt, "ServerVersion", m_server_version.c_str());
 
 	auto ServerDN = fmt::format(server_base_dn,
 		x500_org_name.c_str(), deploymentid, domain);

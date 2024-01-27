@@ -41,6 +41,7 @@ static DCERPC_ENDPOINT *ep_6001;
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
+	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
 };
 
@@ -79,6 +80,10 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> gxcfg,
 		return false;
 	}
 	emsmdb_backfill_transporthdr = gxcfg->get_ll("backfill_transport_headers");
+	auto str = znul(gxcfg->get_value("reported_server_version"));
+	auto &ver = server_normal_version;
+	memset(ver, 0, sizeof(ver));
+	sscanf(str, "%hu.%hu.%hu.%hu", &ver[0], &ver[1], &ver[2], &ver[3]);
 
 	if (pconfig == nullptr)
 		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path(),

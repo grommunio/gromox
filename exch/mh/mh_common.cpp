@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <fmt/core.h>
@@ -10,10 +10,11 @@
 using namespace gromox;
 using namespace hpm_mh;
 
-MhContext::MhContext(int context_id) :
+MhContext::MhContext(int context_id, const std::string &srvver) :
 	ID(context_id), orig(*get_request(context_id)),
 	auth_info(get_auth_info(context_id)), start_time(tp_now()),
-	push_buff(std::make_unique<char[]>(push_buff_size))
+	push_buff(std::make_unique<char[]>(push_buff_size)),
+	m_server_version(srvver)
 {}
 
 bool MhContext::loadHeaders()
@@ -77,7 +78,8 @@ std::string render_content(time_point now, time_point start)
  * @param date				Date string
  */
 std::string commonHeader(const char *requestType, const char *requestId,
-    const char *clientInfo, const char *sid, time_point date)
+    const char *clientInfo, const char *sid,
+    const std::string &excver, time_point date)
 {
 	static constexpr char templ[] = "HTTP/1.1 200 OK\r\n"
         "Cache-Control: private\r\n"
@@ -88,7 +90,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
         "X-ResponseCode: 0\r\n"
         "X-PendingPeriod: {}\r\n"
         "X-ExpirationInfo: {}\r\n"
-        "X-ServerApplication: Exchange/15.00.0847.4040\r\n"
+        "X-ServerApplication: Exchange/{}\r\n"
         "Date: {}\r\n";
 	using namespace std::chrono;
 	char dstring[128];
@@ -96,7 +98,7 @@ std::string commonHeader(const char *requestType, const char *requestId,
 	auto rs = fmt::format(templ, requestType, requestId, clientInfo,
 	          static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
 	          static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
-	          dstring);
+	          excver, dstring);
 	if (*sid != '\0')
 		rs += fmt::format("Set-Cookie: sid={}\r\n", sid);
 	return rs;
@@ -108,9 +110,9 @@ std::string commonHeader(const char *requestType, const char *requestId,
 
 http_status MhContext::error_responsecode(resp_code response_code) const
 {
-	char dstring[128], text_buff[512], response_buff[4096];
+	char dstring[128], text_buff[512];
 
-	auto text_len = sprintf(text_buff,
+	auto text_len = snprintf(text_buff, sizeof(text_buff),
 		"<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\r\n"
 		"<html><head>\r\n"
 		"<title>MAPI OVER HTTP ERROR</title>\r\n"
@@ -119,24 +121,26 @@ http_status MhContext::error_responsecode(resp_code response_code) const
 		"<p>%s</p>\r\n"
 		"</body></html>\r\n", g_error_text[static_cast<unsigned int>(response_code)]);
 	rfc1123_dstring(dstring, std::size(dstring), time_point::clock::to_time_t(start_time));
-	auto response_len = snprintf(response_buff,
-		sizeof(response_buff),
+	static constexpr char templ[] =
 		"HTTP/1.1 200 OK\r\n"
 		"Cache-Control: private\r\n"
 		"Content-Type: text/html\r\n"
-		"X-ResponseCode: %u\r\n"
-		"Content-Length: %d\r\n"
-		"X-ServerApplication: Exchange/15.00.0847.4040\r\n"
-		"Date: %s\r\n\r\n%s",
-		static_cast<unsigned int>(response_code), text_len, dstring, text_buff);
-	return write_response(ID, response_buff, response_len);
+		"X-ResponseCode: {}\r\n"
+		"Content-Length: {}\r\n"
+		"X-ServerApplication: Exchange/{}\r\n"
+		"Date: {}\r\n\r\n{}";
+	auto rs = fmt::format(templ,
+	          static_cast<unsigned int>(response_code), text_len,
+	          m_server_version, dstring, text_buff);
+	return write_response(ID, rs.c_str(), rs.size());
 }
 
 http_status MhContext::ping_response() const try
 {
 	auto current_time = tp_now();
 	auto ct = render_content(current_time, start_time);
-	auto rs = commonHeader("PING", request_id, client_info, session_string, current_time) +
+	auto rs = commonHeader("PING", request_id, client_info, session_string,
+	          m_server_version, current_time) +
 	          fmt::format("Content-Length: {}\r\n", ct.size()) +
 	          "\r\n" + std::move(ct);
 	return write_response(ID, rs.c_str(), rs.size());
@@ -151,7 +155,7 @@ http_status MhContext::failure_response(uint32_t status) const try
 	auto current_time = tp_now();
 	auto ct = render_content(current_time, start_time);
 	auto rs = commonHeader(request_value, request_id, client_info,
-	          session_string, current_time) +
+	          session_string, m_server_version, current_time) +
 	          fmt::format("Content-Length: {}\r\n", ct.size());
 	if (sequence_guid != GUID_NONE) {
 		char txt[GUIDSTR_SIZE];
@@ -170,7 +174,7 @@ http_status MhContext::normal_response() const try
 	char chunk_string[32];
 	auto current_time = tp_now();
 	auto rs = commonHeader(request_value, request_id, client_info,
-	          session_string, current_time) +
+	          session_string, m_server_version, current_time) +
 	          "Transfer-Encoding: chunked\r\n";
 	if (sequence_guid != GUID_NONE) {
 		char txt[GUIDSTR_SIZE];

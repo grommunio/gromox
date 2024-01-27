@@ -524,7 +524,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh, const char *puser_dn,
 	uint16_t client_mode;
 	uint16_t client_version[4];
 	AUX_CLIENT_CONTROL aux_control;
-	uint16_t server_normal_version[4] = {15, 0, 847, 4040};
 	bool is_success = false;
 
 	auto cl_0 = make_scope_exit([&]() {

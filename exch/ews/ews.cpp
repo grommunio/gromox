@@ -340,7 +340,10 @@ http_status EWSPlugin::dispatch(int ctx_id, HTTP_AUTH_INFO& auth_info, const voi
 	}
 
 	using namespace std::string_literals;
-	auto& pc = contexts[ctx_id] = std::make_unique<EWSContext>(ctx_id, auth_info, static_cast<const char*>(data), len, *this);
+	auto &pc = contexts[ctx_id] =
+	           std::make_unique<EWSContext>(ctx_id,
+	           auth_info, static_cast<const char *>(data), len, m_server_version,
+	           *this);
 	EWSContext& context = *pc;
 	const XMLElement* request = context.request().body->FirstChildElement();
 	if(!request)
@@ -475,16 +478,26 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 	CFG_TABLE_END,
 };
 
+static constexpr struct cfg_directive ews_gxcfg_deflt[] = {
+	{"reported_server_version", "15.00.0847.4040"},
+	CFG_TABLE_END,
+};
+
 /**
  * @brief      Load configuration file
  */
 void EWSPlugin::loadConfig()
 {
-	auto gxcfg = config_file_initd("gromox.cfg", get_config_path(), nullptr);
+	auto gxcfg = config_file_initd("gromox.cfg", get_config_path(), ews_gxcfg_deflt);
 	if (gxcfg == nullptr) {
 		mlog(LV_INFO, "[ews]: Failed to load gromox.cfg: %s", strerror(errno));
 		return;
 	}
+	auto str = gxcfg->get_value("reported_server_version");
+	auto &ver = m_server_version;
+	ver.clear();
+	ver.resize(4);
+	sscanf(str, "%hu.%hu.%hu.%hu", &ver[0], &ver[1], &ver[2], &ver[3]);
 
 	auto cfg = config_file_initd("exmdb_provider.cfg", get_config_path(), x500_defaults);
 	if(!cfg)
@@ -508,7 +521,7 @@ void EWSPlugin::loadConfig()
 	cache_embedded_instance_lifetime = std::chrono::milliseconds(cfg->get_ll("ews_cache_embedded_instance_lifetime"));
 	max_user_photo_size = cfg->get_ll("ews_max_user_photo_size");
 
-	auto str = gxcfg->get_value("outgoing_smtp_url");
+	str = gxcfg->get_value("outgoing_smtp_url");
 	if (str != nullptr) {
 		try {
 			smtp_url = vmime::utility::url(str);
@@ -637,7 +650,7 @@ int EWSContext::notify()
 
 	mGetStreamingEventsResponse data;
 	mGetStreamingEventsResponseMessage& msg = data.ResponseMessages.emplace_back();
-	SOAP::Envelope envelope;
+	SOAP::Envelope envelope(m_server_version);
 	tinyxml2::XMLElement* response = envelope.body->InsertNewChildElement("m:GetStreamingEventsResponse");
 	response->SetAttribute("xmlns:m", Structures::NS_EWS_Messages::NS_URL);
 	response->SetAttribute("xmlns:t", Structures::NS_EWS_Types::NS_URL);

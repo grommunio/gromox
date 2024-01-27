@@ -61,3 +61,4 @@ extern unsigned int emsmdb_max_obh_per_session, emsmdb_pvt_folder_softdel;
 extern unsigned int emsmdb_backfill_transporthdr;
 extern size_t ems_max_active_sessions, ems_max_active_users;
 extern size_t ems_max_active_notifh, ems_max_pending_sesnotif;
+extern uint16_t server_normal_version[4];

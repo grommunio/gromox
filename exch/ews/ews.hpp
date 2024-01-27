@@ -3,11 +3,12 @@
 // This file is part of Gromox.
 
 #pragma once
+#include <cstdint>
 #include <list>
 #include <optional>
 #include <unordered_map>
 #include <variant>
-
+#include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
@@ -85,8 +86,7 @@ class EWSContext;
 /**
  * @brief      Aggregation of plugin data and functions
  */
-class EWSPlugin
-{
+class EWSPlugin {
 public:
 	using Handler = void (*)(const tinyxml2::XMLElement *, tinyxml2::XMLElement *, EWSContext &);
 
@@ -219,6 +219,7 @@ private:
 
 	std::unique_ptr<DebugCtx> debug;
 	std::vector<std::string> logFilters;
+	std::vector<uint16_t> m_server_version;
 	bool invertFilter = true;
 	bool teardown = false;
 
@@ -229,14 +230,13 @@ private:
 /**
  * @brief      EWS request context
  */
-class EWSContext
-{
+class EWSContext {
 public:
 	using MCONT_PTR = std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner>; ///< Unique pointer to MESSAGE_CONTENT
 
 	enum State : uint8_t {S_DEFAULT, S_WRITE, S_DONE, S_STREAM_NOTIFY};
 
-	EWSContext(int, HTTP_AUTH_INFO, const char*, uint64_t, EWSPlugin&);
+	EWSContext(int, HTTP_AUTH_INFO, const char *, uint64_t, const std::vector<uint16_t> &ver, EWSPlugin &);
 	~EWSContext();
 
 	EWSContext(const EWSContext&) = delete;
@@ -355,7 +355,11 @@ private:
 
 	PROPERTY_NAME* getPropertyName(const std::string&, uint16_t) const;
 
+	std::vector<uint16_t> m_server_version;
 	int m_ID = 0;
+	http_status m_code = http_status::ok;
+	State m_state = S_DEFAULT;
+	bool m_log = false;
 	HTTP_REQUEST& m_orig;
 	HTTP_AUTH_INFO m_auth_info{};
 	SOAP::Envelope m_request;
@@ -364,9 +368,6 @@ private:
 	std::string impersonationUser; ///< Buffer to hold username of impersonated user
 	std::string impersonationMaildir; ///< Buffer to hold maildir of impersonated user
 	std::chrono::high_resolution_clock::time_point m_created = std::chrono::high_resolution_clock::now();
-	http_status m_code = http_status::ok;
-	State m_state = S_DEFAULT;
-	bool m_log = false;
 	std::unique_ptr<NotificationContext> m_notify;
 };
 

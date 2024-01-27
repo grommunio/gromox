@@ -50,6 +50,7 @@ static unsigned int g_max_rop_payloads = 96;
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_pvt_folder_softdel, emsmdb_rop_chaining;
+uint16_t server_normal_version[4];
 
 object_node::object_node(object_node &&o) noexcept :
 	handle(std::move(o.handle)),

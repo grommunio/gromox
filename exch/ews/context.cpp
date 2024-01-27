@@ -77,11 +77,14 @@ void Cleaner::operator()(MESSAGE_CONTENT *x) {message_content_free(x);}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length, EWSPlugin &p) :
+EWSContext::EWSContext(int id, HTTP_AUTH_INFO ai, const char *data, uint64_t length,
+    const std::vector<uint16_t> &srvver, EWSPlugin &p) :
+	m_server_version(srvver),
 	m_ID(id),
 	m_orig(*get_request(id)),
 	m_auth_info(ai),
 	m_request(data, length),
+	m_response(m_server_version),
 	m_plugin(p)
 {
 	tinyxml2::XMLElement* imp = nullptr;

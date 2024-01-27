@@ -3,10 +3,9 @@
 // This file is part of Gromox.
 
 #pragma once
-
 #include <string>
-
 #include <tinyxml2.h>
+#include <vector>
 
 namespace gromox::EWS::SOAP
 {
@@ -22,7 +21,7 @@ static constexpr char NS_TYPS[] = "http://schemas.microsoft.com/exchange/service
  */
 class Envelope {
 	public:
-	Envelope();
+	Envelope(const std::vector<uint16_t> &);
 	explicit Envelope(const char*, size_t=static_cast< size_t >(-1));
 
 	tinyxml2::XMLDocument doc; ///< XML document containing the envelope

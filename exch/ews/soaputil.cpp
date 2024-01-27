@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
-
+#include <cassert>
 #include <stdexcept>
 #include <string>
 #include <fmt/core.h>
@@ -22,7 +22,7 @@ namespace gromox::EWS::SOAP
 /**
  * @brief      Generate empty SOAP Envelope
  */
-Envelope::Envelope()
+Envelope::Envelope(const std::vector<uint16_t> &ver)
 {
 	auto decl = doc.NewDeclaration();
 	doc.InsertEndChild(decl);
@@ -36,10 +36,11 @@ Envelope::Envelope()
 
 	XMLElement* ServerVersionInfo = header->InsertNewChildElement("t:ServerVersionInfo");
 	ServerVersionInfo->SetAttribute("xmlns:t", NS_TYPS);
-	ServerVersionInfo->SetAttribute("MajorVersion", "15");
-	ServerVersionInfo->SetAttribute("MinorVersion", "0");
-	ServerVersionInfo->SetAttribute("MajorBuildNumber", "847");
-	ServerVersionInfo->SetAttribute("MinorBuildNumber", "4040");
+	assert(ver.size() >= 4);
+	ServerVersionInfo->SetAttribute("MajorVersion", ver[0]);
+	ServerVersionInfo->SetAttribute("MinorVersion", ver[1]);
+	ServerVersionInfo->SetAttribute("MajorBuildNumber", ver[2]);
+	ServerVersionInfo->SetAttribute("MinorBuildNumber", ver[3]);
 }
 
 /**

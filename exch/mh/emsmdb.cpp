@@ -20,6 +20,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/hpm_common.h>
@@ -175,7 +176,8 @@ struct ems_push : public EXT_PUSH {
  */
 struct MhEmsmdbContext : public MhContext
 {
-	explicit MhEmsmdbContext(int contextId) : MhContext(contextId)
+	explicit MhEmsmdbContext(int contextId, const std::string &excver) :
+		MhContext(contextId, excver)
 	{
 		ext_push.init(push_buff.get(), push_buff_size, EXT_FLAG_UTF16 | EXT_FLAG_WCOUNT);
 		epush = &ext_push;
@@ -200,8 +202,7 @@ struct MhEmsmdbContext : public MhContext
 	ems_push ext_push{};
 };
 
-class MhEmsmdbPlugin
-{
+class MhEmsmdbPlugin {
 public:
 	using SessionIterator = std::unordered_map<std::string, session_data>::iterator;
 
@@ -235,6 +236,12 @@ private:
 	std::unordered_map<std::string, int> users;
 	std::unordered_map<std::string, session_data> sessions;
 	std::vector<notification_ctx> status;
+	std::string m_server_version;
+};
+
+static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
+	{"reported_server_version", "15.00.0847.4040"},
+	CFG_TABLE_END,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,6 +263,9 @@ MhEmsmdbPlugin::MhEmsmdbPlugin(void** ppdata)
 	    !query_service1(asyncemsmdb_interface_register_active) ||
 	    !query_service1(asyncemsmdb_interface_remove))
 		throw std::runtime_error("exchange_emsmdb not loaded");
+	auto cfg = config_file_initd("gromox.cfg", get_config_path(), mhems_gxcfg_deflt);
+	if (cfg != nullptr)
+		m_server_version = cfg->get_value("reported_server_version");
 	size_t contextnum = get_context_num();
 	status.resize(contextnum);
 	users.reserve(AVERAGE_SESSION_PER_CONTEXT*contextnum);
@@ -355,7 +365,7 @@ MhEmsmdbPlugin::SessionIterator MhEmsmdbPlugin::removeSession(const char* sessio
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Plugin (de-)initialization
 
-static std::unique_ptr<MhEmsmdbPlugin> plugin;
+static std::unique_ptr<MhEmsmdbPlugin> g_mhems_plugin;
 
 /**
  * @brief	(De-) Initialize plugin
@@ -392,11 +402,11 @@ static BOOL hpm_mh_emsmdb(int reason, void **ppdata)
 		if (!register_interface(&interface))
 			return false;
 		asyncemsmdb_interface_register_active(reinterpret_cast<void*>(asyncemsmdb_wakeup_proc));
-		plugin = std::move(created);
+		g_mhems_plugin = std::move(created);
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		plugin.reset();
+		g_mhems_plugin.reset();
 		return TRUE;
 	}
 	return false;
@@ -438,7 +448,7 @@ http_status MhEmsmdbContext::notification_response() const try
 {
 	auto current_time = tp_now();
 	auto rs = commonHeader("NotificationWait", request_id, client_info,
-	          session_string, current_time) +
+	          session_string, m_server_version, current_time) +
 	          "Transfer-Encoding: chunked\r\n\r\n";
 	auto wr = write_response(ID, rs.c_str(), rs.size());
 	if (wr != http_status::ok)
@@ -705,7 +715,7 @@ http_status MhEmsmdbPlugin::process(int context_id, const void *content,
     uint64_t length)
 {
 	ProcRes result;
-	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id); /* huge object */
+	auto heapctx = std::make_unique<MhEmsmdbContext>(context_id, m_server_version); /* huge object */
 	MhEmsmdbContext &ctx = *heapctx;
 	status[ctx.ID] = {};
 	if (ctx.auth_info.auth_status != http_status::ok)
@@ -808,17 +818,17 @@ void MhEmsmdbPlugin::async_wakeup(int context_id, BOOL b_pending)
 
 static http_status emsmdb_proc(int context_id, const void *content, uint64_t length)
 {
-	return plugin != nullptr ? plugin->process(context_id, content, length) : http_status::none;
+	return g_mhems_plugin != nullptr ? g_mhems_plugin->process(context_id, content, length) : http_status::none;
 }
 
 static int emsmdb_retr(int context_id)
-{ return plugin->retr(context_id); }
+{ return g_mhems_plugin->retr(context_id); }
 
 static void asyncemsmdb_wakeup_proc(int context_id, BOOL b_pending)
-{ return plugin->async_wakeup(context_id, b_pending); }
+{ return g_mhems_plugin->async_wakeup(context_id, b_pending); }
 
 static void emsmdb_term(int context_id)
-{ return plugin->term(context_id); }
+{ return g_mhems_plugin->term(context_id); }
 
 static BOOL emsmdb_preproc(int context_id)
 {

@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #pragma once
 #include <chrono>
 #include <cstdarg>
@@ -57,7 +59,7 @@ static constexpr const char *g_error_text[] = {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 extern std::string render_content(gromox::time_point, gromox::time_point);
-extern std::string commonHeader(const char *rq_type, const char *rq_id, const char *cl_info, const char *sid, gromox::time_point);
+extern std::string commonHeader(const char *rq_type, const char *rq_id, const char *cl_info, const char *sid, const std::string &excver, gromox::time_point);
 
 struct MhContext
 {
@@ -83,9 +85,10 @@ struct MhContext
 	size_t push_buff_size = 512 << 10;
 	std::unique_ptr<char[]> push_buff;
 	session_data *session = nullptr;
+	std::string m_server_version;
 
 protected:
-	MhContext(int);
+	MhContext(int, const std::string &);
 	~MhContext() = default;
 	NOMOVE(MhContext);
 
