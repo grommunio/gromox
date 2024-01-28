@@ -380,7 +380,6 @@ static constexpr cfg_directive autodiscover_cfg_defaults[] = {
 	{"oxdisco_request_logging", "0", CFG_BOOL},
 	{"oxdisco_response_logging", "0", CFG_BOOL},
 	{"oxdisco_validate_scndrequest", "yes", CFG_BOOL},
-	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
 };
 
@@ -423,13 +422,20 @@ void OxdiscoPlugin::loadConfig()
 		if (s != nullptr)
 			m_advertise_rpch = parse_adv(s);
 	}
-	/* If there is no autodiscover.cfg, we have an old system and are done. */
 	c = config_file_initd("autodiscover.cfg", get_config_path(), nullptr);
-	if (c == nullptr || c->m_filename.empty())
-		return;
-	/* If there is autodiscover.cfg, ignore autodiscover.ini */
-	c = config_file_initd("autodiscover.cfg", get_config_path(), autodiscover_cfg_defaults);
-	x500_org_name = c->get_value("x500_org_name");
+	if (c != nullptr) {
+		auto s = c->get_value("x500_org_name");
+		if (s != nullptr)
+			x500_org_name = s;
+	}
+	c = config_file_initd("gromox.cfg", get_config_path(), autodiscover_cfg_defaults);
+	if (c != nullptr) {
+		auto s = c->get_value("x500_org_name");
+		if (s != nullptr)
+			x500_org_name = s;
+	}
+	if (x500_org_name.empty())
+		x500_org_name = "Gromox default";
 	RedirectAddr = c->get_value("oxdisco_redirect_addr");
 	RedirectUrl = c->get_value("oxdisco_redirect_url");
 	request_logging = c->get_ll("oxdisco_request_logging");

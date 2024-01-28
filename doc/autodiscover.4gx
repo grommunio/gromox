@@ -1,5 +1,5 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 .TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 autodiscover \(em Autodiscover HTTP Service Protocol handler (AutoDiscover
@@ -28,10 +28,9 @@ to the message store service. However, the Address Book always issues
 Autodiscover requests. (In other words, removing the DNS entry for the
 Autodiscover server after a profile is set up would break the address book, but
 not the message store.)
-.SH Configuration directives
-The normal config file location is /etc/gromox/autodiscover.cfg. (For backwards
-compatibility, if autodiscover.cfg is not present, the module will read part of
-autodiscover.ini.)
+.SH Configuration directives (gromox.cfg)
+The following directives are recognized when they appear in
+/etc/gromox/gromox.cfg.
 .TP
 \fBoxdisco_advertise_mh\fP
 This setting controls whether the AutoDiscover response should include a EXHTTP
@@ -48,6 +47,11 @@ EXCH/EXPR Protocol sections. Possible values: \fIyes\fP, \fIno\fP,
 finely control emission in case of clients other than Outlook.
 .br
 Default: \fIyes\fP
+.TP
+\fBoxdisco_exonym\fP
+Globally valid name pointing to the Autodiscover server.
+.br
+Default: (same value as host_id)
 .TP
 \fBoxdisco_pretty_response\fP
 A debugging knob to make the module emit indented XML responses.
@@ -78,6 +82,22 @@ Default: \fIyes\fP
 \fBx500_org_name\fP
 .br
 Default: (unspecified)
+.SH Configuration directives (autodiscover.cfg)
+The following directives are recognized when they appear in
+/etc/gromox/autodiscover.cfg. autodiscover.cfg is obsolete in favor of
+gromox.cfg.
+.TP
+\fBx500_org_name\fP
+Same as gromox.cfg:x500_org_name.
+.br
+Default: (unspecified)
+.SH Configuration directives (autodiscover.ini)
+The following directives are recognized when they appear in
+/etc/gromox/autodiscover.ini. autodiscover.ini is obsolete in favor of
+gromox.cfg.
+.TP
+\fBorganization\fP
+Same as gromox.cfg:x500_org_name.
 .SH Outlook notes
 When Outlook is active, it is possible to Ctrl-MouseBtn3 (right click) on the
 status tray icon to call up a context menu, from which "Test Email
