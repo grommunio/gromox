@@ -1082,6 +1082,13 @@ struct STATE_ARRAY {
 struct STRING_ARRAY {
 	uint32_t count;
 	char **ppstr;
+
+	using iterator = char**;
+	using const_iterator = const char* const*;
+	inline iterator begin() {return ppstr;}
+	inline iterator end() {return ppstr+count;}
+	inline const_iterator begin() const {return ppstr;}
+	inline const_iterator end() const {return ppstr+count;}
 };
 
 struct GX_EXPORT SVREID {
