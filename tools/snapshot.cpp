@@ -152,7 +152,6 @@ static int do_purge(const char *grpdir, std::chrono::minutes mmin)
 			           EXIT_SUCCESS : EXIT_FAILURE;
 			if (ret == 0)
 				/* ignore */;
-			continue;
 		}
 		printf("Deleting %s...\n", fullpath.c_str());
 		const char *const a_reflink[] = {
