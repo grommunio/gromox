@@ -2880,15 +2880,21 @@ void tFieldURI::tags(sShape& shape, bool add) const
 	auto tags = tagMap.equal_range(FieldURI);
 	for(auto it = tags.first; it != tags.second; ++it)
 		shape.add(it->second, add? sShape::FL_FIELD : sShape::FL_RM);
+	bool found = tags.first != tags.second;
 
 	auto names = nameMap.equal_range(FieldURI);
 	for(auto it = names.first; it != names.second; ++it)
 		shape.add(it->second.first, it->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
+	found |= names.first != names.second;
 
 	static auto compval = [](const SMEntry& v1, const char* const v2){return strcmp(v1.first, v2) < 0;};
 	auto specials = std::lower_bound(specialMap.begin(), specialMap.end(), FieldURI.c_str(), compval);
-	if(specials != specialMap.end() && specials->first == FieldURI)
+	if(specials != specialMap.end() && specials->first == FieldURI) {
 		shape.special |= specials->second;
+		found = true;
+	}
+	if(!found)
+		mlog(LV_NOTICE, "ews: unknown field URI '%s' (ignored)", FieldURI.c_str());
 }
 
 /**
