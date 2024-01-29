@@ -134,6 +134,9 @@ static int do_purge(const char *grpdir, std::chrono::minutes mmin)
 		return errno == ENOENT ? EXIT_SUCCESS : EXIT_FAILURE;
 	const struct dirent *de = nullptr;
 	auto now = std::chrono::system_clock::now();
+	struct stat grpstat;
+	if (fstat(dirfd(dh.get()), &grpstat) != 0)
+		return EXIT_FAILURE;
 	while ((de = readdir(dh.get())) != nullptr) {
 		if (*de->d_name == '.')
 			continue;
@@ -143,7 +146,7 @@ static int do_purge(const char *grpdir, std::chrono::minutes mmin)
 			continue;
 		if (now - std::chrono::system_clock::from_time_t(sb.st_mtime) < mmin)
 			continue;
-		if (mode == snapshot_mode::btrfs) {
+		if (sb.st_dev != grpstat.st_dev && mode == snapshot_mode::btrfs) {
 			printf("Deleting subvolume %s...\n", fullpath.c_str());
 			const char *const a_btrfs[] = {
 				"btrfs", "subvolume", "delete", fullpath.c_str(), nullptr,
