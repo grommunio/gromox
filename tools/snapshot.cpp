@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <dirent.h>
 #include <fcntl.h>
 #include <string>
 #include <unistd.h>
@@ -25,6 +26,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 enum class snapshot_mode {
@@ -127,22 +129,41 @@ static int do_purge(const char *grpdir, std::chrono::minutes mmin)
 	auto mode = snapshot_type(g_subvolume_root, grpdir);
 	if (mode == snapshot_mode::error)
 		return EXIT_FAILURE;
-	if (mode == snapshot_mode::btrfs) {
-		const char *const a_btrfs[] = {
-			"find", grpdir, "-mindepth", "1", "-maxdepth", "1",
-			"-type", "d", "-mmin", time_va, "-print", "-exec",
-			"btrfs", "subvolume", "delete", "{}", "+", nullptr,
+	std::unique_ptr<DIR, file_deleter> dh(opendir(grpdir));
+	if (dh == nullptr)
+		return errno == ENOENT ? EXIT_SUCCESS : EXIT_FAILURE;
+	const struct dirent *de = nullptr;
+	auto now = std::chrono::system_clock::now();
+	while ((de = readdir(dh.get())) != nullptr) {
+		if (*de->d_name == '.')
+			continue;
+		auto fullpath = grpdir + "/"s + de->d_name;
+		struct stat sb;
+		if (stat(fullpath.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode))
+			continue;
+		if (now - std::chrono::system_clock::from_time_t(sb.st_mtime) < mmin)
+			continue;
+		if (mode == snapshot_mode::btrfs) {
+			printf("Deleting subvolume %s...\n", fullpath.c_str());
+			const char *const a_btrfs[] = {
+				"btrfs", "subvolume", "delete", fullpath.c_str(), nullptr,
+			};
+			auto ret = HXproc_run_sync(a_btrfs, HXPROC_NULL_STDIN) == 0 ?
+			           EXIT_SUCCESS : EXIT_FAILURE;
+			if (ret == 0)
+				/* ignore */;
+			continue;
+		}
+		printf("Deleting %s...\n", fullpath.c_str());
+		const char *const a_reflink[] = {
+			"rm", "-Rf", fullpath.c_str(), nullptr,
 		};
-		return HXproc_run_sync(a_btrfs, HXPROC_NULL_STDIN) == 0 ?
-		       EXIT_SUCCESS : EXIT_FAILURE;
+		auto ret = HXproc_run_sync(a_reflink, HXPROC_NULL_STDIN) == 0 ?
+		           EXIT_SUCCESS : EXIT_FAILURE;
+		if (ret != 0)
+			/* ignore */;
 	}
-	const char *const a_reflink[] = {
-		"find", grpdir, "-mindepth", "1", "-maxdepth", "1",
-		"-type", "d", "-mmin", time_va, "-print", "-exec",
-		"rm", "-Rf", "{}", "+", nullptr,
-	};
-	return HXproc_run_sync(a_reflink, HXPROC_NULL_STDIN) == 0 ?
-	       EXIT_SUCCESS : EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
 
 static int do_group(const char *gname, const char *today, std::chrono::minutes mmin)
