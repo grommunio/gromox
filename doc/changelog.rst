@@ -1,15 +1,27 @@
-Development 2.21.13
-===================
+Gromox 2.22 (2024-01-29)
+========================
 
 Fixes:
 
 * exmdb_client: discard connections when EOF is detected
+* mda: resolve a case where four extra bytes of garbage were be added to the
+  front of the first transport header (usually the unimportant "X-Lasthop")
+  when the first delivery attempt had failed and redelivery was tried
+* mda: resolve a case with one extra byte of garbage added to the
+  PR_TRANSPORT_MESSAGE_HEADERS MAPI property
+* mda: resolve a case with trashed body bytes when a line began with dot
+* ews: proper CN generation for public store objects
+* http: reduce overreporting of E-5310
+* oxcmail: drop unintended doublequotes around RFC 2047-style =?..?=
+  encoded-words
 
 Enhancements:
 
+* oxcical: support emission of iCalendar VFREEBUSY objects
 * nsp,ab: support name resolution of IDN addresses
-* twostep_ruleproc: support OL-style public folder references in
-  store_eid_to_user RPC
+* twostep_ruleproc: support Outlook-style public folder entryids in Move/Copy
+  rules (as opposed to GWeb-style entryids)
+* daemons: report when time-based config directive are lacking units
 
 
 Gromox 2.21 (2024-01-08)
