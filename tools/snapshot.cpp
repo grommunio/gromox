@@ -52,7 +52,8 @@ static errno_t reflink_supported(const std::string &src, const std::string &dst)
 	wrapfd dfd(dtf.open_anon(dst.c_str(), O_RDWR, 0600));
 	if (dfd.get() < 0)
 		return errno;
-	if (ioctl(dfd.get(), _IOW(0x94, 9, int), sfd.get()) != 0)
+	static constexpr unsigned int ficlone = _IOW(0x94, 9, int);
+	if (ioctl(dfd.get(), ficlone, sfd.get()) != 0)
 		return errno;
 	return 0;
 #else
