@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -118,18 +119,18 @@ static int do_snap(const std::string &grpdir, const char *today)
 	       EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-static int do_purge(const char *grpdir, unsigned int mtime, unsigned int mmin)
+static int do_purge(const char *grpdir, std::chrono::minutes mmin)
 {
-	const char *time_type = mtime > 0 ? "-mtime" : "-mmin";
 	char time_va[32];
-	snprintf(time_va, sizeof(time_va), "+%u", mmin > 0 ? mmin : mtime);
+	snprintf(time_va, sizeof(time_va), "+%ld",
+		static_cast<long int>(mmin.count()));
 	auto mode = snapshot_type(g_subvolume_root, grpdir);
 	if (mode == snapshot_mode::error)
 		return EXIT_FAILURE;
 	if (mode == snapshot_mode::btrfs) {
 		const char *const a_btrfs[] = {
 			"find", grpdir, "-mindepth", "1", "-maxdepth", "1",
-			"-type", "d", time_type, time_va, "-print", "-exec",
+			"-type", "d", "-mmin", time_va, "-print", "-exec",
 			"btrfs", "subvolume", "delete", "{}", "+", nullptr,
 		};
 		return HXproc_run_sync(a_btrfs, HXPROC_NULL_STDIN) == 0 ?
@@ -137,15 +138,14 @@ static int do_purge(const char *grpdir, unsigned int mtime, unsigned int mmin)
 	}
 	const char *const a_reflink[] = {
 		"find", grpdir, "-mindepth", "1", "-maxdepth", "1",
-		"-type", "d", time_type, time_va, "-print", "-exec",
+		"-type", "d", "-mmin", time_va, "-print", "-exec",
 		"rm", "-Rf", "{}", "+", nullptr,
 	};
 	return HXproc_run_sync(a_reflink, HXPROC_NULL_STDIN) == 0 ?
 	       EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-static int do_group(const char *gname, const char *today, unsigned int mtime,
-    unsigned int mmin = 0)
+static int do_group(const char *gname, const char *today, std::chrono::minutes mmin)
 {
 	auto grpdir = g_snapshot_archive + "/" + gname;
 	if (mkdir(grpdir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) != 0 &&
@@ -153,13 +153,13 @@ static int do_group(const char *gname, const char *today, unsigned int mtime,
 		fprintf(stderr, "mkdir %s: %s\n", grpdir.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
-	if (mtime != 0 || mmin != 0) {
+	if (mmin != std::chrono::minutes{}) {
 		auto ret = do_snap(grpdir, today);
 		if (ret != EXIT_SUCCESS)
 			return ret;
 	}
 	printf("Purging %s...\n", gname);
-	return do_purge(grpdir.c_str(), mtime, mmin);
+	return do_purge(grpdir.c_str(), mmin);
 }
 
 int main(int argc, char **argv)
@@ -196,19 +196,19 @@ int main(int argc, char **argv)
 
 	char buf[32];
 	strftime(buf, sizeof(buf), "%Y%m", tm);
-	auto ret = do_group("monthly", buf, 31 * g_keep_months);
+	auto ret = do_group("monthly", buf, std::chrono::hours(g_keep_months * 31 * 24));
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	strftime(buf, sizeof(buf), "%YW%W", tm);
-	ret = do_group("weekly", buf, 7 * g_keep_weeks);
+	ret = do_group("weekly", buf, std::chrono::hours(g_keep_weeks * 7 * 24));
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	strftime(buf, sizeof(buf), "%F", tm);
-	ret = do_group("daily", buf, g_keep_days);
+	ret = do_group("daily", buf, std::chrono::hours(g_keep_days * 24));
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	strftime(buf, sizeof(buf), "%FT%H", tm);
-	ret = do_group("hourly", buf, 0, 60 * g_keep_hours);
+	ret = do_group("hourly", buf, std::chrono::hours(g_keep_hours));
 	if (ret != EXIT_SUCCESS)
 		return ret;
 	return EXIT_SUCCESS;
