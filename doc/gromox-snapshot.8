@@ -71,5 +71,11 @@ subvolume_root.
 .IP \(bu 4
 Operation not supported: the filesystem employed on snapshot_archive does not
 support reflinks
+.SH Known issues
+When a reflink-based snapshot is deleted (which happens via /bin/rm), rm may
+modify the directory's timestamp. If that rm call is interrupted without
+completing, the next run of gromox-snapshot will erroneously consider the
+directory as "too new" and not resume the deletion until it has sufficiently
+aged again.
 .SH See also
 \fBgromox\fP(7)
