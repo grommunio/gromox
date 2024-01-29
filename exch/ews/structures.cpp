@@ -1771,11 +1771,7 @@ const tChangeDescription::Field* tChangeDescription::find(const char* type, cons
  */
 template<typename T>
 TAGGED_PROPVAL tChangeDescription::mkProp(uint32_t tag, const T& val)
-{
-	TAGGED_PROPVAL tp{tag, EWSContext::alloc<T>()};
-	*static_cast<T*>(tp.pvalue) = val;
-	return tp;
-}
+{return TAGGED_PROPVAL{tag, EWSContext::construct<T>(val)};}
 
 /**
  * @brief      Convert XML object to property
@@ -2754,6 +2750,19 @@ SORTORDER_SET* tFieldOrder::build(const std::vector<tFieldOrder>& sorts, const s
 ///////////////////////////////////////////////////////////////////////////////
 
 decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
+	{"calendar:DateTimeStamp", PR_CREATION_TIME},
+	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
+	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
+	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
+	{"calendar:Organizer", PR_SENDER_NAME},
+	{"contacts:CompleteName", PR_DISPLAY_NAME_PREFIX},
+	{"contacts:CompleteName", PR_DISPLAY_NAME},
+	{"contacts:CompleteName", PR_GENERATION},
+	{"contacts:CompleteName", PR_GIVEN_NAME},
+	{"contacts:CompleteName", PR_INITIALS},
+	{"contacts:CompleteName", PR_MIDDLE_NAME},
+	{"contacts:CompleteName", PR_NICKNAME}, // TODO: YomiFirstName, YomiLastName;
+	{"contacts:CompleteName", PR_SURNAME},
 	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
 	{"folder:DisplayName", PR_DISPLAY_NAME},
 	{"folder:FolderClass", PR_CONTAINER_CLASS},
@@ -2762,10 +2771,10 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"folder:TotalCount", PR_CONTENT_COUNT},
 	{"folder:UnreadCount", PR_CONTENT_UNREAD},
 	{"item:ConversationId", PR_CONVERSATION_ID},
-	{"item:DisplayTo", PR_DISPLAY_TO},
 	{"item:DateTimeCreated", PR_CREATION_TIME},
 	{"item:DateTimeReceived", PR_MESSAGE_DELIVERY_TIME},
 	{"item:DateTimeSent", PR_CLIENT_SUBMIT_TIME},
+	{"item:DisplayTo", PR_DISPLAY_TO},
 	{"item:HasAttachments", PR_HASATTACH},
 	{"item:Importance", PR_IMPORTANCE},
 	{"item:InReplyTo", PR_IN_REPLY_TO_ID},
@@ -2797,22 +2806,6 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"message:Sender", PR_SENDER_ADDRTYPE},
 	{"message:Sender", PR_SENDER_EMAIL_ADDRESS},
 	{"message:Sender", PR_SENDER_NAME},
-	// {"calendar:EndTimeZone", },
-	{"calendar:DateTimeStamp", PR_CREATION_TIME},
-	{"calendar:IsResponseRequested", PR_RESPONSE_REQUESTED},
-	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
-	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
-	{"calendar:Organizer", PR_SENDER_NAME},
-	{"contacts:CompleteName", PR_DISPLAY_NAME_PREFIX},
-	{"contacts:CompleteName", PR_GIVEN_NAME},
-	{"contacts:CompleteName", PR_MIDDLE_NAME},
-	{"contacts:CompleteName", PR_SURNAME},
-	{"contacts:CompleteName", PR_GENERATION},
-	{"contacts:CompleteName", PR_INITIALS},
-	{"contacts:CompleteName", PR_DISPLAY_NAME},
-	{"contacts:CompleteName", PR_NICKNAME}, // TODO: YomiFirstName, YomiLastName;
-	// {"calendar:OriginalStart", },
-	// {"calendar:StartTimeZone", },
 };
 
 decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
