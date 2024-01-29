@@ -33,6 +33,7 @@
 # 20221014, v1.0, ignore: postmaster@localhost,SYSTEM and headings.
 # 20221022, v1.1, report correct archiver guid, add summary.
 # 20221025, v1.2, added some explanations.
+# 20240129, v1.3, error when removing leading zeros fixed, 008 was treated as an octal number
 #
 #
 # Notice:
@@ -164,7 +165,8 @@ do
     size_store=$( echo "${SIZE_ARRAY[@]}" | cut -d " " -f1 )
     size_archive=$( echo "${SIZE_ARRAY[@]}" | cut -d " " -f2 )
     # remove leading zeros, bash treads numbers with leading 0 as octal
-    size_store=$((${size_store#0}+0))
+    #size_store=$((${size_store#0}+0))
+    size_store=$(echo $size_store | sed 's/^0*//')
     # multiply by 10 to get MB
     size_store=$((size_store*10))
     # Statistics
@@ -172,7 +174,8 @@ do
     #
     # archiver
     # remove leading zeros, bash treads numbers with leading 0 as octal
-    size_archive=$((${size_archive#0}+0))
+    #size_archive=$((${size_archive#0}+0))
+    size_archive=$(echo $size_archive | sed 's/^0*//')
     # multiply by 10 to get MB
     size_archive=$((size_archive*10))
     #
