@@ -577,11 +577,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	char tmp_buff[UADDR_SIZE];
 	EMAIL_ADDR email_addr;
 	ONEOFF_ENTRYID tmp_entry;
-	uint8_t bin_buff[256*1024];
+	auto bin_buff = std::make_unique<uint8_t[]>(256 * 1024);
 	static constexpr uint8_t pad_bytes[3]{};
 	
 	count = 0;
-	if (!ext_push.init(bin_buff, sizeof(bin_buff), EXT_FLAG_UTF16))
+	if (!ext_push.init(bin_buff.get(), 256 * 1024, EXT_FLAG_UTF16))
 		return false;
 	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
@@ -648,7 +648,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	if (count == 0)
 		return TRUE;
 	tmp_bin.cb = ext_push.m_offset;
-	tmp_bin.pb = bin_buff;
+	tmp_bin.pb = bin_buff.get();
 	uint32_t bytes = ext_push.m_offset - (offset + sizeof(uint32_t));
 	ext_push.m_offset = 0;
 	if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
