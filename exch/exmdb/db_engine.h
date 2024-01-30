@@ -129,6 +129,7 @@ struct DB_ITEM {
 	std::atomic<int> reference{0};
 	time_t last_time = 0;
 	std::timed_mutex giant_lock; /* should be broken up */
+	const char *giant_lock_func = nullptr;
 	sqlite3 *psqlite = nullptr;
 	std::vector<dynamic_node> dynamic_list; /* dynamic searches */
 	std::vector<nsub_node> nsub_list;
@@ -154,7 +155,7 @@ class db_item_deleter {
 
 using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
 
-extern db_item_ptr db_engine_get_db(const char *dir);
+extern db_item_ptr db_engine_get_db(const char *dir, const char *func);
 extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
 extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);

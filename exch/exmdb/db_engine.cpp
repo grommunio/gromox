@@ -191,7 +191,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 }
 
 /* query or create DB_ITEM in hash table */
-db_item_ptr db_engine_get_db(const char *path)
+db_item_ptr db_engine_get_db(const char *path, const char *parent_func)
 {
 	char db_path[256];
 	DB_ITEM *pdb;
@@ -212,12 +212,15 @@ db_item_ptr db_engine_get_db(const char *path)
 			mlog(LV_WARN, "W-1620: contention on %s (%u waiters)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
+		auto func_then = znul(pdb->giant_lock_func);
 		if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
 			--pdb->reference;
-			mlog(LV_ERR, "E-2207: %s: exclusive access unobtainable after %us (mailbox kept busy by other threads?)",
-				path, static_cast<unsigned int>(DB_LOCK_TIMEOUT.count())));
+			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %us (mailbox busy with <%s>/<%s>)",
+				path, static_cast<unsigned int>(DB_LOCK_TIMEOUT.count()),
+				func_then, znul(pdb->giant_lock_func));
 			return NULL;
 		}
+		pdb->giant_lock_func = parent_func;
 		return db_item_ptr(pdb);
 	}
 	if (g_hash_table.size() >= g_table_size) {
@@ -265,13 +268,14 @@ db_item_ptr db_engine_get_db(const char *path)
 void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
 	pdb->last_time = time(nullptr);
+	pdb->giant_lock_func = nullptr;
 	pdb->giant_lock.unlock();
 	pdb->reference --;
 }
 
 BOOL db_engine_vacuum(const char *path)
 {
-	auto db = db_engine_get_db(path);
+	auto db = db_engine_get_db(path, __func__);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	mlog(LV_INFO, "I-2102: Vacuuming %s (exchange.sqlite3)", path);
@@ -422,7 +426,7 @@ static bool db_reload(db_item_ptr &pdb, const char *dir)
 	if (g_exmdb_search_yield)
 		std::this_thread::yield(); /* +2 to +3% walltime */
 	exmdb_server::build_env(EM_PRIVATE, dir);
-	pdb = db_engine_get_db(dir);
+	pdb = db_engine_get_db(dir, "db_engine_search_folder");
 	return pdb != nullptr && pdb->psqlite != nullptr;
 }
 
@@ -430,7 +434,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction)
 {
 	char sql_string[128];
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
@@ -515,7 +519,7 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 {
 	char sql_string[128];
 	
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
@@ -665,7 +669,7 @@ static void *mdpeng_thrwork(void *param)
 		}
 		if (g_notify_stop)
 			break;
-		auto pdb = db_engine_get_db(psearch->dir.c_str());
+		auto pdb = db_engine_get_db(psearch->dir.c_str(), __func__);
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
 		/* Stop animation (does nothing else in OL really) */

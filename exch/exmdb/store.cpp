@@ -26,7 +26,7 @@ static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 
 BOOL exmdb_server::ping_store(const char *dir)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	return pdb != nullptr ? TRUE : false;
 }
 
@@ -36,7 +36,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	int total_count;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -69,7 +69,7 @@ BOOL exmdb_server::get_named_propids(const char *dir,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
@@ -84,7 +84,7 @@ BOOL exmdb_server::get_named_propids(const char *dir,
 BOOL exmdb_server::get_named_propnames(const char *dir,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	return common_util_get_named_propnames(pdb->psqlite, ppropids, ppropnames);
@@ -93,7 +93,7 @@ BOOL exmdb_server::get_named_propnames(const char *dir,
 BOOL exmdb_server::get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!common_util_get_mapping_guid(pdb->psqlite, replid, pb_found, pguid))
@@ -105,7 +105,7 @@ BOOL exmdb_server::get_mapping_guid(const char *dir,
 BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
     uint16_t *preplid, ec_error_t *e_result)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	char guid_string[GUIDSTR_SIZE], sql_string[128];
@@ -144,7 +144,7 @@ BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
 BOOL exmdb_server::get_store_all_proptags(const char *dir,
     PROPTAG_ARRAY *pproptags)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	std::vector<uint32_t> tags;
@@ -161,7 +161,7 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
     const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	return cu_get_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
@@ -171,7 +171,7 @@ BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
 BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
     const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
@@ -184,7 +184,7 @@ BOOL exmdb_server::set_store_properties(const char *dir, cpid_t cpid,
 BOOL exmdb_server::remove_store_properties(const char *dir,
     const PROPTAG_ARRAY *pproptags)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
@@ -212,7 +212,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*ppermission = rightsNone;
@@ -292,7 +292,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 BOOL exmdb_server::allocate_cn(const char *dir, uint64_t *pcn)
 {
 	uint64_t change_num;
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
@@ -309,7 +309,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	uint64_t tmp_eid;
 	char sql_string[128];
 	
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -346,7 +346,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 {
 	uint16_t replid;
 	
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	uint32_t last_id = pdb->nsub_list.size() == 0 ? 0 :
@@ -389,7 +389,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 
 BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto i = std::find_if(pdb->nsub_list.begin(), pdb->nsub_list.end(),
@@ -402,7 +402,7 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id, uint32_t message_flags, const char *pstr_class)
 {
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
@@ -459,7 +459,7 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
 	
-	auto pdb = db_engine_get_db(dir);
+	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	propnames.count = 3;
