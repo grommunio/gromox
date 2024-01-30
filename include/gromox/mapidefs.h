@@ -1023,6 +1023,7 @@ struct PROPID_ARRAY {
 struct PROPNAME_ARRAY {
 	uint16_t count;
 	PROPERTY_NAME *ppropname;
+	I_BEGIN_END(ppropname, count);
 };
 
 struct GX_EXPORT PROPTAG_ARRAY {

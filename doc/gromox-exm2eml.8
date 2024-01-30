@@ -1,18 +1,23 @@
 .\" SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-.\" SPDX-FileCopyrightText: 2022 grommunio GmbH
+.\" SPDX-FileCopyrightText: 2024 grommunio GmbH
 .TH gromox\-exm2eml 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-exm2eml \(em Utility to export messages as Internet Mail, iCalendar and
-vCard objects
+gromox\-exm2eml \(em Utility to export messages in various formats
 .SH Synopsis
-\fBgromox\-exm2eml \-u\fP \fIu@d.at\fP \fImessage_id\fP
+\fBgromox\-exm2eml \-u\fP \fIu@d.at\fP [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
 .PP
-\fBgromox\-exm2ical \-u\fP \fIu@d.at\fP \fImessage_id\fP
+\fBgromox\-exm2ical \-u\fP \fIu@d.at\fP [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
 .PP
-\fBgromox\-exm2vcf \-u\fP \fIu@d.at\fP \fImessage_id\fP
+\fBgromox\-exm2vcf \-u\fP \fIu@d.at\fP [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP
+.PP
+\fBgromox\-exm2mt \-u\fP \fIu@d.at\fP [\fIfolder_id\fP\fB:\fP]\fImessage_id\fP >file.mt
 .SH Description
-This tool serves as a development aid to test the conversion from MAPI message
-to Internet Mail (RFC 5322), iCalendar (RFC 5545) or vCard (RFC 6350).
+gromox\-exm2eml reads one message from an exmdb information store and exports
+it as Internet Mail (RFC 5322), iCalendar (RFC 5545), vCard (RFC 6350) or the
+Gromox mailbox transfer format (cf. gromox-mt2exm).
+.PP
+When \fIfolder_id\fP is specified, exm2eml validates that the message is in
+that particular folder.
 .PP
 An alternate way to get an EML representation is using grommunio-web's "Export
 as > EML file(s)" function from the context menu of a mail item.

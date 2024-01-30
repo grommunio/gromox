@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -12,9 +12,11 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/oxcmail.hpp>
@@ -29,6 +31,7 @@ enum {
 	EXPORT_MAIL,
 	EXPORT_ICAL,
 	EXPORT_VCARD,
+	EXPORT_GXMT,
 };
 
 using namespace gromox;
@@ -43,6 +46,7 @@ static constexpr HXoption g_options_table[] = {
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	{"ical", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_ICAL, "Export as calendar object"},
 	{"mail", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_MAIL, "Export as RFC5322 mail"},
+	{"mt", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_GXMT, "Export as Gromox mailbox transfer format"},
 	{"vcard", 0, HXTYPE_VAL, &g_export_mode, nullptr, nullptr, EXPORT_VCARD, "Export as vCard object"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -85,6 +89,8 @@ int main(int argc, const char **argv) try
 	auto bn = HX_basename(argv[0]);
 	if (strcmp(bn, "gromox-exm2eml") == 0) {
 		g_export_mode = EXPORT_MAIL;
+	} else if (strcmp(bn, "gromox-exm2mt") == 0) {
+		g_export_mode = EXPORT_GXMT;
 	} else if (strcmp(bn, "gromox-exm2ical") == 0) {
 		g_export_mode = EXPORT_ICAL;
 	} else if (strcmp(bn, "gromox-exm2vcf") == 0) {
@@ -99,6 +105,11 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	if (g_username == nullptr || argc < 2) {
 		terse_help();
+		return EXIT_FAILURE;
+	}
+	if (g_export_mode == EXPORT_GXMT && isatty(STDOUT_FILENO)) {
+		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
 	if (g_allday_mode >= 0)
@@ -145,6 +156,7 @@ int main(int argc, const char **argv) try
 	auto cl_1 = make_scope_exit(gi_shutdown);
 
 	MESSAGE_CONTENT *ctnt = nullptr;
+	uint64_t msg_id = 0;
 	if (strchr(argv[1], ':') != nullptr) {
 		char *sep = nullptr;
 		auto folder_id = strtoull(argv[1], &sep, 0);
@@ -152,7 +164,7 @@ int main(int argc, const char **argv) try
 			fprintf(stderr, "Unparsable: \"%s\"\n", argv[1]);
 			return EXIT_FAILURE;
 		}
-		auto msg_id = strtoull(sep + 1, nullptr, 0);
+		msg_id = strtoull(sep + 1, nullptr, 0);
 		uint32_t inst_id = 0;
 		ctnt = message_content_init();
 		if (!exmdb_client_remote::load_message_instance(g_storedir,
@@ -168,7 +180,7 @@ int main(int argc, const char **argv) try
 			return EXIT_FAILURE;
 		}
 	} else {
-		auto msg_id = strtoull(argv[1], nullptr, 0);
+		msg_id = strtoull(argv[1], nullptr, 0);
 		if (!exmdb_client_remote::read_message(g_storedir, nullptr, CP_UTF8,
 		    rop_util_make_eid_ex(1, msg_id), &ctnt)) {
 			fprintf(stderr, "The RPC was rejected for an unspecified reason.\n");
@@ -191,6 +203,47 @@ int main(int argc, const char **argv) try
 			fprintf(stderr, "Writeout failed for an unspecified reason.\n");
 			return EXIT_FAILURE;
 		}
+	} else if (g_export_mode == EXPORT_GXMT) {
+		std::vector<uint16_t> tags;
+		for (const auto &p : ctnt->proplist)
+			tags.push_back(PROP_ID(p.proptag));
+		const PROPID_ARRAY propids = {static_cast<uint16_t>(tags.size()), deconst(tags.data())};
+		PROPNAME_ARRAY propnames{};
+		if (!exmdb_client_remote::get_named_propnames(g_storedir, &propids, &propnames)) {
+			fprintf(stderr, "get_all_named_propids failed\n");
+			return EXIT_FAILURE;
+		}
+		gi_name_map name_map;
+		for (size_t i = 0; i < tags.size() && i < propnames.count; ++i) {
+			const auto &p = propnames.ppropname[i];
+			if (p.kind <= MNID_STRING)
+				name_map.emplace(PROP_TAG(PT_UNSPECIFIED, tags[i]), p);
+		}
+		if (HXio_fullwrite(STDOUT_FILENO, "GXMT0003", 8) < 0)
+			throw YError("PG-1014: %s", strerror(errno));
+		uint8_t flag = false;
+		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* splice flag */
+			throw YError("PG-1015: %s", strerror(errno));
+		if (HXio_fullwrite(STDOUT_FILENO, &flag, sizeof(flag)) < 0) /* public store flag */
+			throw YError("PG-1016: %s", strerror(errno));
+		gi_folder_map_write({});
+		gi_name_map_write(name_map);
+		EXT_PUSH ep;
+		if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+			throw YError("ENOMEM");
+		if (ep.p_uint32(static_cast<uint32_t>(MAPI_MESSAGE)) != EXT_ERR_SUCCESS ||
+		    ep.p_uint32(msg_id) != EXT_ERR_SUCCESS ||
+		    ep.p_uint32(static_cast<uint32_t>(0)) != EXT_ERR_SUCCESS ||
+		    ep.p_uint64(~0ULL) != EXT_ERR_SUCCESS ||
+		    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS) {
+			fprintf(stderr, "E-2021\n");
+			return EXIT_FAILURE;
+		}
+		uint64_t xsize = cpu_to_le64(ep.m_offset);
+		if (HXio_fullwrite(STDOUT_FILENO, &xsize, sizeof(xsize)) < 0)
+			throw YError("PG-1017: %s", strerror(errno));
+		if (HXio_fullwrite(STDOUT_FILENO, ep.m_vdata, ep.m_offset) < 0)
+			throw YError("PG-1018: %s", strerror(errno));
 	} else if (g_export_mode == EXPORT_ICAL) {
 		ical ic;
 		if (!oxcical_export(ctnt, ic, g_config_file->get_value("x500_org_name"),
