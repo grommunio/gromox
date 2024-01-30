@@ -568,18 +568,16 @@ static BOOL oxcmail_parse_address(const char *field,
 }
 
 static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
-    TPROPVAL_ARRAY *pproplist)
+    TPROPVAL_ARRAY *pproplist) try
 {
 	uint32_t count;
 	BINARY tmp_bin;
-	int str_offset;
 	uint8_t pad_len;
 	EXT_PUSH ext_push;
 	char tmp_buff[UADDR_SIZE];
 	EMAIL_ADDR email_addr;
 	ONEOFF_ENTRYID tmp_entry;
 	uint8_t bin_buff[256*1024];
-	char str_buff[MIME_FIELD_LEN];
 	static constexpr uint8_t pad_bytes[3]{};
 	
 	count = 0;
@@ -590,7 +588,6 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	uint32_t offset = ext_push.m_offset;
 	if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	str_offset = 0;
 	tmp_entry.flags = 0;
 	tmp_entry.version = 0;
 	tmp_entry.pdisplay_name = email_addr.display_name;
@@ -598,12 +595,8 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 	tmp_entry.pmail_address = tmp_buff;
 
 	vmime::mailboxList mblist;
-	try {
-		mblist.parse(field);
-	} catch (const std::bad_alloc &) {
-		mlog(LV_ERR, "E-2022: ENOMEM");
-		return false;
-	}
+	std::string names;
+	mblist.parse(field);
 	for (const auto &compo : mblist.getChildComponents()) {
 		auto mb = vmime::dynamicCast<vmime::mailbox>(compo);
 		if (mb == nullptr)
@@ -617,23 +610,21 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		    !oxcmail_is_ascii(email_addr.local_part) ||
 		    !oxcmail_is_ascii(email_addr.domain))
 			continue;
-		if (str_offset != 0)
-			str_offset += gx_snprintf(&str_buff[str_offset],
-			              std::size(str_buff) - str_offset, ";");
-		if (*email_addr.display_name != '\0')
-			str_offset += gx_snprintf(&str_buff[str_offset],
-			              std::size(str_buff) - str_offset, "%s",
-			              email_addr.display_name);
-		else
-			str_offset += gx_snprintf(&str_buff[str_offset],
-			              std::size(str_buff) - str_offset, "%s@%s",
-			              email_addr.local_part, email_addr.domain);
+		snprintf(tmp_buff, std::size(tmp_buff), "%s@%s",
+			 email_addr.local_part, email_addr.domain);
+		if (names.size() > 0)
+			names += ';';
+		if (*email_addr.display_name != '\0') {
+			auto oldsize = names.size();
+			names += email_addr.display_name;
+			names.erase(std::remove(names.begin() + oldsize, names.end(), ';'), names.end());
+		} else {
+			names += tmp_buff;
+		}
 
 		uint32_t offset1 = ext_push.m_offset;
 		if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
 			return FALSE;
-		snprintf(tmp_buff, std::size(tmp_buff), "%s@%s",
-			 email_addr.local_part, email_addr.domain);
 		tmp_entry.ctrl_flags = MAPI_ONE_OFF_NO_RICH_INFO | MAPI_ONE_OFF_UNICODE;
 		auto status = ext_push.p_oneoff_eid(tmp_entry);
 		if (EXT_ERR_CHARCNV == status) {
@@ -667,10 +658,13 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		return FALSE;
 	if (pproplist->set(PR_REPLY_RECIPIENT_ENTRIES, &tmp_bin) != 0)
 		return FALSE;
-	if (str_offset > 0 &&
-	    pproplist->set(PR_REPLY_RECIPIENT_NAMES, str_buff) != 0)
+	if (names.size() > 0 &&
+	    pproplist->set(PR_REPLY_RECIPIENT_NAMES, names.c_str()) != 0)
 		return FALSE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2022: ENOMEM");
+	return false;
 }
 
 static BOOL oxcmail_parse_subject(const char *charset, const char *field,
