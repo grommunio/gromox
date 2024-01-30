@@ -1712,23 +1712,31 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"Body", {tChangeDescription::convBody}},
-	{"Categories", {tChangeDescription::convCategories}},
+	{"Birthday", {[](auto&&... args){convDate(PR_BIRTHDAY, args...);}}},
+	{"BusinessHomePage", {[](auto&&... args){convText(PR_BUSINESS_HOME_PAGE, args...);}}},
+	{"Categories", {[](auto&&... args){convStrArray(NtCategories, args...);}}},
+	{"Children", {[](auto&&... args){convStrArray(PR_CHILDRENS_NAMES, args...);}}},
 	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
+	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
 	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
+	{"Initials", {[](auto&&... args){convText(PR_INITIALS, args...);}}},
 	{"IsDeliveryReceiptRequested", {[](auto&&... args){convBool(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, args...);}}},
 	{"IsRead", {[](auto&&... args){convBool(PR_READ, args...);}}},
 	{"IsReadReceiptRequested", {[](auto&&... args){convBool(PR_READ_RECEIPT_REQUESTED, args...);}}},
 	{"JobTitle", {[](auto&&... args){convText(PR_TITLE, args...);}}},
 	{"LastModifiedName", {[](auto&&... args){convText(PR_LAST_MODIFIER_NAME, args...);}}},
 	{"MimeContent", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.mimeContent = base64_decode(xml->GetText());}}},
+	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
 	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
 	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
 	{"Surname", {[](auto&&... args){convText(PR_SURNAME, args...);}}},
+	{"SpouseName", {[](auto&&... args){convText(PR_SPOUSE_NAME, args...);}}},
+	{"WeddingAnniversary", {[](auto&&... args){convDate(PR_WEDDING_ANNIVERSARY, args...);}}},
 }};
 
 
@@ -1830,6 +1838,21 @@ void tChangeDescription::convBool(uint32_t tag, const XMLElement* v, sShape& sha
 }
 
 /**
+ * @brief      Property conversion function for datetime fields
+ *
+ * @param      tag    Tag ID
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ */
+void tChangeDescription::convDate(uint32_t tag, const XMLElement* v, sShape& shape)
+{
+	const char* text = v->GetText();
+	if(!text)
+		throw EWSError::InvalidExtendedPropertyValue(E3257);
+	shape.write(mkProp(tag, sTimePoint(text).toNT()));
+}
+
+/**
  * @brief      Property coversion function for enumerations
  *
  * Converts string to corresponding index and stores it in a numeric property.
@@ -1873,7 +1896,7 @@ void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& sha
 	shape.write(TAGGED_PROPVAL{tag, deconst(znul(v->GetText()))});
 }
 
-void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
+void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape& shape)
 {
 	uint32_t count = 0;
 	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
@@ -1882,7 +1905,14 @@ void tChangeDescription::convCategories(const XMLElement* v, sShape& shape)
 	char** dest = categories->ppstr;
 	for(const XMLElement* s = v->FirstChildElement("String"); s; s = s->NextSiblingElement("String"))
 		strcpy(*dest++ = EWSContext::alloc<char>(strlen(s->GetText())+1), s->GetText());
-	shape.write(NtCategories, TAGGED_PROPVAL{PT_MV_UNICODE, categories});
+	shape.write(TAGGED_PROPVAL{tag, categories});
+}
+
+void tChangeDescription::convStrArray(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+{
+	uint32_t tag = shape.tag(name);
+	if(tag)
+		convStrArray(tag, v, shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1892,12 +1922,15 @@ tContact::tContact(const sShape& shape) : tItem(shape)
 
 void tContact::update(const sShape& shape)
 {
-	fromProp(shape.get(PR_COMPANY_NAME), CompanyName);
-	// TODO ContactSource
 	fromProp(shape.get(PR_ASSISTANT), AssistantName);
+	fromProp(shape.get(PR_BIRTHDAY), Birthday);
+	fromProp(shape.get(PR_BUSINESS_HOME_PAGE), BusinessHomePage);
+	fromProp(shape.get(PR_COMPANY_NAME), CompanyName);
 	fromProp(shape.get(PR_DEPARTMENT_NAME), Department);
 	fromProp(shape.get(PR_TITLE), JobTitle);
 	fromProp(shape.get(PR_OFFICE_LOCATION), OfficeLocation);
+	fromProp(shape.get(PR_SPOUSE_NAME), SpouseName);
+	fromProp(shape.get(PR_WEDDING_ANNIVERSARY), WeddingAnniversary);
 	const char* val;
 	if((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
@@ -1984,8 +2017,10 @@ void tContact::update(const sShape& shape)
 		fromProp(prop, Surname);
 		fromProp(prop, defaulted(CompleteName).LastName);
 	}
-	if((prop = shape.get(PR_GENERATION)))
+	if((prop = shape.get(PR_GENERATION))) {
+		fromProp(prop, Generation);
 		fromProp(prop, defaulted(CompleteName).Suffix);
+	}
 	if((prop = shape.get(PR_INITIALS))){
 		fromProp(prop, Initials);
 		fromProp(prop, defaulted(CompleteName).Initials);
@@ -1998,6 +2033,11 @@ void tContact::update(const sShape& shape)
 		fromProp(prop, Nickname);
 		fromProp(prop, defaulted(CompleteName).Nickname);
 	}
+	if((prop = shape.get(PR_CHILDRENS_NAMES))) {
+		const STRING_ARRAY* names = static_cast<const STRING_ARRAY*>(prop->pvalue);
+		Children.emplace(names->begin(), names->end());
+	}
+
 	if((prop = shape.get(NtEmailAddress1)))
 		defaulted(EmailAddresses).emplace_back(static_cast<const char*>(prop->pvalue), Enum::EmailAddress1);
 	if((prop = shape.get(NtEmailAddress2)))
@@ -2755,6 +2795,10 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
+	{"contacts:Birthday", PR_BIRTHDAY},
+	{"contacts:BusinessHomePage", PR_BUSINESS_HOME_PAGE},
+	{"contacts:Children", PR_CHILDRENS_NAMES},
+	{"contacts:CompanyName", PR_COMPANY_NAME},
 	{"contacts:CompleteName", PR_DISPLAY_NAME_PREFIX},
 	{"contacts:CompleteName", PR_DISPLAY_NAME},
 	{"contacts:CompleteName", PR_GENERATION},
@@ -2763,6 +2807,18 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"contacts:CompleteName", PR_MIDDLE_NAME},
 	{"contacts:CompleteName", PR_NICKNAME}, // TODO: YomiFirstName, YomiLastName;
 	{"contacts:CompleteName", PR_SURNAME},
+	{"contacts:Department", PR_DEPARTMENT_NAME},
+	{"contacts:DisplayName", PR_DISPLAY_NAME},
+	{"contacts:Generation", PR_GENERATION},
+	{"contacts:GivenName", PR_GIVEN_NAME},
+	{"contacts:Initials", PR_INITIALS},
+	{"contacts:JobTitle", PR_TITLE},
+	{"contacts:MiddleName", PR_GIVEN_NAME},
+	{"contacts:Nickname", PR_NICKNAME},
+	{"contacts:OfficeLocation", PR_OFFICE_LOCATION},
+	{"contacts:SpouseName", PR_SPOUSE_NAME},
+	{"contacts:Surname", PR_SURNAME},
+	{"contacts:WeddingAnniversary", PR_WEDDING_ANNIVERSARY},
 	{"folder:ChildFolderCount", PR_FOLDER_CHILD_COUNT},
 	{"folder:DisplayName", PR_DISPLAY_NAME},
 	{"folder:FolderClass", PR_CONTAINER_CLASS},

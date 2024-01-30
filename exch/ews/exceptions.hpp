@@ -378,6 +378,7 @@ E(3253, "output format not supported");
 E(3254, "failed to set item properties");
 E(3255, "failed to set item properties");
 E(3256, "input body size too large");
+E(3257, "missing date value");
 
 #undef E
 }

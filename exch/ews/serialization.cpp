@@ -235,6 +235,9 @@ sTime::sTime(const XMLElement* xml)
 sTimePoint::sTimePoint(const tinyxml2::XMLAttribute* xml) : sTimePoint(xml->Value())
 {}
 
+sTimePoint::sTimePoint(const tinyxml2::XMLElement* xml) : sTimePoint(xml->GetText())
+{}
+
 void sTimePoint::serialize(XMLElement* xml) const
 {
 	tm t;
@@ -632,12 +635,17 @@ tContact::tContact(const tinyxml2::XMLElement* xml) :
 //	XMLINIT(EmailAddresses),
 //	XMLINIT(PhoneNumbers),
 	XMLINIT(AssistantName),
+	XMLINIT(BusinessHomePage),
+	XMLINIT(Children),
 	XMLINIT(ContactSource),
 	XMLINIT(Department),
+	XMLINIT(Generation),
 	XMLINIT(JobTitle),
 	XMLINIT(OfficeLocation),
 	XMLINIT(PostalAddressIndex),
-	XMLINIT(Surname)
+	XMLINIT(SpouseName),
+	XMLINIT(Surname),
+	XMLINIT(WeddingAnniversary)
 {}
 
 void tContact::serialize(tinyxml2::XMLElement* xml) const
@@ -656,12 +664,17 @@ void tContact::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(PhysicalAddresses);
 	XMLDUMPT(PhoneNumbers);
 	XMLDUMPT(AssistantName);
+	XMLDUMPT(BusinessHomePage);
+	XMLDUMPT(Children);
 	XMLDUMPT(Department);
+	XMLDUMPT(Generation);
 	XMLDUMPT(ContactSource);
 	XMLDUMPT(JobTitle);
 	XMLDUMPT(OfficeLocation);
 	XMLDUMPT(PostalAddressIndex);
+	XMLDUMPT(SpouseName);
 	XMLDUMPT(Surname);
+	XMLDUMPT(WeddingAnniversary);
 }
 
 tContactsView::tContactsView(const tinyxml2::XMLElement* xml) :

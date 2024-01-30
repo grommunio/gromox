@@ -439,6 +439,7 @@ struct sTimePoint
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
 	explicit sTimePoint(const tinyxml2::XMLAttribute*);
+	explicit sTimePoint(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -1160,12 +1161,14 @@ struct tChangeDescription
 	static void convProp(const char*, const char*, const tinyxml2::XMLElement*, sShape&);
 
 	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convDate(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(const PROPERTY_NAME&,  const tinyxml2::XMLElement*, sShape&);
-	static void convCategories(const tinyxml2::XMLElement*, sShape&);
+	static void convStrArray(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convStrArray(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	static void convBody(const tinyxml2::XMLElement*, sShape&);
 
 	static std::array<const char*, 15> itemTypes;
@@ -1951,13 +1954,13 @@ struct tContact : public tItem
 	std::optional<std::vector<tPhysicalAddressDictionaryEntry>> PhysicalAddresses;
 	std::optional<std::vector<tPhoneNumberDictionaryEntry>> PhoneNumbers;
 	std::optional<std::string> AssistantName;
-	// <xs:element name="Birthday" type="xs:dateTime" minOccurs="0" />
-	// <xs:element name="BusinessHomePage" type="xs:anyURI" minOccurs="0" />
-	// <xs:element name="Children" type="t:ArrayOfStringsType" minOccurs="0" />
+	std::optional<sTimePoint> Birthday;
+	std::optional<std::string> BusinessHomePage;
+	std::optional<std::vector<sString>> Children;
 	// <xs:element name="Companies" type="t:ArrayOfStringsType" minOccurs="0" />
 	std::optional<Enum::ContactSourceType> ContactSource;
 	std::optional<std::string> Department;
-	// <xs:element name="Generation" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Generation;
 	// <xs:element name="ImAddresses" type="t:ImAddressDictionaryType" minOccurs="0" />
 	std::optional<std::string> JobTitle;
 	// <xs:element name="Manager" type="xs:string" minOccurs="0" />
@@ -1965,9 +1968,9 @@ struct tContact : public tItem
 	std::optional<std::string> OfficeLocation;
 	std::optional<Enum::PhysicalAddressIndexType> PostalAddressIndex;
 	// <xs:element name="Profession" type="xs:string" minOccurs="0" />
-	// <xs:element name="SpouseName" type="xs:string" minOccurs="0" />
+	std::optional<std::string> SpouseName;
 	std::optional<std::string> Surname;
-	// <xs:element name="WeddingAnniversary" type="xs:dateTime" minOccurs="0" />
+	std::optional<sTimePoint> WeddingAnniversary;
 	// <xs:element name="HasPicture" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="PhoneticFullName" type="xs:string" minOccurs="0" />
 	// <xs:element name="PhoneticFirstName" type="xs:string" minOccurs="0" />
