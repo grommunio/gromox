@@ -613,7 +613,9 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		gx_strlcpy(email_addr.local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(email_addr.local_part));
 		gx_strlcpy(email_addr.domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(email_addr.domain));
 
-		if (*email_addr.local_part == '\0')
+		if (!email_addr.has_addr() ||
+		    !oxcmail_is_ascii(email_addr.local_part) ||
+		    !oxcmail_is_ascii(email_addr.domain))
 			continue;
 		if (str_offset != 0)
 			str_offset += gx_snprintf(&str_buff[str_offset],
@@ -626,11 +628,6 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			str_offset += gx_snprintf(&str_buff[str_offset],
 			              std::size(str_buff) - str_offset, "%s@%s",
 			              email_addr.local_part, email_addr.domain);
-
-		if (!email_addr.has_addr() ||
-		    !oxcmail_is_ascii(email_addr.local_part) ||
-		    !oxcmail_is_ascii(email_addr.domain))
-			continue;
 
 		uint32_t offset1 = ext_push.m_offset;
 		if (ext_push.advance(sizeof(uint32_t)) != EXT_ERR_SUCCESS)
@@ -669,10 +666,10 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			return FALSE;
 		if (pproplist->set(PR_REPLY_RECIPIENT_ENTRIES, &tmp_bin) != 0)
 			return FALSE;
+		if (str_offset > 0 &&
+		    pproplist->set(PR_REPLY_RECIPIENT_NAMES, str_buff) != 0)
+			return FALSE;
 	}
-	if (str_offset > 0 &&
-	    pproplist->set(PR_REPLY_RECIPIENT_NAMES, str_buff) != 0)
-		return FALSE;
 	return TRUE;
 }
 
