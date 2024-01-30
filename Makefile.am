@@ -68,7 +68,7 @@ endif
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
-dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-vcf2mt
+dist_sbin_SCRIPTS = gromox-abktpull tools/gromox-exm2ical tools/gromox-exm2vcf tools/gromox-ical2mt tools/gromox-mbox2mt tools/gromox-vcf2mt
 dist_pkglibexec_SCRIPTS = tools/kdb-uidextract tools/kdb-uidextract-limited
 noinst_DATA = dldcheck.stamp
 
@@ -304,6 +304,7 @@ dist_man_MANS = \
 	doc/gromox.7 doc/gromox.cfg.5 doc/gromox-abktconv.8 \
 	doc/gromox-abktpull.8 doc/gromox-dbop.8 doc/gromox-dscli.8 \
 	doc/gromox-eml2mbox.8 doc/gromox-eml2mt.8 doc/gromox-exm2eml.8 \
+	doc/gromox-exm2ical.8 doc/gromox-exm2vcf.8 \
 	doc/gromox-kdb2mt.8 doc/gromox-mailq.8 doc/gromox-mbop.8 \
 	doc/gromox-mkmidb.8 doc/gromox-mkprivate.8 doc/gromox-mkpublic.8 \
 	doc/gromox-mt2exm.8 doc/gromox-selinux.5 \
