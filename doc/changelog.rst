@@ -1,3 +1,20 @@
+Development 2.22.20
+===================
+
+Fixes:
+
+* snapshot: on btrfs, fallback to rm when encountering reflink-based snapshots
+* oxcmail: make PR_REPLY_RECIPIENT_NAMES be consistent with _ENTRYIDS
+* oxcmail: deal with semicolons in Reply-To
+* oxcmail: do not ignore IDN addresses when reading headers
+
+Enhancements:
+
+* exmdb: track where a DB_ITEM instance is held by and report
+* exmdb: make dbg_synth_content work with read_message RPC
+* new command: gromox-exm2mt
+
+
 Gromox 2.22 (2024-01-29)
 ========================
 
