@@ -204,24 +204,25 @@ db_item_ptr db_engine_get_db(const char *path)
 		if (refs > 0 && g_mbox_contention_reject > 0 &&
 		    static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
 			hhold.unlock();
-			mlog(LV_ERR, "E-1593: contention on %s (%u uses), rejecting db request", path, refs);
+			mlog(LV_ERR, "E-1593: contention on %s (%u waiters), rejecting db request", path, refs);
 			return NULL;
 		}
 		if (refs > 0 && g_mbox_contention_warning > 0 &&
 		    static_cast<unsigned int>(refs) > g_mbox_contention_warning)
-			mlog(LV_WARN, "W-1620: contention on %s (%u uses)", path, refs);
+			mlog(LV_WARN, "W-1620: contention on %s (%u waiters)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
 		if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
 			--pdb->reference;
-			mlog(LV_DEBUG, "D-2207: rejecting access to %s because of DB contention", path);
+			mlog(LV_ERR, "E-2207: %s: exclusive access unobtainable after %us (mailbox kept busy by other threads?)",
+				path, static_cast<unsigned int>(DB_LOCK_TIMEOUT.count())));
 			return NULL;
 		}
 		return db_item_ptr(pdb);
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
-		mlog(LV_ERR, "E-1297: too many sqlites referenced at once (exmdb_provider.cfg:table_size=%zu)", g_table_size);
+		mlog(LV_ERR, "E-1297: too many sqlite files referenced at once (exmdb_provider.cfg:table_size=%zu)", g_table_size);
 		return NULL;
 	}
 	try {
