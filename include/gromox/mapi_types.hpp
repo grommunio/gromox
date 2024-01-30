@@ -93,11 +93,7 @@ struct EXT_RECIPIENT_BLOCK {
 struct GX_EXPORT EXT_FORWARDDELEGATE_ACTION {
 	uint32_t count;
 	EXT_RECIPIENT_BLOCK *pblock;
-
-	inline EXT_RECIPIENT_BLOCK *begin() { return pblock; }
-	inline EXT_RECIPIENT_BLOCK *end() { return pblock + count; }
-	inline const EXT_RECIPIENT_BLOCK *begin() const { return pblock; }
-	inline const EXT_RECIPIENT_BLOCK *end() const { return pblock + count; }
+	I_BEGIN_END(pblock, count);
 };
 
 enum { /* ACTION_BLOCK::flavor for OP_FORWARD */
@@ -123,11 +119,7 @@ struct EXT_ACTION_BLOCK {
 struct GX_EXPORT EXT_RULE_ACTIONS {
 	uint32_t count;
 	EXT_ACTION_BLOCK *pblock;
-
-	inline EXT_ACTION_BLOCK *begin() { return pblock; }
-	inline EXT_ACTION_BLOCK *end() { return pblock + count; }
-	inline const EXT_ACTION_BLOCK *begin() const { return pblock; }
-	inline const EXT_ACTION_BLOCK *end() const { return pblock + count; }
+	I_BEGIN_END(pblock, count);
 };
 
 enum {
@@ -245,10 +237,7 @@ struct GX_EXPORT PROBLEM_ARRAY {
 	uint16_t count;
 	PROPERTY_PROBLEM *pproblem;
 
-	inline PROPERTY_PROBLEM *begin() { return pproblem; }
-	inline PROPERTY_PROBLEM *end() { return pproblem + count; }
-	inline const PROPERTY_PROBLEM *begin() const { return pproblem; }
-	inline const PROPERTY_PROBLEM *end() const { return pproblem + count; }
+	I_BEGIN_END(pproblem, count);
 	bool have_index(unsigned int) const;
 	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
 	inline void emplace_back(unsigned int i, uint32_t tag, uint32_t err) {
@@ -703,10 +692,7 @@ struct GLOBALOBJECTID {
 struct GX_EXPORT EID_ARRAY {
 	uint32_t count;
 	uint64_t *pids;
-	inline uint64_t *begin() { return pids; }
-	inline uint64_t *end() { return pids + count; }
-	inline const uint64_t *begin() const { return pids; }
-	inline const uint64_t *end() const { return pids + count; }
+	I_BEGIN_END(pids, count);
 };
 
 using INDEX_ARRAY = PROPTAG_ARRAY;

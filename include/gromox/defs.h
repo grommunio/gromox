@@ -16,6 +16,13 @@
 #define NOMOVE(K) \
 	K(K &&) noexcept = delete; \
 	void operator=(K &&) noexcept = delete;
+#define I_BEGIN_END(memb, count) \
+	using iterator = decltype(&memb[0]); \
+	using const_iterator = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<iterator>>>; \
+	inline iterator begin() { return (memb); } \
+	inline const_iterator begin() const { return (memb); } \
+	inline iterator end() { return (memb) + (count); } \
+	inline const_iterator end() const { return (memb) + (count); }
 
 /*
  * The timezone column in the user database ought to be never empty. Having an

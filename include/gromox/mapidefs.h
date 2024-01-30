@@ -1152,15 +1152,9 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
 	TPROPVAL_ARRAY *dup() const;
 
-	using iterator = TAGGED_PROPVAL*;
-	using const_iterator = const TAGGED_PROPVAL*;
-	inline iterator begin() {return ppropval;}
-	inline iterator end() {return ppropval+count;}
-	inline const_iterator begin() const {return ppropval;}
-	inline const_iterator end() const {return ppropval+count;}
-
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
+	I_BEGIN_END(ppropval, count);
 };
 
 struct mapidefs1_del {
@@ -1214,10 +1208,7 @@ struct GX_EXPORT RECIPIENT_BLOCK {
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 
-	inline TAGGED_PROPVAL *begin() { return ppropval; }
-	inline TAGGED_PROPVAL *end() { return ppropval + count; }
-	inline const TAGGED_PROPVAL *begin() const { return ppropval; }
-	inline const TAGGED_PROPVAL *end() const { return ppropval + count; }
+	I_BEGIN_END(ppropval, count);
 	std::string repr() const;
 };
 
@@ -1350,10 +1341,7 @@ struct GX_EXPORT RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
 
-	inline ACTION_BLOCK *begin() { return pblock; }
-	inline ACTION_BLOCK *end() { return pblock + count; }
-	inline const ACTION_BLOCK *begin() const { return pblock; }
-	inline const ACTION_BLOCK *end() const { return pblock + count; }
+	I_BEGIN_END(pblock, count);
 	std::string repr() const;
 };
 
@@ -1365,11 +1353,7 @@ struct RULE_DATA {
 struct GX_EXPORT RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
-
-	inline RULE_DATA *begin() { return prule; }
-	inline RULE_DATA *end() { return prule + count; }
-	inline const RULE_DATA *begin() const { return prule; }
-	inline const RULE_DATA *end() const { return prule + count; }
+	I_BEGIN_END(prule, count);
 };
 
 struct ZMOVECOPY_ACTION {
@@ -1397,10 +1381,7 @@ struct GX_EXPORT FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 
-	inline RECIPIENT_BLOCK *begin() { return pblock; }
-	inline RECIPIENT_BLOCK *end() { return pblock + count; }
-	inline const RECIPIENT_BLOCK *begin() const { return pblock; }
-	inline const RECIPIENT_BLOCK *end() const { return pblock + count; }
+	I_BEGIN_END(pblock, count);
 	std::string repr() const;
 };
 
