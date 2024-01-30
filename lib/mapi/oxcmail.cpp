@@ -487,7 +487,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 }
 
 static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
-    uint32_t rcpt_type, TARRAY_SET *pset)
+    uint32_t rcpt_type, TARRAY_SET *pset) try
 {
 	EMAIL_ADDR email_addr;
 
@@ -503,17 +503,26 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 		if (mb == nullptr)
 			continue;
 		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
-		auto &emp = mb->getEmail();
-		gx_strlcpy(email_addr.local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(email_addr.local_part));
-		gx_strlcpy(email_addr.domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(email_addr.domain));
+		auto emp = mb->getEmail().generate();
+		auto at  = emp.find('@');
+		if (at == emp.npos)
+			continue;
+		emp[at] = '\0';
+		gx_strlcpy(email_addr.local_part, &emp[0], std::size(email_addr.local_part));
+		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
 
-		if (*email_addr.local_part == '\0')
+		if (!email_addr.has_addr() ||
+		    !oxcmail_is_ascii(email_addr.local_part) ||
+		    !oxcmail_is_ascii(email_addr.domain))
 			continue;
 		if (!oxcmail_parse_recipient(charset,
 		    &email_addr, rcpt_type, pset))
 			return FALSE;
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-2047: ENOMEM");
+	return false;
 }
 
 static BOOL oxcmail_parse_address(const char *field,
@@ -602,9 +611,13 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		if (mb == nullptr)
 			continue;
 		gx_strlcpy(email_addr.display_name, mb->getName().getConvertedText("utf-8").c_str(), std::size(email_addr.display_name));
-		auto &emp = mb->getEmail();
-		gx_strlcpy(email_addr.local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(email_addr.local_part));
-		gx_strlcpy(email_addr.domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(email_addr.domain));
+		auto emp = mb->getEmail().generate();
+		auto at  = emp.find('@');
+		if (at == emp.npos)
+			continue;
+		emp[at] = '\0';
+		gx_strlcpy(email_addr.local_part, &emp[0], std::size(email_addr.local_part));
+		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
 
 		if (!email_addr.has_addr() ||
 		    !oxcmail_is_ascii(email_addr.local_part) ||

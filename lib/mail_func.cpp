@@ -272,9 +272,15 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
 	mb.parse(input);
 
 	gx_strlcpy(e_addr->display_name, mb.getName().getConvertedText("utf-8").c_str(), std::size(e_addr->display_name));
-	auto &emp = mb.getEmail();
-	gx_strlcpy(e_addr->local_part, emp.getLocalName().getConvertedText("utf-8").c_str(), std::size(e_addr->local_part));
-	gx_strlcpy(e_addr->domain, emp.getDomainName().getConvertedText("utf-8").c_str(), std::size(e_addr->domain));
+	auto emp = mb.getEmail().generate();
+	auto at  = emp.find('@');
+	if (at == emp.npos) {
+		*e_addr = {};
+		return;
+	}
+	emp[at] = '\0';
+	gx_strlcpy(e_addr->local_part, &emp[0], std::size(e_addr->local_part));
+	gx_strlcpy(e_addr->domain, &emp[at+1], std::size(e_addr->domain));
 } catch (const std::bad_alloc &) {
 	*e_addr = {};
 }
