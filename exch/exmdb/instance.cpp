@@ -575,8 +575,6 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
 		buf = "<html><body><p><tt>";
 	else if (tag == ID_TAG_RTFCOMPRESSED)
 		buf = "\x7b\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\n";
-	else if (tag == ID_TAG_BODY)
-		buf.resize(4);
 	if (tag != 0)
 		buf += fmt::format("[CID={} Tag={:x}] {}", cid, tag,
 		       mode <= 1 ? "Property/Attachment absent" : "Filler text for debugging");
@@ -597,20 +595,13 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, const char *cid,
 	if (out == nullptr)
 		return nullptr;
 	memcpy(out, buf.c_str(), buf.size() + 1);
-	if (outlen != nullptr) {
+	if (outlen != nullptr)
 		*outlen = buf.size();
-		if (tag == ID_TAG_BODY)
-			cpu_to_le32p(out, *outlen - 4);
-	}
 	return out;
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
 
-/**
- * Returns a buffer with the raw file content (including UTF-8 length marker,
- * if any), plus a trailing NUL.
- */
 void *instance_read_cid_content(const char *cid, uint32_t *plen, uint32_t tag) try
 {
 	struct stat node_stat;
