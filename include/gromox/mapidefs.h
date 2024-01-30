@@ -855,11 +855,13 @@ using DATA_BLOB = BINARY;
 struct BINARY_ARRAY {
 	uint32_t count;
 	BINARY *pbin;
+	I_BEGIN_END(pbin, count);
 };
 
 struct DOUBLE_ARRAY {
 	uint32_t count;
 	double *mval;
+	I_BEGIN_END(mval, count);
 };
 
 struct GX_EXPORT freebusy_event {
@@ -896,11 +898,13 @@ struct FLATUID {
 struct FLATUID_ARRAY {
 	uint32_t cvalues;
 	FLATUID **ppguid;
+	I_BEGIN_END(ppguid, cvalues);
 };
 
 struct FLOAT_ARRAY {
 	uint32_t count;
 	float *mval;
+	I_BEGIN_END(mval, count);
 };
 
 struct GLOBCNT {
@@ -941,21 +945,25 @@ struct GX_EXPORT GUID {
 struct GUID_ARRAY {
 	uint32_t count;
 	GUID *pguid;
+	I_BEGIN_END(pguid, count);
 };
 
 struct LONG_ARRAY {
 	uint32_t count;
 	uint32_t *pl; // XXX: should be int32_t
+	I_BEGIN_END(pl, count);
 };
 
 struct LONGLONG_ARRAY {
 	uint32_t count;
 	uint64_t *pll; // XXX: should be int64_t
+	I_BEGIN_END(pll, count);
 };
 
 struct LPROPTAG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pproptag;
+	I_BEGIN_END(pproptag, cvalues);
 };
 
 struct MESSAGE_STATE {
@@ -981,6 +989,7 @@ struct ONEOFF_ENTRYID {
 struct ONEOFF_ARRAY {
 	uint32_t count;
 	ONEOFF_ENTRYID *pentry_id;
+	I_BEGIN_END(pentry_id, count);
 };
 
 struct PERMISSION_ROW {
@@ -1018,6 +1027,7 @@ struct GX_EXPORT PROPERTY_XNAME {
 struct PROPID_ARRAY {
 	uint16_t count;
 	uint16_t *ppropid;
+	I_BEGIN_END(ppropid, count);
 };
 
 struct PROPNAME_ARRAY {
@@ -1041,6 +1051,7 @@ struct GX_EXPORT PROPTAG_ARRAY {
 struct SHORT_ARRAY {
 	uint32_t count;
 	uint16_t *ps; // XXX: should be int16_t
+	I_BEGIN_END(ps, count);
 };
 
 /**
@@ -1071,6 +1082,7 @@ struct GX_EXPORT SORTORDER_SET {
 struct STATE_ARRAY {
 	uint32_t count;
 	MESSAGE_STATE *pstate;
+	I_BEGIN_END(pstate, count);
 };
 
 struct STRING_ARRAY {
@@ -1169,6 +1181,7 @@ using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, mapidefs1_del>;
 struct LTPROPVAL_ARRAY {
 	uint32_t count;
 	TAGGED_PROPVAL *propval;
+	I_BEGIN_END(propval, count);
 };
 
 /* Better known as rowset/row_set in MSMAPI */
@@ -1372,6 +1385,7 @@ struct ZNOTIFICATION {
 struct ZNOTIFICATION_ARRAY {
 	uint16_t count;
 	ZNOTIFICATION **ppnotification;
+	I_BEGIN_END(ppnotification, count);
 };
 
 /* reply or OOF action */

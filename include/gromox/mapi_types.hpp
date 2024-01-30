@@ -176,6 +176,7 @@ struct LONG_TERM_ID {
 struct LONG_TERM_ID_ARRAY {
 	uint16_t count;
 	LONG_TERM_ID *pids;
+	I_BEGIN_END(pids, count);
 };
 
 struct LONG_TERM_ID_RANGE {
@@ -490,6 +491,7 @@ struct PERSISTDATA {
 struct PERSISTDATA_ARRAY {
 	uint8_t count;
 	PERSISTDATA **ppitems;
+	I_BEGIN_END(ppitems, count);
 };
 
 /* aggregated permissions for delegation */
