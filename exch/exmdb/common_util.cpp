@@ -1563,24 +1563,40 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	std::string cid = pstmt.col_text(1);
 	pstmt.finalize();
 
-	if (strchr(cid.c_str(), '/') != nullptr) {
+	if (g_dbg_synth_content == 2) {
+	} else if (strchr(cid.c_str(), '/') != nullptr) {
 		/* v3 */
 		auto blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 0);
 		if (blk != nullptr)
 			return blk;
-		return nullptr;
+	} else {
+		auto blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 2);
+		if (blk != nullptr)
+			return blk;
+		if (errno != ENOENT)
+			return nullptr;
+		blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 1);
+		if (blk != nullptr)
+			return blk;
+		if (errno != ENOENT)
+			return nullptr;
+		blk = cu_get_object_text_v0(dir, cid.c_str(), proptag, proptag1, cpid);
+		if (blk != nullptr)
+			return blk;
 	}
-	auto blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 2);
-	if (blk != nullptr)
-		return blk;
-	if (errno != ENOENT)
+	auto str = fmt::format("[CID={} Tag={:x}] {}", cid, proptag,
+		   g_dbg_synth_content <= 1 ? "Property/Attachment absent" :
+		   "Filler text for debugging");
+	if (PROP_TYPE(proptag) == PT_UNICODE || PROP_TYPE(proptag) == PT_STRING8)
+		return common_util_dup(str.c_str());
+	auto bv = cu_alloc<BINARY>();
+	if (bv == nullptr)
 		return nullptr;
-	blk = cu_get_object_text_vx(dir, cid.c_str(), proptag, proptag1, cpid, 1);
-	if (blk != nullptr)
-		return blk;
-	if (errno != ENOENT)
+	bv->cb = str.size();
+	bv->pc = common_util_dup(str.c_str());
+	if (bv->pc == nullptr)
 		return nullptr;
-	return cu_get_object_text_v0(dir, cid.c_str(), proptag, proptag1, cpid);
+	return bv;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-2387: ENOMEM");
 	return nullptr;
