@@ -654,22 +654,22 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 			return FALSE;
 		count++;
 	}
-	if (0 != count) {
-		tmp_bin.cb = ext_push.m_offset;
-		tmp_bin.pb = bin_buff;
-		uint32_t bytes = ext_push.m_offset - (offset + sizeof(uint32_t));
-		ext_push.m_offset = 0;
-		if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
-			return FALSE;
-		ext_push.m_offset = offset;
-		if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (pproplist->set(PR_REPLY_RECIPIENT_ENTRIES, &tmp_bin) != 0)
-			return FALSE;
-		if (str_offset > 0 &&
-		    pproplist->set(PR_REPLY_RECIPIENT_NAMES, str_buff) != 0)
-			return FALSE;
-	}
+	if (count == 0)
+		return TRUE;
+	tmp_bin.cb = ext_push.m_offset;
+	tmp_bin.pb = bin_buff;
+	uint32_t bytes = ext_push.m_offset - (offset + sizeof(uint32_t));
+	ext_push.m_offset = 0;
+	if (ext_push.p_uint32(count) != EXT_ERR_SUCCESS)
+		return FALSE;
+	ext_push.m_offset = offset;
+	if (ext_push.p_uint32(bytes) != EXT_ERR_SUCCESS)
+		return FALSE;
+	if (pproplist->set(PR_REPLY_RECIPIENT_ENTRIES, &tmp_bin) != 0)
+		return FALSE;
+	if (str_offset > 0 &&
+	    pproplist->set(PR_REPLY_RECIPIENT_NAMES, str_buff) != 0)
+		return FALSE;
 	return TRUE;
 }
 
