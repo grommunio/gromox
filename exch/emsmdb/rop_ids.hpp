@@ -166,6 +166,11 @@ enum {
 	// ropPrereadMessages = 0xA2,
 	// ropWriteStreamExtended = 0xA3,
 	// ropGetContentsTableExtended = 0xA4,
+	// ropStartScope = 0xA5, (wireshark)
+	// ropEndScope = 0xA6, (wireshark)
+	// ropEchoString = 0xC8, (wireshark)
+	// ropEchoInt = 0xC9, (wireshark)
+	// ropEchoBinary = 0xCA, (wireshark)
 	ropBackoff = 0xF9,
 	// ropExtendedError = 0xFA,
 	// ropBookmarkReturned = 0xFB,
