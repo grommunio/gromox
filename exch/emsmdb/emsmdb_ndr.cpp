@@ -182,6 +182,18 @@ static pack_result emsmdb_ndr_pull_ecdorpcext2(NDR_PULL *pndr, ECDORPCEXT2_IN *r
 	
 	TRY(pndr->g_ctx_handle(&r->cxh));
 	TRY(pndr->g_uint32(&r->flags));
+	/*
+	 * NDR Transfer Syntax (C706, §14.3.3.2 & §14.3.3.3) specifies the
+	 * encoding of arrays. It makes sense in the context of serializing
+	 * e.g. a std::vector<> object. But: C706 does not mention any
+	 * object-oriented language and focuses heavily on ISO C instead, where
+	 * the programmer has to manage an array's size manually, e.g.
+	 * struct S { size_t z; [length_is(z)] uint32_t *array; };, and
+	 * NDR-encoding such a NDR struct then unfortunately causes the length
+	 * to be encoded twice.
+	 *
+	 * Anecdotes: https://lists.samba.org/archive/samba-technical/2009-April/064319.html
+	 */
 	TRY(pndr->g_ulong(&size));
 	r->pin = ndr_stack_anew<uint8_t>(NDR_STACK_IN, size);
 	if (r->pin == nullptr)
