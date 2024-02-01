@@ -2478,49 +2478,7 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	    uid_list.size() == 0)
 		return ecNotFound;
 	piline = pical.get_line("METHOD");
-	if (NULL != piline) {
-		pvalue = piline->get_first_subvalue();
-		if (NULL != pvalue) {
-			if (0 == strcasecmp(pvalue, "PUBLISH")) {
-				if (uid_list.size() > 1) {
-					if (!oxcical_import_events(str_zone,
-					    calendartype, pical,
-					    uid_list, alloc, get_propids,
-					    username_to_entryid, msgvec))
-						return ecError;
-					finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
-					return ecSuccess;
-				}
-				mclass = "IPM.Appointment";
-			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
-				if (uid_list.size() != 1)
-					return ecNotFound;
-				mclass = "IPM.Schedule.Meeting.Request";
-			} else if (0 == strcasecmp(pvalue, "REPLY")) {
-				if (uid_list.size() != 1)
-					return ecNotFound;
-				pvalue1 = oxcical_get_partstat(uid_list);
-				if (NULL != pvalue1) {
-					if (strcasecmp(pvalue1, "ACCEPTED") == 0)
-						mclass = "IPM.Schedule.Meeting.Resp.Pos";
-					else if (strcasecmp(pvalue1, "TENTATIVE") == 0)
-						mclass = "IPM.Schedule.Meeting.Resp.Tent";
-					else if (strcasecmp(pvalue1, "DECLINED") == 0)
-						mclass = "IPM.Schedule.Meeting.Resp.Neg";
-				}
-			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
-				if (uid_list.size() != 1)
-					return ecNotFound;
-				pvalue1 = oxcical_get_partstat(uid_list);
-				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
-					mclass = "IPM.Schedule.Meeting.Resp.Tent";
-					b_proposal = TRUE;
-				}
-			} else if (0 == strcasecmp(pvalue, "CANCEL")) {
-				mclass = "IPM.Schedule.Meeting.Canceled";
-			}
-		}
-	} else {
+	if (piline == nullptr) {
 		if (!oxcical_import_events(str_zone, calendartype,
 		    pical, uid_list, alloc, get_propids,
 		    username_to_entryid, msgvec))
@@ -2528,6 +2486,49 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 		finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
 		return ecSuccess;
 	}
+
+	pvalue = piline->get_first_subvalue();
+	if (NULL != pvalue) {
+		if (0 == strcasecmp(pvalue, "PUBLISH")) {
+			if (uid_list.size() > 1) {
+				if (!oxcical_import_events(str_zone,
+				    calendartype, pical,
+				    uid_list, alloc, get_propids,
+				    username_to_entryid, msgvec))
+					return ecError;
+				finalvec.insert(finalvec.end(), std::make_move_iterator(msgvec.begin()), std::make_move_iterator(msgvec.end()));
+				return ecSuccess;
+			}
+			mclass = "IPM.Appointment";
+		} else if (0 == strcasecmp(pvalue, "REQUEST")) {
+			if (uid_list.size() != 1)
+				return ecNotFound;
+			mclass = "IPM.Schedule.Meeting.Request";
+		} else if (0 == strcasecmp(pvalue, "REPLY")) {
+			if (uid_list.size() != 1)
+				return ecNotFound;
+			pvalue1 = oxcical_get_partstat(uid_list);
+			if (NULL != pvalue1) {
+				if (strcasecmp(pvalue1, "ACCEPTED") == 0)
+					mclass = "IPM.Schedule.Meeting.Resp.Pos";
+				else if (strcasecmp(pvalue1, "TENTATIVE") == 0)
+					mclass = "IPM.Schedule.Meeting.Resp.Tent";
+				else if (strcasecmp(pvalue1, "DECLINED") == 0)
+					mclass = "IPM.Schedule.Meeting.Resp.Neg";
+			}
+		} else if (0 == strcasecmp(pvalue, "COUNTER")) {
+			if (uid_list.size() != 1)
+				return ecNotFound;
+			pvalue1 = oxcical_get_partstat(uid_list);
+			if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
+				mclass = "IPM.Schedule.Meeting.Resp.Tent";
+				b_proposal = TRUE;
+			}
+		} else if (0 == strcasecmp(pvalue, "CANCEL")) {
+			mclass = "IPM.Schedule.Meeting.Canceled";
+		}
+	}
+
 	message_ptr msg(message_content_init());
 	if (msg == nullptr)
 		return ecMAPIOOM;
