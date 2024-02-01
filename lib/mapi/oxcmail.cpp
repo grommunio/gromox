@@ -2826,8 +2826,10 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			} else {
 				pmsg1.reset(oxcical_import_single(str_zone, ical, alloc,
 				        get_propids, oxcmail_username_to_entryid).release());
-				if (pmsg1 == nullptr)
+				if (pmsg1 == nullptr) {
+					mlog(LV_WARN, "W-2728: oxcmail_import_single returned no object (parse error?); placing ical as attachment instead");
 					mime_enum.pcalendar = NULL;
+				}
 			}
 		}
 	}
