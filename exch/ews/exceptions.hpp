@@ -379,6 +379,7 @@ E(3254, "failed to set item properties");
 E(3255, "failed to set item properties");
 E(3256, "input body size too large");
 E(3257, "missing date value");
+E(3258, "too many children");
 
 #undef E
 }

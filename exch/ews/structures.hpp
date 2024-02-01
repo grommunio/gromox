@@ -625,8 +625,9 @@ struct tRequestAttachmentId : public tBaseItemId
 struct tBody : public std::string
 {
 	template<typename T>
-	inline tBody(T&& content, const char* type) : std::string(std::forward<T>(content)), BodyType(type)
-	{}
+	inline tBody(T&& content, const char* type) : std::string(std::forward<T>(content)), BodyType(type) {}
+
+	explicit tBody(const tinyxml2::XMLElement*);
 
 	Enum::BodyTypeType BodyType; //Attribute
 	std::optional<bool> IsTruncated; //Attribute
@@ -725,11 +726,12 @@ struct tEmailAddressType : public NS_EWS_Types
  */
 struct tEmailAddressDictionaryEntry
 {
-	static constexpr char NAME[] = "t:Entry";
+	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	explicit tEmailAddressDictionaryEntry(const std::string&, const Enum::EmailAddressKeyType&);
+	tEmailAddressDictionaryEntry(const std::string&, const Enum::EmailAddressKeyType&);
+	explicit tEmailAddressDictionaryEntry(const tinyxml2::XMLElement*);
 
 	std::string Entry;
 	Enum::EmailAddressKeyType Key; //Attribute
@@ -747,7 +749,8 @@ struct tPhoneNumberDictionaryEntry
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	explicit tPhoneNumberDictionaryEntry(std::string, Enum::PhoneNumberKeyType);
+	tPhoneNumberDictionaryEntry(std::string, Enum::PhoneNumberKeyType);
+	explicit tPhoneNumberDictionaryEntry(const tinyxml2::XMLElement*);
 
 	std::string Entry;
 	Enum::PhoneNumberKeyType Key; //Attribute
@@ -1893,6 +1896,7 @@ struct tCompleteName : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tCompleteName() = default;
+	explicit tCompleteName(const tinyxml2::XMLElement*);
 
 	std::optional<std::string> Title;
 	std::optional<std::string> FirstName;
@@ -1916,6 +1920,7 @@ struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 
 	explicit inline tPhysicalAddressDictionaryEntry(Enum::PhysicalAddressKeyType pak) : Key(pak) {}
+	explicit tPhysicalAddressDictionaryEntry(const tinyxml2::XMLElement*);
 
 	Enum::PhysicalAddressKeyType Key; // Attribute
 

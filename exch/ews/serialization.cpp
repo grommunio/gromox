@@ -370,6 +370,12 @@ tBaseSubscriptionRequest::tBaseSubscriptionRequest(const tinyxml2::XMLElement* x
 	XMLINIT(EventTypes)
 {}
 
+tBody::tBody(const tinyxml2::XMLElement* xml) :
+	std::string(fromXMLNode<std::string>(xml)),
+	XMLINITA(BodyType),
+	XMLINITA(IsTruncated)
+{}
+
 void tBody::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(c_str());
@@ -600,6 +606,19 @@ tChangeDescription::tChangeDescription(const tinyxml2::XMLElement* xml) :
 void tConflictResults::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(Count);}
 
+tCompleteName::tCompleteName(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Title),
+	XMLINIT(FirstName),
+	XMLINIT(MiddleName),
+	XMLINIT(LastName),
+	XMLINIT(Suffix),
+	XMLINIT(Initials),
+	XMLINIT(FullName),
+	XMLINIT(Nickname),
+	XMLINIT(YomiFirstName),
+	XMLINIT(YomiLastName)
+{}
+
 void tCompleteName::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(Title);
@@ -613,6 +632,16 @@ void tCompleteName::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(YomiFirstName);
 	XMLDUMPT(YomiLastName);
 }
+
+tPhysicalAddressDictionaryEntry::tPhysicalAddressDictionaryEntry(const tinyxml2::XMLElement* xml) :
+	XMLINITA(Key),
+	XMLINIT(Street),
+	XMLINIT(City),
+	XMLINIT(State),
+	XMLINIT(CountryOrRegion),
+	XMLINIT(PostalCode)
+{}
+
 void tPhysicalAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPA(Key);
@@ -631,10 +660,13 @@ tContact::tContact(const tinyxml2::XMLElement* xml) :
 	XMLINIT(Initials),
 	XMLINIT(MiddleName),
 	XMLINIT(Nickname),
+	XMLINIT(CompleteName),
 	XMLINIT(CompanyName),
-//	XMLINIT(EmailAddresses),
-//	XMLINIT(PhoneNumbers),
+	XMLINIT(EmailAddresses),
+	XMLINIT(PhysicalAddresses),
+	XMLINIT(PhoneNumbers),
 	XMLINIT(AssistantName),
+	XMLINIT(Birthday),
 	XMLINIT(BusinessHomePage),
 	XMLINIT(Children),
 	XMLINIT(ContactSource),
@@ -728,6 +760,14 @@ void tEmailAddressType::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(OriginalDisplayName);
 }
 
+tEmailAddressDictionaryEntry::tEmailAddressDictionaryEntry(const tinyxml2::XMLElement* xml) :
+	Entry(fromXMLNode<std::string>(xml)),
+	XMLINITA(Key),
+	XMLINITA(Name),
+	XMLINITA(RoutingType),
+	XMLINITA(MailboxType)
+{}
+
 void tEmailAddressDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
 	xml->SetText(Entry.c_str());
@@ -756,6 +796,11 @@ void tFindItemParent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Items);
 	XMLDUMPT(Groups);
 }
+
+tPhoneNumberDictionaryEntry::tPhoneNumberDictionaryEntry(const tinyxml2::XMLElement* xml) :
+	Entry(fromXMLNode<std::string>(xml)),
+	XMLINITA(Key)
+{}
 
 void tPhoneNumberDictionaryEntry::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -897,7 +942,7 @@ tItem::tItem(const tinyxml2::XMLElement* xml) :
 	XMLINIT(ItemClass),
 	XMLINIT(Subject),
 	XMLINIT(Sensitivity),
-//	XMLINIT(Body),
+	XMLINIT(Body),
 //	XMLINIT(Attachments),
 //	XMLINIT(DateTimeReceived),
 //	XMLINIT(Size),
