@@ -2457,6 +2457,10 @@ static uint32_t oxcical_get_calendartype(const ical_line *piline)
 	return it != std::end(cal_scale_names) ? it->first : CAL_DEFAULT;
 }
 
+/**
+ * Read a bunch of VCALENDAR/VEVENT items from @pical and put each of them as
+ * messages into @finalvec.
+ */
 ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid, std::vector<message_ptr> &finalvec)
@@ -2543,6 +2547,14 @@ ec_error_t oxcical_import_multi(const char *str_zone, const ical &pical,
 	return ecSuccess;
 }
 
+/**
+ * Reads one VCALENDAR/VEVENT item from @pical and turns it into a
+ * message_content object (IPM.Appointment or otherwise).
+ *
+ * If @pical, contrary to expectations, has more than one VCALENDAR/VEVENT
+ * item, the message_content object will be a blank IPM.Note with embedded
+ * message attachments (IPM.Appointment).
+ */
 message_ptr oxcical_import_single(const char *str_zone,
     const ical &pical, EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid)
