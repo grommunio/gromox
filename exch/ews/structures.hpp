@@ -1047,7 +1047,7 @@ struct tIndexedFieldURI
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, uint32_t>, 24> tagMap;
+	static std::array<std::pair<UIKey, uint32_t>, 25> tagMap;
 	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 9> nameMap;
 };
 
@@ -1968,7 +1968,7 @@ struct tContact : public tItem
 	std::optional<std::string> Generation;
 	// <xs:element name="ImAddresses" type="t:ImAddressDictionaryType" minOccurs="0" />
 	std::optional<std::string> JobTitle;
-	// <xs:element name="Manager" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Manager;
 	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
 	std::optional<std::string> OfficeLocation;
 	std::optional<Enum::PhysicalAddressIndexType> PostalAddressIndex;

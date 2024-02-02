@@ -1711,6 +1711,7 @@ decltype(tChangeDescription::itemTypes) tChangeDescription::itemTypes = {
  * List of field -> conversion function mapping
  */
 decltype(tChangeDescription::fields) tChangeDescription::fields = {{
+	{"Assistant", {[](auto&&... args){convText(PR_ASSISTANT, args...);}}},
 	{"Body", {tChangeDescription::convBody}},
 	{"Birthday", {[](auto&&... args){convDate(PR_BIRTHDAY, args...);}}},
 	{"BusinessHomePage", {[](auto&&... args){convText(PR_BUSINESS_HOME_PAGE, args...);}}},
@@ -2795,6 +2796,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"calendar:Organizer", PR_SENDER_ADDRTYPE},
 	{"calendar:Organizer", PR_SENDER_EMAIL_ADDRESS},
 	{"calendar:Organizer", PR_SENDER_NAME},
+	{"contacts:AssistantName", PR_ASSISTANT},
 	{"contacts:Birthday", PR_BIRTHDAY},
 	{"contacts:BusinessHomePage", PR_BUSINESS_HOME_PAGE},
 	{"contacts:Children", PR_CHILDRENS_NAMES},
@@ -2813,6 +2815,7 @@ decltype(tFieldURI::tagMap) tFieldURI::tagMap = {
 	{"contacts:GivenName", PR_GIVEN_NAME},
 	{"contacts:Initials", PR_INITIALS},
 	{"contacts:JobTitle", PR_TITLE},
+	{"contacts:Manager", PR_MANAGER_NAME},
 	{"contacts:MiddleName", PR_GIVEN_NAME},
 	{"contacts:Nickname", PR_NICKNAME},
 	{"contacts:OfficeLocation", PR_OFFICE_LOCATION},
@@ -3040,6 +3043,7 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "BusinessPhone"}, PR_BUSINESS_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessPhone2"}, PR_BUSINESS2_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "Callback"}, PR_CALLBACK_TELEPHONE_NUMBER},
+	{{"contacts:PhoneNumber", "Car"}, PR_CAR_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "CompanyMainPhone"}, PR_COMPANY_MAIN_PHONE_NUMBER},
 	{{"contacts:PhoneNumber", "HomeFax"}, PR_HOME_FAX_NUMBER},
 	{{"contacts:PhoneNumber", "HomePhone"}, PR_HOME_TELEPHONE_NUMBER},
