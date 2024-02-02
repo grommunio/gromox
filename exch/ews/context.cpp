@@ -1397,15 +1397,13 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 	if(!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	if(item.Start) {
-		auto ntstart = rop_util_unix_to_nttime(item.Start.value());
-		auto start = EWSContext::construct<uint64_t>(ntstart);
+		auto start = EWSContext::construct<uint64_t>(item.Start.value().toNT());
 		shape.write(NtCommonStart, TAGGED_PROPVAL{PT_SYSTIME, start});
 		shape.write(NtAppointmentStartWhole, TAGGED_PROPVAL{PT_SYSTIME, start});
 		shape.write(TAGGED_PROPVAL{PR_START_DATE, start});
 	}
 	if(item.End) {
-		auto ntend = rop_util_unix_to_nttime(item.End.value());
-		auto end = EWSContext::construct<uint64_t>(ntend);
+		auto end = EWSContext::construct<uint64_t>(item.End.value().toNT());
 		shape.write(NtCommonEnd, TAGGED_PROPVAL{PT_SYSTIME, end});
 		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
 		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});

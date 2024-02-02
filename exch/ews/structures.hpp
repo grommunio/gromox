@@ -439,6 +439,7 @@ struct sTimePoint
 	explicit sTimePoint(const gromox::time_point&);
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
+	explicit sTimePoint(const tinyxml2::XMLElement*);
 	explicit sTimePoint(const tinyxml2::XMLAttribute*);
 	explicit sTimePoint(const tinyxml2::XMLElement*);
 
@@ -1814,8 +1815,8 @@ struct tCalendarItem : public tItem
 	std::optional<sTimePoint> DateTimeStamp;
 
 	// <!-- Single and Occurrence only -->
-	std::optional<gromox::time_point> Start;
-	std::optional<gromox::time_point> End;
+	std::optional<sTimePoint> Start;
+	std::optional<sTimePoint> End;
 
 	// <!-- Occurrence only -->
 	std::optional<gromox::time_point> OriginalStart;

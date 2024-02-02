@@ -232,6 +232,9 @@ sTime::sTime(const XMLElement* xml)
 		throw DeserializationError(E3042(xml->Name(), xml->GetText()));
 }
 
+sTimePoint::sTimePoint(const tinyxml2::XMLElement* xml) : sTimePoint(xml->GetText())
+{}
+
 sTimePoint::sTimePoint(const tinyxml2::XMLAttribute* xml) : sTimePoint(xml->Value())
 {}
 
