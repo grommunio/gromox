@@ -7,6 +7,7 @@ Fixes:
 * oxcmail: make PR_REPLY_RECIPIENT_NAMES be consistent with _ENTRYIDS
 * oxcmail: deal with semicolons in Reply-To
 * oxcmail: do not ignore IDN addresses when reading headers
+* oxcmail: resolve a case with trashed body bytes when a line began with dot
 
 Enhancements:
 

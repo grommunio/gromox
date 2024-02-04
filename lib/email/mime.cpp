@@ -229,7 +229,6 @@ bool MIME::write_content(const char *pcontent, size_t length,
     enum mime_encoding encoding_type) try
 {
 	auto pmime = this;
-	size_t i, j;
 	/* align the buffer with 64K */
 	
 #ifdef _DEBUG_UMTA
@@ -269,16 +268,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		for (i=0,j=0; i<length; i++,j++) {
-			if ('.' == pcontent[i]) {
-				if (i == 0)
-					pmime->content_begin[j++] = '.';
-				else if (i > 2 && pcontent[i-1] == '\n' && pcontent[i-2] == '\r')
-					pmime->content_begin[j++] = '.';
-			}
-			pmime->content_begin[j] = pcontent[i];
-		}
-		length = j;
+		gx_strlcpy(content_begin, pcontent, length);
 		pmime->content_length = length;
 		if (added_crlf) {
 			memcpy(pmime->content_begin + length, "\r\n", 2);
@@ -301,16 +291,8 @@ bool MIME::write_content(const char *pcontent, size_t length,
 			memcpy(&pbuff[length], "\r\n", 2);
 			length += 2;
 		}
-		for (i=0,j=0; i<length; i++,j++) {
-			if ('.' == pbuff[i]) {
-				if (i == 0)
-					pmime->content_begin[j++] = '.';
-				else if (i > 2 && pbuff[i-1] == '\n' && pbuff[i-2] == '\r')
-					pmime->content_begin[j++] = '.';
-			}
-			pmime->content_begin[j] = pbuff[i];
-		}
-		pmime->content_length = j;
+		gx_strlcpy(content_begin, pbuff.get(), length);
+		pmime->content_length = length;
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return true;
 	}
@@ -988,7 +970,7 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 {
 	auto pmime = this;
 	void *ptr;
-	size_t i, offset, max_length;
+	size_t offset, max_length;
 	unsigned int buff_size;
 	
 #ifdef _DEBUG_UMTA
@@ -1068,20 +1050,8 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	else if (tmp_len >= 1 && newline_size(&pmime->content_begin[tmp_len-1], 1) == 1)
 		tmp_len -= 1;
 	size_t size = 0;
-	for (i=0; i<tmp_len; i++) {
-		if ('.' == pmime->content_begin[i]) {
-			if (0 == i) {
-				if (pmime->content_begin[1] == '.')
-					i ++;
-			} else {
-				if (i > 2 && pmime->content_begin[i-1] == '\n' &&
-				    pmime->content_begin[i-2] == '\r' &&
-				    pmime->content_begin[i+1] == '.')
-					i ++;
-			}
-		}
-		pbuff[size++] = pmime->content_begin[i];
-	}
+	gx_strlcpy(pbuff.get(), content_begin, tmp_len);
+	size = tmp_len;
 	
 	switch (encoding_type) {
 	case mime_encoding::base64:
