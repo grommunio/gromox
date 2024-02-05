@@ -1,5 +1,5 @@
-Development 2.22.20
-===================
+Gromox 2.23 (2024-02-05)
+========================
 
 Fixes:
 
@@ -11,7 +11,10 @@ Fixes:
 
 Enhancements:
 
-* exmdb: track where a DB_ITEM instance is held by and report
+* exmdb: add config directive ``exmdb_contention_reject_time`` for configuring
+  contention timeout
+* exmdb: have DB_ITEM instances track which function holds them, and report
+  this upon reaching contention timeouts
 * exmdb: make dbg_synth_content work with read_message RPC
 * new command: gromox-exm2mt
 
