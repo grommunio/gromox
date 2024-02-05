@@ -52,9 +52,8 @@ Default: if \-s is present, import without hidden folders
 .TP
 \fB\-\-only\-obj\fP \fInid\fP
 Extract just the object with the given PFF node id. This option may be
-specified multiple times. In the output stream, the objects will have an
-unspecified location given as their parent folder. (mt2exm will use the
-drafts folder because it is expectedly less crowded than one's inbox.)
+specified multiple times. The objects will be unanchored; see gromox\-mt2exm(8)
+for where messages are placed.
 .SH Examples
 Import of a PFF-compatible file into a Gromox mailbox via exmdb transport:
 .PP
