@@ -88,14 +88,19 @@ becoming the victim of a downgrade attack is a possibility.
 .SS Grommunio Admin API directives
 .TP
 \fBldap_host\fP
+.PP
 .TP
 \fBldap_bind_user\fP
+.PP
 .TP
 \fBldap_bind_pass\fP
+.PP
 .TP
 \fBldap_search_base\fP
+.PP
 .TP
 \fBldap_start_tls\fP
+.PP
 .TP
 \fBldap_mail_attr\fP
 (These six as above)
