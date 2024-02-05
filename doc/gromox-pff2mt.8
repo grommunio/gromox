@@ -59,6 +59,8 @@ drafts folder because it is expectedly less crowded than one's inbox.)
 Import of a PFF-compatible file into a Gromox mailbox via exmdb transport:
 .PP
 gromox\-pff2mt sample.pst | gromox\-mt2exm \-u user@domain.example
+.PP
+mt2exm has more target options; see its manpage.
 .SH Bugs
 Embedded messages are treated as subitems by libpff. Luckily, the only
 consequence is that the tree view (-t) shows duplicate NID visits.
