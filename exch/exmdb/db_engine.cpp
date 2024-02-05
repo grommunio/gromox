@@ -109,7 +109,7 @@ unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel;
-static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
+unsigned long long g_exmdb_lock_timeout = 60000000000ULL;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
 static void dbeng_notify_cttbl_modify_row(DB_ITEM *, uint64_t folder_id, uint64_t message_id);
@@ -213,10 +213,10 @@ db_item_ptr db_engine_get_db(const char *path, const char *parent_func)
 		++pdb->reference;
 		hhold.unlock();
 		auto func_then = znul(pdb->giant_lock_func);
-		if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
+		if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
 			--pdb->reference;
-			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %us (mailbox busy with <%s>/<%s>)",
-				path, static_cast<unsigned int>(DB_LOCK_TIMEOUT.count()),
+			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns (mailbox busy with <%s>/<%s>)",
+				path, g_exmdb_lock_timeout,
 				func_then, znul(pdb->giant_lock_func));
 			return NULL;
 		}
@@ -239,7 +239,7 @@ db_item_ptr db_engine_get_db(const char *path, const char *parent_func)
 	pdb->last_time = time(nullptr);
 	pdb->reference ++;
 	hhold.unlock();
-	if (!pdb->giant_lock.try_lock_for(DB_LOCK_TIMEOUT)) {
+	if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
 		pdb->reference --;
 		return NULL;
 	}

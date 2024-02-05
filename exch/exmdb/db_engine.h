@@ -162,7 +162,7 @@ extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint6
 extern bool db_engine_check_populating(const char *dir, uint64_t folder_id);
 
 extern unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
-extern unsigned long long g_exmdb_search_pacing_time;
+extern unsigned long long g_exmdb_search_pacing_time, g_exmdb_lock_timeout;
 extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 extern unsigned int g_exmdb_pvt_folder_softdel;
 extern std::string g_exmdb_ics_log_file;

@@ -63,6 +63,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "0", CFG_SIZE},
 	{"mbox_contention_reject", "0", CFG_SIZE},
+	{"mbox_contention_reject_time", "60s", CFG_TIME_NS},
 	{"mbox_contention_warning", "10", CFG_SIZE},
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
@@ -106,6 +107,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	exmdb_pf_read_states = pconfig->get_ll("exmdb_pf_read_states");
 	g_exmdb_pvt_folder_softdel = pconfig->get_ll("exmdb_private_folder_softdelete");
 	g_exmdb_search_pacing = pconfig->get_ll("exmdb_search_pacing");
+	g_exmdb_lock_timeout = pconfig->get_ll("mbox_contention_reject_time");
 	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
