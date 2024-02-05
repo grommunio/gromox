@@ -18,10 +18,10 @@ when *.eml leads to an expansion the system cannot handle.
 gromox\-eml2mbox *.eml >all.mbox
 .fi
 .nf
-find . -type f -name "*.eml" | gromox\-eml2mbox - >all.mbox
+find . \-type f \-name "*.eml" | gromox\-eml2mbox \- >all.mbox
 .fi
 .nf
-alpine -f $PWD/all.mbox
+alpine \-f $PWD/all.mbox
 .fi
 .SH See also
 \fBgromox\fP(7)

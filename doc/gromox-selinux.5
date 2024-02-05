@@ -9,7 +9,7 @@ The gromox processes execute with the gromox_t SELinux type. You can check if yo
 
 For example:
 
-.B ps -eZ | grep gromox_t
+.B ps \-eZ | grep gromox_t
 
 
 .SH "ENTRYPOINTS"
@@ -34,7 +34,7 @@ The following process types are defined for gromox:
 .EE
 .PP
 Note:
-.B semanage permissive -a gromox_t
+.B semanage permissive \-a gromox_t
 can be used to make the process type gromox_t permissive. SELinux does not deny access to permissive process types, but the AVC (SELinux denials) messages are still generated.
 
 .SH BOOLEANS
@@ -45,7 +45,7 @@ SELinux policy is customizable based on least access required.  gromox policy is
 If you want to dontaudit all daemons scheduling requests (setsched, sys_nice), you must turn on the daemons_dontaudit_scheduling boolean. Enabled by default.
 
 .EX
-.B setsebool -P daemons_dontaudit_scheduling 1
+.B setsebool \-P daemons_dontaudit_scheduling 1
 
 .EE
 
@@ -53,7 +53,7 @@ If you want to dontaudit all daemons scheduling requests (setsched, sys_nice), y
 If you want to allow all domains to execute in fips_mode, you must turn on the fips_mode boolean. Enabled by default.
 
 .EX
-.B setsebool -P fips_mode 1
+.B setsebool \-P fips_mode 1
 
 .EE
 
@@ -158,9 +158,9 @@ SELinux gromox policy is very flexible allowing users to setup their gromox proc
 SELinux defines the file context types for the gromox, if you wanted to
 store files with these types in a different paths, you need to execute the semanage command to specify alternate labeling and then use restorecon to put the labels on disk.
 
-.B semanage fcontext -a -t gromox_var_run_t '/srv/mygromox_content(/.*)?'
+.B semanage fcontext \-a \-t gromox_var_run_t '/srv/mygromox_content(/.*)?'
 .br
-.B restorecon -R -v /srv/mygromox_content
+.B restorecon \-R \-v /srv/mygromox_content
 
 Note: SELinux often uses regular expressions to specify labels that match multiple files.
 
