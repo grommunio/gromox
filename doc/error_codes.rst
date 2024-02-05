@@ -41,7 +41,7 @@ Synchronization Log
 	18:14:35 Synchronizer Version 16.0.5197
 	18:14:35 Synchronizing Mailbox 'User Name'
 	18:14:35 Synchronizing local changes in folder 'Kalender'
-	18:14:35 Uploading to server '63545368-4067-726f-6d6d-756e1f000000@locally.de'
+	18:14:35 Uploading to server '63545368-4067-726f-6d6d-756e1f000000@domain.example'
 	18:14:35 Error synchronizing message 'Test-in-shared-cal'
 	18:14:35 		 [80070057-501-80070057-322]
 	18:14:35 		 The client operation failed.
@@ -49,7 +49,7 @@ Synchronization Log
 	18:14:35 		 For more information on this failure, click the URL below:
 	18:14:35 		 http://www.microsoft.com/support/prodredirect/outlook2000_us.asp?err=80070057-501-80070057-322
 	18:14:35 Moved a message that failed synchronization to 'Lokale Fehler'. Message subject -> 'Test-in-shared-cal'. You can view  this message in your offline folder only.
-	18:14:35 Downloading from server '63545368-4067-726f-6d6d-756e1f000000@locally.de'
+	18:14:35 Downloading from server '63545368-4067-726f-6d6d-756e1f000000@domain.example'
 	18:14:35 Done
 	# other examples
 	# [80040803-30141506-0-533]
@@ -100,8 +100,9 @@ Send and Receive dialog
 
 	x of y Tasks have completed successfully.
 
-	Task 'Synchronizing subscribed folders for abc@def.de` reported error
-	(0x80048002) : 'This task was cancelled before it was completed.'
+	Task 'Synchronizing subscribed folders for user@domain.example`
+	reported error (0x80048002) : 'This task was cancelled before it was
+	completed.'
 
 	Task '...' reported error (0x800CCC0D) : 'Cannot find the email server.
 	Verify the server information in your account properties.'
@@ -110,11 +111,11 @@ Send and Receive dialog
 	incoming )POP3) e-mail server. If you continue to receive this message, contact
 	your server administrator or Internet service provider (ISP).'
 
-	Fehler (0x80190194) beim Ausführen der Aufgabe "abc@def.de": "Ein unerwarteter
-	Fehler ist aufgetreten."
+	Fehler (0x80190194) beim Ausführen der Aufgabe "user@domain.example":
+	"Ein unerwarteter Fehler ist aufgetreten."
 
-	Fehler (0x80200011) beim Ausführen der Aufgabe "abc@def.de": "Fehler beim
-	Ausführen der Operation."
+	Fehler (0x80200011) beim Ausführen der Aufgabe "user@domain.example":
+	"Fehler beim Ausführen der Operation."
 
 The error decoder is a hit-and-miss in this regard. 80190194 was recognized,
 800ccc0d was not.

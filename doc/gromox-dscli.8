@@ -18,7 +18,7 @@ non-standard. Use of \-H disables DNS SRV lookup.
 .br
 Default: \fIhttps://localhost/Autodiscover/Autodiscover.xml\fP
 .TP
-\fB\-e\fP \fIuser@domain.de\fP
+\fB\-e\fP \fIuser@domain.example\fP
 Username to send along in the request.
 .br
 Default: (none)
@@ -50,7 +50,7 @@ Discover your store:
 .PP
 .RS 4
 .nf
-PASS=letmein gromox-dscli -e user@company.at
+PASS=letmein gromox-dscli -e user@domain.example
 .fi
 .RE
 .PP
@@ -58,7 +58,8 @@ Test public store discovery:
 .PP
 .RS 4
 .nf
-PASS=letmein gromox-dscli -e public.folder.root@company.at -u user@company.at
+PASS=letmein gromox-dscli -e public.folder.root@domain.example -u
+user@domain.example
 .fi
 .RE
 .SH Normative references

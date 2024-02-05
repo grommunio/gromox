@@ -8,7 +8,7 @@ The IMAP server supports impersonation. The username given to the IMAP login
 normally specifies both the mailbox and the user performing the access. To use
 a different identity for authentication, prefix the mailbox name by the user
 identity and separate it with an exclamation mark, e.g.
-"myaccount@company.com!sharedmbox@company.com". Accessing a store in such
+"myaccount@domain.example!sharedmbox@domain.example". Accessing a store in such
 manner is only possible when the authenticating user has store ownership over
 the mailbox.
 .SH Synopsis

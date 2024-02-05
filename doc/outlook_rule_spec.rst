@@ -689,7 +689,7 @@ proptag                             v1 v2                                    v3
 ``PR_SEARCH_KEY``
 	``EX:/O=COMPANY/...``
 ``PR_SMTP_ADDRESS``
-	``abcdefgh@ijkl.de``
+	``user@domain.example``
 ``PR_EMAIL_ADDRESS``
 	``/o=company/...``
 ``PR_AB_PROVIDERS``
@@ -725,11 +725,11 @@ proptag                                    v1 v2                                
 ``PR_ADDRTYPE``
 	``SMTP``
 ``PR_SEARCH_KEY``
-	``SMTP:ABCDEFG@IJKL.DE``
+	``SMTP:USER@DOMAIN.EXAMPLE``
 ``PR_RECORD_KEY``
 	``00000000812b1fa4bea310199d6e00dd010f5402000001906100620063006400650066006700400069006a006b006c002e0064006500000053004d005400500000006100620063006400650066006700400069006a006b006c002e00640065000000``
 ``PR_EMAIL_ADDRESS``
-	``abcdefg@ijkl.de``
+	``user@domain.example``
 
 
 Condition 204 (0xcc): To
@@ -1334,7 +1334,7 @@ SRestriction:
 
 .. code-block:: c
 
-	{RES_CONTENT, FL_SUBSTRING, PR_SEARCH_KEY, "SMTP:FOO@BAR.DE"}
+	{RES_CONTENT, FL_SUBSTRING, PR_SEARCH_KEY, "SMTP:USER@DOMAIN.EXAMPLE"}
 
 
 Condition 230 (0xe6): Sender words
@@ -1355,7 +1355,7 @@ SRestriction:
 
 .. code-block:: c
 
-	{RES_CONTENT, FL_SUBSTRING, PR_SENDER_SEARCH_KEY, "SMTP:FOO@BAR.DE"}
+	{RES_CONTENT, FL_SUBSTRING, PR_SENDER_SEARCH_KEY, "SMTP:USER@DOMAIN.EXAMPLE"}
 
 
 Condition 232 (0xe8): Header words
@@ -1697,12 +1697,12 @@ Typically 12 props for an SMTP target:
 * ``PR_OBJECT_TYPE`` = 6
 * ``PR_DISPLAY_TYPE`` = 0
 * ``PR_TRANSMITTABLE_DISPLAY_NAME``
-* ``PR_EMAIL_ADDRESS`` = ``foo@bar.de``
+* ``PR_EMAIL_ADDRESS`` = ``user@domain.example``
 * ``PR_ADDRTYPE`` = ``SMTP``
 * ``PR_SEND_RICH_INFO`` = false
 * ``PR_SEND_INTERNET_ENCODING`` = 0
 * ``PR_RECIPIENT_TYPE`` = 1 (``MAPI_TO``)
-* ``PR_SEARCH_KEY`` = ``SMTP:FOO@BAR.DE``
+* ``PR_SEARCH_KEY`` = ``SMTP:USER@DOMAIN.EXAMPLE``
 * ``PR_RECORD_KEY``
 
 Typically 14 props for an EX target:
@@ -1714,8 +1714,8 @@ Typically 14 props for an EX target:
 * ``PR_TRANSMITTABLE_DISPLAY_NAME``
 * ``PR_EMAIL_ADDRESS``
 * ``PR_ADDRTYPE`` = ``EX``
-* ``PR_7BIT_DISPLAY_NAME`` = ``foo#bar.de``
-* ``PR_SMTP_ADDRESS`` = ``foo@bar.de``
+* ``PR_7BIT_DISPLAY_NAME`` = ``user#domain.example``
+* ``PR_SMTP_ADDRESS`` = ``user@domain.example``
 * ``PR_SEND_INTERNET_ENCODING`` = 0
 * ``PR_RECIPIENT_TYPE`` = 1 (``MAPI_TO``)
 * ``PR_SEARCH_KEY``

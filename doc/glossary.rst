@@ -108,7 +108,7 @@ Store GUID
 
 MAPIHTTP MailboxId
 	The MH request URI has a parameter ``MailboxId``. It is something like
-	``https://g.net/mapi/emsmdb/?MailboxId=754af46e-6310-4e07-aea1-2c911e595644@g.net``.
+	``https://g.net/mapi/emsmdb/?MailboxId=754af46e-6310-4e07-aea1-2c911e595644@domain.example``.
 	In Exchange, the parameter is the GUID36 rendition of the Mailbox GUID.
 	In Gromox, the parameter is a GUID36 rendition of 12 filler bytes plus
 	4 LE bytes conveying the user ID, but the parameter is never really used,

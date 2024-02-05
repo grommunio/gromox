@@ -155,8 +155,8 @@ cert and the key in the same file, if you wish to do so. Add to
 
 	http_listen_tls_port = 443
 	http_support_tls = true
-	http_certificate_path = /etc/gromox/mydomain.pem
-	http_private_key_path = /etc/gromox/mydomain.key
+	http_certificate_path = /etc/gromox/domain.example.pem
+	http_private_key_path = /etc/gromox/domain.example.key
 
 The Gromox Autodiscover handler `forces`__ a HTTPS redirect, which is why a
 certificate should indeed be set up. Then, since you already have the
@@ -232,7 +232,7 @@ Internet mail or to add spam filtration, you will have reconfigure
 gromox-delivery-queue (edit smtp.cfg) to listen on port 24 rather than 25, and
 install a full MTA like Postfix with configuration directives similar to::
 
-	virtual_mailbox_domains = mydomain.de myotherdomain.com
+	virtual_mailbox_domains = domain.example otherdomain.example
 	virtual_transport = lmtp:localhost:24
 
 
