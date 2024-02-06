@@ -379,7 +379,7 @@ static constexpr cfg_directive autodiscover_cfg_defaults[] = {
 	{"oxdisco_request_logging", "0", CFG_BOOL},
 	{"oxdisco_response_logging", "0", CFG_BOOL},
 	{"oxdisco_validate_scndrequest", "yes", CFG_BOOL},
-	{"reported_server_version", "15.00.0847.4040"},
+	{"reported_server_version", "15.02.1258.028"},
 	CFG_TABLE_END,
 };
 

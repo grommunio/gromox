@@ -479,7 +479,7 @@ static constexpr cfg_directive ews_cfg_defaults[] = {
 };
 
 static constexpr struct cfg_directive ews_gxcfg_deflt[] = {
-	{"reported_server_version", "15.00.0847.4040"},
+	{"reported_server_version", "15.02.1258.028"},
 	CFG_TABLE_END,
 };
 

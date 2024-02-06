@@ -41,7 +41,7 @@ static DCERPC_ENDPOINT *ep_6001;
 
 static constexpr cfg_directive emsmdb_gxcfg_dflt[] = {
 	{"backfill_transport_headers", "0", CFG_BOOL},
-	{"reported_server_version", "15.00.0847.4040"},
+	{"reported_server_version", "15.02.1258.028"},
 	CFG_TABLE_END,
 };
 

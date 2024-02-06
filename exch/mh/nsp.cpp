@@ -210,7 +210,7 @@ void* MhNspPlugin::scanWork(void* ptr)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static constexpr struct cfg_directive mhnsp_gxcfg_deflt[] = {
-	{"reported_server_version", "15.00.0847.4040"},
+	{"reported_server_version", "15.02.1258.028"},
 	CFG_TABLE_END,
 };
 
