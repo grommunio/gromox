@@ -29,13 +29,6 @@
 # ambiguous, use the line with <KopanoStoreGUID>,1 or <KopanoArchiverStoreGUID>,1 to migrate this mailbox.
 #
 #
-# Versions:
-# 20221014, v1.0, ignore: postmaster@localhost,SYSTEM and headings.
-# 20221022, v1.1, report correct archiver guid, add summary.
-# 20221025, v1.2, added some explanations.
-# 20240129, v1.3, error when removing leading zeros fixed, 008 was treated as an octal number
-#
-#
 # Notice:
 # This script assumes a correct working Kopano server and if used a correct working Kopano archiver.
 # Script is compatible with any Linux target source.
