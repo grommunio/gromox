@@ -1351,8 +1351,8 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 
 
 	TPROPVAL_ARRAY userProps{};
-	auto unres = request.UnresolvedEntry.c_str();
-	if (strchr(unres, ':') != nullptr)
+	auto unres = strchr(request.UnresolvedEntry.c_str(), ':');
+	if (unres != nullptr)
 		++unres;
 	else
 		unres = request.UnresolvedEntry.c_str();
