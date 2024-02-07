@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 ACLOCAL_AMFLAGS = -I build-aux
-AM_CPPFLAGS = ${my_CPPFLAGS} -Iinclude -I${top_srcdir}/include ${fmt_CFLAGS} ${gss_CFLAGS} ${iconv_CPPFLAGS} ${jsoncpp_CFLAGS} ${libHX_CFLAGS} ${libcrypto_CFLAGS} ${libcurl_CFLAGS} ${libesedb_CFLAGS} ${libidn2_CFLAGS} ${libldap_CFLAGS} ${libolecf_CFLAGS} ${libpff_CFLAGS} ${libssl_CFLAGS} ${libxml2_CFLAGS} ${libxxhash_CFLAGS} ${libzstd_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${tinyxml2_CFLAGS} ${vmime_CFLAGS} ${zlib_CFLAGS}
+AM_CPPFLAGS = ${my_CPPFLAGS} -Iinclude -I${top_srcdir}/include ${fmt_CFLAGS} ${gss_CFLAGS} ${iconv_CPPFLAGS} ${jsoncpp_CFLAGS} ${libHX_CFLAGS} ${libcrypto_CFLAGS} ${libcurl_CFLAGS} ${libesedb_CFLAGS} ${libldap_CFLAGS} ${libolecf_CFLAGS} ${libpff_CFLAGS} ${libssl_CFLAGS} ${libxml2_CFLAGS} ${libxxhash_CFLAGS} ${libzstd_CFLAGS} ${mysql_CFLAGS} ${sqlite_CFLAGS} ${tinyxml2_CFLAGS} ${vmime_CFLAGS} ${zlib_CFLAGS}
 AM_CFLAGS   = ${my_CFLAGS}
 AM_CXXFLAGS = ${my_CXXFLAGS}
 AM_LDFLAGS  = ${my_LDFLAGS}

@@ -33,7 +33,6 @@ Optional deps:
 
 * libc/libresolv with "res_nquerydomain" & "ns_initparse" functions
 * libesedb
-* libidn2
 * libolecf
 * libpff
 * libxxhash >= 0.7

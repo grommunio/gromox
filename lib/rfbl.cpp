@@ -33,9 +33,6 @@
 #include <utility>
 #include <vector>
 #include <zstd.h>
-#ifdef HAVE_IDN
-#	include <idn2.h>
-#endif
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
@@ -59,6 +56,7 @@
 #	include <sys/types.h>
 #	include <sys/sysctl.h>
 #endif
+#include <vmime/charset.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
@@ -1633,21 +1631,34 @@ std::string base64_decode(const std::string_view &x)
 	return out;
 }
 
-#ifdef HAVE_IDN
+static std::string dom2idna(const std::string_view dom)
+{
+	std::string idn, part;
+	size_t p = 0;
+
+	for (size_t n; (n = dom.find('.', p)) != dom.npos; p = n + 1) {
+		part.clear();
+		vmime::charset::convert(std::string(&dom[p], &dom[n]), part,
+			vmime::charsets::UTF_8, vmime::charsets::IDNA);
+		idn += std::move(part) + '.';
+	}
+	if (p >= dom.length())
+		return idn;
+	part.clear();
+	vmime::charset::convert(std::string(dom.begin() + p, dom.end()), part,
+		vmime::charsets::UTF_8, vmime::charsets::IDNA);
+	idn += std::move(part);
+	return idn;
+}
+
 std::string gx_utf8_to_punycode(const char *addr)
 {
 	auto at = strchr(addr, '@');
 	if (at == nullptr)
 		return addr;
 	++at;
-	std::unique_ptr<char[], stdlib_delete> puny;
-	auto ret = idn2_to_ascii_8z(at, &unique_tie(puny),
-	           IDN2_NONTRANSITIONAL | IDN2_NFC_INPUT);
-	if (ret != IDN2_OK)
-		return addr;
-	return std::string(addr, at - addr) + puny.get();
+	return std::string(addr, at - addr) + dom2idna(at);
 }
-#endif
 
 }
 

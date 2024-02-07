@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -2356,10 +2353,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				ptoken ++;
 			else
 				ptoken = pstrs->ppstr[i];
-#ifdef HAVE_IDN
 			std::string idn_deco = gx_utf8_to_punycode(ptoken);
 			ptoken = idn_deco.c_str();
-#endif
 			auto pnode = nsp_interface_resolve_gal(*pbase,
 						pstat->codepage, ptoken, &b_ambiguous);
 			if (NULL == pnode) {
@@ -2401,10 +2396,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			ptoken++;
 		else
 			ptoken = pstrs->ppstr[i];
-#ifdef HAVE_IDN
 		std::string idn_deco = gx_utf8_to_punycode(ptoken);
 		ptoken = idn_deco.c_str();
-#endif
 		*pproptag = MID_UNRESOLVED;
 		size_t j;
 		const SIMPLE_TREE_NODE *pnode1, *pnode2 = nullptr;
