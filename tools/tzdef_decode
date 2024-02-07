@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+# SPDX-License-Identifier: MIT
+use strict;
+use warnings;
+while (<>) {
+	chomp;
+	next if !s{^X'(.*)'}{pack("H*", $1)}eg;
+	my $len = unpack("v", substr($_, 6, 2));
+	my $name = substr($_, 8, $len * 2);
+	$name =~ s{\x00}{}g;
+	$name =~ s{ Standard Time}{}g;
+	$name =~ tr{[A-Za-z0-9_\-+]}{__}c;
+	open(FH, ">$name.tzd");
+	print FH $_;
+}
