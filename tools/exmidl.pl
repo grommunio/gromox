@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-
+# SPDX-License-Identifier: MIT
 use Getopt::Long;
 use strict;
 use warnings;
