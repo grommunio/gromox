@@ -36,6 +36,7 @@
 #ifdef HAVE_SYSLOG_H
 #	include <syslog.h>
 #endif
+#include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
 #if defined(__linux__) && defined(__GLIBC__) && __GLIBC__ == 2 && __GLIBC_MINOR__ < 30
@@ -48,6 +49,7 @@
 #include <json/reader.h>
 #include <json/writer.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
 #include <libHX/string.h>
@@ -57,7 +59,9 @@
 #	include <sys/sysctl.h>
 #endif
 #include <vmime/charset.hpp>
+#include <gromox/archive.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/json.hpp>
 #include <gromox/mapidefs.h>
@@ -1658,6 +1662,50 @@ std::string gx_utf8_to_punycode(const char *addr)
 		return addr;
 	++at;
 	return std::string(addr, at - addr) + dom2idna(at);
+}
+
+archive::~archive()
+{
+	if (mapped_area != nullptr)
+		munmap(deconst(mapped_area), mapped_size);
+}
+
+errno_t archive::open(const char *file)
+{
+	wrapfd fd(::open(file, O_RDONLY | O_BINARY));
+	if (fd.get() < 0)
+		return errno;
+	struct stat sb;
+	if (fstat(fd.get(), &sb) < 0)
+		return errno;
+	if (mapped_area != nullptr)
+		munmap(deconst(mapped_area), mapped_size);
+	mapped_size = sb.st_size;
+	mapped_area = static_cast<char *>(mmap(nullptr, mapped_size, PROT_READ, MAP_SHARED, fd.get(), 0));
+	if (mapped_area == (void *)-1)
+		return errno;
+	if (memcmp(mapped_area, "PACK", 4) != 0 || mapped_size < 12)
+		return EINVAL;
+	auto dirofs  = le32p_to_cpu(&mapped_area[4]);
+	auto dirsize = le32p_to_cpu(&mapped_area[8]) / 64;
+	if (dirofs + dirsize > mapped_size)
+		return EINVAL;
+	entries.clear();
+	for (unsigned int i = 0; i < dirsize; ++i) {
+		auto deofs = dirofs + 64 * i;
+		auto entryofs = le32p_to_cpu(&mapped_area[deofs+56]);
+		auto entrysz  = le32p_to_cpu(&mapped_area[deofs+60]);
+		std::string_view name(&mapped_area[deofs], strnlen(&mapped_area[deofs], 56));
+		std::string_view data(&mapped_area[entryofs], entrysz);
+		entries.emplace(std::move(name), std::move(data));
+	}
+	return 0;
+}
+
+const std::string_view *archive::find(const std::string &file) const
+{
+	auto i = entries.find(file);
+	return i == entries.cend() ? nullptr : &i->second;
 }
 
 }

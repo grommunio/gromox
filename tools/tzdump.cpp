@@ -99,7 +99,7 @@ static int d_zones(int argc, char **argv, bool windows)
 			ret = EXIT_FAILURE;
 			continue;
 		}
-		auto r2 = d_raw(*argv, buf->c_str(), buf->size());
+		auto r2 = d_raw(*argv, buf->data(), buf->size());
 		if (r2 != EXIT_SUCCESS)
 			ret = r2;
 	}

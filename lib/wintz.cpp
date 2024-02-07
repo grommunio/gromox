@@ -10,6 +10,7 @@
 #include <tinyxml2.h>
 #include <utility>
 #include <unordered_map>
+#include <gromox/archive.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
@@ -19,18 +20,19 @@
 using namespace gromox;
 
 static std::atomic<unsigned int> wintz_loaded;
+static gromox::archive tzd_archive;
 static std::unordered_map<std::string, std::string> iana_to_wzone;
 static std::unordered_map<std::string, std::string> wzone_to_tzdef;
 
-static errno_t wintz_load_namemap()
+static errno_t wintz_load_namemap(const archive &arc)
 {
-	std::unique_ptr<FILE, file_deleter> fp(fopen_sd("windowsZones.xml", PKGDATADIR));
+	auto fp = arc.find("windowsZones.xml");
 	if (fp == nullptr) {
-		mlog(LV_ERR, "Could not open windowsZones.xml: %s", strerror(errno));
-		return errno;
+		mlog(LV_ERR, "Could not open windowsZones.xml: %s", strerror(ENOENT));
+		return ENOENT;
 	}
 	tinyxml2::XMLDocument doc;
-	auto ret = doc.LoadFile(fp.get());
+	auto ret = doc.Parse(fp->data(), fp->size());
 	if (ret != tinyxml2::XML_SUCCESS) {
 		mlog(LV_ERR, "Failed to load/parse windowsZones.xml");
 		return EIO;
@@ -76,54 +78,32 @@ static errno_t wintz_load_namemap()
 	return 0;
 }
 
-static errno_t wintz_load_tzdefs()
-{
-	for (const auto &tzpair : iana_to_wzone) {
-		auto &wzone = tzpair.second;
-		std::unique_ptr<FILE, file_deleter> fp(fopen_sd((wzone + ".tzd").c_str(), PKGDATADIR));
-		if (fp == nullptr) {
-			mlog(LV_ERR, "Could not open %s: %s",
-			        wzone.c_str(), strerror(errno));
-			return errno;
-		}
-		size_t sl = 0;
-		std::unique_ptr<char[], stdlib_delete> sd(HX_slurp_fd(fileno(fp.get()), &sl));
-		if (sd == nullptr) {
-			mlog(LV_ERR, "slurp_fd: %s", strerror(errno));
-			return errno;
-		}
-		wzone_to_tzdef.emplace(wzone, std::string(sd.get(), sl));
-	}
-	return 0;
-}
-
 static errno_t wintz_load_once()
 {
 	unsigned int exp = 0;
 	if (!wintz_loaded.compare_exchange_strong(exp, 1))
 		return 0;
-	auto ret = wintz_load_namemap();
-	if (ret != 0)
-		return ret;
-	ret = wintz_load_tzdefs();
-	if (ret != 0)
-		return ret;
-	return 0;
+	static constexpr char pak[] = PKGDATADIR "/timezone.pak";
+	auto err = tzd_archive.open(pak);
+	if (err != 0) {
+		if (errno == ENOENT)
+			return 0;
+		mlog(LV_ERR, "Could not read %s: %s", pak, strerror(errno));
+		return errno;
+	}
+	return wintz_load_namemap(tzd_archive);
 }
 
 namespace gromox {
 
-const std::string *wintz_to_tzdef(const char *izone)
+const std::string_view *wintz_to_tzdef(const char *izone)
 {
 	if (wintz_load_once() != 0)
 		return nullptr;
-	auto ti = wzone_to_tzdef.find(izone);
-	if (ti == wzone_to_tzdef.end())
-		return nullptr;
-	return &ti->second;
+	return tzd_archive.find(izone + std::string(".tzd"));
 }
 
-const std::string *ianatz_to_tzdef(const char *izone)
+const std::string_view *ianatz_to_tzdef(const char *izone)
 {
 	if (wintz_load_once() != 0)
 		return nullptr;

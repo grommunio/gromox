@@ -15,10 +15,12 @@
 #include <unistd.h>
 #include <unordered_set>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/archive.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
@@ -63,6 +65,7 @@ static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
 static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
 static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
+static gromox::archive abkt_archive;
 
 static void nsp_trace(const char *func, bool is_exit, const STAT *s,
     int *delta = nullptr, NSP_ROWSET *outrows = nullptr)
@@ -534,6 +537,10 @@ static uint32_t nsp_interface_fetch_row(const SIMPLE_TREE_NODE *pnode,
 void nsp_interface_init(BOOL b_check)
 {
 	g_session_check = b_check;
+	static constexpr char pk[] = PKGDATADIR "/abkt.pak";
+	auto err = abkt_archive.open(pk);
+	if (err != 0)
+		mlog(LV_ERR, "Could not read %s: %s. Addressbook dialogs have not been loaded.", pk, strerror(err));
 }
 
 int nsp_interface_run()
@@ -2454,19 +2461,13 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 		return MAPI_E_UNKNOWN_LCID;
 	}
 
-	char buf[4096];
-	snprintf(buf, sizeof(buf), PKGDATADIR "/%x-%x.abkt", locale_id, type);
-	wrapfd fd = open(buf, O_RDONLY);
-	if (fd.get() < 0)
+	auto tplfile = abkt_archive.find(fmt::format("{:x}-{:x}.abkt", locale_id, type));
+	if (tplfile == nullptr)
 		return MAPI_E_UNKNOWN_LCID;
 	std::string tpldata;
-	ssize_t have_read;
-	while ((have_read = read(fd.get(), buf, sizeof(buf))) > 0)
-		tpldata += std::string_view(buf, have_read);
-	fd.close_rd();
 	try {
 		/* .abkt files are Unicode, transform them to 8-bit codepage */
-		tpldata = abkt_tobinary(abkt_tojson(tpldata, CP_ACP), codepage, false);
+		tpldata = abkt_tobinary(abkt_tojson(*tplfile, CP_ACP), codepage, false);
 	} catch (const std::bad_alloc &) {
 		return ecServerOOM;
 	} catch (const std::runtime_error &) {
