@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <memory>
 #include <string>
@@ -104,10 +105,6 @@ extern GX_EXPORT unsigned int newline_size(const char *, size_t);
 extern GX_EXPORT ec_error_t cu_validate_msgclass(const char *);
 extern GX_EXPORT bool cpid_cstr_compatible(cpid_t);
 extern GX_EXPORT bool cset_cstr_compatible(const char *);
-extern GX_EXPORT size_t mb_to_utf8_len(const char *);
-extern GX_EXPORT size_t utf8_to_mb_len(const char *);
-extern GX_EXPORT size_t utf8_to_utf16_len(const char *);
-inline size_t utf16_to_utf8_len(size_t z) { return z / 2 * 3 + 1; }
 extern GX_EXPORT int iconv_validate();
 extern GX_EXPORT const std::string_view *ianatz_to_tzdef(const char *);
 extern GX_EXPORT const std::string_view *wintz_to_tzdef(const char *);
@@ -123,6 +120,27 @@ extern GX_EXPORT size_t utf8_printable_prefix(const void *, size_t);
 extern GX_EXPORT errno_t filedes_limit_bump(size_t);
 extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
 extern GX_EXPORT std::string gx_utf8_to_punycode(const char *);
+
+/* _xlen - exact length (chars); _len - allocation size, i.e. \0-terminated */
+/* All the classic 8-bit charsets map to within the Unicode Basic Multilingual Plane */
+static inline size_t mb_to_utf8_xlen(size_t z) { return 3 * z; }
+static inline size_t mb_to_utf8_xlen(const char *s) { return mb_to_utf8_xlen(strlen(s)); }
+static inline size_t mb_to_utf8_len(const char *s) { return mb_to_utf8_xlen(s) + 1; }
+/*
+ * Shift states... yuck. Anyway, if you look at all values of @utf32,
+ * @isojp and @utf7, @utf32 is always largest, which means we need not
+ * calculate max(utf32,utf7,isojp).
+ */
+// auto isojp = (z + 1) / 4 * 9 - 1 + (z - 3) % 4;
+// auto utf7  = (z + 1) / 2 * 6 - (z % 2);
+static inline size_t utf8_to_mb_xlen(size_t z) { return 4 * z + 4; }
+static inline size_t utf8_to_mb_xlen(const char *s) { return utf8_to_mb_xlen(strlen(s)); }
+static inline size_t utf8_to_mb_len(const char *s) { return utf8_to_mb_xlen(s) + 1; }
+static inline size_t utf8_to_utf16_xlen(size_t z) { return 2 * z; }
+static inline size_t utf8_to_utf16_len(size_t z) { return utf8_to_utf16_xlen(z) + 2; }
+static inline size_t utf8_to_utf16_len(const char *s) { return utf8_to_utf16_xlen(strlen(s)) + 2; }
+static inline size_t utf16_to_utf8_xlen(size_t z) { return z / 2 * 3 + 1; }
+static inline size_t utf16_to_utf8_len(size_t z) { return utf16_to_utf8_xlen(z) + 1; }
 
 extern GX_EXPORT const uint8_t utf8_byte_num[256];
 

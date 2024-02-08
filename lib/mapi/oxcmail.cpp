@@ -172,15 +172,6 @@ ec_error_t oxcmail_id2user(int id, std::string &user) try
 	return ecMAPIOOM;
 }
 
-static inline size_t worst_encoding_overhead(size_t in)
-{
-	/*
-	 * (To be used for conversions _from UTF-8_ to any other encoding.)
-	 * UTF-7 can be *so* pathological.
-	 */
-	return 5 * in;
-}
-	
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
 	/* Avoid uninitialized read when the copy/transfer is made */
@@ -1516,8 +1507,8 @@ static BOOL oxcmail_parse_message_body(const char *charset, const MIME *pmime,
 	if (!pmime->read_content(pcontent.get(), &length))
 		return TRUE;
 	pcontent[length] = '\0';
-	auto content_size = mb_to_utf8_len(pcontent.get());
-	std::unique_ptr<char[], stdlib_delete> cutf(me_alloc<char>(content_size + 1));
+	auto content_size = mb_to_utf8_xlen(length) + 1;
+	std::unique_ptr<char[], stdlib_delete> cutf(me_alloc<char>(content_size));
 	if (cutf == nullptr)
 		return false;
 	if (oxcmail_get_content_param(pmime, "charset", temp_charset, 32))
@@ -1727,7 +1718,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		}
 		size_t content_len = rdlength;
 		if (content_len < VCARD_MAX_BUFFER_LEN) {
-			auto contallocsz = 3 * content_len + 2;
+			auto contallocsz = mb_to_utf8_xlen(content_len) + 1;
 			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contallocsz));
 			if (pcontent == nullptr)
 				return;
@@ -2803,7 +2794,7 @@ MESSAGE_CONTENT *oxcmail_import(const char *charset, const char *str_zone,
 			return imp_null;
 		}
 		content_len = rdlength;
-		auto contoutsize = 3 * content_len + 2;
+		auto contoutsize = mb_to_utf8_xlen(content_len) + 1;
 		std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(contoutsize));
 		if (pcontent == nullptr)
 			return imp_null;
@@ -2935,7 +2926,7 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 {
 	size_t offset;
 	size_t base64_len;
-	auto alloc_size = worst_encoding_overhead(strlen(pstring)) + 1;
+	auto alloc_size = utf8_to_mb_len(pstring);
 	std::unique_ptr<char[]> tmp_buff;
 	try {
 		tmp_buff = std::make_unique<char[]>(alloc_size);
@@ -4362,7 +4353,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef,
 			if (!pplain->write_content("\r\n", 2, mime_encoding::base64))
 				return exp_false;
 		} else {
-			auto alloc_size = worst_encoding_overhead(strlen(mime_skeleton.pplain)) + 1;
+			auto alloc_size = utf8_to_mb_len(mime_skeleton.pplain);
 			std::unique_ptr<char[]> pbuff;
 			try {
 				pbuff = std::make_unique<char[]>(alloc_size);

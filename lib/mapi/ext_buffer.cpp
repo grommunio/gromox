@@ -218,8 +218,7 @@ pack_result EXT_PULL::g_wstr(std::string *out) try
 	if (i >= max_len - 1)
 		return pack_result::bufsize;
 	auto len = i + 2;
-	auto bufsize = utf16_to_utf8_len(len);
-	/* bufsize has NUL included, good enough for now */
+	auto bufsize = utf16_to_utf8_xlen(len);
 	out->resize(bufsize);
 	if (!utf16le_to_utf8(&m_cdata[m_offset], len, out->data(), bufsize))
 		return pack_result::charconv;

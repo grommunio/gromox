@@ -1252,7 +1252,7 @@ bool MIME::emit(write_func write, void *fd) const
 }
 
 /*
- *	calculate MIME length in bytes
+ *	calculate MIME length in bytes (no trailing \0 included)
  *	@param
  *		pmime [in]		indicate the MIME object
  *	@return
