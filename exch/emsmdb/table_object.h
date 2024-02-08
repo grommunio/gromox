@@ -28,7 +28,7 @@ struct table_object {
 	bool is_loaded() const { return rop_id == ropGetAttachmentTable || m_loaded; }
 	BOOL load();
 	void unload();
-	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *);
+	BOOL query_rows(BOOL forward, uint16_t row_count, TARRAY_SET *) const;
 	BOOL set_restriction(const RESTRICTION *);
 	void seek_current(BOOL forward, uint16_t row_count);
 	void set_handle(uint32_t h) { handle = h; }
@@ -41,12 +41,12 @@ struct table_object {
 	void clear_bookmarks() { bookmark_list.clear(); }
 	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
 	void reset();
-	BOOL get_all_columns(PROPTAG_ARRAY *cols);
-	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pposition, TPROPVAL_ARRAY *);
-	BOOL read_row(uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *);
-	BOOL expand(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count);
-	BOOL collapse(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count);
-	BOOL store_state(uint64_t inst_id, uint32_t inst_num, uint32_t *state_id);
+	BOOL get_all_columns(PROPTAG_ARRAY *cols) const;
+	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pposition, TPROPVAL_ARRAY *) const;
+	BOOL read_row(uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *) const;
+	BOOL expand(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count) const;
+	BOOL collapse(uint64_t inst_id, BOOL *found, int32_t *pos, uint32_t *row_count) const;
+	BOOL store_state(uint64_t inst_id, uint32_t inst_num, uint32_t *state_id) const;
 	BOOL restore_state(uint32_t state_id, uint32_t *index);
 
 	logon_object *plogon = nullptr;

@@ -40,7 +40,7 @@ static bool toplevel(uint64_t f)
 	       f == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
 }
 
-BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -73,7 +73,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-bool folder_object::is_readonly_prop(uint32_t proptag)
+bool folder_object::is_readonly_prop(uint32_t proptag) const
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return true;
@@ -129,7 +129,7 @@ bool folder_object::is_readonly_prop(uint32_t proptag)
 	return FALSE;
 }
 
-static BOOL folder_object_get_calculated_property(folder_object *pfolder,
+static BOOL folder_object_get_calculated_property(const folder_object *pfolder,
     uint32_t proptag, void **outvalue)
 {
 	BINARY *pbin;
@@ -160,7 +160,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		       rpc_info.username, pfolder->folder_id, v);
 	}
 	case PR_ACCESS:
-		*outvalue = &pfolder->tag_access;
+		*outvalue = deconst(&pfolder->tag_access);
 		return TRUE;
 	case PidTagFolderId: {
 		auto v = cu_alloc<uint64_t>();
@@ -407,7 +407,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 }
 
 BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+    TPROPVAL_ARRAY *ppropvals) const
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;

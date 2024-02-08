@@ -174,7 +174,7 @@ BOOL attachment_object::flush_streams()
 	
 }
 
-BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -220,13 +220,12 @@ bool attachment_object::is_readonly_prop(uint32_t proptag) const
 	return FALSE;
 }
 
-static BOOL attachment_object_get_calculated_property(
-	attachment_object *pattachment, uint32_t proptag, void **ppvalue)
+static BOOL attachment_object_get_calculated_property(const attachment_object *pattachment,
+    uint32_t proptag, void **ppvalue)
 {
-	
 	switch (proptag) {
 	case PR_ACCESS:
-		*ppvalue = &pattachment->pparent->tag_access;
+		*ppvalue = deconst(&pattachment->pparent->tag_access);
 		return TRUE;
 	case PR_ACCESS_LEVEL: {
 		auto v = cu_alloc<uint32_t>();
@@ -252,8 +251,8 @@ static BOOL attachment_object_get_calculated_property(
 	return FALSE;
 }
 
-static void* attachment_object_get_stream_property_value(
-    attachment_object *at, uint32_t proptag)
+static void *attachment_object_get_stream_property_value(const attachment_object *at,
+    uint32_t proptag)
 {
 	for (auto so : at->stream_list)
 		if (so->get_proptag() == proptag)
@@ -262,7 +261,7 @@ static void* attachment_object_get_stream_property_value(
 }
 
 BOOL attachment_object::get_properties(uint32_t size_limit,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;

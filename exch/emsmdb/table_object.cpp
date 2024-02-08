@@ -124,7 +124,8 @@ void table_object::unload()
 	table_object_set_table_id(this, 0);
 }
 
-BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
+BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count,
+    TARRAY_SET *pset) const
 {
 	assert(is_loaded());
 	auto ptable = this;
@@ -324,7 +325,7 @@ void table_object::reset()
 	ptable->clear_bookmarks();
 }
 
-BOOL table_object::get_all_columns(PROPTAG_ARRAY *pcolumns)
+BOOL table_object::get_all_columns(PROPTAG_ARRAY *pcolumns) const
 {
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
@@ -335,7 +336,7 @@ BOOL table_object::get_all_columns(PROPTAG_ARRAY *pcolumns)
 }
 
 BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
-	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto ptable = this;
 	if (m_columns == nullptr)
@@ -348,7 +349,7 @@ BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 }
 
 BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
-	TPROPVAL_ARRAY *ppropvals)
+    TPROPVAL_ARRAY *ppropvals) const
 {
 	auto ptable = this;
 	if (m_columns == nullptr)
@@ -361,21 +362,21 @@ BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 }
 
 BOOL table_object::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
-    uint32_t *prow_count)
+    uint32_t *prow_count) const
 {
 	return exmdb_client::expand_table(plogon->get_dir(),
 	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
 BOOL table_object::collapse(uint64_t inst_id, BOOL *pb_found,
-    int32_t *pposition, uint32_t *prow_count)
+    int32_t *pposition, uint32_t *prow_count) const
 {
 	return exmdb_client::collapse_table(plogon->get_dir(),
 	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
 BOOL table_object::store_state(uint64_t inst_id, uint32_t inst_num,
-    uint32_t *pstate_id)
+    uint32_t *pstate_id) const
 {
 	return exmdb_client::store_table_state(plogon->get_dir(),
 	       m_table_id, inst_id, inst_num, pstate_id);

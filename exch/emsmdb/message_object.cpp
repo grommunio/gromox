@@ -618,14 +618,15 @@ BOOL message_object::reload()
 	return TRUE;
 }
 
-BOOL message_object::read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
+BOOL message_object::read_recipients(uint32_t row_id, uint16_t need_count,
+    TARRAY_SET *pset) const
 {
 	auto pmessage = this;
 	return exmdb_client::get_message_instance_rcpts(pmessage->plogon->get_dir(),
 	       pmessage->instance_id, row_id, need_count, pset);
 }
 
-BOOL message_object::get_recipient_num(uint16_t *pnum)
+BOOL message_object::get_recipient_num(uint16_t *pnum) const
 {
 	auto pmessage = this;
 	return exmdb_client::get_message_instance_rcpts_num(pmessage->plogon->get_dir(),
@@ -681,7 +682,7 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	return TRUE;
 }
 
-BOOL message_object::get_attachments_num(uint16_t *pnum)
+BOOL message_object::get_attachments_num(uint16_t *pnum) const
 {
 	auto pmessage = this;
 	return exmdb_client::get_message_instance_attachments_num(
@@ -701,7 +702,7 @@ BOOL message_object::delete_attachment(uint32_t attachment_num)
 	return TRUE;
 }
 
-BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto pmessage = this;
 	return exmdb_client::get_message_instance_attachment_table_all_proptags(
@@ -709,7 +710,7 @@ BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
 }
 
 BOOL message_object::query_attachment_table(const PROPTAG_ARRAY *pproptags,
-	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
+    uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset) const
 {
 	auto pmessage = this;
 	return exmdb_client::query_message_instance_attachment_table(
@@ -800,7 +801,7 @@ BOOL message_object::clear_unsent()
 	       pmessage->instance_id, &tmp_propval, &result);
 }
 
-BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto pmessage = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -888,12 +889,12 @@ bool message_object::is_readonly_prop(uint32_t proptag) const
 	return FALSE;
 }
 
-static BOOL message_object_get_calculated_property(message_object *pmessage,
+static BOOL message_object_get_calculated_property(const message_object *pmessage,
     uint32_t proptag, void **ppvalue)
 {	
 	switch (proptag) {
 	case PR_ACCESS:
-		*ppvalue = &pmessage->tag_access;
+		*ppvalue = deconst(&pmessage->tag_access);
 		return TRUE;
 	case PR_ACCESS_LEVEL: {
 		auto v = cu_alloc<uint32_t>();
@@ -927,7 +928,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	case PidTagParentFolderId:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = &pmessage->folder_id;
+		*ppvalue = deconst(&pmessage->folder_id);
 		return TRUE;
 	case PR_PARENT_SOURCE_KEY:
 		if (!exmdb_client::get_folder_property(pmessage->plogon->get_dir(),
@@ -942,7 +943,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	case PidTagMid:
 		if (pmessage->message_id == 0)
 			return FALSE;
-		*ppvalue = &pmessage->message_id;
+		*ppvalue = deconst(&pmessage->message_id);
 		return TRUE;
 	case PR_RECORD_KEY:
 		if (pmessage->message_id == 0)
@@ -957,7 +958,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	return FALSE;
 }
 
-static void* message_object_get_stream_property_value(message_object *pmessage,
+static void *message_object_get_stream_property_value(const message_object *pmessage,
     uint32_t proptag)
 {
 	for (auto so : pmessage->stream_list)
@@ -967,7 +968,7 @@ static void* message_object_get_stream_property_value(message_object *pmessage,
 }
 
 BOOL message_object::get_properties(uint32_t size_limit,
-    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+    const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals) const
 {
 	auto pmessage = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -1040,7 +1041,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_CODEPAGE;
-		pv.pvalue = &pmessage->cpid;
+		pv.pvalue  = deconst(&pmessage->cpid);
 		ppropvals->count ++;
 	}
 	return TRUE;	
@@ -1268,7 +1269,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	return TRUE;
 }
 
-BOOL message_object::copy_rcpts(message_object *pmessage_src,
+BOOL message_object::copy_rcpts(const message_object *pmessage_src,
     BOOL b_force, BOOL *pb_result)
 {
 	auto pmessage = this;
@@ -1280,7 +1281,7 @@ BOOL message_object::copy_rcpts(message_object *pmessage_src,
 	return TRUE;
 }
 	
-BOOL message_object::copy_attachments(message_object *pmessage_src,
+BOOL message_object::copy_attachments(const message_object *pmessage_src,
     BOOL b_force, BOOL *pb_result)
 {
 	auto pmessage = this;

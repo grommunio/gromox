@@ -1141,7 +1141,7 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 }
 
 BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
-	uint16_t *pprogress, uint16_t *ptotal)
+    uint16_t *pprogress, uint16_t *ptotal)
 {
 	*pprogress = progress_steps / divisor;
 	*ptotal = total_steps / divisor;

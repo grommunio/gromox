@@ -77,7 +77,8 @@ GUID logon_object::guid() const
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL logon_object::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
+BOOL logon_object::get_named_propname(uint16_t propid,
+    PROPERTY_NAME *ppropname)
 {
 	if (propid < 0x8000) {
 		ppropname->guid = PS_MAPI;
@@ -277,7 +278,7 @@ logon_object::get_property_groupinfo(uint32_t group_id) try
 	return nullptr;
 }
 
-BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 {
 	auto plogon = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -377,7 +378,7 @@ static bool lo_is_readonly_prop(const logon_object *plogon, uint32_t proptag)
 	return FALSE;
 }
 
-static BOOL logon_object_get_calculated_property(logon_object *plogon,
+static BOOL logon_object_get_calculated_property(const logon_object *plogon,
     uint32_t proptag, void **ppvalue)
 {
 	void *pvalue;
@@ -579,7 +580,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
  * The output order is not necessarily the same as the input order.
  */
 BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
-    TPROPVAL_ARRAY *ppropvals)
+    TPROPVAL_ARRAY *ppropvals) const
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;

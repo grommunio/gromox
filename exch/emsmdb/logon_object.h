@@ -35,8 +35,8 @@ struct logon_object {
 	const property_groupinfo *get_last_property_groupinfo();
 	/* same as logon_object_get_last_property_groupinfo, do not free it outside */
 	const property_groupinfo *get_property_groupinfo(uint32_t group_id);
-	BOOL get_all_proptags(PROPTAG_ARRAY *);
-	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	BOOL get_all_proptags(PROPTAG_ARRAY *) const;
+	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *) const;
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);
 	const char *eff_user() const;

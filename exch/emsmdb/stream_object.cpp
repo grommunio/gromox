@@ -65,7 +65,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	case ems_objtype::folder:
 		proptags.count = 1;
 		proptags.pproptag = &proptag;
-		if (!static_cast<folder_object *>(pparent)->get_properties(&proptags, &propvals))
+		if (!static_cast<const folder_object *>(pparent)->get_properties(&proptags, &propvals))
 			return NULL;
 		break;
 	default:
@@ -91,7 +91,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	switch (PROP_TYPE(proptag)) {
 	case PT_BINARY:
 	case PT_OBJECT: {
-		auto bv = static_cast<BINARY *>(pvalue);
+		auto bv = static_cast<const BINARY *>(pvalue);
 		pstream->content_bin.cb = bv->cb;
 		pstream->content_bin.pv = malloc(bv->cb);
 		if (pstream->content_bin.pv == nullptr)
@@ -110,11 +110,12 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		return pstream;
 	}
 	case PT_UNICODE: {
-		auto buff_len = utf8_to_utf16_len(static_cast<char *>(pvalue));
+		auto val = static_cast<const char *>(pvalue);
+		auto buff_len = utf8_to_utf16_len(val);
 		pstream->content_bin.pv = malloc(buff_len);
 		if (pstream->content_bin.pv == nullptr)
 			return NULL;
-		auto utf16_len = utf8_to_utf16le(static_cast<char *>(pvalue),
+		auto utf16_len = utf8_to_utf16le(val,
 			pstream->content_bin.pb, buff_len);
 		if (utf16_len < 2) {
 			pstream->content_bin.pb[0] = '\0';
