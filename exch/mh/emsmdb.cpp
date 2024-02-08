@@ -240,7 +240,7 @@ private:
 };
 
 static constexpr struct cfg_directive mhems_gxcfg_deflt[] = {
-	{"reported_server_version", "15.02.1258.028"},
+	{"reported_server_version", "15.00.0847.4040"},
 	CFG_TABLE_END,
 };
 
