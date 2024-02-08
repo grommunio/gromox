@@ -442,21 +442,21 @@ void OxdiscoPlugin::loadConfig()
 		auto s = c->get_value("x500_org_name");
 		if (s != nullptr)
 			x500_org_name = s;
+		RedirectAddr = c->get_value("oxdisco_redirect_addr");
+		RedirectUrl = c->get_value("oxdisco_redirect_url");
+		request_logging = c->get_ll("oxdisco_request_logging");
+		response_logging = c->get_ll("oxdisco_response_logging");
+		pretty_response = c->get_ll("oxdisco_pretty_response");
+		m_advertise_mh = parse_adv(c->get_value("oxdisco_advertise_mh"));
+		m_advertise_rpch = parse_adv(c->get_value("oxdisco_advertise_rpch"));
+		m_validate_scndrequest = c->get_ll("oxdisco_validate_scndrequest");
+		s = c->get_value("oxdisco_exonym");
+		if (s != nullptr)
+			host_id = s;
+		m_server_version = exver_dotted_to_hex(c->get_value("reported_server_version"));
 	}
 	if (x500_org_name.empty())
 		x500_org_name = "Gromox default";
-	RedirectAddr = c->get_value("oxdisco_redirect_addr");
-	RedirectUrl = c->get_value("oxdisco_redirect_url");
-	request_logging = c->get_ll("oxdisco_request_logging");
-	response_logging = c->get_ll("oxdisco_response_logging");
-	pretty_response = c->get_ll("oxdisco_pretty_response");
-	m_advertise_mh = parse_adv(c->get_value("oxdisco_advertise_mh"));
-	m_advertise_rpch = parse_adv(c->get_value("oxdisco_advertise_rpch"));
-	m_validate_scndrequest = c->get_ll("oxdisco_validate_scndrequest");
-	auto s = c->get_value("oxdisco_exonym");
-	if (s != nullptr)
-		host_id = s;
-	m_server_version = exver_dotted_to_hex(c->get_value("reported_server_version"));
 }
 
 /**
