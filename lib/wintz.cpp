@@ -22,9 +22,9 @@ static std::atomic<unsigned int> wintz_loaded;
 static std::unordered_map<std::string, std::string> iana_to_wzone;
 static std::unordered_map<std::string, std::string> wzone_to_tzdef;
 
-static errno_t wintz_load_namemap(const char *dirs)
+static errno_t wintz_load_namemap()
 {
-	std::unique_ptr<FILE, file_deleter> fp(fopen_sd("windowsZones.xml", dirs));
+	std::unique_ptr<FILE, file_deleter> fp(fopen_sd("windowsZones.xml", PKGDATADIR));
 	if (fp == nullptr) {
 		mlog(LV_ERR, "Could not open windowsZones.xml: %s", strerror(errno));
 		return errno;
@@ -76,11 +76,11 @@ static errno_t wintz_load_namemap(const char *dirs)
 	return 0;
 }
 
-static errno_t wintz_load_tzdefs(const char *dirs)
+static errno_t wintz_load_tzdefs()
 {
 	for (const auto &tzpair : iana_to_wzone) {
 		auto &wzone = tzpair.second;
-		std::unique_ptr<FILE, file_deleter> fp(fopen_sd((wzone + ".tzd").c_str(), dirs));
+		std::unique_ptr<FILE, file_deleter> fp(fopen_sd((wzone + ".tzd").c_str(), PKGDATADIR));
 		if (fp == nullptr) {
 			mlog(LV_ERR, "Could not open %s: %s",
 			        wzone.c_str(), strerror(errno));
@@ -97,15 +97,15 @@ static errno_t wintz_load_tzdefs(const char *dirs)
 	return 0;
 }
 
-static errno_t wintz_load_once(const char *dirs)
+static errno_t wintz_load_once()
 {
 	unsigned int exp = 0;
 	if (!wintz_loaded.compare_exchange_strong(exp, 1))
 		return 0;
-	auto ret = wintz_load_namemap(dirs);
+	auto ret = wintz_load_namemap();
 	if (ret != 0)
 		return ret;
-	ret = wintz_load_tzdefs(dirs);
+	ret = wintz_load_tzdefs();
 	if (ret != 0)
 		return ret;
 	return 0;
@@ -113,11 +113,9 @@ static errno_t wintz_load_once(const char *dirs)
 
 namespace gromox {
 
-const std::string *wintz_to_tzdef(const char *izone, const char *dirs)
+const std::string *wintz_to_tzdef(const char *izone)
 {
-	if (dirs == nullptr)
-		dirs = PKGDATADIR;
-	if (wintz_load_once(dirs) != 0)
+	if (wintz_load_once() != 0)
 		return nullptr;
 	auto ti = wzone_to_tzdef.find(izone);
 	if (ti == wzone_to_tzdef.end())
@@ -125,11 +123,9 @@ const std::string *wintz_to_tzdef(const char *izone, const char *dirs)
 	return &ti->second;
 }
 
-const std::string *ianatz_to_tzdef(const char *izone, const char *dirs)
+const std::string *ianatz_to_tzdef(const char *izone)
 {
-	if (dirs == nullptr)
-		dirs = PKGDATADIR;
-	if (wintz_load_once(dirs) != 0)
+	if (wintz_load_once() != 0)
 		return nullptr;
 	std::string lizone = izone;
 	HX_strlower(lizone.data());
