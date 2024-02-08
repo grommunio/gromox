@@ -154,11 +154,12 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
  * @param      response  XMLElement to store response in
  * @param      ctx       Request context
  */
-void process(mConvertIdRequest&& request, XMLElement* response, const EWSContext& ctx)
+void process(mConvertIdRequest&& request, XMLElement* response, EWSContext& ctx)
 {
 	ctx.experimental("ConvertId");
 
 	response->SetName("m:ConvertIdResponse");
+	ctx.response().body->SetAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
 	mConvertIdResponse data;
 	data.ResponseMessages.reserve(request.SourceIds.size());

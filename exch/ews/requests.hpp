@@ -14,8 +14,9 @@ namespace gromox::EWS::Requests
 {
 
 #define EWSFUNC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&)
+#define EWSFUNC_NC(in) void process(gromox::EWS::Structures::in&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&)
 
-EWSFUNC(mConvertIdRequest);
+EWSFUNC_NC(mConvertIdRequest);
 EWSFUNC(mCreateFolderRequest);
 EWSFUNC(mCreateItemRequest);
 EWSFUNC(mDeleteFolderRequest);
@@ -30,10 +31,10 @@ EWSFUNC(mGetItemRequest);
 EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetMailTipsRequest);
 EWSFUNC(mGetServiceConfigurationRequest);
-void process(gromox::EWS::Structures::mGetStreamingEventsRequest&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&);
+EWSFUNC_NC(mGetStreamingEventsRequest);
 EWSFUNC(mGetUserAvailabilityRequest);
 EWSFUNC(mGetUserOofSettingsRequest);
-void process(gromox::EWS::Structures::mGetUserPhotoRequest&&, tinyxml2::XMLElement*, gromox::EWS::EWSContext&);
+EWSFUNC_NC(mGetUserPhotoRequest);
 void process(const Structures::mBaseMoveCopyFolder&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 void process(const Structures::mBaseMoveCopyItem&, tinyxml2::XMLElement*, const gromox::EWS::EWSContext&);
 EWSFUNC(mResolveNamesRequest);
