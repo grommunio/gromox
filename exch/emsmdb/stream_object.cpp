@@ -99,14 +99,16 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		memcpy(pstream->content_bin.pv, bv->pv, bv->cb);
 		return pstream;
 	}
-	case PT_STRING8:
-		pstream->content_bin.cb = strlen(static_cast<char *>(pvalue)) + 1;
+	case PT_STRING8: {
+		auto val = static_cast<const char *>(pvalue);
+		pstream->content_bin.cb = strlen(val) + 1;
 		pstream->content_bin.pv = malloc(pstream->content_bin.cb);
 		if (pstream->content_bin.pv == nullptr)
 			return NULL;
-		memcpy(pstream->content_bin.pv, static_cast<BINARY *>(pvalue)->pv,
+		memcpy(pstream->content_bin.pv, val,
 		       pstream->content_bin.cb);
 		return pstream;
+	}
 	case PT_UNICODE: {
 		auto buff_len = utf8_to_utf16_len(static_cast<char *>(pvalue));
 		pstream->content_bin.pv = malloc(buff_len);
