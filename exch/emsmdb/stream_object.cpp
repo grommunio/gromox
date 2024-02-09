@@ -15,7 +15,6 @@
 #include "message_object.h"
 #include "rop_processor.h"
 #include "stream_object.h"
-#define STREAM_INIT_BUFFER_LENGTH						4096
 
 using namespace gromox;
 
@@ -81,8 +80,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 			return pstream;
 		} else {
 			pstream->content_bin.cb = 0;
-			pstream->content_bin.pv =
-				malloc(STREAM_INIT_BUFFER_LENGTH);
+			pstream->content_bin.pv = malloc(1);
 			if (pstream->content_bin.pv == nullptr)
 				return NULL;
 			return pstream;
