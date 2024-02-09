@@ -1,3 +1,19 @@
+Gromox 2.24 (2024-02-10)
+========================
+
+Fixes:
+
+* email_lib: the last byte of a MIME part was erroneously deleted
+* emsmdb: repair garbage memory read when creating a stream on a PT_STRING8
+  property
+* ews: repair a potential lack of results with the ResolveNames operation
+  when searching by email address
+
+Enhancements:
+
+* ews: add t:AlternateIdType attribute
+
+
 Gromox 2.23 (2024-02-05)
 ========================
 
