@@ -268,7 +268,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 		content_begin = content_buf.get();
 		if (pmime->content_begin == nullptr)
 			return false;
-		gx_strlcpy(content_begin, pcontent, length);
+		memcpy(content_begin, pcontent, length);
 		pmime->content_length = length;
 		if (added_crlf) {
 			memcpy(pmime->content_begin + length, "\r\n", 2);
@@ -291,7 +291,7 @@ bool MIME::write_content(const char *pcontent, size_t length,
 			memcpy(&pbuff[length], "\r\n", 2);
 			length += 2;
 		}
-		gx_strlcpy(content_begin, pbuff.get(), length);
+		memcpy(content_begin, pbuff.get(), length);
 		pmime->content_length = length;
 		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return true;
@@ -962,9 +962,10 @@ bool MIME::read_head(char *out_buff, size_t *plength) const
  *		pmime [in]			indicate the MIME object
  *		out_buff [out]		buffer for retrieving the decoded content
  *		plength [in, out]	length of out_buff, and result length
- *	@return
- *		TRUE			OK
- *		FALSE			fail
+ *
+ * The buffer is filled exactly: *plength is updated with the bytes that were
+ * written, and it is unspecified whether a final \0 is generated. (In any
+ * case, the returned length never includes \0.)
  */
 bool MIME::read_content(char *out_buff, size_t *plength) const try
 {
@@ -1039,7 +1040,6 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 			encoding_type = mime_encoding::qp;
 	}
 	
-	auto pbuff = std::make_unique<char[]>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
 	/*
 	 * Newline before boundary string or end of mail should not be included
 	 * (the mention is hidden somewhere in RFC 2046,2049)
@@ -1050,7 +1050,8 @@ bool MIME::read_content(char *out_buff, size_t *plength) const try
 	else if (tmp_len >= 1 && newline_size(&pmime->content_begin[tmp_len-1], 1) == 1)
 		tmp_len -= 1;
 	size_t size = 0;
-	gx_strlcpy(pbuff.get(), content_begin, tmp_len);
+	auto pbuff = std::make_unique<char[]>(tmp_len);
+	memcpy(pbuff.get(), content_begin, tmp_len);
 	size = tmp_len;
 	
 	switch (encoding_type) {
