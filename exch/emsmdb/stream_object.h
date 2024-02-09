@@ -21,7 +21,7 @@ struct stream_object {
 	uint8_t get_open_flags() const { return open_flags; }
 	ems_objtype get_parent_type() const { return object_type; }
 	uint32_t get_proptag() const { return proptag; }
-	void* get_content();
+	const void *get_content() const;
 	uint32_t get_length() const { return content_bin.cb; }
 	ec_error_t set_length(uint32_t len);
 	ec_error_t seek(uint8_t opt, int64_t offset);

@@ -752,7 +752,7 @@ BOOL message_object::commit_stream_object(stream_object *pstream)
 		}
 		it = stream_list.erase(it);
 		tmp_propval.proptag = pstream->get_proptag();
-		tmp_propval.pvalue = pstream->get_content();
+		tmp_propval.pvalue  = deconst(pstream->get_content());
 		if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &tmp_propval, &result))
 			return FALSE;
@@ -770,7 +770,7 @@ BOOL message_object::flush_streams()
 	while (stream_list.size() > 0) {
 		auto pstream = stream_list.front();
 		tmp_propval.proptag = pstream->get_proptag();
-		tmp_propval.pvalue = pstream->get_content();
+		tmp_propval.pvalue  = deconst(pstream->get_content());
 		if (!exmdb_client::set_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &tmp_propval, &result))
 			return FALSE;
@@ -958,7 +958,7 @@ static BOOL message_object_get_calculated_property(const message_object *pmessag
 	return FALSE;
 }
 
-static void *message_object_get_stream_property_value(const message_object *pmessage,
+static const void *message_object_get_stream_property_value(const message_object *pmessage,
     uint32_t proptag)
 {
 	for (auto so : pmessage->stream_list)
@@ -994,7 +994,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
 			continue;
 		}
-		pvalue = message_object_get_stream_property_value(pmessage, tag);
+		pvalue = deconst(message_object_get_stream_property_value(pmessage, tag));
 		if (NULL != pvalue) {
 			ppropvals->emplace_back(tag, pvalue);
 			continue;

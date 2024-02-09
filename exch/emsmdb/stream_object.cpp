@@ -170,7 +170,7 @@ std::pair<uint16_t, ec_error_t> stream_object::write(void *pbuff, uint16_t buf_l
 	return {buf_len, ecSuccess};
 }
 
-void *stream_object::get_content()
+const void *stream_object::get_content() const
 {
 	auto pstream = this;
 	void *pcontent;
@@ -286,7 +286,7 @@ BOOL stream_object::commit()
 	propvals.count = 1;
 	propvals.ppropval = &propval;
 	propval.proptag = pstream->proptag;
-	propval.pvalue = get_content();
+	propval.pvalue  = deconst(get_content());
 	if (propval.pvalue == nullptr)
 		return FALSE;
 	if (!static_cast<folder_object *>(pstream->pparent)->set_properties(&propvals, &problems) ||

@@ -148,7 +148,7 @@ BOOL attachment_object::commit_stream_object(stream_object *pstream)
 		}
 		it = stream_list.erase(it);
 		tmp_propval.proptag = pstream->get_proptag();
-		tmp_propval.pvalue = pstream->get_content();
+		tmp_propval.pvalue  = deconst(pstream->get_content());
 		return exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
 		       pattachment->instance_id, &tmp_propval, &result) ? TRUE : false;
 	}
@@ -164,7 +164,7 @@ BOOL attachment_object::flush_streams()
 	while (stream_list.size() > 0) {
 		auto pstream = stream_list.front();
 		tmp_propval.proptag = pstream->get_proptag();
-		tmp_propval.pvalue = pstream->get_content();
+		tmp_propval.pvalue  = deconst(pstream->get_content());
 		if (!exmdb_client::set_instance_property(pattachment->pparent->plogon->get_dir(),
 		    pattachment->instance_id, &tmp_propval, &result))
 			return FALSE;
@@ -251,7 +251,7 @@ static BOOL attachment_object_get_calculated_property(const attachment_object *p
 	return FALSE;
 }
 
-static void *attachment_object_get_stream_property_value(const attachment_object *at,
+static const void *attachment_object_get_stream_property_value(const attachment_object *at,
     uint32_t proptag)
 {
 	for (auto so : at->stream_list)
@@ -286,7 +286,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 				ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &err_code);
 			continue;
 		}
-		pvalue = attachment_object_get_stream_property_value(pattachment, tag);
+		pvalue = deconst(attachment_object_get_stream_property_value(pattachment, tag));
 		if (NULL != pvalue) {
 			ppropvals->emplace_back(tag, pvalue);
 			continue;
