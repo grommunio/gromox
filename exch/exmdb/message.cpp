@@ -2389,7 +2389,6 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	GUID template_guid, BOOL *pb_result)
 {
 	void *pvalue;
-	GUID tmp_guid;
 	BINARY tmp_bin;
 	char content_type[128];
 	char tmp_buff[256*1024];
@@ -2429,12 +2428,14 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
 	if (flag == nullptr || *flag == 0)
 		return TRUE;
-	auto bin = pmsgctnt->proplist.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
-	if (bin == nullptr || bin->cb != 16)
-		return TRUE;
-	tmp_guid = rop_util_binary_to_guid(bin);
-	if (tmp_guid != template_guid)
-		return TRUE;
+	if (template_guid != GUID_NONE) {
+		auto bin = pmsgctnt->proplist.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
+		if (bin == nullptr || bin->cb != 16)
+			return TRUE;
+		auto tmp_guid = rop_util_binary_to_guid(bin);
+		if (tmp_guid != template_guid)
+			return TRUE;
+	}
 	if (action_flavor & DO_NOT_SEND_TO_ORIGINATOR) {
 		if (pmsgctnt->children.prcpts  == nullptr ||
 		    pmsgctnt->children.prcpts->count == 0)
