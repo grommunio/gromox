@@ -39,7 +39,6 @@ struct sql_del {
 
 BOOL exmdb_server::vacuum(const char *dir)
 {
-	sleep(305);
 	return db_engine_vacuum(dir);
 }
 
