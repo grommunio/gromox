@@ -3403,8 +3403,8 @@ ec_error_t zs_submitmessage(GUID hsession, uint32_t hmessage) try
 		repr_grant = cu_get_delegate_perm_AA(account, username.c_str());
 	}
 	if (repr_grant < repr_grant::send_on_behalf) {
-		mlog(LV_INFO, "I-1334: uid %s tried to send with from=<%s>, but no impersonation permission given.",
-		        account, username.c_str());
+		mlog(LV_INFO, "I-1334: uid %s tried to submit %s:%llxh with from=<%s>, but no impersonation permission given.",
+		        account, pstore->dir, LLU{pmessage->get_id()}, username.c_str());
 		return ecAccessDenied;
 	}
 	auto err = rectify_message(pmessage, username.c_str(),
