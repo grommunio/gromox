@@ -2514,15 +2514,14 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	if (pmime == nullptr)
 		return FALSE;
 	pmime->set_field("X-Auto-Response-Suppress", "All");
-	const char *pvalue2 = strchr(rp.ev_from, '@');
-	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
+	pmime->set_field("From", rp.ev_to);
 	std::vector<std::string> rcpt_list;
 	for (auto &r : *pmsgctnt->children.prcpts) {
 		TPROPVAL_ARRAY pv = {r.count, r.ppropval};
 		if (!cu_rcpt_to_list(std::move(pv), rcpt_list))
 			return false;
 	}
-	auto ret = ems_send_mail(&imail, tmp_buff, rcpt_list);
+	auto ret = ems_send_mail(&imail, rp.ev_to, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1188: ems_send_mail: %s", mapi_strerror(ret));
 	*pb_result = TRUE;

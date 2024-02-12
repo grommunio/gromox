@@ -176,8 +176,7 @@ void auto_response_reply(const char *user_home,
 	pcontext = get_context();
 	if (pcontext == nullptr)
 		return;
-	auto pdomain = strchr(from, '@') + 1;
-	snprintf(pcontext->ctrl.from, std::size(pcontext->ctrl.from), "auto-reply@%s", pdomain);
+	gx_strlcpy(pcontext->ctrl.from, from, std::size(pcontext->ctrl.from));
 	pcontext->ctrl.rcpt.emplace_back(rcpt);
 	auto pmime = pcontext->mail.add_head();
 	if (NULL == pmime) {
