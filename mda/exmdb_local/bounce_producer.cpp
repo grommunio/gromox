@@ -110,11 +110,8 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 		mlog(LV_ERR, "exmdb_local: MIME pool exhausted");
 		return false;
 	}
-	char tmp_buff[256];
-	parse_field_value(tp.content_type.c_str(), tp.content_type.size(),
-		tmp_buff, 256, pmime->f_type_params);
-	pmime->set_content_type(tmp_buff);
-	pmime->set_content_param("charset", "\"utf-8\"");
+	pmime->set_content_type("text/plain");
+	pmime->set_content_param("charset", "utf-8");
 	if (!pmime->write_content(replaced, aprint_len,
 	    mime_encoding::automatic)) {
 	mlog(LV_ERR, "exmdb_local: failed to write content");

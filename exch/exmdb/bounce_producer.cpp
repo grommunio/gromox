@@ -59,8 +59,7 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 
 BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     sqlite3 *psqlite, uint64_t message_id, const char *bounce_type,
-    char *mime_from, std::string &subject, std::string &cttype,
-    std::string &content) try
+    char *mime_from, std::string &subject, std::string &content) try
 {
 	void *pvalue;
 	char charset[32], date_buff[128], lang[32];
@@ -119,7 +118,6 @@ BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
 	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
 	content = replaced;
 	subject = tp.subject;
-	cttype  = tp.content_type;
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1219: ENOMEM");
@@ -131,11 +129,11 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 {
 	MIME *pmime;
 	char mime_from[UADDR_SIZE], date_buff[128];
-	std::string subject, content_type, content_buff;
+	std::string subject, content_buff;
 	
 	if (!exmdb_bouncer_make_content(from, rcpt,
 	    psqlite, message_id, bounce_type, mime_from,
-	    subject, content_type, content_buff))
+	    subject, content_buff))
 		return FALSE;
 	auto phead = pmail->add_head();
 	if (phead == nullptr)
@@ -153,8 +151,8 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (pmime == nullptr)
 		return FALSE;
-	pmime->set_content_type(content_type.c_str());
-	pmime->set_content_param("charset", "\"utf-8\"");
+	pmime->set_content_type("text/plain");
+	pmime->set_content_param("charset", "utf-8");
 	if (!pmime->write_content(content_buff.c_str(),
 	    content_buff.size(), mime_encoding::automatic))
 		return FALSE;

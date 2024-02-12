@@ -36,7 +36,7 @@ using buff_t = bool (*)(const char *, char *, size_t);
 
 static bool bounce_producer_make_content(buff_t gul,
     const char *username, MESSAGE_CONTENT *pbrief, const char *bounce_type,
-    std::string &subject, std::string &cttype, std::string &content)
+    std::string &subject, std::string &content)
 {
 	char charset[32], date_buff[128], lang[32];
 
@@ -94,7 +94,6 @@ static bool bounce_producer_make_content(buff_t gul,
 	auto cl_1 = make_scope_exit([&]() { HXmc_free(replaced); });
 	content = replaced;
 	subject = tp.subject;
-	cttype  = tp.content_type;
 	return true;
 }
 
@@ -114,9 +113,9 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	} else {
 		*mime_from = '\0';
 	}
-	std::string subject, content_type, content_buff;
+	std::string subject, content_buff;
 	if (!bounce_producer_make_content(gul, username, pbrief,
-	    bounce_type, subject, content_type, content_buff))
+	    bounce_type, subject, content_buff))
 		return false;
 	auto phead = pmail->add_head();
 	if (phead == nullptr)
@@ -157,8 +156,8 @@ bool exch_bouncer_make(buff_t gudn, buff_t gul,
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (pmime == nullptr)
 		return false;
-	pmime->set_content_type(content_type.c_str());
-	pmime->set_content_param("charset", "\"utf-8\"");
+	pmime->set_content_type("text/plain");
+	pmime->set_content_param("charset", "utf-8");
 	if (!pmime->write_content(content_buff.c_str(),
 	    content_buff.size(), mime_encoding::automatic))
 		return false;

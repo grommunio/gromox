@@ -2,5 +2,5 @@
 #include <sqlite3.h>
 
 struct MAIL;
-extern BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt, sqlite3 *, uint64_t msg_id, const char *bounce_type, char *mime_from, std::string &subject, std::string &cttype, std::string &ct);
+extern BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt, sqlite3 *, uint64_t msg_id, const char *bounce_type, char *mime_from, std::string &subject, std::string &ct);
 extern BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *, uint64_t msg_id, const char *bounce_type, MAIL *);

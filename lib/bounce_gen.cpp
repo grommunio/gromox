@@ -53,9 +53,7 @@ static errno_t bounce_gen_load(const std::string &cset_path, template_map &tplis
 					tpl_file.c_str());
 				return EIO;
 			}
-			if (strcasecmp(mf.name.c_str(), "Content-Type") == 0)
-				bt.content_type = std::move(mf.value);
-			else if (strcasecmp(mf.name.c_str(), "From") == 0)
+			if (strcasecmp(mf.name.c_str(), "From") == 0)
 				bt.from = std::move(mf.value);
 			else if (strcasecmp(mf.name.c_str(), "Subject") == 0)
 				bt.subject = std::move(mf.value);

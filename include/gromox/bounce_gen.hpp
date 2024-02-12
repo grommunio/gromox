@@ -10,7 +10,7 @@ struct tarray_set;
 namespace gromox {
 
 struct bounce_template {
-	std::string content_type, from, subject;
+	std::string from, subject;
 	std::unique_ptr<char[], stdlib_delete> content;
 	size_t ctlen = 0, body_start = 0;
 };
