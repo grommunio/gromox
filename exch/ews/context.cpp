@@ -135,6 +135,21 @@ double EWSContext::age() const
 {return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
 
 /**
+ * @brief      Copy string to context allocated buffer
+ *
+ * @param      src   Source string
+ *
+ * @return     Pointer to copied C-string
+ */
+char* EWSContext::cpystr(const std::string_view& src)
+{
+	char* dst = alloc<char>(src.size()+1);
+	strncpy(dst, src.data(), src.size());
+	dst[src.size()] = 0;
+	return dst;
+}
+
+/**
  * @brief      Create new folder
  *
  * @param      dir       Store directory
@@ -1458,6 +1473,8 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 	writeProp(shape, item.Surname, PR_SURNAME);
 	writeProp(shape, item.WeddingAnniversary, PR_WEDDING_ANNIVERSARY);
 
+	if(!item.FileAs && item.DisplayName)
+		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.DisplayName)});
 	if(item.PostalAddressIndex)
 		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
 	if(item.EmailAddresses)
@@ -1468,24 +1485,29 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
 		}
 	if(item.PhysicalAddresses)
 		for(const tPhysicalAddressDictionaryEntry& entry : *item.PhysicalAddresses) {
+			std::string address = item.mkAddress(entry.Street, entry.City, entry.State, entry.PostalCode,
+			                                     entry.CountryOrRegion);
 			if(entry.Key == Enum::Business) {
 				writeProp(shape, entry.City, NtBusinessAddressCity, PT_UNICODE);
 				writeProp(shape, entry.CountryOrRegion, NtBusinessAddressCountry, PT_UNICODE);
 				writeProp(shape, entry.PostalCode, NtBusinessAddressPostalCode, PT_UNICODE);
 				writeProp(shape, entry.State, NtBusinessAddressState, PT_UNICODE);
 				writeProp(shape, entry.Street, NtBusinessAddressStreet, PT_UNICODE);
+				shape.write(NtBusinessAddress, TAGGED_PROPVAL{PT_UNICODE, cpystr(address)});
 			} else if(entry.Key == Enum::Home) {
 				writeProp(shape, entry.City, PR_HOME_ADDRESS_CITY);
 				writeProp(shape, entry.CountryOrRegion, PR_HOME_ADDRESS_COUNTRY);
 				writeProp(shape, entry.PostalCode, PR_HOME_ADDRESS_POSTAL_CODE);
 				writeProp(shape, entry.State, PR_HOME_ADDRESS_STATE_OR_PROVINCE);
 				writeProp(shape, entry.Street, PR_HOME_ADDRESS_STREET);
+				shape.write(NtHomeAddress, TAGGED_PROPVAL{PT_UNICODE, cpystr(address)});
 			} else if(entry.Key == Enum::Other) {
 				writeProp(shape, entry.City, PR_OTHER_ADDRESS_CITY);
 				writeProp(shape, entry.CountryOrRegion, PR_OTHER_ADDRESS_COUNTRY);
 				writeProp(shape, entry.PostalCode, PR_OTHER_ADDRESS_POSTAL_CODE);
 				writeProp(shape, entry.State, PR_OTHER_ADDRESS_STATE_OR_PROVINCE);
 				writeProp(shape, entry.Street, PR_OTHER_ADDRESS_STREET);
+				shape.write(NtOtherAddress, TAGGED_PROPVAL{PT_UNICODE, cpystr(address)});
 			}
 		}
 	if(item.PhoneNumbers)

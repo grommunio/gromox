@@ -1568,6 +1568,7 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			if (std::holds_alternative<tSetItemField>(update))
 				std::get<tSetItemField>(update).put(shape);
 		}
+		tContact::genFields(shape);
 		const char* username = ctx.effectiveUser(parentFolder);
 		ctx.updated(dir, mid, shape);
 		mUpdateItemResponseMessage msg;
@@ -1586,10 +1587,10 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			TPROPVAL_ARRAY props = shape.write();
 			PROPTAG_ARRAY tagsRm = shape.remove();
 			PROBLEM_ARRAY problems;
-			if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
-				throw EWSError::ItemSave(E3092);
 			if(!ctx.plugin().exmdb.remove_message_properties(dir.c_str(), CP_ACP, mid.messageId(), &tagsRm))
 				throw EWSError::ItemSave(E3093);
+			if(!ctx.plugin().exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
+				throw EWSError::ItemSave(E3092);
 			msg.ConflictResults.Count = problems.count;
 		}
 		msg.Items.emplace_back(ctx.loadItem(dir, mid.folderId(), mid.messageId(), idOnly));

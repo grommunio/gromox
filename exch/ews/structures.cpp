@@ -886,8 +886,39 @@ void sShape::write(const PROPERTY_NAME& name, const TAGGED_PROPVAL& tp)
 TPROPVAL_ARRAY sShape::write() const
 {return mkArray<TPROPVAL_ARRAY>(wProps);}
 
-bool sShape::writes(uint32_t tag) const
-{return std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;}) != wProps.end();}
+/**
+ * @brief      Get property that is about to be written
+ *
+ * @param      tag  Tag of the property
+ *
+ * @return     Property or nullptr if not present
+ */
+const TAGGED_PROPVAL* sShape::writes(uint32_t tag) const
+{
+	auto it = std::find_if(wProps.begin(), wProps.end(), [=](const TAGGED_PROPVAL& tp){return tp.proptag == tag;});
+	return it != wProps.end()? it.base() : nullptr;
+}
+
+/**
+ * @brief      Get property that is about to be written
+ *
+ * @param      tag  Tag of the property
+ *
+ * @return     Property or nullptr if not present
+ */
+const TAGGED_PROPVAL* sShape::writes(const PROPERTY_NAME& name) const
+{
+	auto it = std::find_if(names.begin(), names.end(), [&](const PROPERTY_NAME& n){return n == name;});
+	if(it == names.end())
+		return nullptr;
+	size_t index = std::distance(names.begin(), it);
+	if(namedCache.size() == names.size())  // Named property IDs have not yet been retrieved
+		return &namedCache[index];
+	if(namedTags.size() == names.size())  // Named property IDS vae been retrieved
+		return writes(namedTags[index]);
+	return nullptr;
+}
+
 
 
 /**
@@ -1720,6 +1751,7 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"CompanyName", {[](auto&&... args){convText(PR_COMPANY_NAME, args...);}}},
 	{"Department", {[](auto&&... args){convText(PR_DEPARTMENT_NAME, args...);}}},
 	{"DisplayName", {[](auto&&... args){convText(PR_DISPLAY_NAME, args...);}}},
+	{"FileAs", {[](auto&&... args){convText(NtFileAs, args...);}}},
 	{"Generation", {[](auto&&... args){convText(PR_GENERATION, args...);}}},
 	{"GivenName", {[](auto&&... args){convText(PR_GIVEN_NAME, args...);}}},
 	{"Importance", {[](auto&&... args){convEnumIndex<Enum::ImportanceChoicesType>(PR_IMPORTANCE, args...);}}},
@@ -1897,6 +1929,20 @@ void tChangeDescription::convText(uint32_t tag, const XMLElement* v, sShape& sha
 	shape.write(TAGGED_PROPVAL{tag, deconst(znul(v->GetText()))});
 }
 
+/**
+ * @brief      Property conversion function for boolean fields
+ *
+ * @param      name   Tag name
+ * @param      v      XML value node
+ * @param      shape  Shape to store property in
+ */
+void tChangeDescription::convText(const PROPERTY_NAME& name, const XMLElement* v, sShape& shape)
+{
+	uint32_t tag = shape.tag(name);
+	if(tag)
+		convText(tag, v, shape);
+}
+
 void tChangeDescription::convStrArray(uint32_t tag, const XMLElement* v, sShape& shape)
 {
 	uint32_t count = 0;
@@ -1921,6 +1967,82 @@ void tChangeDescription::convStrArray(const PROPERTY_NAME& name, const XMLElemen
 tContact::tContact(const sShape& shape) : tItem(shape)
 {tContact::update(shape);}
 
+/**
+ * @brief      Generate composite contact fields from written properties
+ *
+ * @param      shape   Shape to update with generated fields
+ */
+void tContact::genFields(sShape& shape)
+{
+	std::optional<std::string> street, city, state, country, postal;
+
+	uint32_t tag;
+	if((tag = shape.tag(NtBusinessAddress)) && !shape.writes(tag)) {
+		fromProp(shape.writes(NtBusinessAddressStreet), street);
+		fromProp(shape.writes(NtBusinessAddressCity), city);
+		fromProp(shape.writes(NtBusinessAddressState), state);
+		fromProp(shape.writes(NtBusinessAddressCountry), country);
+		fromProp(shape.writes(NtBusinessAddressPostalCode), postal);
+		if(street || city || state || country || postal) {
+			std::string addr = mkAddress(street, city, state, postal, country);
+			shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(addr)});
+			street.reset(), city.reset(), state.reset(), country.reset(), postal.reset();
+		}
+	}
+	if((tag = shape.tag(NtHomeAddress)) && !shape.writes(tag)) {
+		fromProp(shape.writes(PR_HOME_ADDRESS_STREET), street);
+		fromProp(shape.writes(PR_HOME_ADDRESS_CITY), city);
+		fromProp(shape.writes(PR_HOME_ADDRESS_STATE_OR_PROVINCE), state);
+		fromProp(shape.writes(PR_HOME_ADDRESS_COUNTRY), country);
+		fromProp(shape.writes(PR_HOME_ADDRESS_POSTAL_CODE), postal);
+		if(street || city || state || country || postal) {
+			std::string addr = mkAddress(street, city, state, postal, country);
+			shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(addr)});
+			street.reset(), city.reset(), state.reset(), country.reset(), postal.reset();
+		}
+	}
+	if((tag = shape.tag(NtOtherAddress)) && !shape.writes(tag)) {
+		fromProp(shape.writes(PR_OTHER_ADDRESS_STREET), street);
+		fromProp(shape.writes(PR_OTHER_ADDRESS_CITY), city);
+		fromProp(shape.writes(PR_OTHER_ADDRESS_STATE_OR_PROVINCE), state);
+		fromProp(shape.writes(PR_OTHER_ADDRESS_COUNTRY), country);
+		fromProp(shape.writes(PR_OTHER_ADDRESS_POSTAL_CODE), postal);
+		if(street || city || state || country || postal) {
+			std::string addr = mkAddress(street, city, state, postal, country);
+			shape.write(TAGGED_PROPVAL{tag, EWSContext::cpystr(addr)});
+		}
+	}
+
+	if((tag = shape.tag(NtFileAs)) && !shape.writes(tag)) {
+		const TAGGED_PROPVAL* displayName = shape.writes(PR_DISPLAY_NAME);
+		if(displayName)
+			shape.write(TAGGED_PROPVAL{tag, displayName->pvalue});
+	}
+}
+
+/**
+ * @brief      Build combined address from (optional) parts
+ *
+ * @param      street      Street part of the address
+ * @param      city        City part of the address
+ * @param      state       State part of the address
+ * @param      postalCode  Postal code part of the address
+ * @param      country     Country part of the address
+ *
+ * @return     Combined address string
+ */
+std::string tContact::mkAddress(const std::optional<std::string>& street, const std::optional<std::string>& city,
+                                const std::optional<std::string>& state, const std::optional<std::string>& postal,
+                                const std::optional<std::string>& country)
+{
+	auto get = [](const std::optional<std::string>& src) {return src? src->c_str() : "";};
+	auto con = [] (bool src, const char* c) {return src? c : "";};
+	bool lines[] = {bool(street), city || state || postal, bool(country)};
+	return fmt::format(addressTemplate, get(street), con(lines[0] || lines[1], "\n"),
+	                    get(city), con(city && state, " "), get(state), con((city || state) && postal, " "), get(postal),
+	                    con((lines[0] || lines[1]) && lines[2], "\n"), get(country));
+}
+
 void tContact::update(const sShape& shape)
 {
 	fromProp(shape.get(PR_ASSISTANT), AssistantName);
@@ -1932,6 +2054,7 @@ void tContact::update(const sShape& shape)
 	fromProp(shape.get(PR_OFFICE_LOCATION), OfficeLocation);
 	fromProp(shape.get(PR_SPOUSE_NAME), SpouseName);
 	fromProp(shape.get(PR_WEDDING_ANNIVERSARY), WeddingAnniversary);
+	fromProp(shape.get(NtFileAs), FileAs);
 	const char* val;
 	if((val = shape.get<char>(PR_BUSINESS_TELEPHONE_NUMBER)))
 		defaulted(PhoneNumbers).emplace_back(tPhoneNumberDictionaryEntry(val, Enum::BusinessPhone));
@@ -2886,6 +3009,8 @@ decltype(tFieldURI::nameMap) tFieldURI::nameMap = {
 	{"calendar:Start", {NtCommonStart, PT_SYSTIME}},
 	{"calendar:UID", {NtGlobalObjectId, PT_BINARY}},
 	{"calendar:RecurrenceId", {NtExceptionReplaceTime, PT_SYSTIME}},
+	{"contacts:DisplayName", {NtFileAs, PT_UNICODE}},
+	{"contacts:FileAs", {NtFileAs, PT_UNICODE}},
 	{"contacts:PostalAddressIndex", {NtPostalAddressIndex, PT_LONG}},
 	{"item:Categories", {NtCategories, PT_MV_UNICODE}},
 	{"item:ReminderDueBy", {NtReminderTime, PT_SYSTIME}},
@@ -3065,18 +3190,54 @@ decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhysicalAddress:Street", "Other"}, PR_OTHER_ADDRESS_STREET},
 }};
 
+/**
+ * @brief      Mapping for indexed field URIs -> property name / type pairs
+ *
+ * Must be sorted alphabetically.
+ *
+ * Contains an entry for the respective composite address property for each
+ * address part. Composite property *must* be specified after address part
+ * property.
+ */
 decltype(tIndexedFieldURI::nameMap) tIndexedFieldURI::nameMap = {{
 	{{"contacts:EmailAddress", "EmailAddress1"}, {NtEmailAddress1, PT_UNICODE}},
 	{{"contacts:EmailAddress", "EmailAddress2"}, {NtEmailAddress2, PT_UNICODE}},
 	{{"contacts:EmailAddress", "EmailAddress3"}, {NtEmailAddress3, PT_UNICODE}},
 	{{"contacts:ImAddress", "ImAddress1"}, {NtImAddress1, PT_UNICODE}},
 	{{"contacts:PhysicalAddress:City", "Business"}, {NtBusinessAddressCity, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:City", "Business"}, {NtBusinessAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:City", "Home"}, {NtHomeAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:City", "Other"}, {NtOtherAddress, PT_UNICODE}},
 	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, {NtBusinessAddressCountry, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Business"}, {NtBusinessAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Home"}, {NtHomeAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:CountryOrRegion", "Other"}, {NtOtherAddress, PT_UNICODE}},
 	{{"contacts:PhysicalAddress:PostalCode", "Business"}, {NtBusinessAddressPostalCode, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:PostalCode", "Business"}, {NtBusinessAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:PostalCode", "Home"}, {NtHomeAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:PostalCode", "Other"}, {NtOtherAddress, PT_UNICODE}},
 	{{"contacts:PhysicalAddress:State", "Business"}, {NtBusinessAddressState, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:State", "Business"}, {NtBusinessAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:State", "Home"}, {NtHomeAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:State", "Other"}, {NtOtherAddress, PT_UNICODE}},
 	{{"contacts:PhysicalAddress:Street", "Business"}, {NtBusinessAddressStreet, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:Street", "Business"}, {NtBusinessAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:Street", "Home"}, {NtHomeAddress, PT_UNICODE}},
+	{{"contacts:PhysicalAddress:Street", "Other"}, {NtOtherAddress, PT_UNICODE}},
 }};
 
+/**
+ * @brief      Collect tags specified by indexed field URI
+ *
+ * Will add composite address fields.
+ * As these fields are not mapped, this has no effect when reading.
+ * When writing, this will cause the composite field tags to be resolved, but
+ * not actively filled by the standard SetItemField mechanism. Instead, these
+ * properties are explicitely synthesized by tContact::genFields.
+ *
+ * @param      shape   Shape to store tags in
+ * @param      add     Whether tags are added or deleted
+ */
 void tIndexedFieldURI::tags(sShape& shape, bool add) const
 {
 	static auto compval = [](const auto& v1, const tIndexedFieldURI& v2)
@@ -3086,9 +3247,12 @@ void tIndexedFieldURI::tags(sShape& shape, bool add) const
 	if(tagIt != tagMap.end() && tagIt->first.first == FieldURI && tagIt->first.second == FieldIndex)
 		shape.add(tagIt->second, add? sShape::FL_FIELD : sShape::FL_RM);
 
+	// Additional
 	auto names = std::lower_bound(nameMap.begin(), nameMap.end(), *this, compval);
-	if(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex)
+	while(names != nameMap.end() && names->first.first == FieldURI && names->first.second == FieldIndex) {
 		shape.add(names->second.first, names->second.second, add? sShape::FL_FIELD : sShape::FL_RM);
+		++names;
+	}
 }
 
 /**

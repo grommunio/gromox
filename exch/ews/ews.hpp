@@ -317,6 +317,7 @@ public:
 	static void* alloc(size_t);
 	template<typename T> static T* alloc(size_t=1);
 	template<typename T, typename... Args> static T* construct(Args&&...);
+	static char* cpystr(const std::string_view&);
 
 	static void assertIdType(Structures::tBaseItemId::IdType, Structures::tBaseItemId::IdType);
 	static void ext_error(pack_result, const char* = nullptr, const char* = nullptr);

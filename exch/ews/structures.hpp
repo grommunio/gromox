@@ -367,7 +367,8 @@ public:
 	void write(const TAGGED_PROPVAL&);
 	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
 	TPROPVAL_ARRAY write() const;
-	bool writes(uint32_t) const;
+	const TAGGED_PROPVAL* writes(uint32_t) const;
+	const TAGGED_PROPVAL* writes(const PROPERTY_NAME&) const;
 
 	PROPTAG_ARRAY remove() const;
 
@@ -1048,7 +1049,7 @@ struct tIndexedFieldURI
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
 	static std::array<std::pair<UIKey, uint32_t>, 25> tagMap;
-	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 9> nameMap;
+	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 25> nameMap;
 };
 
 /**
@@ -1166,6 +1167,7 @@ struct tChangeDescription
 	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	static void convDate(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convText(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
@@ -2030,6 +2032,14 @@ struct tContact : public tItem
 	// <xs:element name="PartnerNetworkThumbnailPhotoUrl" type="xs:string" minOccurs="0" />
 	// <xs:element name="PersonId" type="xs:string" minOccurs="0" />
 	// <xs:element name="ConversationGuid" type="t:GuidType" minOccurs="0" />
+
+	static constexpr char addressTemplate[] = "{}{}{}{}{}{}{}{}{}"; // Street, city, state, postal code, country
+
+	static std::string mkAddress(const std::optional<std::string>&, const std::optional<std::string>&,
+	                             const std::optional<std::string>&, const std::optional<std::string>&,
+	                             const std::optional<std::string>&);
+
+	static void genFields(sShape&);
 };
 
 /**
