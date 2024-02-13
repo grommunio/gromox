@@ -324,14 +324,14 @@ static constexpr char tbl_pvt_autoreply_ts_11[] =
 "	`peer` VARCHAR(320) PRIMARY KEY,"
 "	`ts` INTEGER)";
 
-static constexpr char tbl_replguidmap_13[] =
-"CREATE TABLE `replguidmap` ("
+static constexpr char tbl_replguidmap_14[] =
+"CREATE TABLE IF NOT EXISTS `replguidmap` ("
 "	`replid` INTEGER PRIMARY KEY AUTOINCREMENT,"
 "	`replguid` VARCHAR(40));"
-"CREATE UNIQUE INDEX replguidmap_guid ON replguidmap(replguid);"
+"CREATE UNIQUE INDEX IF NOT EXISTS replguidmap_guid ON replguidmap(replguid);"
 /* bump autoincrement such that next entry is 6 */
-"INSERT INTO replguidmap (replid) VALUES (5);"
-"DELETE FROM replguidmap;";
+"REPLACE INTO replguidmap (replid) VALUES (5);"
+"DELETE FROM replguidmap WHERE replid=5;";
 
 static constexpr char tbl_pub_folders_0[] =
 "CREATE TABLE folders ("
@@ -417,7 +417,7 @@ static constexpr tbl_init tbl_pvt_init_top[] = {
 	{"message_changes", tbl_msgchgs_0},
 	{"recipients", tbl_rcpts_0},
 	{"recipients_properties", tbl_rcptprops_5},
-	{"replguidmap", tbl_replguidmap_13},
+	{"replguidmap", tbl_replguidmap_14},
 	{"attachments", tbl_attach_0},
 	{"attachment_properties", tbl_atxprops_6},
 	{"folders", tbl_pvt_folders_10},
@@ -469,7 +469,7 @@ static constexpr tbl_init tbl_pub_init_top[] = {
 	{"messages", tbl_pub_msgs_0},
 	{"read_states", tbl_pub_readst_0},
 	{"read_cns", tbl_pub_readcn_0},
-	{"replca_mapping", tbl_pub_replmap_0},
+	{"replguidmap", tbl_replguidmap_14},
 	TABLE_END,
 };
 
@@ -564,7 +564,7 @@ static constexpr tblite_upgradefn tbl_pvt_upgrade_list[] = {
 	{10, nullptr, "folders", tbl_pvt_folders_10, tbl_pvt_folders_move10},
 	{11, tbl_pvt_autoreply_ts_11},
 	{12, "CREATE UNIQUE INDEX namedprop_unique ON named_properties(name_string)"},
-	{13, tbl_replguidmap_13},
+	{14, tbl_replguidmap_14},
 	/* advance schema numbers in lockstep with public stores */
 	TABLE_END,
 };
@@ -576,7 +576,7 @@ static constexpr tblite_upgradefn tbl_pub_upgrade_list[] = {
 	{4, nullptr, "message_properties", tbl_msgprops_4, tbl_msgprops_move4},
 	{5, nullptr, "recipients_properties", tbl_rcptprops_5, tbl_rcptprops_move5},
 	{6, nullptr, "attachment_properties", tbl_atxprops_6, tbl_atxprops_move6},
-	{13, tbl_replguidmap_13},
+	{14, tbl_replguidmap_14},
 	/* advance schema numbers in lockstep with private stores */
 	TABLE_END,
 };

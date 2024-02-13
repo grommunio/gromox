@@ -1,3 +1,11 @@
+Development 2.24.3
+==================
+
+Fixes:
+
+* mkpublic: newly created public stores lacked a ``replguidmap`` table
+
+
 Gromox 2.24 (2024-02-10)
 ========================
 
