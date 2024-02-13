@@ -64,6 +64,37 @@ template<typename T, typename... Args>
 T& defaulted(std::optional<T>& container, Args&&... args)
 {return container? *container : container.emplace(std::forward<Args...>(args)...);}
 
+/**
+ * @brief      Write property to shape (string specialization)
+ *
+ * @param      shape   Shape to write to
+ * @param      value   value to write
+ * @param      tag     Property tag to use
+ */
+void writeProp(sShape& shape, const std::optional<std::string>& value, uint32_t tag)
+{if(value) shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(value->c_str())});}
+
+/**
+ * @brief      Write property to shape (time point specialization)
+ *
+ * @param      shape   Shape to write to
+ * @param      value   value to write
+ * @param      tag     Property tag to use
+ */
+void writeProp(sShape& shape, const std::optional<sTimePoint>& value, uint32_t tag)
+{if(value) shape.write(TAGGED_PROPVAL{tag, EWSContext::construct<uint64_t>(value->toNT())});}
+
+/**
+ * @brief      Write property to shape (string specialization)
+ *
+ * @param      shape   Shape to write to
+ * @param      value   value to write
+ * @param      name    Property name to write to
+ * @param      type    Property type to use
+ */
+void writeProp(sShape& shape, const std::optional<std::string>& value, const PROPERTY_NAME& name, uint16_t type)
+{if(value) shape.write(name, TAGGED_PROPVAL{type, const_cast<char*>(value->c_str())});}
+
 } // Anonymous namespace
 
 namespace detail
@@ -102,6 +133,21 @@ EWSContext::~EWSContext()
 
 double EWSContext::age() const
 {return std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-m_created).count();}
+
+/**
+ * @brief      Copy string to context allocated buffer
+ *
+ * @param      src   Source string
+ *
+ * @return     Pointer to copied C-string
+ */
+char* EWSContext::cpystr(const std::string_view& src)
+{
+	char* dst = alloc<char>(src.size()+1);
+	strncpy(dst, src.data(), src.size());
+	dst[src.size()] = 0;
+	return dst;
+}
 
 /**
  * @brief      Create new folder
@@ -190,7 +236,8 @@ sItem EWSContext::create(const std::string& dir, const sFolderSpec& parent, cons
 	auto messageId = content.proplist.get<const uint64_t>(PidTagMid);
 	if(!messageId)
 		throw DispatchError(E3112);
-	m_plugin.exmdb.write_message(dir.c_str(), m_auth_info.username, CP_ACP, parent.folderId, &content, &error);
+	if(!m_plugin.exmdb.write_message(dir.c_str(), m_auth_info.username, CP_ACP, parent.folderId, &content, &error) || error)
+		throw EWSError::ItemSave(E3254);
 
 	sShape retshape = sShape(tItemResponseShape());
 	return loadItem(dir, parent.folderId, *messageId, retshape);
@@ -1251,6 +1298,27 @@ bool EWSContext::streamEvents(const tSubscriptionId& subscriptionId) const
 }
 
 /**
+ * @brief      Create MESSAGE_CONTENT from string
+ *
+ * @param     dir          Home directory of the associated store
+ * @param     mimeContent  MimeContent data
+ *
+ * @return    Pointer to new MESSAGE_CONTENT structure
+ */
+EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, std::string& mimeContent) const
+{
+	MAIL mail;
+	if(!mail.load_from_str_move(reinterpret_cast<char*>(mimeContent.data()), mimeContent.size()))
+		throw EWSError::ItemCorrupt(E3123);
+	auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
+	{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
+	MCONT_PTR cnt(oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc, getPropIds));
+	if(!cnt)
+		throw EWSError::ItemCorrupt(E3124);
+	return cnt;
+}
+
+/**
  * @brief     Convert item to MESSAGE_CONTENT
  *
  * @param     dir      Home directory of the associated store
@@ -1371,11 +1439,109 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
  * @param      item      Contact item to create
  * @param      shape     Shape to store properties in
  * @param      content   Message content
- *
- * @todo Map remaining fields
  */
 void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape, MCONT_PTR& content) const
-{toContent(dir, static_cast<tItem&>(item), shape, content);}
+{
+	toContent(dir, static_cast<tItem&>(item), shape, content);
+	shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, const_cast<char*>("IPM.Contact")});
+	if(item.CompleteName) {
+		writeProp(shape, item.CompleteName->Title, PR_TITLE);
+		writeProp(shape, item.CompleteName->FirstName, PR_GIVEN_NAME);
+		writeProp(shape, item.CompleteName->MiddleName, PR_MIDDLE_NAME);
+		writeProp(shape, item.CompleteName->LastName, PR_SURNAME);
+		writeProp(shape, item.CompleteName->Suffix, PR_GENERATION);
+		writeProp(shape, item.CompleteName->Initials, PR_INITIALS);
+		writeProp(shape, item.CompleteName->FullName, PR_DISPLAY_NAME);
+		writeProp(shape, item.CompleteName->Nickname, PR_NICKNAME);
+	}
+
+	writeProp(shape, item.DisplayName, PR_DISPLAY_NAME);
+	writeProp(shape, item.GivenName, PR_GIVEN_NAME);
+	writeProp(shape, item.Initials, PR_INITIALS);
+	writeProp(shape, item.MiddleName, PR_MIDDLE_NAME);
+	writeProp(shape, item.Nickname, PR_NICKNAME);
+	writeProp(shape, item.CompanyName, PR_COMPANY_NAME);
+	writeProp(shape, item.AssistantName, PR_ASSISTANT);
+	writeProp(shape, item.Birthday, PR_BIRTHDAY);
+	writeProp(shape, item.BusinessHomePage, PR_BUSINESS_HOME_PAGE);
+	writeProp(shape, item.Department, PR_DEPARTMENT_NAME);
+	writeProp(shape, item.Generation, PR_GENERATION);
+	writeProp(shape, item.JobTitle, PR_TITLE);
+	writeProp(shape, item.CompanyName, PR_COMPANY_NAME);
+	writeProp(shape, item.OfficeLocation, PR_OFFICE_LOCATION);
+	writeProp(shape, item.SpouseName, PR_SPOUSE_NAME);
+	writeProp(shape, item.Surname, PR_SURNAME);
+	writeProp(shape, item.WeddingAnniversary, PR_WEDDING_ANNIVERSARY);
+
+	if(!item.FileAs && item.DisplayName)
+		shape.write(NtFileAs, TAGGED_PROPVAL{PT_UNICODE, cpystr(*item.DisplayName)});
+	if(item.PostalAddressIndex)
+		shape.write(NtPostalAddressIndex, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.PostalAddressIndex->index())});
+	if(item.EmailAddresses)
+		for(const tEmailAddressDictionaryEntry& entry : *item.EmailAddresses) {
+			const PROPERTY_NAME& name = entry.Key == Enum::EmailAddress1? NtEmailAddress1 :
+			                            entry.Key == Enum::EmailAddress2? NtEmailAddress2 : NtEmailAddress3;
+			shape.write(name, TAGGED_PROPVAL{PT_UNICODE, const_cast<char*>(entry.Entry.c_str())});
+		}
+	if(item.PhysicalAddresses)
+		for(const tPhysicalAddressDictionaryEntry& entry : *item.PhysicalAddresses) {
+			std::string address = item.mkAddress(entry.Street, entry.City, entry.State, entry.PostalCode,
+			                                     entry.CountryOrRegion);
+			if(entry.Key == Enum::Business) {
+				writeProp(shape, entry.City, NtBusinessAddressCity, PT_UNICODE);
+				writeProp(shape, entry.CountryOrRegion, NtBusinessAddressCountry, PT_UNICODE);
+				writeProp(shape, entry.PostalCode, NtBusinessAddressPostalCode, PT_UNICODE);
+				writeProp(shape, entry.State, NtBusinessAddressState, PT_UNICODE);
+				writeProp(shape, entry.Street, NtBusinessAddressStreet, PT_UNICODE);
+				shape.write(NtBusinessAddress, TAGGED_PROPVAL{PT_UNICODE, cpystr(address)});
+			} else if(entry.Key == Enum::Home) {
+				writeProp(shape, entry.City, PR_HOME_ADDRESS_CITY);
+				writeProp(shape, entry.CountryOrRegion, PR_HOME_ADDRESS_COUNTRY);
+				writeProp(shape, entry.PostalCode, PR_HOME_ADDRESS_POSTAL_CODE);
+				writeProp(shape, entry.State, PR_HOME_ADDRESS_STATE_OR_PROVINCE);
+				writeProp(shape, entry.Street, PR_HOME_ADDRESS_STREET);
+				shape.write(NtHomeAddress, TAGGED_PROPVAL{PT_UNICODE, cpystr(address)});
+			} else if(entry.Key == Enum::Other) {
+				writeProp(shape, entry.City, PR_OTHER_ADDRESS_CITY);
+				writeProp(shape, entry.CountryOrRegion, PR_OTHER_ADDRESS_COUNTRY);
+				writeProp(shape, entry.PostalCode, PR_OTHER_ADDRESS_POSTAL_CODE);
+				writeProp(shape, entry.State, PR_OTHER_ADDRESS_STATE_OR_PROVINCE);
+				writeProp(shape, entry.Street, PR_OTHER_ADDRESS_STREET);
+				shape.write(NtOtherAddress, TAGGED_PROPVAL{PT_UNICODE, cpystr(address)});
+			}
+		}
+	if(item.PhoneNumbers)
+		for(const tPhoneNumberDictionaryEntry& entry : *item.PhoneNumbers) {
+			uint32_t tag;
+			switch(entry.Key) {
+			case 0: tag = PR_ASSISTANT_TELEPHONE_NUMBER; break;
+			case 1: tag = PR_BUSINESS_FAX_NUMBER; break;
+			case 2: tag = PR_BUSINESS_TELEPHONE_NUMBER; break;
+			case 3: tag = PR_BUSINESS2_TELEPHONE_NUMBER; break;
+			case 4: tag = PR_CALLBACK_TELEPHONE_NUMBER; break;
+			case 6: tag = PR_COMPANY_MAIN_PHONE_NUMBER; break;
+			case 7: tag = PR_HOME_FAX_NUMBER; break;
+			case 8: tag = PR_HOME_TELEPHONE_NUMBER; break;
+			case 9: tag = PR_HOME2_TELEPHONE_NUMBER; break;
+			case 11: tag = PR_MOBILE_TELEPHONE_NUMBER; break;
+			case 13: tag = PR_OTHER_TELEPHONE_NUMBER; break;
+			case 14: tag = PR_PAGER_TELEPHONE_NUMBER; break;
+			case 15: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
+			case 16: tag = PR_RADIO_TELEPHONE_NUMBER; break;
+			default: continue;
+			}
+			shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(entry.Entry.c_str())});
+		}
+	if(item.Children) {
+		if(item.Children->size() > std::numeric_limits<uint32_t>::max())
+			throw InputError(E3258);
+		STRING_ARRAY* sa = construct<STRING_ARRAY>(STRING_ARRAY{static_cast<uint32_t>(item.Children->size()),
+		                                                        alloc<char*>(item.Children->size())});
+		auto it = sa->begin();
+		for(const std::string& child : *item.Children)
+			*it++ = const_cast<char*>(child.c_str());
+	}
+}
 
 /**
  * @brief      Write item properties to shape
@@ -1392,19 +1558,8 @@ void EWSContext::toContent(const std::string& dir, tContact& item, sShape& shape
  */
 void EWSContext::toContent(const std::string& dir, tItem& item, sShape& shape, MCONT_PTR& content) const
 {
-	if(item.MimeContent) {
-		// Convert MimeContent to MESSAGE_CONTENT
-		MAIL mail;
-		if(!mail.load_from_str_move(reinterpret_cast<char*>(item.MimeContent->data()), item.MimeContent->size()))
-			throw EWSError::ItemCorrupt(E3123);
-		auto getPropIds = [&](const PROPNAME_ARRAY* names, PROPID_ARRAY* ids)
-		{*ids = getNamedPropIds(dir, *names, true); return TRUE;};
-		std::unique_ptr<MESSAGE_CONTENT, detail::Cleaner> cnt(oxcmail_import("utf-8", "UTC", &mail, EWSContext::alloc,
-		                                                                     getPropIds));
-		if(!cnt)
-			throw EWSError::ItemCorrupt(E3124);
-		content = std::move(cnt);
-	}
+	if(item.MimeContent)
+		content = toContent(dir, *item.MimeContent);
 	if(item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst(item.ItemClass->c_str())});
 	if(item.Sensitivity)
@@ -1578,64 +1733,51 @@ bool EWSContext::unsubscribe(const Structures::tSubscriptionId& subscriptionId) 
 {return m_plugin.unsubscribe(subscriptionId.ID, m_auth_info.username);}
 
 /**
- * @brief      Mark message as updated
+ * @brief      Add update tags to the shape
  *
  * @param      dir       Home directory of user or domain
  * @param      username  Account name of the user updating the message
  * @param      mid       Message ID
- *
- * @todo Perhaps this should work on an instance
  */
-void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid) const
+void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sShape& shape) const
 {
 	uint64_t changeNum;
 	if(!m_plugin.exmdb.allocate_cn(dir.c_str(), &changeNum))
 		throw DispatchError(E3084);
-	TAGGED_PROPVAL _props[8];
-	TPROPVAL_ARRAY props{0, _props};
 	uint64_t localCommitTime = rop_util_current_nttime();
-	_props[props.count].proptag = PR_LOCAL_COMMIT_TIME;
-	_props[props.count++].pvalue = &localCommitTime;
-	_props[props.count].proptag = PR_LAST_MODIFICATION_TIME;
-	_props[props.count++].pvalue = &localCommitTime;
+	shape.write(TAGGED_PROPVAL{PR_LOCAL_COMMIT_TIME, construct<uint64_t>(localCommitTime)});
+	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, construct<uint64_t>(localCommitTime)});
 
 	char displayName[1024];
-	_props[props.count].proptag = PR_LAST_MODIFIER_NAME;
 	if(!m_plugin.mysql.get_user_displayname(m_auth_info.username, displayName, std::size(displayName)) || !*displayName)
-		_props[props.count++].pvalue = displayName;
+		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, strcpy(alloc<char>(strlen(displayName)+1), displayName)});
 	else
-		_props[props.count++].pvalue = deconst(m_auth_info.username);
+		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_NAME, const_cast<char*>(m_auth_info.username)});
 
-	uint8_t abEidBuff[1280];
+	static constexpr size_t ABEIDBUFFSIZE = 1280;
+	uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
 	EXT_PUSH wAbEid;
 	std::string essdn = username_to_essdn(m_auth_info.username);
 	EMSAB_ENTRYID abEid{0, 1, DT_MAILUSER, essdn.data()};
-	if(!wAbEid.init(abEidBuff, std::size(abEidBuff), EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
+	if(!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
 		throw DispatchError(E3085);
-	BINARY abEidContainer{wAbEid.m_offset, {abEidBuff}};
-	_props[props.count].proptag = PR_LAST_MODIFIER_ENTRYID;
-	_props[props.count++].pvalue = &abEidContainer;
+	BINARY* abEidContainer = construct<BINARY>(BINARY{wAbEid.m_offset, {abEidBuff}});
+	shape.write(TAGGED_PROPVAL{PR_LAST_MODIFIER_ENTRYID, abEidContainer});
 
 	XID changeKey{(mid.isPrivate()? rop_util_make_user_guid : rop_util_make_domain_guid)(mid.accountId()), changeNum};
-	BINARY changeKeyContainer = serialize(changeKey);
-	_props[props.count].proptag = PR_CHANGE_KEY;
-	_props[props.count++].pvalue = &changeKeyContainer;
+	BINARY* changeKeyContainer = construct<BINARY>(serialize(changeKey));
+	shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, changeKeyContainer});
 
 	const BINARY* currentPclContainer = getItemProp<BINARY>(dir, mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
 	PCL pcl;
 	if(!currentPclContainer || !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
 	auto serializedPcl = mkPCL(changeKey, std::move(pcl));
-	_props[props.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	_props[props.count++].pvalue = serializedPcl.get();
+	BINARY* newPclContainer = construct<BINARY>(BINARY{serializedPcl->cb, {alloc<uint8_t>(serializedPcl->cb)}});
+	memcpy(newPclContainer->pv, serializedPcl->pv, serializedPcl->cb);
+	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, newPclContainer});
 
-	_props[props.count].proptag = PidTagChangeNumber;
-	_props[props.count++].pvalue = &changeNum;
-
-	const char* username = mid.isPrivate()? nullptr : m_auth_info.username;
-	PROBLEM_ARRAY problems;
-	if(!m_plugin.exmdb.set_message_properties(dir.c_str(), username, CP_ACP, mid.messageId(), &props, &problems))
-		throw DispatchError(E3089);
+	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});
 }
 
 /**

@@ -432,6 +432,7 @@ struct Enum
 	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
 	using NotificationEventType = StrEnum<CopiedEvent, CreatedEvent, DeletedEvent, ModifiedEvent, MovedEvent, NewMailEvent, FreeBusyChangedEvent>; ///< Types.xsd:6085
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
+	using PhysicalAddressIndexType = StrEnum<None, Home, Business, Other>; ///< Types.xsd:5265, index maps directly to PidLidPostalAddressIndex value
 	using PhysicalAddressKeyType = StrEnum<Home, Business, Other>; ///< Types.xsd:5275
 	using ResolveNamesSearchScopeType = StrEnum<ActiveDirectory, ActiveDirectoryContacts, Contacts, ContactsActiveDirectory>; ///< Types.xsd:4255
 	using ResponseTypeType = StrEnum<Unknown, Organizer, Tentative, Accept, Decline, NoResponseReceived>; ///< Types.xsd:4372

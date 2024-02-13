@@ -359,6 +359,7 @@ public:
 	PROPNAME_ARRAY namedProperties() const;
 	void properties(const TPROPVAL_ARRAY&);
 	PROPTAG_ARRAY proptags() const;
+	uint32_t tag(const PROPERTY_NAME&) const;
 
 	sShape& add(uint32_t, uint8_t=0);
 	sShape& add(const PROPERTY_NAME&, uint16_t, uint8_t=0);
@@ -366,7 +367,8 @@ public:
 	void write(const TAGGED_PROPVAL&);
 	void write(const PROPERTY_NAME&, const TAGGED_PROPVAL&);
 	TPROPVAL_ARRAY write() const;
-	bool writes(uint32_t) const;
+	const TAGGED_PROPVAL* writes(uint32_t) const;
+	const TAGGED_PROPVAL* writes(const PROPERTY_NAME&) const;
 
 	PROPTAG_ARRAY remove() const;
 
@@ -374,11 +376,13 @@ public:
 	const TAGGED_PROPVAL* get(uint32_t, uint8_t=FL_FIELD) const;
 	const TAGGED_PROPVAL* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	template<typename T> const T* get(uint32_t, uint8_t=FL_FIELD) const;
+	template<typename T> const T* get(const PROPERTY_NAME&, uint8_t=FL_FIELD) const;
 	void putExtended(std::vector<tExtendedProperty>&) const;
 
 
 	uint64_t special = 0; ///< Fields that are not directly accessible by properties
 	std::string store; ///< For which store the named properties are valid
+	std::optional<std::string> mimeContent; ///< MimeContent to write
 };
 
 /**
@@ -436,6 +440,7 @@ struct sTimePoint
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
 	explicit sTimePoint(const tinyxml2::XMLAttribute*);
+	explicit sTimePoint(const tinyxml2::XMLElement*);
 
 	void serialize(tinyxml2::XMLElement*) const;
 
@@ -621,8 +626,9 @@ struct tRequestAttachmentId : public tBaseItemId
 struct tBody : public std::string
 {
 	template<typename T>
-	inline tBody(T&& content, const char* type) : std::string(std::forward<T>(content)), BodyType(type)
-	{}
+	inline tBody(T&& content, const char* type) : std::string(std::forward<T>(content)), BodyType(type) {}
+
+	explicit tBody(const tinyxml2::XMLElement*);
 
 	Enum::BodyTypeType BodyType; //Attribute
 	std::optional<bool> IsTruncated; //Attribute
@@ -721,11 +727,12 @@ struct tEmailAddressType : public NS_EWS_Types
  */
 struct tEmailAddressDictionaryEntry
 {
-	static constexpr char NAME[] = "t:Entry";
+	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	explicit tEmailAddressDictionaryEntry(const std::string&, const Enum::EmailAddressKeyType&);
+	tEmailAddressDictionaryEntry(const std::string&, const Enum::EmailAddressKeyType&);
+	explicit tEmailAddressDictionaryEntry(const tinyxml2::XMLElement*);
 
 	std::string Entry;
 	Enum::EmailAddressKeyType Key; //Attribute
@@ -743,7 +750,8 @@ struct tPhoneNumberDictionaryEntry
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	explicit tPhoneNumberDictionaryEntry(std::string, Enum::PhoneNumberKeyType);
+	tPhoneNumberDictionaryEntry(std::string, Enum::PhoneNumberKeyType);
+	explicit tPhoneNumberDictionaryEntry(const tinyxml2::XMLElement*);
 
 	std::string Entry;
 	Enum::PhoneNumberKeyType Key; //Attribute
@@ -1040,8 +1048,8 @@ struct tIndexedFieldURI
 
 	using UIKey = std::pair<std::string, std::string>;
 	//Types.xsd:988
-	static std::array<std::pair<UIKey, uint32_t>, 28> tagMap;
-	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 4> nameMap;
+	static std::array<std::pair<UIKey, uint32_t>, 25> tagMap;
+	static std::array<std::pair<UIKey, std::pair<PROPERTY_NAME, uint16_t>>, 25> nameMap;
 };
 
 /**
@@ -1157,10 +1165,16 @@ struct tChangeDescription
 	static void convProp(const char*, const char*, const tinyxml2::XMLElement*, sShape&);
 
 	static void convBool(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convDate(uint32_t, const tinyxml2::XMLElement*, sShape&);
 	static void convText(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convText(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
 	template<typename ET, typename PT=uint32_t>
 	static void convEnumIndex(uint32_t,  const tinyxml2::XMLElement*, sShape&);
-	static void convCategories(const tinyxml2::XMLElement*, sShape&);
+	template<typename ET, typename PT=uint32_t>
+	static void convEnumIndex(const PROPERTY_NAME&,  const tinyxml2::XMLElement*, sShape&);
+	static void convStrArray(uint32_t, const tinyxml2::XMLElement*, sShape&);
+	static void convStrArray(const PROPERTY_NAME&, const tinyxml2::XMLElement*, sShape&);
+	static void convBody(const tinyxml2::XMLElement*, sShape&);
 
 	static std::array<const char*, 15> itemTypes;
 	static std::array<const char*, 5> folderTypes;
@@ -1884,6 +1898,7 @@ struct tCompleteName : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tCompleteName() = default;
+	explicit tCompleteName(const tinyxml2::XMLElement*);
 
 	std::optional<std::string> Title;
 	std::optional<std::string> FirstName;
@@ -1905,6 +1920,9 @@ struct tPhysicalAddressDictionaryEntry : public NS_EWS_Types
 	static constexpr char NAME[] = "Entry";
 
 	void serialize(tinyxml2::XMLElement*) const;
+
+	explicit inline tPhysicalAddressDictionaryEntry(Enum::PhysicalAddressKeyType pak) : Key(pak) {}
+	explicit tPhysicalAddressDictionaryEntry(const tinyxml2::XMLElement*);
 
 	Enum::PhysicalAddressKeyType Key; // Attribute
 
@@ -1930,7 +1948,7 @@ struct tContact : public tItem
 	void serialize(tinyxml2::XMLElement*) const;
 
 	std::optional<std::string> FileAs;
-	std::optional<Enum::FileAsMappingType> FileAsMapping;
+	//std::optional<Enum::FileAsMappingType> FileAsMapping;
 	std::optional<std::string> DisplayName;
 	std::optional<std::string> GivenName;
 	std::optional<std::string> Initials;
@@ -1943,23 +1961,23 @@ struct tContact : public tItem
 	std::optional<std::vector<tPhysicalAddressDictionaryEntry>> PhysicalAddresses;
 	std::optional<std::vector<tPhoneNumberDictionaryEntry>> PhoneNumbers;
 	std::optional<std::string> AssistantName;
-	// <xs:element name="Birthday" type="xs:dateTime" minOccurs="0" />
-	// <xs:element name="BusinessHomePage" type="xs:anyURI" minOccurs="0" />
-	// <xs:element name="Children" type="t:ArrayOfStringsType" minOccurs="0" />
+	std::optional<sTimePoint> Birthday;
+	std::optional<std::string> BusinessHomePage;
+	std::optional<std::vector<sString>> Children;
 	// <xs:element name="Companies" type="t:ArrayOfStringsType" minOccurs="0" />
 	std::optional<Enum::ContactSourceType> ContactSource;
 	std::optional<std::string> Department;
-	// <xs:element name="Generation" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Generation;
 	// <xs:element name="ImAddresses" type="t:ImAddressDictionaryType" minOccurs="0" />
 	std::optional<std::string> JobTitle;
-	// <xs:element name="Manager" type="xs:string" minOccurs="0" />
+	std::optional<std::string> Manager;
 	// <xs:element name="Mileage" type="xs:string" minOccurs="0" />
 	std::optional<std::string> OfficeLocation;
-	// <xs:element name="PostalAddressIndex" type="t:PhysicalAddressIndexType" minOccurs="0" />
+	std::optional<Enum::PhysicalAddressIndexType> PostalAddressIndex;
 	// <xs:element name="Profession" type="xs:string" minOccurs="0" />
-	// <xs:element name="SpouseName" type="xs:string" minOccurs="0" />
+	std::optional<std::string> SpouseName;
 	std::optional<std::string> Surname;
-	// <xs:element name="WeddingAnniversary" type="xs:dateTime" minOccurs="0" />
+	std::optional<sTimePoint> WeddingAnniversary;
 	// <xs:element name="HasPicture" type="xs:boolean" minOccurs="0" />
 	// <xs:element name="PhoneticFullName" type="xs:string" minOccurs="0" />
 	// <xs:element name="PhoneticFirstName" type="xs:string" minOccurs="0" />
@@ -2014,6 +2032,14 @@ struct tContact : public tItem
 	// <xs:element name="PartnerNetworkThumbnailPhotoUrl" type="xs:string" minOccurs="0" />
 	// <xs:element name="PersonId" type="xs:string" minOccurs="0" />
 	// <xs:element name="ConversationGuid" type="t:GuidType" minOccurs="0" />
+
+	static constexpr char addressTemplate[] = "{}{}{}{}{}{}{}{}{}"; // Street, city, state, postal code, country
+
+	static std::string mkAddress(const std::optional<std::string>&, const std::optional<std::string>&,
+	                             const std::optional<std::string>&, const std::optional<std::string>&,
+	                             const std::optional<std::string>&);
+
+	static void genFields(sShape&);
 };
 
 /**
