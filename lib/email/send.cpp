@@ -88,7 +88,7 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	vmime::mailboxList vrcpt_list;
 	for (const auto &r : rcpt_list)
 		vrcpt_list.appendMailbox(vmime::make_shared<vmime::mailbox>(r));
-	auto xprt = vmime::net::session::create()->getTransport(smtp_url);
+	auto xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
 	try {
 		/* vmime default timeout is 30s */
 		xprt->connect();
