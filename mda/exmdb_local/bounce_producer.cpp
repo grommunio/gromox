@@ -71,9 +71,6 @@ bool exml_bouncer_make(const char *from, const char *rcpt_to,
 	auto str = bounce_gen_subject(*pmail_original, mcharset.c_str());
 	if (HXformat_add(fa, "subject", str.c_str(), HXTYPE_STRING | immed) < 0)
 		return false;
-	str = bounce_gen_attachs(*pmail_original, mcharset.c_str());
-	if (HXformat_add(fa, "parts", str.c_str(), HXTYPE_STRING | immed) < 0)
-		return false;
 	auto mail_len = pmail_original->get_length();
 	if (mail_len < 0) {
 		mlog(LV_ERR, "exmdb_local: failed to get mail length");

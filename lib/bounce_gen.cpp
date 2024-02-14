@@ -162,18 +162,4 @@ std::string bounce_gen_rcpts(const tarray_set &rcpts)
 	return r;
 }
 
-std::string bounce_gen_attachs(const ATTACHMENT_LIST &at)
-{
-	std::string r;
-	for (size_t i = 0; i < at.count; ++i) {
-		auto str = at.pplist[i]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
-		if (str == nullptr)
-			continue;
-		if (!r.empty())
-			r += "; ";
-		r += str;
-	}
-	return r;
-}
-
 }

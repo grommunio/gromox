@@ -11,5 +11,4 @@ Subject: =?utf-8?b?5oqV6YGe5aSx5pWX77yM5rKS5pyJ6Laz5aSg55qE5qyK6ZmQ?=
     發件人地址：  %(from)
     收件人：      %(rcpts)
     郵件主題：    %(subject)
-    附件：        %(parts)
     郵件大小：    %(length)

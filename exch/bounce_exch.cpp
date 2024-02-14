@@ -82,10 +82,7 @@ static bool bounce_producer_make_content(buff_t gul,
 		return false;
 	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
 	if (HXformat_add(fa, "subject", subj != nullptr ? subj : "",
-	    HXTYPE_STRING) < 0 ||
-	    HXformat_add(fa, "parts",
-	    bounce_gen_attachs(*pbrief->children.pattachments).c_str(),
-	    HXTYPE_STRING | immed) < 0)
+	    HXTYPE_STRING) < 0)
 		return false;
 	HX_unit_size(date_buff, std::size(date_buff), *message_size, 1000, 0);
 	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)

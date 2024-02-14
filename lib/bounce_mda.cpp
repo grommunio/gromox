@@ -18,27 +18,6 @@ struct enum_parts {
 
 namespace gromox {
 
-static void bp_enum_parts(const MIME *mime, void *arg)
-{
-	auto &param = *static_cast<enum_parts *>(arg);
-	char rawname[256], u8name[512];
-
-	if (!mime->get_filename(rawname, std::size(rawname)) ||
-	    !mime_string_to_utf8(param.charset, rawname, u8name, std::size(u8name)))
-		return;
-	if (!param.result.empty())
-		param.result += "; ";
-	param.result += u8name;
-}
-
-std::string bounce_gen_attachs(const MAIL &m, const char *charset)
-{
-	std::string result;
-	enum_parts param{result, charset};
-	m.enum_mime(bp_enum_parts, &param);
-	return result;
-}
-
 std::string bounce_gen_thrindex(const MAIL &m) try
 {
 	auto h = m.get_head();

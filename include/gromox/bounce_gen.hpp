@@ -20,8 +20,6 @@ extern GX_EXPORT const bounce_template *bounce_gen_lookup(const char *cset, cons
 extern GX_EXPORT const char *bounce_gen_postmaster();
 
 extern GX_EXPORT std::string bounce_gen_rcpts(const tarray_set &);
-extern GX_EXPORT std::string bounce_gen_attachs(const attachment_list &);
-extern GX_EXPORT std::string bounce_gen_attachs(const MAIL &, const char *cset);
 extern GX_EXPORT std::string bounce_gen_thrindex(const MAIL &);
 extern GX_EXPORT std::string bounce_gen_charset(const MAIL &);
 extern GX_EXPORT std::string bounce_gen_subject(const MAIL &, const char *cset);

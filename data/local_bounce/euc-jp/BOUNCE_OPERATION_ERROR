@@ -10,5 +10,4 @@ Subject: =?utf-8?b?44K344K544OG44Og44Ko44Op44O844GM44GC44Gj44Gf44Gf44KB44CB44Oh4
     送信者：　　  %(from)
     宛先：　      %(rcpts)
     メール標題：  %(subject)
-    添付：        %(parts)
     サイズ：　    %(length)

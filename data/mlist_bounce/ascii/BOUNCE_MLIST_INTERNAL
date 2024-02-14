@@ -11,7 +11,6 @@ Below is the original mail information:
    From:    %(from)
    To:      %(rcpts)
    Subject: %(subject)
-   Parts:   %(parts)
    Length:  %(length)
 	
 	

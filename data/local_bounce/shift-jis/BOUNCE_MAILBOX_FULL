@@ -11,5 +11,4 @@ Subject: =?utf-8?b?5Y+X5L+h6ICF44Gu44Oh44O844Or44Oc44OD44Kv44K544GM5LiA5p2v44Gr4
     送信者：　　  %(from)
     宛先：　      %(rcpts)
     メール標題：  %(subject)
-    添付：        %(parts)
     サイズ：　    %(length)

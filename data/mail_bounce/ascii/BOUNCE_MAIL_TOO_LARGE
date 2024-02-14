@@ -9,5 +9,4 @@ Below is the original mail information:
    From:    %(from)
    To:      %(rcpt)
    Subject: %(subject)
-   Parts:   %(parts)
    Length:  %(length)
