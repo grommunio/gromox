@@ -364,16 +364,16 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_purge_softdelete &d)
 	return x.p_uint64(d.cutoff);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_check_folder_cycle &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_is_descendant_folder &d)
 {
-	TRY(x.g_uint64(&d.src_fid));
-	return x.g_uint64(&d.dst_fid);
+	TRY(x.g_uint64(&d.parent_fid));
+	return x.g_uint64(&d.child_fid);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_folder_cycle &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_is_descendant_folder &d)
 {
-	TRY(x.p_uint64(d.src_fid));
-	return x.p_uint64(d.dst_fid);
+	TRY(x.p_uint64(d.parent_fid));
+	return x.p_uint64(d.child_fid);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_copy_folder_internal &d)
@@ -2265,7 +2265,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(remove_folder_properties) \
 	E(delete_folder) \
 	E(empty_folder) \
-	E(check_folder_cycle) \
+	E(is_descendant_folder) \
 	E(copy_folder_internal) \
 	E(get_search_criteria) \
 	E(set_search_criteria) \
@@ -2719,14 +2719,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_empty_folder &d)
 	return x.p_bool(d.b_partial);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_check_folder_cycle &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_is_descendant_folder &d)
 {
-	return x.g_bool(&d.b_cycle);
+	return x.g_bool(&d.b_included);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_folder_cycle &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_is_descendant_folder &d)
 {
-	return x.p_bool(d.b_cycle);
+	return x.p_bool(d.b_included);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_copy_folder_internal &d)
@@ -3689,7 +3689,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(set_folder_properties) \
 	E(delete_folder) \
 	E(empty_folder) \
-	E(check_folder_cycle) \
+	E(is_descendant_folder) \
 	E(copy_folder_internal) \
 	E(get_search_criteria) \
 	E(set_search_criteria) \

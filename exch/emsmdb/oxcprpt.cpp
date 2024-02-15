@@ -789,7 +789,7 @@ ec_error_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 				return ecAccessDenied;
 		}
 		if (!pexcluded_proptags->has(PR_CONTAINER_HIERARCHY)) {
-			if (!exmdb_client::check_folder_cycle(plogon->get_dir(),
+			if (!exmdb_client::is_descendant_folder(plogon->get_dir(),
 			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)

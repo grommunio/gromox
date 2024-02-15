@@ -52,7 +52,7 @@ enum class exmdb_callid : uint8_t {
 	remove_folder_properties = 0x19,
 	delete_folder = 0x1a,
 	// empty_folder_v1 = 0x1b,
-	check_folder_cycle = 0x1c,
+	is_descendant_folder = 0x1c,
 	copy_folder_internal = 0x1d,
 	get_search_criteria = 0x1e,
 	set_search_criteria = 0x1f,
@@ -286,9 +286,8 @@ struct exreq_empty_folder final : public exreq {
 	uint32_t flags;
 };
 
-struct exreq_check_folder_cycle final : public exreq {
-	uint64_t src_fid;
-	uint64_t dst_fid;
+struct exreq_is_descendant_folder final : public exreq {
+	uint64_t parent_fid, child_fid;
 };
 
 struct exreq_copy_folder_internal final : public exreq {
@@ -962,8 +961,8 @@ struct exresp_empty_folder final : public exresp {
 	BOOL b_partial;
 };
 
-struct exresp_check_folder_cycle final : public exresp {
-	BOOL b_cycle;
+struct exresp_is_descendant_folder final : public exresp {
+	BOOL b_included;
 };
 
 struct exresp_copy_folder_internal final : public exresp {

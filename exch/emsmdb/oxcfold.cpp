@@ -562,7 +562,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::check_folder_cycle(dir, folder_id,
+	if (!exmdb_client::is_descendant_folder(dir, folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
@@ -659,7 +659,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::check_folder_cycle(dir, folder_id,
+	if (!exmdb_client::is_descendant_folder(dir, folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)

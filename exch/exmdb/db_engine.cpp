@@ -851,9 +851,9 @@ static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
 	if (!(pdynamic->search_flags & RECURSIVE_SEARCH))
 		return;
 
-	if (!common_util_check_descendant(pdb->psqlite,
+	if (!cu_is_descendant_folder(pdb->psqlite,
 	    id1, pdynamic->folder_ids.pll[i], &b_included) ||
-	    !common_util_check_descendant(pdb->psqlite,
+	    !cu_is_descendant_folder(pdb->psqlite,
 	    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
@@ -908,7 +908,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
 	char sql_string[128];
 
 	if (pdynamic->search_flags & RECURSIVE_SEARCH) {
-		if (!common_util_check_descendant(pdb->psqlite,
+		if (!cu_is_descendant_folder(pdb->psqlite,
 		    id1, pdynamic->folder_ids.pll[i], &b_included)) {
 			mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 			return;
@@ -2013,7 +2013,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (folder_id == ptable->folder_id ||
-			    !common_util_check_descendant(pdb->psqlite,
+			    !cu_is_descendant_folder(pdb->psqlite,
 			    folder_id, ptable->folder_id, &b_included) ||
 			    !b_included)
 				continue;
@@ -2746,7 +2746,7 @@ static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
 		if (ptable->type != table_type::hierarchy)
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
-			if (!common_util_check_descendant(pdb->psqlite,
+			if (!cu_is_descendant_folder(pdb->psqlite,
 			    parent_id, ptable->folder_id, &b_included) ||
 			    !b_included)
 				continue;
@@ -3452,7 +3452,7 @@ static void dbeng_notify_hiertbl_modify_row(DB_ITEM *pdb,
 			continue;
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (folder_id == ptable->folder_id ||
-			    !common_util_check_descendant(pdb->psqlite,
+			    !cu_is_descendant_folder(pdb->psqlite,
 			    folder_id, ptable->folder_id, &b_included) ||
 			    !b_included)
 				continue;

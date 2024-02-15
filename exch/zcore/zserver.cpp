@@ -2357,7 +2357,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 		}
 		return ecSuccess;
 	}
-	if (!exmdb_client::check_folder_cycle(src_store->get_dir(), folder_id,
+	if (!exmdb_client::is_descendant_folder(src_store->get_dir(), folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
@@ -3951,7 +3951,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		BOOL b_sub;
 		if (!pexclude_proptags->has(PR_CONTAINER_HIERARCHY)) {
-			if (!exmdb_client::check_folder_cycle(pstore->get_dir(),
+			if (!exmdb_client::is_descendant_folder(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)

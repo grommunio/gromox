@@ -1034,11 +1034,11 @@ static uint32_t common_util_get_folder_flags(
 	if (common_util_check_folder_rules(psqlite, folder_id))
 		folder_flags |= FOLDER_FLAGS_RULES;
 	if (exmdb_server::is_private()) {
-		if (common_util_check_descendant(psqlite, folder_id,
+		if (cu_is_descendant_folder(psqlite, folder_id,
 		    PRIVATE_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
 	} else {
-		if (common_util_check_descendant(psqlite, folder_id,
+		if (cu_is_descendant_folder(psqlite, folder_id,
 		    PUBLIC_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
 	}
@@ -3946,7 +3946,16 @@ BINARY* common_util_username_to_addressbook_entryid(
 	return pbin;
 }
 
-BOOL common_util_check_descendant(sqlite3 *psqlite,
+/**
+ * Test whether @child_fid is reachable from of @parent_fid by
+ * descending, and set *pb_included accordingly. (This is used higher
+ * up to deny impossible moves of an objects to an object's
+ * subordinate.)
+ *
+ * WARNING: Argument order is inverted compared to the
+ * is_descendant_folder EXRPC.
+ */
+BOOL cu_is_descendant_folder(sqlite3 *psqlite,
     uint64_t child_fid, uint64_t parent_fid, BOOL *pb_included)
 {
 	if (child_fid == parent_fid) {
