@@ -940,13 +940,14 @@ static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
 
 static BOOL instance_identify_attachments(ATTACHMENT_LIST *pattachments)
 {
-	uint32_t i;
+	uint32_t i = 0;
 	
 	for (auto &at : *pattachments) {
 		if (at.proplist.set(PR_ATTACH_NUM, &i) != 0)
 			return FALSE;	
 		if (at.pembedded != nullptr && !instance_identify_message(at.pembedded))
 			return FALSE;	
+		++i;
 	}
 	return TRUE;
 }
