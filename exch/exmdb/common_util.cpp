@@ -4857,7 +4857,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_check_folder_id(sqlite3 *psqlite,
+BOOL cu_is_folder_present(sqlite3 *psqlite,
 	uint64_t folder_id, BOOL *pb_exist)
 {
 	char sql_string[256];

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -189,17 +189,17 @@ BOOL exmdb_server::get_folder_class_table(
 	return TRUE;
 }
 
-BOOL exmdb_server::check_folder_id(const char *dir,
+BOOL exmdb_server::is_folder_present(const char *dir,
 	uint64_t folder_id, BOOL *pb_exist)
 {
 	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	return common_util_check_folder_id(pdb->psqlite,
+	return cu_is_folder_present(pdb->psqlite,
 	       rop_util_get_gc_value(folder_id), pb_exist);
 }
 
-BOOL exmdb_server::check_folder_deleted(const char *dir,
+BOOL exmdb_server::is_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
 	char sql_string[256];

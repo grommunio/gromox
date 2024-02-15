@@ -875,7 +875,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		       pmessage_id, hin, phout);
 	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::check_message(dir, folder_id, message_id, &b_exist))
+	if (!exmdb_client::is_msg_present(dir, folder_id, message_id, &b_exist))
 		return ecError;
 	BOOL b_new = !b_exist ? TRUE : false;
 	*pmessage_id = 0;
@@ -1087,7 +1087,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (static_cast<BINARY *>(phichyvals->ppropval[0].pvalue)->cb == 0) {
 		parent_type = pfolder->type;
 		parent_id1 = pfolder->folder_id;
-		if (!exmdb_client::check_folder_id(dir,
+		if (!exmdb_client::is_folder_present(dir,
 		    parent_id1, &b_exist))
 			return ecError;
 		if (!b_exist)
@@ -1142,7 +1142,7 @@ ec_error_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 	}
-	if (!exmdb_client::check_folder_id(dir, folder_id, &b_exist))
+	if (!exmdb_client::is_folder_present(dir, folder_id, &b_exist))
 		return ecError;
 	*pfolder_id = 0;
 	auto username = plogon->eff_user();
@@ -1367,10 +1367,10 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			if (!exmdb_client::check_message(dir,
+			if (!exmdb_client::is_msg_present(dir,
 			    folder_id, eid, &b_exist))
 				return ecError;
-		} else if (!exmdb_client::check_folder_id(dir,
+		} else if (!exmdb_client::is_folder_present(dir,
 		    eid, &b_exist)) {
 			return ecError;
 		}
@@ -1468,7 +1468,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	auto src_mid = rop_util_make_eid(1, xid_src.local_to_gc());
 	auto dst_mid = rop_util_make_eid(1, xid_dst.local_to_gc());
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::check_message(dir, src_fid, src_mid, &b_exist))
+	if (!exmdb_client::is_msg_present(dir, src_fid, src_mid, &b_exist))
 		return ecError;
 	/*
 	 * No client would normally try to move an entity they have not seen

@@ -179,22 +179,22 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_set_folder_by_class &d)
 	return x.p_str(d.str_class);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_check_folder_id &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_is_folder_present &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_folder_id &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_is_folder_present &d)
 {
 	return x.p_uint64(d.folder_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_check_folder_deleted &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_is_folder_deleted &d)
 {
 	return x.g_uint64(&d.folder_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_folder_deleted &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_is_folder_deleted &d)
 {
 	return x.p_uint64(d.folder_id);
 }
@@ -995,24 +995,24 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_restore_table_state &d)
 	return x.p_uint32(d.state_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_check_message &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_is_msg_present &d)
 {
 	TRY(x.g_uint64(&d.folder_id));
 	return x.g_uint64(&d.message_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_message &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_is_msg_present &d)
 {
 	TRY(x.p_uint64(d.folder_id));
 	return x.p_uint64(d.message_id);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_check_message_deleted &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_is_msg_deleted &d)
 {
 	return x.g_uint64(&d.message_id);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_message_deleted &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_is_msg_deleted &d)
 {
 	return x.p_uint64(d.message_id);
 }
@@ -2253,8 +2253,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(get_mbox_perm) \
 	E(get_folder_by_class) \
 	E(set_folder_by_class) \
-	E(check_folder_id) \
-	E(check_folder_deleted) \
+	E(is_folder_present) \
+	E(is_folder_deleted) \
 	E(get_folder_by_name) \
 	E(get_folder_perm) \
 	E(create_folder_v1) \
@@ -2293,8 +2293,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(collapse_table) \
 	E(store_table_state) \
 	E(restore_table_state) \
-	E(check_message) \
-	E(check_message_deleted) \
+	E(is_msg_present) \
+	E(is_msg_deleted) \
 	E(load_message_instance) \
 	E(load_embedded_instance) \
 	E(get_embedded_cn) \
@@ -2607,22 +2607,22 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_get_folder_class_table &
 	return x.p_tarray_set(d.table);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_check_folder_id &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_is_folder_present &d)
 {
 	return x.g_bool(&d.b_exist);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_folder_id &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_is_folder_present &d)
 {
 	return x.p_bool(d.b_exist);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_check_folder_deleted &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_is_folder_deleted &d)
 {
 	return x.g_bool(&d.b_del);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_folder_deleted &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_is_folder_deleted &d)
 {
 	return x.p_bool(d.b_del);
 }
@@ -3027,22 +3027,22 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_restore_table_state &d)
 	return x.p_int32(d.position);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_check_message &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_is_msg_present &d)
 {
 	return x.g_bool(&d.b_exist);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_message &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_is_msg_present &d)
 {
 	return x.p_bool(d.b_exist);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_check_message_deleted &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_is_msg_deleted &d)
 {
 	return x.g_bool(&d.b_del);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_message_deleted &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_is_msg_deleted &d)
 {
 	return x.p_bool(d.b_del);
 }
@@ -3678,8 +3678,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(get_folder_by_class) \
 	E(set_folder_by_class) \
 	E(get_folder_class_table) \
-	E(check_folder_id) \
-	E(check_folder_deleted) \
+	E(is_folder_present) \
+	E(is_folder_deleted) \
 	E(get_folder_by_name) \
 	E(get_folder_perm) \
 	E(create_folder_v1) \
@@ -3715,8 +3715,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(collapse_table) \
 	E(store_table_state) \
 	E(restore_table_state) \
-	E(check_message) \
-	E(check_message_deleted) \
+	E(is_msg_present) \
+	E(is_msg_deleted) \
 	E(load_message_instance) \
 	E(load_embedded_instance) \
 	E(get_embedded_cn) \

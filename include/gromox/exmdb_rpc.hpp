@@ -40,9 +40,9 @@ enum class exmdb_callid : uint8_t {
 	// get_folder_by_class (v1) = 0x0d,
 	set_folder_by_class = 0x0e,
 	get_folder_class_table = 0x0f,
-	check_folder_id = 0x10,
+	is_folder_present = 0x10,
 	// query_folder_messages = 0x11,
-	check_folder_deleted = 0x12,
+	is_folder_deleted = 0x12,
 	get_folder_by_name = 0x13,
 	get_folder_perm = 0x14,
 	create_folder_v1 = 0x15,
@@ -79,8 +79,8 @@ enum class exmdb_callid : uint8_t {
 	collapse_table = 0x34,
 	store_table_state = 0x35,
 	restore_table_state = 0x36,
-	check_message = 0x37,
-	check_message_deleted = 0x38,
+	is_msg_present = 0x37,
+	is_msg_deleted = 0x38,
 	load_message_instance = 0x39,
 	load_embedded_instance = 0x3a,
 	get_embedded_cn = 0x3b,
@@ -229,11 +229,11 @@ struct exreq_set_folder_by_class final : public exreq {
 	char *str_class;
 };
 
-struct exreq_check_folder_id final : public exreq {
+struct exreq_is_folder_present final : public exreq {
 	uint64_t folder_id;
 };
 
-struct exreq_check_folder_deleted final : public exreq {
+struct exreq_is_folder_deleted final : public exreq {
 	uint64_t folder_id;
 };
 
@@ -476,12 +476,12 @@ struct exreq_restore_table_state final : public exreq {
 	uint32_t state_id;
 };
 
-struct exreq_check_message final : public exreq {
+struct exreq_is_msg_present final : public exreq {
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
-struct exreq_check_message_deleted final : public exreq {
+struct exreq_is_msg_deleted final : public exreq {
 	uint64_t message_id;
 };
 
@@ -917,11 +917,11 @@ struct exresp_get_folder_class_table final : public exresp {
 	TARRAY_SET table;
 };
 
-struct exresp_check_folder_id final : public exresp {
+struct exresp_is_folder_present final : public exresp {
 	BOOL b_exist;
 };
 
-struct exresp_check_folder_deleted final : public exresp {
+struct exresp_is_folder_deleted final : public exresp {
 	BOOL b_del;
 };
 
@@ -1077,11 +1077,11 @@ struct exresp_restore_table_state final : public exresp {
 	int32_t position;
 };
 
-struct exresp_check_message final : public exresp {
+struct exresp_is_msg_present final : public exresp {
 	BOOL b_exist;
 };
 
-struct exresp_check_message_deleted final : public exresp {
+struct exresp_is_msg_deleted final : public exresp {
 	BOOL b_del;
 };
 
