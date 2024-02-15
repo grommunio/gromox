@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -3947,30 +3947,26 @@ BINARY* common_util_username_to_addressbook_entryid(
 }
 
 BOOL common_util_check_descendant(sqlite3 *psqlite,
-	uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included)
+    uint64_t child_fid, uint64_t parent_fid, BOOL *pb_included)
 {
-	uint64_t folder_id;
-	
-	if (inner_fid == outer_fid) {
+	if (child_fid == parent_fid) {
 		*pb_included = TRUE;
 		return TRUE;
 	}
-	folder_id = inner_fid;
-	auto b_private = exmdb_server::is_private();
+	auto root = exmdb_server::is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT;
 	auto pstmt = gx_sql_prep(psqlite, "SELECT parent_id"
 	             " FROM folders WHERE folder_id=?");
 	if (pstmt == nullptr)
 		return FALSE;
-	while (!((b_private && folder_id == PRIVATE_FID_ROOT) ||
-	    (!b_private && folder_id == PUBLIC_FID_ROOT))) {
-		sqlite3_bind_int64(pstmt, 1, folder_id);
+	while (child_fid != root) {
+		sqlite3_bind_int64(pstmt, 1, child_fid);
 		if (pstmt.step() != SQLITE_ROW) {
 			*pb_included = FALSE;
 			return TRUE;
 		}
-		folder_id = sqlite3_column_int64(pstmt, 0);
+		child_fid = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt);
-		if (folder_id == outer_fid) {
+		if (child_fid == parent_fid) {
 			*pb_included = TRUE;
 			return TRUE;
 		}
