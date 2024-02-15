@@ -3044,6 +3044,11 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		char maildir[256];
 		if (!common_util_get_maildir(eaddr.c_str(), maildir, std::size(maildir)))
 			continue;
+		if (*maildir == '\0') {
+			mlog(LV_ERR, "E-1740: copy from %s to delegate %s not possible: no homedir",
+				tmp_path1, eaddr.c_str());
+			continue;
+		}
 		auto mid_string = std::to_string(time(nullptr)) + "." +
 				  std::to_string(common_util_sequence_ID()) + "." +
 				  get_host_ID();
