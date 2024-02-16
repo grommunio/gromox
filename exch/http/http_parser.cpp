@@ -418,6 +418,8 @@ static const char *status_text(http_status s)
 
 std::string http_make_err_response(const http_context &ctx, http_status code)
 {
+	if (static_cast<int>(code) < 0)
+		code = static_cast<http_status>(-static_cast<int>(code));
 	auto msg = status_text(code);
 	if (static_cast<int>(code) >= 1000)
 		code = static_cast<http_status>(static_cast<int>(code) / 10);
