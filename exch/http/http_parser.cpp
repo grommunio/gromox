@@ -1725,7 +1725,9 @@ static tproc_status htparse_rdbody_nochan(http_context *pcontext)
 	}
 	if (pcontext->request.imethod != http_method::rpcin &&
 	    pcontext->request.imethod != http_method::rpcout) {
-		pcontext->log(LV_DEBUG, "I-1936: unrecognized HTTP method \"%s\"", pcontext->request.method);
+		pcontext->log(LV_DEBUG, "I-1936: No plugin felt responsible for rq \"%s %s\"",
+			pcontext->request.method,
+			pcontext->request.f_request_uri.c_str());
 		/* other http request here if wanted */
 		return http_done(pcontext, http_status::method_not_allowed);
 	}
