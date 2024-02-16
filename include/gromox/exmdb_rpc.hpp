@@ -99,7 +99,7 @@ enum class exmdb_callid : uint8_t {
 	get_instance_properties = 0x48,
 	set_instance_properties = 0x49,
 	remove_instance_properties = 0x4a,
-	check_instance_cycle = 0x4b,
+	is_descendant_instance = 0x4b,
 	empty_message_instance_rcpts = 0x4c,
 	get_message_instance_rcpts_num = 0x4d,
 	get_message_instance_rcpts_all_proptags = 0x4e,
@@ -572,9 +572,8 @@ struct exreq_remove_instance_properties final : public exreq {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct exreq_check_instance_cycle final : public exreq {
-	uint32_t src_instance_id;
-	uint32_t dst_instance_id;
+struct exreq_is_descendant_instance final : public exreq {
+	uint32_t parent_iid, child_iid;
 };
 
 struct exreq_empty_message_instance_rcpts final : public exreq {
@@ -1142,8 +1141,8 @@ struct exresp_remove_instance_properties final : public exresp {
 	PROBLEM_ARRAY problems;
 };
 
-struct exresp_check_instance_cycle final : public exresp {
-	BOOL b_cycle;
+struct exresp_is_descendant_instance final : public exresp {
+	BOOL b_included;
 };
 
 struct exresp_get_message_instance_rcpts_num final : public exresp {

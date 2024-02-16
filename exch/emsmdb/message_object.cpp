@@ -1221,7 +1221,7 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	MESSAGE_CONTENT msgctnt;
 	auto dstdir = plogon->get_dir();
 	
-	if (!exmdb_client::check_instance_cycle(dstdir,
+	if (!exmdb_client::is_descendant_instance(dstdir,
 	    pmessage_src->instance_id, pmessage->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)

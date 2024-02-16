@@ -1282,16 +1282,16 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_remove_instance_propertie
 	return x.p_proptag_a(*d.pproptags);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exreq_check_instance_cycle &d)
+static pack_result exmdb_pull(EXT_PULL &x, exreq_is_descendant_instance &d)
 {
-	TRY(x.g_uint32(&d.src_instance_id));
-	return x.g_uint32(&d.dst_instance_id);
+	TRY(x.g_uint32(&d.parent_iid));
+	return x.g_uint32(&d.child_iid);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exreq_check_instance_cycle &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exreq_is_descendant_instance &d)
 {
-	TRY(x.p_uint32(d.src_instance_id));
-	return x.p_uint32(d.dst_instance_id);
+	TRY(x.p_uint32(d.parent_iid));
+	return x.p_uint32(d.child_iid);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exreq_empty_message_instance_rcpts &d)
@@ -2313,7 +2313,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(get_instance_properties) \
 	E(set_instance_properties) \
 	E(remove_instance_properties) \
-	E(check_instance_cycle) \
+	E(is_descendant_instance) \
 	E(empty_message_instance_rcpts) \
 	E(get_message_instance_rcpts_num) \
 	E(get_message_instance_rcpts_all_proptags) \
@@ -3229,14 +3229,14 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_remove_instance_properti
 	return x.p_problem_a(d.problems);
 }
 
-static pack_result exmdb_pull(EXT_PULL &x, exresp_check_instance_cycle &d)
+static pack_result exmdb_pull(EXT_PULL &x, exresp_is_descendant_instance &d)
 {
-	return x.g_bool(&d.b_cycle);
+	return x.g_bool(&d.b_included);
 }
 
-static pack_result exmdb_push(EXT_PUSH &x, const exresp_check_instance_cycle &d)
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_is_descendant_instance &d)
 {
-	return x.p_bool(d.b_cycle);
+	return x.p_bool(d.b_included);
 }
 
 static pack_result exmdb_pull(EXT_PULL &x, exresp_get_message_instance_rcpts_num &d)
@@ -3732,7 +3732,7 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(get_instance_properties) \
 	E(set_instance_properties) \
 	E(remove_instance_properties) \
-	E(check_instance_cycle) \
+	E(is_descendant_instance) \
 	E(get_message_instance_rcpts_num) \
 	E(get_message_instance_rcpts_all_proptags) \
 	E(get_message_instance_rcpts) \

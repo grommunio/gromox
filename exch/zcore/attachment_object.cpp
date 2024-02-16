@@ -292,7 +292,7 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	*pb_cycle = false;
 	if (strcmp(pparent->pstore->get_dir(),
 	    pattachment_src->pparent->pstore->get_dir()) == 0 &&
-	    !exmdb_client::check_instance_cycle(pattachment->pparent->pstore->get_dir(),
+	    !exmdb_client::is_descendant_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)

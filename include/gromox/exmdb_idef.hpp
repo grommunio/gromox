@@ -80,7 +80,7 @@ EXMIDL(get_instance_all_proptags, (const char *dir, uint32_t instance_id, IDLOUT
 EXMIDL(get_instance_properties, (const char *dir, uint32_t size_limit, uint32_t instance_id, const PROPTAG_ARRAY *pproptags, IDLOUT TPROPVAL_ARRAY *propvals))
 EXMIDL(set_instance_properties, (const char *dir, uint32_t instance_id, const TPROPVAL_ARRAY *pproperties, IDLOUT PROBLEM_ARRAY *problems))
 EXMIDL(remove_instance_properties, (const char *dir, uint32_t instance_id, const PROPTAG_ARRAY *pproptags, IDLOUT PROBLEM_ARRAY *problems))
-EXMIDL(check_instance_cycle, (const char *dir, uint32_t src_instance_id, uint32_t dst_instance_id, IDLOUT BOOL *b_cycle))
+EXMIDL(is_descendant_instance, (const char *dir, uint32_t parent_iid, uint32_t child_iid, IDLOUT BOOL *b_included))
 EXMIDL(empty_message_instance_rcpts, (const char *dir, uint32_t instance_id))
 EXMIDL(get_message_instance_rcpts_num, (const char *dir, uint32_t instance_id, IDLOUT uint16_t *num))
 EXMIDL(get_message_instance_rcpts_all_proptags, (const char *dir, uint32_t instance_id, IDLOUT PROPTAG_ARRAY *proptags))
