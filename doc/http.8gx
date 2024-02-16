@@ -257,6 +257,8 @@ Example: \fI/usr/lib/squid/negotiate_wrapper_auth \-\-ntlm /usr/bin/ntlm_auth
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
 (C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
+.br
+Default: \fI4M\fP
 .TP
 \fBtls_min_proto\fP
 The lowest TLS version to offer. Possible values are: \fBtls1.0\fP,
