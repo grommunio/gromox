@@ -106,7 +106,7 @@ static constexpr cfg_directive http_cfg_defaults[] = {
 	{"http_log_level", "4" /* LV_NOTICE */},
 	{"http_old_php_handler", "0", CFG_BOOL},
 	{"http_rqbody_flush_size", "512K", CFG_SIZE, "0"},
-	{"http_rqbody_max_size", "4M", CFG_SIZE, "1"},
+	{"http_rqbody_max_size", "50M", CFG_SIZE, "1"},
 	{"http_support_ssl", "http_support_tls", CFG_ALIAS},
 	{"http_support_tls", "false", CFG_BOOL},
 	{"http_thread_charge_num", "20", CFG_SIZE, "4"},

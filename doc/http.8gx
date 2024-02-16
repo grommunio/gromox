@@ -214,7 +214,7 @@ Default: \fI512K\fP
 If the Content-Length of a HTTP request to a CGI endpoint is larger than this
 value, the request is rejected.
 .br
-Default: \fI4M\fP
+Default: \fI50M\fP
 .TP
 \fBhttp_support_tls\fP
 This flag controls whether (or not) the server offers TLS at all. The default
