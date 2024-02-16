@@ -1651,7 +1651,7 @@ static tproc_status htparse_rdbody_nochan2(http_context *pcontext)
 	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		mlog(LV_ERR, "E-1179: ENOMEM");
-		return http_done(pcontext, http_status::bad_request);
+		return http_done(pcontext, http_status::enomem_CL);
 	}
 	auto actual_read = htparse_readsock(pcontext, "EOB", pbuff, size);
 	auto current_time = tp_now();
