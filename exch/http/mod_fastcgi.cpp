@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <cerrno>
@@ -414,14 +414,19 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 	} else {
 		suffix[0] = '\0';
 	}
-	ptoken = strrchr(request_uri, '/');
-	if (NULL != ptoken) {
-		*ptoken = '\0';
-		gx_strlcpy(file_name, &ptoken[1], std::size(file_name));
+	if (phttp->request.imethod == http_method::options &&
+	    strcmp(request_uri, "*") == 0) {
+		gx_strlcpy(file_name, request_uri, std::size(file_name));
 	} else {
-		phttp->log(LV_DEBUG, "request uri format "
-					"error, missing slash for mod_fastcgi");
-		return http_status::bad_request;
+		ptoken = strrchr(request_uri, '/');
+		if (NULL != ptoken) {
+			*ptoken = '\0';
+			gx_strlcpy(file_name, &ptoken[1], std::size(file_name));
+		} else {
+			phttp->log(LV_DEBUG, "request uri format "
+						"error, missing slash for mod_fastcgi");
+			return http_status::bad_request;
+		}
 	}
 	auto pfnode = mod_fastcgi_find_backend(phttp->request.f_host.c_str(),
 	              request_uri, file_name, suffix, &b_index);
