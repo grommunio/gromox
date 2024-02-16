@@ -62,6 +62,7 @@ class GX_EXPORT tmpfile {
 
 class GX_EXPORT wrapfd {
 	public:
+	wrapfd() = default;
 	wrapfd(int z) : m_fd{z} {}
 	wrapfd(wrapfd &&) noexcept = delete;
 	~wrapfd() { close_rd(); }

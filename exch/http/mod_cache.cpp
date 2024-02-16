@@ -60,7 +60,7 @@ struct RANGE {
 
 struct cache_context {
 	std::shared_ptr<cache_item> pitem;
-	BOOL b_header = false;
+	bool b_header = false;
 	uint32_t offset = 0, until = 0;
 	ssize_t range_pos = -1;
 	std::vector<RANGE> range;
@@ -284,6 +284,8 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 		emit_206 ? "206 Partial Content\r\n" : "200 OK\r\n",
 		date_string, pcontext->until - pcontext->offset,
 		modified_string, etag);
+	if (phttp->request.imethod == http_method::options)
+		rsp += fmt::format("Accept: GET,POST,OPTIONS,HEAD\r\n");
 	if (pcontent_type != nullptr)
 		rsp += fmt::format("Content-Type: {}\r\n", pcontent_type);
 	if (emit_206)
@@ -452,64 +454,79 @@ http_status mod_cache_take_request(http_context *phttp)
 		return http_status::bad_request_CL;
 	}
 	suffix[0] = '\0';
-	ptoken = strrchr(request_uri, '/');
-	if (NULL == ptoken) {
-		phttp->log(LV_DEBUG, "request uri "
-			"format error, missing slash for mod_cache");
-		return http_status::bad_request_CL;
-	}
-	ptoken ++;
-	ptoken = strrchr(ptoken, '.');
-	if (NULL != ptoken) {
-		ptoken ++;
-		if (strlen(ptoken) < 16)
-			strcpy(suffix, ptoken);
-	}
-	auto it = std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
-	          [&](const auto &e) {
-	            return wildcard_match(phttp->request.f_host.c_str(), e.domain.c_str(), TRUE) != 0 &&
-	                   strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
-	          });
-	if (it == g_directory_list.cend())
-		return http_status::none;
-	snprintf(tmp_path, std::size(tmp_path), "%s%s", it->dir.c_str(),
-	         request_uri + it->path.size());
-	wrapfd fd = open(tmp_path, O_RDONLY);
-	if (fd.get() < 0)
-		return errno == ENOENT || errno == ENOTDIR ? http_status::not_found :
-		       errno == EACCES || errno == EISDIR ? http_status::forbidden :
-		       http_status::service_unavailable;
-	if (phttp->request.imethod == http_method::head ||
-	    phttp->request.imethod == http_method::get ||
-	    phttp->request.imethod == http_method::post)
-		/* ok */;
-	else if (phttp->request.imethod == http_method::put ||
-	    phttp->request.imethod == http_method::patch ||
-	    phttp->request.imethod == http_method::xdelete)
-		return http_status::forbidden;
-	else
-		return http_status::not_impl;
-	if (fstat(fd.get(), &node_stat) != 0)
-		return http_status::server_error;
-	if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
-		return http_status::server_error;
-	else if (!S_ISREG(node_stat.st_mode))
-		return http_status::forbidden;
-	static_assert(UINT32_MAX <= SIZE_MAX);
-	struct stat sb;
-	auto val = mod_cache_get_others_field(phttp->request.f_others, "If-None-Match");
-	if (val != nullptr && mod_cache_retrieve_etag(val, sb)) {
-		if (stat4_eq(sb, node_stat))
-			return http_status::not_modified;
-	} else if ((val = mod_cache_get_others_field(phttp->request.f_others, "If-Modified-Since")) != nullptr &&
-	    mod_cache_parse_rfc1123_dstring(val, &sb.st_mtime)) {
-		if (sb.st_mtime == node_stat.st_mtime)
-			return http_status::not_modified;
-	}
+	wrapfd fd;
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
+	bool opstar = phttp->request.imethod == http_method::options &&
+	              strcmp(request_uri, "*") == 0;
+	if (!opstar) {
+		ptoken = strrchr(request_uri, '/');
+		if (NULL == ptoken) {
+			phttp->log(LV_DEBUG, "request uri "
+				"format error, missing slash for mod_cache");
+			return http_status::bad_request_CL;
+		}
+		ptoken ++;
+		ptoken = strrchr(ptoken, '.');
+		if (NULL != ptoken) {
+			ptoken ++;
+			if (strlen(ptoken) < 16)
+				strcpy(suffix, ptoken);
+		}
+		auto it = std::find_if(g_directory_list.cbegin(), g_directory_list.cend(),
+		          [&](const auto &e) {
+		          	return wildcard_match(phttp->request.f_host.c_str(), e.domain.c_str(), TRUE) != 0 &&
+		          	       strncasecmp(request_uri, e.path.c_str(), e.path.size()) == 0;
+		          });
+		if (it == g_directory_list.cend())
+			return http_status::none;
+		snprintf(tmp_path, std::size(tmp_path), "%s%s", it->dir.c_str(),
+			 request_uri + it->path.size());
+		fd = wrapfd(open(tmp_path, O_RDONLY));
+		if (fd.get() < 0)
+			return errno == ENOENT || errno == ENOTDIR ? http_status::not_found :
+			       errno == EACCES || errno == EISDIR ? http_status::forbidden :
+			       http_status::service_unavailable;
+		if (fstat(fd.get(), &node_stat) != 0)
+			return http_status::server_error;
+		else if (!S_ISREG(node_stat.st_mode))
+			return http_status::forbidden;
+		else if (static_cast<unsigned long long>(node_stat.st_size) >= UINT32_MAX)
+			return http_status::server_error;
+		static_assert(UINT32_MAX <= SIZE_MAX);
+	}
+	switch (phttp->request.imethod) {
+	case http_method::options:
+		/* Never output bodies with OPTIONS */
+		fd = wrapfd(open("/dev/null", O_RDONLY));
+		if (fd.get() < 0)
+			return http_status::service_unavailable;
+		break;
+	case http_method::head:
+	case http_method::get:
+	case http_method::post:
+		break;
+	case http_method::put:
+	case http_method::patch:
+	case http_method::xdelete:
+		return http_status::forbidden;
+	default:
+		return http_status::not_impl;
+	}
+	if (!opstar) {
+		struct stat sb;
+		auto val = mod_cache_get_others_field(phttp->request.f_others, "If-None-Match");
+		if (val != nullptr && mod_cache_retrieve_etag(val, sb)) {
+			if (stat4_eq(sb, node_stat))
+				return http_status::not_modified;
+		} else if ((val = mod_cache_get_others_field(phttp->request.f_others, "If-Modified-Since")) != nullptr &&
+		    mod_cache_parse_rfc1123_dstring(val, &sb.st_mtime)) {
+			if (sb.st_mtime == node_stat.st_mtime)
+				return http_status::not_modified;
+		}
+	}
 	phttp->request.posted_size = 0;
-	val = mod_cache_get_others_field(phttp->request.f_others, "Range");
+	auto val = mod_cache_get_others_field(phttp->request.f_others, "Range");
 	if (val != nullptr) {
 		gx_strlcpy(tmp_buff, val, std::size(tmp_buff));
 		auto status = mod_cache_parse_range_value(tmp_buff,
@@ -526,9 +543,9 @@ http_status mod_cache_take_request(http_context *phttp)
 		auto pitem = iter->second;
 		if (!stat4_eq(pitem->sb, node_stat)) {
 			g_cache_hash.erase(iter);
-		} else if (node_stat.st_size == 0) {
-			/* nothing - pitem->blk is already nullptr */
 		} else {
+			if (pitem->mblk != nullptr)
+				printf("already mapped\n");
 			pitem->mblk = mmap(nullptr, node_stat.st_size,
 			              PROT_READ, MAP_SHARED, fd.get(), 0);
 			if (pitem->mblk == MAP_FAILED) {
@@ -587,7 +604,7 @@ BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp)
 	CACHE_CONTEXT *pcontext;
 	
 	pcontext = mod_cache_get_cache_context(phttp);
-	return pcontext->b_header;
+	return pcontext->b_header ? TRUE : false;
 }
 
 BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
@@ -610,7 +627,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 		}
-		pcontext->b_header = TRUE;
+		pcontext->b_header = true;
 		if (phttp->request.imethod == http_method::head) {
 			mod_cache_put_context(phttp);
 			return FALSE;
