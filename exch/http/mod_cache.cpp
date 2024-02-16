@@ -380,7 +380,7 @@ static http_status mod_cache_parse_range_value(char *value,
 	value += 5;
 	HX_strltrim(value);
 	if (*value != '=')
-		return http_status::bad_request;
+		return http_status::bad_request_CL;
 	value ++;
 	HX_strltrim(value);
 	auto val_len = strlen(value);
@@ -457,14 +457,14 @@ http_status mod_cache_take_request(http_context *phttp)
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 				" uri format error for mod_cache");
-		return http_status::bad_request;
+		return http_status::bad_request_CL;
 	}
 	suffix[0] = '\0';
 	ptoken = strrchr(request_uri, '/');
 	if (NULL == ptoken) {
 		phttp->log(LV_DEBUG, "request uri "
 			"format error, missing slash for mod_cache");
-		return http_status::bad_request;
+		return http_status::bad_request_CL;
 	}
 	ptoken ++;
 	ptoken = strrchr(ptoken, '.');

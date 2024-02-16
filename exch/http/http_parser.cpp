@@ -1108,7 +1108,7 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	if (0 == tmp_len || tmp_len >= 1024) {
 		pcontext->log(LV_DEBUG,
 			"I-1926: rpcproxy request method error");
-		return http_done(pcontext, http_status::bad_request);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	char tmp_buff[2048];
 	gx_strlcpy(tmp_buff, pcontext->request.f_request_uri.c_str(), std::size(tmp_buff));
@@ -1121,19 +1121,19 @@ static tproc_status htp_delegate_rpc(http_context *pcontext,
 	} else {
 		pcontext->log(LV_DEBUG,
 			"I-1928: rpcproxy request method error");
-		return http_done(pcontext, http_status::bad_request);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	auto ptoken1 = strchr(tmp_buff, ':');
 	if (NULL == ptoken1) {
 		pcontext->log(LV_DEBUG,
 			"I-1929: rpcproxy request method error");
-		return http_done(pcontext, http_status::bad_request);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	*ptoken1 = '\0';
 	if (ptoken1 - ptoken > 128) {
 		pcontext->log(LV_DEBUG,
 			"I-1930: rpcproxy request method error");
-		return http_done(pcontext, http_status::bad_request);
+		return http_done(pcontext, http_status::bad_request_CL);
 	}
 	ptoken1++;
 	gx_strlcpy(pcontext->host, ptoken, std::size(pcontext->host));

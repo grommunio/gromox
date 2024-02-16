@@ -393,7 +393,7 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 	if (!parse_uri(phttp->request.f_request_uri.c_str(), request_uri)) {
 		phttp->log(LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
-		return http_status::bad_request;
+		return http_status::bad_request_CL;
 	}
 	ptoken = strrchr(request_uri, '?');
 	if (ptoken != nullptr)
@@ -425,7 +425,7 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 		} else {
 			phttp->log(LV_DEBUG, "request uri format "
 						"error, missing slash for mod_fastcgi");
-			return http_status::bad_request;
+			return http_status::bad_request_CL;
 		}
 	}
 	auto pfnode = mod_fastcgi_find_backend(phttp->request.f_host.c_str(),
@@ -440,7 +440,7 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 		phttp->log(LV_INFO, "rejected because Content-Length too large "
 			"(%zu > %zu; http.cfg:http_rqbody_max_size)",
 			rq.content_len, g_rqbody_max_size);
-		return http_status::bad_request;
+		return http_status::bad_request_CL;
 	}
 	auto pcontext = &g_context_list[phttp->context_id];
 	pcontext->last_time = tp_now();
