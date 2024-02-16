@@ -1,10 +1,12 @@
-Development 2.24.26
+Development 2.24.30
 ===================
 
 Fixes:
 
 * mkpublic: newly created public stores lacked a ``replguidmap`` table
 * exmdb: repair initialization of PR_ATTACH_NUM when instances are opened
+* oxcmail: strip leftover right angled bracket from Content-ID on
+  oxcmail_import
 
 
 Gromox 2.24 (2024-02-10)

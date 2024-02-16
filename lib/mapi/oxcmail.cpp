@@ -1413,7 +1413,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 			char rw[MIME_FIELD_LEN];
 			if (field[0] == '<' && field[tmp_int32-1] == '>') {
 				snprintf(rw, std::size(rw), "%.*s",
-				         static_cast<int>(tmp_int32 - 1), &field[1]);
+				         static_cast<int>(tmp_int32 - 2), &field[1]);
 				field = rw;
 			}
 			uint32_t tag = oxcmail_is_ascii(field) ?
