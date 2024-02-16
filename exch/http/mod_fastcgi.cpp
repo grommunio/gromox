@@ -437,8 +437,9 @@ http_status mod_fastcgi_take_request(http_context *phttp)
 		phttp->request.f_request_uri.c_str(),
 		phttp->request.f_host.c_str(), pfnode->sock_path.c_str());
 	if (rq.content_len > g_rqbody_max_size) {
-		phttp->log(LV_DEBUG, "content-length"
-			" is too long for mod_fastcgi");
+		phttp->log(LV_INFO, "rejected because Content-Length too large "
+			"(%zu > %zu; http.cfg:http_rqbody_max_size)",
+			rq.content_len, g_rqbody_max_size);
 		return http_status::bad_request;
 	}
 	auto pcontext = &g_context_list[phttp->context_id];

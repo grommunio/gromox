@@ -285,8 +285,9 @@ http_status hpm_processor_take_request(http_context *phttp)
 		if (!pplugin->interface.preproc(phttp->context_id))
 			continue;
 		if (rq.content_len > g_rqbody_max_size) {
-			phttp->log(LV_DEBUG, "content-length"
-				" is too long for hpm_processor");
+			phttp->log(LV_INFO, "rejected because Content-Length too large "
+				"(%zu > %zu; http.cfg:http_rqbody_max_size)",
+				rq.content_len, g_rqbody_max_size);
 			return http_status::bad_request;
 		}
 		if (rq.b_chunked || rq.content_len > g_rqbody_flush_size) {
