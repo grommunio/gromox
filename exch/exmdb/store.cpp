@@ -412,10 +412,8 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 
 static BOOL table_check_address_in_contact_folder(
 	sqlite3_stmt *pstmt_subfolder, sqlite3_stmt *pstmt_search,
-	uint64_t folder_id, const char *paddress, BOOL *pb_found)
+	uint64_t folder_id, const char *paddress, BOOL *pb_found) try
 {
-	DOUBLE_LIST folder_list;
-	
 	sqlite3_reset(pstmt_search);
 	sqlite3_bind_int64(pstmt_search, 1, folder_id);
 	sqlite3_bind_text(pstmt_search, 2, paddress, -1, SQLITE_STATIC);
@@ -423,31 +421,23 @@ static BOOL table_check_address_in_contact_folder(
 		*pb_found = TRUE;
 		return TRUE;
 	}
-	double_list_init(&folder_list);
+	std::vector<uint64_t> folder_list;
 	sqlite3_reset(pstmt_subfolder);
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
-	while (gx_sql_step(pstmt_subfolder) == SQLITE_ROW) {
-		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-		if (pnode == nullptr)
-			return FALSE;
-		auto uv = cu_alloc<uint64_t>();
-		pnode->pdata = uv;
-		if (pnode->pdata == nullptr)
-			return FALSE;
-		*uv = sqlite3_column_int64(pstmt_subfolder, 0);
-		double_list_append_as_tail(&folder_list, pnode);
-	}
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&folder_list)) != nullptr) {
+	while (gx_sql_step(pstmt_subfolder) == SQLITE_ROW)
+		folder_list.push_back(sqlite3_column_int64(pstmt_subfolder, 0));
+	for (auto fid : folder_list) {
 		if (!table_check_address_in_contact_folder(pstmt_subfolder,
-		    pstmt_search, *static_cast<uint64_t *>(pnode->pdata),
-		    paddress, pb_found))
+		    pstmt_search, fid, paddress, pb_found))
 			return FALSE;	
 		if (*pb_found)
 			return TRUE;
 	}
 	*pb_found = FALSE;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1727: ENOMEM");
+	return false;
 }
 
 BOOL exmdb_server::check_contact_address(const char *dir,
