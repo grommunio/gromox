@@ -788,7 +788,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecError;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (username != STORE_OWNER_GRANTED) {
-			if (!exmdb_client::check_message_owner(dir,
+			if (!exmdb_client::is_message_owner(dir,
 			    pmessage_ids->pll[i], username, &b_owner))
 				return ecError;
 			if (!b_owner) {

@@ -15,7 +15,7 @@ extern BOOL get_named_propname(const char *dir, uint16_t propid, PROPERTY_NAME *
 extern BOOL get_store_property(const char *dir, cpid_t, uint32_t proptag, void **ppval);
 extern BOOL get_folder_property(const char *dir, cpid_t, uint64_t folder_id, uint32_t proptag, void **ppval);
 extern BOOL delete_message(const char *dir, int account_id, cpid_t, uint64_t folder_id, uint64_t msg_id, BOOL b_hard, BOOL *pb_done);
-extern BOOL check_message_owner(const char *dir, uint64_t msg_id, const char *username, BOOL *pb_owner);
+extern BOOL is_message_owner(const char *dir, uint64_t msg_id, const char *username, BOOL *pb_owner);
 extern BOOL get_instance_property(const char *dir, uint32_t instance_id, uint32_t proptag, void **ppval);
 extern BOOL set_instance_property(const char *dir, uint32_t instance_id, const TAGGED_PROPVAL *, uint32_t *presult);
 extern BOOL remove_instance_property(const char *dir, uint32_t instance_id, uint32_t proptag, uint32_t *presult);

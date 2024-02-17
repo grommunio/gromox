@@ -412,7 +412,7 @@ ec_error_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids
 			return ecError;
 		if (!(permission & (frightsReadAny | frightsOwner))) {
 			for (size_t i = 0; i < pmessage_ids->count; ++i) {
-				if (!exmdb_client::check_message_owner(plogon->get_dir(),
+				if (!exmdb_client::is_message_owner(plogon->get_dir(),
 				    pmessage_ids->pll[i], username, &b_owner))
 					return ecError;
 				if (!b_owner)
@@ -895,7 +895,7 @@ ec_error_t rop_syncimportmessagechange(uint8_t import_flags,
 		} else if (permission & frightsOwner) {
 			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ|MAPI_ACCESS_DELETE;
 		} else {
-			if (!exmdb_client::check_message_owner(dir,
+			if (!exmdb_client::is_message_owner(dir,
 			    message_id, username, &b_owner))
 				return ecError;
 			if (b_owner || (permission & frightsReadAny))
@@ -1013,7 +1013,7 @@ ec_error_t rop_syncimportreadstatechanges(uint16_t count,
 			continue;
 		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (eff_user != STORE_OWNER_GRANTED) {
-			if (!exmdb_client::check_message_owner(dir,
+			if (!exmdb_client::is_message_owner(dir,
 			    message_id, eff_user, &b_owner))
 				return ecError;
 			if (!b_owner)
@@ -1378,7 +1378,7 @@ ec_error_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 			continue;
 		if (username != STORE_OWNER_GRANTED) {
 			if (SYNC_TYPE_CONTENTS == sync_type) {
-				if (!exmdb_client::check_message_owner(dir,
+				if (!exmdb_client::is_message_owner(dir,
 				    eid, username, &b_owner))
 					return ecError;
 				if (!b_owner)
@@ -1487,7 +1487,7 @@ ec_error_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		if (permission & frightsDeleteAny) {
 			/* do nothing */
 		} else if (permission & frightsDeleteOwned) {
-			if (!exmdb_client::check_message_owner(dir,
+			if (!exmdb_client::is_message_owner(dir,
 			    src_mid, rpc_info.username, &b_owner))
 				return ecError;
 			if (!b_owner)

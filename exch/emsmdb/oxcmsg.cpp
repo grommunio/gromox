@@ -88,7 +88,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client::check_message_owner(plogon->get_dir(), message_id,
+	if (!exmdb_client::is_message_owner(plogon->get_dir(), message_id,
 	    rpc_user, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
