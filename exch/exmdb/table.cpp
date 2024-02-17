@@ -37,8 +37,7 @@ using namespace gromox;
 
 namespace {
 
-struct CONDITION_NODE {
-	DOUBLE_LIST_NODE node;
+struct condition_node {
 	uint32_t proptag;
 	void *pvalue;
 };
@@ -300,16 +299,14 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	return TRUE;
 }
 
-static void table_condition_list_to_where_clause(
-	DOUBLE_LIST *pcondition_list, char *where_clause, int length)
+static void table_cond_to_where(const std::vector<condition_node> &list,
+    char *where_clause, int length)
 {
 	int offset;
-	DOUBLE_LIST_NODE *pnode;
 	
 	offset = 0;
-	for (pnode=double_list_get_head(pcondition_list); NULL!=pnode;
-		pnode=double_list_get_after(pcondition_list, pnode)) {
-		auto pcnode = static_cast<const CONDITION_NODE *>(pnode->pdata);
+	for (const auto &cnode : list) {
+		auto pcnode = &cnode;
 		if (offset == 0)
 			offset = gx_snprintf(where_clause, length, "WHERE ");
 		else
@@ -328,11 +325,10 @@ static void table_condition_list_to_where_clause(
 
 static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
-	DOUBLE_LIST *pcondition_list, sqlite3_stmt *pstmt_insert,
+    std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
 	uint32_t *pheader_id, sqlite3_stmt *pstmt_update,
-	uint32_t *punread_count)
+    uint32_t *punread_count) try
 {
-	int i;
 	int sql_len;
 	void *pvalue;
 	uint16_t type;
@@ -346,15 +342,12 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	char sql_string[1024];
 	uint32_t unread_count;
 	char where_clause[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONDITION_NODE tmp_cnode;
 	
 	int64_t prev_id = -parent_id;
-	table_condition_list_to_where_clause(pcondition_list,
-					where_clause, sizeof(where_clause));
+	table_cond_to_where(cond_list, where_clause, sizeof(where_clause));
 	if (depth == psorts->ccategories) {
 		multi_index = -1;
-		for (i = 0; i < psorts->count; ++i) {
+		for (unsigned int i = 0; i < psorts->count; ++i) {
 			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
 				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 				multi_index = i;
@@ -370,7 +363,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			          "SELECT message_id, read_state, inst_num"
 			          " FROM stbl %s", where_clause);
 		b_orderby = FALSE;
-		for (i=psorts->ccategories; i<psorts->count; i++) {
+		for (unsigned int i = psorts->ccategories; i < psorts->count; ++i) {
 			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (TABLE_SORT_MAXIMUM_CATEGORY ==
 				psorts->psort[i].table_sort ||
@@ -397,16 +390,18 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		if (pstmt == nullptr)
 			return FALSE;
 		bind_index = 1;
-		for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
-			pnode=double_list_get_after(pcondition_list, pnode),i++) {
-			if (static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue == nullptr)
+		size_t i = 0;
+		for (const auto &cond : cond_list) {
+			if (cond.pvalue == nullptr) {
+				++i;
 				continue;
+			}
 			type = psorts->psort[i].type & ~MVI_FLAG;
 			if (!common_util_bind_sqlite_statement(pstmt,
-			    bind_index, type,
-			    static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue))
+			    bind_index, type, cond.pvalue))
 				return FALSE;
 			bind_index++;
+			++i;
 		}
 		while (pstmt.step() == SQLITE_ROW) {
 			if (psorts->ccategories <= 0) {
@@ -485,18 +480,20 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	bind_index = 1;
-	for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
-		pnode=double_list_get_after(pcondition_list, pnode),i++) {
-		if (static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue == nullptr)
+	size_t i = 0;
+	for (const auto &cond : cond_list) {
+		if (cond.pvalue == nullptr) {
+			++i;
 			continue;
+		}
 		type = psorts->psort[i].type & ~MVI_FLAG;
 		if (!common_util_bind_sqlite_statement(pstmt, bind_index, type,
-		    static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue))
+		    cond.pvalue))
 			return FALSE;
 		bind_index++;
+		++i;
 	}
-	tmp_cnode.node.pdata = &tmp_cnode;
-	double_list_append_as_tail(pcondition_list, &tmp_cnode.node);
+	auto &tmp_cnode = cond_list.emplace_back();
 	while (pstmt.step() == SQLITE_ROW) {
 		(*pheader_id) ++;
 		header_id = *pheader_id | 0x100000000000000ULL;
@@ -531,7 +528,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		unread_count = 0;
 		tmp_cnode.pvalue = pvalue;
 		if (!table_load_content(pdb, psqlite, psorts,
-		    depth + 1, prev_id, pcondition_list, pstmt_insert,
+		    depth + 1, prev_id, cond_list, pstmt_insert,
 		    pheader_id, pstmt_update, &unread_count))
 			return FALSE;
 		sqlite3_bind_int64(pstmt_update, 1, unread_count);
@@ -541,8 +538,11 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		sqlite3_reset(pstmt_update);
 		*punread_count += unread_count;
 	}
-	double_list_remove(pcondition_list, &tmp_cnode.node);
+	cond_list.pop_back();
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1727: ENOMEM");
+	return false;
 }
 
 static inline const BINARY *get_conv_id(const RESTRICTION *x)
@@ -982,12 +982,10 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		DOUBLE_LIST value_list;
-		double_list_init(&value_list);
+		std::vector<condition_node> cond_list;
 		uint32_t unread_count = 0;
-		if (!table_load_content(pdb,
-		    psqlite, psorts, 0, 0, &value_list, pstmt,
-		    &ptnode->header_id, pstmt1, &unread_count))
+		if (!table_load_content(pdb, psqlite, psorts, 0, 0, cond_list,
+		    pstmt, &ptnode->header_id, pstmt1, &unread_count))
 			return false;
 		pstmt.finalize();
 		pstmt1.finalize();
