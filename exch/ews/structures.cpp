@@ -3053,6 +3053,7 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"item:IsResend", sShape::MessageFlags},
 	{"item:IsSubmitted", sShape::MessageFlags},
 	{"item:IsUnmodified", sShape::MessageFlags},
+	{"item:MimeContent", sShape::MimeContent},
 	{"message:BccRecipients", sShape::BccRecipients},
 	{"message:CcRecipients", sShape::CcRecipients},
 	{"message:ToRecipients", sShape::ToRecipients},

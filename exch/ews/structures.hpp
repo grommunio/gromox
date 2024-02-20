@@ -937,7 +937,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 15> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 16> specialMap; ///< Mapping for special properties
 };
 
 /**
