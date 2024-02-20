@@ -3320,7 +3320,7 @@ std::vector<tInternetMessageHeader> tInternetMessageHeader::parse(std::string_vi
 			result.back().content.append(" ").append(trim(line));
 		else if((sep = line.find(':')) == std::string_view::npos)
 			continue;
-		else if(sep && line.size() > sep+1)
+		else if(sep && line.size() > sep+1 && line.substr(0, sep) != "From")
 			result.emplace_back(line.substr(0, sep), trim(line.substr(sep+1)));
 	}
 	return result;
