@@ -1224,7 +1224,6 @@ static bool xp_is_in_charge(const TPROPVAL_ARRAY &props)
 static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
     std::vector<std::string> &list, bool resend) try
 {
-	char username[UADDR_SIZE];
 	if (resend && !mapi_p1(props))
 		return ecSuccess;
 	/*
@@ -1252,7 +1251,7 @@ static ec_error_t cu_rcpt_to_list(eid_t message_id, const TPROPVAL_ARRAY &props,
 	auto ret = cvt_entryid_to_smtpaddr(props.get<const BINARY>(PR_ENTRYID),
 	           g_org_name, cu_id2user, es_result);
 	if (ret == ecSuccess)
-		list.emplace_back(username);
+		list.emplace_back(std::move(es_result));
 	return ret == ecNullObject || ret == ecUnknownUser ? ecInvalidRecips : ret;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1122: ENOMEM");
