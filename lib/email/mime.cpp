@@ -796,7 +796,7 @@ bool MIME::serialize(STREAM *pstream) const
 	pstream->write(pmime->boundary_string, pmime->boundary_len);
 	pstream->write("--", 2);
 	if (NULL == pmime->last_boundary) {
-		pstream->write("\r\n\r\n", 4);
+		pstream->write("\r\n", 2);
 		return true;
 	}
 	tmp_len = pmime->content_length -
@@ -1230,8 +1230,8 @@ bool MIME::emit(write_func write, void *fd) const
 	memcpy(tmp_buff + len, "--", 2);
 	len += 2;
 	if (NULL == pmime->last_boundary) {
-		memcpy(tmp_buff + len, "\r\n\r\n", 4);
-		len += 4;
+		memcpy(tmp_buff + len, "\r\n", 2);
+		len += 2;
 	} else {
 		tmp_len = pmime->content_length -
 		          (pmime->last_boundary - pmime->content_begin);
@@ -1325,7 +1325,7 @@ ssize_t MIME::get_length() const
 		mime_len += pmime->boundary_len + 6;
 	mime_len += pmime->boundary_len + 4;
 	if (NULL == pmime->last_boundary) {
-		mime_len += 4;
+		mime_len += 2;
 	} else {
 		auto tmp_len = pmime->content_length - (pmime->last_boundary -
 		               pmime->content_begin);

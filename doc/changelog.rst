@@ -1,4 +1,4 @@
-Development 2.24.30
+Development 2.24.38
 ===================
 
 Fixes:
@@ -7,6 +7,12 @@ Fixes:
 * exmdb: repair initialization of PR_ATTACH_NUM when instances are opened
 * oxcmail: strip leftover right angled bracket from Content-ID on
   oxcmail_import
+
+Changes:
+
+* oxcmail: export no longer generates a MIME epilogue, which should
+  workaround Outlook's broken S/MIME validator which fails to include
+  epilogues in the signature verification.
 
 
 Gromox 2.24 (2024-02-10)
