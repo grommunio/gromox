@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -256,14 +257,12 @@ static BOOL mod_cache_parse_rfc1123_dstring(
 	return TRUE;
 }
 
-static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
+static BOOL mod_cache_response_single_header(http_context *phttp) try
 {
 	char etag[128];
 	struct tm tmp_tm;
-	int response_len;
 	char date_string[128];
 	CACHE_CONTEXT *pcontext;
-	char response_buff[1024];
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
@@ -275,35 +274,28 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
 	                pcontext->until != static_cast<uint64_t>(pcontext->pitem->sb.st_size);
-	strcpy(response_buff, emit_206 ?
-	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
-	response_len = strlen(response_buff);
-	response_len += gx_snprintf(response_buff + response_len,
-	                std::size(response_buff) - response_len,
-					"Date: %s\r\n"
-					"Content-Length: %u\r\n"
-					"Accept-Ranges: bytes\r\n"
-					"Last-Modified: %s\r\n"
-					"ETag: \"%s\"\r\n",
-					date_string,
-					pcontext->until - pcontext->offset,
-					modified_string, etag);
+	auto rsp = fmt::format(
+		"HTTP/1.1 {}"
+		"Date: {}\r\n"
+		"Content-Length: {}\r\n"
+		"Accept-Ranges: bytes\r\n"
+		"Last-Modified: {}\r\n"
+		"ETag: \"{}\"\r\n",
+		emit_206 ? "206 Partial Content\r\n" : "200 OK\r\n",
+		date_string, pcontext->until - pcontext->offset,
+		modified_string, etag);
 	if (pcontent_type != nullptr)
-		response_len += gx_snprintf(&response_buff[response_len],
-				std::size(response_buff) - response_len,
-				"Content-Type: %s\r\n", pcontent_type);
-	if (emit_206) {
-		response_len += gx_snprintf(response_buff + response_len,
-		                std::size(response_buff) - response_len,
-					"Content-Range: bytes %u-%u/%llu\r\n\r\n",
-					pcontext->offset, pcontext->until - 1,
-		                static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
-	} else {
-		gx_strlcpy(&response_buff[response_len], "\r\n",
-		           std::size(response_buff) - response_len);
-		response_len += 2;
-	}
-	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
+		rsp += fmt::format("Content-Type: {}\r\n", pcontent_type);
+	if (emit_206)
+		rsp += fmt::format("Content-Range: bytes {}-{}/{}\r\n\r\n",
+		       pcontext->offset, pcontext->until - 1,
+		       static_cast<unsigned long long>(pcontext->pitem->sb.st_size));
+	else
+		rsp += "\r\n";
+	return phttp->stream_out.write(rsp.c_str(), rsp.size()) == STREAM_WRITE_OK ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1726: ENOMEM");
+	return false;
 }
 
 static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
