@@ -534,6 +534,8 @@ http_status mod_cache_take_request(http_context *phttp)
 		auto pitem = iter->second;
 		if (!stat4_eq(pitem->sb, node_stat)) {
 			g_cache_hash.erase(iter);
+		} else if (node_stat.st_size == 0) {
+			/* nothing - pitem->blk is already nullptr */
 		} else {
 			pitem->mblk = mmap(nullptr, node_stat.st_size,
 			              PROT_READ, MAP_SHARED, fd.get(), 0);
@@ -555,13 +557,15 @@ http_status mod_cache_take_request(http_context *phttp)
 	hhold.lock();
 	iter = g_cache_hash.find(tmp_path);
 	if (iter == g_cache_hash.end()) {
-		pitem->mblk = mmap(nullptr, node_stat.st_size,
-		              PROT_READ, MAP_SHARED, fd.get(), 0);
-		if (pitem->mblk == MAP_FAILED) {
-			pcontext->range.clear();
-			return http_status::service_unavailable;
+		if (node_stat.st_size != 0) {
+			pitem->mblk = mmap(nullptr, node_stat.st_size,
+				      PROT_READ, MAP_SHARED, fd.get(), 0);
+			if (pitem->mblk == MAP_FAILED) {
+				pcontext->range.clear();
+				return http_status::service_unavailable;
+			}
+			posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 		}
-		posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 		g_cache_hash.emplace(tmp_path, pitem);
 		pcontext->pitem = std::move(pitem);
 		return http_status::ok;
@@ -625,15 +629,17 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	auto rem_to_eof = pcontext->offset < static_cast<uint64_t>(item.sb.st_size) ?
 	                  static_cast<uint64_t>(item.sb.st_size) - pcontext->offset : 0;
 	writeout_size = std::min(static_cast<uint64_t>(writeout_size), rem_to_eof);
-	if (item.mblk == nullptr) {
-		mlog(LV_DEBUG, "%s called without active memory mapping", __func__);
-		mod_cache_put_context(phttp);
-		return FALSE;
-	}
-	if (phttp->stream_out.write(static_cast<const char *>(item.mblk) +
-	    pcontext->offset, writeout_size) != STREAM_WRITE_OK) {
-		mod_cache_put_context(phttp);
-		return false;
+	if (writeout_size != 0) {
+		if (item.mblk == nullptr) {
+			mlog(LV_DEBUG, "%s called without active memory mapping", __func__);
+			mod_cache_put_context(phttp);
+			return FALSE;
+		}
+		if (phttp->stream_out.write(static_cast<const char *>(item.mblk) +
+		    pcontext->offset, writeout_size) != STREAM_WRITE_OK) {
+			mod_cache_put_context(phttp);
+			return false;
+		}
 	}
 	pcontext->offset += writeout_size;
 	if (pcontext->offset == pcontext->until) {
