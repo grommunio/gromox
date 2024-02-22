@@ -199,6 +199,26 @@ the user identities are available.
 
 (Gromox RPM packages will do this on their own already)
 
+The directory ``/var/lib/gromox`` and all contents shall be owned by user
+``gromox`` or ``grommunio``. (The latter would be the grommunio-admin-api user,
+but is not created by Gromox's sysusers file.) The group owner shall be
+``gromox`` with read-write permission. Others should not have any access
+whatsoever. This is all so that Gromox services and AAPI services alike can
+read/write to it irrespective of the creator of files.
+
+.. code-block:: text
+
+	drwxrwx--- 5 gromox gromox 62 Feb 13 23:15 /var/lib/gromox
+
+The directory ``/etc/gromox`` and all contents are supposed to be owned by user
+``root`` or ``grommunio``, be owned by group ``gromoxcf`` read-only, and be
+otherwise inaccessible. Gromox has no need to update config files at all, just
+read them.
+
+.. code-block:: text
+
+	drwxr-x--- 2 root gromoxcf 125 Feb 20 21:47 /etc/gromox
+
 
 SMTP
 ----
