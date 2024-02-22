@@ -219,6 +219,13 @@ read them.
 
 	drwxr-x--- 2 root gromoxcf 125 Feb 20 21:47 /etc/gromox
 
+If you plan on utilizing SSO authentication via ``/usr/bin/ntlm_auth``, you
+*may* need to add ``winbind`` to the list of supplementary groups for the
+``gromox`` user, because the winbind socket (e.g.
+``/var/run/samba/winbindd/pipe`` or ``/var/lib/samba/winbindd_privileged/pipe``
+on SUSE Linux) may have limited permissions set on it. Consult with the winbind
+manuals for details on which gets used and when.
+
 
 SMTP
 ----
