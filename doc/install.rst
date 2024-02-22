@@ -167,7 +167,7 @@ Hostname
 --------
 
 If the kernel hostname is different from the hostname used to access the
-service(s), then ``autodiscover.ini`` needs the ``hostname=...`` line so that
+service(s), then ``gromox.cfg`` needs the ``oxdisco_exonym=...`` line so that
 Autodiscover can construct the correct TLS upgrade redirect URLs to itself, for
 an external user.
 
