@@ -98,9 +98,6 @@ which requires that ``-lcrypt`` *also* be part of the ``LIBS`` variable.
 Optional runtime components
 ===========================
 
-* A FastCGI server that can execute PHP >= 7.4,
-  to enable AutoDiscover and Free/Busy Scheduling Assistant functions.
-
 * PHP command-line interface,
   to enable the scheduled/delayed message sending function.
 
@@ -201,25 +198,6 @@ Gromox services run in a privilege-reduced context. To that end,
 the user identities are available.
 
 (Gromox RPM packages will do this on their own already)
-
-
-php-fpm config
---------------
-
-Parts of Gromox are (still) implemented in PHP and need both php-fpm and
-php-cli, and we hope to remedy this in a future release. A sample fragment for
-FPM is available in ``data/fpm-gromox.conf.sample``.
-
-The choice of ``/run/php-fpm/php-gromox-fpm.sock`` in this sample file
-coincides with the built-in default config of mod_fastcgi(4gx), which in turn
-is modeled on the default AppArmor profile(s) that are present and potentially
-enabled on the Grommunio Appliance and/or its base systems, i.e. SUSE Linux
-Enterprise and openSUSE. On other platforms, such as Debian/Ubuntu (the latter
-also uses AppArmor in some capacity), the distro-designated path for FPM
-sockets is something like ``/run/php8.2-fpm``, and you must take care of this
-by suitably modifying the php-fpm config fragment and/or
-``/etc/gromox/mod_fastcgi.txt`` to agree on the same socket location, whichever
-one you ultimately choose.
 
 
 SMTP
