@@ -86,10 +86,13 @@ The following additional developer options are available:
 Due to a problem in libtool < 2.4.7 (debbugs.gnu.org/56839) and ASAN
 (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103930), it is necessary to also
 call ``make`` with the sanitizer libs (asan, ubsan or both, depending on
-choice) if they are shared libraries (usually gcc). **In addition**,
-to-intercept libraries need to be specified ``make LIBS="-lasan -lubsan
--lcrypt"``; in particular, failure to add ``-lcrypt`` will leave the PLT entry
-for the ``crypt`` symbol at value NULL for some reason, leading to a crash.
+choice) if they are shared libraries (usually gcc). The command is ``make
+LIBS="-lasan -lubsan"``.
+
+**In addition**, when using ASAN with gcc >= 7, < 14 or ASAN with clang >= 10,
+< 17, there is `an issue with ASAN and a dlopened crypt(3) function
+<https://github.com/llvm/llvm-project/commit/d7bead833631486e337e541e692d9b4a1ca14edd>`_,
+which requires that ``-lcrypt`` *also* be part of the ``LIBS`` variable.
 
 
 Optional runtime components
