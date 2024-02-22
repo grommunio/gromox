@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2023 grommunio GmbH
+	SPDX-FileCopyrightText: 2024 grommunio GmbH
 
 Dependency installation
 =======================
@@ -61,13 +61,12 @@ be used for other source repositories such as libexmdbpp.
 Source build procedure
 ======================
 
-The procedure is the well-established autotools run. Note that the default
-install prefix is /usr, not /usr/local.
+The procedure is the well-established autotools run. Note that we changed the
+autoconf-supplied default install prefix from ``/usr/local`` to ``/usr``.
 
 For true developers, the ``qconf`` helper script may be used as a typing
-shortcut and to configure the paths such that just-built program binaries, from
-within the source directory, would work with a (pre-existing) Gromox
-installation from the grommunio distribution.
+shortcut and to invoke the ``configure`` script with the paths normally used by
+the pre-built Gromox packages.
 
 The rest of the documentation assumes that Gromox was configured with
 ``--prefix=/usr --sysconfdir=/etc --localstatedir=/var``.
