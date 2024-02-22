@@ -1360,8 +1360,10 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 
 	if(!shape.writes(PR_LAST_MODIFICATION_TIME))
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, EWSContext::construct<uint64_t>(rop_util_current_nttime())});
-
 	if(persist) {
+		static const uint8_t trueVal = TRUE;
+		if(!shape.writes(PR_READ))	// Unless specified otherwise, newly created items should be marked as read
+			shape.write(TAGGED_PROPVAL{PR_READ, const_cast<uint8_t*>(&trueVal)});
 		shape.write(TAGGED_PROPVAL{PidTagMid, construct<uint64_t>(messageId)});
 		shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNumber)});
 		shape.write(TAGGED_PROPVAL{PR_CHANGE_KEY, ckey});
