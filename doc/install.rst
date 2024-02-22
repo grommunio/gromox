@@ -190,11 +190,11 @@ Users & /run
 
 Gromox services create AF_LOCAL sockets, and the standard location for this is
 the ``/run/gromox`` directory. A systemd-tmpfiles fragment is provided in the
-source tree at ``data/tmpfiles-gromox.conf`` which can trigger the creation of
-this directory when running under systemd.
+source tree at ``system/tmpfiles-gromox.conf`` which can trigger the creation
+of this directory when running under systemd.
 
 Gromox services run in a privilege-reduced context. To that end,
-``data/sysusers-gromox.conf`` is a systemd-sysusers fragment that will ensure
+``system/sysusers-gromox.conf`` is a systemd-sysusers fragment that will ensure
 the user identities are available.
 
 (Gromox RPM packages will do this on their own already)
