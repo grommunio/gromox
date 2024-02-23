@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 #include <openssl/ssl.h>
 #include <vmime/mailbox.hpp>
@@ -97,7 +98,7 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 		return MAPI_W_NO_SERVICE;
 	}
 	try {
-		xprt->send(msg, vsender, vrcpt_list, nullptr, {}, {});
+		xprt->send(std::move(msg), vsender, vrcpt_list, nullptr, {}, {});
 		xprt->disconnect();
 	} catch (const vmime::exception &e) {
 		mlog(LV_ERR, "vmime.send: %s", e.what());
