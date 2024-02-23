@@ -547,15 +547,6 @@ http_status mod_cache_take_request(http_context *phttp)
 		if (!stat4_eq(pitem->sb, node_stat)) {
 			g_cache_hash.erase(iter);
 		} else {
-			if (pitem->mblk != nullptr)
-				printf("already mapped\n");
-			pitem->mblk = mmap(nullptr, node_stat.st_size,
-			              PROT_READ, MAP_SHARED, fd.get(), 0);
-			if (pitem->mblk == MAP_FAILED) {
-				pcontext->range.clear();
-				return http_status::service_unavailable;
-			}
-			posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 			pcontext->pitem = std::move(pitem);
 			return http_status::ok;
 		}
