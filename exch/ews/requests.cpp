@@ -1528,9 +1528,14 @@ void process(mUpdateItemRequest&& request, XMLElement* response, const EWSContex
 			EWSContext::MCONT_PTR content = ctx.toContent(dir, *shape.mimeContent);
 			for(uint32_t tag : shape.remove())
 				content->proplist.erase(tag);
-			for(const TAGGED_PROPVAL& prop : shape.write())
-				content->proplist.set(prop);
-			content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
+			for (const auto &prop : shape.write()) {
+				auto ret = content->proplist.set(prop);
+				if (ret == -ENOMEM)
+					throw EWSError::ItemSave(E3035);
+			}
+			auto ret = content->proplist.set(PidTagMid, EWSContext::construct<uint64_t>(rop_util_make_eid(1, mid.message_global_counter)));
+			if (ret == -ENOMEM)
+				throw EWSError::ItemSave(E3035);
 			ec_error_t error;
 			if(!ctx.plugin().exmdb.write_message(dir.c_str(), ctx.auth_info().username, CP_ACP, parentFolder.folderId,
 				                                 content.get(), &error) || error)
