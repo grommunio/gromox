@@ -442,9 +442,8 @@ http_status mod_cache_take_request(http_context *phttp)
 {
 	char *ptoken;
 	char suffix[16];
-	char tmp_path[512];
 	char tmp_buff[8192];
-	struct stat node_stat;
+	struct stat node_stat{};
 	char request_uri[http_request::uri_limit];
 	CACHE_CONTEXT *pcontext;
 	
@@ -457,9 +456,12 @@ http_status mod_cache_take_request(http_context *phttp)
 	wrapfd fd;
 	pcontext = mod_cache_get_cache_context(phttp);
 	*pcontext = {};
+	std::string tmp_path;
 	bool opstar = phttp->request.imethod == http_method::options &&
 	              strcmp(request_uri, "*") == 0;
-	if (!opstar) {
+	if (opstar) {
+		tmp_path = request_uri;
+	} else {
 		ptoken = strrchr(request_uri, '/');
 		if (NULL == ptoken) {
 			phttp->log(LV_DEBUG, "request uri "
@@ -480,9 +482,8 @@ http_status mod_cache_take_request(http_context *phttp)
 		          });
 		if (it == g_directory_list.cend())
 			return http_status::none;
-		snprintf(tmp_path, std::size(tmp_path), "%s%s", it->dir.c_str(),
-			 request_uri + it->path.size());
-		fd = wrapfd(open(tmp_path, O_RDONLY));
+		tmp_path = it->dir + &request_uri[it->path.size()];
+		fd = wrapfd(open(tmp_path.c_str(), O_RDONLY));
 		if (fd.get() < 0)
 			return errno == ENOENT || errno == ENOTDIR ? http_status::not_found :
 			       errno == EACCES || errno == EISDIR ? http_status::forbidden :
@@ -575,7 +576,7 @@ http_status mod_cache_take_request(http_context *phttp)
 			}
 			posix_madvise(pitem->mblk, static_cast<size_t>(node_stat.st_size), POSIX_MADV_SEQUENTIAL);
 		}
-		g_cache_hash.emplace(tmp_path, pitem);
+		g_cache_hash.emplace(std::move(tmp_path), pitem);
 		pcontext->pitem = std::move(pitem);
 		return http_status::ok;
 	}
