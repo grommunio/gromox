@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/database.h>
@@ -37,8 +38,7 @@ using namespace gromox;
 
 namespace {
 
-struct CONDITION_NODE {
-	DOUBLE_LIST_NODE node;
+struct condition_node {
 	uint32_t proptag;
 	void *pvalue;
 };
@@ -300,40 +300,28 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	return TRUE;
 }
 
-static void table_condition_list_to_where_clause(
-	DOUBLE_LIST *pcondition_list, char *where_clause, int length)
+static std::string table_cond_to_where(const std::vector<condition_node> &list)
 {
-	int offset;
-	DOUBLE_LIST_NODE *pnode;
-	
-	offset = 0;
-	for (pnode=double_list_get_head(pcondition_list); NULL!=pnode;
-		pnode=double_list_get_after(pcondition_list, pnode)) {
-		auto pcnode = static_cast<const CONDITION_NODE *>(pnode->pdata);
-		if (offset == 0)
-			offset = gx_snprintf(where_clause, length, "WHERE ");
+	std::string w;
+	for (const auto &cnode : list) {
+		if (w.empty())
+			w = "WHERE ";
 		else
-			offset += gx_snprintf(where_clause + offset,
-						length - offset, " AND ");
-		if (pcnode->pvalue == nullptr)
-			offset += gx_snprintf(where_clause + offset,
-					length - offset, "v%x IS NULL",
-					pcnode->proptag);
+			w += " AND ";
+		if (cnode.pvalue == nullptr)
+			w += fmt::format("v{:x} IS NULL", cnode.proptag);
 		else
-			offset += gx_snprintf(where_clause + offset,
-				length - offset, "v%x=?", pcnode->proptag);
+			w += fmt::format("v{:x}=?", cnode.proptag);
 	}
-	where_clause[offset] = '\0';
+	return w;
 }
 
 static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
-	DOUBLE_LIST *pcondition_list, sqlite3_stmt *pstmt_insert,
+    std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
 	uint32_t *pheader_id, sqlite3_stmt *pstmt_update,
-	uint32_t *punread_count)
+    uint32_t *punread_count) try
 {
-	int i;
-	int sql_len;
 	void *pvalue;
 	uint16_t type;
 	BOOL b_orderby;
@@ -343,34 +331,28 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 	uint64_t header_id;
 	uint32_t tmp_proptag;
 	uint32_t tmp_proptag1;
-	char sql_string[1024];
 	uint32_t unread_count;
-	char where_clause[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONDITION_NODE tmp_cnode;
 	
 	int64_t prev_id = -parent_id;
-	table_condition_list_to_where_clause(pcondition_list,
-					where_clause, sizeof(where_clause));
+	auto where = table_cond_to_where(cond_list);
 	if (depth == psorts->ccategories) {
 		multi_index = -1;
-		for (i = 0; i < psorts->count; ++i) {
+		for (unsigned int i = 0; i < psorts->count; ++i) {
 			if ((psorts->psort[i].type & MVI_FLAG) == MVI_FLAG) {
 				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 				multi_index = i;
 				break;
 			}
 		}
+		std::string qstr;
 		if (multi_index != -1)
-			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-			          "SELECT message_id, read_state, inst_num, v%x"
-			          " FROM stbl %s", tmp_proptag, where_clause);
+			qstr = fmt::format("SELECT message_id, read_state, "
+			       "inst_num, v{:x} FROM stbl {}", tmp_proptag, where);
 		else
-			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-			          "SELECT message_id, read_state, inst_num"
-			          " FROM stbl %s", where_clause);
+			qstr = fmt::format("SELECT message_id, read_state, "
+			       "inst_num FROM stbl {}", where);
 		b_orderby = FALSE;
-		for (i=psorts->ccategories; i<psorts->count; i++) {
+		for (unsigned int i = psorts->ccategories; i < psorts->count; ++i) {
 			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (TABLE_SORT_MAXIMUM_CATEGORY ==
 				psorts->psort[i].table_sort ||
@@ -378,35 +360,31 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 				psorts->psort[i].table_sort) {
 				continue;
 			}
+			auto ord = psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
+			           " ASC" : " DESC";
 			if (!b_orderby) {
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           std::size(sql_string) - sql_len,
-							" ORDER BY v%x ", tmp_proptag);
+				qstr += fmt::format(" ORDER BY v{:x} {}", tmp_proptag, ord);
 				b_orderby = TRUE;
 			} else {
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           std::size(sql_string) - sql_len,
-							", v%x ", tmp_proptag);
+				qstr += fmt::format(", v{:x} {}", tmp_proptag, ord);
 			}
-			sql_len += gx_snprintf(sql_string + sql_len,
-			           std::size(sql_string) - sql_len,
-			           psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
-			           " ASC" : " DESC");
 		}
-		auto pstmt = gx_sql_prep(psqlite, sql_string);
+		auto pstmt = gx_sql_prep(psqlite, qstr.c_str());
 		if (pstmt == nullptr)
 			return FALSE;
 		bind_index = 1;
-		for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
-			pnode=double_list_get_after(pcondition_list, pnode),i++) {
-			if (static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue == nullptr)
+		size_t i = 0;
+		for (const auto &cond : cond_list) {
+			if (cond.pvalue == nullptr) {
+				++i;
 				continue;
+			}
 			type = psorts->psort[i].type & ~MVI_FLAG;
 			if (!common_util_bind_sqlite_statement(pstmt,
-			    bind_index, type,
-			    static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue))
+			    bind_index, type, cond.pvalue))
 				return FALSE;
 			bind_index++;
+			++i;
 		}
 		while (pstmt.step() == SQLITE_ROW) {
 			if (psorts->ccategories <= 0) {
@@ -448,6 +426,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		}
 		return TRUE;
 	}
+	std::string qstr;
 	tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
 	if (depth == psorts->ccategories - 1 &&
 		psorts->count > psorts->ccategories
@@ -459,44 +438,40 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psorts->psort[depth + 1].table_sort) {
-			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-					"SELECT v%x, count(*), max(v%x) AS max_field "
-					"FROM stbl %s GROUP BY v%x ORDER BY max_field",
-					tmp_proptag, tmp_proptag1, where_clause,
-					tmp_proptag);
+			qstr = fmt::format("SELECT v{:x}, COUNT(*), MAX(v{:x}) AS max_field "
+			       "FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
+			       tmp_proptag, tmp_proptag1, where, tmp_proptag);
 		} else {
-			sql_len = gx_snprintf(sql_string, std::size(sql_string),
-					"SELECT v%x, count(*), min(v%x) AS max_field "
-					"FROM stbl %s GROUP BY v%x ORDER BY max_field",
-					tmp_proptag, tmp_proptag1, where_clause,
-					tmp_proptag);	
+			qstr = fmt::format("SELECT v{:x}, COUNT(*), MIN(v{:x}) AS max_field "
+			       "FROM stbl {} GROUP BY v{:x} ORDER BY max_field",
+			       tmp_proptag, tmp_proptag1, where, tmp_proptag);
 		}
 	} else {
 		b_extremum = FALSE;
-		sql_len = gx_snprintf(sql_string, std::size(sql_string),
-				"SELECT v%x, count(*) FROM stbl %s GROUP"
-				" BY v%x ORDER BY v%x", tmp_proptag,
-				where_clause, tmp_proptag, tmp_proptag);
+		qstr = fmt::format("SELECT v{:x}, COUNT(*) FROM stbl {} "
+		       "GROUP BY v{:x} ORDER BY v{:x}",
+		       tmp_proptag, where, tmp_proptag, tmp_proptag);
 	}
-	gx_snprintf(sql_string + sql_len, std::size(sql_string) - sql_len,
-	            psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
-	            " ASC" : " DESC");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	qstr += psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
+	        " ASC" : " DESC";
+	auto pstmt = gx_sql_prep(psqlite, qstr.c_str());
 	if (pstmt == nullptr)
 		return FALSE;
 	bind_index = 1;
-	for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
-		pnode=double_list_get_after(pcondition_list, pnode),i++) {
-		if (static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue == nullptr)
+	size_t i = 0;
+	for (const auto &cond : cond_list) {
+		if (cond.pvalue == nullptr) {
+			++i;
 			continue;
+		}
 		type = psorts->psort[i].type & ~MVI_FLAG;
 		if (!common_util_bind_sqlite_statement(pstmt, bind_index, type,
-		    static_cast<CONDITION_NODE *>(pnode->pdata)->pvalue))
+		    cond.pvalue))
 			return FALSE;
 		bind_index++;
+		++i;
 	}
-	tmp_cnode.node.pdata = &tmp_cnode;
-	double_list_append_as_tail(pcondition_list, &tmp_cnode.node);
+	auto &tmp_cnode = cond_list.emplace_back();
 	while (pstmt.step() == SQLITE_ROW) {
 		(*pheader_id) ++;
 		header_id = *pheader_id | 0x100000000000000ULL;
@@ -531,7 +506,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		unread_count = 0;
 		tmp_cnode.pvalue = pvalue;
 		if (!table_load_content(pdb, psqlite, psorts,
-		    depth + 1, prev_id, pcondition_list, pstmt_insert,
+		    depth + 1, prev_id, cond_list, pstmt_insert,
 		    pheader_id, pstmt_update, &unread_count))
 			return FALSE;
 		sqlite3_bind_int64(pstmt_update, 1, unread_count);
@@ -541,8 +516,11 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		sqlite3_reset(pstmt_update);
 		*punread_count += unread_count;
 	}
-	double_list_remove(pcondition_list, &tmp_cnode.node);
+	cond_list.pop_back();
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1727: ENOMEM");
+	return false;
 }
 
 static inline const BINARY *get_conv_id(const RESTRICTION *x)
@@ -982,12 +960,10 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		DOUBLE_LIST value_list;
-		double_list_init(&value_list);
+		std::vector<condition_node> cond_list;
 		uint32_t unread_count = 0;
-		if (!table_load_content(pdb,
-		    psqlite, psorts, 0, 0, &value_list, pstmt,
-		    &ptnode->header_id, pstmt1, &unread_count))
+		if (!table_load_content(pdb, psqlite, psorts, 0, 0, cond_list,
+		    pstmt, &ptnode->header_id, pstmt1, &unread_count))
 			return false;
 		pstmt.finalize();
 		pstmt1.finalize();

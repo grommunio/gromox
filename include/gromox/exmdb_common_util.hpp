@@ -128,7 +128,7 @@ BINARY* common_util_to_private_message_entryid(
 	sqlite3 *psqlite, const char *username,
 	uint64_t folder_id, uint64_t message_id);
 extern BOOL cu_get_folder_permission(sqlite3 *, uint64_t folder_id, const char *username, uint32_t *perms);
-extern BOOL common_util_check_descendant(sqlite3 *, uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included);
+extern BOOL cu_is_descendant_folder(sqlite3 *, uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included);
 BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	uint64_t message_id, uint64_t *pfolder_id);
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
@@ -151,8 +151,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	PROPID_ARRAY *ppropids);
 BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
-BOOL common_util_check_folder_id(sqlite3 *psqlite,
-	uint64_t folder_id, BOOL *pb_exist);
+extern BOOL cu_is_folder_present(sqlite3 *, uint64_t folder_id, BOOL *exist);
 BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);
 extern BOOL cu_adjust_store_size(sqlite3 *psqlite, bool sub, uint64_t normal_size, uint64_t fai_size);

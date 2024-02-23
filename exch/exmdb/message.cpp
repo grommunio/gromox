@@ -780,7 +780,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	return TRUE;
 }
 
-BOOL exmdb_server::check_message(const char *dir,
+BOOL exmdb_server::is_msg_present(const char *dir,
 	uint64_t folder_id, uint64_t message_id, BOOL *pb_exist)
 {
 	uint64_t tmp_val;
@@ -816,7 +816,7 @@ BOOL exmdb_server::check_message(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server::check_message_deleted(const char *dir,
+BOOL exmdb_server::is_msg_deleted(const char *dir,
 	uint64_t message_id, BOOL *pb_del)
 {
 	uint64_t mid_val;
@@ -2848,7 +2848,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
-	if (!common_util_check_folder_id(rp.sqlite, dst_fid, &b_exist))
+	if (!cu_is_folder_present(rp.sqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist) {
 		mlog(LV_WARN, "W-1978: inbox \"%s\": while processing msgid %llxh (folder %llxh), "
@@ -3215,7 +3215,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 		/* Already moved to this folder once. */
 		return ecSuccess;
 	BOOL b_exist = false;
-	if (!common_util_check_folder_id(rp.sqlite, dst_fid, &b_exist))
+	if (!cu_is_folder_present(rp.sqlite, dst_fid, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);

@@ -2514,7 +2514,7 @@ BOOL exmdb_server::remove_instance_properties(const char *dir,
 	       rip_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pproptags, pproblems);
 }
 
-BOOL exmdb_server::check_instance_cycle(const char *dir,
+BOOL exmdb_server::is_descendant_instance(const char *dir,
 	uint32_t src_instance_id, uint32_t dst_instance_id, BOOL *pb_cycle)
 {
 	if (src_instance_id == dst_instance_id) {

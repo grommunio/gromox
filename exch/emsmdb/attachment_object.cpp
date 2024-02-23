@@ -421,7 +421,7 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	ATTACHMENT_CONTENT attctnt;
 	
 	auto dstdir = pparent->plogon->get_dir();
-	if (!exmdb_client::check_instance_cycle(dstdir,
+	if (!exmdb_client::is_descendant_instance(dstdir,
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
 		return FALSE;	
 	if (*pb_cycle)

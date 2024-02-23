@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -189,17 +189,17 @@ BOOL exmdb_server::get_folder_class_table(
 	return TRUE;
 }
 
-BOOL exmdb_server::check_folder_id(const char *dir,
+BOOL exmdb_server::is_folder_present(const char *dir,
 	uint64_t folder_id, BOOL *pb_exist)
 {
 	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	return common_util_check_folder_id(pdb->psqlite,
+	return cu_is_folder_present(pdb->psqlite,
 	       rop_util_get_gc_value(folder_id), pb_exist);
 }
 
-BOOL exmdb_server::check_folder_deleted(const char *dir,
+BOOL exmdb_server::is_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
 	char sql_string[256];
@@ -985,15 +985,19 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 	return sql_transact.commit() == 0 ? TRUE : false;
 }
 
-BOOL exmdb_server::check_folder_cycle(const char *dir,
-	uint64_t src_fid, uint64_t dst_fid, BOOL *pb_cycle)
+/**
+ * Test whether @inner_fid is indeed a subordinate of @outer_fid,
+ * and set *pb_included accordingly.
+ */
+BOOL exmdb_server::is_descendant_folder(const char *dir,
+    uint64_t parent_fid, uint64_t child_fid, BOOL *b_status)
 {
 	auto pdb = db_engine_get_db(dir, __func__);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!common_util_check_descendant(pdb->psqlite,
-	    rop_util_get_gc_value(dst_fid), rop_util_get_gc_value(src_fid),
-	    pb_cycle))
+	if (!cu_is_descendant_folder(pdb->psqlite,
+	    rop_util_get_gc_value(child_fid), rop_util_get_gc_value(parent_fid),
+	    b_status))
 		return FALSE;
 	return TRUE;
 }
@@ -1451,7 +1455,7 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 		account_id = get_account_id();
 	auto src_val = rop_util_get_gc_value(src_fid);
 	auto dst_val = rop_util_get_gc_value(dst_fid);
-	if (!common_util_check_descendant(pdb->psqlite, dst_fid,
+	if (!cu_is_descendant_folder(pdb->psqlite, dst_fid,
 	    src_val, pb_collid))
 		return FALSE;
 	if (*pb_collid)
@@ -1545,7 +1549,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 	}
 	if (!b_copy) {
 		BOOL b_included = false;
-		if (!common_util_check_descendant(pdb->psqlite, dst_val,
+		if (!cu_is_descendant_folder(pdb->psqlite, dst_val,
 		    src_val, &b_included))
 			return FALSE;
 		if (b_included) {
@@ -1763,7 +1767,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			auto fid_val1 = rop_util_get_gc_value(pfolder_ids->pll[i]);
 			BOOL b_included = false;
-			if (!common_util_check_descendant(pdb->psqlite, fid_val,
+			if (!cu_is_descendant_folder(pdb->psqlite, fid_val,
 			    fid_val1, &b_included))
 				return FALSE;	
 			if (b_included) {

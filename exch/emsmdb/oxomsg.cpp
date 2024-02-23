@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -385,7 +387,7 @@ ec_error_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 #if 0
 	/* check if it is already in spooler queue */
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client::check_message(dir, fid_spooler,
+	if (!exmdb_client::is_msg_present(dir, fid_spooler,
 	    pmessage->get_id(), &b_exist))
 		return ecError;
 	if (b_exist)
@@ -455,7 +457,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecNotSupported;
 	if (plogon->logon_mode == logon_mode::guest)
 		return ecAccessDenied;
-	if (!exmdb_client::check_message(plogon->get_dir(), folder_id,
+	if (!exmdb_client::is_msg_present(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
@@ -479,7 +481,7 @@ ec_error_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
-	if (!exmdb_client::check_message(plogon->get_dir(), fid_spooler,
+	if (!exmdb_client::is_msg_present(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
@@ -541,7 +543,7 @@ ec_error_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		return ecSuccess;
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::check_message(dir, fid_spooler, message_id, &b_exist))
+	if (!exmdb_client::is_msg_present(dir, fid_spooler, message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotInQueue;

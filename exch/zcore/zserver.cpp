@@ -1015,7 +1015,7 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return ecInvalidParam;
 	}
 	if (0 != message_id) {
-		if (!exmdb_client::check_message_deleted(pstore->get_dir(),
+		if (!exmdb_client::is_msg_deleted(pstore->get_dir(),
 		    message_id, &b_del))
 			return ecError;
 		if (b_del && !(flags & SHOW_SOFT_DELETES))
@@ -1035,13 +1035,13 @@ ec_error_t zs_openstoreentry(GUID hsession, uint32_t hobject, BINARY entryid,
 			return zh_error(*phobject);
 		*pmapi_type = zs_objtype::message;
 	} else {
-		if (!exmdb_client::check_folder_id(pstore->get_dir(),
+		if (!exmdb_client::is_folder_present(pstore->get_dir(),
 		    folder_id, &b_exist))
 			return ecError;
 		if (!b_exist)
 			return ecNotFound;
 		if (!pstore->b_private) {
-			if (!exmdb_client::check_folder_deleted(pstore->get_dir(),
+			if (!exmdb_client::is_folder_deleted(pstore->get_dir(),
 			    folder_id, &b_del))
 				return ecError;
 			if (b_del && !(flags & SHOW_SOFT_DELETES))
@@ -2207,7 +2207,7 @@ ec_error_t zs_deletefolder(GUID hsession,
 			return ecAccessDenied;
 		username = pinfo->get_username();
 	}
-	if (!exmdb_client::check_folder_id(pstore->get_dir(),
+	if (!exmdb_client::is_folder_present(pstore->get_dir(),
 	    pfolder->folder_id, &b_exist))
 		return ecError;
 	if (!b_exist)
@@ -2357,7 +2357,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 		}
 		return ecSuccess;
 	}
-	if (!exmdb_client::check_folder_cycle(src_store->get_dir(), folder_id,
+	if (!exmdb_client::is_descendant_folder(src_store->get_dir(), folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
@@ -3951,7 +3951,7 @@ ec_error_t zs_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		BOOL b_sub;
 		if (!pexclude_proptags->has(PR_CONTAINER_HIERARCHY)) {
-			if (!exmdb_client::check_folder_cycle(pstore->get_dir(),
+			if (!exmdb_client::is_descendant_folder(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)
@@ -4332,7 +4332,7 @@ ec_error_t zs_importmessage(GUID hsession, uint32_t hctx,
 		if (tmp_guid != tmp_xid.guid)
 			return ecInvalidParam;
 		message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
-		if (!exmdb_client::check_message(pstore->get_dir(), folder_id,
+		if (!exmdb_client::is_msg_present(pstore->get_dir(), folder_id,
 		    message_id, &b_exist))
 			return ecError;
 		if (!b_exist)
@@ -4449,7 +4449,7 @@ ec_error_t zs_importfolder(GUID hsession,
 		return ecNotSupported;
 	if (static_cast<BINARY *>(pproplist->ppropval[0].pvalue)->cb == 0) {
 		parent_id1 = pctx->get_parent_folder_id();
-		if (!exmdb_client::check_folder_id(pstore->get_dir(),
+		if (!exmdb_client::is_folder_present(pstore->get_dir(),
 		    parent_id1, &b_exist))
 			return ecError;
 		if (!b_exist)
@@ -4505,7 +4505,7 @@ ec_error_t zs_importfolder(GUID hsession,
 			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 	}
-	if (!exmdb_client::check_folder_id(pstore->get_dir(), folder_id, &b_exist))
+	if (!exmdb_client::is_folder_present(pstore->get_dir(), folder_id, &b_exist))
 		return ecError;
 	if (!b_exist) {
 		if (!pstore->owner_mode()) {
@@ -4699,11 +4699,11 @@ ec_error_t zs_importdeletion(GUID hsession,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			if (!exmdb_client::check_message(pstore->get_dir(),
+			if (!exmdb_client::is_msg_present(pstore->get_dir(),
 			    folder_id, eid, &b_exist))
 				return ecError;
 		} else {
-			if (!exmdb_client::check_folder_id(pstore->get_dir(),
+			if (!exmdb_client::is_folder_present(pstore->get_dir(),
 			    eid, &b_exist))
 				return ecError;
 		}

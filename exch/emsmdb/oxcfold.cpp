@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -52,12 +54,12 @@ ec_error_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		}
 	}
 	auto dir = plogon->get_dir();
-	if (!exmdb_client::check_folder_id(dir, folder_id, &b_exist))
+	if (!exmdb_client::is_folder_present(dir, folder_id, &b_exist))
 		return ecError;
 	if (!b_exist)
 		return ecNotFound;
 	if (!plogon->is_private()) {
-		if (!exmdb_client::check_folder_deleted(dir, folder_id, &b_del))
+		if (!exmdb_client::is_folder_deleted(dir, folder_id, &b_del))
 			return ecError;
 		if (b_del && !(open_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
 			return ecNotFound;
@@ -301,7 +303,7 @@ ec_error_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 		if (!(permission & frightsOwner))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::check_folder_id(plogon->get_dir(), folder_id, &b_exist))
+	if (!exmdb_client::is_folder_present(plogon->get_dir(), folder_id, &b_exist))
 		return ecError;
 	if (!b_exist) {
 		*ppartial_completion = 0;
@@ -560,7 +562,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::check_folder_cycle(dir, folder_id,
+	if (!exmdb_client::is_descendant_folder(dir, folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
@@ -657,7 +659,7 @@ ec_error_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 		if (!(permission & (frightsOwner | frightsCreateSubfolder)))
 			return ecAccessDenied;
 	}
-	if (!exmdb_client::check_folder_cycle(dir, folder_id,
+	if (!exmdb_client::is_descendant_folder(dir, folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
@@ -786,7 +788,7 @@ static ec_error_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		return ecError;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
 		if (username != STORE_OWNER_GRANTED) {
-			if (!exmdb_client::check_message_owner(dir,
+			if (!exmdb_client::is_message_owner(dir,
 			    pmessage_ids->pll[i], username, &b_owner))
 				return ecError;
 			if (!b_owner) {

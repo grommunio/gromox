@@ -213,7 +213,7 @@ BOOL remove_message_property(const char *dir, cpid_t cpid,
 	       message_id, &tmp_proptags);
 }
 
-BOOL check_message_owner(const char *dir, uint64_t message_id,
+BOOL is_message_owner(const char *dir, uint64_t message_id,
     const char *username, BOOL *pb_owner)
 {
 	BINARY *pbin;

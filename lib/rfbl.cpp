@@ -1396,6 +1396,8 @@ errno_t gx_compress_tofile(std::string_view inbuf, const char *outfile,
 	return fd.close_wr();
 }
 
+namespace {
+
 struct iomembuf : public std::streambuf {
 	iomembuf(const char *p, size_t z) {
 		auto q = const_cast<char *>(p);
@@ -1409,6 +1411,8 @@ struct imemstream : public virtual iomembuf, public std::istream {
 		std::istream(static_cast<std::streambuf *>(this))
 	{}
 };
+
+}
 
 bool json_from_str(std::string_view sv, Json::Value &jv)
 {

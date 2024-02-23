@@ -40,9 +40,9 @@ enum class exmdb_callid : uint8_t {
 	// get_folder_by_class (v1) = 0x0d,
 	set_folder_by_class = 0x0e,
 	get_folder_class_table = 0x0f,
-	check_folder_id = 0x10,
+	is_folder_present = 0x10,
 	// query_folder_messages = 0x11,
-	check_folder_deleted = 0x12,
+	is_folder_deleted = 0x12,
 	get_folder_by_name = 0x13,
 	get_folder_perm = 0x14,
 	create_folder_v1 = 0x15,
@@ -52,7 +52,7 @@ enum class exmdb_callid : uint8_t {
 	remove_folder_properties = 0x19,
 	delete_folder = 0x1a,
 	// empty_folder_v1 = 0x1b,
-	check_folder_cycle = 0x1c,
+	is_descendant_folder = 0x1c,
 	copy_folder_internal = 0x1d,
 	get_search_criteria = 0x1e,
 	set_search_criteria = 0x1f,
@@ -79,8 +79,8 @@ enum class exmdb_callid : uint8_t {
 	collapse_table = 0x34,
 	store_table_state = 0x35,
 	restore_table_state = 0x36,
-	check_message = 0x37,
-	check_message_deleted = 0x38,
+	is_msg_present = 0x37,
+	is_msg_deleted = 0x38,
 	load_message_instance = 0x39,
 	load_embedded_instance = 0x3a,
 	get_embedded_cn = 0x3b,
@@ -99,7 +99,7 @@ enum class exmdb_callid : uint8_t {
 	get_instance_properties = 0x48,
 	set_instance_properties = 0x49,
 	remove_instance_properties = 0x4a,
-	check_instance_cycle = 0x4b,
+	is_descendant_instance = 0x4b,
 	empty_message_instance_rcpts = 0x4c,
 	get_message_instance_rcpts_num = 0x4d,
 	get_message_instance_rcpts_all_proptags = 0x4e,
@@ -229,11 +229,11 @@ struct exreq_set_folder_by_class final : public exreq {
 	char *str_class;
 };
 
-struct exreq_check_folder_id final : public exreq {
+struct exreq_is_folder_present final : public exreq {
 	uint64_t folder_id;
 };
 
-struct exreq_check_folder_deleted final : public exreq {
+struct exreq_is_folder_deleted final : public exreq {
 	uint64_t folder_id;
 };
 
@@ -286,9 +286,8 @@ struct exreq_empty_folder final : public exreq {
 	uint32_t flags;
 };
 
-struct exreq_check_folder_cycle final : public exreq {
-	uint64_t src_fid;
-	uint64_t dst_fid;
+struct exreq_is_descendant_folder final : public exreq {
+	uint64_t parent_fid, child_fid;
 };
 
 struct exreq_copy_folder_internal final : public exreq {
@@ -476,12 +475,12 @@ struct exreq_restore_table_state final : public exreq {
 	uint32_t state_id;
 };
 
-struct exreq_check_message final : public exreq {
+struct exreq_is_msg_present final : public exreq {
 	uint64_t folder_id;
 	uint64_t message_id;
 };
 
-struct exreq_check_message_deleted final : public exreq {
+struct exreq_is_msg_deleted final : public exreq {
 	uint64_t message_id;
 };
 
@@ -573,9 +572,8 @@ struct exreq_remove_instance_properties final : public exreq {
 	PROPTAG_ARRAY *pproptags;
 };
 
-struct exreq_check_instance_cycle final : public exreq {
-	uint32_t src_instance_id;
-	uint32_t dst_instance_id;
+struct exreq_is_descendant_instance final : public exreq {
+	uint32_t parent_iid, child_iid;
 };
 
 struct exreq_empty_message_instance_rcpts final : public exreq {
@@ -917,11 +915,11 @@ struct exresp_get_folder_class_table final : public exresp {
 	TARRAY_SET table;
 };
 
-struct exresp_check_folder_id final : public exresp {
+struct exresp_is_folder_present final : public exresp {
 	BOOL b_exist;
 };
 
-struct exresp_check_folder_deleted final : public exresp {
+struct exresp_is_folder_deleted final : public exresp {
 	BOOL b_del;
 };
 
@@ -962,8 +960,8 @@ struct exresp_empty_folder final : public exresp {
 	BOOL b_partial;
 };
 
-struct exresp_check_folder_cycle final : public exresp {
-	BOOL b_cycle;
+struct exresp_is_descendant_folder final : public exresp {
+	BOOL b_included;
 };
 
 struct exresp_copy_folder_internal final : public exresp {
@@ -1077,11 +1075,11 @@ struct exresp_restore_table_state final : public exresp {
 	int32_t position;
 };
 
-struct exresp_check_message final : public exresp {
+struct exresp_is_msg_present final : public exresp {
 	BOOL b_exist;
 };
 
-struct exresp_check_message_deleted final : public exresp {
+struct exresp_is_msg_deleted final : public exresp {
 	BOOL b_del;
 };
 
@@ -1143,8 +1141,8 @@ struct exresp_remove_instance_properties final : public exresp {
 	PROBLEM_ARRAY problems;
 };
 
-struct exresp_check_instance_cycle final : public exresp {
-	BOOL b_cycle;
+struct exresp_is_descendant_instance final : public exresp {
+	BOOL b_included;
 };
 
 struct exresp_get_message_instance_rcpts_num final : public exresp {

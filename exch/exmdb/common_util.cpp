@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -1034,11 +1034,11 @@ static uint32_t common_util_get_folder_flags(
 	if (common_util_check_folder_rules(psqlite, folder_id))
 		folder_flags |= FOLDER_FLAGS_RULES;
 	if (exmdb_server::is_private()) {
-		if (common_util_check_descendant(psqlite, folder_id,
+		if (cu_is_descendant_folder(psqlite, folder_id,
 		    PRIVATE_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
 	} else {
-		if (common_util_check_descendant(psqlite, folder_id,
+		if (cu_is_descendant_folder(psqlite, folder_id,
 		    PUBLIC_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
 	}
@@ -3946,31 +3946,36 @@ BINARY* common_util_username_to_addressbook_entryid(
 	return pbin;
 }
 
-BOOL common_util_check_descendant(sqlite3 *psqlite,
-	uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included)
+/**
+ * Test whether @child_fid is reachable from of @parent_fid by
+ * descending, and set *pb_included accordingly. (This is used higher
+ * up to deny impossible moves of an objects to an object's
+ * subordinate.)
+ *
+ * WARNING: Argument order is inverted compared to the
+ * is_descendant_folder EXRPC.
+ */
+BOOL cu_is_descendant_folder(sqlite3 *psqlite,
+    uint64_t child_fid, uint64_t parent_fid, BOOL *pb_included)
 {
-	uint64_t folder_id;
-	
-	if (inner_fid == outer_fid) {
+	if (child_fid == parent_fid) {
 		*pb_included = TRUE;
 		return TRUE;
 	}
-	folder_id = inner_fid;
-	auto b_private = exmdb_server::is_private();
+	auto root = exmdb_server::is_private() ? PRIVATE_FID_ROOT : PUBLIC_FID_ROOT;
 	auto pstmt = gx_sql_prep(psqlite, "SELECT parent_id"
 	             " FROM folders WHERE folder_id=?");
 	if (pstmt == nullptr)
 		return FALSE;
-	while (!((b_private && folder_id == PRIVATE_FID_ROOT) ||
-	    (!b_private && folder_id == PUBLIC_FID_ROOT))) {
-		sqlite3_bind_int64(pstmt, 1, folder_id);
+	while (child_fid != root) {
+		sqlite3_bind_int64(pstmt, 1, child_fid);
 		if (pstmt.step() != SQLITE_ROW) {
 			*pb_included = FALSE;
 			return TRUE;
 		}
-		folder_id = sqlite3_column_int64(pstmt, 0);
+		child_fid = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt);
-		if (folder_id == outer_fid) {
+		if (child_fid == parent_fid) {
 			*pb_included = TRUE;
 			return TRUE;
 		}
@@ -4861,7 +4866,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_check_folder_id(sqlite3 *psqlite,
+BOOL cu_is_folder_present(sqlite3 *psqlite,
 	uint64_t folder_id, BOOL *pb_exist)
 {
 	char sql_string[256];

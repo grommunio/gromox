@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -59,7 +59,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		return ecNullObject;
 	if (object_type != ems_objtype::logon && object_type != ems_objtype::folder)
 		return ecNotSupported;
-	if (!exmdb_client::check_message(plogon->get_dir(), folder_id,
+	if (!exmdb_client::is_msg_present(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
 	if (!b_exist)
@@ -68,7 +68,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 	    CP_ACP, message_id, PidTagFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	folder_id = *static_cast<uint64_t *>(pvalue);
-	if (!exmdb_client::check_message_deleted(plogon->get_dir(), message_id, &b_del))
+	if (!exmdb_client::is_msg_deleted(plogon->get_dir(), message_id, &b_del))
 		return ecError;
 	if (b_del && !(open_mode_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
 		return ecNotFound;
@@ -88,7 +88,7 @@ ec_error_t rop_openmessage(uint16_t cpraw, uint64_t folder_id,
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
-	if (!exmdb_client::check_message_owner(plogon->get_dir(), message_id,
+	if (!exmdb_client::is_message_owner(plogon->get_dir(), message_id,
 	    rpc_user, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
