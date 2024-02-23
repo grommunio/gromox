@@ -1311,7 +1311,7 @@ ec_error_t ems_send_vmail(vmime::shared_ptr<vmime::message> m,
     const char *sender, const std::vector<std::string> &rcpts)
 {
 	m->getHeader()->getField("X-Mailer")->setValue(EMSMDB_UA);
-	return cu_send_vmail(m, g_smtp_url.c_str(), sender, rcpts);
+	return cu_send_vmail(std::move(m), g_smtp_url.c_str(), sender, rcpts);
 }
 
 void common_util_notify_receipt(const char *username, int type,
