@@ -228,13 +228,16 @@ static bool mod_cache_retrieve_etag(const char *etag, struct stat &sb)
 	return true;
 }
 
-static void mod_cache_serialize_etag(const struct stat &sb, char *etag, size_t len)
+static bool mod_cache_serialize_etag(const struct stat &sb, char *etag, size_t len)
 {
+	if (sb.st_dev == 0)
+		return false;
 	snprintf(etag, len, "%x-%llx-%llx-%llx",
 	         static_cast<unsigned int>(sb.st_dev),
 	         static_cast<unsigned long long>(sb.st_ino),
 	         static_cast<unsigned long long>(sb.st_size),
 	         static_cast<unsigned long long>(sb.st_mtime));
+	return true;
 }
 
 static const char *
@@ -270,7 +273,6 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
 		tmp_tm = {};
 	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
-	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	auto pcontent_type = pcontext->pitem->content_type;
 	bool emit_206 = pcontext->offset != 0 ||
 	                pcontext->until != static_cast<uint64_t>(pcontext->pitem->sb.st_size);
@@ -279,11 +281,12 @@ static BOOL mod_cache_response_single_header(http_context *phttp) try
 		"Date: {}\r\n"
 		"Content-Length: {}\r\n"
 		"Accept-Ranges: bytes\r\n"
-		"Last-Modified: {}\r\n"
-		"ETag: \"{}\"\r\n",
+		"Last-Modified: {}\r\n",
 		emit_206 ? "206 Partial Content\r\n" : "200 OK\r\n",
 		date_string, pcontext->until - pcontext->offset,
-		modified_string, etag);
+		modified_string);
+	if (mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag)))
+		rsp += fmt::format("ETag: \"{}\"\r\n", etag);
 	if (phttp->request.imethod == http_method::options)
 		rsp += fmt::format("Accept: GET,POST,OPTIONS,HEAD\r\n");
 	if (pcontent_type != nullptr)
@@ -329,15 +332,13 @@ static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
 	return content_length;
 }
 
-static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
+static BOOL mod_cache_response_multiple_header(http_context *phttp) try
 {
 	char etag[128];
 	struct tm tmp_tm;
-	int response_len;
 	char date_string[128];
 	uint32_t content_length;
 	CACHE_CONTEXT *pcontext;
-	char response_buff[1024];
 	char modified_string[128];
 	
 	pcontext = mod_cache_get_cache_context(phttp);
@@ -345,19 +346,20 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	if (gmtime_r(&pcontext->pitem->sb.st_mtime, &tmp_tm) == nullptr)
 		tmp_tm = {};
 	rfc1123_dstring(modified_string, std::size(modified_string), tmp_tm);
-	mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag));
 	content_length =  mod_cache_calculate_content_length(pcontext);	
-	response_len = gx_snprintf(response_buff, std::size(response_buff),
-					"HTTP/1.1 206 Partial Content\r\n"
-					"Date: %s\r\n"
-					"Content-Type: multipart/byteranges;"
-					" boundary=%s\r\n"
-					"Content-Length: %u\r\n"
-					"Last-Modified: %s\r\n"
-					"ETag: \"%s\"\r\n",
-					date_string, BOUNDARY_STRING,
-					content_length, modified_string, etag);
-	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
+	auto rsp = fmt::format(
+	           "HTTP/1.1 206 Partial Content\r\n"
+	           "Date: %s\r\n"
+	           "Content-Type: multipart/byteranges; boundary=%s\r\n"
+	           "Content-Length: %u\r\n"
+	           "Last-Modified: %s\r\n",
+	           date_string, BOUNDARY_STRING, content_length, modified_string);
+	if (mod_cache_serialize_etag(pcontext->pitem->sb, etag, std::size(etag)))
+		rsp += fmt::format("ETag: \"{}\"\r\n", etag);
+	return phttp->stream_out.write(rsp.c_str(), rsp.size()) == STREAM_WRITE_OK ? TRUE : false;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1736: ENOMEM");
+	return false;
 }
 
 static http_status mod_cache_parse_range_value(char *value,
