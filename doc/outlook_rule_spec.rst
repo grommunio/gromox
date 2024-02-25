@@ -413,11 +413,11 @@ XR_Rule
 
 .. code-block:: c
 
-	XR_Header
+	XR_Header;
 	repeat zero-or-more {
 		<any XR_Condition or XR_Action>;
 		if (there are more conds/actions)
-			XR_Separator
+			XR_Separator;
 	};
 
 The size of a XR element can be variadic and generally there are no length
@@ -1642,12 +1642,12 @@ SSRT:
 .. code-block:: c
 
 	given ACTION *act;
-	act->acttype = OP_MOVE
-	act->ulActionFlavor = 0
-	act->actMoveCopy.cbStoreEntryId = @seid_len
-	act->actMoveCopy.lpStoreEntryId = @store_eid
-	act->actMoveCopy.cbFldEntryId = @feid_len
-	act->actMoveCopy.lpFldEntryId = @folder_eid
+	act->acttype = OP_MOVE;
+	act->ulActionFlavor = 0;
+	act->actMoveCopy.cbStoreEntryId = @seid_len;
+	act->actMoveCopy.lpStoreEntryId = @store_eid;
+	act->actMoveCopy.cbFldEntryId = @feid_len;
+	act->actMoveCopy.lpFldEntryId = @folder_eid;
 
 The OL2019 UI's left pane arbitrarily restricts folder names to 127 characters
 by ignoring excess keypresses. The folder property dialog (via context menu)
@@ -1678,9 +1678,9 @@ SSRT:
 .. code-block:: c
 
 	given ACTION *act;
-	act->acttype = OP_MOVE
-	act->ulActionFlavor = 0
-	act->actMoveCopy = (set to the wastebasket)
+	act->acttype = OP_MOVE;
+	act->ulActionFlavor = 0;
+	act->actMoveCopy = <wastebasket>;
 
 
 Action 302 (0x12e): Forward
@@ -1713,9 +1713,9 @@ SSRT:
 .. code-block:: c
 
 	given ACTION *act;
-	act->acttype = OP_FORWARD
-	act->ulActionFlavor = 0
-	act->lpadrlist = ...
+	act->acttype = OP_FORWARD;
+	act->ulActionFlavor = 0;
+	act->lpadrlist = ...;
 
 Typically 12 props for an SMTP target:
 
@@ -1782,9 +1782,9 @@ SSRT:
 .. code-block:: c
 
 	given ACTION *act;
-	act->acttype = OP_DEFER_ACTION
-	act->ulActionFlavor = 0
-	act->actDeferAction.pbData = /* see XR_Begin */
+	act->acttype = OP_DEFER_ACTION;
+	act->ulActionFlavor = 0;
+	act->actDeferAction.pbData = /* see XR_Begin */;
 
 
 Action 304 (0x130): Show Outlook notification
@@ -1976,8 +1976,8 @@ The layout is the same as Move (300), but with
 
 .. code-block:: c
 
-	act->acttype = OP_COPY
-	act->ulActionFlavor = 0
+	act->acttype = OP_COPY;
+	act->ulActionFlavor = 0;
 
 
 Action 314 (0x13a): Notify when read
@@ -2123,8 +2123,8 @@ The layout is the same as Forward (302), but with
 
 .. code-block:: c
 
-	act->acttype = OP_FORWARD
-	act->ulActionFlavor = FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG
+	act->acttype = OP_FORWARD;
+	act->ulActionFlavor = FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG;
 
 
 Action 326 (0x146): Reply
@@ -2157,10 +2157,10 @@ SSRT:
 
 .. code-block:: c
 
-	act->acttype = OP_REPLY
-	act->ulActionFlavor = 0
-	act->actReply.cbEntryId = @eidlen
-	act->actReply.lpEntryId = @eid
+	act->acttype = OP_REPLY;
+	act->ulActionFlavor = 0;
+	act->actReply.cbEntryId = @eidlen;
+	act->actReply.lpEntryId = @eid;
 
 The associated message referenced by ``eid`` is stored in the inbox's
 Associated Contents and has a PR_MESSAGE_CLASS of
@@ -2183,8 +2183,8 @@ The layout is the same as Forward (302), but with
 
 .. code-block:: c
 
-	act->acttype = OP_FORWARD
-	act->ulActionFlavor = FWD_AS_ATTACHMENT
+	act->acttype = OP_FORWARD;
+	act->ulActionFlavor = FWD_AS_ATTACHMENT;
 
 
 Action 328 (0x148): Print
@@ -2339,9 +2339,9 @@ SSRT:
 .. code-block:: c
 
 	given ACTION *act;
-	act->acttype = OP_TAG
-	act->ulActionFlavor = 0
-	act->propTag.ulPropTag = PROP_TAG(PT_MV_UNICODE, 0x8002)
+	act->acttype = OP_TAG;
+	act->ulActionFlavor = 0;
+	act->propTag.ulPropTag = PROP_TAG(PT_MV_UNICODE, 0x8002);
 
 
 Condition 400 (0x190): Receive/Send
