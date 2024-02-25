@@ -1,10 +1,11 @@
 ..
         SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-        SPDX-FileCopyrightText: 2019 Jan Engelhardt
+        SPDX-FileCopyrightText: 2024 Jan Engelhardt
 
-Specification for the Outlook RWZ rule stream and file format
+Specification for the Outlook (2016–2021) RWZ rule stream and file format.
+Available information for older versions is sporadicly sprinkled in.
 
-version 2021-05-12
+version 2024-02-25
 
 written up by Jan Engelhardt
 
@@ -19,7 +20,9 @@ Table of Contents
 * `Length fields`_
 * `Timestamps`_
 * `Rules Stream`_
-* `XR_Begin`_
+* `RW_Magic (>=OL2016)`_, `RW_Magic (OL2002)`_, `RW_Magic (OL2000)`_,
+  `RW_Magic (OL1998)`_
+* `XR_Magic`_
 * `XR_Rule`_
 * `XR_Header`_
 * `XR_Separator: Element Separator`_
@@ -234,7 +237,10 @@ document. Numeric values are presented as an abstract number and their
 representation in the rule stream is in little-endian format. That is, the
 notation ``uint16_t x = 0x8001;`` concurs with a byte sequence of ``01 80``.
 
-Unless otherwise noted, there is no NUL termination for strings.
+In the OL 1998/2000 formats, strings are 8-bit, so TCHAR s[len] means exactly
+*len* octets. In the OL 2002+ formats, strings are UTF-16, so TCHAR s[len]
+means *len times 2* octets. Unless otherwise noted, there is no NUL terminator
+included in any string.
 
 
 Length fields
@@ -348,15 +354,13 @@ Rules Stream
 
 .. code-block:: c
 
-	uint32_t magic[] =
-		{0x00140000, 0x06140000, 0, 0,
-		0, 0, 0, 0, 1, 1, 0};
+	RW_Magic;
 	uint16_t numrules;
 	repeat numrules {
-		XR_Begin;
+		XR_Magic;
 	};
 	uint32_t tdlen;
-	char16_t template_dir[tdlen];
+	TCHAR template_dir[tdlen];
 	uint32_t magic = 0;
 	double timestamp;
 	uint32_t magic = 0;
@@ -368,7 +372,26 @@ Rules Stream
 Rule order is defined by their logical position to one another in XR_Begin.
 
 
-XR_Begin
+RW_Magic
+========
+
+.. code-block:: c
+
+	if (format >= ol2016)
+		uint8_t magic[8] = {0, 0, 0x14, 0, 0, 0, 0x14, 0x06};
+	else if (format == ol2002)
+		uint8_t magic[8] = {0x40, 0x42, 0x0f, 0, 0, 0, 0x14, 0x06};
+	else if (format == ol2000)
+		uint8_t magic[4] = {0xbd, 0x5e, 0x0e, 0};
+	else if (format == ol1998)
+		uint8_t magic[4] = {0x3c, 0xd0, 0x0e, 0};
+	uint32_t unknown[6] = {0, 0, 0, 0, 0, 0};
+	uint32_t unknown[2] = {1, 1};
+	if (format >= ol2002)
+		uint32_t unknown = 0;
+
+
+XR_Magic
 ========
 
 .. code-block:: c
@@ -376,11 +399,10 @@ XR_Begin
 	uint8_t magic[3];
 
 ``magic``
-	The bit pattern suggests this could be a flags field. However, before
-	OL2019 for the first time created e0c810 rules, it warned of backwards
-	compatibility (once only), so this is perhaps a version field.
+	The bit pattern suggests this could be a flags field.
 
-	* ``40 42 0f``: XR_Rule (alternative 1)
+	* ``00 00 14``: OL2016/2019/2021 XR_Rule
+	* ``40 42 0f``: OL2002 XR_Rule
 	* ``80 4f 12``: XR_Rule (alternative 2)
 	* ``e0 c8 10``: XR_Rule (alternative 3)
 	* ``6e 54 3d``: AR_DeferAction
@@ -417,23 +439,28 @@ XR_Header
 
 .. code-block:: c
 
+	if (format >= ol2002)
+		XR_Magic;
 	uint8_t locator;
 	uint8_t rname_len;
 	if (rname_len == 0xff)
 		uint16_t rname_len;
-	char16_t rule_name[rname_len];
+	TCHAR rule_name[rname_len];
 	uint32_t rule_is_active;
+	if (format >= ol2002)
+		uint32_t unknown = 0;
 	alternative {
-		uint32_t ptact_recv_rule_activated[]  = {0, 0, 0, 1};
-		uint32_t ptact_recv_rule_activated2[] = {0, 0, 0, 2};
-		uint32_t strm_recv_rule_activated[]   = {0, 1, 0, 1};
-		uint32_t strm_recv_rule_activated2[]  = {0, 1, 0, 2};
-		uint32_t strm_recv_rule_activated3[]  = {0, 1, 0, 3};
-		uint32_t strm_recv_rule_deactivated[] = {0, 0, 0, 0};
-		uint32_t strm_send_rule_activated[]   = {0, 0, 0, 0};
-		uint32_t strm_send_rule_deactivated[] = {0, 0, 0, 0};
+		uint32_t ptact_recv_rule_activated[]  = {0, 0, 1};
+		uint32_t ptact_recv_rule_activated2[] = {0, 0, 2};
+		uint32_t strm_recv_rule_activated[]   = {1, 0, 1};
+		uint32_t strm_recv_rule_activated2[]  = {1, 0, 2};
+		uint32_t strm_recv_rule_activated3[]  = {1, 0, 3};
+		uint32_t strm_recv_rule_deactivated[] = {0, 0, 0};
+		uint32_t strm_send_rule_activated[]   = {0, 0, 0};
+		uint32_t strm_send_rule_deactivated[] = {0, 0, 0};
 	} magic;
-	uint32_t bytecount;
+	if (format >= ol2002)
+		uint32_t bytecount;
 	uint16_t rule_elements;
 	uint16_t separator;
 	if (separator == 0xffff) {
@@ -779,7 +806,7 @@ Layout:
 		uint8_t mlen;
 		if (mlen == 0xff)
 			uint16_t mlen;
-		char16_t substring[mlen];
+		TCHAR substring[mlen];
 	} m;
 
 SRestriction:
@@ -862,7 +889,7 @@ Layout:
 	uint8_t nlen;
 	if (nlen == 0xff)
 		uint16_t nlen;
-	char16_t action[nlen];
+	TCHAR action[nlen];
 	uint32_t magic = 1;
 
 SRestriction:
@@ -948,7 +975,7 @@ Layout:
 	uint8_t cname_len;
 	if (cname_len == 0xff)
 		uint16_t cname_len;
-	char16_t categories[cname_len];
+	TCHAR categories[cname_len];
 
 SRestriction:
 
@@ -1030,13 +1057,13 @@ Layout:
 	uint8_t flen;
 	if (flen == 0xff)
 		uint16_t flen;
-	char16_t forms[flen];
+	TCHAR forms[flen];
 	uint16_t numprops;
 	repeat numprops {
 		uint8_t flen;
 		if (flen == 0xff) /* conjecture */
 			uint16_t flen;
-		char16_t fieldname[flen];
+		TCHAR fieldname[flen];
 		uint32_t proptag;
 
 		enum : uint32_t {
@@ -1047,7 +1074,7 @@ Layout:
 		uint8_t svlen;
 		if (svlen == 0xff) /* conjecture */
 			uint16_t svlen;
-		char16_t v_string[svlen];
+		TCHAR v_string[svlen];
 		enum : uint32_t {
 			EQ = 0,
 			NE = 1,
@@ -1287,7 +1314,7 @@ Layout:
 		uint8_t nlen;
 		if (nlen == 0xff)
 			uint16_t nlen;
-		char16_t name[nlen];
+		TCHAR name[nlen];
 		uint8_t clen;
 		if (clen == 0xff) /* conjecture */
 			uint16_t clen;
@@ -1402,7 +1429,7 @@ Layout:
 	uint8_t alen;
 	if (alen == 0xff) /* conjecture */
 		uint16_t alen;
-	char16_t account_name[alen];
+	TCHAR account_name[alen];
 	uint8_t abc_len;
 	if (abc_len == 0xff) /* conjecture */
 		uint16_t abc_len;
@@ -1468,7 +1495,7 @@ Layout:
 	uint8_t nlen;
 	if (nlen == 0xff) /* conjecture */
 		uint16_t nlen;
-	char16_t name[nlen];
+	TCHAR name[nlen];
 
 SRestriction:
 
@@ -1523,7 +1550,7 @@ Layout:
 	uint8_t nlen;
 	if (nlen == 0xff)
 		uint16_t nlen;
-	char16_t name[nlen];
+	TCHAR name[nlen];
 
 SRestriction:
 
@@ -1607,7 +1634,7 @@ Layout:
 	uint8_t fname_len;
 	if (fname_len == 0xff)
 		uint16_t fname_len;
-	char16_t folder_name[fname_len];
+	TCHAR folder_name[fname_len];
 	uint32_t magic = 0;
 
 SSRT:
@@ -1748,7 +1775,7 @@ Layout:
 	uint8_t plen;
 	if (plen == 0xff)
 		uint16_t plen;
-	char16_t pathname[plen];
+	TCHAR pathname[plen];
 
 SSRT:
 
@@ -1777,7 +1804,7 @@ Layout:
 	uint8_t tlen;
 	if (tlen == 0xff)
 		uint16_t tlen;
-	char16_t text[tlen];
+	TCHAR text[tlen];
 
 SSRT:
 
@@ -1818,7 +1845,7 @@ Layout:
 	uint8_t nlen;
 	if (nlen == 0xff)
 		uint16_t nlen;
-	char16_t action[nlen];
+	TCHAR action[nlen];
 	uint32_t magic = 0;
 
 SSRT:
@@ -1863,7 +1890,7 @@ Layout:
 	uint8_t clen;
 	if (clen == 0xff)
 		uint16_t clen;
-	char16_t categories[clen];
+	TCHAR categories[clen];
 
 SSRT:
 
@@ -2124,7 +2151,7 @@ Layout:
 	uint8_t slen;
 	if (slen == 0xff)
 		uint16_t slen;
-	char16_t subject[slen];
+	TCHAR subject[slen];
 
 SSRT:
 
@@ -2285,7 +2312,7 @@ Layout:
 		FOLLOWUP_DONE = 0xa,
 	};
 	uint8_t fu_name_len;
-	char16_t fu_name[fu_name_len];
+	TCHAR fu_name[fu_name_len];
 
 SSRT:
 
