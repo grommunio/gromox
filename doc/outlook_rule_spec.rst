@@ -156,6 +156,12 @@ this name is misleading since only very few of the conditions and actions one
 could possibly use in rules actually require a running client in the first
 place.
 
+Rules can also be defined for public folders. The dialog for this in Outlook
+however reeks of the 16-bit era and is much more limited than the one for
+private stores; that dialog only supports the features of server-side rules,
+and server-side rules are the only storage medium. There are no FAI messages to
+hold copies of the configuration.
+
 
 FAI message: RuleOrganizer
 ==========================
@@ -2944,6 +2950,37 @@ table is documented on MSDN, therefore abridged here and limited to notes.
 	Integer specifying the order of the rule with respect to others.
 	Apparently, no one could be bothered to insert rules at the right spot
 	and just use PR_ROWID.
+
+
+SSRT: Public Folder rules
+=========================
+
+In Outlook, right-click on a public folder, select "Properties…", select
+"Folder Assistant…" (Rule editor). FA allows rules to have only few actions:
+
+* "Return to sender", which maps to:
+
+  .. code-block:: c
+
+     act->acttype = OP_BOUNCE;
+     act->ulActionFlavor = 0;
+     act->actBounce.scBounceCode = 0x26;
+
+  (scBounceCode follows ``enum ndr_diag_code``.)
+
+* "Delete", which maps to:
+
+  .. code-block:: c
+
+     act->acttype = OP_DELETE;
+     act->ulActionFlavor = 0;
+
+* "Reply with template", which maps to an SSRT OP_REPLY action as shown in
+  section Action 326. Just like with private store rules, STOCK_REPLY_TEMPLATE
+  is not selectable from within Outlook (2021).
+
+* "Forward", which maps to an SSRT OP_FORWARD action as shown in section Action
+  302.
 
 
 SSRT: Organizer2
