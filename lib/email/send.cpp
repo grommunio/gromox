@@ -50,8 +50,9 @@ ec_error_t cu_send_mail(MAIL &mail, const char *smtp_url, const char *sender,
 	}
 	vmime::utility::inputStreamStringAdapter ct_adap(content); /* copies */
 	content.clear();
-	auto xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
+	vmime::shared_ptr<vmime::net::transport> xprt;
 	try {
+		xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {
@@ -89,8 +90,9 @@ ec_error_t cu_send_vmail(vmime::shared_ptr<vmime::message> msg,
 	vmime::mailboxList vrcpt_list;
 	for (const auto &r : rcpt_list)
 		vrcpt_list.appendMailbox(vmime::make_shared<vmime::mailbox>(r));
-	auto xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
+	vmime::shared_ptr<vmime::net::transport> xprt;
 	try {
+		xprt = vmime::net::session::create()->getTransport(vmime::utility::url(smtp_url));
 		/* vmime default timeout is 30s */
 		xprt->connect();
 	} catch (const vmime::exception &e) {
