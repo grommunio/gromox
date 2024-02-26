@@ -21,86 +21,6 @@ using namespace gromox;
 using LLU = unsigned long long;
 namespace exmdb_client = exmdb_client_remote;
 
-static constexpr std::pair<const char *, uint8_t> fld_special_names[] = {
-	{"", PRIVATE_FID_ROOT},
-	{"CALENDAR", PRIVATE_FID_CALENDAR},
-	{"COMMON_VIEWS", PRIVATE_FID_COMMON_VIEWS},
-	{"CONFLICTS", PRIVATE_FID_CONFLICTS},
-	{"CONTACTS", PRIVATE_FID_CONTACTS},
-	{"DEFERRED_ACTION", PRIVATE_FID_DEFERRED_ACTION},
-	{"DELETED", PRIVATE_FID_DELETED_ITEMS},
-	{"DRAFT", PRIVATE_FID_DRAFT},
-	{"FINDER", PRIVATE_FID_FINDER},
-	{"INBOX", PRIVATE_FID_INBOX},
-	{"IPM_SUBTREE", PRIVATE_FID_IPMSUBTREE},
-	{"JOURNAL", PRIVATE_FID_JOURNAL},
-	{"JUNK", PRIVATE_FID_JUNK},
-	{"LOCAL_FAILURES", PRIVATE_FID_LOCAL_FAILURES},
-	{"NOTES", PRIVATE_FID_NOTES},
-	{"OUTBOX", PRIVATE_FID_OUTBOX},
-	{"SENT", PRIVATE_FID_SENT_ITEMS},
-	{"SERVER_FAILURES", PRIVATE_FID_SERVER_FAILURES},
-	{"SHORTCUTS", PRIVATE_FID_SHORTCUTS},
-	{"SYNC_ISSUES", PRIVATE_FID_SYNC_ISSUES},
-	{"TASKS", PRIVATE_FID_TASKS},
-	{"TRASH", PRIVATE_FID_DELETED_ITEMS},
-	{"VIEWS", PRIVATE_FID_VIEWS},
-	{"WASTEBASKET", PRIVATE_FID_DELETED_ITEMS},
-};
-
-static eid_t lookup_eid_by_name(const char *dir, const char *name)
-{
-	auto pathcomp = gx_split(name, '/');
-	if (pathcomp.size() == 0)
-		return 0;
-	auto ptr = std::lower_bound(std::begin(fld_special_names), std::end(fld_special_names),
-	           pathcomp[0].c_str(), [](const std::pair<const char *, uint8_t> &pair, const char *x) {
-	           	return strcmp(pair.first, x) < 0;
-	           });
-	if (ptr == std::end(fld_special_names) ||
-	    strcmp(ptr->first, pathcomp[0].c_str()) != 0)
-		return 0;
-
-	eid_t fid = rop_util_make_eid_ex(1, ptr->second);
-	for (size_t i = 1; i < pathcomp.size(); ++i) {
-		if (pathcomp[i].empty())
-			continue;
-		RESTRICTION_CONTENT rst_4 = {FL_IGNORECASE, PR_DISPLAY_NAME, {PR_DISPLAY_NAME, deconst(pathcomp[i].c_str())}};
-		RESTRICTION_EXIST rst_3   = {PR_DISPLAY_NAME};
-		RESTRICTION rst_2[2]      = {{RES_EXIST, {&rst_3}}, {RES_CONTENT, {&rst_4}}};
-		RESTRICTION_AND_OR rst_1  = {std::size(rst_2), rst_2};
-		RESTRICTION rst           = {RES_AND, {&rst_1}};
-		uint32_t table_id = 0, rowcount = 0;
-		if (!exmdb_client::load_hierarchy_table(dir, fid, nullptr,
-		    0, &rst, &table_id, &rowcount)) {
-			mlog(LV_ERR, "load_hierarchy_table RPC rejected");
-			return 0;
-		}
-		auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
-
-		static constexpr uint32_t qtags[] = {PidTagFolderId};
-		static constexpr PROPTAG_ARRAY qtaginfo = {std::size(qtags), deconst(qtags)};
-		tarray_set rowset;
-		if (!exmdb_client::query_table(dir, nullptr, CP_ACP, table_id,
-		    &qtaginfo, 0, rowcount, &rowset)) {
-			mlog(LV_ERR, "query_table RPC rejected");
-			return 0;
-		}
-		if (rowset.count == 0) {
-			mlog(LV_ERR, "Could not locate \"%s\".", pathcomp[i].c_str());
-			return 0;
-		} else if (rowset.count > 1) {
-			mlog(LV_ERR, "\"%s\" is ambiguous.", pathcomp[i].c_str());
-			return 0;
-		}
-		auto newfid = rowset.pparray[0]->get<const eid_t>(PidTagFolderId);
-		if (newfid == nullptr)
-			return 0;
-		fid = *newfid;
-	}
-	return fid;
-}
-
 namespace delmsg {
 
 static char *g_folderstr;
@@ -149,7 +69,7 @@ static int main(int argc, const char **argv)
 		char *end = nullptr;
 		uint64_t fid = strtoul(g_folderstr, &end, 0);
 		if (end == g_folderstr || *end != '\0')
-			g_folderid = lookup_eid_by_name(g_storedir, g_folderstr);
+			g_folderid = gi_lookup_eid_by_name(g_storedir, g_folderstr);
 		else
 			g_folderid = rop_util_make_eid_ex(1, fid);
 	}
@@ -158,7 +78,8 @@ static int main(int argc, const char **argv)
 	std::vector<uint64_t> eids;
 	while (*++argv != nullptr) {
 		uint64_t id = strtoull(*argv, nullptr, 0);
-		eid_t eid = id == 0 ? lookup_eid_by_name(g_storedir, *argv) : rop_util_make_eid_ex(1, id);
+		eid_t eid = id == 0 ? gi_lookup_eid_by_name(g_storedir, *argv) :
+		            rop_util_make_eid_ex(1, id);
 		if (eid == 0) {
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
@@ -338,7 +259,8 @@ static int main(int argc, const char **argv)
 	while (*++argv != nullptr) {
 		BOOL partial = false;
 		uint64_t id = strtoull(*argv, nullptr, 0);
-		eid_t eid = id == 0 ? lookup_eid_by_name(g_storedir, *argv) : rop_util_make_eid_ex(1, id);
+		eid_t eid = id == 0 ? gi_lookup_eid_by_name(g_storedir, *argv) :
+		            rop_util_make_eid_ex(1, id);
 		if (eid == 0) {
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;
@@ -391,7 +313,8 @@ static int main(int argc, const char **argv)
 	auto age = rop_util_unix_to_nttime(time(nullptr) - HX_strtoull_sec(znul(g_age_str), nullptr));
 	while (*++argv != nullptr) {
 		uint64_t id = strtoull(*argv, nullptr, 0);
-		eid_t eid = id == 0 ? lookup_eid_by_name(g_storedir, *argv) : rop_util_make_eid_ex(1, id);
+		eid_t eid = id == 0 ? gi_lookup_eid_by_name(g_storedir, *argv) :
+		            rop_util_make_eid_ex(1, id);
 		if (eid == 0) {
 			fprintf(stderr, "Not recognized/found: \"%s\"\n", *argv);
 			return EXIT_FAILURE;

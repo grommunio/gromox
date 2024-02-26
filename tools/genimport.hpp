@@ -106,4 +106,5 @@ extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern void gi_setup_early(const char *dstmbox);
 extern int gi_setup();
 extern int gi_setup_from_dir();
+extern eid_t gi_lookup_eid_by_name(const char *dir, const char *name);
 extern void gi_shutdown();
