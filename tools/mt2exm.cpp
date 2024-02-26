@@ -32,12 +32,13 @@ struct ob_desc {
 
 using propididmap_t = std::unordered_map<uint16_t, uint16_t>;
 
-static char *g_username;
+static char *g_username, *g_anchor_folder_str;
 static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static propididmap_t g_thru_name_map;
 static uint8_t g_splice;
-static unsigned int g_oexcl = 1, g_anchor_folder, g_repeat_iter = 1;
+static uint64_t g_anchor_folder; /* GCV */
+static unsigned int g_oexcl = 1, g_repeat_iter = 1;
 static unsigned int g_do_delivery, g_skip_notif, g_skip_rules, g_twostep;
 static unsigned int g_continuous_mode;
 
@@ -46,35 +47,8 @@ static const char *strerror_eof(int e)
 	return e != 0 ? strerror(e) : "EOF";
 }
 
-static void cb_anchor_folder(const HXoptcb *cb)
-{
-	/* The strings are the common IMAP names for such folders */
-	if (strcmp(cb->data, "inbox") == 0)
-		g_anchor_folder = PRIVATE_FID_INBOX;
-	else if (strcmp(cb->data, "draft") == 0)
-		g_anchor_folder = PRIVATE_FID_DRAFT;
-	else if (strcmp(cb->data, "calendar") == 0)
-		g_anchor_folder = PRIVATE_FID_CALENDAR;
-	else if (strcmp(cb->data, "journal") == 0)
-		g_anchor_folder = PRIVATE_FID_JOURNAL;
-	else if (strcmp(cb->data, "notes") == 0)
-		g_anchor_folder = PRIVATE_FID_NOTES;
-	else if (strcmp(cb->data, "tasks") == 0)
-		g_anchor_folder = PRIVATE_FID_TASKS;
-	else if (strcmp(cb->data, "contacts") == 0)
-		g_anchor_folder = PRIVATE_FID_CONTACTS;
-	else if (strcmp(cb->data, "junk") == 0)
-		g_anchor_folder = PRIVATE_FID_JUNK;
-	else if (strcmp(cb->data, "sent") == 0)
-		g_anchor_folder = PRIVATE_FID_SENT_ITEMS;
-	else if (strcmp(cb->data, "trash") == 0)
-		g_anchor_folder = PRIVATE_FID_DELETED_ITEMS;
-	else
-		fprintf(stderr, "Unrecognized argument for -B: \"%s\", falling back to default\n", cb->data);
-}
-
 static constexpr HXoption g_options_table[] = {
-	{nullptr, 'B', HXTYPE_STRING, nullptr, nullptr, cb_anchor_folder, 0, "Placement position for unanchored messages", "NAME"},
+	{nullptr, 'B', HXTYPE_STRING, &g_anchor_folder_str, nullptr, nullptr, 0, "Placement position for unanchored messages", "NAME"},
 	{nullptr, 'D', HXTYPE_NONE, &g_do_delivery, nullptr, nullptr, 0, "Use delivery mode"},
 	{nullptr, 'c', HXTYPE_NONE, &g_continuous_mode, {}, {}, 0, "Continuous operation mode (do not stop on errors)"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
@@ -453,11 +427,20 @@ int main(int argc, const char **argv) try
 	if (iconv_validate() != 0)
 		return EXIT_FAILURE;
 	gi_setup_early(g_username);
-	if (exm_read_base_maps() == 0)
-		return EXIT_SUCCESS;
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	auto cl_0 = make_scope_exit(gi_shutdown);
+	if (g_anchor_folder_str == nullptr) {
+		g_anchor_folder = PRIVATE_FID_DRAFT;
+	} else {
+		g_anchor_folder = rop_util_get_gc_value(gi_lookup_eid_by_name(g_storedir, g_anchor_folder_str));
+		if (g_anchor_folder == 0) {
+			fprintf(stderr, "Folder not recognized/found: \"%s\"\n", g_anchor_folder_str);
+			return EXIT_FAILURE;
+		}
+	}
+	if (exm_read_base_maps() == 0)
+		return EXIT_SUCCESS;
 	int iret = EXIT_SUCCESS;
 	while (true) {
 		uint64_t xsize = 0;
