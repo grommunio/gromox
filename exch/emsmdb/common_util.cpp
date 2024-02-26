@@ -1329,7 +1329,7 @@ void common_util_notify_receipt(const char *username, int type,
 	if (!exch_bouncer_make(common_util_get_user_displayname,
 	    common_util_get_user_lang, username, pbrief, bounce_type, imail))
 		return;
-	auto ret = ems_send_vmail(imail, username, rcpt_list);
+	auto ret = ems_send_vmail(std::move(imail), username, rcpt_list);
 	if (ret != ecSuccess)
 		mlog2(LV_ERR, "E-1189: ems_send_mail: %s\n", mapi_strerror(ret));
 } catch (const std::bad_alloc &) {
