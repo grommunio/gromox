@@ -708,7 +708,6 @@ eid_t gi_lookup_eid_by_name(const char *dir, const char *name)
 			return 0;
 		}
 		if (rowset.count == 0) {
-			mlog(LV_ERR, "Could not locate \"%s\".", pathcomp[i].c_str());
 			return 0;
 		} else if (rowset.count > 1) {
 			mlog(LV_ERR, "\"%s\" is ambiguous.", pathcomp[i].c_str());
