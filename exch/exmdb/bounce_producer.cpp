@@ -59,7 +59,7 @@ static std::string exmdb_bouncer_attachs(sqlite3 *psqlite, uint64_t message_id)
 
 BOOL exmdb_bouncer_make_content(const char *from, const char *rcpt,
     sqlite3 *psqlite, uint64_t message_id, const char *bounce_type,
-    char *mime_from, std::string &subject, std::string &content) try
+    std::string &subject, std::string &content) try
 {
 	void *pvalue;
 	char charset[32], date_buff[128], lang[32];
@@ -128,11 +128,11 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
     uint64_t message_id, const char *bounce_type, MAIL *pmail) try
 {
 	MIME *pmime;
-	char mime_from[UADDR_SIZE], date_buff[128];
+	char date_buff[128];
 	std::string subject, content_buff;
 	
 	if (!exmdb_bouncer_make_content(from, rcpt,
-	    psqlite, message_id, bounce_type, mime_from,
+	    psqlite, message_id, bounce_type,
 	    subject, content_buff))
 		return FALSE;
 	auto phead = pmail->add_head();
@@ -141,7 +141,7 @@ BOOL exmdb_bouncer_make(const char *from, const char *rcpt, sqlite3 *psqlite,
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
 	pmime->set_content_param("report-type", "delivery-status");
-	pmime->set_field("From", mime_from);
+	pmime->set_field("From", ("<"s + rcpt + ">").c_str());
 	pmime->set_field("To", ("<"s + from + ">").c_str());
 	pmime->set_field("MIME-Version", "1.0");
 	pmime->set_field("X-Auto-Response-Suppress", "All");

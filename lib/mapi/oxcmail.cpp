@@ -2614,13 +2614,13 @@ static void select_parts(const MIME *part, MIME_ENUM_PARAM &info)
 
 static BOOL xlog_bool(const char *func, unsigned int line)
 {
-	mlog(LV_ERR, "%s:%u returned false", func, line);
+	mlog(LV_ERR, "%s:%u returned false; see surrounding log messages", func, line);
 	return false;
 }
 
 static std::nullptr_t xlog_null(const char *func, unsigned int line)
 {
-	mlog(LV_ERR, "%s:%u returned false", func, line);
+	mlog(LV_ERR, "%s:%u returned false; see surrounding log messages and those of gromox-http for unexpected shutdowns", func, line);
 	return nullptr;
 }
 

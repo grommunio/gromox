@@ -2478,7 +2478,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	std::string subject, content_buff;
 	if (action_flavor & STOCK_REPLY_TEMPLATE) {
 		if (!exmdb_bouncer_make_content(rp.ev_from, rp.ev_to,
-		    rp.sqlite, rp.message_id, "BOUNCE_AUTO_RESPONSE", nullptr,
+		    rp.sqlite, rp.message_id, "BOUNCE_AUTO_RESPONSE",
 		    subject, content_buff))
 			return false;
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
