@@ -32,6 +32,7 @@ Makefile.in
 /dldcheck
 /dldcheck.stamp
 /digest
+/eidprint
 /event
 /gromox-abktconv
 /gromox-compress

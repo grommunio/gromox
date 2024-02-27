@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/range_set.hpp>
 

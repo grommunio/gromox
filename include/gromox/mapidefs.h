@@ -376,10 +376,10 @@ enum { /* ENTRYID flags byte 0 */
 	MAPI_NOTRECIP    = 0x40U,
 	MAPI_SHORTTERM   = 0x80U,
 };
-#if 0
 enum { /* ENTRYID flags byte 1 */
 	MAPI_COMPOUND = 0x80U,
 };
+#if 0
 enum { /* ENTRYID flags byte 3 */
 	ZC6_FAVORITE = 0x01U, // provider-specific extension, not exposed to MSMAPI32
 };

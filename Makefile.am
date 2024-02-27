@@ -10,7 +10,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
-pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue eidprint event gromox-snapshot http imap midb pop3 timer zcore
 pkglib_LTLIBRARIES = ${exchange_plugins} ${mta_plugins} ${mra_plugins} libmapi4zf.la
 default_sym = ${srcdir}/default.sym
 if WITH_GNU_LD
@@ -204,6 +204,8 @@ pam_gromox_la_LIBADD = ${dl_LIBS} ${libHX_LIBS} ${pam_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 saphpdir = ${pkgdatadir}/sa
 dist_saphp_DATA = tools/php/submit.php
+eidprint_SOURCES = tools/eidprint.cpp
+eidprint_LDADD = libgromox_common.la libgromox_mapi.la
 event_SOURCES = tools/event.cpp
 event_LDADD = -lpthread ${libHX_LIBS} libgromox_common.la
 gromox_abktconv_SOURCES = tools/abktconv.cpp
