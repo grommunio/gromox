@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -418,18 +418,31 @@ static int main(int argc, const char **argv)
 
 }
 
-static errno_t delstoreprop(const GUID &guid, const char *name)
+static errno_t resolvename(const GUID &guid, const char *name, bool create,
+    uint16_t *out)
 {
 	const PROPERTY_NAME xn = {MNID_STRING, guid, 0, deconst(name)};
 	const PROPNAME_ARRAY name_req = {1, deconst(&xn)};
 	PROPID_ARRAY name_rsp{};
-	if (!exmdb_client::get_named_propids(g_storedir, false, &name_req, &name_rsp))
+	if (!exmdb_client::get_named_propids(g_storedir, create, &name_req, &name_rsp))
 		return EINVAL;
 	if (name_rsp.count != name_req.count)
 		return EINVAL;
 	if (name_rsp.ppropid[0] == 0)
+		return ENOENT;
+	*out = name_rsp.ppropid[0];
+	return 0;
+}
+
+static errno_t delstoreprop(const GUID &guid, const char *name)
+{
+	uint16_t propid = 0;
+	auto err = resolvename(guid, name, false, &propid);
+	if (err == ENOENT)
 		return 0;
-	uint32_t proptag = PROP_TAG(PT_BINARY, name_rsp.ppropid[0]);
+	else if (err != 0)
+		return err;
+	uint32_t proptag = PROP_TAG(PT_BINARY, propid);
 	/* In the future, some names may require us to use a different PT */
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
