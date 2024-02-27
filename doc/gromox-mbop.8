@@ -27,11 +27,15 @@ delmsg: issue "delete_message" RPCs for a mailbox
 .IP \(bu 4
 emptyfld: remove objects from folders
 .IP \(bu 4
+get\-photo: retrieve user image from store and print to stdout
+.IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
 purge\-softdelete: remove soft-deleted items from a folder
 .IP \(bu 4
 recalc\-sizes: recalculate store size
+.IP \(bu 4
+set\-photo: read user image from stdin and save to store
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
@@ -109,6 +113,13 @@ the hands of the user, or by using mbop's purge\-softdelete subcommand.
 .IP \(bu 4
 Take out the trash ("Deleted Items") for a lazy user:
 gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
+.SH get\-photo
+.SS Synopsis
+\fBget\-photo >\fP\fIsomefile\fP
+.SS Description
+Reads the user photo from the store and dumps it to stdout. If stdout is a
+terminal, no output is shown, in which case, if stderr is (also) a terminal,
+a summary will be shown there.
 .SH purge\-datafiles
 The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.
@@ -137,6 +148,11 @@ To process an entire mailbox and wipe everything older than a few days:
 gromox\-mbop \-u abc@example.com purge\-softdelete \-r / \-t 10d
 .SH recalc\-sizes
 Recalculates the store size.
+.SH set\-photo
+.SS Synopsis
+\fBset\-photo <\fP\fIsomefile\fP
+.SS Description
+Reads a new user photo from standard input and writes it to the store.
 .SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to

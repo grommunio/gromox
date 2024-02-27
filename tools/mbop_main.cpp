@@ -7,7 +7,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unistd.h>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/exmdb_client.hpp>
@@ -443,7 +445,6 @@ static errno_t delstoreprop(const GUID &guid, const char *name)
 	else if (err != 0)
 		return err;
 	uint32_t proptag = PROP_TAG(PT_BINARY, propid);
-	/* In the future, some names may require us to use a different PT */
 	const PROPTAG_ARRAY tags = {1, &proptag};
 	if (!exmdb_client::remove_store_properties(g_storedir, &tags))
 		return EINVAL;
@@ -452,6 +453,81 @@ static errno_t delstoreprop(const GUID &guid, const char *name)
 	else if (strcmp(name, "photo") == 0)
 		unlink((g_storedir + "/config/portrait.jpg"s).c_str());
 	return 0;
+}
+
+static errno_t showstoreprop(uint32_t proptag)
+{
+	const PROPTAG_ARRAY tags = {1, &proptag};
+	TPROPVAL_ARRAY vals{};
+	if (!exmdb_client::get_store_properties(g_storedir, CP_ACP, &tags, &vals))
+		return EINVAL;
+	switch (PROP_TYPE(proptag)) {
+	case PT_BINARY: {
+		auto bv = vals.get<const BINARY>(proptag);
+		if (bv == nullptr) {
+			if (isatty(STDERR_FILENO))
+				fprintf(stderr, "Property is unset\n");
+			return 0;
+		}
+		if (isatty(STDOUT_FILENO) && isatty(STDERR_FILENO))
+			fprintf(stderr, "[%u bytes of binary data]\n", bv->cb);
+		if (!isatty(STDOUT_FILENO))
+			write(STDOUT_FILENO, bv->pc, bv->cb);
+		return 0;
+	}
+	default:
+		fprintf(stderr, "No printer implemented for 0x%x\n", proptag);
+		return EINVAL;
+	}
+}
+
+static errno_t showstoreprop(const GUID guid, const char *name, uint16_t proptype)
+{
+	uint16_t propid = 0;
+	auto err = resolvename(guid, name, false, &propid);
+	if (err == ENOENT)
+		return 0;
+	else if (err != 0)
+		return err;
+	return showstoreprop(PROP_TAG(proptype, propid));
+}
+
+static errno_t setstoreprop(uint32_t proptag)
+{
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(STDIN_FILENO, &slurp_len));
+	if (slurp_data == nullptr) {
+		fprintf(stderr, "Outta memory\n");
+		return ENOMEM;
+	}
+	BINARY bv;
+	bv.cb = slurp_len;
+	bv.pv = slurp_data.get();
+	const TAGGED_PROPVAL tprop = {proptag, &bv};
+	const TPROPVAL_ARRAY tprop_arr = {1, deconst(&tprop)};
+	PROBLEM_ARRAY prob{};
+	if (!exmdb_client::set_store_properties(g_storedir, CP_ACP, &tprop_arr, &prob)) {
+		mlog(LV_ERR, "set_store_prop RPC unsuccessful");
+		return EIO;
+	} else if (prob.count > 0) {
+		mlog(LV_ERR, "set_store_prop action unsuccessful / property rejected");
+		return EIO;
+	}
+	return 0;
+}
+
+static errno_t setstoreprop(const GUID guid, const char *name, uint16_t proptype)
+{
+	uint16_t propid = 0;
+	auto err = resolvename(guid, name, true, &propid);
+	if (err == ENOENT) {
+		fprintf(stderr, "namedprop %s not found\n", name);
+		return EIO;
+	} else if (err != 0) {
+		fprintf(stderr, "%s\n", strerror(-err));
+		return err;
+	}
+	return setstoreprop(PROP_TAG(proptype, propid));
 }
 
 static errno_t clear_rwz()
@@ -538,6 +614,10 @@ int main(int argc, const char **argv)
 		ret = delstoreprop(PSETID_GROMOX, "zcore_profsect");
 	} else if (strcmp(argv[0], "clear-rwz") == 0) {
 		ret = clear_rwz();
+	} else if (strcmp(argv[0], "get-photo") == 0) {
+		ret = showstoreprop(PSETID_GROMOX, "photo", PT_BINARY);
+	} else if (strcmp(argv[0], "set-photo") == 0) {
+		ret = setstoreprop(PSETID_GROMOX, "photo", PT_BINARY);
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
 	} else {
