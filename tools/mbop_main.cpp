@@ -475,6 +475,13 @@ static errno_t showstoreprop(uint32_t proptag)
 			write(STDOUT_FILENO, bv->pc, bv->cb);
 		return 0;
 	}
+	case PT_STRING8:
+	case PT_UNICODE: {
+		auto str = vals.get<const char>(proptag);
+		if (str != nullptr)
+			fputs(str, stdout);
+		return 0;
+	}
 	default:
 		fprintf(stderr, "No printer implemented for 0x%x\n", proptag);
 		return EINVAL;
@@ -501,10 +508,21 @@ static errno_t setstoreprop(uint32_t proptag)
 		return ENOMEM;
 	}
 	BINARY bv;
-	bv.cb = slurp_len;
-	bv.pv = slurp_data.get();
-	const TAGGED_PROPVAL tprop = {proptag, &bv};
-	const TPROPVAL_ARRAY tprop_arr = {1, deconst(&tprop)};
+	TAGGED_PROPVAL pv = {proptag};
+	switch (PROP_TYPE(proptag)) {
+	case PT_BINARY:
+		bv.cb = slurp_len;
+		bv.pv = slurp_data.get();
+		pv.pvalue = &bv;
+		break;
+	case PT_STRING8:
+	case PT_UNICODE:
+		pv.pvalue = slurp_data.get();
+		break;
+	default:
+		return EINVAL;
+	}
+	const TPROPVAL_ARRAY tprop_arr = {1, deconst(&pv)};
 	PROBLEM_ARRAY prob{};
 	if (!exmdb_client::set_store_properties(g_storedir, CP_ACP, &tprop_arr, &prob)) {
 		mlog(LV_ERR, "set_store_prop RPC unsuccessful");
@@ -618,6 +636,10 @@ int main(int argc, const char **argv)
 		ret = showstoreprop(PSETID_GROMOX, "photo", PT_BINARY);
 	} else if (strcmp(argv[0], "set-photo") == 0) {
 		ret = setstoreprop(PSETID_GROMOX, "photo", PT_BINARY);
+	} else if (strcmp(argv[0], "get-websettings") == 0) {
+		ret = showstoreprop(PSETID_GROMOX, "websettings", PT_UNICODE);
+	} else if (strcmp(argv[0], "set-websettings") == 0) {
+		ret = setstoreprop(PSETID_GROMOX, "websettings", PT_UNICODE);
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
 	} else {

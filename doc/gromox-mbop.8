@@ -29,6 +29,8 @@ emptyfld: remove objects from folders
 .IP \(bu 4
 get\-photo: retrieve user image from store and print to stdout
 .IP \(bu 4
+get\-websettings: retrieve settings for grommunio-web
+.IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
 purge\-softdelete: remove soft-deleted items from a folder
@@ -36,6 +38,8 @@ purge\-softdelete: remove soft-deleted items from a folder
 recalc\-sizes: recalculate store size
 .IP \(bu 4
 set\-photo: read user image from stdin and save to store
+.IP \(bu 4
+set\-websettings: read new grommunio-web settings from stdin and save to store
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
@@ -120,6 +124,11 @@ gromox\-mbop \-u abc@example.com emptyfld \-Rt 1week \-\-soft DELETED
 Reads the user photo from the store and dumps it to stdout. If stdout is a
 terminal, no output is shown, in which case, if stderr is (also) a terminal,
 a summary will be shown there.
+.SH get\-websettings
+.SS Synopsis
+\fBget\-websettings >\fP\fIsomefile.json\fP
+.SS Description
+Reads the grommunio-web settings from the store and dumps it to stdout.
 .SH purge\-datafiles
 The "purge\-datafiles" RPC makes exmdb_provider remove attachment and content
 files from disk that are no longer referenced by any message.
@@ -153,6 +162,12 @@ Recalculates the store size.
 \fBset\-photo <\fP\fIsomefile\fP
 .SS Description
 Reads a new user photo from standard input and writes it to the store.
+.SH set\-websettings
+.SS Synopsis
+\fBset\-websettings <\fP\fIsomefile.json\fP
+.SS Description
+Reads new grommunio-web settings from standard input and writes it to the
+store.
 .SH unload
 Normally, exmdb_provider(4gx) keeps stores open for up to
 exmdb_provider.cfg:cache_interval. The "unload_store" RPC to
