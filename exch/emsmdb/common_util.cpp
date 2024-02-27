@@ -582,7 +582,7 @@ BINARY* common_util_to_folder_replica(
 ec_error_t replguid_to_replid(const logon_object &logon,
     const GUID &guid, uint16_t &replid)
 {
-	if (guid == GUID_NONE) {
+	if (guid == GUID_NULL) {
 		replid = 0;
 		return ecInvalidParam;
 	}

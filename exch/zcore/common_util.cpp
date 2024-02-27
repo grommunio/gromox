@@ -876,7 +876,7 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 static ec_error_t replguid_to_replid(const store_object &logon,
     const GUID &guid, uint16_t &replid)
 {
-	if (guid == GUID_NONE) {
+	if (guid == GUID_NULL) {
 		replid = 0;
 		return ecInvalidParam;
 	}

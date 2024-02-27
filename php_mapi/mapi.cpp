@@ -282,7 +282,7 @@ static void stream_object_free(STREAM_OBJECT *pstream)
 
 static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 {
-	if (pstream->hsession == GUID_NONE || pstream->hparent == 0 || pstream->proptag == 0)
+	if (pstream->hsession == GUID_NULL || pstream->hparent == 0 || pstream->proptag == 0)
 		return ecInvalidParam;
 	switch (PROP_TYPE(pstream->proptag)) {
 	case PT_BINARY:
@@ -308,7 +308,7 @@ static BINARY* stream_object_get_content(STREAM_OBJECT *pstream)
 static void notif_sink_free(NOTIF_SINK *psink)
 {
 	if (NULL != psink->padvise) {
-		if (psink->hsession != GUID_NONE)
+		if (psink->hsession != GUID_NULL)
 			for (unsigned int i = 0; i < psink->count; ++i)
 				zclient_unadvise(psink->hsession,
 					psink->padvise[i].hstore, psink->padvise[i].sub_id);
@@ -336,7 +336,7 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 	               sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
 	if (padvise == nullptr)
 		return 0;
-	if (psink->hsession == GUID_NONE)
+	if (psink->hsession == GUID_NULL)
 		psink->hsession = hsession;
 	else if (psink->hsession != hsession)
 		return 0;

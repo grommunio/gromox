@@ -157,7 +157,7 @@ http_status MhContext::failure_response(uint32_t status) const try
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, m_server_version, current_time) +
 	          fmt::format("Content-Length: {}\r\n", ct.size());
-	if (sequence_guid != GUID_NONE) {
+	if (sequence_guid != GUID_NULL) {
 		char txt[GUIDSTR_SIZE];
 		sequence_guid.to_str(txt, std::size(txt));
 		rs += fmt::format("Set-Cookie: sequence={}\r\n", txt);
@@ -176,7 +176,7 @@ http_status MhContext::normal_response() const try
 	auto rs = commonHeader(request_value, request_id, client_info,
 	          session_string, m_server_version, current_time) +
 	          "Transfer-Encoding: chunked\r\n";
-	if (sequence_guid != GUID_NONE) {
+	if (sequence_guid != GUID_NULL) {
 		char txt[GUIDSTR_SIZE];
 		sequence_guid.to_str(txt, std::size(txt));
 		rs += fmt::format("Set-Cookie: sequence={}\r\n", txt);

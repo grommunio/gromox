@@ -2425,7 +2425,7 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);
 	if (flag == nullptr || *flag == 0)
 		return TRUE;
-	if (template_guid != GUID_NONE) {
+	if (template_guid != GUID_NULL) {
 		auto bin = pmsgctnt->proplist.get<const BINARY>(PR_REPLY_TEMPLATE_ID);
 		if (bin == nullptr || bin->cb != 16)
 			return TRUE;
