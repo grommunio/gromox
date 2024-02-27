@@ -529,11 +529,9 @@ int main(int argc, const char **argv)
 		ret = purgesoftdel::main(argc, argv);
 	} else {
 		ret = simple_rpc::main(argc, argv);
-		if (ret == -EINVAL) {
+		if (ret == -EINVAL)
 			fprintf(stderr, "Unrecognized subcommand \"%s\"\n", argv[0]);
-			ret = EXIT_FAILURE;
-		}
 	}
 	gi_shutdown();
-	return ret;
+	return !!ret;
 }
