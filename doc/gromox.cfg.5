@@ -38,8 +38,8 @@ have an SMTP-looking address in this field. Preferably, it should point to the
 administrator's mailbox (or an alias thereto).
 .br
 When the value set here has no domain part and ends in just '@', the domain is
-taken from a re-resolution of the system hostname. (At minimum, the FQDN to the
-system hostname should be in /etc/hosts.)
+taken from a re-resolution of the system hostname (so as to cope with an
+unqualified hostname in /etc/hosts that many system installations use).
 .br
 Default: \fIpostmaster@\fP
 .TP
