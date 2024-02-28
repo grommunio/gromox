@@ -943,6 +943,10 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
+	/*
+	 * Do *not* handle PR_EMS_AB_THUMBNAIL_PHOTO. EMSAB proptags are not
+	 * valid in their intended sense for IMsgStores.
+	 */
 	}
 	return FALSE;
 }
@@ -1230,6 +1234,9 @@ static void set_store_lang(store_object *store, const char *locale)
 	system_services_set_user_lang(store->account, mloc);
 }
 
+/*
+ * This function is tailored to grommunio-web and does not behave like normal.
+ */
 BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	auto pinfo = zs_get_info();
@@ -1239,6 +1246,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		if (store_object_is_readonly_prop(pstore, pv.proptag))
 			continue;
 		switch (pv.proptag) {
+		/* OOF is stored outside the information store. */
 		case PR_EC_OUTOFOFFICE:
 		case PR_EC_OUTOFOFFICE_FROM:
 		case PR_EC_OUTOFOFFICE_UNTIL:
@@ -1261,6 +1269,10 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 					static_cast<char *>(pv.pvalue));
 			continue;
 		case PR_EMS_AB_THUMBNAIL_PHOTO: {
+			/*
+			 * Translate g-web issuing a set_property call with a
+			 * silly proptag.
+			 */
 			if (!pstore->b_private)
 				continue;
 			auto bv = static_cast<BINARY *>(pv.pvalue);
@@ -1269,6 +1281,10 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			continue;
 		}
 		}
+		/*
+		 * The rest is written to a *shadow* store object only visible
+		 * to zcore (unexplored historic reasons).
+		 */
 		if (!pinfo->ptree->set_zstore_propval(&pv))
 			return FALSE;
 	}
