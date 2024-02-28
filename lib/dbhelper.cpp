@@ -118,8 +118,11 @@ int gx_sql_step(sqlite3_stmt *stm, unsigned int flags)
 	auto exp = sqlite3_expanded_sql(stm);
 	auto db  = sqlite3_db_handle(stm);
 	auto fn  = db != nullptr ? sqlite3_db_filename(db, nullptr) : nullptr;
+	auto msg = sqlite3_errmsg(db);
+	if (msg == nullptr)
+		msg = sqlite3_errstr(ret);
 	mlog(LV_ERR, "sqlite3_step(%s) \"%s\": %s (%d)", znul(fn), exp != nullptr ?
-		exp : sqlite3_sql(stm), sqlite3_errstr(ret), ret);
+		exp : sqlite3_sql(stm), znul(msg), ret);
 	sqlite3_free(exp);
 	return ret;
 }
