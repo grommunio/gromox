@@ -1251,28 +1251,26 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			if (!store_object_set_oof_property(pstore->get_dir(),
 			    pv.proptag, pv.pvalue))
 				return FALSE;	
-			break;
+			continue;
 		case PR_EC_USER_LANGUAGE:
 			set_store_lang(pstore, static_cast<char *>(pv.pvalue));
-			break;
+			continue;
 		case PR_EC_USER_TIMEZONE:
 			if (pstore->b_private)
 				system_services_set_timezone(pstore->account,
 					static_cast<char *>(pv.pvalue));
-			break;
+			continue;
 		case PR_EMS_AB_THUMBNAIL_PHOTO: {
 			if (!pstore->b_private)
-				break;
+				continue;
 			auto bv = static_cast<BINARY *>(pv.pvalue);
 			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
 				"photo", PT_BINARY, bv->pb, bv->cb);
-			break;
+			continue;
 		}
-		default:
-			if (!pinfo->ptree->set_zstore_propval(&pv))
-				return FALSE;	
-			break;
 		}
+		if (!pinfo->ptree->set_zstore_propval(&pv))
+			return FALSE;
 	}
 	return TRUE;
 }
