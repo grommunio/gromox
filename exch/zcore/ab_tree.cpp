@@ -1409,7 +1409,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		auto pvalue = cu_alloc<BINARY>();
 		if (pvalue == nullptr)
 			return FALSE;
-		auto bv = cu_read_storenamedprop(dn, PSETID_GROMOX, "photo", PT_BINARY);
+		auto bv = static_cast<BINARY *>(cu_read_storenamedprop(dn,
+		          PSETID_GROMOX, "photo", PT_BINARY));
 		if (bv != nullptr) {
 			*ppvalue = bv;
 			return TRUE;

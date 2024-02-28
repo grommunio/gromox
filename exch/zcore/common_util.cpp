@@ -2090,7 +2090,7 @@ const char* common_util_get_submit_command()
 	return g_submit_command;
 }
 
-BINARY *cu_read_storenamedprop(const char *dir, const GUID &guid,
+void *cu_read_storenamedprop(const char *dir, const GUID &guid,
     const char *name, uint16_t proptype)
 {
 	if (*dir == '\0')
@@ -2106,7 +2106,7 @@ BINARY *cu_read_storenamedprop(const char *dir, const GUID &guid,
 	TPROPVAL_ARRAY values{};
 	if (!exmdb_client::get_store_properties(dir, CP_ACP, &tags, &values))
 		return nullptr;
-	return values.get<BINARY>(proptag);
+	return values.getval(proptag);
 }
 
 errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
@@ -2120,10 +2120,17 @@ errno_t cu_write_storenamedprop(const char *dir, const GUID &guid,
 	if (!exmdb_client::get_named_propids(dir, true, &name_req, &name_rsp) ||
 	    name_rsp.count != name_req.count || name_rsp.ppropid[0] == 0)
 		return EINVAL;
+	TAGGED_PROPVAL pv = {PROP_TAG(proptype, name_rsp.ppropid[0])};
 	BINARY bin;
-	bin.cb = size;
-	bin.pv = deconst(buf);
-	TAGGED_PROPVAL pv = {PROP_TAG(proptype, name_rsp.ppropid[0]), &bin};
+	if (proptype == PT_BINARY) {
+		bin.cb = size;
+		bin.pv = deconst(buf);
+		pv.pvalue = &bin;
+	} else if (proptype == PT_STRING8 || proptype == PT_UNICODE) {
+		pv.pvalue = deconst(buf);
+	} else {
+		return EINVAL;
+	}
 	TPROPVAL_ARRAY values = {1, &pv};
 	PROBLEM_ARRAY prob;
 	if (!exmdb_client::set_store_properties(dir, CP_ACP, &values, &prob))

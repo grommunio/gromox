@@ -943,6 +943,12 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;
+	case PR_EC_WEBACCESS_SETTINGS_JSON:
+		*ppvalue = cu_read_storenamedprop(pstore->dir, PSETID_GROMOX,
+		           "websettings", PT_UNICODE);
+		if (*ppvalue == nullptr)
+			return false;
+		return TRUE;
 	/*
 	 * Do *not* handle PR_EMS_AB_THUMBNAIL_PHOTO. EMSAB proptags are not
 	 * valid in their intended sense for IMsgStores.
@@ -1278,6 +1284,15 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			auto bv = static_cast<BINARY *>(pv.pvalue);
 			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
 				"photo", PT_BINARY, bv->pb, bv->cb);
+			continue;
+		}
+		case PR_EC_WEBACCESS_SETTINGS_JSON: {
+			if (!pstore->b_private)
+				break;
+			cu_write_storenamedprop(pstore->dir, PSETID_GROMOX,
+				"websettings", PT_UNICODE, pv.pvalue, 0);
+			/* Remove old copy in shadow store */
+			pinfo->ptree->remove_zstore_propval(PR_EC_WEBACCESS_SETTINGS_JSON);
 			continue;
 		}
 		}

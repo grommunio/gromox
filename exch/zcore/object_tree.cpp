@@ -84,8 +84,8 @@ object_tree_init_root(const char *maildir) try
 	if (prootobj->maildir == nullptr)
 		return NULL;
 	prootobj->b_touched = FALSE;
-	auto bv = cu_read_storenamedprop(maildir, PSETID_GROMOX,
-	          "zcore_profsect", PT_BINARY);
+	auto bv = static_cast<const BINARY *>(cu_read_storenamedprop(maildir,
+	          PSETID_GROMOX, "zcore_profsect", PT_BINARY));
 	if (bv != nullptr && object_tree_deserialize(*prootobj, bv->pb, bv->cb) == 0)
 		return prootobj;
 
