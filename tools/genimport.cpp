@@ -602,6 +602,10 @@ int gi_setup_from_dir()
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
+	g_storedir_s = g_storedir;
+	for (auto z = g_storedir_s.size(); z > 1 && g_storedir_s[z-1] == '/'; --z)
+		g_storedir_s[z-1] = '\0';
+	g_storedir = g_storedir_s.c_str();
 	auto ret = sql_dir_to_user(sqh.get(), g_storedir, g_user_id, g_dstuser);
 	if (ret == -ENOENT) {
 		fprintf(stderr, "exm: No user with homedir \"%s\"\n", g_storedir);
