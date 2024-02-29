@@ -1309,22 +1309,23 @@ void process(mResolveNamesRequest&& request, XMLElement* response, const EWSCont
 	response->SetName("m:ResolveNamesResponse");
 
 	mResolveNamesResponse data;
-	mResolveNamesResponseMessage& msg = data.ResponseMessages.emplace_back();
-	auto& resolutionSet = msg.ResolutionSet.emplace();
 
+	auto unres = strchr(request.UnresolvedEntry.c_str(), ':');
+	unres = unres? unres+1 : request.UnresolvedEntry.c_str();
+	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
 
 	TPROPVAL_ARRAY userProps{};
-	auto unres = strchr(request.UnresolvedEntry.c_str(), ':');
-	if (unres != nullptr)
-		++unres;
-	else
-		unres = request.UnresolvedEntry.c_str();
-	request.UnresolvedEntry = gx_utf8_to_punycode(unres);
-	unres = request.UnresolvedEntry.c_str();
 	if(!ctx.plugin().mysql.get_user_properties(request.UnresolvedEntry.c_str(), userProps))
 		throw DispatchError(E3067);
+	if(!userProps.count) {
+		data.ResponseMessages.emplace_back(EWSError::NameResolutionNoResults(E3259));
+		data.serialize(response);
+		return;
+	}
 	TAGGED_PROPVAL* displayName = userProps.find(PR_DISPLAY_NAME);
 
+	mResolveNamesResponseMessage& msg = data.ResponseMessages.emplace_back();
+	auto& resolutionSet = msg.ResolutionSet.emplace();
 	tResolution& resol = resolutionSet.emplace_back();
 	resol.Mailbox.Name = displayName? static_cast<const char*>(displayName->pvalue) : request.UnresolvedEntry;
 	resol.Mailbox.EmailAddress = request.UnresolvedEntry;

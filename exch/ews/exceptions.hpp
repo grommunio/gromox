@@ -95,6 +95,7 @@ public:
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
+	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
@@ -380,6 +381,7 @@ E(3255, "failed to set item properties");
 E(3256, "input body size too large");
 E(3257, "missing date value");
 E(3258, "too many children");
+E(3259, "no name resolution results");
 
 #undef E
 }

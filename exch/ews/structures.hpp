@@ -3770,6 +3770,8 @@ struct mResolveNamesResponseMessage : mResponseMessageType
 {
 	static constexpr char NAME[] = "ResolveNamesResponseMessage";
 
+	using mResponseMessageType::mResponseMessageType;
+
 	std::optional<std::vector<tResolution>> ResolutionSet;
 
 	void serialize(tinyxml2::XMLElement*) const;
