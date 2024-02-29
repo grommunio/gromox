@@ -126,7 +126,7 @@ bool mlex_bouncer_make(const char *from, const char *rcpt_to,
 	str = bounce_gen_thrindex(*pmail_original);
 	if (!str.empty())
 		pmime->set_field("Thread-Index", str.c_str());
-	pmime->set_field("From", tp.from.c_str());
+	pmime->set_field("From", tp.from.size() > 0 ? tp.from.c_str() : bounce_gen_postmaster());
 	pmime->set_field("To", ("<"s + from + ">").c_str());
 	pmime->set_field("MIME-Version", "1.0");
 	rfc1123_dstring(date_buff, std::size(date_buff), 0);
