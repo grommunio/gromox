@@ -1166,6 +1166,7 @@ struct GX_EXPORT TPROPVAL_ARRAY {
 	void erase(uint32_t tag);
 	size_t erase_if(bool (*pred)(const TAGGED_PROPVAL &));
 	TPROPVAL_ARRAY *dup() const;
+	std::string repr() const;
 
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;

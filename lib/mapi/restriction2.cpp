@@ -613,3 +613,12 @@ std::string PROPTAG_ARRAY::repr() const
 	s += "}";
 	return s;
 }
+
+std::string TPROPVAL_ARRAY::repr() const
+{
+	std::string s = "TPROPVAL_ARRAY{";
+	for (unsigned int i = 0; i < count; ++i)
+		s += fmt::format("{:x}h={},", ppropval[i].proptag, ppropval[i].repr());
+	s += "}";
+	return s;
+}
