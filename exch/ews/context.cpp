@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <fmt/core.h>
+#include <sstream>
 
 #include <libHX/string.h>
 
@@ -94,6 +95,215 @@ void writeProp(sShape& shape, const std::optional<sTimePoint>& value, uint32_t t
  */
 void writeProp(sShape& shape, const std::optional<std::string>& value, const PROPERTY_NAME& name, uint16_t type)
 {if(value) shape.write(name, TAGGED_PROPVAL{type, const_cast<char*>(value->c_str())});}
+
+/**
+ * @brief      Convert string week day representation to a pattern type
+ * specific bit mask
+ *
+ * @param daysOfWeek
+ * @param weekrecur
+ * @param daycount
+ *
+ * PatternTypeSpecific Week/MonthNth
+ * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
+ * Sa (1 bit): (0x00000040) The event occurs on Saturday.
+ * F  (1 bit): (0x00000020) The event occurs on Friday.
+ * Th (1 bit): (0x00000010) The event occurs on Thursday.
+ * W  (1 bit): (0x00000008) The event occurs on Wednesday.
+ * Tu (1 bit): (0x00000004) The event occurs on Tuesday.
+ * M  (1 bit): (0x00000002) The event occurs on Monday.
+ * Su (1 bit): (0x00000001) The event occurs on Sunday.
+ * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
+ * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only PATTERNTYPE_MONTHNTH
+ * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only PATTERNTYPE_MONTHNTH
+ * Nth Weekend of month: (bits Sa, Su are set) - only PATTERNTYPE_MONTHNTH
+ */
+void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur,
+	uint8_t& daycount)
+{
+	std::istringstream strstream(daysOfWeek);
+	std::string dayOfWeek;
+
+	while(strstream >> dayOfWeek) {
+		tolower(dayOfWeek);
+		if(dayOfWeek == "day") {
+			weekrecur = 0x7F;
+			break;
+		}
+		else if(dayOfWeek == "weekday") {
+			weekrecur = 0x3E;
+			break;
+		}
+		else if(dayOfWeek == "weekendday") {
+			weekrecur = 0x41;
+			break;
+		}
+		else if(dayOfWeek == "sunday") {
+			weekrecur |= 1 << FIRSTDOW_SUNDAY;
+			++daycount;
+		}
+		else if(dayOfWeek == "monday") {
+			weekrecur |= 1 << FIRSTDOW_MONDAY;
+			++daycount;
+		}
+		else if(dayOfWeek ==  "tuesday") {
+			weekrecur |= 1 << FIRSTDOW_TUESDAY;
+			++daycount;
+		}
+		else if(dayOfWeek == "wednesday") {
+			weekrecur |= 1 << FIRSTDOW_WEDNESDAY;
+			++daycount;
+		}
+		else if(dayOfWeek == "thursday") {
+			weekrecur |= 1 << FIRSTDOW_THURSDAY;
+			++daycount;
+		}
+		else if(dayOfWeek == "friday") {
+			weekrecur |= 1 << FIRSTDOW_FRIDAY;
+			++daycount;
+		}
+		else if(dayOfWeek == "saturday") {
+			weekrecur |= 1 << FIRSTDOW_SATURDAY;
+			++daycount;
+		}
+		else
+			throw EWSError::CalendarInvalidRecurrence(E3260);
+	}
+}
+
+/**
+ * @brief Calculate the first ever day, week, or month of a recurring series
+ *
+ * @param recur_pat
+ * @param tmp_tm
+ */
+void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
+{
+	switch(recur_pat.patterntype) {
+	case PATTERNTYPE_DAY:
+		recur_pat.firstdatetime = recur_pat.startdate % recur_pat.period;
+		break;
+	case PATTERNTYPE_WEEK: {
+		// determine the first day of the week in which the first event occurrs
+		auto startdate = rop_util_rtime_to_unix(recur_pat.startdate);
+		if(gmtime_r(&startdate, tmp_tm) == nullptr)
+			throw EWSError::CalendarInvalidRecurrence(E3261);
+		auto weekstart = rop_util_unix_to_rtime(
+			 startdate - ((tmp_tm->tm_wday - recur_pat.firstdow + 7) % 7) * 86400);
+		recur_pat.firstdatetime = weekstart % (10080 * recur_pat.period);
+		break;
+	}
+	case PATTERNTYPE_MONTH:
+	case PATTERNTYPE_MONTHNTH: {
+		recur_pat.firstdatetime = 0;
+		int fdt = ((((12 % recur_pat.period) * ((tmp_tm->tm_year + 299) % recur_pat.period)) % recur_pat.period) + tmp_tm->tm_mon) % recur_pat.period;
+			for (int i = 0; i < fdt; ++i)
+				// minutes in month
+				recur_pat.firstdatetime += ical_get_monthdays(1601 + (i / 12), (i % 12) + 1) * 1440;
+		break;
+	}
+	}
+}
+
+/**
+ * @brief Calculate the ending date for the recurrence
+ *
+ * @param recur_pat
+ * @param tmp_tm
+ * @param daycount
+ */
+void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm, const uint8_t daycount)
+{
+	time_t enddate = rop_util_rtime_to_unix(recur_pat.startdate);
+	// forwardcount is the number of occurrences we can skip and still
+	// be inside the recurrence range (minus one to make sure there is
+	// always at least one occurrence left)
+	uint32_t forwardcount = 0;
+	switch(recur_pat.recurfrequency) {
+	case RECURFREQUENCY_DAILY:
+		if(recur_pat.patterntype == PATTERNTYPE_DAY)
+			// occurrencecount - 1 because the first day already counts
+			enddate += recur_pat.period * 60 * (recur_pat.occurrencecount - 1);
+		break;
+	case RECURFREQUENCY_WEEKLY:
+	{
+		forwardcount = (recur_pat.occurrencecount - 1) / daycount;
+		// number of remaining occurrences after the week skip
+		uint32_t restocc = recur_pat.occurrencecount - forwardcount * daycount - 1;
+		forwardcount *= recur_pat.period;
+		enddate += forwardcount * 604800; // seconds in a week
+		if(gmtime_r(&enddate, tmp_tm) == nullptr)
+			throw EWSError::CalendarInvalidRecurrence(E3262);
+		for(int j = 1; restocc > 0; ++j) {
+			if((tmp_tm->tm_wday + j) % 7 == (int) recur_pat.firstdow)
+				enddate += (recur_pat.period - 1) * 604800;
+			// If this is a matching day, one occurrence less to process
+			if(recur_pat.pts.weekrecur & (1 << ((tmp_tm->tm_wday + j) % 7)))
+				--restocc;
+			// Next day
+			enddate += 86400;
+		}
+		break;
+	}
+	case RECURFREQUENCY_MONTHLY:
+	case RECURFREQUENCY_YEARLY:
+		forwardcount = (recur_pat.occurrencecount - 1) * recur_pat.period;
+		auto curyear = tmp_tm->tm_year + 1900;
+		auto curmonth = tmp_tm->tm_mon;
+		while(forwardcount > 0) {
+			// month in seconds
+			enddate += ical_get_monthdays(curyear, curmonth) * 86400;
+			if(curmonth >= 12) {
+				curmonth = 1;
+				++curyear;
+			}
+			else {
+				++curmonth;
+			}
+			--forwardcount;
+		}
+		if(gmtime_r(&enddate, tmp_tm) == nullptr)
+			throw EWSError::CalendarInvalidRecurrence(E3263);
+		tmp_tm->tm_year += 1900;
+		++tmp_tm->tm_mon;
+
+		switch(recur_pat.patterntype) {
+		case PATTERNTYPE_MONTH:
+			// compensation between 28 and 31
+			if (recur_pat.pts.dayofmonth >= 28 &&
+					recur_pat.pts.dayofmonth <= 31 &&
+					tmp_tm->tm_mday < (int)recur_pat.pts.dayofmonth) {
+				if (tmp_tm->tm_mday < 28)
+					enddate -= tmp_tm->tm_mday * 86400;
+				else
+					enddate += (ical_get_monthdays(tmp_tm->tm_year, tmp_tm->tm_mon) - tmp_tm->tm_mday) * 86400;
+			}
+			break;
+		case PATTERNTYPE_MONTHNTH:
+			if(recur_pat.pts.monthnth.recurnum == 5)
+				// Set date on the last day of the last month
+				enddate += (ical_get_monthdays(tmp_tm->tm_year, tmp_tm->tm_mon) - tmp_tm->tm_mday) * 86400;
+			else
+				// Set date on the first day of the last month
+				enddate -= (tmp_tm->tm_mday - 1) * 86400;
+
+			// calculate the day of the last occurrence
+			for(int j = 0; j < 7; ++j) {
+				if(gmtime_r(&enddate, tmp_tm) == nullptr)
+					throw EWSError::CalendarInvalidRecurrence(E3264);
+				if(recur_pat.pts.monthnth.recurnum == 5 &&
+				  (1 << (tmp_tm->tm_wday - j) % 7) & recur_pat.pts.monthnth.weekrecur)
+					enddate -= j * 86400;
+				else if(recur_pat.pts.monthnth.recurnum != 5 &&
+				       (1 << (tmp_tm->tm_wday + j) % 7) & recur_pat.pts.monthnth.weekrecur)
+					enddate += (j + ((recur_pat.pts.monthnth.recurnum - 1) * 7)) * 86400;
+			}
+			break;
+		}
+		break;
+	}
+	recur_pat.enddate = rop_util_unix_to_rtime(enddate);
+}
 
 } // Anonymous namespace
 
@@ -1393,7 +1603,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& shape, MCONT_PTR& content) const
 {
 	toContent(dir, static_cast<tItem&>(item), shape, content);
-	// TODO: goid, recurrences
+	// TODO: goid
 	if(!item.ItemClass)
 		shape.write(TAGGED_PROPVAL{PR_MESSAGE_CLASS, deconst("IPM.Appointment")});
 	if(item.Start) {
@@ -1408,24 +1618,207 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		shape.write(NtAppointmentEndWhole, TAGGED_PROPVAL{PT_SYSTIME, end});
 		shape.write(TAGGED_PROPVAL{PR_END_DATE, end});
 	}
+	// TODO handle no start and/or end times
+
 	if(item.IsAllDayEvent)
-		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(item.IsAllDayEvent.value())});
+		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(item.IsAllDayEvent.value())});
 	else
-		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(0)});
+		shape.write(NtAppointmentSubType, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(0)});
 	if(item.LegacyFreeBusyStatus)
 		shape.write(NtBusyStatus, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(item.LegacyFreeBusyStatus->index())});
 	else
 		shape.write(NtBusyStatus, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(olBusy)});
 	if(item.IsResponseRequested)
-		shape.write(TAGGED_PROPVAL{PR_RESPONSE_REQUESTED, EWSContext::construct<uint32_t>(item.IsResponseRequested.value())});
+		shape.write(TAGGED_PROPVAL{PR_RESPONSE_REQUESTED, construct<uint32_t>(item.IsResponseRequested.value())});
 	if(item.AllowNewTimeProposal)
-		shape.write(NtAppointmentNotAllowPropose, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(!item.AllowNewTimeProposal.value())});
-	if(item.IsRecurring)
-		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(item.IsRecurring.value())});
-	else
-		shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, EWSContext::construct<uint32_t>(0)});
+		shape.write(NtAppointmentNotAllowPropose, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(!item.AllowNewTimeProposal.value())});
 	if(item.Location)
 		shape.write(NtLocation, TAGGED_PROPVAL{PT_UNICODE, deconst(item.Location.value().c_str())});
+
+	uint8_t isrecurring = item.IsRecurring && item.IsRecurring.value() ? 1 : 0;
+
+	if(item.Recurrence) {
+		time_t localStartTime = gromox::time_point::clock::to_time_t(item.Start.value().time);
+		time_t localEndTime = gromox::time_point::clock::to_time_t(item.End.value().time);
+		auto duration = localEndTime - localStartTime;
+		struct tm startdate_tm;
+		if (localtime_r(&localStartTime, &startdate_tm) == nullptr)
+			throw EWSError::CalendarInvalidRecurrence(E3265);
+		APPOINTMENT_RECUR_PAT apr{};
+		uint32_t deleted_dates[1024], modified_dates[1024];
+		EXCEPTIONINFO exceptions[1024];
+		EXTENDEDEXCEPTION ext_exceptions[1024];
+
+		apr.readerversion2 = 0x3006;
+		apr.writerversion2 = 0x3009;
+		apr.exceptioncount = 0;
+		apr.pexceptioninfo = exceptions;
+		apr.pextendedexception = ext_exceptions;
+		apr.starttimeoffset = 60 * startdate_tm.tm_hour + startdate_tm.tm_min;
+		apr.endtimeoffset = apr.starttimeoffset + duration / 60;
+		apr.recur_pat.readerversion = 0x3004;
+		apr.recur_pat.writerversion = 0x3004;
+		apr.recur_pat.calendartype = CAL_DEFAULT;
+		apr.recur_pat.deletedinstancecount = 0;
+		apr.recur_pat.pdeletedinstancedates = deleted_dates;
+		apr.recur_pat.modifiedinstancecount = 0;
+		apr.recur_pat.pmodifiedinstancedates = modified_dates;
+		apr.recur_pat.slidingflag = 0;
+		startdate_tm.tm_hour = 0;
+		startdate_tm.tm_min = 0;
+		startdate_tm.tm_sec = 0;
+		time_t startdate = timegm(&startdate_tm);
+		apr.recur_pat.startdate = rop_util_unix_to_rtime(startdate);
+		uint8_t rectype = rectypeNone;
+		uint8_t daycount = 0;
+		auto& rp = item.Recurrence->RecurrencePattern;
+		auto& rr = item.Recurrence->RecurrenceRange;
+
+		if(std::holds_alternative<tDailyRecurrencePattern>(rp)) {
+			auto interval = std::get<tDailyRecurrencePattern>(rp).Interval;
+			if(interval < 1 || interval > 999)
+				throw EWSError::CalendarInvalidRecurrence(E3266);
+			apr.recur_pat.recurfrequency = RECURFREQUENCY_DAILY;
+			apr.recur_pat.patterntype = PATTERNTYPE_DAY;
+			apr.recur_pat.period = interval * 1440;
+			rectype = rectypeDaily;
+		}
+		else if(std::holds_alternative<tWeeklyRecurrencePattern>(rp)) {
+			auto interval = std::get<tWeeklyRecurrencePattern>(rp).Interval;
+			if(interval < 1 || interval > 99)
+				throw EWSError::CalendarInvalidRecurrence(E3267);
+			auto firstdow = 1; // TODO get from user settings?
+			if(std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek)
+				firstdow = std::get<tWeeklyRecurrencePattern>(rp).FirstDayOfWeek->index();
+			if(firstdow > 6)
+				throw EWSError::CalendarInvalidRecurrence(E3268);
+
+			auto daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
+			apr.recur_pat.pts.weekrecur = 0;
+			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur, daycount);
+			if(apr.recur_pat.pts.weekrecur == 0)
+				throw EWSError::CalendarInvalidRecurrence(E3269);
+
+			// every weekday has daily frequency and weekly pattern type
+			apr.recur_pat.recurfrequency = apr.recur_pat.pts.weekrecur != 0x3E ?
+				RECURFREQUENCY_WEEKLY : RECURFREQUENCY_DAILY;
+			apr.recur_pat.patterntype = PATTERNTYPE_WEEK;
+			apr.recur_pat.period = interval;
+			apr.recur_pat.firstdow = firstdow;
+			rectype = rectypeWeekly;
+		}
+		else if(std::holds_alternative<tRelativeMonthlyRecurrencePattern>(rp)) {
+			auto interval = std::get<tRelativeMonthlyRecurrencePattern>(rp).Interval;
+			if(interval < 1 || interval > 99)
+				throw EWSError::CalendarInvalidRecurrence(E3270);
+
+			auto daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
+			apr.recur_pat.pts.monthnth.weekrecur = 0;
+			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur, daycount);
+			if(apr.recur_pat.pts.monthnth.weekrecur == 0)
+				throw EWSError::CalendarInvalidRecurrence(E3271);
+			auto dayOfWeekIndex = std::get<tRelativeMonthlyRecurrencePattern>(rp).DayOfWeekIndex.index();
+			if(dayOfWeekIndex > 4)
+				throw EWSError::CalendarInvalidRecurrence(E3272);
+
+			apr.recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
+			apr.recur_pat.patterntype = PATTERNTYPE_MONTHNTH;
+			apr.recur_pat.period = interval;
+			apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
+			rectype = rectypeMonthly;
+		}
+		else if(std::holds_alternative<tAbsoluteMonthlyRecurrencePattern>(rp)) {
+			auto interval = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).Interval;
+			if(interval < 1 || interval > 99)
+				throw EWSError::CalendarInvalidRecurrence(E3273);
+			apr.recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
+			apr.recur_pat.patterntype = PATTERNTYPE_MONTH;
+			apr.recur_pat.period = interval;
+			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteMonthlyRecurrencePattern>(rp).DayOfMonth;
+			if(apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
+				throw EWSError::CalendarInvalidRecurrence(E3274);
+			rectype = rectypeMonthly;
+		}
+		else if(std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
+			auto daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
+			apr.recur_pat.pts.monthnth.weekrecur = 0;
+			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur, daycount);
+			if(apr.recur_pat.pts.monthnth.weekrecur == 0)
+				throw EWSError::CalendarInvalidRecurrence(E3275);
+			auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
+			if(dayOfWeekIndex < 0 || dayOfWeekIndex > 4)
+				throw EWSError::CalendarInvalidRecurrence(E3276);
+			auto month = std::get<tRelativeYearlyRecurrencePattern>(rp).Month.index();
+			if(month < 0 || month > 11)
+				throw EWSError::CalendarInvalidRecurrence(E3277);
+			apr.recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
+			apr.recur_pat.patterntype = PATTERNTYPE_MONTHNTH;
+			apr.recur_pat.period = 12;
+			apr.recur_pat.pts.monthnth.recurnum = static_cast<uint8_t>(dayOfWeekIndex) + 1;
+			rectype = rectypeYearly;
+			startdate_tm.tm_mon = month;
+		}
+		else if(std::holds_alternative<tAbsoluteYearlyRecurrencePattern>(rp)) {
+			auto month = std::get<tAbsoluteYearlyRecurrencePattern>(rp).Month.index();
+			if(month < 0 || month > 11)
+				throw EWSError::CalendarInvalidRecurrence(E3278);
+			apr.recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
+			apr.recur_pat.patterntype = PATTERNTYPE_MONTH;
+			apr.recur_pat.period = 12;
+			apr.recur_pat.pts.dayofmonth = std::get<tAbsoluteYearlyRecurrencePattern>(rp).DayOfMonth;
+			if(apr.recur_pat.pts.dayofmonth < 1 || apr.recur_pat.pts.dayofmonth > 31)
+				throw EWSError::CalendarInvalidRecurrence(E3279);
+			rectype = rectypeYearly;
+			startdate_tm.tm_mon = month;
+		}
+		else
+			throw EWSError::CalendarInvalidRecurrence(E3280);
+
+		calc_firstdatetime(apr.recur_pat, &startdate_tm);
+		if(std::holds_alternative<tNoEndRecurrenceRange>(rr)) {
+			apr.recur_pat.endtype = ENDTYPE_NEVER_END;
+			apr.recur_pat.occurrencecount = 0xA; // value for a recurring series with no end date
+			apr.recur_pat.enddate = ENDDATE_MISSING;
+		}
+		else if(std::holds_alternative<tEndDateRecurrenceRange>(rr)) {
+			apr.recur_pat.endtype = ENDTYPE_AFTER_DATE;
+			apr.recur_pat.occurrencecount = 0xA; // TODO count occurrences, but this field doesn't really matter
+			auto ed = std::get<tEndDateRecurrenceRange>(rr).EndDate;
+			time_t enddate = gromox::time_point::clock::to_time_t(ed);
+			apr.recur_pat.enddate = rop_util_unix_to_rtime(enddate);
+		}
+		else if(std::holds_alternative<tNumberedRecurrenceRange>(rr)) {
+			apr.recur_pat.endtype = ENDTYPE_AFTER_N_OCCURRENCES;
+			apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
+			calc_enddate(apr.recur_pat, &startdate_tm, daycount);
+		}
+		else
+			throw EWSError::CalendarInvalidRecurrence(E3281);
+
+		BINARY tmp_bin;
+		EXT_PUSH ext_push;
+
+		if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
+		     ext_push.p_apptrecpat(apr) != EXT_ERR_SUCCESS)
+			throw EWS::DispatchError(E3120);
+		tmp_bin.cb = ext_push.m_offset;
+		tmp_bin.pb = ext_push.m_udata;
+
+		// copy the data from ext_push, so it is not lost when ext_push goes out of scope
+		uint8_t* recurdata = alloc<uint8_t>(tmp_bin.cb);
+		memcpy(recurdata, tmp_bin.pv, tmp_bin.cb);
+
+		isrecurring = 1;
+		shape.write(NtRecurrenceType, TAGGED_PROPVAL{PT_LONG, construct<uint32_t>(rectype)});
+		shape.write(NtAppointmentRecur, TAGGED_PROPVAL{PT_BINARY, construct<BINARY>(BINARY{tmp_bin.cb, {recurdata}})});
+		// TODO: midnight in local time persist in UTC
+		auto clipstart = EWSContext::construct<uint64_t>(rop_util_unix_to_nttime(startdate));
+		shape.write(NtClipStart, TAGGED_PROPVAL{PT_SYSTIME, clipstart});
+		// TODO: midnight in local time persist in UTC
+		auto clipend = EWSContext::construct<uint64_t>(rop_util_rtime_to_nttime(apr.recur_pat.enddate));
+		shape.write(NtClipEnd, TAGGED_PROPVAL{PT_SYSTIME, clipend});
+	}
+	shape.write(NtRecurring, TAGGED_PROPVAL{PT_BOOLEAN, construct<uint32_t>(isrecurring)});
 }
 
 /**

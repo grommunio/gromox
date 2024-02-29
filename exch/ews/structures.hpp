@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -439,7 +439,6 @@ struct sTimePoint
 	explicit sTimePoint(const gromox::time_point&);
 	sTimePoint(const gromox::time_point&, const tSerializableTimeZone&);
 	explicit sTimePoint(const char*);
-	explicit sTimePoint(const tinyxml2::XMLElement*);
 	explicit sTimePoint(const tinyxml2::XMLAttribute*);
 	explicit sTimePoint(const tinyxml2::XMLElement*);
 
@@ -1375,7 +1374,9 @@ struct tIntervalRecurrencePatternBase : public tRecurrencePatternBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tIntervalRecurrencePatternBase(const int& i) : Interval(i) {}
+	tIntervalRecurrencePatternBase() = default;
+	explicit tIntervalRecurrencePatternBase(const int& i) : Interval(i) {}
+	explicit tIntervalRecurrencePatternBase(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1392,9 +1393,10 @@ struct tRelativeYearlyRecurrencePattern : public tRecurrencePatternBase
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tRelativeYearlyRecurrencePattern() = default;
-	tRelativeYearlyRecurrencePattern(const std::string& dow,
+	explicit tRelativeYearlyRecurrencePattern(const std::string& dow,
 		const Enum::DayOfWeekIndexType& dowi, const Enum::MonthNamesType& mnt) :
 		DaysOfWeek(dow), DayOfWeekIndex(dowi), Month(mnt) {};
+	explicit tRelativeYearlyRecurrencePattern(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1409,8 +1411,10 @@ struct tAbsoluteYearlyRecurrencePattern : public tRecurrencePatternBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tAbsoluteYearlyRecurrencePattern(const int& dom, const Enum::MonthNamesType& mnt) :
+	tAbsoluteYearlyRecurrencePattern() = default;
+	explicit tAbsoluteYearlyRecurrencePattern(const int& dom, const Enum::MonthNamesType& mnt) :
 		DayOfMonth(dom), Month(mnt) {};
+	explicit tAbsoluteYearlyRecurrencePattern(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1425,8 +1429,11 @@ struct tRelativeMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tRelativeMonthlyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekIndexType& dowi) :
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+	tRelativeMonthlyRecurrencePattern() = default;
+	explicit tRelativeMonthlyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekIndexType& dowi) :
 		tIntervalRecurrencePatternBase(i), DaysOfWeek(dow), DayOfWeekIndex(dowi) {};
+	explicit tRelativeMonthlyRecurrencePattern(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1439,8 +1446,11 @@ struct tAbsoluteMonthlyRecurrencePattern : public tIntervalRecurrencePatternBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tAbsoluteMonthlyRecurrencePattern(const int& i, const int& dom) :
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+	tAbsoluteMonthlyRecurrencePattern() = default;
+	explicit tAbsoluteMonthlyRecurrencePattern(const int& i, const int& dom) :
 		tIntervalRecurrencePatternBase(i), DayOfMonth(dom) {};
+	explicit tAbsoluteMonthlyRecurrencePattern(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1451,12 +1461,15 @@ struct tWeeklyRecurrencePattern : public tIntervalRecurrencePatternBase
 	static constexpr char NAME[] = "WeeklyRecurrence";
 
 	std::string DaysOfWeek;
-	Enum::DayOfWeekType FirstDayOfWeek;
+	std::optional<Enum::DayOfWeekType> FirstDayOfWeek;
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tWeeklyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekType& fdow) :
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+	tWeeklyRecurrencePattern() = default;
+	explicit tWeeklyRecurrencePattern(const int& i, const std::string& dow, const Enum::DayOfWeekType& fdow) :
 		tIntervalRecurrencePatternBase(i), DaysOfWeek(dow), FirstDayOfWeek(fdow) {};
+	explicit tWeeklyRecurrencePattern(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1468,7 +1481,9 @@ struct tDailyRecurrencePattern : public tIntervalRecurrencePatternBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	tDailyRecurrencePattern(const int& i) : tIntervalRecurrencePatternBase(i) {};
+	using tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase;
+	tDailyRecurrencePattern() = default;
+	explicit tDailyRecurrencePattern(const int& i) : tIntervalRecurrencePatternBase(i) {};
 };
 
 /**
@@ -1557,7 +1572,8 @@ struct tRecurrenceRangeBase : public NS_EWS_Types
 	void serialize(tinyxml2::XMLElement*) const;
 
 	tRecurrenceRangeBase() = default;
-	tRecurrenceRangeBase(const gromox::time_point& sd) : StartDate(sd) {};
+	explicit tRecurrenceRangeBase(const gromox::time_point& sd) : StartDate(sd) {};
+	explicit tRecurrenceRangeBase(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1569,8 +1585,10 @@ struct tNoEndRecurrenceRange : public tRecurrenceRangeBase
 
 	void serialize(tinyxml2::XMLElement*) const;
 
+	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tNoEndRecurrenceRange() = default;
-	tNoEndRecurrenceRange(const gromox::time_point& sd) : tRecurrenceRangeBase(sd) {};
+	explicit tNoEndRecurrenceRange(const gromox::time_point& sd) : tRecurrenceRangeBase(sd) {};
+	explicit tNoEndRecurrenceRange(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1583,9 +1601,12 @@ struct tEndDateRecurrenceRange : public tRecurrenceRangeBase
 	void serialize(tinyxml2::XMLElement*) const;
 
 	gromox::time_point EndDate;
+
+	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tEndDateRecurrenceRange() = default;
-	tEndDateRecurrenceRange(const gromox::time_point& sd, const gromox::time_point& ed) :
+	explicit tEndDateRecurrenceRange(const gromox::time_point& sd, const gromox::time_point& ed) :
 		tRecurrenceRangeBase(sd), EndDate(ed) {};
+	explicit tEndDateRecurrenceRange(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1599,9 +1620,11 @@ struct tNumberedRecurrenceRange : public tRecurrenceRangeBase
 
 	int NumberOfOccurrences;
 
+	using tRecurrenceRangeBase::tRecurrenceRangeBase;
 	tNumberedRecurrenceRange() = default;
-	tNumberedRecurrenceRange(const gromox::time_point& sd, const int& noo) :
+	explicit tNumberedRecurrenceRange(const gromox::time_point& sd, const int& noo) :
 		tRecurrenceRangeBase(sd), NumberOfOccurrences(noo) {};
+	explicit tNumberedRecurrenceRange(const tinyxml2::XMLElement*);
 };
 
 /**
@@ -1621,6 +1644,8 @@ struct tRecurrenceType
 	tRecurrencePattern RecurrencePattern;
 	tRecurrenceRange RecurrenceRange;
 
+	tRecurrenceType() = default;
+	explicit tRecurrenceType(const tinyxml2::XMLElement*);
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
