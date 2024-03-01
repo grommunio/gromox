@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -325,7 +325,7 @@ struct Enum
 	STR(WaitingOnOthers);
 	STR(Wednesday);
 	STR(Weekday);
-	STR(Weekendday);
+	STR(WeekendDay);
 	STR(WorkingElsewhere);
 	STR(adminauditlogs);
 	STR(allcategorizeditems);
@@ -407,7 +407,7 @@ struct Enum
 	using CalendarItemTypeType = StrEnum<Single, Occurrence, Exception, RecurringMaster>; ///< Types.xsd:4363
 	using ConnectionStatusType = StrEnum<OK, Closed>; ///< Types.xsd:6182
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
-	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, Weekendday>; ///< Types.xsd:4481
+	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, WeekendDay>; ///< Types.xsd:4481
 	using DayOfWeekIndexType = StrEnum<First, Second, Third, Fourth, Last>; ///<Types.xsd:4500
 	using DefaultShapeNamesType = StrEnum<IdOnly, Default, AllProperties, PcxPeopleSearch>; ///< Types.xsd:1255
 	using DisposalType = StrEnum<HardDelete, SoftDelete, MoveToDeletedItems>; ///< Types.xsd:1321

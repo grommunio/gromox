@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 /**
  * @brief      Implementation of EWS structure (de-)serialization
@@ -57,10 +57,13 @@ XMLError ExplicitConvert<gromox::time_point>::deserialize(const tinyxml2::XMLEle
 	tm t{};
 	double seconds = 0;
 	int tz_hour = 0, tz_min = 0;
+	t.tm_hour = 0;
+	t.tm_min = 0;
 	/* Timezone info is optional, date and time values mandatory */
+	/* Recurrence range start and end times are dates only */
 	if (std::sscanf(data, "%4d-%02d-%02dT%02d:%02d:%lf%03d:%02d", &t.tm_year,
 	    &t.tm_mon, &t.tm_mday, &t.tm_hour, &t.tm_min, &seconds, &tz_hour,
-	    &tz_min) < 6)
+	    &tz_min) < 3)
 		return tinyxml2::XML_CAN_NOT_CONVERT_TEXT;
 	t.tm_year -= 1900;
 	t.tm_mon -= 1;
@@ -434,8 +437,18 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(CalendarEventDetails);
 }
 
+tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase(const tinyxml2::XMLElement* xml) :
+	XMLINIT(Interval)
+{}
+
 void tIntervalRecurrencePatternBase::serialize(tinyxml2::XMLElement* xml) const
 {XMLDUMPT(Interval);}
+
+tRelativeYearlyRecurrencePattern::tRelativeYearlyRecurrencePattern(const tinyxml2::XMLElement* xml) :
+	XMLINIT(DaysOfWeek),
+	XMLINIT(DayOfWeekIndex),
+	XMLINIT(Month)
+{}
 
 void tRelativeYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -444,11 +457,22 @@ void tRelativeYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) cons
 	XMLDUMPT(Month);
 }
 
+tAbsoluteYearlyRecurrencePattern::tAbsoluteYearlyRecurrencePattern(const tinyxml2::XMLElement* xml) :
+	XMLINIT(DayOfMonth),
+	XMLINIT(Month)
+{}
+
 void tAbsoluteYearlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(DayOfMonth);
 	XMLDUMPT(Month);
 }
+
+tRelativeMonthlyRecurrencePattern::tRelativeMonthlyRecurrencePattern(const tinyxml2::XMLElement* xml) :
+	tIntervalRecurrencePatternBase(xml),
+	XMLINIT(DaysOfWeek),
+	XMLINIT(DayOfWeekIndex)
+{}
 
 void tRelativeMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -458,12 +482,23 @@ void tRelativeMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) con
 	XMLDUMPT(DayOfWeekIndex);
 }
 
+tAbsoluteMonthlyRecurrencePattern::tAbsoluteMonthlyRecurrencePattern(const tinyxml2::XMLElement* xml) :
+	tIntervalRecurrencePatternBase(xml),
+	XMLINIT(DayOfMonth)
+{}
+
 void tAbsoluteMonthlyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
 {
 	tIntervalRecurrencePatternBase::serialize(xml);
 
 	XMLDUMPT(DayOfMonth);
 }
+
+tWeeklyRecurrencePattern::tWeeklyRecurrencePattern(const tinyxml2::XMLElement* xml) :
+	tIntervalRecurrencePatternBase(xml),
+	XMLINIT(DaysOfWeek),
+	XMLINIT(FirstDayOfWeek)
+{}
 
 void tWeeklyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -478,23 +513,28 @@ void tDailyRecurrencePattern::serialize(tinyxml2::XMLElement* xml) const
 	tIntervalRecurrencePatternBase::serialize(xml);
 }
 
+tRecurrenceRangeBase::tRecurrenceRangeBase(const tinyxml2::XMLElement* xml) :
+	XMLINIT(StartDate)
+{}
+
 void tRecurrenceRangeBase::serialize(tinyxml2::XMLElement* xml) const
 {
 	XMLDUMPT(StartDate);
 }
+
+tNoEndRecurrenceRange::tNoEndRecurrenceRange(const tinyxml2::XMLElement* xml) :
+	tRecurrenceRangeBase(xml)
+{}
 
 void tNoEndRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 {
 	tRecurrenceRangeBase::serialize(xml);
 }
 
-void tNotification::serialize(tinyxml2::XMLElement* xml) const
-{
-	XMLDUMPT(SubscriptionId);
-	XMLDUMPT(MoreEvents);
-	for(const auto& event : events)
-		XMLDUMPT(event);
-}
+tEndDateRecurrenceRange::tEndDateRecurrenceRange(const tinyxml2::XMLElement* xml) :
+	tRecurrenceRangeBase(xml),
+	XMLINIT(EndDate)
+{}
 
 void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -503,12 +543,22 @@ void tEndDateRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(EndDate);
 }
 
+tNumberedRecurrenceRange::tNumberedRecurrenceRange(const tinyxml2::XMLElement* xml) :
+	tRecurrenceRangeBase(xml),
+	XMLINIT(NumberOfOccurrences)
+{}
+
 void tNumberedRecurrenceRange::serialize(tinyxml2::XMLElement* xml) const
 {
 	tRecurrenceRangeBase::serialize(xml);
 
 	XMLDUMPT(NumberOfOccurrences);
 }
+
+tRecurrenceType::tRecurrenceType(const tinyxml2::XMLElement* xml) :
+	VXMLINIT(RecurrencePattern),
+	VXMLINIT(RecurrenceRange)
+{}
 
 void tRecurrenceType::serialize(tinyxml2::XMLElement* xml) const
 {
@@ -535,6 +585,14 @@ void tTaskRecurrence::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(RecurrenceRange);
 }
 
+void tNotification::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(SubscriptionId);
+	XMLDUMPT(MoreEvents);
+	for(const auto& event : events)
+		XMLDUMPT(event);
+}
+
 tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
 	tItem(xml),
 	XMLINIT(UID),
@@ -557,7 +615,7 @@ tCalendarItem::tCalendarItem(const tinyxml2::XMLElement* xml) :
 	XMLINIT(AppointmentReplyTime),
 	XMLINIT(AppointmentSequenceNumber),
 	XMLINIT(AppointmentState),
-//	XMLINIT(Recurrence),
+	XMLINIT(Recurrence),
 	XMLINIT(AllowNewTimeProposal)
 {}
 

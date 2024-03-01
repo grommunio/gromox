@@ -45,15 +45,18 @@ static const PROPERTY_NAME NtAppointmentSequence = {MNID_ID, PSETID_APPOINTMENT,
 static const PROPERTY_NAME NtBusyStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus, deconst("BusyStatus")};
 static const PROPERTY_NAME NtLocation = {MNID_ID, PSETID_APPOINTMENT, PidLidLocation, deconst("Location")};
 static const PROPERTY_NAME NtAppointmentReplyTime = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentReplyTime, deconst("AppointmentReplyTime")};
-static const PROPERTY_NAME NtAppointmentStartWhole = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole, nullptr};
-static const PROPERTY_NAME NtAppointmentEndWhole = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole, nullptr};
+static const PROPERTY_NAME NtAppointmentStartWhole = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStartWhole, deconst("AppointmentStartWhole")};
+static const PROPERTY_NAME NtAppointmentEndWhole = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentEndWhole, deconst("AppointmentEndWhole")};
 static const PROPERTY_NAME NtAppointmentSubType = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentSubType, deconst("AppointmentSubType")};
 static const PROPERTY_NAME NtAppointmentRecur = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentRecur, deconst("AppointmentRecur")};
 static const PROPERTY_NAME NtAppointmentStateFlags = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentStateFlags, deconst("AppointmentStateFlags")};
-static const PROPERTY_NAME NtExceptionReplaceTime = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, deconst("ExceptionReplaceTime")};
-static const PROPERTY_NAME NtFInvited = {MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, deconst("FInvited")};
 static const PROPERTY_NAME NtResponseStatus = {MNID_ID, PSETID_APPOINTMENT, PidLidResponseStatus, deconst("ResponseStatus")};
 static const PROPERTY_NAME NtRecurring = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurring, deconst("Recurring")};
+static const PROPERTY_NAME NtExceptionReplaceTime = {MNID_ID, PSETID_APPOINTMENT, PidLidExceptionReplaceTime, deconst("ExceptionReplaceTime")};
+static const PROPERTY_NAME NtFInvited = {MNID_ID, PSETID_APPOINTMENT, PidLidFInvited, deconst("FInvited")};
+static const PROPERTY_NAME NtRecurrenceType = {MNID_ID, PSETID_APPOINTMENT, PidLidRecurrenceType, deconst("RecurrenceType")};
+static const PROPERTY_NAME NtClipStart = {MNID_ID, PSETID_APPOINTMENT, PidLidClipStart, deconst("ClipStart")};
+static const PROPERTY_NAME NtClipEnd = {MNID_ID, PSETID_APPOINTMENT, PidLidClipEnd, deconst("ClipEnd")};
 static const PROPERTY_NAME NtAppointmentNotAllowPropose = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentNotAllowPropose, deconst("AppointmentNotAllowPropose")};
 
 /* PSETID_Common */

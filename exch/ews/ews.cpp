@@ -895,7 +895,7 @@ std::shared_ptr<EWSPlugin::ExmdbInstance> EWSPlugin::loadMessageInstance(const s
 	} catch(const std::out_of_range&) {
 	}
 	uint32_t instanceId;
-	if(!exmdb.load_message_instance(dir.c_str(), nullptr, CP_ACP, false,fid, mid, &instanceId))
+	if(!exmdb.load_message_instance(dir.c_str(), "", CP_ACP, false,fid, mid, &instanceId))
 		throw DispatchError(Exceptions::E3077);
 	std::shared_ptr<ExmdbInstance> instance(new ExmdbInstance(*this, dir, instanceId));
 	cache.emplace(cache_message_instance_lifetime, mkey, instance);

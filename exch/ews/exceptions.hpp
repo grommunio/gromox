@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022-2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 
 #pragma once
@@ -59,6 +59,7 @@ public:
 
 #define ERR(name) static inline EWSError name(const std::string& m) {return EWSError("Error" #name, m);}
 	ERR(AccessDenied) ///< Calling account does not have necessary rights
+	ERR(CalendarInvalidRecurrence) ///< Internal structure of the objects that represent the recurrence is invalid.
 	ERR(CannotDeleteObject) ///< Exmdb `delete_message` operation failed
 	ERR(CannotEmptyFolder) ///< Failed to empty folder
 	ERR(CannotFindUser) ///< Not officially documented, used to signal user or domain resolution error
@@ -95,6 +96,7 @@ public:
 	ERR(MailRecipientNotFound) ///< Username could not be resolved internally
 	ERR(MissingRecipients) ///< Failed to send item because no recipients were specified
 	ERR(MoveCopyFailed) ///< Exmdb `movecopy_message` operation failed
+	ERR(NameResolutionNoResults) ///< Name resolution failed / no results
 	ERR(NotEnoughMemory) ///< Out of memory
 	ERR(SchemaValidation) ///< XML value is does not confirm to schema
 	ERR(SubscriptionAccessDenied) ///< Trying to access subscription from another user
@@ -380,6 +382,29 @@ E(3255, "failed to set item properties");
 E(3256, "input body size too large");
 E(3257, "missing date value");
 E(3258, "too many children");
+E(3259, "no name resolution results");
+E(3260, "invalid day of week for a weekly recurrence");
+E(3261, "failed to convert gmtime to tm");
+E(3262, "failed to convert gmtime to tm");
+E(3263, "failed to convert gmtime to tm");
+E(3264, "failed to convert gmtime to tm");
+E(3265, "failed to convert gmtime to tm");
+E(3266, "daily recurrence interval must be between 1 and 999");
+E(3267, "weekly recurrence interval must be between 1 and 99");
+E(3268, "invalid first day of week for a weekly recurrence");
+E(3269, "weekly recurrence without a day of week");
+E(3270, "MonthlyNth recurrence interval must be between 1 and 99");
+E(3271, "MonthlyNth recurrence without a day of week");
+E(3272, "MonthlyNth invalid occurrence of the recurrence's days");
+E(3273, "monthly recurrence interval must be between 1 and 99");
+E(3274, "monthly recurrence invalid day of month");
+E(3275, "yearly (MonthlyNth) recurrence without a day of week");
+E(3276, "yearly (MonthlyNth) Invalid occurrence of the recurrence's days");
+E(3277, "yearly (MonthlyNth) Invalid month");
+E(3278, "yearly recurrence invalid month");
+E(3279, "yearly recurrence invalid day of month");
+E(3280, "invalid recurrence type for a calendar item");
+E(3281, "invalid recurrence range for a calendar item");
 
 #undef E
 }

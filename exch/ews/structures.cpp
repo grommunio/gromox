@@ -235,7 +235,7 @@ constexpr size_t typeWidth(uint16_t type)
  * @param weekrecur    Bit pattern
  * @param daysofweek   Return string
  *
- * PatterTypeSpecific Week
+ * PatternTypeSpecific Week/MonthNth
  * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
  * Sa (1 bit): (0x00000040) The event occurs on Saturday.
  * F  (1 bit): (0x00000020) The event occurs on Friday.
@@ -245,9 +245,20 @@ constexpr size_t typeWidth(uint16_t type)
  * M  (1 bit): (0x00000002) The event occurs on Monday.
  * Su (1 bit): (0x00000001) The event occurs on Sunday.
  * unused (3 bytes): These bits are not used. MUST be zero and MUST be ignored.
+ * Nth Day of month: (bits M, Tu, W, Th, F, SA, Su are set) - only PATTERNTYPE_MONTHNTH
+ * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only PATTERNTYPE_MONTHNTH
+ * Nth Weekend of month: (bits Sa, Su are set) - only PATTERNTYPE_MONTHNTH
  */
 void daysofweek_to_str(const uint32_t& weekrecur, std::string& daysofweek)
 {
+	switch(weekrecur) {
+	case 0x7F:
+		daysofweek.append(Enum::Day); return;
+	case 0x3E:
+		daysofweek.append(Enum::Weekday); return;
+	case 0x41:
+		daysofweek.append(Enum::WeekendDay); return;
+	}
 	for(uint8_t wd = 0; wd < 7; ++wd)
 		if(weekrecur & (1 << wd))
 			daysofweek.append(Enum::DayOfWeekType::Choices[wd]).append(" ");
