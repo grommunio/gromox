@@ -160,10 +160,8 @@ static BOOL exmdb_parser_dispatch(const exreq *prequest, std::unique_ptr<exresp>
 	return ret;
 }
 
-static void stripslash(char *s)
+static inline void stripslash(char *s)
 {
-	if (s == nullptr)
-		return;
 	for (auto z = strlen(s); z > 1 && s[z-1] == '/'; --z)
 		s[z-1] = '\0';
 }
@@ -249,7 +247,8 @@ static void *mdpps_thrwork(void *pparam)
 		auto status = exmdb_ext_pull_request(&tmp_bin, request);
 		free(pbuff);
 		pbuff = NULL;
-		stripslash(request->dir);
+		if (request != nullptr && request->dir != nullptr)
+			stripslash(request->dir);
 		exmdb_response tmp_byte;
 		std::unique_ptr<exresp> response;
 		if (EXT_ERR_SUCCESS != status) {
