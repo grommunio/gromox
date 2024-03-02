@@ -912,6 +912,7 @@ enum {
 	PR_EC_EXTERNAL_REPLY = PROP_TAG(PT_UNICODE, 0x6767),
 	PR_EC_EXTERNAL_SUBJECT = PROP_TAG(PT_UNICODE, 0x6768),
 	PR_EC_WEBACCESS_SETTINGS_JSON = PROP_TAG(PT_UNICODE, 0x6772),
+	PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON = PROP_TAG(PT_UNICODE, 0x6774),
 	pidTagReservedCnCounterRangeUpperLimit = PROP_TAG(PT_I8, 0x677E),
 	pidTagReservedIdCounterRangeUpperLimit = PROP_TAG(PT_I8, 0x677F),
 	// ? = PROP_TAG(PT_LONG, 0x6780), /* EXCH2019: number of ReceiveFolderTable entries pointing to this folder */
