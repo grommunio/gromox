@@ -29,7 +29,8 @@ emptyfld: remove objects from folders
 .IP \(bu 4
 get\-photo: retrieve user image from store and print to stdout
 .IP \(bu 4
-get\-websettings: retrieve settings for grommunio-web
+get\-websettings, get\-websettings\-persistent: retrieve settings for
+grommunio-web
 .IP \(bu 4
 purge\-datafiles: remove orphaned attachments/content files from disk
 .IP \(bu 4
@@ -39,7 +40,8 @@ recalc\-sizes: recalculate store size
 .IP \(bu 4
 set\-photo: read user image from stdin and save to store
 .IP \(bu 4
-set\-websettings: read new grommunio-web settings from stdin and save to store
+set\-websettings, set\-websettings\-persistent: read new grommunio-web settings
+from stdin and save to store
 .IP \(bu 4
 unload: issue the "unload_store" RPC for a mailbox
 .IP \(bu 4
@@ -126,7 +128,9 @@ terminal, no output is shown, in which case, if stderr is (also) a terminal,
 a summary will be shown there.
 .SH get\-websettings
 .SS Synopsis
-\fBget\-websettings >\fP\fIsomefile.json\fP
+\fBget\-websettings >\fP\fIfile.json\fP
+.br
+\fBget\-websettings\-persistent >\fP\fIfile.json\fP
 .SS Description
 Reads the grommunio-web settings from the store and dumps it to stdout.
 .SH purge\-datafiles
@@ -164,7 +168,9 @@ Recalculates the store size.
 Reads a new user photo from standard input and writes it to the store.
 .SH set\-websettings
 .SS Synopsis
-\fBset\-websettings <\fP\fIsomefile.json\fP
+\fBset\-websettings <\fP\fIfile.json\fP
+.br
+\fBset\-websettings\-persistent <\fP\fIfile.json\fP
 .SS Description
 Reads new grommunio-web settings from standard input and writes it to the
 store.

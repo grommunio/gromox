@@ -640,6 +640,10 @@ int main(int argc, const char **argv)
 		ret = showstoreprop(PSETID_GROMOX, "websettings", PT_UNICODE);
 	} else if (strcmp(argv[0], "set-websettings") == 0) {
 		ret = setstoreprop(PSETID_GROMOX, "websettings", PT_UNICODE);
+	} else if (strcmp(argv[0], "get-websettings-persistent") == 0) {
+		ret = showstoreprop(PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
+	} else if (strcmp(argv[0], "set-websettings-persistent") == 0) {
+		ret = setstoreprop(PSETID_GROMOX, "websettings_persistent", PT_UNICODE);
 	} else if (strcmp(argv[0], "purge-softdelete") == 0) {
 		ret = purgesoftdel::main(argc, argv);
 	} else {
