@@ -1497,10 +1497,6 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	char tmp_buff[1024];
 	STORE_ENTRYID store_entryid = {};
 	
-	store_entryid.flags = 0;
-	store_entryid.version = 0;
-	store_entryid.flag = 0;
-	store_entryid.wrapped_flags = 0;
 	store_entryid.pserver_name = deconst(pstore->get_account());
 	if (pstore->b_private) {
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;

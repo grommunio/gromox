@@ -2392,10 +2392,6 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 		username = tmp_buff;
 		mailbox_dn = username.c_str();
 	}
-	store_entryid.flags = 0;
-	store_entryid.version = 0;
-	store_entryid.flag = 0;
-	store_entryid.wrapped_flags = 0;
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 	store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
 	store_entryid.pserver_name = deconst(username.c_str());
