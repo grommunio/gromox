@@ -475,15 +475,10 @@ std::string RESTRICTION_COUNT::repr() const
 std::string MOVECOPY_ACTION::repr() const
 {
 	std::string s = "{same?=" + std::to_string(same_store);
-	if (pstore_eid != nullptr) {
-		s += ",store={";
-		s += bin2hex(pstore_eid, offsetof(STORE_ENTRYID, pserver_name));
-		s += "...,";
-		s += znul(pstore_eid->pserver_name);
-		s += ",";
-		s += znul(pstore_eid->pmailbox_dn);
-		s += "}";
-	}
+	if (pstore_eid != nullptr)
+		s += fmt::format(",store={},{},{}}}",
+		     bin2hex(pstore_eid->wrapped_provider_uid),
+		     znul(pstore_eid->pserver_name), znul(pstore_eid->pmailbox_dn));
 	if (pfolder_eid == nullptr) {
 		s += ",folder=null";
 	} else if (same_store) {
