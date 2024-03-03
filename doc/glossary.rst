@@ -12,9 +12,45 @@ reads. Terms within one section are likewise sorted.
 Stores
 ======
 
+MAPI Provider
+	A component within a connector that actually delivers data. The
+	``emsmdb32.dll`` connector for example offers "Microsoft Exchange
+	Message Store" (a store provider), "Microsoft Exchange Directory
+	Services" (an address book provider) and then some.
+
+MAPI Service
+	A service is an instantiation of an IMsgService object produced by a
+	connector plugin. It corresponds roughly to an account (a identity to
+	use for accessing the providers in a service).
+
+MAPI Profile
+	A profile consists of zero or more service instances. In essence, a
+	profile is a list of stores to open and address books to draw data
+	from.
+
+Primary Store
+	In MSMAPI documentation, this term is used for a message store which is
+	used during the ropLogon procedure. There is just one primary store for
+	a profile, so, unfortunately, it does not refer to a user's home store.
+
+	Outside of MSMAPI, the term might be used in reference to the home store.
+
+Secondary Store
+	In MSMAPI documentation, this term is used for a message store which
+	can be promoted to primary if the original primary is unavailable. (We
+	have never observed the SECONDARY flag in MSMAPI profiles.)
+
+	In other situations, the term might be used in reference to any store
+	other than the home store (even to stores that are not promotable in
+	this fashion).
+
 Default Store
-	In a *MAPI profile*, there is a "default store" (default mailbox).
-	This is the user's home store.
+	In MSMAPI documentation, this is the, well, default store for
+	a *profile*. It is not necessarily referring to a home store.
+
+Home store
+	(We are still looking for a suitable term to denote a user identity's
+	intrinsic mailbox.)
 
 Private Store
 	A type of mailbox. In Gromox, this is prepopulated by gromox-mkprivate
@@ -58,11 +94,6 @@ Non-default store
 
 Shared Store
 	A term used for a non-default private store.
-
-MAPI Profile
-	A list of one or more mailboxes. This concept only exists client-side,
-	e.g. in MSMAPI or PHP-MAPI. Other mailboxes can still be opened even if
-	they are not part of a MAPI profile.
 
 exchange.sqlite3
 	An SQLite database file used by Gromox which stores a significant
