@@ -790,14 +790,34 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 		return EXT_ERR_FORMAT;
 	}
 	TRY(g_uint8(&r->version));
-	TRY(g_uint8(&r->flag));
-	char dll[14];
-	TRY(g_bytes(dll, 14));
-	TRY(g_uint32(&r->wrapped_flags));
-	TRY(g_guid(&r->wrapped_provider_uid));
-	TRY(g_uint32(&r->wrapped_type));
-	TRY(g_str(&r->pserver_name));
-	return g_str(&r->pmailbox_dn);
+	if (r->version != 0) {
+		mlog(LV_INFO, "I-1969: not a recognized wrapuid");
+		return pack_result::format;
+	}
+	TRY(g_uint8(&r->ivflag));
+	if (r->ivflag == 0) {
+		/* MS-OXCDATA §2.2.4.3 */
+		char dll[14];
+		TRY(g_bytes(dll, 14));
+		TRY(g_uint32(&r->wrapped_flags));
+		TRY(g_guid(&r->wrapped_provider_uid));
+		TRY(g_uint32(&r->wrapped_type));
+		TRY(g_str(&r->pserver_name));
+		return g_str(&r->pmailbox_dn);
+	} else if (r->ivflag == 0x1) {
+		/*
+		 * Observed in MSMAPI for freshly added stores that have not
+		 * been opened yet.
+		 */
+		r->wrapped_flags = 0;
+		TRY(g_guid(&r->wrapped_provider_uid));
+		r->wrapped_type = 0;
+		r->pserver_name = nullptr;
+		r->pmailbox_dn = nullptr;
+		return pack_result::success;
+	}
+	mlog(LV_INFO, "I-1969: not a recognized wrapuid");
+	return pack_result::format;
 }
 
 static pack_result ext_buffer_pull_zmovecopy_action(EXT_PULL *e, ZMOVECOPY_ACTION *r)
@@ -2633,7 +2653,7 @@ pack_result EXT_PUSH::p_store_eid(const STORE_ENTRYID &r)
 	TRY(p_uint32(r.flags));
 	TRY(p_guid(muidStoreWrap));
 	TRY(p_uint8(r.version));
-	TRY(p_uint8(r.flag));
+	TRY(p_uint8(r.ivflag));
 	constexpr char dll[14] = "emsmdb.dll";
 	TRY(p_bytes(dll, std::size(dll)));
 	TRY(p_uint32(r.wrapped_flags));

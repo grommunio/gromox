@@ -116,7 +116,7 @@ static void try_storewrap(std::string_view s, unsigned int ind)
 	++ind;
 	printf("%-*sflags   = 0x%08x\n", lead(ind), "", eid.flags);
 	printf("%-*sversion = 0x%02x\n", lead(ind), "", eid.version);
-	printf("%-*sflag    = 0x%02x\n", lead(ind), "", eid.flag);
+	printf("%-*sivflag  = 0x%02x\n", lead(ind), "", eid.ivflag);
 	printf("%-*swflags  = 0x%08x\n", lead(ind), "", eid.wrapped_flags);
 	printf("%-*swuid    = ", lead(ind), "");
 	print_guid(eid.wrapped_provider_uid);
