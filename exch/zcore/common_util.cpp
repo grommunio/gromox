@@ -2168,12 +2168,13 @@ ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
 	return ecServerOOM;
 }
 
-bool permrow_entryids_equal(const PERMISSION_ROW &row, const BINARY *other)
+bool permrow_entryids_equal(const PERMISSION_ROW &row, const uint32_t *oidp, const BINARY *other)
 {
 	auto other_cb = other != nullptr ? other->cb : 0;
 	if (row.entryid.cb != other_cb)
 		return false;
-	if (row.entryid.cb == 0)
-		return true;
-	return memcmp(row.entryid.pv, other->pv, other_cb) == 0;
+	if (row.entryid.cb != 0)
+		return memcmp(row.entryid.pv, other->pv, other_cb) == 0;
+	auto oid = oidp != nullptr ? *oidp : 0xdeadbeefU;
+	return row.member_id == oid;
 }

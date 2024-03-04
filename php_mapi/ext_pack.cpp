@@ -68,11 +68,12 @@ void ext_pack_free(void *p)
 
 const EXT_BUFFER_MGT ext_buffer_mgt = {ext_pack_alloc, ext_pack_realloc, ext_pack_free};
 
-static pack_result ext_pack_pull_permission_row(PULL_CTX *pctx, PERMISSION_ROW *r)
+static pack_result ext_pack_pull_permission_row(PULL_CTX *x, PERMISSION_ROW *r)
 {
-	TRY(pctx->g_uint32(&r->flags));
-	TRY(pctx->g_bin(&r->entryid));
-	return pctx->g_uint32(&r->member_rights);
+	TRY(x->g_uint32(&r->flags));
+	TRY(x->g_uint32(&r->member_id));
+	TRY(x->g_uint32(&r->member_rights));
+	return x->g_bin(&r->entryid);
 }
 
 pack_result PULL_CTX::g_perm_set(PERMISSION_SET *r)
@@ -238,11 +239,12 @@ pack_result PULL_CTX::g_znotif_a(ZNOTIFICATION_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static pack_result ext_pack_push_permission_row(PUSH_CTX *pctx, const PERMISSION_ROW *r)
+static pack_result ext_pack_push_permission_row(PUSH_CTX *x, const PERMISSION_ROW *r)
 {
-	TRY(pctx->p_uint32(r->flags));
-	TRY(pctx->p_bin(r->entryid));
-	return pctx->p_uint32(r->member_rights);
+	TRY(x->p_uint32(r->flags));
+	TRY(x->p_uint32(r->member_id));
+	TRY(x->p_uint32(r->member_rights));
+	return x->p_bin(r->entryid);
 }
 
 pack_result PUSH_CTX::p_perm_set(const PERMISSION_SET *r)

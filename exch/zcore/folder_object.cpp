@@ -587,9 +587,9 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
 	uint32_t table_id;
-	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -600,8 +600,6 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		pfolder->folder_id, flags, &table_id, &row_num)) {
 		return FALSE;
 	}
-	proptags.count = 2;
-	proptags.pproptag = deconst(proptag_buff);
 	if (!exmdb_client::query_table(dir, nullptr, CP_ACP,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client::unload_table(dir, table_id);
@@ -613,17 +611,17 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	if (pperm_set->prows == nullptr)
 		return FALSE;
 	for (size_t i = 0; i < permission_set.count; ++i) {
-		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
 		auto pentry_id = permission_set.pparray[i]->get<BINARY>(PR_ENTRYID);
-		/* ignore the default and anonymous user */
-		if (pentry_id == nullptr || pentry_id->cb == 0)
+		auto &cur = pperm_set->prows[pperm_set->count];
+		cur.flags = RIGHT_NORMAL;
+		auto v = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
+		if (v == nullptr)
 			continue;
-		auto prights = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
-		if (prights == nullptr)
-			continue;
-		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
-		pperm_set->prows[pperm_set->count].entryid = *pentry_id;
-		pperm_set->prows[pperm_set->count++].member_rights = *prights;
+		cur.member_rights = *v;
+		v = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_ID);
+		cur.member_id = v != nullptr ? *v : 0xdeadbeefU;
+		cur.entryid = pentry_id != nullptr ? *pentry_id : BINARY{};
+		++pperm_set->count;
 	}
 	return TRUE;
 }
@@ -661,6 +659,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			/* ... check against the old set rows. */
 			for (j = 0; j < permission_set.count; ++j)
 				if (permrow_entryids_equal(pperm_set->prows[i],
+				    permission_set.pparray[j]->get<uint32_t>(PR_MEMBER_ID),
 				    permission_set.pparray[j]->get<BINARY>(PR_ENTRYID)))
 					break;
 			if (j < permission_set.count) {
@@ -697,6 +696,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			size_t j;
 			for (j = 0; j < permission_set.count; ++j)
 				if (permrow_entryids_equal(pperm_set->prows[i],
+				    permission_set.pparray[j]->get<uint32_t>(PR_MEMBER_ID),
 				    permission_set.pparray[j]->get<BINARY>(PR_ENTRYID)))
 					break;	
 			if (j >= permission_set.count)

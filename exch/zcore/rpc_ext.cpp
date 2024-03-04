@@ -120,8 +120,9 @@ static pack_result rpc_ext_pull_permission_row(
 	EXT_PULL *pext, PERMISSION_ROW *r)
 {
 	QRF(pext->g_uint32(&r->flags));
-	QRF(pext->g_bin(&r->entryid));
+	QRF(pext->g_uint32(&r->member_id));
 	QRF(pext->g_uint32(&r->member_rights));
+	QRF(pext->g_bin(&r->entryid));
 	return pack_result::ok;
 }
 
@@ -256,8 +257,9 @@ static pack_result rpc_ext_push_permission_row(
 	EXT_PUSH *pext, const PERMISSION_ROW *r)
 {
 	QRF(pext->p_uint32(r->flags));
-	QRF(pext->p_bin(r->entryid));
+	QRF(pext->p_uint32(r->member_id));
 	QRF(pext->p_uint32(r->member_rights));
+	QRF(pext->p_bin(r->entryid));
 	return pack_result::ok;
 }
 

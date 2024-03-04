@@ -3156,6 +3156,7 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	HashTable *pdata, *ptarget_hash;
 	MAPI_RESOURCE *pfolder;
 	PERMISSION_SET perm_set;
+	zstrplus str_mbid(zend_string_init(ZEND_STRL("memberid"), 0));
 	zstrplus str_userid(zend_string_init(ZEND_STRL("userid"), 0));
 	zstrplus str_type(zend_string_init(ZEND_STRL("type"), 0));
 	zstrplus str_rights(zend_string_init(ZEND_STRL("rights"), 0));
@@ -3202,6 +3203,10 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 			continue;
 		if (zval_get_long(value) != ACCESS_TYPE_GRANT)
 			continue;
+		value = zend_hash_find(pdata, str_mbid.get());
+		if (value == nullptr)
+			continue;
+		perm_set.prows[j].member_id = zval_get_long(value);
 		value = zend_hash_find(pdata, str_rights.get());
 		if (value == nullptr)
 			continue;

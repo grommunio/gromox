@@ -1002,9 +1002,8 @@ struct ONEOFF_ARRAY {
 };
 
 struct PERMISSION_ROW {
-	uint32_t flags;
+	uint32_t flags, member_id, member_rights;
 	BINARY entryid;
-	uint32_t member_rights;
 };
 
 struct PERMISSION_SET {

@@ -1340,16 +1340,14 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t max_count;
-	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
-	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PR_MEMBER_RIGHTS, PR_MEMBER_ID};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(proptag_buff), deconst(proptag_buff)};
 	
 	if (!exmdb_client::load_permission_table(
 	    pstore->dir, folder_id, 0, &table_id, &row_num))
 		return FALSE;
-	proptags.count = 2;
-	proptags.pproptag = deconst(proptag_buff);
 	if (!exmdb_client::query_table(pstore->dir, nullptr, CP_ACP, table_id,
 	    &proptags, 0, row_num, &permission_set)) {
 		exmdb_client::unload_table(pstore->dir, table_id);
@@ -1368,24 +1366,26 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 					sizeof(PERMISSION_ROW)*pperm_set->count);
 			pperm_set->prows = pperm_row;
 		}
+		auto mbid = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_ID);
 		auto pentryid = permission_set.pparray[i]->get<BINARY>(PR_ENTRYID);
-		/* ignore the default and anonymous user */
-		if (pentryid == nullptr || pentryid->cb == 0)
-			continue;
 		size_t j;
 		for (j = 0; j < pperm_set->count; j++)
-			if (permrow_entryids_equal(pperm_set->prows[j], pentryid))
+			if (permrow_entryids_equal(pperm_set->prows[j], mbid, pentryid))
 				break;	
-		auto prights = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
-		if (prights == nullptr)
+		auto v = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
+		if (v == nullptr)
 			continue;
 		if (j < pperm_set->count) {
-			pperm_set->prows[j].member_rights |= *prights;
+			pperm_set->prows[j].member_rights |= *v;
 			continue;
 		}
-		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
-		pperm_set->prows[pperm_set->count].entryid = *pentryid;
-		pperm_set->prows[pperm_set->count++].member_rights = *prights;
+		auto &cur = pperm_set->prows[pperm_set->count];
+		cur.flags = RIGHT_NORMAL;
+		cur.member_rights = *v;
+		v = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_ID);
+		cur.member_id = v != nullptr ? *v : 0xdeadbeefU;
+		cur.entryid = pentryid != nullptr ? *pentryid : BINARY{};
+		++pperm_set->count;
 	}
 	return TRUE;
 }
