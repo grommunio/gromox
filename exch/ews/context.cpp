@@ -1693,7 +1693,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			if(firstdow > 6)
 				throw EWSError::CalendarInvalidRecurrence(E3268);
 
-			auto daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
+			const auto& daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur, daycount);
 			if(apr.recur_pat.pts.weekrecur == 0)
@@ -1712,7 +1712,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			if(interval < 1 || interval > 99)
 				throw EWSError::CalendarInvalidRecurrence(E3270);
 
-			auto daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
+			const auto& daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur, daycount);
 			if(apr.recur_pat.pts.monthnth.weekrecur == 0)
@@ -1740,7 +1740,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 			rectype = rectypeMonthly;
 		}
 		else if(std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
-			auto daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
+			const auto& daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
 			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur, daycount);
 			if(apr.recur_pat.pts.monthnth.weekrecur == 0)
