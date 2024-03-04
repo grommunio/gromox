@@ -399,9 +399,9 @@ E(3272, "MonthlyNth invalid occurrence of the recurrence's days");
 E(3273, "monthly recurrence interval must be between 1 and 99");
 E(3274, "monthly recurrence invalid day of month");
 E(3275, "yearly (MonthlyNth) recurrence without a day of week");
-E(3276, "yearly (MonthlyNth) Invalid occurrence of the recurrence's days");
-E(3277, "yearly (MonthlyNth) Invalid month");
-E(3278, "yearly recurrence invalid month");
+// 3276 removed
+// 3277 removed
+// 3278 removed
 E(3279, "yearly recurrence invalid day of month");
 E(3280, "invalid recurrence type for a calendar item");
 E(3281, "invalid recurrence range for a calendar item");
