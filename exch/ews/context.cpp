@@ -2158,7 +2158,7 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 
 	const BINARY* currentPclContainer = getItemProp<BINARY>(dir, mid.messageId(), PR_PREDECESSOR_CHANGE_LIST);
 	PCL pcl;
-	if(!currentPclContainer || !pcl.deserialize(currentPclContainer))
+	if (currentPclContainer != nullptr && !pcl.deserialize(currentPclContainer))
 		throw DispatchError(E3087);
 	auto serializedPcl = mkPCL(changeKey, std::move(pcl));
 	BINARY* newPclContainer = construct<BINARY>(BINARY{serializedPcl->cb, {alloc<uint8_t>(serializedPcl->cb)}});

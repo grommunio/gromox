@@ -274,6 +274,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	common_util_remove_propvals(pproperties, PidTagChangeNumber);
 	auto change_num = rop_util_get_gc_value(*cn_p);
 	if (!pproperties->has(PR_PREDECESSOR_CHANGE_LIST)) {
+		/* This could be relaxed, just auto-create PCL from CN */
 		mlog(LV_ERR, "E-1584: create_folder_b_p request without PCL");
 		return TRUE;
 	}

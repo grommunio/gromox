@@ -571,8 +571,7 @@ ec_error_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 		return ecError;
 	if (!exmdb_client::get_folder_property(dir, CP_ACP,
 	    folder_id, PR_PREDECESSOR_CHANGE_LIST,
-	    reinterpret_cast<void **>(&pbin_pcl)) ||
-	    pbin_pcl == nullptr)
+	    reinterpret_cast<void **>(&pbin_pcl)))
 		return ecError;
 	auto pbin_changekey = cu_xid_to_bin({plogon->guid(), change_num});
 	if (pbin_changekey == nullptr)

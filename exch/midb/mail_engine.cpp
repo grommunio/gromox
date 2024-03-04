@@ -2672,7 +2672,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 static int mail_engine_mrenf(int argc, char **argv, int sockd)
 {
 	char *ptoken;
-	BINARY *pbin1;
 	char *ptoken1;
 	uint64_t nt_time;
 	uint64_t parent_id;
@@ -2760,9 +2759,9 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (!exmdb_client::allocate_cn(argv[1], &change_num))
 		return MIDB_E_MDB_ALLOCID;
 	if (!exmdb_client::get_folder_properties(argv[1], CP_ACP,
-	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals) ||
-	     (pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST)) == nullptr)
+	    rop_util_make_eid_ex(1, folder_id), &proptags, &propvals))
 		return MIDB_E_MDB_GETFOLDERPROPS;
+	auto pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	propvals.count = parent_id == folder_id1 ? 5 : 4;
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PidTagChangeNumber;

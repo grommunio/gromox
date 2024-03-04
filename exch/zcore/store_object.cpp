@@ -23,6 +23,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/msgchg_grouping.hpp>
+#include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
@@ -1182,8 +1183,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	tmp_propvals.ppropval[1].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pstore->dir, CP_ACP, folder_id,
-	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)) ||
-	    pbin_pcl == nullptr)
+	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)))
 		return FALSE;
 	auto pbin_changekey = cu_xid_to_bin({rop_util_make_user_guid(pstore->account_id), change_num});
 	if (pbin_changekey == nullptr)

@@ -507,8 +507,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
-	    reinterpret_cast<void **>(&pbin_pcl)) ||
-	    pbin_pcl == nullptr)
+	    reinterpret_cast<void **>(&pbin_pcl)))
 		return FALSE;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
 	if (pbin_changekey == nullptr)
@@ -562,8 +561,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		return TRUE;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    CP_ACP, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
-	    reinterpret_cast<void **>(&pbin_pcl)) ||
-	    pbin_pcl == nullptr)
+	    reinterpret_cast<void **>(&pbin_pcl)))
 		return FALSE;
 	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
