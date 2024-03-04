@@ -3135,6 +3135,7 @@ static ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	for (unsigned int i = 0; i < perm_set.count; ++i) {
 		zval pzdata_value;
 		zarray_init(&pzdata_value);
+		add_assoc_long(&pzdata_value, "memberid", perm_set.prows[i].member_id);
 		add_assoc_stringl(&pzdata_value, "userid",
 			reinterpret_cast<const char *>(perm_set.prows[i].entryid.pb),
 			perm_set.prows[i].entryid.cb);
@@ -3211,6 +3212,8 @@ static ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		if (value == nullptr)
 			continue;
 		perm_set.prows[j].member_rights = zval_get_long(value);
+		value = zend_hash_find(pdata, str_mbid.get());
+		perm_set.prows[j].member_id = value != nullptr ? zval_get_long(value) : 0xdeadbeefU;
 		value = zend_hash_find(pdata, str_state.get());
 		perm_set.prows[j].flags = value != nullptr ? zval_get_long(value) :
 		                          RIGHT_NEW | RIGHT_AUTOUPDATE_DENIED;
