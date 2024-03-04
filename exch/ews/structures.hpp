@@ -725,7 +725,7 @@ struct tEmailAddressType : public NS_EWS_Types
 /**
  * Types.xsd:5359
  */
-struct tEmailAddressDictionaryEntry
+struct tEmailAddressDictionaryEntry : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Entry";
 
@@ -744,7 +744,7 @@ struct tEmailAddressDictionaryEntry
 /**
  * Types.xsd
  */
-struct tPhoneNumberDictionaryEntry
+struct tPhoneNumberDictionaryEntry : public NS_EWS_Types
 {
 	static constexpr char NAME[] = "Entry";
 
