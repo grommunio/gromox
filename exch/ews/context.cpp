@@ -102,7 +102,6 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, const PRO
  *
  * @param daysOfWeek
  * @param weekrecur
- * @param daycount
  *
  * PatternTypeSpecific Week/MonthNth
  * X  (1 bit): This bit is not used. MUST be zero and MUST be ignored.
@@ -118,8 +117,7 @@ void writeProp(sShape& shape, const std::optional<std::string>& value, const PRO
  * Nth Weekday of month: (bits M, Tu, W, Th, F are set) - only PATTERNTYPE_MONTHNTH
  * Nth Weekend of month: (bits Sa, Su are set) - only PATTERNTYPE_MONTHNTH
  */
-void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur,
-	uint8_t& daycount)
+void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur)
 {
 	std::istringstream strstream(daysOfWeek);
 	std::string dayOfWeek;
@@ -138,34 +136,20 @@ void daysofweek_to_pts(const std::string& daysOfWeek, uint32_t& weekrecur,
 			weekrecur = 0x41;
 			break;
 		}
-		else if(dayOfWeek == "sunday") {
+		else if(dayOfWeek == "sunday")
 			weekrecur |= 1 << FIRSTDOW_SUNDAY;
-			++daycount;
-		}
-		else if(dayOfWeek == "monday") {
+		else if(dayOfWeek == "monday")
 			weekrecur |= 1 << FIRSTDOW_MONDAY;
-			++daycount;
-		}
-		else if(dayOfWeek ==  "tuesday") {
+		else if(dayOfWeek ==  "tuesday")
 			weekrecur |= 1 << FIRSTDOW_TUESDAY;
-			++daycount;
-		}
-		else if(dayOfWeek == "wednesday") {
+		else if(dayOfWeek == "wednesday")
 			weekrecur |= 1 << FIRSTDOW_WEDNESDAY;
-			++daycount;
-		}
-		else if(dayOfWeek == "thursday") {
+		else if(dayOfWeek == "thursday")
 			weekrecur |= 1 << FIRSTDOW_THURSDAY;
-			++daycount;
-		}
-		else if(dayOfWeek == "friday") {
+		else if(dayOfWeek == "friday")
 			weekrecur |= 1 << FIRSTDOW_FRIDAY;
-			++daycount;
-		}
-		else if(dayOfWeek == "saturday") {
+		else if(dayOfWeek == "saturday")
 			weekrecur |= 1 << FIRSTDOW_SATURDAY;
-			++daycount;
-		}
 		else
 			throw EWSError::CalendarInvalidRecurrence(E3260);
 	}
@@ -206,13 +190,28 @@ void calc_firstdatetime(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 }
 
 /**
+ * @brief Calculate the number of days per week that an occurrence occurs
+ *
+ * @param weekrecur
+ * @return uint8_t
+ */
+uint8_t calc_daycount(uint32_t weekrecur)
+{
+	uint8_t daycount = 0;
+	while(weekrecur) {
+		daycount += weekrecur & 1;
+		weekrecur >>= 1;
+	}
+	return daycount;
+}
+
+/**
  * @brief Calculate the ending date for the recurrence
  *
  * @param recur_pat
  * @param tmp_tm
- * @param daycount
  */
-void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm, const uint8_t daycount)
+void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 {
 	time_t enddate = rop_util_rtime_to_unix(recur_pat.startdate);
 	// forwardcount is the number of occurrences we can skip and still
@@ -227,6 +226,9 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm, const uint8_t dayco
 		break;
 	case RECURFREQUENCY_WEEKLY:
 	{
+		uint8_t daycount = calc_daycount(recur_pat.pts.weekrecur);
+		if(daycount == 0)
+			throw EWSError::CalendarInvalidRecurrence("ERROR NEEDED: daycount must not be zero");
 		forwardcount = (recur_pat.occurrencecount - 1) / daycount;
 		// number of remaining occurrences after the week skip
 		uint32_t restocc = recur_pat.occurrencecount - forwardcount * daycount - 1;
@@ -1670,7 +1672,6 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		time_t startdate = timegm(&startdate_tm);
 		apr.recur_pat.startdate = rop_util_unix_to_rtime(startdate);
 		uint8_t rectype = rectypeNone;
-		uint8_t daycount = 0;
 		auto& rp = item.Recurrence->RecurrencePattern;
 		auto& rr = item.Recurrence->RecurrenceRange;
 
@@ -1695,7 +1696,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 			const auto& daysOfWeek = std::get<tWeeklyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.weekrecur = 0;
-			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur, daycount);
+			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.weekrecur);
 			if(apr.recur_pat.pts.weekrecur == 0)
 				throw EWSError::CalendarInvalidRecurrence(E3269);
 
@@ -1714,7 +1715,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 
 			const auto& daysOfWeek = std::get<tRelativeMonthlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
-			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur, daycount);
+			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
 			if(apr.recur_pat.pts.monthnth.weekrecur == 0)
 				throw EWSError::CalendarInvalidRecurrence(E3271);
 			auto dayOfWeekIndex = std::get<tRelativeMonthlyRecurrencePattern>(rp).DayOfWeekIndex.index();
@@ -1742,7 +1743,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		else if(std::holds_alternative<tRelativeYearlyRecurrencePattern>(rp)) {
 			const auto& daysOfWeek = std::get<tRelativeYearlyRecurrencePattern>(rp).DaysOfWeek;
 			apr.recur_pat.pts.monthnth.weekrecur = 0;
-			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur, daycount);
+			daysofweek_to_pts(daysOfWeek, apr.recur_pat.pts.monthnth.weekrecur);
 			if(apr.recur_pat.pts.monthnth.weekrecur == 0)
 				throw EWSError::CalendarInvalidRecurrence(E3275);
 			auto dayOfWeekIndex = std::get<tRelativeYearlyRecurrencePattern>(rp).DayOfWeekIndex.index();
@@ -1784,7 +1785,7 @@ void EWSContext::toContent(const std::string& dir, tCalendarItem& item, sShape& 
 		else if(std::holds_alternative<tNumberedRecurrenceRange>(rr)) {
 			apr.recur_pat.endtype = ENDTYPE_AFTER_N_OCCURRENCES;
 			apr.recur_pat.occurrencecount = std::get<tNumberedRecurrenceRange>(rr).NumberOfOccurrences;
-			calc_enddate(apr.recur_pat, &startdate_tm, daycount);
+			calc_enddate(apr.recur_pat, &startdate_tm);
 		}
 		else
 			throw EWSError::CalendarInvalidRecurrence(E3281);
