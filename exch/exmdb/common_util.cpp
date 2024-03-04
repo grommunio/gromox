@@ -736,12 +736,12 @@ static BOOL common_util_check_subfolders(
 	return pstmt != nullptr && pstmt.step() == SQLITE_ROW ? TRUE : false;
 }
 
-static char *common_util_calculate_folder_path(uint32_t folder_id,
-    sqlite3 *psqlite) try
+static ec_error_t cu_calc_folder_path(uint32_t folder_id,
+    sqlite3 *psqlite, std::string &path)
 {
 	uint64_t tmp_fid;
 	char sql_string[128];
-	std::string path;
+	path.clear();
 	
 	tmp_fid = folder_id;
 	auto b_private = exmdb_server::is_private();
@@ -750,14 +750,21 @@ static char *common_util_calculate_folder_path(uint32_t folder_id,
 				" folder_properties WHERE proptag=%u AND "
 		        "folder_id=%llu", PR_DISPLAY_NAME, LLU{tmp_fid});
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
-			return NULL;
+		if (pstmt == nullptr)
+			return ecError;
+		auto ret = pstmt.step();
+		if (ret == SQLITE_DONE)
+			return ecNotFound;
+		else if (ret != SQLITE_ROW)
+			return ecError;
 		auto dnlen = sqlite3_column_bytes(pstmt, 0);
-		if (dnlen == 0 || dnlen > 255 || path.size() + dnlen + 1 >= 4096)
-			return nullptr;
+		if (dnlen == 0)
+			return ecNotFound;
+		if (dnlen > 255 || path.size() + dnlen + 1 >= 4096)
+			return ecQuotaExceeded;
 		auto dispname = pstmt.col_text(0);
 		if (dispname == nullptr)
-			return nullptr;
+			return ecNotFound;
 		path.insert(0, dispname);
 		path.insert(0, "\\");
 		if ((b_private && tmp_fid == PRIVATE_FID_ROOT) ||
@@ -766,14 +773,14 @@ static char *common_util_calculate_folder_path(uint32_t folder_id,
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM "
 		          "folders WHERE folder_id=%llu", LLU{tmp_fid});
 		pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
-			return NULL;
+		if (pstmt == nullptr)
+			return ecError;
+		ret = pstmt.step();
+		if (ret != SQLITE_ROW)
+			return ecNotFound;
 		tmp_fid = sqlite3_column_int64(pstmt, 0);
 	}
-	return common_util_dup(path.c_str());
-} catch (const std::bad_alloc &) {
-	mlog(LV_ERR, "E-1155: ENOMEM");
-	return nullptr;
+	return ecSuccess;
 }
 
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
@@ -1761,9 +1768,16 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*u = !!common_util_check_folder_rules(db, id);
 		return GP_ADV;
 	}
-	case PR_FOLDER_PATHNAME:
-		pv.pvalue = common_util_calculate_folder_path(id, db);
+	case PR_FOLDER_PATHNAME: {
+		std::string path;
+		auto err = cu_calc_folder_path(id, db, path);
+		if (err == ecError)
+			return GP_ERR;
+		else if (err != ecSuccess)
+			return GP_UNHANDLED;
+		pv.pvalue = common_util_dup(path.c_str());
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
+	}
 	default:
 		return GP_UNHANDLED;
 	}
