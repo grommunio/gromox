@@ -2167,3 +2167,13 @@ ec_error_t cu_fbdata_to_ical(const char *user, const char *fbuser,
 	mlog(LV_ERR, "E-2188: ENOMEM");
 	return ecServerOOM;
 }
+
+bool permrow_entryids_equal(const PERMISSION_ROW &row, const BINARY *other)
+{
+	auto other_cb = other != nullptr ? other->cb : 0;
+	if (row.entryid.cb != other_cb)
+		return false;
+	if (row.entryid.cb == 0)
+		return true;
+	return memcmp(row.entryid.pv, other->pv, other_cb) == 0;
+}

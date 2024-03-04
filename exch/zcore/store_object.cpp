@@ -1374,10 +1374,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 			continue;
 		size_t j;
 		for (j = 0; j < pperm_set->count; j++)
-			if (pperm_set->prows[j].entryid.cb ==
-				pentryid->cb && 0 == memcmp(
-				pperm_set->prows[j].entryid.pb,
-			    pentryid->pb, pentryid->cb))
+			if (permrow_entryids_equal(pperm_set->prows[j], pentryid))
 				break;	
 		auto prights = permission_set.pparray[i]->get<uint32_t>(PR_MEMBER_RIGHTS);
 		if (prights == nullptr)

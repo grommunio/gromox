@@ -659,15 +659,10 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		if (pperm_set->prows[i].flags & (RIGHT_NEW | RIGHT_MODIFY)) {
 			size_t j;
 			/* ... check against the old set rows. */
-			for (j=0; j<permission_set.count; j++) {
-				auto pentryid = permission_set.pparray[j]->get<BINARY>(PR_ENTRYID);
-				if (NULL != pentryid && pentryid->cb ==
-					pperm_set->prows[i].entryid.cb && 0 ==
-					memcmp(pperm_set->prows[i].entryid.pb,
-					pentryid->pb, pentryid->cb)) {
-					break;	
-				}
-			}
+			for (j = 0; j < permission_set.count; ++j)
+				if (permrow_entryids_equal(pperm_set->prows[i],
+				    permission_set.pparray[j]->get<BINARY>(PR_ENTRYID)))
+					break;
 			if (j < permission_set.count) {
 				auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PR_MEMBER_ID);
 				if (pmember_id == nullptr)
@@ -700,15 +695,10 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 						&pperm_set->prows[i].member_rights;
 		} else if (pperm_set->prows[i].flags & RIGHT_DELETED) {
 			size_t j;
-			for (j=0; j<permission_set.count; j++) {
-				auto pentryid = permission_set.pparray[j]->get<BINARY>(PR_ENTRYID);
-				if (NULL != pentryid && pentryid->cb ==
-					pperm_set->prows[i].entryid.cb && 0 ==
-					memcmp(pperm_set->prows[i].entryid.pb,
-					pentryid->pb, pentryid->cb)) {
+			for (j = 0; j < permission_set.count; ++j)
+				if (permrow_entryids_equal(pperm_set->prows[i],
+				    permission_set.pparray[j]->get<BINARY>(PR_ENTRYID)))
 					break;	
-				}
-			}
 			if (j >= permission_set.count)
 				continue;
 			auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PR_MEMBER_ID);
