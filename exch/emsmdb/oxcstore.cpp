@@ -48,8 +48,8 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	           cu_id2user, username);
 	if (ret != ecSuccess)
 		return ret;
-	unsigned int user_id = 0;
-	if (!common_util_get_user_ids(username.c_str(), &user_id, nullptr, nullptr))
+	unsigned int user_id = 0, dom_id = 0;
+	if (!common_util_get_user_ids(username.c_str(), &user_id, &dom_id, nullptr))
 		return ecUnknownUser;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)
@@ -129,7 +129,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	
 	*pstore_stat = 0;
 	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
-	              user_id, username.c_str(), maildir, *pmailbox_guid);
+	              user_id, dom_id, username.c_str(), maildir, *pmailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	/* create logon map and logon object */
@@ -206,7 +206,8 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	*replguid = mailbox_guid; /* send PR_MAPPING_SIGNATURE */
 	memset(pper_user_guid, 0, sizeof(GUID));
 	auto plogon = logon_object::create(logon_flags, open_flags,
-	              logon_mode::guest, domain_id, pdomain, homedir, mailbox_guid);
+	              logon_mode::guest, domain_id, domain_id,
+	              pdomain, homedir, mailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
 	/* create logon map and logon object */
