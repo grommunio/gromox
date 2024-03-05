@@ -147,7 +147,7 @@ extern void imap_parser_bcast_expunge(const imap_context &, const std::vector<MI
 extern void imap_parser_remove_select(imap_context *);
 extern  void imap_parser_safe_write(imap_context *, const void *pbuff, size_t count);
 extern int imap_parser_get_sequence_ID();
-extern void imap_parser_log_info(imap_context *, int level, const char *format, ...);
+extern void imap_parser_log_info(imap_context *, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern void imap_cmd_parser_clsfld(imap_context *);
 extern int imap_cmd_parser_capability(int argc, char **argv, imap_context *);

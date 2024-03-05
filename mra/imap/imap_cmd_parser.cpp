@@ -1455,7 +1455,7 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 	gx_strlcpy(pcontext->username, argv[2], std::size(pcontext->username));
 	HX_strltrim(pcontext->username);
 	if (!system_services_judge_user(pcontext->username)) {
-		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase0 rejected: denied by user filter",
+		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase0 rejecting \"%s\": denied by user filter",
 			pcontext->username);
 		return 1901 | DISPATCH_SHOULD_CLOSE;
     }
@@ -1465,7 +1465,8 @@ int imap_cmd_parser_login(int argc, char **argv, imap_context *pcontext)
 	sql_meta_result mres_auth, mres /* target */;
 	if (!system_services_auth_login(pcontext->username, temp_password,
 	    USER_PRIVILEGE_IMAP, mres_auth)) {
-		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase1 rejected: %s", mres.errstr.c_str());
+		imap_parser_log_info(pcontext, LV_WARN, "LOGIN phase1 rejecting \"%s\": %s",
+			pcontext->username, mres.errstr.c_str());
 		pcontext->auth_times++;
 		if (pcontext->auth_times < g_max_auth_times) {
 			gx_strlcpy(pcontext->tag_string, argv[0], std::size(pcontext->tag_string));

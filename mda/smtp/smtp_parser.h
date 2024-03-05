@@ -102,7 +102,7 @@ extern const char *flh_get_extra_tag(unsigned int ctx, int pos);
 extern const char *flh_get_extra_value(unsigned int ctx, int pos);
 extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
-extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
+extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
 extern smtp_param g_param;
 extern std::string g_rcpt_delimiter;
