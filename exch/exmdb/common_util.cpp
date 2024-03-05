@@ -4015,6 +4015,15 @@ static SVREID *cu_get_msg_parent_svreid(sqlite3 *psqlite, uint64_t message_id)
 	return s;
 }
 
+static BINARY *cu_get_msg_parent_entryid(sqlite3 *psqlite, uint64_t message_id)
+{
+	uint64_t folder_id;
+
+	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
+		return nullptr;
+	return cu_fid_to_entryid(psqlite, folder_id);
+}
+
 BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	uint64_t folder_id, LONGLONG_ARRAY *pfolder_ids)
 {
@@ -4317,8 +4326,10 @@ bool cu_eval_msg_restriction(sqlite3 *psqlite,
 			return false;
 		switch (rprop->proptag) {
 		case PR_PARENT_SVREID:
-		case PR_PARENT_ENTRYID:
 			pvalue = cu_get_msg_parent_svreid(psqlite, message_id);
+			break;
+		case PR_PARENT_ENTRYID:
+			pvalue = cu_get_msg_parent_entryid(psqlite, message_id);
 			break;
 		case PR_ANR: {
 			if (!cu_get_property(MAPI_MESSAGE,
