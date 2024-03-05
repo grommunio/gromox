@@ -472,7 +472,7 @@ void STREAM::reset_reading()
  *							the unterminated line into the pbuff
  *		STREAM_COPY_END		like EOF in ASCI-C std read or write file
  */
-int STREAM::copyline(char *pbuff, unsigned int *psize)
+scopy_result STREAM::copyline(char *pbuff, unsigned int *psize)
 {
 	auto pstream = this;
 	unsigned int state = 0;
@@ -482,12 +482,12 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 	assert(pstream->wr_block_pos < STREAM_BLOCK_SIZE);
 	if (pbuff == nullptr || psize == nullptr) {
 		mlog(LV_DEBUG, "stream: stream_copyline, param NULL");
-		return STREAM_COPY_ERROR;
+		return scopy_result::error;
 	}
 
 	if (*psize <= 0 ) {
 		*psize = 0;
-		return STREAM_COPY_ERROR;
+		return scopy_result::error;
 	}
 #endif
 	
@@ -498,7 +498,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 	*/
 	if (pstream->rd_total_pos >= pstream->wr_total_pos) {
 		*psize	= 0;
-		return STREAM_COPY_END;
+		return scopy_result::end;
 	}
 
 	/* skip the '\n' at the beginning of the stream */
@@ -537,7 +537,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 			pbuff[actual_size] = '\0';
 			pstream->rd_block_pos += actual_size;
 			pstream->rd_total_pos += actual_size;
-			return STREAM_COPY_PART;
+			return scopy_result::part;
 		}
 		*psize = actual_size;
 		memcpy(pbuff, (char*)pnode->pdata + pstream->rd_block_pos, actual_size);
@@ -547,13 +547,13 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 		if (i == end) {
 			pstream->rd_block_pos = end;
 			pstream->rd_total_pos = pstream->wr_total_pos;
-			return STREAM_COPY_TERM;
+			return scopy_result::term;
 		}
 		
 		if (state == LF || i + 1 == end) {
 			pstream->rd_block_pos += actual_size + 1;
 			pstream->rd_total_pos += actual_size + 1;
-			return STREAM_COPY_OK;
+			return scopy_result::ok;
 		}
 
 		if (*((char*)pnode->pdata + i + 1) == '\n') {
@@ -563,7 +563,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 			pstream->rd_block_pos += actual_size + 1;
 			pstream->rd_total_pos += actual_size + 1;
 		}
-		return STREAM_COPY_OK;
+		return scopy_result::ok;
 	}
 
 	auto pnode = pstream->pnode_rd;
@@ -589,7 +589,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 			pbuff[actual_size] = '\0';
 			pstream->rd_block_pos += actual_size;
 			pstream->rd_total_pos += actual_size;
-			return STREAM_COPY_PART;
+			return scopy_result::part;
 		}
 
 		*psize = actual_size;
@@ -604,10 +604,10 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 					&pstream->list, pstream->pnode_rd);
 				pstream->rd_block_pos = 0;
 			}
-			return STREAM_COPY_OK;
+			return scopy_result::ok;
 		}
 		if (state != CR)
-			return STREAM_COPY_OK;
+			return scopy_result::ok;
 		if (i + 1 == STREAM_BLOCK_SIZE) {
 			pstream->pnode_rd = double_list_get_after(
 				&pstream->list, pstream->pnode_rd);
@@ -632,7 +632,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 				pstream->rd_block_pos += actual_size + 2;
 			}
 		}
-		return STREAM_COPY_OK;
+		return scopy_result::ok;
 	}
 	/* span two blocks */
 	auto actual_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
@@ -673,7 +673,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 			pstream->rd_total_pos += actual_size;
 		}
 		pbuff[actual_size] = '\0';
-		return STREAM_COPY_PART;
+		return scopy_result::part;
 	}
 
 	*psize = actual_size;
@@ -686,13 +686,13 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 	pbuff[actual_size] = '\0';
 
 	if (i == end) {
-		return STREAM_COPY_TERM;
+		return scopy_result::term;
 	}
 	if (state == LF || (pstream->rd_total_pos + actual_size + 1)
 	    == pstream->wr_total_pos) {
 		pstream->rd_block_pos = i + 1;
 		pstream->rd_total_pos += actual_size + 1;
-		return STREAM_COPY_OK;
+		return scopy_result::ok;
 	}
 	if (*((char *)pstream->pnode_rd->pdata + i + 1) == '\n') {
 		pstream->rd_block_pos = i + 2;
@@ -701,7 +701,7 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 		pstream->rd_block_pos = i + 1;
 		pstream->rd_total_pos += actual_size + 1;
 	}
-	return STREAM_COPY_OK;
+	return scopy_result::ok;
 }
 
 /*

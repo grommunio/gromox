@@ -21,12 +21,8 @@ enum {
     STREAM_EOM_DIRTY,
 };
 
-enum {
-	STREAM_COPY_ERROR = -3,
-    STREAM_COPY_PART,
-    STREAM_COPY_TERM,
-    STREAM_COPY_OK,
-    STREAM_COPY_END
+enum class scopy_result {
+	error = -3, part, term, ok, end,
 };
 
 enum {
@@ -60,7 +56,7 @@ struct GX_EXPORT STREAM {
 	void *get_read_buf(unsigned int *size);
 	void *get_write_buf(unsigned int *size);
 	size_t get_total_length() const { return wr_total_pos; }
-	int copyline(char *buf, unsigned int *size);
+	scopy_result copyline(char *buf, unsigned int *size);
 	unsigned int peek_buffer(char *, unsigned int) const;
 	int dump(int fd);
 	int write(const void *buf, size_t);

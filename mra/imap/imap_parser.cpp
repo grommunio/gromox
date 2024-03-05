@@ -951,11 +951,13 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 		auto copy_result = pcontext->stream.copyline(pcontext->write_buff +
 		              pcontext->write_length, reinterpret_cast<unsigned int *>(&line_length));
 		switch (copy_result) {
-		case STREAM_COPY_END:
+		default:
+			continue;
+		case scopy_result::end:
 			return IMAP_RETRIEVE_TERM;
-		case STREAM_COPY_TERM:
+		case scopy_result::term:
 			return IMAP_RETRIEVE_ERROR;
-		case STREAM_COPY_OK:
+		case scopy_result::ok:
 			last_line = pcontext->write_buff + pcontext->write_length;
 			if (line_length > 8 && 0 == strncmp(last_line, "<<{file}", 8)) {
 				last_line[line_length] = '\0';
@@ -1049,7 +1051,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				pcontext->write_length += 2;
 			}
 			break;
-		case STREAM_COPY_PART:
+		case scopy_result::part:
 			pcontext->write_length += line_length;
 			return IMAP_RETRIEVE_OK;
 		}

@@ -258,14 +258,14 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		fp = (FILE*)pentity->pflusher->flush_ptr;
 	}
 	/* write stream into mess file */
-	int copy_result;
+	scopy_result copy_result;
 	while (true) {
 		size = MAX_LINE_LENGTH;
 		copy_result = pentity->pstream->copyline(tmp_buff, &size);
-		if (copy_result != STREAM_COPY_OK &&
-		    copy_result != STREAM_COPY_PART)
+		if (copy_result != scopy_result::ok &&
+		    copy_result != scopy_result::part)
 			break;
-		if (STREAM_COPY_OK == copy_result) {
+		if (copy_result == scopy_result::ok) {
 			tmp_buff[size++] = '\r';
 			tmp_buff[size++] = '\n';
 		}
@@ -277,7 +277,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		if (write_len != size - unstuff)
 			goto REMOVE_MESS;
 	}
-	if (STREAM_COPY_TERM == copy_result) {
+	if (copy_result == scopy_result::term) {
 		write_len = fwrite(tmp_buff, 1, size, fp);
 		if (write_len != size)
 			goto REMOVE_MESS;

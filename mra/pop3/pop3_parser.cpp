@@ -438,7 +438,6 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 {
 	unsigned int size, line_length;
 	int read_len;
-	int last_result;
 	BOOL b_stop;
 	char line_buff[MAX_LINE_LENGTH + 3];
 	
@@ -470,41 +469,43 @@ int pop3_parser_retrieve(pop3_context *pcontext)
 		}
 	}
 	b_stop = FALSE;
-	last_result = STREAM_COPY_OK;
+	scopy_result last_result = scopy_result::ok;
 	while (!b_stop) {
 		line_length = MAX_LINE_LENGTH;
 		auto copy_result = temp_stream.copyline(line_buff, &line_length);
 		switch (copy_result) {
-		case STREAM_COPY_END:
+		default:
+			break;
+		case scopy_result::end:
 			if (-1 == pcontext->message_fd) {
 				pcontext->stream.write(".\r\n", 3);
 			}
 			b_stop = TRUE;
 			break;
-		case STREAM_COPY_TERM:
+		case scopy_result::term:
 			pcontext->stream.write(line_buff, line_length);
 			if (-1 == pcontext->message_fd) {
 				pcontext->stream.write("\r\n.\r\n", 5);
 			}
 			b_stop = TRUE;
 			break;
-		case STREAM_COPY_OK:
-		case STREAM_COPY_PART:
+		case scopy_result::ok:
+		case scopy_result::part:
 			if (pcontext->cur_line < 0 && 0 == line_length) {
 				pcontext->cur_line = 0;
 			}
-			if ('.' == line_buff[0] && STREAM_COPY_OK == last_result) {
+			if ('.' == line_buff[0] && scopy_result::ok == last_result) {
 				memmove(&line_buff[1], line_buff, line_length);
 				line_length ++;
 			}
-			if (STREAM_COPY_OK == copy_result) {
+			if (scopy_result::ok == copy_result) {
 				gx_strlcpy(&line_buff[line_length], "\r\n",
 					std::size(line_buff) - line_length);
 				line_length += 2;
 			}
 			pcontext->stream.write(line_buff, line_length);
 			
-			if (copy_result != STREAM_COPY_OK ||
+			if (copy_result != scopy_result::ok ||
 			    pcontext->cur_line <= 0)
 				break;
 			if (pcontext->until_line != pcontext->cur_line) {
