@@ -32,7 +32,6 @@ Makefile.in
 /dldcheck
 /dldcheck.stamp
 /digest
-/eidprint
 /event
 /gromox-abktconv
 /gromox-compress
@@ -84,4 +83,5 @@ Makefile.in
 /tests/*.log
 /tests/*.trs
 /test-suite.log
+/tools/eidprint
 /tools/tzdump
