@@ -957,103 +957,103 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 			return IMAP_RETRIEVE_TERM;
 		case scopy_result::term:
 			return IMAP_RETRIEVE_ERROR;
-		case scopy_result::ok:
-			last_line = pcontext->write_buff + pcontext->write_length;
-			if (line_length > 8 && 0 == strncmp(last_line, "<<{file}", 8)) {
-				last_line[line_length] = '\0';
-				if (NULL == (ptr = strchr(last_line + 8, '|')) ||
-					NULL == (ptr1 = strchr(ptr + 1, '|'))) {
-					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
-					pcontext->write_length += 3;
-				} else {
-					*ptr = '\0';
-					*ptr1 = '\0';
-					pcontext->close_fd();
-					try {
-						auto eml_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
-						pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
-					} catch (const std::bad_alloc &) {
-						mlog(LV_ERR, "E-1466: ENOMEM");
-					}
-					if (-1 == pcontext->message_fd) {
-						strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
-						pcontext->write_length += 3;
-					} else {
-						if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
-							mlog(LV_ERR, "E-1426: lseek: %s", strerror(errno));
-						pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
-						pcontext->current_len = 0;
-						len = MAX_LINE_LENGTH - pcontext->write_length;
-						if (len > pcontext->literal_len)
-							len = pcontext->literal_len;
-						read_len = read(pcontext->message_fd, pcontext->write_buff +
-									pcontext->write_length, len);
-						if (read_len != len) {
-							imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
-							pcontext->close_fd();
-							return IMAP_RETRIEVE_ERROR;
-						}
-						pcontext->current_len += len;
-						pcontext->write_length += len;
-						if (pcontext->literal_len == len) {
-							pcontext->close_fd();
-							pcontext->literal_len = 0;
-							pcontext->current_len = 0;
-						}
-					}
-				}
-			} else if (line_length > 10 && 0 == strncmp(last_line, "<<{rfc822}", 10)) {
-				last_line[line_length] = '\0';
-				if (NULL == (ptr = strchr(last_line + 10, '|')) ||
-					NULL == (ptr1 = strchr(ptr + 1, '|'))) {
-					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
-					pcontext->write_length += 3;
-				} else {
-					*ptr = '\0';
-					*ptr1 = '\0';
-					pcontext->close_fd();
-					try {
-						auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
-						pcontext->message_fd = open(rfc_path.c_str(), O_RDONLY);
-					} catch (const std::bad_alloc &) {
-						mlog(LV_ERR, "E-1467: ENOMEM");
-					}
-					if (-1 == pcontext->message_fd) {
-						strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
-						pcontext->write_length += 3;
-					} else {
-						if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
-							mlog(LV_ERR, "E-1427: lseek: %s", strerror(errno));
-						pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
-						pcontext->current_len = 0;
-						len = MAX_LINE_LENGTH - pcontext->write_length;
-						if (len > pcontext->literal_len)
-							len = pcontext->literal_len;
-						read_len = read(pcontext->message_fd, pcontext->write_buff +
-									pcontext->write_length, len);
-						if (read_len != len) {
-							imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
-							pcontext->close_fd();
-							return IMAP_RETRIEVE_ERROR;
-						}
-						pcontext->current_len += len;
-						pcontext->write_length += len;
-						if (pcontext->literal_len == len) {
-							pcontext->close_fd();
-							pcontext->literal_len = 0;
-							pcontext->current_len = 0;
-						}
-					}
-				}
-			} else {
-				pcontext->write_length += line_length;
-				strcpy(&pcontext->write_buff[pcontext->write_length], "\r\n");
-				pcontext->write_length += 2;
-			}
-			break;
 		case scopy_result::part:
 			pcontext->write_length += line_length;
 			return IMAP_RETRIEVE_OK;
+		case scopy_result::ok:
+			break;
+		}
+		last_line = pcontext->write_buff + pcontext->write_length;
+		if (line_length > 8 && 0 == strncmp(last_line, "<<{file}", 8)) {
+			last_line[line_length] = '\0';
+			if (NULL == (ptr = strchr(last_line + 8, '|')) ||
+			    NULL == (ptr1 = strchr(ptr + 1, '|'))) {
+				strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
+				pcontext->write_length += 3;
+			} else {
+				*ptr = '\0';
+				*ptr1 = '\0';
+				pcontext->close_fd();
+				try {
+					auto eml_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
+					pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+				} catch (const std::bad_alloc &) {
+					mlog(LV_ERR, "E-1466: ENOMEM");
+				}
+				if (-1 == pcontext->message_fd) {
+					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
+					pcontext->write_length += 3;
+				} else {
+					if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
+						mlog(LV_ERR, "E-1426: lseek: %s", strerror(errno));
+					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
+					pcontext->current_len = 0;
+					len = MAX_LINE_LENGTH - pcontext->write_length;
+					if (len > pcontext->literal_len)
+						len = pcontext->literal_len;
+					read_len = read(pcontext->message_fd, pcontext->write_buff +
+					           pcontext->write_length, len);
+					if (read_len != len) {
+						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						pcontext->close_fd();
+						return IMAP_RETRIEVE_ERROR;
+					}
+					pcontext->current_len += len;
+					pcontext->write_length += len;
+					if (pcontext->literal_len == len) {
+						pcontext->close_fd();
+						pcontext->literal_len = 0;
+						pcontext->current_len = 0;
+					}
+				}
+			}
+		} else if (line_length > 10 && 0 == strncmp(last_line, "<<{rfc822}", 10)) {
+			last_line[line_length] = '\0';
+			if (NULL == (ptr = strchr(last_line + 10, '|')) ||
+			    NULL == (ptr1 = strchr(ptr + 1, '|'))) {
+				strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
+				pcontext->write_length += 3;
+			} else {
+				*ptr = '\0';
+				*ptr1 = '\0';
+				pcontext->close_fd();
+				try {
+					auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
+					pcontext->message_fd = open(rfc_path.c_str(), O_RDONLY);
+				} catch (const std::bad_alloc &) {
+					mlog(LV_ERR, "E-1467: ENOMEM");
+				}
+				if (-1 == pcontext->message_fd) {
+					strcpy(&pcontext->write_buff[pcontext->write_length], "NIL");
+					pcontext->write_length += 3;
+				} else {
+					if (lseek(pcontext->message_fd, strtol(ptr + 1, nullptr, 0), SEEK_SET) < 0)
+						mlog(LV_ERR, "E-1427: lseek: %s", strerror(errno));
+					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
+					pcontext->current_len = 0;
+					len = MAX_LINE_LENGTH - pcontext->write_length;
+					if (len > pcontext->literal_len)
+						len = pcontext->literal_len;
+					read_len = read(pcontext->message_fd, pcontext->write_buff +
+					           pcontext->write_length, len);
+					if (read_len != len) {
+						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						pcontext->close_fd();
+						return IMAP_RETRIEVE_ERROR;
+					}
+					pcontext->current_len += len;
+					pcontext->write_length += len;
+					if (pcontext->literal_len == len) {
+						pcontext->close_fd();
+						pcontext->literal_len = 0;
+						pcontext->current_len = 0;
+					}
+				}
+			}
+		} else {
+			pcontext->write_length += line_length;
+			strcpy(&pcontext->write_buff[pcontext->write_length], "\r\n");
+			pcontext->write_length += 2;
 		}
 	}
 }
