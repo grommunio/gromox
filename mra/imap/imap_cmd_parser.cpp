@@ -2388,13 +2388,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	b_seen = FALSE;
 	b_draft = FALSE;
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
-		close(pcontext->message_fd);
-		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1342: remove %s: %s",
-				pcontext->file_path.c_str(), strerror(errno));
-		pcontext->message_fd = -1;
-		pcontext->mid.clear();
-		pcontext->file_path.clear();
+		pcontext->close_and_unlink();
 		return 1909 | DISPATCH_TAG;
 	}
 	lseek(pcontext->message_fd, 0, SEEK_SET);
@@ -2402,28 +2396,17 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	if (pbuff == nullptr || read(pcontext->message_fd, pbuff.get(),
 	    node_stat.st_size) != node_stat.st_size) {
 		pbuff.reset();
-		close(pcontext->message_fd);
-		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1343: remove %s: %s",
-				pcontext->file_path.c_str(), strerror(errno));
-		pcontext->message_fd = -1;
-		pcontext->mid.clear();
-		pcontext->file_path.clear();
+		pcontext->close_and_unlink();
 		return 1909 | DISPATCH_TAG;
 	}
-	close(pcontext->message_fd);
-	pcontext->message_fd = -1;
+	pcontext->close_fd();
 	uint32_t mfd_len = 0;
 	memcpy(&mfd_len, pbuff.get(), sizeof(mfd_len));
 	MAIL imail;
 	if (!imail.load_from_str_move(&pbuff[mfd_len], node_stat.st_size - mfd_len)) {
 		imail.clear();
 		pbuff.reset();
-		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1344: remove %s: %s",
-				pcontext->file_path.c_str(), strerror(errno));
-		pcontext->mid.clear();
-		pcontext->file_path.clear();
+		pcontext->unlink_file();
 		return 1909;
 	}
 	auto str_name = pbuff.get() + sizeof(uint32_t);

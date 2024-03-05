@@ -78,6 +78,9 @@ struct content_array final : public XARRAY {
 };
 
 /**
+ * @mid:        midstr
+ * @file_path:  absolute path in filesystem, built from midstr
+ * @message_fd:	feckin descriptor
  * @b_modify:	flag indicating that other clients concurrently modified the mailbox
  * 		(@f_flags, @f_expunged_uids is filled with changes)
  * @contents:	current mapping of seqid -> mid/uid for the currently selected folder
@@ -92,12 +95,15 @@ struct imap_context final : public schedule_context {
 	NOMOVE(imap_context);
 	/* a.k.a. is_login in pop3 */
 	inline bool is_authed() const { return proto_stat >= iproto_stat::auth; }
+	void close_fd();
+	void unlink_file();
+	void close_and_unlink();
 
 	GENERIC_CONNECTION connection;
 	std::string mid, file_path;
+	int message_fd = -1;
 	iproto_stat proto_stat = iproto_stat::none;
 	isched_stat sched_stat = isched_stat::none;
-	int message_fd = -1;
 	char *write_buff = nullptr;
 	size_t write_length = 0, write_offset = 0;
 	time_t selected_time = 0;

@@ -613,16 +613,8 @@ static tproc_status ps_cmd_processing(imap_context *pcontext)
 			    pcontext->command_len, argv, std::size(argv));
 		if (pcontext->sched_stat == isched_stat::appended) {
 			if (0 != argc) {
-				if (-1 != pcontext->message_fd) {
-					close(pcontext->message_fd);
-					pcontext->message_fd = -1;
-				}
-				if (!pcontext->file_path.empty()) {
-					if (remove(pcontext->file_path.c_str()) != 0 && errno != ENOENT)
-						mlog(LV_WARN, "W-1474: remove %s: %s",
-						        pcontext->file_path.c_str(), strerror(errno));
-					pcontext->file_path.clear();
-				}
+				/* Clears pcontext->mid; is this wanted here? */
+				pcontext->close_and_unlink();
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 				pcontext->connection.write(pcontext->tag_string, strlen(pcontext->tag_string));
@@ -833,8 +825,7 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 	pcontext->write_offset = 0;
 	if (pcontext->literal_len != pcontext->current_len)
 		return tproc_status::cont;
-	close(pcontext->message_fd);
-	pcontext->message_fd = -1;
+	pcontext->close_fd();
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
 	if (imap_parser_wrdat_retrieve(pcontext) != IMAP_RETRIEVE_ERROR)
@@ -938,16 +929,7 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 		pcontext->proto_stat = iproto_stat::auth;
 		pcontext->selected_folder[0] = '\0';
 	}
-	if (-1 != pcontext->message_fd) {
-		close(pcontext->message_fd);
-		pcontext->message_fd = -1;
-	}
-	if (!pcontext->file_path.empty()) {
-		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1381: remove %s: %s",
-				pcontext->file_path.c_str(), strerror(errno));
-		pcontext->file_path.clear();
-	}
+	pcontext->close_and_unlink();
 	imap_parser_context_clear(pcontext);
 	return tproc_status::close;
 }
@@ -984,7 +966,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				} else {
 					*ptr = '\0';
 					*ptr1 = '\0';
-					pcontext->message_fd = -1;
+					pcontext->close_fd();
 					try {
 						auto eml_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
 						pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
@@ -1006,15 +988,13 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 									pcontext->write_length, len);
 						if (read_len != len) {
 							imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
-							close(pcontext->message_fd);
-							pcontext->message_fd = -1;
+							pcontext->close_fd();
 							return IMAP_RETRIEVE_ERROR;
 						}
 						pcontext->current_len += len;
 						pcontext->write_length += len;
 						if (pcontext->literal_len == len) {
-							close(pcontext->message_fd);
-							pcontext->message_fd = -1;
+							pcontext->close_fd();
 							pcontext->literal_len = 0;
 							pcontext->current_len = 0;
 						}
@@ -1029,7 +1009,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				} else {
 					*ptr = '\0';
 					*ptr1 = '\0';
-					pcontext->message_fd = -1;
+					pcontext->close_fd();
 					try {
 						auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
 						pcontext->message_fd = open(rfc_path.c_str(), O_RDONLY);
@@ -1051,15 +1031,13 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 									pcontext->write_length, len);
 						if (read_len != len) {
 							imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
-							close(pcontext->message_fd);
-							pcontext->message_fd = -1;
+							pcontext->close_fd();
 							return IMAP_RETRIEVE_ERROR;
 						}
 						pcontext->current_len += len;
 						pcontext->write_length += len;
 						if (pcontext->literal_len == len) {
-							close(pcontext->message_fd);
-							pcontext->message_fd = -1;
+							pcontext->close_fd();
 							pcontext->literal_len = 0;
 							pcontext->current_len = 0;
 						}
@@ -1436,9 +1414,9 @@ static void imap_parser_context_clear(imap_context *pcontext)
 	pcontext->connection.reset();
 	pcontext->proto_stat = iproto_stat::none;
 	pcontext->sched_stat = isched_stat::none;
+	pcontext->close_fd();
 	pcontext->mid[0] = '\0';
 	pcontext->file_path[0] = '\0';
-	pcontext->message_fd = -1;
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -1463,13 +1441,31 @@ static void imap_parser_context_clear(imap_context *pcontext)
 
 imap_context::~imap_context()
 {
-	auto pcontext = this;
-	if (pcontext->message_fd >= 0)
-		close(pcontext->message_fd);
-	if (!pcontext->file_path.empty())
-		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1351: chmod %s: %s",
-				pcontext->file_path.c_str(), strerror(errno));
+	close_and_unlink();
+}
+
+void imap_context::close_fd()
+{
+	if (message_fd != -1)
+		close(message_fd);
+	message_fd = -1;
+}
+
+void imap_context::unlink_file()
+{
+	if (file_path.empty())
+		return;
+	if (remove(file_path.c_str()) < 0 && errno != ENOENT)
+		mlog(LV_WARN, "W-1342: remove %s: %s",
+			file_path.c_str(), strerror(errno));
+	file_path.clear();
+	mid.clear();
+}
+
+void imap_context::close_and_unlink()
+{
+	close_fd();
+	unlink_file();
 }
 
 static void *imps_thrwork(void *argp)
