@@ -814,7 +814,8 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 		len = 64 * 1024;
 	auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 	if (read_len != len) {
-		imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+		imap_parser_log_info(pcontext, LV_WARN, "W-5200: %s: wanted %d bytes, got %zd",
+			pcontext->file_path.c_str(), len, read_len);
 		/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1812, 1, &string_length);
@@ -937,7 +938,7 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 {
 	int len;
-	int read_len;
+	ssize_t read_len;
 	int line_length;
 	char *last_line;
 	char *ptr, *ptr1;
@@ -974,9 +975,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				*ptr = '\0';
 				*ptr1 = '\0';
 				pcontext->close_fd();
+				pcontext->file_path.clear();
 				try {
-					auto eml_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
-					pcontext->message_fd = open(eml_path.c_str(), O_RDONLY);
+					pcontext->file_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
+					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
 				}
@@ -994,8 +996,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						imap_parser_log_info(pcontext, LV_WARN, "W-5201: %s: wanted %d bytes, got %zd",
+							pcontext->file_path.c_str(), len, read_len);
 						pcontext->close_fd();
+						pcontext->file_path.clear();
 						return IMAP_RETRIEVE_ERROR;
 					}
 					pcontext->current_len += len;
@@ -1017,9 +1021,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				*ptr = '\0';
 				*ptr1 = '\0';
 				pcontext->close_fd();
+				pcontext->file_path.clear();
 				try {
-					auto rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
-					pcontext->message_fd = open(rfc_path.c_str(), O_RDONLY);
+					pcontext->file_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
+					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}
@@ -1037,8 +1042,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
+						imap_parser_log_info(pcontext, LV_WARN, "W-5202: %s: wanted %d bytes, got %zd",
+							pcontext->file_path.c_str(), len, read_len);
 						pcontext->close_fd();
+						pcontext->file_path.clear();
 						return IMAP_RETRIEVE_ERROR;
 					}
 					pcontext->current_len += len;
