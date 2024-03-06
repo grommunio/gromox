@@ -1437,6 +1437,10 @@ void process(mUpdateFolderRequest&& request, XMLElement* response, const EWSCont
 			throw EWSError::FolderSave(E3175);
 		if(!ctx.plugin().exmdb.remove_folder_properties(dir.c_str(), folder.folderId, &tagsRm))
 			throw EWSError::FolderSave(E3176);
+		if(shape.permissionSet)
+			ctx.writePermissions(dir, folder.folderId, tPermissionSet(shape.permissionSet).write());
+		else if(shape.calendarPermissionSet)
+			ctx.writePermissions(dir, folder.folderId, tCalendarPermissionSet(shape.calendarPermissionSet).write());
 		ctx.updated(dir, folder);
 		mUpdateFolderResponseMessage msg;
 		msg.Folders.emplace_back(ctx.loadFolder(dir, folder.folderId, idOnly));

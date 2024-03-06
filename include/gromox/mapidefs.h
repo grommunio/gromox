@@ -620,9 +620,22 @@ enum {
 
 	rightsMaxROP = rightsAll | frightsContact | frightsFreeBusySimple |
 	               frightsFreeBusyDetailed,
+	/*
+	 * Profiles used by Outlook
+	 */
+	rightsPublishingEditor = frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned |
+	                         frightsEditAny | frightsDeleteAny | frightsCreateSubfolder,
+	rightsEditor = frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsEditAny |
+	               frightsDeleteAny,
+	rightsPublishingAuthor = frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned |
+	                         frightsCreateSubfolder,
+	rightsAuthor = frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned,
+	rightsNoneditingAuthor = frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned,
+	rightsReviewer = frightsReadAny | frightsVisible,
+	rightsContributor = frightsVisible | frightsCreate,
 };
 
-enum { /* ROWENTRY::ulRowFlags bits */
+enum : uint8_t { /* ROWENTRY::ulRowFlags bits */
 	ROW_ADD    = 0x1U,
 	ROW_MODIFY = 0x2U,
 	ROW_REMOVE = 0x4U,

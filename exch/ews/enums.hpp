@@ -31,7 +31,7 @@ public:
 	StrEnum() = default;
 	constexpr StrEnum(const std::string_view& v) : idx(check(v)) {}
 	constexpr StrEnum(const char* v) : idx(check(v)) {}
-	constexpr explicit StrEnum(index_t index) : idx(check(index)) {}
+	constexpr StrEnum(index_t index) : idx(check(index)) {}
 
 	operator std::string() const { return s(); }
 	constexpr operator std::string_view() const {return sv();}
@@ -96,6 +96,7 @@ struct Enum
 	STR(Address);
 	STR(All);
 	STR(AllProperties);
+	STR(Anonymous);
 	STR(ApplicationTime);
 	STR(ApplicationTimeArray);
 	STR(Appointment);
@@ -104,6 +105,7 @@ struct Enum
 	STR(AssistantPhone);
 	STR(Associated);
 	STR(August);
+	STR(Author);
 	STR(Beginning);
 	STR(Best);
 	STR(Binary);
@@ -133,9 +135,11 @@ struct Enum
 	STR(Contact);
 	STR(Contacts);
 	STR(ContactsActiveDirectory);
+	STR(Contributor);
 	STR(CopiedEvent);
 	STR(Currency);
 	STR(CurrencyArray);
+	STR(Custom);
 	STR(CustomMailTip);
 	STR(CreatedEvent);
 	STR(Day);
@@ -153,6 +157,7 @@ struct Enum
 	STR(DisplayName);
 	STR(Double);
 	STR(DoubleArray);
+	STR(Editor);
 	STR(EmailAddress1);
 	STR(EmailAddress2);
 	STR(EmailAddress3);
@@ -179,7 +184,10 @@ struct Enum
 	STR(FreeBusy);
 	STR(FreeBusyChangedEvent);
 	STR(FreeBusyMerged);
+	STR(FreeBusyTimeAndSubjectAndLocation);
+	STR(FreeBusyTimeOnly);
 	STR(Friday);
+	STR(FullDetails);
 	STR(Good);
 	STR(GroupMailbox);
 	STR(HTML);
@@ -241,6 +249,7 @@ struct Enum
 	STR(NewMailEvent);
 	STR(NoData);
 	STR(NoResponseReceived);
+	STR(NoneditingAuthor);
 	STR(None);
 	STR(Normal);
 	STR(NormalAndAssociatedItems);
@@ -264,6 +273,8 @@ struct Enum
 	STR(OtherTelephone);
 	STR(OutOfOfficeMessage);
 	STR(OwaId);
+	STR(Owned);
+	STR(Owner);
 	STR(Pager);
 	STR(Personal);
 	STR(PcxPeopleSearch);
@@ -277,11 +288,14 @@ struct Enum
 	STR(PublicDL);
 	STR(PublicFolder);
 	STR(PublicStrings);
+	STR(PublishingAuthor);
+	STR(PublishingEditor);
 	STR(RadioPhone);
 	STR(RecipientSuggestions);
 	STR(RecurringMaster);
 	STR(Required);
 	STR(Resource);
+	STR(Reviewer);
 	STR(Room);
 	STR(Saturday);
 	STR(SaveOnly);
@@ -315,6 +329,8 @@ struct Enum
 	STR(Text);
 	STR(Third);
 	STR(Thursday);
+	STR(TimeAndSubjectAndLocation);
+	STR(TimeOnly);
 	STR(TotalMemberCount);
 	STR(TtyTddPhone);
 	STR(Tuesday);
@@ -405,6 +421,8 @@ struct Enum
 	using BodyTypeType = StrEnum<HTML, Text>; ///< Types.xsd:1717
 	using CalendarItemCreateOrDeleteOperationType = StrEnum<SendToNone, SendOnlyToAll, SendToAllAndSaveCopy>; ///<< Types.xsd:4005
 	using CalendarItemTypeType = StrEnum<Single, Occurrence, Exception, RecurringMaster>; ///< Types.xsd:4363
+	using CalendarPermissionLevelType = StrEnum<None, Owner, PublishingEditor, Editor, PublishingAuthor, Author, NoneditingAuthor, Reviewer, Contributor, FreeBusyTimeOnly, FreeBusyTimeAndSubjectAndLocation, Custom>; ///< Types.xsd
+	using CalendarPermissionReadAccessType = StrEnum<None, TimeOnly, TimeAndSubjectAndLocation, FullDetails>; ///< Types.xsd:6764
 	using ConnectionStatusType = StrEnum<OK, Closed>; ///< Types.xsd:6182
 	using ContactSourceType = StrEnum<ActiveDirectory, Store>; ///< Types.xsd:5307
 	using DayOfWeekType = StrEnum<Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Day, Weekday, WeekendDay>; ///< Types.xsd:4481
@@ -413,6 +431,7 @@ struct Enum
 	using DisposalType = StrEnum<HardDelete, SoftDelete, MoveToDeletedItems>; ///< Types.xsd:1321
 	using DistinguishedFolderIdNameType = StrEnum<calendar, contacts, deleteditems, drafts, inbox, journal, notes, outbox, sentitems, tasks, msgfolderroot, publicfoldersroot, root, junkemail, searchfolders, voicemail, recoverableitemsroot, recoverableitemsdeletions, recoverableitemsversions, recoverableitemspurges, recoverableitemsdiscoveryholds, archiveroot, archivemsgfolderroot, archivedeleteditems, archiveinbox, archiverecoverableitemsroot, archiverecoverableitemsdeletions, archiverecoverableitemsversions, archiverecoverableitemspurges, archiverecoverableitemsdiscoveryholds, syncissues, conflicts, localfailures, serverfailures, recipientcache, quickcontacts, conversationhistory, adminauditlogs, todosearch, mycontacts, directory, imcontactlist, peopleconnect, favorites, mecontact, personmetadata, teamspaceactivity, teamspacemessaging, teamspaceworkitems, scheduled, orionnotes, tagitems, alltaggeditems, allcategorizeditems, externalcontacts, teamchat, teamchathistory, yammerdata, yammerroot, yammerinbound, yammeroutbound, yammerfeeds, kaizaladata, messageingestion, onedriveroot, onedriverecylebin, onedrivesystem, onedrivevolume, important, starred, archiv>; //Types.xsd:1768
 	using DistinguishedPropertySetType = StrEnum<Meeting, Appointment, Common, PublicStrings, Address, InternetHeaders, CalendarAssistant, UnifiedMessaging, Task, Sharing>; ///< Types.xsd:1040
+	using DistinguishedUserType = StrEnum<Default, Anonymous>; ///< Types.xsd:6732
 	using EmailAddressKeyType = StrEnum<EmailAddress1, EmailAddress2, EmailAddress3>; ///< Types.xsd:5205
 	using ExternalAudience = StrEnum<None, Known, All>; ///< Types.xsd:6530
 	using FileAsMappingType = StrEnum<None, LastCommaFirst, FirstSpaceLast, Company, LastCommaFirstCompany, CompanyLastFirst, LastFirst, LastFirstCompany, CompanyLastCommaFirst, LastFirstSuffix, LastSpaceFirstCompany, CompanyLastSpaceFirst, LastSpaceFirst, DisplayName, FirstName, LastFirstMiddleSuffix, LastName, Empty>; ///< Types.xsd:5283
@@ -431,6 +450,9 @@ struct Enum
 	using MessageDispositionType = StrEnum<SaveOnly, SendOnly, SendAndSaveCopy>; ///< Types.xsd:3997
 	using MonthNamesType = StrEnum<January, February, March, April, May, June, July, August, September, October, November, December>; ///< Types.xsd:4510
 	using NotificationEventType = StrEnum<CopiedEvent, CreatedEvent, DeletedEvent, ModifiedEvent, MovedEvent, NewMailEvent, FreeBusyChangedEvent>; ///< Types.xsd:6085
+	using PermissionActionType = StrEnum<None, Owned, All>; ///< Types.xsd:6814
+	using PermissionLevelType = StrEnum<None, Owner, PublishingEditor, Editor, PublishingAuthor, Author, NoneditingAuthor, Reviewer, Contributor, Custom>; ///< Types.xsd:6822
+	using PermissionReadAccessType = StrEnum<None, FullDetails>; ///< Types.xsd:6757
 	using PhoneNumberKeyType = StrEnum<AssistantPhone, BusinessFax, BusinessPhone, BusinessPhone2, Callback, CarPhone, CompanyMainPhone, HomeFax, HomePhone, HomePhone2, Isdn, MobilePhone, OtherFax, OtherTelephone, Pager, PrimaryPhone, RadioPhone, Telex, TtyTddPhone, BusinessMobile, IPPhone, Mms, Msn>; ///< Types.xsd:5237
 	using PhysicalAddressIndexType = StrEnum<None, Home, Business, Other>; ///< Types.xsd:5265, index maps directly to PidLidPostalAddressIndex value
 	using PhysicalAddressKeyType = StrEnum<Home, Business, Other>; ///< Types.xsd:5275

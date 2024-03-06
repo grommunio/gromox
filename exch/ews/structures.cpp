@@ -1775,6 +1775,8 @@ decltype(tChangeDescription::fields) tChangeDescription::fields = {{
 	{"MimeContent", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.mimeContent = base64_decode(xml->GetText());}}},
 	{"Nickname", {[](auto&&... args){convText(PR_NICKNAME, args...);}}},
 	{"OfficeLocation", {[](auto&&... args){convText(PR_OFFICE_LOCATION, args...);}}},
+	{"PermissionSet", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.calendarPermissionSet = xml;}, "CalendarFolder"}},
+	{"PermissionSet", {[](const tinyxml2::XMLElement* xml, sShape& shape){shape.permissionSet = xml;}}},
 	{"PostalAddressIndex", {[](auto&&... args) {convEnumIndex<Enum::PhysicalAddressIndexType>(NtPostalAddressIndex, args...);}}},
 	{"Sensitivity", {[](auto&&... args) {convEnumIndex<Enum::SensitivityChoicesType>(PR_SENSITIVITY, args...);}}},
 	{"Subject", {[](auto&&... args){convText(PR_SUBJECT, args...);}}},
@@ -3055,10 +3057,11 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
 	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
 	{"calendar:Resources", sShape::Resources},
-	{"folder:EffectiveRights", sShape::Permissions},
+	{"folder:EffectiveRights", sShape::Rights},
+	{"folder:PermissionSet", sShape::Permissions},
 	{"item:Attachments", sShape::Attachments},
 	{"item:Body", sShape::Body},
-	{"item:EffectiveRights", sShape::Permissions},
+	{"item:EffectiveRights", sShape::Rights},
 	{"item:IsDraft", sShape::MessageFlags},
 	{"item:IsFromMe", sShape::MessageFlags},
 	{"item:IsResend", sShape::MessageFlags},
@@ -3174,6 +3177,7 @@ std::string tGuid::serialize() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
 decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
@@ -3565,6 +3569,227 @@ void tPath::tags(sShape& shape, bool add) const
 uint32_t tPath::tag(const sGetNameId& getId) const
 {return std::visit([&](auto&& v){return v.tag(getId);}, asVariant());};
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      List of pre-defined profiles
+ *
+ * Index maps directly to Enum::PermissionLevelType/Enum::CalendarPermissionLevelType,
+ * except for Enum::Custom.
+ */
+decltype(tBasePermission::profileTable) tBasePermission::profileTable = {
+	0,
+	frightsOwner,
+	rightsPublishingEditor,
+	rightsEditor,
+	rightsPublishingAuthor,
+	rightsAuthor,
+	rightsNoneditingAuthor,
+	rightsReviewer,
+	rightsContributor,
+	frightsFreeBusySimple,
+	frightsFreeBusyDetailed,
+};
+
+/**
+ * @brief      Create permission from properties
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected.
+ *
+ * @param      props   Single row from the permission table
+ */
+tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
+{
+	const uint32_t* memberId = props.get<uint32_t>(PR_MEMBER_ID);
+	if(memberId && *memberId == 0)
+		UserId.DistinguishedUser = Enum::Default;
+	else if(memberId && *memberId == 0xffffffff)
+		UserId.DistinguishedUser = Enum::Anonymous;
+	else {
+		fromProp(props.find(PR_SMTP_ADDRESS), UserId.PrimarySmtpAddress);
+		fromProp(props.find(PR_MEMBER_NAME), UserId.DisplayName);
+	}
+	static const uint32_t none = 0;
+	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	if(!rights)
+		rights = &none;
+	CanCreateItems.emplace(*rights & frightsCreate);
+	CanCreateSubFolders.emplace(*rights & frightsCreateSubfolder);
+	IsFolderOwner.emplace(*rights & frightsOwner);
+	IsFolderVisible.emplace(*rights & frightsVisible);
+	IsFolderContact.emplace(*rights & frightsContact);
+	EditItems.emplace(*rights & frightsEditAny? Enum::All : *rights & frightsEditOwned? Enum::Owned : Enum::None);
+	DeleteItems.emplace(*rights & frightsDeleteAny? Enum::All : *rights & frightsDeleteOwned? Enum::Owned : Enum::None);
+}
+
+
+/**
+ * @brief      Generate permission information
+ *
+ * @param      rights  Instance specific basic rights
+ *
+ * @return     PERMISSION_DATA struct representing the permission
+ */
+PERMISSION_DATA tBasePermission::write(uint32_t rights) const
+{
+	auto updateIf = [&](const std::optional<bool>& s, uint32_t f) {if(s) *s? rights |= f : rights &= ~f;};
+	updateIf(CanCreateItems, frightsCreate);
+	updateIf(CanCreateSubFolders, frightsCreateSubfolder);
+	updateIf(IsFolderOwner, frightsOwner);
+	updateIf(IsFolderVisible, frightsVisible);
+	updateIf(IsFolderContact, frightsContact);
+	if(EditItems)
+		rights |= *EditItems == Enum::All? frightsEditAny : *EditItems == Enum::Owned? frightsEditOwned : 0;
+	if(DeleteItems)
+		rights |= *DeleteItems == Enum::All? frightsDeleteAny : *DeleteItems == Enum::Owned? frightsDeleteOwned : 0;
+
+
+	static const uint32_t def = 0;
+	static const uint32_t anon = 0xffffffff;
+	PERMISSION_DATA perm{UserId.DistinguishedUser? ROW_MODIFY : ROW_ADD,
+		                 TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(3)}};
+	uint16_t& count = perm.propvals.count;
+	perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_RIGHTS, EWSContext::construct<uint32_t>(rights)};
+	if(UserId.DistinguishedUser) {
+		const uint32_t* memberId = *UserId.DistinguishedUser == Enum::Anonymous? &anon : &def;
+		perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_ID, const_cast<uint32_t*>(memberId)};
+	} else {
+		if(UserId.DisplayName)
+			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_MEMBER_NAME, EWSContext::cpystr(*UserId.DisplayName)};
+		if(UserId.PrimarySmtpAddress)
+			perm.propvals.ppropval[count++] = TAGGED_PROPVAL{PR_SMTP_ADDRESS, EWSContext::cpystr(*UserId.PrimarySmtpAddress)};
+	}
+	return perm;
+}
+
+/**
+ * @brief      Create permission from properties
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected.
+ *
+ * @param      props   Single row from the permission table
+ */
+tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
+{
+	static const uint32_t none = 0;
+	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	if(!rights)
+		rights = &none;
+	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails :
+	                  *rights & frightsFreeBusyDetailed? Enum::FreeBusyTimeAndSubjectAndLocation :
+	                  *rights & frightsFreeBusySimple? Enum::TimeOnly :Enum::None);
+	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
+	size_t index = std::distance(profileTable.begin(), it);
+	index < calendarProfiles? CalendarPermissionLevel = uint8_t(index) : CalendarPermissionLevel = Enum::Custom;
+}
+
+
+/**
+ * @brief      Generate permission information
+ *
+ * @return     PERMISSION_DATA struct representing the permission
+ */
+PERMISSION_DATA tCalendarPermission::write() const
+{
+	uint32_t rights = CalendarPermissionLevel == Enum::Custom? 0 : profileTable[CalendarPermissionLevel.index()];
+	if(ReadItems)
+		rights |= *ReadItems == Enum::FullDetails? frightsReadAny : 0;
+	return tBasePermission::write(rights);
+}
+
+/**
+ * @brief      Create permission from properties
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected.
+ *
+ * @param      props   Single row from the permission table
+ */
+tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
+{
+	static const uint32_t none = 0;
+	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	if(!rights)
+		rights = &none;
+	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails : Enum::None);
+	auto it = std::find(profileTable.begin(), profileTable.end(), *rights);
+	size_t index = std::distance(profileTable.begin(), it);
+	index < profiles? PermissionLevel = uint8_t(index) : PermissionLevel = Enum::Custom;
+}
+
+/**
+ * @brief      Generate permission information
+ *
+ * @return     PERMISSION_DATA struct representing the permission
+ */
+PERMISSION_DATA tPermission::write() const
+{
+	uint32_t rights = PermissionLevel == Enum::Custom? 0 : profileTable[PermissionLevel.index()];
+	if(ReadItems)
+		rights |= *ReadItems == Enum::FullDetails? frightsReadAny : 0;
+	return tBasePermission::write(rights);
+}
+
+/**
+ * @brief      Create permission set from property table
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected to be contained in the table.
+ *
+ * @param      propTable   Permission table
+ */
+tPermissionSet::tPermissionSet(const TARRAY_SET& propTable)
+{
+	Permissions.reserve(propTable.count);
+	for(const TPROPVAL_ARRAY& props : propTable)
+		Permissions.emplace_back(props);
+}
+
+/**
+ * @brief      Generate list of permissions to write to exmdb
+ *
+ * @return     List of PERMISSION_DATA structures
+ */
+std::vector<PERMISSION_DATA> tPermissionSet::write() const
+{
+	std::vector<PERMISSION_DATA> res;
+	res.reserve(Permissions.size());
+	std::transform(Permissions.begin(), Permissions.end(), std::back_inserter(res),
+	               [](const tPermission& perm){return perm.write();});
+	return res;
+}
+
+/**
+ * @brief      Create permission set from property table
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected to be contained in the table.
+ *
+ * @param      propTable   Permission table
+ */
+tCalendarPermissionSet::tCalendarPermissionSet(const TARRAY_SET& propTable)
+{
+	CalendarPermissions.reserve(propTable.count);
+	for(const TPROPVAL_ARRAY& props : propTable)
+		CalendarPermissions.emplace_back(props);
+}
+
+/**
+ * @brief      Generate list of permissions to write to exmdb
+ *
+ * @return     List of PERMISSION_DATA structures
+ */
+std::vector<PERMISSION_DATA> tCalendarPermissionSet::write() const
+{
+	std::vector<PERMISSION_DATA> res;
+	res.reserve(CalendarPermissions.size());
+	std::transform(CalendarPermissions.begin(), CalendarPermissions.end(), std::back_inserter(res),
+	               [](const tCalendarPermission& perm){return perm.write();});
+	return res;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

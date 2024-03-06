@@ -13,6 +13,7 @@
 #include <gromox/mail.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/pcl.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/usercvt.hpp>
 
 #include "exceptions.hpp"
@@ -228,7 +229,7 @@ void calc_enddate(RECURRENCE_PATTERN &recur_pat, tm* tmp_tm)
 	{
 		uint8_t daycount = calc_daycount(recur_pat.pts.weekrecur);
 		if(daycount == 0)
-			throw EWSError::CalendarInvalidRecurrence("ERROR NEEDED: daycount must not be zero");
+			throw EWSError::CalendarInvalidRecurrence(E3282);
 		forwardcount = (recur_pat.occurrencecount - 1) / daycount;
 		// number of remaining occurrences after the week skip
 		uint32_t restocc = recur_pat.occurrencecount - forwardcount * daycount - 1;
@@ -910,6 +911,43 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
 }
 
 /**
+ * @brief      Load permission table
+ *
+ * @param      dir   Store to load from
+ * @param      fid   Folder Id
+ *
+ * @return     Property table containing `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and `PR_SMTP_ADDRESS` tags
+ */
+TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) const
+{
+	uint32_t tableId, rowCount;
+	const auto& exmdb = m_plugin.exmdb;
+	if(!exmdb.load_permission_table(dir.c_str(), fid, 0, &tableId, &rowCount))
+		throw EWSError::ItemCorrupt(E3283);
+	auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
+	static const uint32_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
+	static const PROPTAG_ARRAY proptags{4, const_cast<uint32_t*>(tags)};
+	TARRAY_SET propTable;
+	if(!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId, &proptags, 0, rowCount, &propTable))
+		throw EWSError::ItemCorrupt(E3284);
+	return propTable;
+}
+
+/**
+ * @brief     Load special folder fields for calendar folders
+ *
+ * @param     dir     Store to load from
+ * @param     fid     Folder ID
+ * @param     folder  Folder object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fId, tBaseFolderType& folder, uint64_t special) const
+{
+	if(special & sShape::Rights)
+		folder.EffectiveRights.emplace(permissions(dir, fId));
+}
+
+/**
  * @brief     Load generic special folder fields
  *
  * Currently supports
@@ -920,10 +958,44 @@ sAttachment EWSContext::loadAttachment(const std::string& dir, const sAttachment
  * @param     folder  Folder object to store data in
  * @param     special Bit mask of attributes to load
  */
-void EWSContext::loadSpecial(const std::string& dir, uint64_t fId, tBaseFolderType& folder, uint64_t special) const
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fId, tCalendarFolderType& folder, uint64_t special) const
 {
+	loadSpecial(dir, fId, static_cast<tBaseFolderType&>(folder), special);
 	if(special & sShape::Permissions)
-		folder.EffectiveRights.emplace(permissions(dir, fId));
+		folder.PermissionSet.emplace(loadPermissions(dir, fId));
+}
+
+/**
+ * @brief     Load generic special folder fields for contacts folder
+ *
+ * Currently supports
+ * - loading of permissions
+ *
+ * @param     dir     Store to load from
+ * @param     fid     Folder ID
+ * @param     folder  Folder object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fId, tContactsFolderType& folder, uint64_t special) const
+{
+	loadSpecial(dir, fId, static_cast<tBaseFolderType&>(folder), special);
+	if(special & sShape::Permissions)
+		folder.PermissionSet.emplace(loadPermissions(dir, fId));
+}
+
+/**
+ * @brief     Load special folder fields for normal folders
+ *
+ * @param     dir     Store to load from
+ * @param     fid     Folder ID
+ * @param     folder  Folder object to store data in
+ * @param     special Bit mask of attributes to load
+ */
+void EWSContext::loadSpecial(const std::string& dir, uint64_t fId, tFolderType& folder, uint64_t special) const
+{
+	loadSpecial(dir, fId, static_cast<tBaseFolderType&>(folder), special);
+	if(special & sShape::Permissions)
+		folder.PermissionSet.emplace(loadPermissions(dir, fId));
 }
 
 /**
@@ -1010,7 +1082,7 @@ void EWSContext::loadSpecial(const std::string& dir, uint64_t fid, uint64_t mid,
 			item.Attachments->emplace_back(tAttachment::create(aid, props));
 		}
 	}
-	if(special & sShape::Permissions)
+	if(special & sShape::Rights)
 		item.EffectiveRights.emplace(permissions(dir, fid));
 }
 
@@ -2188,6 +2260,25 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 		throw EWSError::CannotFindUser(E3091(username));
 	return fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-{}",
 	                   m_plugin.x500_org_name.c_str(), domainId, userId, userpart);
+}
+
+/**
+ * @brief      Write permissions
+ *
+ * @param      dir     Store to write to
+ * @param      fid     Folder Id to set permissions on
+ * @param      perms   Permission data to write
+ */
+void EWSContext::writePermissions(const std::string& dir, uint64_t fid, const std::vector<PERMISSION_DATA>& perms) const
+{
+		size_t memberCount = perms.size();
+		if(memberCount > std::numeric_limits<uint16_t>::max())
+			throw InputError(E3285);
+		const auto& exmdb = m_plugin.exmdb;
+		if(!exmdb.empty_folder_permission(dir.c_str(), fid))
+			throw EWSError::FolderSave(E3286);
+		if(!exmdb.update_folder_permission(dir.c_str(), fid, false, uint16_t(memberCount), perms.data()))
+			throw EWSError::FolderSave(E3287);
 }
 
 /**
