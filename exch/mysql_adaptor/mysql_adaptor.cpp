@@ -660,6 +660,8 @@ BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) tr
 
 BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
 {
+	if (domain_id1 == domain_id2)
+		return TRUE;
 	auto qstr = "SELECT org_id FROM domains WHERE id=" + std::to_string(domain_id1) +
 	            " OR id=" + std::to_string(domain_id2);
 	auto conn = g_sqlconn_pool.get_wait();
@@ -824,6 +826,8 @@ void mysql_adaptor_encode_squote(const char *in, char *out)
 BOOL mysql_adaptor_check_same_org2(const char *domainname1,
     const char *domainname2) try
 {
+	if (strcasecmp(domainname1, domainname2) == 0)
+		return TRUE;
 	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);
