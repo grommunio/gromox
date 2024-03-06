@@ -60,6 +60,7 @@
 #endif
 #include <vmime/charset.hpp>
 #include <gromox/archive.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
@@ -1154,6 +1155,9 @@ void mlog(unsigned int level, const char *fmt, ...)
 				level <= LV_WARN ? "\e[31m" :
 				level <= LV_NOTICE ? "\e[1;37m" :
 				level == LV_DEBUG ? "\e[1;30m" : "");
+#if 0
+		fprintf(stderr, "[%f] ", std::chrono::duration<double>(tp_now() - decltype(tp_now()){}).count());
+#endif
 		vfprintf(stderr, fmt, args);
 		if (g_log_tty)
 			fprintf(stderr, "\e[0m");
