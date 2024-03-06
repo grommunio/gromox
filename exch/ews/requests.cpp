@@ -135,7 +135,7 @@ void writeMessageBody(const std::string& path, const optional<tReplyBody>& reply
 {
 	if(!reply || !reply->Message)
 		return (void) unlink(path.c_str());
-	static const char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
+	static constexpr char header[] = "Content-Type: text/html;\r\n\tcharset=\"utf-8\"\r\n\r\n";
 	auto& content = *reply->Message;
 	std::ofstream file(path, std::ios::binary); /* FMODE_PUBLIC */
 	file.write(header, std::size(header)-1);
@@ -284,8 +284,8 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
 {
 	response->SetName("m:DeleteFolderResponse");
 
-	static uint32_t parentFidTag = PidTagParentFolderId;
-	static const PROPTAG_ARRAY parentTags{1, &parentFidTag};
+	static constexpr uint32_t parentFidTag = PidTagParentFolderId;
+	static constexpr PROPTAG_ARRAY parentTags = {1, deconst(&parentFidTag)};
 
 	mDeleteFolderResponse data;
 	data.ResponseMessages.reserve(request.FolderIds.size());

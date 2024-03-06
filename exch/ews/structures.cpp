@@ -3611,7 +3611,7 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 		fromProp(props.find(PR_SMTP_ADDRESS), UserId.PrimarySmtpAddress);
 		fromProp(props.find(PR_MEMBER_NAME), UserId.DisplayName);
 	}
-	static const uint32_t none = 0;
+	static constexpr uint32_t none = 0;
 	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
 	if(!rights)
 		rights = &none;
@@ -3646,8 +3646,7 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 		rights |= *DeleteItems == Enum::All? frightsDeleteAny : *DeleteItems == Enum::Owned? frightsDeleteOwned : 0;
 
 
-	static const uint32_t def = 0;
-	static const uint32_t anon = 0xffffffff;
+	static constexpr uint32_t def = 0, anon = 0xffffffff;
 	PERMISSION_DATA perm{UserId.DistinguishedUser? ROW_MODIFY : ROW_ADD,
 		                 TPROPVAL_ARRAY{0, EWSContext::alloc<TAGGED_PROPVAL>(3)}};
 	uint16_t& count = perm.propvals.count;
@@ -3674,7 +3673,7 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
  */
 tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
-	static const uint32_t none = 0;
+	static constexpr uint32_t none = 0;
 	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
 	if(!rights)
 		rights = &none;
@@ -3710,7 +3709,7 @@ PERMISSION_DATA tCalendarPermission::write() const
  */
 tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
-	static const uint32_t none = 0;
+	static constexpr uint32_t none = 0;
 	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
 	if(!rights)
 		rights = &none;

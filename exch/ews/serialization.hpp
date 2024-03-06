@@ -58,7 +58,7 @@ static constexpr uint8_t EC_IMP_OUT = 0x4U; ///< Can be exported implicitely by 
  */
 template<typename T>
 struct ExplicitConvert
-{static const uint8_t value = 0;};
+{static constexpr uint8_t value = 0;};
 
 /**
  * @brief      Conversion specialization for boolean

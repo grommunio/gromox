@@ -733,7 +733,7 @@ std::pair<std::list<sNotificationEvent>, bool> EWSContext::getEvents(const tSubs
 TAGGED_PROPVAL EWSContext::getFolderEntryId(const std::string& dir, uint64_t folderId) const
 {
 	static constexpr uint32_t propids[] = {PR_ENTRYID};
-	PROPTAG_ARRAY proptags{1, deconst(propids)};
+	static constexpr PROPTAG_ARRAY proptags = {1, deconst(propids)};
 	TPROPVAL_ARRAY props = getFolderProps(dir, folderId, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
 		throw EWSError::FolderPropertyRequestFailed(E3022);
@@ -768,8 +768,8 @@ TPROPVAL_ARRAY EWSContext::getFolderProps(const std::string& dir, uint64_t folde
  */
 TAGGED_PROPVAL EWSContext::getItemEntryId(const std::string& dir, uint64_t mid) const
 {
-	static const uint32_t propids[] = {PR_ENTRYID};
-	PROPTAG_ARRAY proptags{1, deconst(propids)};
+	static constexpr uint32_t propids[] = {PR_ENTRYID};
+	static constexpr PROPTAG_ARRAY proptags = {1, deconst(propids)};
 	TPROPVAL_ARRAY props = getItemProps(dir, mid, proptags);
 	if(props.count != 1 || props.ppropval->proptag != PR_ENTRYID)
 		throw EWSError::ItemPropertyRequestFailed(E3024);
@@ -839,8 +839,8 @@ TPROPVAL_ARRAY EWSContext::getItemProps(const std::string& dir,	uint64_t mid, co
  */
 GUID EWSContext::getMailboxGuid(const std::string& dir) const
 {
-	static const uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
-	static constexpr PROPTAG_ARRAY recordKeyTags{1, deconst(&recordKeyTag)};
+	static constexpr uint32_t recordKeyTag = PR_STORE_RECORD_KEY;
+	static constexpr PROPTAG_ARRAY recordKeyTags = {1, deconst(&recordKeyTag)};
 	TPROPVAL_ARRAY recordKeyProp;
 	if(!m_plugin.exmdb.get_store_properties(dir.c_str(), CP_ACP, &recordKeyTags, &recordKeyProp) ||
 	   recordKeyProp.count != 1 || recordKeyProp.ppropval->proptag != PR_STORE_RECORD_KEY)
@@ -925,8 +925,8 @@ TARRAY_SET EWSContext::loadPermissions(const std::string& dir, uint64_t fid) con
 	if(!exmdb.load_permission_table(dir.c_str(), fid, 0, &tableId, &rowCount))
 		throw EWSError::ItemCorrupt(E3283);
 	auto unloadTable = make_scope_exit([&, tableId]{exmdb.unload_table(dir.c_str(), tableId);});
-	static const uint32_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
-	static const PROPTAG_ARRAY proptags{4, const_cast<uint32_t*>(tags)};
+	static constexpr uint32_t tags[] = {PR_MEMBER_ID, PR_MEMBER_NAME, PR_MEMBER_RIGHTS, PR_SMTP_ADDRESS};
+	static constexpr PROPTAG_ARRAY proptags = {std::size(tags), deconst(tags)};
 	TARRAY_SET propTable;
 	if(!exmdb.query_table(dir.c_str(), "", CP_UTF8, tableId, &proptags, 0, rowCount, &propTable))
 		throw EWSError::ItemCorrupt(E3284);
@@ -1304,8 +1304,8 @@ std::unique_ptr<BINARY, detail::Cleaner> EWSContext::mkPCL(const XID& xid, PCL p
 uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& folder, uint64_t newParent, uint32_t accountId,
                                     bool copy) const
 {
-	static uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
-	static const PROPTAG_ARRAY tags{std::size(tagIds), tagIds};
+	static constexpr uint32_t tagIds[] = {PidTagParentFolderId, PR_DISPLAY_NAME};
+	static constexpr PROPTAG_ARRAY tags = {std::size(tagIds), deconst(tagIds)};
 	TPROPVAL_ARRAY props;
 	if(!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
 		throw DispatchError(E3159);
@@ -1645,7 +1645,7 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 	if(!shape.writes(PR_LAST_MODIFICATION_TIME))
 		shape.write(TAGGED_PROPVAL{PR_LAST_MODIFICATION_TIME, EWSContext::construct<uint64_t>(rop_util_current_nttime())});
 	if(persist) {
-		static const uint8_t trueVal = TRUE;
+		static constexpr uint8_t trueVal = TRUE;
 		if(!shape.writes(PR_READ))	// Unless specified otherwise, newly created items should be marked as read
 			shape.write(TAGGED_PROPVAL{PR_READ, const_cast<uint8_t*>(&trueVal)});
 		shape.write(TAGGED_PROPVAL{PidTagMid, construct<uint64_t>(messageId)});
