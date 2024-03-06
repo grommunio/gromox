@@ -3602,7 +3602,7 @@ decltype(tBasePermission::profileTable) tBasePermission::profileTable = {
  */
 tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 {
-	const uint32_t* memberId = props.get<uint32_t>(PR_MEMBER_ID);
+	auto memberId = props.get<const uint32_t>(PR_MEMBER_ID);
 	if(memberId && *memberId == 0)
 		UserId.DistinguishedUser = Enum::Default;
 	else if(memberId && *memberId == 0xffffffff)
@@ -3612,7 +3612,7 @@ tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
 		fromProp(props.find(PR_MEMBER_NAME), UserId.DisplayName);
 	}
 	static constexpr uint32_t none = 0;
-	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if(!rights)
 		rights = &none;
 	CanCreateItems.emplace(*rights & frightsCreate);
@@ -3674,7 +3674,7 @@ PERMISSION_DATA tBasePermission::write(uint32_t rights) const
 tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
 	static constexpr uint32_t none = 0;
-	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if(!rights)
 		rights = &none;
 	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails :
@@ -3710,7 +3710,7 @@ PERMISSION_DATA tCalendarPermission::write() const
 tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
 {
 	static constexpr uint32_t none = 0;
-	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	auto rights = props.get<const uint32_t>(PR_MEMBER_RIGHTS);
 	if(!rights)
 		rights = &none;
 	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails : Enum::None);

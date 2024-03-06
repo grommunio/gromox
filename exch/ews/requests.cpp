@@ -296,7 +296,7 @@ void process(mDeleteFolderRequest&& request, XMLElement* response, const EWSCont
 			throw EWSError::DeleteDistinguishedFolder(E3156);
 		std::string dir = ctx.getDir(folder);
 		TPROPVAL_ARRAY parentProps = ctx.getFolderProps(dir, folder.folderId, parentTags);
-		const uint64_t* parentFolderId = parentProps.get<uint64_t>(parentFidTag);
+		auto parentFolderId = parentProps.get<const uint64_t>(parentFidTag);
 		if(!parentFolderId)
 			throw DispatchError(E3166);
 		sFolderSpec parentFolder = folder;
@@ -910,7 +910,7 @@ void process(mGetUserPhotoRequest&& request, XMLElement* response, EWSContext& c
 		PROPTAG_ARRAY tags{1, &tag};
 		TPROPVAL_ARRAY props;
 		ctx.plugin().exmdb.get_store_properties(dir.c_str(), CP_ACP, &tags, & props);
-		const BINARY* photodata = props.get<BINARY>(tag);
+		auto photodata = props.get<const BINARY>(tag);
 		if(photodata && photodata->cb)
 			data.PictureData = photodata;
 		else

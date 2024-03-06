@@ -1254,7 +1254,7 @@ sItem EWSContext::loadOccurrence(const std::string& dir, uint64_t fid, uint64_t 
 		if(!m_plugin.exmdb.get_instance_properties(dir.c_str(), 0, eInst->instanceId, &tags, &props))
 			throw DispatchError(E3211);
 
-		const uint64_t* exstarttime = props.get<uint64_t>(ex_replace_time_tag);
+		auto exstarttime = props.get<const uint64_t>(ex_replace_time_tag);
 		if(!exstarttime)
 			continue;
 		time_t exstart = gromox::time_point::clock::to_time_t(rop_util_nttime_to_unix2(*exstarttime));
@@ -1310,7 +1310,7 @@ uint64_t EWSContext::moveCopyFolder(const std::string& dir, const sFolderSpec& f
 	if(!m_plugin.exmdb.get_folder_properties(dir.c_str(), CP_ACP, folder.folderId, &tags, &props))
 		throw DispatchError(E3159);
 	uint64_t* parentFid = props.get<uint64_t>(PidTagParentFolderId);
-	const char* folderName = props.get<char>(PR_DISPLAY_NAME);
+	auto folderName = props.get<const char>(PR_DISPLAY_NAME);
 	if(!parentFid || !folderName)
 		throw DispatchError(E3160);
 	sFolderSpec parentFolder = folder;
