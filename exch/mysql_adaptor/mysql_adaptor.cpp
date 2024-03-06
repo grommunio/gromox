@@ -566,8 +566,10 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 	if (pmyres.num_rows() != 1)
 		return FALSE;	
 	auto myrow = pmyres.fetch_row();
-	*puser_id   = strtoul(myrow[0], nullptr, 0);
-	*pdomain_id = strtoul(myrow[1], nullptr, 0);
+	if (puser_id != nullptr)
+		*puser_id = strtoul(myrow[0], nullptr, 0);
+	if (pdomain_id != nullptr)
+		*pdomain_id = strtoul(myrow[1], nullptr, 0);
 	if (dtypx != nullptr) {
 		*dtypx = DT_MAILUSER;
 		if (myrow[2] != nullptr)
