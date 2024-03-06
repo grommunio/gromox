@@ -258,7 +258,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		E(common_util_get_homedir_by_id, "get_homedir_by_id");
 		E(common_util_get_id_from_maildir, "get_id_from_maildir");
 		E(common_util_get_id_from_homedir, "get_id_from_homedir");
-		E(common_util_get_id_from_username, "get_id_from_username");
+		E(common_util_get_user_ids, "get_user_ids");
 		E(common_util_get_username_from_id, "get_username_from_id");
 		E(common_util_get_user_displayname, "get_user_displayname");
 		E(common_util_check_mlist_include, "check_mlist_include");

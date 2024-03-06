@@ -49,7 +49,7 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (ret != ecSuccess)
 		return ret;
 	unsigned int user_id = 0;
-	if (!common_util_get_id_from_username(username.c_str(), &user_id))
+	if (!common_util_get_user_ids(username.c_str(), &user_id, nullptr, nullptr))
 		return ecUnknownUser;
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)

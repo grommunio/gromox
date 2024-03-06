@@ -76,7 +76,6 @@ E(check_mlist_include)
 E(get_user_lang)
 E(get_timezone)
 E(get_username_from_id)
-E(get_id_from_username)
 E(get_user_ids)
 E(get_domain_ids)
 E(check_same_org)
@@ -1677,7 +1676,6 @@ int common_util_run()
 	E(common_util_check_mlist_include, "check_mlist_include");
 	E(common_util_get_user_lang, "get_user_lang");
 	E(common_util_get_timezone, "get_timezone");
-	E(common_util_get_id_from_username, "get_id_from_username");
 	E(common_util_get_user_ids, "get_user_ids");
 	E(common_util_get_domain_ids, "get_domain_ids");
 	E(common_util_check_same_org, "check_same_org");

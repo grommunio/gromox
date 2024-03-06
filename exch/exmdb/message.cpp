@@ -1754,7 +1754,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			XID tmp_xid;
 			if (exmdb_server::is_private()) {
 				unsigned int tmp_int = 0;
-				if (!common_util_get_id_from_username(account, &tmp_int))
+				if (!common_util_get_user_ids(account, &tmp_int, nullptr, nullptr))
 					return FALSE;
 				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
 			} else {
@@ -2852,7 +2852,7 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	unsigned int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
-		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
+		if (!common_util_get_user_ids(rp.ev_to, &tmp_id, nullptr, nullptr))
 			return ecError;
 	} else {
 		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
@@ -3160,7 +3160,7 @@ static ec_error_t opx_move_private(const char *account, sqlite3 *psqlite,
 	if (pextmvcp->folder_eid.folder_type != EITLT_PRIVATE_FOLDER)
 		return message_disable_rule(psqlite, TRUE, rule.id);
 	unsigned int tmp_id = 0;
-	if (!common_util_get_id_from_username(account, &tmp_id))
+	if (!common_util_get_user_ids(account, &tmp_id, nullptr, nullptr))
 		return ecSuccess;
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
 	if (tmp_guid != pextmvcp->folder_eid.database_guid)
@@ -3210,7 +3210,7 @@ static ec_error_t opx_move(const rulexec_in &rp,
 	unsigned int tmp_id = 0, tmp_id1 = 0;
 	auto is_pvt = exmdb_server::is_private();
 	if (is_pvt) {
-		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
+		if (!common_util_get_user_ids(rp.ev_to, &tmp_id, nullptr, nullptr))
 			return ecError;
 	} else {
 		if (!common_util_get_domain_ids(rp.ev_to, &tmp_id, &tmp_id1))
@@ -3266,7 +3266,7 @@ static ec_error_t opx_reply(const rulexec_in &rp, const rule_node &rule,
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 	if (exmdb_server::is_private()) {
 		unsigned int tmp_id = 0;
-		if (!common_util_get_id_from_username(rp.ev_to, &tmp_id))
+		if (!common_util_get_user_ids(rp.ev_to, &tmp_id, nullptr, nullptr))
 			return ecSuccess;
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)

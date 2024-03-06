@@ -91,7 +91,6 @@ E(get_timezone)
 E(get_maildir)
 E(get_homedir)
 E(get_homedir_by_id)
-E(get_id_from_username)
 E(get_user_ids)
 E(get_domain_ids)
 E(get_id_from_maildir)
@@ -3827,7 +3826,7 @@ BINARY* common_util_to_private_folder_entryid(
 		return nullptr;
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
 	unsigned int user_id = 0;
-	if (!common_util_get_id_from_username(username, &user_id))
+	if (!common_util_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
 	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
@@ -3858,7 +3857,7 @@ BINARY* common_util_to_private_message_entryid(
 		return nullptr;
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
 	unsigned int user_id = 0;
-	if (!common_util_get_id_from_username(username, &user_id))
+	if (!common_util_get_user_ids(username, &user_id, nullptr, nullptr))
 		return nullptr;
 	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;

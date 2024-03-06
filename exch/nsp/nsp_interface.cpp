@@ -62,7 +62,7 @@ enum {
 unsigned int g_nsp_trace;
 static BOOL g_session_check;
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
-static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
+static decltype(mysql_adaptor_get_user_ids) *get_user_ids;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
 static decltype(mysql_adaptor_get_mlist_memb) *get_mlist_memb;
 static gromox::archive abkt_archive;
@@ -555,7 +555,7 @@ int nsp_interface_run()
 
 	E(get_domain_ids, "get_domain_ids");
 	E(get_maildir, "get_maildir");
-	E(get_id_from_username, "get_id_from_username");
+	E(get_user_ids, "get_user_ids");
 	E(get_mlist_memb, "get_mlist_memb");
 	return 0;
 #undef E
@@ -1314,7 +1314,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (outmids->cvalues > requested)
 				break;
 			unsigned int user_id = 0;
-			if (!get_id_from_username(memb.c_str(), &user_id))
+			if (!get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
 			if (pnode == nullptr ||
@@ -1343,7 +1343,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (outmids->cvalues > requested)
 				break;
 			unsigned int user_id = 0;
-			if (!get_id_from_username(deleg.c_str(), &user_id))
+			if (!get_user_ids(deleg.c_str(), &user_id, nullptr, nullptr))
 				continue;
 			pnode = ab_tree_uid_to_node(pbase.get(), user_id);
 			if (pnode == nullptr ||
