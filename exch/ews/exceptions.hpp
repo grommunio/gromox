@@ -405,6 +405,9 @@ E(3275, "yearly (MonthlyNth) recurrence without a day of week");
 E(3279, "yearly recurrence invalid day of month");
 E(3280, "invalid recurrence type for a calendar item");
 E(3281, "invalid recurrence range for a calendar item");
+E(3282, "daycount must not be zero");
+E(3283, "failed to load permission table");
+E(3284, "failed to load permissions");
 
 #undef E
 }

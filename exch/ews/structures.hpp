@@ -336,7 +336,8 @@ public:
 	static constexpr uint64_t RequiredAttendees = 1 << 7;
 	static constexpr uint64_t OptionalAttendees = 1 << 8;
 	static constexpr uint64_t Resources =         1 << 9;
-	static constexpr uint64_t Permissions =       1 << 10;
+	static constexpr uint64_t Rights =            1 << 10;
+	static constexpr uint64_t Permissions =       1 << 11;
 
 	static constexpr uint64_t Recipients = ToRecipients | CcRecipients | BccRecipients;
 	static constexpr uint64_t Attendees = RequiredAttendees | OptionalAttendees | Resources;
@@ -814,6 +815,9 @@ struct tGuid : public GUID
 	std::string serialize() const;
 };
 
+/**
+ * Types.xsd:6874
+ */
 struct tEffectiveRights
 {
 	explicit tEffectiveRights(uint32_t);
@@ -937,7 +941,7 @@ struct tFieldURI
 	//Types.xsd:402
 	static std::unordered_multimap<std::string, uint32_t> tagMap; ///< Mapping for normal properties
 	static std::unordered_multimap<std::string, std::pair<PROPERTY_NAME, uint16_t>> nameMap; ///< Mapping for named properties
-	static std::array<SMEntry, 16> specialMap; ///< Mapping for special properties
+	static std::array<SMEntry, 17> specialMap; ///< Mapping for special properties
 };
 
 /**
@@ -1099,6 +1103,95 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
 };
 
 /**
+ * Types.xsd:6722
+ */
+struct tUserId
+{
+	//<xs:element name="SID" type="xs:string" minOccurs="0" maxOccurs="1" />
+	std::optional<std::string> PrimarySmtpAddress;
+	std::optional<std::string> DisplayName;
+    std::optional<Enum::DistinguishedUserType> DistinguishedUser;
+    //<xs:element name="ExternalUserIdentity" type="xs:string" minOccurs="0" maxOccurs="1" />
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6773
+ */
+struct tBasePermission : public NS_EWS_Types
+{
+	explicit tBasePermission(const TPROPVAL_ARRAY&);
+
+	tUserId UserId;
+	std::optional<bool> CanCreateItems;
+	std::optional<bool> CanCreateSubFolders;
+	std::optional<bool> IsFolderOwner;
+	std::optional<bool> IsFolderVisible;
+	std::optional<bool> IsFolderContact;
+	std::optional<Enum::PermissionActionType> EditItems;
+	std::optional<Enum::PermissionActionType> DeleteItems;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6803
+ */
+struct tCalendarPermission: public tBasePermission
+{
+	static constexpr char NAME[] = "CalendarPermission";
+
+	explicit tCalendarPermission(const TPROPVAL_ARRAY&);
+
+	std::optional<Enum::CalendarPermissionReadAccessType> ReadItems;
+	Enum::CalendarPermissionLevelType CalendarPermissionLevel;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6789
+ */
+struct tPermission: public tBasePermission
+{
+	static constexpr char NAME[] = "Permission";
+
+	explicit tPermission(const TPROPVAL_ARRAY&);
+
+	std::optional<Enum::PermissionReadAccessType> ReadItems;
+	Enum::PermissionLevelType PermissionLevel;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6864
+ */
+struct tCalendarPermissionSet : NS_EWS_Types
+{
+	explicit tCalendarPermissionSet(const TARRAY_SET&);
+
+	std::vector<tCalendarPermission> CalendarPermissions;
+	//std::optional<std::vector<aUnknownEntry>> UnknownEntries;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
+ * Types.xsd:6854
+ */
+struct tPermissionSet : NS_EWS_Types
+{
+	explicit tPermissionSet(const TARRAY_SET&);
+
+	std::vector<tPermission> Permissions;
+	//std::optional<std::vector<aUnknownEntry>> UnknownEntries;
+
+	void serialize(tinyxml2::XMLElement*) const;
+};
+
+/**
  * Messages.xsd:5992
  */
 struct tFieldOrder
@@ -1123,7 +1216,7 @@ struct tFolderType : public tBaseFolderType
 
 	void serialize(tinyxml2::XMLElement*) const;
 
-	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
+	std::optional<tPermissionSet> PermissionSet;
 	std::optional<int32_t> UnreadCount;
 };
 
@@ -1136,10 +1229,12 @@ struct tCalendarFolderType : public tBaseFolderType
 
 	using tBaseFolderType::tBaseFolderType;
 
-	//void serialize(tinyxml2::XMLElement*) const;
+	std::optional<tCalendarPermissionSet> PermissionSet;
 
 	//<xs:element name="SharingEffectiveRights" type="t:CalendarPermissionReadAccessType" minOccurs="0"/>
-	//<xs:element name="PermissionSet" type="t:CalendarPermissionSetType" minOccurs="0"/>
+
+	void serialize(tinyxml2::XMLElement*) const;
+
 };
 
 /**
@@ -1224,10 +1319,10 @@ struct tContactsFolderType : public tBaseFolderType
 
 	using tBaseFolderType::tBaseFolderType;
 
-	//void serialize(tinyxml2::XMLElement*) const;
+	void serialize(tinyxml2::XMLElement*) const;
 
 	//<xs:element name="SharingEffectiveRights" type="t:PermissionReadAccessType" minOccurs="0"/>
-	//<xs:element name="PermissionSet" type="t:PermissionSetType" minOccurs="0"/>
+	std::optional<tPermissionSet> PermissionSet;
 	//<xs:element name="SourceId" type="xs:string" minOccurs="0"/>
 	//<xs:element name="AccountName" type="xs:string" minOccurs="0"/>
 };

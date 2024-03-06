@@ -269,8 +269,12 @@ public:
 	Structures::sAttachment loadAttachment(const std::string&,const Structures::sAttachmentId&) const;
 	Structures::sFolder loadFolder(const std::string&, uint64_t, Structures::sShape&) const;
 	Structures::sItem loadItem(const std::string&, uint64_t, uint64_t, Structures::sShape&) const;
+	TARRAY_SET loadPermissions(const std::string&, uint64_t) const;
 	Structures::sItem loadOccurrence(const std::string&, uint64_t, uint64_t, uint32_t, Structures::sShape&) const;
 	void loadSpecial(const std::string&, uint64_t, Structures::tBaseFolderType&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, Structures::tCalendarFolderType&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, Structures::tContactsFolderType&, uint64_t) const;
+	void loadSpecial(const std::string&, uint64_t, Structures::tFolderType&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tItem&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tMessage&, uint64_t) const;
 	void loadSpecial(const std::string&, uint64_t, uint64_t, Structures::tCalendarItem&, uint64_t) const;

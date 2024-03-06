@@ -3055,10 +3055,11 @@ decltype(tFieldURI::specialMap) tFieldURI::specialMap = {{
 	{"calendar:OptionalAttendees", sShape::OptionalAttendees},
 	{"calendar:RequiredAttendees", sShape::RequiredAttendees},
 	{"calendar:Resources", sShape::Resources},
-	{"folder:EffectiveRights", sShape::Permissions},
+	{"folder:EffectiveRights", sShape::Rights},
+	{"folder:PermissionSet", sShape::Permissions},
 	{"item:Attachments", sShape::Attachments},
 	{"item:Body", sShape::Body},
-	{"item:EffectiveRights", sShape::Permissions},
+	{"item:EffectiveRights", sShape::Rights},
 	{"item:IsDraft", sShape::MessageFlags},
 	{"item:IsFromMe", sShape::MessageFlags},
 	{"item:IsResend", sShape::MessageFlags},
@@ -3174,6 +3175,7 @@ std::string tGuid::serialize() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
 decltype(tIndexedFieldURI::tagMap) tIndexedFieldURI::tagMap = {{
 	{{"contacts:PhoneNumber", "AssistantPhone"}, PR_ASSISTANT_TELEPHONE_NUMBER},
 	{{"contacts:PhoneNumber", "BusinessFax"}, PR_BUSINESS_FAX_NUMBER},
@@ -3565,6 +3567,154 @@ void tPath::tags(sShape& shape, bool add) const
 uint32_t tPath::tag(const sGetNameId& getId) const
 {return std::visit([&](auto&& v){return v.tag(getId);}, asVariant());};
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Create permission from properties
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected.
+ *
+ * @param      props   Single row from the permission table
+ */
+tBasePermission::tBasePermission(const TPROPVAL_ARRAY& props)
+{
+	const uint32_t* memberId = props.get<uint32_t>(PR_MEMBER_ID);
+	if(memberId && *memberId == 0)
+		UserId.DistinguishedUser = Enum::Default;
+	else if(memberId && *memberId == 0xffffffff)
+		UserId.DistinguishedUser = Enum::Anonymous;
+	else {
+		fromProp(props.find(PR_SMTP_ADDRESS), UserId.PrimarySmtpAddress);
+		fromProp(props.find(PR_MEMBER_NAME), UserId.DisplayName);
+	}
+	static const uint32_t none = 0;
+	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	if(!rights)
+		rights = &none;
+	CanCreateItems.emplace(*rights & frightsCreate);
+	CanCreateSubFolders.emplace(*rights & frightsCreateSubfolder);
+	IsFolderOwner.emplace(*rights & frightsOwner);
+	IsFolderVisible.emplace(*rights & frightsVisible);
+	IsFolderContact.emplace(*rights & frightsContact);
+	EditItems.emplace(*rights & frightsEditAny? Enum::All : *rights & frightsEditOwned? Enum::Owned : Enum::None);
+	DeleteItems.emplace(*rights & frightsDeleteAny? Enum::All : *rights & frightsDeleteOwned? Enum::Owned : Enum::None);
+}
+
+/**
+ * @brief      Create permission from properties
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected.
+ *
+ * @param      props   Single row from the permission table
+ */
+tCalendarPermission::tCalendarPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
+{
+	static const uint32_t none = 0;
+	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	if(!rights)
+		rights = &none;
+	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails :
+	                  *rights & frightsFreeBusyDetailed? Enum::FreeBusyTimeAndSubjectAndLocation :
+	                  *rights & frightsFreeBusySimple? Enum::TimeOnly :Enum::None);
+	switch(*rights) {
+	case 0:
+		CalendarPermissionLevel = Enum::None; break;
+	case frightsOwner:
+		CalendarPermissionLevel = Enum::Owner; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsEditAny | frightsDeleteAny | frightsCreateSubfolder:
+		CalendarPermissionLevel = Enum::PublishingEditor; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsEditAny | frightsDeleteAny:
+		CalendarPermissionLevel = Enum::Editor; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsCreateSubfolder:
+		CalendarPermissionLevel = Enum::PublishingAuthor; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned:
+		CalendarPermissionLevel = Enum::Author; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned:
+		CalendarPermissionLevel = Enum::NoneditingAuthor; break;
+	case frightsReadAny | frightsVisible:
+		CalendarPermissionLevel = Enum::Reviewer; break;
+	case frightsVisible | frightsCreate:
+		CalendarPermissionLevel = Enum::Contributor; break;
+	case frightsFreeBusySimple:
+		CalendarPermissionLevel = Enum::FreeBusyTimeOnly; break;
+	case frightsFreeBusyDetailed:
+		CalendarPermissionLevel = Enum::FreeBusyTimeAndSubjectAndLocation; break;
+	default:
+		CalendarPermissionLevel = Enum::Custom;
+	}
+}
+
+/**
+ * @brief      Create permission from properties
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected.
+ *
+ * @param      props   Single row from the permission table
+ */
+tPermission::tPermission(const TPROPVAL_ARRAY& props) : tBasePermission(props)
+{
+	static const uint32_t none = 0;
+	const uint32_t* rights = props.get<uint32_t>(PR_MEMBER_RIGHTS);
+	if(!rights)
+		rights = &none;
+	ReadItems.emplace(*rights & frightsReadAny? Enum::FullDetails : Enum::None);
+	switch(*rights) {
+	case 0:
+		PermissionLevel = Enum::None; break;
+	case frightsOwner:
+		PermissionLevel = Enum::Owner; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsEditAny | frightsDeleteAny | frightsCreateSubfolder:
+		PermissionLevel = Enum::PublishingEditor; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsEditAny | frightsDeleteAny:
+		PermissionLevel = Enum::Editor; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned | frightsCreateSubfolder:
+		PermissionLevel = Enum::PublishingAuthor; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned | frightsEditOwned:
+		PermissionLevel = Enum::Author; break;
+	case frightsReadAny | frightsVisible | frightsCreate | frightsDeleteOwned:
+		PermissionLevel = Enum::NoneditingAuthor; break;
+	case frightsReadAny | frightsVisible:
+		PermissionLevel = Enum::Reviewer; break;
+	case frightsVisible | frightsCreate:
+		PermissionLevel = Enum::Contributor; break;
+	default:
+		PermissionLevel = Enum::Custom;
+	}
+}
+
+/**
+ * @brief      Create permission set from property table
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected to be contained in the table.
+ *
+ * @param      propTable   Permission table
+ */
+tPermissionSet::tPermissionSet(const TARRAY_SET& propTable)
+{
+	Permissions.reserve(propTable.count);
+	for(const TPROPVAL_ARRAY& props : propTable)
+		Permissions.emplace_back(props);
+}
+
+/**
+ * @brief      Create permission set from property table
+ *
+ * The properties `PR_MEMBER_ID`, `PR_MEMBER_NAME`, `PR_MEMBER_RIGHTS` and
+ * `PR_SMTP_ADDRESS` are expected to be contained in the table.
+ *
+ * @param      propTable   Permission table
+ */
+tCalendarPermissionSet::tCalendarPermissionSet(const TARRAY_SET& propTable)
+{
+	CalendarPermissions.reserve(propTable.count);
+	for(const TPROPVAL_ARRAY& props : propTable)
+		CalendarPermissions.emplace_back(props);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

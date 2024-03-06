@@ -368,6 +368,18 @@ void tBaseObjectChangedEvent::serialize(tinyxml2::XMLElement* xml) const
 tBasePagingType::tBasePagingType(const tinyxml2::XMLElement* xml) : XMLINITA(MaxEntriesReturned)
 {}
 
+void tBasePermission::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(UserId);
+	XMLDUMPT(CanCreateItems);
+	XMLDUMPT(CanCreateSubFolders);
+	XMLDUMPT(IsFolderOwner);
+	XMLDUMPT(IsFolderVisible);
+	XMLDUMPT(IsFolderContact);
+	XMLDUMPT(EditItems);
+	XMLDUMPT(DeleteItems);
+}
+
 tBaseSubscriptionRequest::tBaseSubscriptionRequest(const tinyxml2::XMLElement* xml) :
 	XMLINIT(FolderIds),
 	XMLINIT(EventTypes)
@@ -435,6 +447,12 @@ void tCalendarEvent::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(EndTime);
 	XMLDUMPT(BusyType);
 	XMLDUMPT(CalendarEventDetails);
+}
+
+void tCalendarFolderType::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBaseFolderType::serialize(xml);
+	XMLDUMPT(PermissionSet);
 }
 
 tIntervalRecurrencePatternBase::tIntervalRecurrencePatternBase(const tinyxml2::XMLElement* xml) :
@@ -651,6 +669,16 @@ void tCalendarItem::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(AllowNewTimeProposal);
 }
 
+void tCalendarPermission::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBasePermission::serialize(xml);
+	XMLDUMPT(ReadItems);
+	XMLDUMPT(CalendarPermissionLevel);
+}
+
+void tCalendarPermissionSet::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPT(CalendarPermissions);}
+
 tCalendarView::tCalendarView(const tinyxml2::XMLElement* xml) :
 	tBasePagingType(xml),
 	XMLINITA(StartDate),
@@ -689,6 +717,12 @@ void tCompleteName::serialize(tinyxml2::XMLElement* xml) const
 	XMLDUMPT(Nickname);
 	XMLDUMPT(YomiFirstName);
 	XMLDUMPT(YomiLastName);
+}
+
+void tContactsFolderType::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBaseFolderType::serialize(xml);
+	XMLDUMPT(PermissionSet);
 }
 
 tPhysicalAddressDictionaryEntry::tPhysicalAddressDictionaryEntry(const tinyxml2::XMLElement* xml) :
@@ -946,6 +980,7 @@ tFolderResponseShape::tFolderResponseShape(const XMLElement* xml) :
 void tFolderType::serialize(XMLElement* xml) const
 {
 	tBaseFolderType::serialize(xml);
+	XMLDUMPT(PermissionSet);
 	XMLDUMPT(UnreadCount);
 }
 
@@ -1167,6 +1202,16 @@ void tMovedCopiedEvent::serialize(tinyxml2::XMLElement* xml) const
 tPath::tPath(const XMLElement* xml) : Base(fromXMLNodeDispatch<Base>(xml))
 {}
 
+void tPermission::serialize(tinyxml2::XMLElement* xml) const
+{
+	tBasePermission::serialize(xml);
+	XMLDUMPT(ReadItems);
+	XMLDUMPT(PermissionLevel);
+}
+
+void tPermissionSet::serialize(tinyxml2::XMLElement* xml) const
+{XMLDUMPT(Permissions);}
+
 tReplyBody::tReplyBody(const XMLElement* xml):
 	XMLINIT(Message), XMLINITA(lang)
 {}
@@ -1331,6 +1376,13 @@ void tSyncFolderItemsReadFlag::serialize(tinyxml2::XMLElement* xml) const
 tTargetFolderIdType::tTargetFolderIdType(const XMLElement* xml) :
 	VXMLINIT(folderId)
 {}
+
+void tUserId::serialize(tinyxml2::XMLElement* xml) const
+{
+	XMLDUMPT(PrimarySmtpAddress);
+	XMLDUMPT(DisplayName);
+	XMLDUMPT(DistinguishedUser);
+}
 
 tUserOofSettings::tUserOofSettings(const XMLElement* xml) :
 	XMLINIT(OofState),
