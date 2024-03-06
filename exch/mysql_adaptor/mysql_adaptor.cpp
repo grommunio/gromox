@@ -262,29 +262,6 @@ BOOL mysql_adaptor_get_username_from_id(unsigned int user_id,
 	return false;
 }
 
-BOOL mysql_adaptor_get_id_from_username(const char *username, unsigned int *puser_id) try
-{
-	char temp_name[UADDR_SIZE*2];
-	
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT id FROM users WHERE username='"s + temp_name + "'";
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1)
-		return FALSE;
-	auto myrow = pmyres.fetch_row();
-	*puser_id = strtoul(myrow[0], nullptr, 0);
-	return TRUE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1705", e.what());
-	return false;
-}
-
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
 {
 	char temp_dir[512];

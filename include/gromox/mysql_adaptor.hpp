@@ -105,7 +105,6 @@ extern BOOL mysql_adaptor_login2(const char *username, const char *password, std
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);
 extern BOOL mysql_adaptor_get_username_from_id(unsigned int user_id, char *username, size_t);
-extern BOOL mysql_adaptor_get_id_from_username(const char *username, unsigned int *user_id);
 extern BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *user_id);
 extern bool mysql_adaptor_get_user_displayname(const char *username, char *dispname, size_t);
 extern bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>&);
