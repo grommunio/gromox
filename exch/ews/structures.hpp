@@ -384,6 +384,8 @@ public:
 	uint64_t special = 0; ///< Fields that are not directly accessible by properties
 	std::string store; ///< For which store the named properties are valid
 	std::optional<std::string> mimeContent; ///< MimeContent to write
+	const tinyxml2::XMLElement* permissionSet = nullptr; ///< PermissionSet for update
+	const tinyxml2::XMLElement* calendarPermissionSet = nullptr; ///< CalendarPermissionSet for update
 };
 
 /**
@@ -1107,6 +1109,9 @@ struct tPath : public std::variant<tExtendedFieldURI, tFieldURI, tIndexedFieldUR
  */
 struct tUserId
 {
+	tUserId() = default;
+	explicit tUserId(const tinyxml2::XMLElement*);
+
 	//<xs:element name="SID" type="xs:string" minOccurs="0" maxOccurs="1" />
 	std::optional<std::string> PrimarySmtpAddress;
 	std::optional<std::string> DisplayName;
@@ -1122,6 +1127,7 @@ struct tUserId
 struct tBasePermission : public NS_EWS_Types
 {
 	explicit tBasePermission(const TPROPVAL_ARRAY&);
+	explicit tBasePermission(const tinyxml2::XMLElement*);
 
 	tUserId UserId;
 	std::optional<bool> CanCreateItems;
@@ -1133,6 +1139,11 @@ struct tBasePermission : public NS_EWS_Types
 	std::optional<Enum::PermissionActionType> DeleteItems;
 
 	void serialize(tinyxml2::XMLElement*) const;
+	PERMISSION_DATA write(uint32_t) const;
+
+	static const std::array<uint32_t, 11> profileTable;
+	static constexpr size_t profiles = 9;
+	static constexpr size_t calendarProfiles = 11;
 };
 
 /**
@@ -1143,10 +1154,12 @@ struct tCalendarPermission: public tBasePermission
 	static constexpr char NAME[] = "CalendarPermission";
 
 	explicit tCalendarPermission(const TPROPVAL_ARRAY&);
+	explicit tCalendarPermission(const tinyxml2::XMLElement*);
 
 	std::optional<Enum::CalendarPermissionReadAccessType> ReadItems;
 	Enum::CalendarPermissionLevelType CalendarPermissionLevel;
 
+	PERMISSION_DATA write() const;
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
@@ -1158,10 +1171,12 @@ struct tPermission: public tBasePermission
 	static constexpr char NAME[] = "Permission";
 
 	explicit tPermission(const TPROPVAL_ARRAY&);
+	explicit tPermission(const tinyxml2::XMLElement*);
 
 	std::optional<Enum::PermissionReadAccessType> ReadItems;
 	Enum::PermissionLevelType PermissionLevel;
 
+	PERMISSION_DATA write() const;
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
@@ -1170,11 +1185,13 @@ struct tPermission: public tBasePermission
  */
 struct tCalendarPermissionSet : NS_EWS_Types
 {
+	explicit tCalendarPermissionSet(const tinyxml2::XMLElement*);
 	explicit tCalendarPermissionSet(const TARRAY_SET&);
 
 	std::vector<tCalendarPermission> CalendarPermissions;
 	//std::optional<std::vector<aUnknownEntry>> UnknownEntries;
 
+	std::vector<PERMISSION_DATA> write() const;
 	void serialize(tinyxml2::XMLElement*) const;
 };
 
@@ -1183,11 +1200,13 @@ struct tCalendarPermissionSet : NS_EWS_Types
  */
 struct tPermissionSet : NS_EWS_Types
 {
+	explicit tPermissionSet(const tinyxml2::XMLElement*);
 	explicit tPermissionSet(const TARRAY_SET&);
 
 	std::vector<tPermission> Permissions;
 	//std::optional<std::vector<aUnknownEntry>> UnknownEntries;
 
+	std::vector<PERMISSION_DATA> write() const;
 	void serialize(tinyxml2::XMLElement*) const;
 };
 

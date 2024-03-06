@@ -2263,6 +2263,25 @@ std::string EWSContext::username_to_essdn(const std::string& username) const
 }
 
 /**
+ * @brief      Write permissions
+ *
+ * @param      dir     Store to write to
+ * @param      fid     Folder Id to set permissions on
+ * @param      perms   Permission data to write
+ */
+void EWSContext::writePermissions(const std::string& dir, uint64_t fid, const std::vector<PERMISSION_DATA>& perms) const
+{
+		size_t memberCount = perms.size();
+		if(memberCount > std::numeric_limits<uint16_t>::max())
+			throw InputError(E3285);
+		const auto& exmdb = m_plugin.exmdb;
+		if(!exmdb.empty_folder_permission(dir.c_str(), fid))
+			throw EWSError::FolderSave(E3286);
+		if(!exmdb.update_folder_permission(dir.c_str(), fid, false, uint16_t(memberCount), perms.data()))
+			throw EWSError::FolderSave(E3287);
+}
+
+/**
  * @brief      Validate consistency of message entry id
  *
  * @param      meid          Message entry id to validate

@@ -301,6 +301,7 @@ public:
 	void updated(const std::string&, const Structures::sMessageEntryId&, Structures::sShape&) const;
 	std::string username_to_essdn(const std::string&) const;
 	void validate(const std::string&, const Structures::sMessageEntryId&) const;
+	void writePermissions(const std::string&, uint64_t, const std::vector<PERMISSION_DATA>&) const;
 
 	double age() const;
 	void experimental(const char*) const;

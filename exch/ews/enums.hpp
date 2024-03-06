@@ -31,7 +31,7 @@ public:
 	StrEnum() = default;
 	constexpr StrEnum(const std::string_view& v) : idx(check(v)) {}
 	constexpr StrEnum(const char* v) : idx(check(v)) {}
-	constexpr explicit StrEnum(index_t index) : idx(check(index)) {}
+	constexpr StrEnum(index_t index) : idx(check(index)) {}
 
 	operator std::string() const { return s(); }
 	constexpr operator std::string_view() const {return sv();}

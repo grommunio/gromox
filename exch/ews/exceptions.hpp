@@ -408,6 +408,9 @@ E(3281, "invalid recurrence range for a calendar item");
 E(3282, "daycount must not be zero");
 E(3283, "failed to load permission table");
 E(3284, "failed to load permissions");
+E(3285, "too many folder members");
+E(3286, "failed to update folder permissions");
+E(3287, "failed to write folder permissions");
 
 #undef E
 }
