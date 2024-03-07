@@ -1023,7 +1023,7 @@ enum sqlite_config_id {
 };
 
 #define ALLOCATED_EID_RANGE							0x10000
-#define CHANGE_NUMBER_BEGIN							0x800000000000LL
+#define CHANGE_NUMBER_BEGIN 0
 
 using GET_PROPIDS = std::function<BOOL(const PROPNAME_ARRAY *, PROPID_ARRAY *)>;
 /* if it returns TRUE, PROPERTY_NAME must be available */

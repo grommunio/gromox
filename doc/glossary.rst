@@ -407,17 +407,12 @@ Mailbox quota restriction
 	0..2^31, the unit is kilobytes.
 
 Changes
-	Lowest known limit: 2^47, due to a mystery historic choice for the
-	``CHANGE_NUMBER_BEGIN`` constant of 0x800000000000 in the Gromox 2.17
-	source code.
-	Regular specced limit: 2^48 changes per replid.
+	Limit: 2^48 changes per replid.
 	Upper theoretical limit: 2^64 (by starting to use multiple replids for
 	one "replica").
 
 GLOBCNT
-	Lowest known limit: 2^47 objects for replid 1 (imposed by limit for
-	*Changes*).
-	Regular specced limit: 2^48.
+	Regular specced limit: 2^48. (imposed by limit for *Changes*)
 	Upper theoretical limit: 2^64.
 
 Folders
