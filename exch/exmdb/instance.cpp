@@ -308,7 +308,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	return TRUE;
 }
 
-uint32_t db_conn::next_instance_id() const
+uint32_t db_base::next_instance_id() const
 {
 	auto db = this;
 	if (db->instance_list.empty())
@@ -386,7 +386,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	return false;
 }
 
-instance_node *db_conn::get_instance(uint32_t id)
+instance_node *db_base::get_instance(uint32_t id)
 {
 	for (auto &e : instance_list)
 		if (e.instance_id == id)

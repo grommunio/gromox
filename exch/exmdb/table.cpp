@@ -1531,7 +1531,7 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 		strcpy(pstring, tmp_buff);
 }
 
-const table_node *db_conn::find_table(uint32_t table_id) const
+const table_node *db_base::find_table(uint32_t table_id) const
 {
 	for (const auto &t : tables.table_list)
 		if (t.table_id == table_id)
