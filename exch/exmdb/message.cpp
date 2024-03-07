@@ -280,7 +280,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 	} else {
 		b_check = TRUE;
 	}
-	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
+	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	if (b_batch)
 		pdb->begin_batch_mode();
 	auto cl_0 = make_scope_exit([&]() {
@@ -497,7 +497,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 			return FALSE;
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
-	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
+	auto b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM;
 	if (b_batch)
 		pdb->begin_batch_mode();
 	auto cl_0 = make_scope_exit([&]() {

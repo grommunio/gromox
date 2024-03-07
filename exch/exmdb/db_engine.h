@@ -137,7 +137,7 @@ struct DB_ITEM {
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
-		BOOL b_batch = false; /* message database is in batch-mode */
+		bool b_batch = false; /* message database is in batch-mode */
 		std::list<table_node> table_list;
 		sqlite3 *psqlite = nullptr;
 	} tables;

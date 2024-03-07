@@ -241,7 +241,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		return NULL;
 	}
 	pdb->tables.last_id = 0;
-	pdb->tables.b_batch = FALSE;
+	pdb->tables.b_batch = false;
 	pdb->tables.psqlite = NULL;
 	sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
 	auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
@@ -3734,7 +3734,7 @@ void DB_ITEM::notify_cttbl_reload(uint32_t table_id)
 void DB_ITEM::begin_batch_mode()
 {
 	auto pdb = this;
-	pdb->tables.b_batch = TRUE;
+	pdb->tables.b_batch = true;
 }
 
 void DB_ITEM::commit_batch_mode_release(db_item_ptr &&pdb)
@@ -3750,7 +3750,7 @@ void DB_ITEM::commit_batch_mode_release(db_item_ptr &&pdb)
 			ptable->b_hint = FALSE;
 		}
 	}
-	pdb->tables.b_batch = FALSE;
+	pdb->tables.b_batch = false;
 	pdb.reset();
 	auto dir = exmdb_server::get_dir();
 	while (table_num-- > 0)
@@ -3762,5 +3762,5 @@ void DB_ITEM::cancel_batch_mode()
 	auto pdb = this;
 	for (auto &t : pdb->tables.table_list)
 		t.b_hint = false;
-	pdb->tables.b_batch = FALSE;
+	pdb->tables.b_batch = false;
 }
