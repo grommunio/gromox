@@ -16,11 +16,7 @@
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
 #include <gromox/util.hpp>
-/*
- * This is a bit lower than the RFC-prescribed 75 so that we always have some
- * room if suddenly a \\ needs to be placed.
- */
-#define MAX_LINE							73
+#define MAX_LINE 75
 
 using namespace gromox;
 
@@ -429,19 +425,32 @@ static std::string ical_serialize_value_string(size_t &line_offset,
 {
 	std::string out;
 	for (size_t i = 0; i < s.size(); ++i) {
-		if (line_offset >= MAX_LINE) {
-			out += "\r\n ";
-			line_offset = 0;
-		}
+		auto w = utf8_byte_num[static_cast<uint8_t>(s[i])];
+		if (w == 0)
+			w = 1;
 		if (s[i] == '\n' || (s[i] == '\r' && s[i+1] == '\n')) {
+			if (line_offset + 2 > MAX_LINE) {
+				out += "\r\n ";
+				line_offset = 1;
+			}
 			out += "\\n";
 			line_offset += 2;
 			if (s[i] == '\r')
 				++i;
 			continue;
 		} else if (s[i] == '\\' || s[i] == ';' || s[i] == ',') {
+			if (line_offset + w + 1 > MAX_LINE) {
+				out += "\r\n ";
+				line_offset = 1;
+			}
 			out += '\\';
-			++line_offset;
+			out += s[i];
+			line_offset += 2;
+			continue;
+		}
+		if (line_offset + w > MAX_LINE) {
+			out += "\r\n ";
+			line_offset = 1;
 		}
 		out += s[i];
 		++line_offset;
