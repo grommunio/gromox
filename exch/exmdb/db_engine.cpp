@@ -350,21 +350,10 @@ table_node::~table_node()
 		sortorder_set_free(psorts);
 }
 
-db_conn::db_conn() :
+db_base::db_base() :
 	reference(1),
 	last_time(tp_now())
-{
-	/*
-	 * g_hash_lock is held while db_conns are constructed and added into
-	 * g_hash_table. Releasing g_hash_lock (in the caller) makes this new
-	 * db_conn visible and grabbable to other threads, which is fine. But
-	 * the other threads should not utilize [parent_r()/parent_w()] an
-	 * obtained db_conn until open() was run, so we will now take the
-	 * rwlock to give our instantiating thread the first pick at running
-	 * open().
-	 * Because of that, the refcount is also set to 1.
-	 */
-}
+{}
 
 bool db_conn::postconstruct_init(const char *dir) try
 {
@@ -404,7 +393,7 @@ bool db_conn::postconstruct_init(const char *dir) try
 	return false;
 }
 
-db_conn::~db_conn()
+db_base::~db_base()
 {
 	auto pdb = this;
 	
@@ -633,7 +622,7 @@ db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return {};
 }
 
-static std::optional<ID_ARRAYS> db_engine_classify_id_array(const db_conn &db,
+static std::optional<ID_ARRAYS> db_engine_classify_id_array(const db_base &db,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;

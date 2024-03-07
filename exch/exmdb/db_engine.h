@@ -100,13 +100,35 @@ struct prepared_statements {
 };
 
 /**
- * @reference: client reference count, item can be closed only when count is 0
+ * @reference: client reference count, db_base can be destroyed when count is 0
  */
+struct db_base {
+	db_base();
+	~db_base();
+	NOMOVE(db_base);
+
+	std::timed_mutex giant_lock; /* should be broken up */
+	std::atomic<int> reference;
+	gromox::time_point last_time{};
+	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
+	/* memory database for holding rop table objects instance */
+	struct {
+		uint32_t last_id = 0;
+		bool b_batch = false; /* message database is in batch-mode */
+		std::list<table_node> table_list;
+	} tables;
+	std::vector<nsub_node> nsub_list;
+	std::vector<dynamic_node> dynamic_list; /* dynamic searches */
+	std::vector<instance_node> instance_list;
+
+	uint32_t next_instance_id() const;
+	instance_node *get_instance(uint32_t);
+	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_base *>(this)->get_instance(id); }
+	const table_node *find_table(uint32_t) const;
+};
+
 class db_item_deleter;
-struct db_conn {
-	db_conn();
-	~db_conn();
-	NOMOVE(db_conn);
+struct db_conn : public db_base {
 	bool postconstruct_init(const char *dir);
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 	void delete_dynamic(uint64_t folder_id);
@@ -129,26 +151,6 @@ struct db_conn {
 	static void commit_batch_mode_release(std::unique_ptr<db_conn, db_item_deleter> &&pdb);
 	void cancel_batch_mode();
 	std::unique_ptr<prepared_statements> begin_optim();
-	uint32_t next_instance_id() const;
-	instance_node *get_instance(uint32_t);
-	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_conn *>(this)->get_instance(id); }
-	const table_node *find_table(uint32_t) const;
-
-	std::atomic<int> reference;
-	gromox::time_point last_time{};
-	std::timed_mutex giant_lock; /* should be broken up */
-	sqlite3 *psqlite = nullptr;
-	std::vector<dynamic_node> dynamic_list; /* dynamic searches */
-	std::vector<nsub_node> nsub_list;
-	std::vector<instance_node> instance_list;
-
-	/* memory database for holding rop table objects instance */
-	struct {
-		uint32_t last_id = 0;
-		bool b_batch = false; /* message database is in batch-mode */
-		std::list<table_node> table_list;
-	} tables;
-	sqlite3 *m_sqlite_eph = nullptr;
 
 	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }
 	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
