@@ -23,6 +23,11 @@ using namespace gromox;
  * alternate data formats are used. OXCMAPIHTTP v13 §2.2.1 mentions some of
  * these. The document is grossly incomplete. Only §2.2.1.1 specifies a
  * HasValue field, but 0xFF bytes can appear in other structs too.
+ *
+ *
+ * In general, all string pointers must be non-null; only very few cases (like
+ * g_str_a,p_str_a; and their callsites) allow for, and recognize, null string
+ * pointers.
  */
 
 void EXT_PULL::init(const void *pdata, uint32_t data_size,
@@ -812,8 +817,14 @@ pack_result EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 		r->wrapped_flags = 0;
 		TRY(g_guid(&r->wrapped_provider_uid));
 		r->wrapped_type = 0;
-		r->pserver_name = nullptr;
-		r->pmailbox_dn = nullptr;
+		r->pserver_name = anew<char>(1);
+		if (r->pserver_name == nullptr)
+			return pack_result::alloc;
+		*r->pserver_name = '\0';
+		r->pmailbox_dn = anew<char>(1);
+		if (r->pmailbox_dn == nullptr)
+			return pack_result::alloc;
+		*r->pmailbox_dn = '\0';
 		return pack_result::success;
 	}
 	mlog(LV_INFO, "I-1969: not a recognized wrapuid");
