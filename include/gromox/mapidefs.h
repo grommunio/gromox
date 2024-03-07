@@ -1555,5 +1555,6 @@ extern GX_EXPORT const GUID
 	PSETID_REPORT, PSETID_SHARING, PSETID_TASK, PSETID_UNIFIEDMESSAGING,
 	PS_INTERNET_HEADERS, PS_MAPI,
 	PS_PUBLIC_STRINGS,
-	gx_dbguid_store_private, gx_dbguid_store_public;
+	gx_dbguid_store_private, gx_dbguid_store_public,
+	exc_replid2, exc_replid4;
 extern GX_EXPORT const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];

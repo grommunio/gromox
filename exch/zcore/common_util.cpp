@@ -913,6 +913,12 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 		guid = logon.b_private ?
 		       rop_util_make_user_guid(logon.account_id) :
 		       rop_util_make_domain_guid(logon.account_id);
+	else if (replid == 2)
+		guid = exc_replid2;
+	else if (replid == 3)
+		guid = pbExchangeProviderPrimaryUserGuid;
+	else if (replid == 4)
+		guid = exc_replid4;
 	else if (replid == 5)
 		guid = logon.mailbox_guid;
 	else if (!exmdb_client::get_mapping_guid(dir, replid, &b_found, &guid))

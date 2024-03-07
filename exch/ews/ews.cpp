@@ -66,6 +66,12 @@ GUID replid_to_replguid(const gromox::EWS::Structures::sMailboxInfo& mbinfo, uin
 	GUID guid;
 	if (replid == 1)
 		guid = mbinfo.isPublic ? rop_util_make_domain_guid(mbinfo.accountId) : rop_util_make_user_guid(mbinfo.accountId);
+	else if (replid == 2)
+		guid = exc_replid2;
+	else if (replid == 3)
+		guid = pbExchangeProviderPrimaryUserGuid;
+	else if (replid == 4)
+		guid = exc_replid4;
 	else if (replid == 5)
 		guid = mbinfo.mailboxGuid;
 	else
