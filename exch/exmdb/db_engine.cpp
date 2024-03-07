@@ -575,7 +575,7 @@ db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return {};
 }
 
-static std::optional<ID_ARRAYS> db_engine_classify_id_array(DB_ITEM *pdb,
+static std::optional<ID_ARRAYS> db_engine_classify_id_array(const DB_ITEM *pdb,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;
@@ -3427,7 +3427,7 @@ void DB_ITEM::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	mlog(LV_ERR, "E-2127: ENOMEM");
 }
 
-static void dbeng_notify_hiertbl_modify_row(DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
