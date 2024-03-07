@@ -2366,7 +2366,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd) try
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
 	unsigned int user_id = 0;
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
+	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
 	    std::size(lang)) || lang[0] == '\0' ||
@@ -2465,7 +2465,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	if (folder_id == 0)
 		return MIDB_E_NO_FOLDER;
 	unsigned int user_id = 0;
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
+	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT message_id,"
 	             " folder_id FROM messages WHERE mid_string=?");
@@ -2561,7 +2561,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	uint64_t nt_time = pstmt.col_int64(CTM_RCVDTIME);
 	pstmt.finalize();
 	unsigned int user_id = 0;
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
+	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
 	    std::size(lang)) || lang[0] == '\0' ||
@@ -2698,7 +2698,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	unsigned int user_id = 0;
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
+	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " parent_fid FROM folders WHERE name=?");
@@ -2813,7 +2813,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
 	unsigned int user_id = 0;
-	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id))
+	if (!system_services_get_user_ids(pidb->username.c_str(), &user_id, nullptr, nullptr))
 		return MIDB_E_SSGETID;
 	if (mail_engine_get_folder_id(pidb.get(), argv[2]) != 0)
 		return MIDB_E_FOLDER_EXISTS;

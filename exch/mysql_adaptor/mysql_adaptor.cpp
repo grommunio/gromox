@@ -262,29 +262,6 @@ BOOL mysql_adaptor_get_username_from_id(unsigned int user_id,
 	return false;
 }
 
-BOOL mysql_adaptor_get_id_from_username(const char *username, unsigned int *puser_id) try
-{
-	char temp_name[UADDR_SIZE*2];
-	
-	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT id FROM users WHERE username='"s + temp_name + "'";
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn->query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn->get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1)
-		return FALSE;
-	auto myrow = pmyres.fetch_row();
-	*puser_id = strtoul(myrow[0], nullptr, 0);
-	return TRUE;
-} catch (const std::exception &e) {
-	mlog(LV_ERR, "%s: %s", "E-1705", e.what());
-	return false;
-}
-
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_id) try
 {
 	char temp_dir[512];
@@ -566,8 +543,10 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 	if (pmyres.num_rows() != 1)
 		return FALSE;	
 	auto myrow = pmyres.fetch_row();
-	*puser_id   = strtoul(myrow[0], nullptr, 0);
-	*pdomain_id = strtoul(myrow[1], nullptr, 0);
+	if (puser_id != nullptr)
+		*puser_id = strtoul(myrow[0], nullptr, 0);
+	if (pdomain_id != nullptr)
+		*pdomain_id = strtoul(myrow[1], nullptr, 0);
 	if (dtypx != nullptr) {
 		*dtypx = DT_MAILUSER;
 		if (myrow[2] != nullptr)
@@ -681,6 +660,8 @@ BOOL mysql_adaptor_get_domain_info(unsigned int domain_id, sql_domain &dinfo) tr
 
 BOOL mysql_adaptor_check_same_org(unsigned int domain_id1, unsigned int domain_id2) try
 {
+	if (domain_id1 == domain_id2)
+		return TRUE;
 	auto qstr = "SELECT org_id FROM domains WHERE id=" + std::to_string(domain_id1) +
 	            " OR id=" + std::to_string(domain_id2);
 	auto conn = g_sqlconn_pool.get_wait();
@@ -845,6 +826,8 @@ void mysql_adaptor_encode_squote(const char *in, char *out)
 BOOL mysql_adaptor_check_same_org2(const char *domainname1,
     const char *domainname2) try
 {
+	if (strcasecmp(domainname1, domainname2) == 0)
+		return TRUE;
 	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);

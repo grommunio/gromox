@@ -652,7 +652,6 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(login2, "mysql_auth_login2");
 	E(setpasswd, "set_password");
 	E(get_username_from_id, "get_username_from_id");
-	E(get_id_from_username, "get_id_from_username");
 	E(get_id_from_maildir, "get_id_from_maildir");
 	E(get_user_displayname, "get_user_displayname");
 	E(get_user_privilege_bits, "get_user_privilege_bits");

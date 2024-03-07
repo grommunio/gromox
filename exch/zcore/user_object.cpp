@@ -218,7 +218,7 @@ ec_error_t user_object::load_list_members(const RESTRICTION *res) try
 	auto info = zs_get_info();
 	for (const auto &memb : member_list) {
 		unsigned int user_id = 0;
-		if (!system_services_get_id_from_username(memb.c_str(), &user_id))
+		if (!system_services_get_user_ids(memb.c_str(), &user_id, nullptr, nullptr))
 			continue;
 		auto mid = ab_tree_make_minid(minid_type::address, user_id);
 		node = ab_tree_minid_to_node(base.get(), mid);

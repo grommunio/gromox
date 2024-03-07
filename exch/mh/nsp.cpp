@@ -103,7 +103,7 @@ enum ReqIndex : size_t
 
 static constexpr int AVERAGE_SESSION_PER_CONTEXT = 10;
 
-static BOOL (*get_id_from_username)(const char *, unsigned int *);
+static BOOL (*get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -224,8 +224,8 @@ static constexpr struct cfg_directive mhnsp_gxcfg_deflt[] = {
 MhNspPlugin::MhNspPlugin(void** ppdata)
 {
 	LINK_HPM_API(ppdata)
-	if (!query_service1(get_id_from_username))
-		throw std::runtime_error("[mh_nsp]: fail to get \"get_id_from_username\" service\n");
+	if (!query_service1(get_user_ids))
+		throw std::runtime_error("[mh_nsp]: failed to get \"get_user_ids\" service\n");
 	if (!query_service1(nsp_interface_bind) ||
 	    !query_service1(nsp_interface_compare_mids) ||
 	    !query_service1(nsp_interface_dntomid) ||
@@ -390,7 +390,7 @@ uint32_t MhNspContext::getaddressbookurl(char* dest)
 
 	if (dest == nullptr)
 		dest = std::get<getaddressbookurl_response>(response).server_url;
-	get_id_from_username(auth_info.username, &user_id);
+	get_user_ids(auth_info.username, &user_id, nullptr, nullptr);
 	memset(username1, 0, std::size(username1));
 	gx_strlcpy(username1, auth_info.username, std::size(username1));
 	auto token = strchr(username1, '@');

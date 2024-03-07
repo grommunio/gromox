@@ -48,7 +48,7 @@ static void *mdpls_thrwork(void *param)
 		NULL == common_util_get_maildir ||
 	    common_util_get_homedir == nullptr ||
 	    common_util_get_homedir_by_id == nullptr ||
-		NULL == common_util_get_id_from_username ||
+	    common_util_get_user_ids == nullptr ||
 		NULL == common_util_get_domain_ids ||
 	    ems_send_mail == nullptr || ems_send_vmail == nullptr) {
 		if (g_notify_stop)

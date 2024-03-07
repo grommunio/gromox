@@ -677,7 +677,7 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 		g_user_table.erase(iter);
 	}
 	tl_hold.unlock();
-	if (!system_services_get_id_from_username(username, &user_id) ||
+	if (!system_services_get_user_ids(username, &user_id, nullptr, nullptr) ||
 	    !system_services_get_homedir(pdomain, homedir, std::size(homedir)) ||
 	    !system_services_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecError;

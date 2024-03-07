@@ -51,7 +51,7 @@ static pack_result exchange_rfr_ndr_pull(int op, NDR_PULL *, void **in);
 static int exchange_rfr_dispatch(unsigned int op, const GUID *obj, uint64_t handle, void *in, void **out, uint32_t *ecode);
 static pack_result exchange_rfr_ndr_push(int op, NDR_PUSH *, void *out);
 
-static BOOL (*get_id_from_username)(const char *username, unsigned int *puser_id);
+static BOOL (*get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
 static DCERPC_ENDPOINT *ep_6001, *ep_6002;
 
 static constexpr DCERPC_INTERFACE interface = {
@@ -72,9 +72,9 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
-		query_service1(get_id_from_username);
-		if (NULL == get_id_from_username) {
-			mlog(LV_ERR, "rfr: failed to get service \"get_id_from_username\"");
+		query_service1(get_user_ids);
+		if (get_user_ids == nullptr) {
+			mlog(LV_ERR, "rfr: failed to get service \"get_user_ids\"");
 			return FALSE;
 		}
 		ep_6001 = register_endpoint("*", 6001);
@@ -109,7 +109,8 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	*punused = '\0';
 	auto rpc_info = get_rpc_info();
 	unsigned int user_id = 0;
-	get_id_from_username(rpc_info.username, &user_id);
+	if (!get_user_ids(rpc_info.username, &user_id, nullptr, nullptr))
+		return ecError;
 	memset(username, 0, sizeof(username));
 	gx_strlcpy(username, rpc_info.username, std::size(username));
 	ptoken = strchr(username, '@');
