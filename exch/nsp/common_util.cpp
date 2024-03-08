@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -9,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
@@ -100,14 +103,9 @@ int common_util_to_utf8(cpid_t codepage, const char *src, char *dst, size_t len)
 void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
 {
 	pbin->cb = 16;
-	pbin->pb[0] = pguid->time_low & 0XFF;
-	pbin->pb[1] = (pguid->time_low >> 8) & 0XFF;
-	pbin->pb[2] = (pguid->time_low >> 16) & 0XFF;
-	pbin->pb[3] = (pguid->time_low >> 24) & 0XFF;
-	pbin->pb[4] = pguid->time_mid & 0XFF;
-	pbin->pb[5] = (pguid->time_mid >> 8) & 0XFF;
-	pbin->pb[6] = pguid->time_hi_and_version & 0XFF;
-	pbin->pb[7] = (pguid->time_hi_and_version >> 8) & 0XFF;
+	cpu_to_le32p(&pbin->pb[0], pguid->time_low);
+	cpu_to_le16p(&pbin->pb[4], pguid->time_mid);
+	cpu_to_le16p(&pbin->pb[6], pguid->time_hi_and_version);
 	memcpy(pbin->pb + 8,  pguid->clock_seq, sizeof(uint8_t) * 2);
 	memcpy(pbin->pb + 10, pguid->node, sizeof(uint8_t) * 6);
 }
@@ -119,32 +117,13 @@ void common_util_set_ephemeralentryid(uint32_t display_type,
 	pephid->r1 = 0x0;
 	pephid->r2 = 0x0;
 	pephid->r3 = 0x0;
-	pephid->provider_uid.ab[0] =
-		g_server_guid.time_low & 0XFF;
-	pephid->provider_uid.ab[1] =
-		(g_server_guid.time_low >> 8) & 0XFF;
-	pephid->provider_uid.ab[2] =
-		(g_server_guid.time_low >> 16) & 0XFF;
-	pephid->provider_uid.ab[3] =
-		(g_server_guid.time_low >> 24) & 0XFF;
-	pephid->provider_uid.ab[4] =
-		g_server_guid.time_mid & 0XFF;
-	pephid->provider_uid.ab[5] =
-		(g_server_guid.time_mid >> 8) & 0XFF;
-	pephid->provider_uid.ab[6] =
-		g_server_guid.time_hi_and_version & 0XFF;
-	pephid->provider_uid.ab[7] =
-		(g_server_guid.time_hi_and_version >> 8) & 0XFF;
-	memcpy(pephid->provider_uid.ab + 8, 
-		g_server_guid.clock_seq, sizeof(uint8_t) * 2);
-	memcpy(pephid->provider_uid.ab + 10,
-		g_server_guid.node, sizeof(uint8_t) * 6);
+	pephid->provider_uid = g_server_guid;
 	pephid->r4 = 0x1;
 	pephid->display_type = display_type;
 	pephid->mid = minid;
 }
 
-BOOL common_util_set_permanententryid(uint32_t display_type,
+BOOL common_util_set_permanententryid(unsigned int display_type,
 	const GUID *pobj_guid, const char *pdn, PERMANENT_ENTRYID *ppermeid)
 {
 	int len;
@@ -199,14 +178,8 @@ BOOL common_util_permanent_entryid_to_binary(
 	pbin->pb[2] = ppermeid->r2;
 	pbin->pb[3] = ppermeid->r3;
 	memcpy(pbin->pb + 4, ppermeid->provider_uid.ab, 16);
-	pbin->pb[20] = (ppermeid->r4 & 0xFF);
-	pbin->pb[21] = ((ppermeid->r4 >> 8)  & 0xFF);
-	pbin->pb[22] = ((ppermeid->r4 >> 16) & 0xFF);
-	pbin->pb[23] = ((ppermeid->r4 >> 24) & 0xFF);
-	pbin->pb[24] = (ppermeid->display_type & 0xFF);
-	pbin->pb[25] = ((ppermeid->display_type >> 8)  & 0xFF);
-	pbin->pb[26] = ((ppermeid->display_type >> 16) & 0xFF);
-	pbin->pb[27] = ((ppermeid->display_type >> 24) & 0xFF);
+	cpu_to_le32p(&pbin->pb[20], ppermeid->r4);
+	cpu_to_le32p(&pbin->pb[24], ppermeid->display_type);
 	memcpy(pbin->pb + 28, ppermeid->pdn, len);
 	return TRUE;
 }
@@ -226,18 +199,9 @@ BOOL common_util_ephemeral_entryid_to_binary(
 	pbin->pb[2] = pephid->r2;
 	pbin->pb[3] = pephid->r3;
 	memcpy(pbin->pb + 4, pephid->provider_uid.ab, 16);
-	pbin->pb[20] = pephid->r4 & 0xFF;
-	pbin->pb[21] = (pephid->r4 >> 8)  & 0xFF;
-	pbin->pb[22] = (pephid->r4 >> 16) & 0xFF;
-	pbin->pb[23] = (pephid->r4 >> 24) & 0xFF;
-	pbin->pb[24] = pephid->display_type & 0xFF;
-	pbin->pb[25] = (pephid->display_type >> 8)  & 0xFF;
-	pbin->pb[26] = (pephid->display_type >> 16) & 0xFF;
-	pbin->pb[27] = (pephid->display_type >> 24) & 0xFF;
-	pbin->pb[28] = pephid->mid & 0xFF;
-	pbin->pb[29] = (pephid->mid >> 8)  & 0xFF;
-	pbin->pb[30] = (pephid->mid >> 16) & 0xFF;
-	pbin->pb[31] = (pephid->mid >> 24) & 0xFF;
+	cpu_to_le32p(&pbin->pb[20], pephid->r4);
+	cpu_to_le32p(&pbin->pb[24], pephid->display_type);
+	cpu_to_le32p(&pbin->pb[28], pephid->mid);
 	return TRUE;
 }
 

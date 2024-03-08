@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <climits>
@@ -31,6 +31,7 @@
 #include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mysql_adaptor.hpp>
@@ -1273,10 +1274,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (bv->pv == nullptr)
 			return FALSE;
 		minid = ab_tree_get_node_minid(pnode);
-		bv->pb[0] = minid & 0xFF;
-		bv->pb[1] = (minid >> 8) & 0xFF;
-		bv->pb[2] = (minid >> 16) & 0xFF;
-		bv->pb[3] = (minid >> 24) & 0xFF;
+		cpu_to_le32p(bv->pb, minid);
 		*ppvalue = pvalue;
 		return TRUE;
 	}
