@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
@@ -14,7 +14,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/textmaps.hpp>
-#include <gromox/tie.hpp>
 #define TRY(expr) do { pack_result klfdv{expr}; if (klfdv != pack_result::success) return klfdv; } while (false)
 
 using namespace gromox;
@@ -124,17 +123,15 @@ static pack_result abkt_read_row(EXT_PULL &bin, Json::Value &jrow,
 	}
 	std::string text;
 	if (cttype_uses_label(ct_type) || cttype_uses_pattern(ct_type)) {
-		std::unique_ptr<char[], stdlib_delete> raw;
 		auto saved_offset = bin.m_offset;
 		bin.m_offset = ulString;
 		if (cpid == CP_ACP) {
-			TRY(bin.g_wstr(&unique_tie(raw)));
-			text = raw.get();
+			TRY(bin.g_wstr(&text));
 		} else {
-			TRY(bin.g_str(&unique_tie(raw)));
+			TRY(bin.g_str(&text));
 			auto cset = cpid_to_cset(cpid);
 			if (cset != nullptr)
-				text = iconvtext(raw.get(), strlen(raw.get()), cset, "UTF-8");
+				text = iconvtext(text.c_str(), text.size(), cset, "UTF-8");
 		}
 		bin.m_offset = saved_offset;
 	}
