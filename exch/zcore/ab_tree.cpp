@@ -1041,6 +1041,18 @@ static uint32_t ab_tree_get_dtyp(const tree_node *n)
 	return DT_MAILUSER;
 }
 
+static uint32_t ab_tree_get_etyp(const tree_node *n)
+{
+	/* cloned from/to nsp/ab_tree.cpp */
+	auto &a = *containerof(n, AB_NODE, stree);
+	if (a.node_type >= abnode_type::containers)
+		return DT_CONTAINER;
+	else if (a.node_type == abnode_type::mlist)
+		return DT_DISTLIST;
+	else
+		return DT_MAILUSER;
+}
+
 static std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 {
 	auto &a = *containerof(n, AB_NODE, stree);
@@ -1228,12 +1240,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		if (node_type >= abnode_type::containers)
-			ab_entryid.type = DT_CONTAINER;
-		else if (node_type == abnode_type::mlist)
-			ab_entryid.type = DT_DISTLIST;
-		else
-			ab_entryid.type = DT_MAILUSER;
+		ab_entryid.type = ab_tree_get_etyp(pnode);
 		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return FALSE;
 		ab_entryid.px500dn = dn;
