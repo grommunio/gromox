@@ -123,8 +123,11 @@ errno_t mysql_adaptor_meta(const char *username, unsigned int wantpriv,
 	}
 	wantpriv &= ~WANTPRIV_METAONLY;
 
-	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
-	if (wantpriv != 0 && !(allowedsvc & wantpriv)) {
+	mres.privbits = strtoul(myrow[3], nullptr, 0);
+	if (!(mres.privbits & USER_PRIVILEGE_DETAIL1))
+		mres.privbits |= USER_PRIVILEGE_DETAIL1 | USER_PRIVILEGE_WEB |
+		                 USER_PRIVILEGE_EAS | USER_PRIVILEGE_DAV;
+	if (wantpriv != 0 && !(mres.privbits & wantpriv)) {
 		mres.errstr = fmt::format("Not authorized to use service(s) {:x}h", wantpriv);
 		return EACCES;
 	}
