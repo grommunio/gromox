@@ -369,13 +369,21 @@ bool DB_ITEM::postconstruct_init(const char *dir) try
 	tables.last_id = 0;
 	tables.b_batch = false;
 	tables.psqlite = nullptr;
-	auto ret = sqlite3_open_v2(":memory:", &tables.psqlite,
-	           SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+	auto db_path = fmt::format("{}/tables.sqlite3", dir);
+	auto ret = ::unlink(db_path.c_str());
+	if (ret != 0 && errno != ENOENT) {
+		mlog(LV_ERR, "E-1351: unlink %s: %s", db_path.c_str(), strerror(errno));
+		return false;
+	}
+	ret = sqlite3_open_v2(db_path.c_str(), &tables.psqlite,
+	      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2 MEM: %s", sqlite3_errstr(ret));
 		return false;
 	}
-	auto db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
+	if (eph_exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
+		return false;
+	db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
 	ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
