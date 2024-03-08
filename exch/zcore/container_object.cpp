@@ -166,7 +166,7 @@ static BINARY *zcsab_prepend(const BINARY *lower_eid,
 	return new_eid;
 }
 
-BOOL container_object::load_user_table(const RESTRICTION *prestriction)
+BOOL container_object::load_user_table(const RESTRICTION *prestriction) try
 {
 	auto pcontainer = this;
 	BINARY tmp_bin;
@@ -185,7 +185,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		PR_TITLE, PR_PRIMARY_TELEPHONE_NUMBER,
 		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,
 		PR_COMPANY_NAME, PR_DEPARTMENT_NAME, PR_OFFICE_LOCATION,
-		PR_CREATION_TIME
+		PR_CREATION_TIME, PR_MESSAGE_CLASS,
 	};
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
@@ -249,6 +249,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		proptags.pproptag[proptags.count++] = PR_DEPARTMENT_NAME;
 		proptags.pproptag[proptags.count++] = PR_OFFICE_LOCATION;
 		proptags.pproptag[proptags.count++] = PR_CREATION_TIME;
+		proptags.pproptag[proptags.count++] = PR_MESSAGE_CLASS;
 		proptags.pproptag[proptags.count++] = PidTagMid;
 		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
@@ -271,28 +272,46 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				pdisplayname = tmp_set.pparray[i]->get<char>(PR_DISPLAY_NAME);
 			auto paddress_type = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+1]);
 			auto paddress = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+2]);
-			if (paddress == nullptr || paddress_type == nullptr)
-				continue;
-			std::string username;
-			if (0 == strcasecmp(paddress_type, "EX")) {
-				if (cvt_essdn_to_username(paddress, g_org_name,
-				    cu_id2user, username) != ecSuccess)
-					continue;
-			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
-				try {
-					username = paddress;
-				} catch (const std::bad_alloc &) {
-					continue;
-				}
-			} else {
-				continue;
-			}
+			mapi_object_type mot = MAPI_MAILUSER;
+			display_type dt = DT_MAILUSER;
+			auto msg_class = tmp_set.pparray[i]->get<char>(PR_MESSAGE_CLASS);
+			if (msg_class != nullptr && strcasecmp(msg_class, "IPM.DistList") == 0)
+				mot = MAPI_DISTLIST;
 			tpropval_array_ptr ppropvals(tpropval_array_init());
 			if (ppropvals == nullptr)
 				return FALSE;
+			std::string username;
+			auto addrtype = "SMTP";
+			switch (mot) {
+			case MAPI_MAILUSER: {
+				if (paddress == nullptr || paddress_type == nullptr)
+					continue;
+				if (0 == strcasecmp(paddress_type, "EX")) {
+					if (cvt_essdn_to_username(paddress, g_org_name,
+					    cu_id2user, username) != ecSuccess)
+						continue;
+				} else if (0 == strcasecmp(paddress_type, "SMTP")) {
+					try {
+						username = paddress;
+					} catch (const std::bad_alloc &) {
+						continue;
+					}
+				} else {
+					continue;
+				}
+				break;
+			}
+			case MAPI_DISTLIST:
+				username = pdisplayname;
+				addrtype = "MAPIPDL";
+				dt = DT_DISTLIST;
+				break;
+			default:
+				break;
+			}
 			if (ppropvals->set(PR_SMTP_ADDRESS, username.c_str()) != 0 ||
 			    ppropvals->set(PR_ACCOUNT, username.c_str()) != 0 ||
-			    ppropvals->set(PR_ADDRTYPE, "SMTP") != 0 ||
+			    ppropvals->set(PR_ADDRTYPE, addrtype) != 0 ||
 			    ppropvals->set(PR_EMAIL_ADDRESS, username.c_str()) != 0)
 				return FALSE;
 			if (NULL != pdisplayname) {
@@ -315,7 +334,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			if (msgid == nullptr)
 				return FALSE;
 			auto pvalue = zcsab_prepend(cu_mid_to_entryid(pstore,
-			              pcontainer->id.exmdb_id.folder_id, *msgid), MAPI_MAILUSER, 3*i+j);
+			              pcontainer->id.exmdb_id.folder_id, *msgid), mot, 3*i+j);
 			if (pvalue == nullptr ||
 			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
 			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
@@ -326,10 +345,10 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			tmp_bin.pv = deconst(&muidZCSAB);
 			if (ppropvals->set(PR_AB_PROVIDER_ID, &tmp_bin) != 0)
 				return FALSE;
-			tmp_int = static_cast<uint32_t>(MAPI_MAILUSER);
+			tmp_int = static_cast<uint32_t>(mot);
 			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0)
 				return FALSE;
-			tmp_int = DT_MAILUSER;
+			tmp_int = static_cast<uint32_t>(dt);
 			if (ppropvals->set(PR_DISPLAY_TYPE, &tmp_int) != 0 ||
 			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != 0)
 				return FALSE;
@@ -338,9 +357,13 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				continue;
 			if (pcontainer->contents.prow_set->append_move(std::move(ppropvals)) != 0)
 				return FALSE;
+			if (mot == MAPI_DISTLIST)
+				break;
 		}
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 BOOL container_object_fetch_special_property(
