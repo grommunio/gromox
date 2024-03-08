@@ -872,38 +872,6 @@ BOOL cu_entryid_to_mid(BINARY bin, BOOL *pb_private,
 	}
 }
 
-#if 0
-static ec_error_t replguid_to_replid(const store_object &logon,
-    const GUID &guid, uint16_t &replid)
-{
-	if (guid == GUID_NULL) {
-		replid = 0;
-		return ecInvalidParam;
-	}
-	if (guid == logon.mailbox_guid) {
-		replid = 5;
-		return ecSuccess;
-	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
-	    reinterpret_cast<const char *>(&gx_dbguid_store_private) + 4, 12) == 0) {
-		auto usr_id = rop_util_get_user_id(guid);
-		if (usr_id == logon.account_id) {
-			replid = 1;
-			return ecSuccess;
-		}
-	} else if (memcmp(reinterpret_cast<const char *>(&guid) + 4,
-	    reinterpret_cast<const char *>(&gx_dbguid_store_public) + 4, 12) == 0) {
-		auto dom_id = rop_util_get_domain_id(guid);
-		if (!system_services_check_same_org(dom_id, logon.account_id))
-			return ecInvalidParam;
-	}
-	ec_error_t ret = ecSuccess;
-	if (!exmdb_client::get_mapping_replid(logon.get_dir(),
-	    guid, &replid, &ret))
-		return ecError;
-	return ret;
-}
-#endif
-
 static ec_error_t replid_to_replguid(const store_object &logon,
     uint16_t replid, GUID &guid)
 {
