@@ -1541,6 +1541,8 @@ enum { /* for PidLidResponseStatus */
 
 extern GX_EXPORT const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
+	pbExchangeProviderPrimaryUserGuid, pbExchangeProviderPublicGuid,
+	pbExchangeProviderDelegateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
 	muidECSAB, muidZCSAB, EncodedGlobalId, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,

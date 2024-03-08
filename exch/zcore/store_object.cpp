@@ -574,21 +574,6 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 {
 	uint32_t permission;
 	char temp_buff[1024];
-	static constexpr uint8_t pbExchangeProviderPrimaryUserGuid[] = {
-		/* {c0a19454-7f29-1b10-a587-08002b2a2517} */
-		0x54, 0x94, 0xA1, 0xC0, 0x29, 0x7F, 0x10, 0x1B,
-		0xA5, 0x87, 0x08, 0x00, 0x2B, 0x2A, 0x25, 0x17
-	};
-	static constexpr uint8_t pbExchangeProviderPublicGuid[] = {
-		/* {70fab278-f7af-cd11-9bc8-00aa002fc45a} */
-		0x78, 0xB2, 0xFA, 0x70, 0xAF, 0xF7, 0x11, 0xCD,
-		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A
-	};
-	static constexpr uint8_t pbExchangeProviderDelegateGuid[] = {
-		/* {0077b49e-e474-ce11-8c5e-00aa004254e2} */
-		0x9E, 0xB4, 0x77, 0x00, 0x74, 0xE4, 0x11, 0xCE,
-		0x8C, 0x5E, 0x00, 0xAA, 0x00, 0x42, 0x54, 0xE2,
-	};
 	
 	switch (proptag) {
 	case PR_MDB_PROVIDER: {
@@ -597,9 +582,9 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		*ppvalue = bv;
 		bv->cb = 16;
-		bv->pb = deconst(!pstore->b_private ? pbExchangeProviderPublicGuid :
-		         pstore->primary_mode() ? pbExchangeProviderPrimaryUserGuid :
-		         pbExchangeProviderDelegateGuid);
+		bv->pv = deconst(!pstore->b_private ? &pbExchangeProviderPublicGuid :
+		         pstore->primary_mode() ? &pbExchangeProviderPrimaryUserGuid :
+		         &pbExchangeProviderDelegateGuid);
 		return TRUE;
 	}
 	case PR_DISPLAY_NAME: {
