@@ -45,7 +45,7 @@ uint32_t nsp_bridge_run(GUID& session_guid, const bind_request& request, bind_re
 		session_guid = {};
 		response.server_guid = {};
 	} else {
-		response.server_guid = cu_flatuid_to_guid(server_flatuid);
+		response.server_guid = server_flatuid;
 		session_guid = ses.guid;
 	}
 	return result;
