@@ -19,25 +19,9 @@ static unsigned int lead(unsigned int level)
 	return 4 * level;
 }
 
-static GUID cu_flatuid_to_guid(const FLATUID &f)
-{
-	GUID g;
-	g.time_low = static_cast<uint32_t>(f.ab[3]) << 24;
-	g.time_low |= static_cast<uint32_t>(f.ab[2]) << 16;
-	g.time_low |= static_cast<uint32_t>(f.ab[1]) << 8;
-	g.time_low |= f.ab[0];
-	g.time_mid = static_cast<uint32_t>(f.ab[5]) << 8;
-	g.time_mid |= f.ab[4];
-	g.time_hi_and_version = static_cast<uint32_t>(f.ab[7]) << 8;
-	g.time_hi_and_version |= f.ab[6];
-	memcpy(g.clock_seq, f.ab + 8, sizeof(uint8_t) * 2);
-	memcpy(g.node, f.ab + 10, sizeof(uint8_t) * 6);
-	return g;
-}
-
 static void print_guid(const FLATUID le)
 {
-	auto he = cu_flatuid_to_guid(le);
+	GUID he = le;
 	char txt[39];
 	he.to_str(txt, std::size(txt), 38);
 	printf("%s", txt);
