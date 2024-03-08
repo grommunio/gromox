@@ -1166,6 +1166,17 @@ std::optional<uint32_t> ab_tree_get_dtypx(const tree_node *n)
 	return {(obj.dtypx & DTE_MASK_LOCAL) | DTE_FLAG_ACL_CAPABLE};
 }
 
+uint32_t ab_tree_get_etyp(const tree_node *n)
+{
+	auto &a = *containerof(n, AB_NODE, stree);
+	if (a.node_type >= abnode_type::containers)
+		return DT_CONTAINER;
+	else if (a.node_type == abnode_type::mlist)
+		return DT_DISTLIST;
+	else
+		return DT_MAILUSER;
+}
+
 /**
  * Dump an individual NSAB_NODE to stderr.
  * Part of the nsp_trace=2 dumper for AB_BASEs.

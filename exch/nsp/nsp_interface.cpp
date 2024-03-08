@@ -121,7 +121,6 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	int temp_len;
 	char dn[1280]{};
 	GUID temp_guid;
-	uint32_t display_type;
 	EPHEMERAL_ENTRYID ephid;
 	EMSAB_ENTRYID permeid;
 	
@@ -213,26 +212,25 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		memcpy(pprop->value.bin.pb, &muidEMSAB, sizeof(muidEMSAB));
 		return ecSuccess;
 	case PR_TEMPLATEID:
-		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 			return ecNotFound;
-		if (!common_util_set_permanententryid(display_type, nullptr, dn, &permeid) ||
+		if (!common_util_set_permanententryid(ab_tree_get_etyp(pnode),
+		    nullptr, dn, &permeid) ||
 		    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
 			return ecServerOOM;
 		return ecSuccess;
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 	case PR_ORIGINAL_ENTRYID:
-		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!b_ephid) {
 			if (!ab_tree_node_to_dn(pnode, dn, std::size(dn)))
 				return ecNotFound;
-			if (!common_util_set_permanententryid(display_type,
+			if (!common_util_set_permanententryid(ab_tree_get_etyp(pnode),
 			    nullptr, dn, &permeid) ||
 			    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
 				return ecServerOOM;
 		} else {
-			common_util_set_ephemeralentryid(display_type,
+			common_util_set_ephemeralentryid(ab_tree_get_etyp(pnode),
 				ab_tree_get_node_minid(pnode), &ephid);
 			if (!common_util_ephemeral_entryid_to_binary(&ephid,
 			    &pprop->value.bin))
