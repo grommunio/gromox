@@ -22,6 +22,7 @@
 #include <gromox/ab_tree.hpp>
 #include <gromox/archive.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/list_file.hpp>
 #include <gromox/mapidefs.h>
@@ -262,10 +263,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		pprop->value.bin.cb = 4;
 		minid = ab_tree_get_node_minid(pnode);
-		pprop->value.bin.pb[0] = minid & 0xFF;
-		pprop->value.bin.pb[1] = (minid >> 8) & 0xFF;
-		pprop->value.bin.pb[2] = (minid >> 16) & 0xFF;
-		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
+		cpu_to_le32p(pprop->value.bin.pb, minid);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME:
 		if (node_type != abnode_type::user)
@@ -2073,7 +2071,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
     uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
 	int base_id;
-	uint32_t tmp_mid;
 	char maildir[256];
 	
 	if (mid == 0)
@@ -2105,11 +2102,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			continue;
 		if (pentry_ids->pbin[i].cb == 32 &&
 		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_EPHEMERAL) {
-			tmp_mid = pentry_ids->pbin[i].pb[28];
-			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[29]) << 8;
-			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[30]) << 16;
-			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[31]) << 24;
-			ptnode = ab_tree_minid_to_node(pbase.get(), tmp_mid);
+			ptnode = ab_tree_minid_to_node(pbase.get(), le32p_to_cpu(&pentry_ids->pbin[i].pb[28]));
 		} else if (pentry_ids->pbin[i].cb >= 28 &&
 		    pentry_ids->pbin[i].pb[0] == ENTRYID_TYPE_PERMANENT) {
 			ptnode = ab_tree_dn_to_node(pbase.get(), pentry_ids->pbin[i].pc + 28);
