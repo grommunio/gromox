@@ -15,6 +15,7 @@
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
+#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 
@@ -199,6 +200,28 @@ static void machine_guid_read()
 	machine_guid = GUID::random_new();
 }
 
+}
+
+FLATUID::operator GUID() const
+{
+	GUID g;
+	g.time_low = le32p_to_cpu(&ab[0]);
+	g.time_mid = le16p_to_cpu(&ab[4]);
+	g.time_hi_and_version = le16p_to_cpu(&ab[6]);
+	memcpy(g.clock_seq, &ab[8], 2);
+	memcpy(g.node, &ab[10], 6);
+	return g;
+}
+
+GUID::operator FLATUID() const
+{
+	FLATUID f;
+	cpu_to_le32p(&f.ab[0], time_low);
+	cpu_to_le16p(&f.ab[4], time_mid);
+	cpu_to_le16p(&f.ab[6], time_hi_and_version);
+	memcpy(&f.ab[8], clock_seq, 2);
+	memcpy(&f.ab[10], node, 6);
+	return f;
 }
 
 const GUID &GUID::machine_id()

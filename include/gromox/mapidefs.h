@@ -906,7 +906,10 @@ struct GX_EXPORT freebusy_event {
  * of GUIDs exist as bytearrays/FLATUID, mostly when the consumer does not care
  * about internal layout.
  */
-struct FLATUID {
+struct GUID;
+struct GX_EXPORT FLATUID {
+	operator GUID() const;
+
 	uint8_t ab[16];
 #if __cplusplus >= 202000L && defined(__GNUG__) >= 13
 	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733 */
@@ -942,6 +945,7 @@ struct GLOBCNT {
  *  - and their reverse functions
  */
 struct GX_EXPORT GUID {
+	operator FLATUID() const;
 	void to_str(char *, size_t, unsigned int type = 36) const;
 	bool from_str(const char *);
 	int compare_4_12(const GUID &) const;
