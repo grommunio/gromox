@@ -20,9 +20,9 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 		mlog(LV_DEBUG, "> sqlite3_prep(%s)", query);
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
-		mlog(LV_ERR, "sqlite3_prepare_v2(%s) \"%s\": %s",
+		mlog(LV_ERR, "sqlite3_prepare_v2(%s) \"%s\": %s (%d)",
 			znul(sqlite3_db_filename(db, nullptr)),
-		        query, sqlite3_errstr(ret));
+		        query, sqlite3_errstr(ret), ret);
 	return out;
 }
 
