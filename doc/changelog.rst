@@ -1,3 +1,26 @@
+Gromox 2.26 (2024-03-11)
+========================
+
+Fixes:
+
+* exmdb: Fix restriction mismatching on ``PR_PARENT_SVREID`` &
+  ``PR_PARENT_ENTRYID``, which had caused reminders to go off even after
+  appointments were moved to the wastebasket.
+* exmdb_local: rectify wrong/empty ``From:`` lines in bounce messages
+* ews: fix segfault when loading public folder item
+* zcore: repaired thumbnail retrieval, which used the wrong directory
+
+Enhancements:
+
+* mbop: add subcommands for manipulating websettings_persistent
+
+Changes:
+
+* zcore: store websettings_persistent directly in the store rather than
+  the zcore shadow store object (automatic migration is in place)
+* kdb2mt: avoid importing ``PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON``
+
+
 Gromox 2.25 (2024-02-29)
 ========================
 
