@@ -656,7 +656,6 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	if (pbin->pv == nullptr)
 		return FALSE;
 	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(essdn);
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||

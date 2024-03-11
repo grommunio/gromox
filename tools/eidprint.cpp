@@ -84,7 +84,6 @@ static void try_emsab(const std::string_view s, unsigned int ind)
 	printf("%-*sEX address entry ID\n", lead(ind), "");
 	++ind;
 	printf("%-*sflags   = 0x%08x\n", lead(ind), "", eid.flags);
-	printf("%-*sversion = 0x%08x\n", lead(ind), "", eid.version);
 	printf("%-*stype    = 0x%08x\n", lead(ind), "", eid.type);
 	printf("%-*sx500dn  = %s\n", lead(ind), "", znul(eid.px500dn));
 }

@@ -245,7 +245,6 @@ ec_error_t cvt_username_to_abkeid(const char *username, const char *org,
 		return err;
 	EMSAB_ENTRYID te;
 	te.flags = 0;
-	te.version = 1;
 	te.type = dtx;
 	te.px500dn = deconst(essdn.c_str());
 	eidbuf.resize(1280);
