@@ -113,12 +113,7 @@ void common_util_guid_to_binary(GUID *pguid, BINARY *pbin)
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid)
 {
-	pephid->id_type = ENTRYID_TYPE_EPHEMERAL;
-	pephid->r1 = 0x0;
-	pephid->r2 = 0x0;
-	pephid->r3 = 0x0;
-	pephid->provider_uid = g_server_guid;
-	pephid->r4 = 0x1;
+	pephid->flags = ENTRYID_TYPE_EPHEMERAL;
 	pephid->display_type = display_type;
 	pephid->mid = minid;
 }
@@ -182,14 +177,12 @@ BOOL common_util_ephemeral_entryid_to_binary(
 	if (pbin->pv == nullptr)
 		return FALSE;
 	memset(pbin->pb, 0, pbin->cb);
-	if (pephid->id_type != ENTRYID_TYPE_EPHEMERAL)
+	if (pephid->flags != ENTRYID_TYPE_EPHEMERAL)
 		mlog(LV_WARN, "W-2041: %s: conversion of a non-permanent entryid attempted", __func__);
-	pbin->pb[0] = pephid->id_type;
-	pbin->pb[1] = pephid->r1;
-	pbin->pb[2] = pephid->r2;
-	pbin->pb[3] = pephid->r3;
-	memcpy(pbin->pb + 4, pephid->provider_uid.ab, 16);
-	cpu_to_le32p(&pbin->pb[20], pephid->r4);
+	cpu_to_le32p(&pbin->pb[0], pephid->flags);
+	FLATUID f = g_server_guid;
+	memcpy(&pbin->pb[4], &f, 16);
+	cpu_to_le32p(&pbin->pb[20], 1);
 	cpu_to_le32p(&pbin->pb[24], pephid->display_type);
 	cpu_to_le32p(&pbin->pb[28], pephid->mid);
 	return TRUE;
