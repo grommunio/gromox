@@ -165,12 +165,7 @@ struct NSPRES {
 };
 
 struct EPHEMERAL_ENTRYID {
-	uint8_t id_type; /* constant: ENTRYID_TYPE_EPHEMERAL */
-	uint8_t r1;			/* reserved: 0x0	*/
-	uint8_t r2;			/* reserved: 0x0	*/
-	uint8_t r3;			/* reserved: 0x0	*/
-	FLATUID	provider_uid;	/* NSPI server GUID	*/
-	uint32_t r4;			/* constant: 0x1	*/
+	uint32_t flags; /* constant: ENTRYID_TYPE_EPHEMERAL */
 	uint32_t display_type;	/* must match one of the existing display type value */
 	uint32_t mid;			/* mid of this object	*/
 };
