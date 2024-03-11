@@ -314,5 +314,11 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 int common_util_run()
 {
 	g_server_guid = GUID::random_new();
+	if (g_server_guid == muidEMSAB)
+		g_server_guid = GUID::random_new();
+	if (g_server_guid == muidEMSAB) {
+		mlog(LV_ERR, "nsp: unlucky random number generator");
+		return -1;
+	}
 	return 0;
 }
