@@ -778,7 +778,6 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 		return err;
 	dispname.resize(strlen(dispname.c_str()));
 	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(essdn.c_str());
 	pentryid->pv = common_util_alloc(1280);

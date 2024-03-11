@@ -1228,7 +1228,6 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		ab_entryid.version = 1;
 		if (node_type >= abnode_type::containers)
 			ab_entryid.type = DT_CONTAINER;
 		else if (node_type == abnode_type::mlist)
