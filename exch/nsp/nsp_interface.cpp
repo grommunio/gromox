@@ -123,7 +123,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	GUID temp_guid;
 	uint32_t display_type;
 	EPHEMERAL_ENTRYID ephid;
-	PERMANENT_ENTRYID permeid;
+	EMSAB_ENTRYID permeid;
 	
 	temp_len = 1024;
 	pprop->proptag = proptag;
@@ -1872,7 +1872,7 @@ int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
     BOOL b_unicode, cpid_t codepage, BOOL has_child,
 	unsigned int depth, int container_id, const char *str_dname,
-	PERMANENT_ENTRYID *ppermeid_parent, PERMANENT_ENTRYID *ppermeid)
+    EMSAB_ENTRYID *ppermeid_parent, EMSAB_ENTRYID *ppermeid)
 {
 	int tmp_len;
 	char tmp_title[1024];
@@ -1963,7 +1963,7 @@ static BOOL nsp_interface_has_child(const SIMPLE_TREE_NODE *pnode)
 }
 
 static uint32_t nsp_interface_get_specialtables_from_node(
-    const SIMPLE_TREE_NODE *pnode, PERMANENT_ENTRYID *ppermeid_parent,
+    const SIMPLE_TREE_NODE *pnode, EMSAB_ENTRYID *ppermeid_parent,
     BOOL b_unicode, cpid_t codepage, NSP_ROWSET *prows)
 {
 	GUID tmp_guid;
@@ -1973,7 +1973,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	NSP_PROPROW *prow;
 	char str_dname[1024];
 	
-	auto ppermeid = ndr_stack_anew<PERMANENT_ENTRYID>(NDR_STACK_OUT);
+	auto ppermeid = ndr_stack_anew<EMSAB_ENTRYID>(NDR_STACK_OUT);
 	if (ppermeid == nullptr)
 		return ecServerOOM;
 	if (!ab_tree_node_to_guid(pnode, &tmp_guid))
@@ -2025,7 +2025,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	int base_id;
 	uint32_t result;
 	NSP_PROPROW *prow;
-	PERMANENT_ENTRYID permeid;
+	EMSAB_ENTRYID permeid;
 	
 	if (flags & NspiAddressCreationTemplates)
 		/* creation of templates table */

@@ -59,10 +59,8 @@ extern int common_util_to_utf8(cpid_t, const char *src, char *dst, size_t len);
 void common_util_guid_to_binary(GUID *pguid, BINARY *pbin);
 void common_util_set_ephemeralentryid(uint32_t display_type,
 	uint32_t minid, EPHEMERAL_ENTRYID *pephid);
-BOOL common_util_set_permanententryid(uint32_t display_type,
-	const GUID *pobj_guid, const char *pdn, PERMANENT_ENTRYID *ppermeid);
-BOOL common_util_permanent_entryid_to_binary(
-	const PERMANENT_ENTRYID *ppermeid, BINARY *pbin);
+BOOL common_util_set_permanententryid(uint32_t display_type, const GUID *in, const char *dn, EMSAB_ENTRYID *out);
+BOOL common_util_permanent_entryid_to_binary(const EMSAB_ENTRYID *, BINARY *);
 BOOL common_util_ephemeral_entryid_to_binary(
 	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin);
 extern NSP_ROWSET *common_util_proprowset_init();
