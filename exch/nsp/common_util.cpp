@@ -313,5 +313,15 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 int common_util_run()
 {
 	g_server_guid = GUID::random_new();
+	/*
+	 * Work around odd behavior of gcc-12 in conjunction with -std=c++20
+	 * and call a.op==(b) instead of a==b.
+	 */
+	if (g_server_guid.operator==(muidEMSAB))
+		g_server_guid = GUID::random_new();
+	if (g_server_guid.operator==(muidEMSAB)) {
+		mlog(LV_ERR, "nsp: unlucky random number generator");
+		return -1;
+	}
 	return 0;
 }
