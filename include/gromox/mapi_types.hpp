@@ -169,6 +169,7 @@ struct TYPED_PROPVAL {
 };
 
 struct LONG_TERM_ID {
+	/* LTIDs are a specific form of XIDs */
 	GUID guid;
 	GLOBCNT global_counter;
 	uint16_t padding;

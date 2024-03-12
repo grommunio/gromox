@@ -583,6 +583,7 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	case MAPI_STORE:
 		gx_strlcpy(sql_string, "SELECT proptag FROM store_properties", std::size(sql_string));
 		tags.push_back(PR_INTERNET_ARTICLE_NUMBER);
+		tags.push_back(PidTagSerializedReplidGuidMap);
 		break;
 	case MAPI_FOLDER:
 		snprintf(sql_string, std::size(sql_string), "SELECT proptag FROM "
@@ -1671,6 +1672,56 @@ namespace {
 enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 }
 
+static BINARY *cu_get_replmap(sqlite3 *db)
+{
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, 0, nullptr))
+		return nullptr;
+	auto stm = gx_sql_prep(db, "SELECT config_value FROM configurations"
+	           " WHERE config_id=1"); /* CONFIG_ID_MAILBOX_GUID */
+	if (stm == nullptr)
+		return nullptr;
+	if (stm.step() == SQLITE_ROW) {
+		auto txt = stm.col_text(0);
+		if (txt != nullptr) {
+			GUID guid;
+			guid.from_str(txt);
+			ep.p_uint16(1);
+			ep.p_guid(guid); /* PR_STORE_RECORD_KEY */
+			ep.p_uint16(5);
+			ep.p_guid(guid); /* PR_MAPPING_SIGNATURE */
+		}
+	}
+	ep.p_uint16(2);
+	ep.p_guid(exc_replid2);
+	ep.p_uint16(3);
+	ep.p_guid(exc_replid3);
+	ep.p_uint16(4);
+	ep.p_guid(exc_replid4);
+	stm = gx_sql_prep(db, "SELECT replid, replguid FROM replguidmap");
+	if (stm == nullptr)
+		return nullptr;
+	while (stm.step() == SQLITE_ROW) {
+		auto txt = stm.col_text(1);
+		if (txt == nullptr)
+			continue;
+		GUID guid;
+		guid.from_str(txt);
+		if (ep.p_uint16(stm.col_int64(0)) != pack_result::success ||
+		    ep.p_guid(std::move(guid)) != pack_result::success)
+			return nullptr;
+	}
+	auto bin = cu_alloc<BINARY>();
+	if (bin == nullptr)
+		return nullptr;
+	bin->cb = ep.m_offset;
+	bin->pv = cu_alloc<char>(bin->cb);
+	if (bin->pv == nullptr)
+		return nullptr;
+	memcpy(bin->pv, ep.m_udata, bin->cb);
+	return bin;
+}
+
 static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 {
 	uint32_t *v = nullptr;
@@ -1686,6 +1737,8 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
 		break;
+	case PidTagSerializedReplidGuidMap:
+		break;
 	default:
 		return GP_UNHANDLED;
 	}
@@ -1696,6 +1749,11 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 	case PR_DELETED_MSG_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_SOFTDELETES); break;
 	case PR_DELETED_ASSOC_MSG_COUNT: *v = cu_get_store_msgcount(db, TABLE_FLAG_ASSOCIATED | TABLE_FLAG_SOFTDELETES); break;
 	case PR_INTERNET_ARTICLE_NUMBER: *v = common_util_get_store_article_number(db); break;
+	case PidTagSerializedReplidGuidMap:
+		pv.pvalue = cu_get_replmap(db);
+		if (pv.pvalue == nullptr)
+			return GP_ERR;
+		break;
 	}
 	return GP_ADV;
 }
