@@ -884,7 +884,7 @@ static ec_error_t replid_to_replguid(const store_object &logon,
 	else if (replid == 2)
 		guid = exc_replid2;
 	else if (replid == 3)
-		guid = pbExchangeProviderPrimaryUserGuid;
+		guid = exc_replid3;
 	else if (replid == 4)
 		guid = exc_replid4;
 	else if (replid == 5)

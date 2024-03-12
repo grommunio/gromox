@@ -316,9 +316,10 @@ ReplidGuidMap, replguidmap
 
 	* replid 1 generally contains the Database GUID (mandated by OXCFXICS
 	  etc.)
-	* replid 2's GUID seems to be the same across all Exchange mailboxes
-	* replid 3's GUID corresponds to the value of ``PR_MDB_PROVIDER``
-	* replid 4's GUID seems to be the same across all Exchange mailboxes
+	* replid 2 is the same across different mailboxes and deployments:
+	  {ed33cbe5-94e2-48b6-8bea-bba984896933}
+	* replid 3 same: {68349a54-323d-4a38-9aa9-e00a683131ba}
+	* replid 4 same: {bb0754de-7f26-4d08-932f-fe7a9d22f8bd}
 	* replid 5 generally contains the Mapping Signature GUID
 
 	Subsequent replids are freely assigned on a first-come-first-serve basis.

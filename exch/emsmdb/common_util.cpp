@@ -587,7 +587,7 @@ ec_error_t replguid_to_replid(const logon_object &logon,
 	} else if (guid == exc_replid2) {
 		replid = 2;
 		return ecSuccess;
-	} else if (guid == pbExchangeProviderPrimaryUserGuid) {
+	} else if (guid == exc_replid3) {
 		replid = 3;
 		return ecSuccess;
 	} else if (guid == exc_replid4) {
@@ -637,7 +637,7 @@ ec_error_t replid_to_replguid(const logon_object &logon, uint16_t replid,
 	else if (replid == 2)
 		guid = exc_replid2;
 	else if (replid == 3)
-		guid = pbExchangeProviderPrimaryUserGuid;
+		guid = exc_replid3;
 	else if (replid == 4)
 		guid = exc_replid4;
 	else if (replid == 5)
