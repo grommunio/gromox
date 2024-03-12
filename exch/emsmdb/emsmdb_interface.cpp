@@ -135,9 +135,9 @@ void emsmdb_report()
 			}
 			++logons;
 			auto lo = static_cast<logon_object *>(root->pobject);
-			mlog(LV_INFO, "%5u  %-32s  %s(%u)", i,
+			mlog(LV_INFO, "%5u  %-32s  %s(%u/%u)", i,
 			        bin2hex(&lo->mailbox_guid, sizeof(lo->mailbox_guid)).c_str(),
-			        lo->account, lo->account_id);
+			        lo->account, lo->account_id, lo->domain_id);
 		}
 	}
 	}
