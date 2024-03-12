@@ -3282,36 +3282,46 @@ static ec_error_t rectify_message(message_object *pmessage,
 	uint8_t tmp_byte = 1;
 	auto nt_time = rop_util_current_nttime();
 	int32_t tmp_level = -1;
-	char sender_essdn[1024], repr_essdn[1024];
-	if (!common_util_username_to_essdn(account, sender_essdn, std::size(sender_essdn)))
+	std::string sender_essdn, repr_essdn, sender_dispname, repr_dispname;
+	sender_essdn.resize(1024);
+	sender_dispname.resize(256);
+	repr_essdn.resize(1024);
+	repr_dispname.resize(256);
+	if (!common_util_username_to_essdn(account, sender_essdn.data(),
+	    sender_essdn.size()))
 		return ecError;
-	char sender_dispname[256], repr_dispname[256], sender_skb[1024], repr_skb[1024];
 	if (!system_services_get_user_displayname(account,
-	    sender_dispname, std::size(sender_dispname)))
+	    sender_dispname.data(), sender_dispname.size()))
 		return ecError;
+	sender_essdn.resize(strlen(sender_essdn.c_str()));
+	sender_dispname.resize(strlen(sender_dispname.c_str()));
 	auto sender_eid = common_util_username_to_addressbook_entryid(account);
 	if (sender_eid == nullptr)
 		return ecError;
 	auto repr_eid = sender_eid;
+	const std::string sender_skb = "EX:" + sender_essdn;
 	BINARY sender_srch, repr_srch;
-	sender_srch.cb = gx_snprintf(sender_skb, std::size(sender_skb), "EX:%s", sender_essdn) + 1;
-	sender_srch.pv = sender_skb;
+	sender_srch.cb = sender_skb.size() + 1;
+	sender_srch.pv = deconst(sender_skb.c_str());
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
-		    repr_essdn, std::size(repr_essdn)))
+		    repr_essdn.data(), repr_essdn.size()))
 			return ecError;
 		if (!system_services_get_user_displayname(representing_username,
-		    repr_dispname, std::size(repr_dispname)))
+		    repr_dispname.data(), repr_dispname.size()))
 			return ecError;
+		repr_essdn.resize(strlen(repr_essdn.c_str()));
+		repr_dispname.resize(strlen(repr_dispname.c_str()));
 		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
 		if (repr_eid == nullptr)
 			return ecError;
 	} else {
-		strcpy(repr_essdn, sender_essdn);
-		strcpy(repr_dispname, sender_dispname);
+		repr_essdn = sender_essdn;
+		repr_dispname = sender_dispname;
 	}
-	repr_srch.cb = gx_snprintf(repr_skb, std::size(repr_skb), "EX:%s", repr_essdn) + 1;
-	repr_srch.pv = repr_skb;
+	const std::string repr_skb = "EX:" + repr_essdn;
+	repr_srch.cb = repr_skb.size() + 1;
+	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
 	make_inet_msgid(msgid, std::size(msgid), 0x5a53);
 	TAGGED_PROPVAL pv[] = {
@@ -3321,14 +3331,14 @@ static ec_error_t rectify_message(message_object *pmessage,
 		{PR_CONTENT_FILTER_SCL, &tmp_level},
 		{PR_SENDER_SMTP_ADDRESS, deconst(send_as ? representing_username : account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
-		{PR_SENDER_EMAIL_ADDRESS, send_as ? repr_essdn : sender_essdn},
-		{PR_SENDER_NAME, send_as ? repr_dispname : sender_dispname},
+		{PR_SENDER_EMAIL_ADDRESS, deconst(send_as ? repr_essdn.c_str() : sender_essdn.c_str())},
+		{PR_SENDER_NAME, deconst(send_as ? repr_dispname.c_str() : sender_dispname.c_str())},
 		{PR_SENDER_ENTRYID, send_as ? repr_eid : sender_eid},
 		{PR_SENDER_SEARCH_KEY, send_as ? &repr_srch : &sender_srch},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
-		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, repr_essdn},
-		{PR_SENT_REPRESENTING_NAME, repr_dispname},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, deconst(repr_essdn.c_str())},
+		{PR_SENT_REPRESENTING_NAME, deconst(repr_dispname.c_str())},
 		{PR_SENT_REPRESENTING_ENTRYID, repr_eid},
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &repr_srch},
 		{PR_INTERNET_MESSAGE_ID, msgid},
