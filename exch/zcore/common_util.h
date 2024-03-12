@@ -98,7 +98,6 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username);
 BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin);
-BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -27,6 +29,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -678,20 +681,21 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_EMAIL_ADDRESS: {
+		std::string essdn;
 		if (pstore->b_private) {
-			if (!common_util_username_to_essdn(pstore->account,
-			    temp_buff, std::size(temp_buff)))
+			if (cvt_username_to_essdn(pstore->account, g_org_name,
+			    system_services_get_user_ids,
+			    system_services_get_domain_ids, essdn) != ecSuccess)
 				return FALSE;	
 		} else {
-			if (!common_util_public_to_essdn(pstore->account,
-			    temp_buff, std::size(temp_buff)))
-				return FALSE;	
+			return false;
 		}
-		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+		HX_strupper(essdn.data());
+		auto tstr = cu_alloc<char>(essdn.size() + 1);
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		strcpy(tstr, temp_buff);
+		gx_strlcpy(tstr, essdn.c_str(), essdn.size() + 1);
 		return TRUE;
 	}
 	case PR_EXTENDED_RULE_SIZE_LIMIT: {

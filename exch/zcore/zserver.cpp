@@ -769,17 +769,20 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
     char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
 {
 	std::string essdn, dispname;
-	essdn.resize(1024);
 	dispname.resize(1024);
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
 	if (!system_services_get_user_displayname(username, dispname.data(), dispname.size()) ||
-	    !system_services_get_user_privilege_bits(username, pprivilege_bits) ||
-	    !common_util_username_to_essdn(username, essdn.data(), essdn.size()))
+	    !system_services_get_user_privilege_bits(username, pprivilege_bits))
 		return ecNotFound;
+	auto err = cvt_username_to_essdn(username, g_org_name,
+	           system_services_get_user_ids, system_services_get_domain_ids,
+	           essdn);
+	if (err != ecSuccess)
+		return err;
+	HX_strupper(essdn.data());
 	dispname.resize(strlen(dispname.c_str()));
-	essdn.resize(strlen(essdn.c_str()));
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
@@ -2378,8 +2381,7 @@ ec_error_t zs_copyfolder(GUID hsession, uint32_t hsrc_folder, BINARY entryid,
 ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 {
 	EXT_PUSH ext_push;
-	std::string username;
-	char tmp_buff[1024];
+	std::string username, essdn;
 	STORE_ENTRYID store_entryid = {};
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
@@ -2391,10 +2393,13 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 			return ret;
 	} else {
 		username = mailbox_dn;
-		if (!common_util_username_to_essdn(mailbox_dn,
-		    tmp_buff, std::size(tmp_buff)))
-			return ecNotFound;
-		mailbox_dn = tmp_buff;
+		auto err = cvt_username_to_essdn(mailbox_dn, g_org_name,
+		           system_services_get_user_ids,
+		           system_services_get_domain_ids, essdn);
+		if (err != ecSuccess)
+			return err;
+		HX_strupper(essdn.data());
+		mailbox_dn = essdn.c_str();
 	}
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 	store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
@@ -3287,17 +3292,17 @@ static ec_error_t rectify_message(message_object *pmessage,
 	auto nt_time = rop_util_current_nttime();
 	int32_t tmp_level = -1;
 	std::string sender_essdn, repr_essdn, sender_dispname, repr_dispname;
-	sender_essdn.resize(1024);
 	sender_dispname.resize(256);
-	repr_essdn.resize(1024);
 	repr_dispname.resize(256);
-	if (!common_util_username_to_essdn(account, sender_essdn.data(),
-	    sender_essdn.size()))
-		return ecError;
+	auto err = cvt_username_to_essdn(account, g_org_name,
+	           system_services_get_user_ids,
+	           system_services_get_domain_ids, sender_essdn);
+	if (err != ecSuccess)
+		return err;
 	if (!system_services_get_user_displayname(account,
 	    sender_dispname.data(), sender_dispname.size()))
 		return ecError;
-	sender_essdn.resize(strlen(sender_essdn.c_str()));
+	HX_strupper(sender_essdn.data());
 	sender_dispname.resize(strlen(sender_dispname.c_str()));
 	auto sender_eid = common_util_username_to_addressbook_entryid(account);
 	if (sender_eid == nullptr)
@@ -3308,13 +3313,15 @@ static ec_error_t rectify_message(message_object *pmessage,
 	sender_srch.cb = sender_skb.size() + 1;
 	sender_srch.pv = deconst(sender_skb.c_str());
 	if (0 != strcasecmp(account, representing_username)) {
-		if (!common_util_username_to_essdn(representing_username,
-		    repr_essdn.data(), repr_essdn.size()))
-			return ecError;
+		err = cvt_username_to_essdn(representing_username,
+		      g_org_name, system_services_get_user_ids,
+		      system_services_get_domain_ids, repr_essdn);
+		if (err != ecSuccess)
+			return err;
 		if (!system_services_get_user_displayname(representing_username,
 		    repr_dispname.data(), repr_dispname.size()))
 			return ecError;
-		repr_essdn.resize(strlen(repr_essdn.c_str()));
+		HX_strupper(repr_essdn.data());
 		repr_dispname.resize(strlen(repr_dispname.c_str()));
 		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
 		if (repr_eid == nullptr)
