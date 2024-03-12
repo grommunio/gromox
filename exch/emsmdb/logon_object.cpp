@@ -428,17 +428,17 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
 		if (!plogon->is_private())
 			return FALSE;
-		auto dispname = cu_alloc<char>(256);
+		auto dispname = cu_alloc<char>(UADDR_SIZE);
 		*ppvalue = dispname;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		if (!common_util_get_user_displayname(plogon->account, dispname, 256))
+		if (!common_util_get_user_displayname(plogon->account, dispname, UADDR_SIZE))
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
 			if (isascii(dispname[i]))
 				continue;
-			strcpy(dispname, plogon->account);
+			gx_strlcpy(dispname, plogon->account, UADDR_SIZE);
 			auto p = strchr(dispname, '@');
 			if (p != nullptr)
 				*p = '\0';
