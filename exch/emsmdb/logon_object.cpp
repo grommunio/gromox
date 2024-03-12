@@ -297,7 +297,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 	pproptags->count = tmp_proptags.count;
 
 	static constexpr uint32_t pvt_tags[] = {
-		PR_MAILBOX_OWNER_NAME, PR_MAILBOX_OWNER_ENTRYID,
+		PR_MAILBOX_OWNER_NAME,
 		PR_MAX_SUBMIT_MESSAGE_SIZE, PR_EMAIL_ADDRESS,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 	};
@@ -311,6 +311,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		PR_EXTENDED_RULE_SIZE_LIMIT, PR_ASSOC_MESSAGE_SIZE,
 		PR_MESSAGE_SIZE, PR_NORMAL_MESSAGE_SIZE, PR_USER_ENTRYID,
 		PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_TEST_LINE_SPEED,
+		PR_MAILBOX_OWNER_ENTRYID,
 	};
 	if (plogon->is_private()) {
 		for (auto t : pvt_tags)
@@ -379,6 +380,12 @@ static bool lo_is_readonly_prop(const logon_object *plogon, uint32_t proptag)
 		return TRUE;
 	}
 	return FALSE;
+}
+
+static inline const char *account_to_domain(const char *u)
+{
+	auto at = strchr(u, '@');
+	return at != nullptr ? at + 1 : u;
 }
 
 static BOOL logon_object_get_calculated_property(const logon_object *plogon,
@@ -493,9 +500,9 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		return TRUE;
 	}
 	case PR_MAILBOX_OWNER_ENTRYID:
-		if (!plogon->is_private())
-			return FALSE;
-		*ppvalue = common_util_username_to_addressbook_entryid(plogon->account);
+		*ppvalue = plogon->is_private() ?
+		           common_util_username_to_addressbook_entryid(plogon->account) :
+		           common_util_username_to_addressbook_entryid(account_to_domain(plogon->account));
 		if (*ppvalue == nullptr)
 			return FALSE;
 		return TRUE;

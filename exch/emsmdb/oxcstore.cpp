@@ -191,7 +191,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[6]  = 0; /* EForms Registry for the user's locale */
 	pfolder_id[7]  = 0; /* Local site's Free/Busy data */
 	pfolder_id[8]  = 0; /* Local site's Offline Addressbook data */
-	pfolder_id[9]  = 0; /* NTTP article index */
+	pfolder_id[9]  = 0; /* NNTP article index */
 	pfolder_id[10] = 0;
 	pfolder_id[11] = 0;
 	pfolder_id[12] = 0;

@@ -286,12 +286,6 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	return TRUE;	
 }
 
-BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnmax)
-{
-	//TODO
-	return FALSE;
-}
-
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid)

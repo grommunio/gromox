@@ -173,18 +173,6 @@ void common_util_obfuscate_data(uint8_t *data, uint32_t size)
 		data[i] ^= 0xA5;
 }
 
-BOOL common_util_essdn_to_public(const char *pessdn, char *domainname)
-{
-	//TODO
-	return FALSE;
-}
-
-BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnmax)
-{
-	//TODO
-	return FALSE;
-}
-
 BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 {
 	ONEOFF_ENTRYID e{};
@@ -225,30 +213,6 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	if (pbin->pv == nullptr)
 		return NULL;
 	memcpy(pbin->pv, eidbuf.data(), pbin->cb);
-	return pbin;
-}
-
-BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
-{
-	char x500dn[1024];
-	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
-	
-	if (!common_util_public_to_essdn(domainname, x500dn, std::size(x500dn)))
-		return NULL;
-	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
-	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = x500dn;
-	auto pbin = cu_alloc<BINARY>();
-	if (pbin == nullptr)
-		return NULL;
-	pbin->pv = common_util_alloc(1280);
-	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
-		return NULL;	
-	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 
