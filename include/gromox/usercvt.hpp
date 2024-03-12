@@ -1,8 +1,10 @@
 #pragma once
 #include <functional>
 #include <string>
-#include <gromox/defs.h>
+#include <gromox/common_types.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/mapierr.hpp>
+#include <gromox/mapi_types.hpp>
 
 struct BINARY;
 struct EXT_PULL;
@@ -18,5 +20,6 @@ extern GX_EXPORT ec_error_t cvt_genaddr_to_smtpaddr(const char *atype, const cha
 extern GX_EXPORT ec_error_t cvt_emsab_to_essdn(const BINARY *, std::string &);
 /* Multiple types of entryids */
 extern GX_EXPORT ec_error_t cvt_entryid_to_smtpaddr(const BINARY *, const char *org, cvt_id2user, std::string &);
+extern GX_EXPORT ec_error_t cvt_username_to_essdn(const char *username, const char *org, GET_USER_IDS, GET_DOMAIN_IDS, std::string &);
 
 }

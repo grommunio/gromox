@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <utility>
+#include <fmt/core.h>
 #include <libHX/string.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mapierr.hpp>
@@ -166,6 +168,37 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
 	if (provider_uid == muidOOP)
 		return cvt_oneoff_to_smtpaddr(ext_pull, org, std::move(id2user), smtpaddr);
 	return ecUnknownUser;
+}
+
+ec_error_t cvt_username_to_essdn(const char *username, const char *org,
+    GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids, std::string &essdn) try
+{
+	const char *at = strchr(username, '@');
+	if (at == nullptr)
+		return ecInvalidParam;
+	unsigned int user_id = 0, domain_id = 0;
+	if (!get_uids(username, &user_id, &domain_id, nullptr))
+		return ecError;
+	essdn = fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-",
+	        org, __builtin_bswap32(domain_id), __builtin_bswap32(user_id));
+	essdn += std::string_view(username, at - username);
+	/*
+	 * In EXC, the ESSDN is normally mixed-case, but appears upper-case in:
+	 *
+	 * - message objects
+	 *   - CreatorEmailAddress (0x4023001f), PR_CREATOR_ENTRYID
+	 *   - LastModifierEmailAddress (0x4025001f), PR_LAST_MODIFIER_ENTRYID
+	 *   - PR_SENDER_EMAIL_ADDRESS, PR_SENDER_ENTRYID
+	 *   - PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_ENTRYID
+	 *   - PR_RECEIVED_BY_EMAIL_ADDRESS, PR_RECEIVED_BY_ENTRYID
+	 *   - PR_RCVD_REPRESENTING_EMAIL_ADDRESS, PR_RCVD_REPRESENTING_ENTRYID
+	 *   - PR_SEARCH_KEY, PR_*_SEARCH_KEY
+	 * - GAB objects
+	 *   - PR_SEARCH_KEY
+	 */
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 }
