@@ -51,11 +51,11 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	uint64_t nt_time;
 	uint8_t tmp_byte;
 	int32_t tmp_level;
-	BINARY search_sender, search_repr;
+	BINARY sender_srch, repr_srch;
 	static constexpr size_t essdn_buff_size = 1024;
-	auto essdn_sender = std::make_unique<char[]>(essdn_buff_size);
-	auto essdn_repr = std::make_unique<char[]>(essdn_buff_size);
-	char dispname_sender[256], dispname_repr[256];
+	auto sender_essdn = std::make_unique<char[]>(essdn_buff_size);
+	auto repr_essdn = std::make_unique<char[]>(essdn_buff_size);
+	char sender_dispname[256], repr_dispname[256];
 	PROBLEM_ARRAY tmp_problems;
 	
 	auto account = pmessage->plogon->get_account();
@@ -63,42 +63,42 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	tmp_byte = 1;
 	nt_time = rop_util_current_nttime();
 	tmp_level = -1;
-	if (!common_util_username_to_essdn(account, essdn_sender.get(), essdn_buff_size))
+	if (!common_util_username_to_essdn(account, sender_essdn.get(), essdn_buff_size))
 		return ecRpcFailed;
 	if (!common_util_get_user_displayname(account,
-	    dispname_sender, std::size(dispname_sender)))
+	    sender_dispname, std::size(sender_dispname)))
 		return ecRpcFailed;
-	auto eid_sender = common_util_username_to_addressbook_entryid(account);
-	if (eid_sender == nullptr)
+	auto sender_eid = common_util_username_to_addressbook_entryid(account);
+	if (sender_eid == nullptr)
 		return ecRpcFailed;
-	auto eid_repr = eid_sender;
-	const std::string search_buff = "EX:"s + essdn_sender.get();
-	search_sender.cb = search_buff.size() + 1;
-	search_sender.pv = deconst(search_buff.c_str());
+	auto repr_eid = sender_eid;
+	const std::string sender_skb = "EX:"s + sender_essdn.get();
+	sender_srch.cb = sender_skb.size() + 1;
+	sender_srch.pv = deconst(sender_skb.c_str());
 	bool oneoff_repr = false;
 	if (strcasecmp(account, representing_username) == 0) {
-		strcpy(essdn_repr.get(), essdn_sender.get());
-		strcpy(dispname_repr, dispname_sender);
+		strcpy(repr_essdn.get(), sender_essdn.get());
+		strcpy(repr_dispname, sender_dispname);
 	} else if (common_util_username_to_essdn(representing_username,
-	    essdn_repr.get(), essdn_buff_size)) {
+	    repr_essdn.get(), essdn_buff_size)) {
 		if (!common_util_get_user_displayname(representing_username,
-		    dispname_repr, std::size(dispname_repr)))
+		    repr_dispname, std::size(repr_dispname)))
 			return ecRpcFailed;
-		eid_repr = common_util_username_to_addressbook_entryid(representing_username);
-		if (eid_repr == nullptr)
+		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
+		if (repr_eid == nullptr)
 			return ecRpcFailed;
 	} else {
-		strcpy(essdn_repr.get(), representing_username);
-		strcpy(dispname_repr, representing_username);
-		eid_repr = cu_username_to_oneoff(representing_username, representing_username);
-		if (eid_repr == nullptr)
+		strcpy(repr_essdn.get(), representing_username);
+		strcpy(repr_dispname, representing_username);
+		repr_eid = cu_username_to_oneoff(representing_username, representing_username);
+		if (repr_eid == nullptr)
 			return ecServerOOM;
 		oneoff_repr = true;
 	}
-	const std::string sk_repr = oneoff_repr ? ("SMTP:"s + representing_username) :
-	                            ("EX:"s + essdn_repr.get());
-	search_repr.cb = sk_repr.size() + 1;
-	search_repr.pv = deconst(sk_repr.c_str());
+	const std::string repr_skb = oneoff_repr ? ("SMTP:"s + representing_username) :
+	                             ("EX:"s + repr_essdn.get());
+	repr_srch.cb = repr_skb.size() + 1;
+	repr_srch.pv = deconst(repr_skb.c_str());
 	char msgid[UADDR_SIZE+2];
 	make_inet_msgid(msgid, std::size(msgid), 0x4553);
 	TAGGED_PROPVAL pv[] = {
@@ -108,16 +108,16 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 		{PR_MESSAGE_LOCALE_ID, &pinfo->lcid_string},
 		{PR_SENDER_SMTP_ADDRESS, deconst(send_as ? representing_username : account)},
 		{PR_SENDER_ADDRTYPE, deconst("EX")},
-		{PR_SENDER_EMAIL_ADDRESS, send_as ? essdn_repr.get() : essdn_sender.get()},
-		{PR_SENDER_NAME, send_as ? dispname_repr : dispname_sender},
-		{PR_SENDER_ENTRYID, send_as ? eid_repr : eid_sender},
-		{PR_SENDER_SEARCH_KEY, send_as ? &search_repr : &search_sender},
+		{PR_SENDER_EMAIL_ADDRESS, send_as ? repr_essdn.get() : sender_essdn.get()},
+		{PR_SENDER_NAME, send_as ? repr_dispname : sender_dispname},
+		{PR_SENDER_ENTRYID, send_as ? repr_eid : sender_eid},
+		{PR_SENDER_SEARCH_KEY, send_as ? &repr_srch : &sender_srch},
 		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
 		{PR_SENT_REPRESENTING_ADDRTYPE, deconst(oneoff_repr ? "SMTP" : "EX")},
-		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_repr.get()},
-		{PR_SENT_REPRESENTING_NAME, dispname_repr},
-		{PR_SENT_REPRESENTING_ENTRYID, eid_repr},
-		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_repr},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, repr_essdn.get()},
+		{PR_SENT_REPRESENTING_NAME, repr_dispname},
+		{PR_SENT_REPRESENTING_ENTRYID, repr_eid},
+		{PR_SENT_REPRESENTING_SEARCH_KEY, &repr_srch},
 		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {std::size(pv), pv};
