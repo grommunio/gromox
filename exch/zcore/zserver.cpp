@@ -2375,6 +2375,7 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 {
 	EXT_PUSH ext_push;
 	std::string username;
+	char tmp_buff[1024];
 	STORE_ENTRYID store_entryid = {};
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
@@ -2385,12 +2386,11 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 		else if (ret != ecSuccess)
 			return ret;
 	} else {
-		char tmp_buff[1024];
+		username = mailbox_dn;
 		if (!common_util_username_to_essdn(mailbox_dn,
 		    tmp_buff, std::size(tmp_buff)))
 			return ecNotFound;
-		username = tmp_buff;
-		mailbox_dn = username.c_str();
+		mailbox_dn = tmp_buff;
 	}
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 	store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
