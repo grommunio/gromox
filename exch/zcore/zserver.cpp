@@ -766,32 +766,36 @@ ec_error_t zs_checksession(GUID hsession)
 }
 
 ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
-	char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits)
+    char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits) try
 {
-	char x500dn[1024];
+	std::string essdn, dispname;
+	essdn.resize(1024);
+	dispname.resize(1024);
 	EXT_PUSH ext_push;
-	char display_name[1024];
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!system_services_get_user_displayname(username,
-	    display_name, std::size(display_name)) ||
+	if (!system_services_get_user_displayname(username, dispname.data(), dispname.size()) ||
 	    !system_services_get_user_privilege_bits(username, pprivilege_bits) ||
-	    !common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
+	    !common_util_username_to_essdn(username, essdn.data(), essdn.size()))
 		return ecNotFound;
+	dispname.resize(strlen(dispname.c_str()));
+	essdn.resize(strlen(essdn.c_str()));
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = x500dn;
+	tmp_entryid.px500dn = deconst(essdn.c_str());
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
-	*ppdisplay_name = common_util_dup(display_name);
-	*ppx500dn = common_util_dup(x500dn);
+	*ppdisplay_name = common_util_dup(dispname.c_str());
+	*ppx500dn = common_util_dup(essdn.c_str());
 	return *ppdisplay_name == nullptr || *ppx500dn == nullptr ?
-	       ecError : ecSuccess;
+	       ecServerOOM : ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 ec_error_t zs_unloadobject(GUID hsession, uint32_t hobject)
