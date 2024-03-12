@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cstdint>
@@ -53,9 +53,7 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	int32_t tmp_level;
 	BINARY sender_srch, repr_srch;
 	std::string sender_essdn, sender_dispname, repr_essdn, repr_dispname;
-	sender_essdn.resize(1024);
 	sender_dispname.resize(256);
-	repr_essdn.resize(1024);
 	repr_dispname.resize(256);
 	PROBLEM_ARRAY tmp_problems;
 	
@@ -64,13 +62,14 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	tmp_byte = 1;
 	nt_time = rop_util_current_nttime();
 	tmp_level = -1;
-	if (!common_util_username_to_essdn(account, sender_essdn.data(),
-	    sender_essdn.size()))
+	if (cvt_username_to_essdn(account, g_emsmdb_org_name,
+	    common_util_get_user_ids, common_util_get_domain_ids,
+	    sender_essdn) != ecSuccess)
 		return ecRpcFailed;
 	if (!common_util_get_user_displayname(account, sender_dispname.data(),
 	    sender_dispname.size()))
 		return ecRpcFailed;
-	sender_essdn.resize(strlen(sender_essdn.c_str()));
+	HX_strupper(sender_essdn.data());
 	sender_dispname.resize(strlen(sender_dispname.c_str()));
 	auto sender_eid = common_util_username_to_addressbook_entryid(account);
 	if (sender_eid == nullptr)
@@ -83,12 +82,13 @@ static ec_error_t oxomsg_rectify_message(message_object *pmessage,
 	if (strcasecmp(account, representing_username) == 0) {
 		repr_essdn = sender_essdn;
 		repr_dispname = sender_dispname;
-	} else if (common_util_username_to_essdn(representing_username,
-	    repr_essdn.data(), repr_essdn.size())) {
+	} else if (cvt_username_to_essdn(representing_username,
+	    g_emsmdb_org_name, common_util_get_user_ids,
+	    common_util_get_domain_ids, repr_essdn) == ecSuccess) {
 		if (!common_util_get_user_displayname(representing_username,
 		    repr_dispname.data(), repr_dispname.size()))
 			return ecRpcFailed;
-		repr_essdn.resize(strlen(repr_essdn.c_str()));
+		HX_strupper(repr_essdn.data());
 		repr_dispname.resize(strlen(repr_dispname.c_str()));
 		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
 		if (repr_eid == nullptr)

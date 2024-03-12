@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -171,30 +173,6 @@ void common_util_obfuscate_data(uint8_t *data, uint32_t size)
 		data[i] ^= 0xA5;
 }
 
-BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
-{
-	char *pdomain;
-	char tmp_name[UADDR_SIZE];
-	char hex_string[16];
-	char hex_string2[16];
-	
-	gx_strlcpy(tmp_name, username, std::size(tmp_name));
-	pdomain = strchr(tmp_name, '@');
-	if (pdomain == nullptr)
-		return FALSE;
-	*pdomain++ = '\0';
-
-	unsigned int user_id = 0, domain_id = 0;
-	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
-		return FALSE;
-	encode_hex_int(user_id, hex_string);
-	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-		g_emsmdb_org_name, hex_string2, hex_string, tmp_name);
-	HX_strupper(pessdn);
-	return TRUE;
-}
-
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname)
 {
 	//TODO
@@ -245,16 +223,18 @@ BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 
 BINARY* common_util_username_to_addressbook_entryid(const char *username)
 {
-	char x500dn[1024];
+	std::string essdn;
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
+	if (cvt_username_to_essdn(username, g_emsmdb_org_name,
+	    common_util_get_user_ids, common_util_get_domain_ids,
+	    essdn) != ecSuccess)
 		return NULL;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = x500dn;
+	tmp_entryid.px500dn = deconst(essdn.c_str());
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;

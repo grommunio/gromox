@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
 #include <climits>
@@ -14,6 +16,7 @@
 #include <gromox/msgchg_grouping.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
 #include "emsmdb_interface.h"
@@ -463,16 +466,18 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		return TRUE;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A: {
-		bool ok = plogon->is_private() ?
-		          common_util_username_to_essdn(plogon->account, temp_buff, std::size(temp_buff)) :
-		          common_util_public_to_essdn(plogon->account, temp_buff, std::size(temp_buff));
-		if (!ok)
+		std::string essdn;
+		if (!plogon->is_private())
 			return false;
-		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+		if (cvt_username_to_essdn(plogon->account, g_emsmdb_org_name,
+		    common_util_get_user_ids, common_util_get_domain_ids,
+		    essdn) != ecSuccess)
+			return false;
+		auto tstr = cu_alloc<char>(essdn.size() + 1);
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)
 			return FALSE;
-		strcpy(tstr, temp_buff);
+		gx_strlcpy(tstr, essdn.c_str(), essdn.size() + 1);
 		return TRUE;
 	}
 	case PR_EXTENDED_RULE_SIZE_LIMIT: {
