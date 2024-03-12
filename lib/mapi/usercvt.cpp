@@ -183,11 +183,12 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
     unsigned int user_id, unsigned int domain_id, std::string &essdn) try
 {
 	const char *at = strchr(username, '@');
-	if (at == nullptr)
-		return ecInvalidParam;
 	essdn = fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-",
 	        org, __builtin_bswap32(domain_id), __builtin_bswap32(user_id));
-	essdn += std::string_view(username, at - username);
+	if (at == nullptr)
+		essdn += "public.folder.root";
+	else
+		essdn += std::string_view(username, at - username);
 	/*
 	 * In EXC, the ESSDN is normally mixed-case, but appears upper-case in:
 	 *
@@ -211,6 +212,16 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
     GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids, std::string &essdn) try
 {
 	unsigned int user_id = 0, domain_id = 0;
+	const char *ps_domain = nullptr, *at = nullptr;
+	if (strncmp(username, "public.folder.root@", 19) == 0)
+		ps_domain = username + 19;
+	else if ((at = strchr(username, '@')) == nullptr)
+		ps_domain = username;
+	if (ps_domain != nullptr) {
+		if (!get_dids(ps_domain, &domain_id, nullptr))
+			return ecError;
+		return cvt_username_to_essdn(ps_domain, org, 0, domain_id, essdn);
+	}
 	if (!get_uids(username, &user_id, &domain_id, nullptr))
 		return ecError;
 	return cvt_username_to_essdn(username, org, user_id, domain_id, essdn);
