@@ -94,7 +94,7 @@ class OxdiscoPlugin {
 	std::string get_redirect_addr(const char *) const;
 	BOOL domainname_to_essdn(const char *, char *, size_t, unsigned int &) const;
 	static bool advertise_prot(enum adv_setting, const char *ua);
-	static std::string get_deploymentid(unsigned int, const char *);
+	static std::string get_mailboxid(unsigned int, const char *);
 	static void get_hex_string(const char *, char *);
 };
 
@@ -661,7 +661,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	if (*homesrv == '\0')
 		homesrv = host_id.c_str();
 
-	std::string DisplayName, essdn, DeploymentId;
+	std::string DisplayName, essdn, mailboxid;
 	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
 		if (!mysql.get_user_displayname(email, buf.get(), 4096)) {
@@ -675,7 +675,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		    essdn) != ecSuccess)
 			return -1;
 		get_hex_string(email, hex_string);
-		DeploymentId = get_deploymentid(user_id, hex_string);
+		mailboxid = get_mailboxid(user_id, hex_string);
 	}
 	else {
 		DisplayName = public_folder;
@@ -683,12 +683,12 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			return -1;
 		essdn = buf.get();
 		get_hex_string(domain, hex_string);
-		DeploymentId = get_deploymentid(domain_id, hex_string);
+		mailboxid = get_mailboxid(domain_id, hex_string);
 	}
 
 	add_child(resp_user, "DisplayName", DisplayName);
 	add_child(resp_user, "LegacyDN", essdn);
-	add_child(resp_user, "DeploymentId", DeploymentId);
+	add_child(resp_user, "DeploymentId", mailboxid);
 
 	auto resp_acc = add_child(resp, "Account");
 	add_child(resp_acc, "AccountType", "email");
@@ -702,10 +702,10 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 
 	if (advertise_prot(m_advertise_mh, user_agent))
 		resp_mh(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
-			DeploymentId, is_private);
+			mailboxid, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
 		resp_rpch(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
-			DeploymentId, is_private);
+			mailboxid, is_private);
 
 	std::vector<sql_user> hints;
 	if (is_private && strcasecmp(authuser, email) == 0) {
@@ -741,7 +741,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
     const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
-    const std::string &EcpUrl, const std::string &deploymentid,
+    const std::string &EcpUrl, const std::string &mailboxid,
     bool is_private)
 {
 	auto resp_prt = add_child(resp_acc, "Protocol");
@@ -771,11 +771,11 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 	resp_prt->SetAttribute("Version", "1");
 	auto resp_prt_mst = add_child(resp_prt, "MailStore");
 
-	auto mst_url = fmt::format(mailbox_base_url, homesrv, "emsmdb", deploymentid, domain);
+	auto mst_url = fmt::format(mailbox_base_url, homesrv, "emsmdb", mailboxid, domain);
 	add_child(resp_prt_mst, "InternalUrl", mst_url);
 	add_child(resp_prt_mst, "ExternalUrl", mst_url);
 
-	auto abk_url = fmt::format(mailbox_base_url, homesrv, "nspi", deploymentid, domain);
+	auto abk_url = fmt::format(mailbox_base_url, homesrv, "nspi", mailboxid, domain);
 	auto resp_prt_abk = add_child(resp_prt, "AddressBook");
 	add_child(resp_prt_abk, "InternalUrl", abk_url);
 	add_child(resp_prt_abk, "ExternalUrl", abk_url);
@@ -784,22 +784,22 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
     const char *domain,
     const std::string &ews_url, const std::string &OABUrl,
-    const std::string &EcpUrl, const std::string &deploymentid,
+    const std::string &EcpUrl, const std::string &mailboxid,
     bool is_private) const
 {
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "Type", "EXCH");
 
-	auto depl_server = fmt::format("{}@{}", deploymentid, domain);
+	auto depl_server = fmt::format("{}@{}", mailboxid, domain);
 	add_child(resp_prt, "Server", depl_server);
 	add_child(resp_prt, "ServerVersion", m_server_version.c_str());
 
 	auto ServerDN = fmt::format(server_base_dn,
-		x500_org_name.c_str(), deploymentid, domain);
+		x500_org_name.c_str(), mailboxid, domain);
 	add_child(resp_prt, "ServerDN", ServerDN);
 
 	auto MdbDN = fmt::format(server_base_dn,
-		x500_org_name.c_str(), deploymentid, domain);
+		x500_org_name.c_str(), mailboxid, domain);
 	MdbDN += "/cn=Microsoft Private MDB";
 	add_child(resp_prt, "MdbDN", MdbDN);
 
@@ -1050,7 +1050,7 @@ BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
 	return TRUE;
 }
 
-std::string OxdiscoPlugin::get_deploymentid(unsigned int id,
+std::string OxdiscoPlugin::get_mailboxid(unsigned int id,
     const char *hex_string)
 {
 	char temp_hex[16];
