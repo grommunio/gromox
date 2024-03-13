@@ -53,39 +53,31 @@ Home store
 	intrinsic mailbox.)
 
 Private Store
-	A type of mailbox. In Gromox, this is prepopulated by gromox-mkprivate
-	with about 19 undeletable essential folders, e.g. Top of Information
-	store, Inbox, Outbox, etc.
+	A type of mailbox. In Gromox, a private store is prepopulated by
+	gromox-mkprivate with about 19 undeletable essential folders, e.g. Top
+	of Information Store (IPM_SUBTREE), Inbox, Outbox, etc.
 
-	Though stores could exist individually (after all, they have
-	MailboxGUID, DatabaseGUID, StoreGUID to be referenced), each store is
-	generally tied from and to one user object (and thus exactly one
-	ESSDN), because utilizing a username is so much more convenient for
-	humans than a GUID.
+Delegate Store
+	A term used in Exchange to denote private stores which are not the
+	default store.
 
 Public Store
-	A type of mailbox. Each user can have at most one public store linked, because the
-	way they are opened in MSMAPI is by specifying the user's ESSDN.
+	A type of mailbox. Because entryids in MSMAPI make reference to a
+	public store using a *private* user's identity, at most one public
+	store can be associated with one user.
 
-	In Exchange, there is a ``cn=PUBS`` user in MSAD for owning the store.
-	It has no associated ESSDN (thus is invisible in Groupware), though it
-	does have an SMTP address of its own. In MFCMAPI, one can observe that
-	``PR_STORE_ENTRYID`` contains: ``ServerShortName=PUBS@example.com``,
-	``MailboxDN=/o=foo/cn=user15``, ``SmtpAddress=PUBS@example.com``,
-	whereby user15 is whatever you used to logon with. Messages to
-	``PUBS@domain.com`` are ignored.
+	In Exchange, each public store has an MSAD user object and
+	ESSDN/LegacyDN, as well as a (admin-pickable) Service Principal
+	Name/mail address (even though that mail address is not enabled).
 
-	In Gromox, public stores are owned by/tied to Gromox domain objects.
-	The schema for domain objects is separate from user objects, and there
-	is no SMTP address nor ESSDN assigned. Though one can observe
-	``public.folder.root@example.com`` in ``PR_STORE_ENTRYID``, this is
-	just a placeholder for Autodiscover/MSMAPI. When working with Gromox
-	command-line utilities, only the domain name is used, sometimes as
-	``example.com``, sometimes as ``@example.com``.
-
-	Each domain can have at most one public store. The SQLite database
-	underlying a Gromox public store is slightly different from a private
-	store, e.g. it has tables to track read states per user.
+	In Gromox, public stores are owned by Gromox domain objects (not Gromox
+	user objects). The schema for domain objects is separate from user
+	objects. The SPN is fixed to public.folder.root@<domain>. Public stores
+	are prepopulated by gromox-mkpublic with a few undeleteable essential
+	folders, e.g. IPM_SUBTREE, IPM_NON_SUBTREE. The sqlite database schema
+	is different, e.g. it has tables to track read states per user. Some
+	Gromox command-line utilities require the use of ``@example.com``,
+	others as ``example.com`` when referencing a domain's public store.
 
 Non-default store
 	Refers to any store that is not the user's home store, e.g. public
