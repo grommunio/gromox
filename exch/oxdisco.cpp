@@ -688,7 +688,10 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 
 	add_child(resp_user, "DisplayName", DisplayName);
 	add_child(resp_user, "LegacyDN", essdn);
-	add_child(resp_user, "DeploymentId", mailboxid);
+	static constexpr GUID dummyguid = {0xeeeeeeee, 0xeeee, 0xeeee, {0xee, 0xee}, {0xee, 0xee, 0xee, 0xee, 0xee, 0xee}}; /* えええ */
+	char DeploymentId[39];
+	dummyguid.to_str(DeploymentId, std::size(DeploymentId));
+	add_child(resp_user, "DeploymentId", DeploymentId);
 
 	auto resp_acc = add_child(resp, "Account");
 	add_child(resp_acc, "AccountType", "email");
