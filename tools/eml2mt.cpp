@@ -95,9 +95,16 @@ static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_eml(const char *file)
 	size_t slurp_len = 0;
 	std::unique_ptr<char[], stdlib_delete> slurp_data(strcmp(file, "-") == 0 ?
 		HX_slurp_fd(STDIN_FILENO, &slurp_len) : HX_slurp_file(file, &slurp_len));
+	static constexpr uint64_t olecf_sig = 0xd0cf11e0a1b11ae1, olecf_beta = 0x0e11fc0dd0cf110e;
 	if (slurp_data == nullptr) {
 		fprintf(stderr, "Unable to read from %s: %s\n", file, strerror(errno));
 		return nullptr;
+	} else if (slurp_len >= 8 &&
+	    (be64p_to_cpu(slurp_data.get()) == olecf_sig ||
+	    be64p_to_cpu(slurp_data.get()) == olecf_beta)) {
+		fprintf(stderr, "Input file %s looks like an OLECF file; "
+			"you should use gromox-oxm2mt, not gromox-eml2mt "
+			"(which is for Internet/RFC5322 mail).\n", file);
 	}
 	return do_mail(file, slurp_data.get(), slurp_len);
 }
