@@ -37,6 +37,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "bounce_producer.hpp"
 #include "db_engine.h"
@@ -2975,7 +2976,8 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		return message_disable_rule(rp.sqlite, false, rule.id);
 	}
 
-	char essdn_buff[1280], display_name[1024];
+	std::string essdn_buff;
+	char display_name[1024];
 	BINARY searchkey_bin;
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -3001,11 +3003,13 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
-		strcpy(essdn_buff, "EX:");
-		if (!common_util_username_to_essdn(rp.ev_to,
-		    &essdn_buff[3], std::size(essdn_buff) - 3))
-			return ecError;
-		HX_strupper(essdn_buff);
+		auto err = cvt_username_to_essdn(rp.ev_to, g_exmdb_org_name,
+		           common_util_get_user_ids, common_util_get_domain_ids,
+		           essdn_buff);
+		if (err != ecSuccess)
+			return err;
+		HX_strupper(essdn_buff.data());
+		essdn_buff.insert(0, "EX:");
 		auto pvalue = common_util_username_to_addressbook_entryid(rp.ev_to);
 		if (pvalue == nullptr)
 			return ecError;
@@ -3015,8 +3019,8 @@ static ec_error_t op_delegate(const rulexec_in &rp, seen_list &seen,
 		if (common_util_get_user_displayname(rp.ev_to, display_name,
 		    std::size(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
-		searchkey_bin.cb = strlen(essdn_buff) + 1;
-		searchkey_bin.pv = essdn_buff;
+		searchkey_bin.cb = essdn_buff.size() + 1;
+		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
 	}
 	cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &fake_true);
@@ -3304,7 +3308,8 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS)
 		return message_disable_rule(rp.sqlite, TRUE, rule.id);
 
-	char essdn_buff[1280], display_name[1024];
+	std::string essdn_buff;
+	char display_name[1024];
 	BINARY searchkey_bin;
 	/* Buffers above may be referenced by pmsgctnt (cu_set_propvals) */
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -3330,10 +3335,13 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
-		strcpy(essdn_buff, "EX:");
-		if (!common_util_username_to_essdn(rp.ev_to,
-		    &essdn_buff[3], std::size(essdn_buff) - 3))
-			return ecError;
+		auto err = cvt_username_to_essdn(rp.ev_to, g_exmdb_org_name,
+		           common_util_get_user_ids, common_util_get_domain_ids,
+		           essdn_buff);
+		if (err != ecSuccess)
+			return err;
+		HX_strupper(essdn_buff.data());
+		essdn_buff.insert(0, "EX:");
 		auto pvalue = common_util_username_to_addressbook_entryid(rp.ev_to);
 		if (pvalue == nullptr)
 			return ecError;
@@ -3343,8 +3351,8 @@ static ec_error_t opx_delegate(const rulexec_in &rp, const rule_node &rule,
 		if (common_util_get_user_displayname(rp.ev_to, display_name,
 		    std::size(display_name)))
 			cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_NAME, display_name);
-		searchkey_bin.cb = strlen(essdn_buff) + 1;
-		searchkey_bin.pv = essdn_buff;
+		searchkey_bin.cb = essdn_buff.size() + 1;
+		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		cu_set_propval(&pmsgctnt->proplist, PR_RCVD_REPRESENTING_SEARCH_KEY, &searchkey_bin);
 	}
 	cu_set_propval(&pmsgctnt->proplist, PR_DELEGATED_BY_RULE, &fake_true);
@@ -3580,7 +3588,6 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	BINARY searchkey_bin;
 	const char *paccount;
 	char mid_string[128];
-	char essdn_buff[1280];
 	char display_name[1024];
 	/* Buffers above may be referenced by tmp_msg (cu_set_propvals) */
 	MESSAGE_CONTENT tmp_msg;
@@ -3618,6 +3625,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	}
 	seen_list seen{{fid_val}};
 	tmp_msg = *pmsg;
+	std::string essdn_buff;
 	if (exmdb_server::is_private()) {
 		tmp_msg.proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pmsg->proplist.count + 15);
 		if (tmp_msg.proplist.ppropval == nullptr)
@@ -3627,11 +3635,12 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 		pentryid = common_util_username_to_addressbook_entryid(account);
 		if (pentryid == nullptr)
 			return FALSE;	
-		strcpy(essdn_buff, "EX:");
-		if (!common_util_username_to_essdn(account,
-		    &essdn_buff[3], std::size(essdn_buff) - 3))
+		if (cvt_username_to_essdn(account, g_exmdb_org_name,
+		    common_util_get_user_ids, common_util_get_domain_ids,
+		    essdn_buff) != ecSuccess)
 			return FALSE;
-		HX_strupper(essdn_buff);
+		HX_strupper(essdn_buff.data());
+		essdn_buff.insert(0, "EX:");
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ENTRYID, pentryid);
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_ADDRTYPE, "EX");
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_EMAIL_ADDRESS, &essdn_buff[3]);
@@ -3640,8 +3649,8 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_NAME, display_name);
 		else
 			display_name[0] = '\0';
-		searchkey_bin.cb = strlen(essdn_buff) + 1;
-		searchkey_bin.pv = essdn_buff;
+		searchkey_bin.cb = essdn_buff.size() + 1;
+		searchkey_bin.pv = deconst(essdn_buff.c_str());
 		cu_set_propval(&tmp_msg.proplist, PR_RECEIVED_BY_SEARCH_KEY, &searchkey_bin);
 		if (!pmsg->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 			cu_set_propval(&tmp_msg.proplist, PR_RCVD_REPRESENTING_ENTRYID, pentryid);
