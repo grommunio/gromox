@@ -1037,17 +1037,17 @@ static uint32_t common_util_get_folder_flags(
 	
 	folder_flags = 0;
 	if (common_util_get_folder_type(psqlite, folder_id, &folder_type))
-		folder_flags |= folder_type == FOLDER_SEARCH ? FOLDER_FLAGS_SEARCH : FOLDER_FLAGS_NORMAL;
+		folder_flags |= folder_type == FOLDER_SEARCH ? MDB_FOLDER_SEARCH : MDB_FOLDER_NORMAL;
 	if (common_util_check_folder_rules(psqlite, folder_id))
-		folder_flags |= FOLDER_FLAGS_RULES;
+		folder_flags |= MDB_FOLDER_RULES;
 	if (exmdb_server::is_private()) {
 		if (cu_is_descendant_folder(psqlite, folder_id,
 		    PRIVATE_FID_IPMSUBTREE, &b_included) && b_included)
-			folder_flags |= FOLDER_FLAGS_IPM;
+			folder_flags |= MDB_FOLDER_IPM;
 	} else {
 		if (cu_is_descendant_folder(psqlite, folder_id,
 		    PUBLIC_FID_IPMSUBTREE, &b_included) && b_included)
-			folder_flags |= FOLDER_FLAGS_IPM;
+			folder_flags |= MDB_FOLDER_IPM;
 	}
 	return folder_flags;
 }
