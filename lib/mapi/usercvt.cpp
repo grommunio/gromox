@@ -204,4 +204,16 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
 	return ecServerOOM;
 }
 
+ec_error_t cvt_username_to_mailboxid(const char *username, unsigned int id,
+    std::string &mailboxid)
+{
+	FLATUID f{};
+	strncpy(reinterpret_cast<char *>(&f.ab[0]), username, 12);
+	cpu_to_le32p(&f.ab[12], id);
+	char txt[37];
+	static_cast<GUID>(f).to_str(txt, std::size(txt), 36);
+	mailboxid = txt;
+	return ecSuccess;
+}
+
 }

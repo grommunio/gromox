@@ -94,8 +94,6 @@ class OxdiscoPlugin {
 	std::string get_redirect_addr(const char *) const;
 	BOOL domainname_to_essdn(const char *, char *, size_t, unsigned int &) const;
 	static bool advertise_prot(enum adv_setting, const char *ua);
-	static std::string get_mailboxid(unsigned int, const char *);
-	static void get_hex_string(const char *, char *);
 };
 
 }
@@ -648,7 +646,6 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	if (domain == nullptr)
 		return -1;
 	++domain;
-	char hex_string[12];
 	bool is_private = strncasecmp(email, public_folder_email, 19) != 0;
 	std::pair<std::string, std::string> homesrv_buf;
 	if (mysql.get_homeserver(is_private ? email : domain,
@@ -674,16 +671,18 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		    mysql.get_user_ids, mysql.get_domain_ids,
 		    essdn) != ecSuccess)
 			return -1;
-		get_hex_string(email, hex_string);
-		mailboxid = get_mailboxid(user_id, hex_string);
+		auto err = cvt_username_to_mailboxid(email, user_id, mailboxid);
+		if (err != ecSuccess)
+			return -1;
 	}
 	else {
 		DisplayName = public_folder;
 		if (!domainname_to_essdn(domain, buf.get(), 4096, domain_id))
 			return -1;
 		essdn = buf.get();
-		get_hex_string(domain, hex_string);
-		mailboxid = get_mailboxid(domain_id, hex_string);
+		auto err = cvt_username_to_mailboxid(domain, domain_id, mailboxid);
+		if (err != ecSuccess)
+			return -1;
 	}
 
 	add_child(resp_user, "DisplayName", DisplayName);
@@ -1051,24 +1050,6 @@ BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
 	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s00000000-public.folder.root",
 			x500_org_name.c_str(), hex_string);
 	return TRUE;
-}
-
-std::string OxdiscoPlugin::get_mailboxid(unsigned int id,
-    const char *hex_string)
-{
-	char temp_hex[16];
-	encode_hex_int(id, temp_hex);
-	return fmt::sprintf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%s",
-			hex_string[0], hex_string[1], hex_string[2], hex_string[3],
-			hex_string[4], hex_string[5], hex_string[6], hex_string[7], 
-			hex_string[8], hex_string[9], hex_string[10], hex_string[11], temp_hex);
-}
-
-void OxdiscoPlugin::get_hex_string(const char *str, char *hex_string)
-{
-	size_t l = strlen(str);
-	for (size_t i = 0; i < 12; ++i)
-		hex_string[i] = i < l ? str[i] : '\0';
 }
 
 /**

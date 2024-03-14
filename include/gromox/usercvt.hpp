@@ -21,5 +21,6 @@ extern GX_EXPORT ec_error_t cvt_emsab_to_essdn(const BINARY *, std::string &);
 /* Multiple types of entryids */
 extern GX_EXPORT ec_error_t cvt_entryid_to_smtpaddr(const BINARY *, const char *org, cvt_id2user, std::string &);
 extern GX_EXPORT ec_error_t cvt_username_to_essdn(const char *username, const char *org, GET_USER_IDS, GET_DOMAIN_IDS, std::string &);
+extern GX_EXPORT ec_error_t cvt_username_to_mailboxid(const char *username, unsigned int id, std::string &);
 
 }
