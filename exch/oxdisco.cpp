@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cctype>
@@ -24,6 +24,7 @@
 #include <gromox/hpm_common.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/mysql_adaptor.hpp>
+#include <gromox/usercvt.hpp>
 #include "mysql_adaptor/sql2.hpp"
 
 using namespace std::string_literals;
@@ -91,7 +92,6 @@ class OxdiscoPlugin {
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
 	std::string get_redirect_addr(const char *) const;
-	BOOL username_to_essdn(const char *, char *, size_t, unsigned int &, unsigned int &) const;
 	BOOL domainname_to_essdn(const char *, char *, size_t, unsigned int &) const;
 	static bool advertise_prot(enum adv_setting, const char *ua);
 	static std::string get_deploymentid(unsigned int, const char *);
@@ -661,7 +661,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	if (*homesrv == '\0')
 		homesrv = host_id.c_str();
 
-	std::string DisplayName, LegacyDN, DeploymentId;
+	std::string DisplayName, essdn, DeploymentId;
 	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
 		if (!mysql.get_user_displayname(email, buf.get(), 4096)) {
@@ -669,10 +669,10 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			return -1;
 		}
 		DisplayName = buf.get();
-		if (!username_to_essdn(email, buf.get(), 4096, user_id, domain_id))
+		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
+		    mysql.get_user_ids, mysql.get_domain_ids,
+		    essdn) != ecSuccess)
 			return -1;
-		LegacyDN = buf.get();
-
 		get_hex_string(email, hex_string);
 		DeploymentId = get_deploymentid(user_id, hex_string);
 	}
@@ -680,14 +680,13 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		DisplayName = public_folder;
 		if (!domainname_to_essdn(domain, buf.get(), 4096, domain_id))
 			return -1;
-		LegacyDN = buf.get();
-
+		essdn = buf.get();
 		get_hex_string(domain, hex_string);
 		DeploymentId = get_deploymentid(domain_id, hex_string);
 	}
 
 	add_child(resp_user, "DisplayName", DisplayName);
-	add_child(resp_user, "LegacyDN", LegacyDN);
+	add_child(resp_user, "LegacyDN", essdn);
 	add_child(resp_user, "DeploymentId", DeploymentId);
 
 	auto resp_acc = add_child(resp, "Account");
@@ -1035,26 +1034,6 @@ std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 	std::string username = s_email.substr(0, s_email.find('@') - 1);
 	std::string redirect_addr = username + "@" + RedirectAddr;
 	return redirect_addr;
-}
-
-BOOL OxdiscoPlugin::username_to_essdn(const char *username, char *pessdn,
-    size_t dnmax, unsigned int &user_id, unsigned int &domain_id) const
-{
-	char tmp_name[UADDR_SIZE];
-	char hex_string[16];
-	char hex_string2[16];
-
-	gx_strlcpy(tmp_name, username, std::size(tmp_name));
-	auto pdomain = strchr(tmp_name, '@');
-	if (pdomain == nullptr)
-		return FALSE;
-	*pdomain++ = '\0';
-	mysql.get_user_ids(username, &user_id, &domain_id, nullptr);
-	encode_hex_int(user_id, hex_string);
-	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-			x500_org_name.c_str(), hex_string2, hex_string, tmp_name);
-	return TRUE;
 }
 
 BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
