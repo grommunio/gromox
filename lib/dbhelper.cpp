@@ -87,7 +87,11 @@ xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos)
 				db, pair.first->second.c_str(), pos.c_str());
 	}
 	auto ret = gx_sql_exec(db, "BEGIN TRANSACTION");
-	return xtransaction(ret == SQLITE_OK ? db : nullptr);
+	if (ret == SQLITE_OK)
+		return xtransaction(db);
+	std::unique_lock lk(active_xa_lock);
+	active_xa.erase(db);
+	return xtransaction(nullptr);
 }
 
 int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
