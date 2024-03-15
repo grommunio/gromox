@@ -159,6 +159,7 @@ static constexpr char
 static constexpr size_t namemap_limit = 0x1000;
 static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
+static GET_DOMAIN_IDS oxcmail_get_domain_ids;
 static GET_USERNAME oxcmail_get_username;
 
 ec_error_t oxcmail_id2user(int id, std::string &user) try
@@ -188,11 +189,12 @@ static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 	return -ENOMEM;
 }
 
-BOOL oxcmail_init_library(const char *org_name,
-	GET_USER_IDS get_user_ids, GET_USERNAME get_username)
+BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS get_user_ids,
+    GET_DOMAIN_IDS get_domain_ids, GET_USERNAME get_username)
 {
 	gx_strlcpy(g_oxcmail_org_name, org_name, std::size(g_oxcmail_org_name));
 	oxcmail_get_user_ids = get_user_ids;
+	oxcmail_get_domain_ids = get_domain_ids;
 	oxcmail_get_username = get_username;
 	textmaps_init();
 	tnef_init_library();

@@ -346,7 +346,7 @@ void common_util_init(const char *org_name, const char *default_charset,
 int common_util_run(const char *data_path)
 {
 	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
-		system_services_get_username_from_id)) {
+	    system_services_get_domain_ids, system_services_get_username_from_id)) {
 		mlog(LV_ERR, "common_util: failed to init oxcmail library");
 		return -2;
 	}

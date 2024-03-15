@@ -46,7 +46,8 @@ static bool (*exmdb_local_get_user_info)(const char *username, char *home_dir, s
 bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
 BOOL (*exmdb_local_check_same_org2)(
 	const char *domainname1, const char *domainname2);
-static BOOL (*exmdb_local_get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
+static GET_USER_IDS exmdb_local_get_user_ids;
+static GET_DOMAIN_IDS exmdb_local_get_domain_ids;
 static BOOL (*exmdb_local_get_username)(unsigned int, char *, size_t);
 
 static int exmdb_local_sequence_ID()
@@ -81,11 +82,12 @@ int exmdb_local_run() try
 	E(exmdb_local_get_lang, "get_user_lang");
 	E(exmdb_local_check_same_org2, "check_same_org2");
 	E(exmdb_local_get_user_ids, "get_user_ids");
+	E(exmdb_local_get_domain_ids, "get_domain_ids");
 	E(exmdb_local_get_username, "get_username_from_id");
 #undef E
 
-	if (!oxcmail_init_library(g_org_name,
-		exmdb_local_get_user_ids, exmdb_local_get_username)) {
+	if (!oxcmail_init_library(g_org_name, exmdb_local_get_user_ids,
+	    exmdb_local_get_domain_ids, exmdb_local_get_username)) {
 		mlog(LV_ERR, "exmdb_local: failed to init oxcmail library");
 		return -2;
 	}

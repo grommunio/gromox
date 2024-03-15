@@ -4344,8 +4344,8 @@ int mail_engine_run()
 	if (sqlite3_config(SQLITE_CONFIG_MEMSTATUS, 0) != SQLITE_OK)
 		mlog(LV_WARN, "mail_engine: failed to close"
 			" memory statistic for sqlite engine");
-	if (!oxcmail_init_library(g_org_name,
-		system_services_get_user_ids, system_services_get_username_from_id)) {
+	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
+	    system_services_get_domain_ids, system_services_get_username_from_id)) {
 		mlog(LV_ERR, "mail_engine: failed to init oxcmail library");
 		return -1;
 	}

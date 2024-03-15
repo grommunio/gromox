@@ -1680,8 +1680,8 @@ int common_util_run()
 	E(common_util_cancel_timer, "cancel_timer");
 #undef E
 
-	if (!oxcmail_init_library(g_emsmdb_org_name,
-		common_util_get_user_ids, common_util_get_username_from_id)) {
+	if (!oxcmail_init_library(g_emsmdb_org_name, common_util_get_user_ids,
+	    common_util_get_domain_ids, common_util_get_username_from_id)) {
 		mlog(LV_ERR, "emsmdb: failed to init oxcmail library");
 		return -2;
 	}

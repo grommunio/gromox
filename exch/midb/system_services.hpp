@@ -6,6 +6,7 @@
 #define E(s) extern decltype(mysql_adaptor_ ## s) *system_services_ ## s;
 E(get_timezone)
 E(get_user_ids)
+E(get_domain_ids)
 E(get_user_lang)
 E(get_username_from_id)
 E(get_id_from_maildir)

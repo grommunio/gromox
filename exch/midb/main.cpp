@@ -50,7 +50,8 @@ bool (*system_services_get_user_lang)(const char *, char *, size_t);
 bool (*system_services_get_timezone)(const char *, char *, size_t);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 decltype(system_services_get_id_from_maildir) system_services_get_id_from_maildir;
-BOOL (*system_services_get_user_ids)(const char *, unsigned int *, unsigned int *, enum display_type *);
+GET_USER_IDS system_services_get_user_ids;
+GET_DOMAIN_IDS system_services_get_domain_ids;
 void (*system_services_broadcast_event)(const char*);
 
 static gromox::atomic_bool g_main_notify_stop, g_listener_notify_stop;
@@ -175,6 +176,7 @@ static int system_services_run()
 	E(system_services_get_username_from_id, "get_username_from_id");
 	E(system_services_get_id_from_maildir, "get_id_from_maildir");
 	E(system_services_get_user_ids, "get_user_ids");
+	E(system_services_get_domain_ids, "get_domain_ids");
 	E(system_services_broadcast_event, "broadcast_event");
 	return 0;
 #undef E
@@ -186,6 +188,7 @@ static void system_services_stop()
 	service_release("get_timezone", "system");
 	service_release("get_username_from_id", "system");
 	service_release("get_id_from_maildir", "system");
+	service_release("get_domain_ids", "system");
 	service_release("get_user_ids", "system");
 	service_release("broadcast_event", "system");
 }

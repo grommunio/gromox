@@ -36,7 +36,8 @@ enum {
 
 using namespace gromox;
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
-decltype(system_services_get_user_ids) system_services_get_user_ids;
+GET_USER_IDS system_services_get_user_ids;
+GET_DOMAIN_IDS system_services_get_domain_ids;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *g_username;
 static unsigned int g_export_mode = EXPORT_MAIL;
@@ -140,11 +141,14 @@ int main(int argc, const char **argv) try
 	E(system_services_get_username_from_id, "get_username_from_id");
 	auto cl_2 = make_scope_exit([]() { service_release("get_username_from_id", "system"); });
 	E(system_services_get_user_ids, "get_user_ids");
+	E(system_services_get_domain_ids, "get_domain_ids");
 	auto cl_3 = make_scope_exit([]() { service_release("get_user_ids", "system"); });
+	auto cl_4 = make_scope_exit([]() { service_release("get_domain_ids", "system"); });
 #undef E
 
 	if (!oxcmail_init_library(g_config_file->get_value("x500_org_name"),
-	    system_services_get_user_ids, system_services_get_username_from_id)) {
+	    system_services_get_user_ids, system_services_get_domain_ids,
+	    system_services_get_username_from_id)) {
 		fprintf(stderr, "oxcmail_init: unspecified error\n");
 		return EXIT_FAILURE;
 	}
