@@ -203,34 +203,6 @@ BOOL oxcmail_init_library(const char *org_name, GET_USER_IDS get_user_ids,
 	return TRUE;
 }
 
-static BOOL oxcmail_username_to_essdn(const char *username,
-    char *pessdn, enum display_type *dtpp)
-{
-	unsigned int user_id = 0, domain_id = 0;
-	char *pdomain;
-	char tmp_name[UADDR_SIZE];
-	char hex_string[16];
-	char hex_string2[16];
-	
-	gx_strlcpy(tmp_name, username, std::size(tmp_name));
-	pdomain = strchr(tmp_name, '@');
-	if (pdomain == nullptr)
-		return FALSE;
-	*pdomain++ = '\0';
-	enum display_type dtypx = DT_MAILUSER;
-	if (oxcmail_get_user_ids == nullptr ||
-	    !oxcmail_get_user_ids(username, &user_id, &domain_id, &dtypx))
-		return FALSE;
-	encode_hex_int(user_id, hex_string);
-	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, 1024, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-		g_oxcmail_org_name, hex_string2, hex_string, tmp_name);
-	HX_strupper(pessdn);
-	if (dtpp != nullptr)
-		*dtpp = dtypx;
-	return TRUE;
-}
-
 static BOOL oxcmail_username_to_oneoff(const char *username,
 	const char *pdisplay_name, BINARY *pbin)
 {
@@ -276,10 +248,13 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 BOOL oxcmail_username_to_entryid(const char *username,
     const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
-	char x500dn[1024];
+	std::string essdn;
 
-	if (oxcmail_username_to_essdn(username, x500dn, dtpp))
-		return oxcmail_essdn_to_entryid(x500dn, pbin);
+	if (oxcmail_get_user_ids(username, nullptr, nullptr, dtpp) &&
+	    cvt_username_to_essdn(username, g_oxcmail_org_name,
+	    oxcmail_get_user_ids, oxcmail_get_domain_ids,
+	    essdn) == ecSuccess)
+		return oxcmail_essdn_to_entryid(essdn.c_str(), pbin);
 	if (dtpp != nullptr)
 		*dtpp = DT_MAILUSER;
 	return oxcmail_username_to_oneoff(
@@ -402,7 +377,6 @@ static void oxcmail_split_filename(char *file_name, char *extension)
 static BOOL oxcmail_parse_recipient(const char *charset,
     const EMAIL_ADDR *paddr, uint32_t rcpt_type, TARRAY_SET *pset) try
 {
-	char essdn[1024];
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
 	char username[UADDR_SIZE];
@@ -423,22 +397,24 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, dispname) != 0)
 			return FALSE;
 	}
+	std::string skb, essdn;
 	if (paddr->has_addr() && oxcmail_is_ascii(paddr->local_part) &&
 	    oxcmail_is_ascii(paddr->domain)) {
 		snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
 		auto dtypx = DT_MAILUSER;
-		std::string skb;
-		if (!oxcmail_username_to_essdn(username, essdn, &dtypx)) {
-			essdn[0] = '\0';
+		std::string essdn, skb;
+		if (!oxcmail_get_user_ids(username, nullptr, nullptr, &dtypx) ||
+		    cvt_username_to_essdn(username, g_oxcmail_org_name,
+		    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) != ecSuccess) {
 			dtypx = DT_MAILUSER;
 			skb = "SMTP:"s + username;
 			if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||
 			    pproplist->set(PR_EMAIL_ADDRESS, username) != 0)
 				return FALSE;
 		} else {
-			skb = "EX:"s + essdn;
+			skb = "EX:" + essdn;
 			if (pproplist->set(PR_ADDRTYPE, "EX") != 0 ||
-			    pproplist->set(PR_EMAIL_ADDRESS, essdn) != 0)
+			    pproplist->set(PR_EMAIL_ADDRESS, essdn.c_str()) != 0)
 				return FALSE;
 		}
 		HX_strupper(skb.data());
@@ -453,7 +429,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			if (!oxcmail_username_to_oneoff(username, paddr->display_name, &tmp_bin))
 				return FALSE;
 		} else {
-			if (!oxcmail_essdn_to_entryid(essdn, &tmp_bin))
+			if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin))
 				return FALSE;
 		}
 		if (pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
@@ -524,7 +500,6 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 {
 	EMAIL_ADDR email_addr, *paddr = &email_addr;
 	parse_mime_addr(&email_addr, field);
-	char essdn[1024];
 	char username[UADDR_SIZE];
 	
 	if (paddr->has_dispname()) {
@@ -544,13 +519,12 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 	    pproplist->set(pr_emaddr, username) != 0 ||
 	    pproplist->set(pr_smtpaddr, username) != 0)
 		return FALSE;
-	std::string skb;
-	if (!oxcmail_username_to_essdn(username, essdn, NULL)) {
-		essdn[0] = '\0';
+	std::string essdn, skb;
+	if (cvt_username_to_essdn(username, g_oxcmail_org_name,
+	    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn) != ecSuccess)
 		skb = "SMTP:"s + username;
-	} else {
+	else
 		skb = "EX:"s + essdn;
-	}
 	HX_strupper(skb.data());
 	BINARY srchkey;
 	srchkey.cb = skb.size() + 1;
@@ -562,7 +536,7 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 		if (!oxcmail_username_to_oneoff(username, paddr->display_name, &tmp_bin))
 			return FALSE;
 	} else {
-		if (!oxcmail_essdn_to_entryid(essdn, &tmp_bin))
+		if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin))
 			return FALSE;
 	}
 	return pproplist->set(pr_entryid, &tmp_bin) == 0 ? TRUE : false;
@@ -2126,7 +2100,6 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	int tmp_len;
 	char *ptoken1;
 	char *ptoken2;
-	char essdn[1280];
 	DSN_FILEDS_INFO f_info;
 	char display_name[512];
 	
@@ -2184,9 +2157,10 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	    pproplist->set(PR_DISPLAY_NAME, display_name) != 0)
 		return false;
 	auto dtypx = DT_MAILUSER;
-	std::string skb;
-	if (!oxcmail_username_to_essdn(f_info.final_recipient, essdn, &dtypx)) {
-		essdn[0] = '\0';
+	std::string essdn, skb;
+	if (!oxcmail_get_user_ids(f_info.final_recipient, nullptr, nullptr, &dtypx) ||
+	    !cvt_username_to_essdn(f_info.final_recipient, g_oxcmail_org_name,
+	    oxcmail_get_user_ids, oxcmail_get_domain_ids, essdn)) {
 		dtypx = DT_MAILUSER;
 		skb = "SMTP:"s + f_info.final_recipient;
 		if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||
@@ -2195,7 +2169,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 	} else {
 		skb = "EX:"s + essdn;
 		if (pproplist->set(PR_ADDRTYPE, "EX") != 0 ||
-		    pproplist->set(PR_EMAIL_ADDRESS, essdn) != 0)
+		    pproplist->set(PR_EMAIL_ADDRESS, essdn.c_str()) != 0)
 			return false;
 	}
 	HX_strupper(skb.data());
@@ -2212,7 +2186,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(const std::vector<dsn_field> &pfields,
 		    display_name, &tmp_bin))
 			return false;
 	} else {
-		if (!oxcmail_essdn_to_entryid(essdn, &tmp_bin))
+		if (!oxcmail_essdn_to_entryid(essdn.c_str(), &tmp_bin))
 			return false;
 	}
 	if (pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
