@@ -251,7 +251,7 @@ struct getmailboxurl_request {
 
 struct getmailboxurl_response {
 	uint32_t status = 0, result = 0;
-	char server_url[1024]{};
+	std::string server_url;
 };
 
 struct getaddressbookurl_request {
@@ -262,7 +262,7 @@ struct getaddressbookurl_request {
 
 struct getaddressbookurl_response {
 	uint32_t status = 0, result = 0;
-	char server_url[1024]{};
+	std::string server_url;
 };
 
 struct nsp_ext_pull : public EXT_PULL {

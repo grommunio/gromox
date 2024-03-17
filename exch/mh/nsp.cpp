@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <utility>
 #include <variant>
+#include <fmt/core.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -122,7 +123,7 @@ struct MhNspContext : public MhContext
 		epush = &ext_push;
 	}
 
-	ec_error_t getaddressbookurl(char * = nullptr);
+	ec_error_t getaddressbookurl(std::string * = nullptr);
 	ec_error_t getmailboxurl();
 
 	NspRequest request{};
@@ -383,13 +384,13 @@ static BOOL nsp_preproc(int context_id)
 	return TRUE;
 }
 
-ec_error_t MhNspContext::getaddressbookurl(char* dest)
+ec_error_t MhNspContext::getaddressbookurl(std::string *dest) try
 {
 	unsigned int user_id = 0;
 	char username1[UADDR_SIZE], hex_string[32];
 
 	if (dest == nullptr)
-		dest = std::get<getaddressbookurl_response>(response).server_url;
+		dest = &std::get<getaddressbookurl_response>(response).server_url;
 	get_user_ids(auth_info.username, &user_id, nullptr, nullptr);
 	memset(username1, 0, std::size(username1));
 	gx_strlcpy(username1, auth_info.username, std::size(username1));
@@ -400,12 +401,13 @@ ec_error_t MhNspContext::getaddressbookurl(char* dest)
 	else
 		token = username1;
 	encode_hex_int(user_id, hex_string);
-	sprintf(dest, "https://%s/mapi/nspi/?MailboxId="
-		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%s@%s",
+	*dest = fmt::format("https://{}/mapi/nspi/?MailboxId={}{}{}{}-{}{}-{}{}-{}{}-{}{}{}@{}",
 		get_host_ID(), username1[0], username1[1], username1[2], username1[3],
 		username1[4], username1[5], username1[6], username1[7], username1[8],
 		username1[9], username1[10], username1[11], hex_string, token);
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
 }
 
 ec_error_t MhNspContext::getmailboxurl() try
@@ -415,13 +417,13 @@ ec_error_t MhNspContext::getmailboxurl() try
 	std::string tmp_buff = req.user_dn;
 	auto token = strrchr(tmp_buff.data(), '/');
 	if (token == nullptr || strncasecmp(token, "/cn=", 4) != 0)
-		return getaddressbookurl(resp.server_url);
+		return getaddressbookurl(&resp.server_url);
 	*token = '\0';
 	token = strrchr(tmp_buff.data(), '/');
 	if (token == nullptr || strncasecmp(token, "/cn=", 4) != 0)
-		return getaddressbookurl(resp.server_url);
-	snprintf(resp.server_url, std::size(resp.server_url),
-	         "https://%s/mapi/emsmdb/?MailboxId=%s", get_host_ID(), token + 4);
+		return getaddressbookurl(&resp.server_url);
+	resp.server_url = fmt::format("https://{}/mapi/emsmdb/?MailboxId={}",
+	                  get_host_ID(), &token[4]);
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
