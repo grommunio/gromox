@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fmt/core.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -31,7 +32,7 @@ struct RFRGETNEWDSA_IN {
 };
 
 struct RFRGETNEWDSA_OUT {
-	char pserver[256];
+	std::string pserver;
 	uint32_t result;
 };
 
@@ -42,7 +43,7 @@ struct RFRGETFQDNFROMLEGACYDN_IN {
 };
 
 struct RFRGETFQDNFROMLEGACYDN_OUT {
-	char serverfqdn[454];
+	std::string serverfqdn;
 	uint32_t result;
 };
 
@@ -100,8 +101,8 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 }
 PROC_ENTRY(proc_exchange_rfr);
 
-static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
-    char *pserver, size_t svlen)
+static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
+    std::string &server)
 {
 	char *ptoken;
 	char username[UADDR_SIZE];
@@ -120,16 +121,16 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	else
 		ptoken = username;
 	encode_hex_int(user_id, hex_string);
-	snprintf(pserver, svlen, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
-			"-%02x%02x%s@%s", username[0], username[1], username[2],
+	server = fmt::format("{}{}{}{}-{}{}-{}{}-{}{}-{}{}{}@{}",
+			username[0], username[1], username[2],
 			username[3], username[4], username[5], username[6],
 			username[7], username[8], username[9], username[10],
 			username[11], hex_string, ptoken);
 	return ecSuccess;
 }
 
-static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
-    const char *mbserverdn, char *serverfqdn, size_t svlen)
+static ec_error_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
+    const char *mbserverdn, std::string &serverfqdn)
 {
 	char *ptoken;
 	char tmp_buff[1024];
@@ -137,12 +138,12 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
 	gx_strlcpy(tmp_buff, mbserverdn, std::size(tmp_buff));
 	ptoken = strrchr(tmp_buff, '/');
 	if (ptoken == nullptr || strncasecmp(ptoken, "/cn=", 4) != 0)
-		return rfr_get_newdsa(flags, nullptr, serverfqdn, svlen);
+		return rfr_get_newdsa(flags, nullptr, serverfqdn);
 	*ptoken = '\0';
 	ptoken = strrchr(tmp_buff, '/');
 	if (ptoken == nullptr || strncasecmp(ptoken, "/cn=", 4) != 0)
-		return rfr_get_newdsa(flags, nullptr, serverfqdn, svlen);
-	gx_strlcpy(serverfqdn, ptoken + 4, svlen);
+		return rfr_get_newdsa(flags, nullptr, serverfqdn);
+	serverfqdn = &ptoken[4];
 	return ecSuccess;
 }
 
@@ -241,9 +242,12 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		prfr_out = ndr_stack_anew<RFRGETNEWDSA_OUT>(NDR_STACK_OUT);
 		if (prfr_out == nullptr)
 			return DISPATCH_FAIL;
-		prfr_out->result = rfr_get_newdsa(prfr_in->flags, prfr_in->puserdn,
-		                   prfr_in->pserver, std::size(prfr_in->pserver));
-		strcpy(prfr_out->pserver, prfr_in->pserver);
+		try {
+			prfr_out->result = rfr_get_newdsa(prfr_in->flags,
+			                   prfr_in->puserdn, prfr_out->pserver);
+		} catch (const std::bad_alloc &) {
+			return DISPATCH_FAIL;
+		}
 		*ppout = prfr_out;
 		return DISPATCH_SUCCESS;
 	}
@@ -252,10 +256,13 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		prfr_dn_out = ndr_stack_anew<RFRGETFQDNFROMLEGACYDN_OUT>(NDR_STACK_OUT);
 		if (prfr_dn_out == nullptr)
 			return DISPATCH_FAIL;
-		prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
-		                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
-		                      prfr_dn_out->serverfqdn,
-		                      std::size(prfr_dn_out->serverfqdn));
+		try {
+			prfr_dn_out->result = rfr_get_fqdnfromlegacydn(prfr_dn_in->flags,
+			                      prfr_dn_in->cb, prfr_dn_in->mbserverdn,
+			                      prfr_dn_out->serverfqdn);
+		} catch (const std::bad_alloc &) {
+			return DISPATCH_FAIL;
+		}
 		*ppout = prfr_dn_out;
 		return DISPATCH_SUCCESS;
 	}
@@ -272,30 +279,30 @@ static pack_result exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	case RfrGetNewDSA: {
 		auto prfr = static_cast<RFRGETNEWDSA_OUT *>(pout);
 		TRY(pndr->p_unique_ptr(nullptr));
-		if ('\0' == *prfr->pserver) {
+		if (prfr->pserver.empty()) {
 			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
 			TRY(pndr->p_unique_ptr(reinterpret_cast<void *>(0x2)));
-			length = strlen(prfr->pserver) + 1;
-			TRY(pndr->p_unique_ptr(prfr->pserver));
+			length = prfr->pserver.size() + 1;
+			TRY(pndr->p_unique_ptr(prfr->pserver.c_str()));
 			TRY(pndr->p_ulong(length));
 			TRY(pndr->p_ulong(0));
 			TRY(pndr->p_ulong(length));
-			TRY(pndr->p_str(prfr->pserver, length));
+			TRY(pndr->p_str(prfr->pserver.c_str(), length));
 		}
 		return pndr->p_uint32(prfr->result);
 	}
 	case RfrGetFQDNFromServerDN: {
 		auto prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(pout);
-		if ('\0' == *prfr_dn->serverfqdn) {
+		if (prfr_dn->serverfqdn.empty()) {
 			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
-			length = strlen(prfr_dn->serverfqdn) + 1;
-			TRY(pndr->p_unique_ptr(prfr_dn->serverfqdn));
+			length = prfr_dn->serverfqdn.size() + 1;
+			TRY(pndr->p_unique_ptr(prfr_dn->serverfqdn.c_str()));
 			TRY(pndr->p_ulong(length));
 			TRY(pndr->p_ulong(0));
 			TRY(pndr->p_ulong(length));
-			TRY(pndr->p_str(prfr_dn->serverfqdn, length));
+			TRY(pndr->p_str(prfr_dn->serverfqdn.c_str(), length));
 		}
 		return pndr->p_uint32(prfr_dn->result);
 	}
