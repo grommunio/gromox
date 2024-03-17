@@ -122,8 +122,8 @@ struct MhNspContext : public MhContext
 		epush = &ext_push;
 	}
 
-	uint32_t getaddressbookurl(char* = nullptr);
-	uint32_t getmailboxurl();
+	ec_error_t getaddressbookurl(char * = nullptr);
+	ec_error_t getmailboxurl();
 
 	NspRequest request{};
 	NspResponse response{};
@@ -383,7 +383,7 @@ static BOOL nsp_preproc(int context_id)
 	return TRUE;
 }
 
-uint32_t MhNspContext::getaddressbookurl(char* dest)
+ec_error_t MhNspContext::getaddressbookurl(char* dest)
 {
 	unsigned int user_id = 0;
 	char username1[UADDR_SIZE], hex_string[32];
@@ -408,7 +408,7 @@ uint32_t MhNspContext::getaddressbookurl(char* dest)
 	return ecSuccess;
 }
 
-uint32_t MhNspContext::getmailboxurl() try
+ec_error_t MhNspContext::getmailboxurl() try
 {
 	const auto& req = std::get<getmailboxurl_request>(request);
 	auto& resp = std::get<getmailboxurl_response>(response);
