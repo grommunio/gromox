@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
+// This file is part of Gromox.
 #define DECLARE_PROC_API_STATIC
 #include <cstdint>
 #include <cstdio>
@@ -29,7 +31,6 @@ struct RFRGETNEWDSA_IN {
 };
 
 struct RFRGETNEWDSA_OUT {
-	char punused[256];
 	char pserver[256];
 	uint32_t result;
 };
@@ -100,13 +101,12 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 PROC_ENTRY(proc_exchange_rfr);
 
 static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
-    char *punused, char *pserver, size_t svlen)
+    char *pserver, size_t svlen)
 {
 	char *ptoken;
 	char username[UADDR_SIZE];
 	char hex_string[32];
 	
-	*punused = '\0';
 	auto rpc_info = get_rpc_info();
 	unsigned int user_id = 0;
 	if (!get_user_ids(rpc_info.username, &user_id, nullptr, nullptr))
@@ -132,17 +132,16 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags, uint32_t cb,
     const char *mbserverdn, char *serverfqdn, size_t svlen)
 {
 	char *ptoken;
-	char tmp_unused[16];
 	char tmp_buff[1024];
 	
 	gx_strlcpy(tmp_buff, mbserverdn, std::size(tmp_buff));
 	ptoken = strrchr(tmp_buff, '/');
 	if (ptoken == nullptr || strncasecmp(ptoken, "/cn=", 4) != 0)
-		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
+		return rfr_get_newdsa(flags, nullptr, serverfqdn, svlen);
 	*ptoken = '\0';
 	ptoken = strrchr(tmp_buff, '/');
 	if (ptoken == nullptr || strncasecmp(ptoken, "/cn=", 4) != 0)
-		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn, svlen);
+		return rfr_get_newdsa(flags, nullptr, serverfqdn, svlen);
 	gx_strlcpy(serverfqdn, ptoken + 4, svlen);
 	return ecSuccess;
 }
@@ -243,9 +242,7 @@ static int exchange_rfr_dispatch(unsigned int opnum, const GUID *pobject,
 		if (prfr_out == nullptr)
 			return DISPATCH_FAIL;
 		prfr_out->result = rfr_get_newdsa(prfr_in->flags, prfr_in->puserdn,
-		                   prfr_in->punused, prfr_in->pserver,
-		                   std::size(prfr_in->pserver));
-		strcpy(prfr_out->punused, prfr_in->punused);
+		                   prfr_in->pserver, std::size(prfr_in->pserver));
 		strcpy(prfr_out->pserver, prfr_in->pserver);
 		*ppout = prfr_out;
 		return DISPATCH_SUCCESS;
@@ -274,18 +271,7 @@ static pack_result exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	switch (opnum) {
 	case RfrGetNewDSA: {
 		auto prfr = static_cast<RFRGETNEWDSA_OUT *>(pout);
-		if ('\0' == *prfr->punused) {
-			TRY(pndr->p_unique_ptr(nullptr));
-		} else {
-			TRY(pndr->p_unique_ptr(reinterpret_cast<void *>(0x1)));
-			length = strlen(prfr->punused) + 1;
-			TRY(pndr->p_unique_ptr(prfr->punused));
-			TRY(pndr->p_ulong(length));
-			TRY(pndr->p_ulong(0));
-			TRY(pndr->p_ulong(length));
-			TRY(pndr->p_str(prfr->punused, length));
-		}
-		
+		TRY(pndr->p_unique_ptr(nullptr));
 		if ('\0' == *prfr->pserver) {
 			TRY(pndr->p_unique_ptr(nullptr));
 		} else {
