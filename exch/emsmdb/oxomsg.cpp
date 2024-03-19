@@ -168,7 +168,7 @@ static bool oxomsg_extract_delegate(message_object *pmessage,
 			return false;
 	}
 	auto str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (str != nullptr) {
+	if (str != nullptr && *str != '\0') {
 		username = str;
 		return TRUE;
 	}
