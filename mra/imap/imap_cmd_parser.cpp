@@ -556,7 +556,6 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 	int len;
 	BOOL b_not;
 	int buff_len;
-	int part_type;
 	size_t temp_len;
 	MJSON_MIME *pmime;
 	
@@ -570,21 +569,22 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 		if (pmime == nullptr && strcmp(temp_id, "1") == 0)
 			pmime = pjson->get_mime("");
 		if (NULL != pmime) {
+			size_t part_length = 0;
 			if (0 == strcmp(temp_id, "")) {
-				part_type = MJSON_MIME_ENTIRE;
+				part_length = pmime->get_length(MJSON_MIME_ENTIRE);
 				temp_len = pmime->get_offset(MJSON_MIME_HEAD);
 			} else {
-				part_type = MJSON_MIME_CONTENT;
+				part_length = pmime->get_length(MJSON_MIME_CONTENT);
 				temp_len = pmime->get_offset(MJSON_MIME_CONTENT);
 			}
 			if (length == -1)
-				length = pmime->get_length(part_type);
-			if (offset >= pmime->get_length(part_type)) {
+				length = part_length;
+			if (offset >= part_length) {
 				buff_len += gx_snprintf(buff + buff_len,
 					max_len - buff_len, "BODY%s NIL", pbody);
 			} else {
-				if (offset + length > pmime->get_length(part_type))
-					length = pmime->get_length(part_type) - offset;
+				if (offset + length > part_length)
+					length = part_length - offset;
 				if (storage_path == nullptr)
 					buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
 					            "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n", pbody,
@@ -608,14 +608,15 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			buff_len += gx_snprintf(buff + buff_len,
 				max_len - buff_len, "BODY%s NIL", pbody);
 		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
+			size_t head_length = pmime->get_length(MJSON_MIME_HEAD);
 			if (length == -1)
-				length = pmime->get_length(MJSON_MIME_HEAD);
-			if (offset >= pmime->get_length(MJSON_MIME_HEAD)) {
+				length = head_length;
+			if (offset >= head_length) {
 				buff_len += gx_snprintf(buff + buff_len,
 					    max_len - buff_len, "BODY%s NIL", pbody);
 			} else {
-				if (offset + length > pmime->get_length(MJSON_MIME_HEAD))
-					length = pmime->get_length(MJSON_MIME_HEAD) - offset;
+				if (offset + length > head_length)
+					length = head_length - offset;
 				if (storage_path == nullptr)
 					buff_len += gx_snprintf(
 						    buff + buff_len, max_len - buff_len,
@@ -641,14 +642,15 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			buff_len += gx_snprintf(buff + buff_len,
 			            max_len - buff_len, "BODY%s NIL", pbody);
 		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
+			size_t ct_length = pmime->get_length(MJSON_MIME_CONTENT);
 			if (length == -1)
-				length = pmime->get_length(MJSON_MIME_CONTENT);
-			if (offset >= pmime->get_length(MJSON_MIME_CONTENT)) {
+				length = ct_length;
+			if (offset >= ct_length) {
 				buff_len += gx_snprintf(buff + buff_len,
 					    max_len - buff_len, "BODY%s NIL", pbody);
 			} else {
-				if (offset + length > pmime->get_length(MJSON_MIME_CONTENT))
-					length = pmime->get_length(MJSON_MIME_CONTENT) - offset;
+				if (offset + length > ct_length)
+					length = ct_length - offset;
 				if (storage_path == nullptr)
 					buff_len += gx_snprintf(
 						    buff + buff_len, max_len - buff_len,
@@ -836,14 +838,15 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			            "RFC822.SIZE %zd", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
 			auto pmime = mjson.get_mime("");
+			size_t ct_length = pmime->get_length(MJSON_MIME_CONTENT);
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len,
 				            std::size(buff) - buff_len,
 				            "RFC822.TEXT {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
-				            pmime->get_length(MJSON_MIME_CONTENT),
+				            ct_length,
 				            mjson.get_mail_filename(),
 				            pmime->get_offset(MJSON_MIME_CONTENT),
-				            pmime->get_length(MJSON_MIME_CONTENT));
+				            ct_length);
 			else
 				buff_len += gx_snprintf(buff + buff_len,
 				            std::size(buff) - buff_len, "RFC822.TEXT NIL");
