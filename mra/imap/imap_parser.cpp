@@ -979,6 +979,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				try {
 					pcontext->file_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
 					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
+					if (pcontext->message_fd < 0)
+						mlog(LV_ERR, "E-1741: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
 				}
@@ -1025,6 +1027,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				try {
 					pcontext->file_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
 					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
+					if (pcontext->message_fd < 0)
+						mlog(LV_ERR, "E-1742: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}
