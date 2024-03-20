@@ -548,184 +548,197 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	return -1;
 }
 
+static int pstruct_null(imap_context *pcontext, MJSON *pjson,
+    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+    const char *storage_path)
+{
+	int buff_len = 0;
+	auto pmime = pjson->get_mime(temp_id);
+	/* Non-[MIME-IMB] messages, and non-multipart
+	   [MIME-IMB] messages with no encapsulated
+	   message, only have a part 1
+	*/
+	if (pmime == nullptr && strcmp(temp_id, "1") == 0)
+		pmime = pjson->get_mime("");
+	if (pmime == nullptr) {
+		buff_len += gx_snprintf(buff + buff_len,
+			max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	size_t part_length = 0, temp_len = 0;
+	if (0 == strcmp(temp_id, "")) {
+		part_length = pmime->get_entire_length();
+		temp_len = pmime->get_head_offset();
+	} else {
+		part_length = pmime->get_content_length();
+		temp_len = pmime->get_content_offset();
+	}
+	if (length == -1)
+		length = part_length;
+	if (offset >= part_length) {
+		buff_len += gx_snprintf(buff + buff_len,
+			max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	if (offset + length > part_length)
+		length = part_length - offset;
+	if (storage_path == nullptr)
+		buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
+			    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n", pbody,
+			    length, pjson->get_mail_filename(),
+				temp_len + offset, length);
+	else
+		buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
+			    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
+					pbody, length, storage_path,
+			    pjson->get_mail_filename(),
+					temp_len + offset, length);
+	return buff_len;
+}
+
+static int pstruct_mime(imap_context *pcontext, MJSON *pjson,
+    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+    const char *storage_path)
+{
+	MJSON_MIME *pmime = nullptr;
+	int buff_len = 0;
+	if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
+	    (strcasecmp(&data_item[1], "HEADER") == 0 && *temp_id != '\0')) {
+		buff_len += gx_snprintf(buff + buff_len,
+			max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	pmime = pjson->get_mime(temp_id);
+	if (pmime == nullptr) {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	size_t head_length = pmime->get_head_length();
+	if (length == -1)
+		length = head_length;
+	if (offset >= head_length) {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	if (offset + length > head_length)
+		length = head_length - offset;
+	if (storage_path == nullptr)
+		buff_len += gx_snprintf(
+			    buff + buff_len, max_len - buff_len,
+			    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
+			    pbody, length, pjson->get_mail_filename(),
+			    pmime->get_head_offset() + offset, length);
+	else
+		buff_len += gx_snprintf(
+			    buff + buff_len, max_len - buff_len,
+			    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
+			    pbody, length, storage_path,
+			    pjson->get_mail_filename(),
+			    pmime->get_head_offset() + offset, length);
+	return buff_len;
+}
+
+static int pstruct_text(imap_context *pcontext, MJSON *pjson,
+    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+    const char *storage_path)
+{
+	MJSON_MIME *pmime = nullptr;
+	int buff_len = 0;
+	if (*temp_id != '\0') {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	pmime = pjson->get_mime(temp_id);
+	if (pmime == nullptr) {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	size_t ct_length = pmime->get_content_length();
+	if (length == -1)
+		length = ct_length;
+	if (offset >= ct_length) {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	if (offset + length > ct_length)
+		length = ct_length - offset;
+	if (storage_path == nullptr)
+		buff_len += gx_snprintf(
+			    buff + buff_len, max_len - buff_len,
+			    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
+			    pbody, length, pjson->get_mail_filename(),
+			    pmime->get_content_offset() + offset, length);
+	else
+		buff_len += gx_snprintf(
+			    buff + buff_len, max_len - buff_len,
+			    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
+			    pbody, length, storage_path,
+			    pjson->get_mail_filename(),
+			    pmime->get_content_offset() + offset, length);
+	return buff_len;
+}
+
+static int pstruct_else(imap_context *pcontext, MJSON *pjson,
+    const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+    const char *storage_path)
+{
+	auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
+	data_item += b_not ? 19 : 15;
+	auto pmime = pjson->get_mime(temp_id);
+	int len, buff_len = 0;
+	if (pmime == nullptr) {
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+		return buff_len;
+	}
+	std::string eml_path = storage_path == nullptr ?
+		std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
+		std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
+	len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
+	      pmime->get_head_offset(),
+	      pmime->get_head_length(),
+	      b_not, data_item, offset, length, buff + buff_len,
+	      max_len - buff_len);
+	if (len == -1)
+		buff_len += gx_snprintf(buff + buff_len,
+			    max_len - buff_len, "BODY%s NIL", pbody);
+	else
+		buff_len += len;
+	return buff_len;
+}
+
 static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path) try
 {
 	if (data_item == nullptr)
-		return [](imap_context *pcontext, MJSON *pjson,
-		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
-		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
-		const char *storage_path) {
-		int buff_len = 0;
-		auto pmime = pjson->get_mime(temp_id);
-		/* Non-[MIME-IMB] messages, and non-multipart
-		   [MIME-IMB] messages with no encapsulated
-		   message, only have a part 1
-		*/
-		if (pmime == nullptr && strcmp(temp_id, "1") == 0)
-			pmime = pjson->get_mime("");
-		if (NULL != pmime) {
-			size_t part_length = 0, temp_len = 0;
-			if (0 == strcmp(temp_id, "")) {
-				part_length = pmime->get_entire_length();
-				temp_len = pmime->get_head_offset();
-			} else {
-				part_length = pmime->get_content_length();
-				temp_len = pmime->get_content_offset();
-			}
-			if (length == -1)
-				length = part_length;
-			if (offset >= part_length) {
-				buff_len += gx_snprintf(buff + buff_len,
-					max_len - buff_len, "BODY%s NIL", pbody);
-				return buff_len;
-			} else {
-				if (offset + length > part_length)
-					length = part_length - offset;
-				if (storage_path == nullptr)
-					buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
-					            "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n", pbody,
-					            length, pjson->get_mail_filename(),
-							temp_len + offset, length);
-				else
-					buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
-					            "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
-								pbody, length, storage_path,
-					            pjson->get_mail_filename(),
-								temp_len + offset, length);
-				return buff_len;
-			}
-		} else {
-			buff_len += gx_snprintf(buff + buff_len,
-				max_len - buff_len, "BODY%s NIL", pbody);
-			return buff_len;
-		}
-	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+		return pstruct_null(pcontext, pjson, cmd_tag, buff, max_len,
+		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcasecmp(&data_item[1], "MIME") == 0 ||
 	    strcasecmp(&data_item[1], "HEADER") == 0)
-		return [](imap_context *pcontext, MJSON *pjson,
-		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
-		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
-		const char *storage_path) {
-		MJSON_MIME *pmime = nullptr;
-		int buff_len = 0;
-		if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
-		    (strcasecmp(&data_item[1], "HEADER") == 0 && *temp_id != '\0')) {
-			buff_len += gx_snprintf(buff + buff_len,
-				max_len - buff_len, "BODY%s NIL", pbody);
-			return buff_len;
-		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
-			size_t head_length = pmime->get_head_length();
-			if (length == -1)
-				length = head_length;
-			if (offset >= head_length) {
-				buff_len += gx_snprintf(buff + buff_len,
-					    max_len - buff_len, "BODY%s NIL", pbody);
-				return buff_len;
-			} else {
-				if (offset + length > head_length)
-					length = head_length - offset;
-				if (storage_path == nullptr)
-					buff_len += gx_snprintf(
-						    buff + buff_len, max_len - buff_len,
-						    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
-						    pbody, length, pjson->get_mail_filename(),
-						    pmime->get_head_offset() + offset, length);
-				else
-					buff_len += gx_snprintf(
-						    buff + buff_len, max_len - buff_len,
-						    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
-						    pbody, length, storage_path,
-						    pjson->get_mail_filename(),
-						    pmime->get_head_offset() + offset, length);
-				return buff_len;
-			}
-		} else {
-			buff_len += gx_snprintf(buff + buff_len,
-				    max_len - buff_len, "BODY%s NIL", pbody);
-			return buff_len;
-		}
-	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+		return pstruct_mime(pcontext, pjson, cmd_tag, buff, max_len,
+		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcasecmp(&data_item[1], "TEXT") == 0)
-		return [](imap_context *pcontext, MJSON *pjson,
-		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
-		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
-		const char *storage_path) {
-		MJSON_MIME *pmime = nullptr;
-		int buff_len = 0;
-		if (*temp_id != '\0') {
-			buff_len += gx_snprintf(buff + buff_len,
-			            max_len - buff_len, "BODY%s NIL", pbody);
-			return buff_len;
-		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
-			size_t ct_length = pmime->get_content_length();
-			if (length == -1)
-				length = ct_length;
-			if (offset >= ct_length) {
-				buff_len += gx_snprintf(buff + buff_len,
-					    max_len - buff_len, "BODY%s NIL", pbody);
-				return buff_len;
-			} else {
-				if (offset + length > ct_length)
-					length = ct_length - offset;
-				if (storage_path == nullptr)
-					buff_len += gx_snprintf(
-						    buff + buff_len, max_len - buff_len,
-						    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
-						    pbody, length, pjson->get_mail_filename(),
-						    pmime->get_content_offset() + offset, length);
-				else
-					buff_len += gx_snprintf(
-						    buff + buff_len, max_len - buff_len,
-						    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
-						    pbody, length, storage_path,
-						    pjson->get_mail_filename(),
-						    pmime->get_content_offset() + offset, length);
-				return buff_len;
-			}
-		} else {
-			buff_len += gx_snprintf(buff + buff_len,
-			            max_len - buff_len, "BODY%s NIL", pbody);
-			return buff_len;
-		}
-	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+		return pstruct_text(pcontext, pjson, cmd_tag, buff, max_len,
+		       pbody, temp_id, data_item, offset, length, storage_path);
 	if (strcmp(temp_id, "") != 0) {
 		int buff_len = 0;
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
 		return buff_len;
 	}
-	return [](imap_context *pcontext, MJSON *pjson,
-		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
-		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
-		const char *storage_path) {
-		auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
-		data_item += b_not ? 19 : 15;
-		auto pmime = pjson->get_mime(temp_id);
-		int len, buff_len = 0;
-		if (pmime == nullptr) {
-			buff_len += gx_snprintf(buff + buff_len,
-				    max_len - buff_len, "BODY%s NIL", pbody);
-			return buff_len;
-		} else {
-			std::string eml_path = storage_path == nullptr ?
-				std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
-				std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
-			len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
-			      pmime->get_head_offset(),
-			      pmime->get_head_length(),
-			      b_not, data_item, offset, length, buff + buff_len,
-			      max_len - buff_len);
-			if (len == -1)
-				buff_len += gx_snprintf(buff + buff_len,
-					    max_len - buff_len, "BODY%s NIL", pbody);
-			else
-				buff_len += len;
-			return buff_len;
-		}
-	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+	return pstruct_else(pcontext, pjson, cmd_tag, buff, max_len, pbody,
+	       temp_id, data_item, offset, length, storage_path);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1465: ENOMEM");
 	return -1;
