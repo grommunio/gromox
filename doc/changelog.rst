@@ -1,3 +1,23 @@
+Development 2.26.70
+===================
+
+Fixes:
+
+* email_lib: avoid splitting UTF-8 code units across lines
+
+Enhancements:
+
+* php_mapi: expose default+anonymous ACEs to PHP programs
+* zcore: expose new PR_EC_ENABLED_FEATURES_L property
+* ews: implement updating folder permissions
+* eml2mt: emit a hint if an Outlook .msg file is erroneously passed to eml2mt
+
+Changes:
+
+* exch: start ICS Change Numbers at 0 rather than 2^47
+  (new mailboxes only)
+
+
 Gromox 2.26 (2024-03-11)
 ========================
 
