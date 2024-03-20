@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 
@@ -814,8 +816,7 @@ static tproc_status ps_stat_wrdat(imap_context *pcontext)
 		len = 64 * 1024;
 	auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 	if (read_len != len) {
-		imap_parser_log_info(pcontext, LV_WARN, "W-5200: %s: wanted %d bytes, got %zd",
-			pcontext->file_path.c_str(), len, read_len);
+		imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 		/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1812, 1, &string_length);
@@ -938,7 +939,7 @@ static tproc_status ps_end_processing(imap_context *pcontext,
 static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 {
 	int len;
-	ssize_t read_len;
+	int read_len;
 	int line_length;
 	char *last_line;
 	char *ptr, *ptr1;
@@ -982,10 +983,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				*ptr = '\0';
 				*ptr1 = '\0';
 				pcontext->close_fd();
-				pcontext->file_path.clear();
 				try {
 					pcontext->file_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
-					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
+					pcontext->open_mode = O_RDONLY;
+					pcontext->message_fd = open(pcontext->file_path.c_str(), pcontext->open_mode);
 					if (pcontext->message_fd < 0)
 						mlog(LV_ERR, "E-1741: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
@@ -1006,10 +1007,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "W-5201: %s: wanted %d bytes, got %zd",
-							pcontext->file_path.c_str(), len, read_len);
+						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 						pcontext->close_fd();
-						pcontext->file_path.clear();
 						return IMAP_RETRIEVE_ERROR;
 					}
 					pcontext->current_len += len;
@@ -1031,10 +1030,10 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				*ptr = '\0';
 				*ptr1 = '\0';
 				pcontext->close_fd();
-				pcontext->file_path.clear();
 				try {
 					pcontext->file_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
-					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
+					pcontext->open_mode = O_RDONLY;
+					pcontext->message_fd = open(pcontext->file_path.c_str(), pcontext->open_mode);
 					if (pcontext->message_fd < 0)
 						mlog(LV_ERR, "E-1742: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
@@ -1055,10 +1054,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 					read_len = read(pcontext->message_fd, pcontext->write_buff +
 					           pcontext->write_length, len);
 					if (read_len != len) {
-						imap_parser_log_info(pcontext, LV_WARN, "W-5202: %s: wanted %d bytes, got %zd",
-							pcontext->file_path.c_str(), len, read_len);
+						imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 						pcontext->close_fd();
-						pcontext->file_path.clear();
 						return IMAP_RETRIEVE_ERROR;
 					}
 					pcontext->current_len += len;
@@ -1438,7 +1435,7 @@ static void imap_parser_context_clear(imap_context *pcontext)
 	pcontext->sched_stat = isched_stat::none;
 	pcontext->close_fd();
 	pcontext->mid[0] = '\0';
-	pcontext->file_path[0] = '\0';
+	pcontext->file_path.clear();
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -1475,7 +1472,7 @@ void imap_context::close_fd()
 
 void imap_context::unlink_file()
 {
-	if (file_path.empty())
+	if (file_path.empty() || !(open_mode & O_CREAT))
 		return;
 	if (remove(file_path.c_str()) < 0 && errno != ENOENT)
 		mlog(LV_WARN, "W-1342: remove %s: %s",

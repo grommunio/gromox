@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 /* 
  * collection of functions for handling the imap command
@@ -2368,9 +2368,10 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv,
 	pcontext->mid = fmt::format("{}.{}.{}",
 	                time(nullptr), imap_parser_get_sequence_ID(),
 	                znul(g_config_file->get_value("host_id")));
+	pcontext->open_mode = O_CREAT | O_RDWR | O_TRUNC;
 	pcontext->file_path = fmt::format("{}/tmp/{}",
 	                      pcontext->maildir, pcontext->mid);
-	wrapfd fd = open(pcontext->file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, FMODE_PRIVATE);
+	wrapfd fd = open(pcontext->file_path.c_str(), pcontext->open_mode, FMODE_PRIVATE);
 	if (fd.get() < 0)
 		return 1909 | DISPATCH_BREAK;
 	std::string buf;
@@ -2476,11 +2477,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	if (fd.get() < 0 || !imail.to_file(fd.get())) {
 		imail.clear();
 		pbuff.reset();
-		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-			mlog(LV_WARN, "W-1345: remove %s: %s",
-				pcontext->file_path.c_str(), strerror(errno));
-		pcontext->mid.clear();
-		pcontext->file_path.clear();
+		pcontext->unlink_file();
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1346: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
@@ -2492,10 +2489,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 	}
 	imail.clear();
 	pbuff.reset();
-	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-		mlog(LV_WARN, "W-1336: remove %s: %s",
-			pcontext->file_path.c_str(), strerror(errno));
-	pcontext->file_path.clear();
+	pcontext->unlink_file();
 	auto ssr = system_services_insert_mail(pcontext->maildir, temp_name,
 	           pcontext->mid.c_str(), flag_buff, tmp_time, &errnum);
 	auto ret = m2icode(ssr, errnum);

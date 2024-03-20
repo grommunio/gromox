@@ -79,6 +79,7 @@ struct content_array final : public XARRAY {
 
 /**
  * @mid:        midstr
+ * @open_mode:  controls unlinking of @file_path upon destruction
  * @file_path:  absolute path in filesystem, built from midstr
  * @message_fd:	feckin descriptor
  * @b_modify:	flag indicating that other clients concurrently modified the mailbox
@@ -101,7 +102,7 @@ struct imap_context final : public schedule_context {
 
 	GENERIC_CONNECTION connection;
 	std::string mid, file_path;
-	int message_fd = -1;
+	int message_fd = -1, open_mode = 0;
 	iproto_stat proto_stat = iproto_stat::none;
 	isched_stat sched_stat = isched_stat::none;
 	char *write_buff = nullptr;
