@@ -965,6 +965,13 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 			break;
 		}
 		last_line = pcontext->write_buff + pcontext->write_length;
+		auto heredoc = strstr(last_line, "<<{");
+		if (heredoc != nullptr) {
+			auto ind = heredoc - last_line;
+			line_length -= ind;
+			last_line += ind;
+			pcontext->write_length += ind;
+		}
 		if (line_length > 8 && 0 == strncmp(last_line, "<<{file}", 8)) {
 			last_line[line_length] = '\0';
 			if (NULL == (ptr = strchr(last_line + 8, '|')) ||
@@ -992,6 +999,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 						mlog(LV_ERR, "E-1426: lseek: %s", strerror(errno));
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 					pcontext->current_len = 0;
+					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
 					if (len > pcontext->literal_len)
 						len = pcontext->literal_len;
@@ -1040,6 +1048,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 						mlog(LV_ERR, "E-1427: lseek: %s", strerror(errno));
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 					pcontext->current_len = 0;
+					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
 					if (len > pcontext->literal_len)
 						len = pcontext->literal_len;
