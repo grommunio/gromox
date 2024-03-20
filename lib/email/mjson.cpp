@@ -208,34 +208,6 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
 	});
 }
 
-size_t MJSON_MIME::get_length(unsigned int param) const
-{
-	auto pmime = this;
-	switch (param) {
-	case MJSON_MIME_HEAD:
-		return (pmime->begin - pmime->head);
-	case MJSON_MIME_CONTENT:
-		return pmime->length;
-	case MJSON_MIME_ENTIRE:
-		return (pmime->begin + pmime->length - pmime->head);
-	default:
-		return 0;
-	}
-}
-
-size_t MJSON_MIME::get_offset(unsigned int param) const
-{
-	auto pmime = this;
-	switch (param) {
-	case MJSON_MIME_HEAD:
-		return pmime->head;
-	case MJSON_MIME_CONTENT:
-		return pmime->begin;
-	default:
-		return 0;
-	}
-}
-
 /*
  *	get file description of mail file and seek pointer to location
  *	@param
@@ -972,13 +944,13 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param) try
 		return;
 	}
 	
-	auto length = pmime->get_length(MJSON_MIME_CONTENT);
+	auto length = pmime->get_content_length();
 	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		pbuild->build_result = FALSE;
 		return;
 	}
-	if (lseek(fd.get(), pmime->get_offset(MJSON_MIME_CONTENT), SEEK_SET) < 0) {
+	if (lseek(fd.get(), pmime->get_content_offset(), SEEK_SET) < 0) {
 		mlog(LV_ERR, "E-1430: lseek: %s", strerror(errno));
 		pbuild->build_result = FALSE;
 		return;

@@ -571,11 +571,11 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 		if (NULL != pmime) {
 			size_t part_length = 0;
 			if (0 == strcmp(temp_id, "")) {
-				part_length = pmime->get_length(MJSON_MIME_ENTIRE);
-				temp_len = pmime->get_offset(MJSON_MIME_HEAD);
+				part_length = pmime->get_entire_length();
+				temp_len = pmime->get_head_offset();
 			} else {
-				part_length = pmime->get_length(MJSON_MIME_CONTENT);
-				temp_len = pmime->get_offset(MJSON_MIME_CONTENT);
+				part_length = pmime->get_content_length();
+				temp_len = pmime->get_content_offset();
 			}
 			if (length == -1)
 				length = part_length;
@@ -608,7 +608,7 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			buff_len += gx_snprintf(buff + buff_len,
 				max_len - buff_len, "BODY%s NIL", pbody);
 		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
-			size_t head_length = pmime->get_length(MJSON_MIME_HEAD);
+			size_t head_length = pmime->get_head_length();
 			if (length == -1)
 				length = head_length;
 			if (offset >= head_length) {
@@ -622,16 +622,14 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
 						    pbody, length, pjson->get_mail_filename(),
-						    pmime->get_offset(MJSON_MIME_HEAD)
-						    + offset, length);
+						    pmime->get_head_offset() + offset, length);
 				else
 					buff_len += gx_snprintf(
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
 						    pbody, length, storage_path,
 						    pjson->get_mail_filename(),
-						    pmime->get_offset(MJSON_MIME_HEAD)
-						    + offset, length);
+						    pmime->get_head_offset() + offset, length);
 			}
 		} else {
 			buff_len += gx_snprintf(buff + buff_len,
@@ -642,7 +640,7 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			buff_len += gx_snprintf(buff + buff_len,
 			            max_len - buff_len, "BODY%s NIL", pbody);
 		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
-			size_t ct_length = pmime->get_length(MJSON_MIME_CONTENT);
+			size_t ct_length = pmime->get_content_length();
 			if (length == -1)
 				length = ct_length;
 			if (offset >= ct_length) {
@@ -656,16 +654,14 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
 						    pbody, length, pjson->get_mail_filename(),
-						    pmime->get_offset(MJSON_MIME_CONTENT)
-						    + offset, length);
+						    pmime->get_content_offset() + offset, length);
 				else
 					buff_len += gx_snprintf(
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%zd}\r\n<<{rfc822}%s/%s|%zd|%zd\r\n",
 						    pbody, length, storage_path,
 						    pjson->get_mail_filename(),
-						    pmime->get_offset(MJSON_MIME_CONTENT)
-						    + offset, length);
+						    pmime->get_content_offset() + offset, length);
 			}
 		} else {
 			buff_len += gx_snprintf(buff + buff_len,
@@ -688,8 +684,8 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 				std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
 				std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
 			len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
-			      pmime->get_offset(MJSON_MIME_HEAD),
-			      pmime->get_length(MJSON_MIME_HEAD),
+			      pmime->get_head_offset(),
+			      pmime->get_head_length(),
 			      b_not, data_item, offset, length, buff + buff_len,
 			      max_len - buff_len);
 			if (len == -1)
@@ -826,9 +822,9 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(&buff[buff_len], std::size(buff) - buff_len,
 				            "RFC822.HEADER {%zd}\r\n<<{file}%s|0|%zd\r\n",
-				            pmime->get_length(MJSON_MIME_HEAD),
+				            pmime->get_head_length(),
 				            mjson.get_mail_filename(),
-				            pmime->get_length(MJSON_MIME_HEAD));
+				            pmime->get_head_length());
 			else
 				buff_len += gx_snprintf(buff + buff_len,
 				            std::size(buff) - buff_len, "RFC822.HEADER NIL");
@@ -838,14 +834,14 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			            "RFC822.SIZE %zd", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
 			auto pmime = mjson.get_mime("");
-			size_t ct_length = pmime->get_length(MJSON_MIME_CONTENT);
+			size_t ct_length = pmime->get_content_length();
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len,
 				            std::size(buff) - buff_len,
 				            "RFC822.TEXT {%zd}\r\n<<{file}%s|%zd|%zd\r\n",
 				            ct_length,
 				            mjson.get_mail_filename(),
-				            pmime->get_offset(MJSON_MIME_CONTENT),
+				            pmime->get_content_offset(),
 				            ct_length);
 			else
 				buff_len += gx_snprintf(buff + buff_len,

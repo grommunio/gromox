@@ -368,7 +368,6 @@ static std::unique_ptr<char[]> mail_engine_ct_decode_mime(const char *charset,
 static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 {
 	auto penum = static_cast<KEYWORD_ENUM *>(param);
-	size_t length;
 	size_t temp_len;
 	const char *charset;
 	const char *filename;
@@ -389,7 +388,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param) try
 				penum->b_result = TRUE;
 		}
 	}
-	length = pmime->get_length(MJSON_MIME_CONTENT);
+	auto length = pmime->get_content_length();
 	auto pbuff = std::make_unique<char[]>(2 * length + 1);
 	auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
 	if (fd == -1)

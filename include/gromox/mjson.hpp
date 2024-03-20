@@ -23,8 +23,11 @@ struct GX_EXPORT MJSON_MIME {
 	inline bool ctype_is_rfc822() const { return strcasecmp(get_ctype(), "message/rfc822") == 0; }
 	inline bool encoding_is_b() const { return strcasecmp(get_encoding(), "base64") == 0; }
 	inline bool encoding_is_q() const { return strcasecmp(get_encoding(), "quoted-printable") == 0; }
-	size_t get_length(unsigned int param) const;
-	size_t get_offset(unsigned int param) const;
+	inline size_t get_head_length() const { return begin - head; }
+	inline size_t get_content_length() const { return length; }
+	inline size_t get_entire_length() const { return get_head_length() + get_content_length(); }
+	inline size_t get_head_offset() const { return head; }
+	inline size_t get_content_offset() const { return begin; }
 };
 
 struct GX_EXPORT MJSON {
