@@ -553,7 +553,11 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
     const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path) try
 {
-	if (data_item == nullptr) {
+	if (data_item == nullptr)
+		return [](imap_context *pcontext, MJSON *pjson,
+		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+		const char *storage_path) {
 		int buff_len = 0;
 		auto pmime = pjson->get_mime(temp_id);
 		/* Non-[MIME-IMB] messages, and non-multipart
@@ -598,8 +602,13 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 				max_len - buff_len, "BODY%s NIL", pbody);
 			return buff_len;
 		}
-	} else if (strcasecmp(&data_item[1], "MIME") == 0 ||
-	    strcasecmp(&data_item[1], "HEADER") == 0) {
+	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+	if (strcasecmp(&data_item[1], "MIME") == 0 ||
+	    strcasecmp(&data_item[1], "HEADER") == 0)
+		return [](imap_context *pcontext, MJSON *pjson,
+		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+		const char *storage_path) {
 		MJSON_MIME *pmime = nullptr;
 		int buff_len = 0;
 		if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
@@ -638,7 +647,12 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 				    max_len - buff_len, "BODY%s NIL", pbody);
 			return buff_len;
 		}
-	} else if (strcasecmp(&data_item[1], "TEXT") == 0) {
+	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+	if (strcasecmp(&data_item[1], "TEXT") == 0)
+		return [](imap_context *pcontext, MJSON *pjson,
+		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+		const char *storage_path) {
 		MJSON_MIME *pmime = nullptr;
 		int buff_len = 0;
 		if (*temp_id != '\0') {
@@ -676,12 +690,17 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			            max_len - buff_len, "BODY%s NIL", pbody);
 			return buff_len;
 		}
-	} else if (strcmp(temp_id, "") != 0) {
+	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
+	if (strcmp(temp_id, "") != 0) {
 		int buff_len = 0;
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
 		return buff_len;
-	} else {
+	}
+	return [](imap_context *pcontext, MJSON *pjson,
+		const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
+		const char *temp_id, const char *data_item, size_t offset, ssize_t length,
+		const char *storage_path) {
 		auto b_not = strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) != 0;
 		data_item += b_not ? 19 : 15;
 		auto pmime = pjson->get_mime(temp_id);
@@ -706,7 +725,7 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 				buff_len += len;
 			return buff_len;
 		}
-	}
+	}(pcontext, pjson, cmd_tag, buff, max_len, pbody, temp_id, data_item, offset, length, storage_path);
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1465: ENOMEM");
 	return -1;
