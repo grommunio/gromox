@@ -550,7 +550,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 
 static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
     const std::string &cmd_tag, char *buff, int max_len, const char *pbody,
-    const char *temp_id, const char *temp_tag, size_t offset, ssize_t length,
+    const char *temp_id, const char *data_item, size_t offset, ssize_t length,
     const char *storage_path) try
 {
 	int len;
@@ -561,7 +561,7 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 	MJSON_MIME *pmime;
 	
 	buff_len = 0;
-	if (NULL == temp_tag) {
+	if (data_item == nullptr) {
 		pmime = pjson->get_mime(temp_id);
 		/* Non-[MIME-IMB] messages, and non-multipart
 		   [MIME-IMB] messages with no encapsulated
@@ -601,12 +601,10 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			buff_len += gx_snprintf(buff + buff_len,
 				max_len - buff_len, "BODY%s NIL", pbody);
 		}
-	} else if (strcasecmp("MIME", temp_tag + 1) == 0 ||
-	    strcasecmp("HEADER", temp_tag + 1) == 0) {
-		if ((0 == strcasecmp("MIME", temp_tag + 1)
-		    && 0 == strcmp(temp_id, "")) ||
-		    (0 == strcasecmp("HEADER", temp_tag + 1)
-		    && 0 != strcmp(temp_id, ""))) {
+	} else if (strcasecmp(&data_item[1], "MIME") == 0 ||
+	    strcasecmp(&data_item[1], "HEADER") == 0) {
+		if ((strcasecmp(&data_item[1], "MIME") == 0 && *temp_id == '\0') ||
+		    (strcasecmp(&data_item[1], "HEADER") == 0 && *temp_id != '\0')) {
 			buff_len += gx_snprintf(buff + buff_len,
 				max_len - buff_len, "BODY%s NIL", pbody);
 		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
@@ -638,8 +636,8 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			buff_len += gx_snprintf(buff + buff_len,
 				    max_len - buff_len, "BODY%s NIL", pbody);
 		}
-	} else if (0 == strcasecmp("TEXT", temp_tag + 1)) {
-		if (0 != strcmp(temp_id, "")) {
+	} else if (strcasecmp(&data_item[1], "TEXT") == 0) {
+		if (*temp_id != '\0') {
 			buff_len += gx_snprintf(buff + buff_len,
 			            max_len - buff_len, "BODY%s NIL", pbody);
 		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
@@ -675,11 +673,11 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 		buff_len += gx_snprintf(buff + buff_len,
 			    max_len - buff_len, "BODY%s NIL", pbody);
 	} else {
-		if (0 == strncasecmp(temp_tag + 1, "HEADER.FIELDS ", 14)) {
-			temp_tag += 15;
+		if (strncasecmp(&data_item[1], "HEADER.FIELDS ", 14) == 0) {
+			data_item += 15;
 			b_not = FALSE;
 		} else {
-			temp_tag += 19;
+			data_item += 19;
 			b_not = TRUE;
 		}
 		pmime = pjson->get_mime(temp_id);
@@ -690,7 +688,7 @@ static int imap_cmd_parser_print_structure(imap_context *pcontext, MJSON *pjson,
 			len = imap_cmd_parser_match_field(cmd_tag.c_str(), eml_path.c_str(),
 			      pmime->get_offset(MJSON_MIME_HEAD),
 			      pmime->get_length(MJSON_MIME_HEAD),
-			      b_not, temp_tag, offset, length, buff + buff_len,
+			      b_not, data_item, offset, length, buff + buff_len,
 			      max_len - buff_len);
 			if (len == -1)
 				buff_len += gx_snprintf(buff + buff_len,
