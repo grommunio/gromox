@@ -146,29 +146,6 @@ void common_util_remove_propvals(
 	}
 }
 
-BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
-{
-	char *pdomain;
-	char tmp_name[UADDR_SIZE];
-	char hex_string[16];
-	char hex_string2[16];
-	
-	gx_strlcpy(tmp_name, username, std::size(tmp_name));
-	pdomain = strchr(tmp_name, '@');
-	if (pdomain == nullptr)
-		return FALSE;
-	*pdomain++ = '\0';
-	unsigned int user_id = 0, domain_id = 0;
-	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
-		return FALSE;
-	encode_hex_int(user_id, hex_string);
-	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-		g_exmdb_org_name, hex_string2, hex_string, tmp_name);
-	HX_strupper(pessdn);
-	return TRUE;
-}
-	
 void common_util_pass_service(const char *name, void *func)
 {
 #define E(v, ptr) do { if (strcmp(name, (v)) == 0) { (ptr) = reinterpret_cast<decltype(ptr)>(func); return; } } while (false)
@@ -3995,16 +3972,18 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username)
 {
-	char x500dn[1024];
+	std::string essdn;
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
+	if (cvt_username_to_essdn(username, g_exmdb_org_name,
+	    common_util_get_user_ids, common_util_get_domain_ids,
+	    essdn) != ecSuccess)
 		return NULL;
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = x500dn;
+	tmp_entryid.px500dn = deconst(essdn.c_str());
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;

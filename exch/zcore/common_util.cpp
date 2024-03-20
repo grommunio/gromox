@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -284,29 +284,6 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 	*pdomain_id = decode_hex_int(pessdn + tmp_len);
 	*puser_id = decode_hex_int(pessdn + tmp_len + 8);
 	return TRUE;	
-}
-
-BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dnmax)
-{
-	char *pdomain;
-	char tmp_name[UADDR_SIZE];
-	char hex_string[16];
-	char hex_string2[16];
-	
-	gx_strlcpy(tmp_name, username, std::size(tmp_name));
-	pdomain = strchr(tmp_name, '@');
-	if (pdomain == nullptr)
-		return FALSE;
-	*pdomain++ = '\0';
-	unsigned int user_id = 0, domain_id = 0;
-	if (!system_services_get_user_ids(username, &user_id, &domain_id, nullptr))
-		return FALSE;
-	encode_hex_int(user_id, hex_string);
-	encode_hex_int(domain_id, hex_string2);
-	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-			g_org_name, hex_string2, hex_string, tmp_name);
-	HX_strupper(pessdn);
-	return TRUE;
 }
 
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnmax)
@@ -659,16 +636,19 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username)
 {
-	char x500dn[1024];
+	std::string essdn;
 	EXT_PUSH ext_push;
 	EMSAB_ENTRYID tmp_entryid;
 	
-	if (!common_util_username_to_essdn(username, x500dn, std::size(x500dn)))
+	if (cvt_username_to_essdn(username, g_org_name,
+	    system_services_get_user_ids, system_services_get_domain_ids,
+	    essdn) != ecSuccess)
 		return NULL;
+	HX_strupper(essdn.data());
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = x500dn;
+	tmp_entryid.px500dn = deconst(essdn.c_str());
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
@@ -1468,25 +1448,28 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 BINARY *common_util_to_store_entryid(store_object *pstore)
 {
 	EXT_PUSH ext_push;
-	char tmp_buff[1024];
+	std::string essdn;
 	STORE_ENTRYID store_entryid = {};
 	
 	store_entryid.pserver_name = deconst(pstore->get_account());
 	if (pstore->b_private) {
 		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
-		if (!common_util_username_to_essdn(pstore->get_account(),
-		    tmp_buff, std::size(tmp_buff)))
+		if (cvt_username_to_essdn(pstore->get_account(), g_org_name,
+		    system_services_get_user_ids, system_services_get_domain_ids,
+		    essdn) != ecSuccess)
 			return NULL;	
 	} else {
 		store_entryid.wrapped_provider_uid = g_muidStorePublic;
 		store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_PUBLIC;
 		auto pinfo = zs_get_info();
-		if (!common_util_username_to_essdn(pinfo->get_username(),
-		    tmp_buff, std::size(tmp_buff)))
+		if (cvt_username_to_essdn(pinfo->get_username(), g_org_name,
+		    system_services_get_user_ids, system_services_get_domain_ids,
+		    essdn) != ecSuccess)
 			return NULL;	
 	}
-	store_entryid.pmailbox_dn = tmp_buff;
+	HX_strupper(essdn.data());
+	store_entryid.pmailbox_dn = deconst(essdn.c_str());
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;

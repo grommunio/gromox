@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -575,8 +575,10 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	*pdomain_id = strtoul(myrow[0], nullptr, 0);
-	*porg_id    = strtoul(myrow[1], nullptr, 0);
+	if (pdomain_id != nullptr)
+		*pdomain_id = strtoul(myrow[0], nullptr, 0);
+	if (porg_id != nullptr)
+		*porg_id = strtoul(myrow[1], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", "E-1720", e.what());

@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <libHX/string.h>
 #include <gromox/ab_tree.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
@@ -179,11 +182,14 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			return FALSE;
 		ppropvals->emplace_back(PR_ACCOUNT, s);
 	}
-	if (w_email && common_util_username_to_essdn(username,
-	    tmp_buff, std::size(tmp_buff))) {
-		auto s = common_util_dup(tmp_buff);
+	std::string essdn;
+	if (w_email && cvt_username_to_essdn(username, g_org_name,
+	    system_services_get_user_ids, system_services_get_domain_ids,
+	    essdn) == ecSuccess) {
+		auto s = common_util_dup(essdn.c_str());
 		if (s == nullptr)
 			return FALSE;
+		HX_strupper(s);
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
 	if (w_dname && system_services_get_user_displayname(username,

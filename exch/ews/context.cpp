@@ -2217,7 +2217,13 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	static constexpr size_t ABEIDBUFFSIZE = 1280;
 	uint8_t* abEidBuff = alloc<uint8_t>(ABEIDBUFFSIZE);
 	EXT_PUSH wAbEid;
-	std::string essdn = username_to_essdn(m_auth_info.username);
+	std::string essdn;
+	auto err = cvt_username_to_essdn(m_auth_info.username,
+	           m_plugin.x500_org_name.c_str(), m_plugin.mysql.get_user_ids,
+	           m_plugin.mysql.get_domain_ids, essdn);
+	if (err != ecSuccess)
+		throw DispatchError(E3085);
+	HX_strupper(essdn.data());
 	EMSAB_ENTRYID abEid{0, 1, DT_MAILUSER, essdn.data()};
 	if(!wAbEid.init(abEidBuff, ABEIDBUFFSIZE, EXT_FLAG_UTF16) || wAbEid.p_abk_eid(abEid) != EXT_ERR_SUCCESS)
 		throw DispatchError(E3085);
@@ -2238,28 +2244,6 @@ void EWSContext::updated(const std::string& dir, const sMessageEntryId& mid, sSh
 	shape.write(TAGGED_PROPVAL{PR_PREDECESSOR_CHANGE_LIST, newPclContainer});
 
 	shape.write(TAGGED_PROPVAL{PidTagChangeNumber, construct<uint64_t>(changeNum)});
-}
-
-/**
- * @brief      Convert username to ESSDN
- *
- * @param      essdn   Username to convert
- *
- * @throw      DispatchError   Conversion failed
- *
- * @return     ESSDN
- */
-std::string EWSContext::username_to_essdn(const std::string& username) const
-{
-	uint32_t userId, domainId;
-	size_t at = username.find('@');
-	if(at == username.npos)
-		throw EWSError::CannotFindUser(E3090(username));
-	std::string_view userpart = std::string_view(username).substr(0, at);
-	if(!m_plugin.mysql.get_user_ids(username.c_str(), &userId, &domainId, nullptr))
-		throw EWSError::CannotFindUser(E3091(username));
-	return fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-{}",
-	                   m_plugin.x500_org_name.c_str(), domainId, userId, userpart);
 }
 
 /**
