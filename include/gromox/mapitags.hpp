@@ -929,6 +929,7 @@ enum {
 	MetaTagCnsetSeen = PROP_TAG(PT_BINARY, 0x6796),
 	PidTagChangeNumber = PROP_TAG(PT_I8, 0x67A4),
 	PR_ASSOCIATED = PROP_TAG(PT_BOOLEAN, 0x67AA), /* PidTagAssociated */
+	PR_EC_ENABLED_FEATURES_L = PROP_TAG(PT_LONG, 0x67B3),
 	MetaTagCnsetRead = PROP_TAG(PT_BINARY, 0x67D2),
 	MetaTagCnsetSeenFAI = PROP_TAG(PT_BINARY, 0x67DA),
 	MetaTagIdsetDeleted = PROP_TAG(PT_BINARY, 0x67E5), /* OXCFXICS §2.2.1.3 */

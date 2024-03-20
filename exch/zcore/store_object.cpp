@@ -388,6 +388,7 @@ static BOOL store_object_is_readonly_prop(store_object *pstore, uint32_t proptag
 	case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 	case PR_NON_IPM_SUBTREE_ENTRYID:
 	case PR_EFORMS_REGISTRY_ENTRYID:
+	case PR_EC_ENABLED_FEATURES_L:
 		return TRUE;
 	}
 	return FALSE;
@@ -945,6 +946,15 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (*ppvalue == nullptr)
 			return false;
 		return TRUE;
+	case PR_EC_ENABLED_FEATURES_L: {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
+			return false;
+		auto info = zs_get_info();
+		*v = info->privbits;
+		*ppvalue = v;
+		return TRUE;
+	}
 	/*
 	 * Do *not* handle PR_EMS_AB_THUMBNAIL_PHOTO. EMSAB proptags are not
 	 * valid in their intended sense for IMsgStores.

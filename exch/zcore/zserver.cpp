@@ -91,7 +91,8 @@ sink_node::~sink_node()
 
 USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	hsession(o.hsession), user_id(o.user_id), domain_id(o.domain_id),
-	org_id(o.org_id), username(std::move(o.username)),
+	org_id(o.org_id), privbits(o.privbits),
+	username(std::move(o.username)),
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),
 	homedir(std::move(o.homedir)), cpid(o.cpid),
 	last_time(o.last_time), reload_time(o.reload_time),
@@ -689,6 +690,7 @@ static ec_error_t zs_logon_phase2(sql_meta_result &&mres, GUID *phsession)
 	tmp_info.user_id = user_id;
 	tmp_info.domain_id = domain_id;
 	tmp_info.org_id = org_id;
+	tmp_info.privbits = mres.privbits;
 	try {
 		tmp_info.username = username;
 		HX_strlower(tmp_info.username.data());
@@ -738,7 +740,7 @@ ec_error_t zs_logon(const char *username, const char *password,
 {
 	sql_meta_result mres{};
 	if (!system_services_auth_login(username, znul(password),
-	    USER_PRIVILEGE_EXCH, mres)) {
+	    WANTPRIV_BASIC, mres)) {
 		mlog(LV_WARN, "rhost=[%s]:0 user=%s zs_logon rejected: %s",
 			znul(rhost), username, mres.errstr.c_str());
 		return ecLoginFailure;
@@ -749,7 +751,7 @@ ec_error_t zs_logon(const char *username, const char *password,
 ec_error_t zs_logon_token(const char *token, const char *rhost, GUID *phsession)
 {
 	sql_meta_result mres{};
-	if (!system_services_auth_login_token(token, USER_PRIVILEGE_EXCH, mres)) {
+	if (!system_services_auth_login_token(token, WANTPRIV_BASIC, mres)) {
 		mlog(LV_WARN, "rhost=[%s] user=%s zs_logon_token rejected: %s",
 			znul(rhost), mres.username.c_str(), mres.errstr.c_str());
 		return ecLoginFailure;

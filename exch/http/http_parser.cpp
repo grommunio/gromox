@@ -734,7 +734,7 @@ static tproc_status htp_auth_basic(http_context *pcontext) try
 
 	sql_meta_result mres;
 	if (system_services_auth_login(pcontext->username, pcontext->password,
-	    USER_PRIVILEGE_EXCH, mres)) {
+	    WANTPRIV_BASIC, mres)) {
 		/* Success */
 		gx_strlcpy(pcontext->username, mres.username.c_str(), std::size(pcontext->username));
 		gx_strlcpy(pcontext->maildir, mres.maildir.c_str(), std::size(pcontext->maildir));

@@ -3,17 +3,30 @@
 #include <string>
 
 /**
- * %EXCH:	can login via emsmdb or zcore
- * %IMAP:	can login via IMAP & POP3
- * %CHGPASSWD:	user is allowed to change their own password via zcore
- * %PUBADDR:	(unused)
+ * Services that a user is allowed to exercise:
+ *
+ * %IMAP:	  allow the use of IMAP & POP3
+ * %CHGPASSWD:	  allow the user to change password on their own via zcore
+ * %PUBADDR:	  (unused)
  * %SMTP, %CHAT, %VIDEO, %FILES, %ARCHIVE:
- * 		pam_gromox with service=...
- * %WANTPRIV_METAONLY: Indicator for callers of auth_meta that only account
- * metadata is desired, but no login checks on address_status or dtypx.
+ *                allow user authentication via pam_gromox with service=...
+ * %DETAIL1:      in the *absence* of this bit, privbits is treated as if
+ *                (WEB|EAS|DAV) was set
+ * %WEB:          allow the use of web MUA (not evaluated by gromox, but g-web)
+ * %EAS:          allow the use of EAS (not evaluated by gromox, but g-sync)
+ * %DAV:          allow the use of DAV (not evaluated by gromox, but g-dav)
+ *
+ * %WANTPRIV_BASIC:
+ *                Mnemonic for source code when no particular privbit should be
+ *                tested. (In essence allowing MAPI & EWS & PHP-MAPI implicitly
+ *                at all times.)
+ * %WANTPRIV_METAONLY:
+ *                Extra flag for the mysql_adaptor_meta function (not present
+ *                in the database); indicates that callers of meta() that only
+ *                account metadata is desired, but no login checks on
+ *                address_status or dtypx.
  */
 enum {
-	USER_PRIVILEGE_EXCH = 0,
 	USER_PRIVILEGE_IMAP = 1U << 0,
 	USER_PRIVILEGE_POP3 = USER_PRIVILEGE_IMAP,
 	USER_PRIVILEGE_SMTP = 1U << 1,
@@ -23,7 +36,13 @@ enum {
 	USER_PRIVILEGE_VIDEO = 1U << 5,
 	USER_PRIVILEGE_FILES = 1U << 6,
 	USER_PRIVILEGE_ARCHIVE = 1U << 7,
-	WANTPRIV_METAONLY = 0x10000U,
+	USER_PRIVILEGE_DETAIL1 = 0x100U,
+	USER_PRIVILEGE_WEB = 0x200U,
+	USER_PRIVILEGE_EAS = 0x400U,
+	USER_PRIVILEGE_DAV = 0x800U,
+
+	WANTPRIV_BASIC = 0,
+	WANTPRIV_METAONLY = 0x40000000U,
 };
 
 /**
@@ -44,6 +63,7 @@ struct sql_meta_result {
 	std::string ldap_mail_attr;
 	bool ldap_start_tls = false;
 	uint8_t have_xid = 0xFF;
+	uint32_t privbits = 0;
 };
 
 using authmgr_login_t = bool (*)(const char *username, const char *password, unsigned int wantprivs, sql_meta_result &);
