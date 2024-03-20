@@ -965,6 +965,13 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 			break;
 		}
 		last_line = pcontext->write_buff + pcontext->write_length;
+		auto heredoc = strstr(last_line, "<<{");
+		if (heredoc != nullptr) {
+			auto ind = heredoc - last_line;
+			line_length -= ind;
+			last_line += ind;
+			pcontext->write_length += ind;
+		}
 		if (line_length > 8 && 0 == strncmp(last_line, "<<{file}", 8)) {
 			last_line[line_length] = '\0';
 			if (NULL == (ptr = strchr(last_line + 8, '|')) ||
@@ -979,6 +986,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				try {
 					pcontext->file_path = std::string(pcontext->maildir) + "/eml/" + (last_line + 8);
 					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
+					if (pcontext->message_fd < 0)
+						mlog(LV_ERR, "E-1741: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1466: ENOMEM");
 				}
@@ -990,6 +999,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 						mlog(LV_ERR, "E-1426: lseek: %s", strerror(errno));
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 					pcontext->current_len = 0;
+					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
 					if (len > pcontext->literal_len)
 						len = pcontext->literal_len;
@@ -1025,6 +1035,8 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 				try {
 					pcontext->file_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + (last_line + 10);
 					pcontext->message_fd = open(pcontext->file_path.c_str(), O_RDONLY);
+					if (pcontext->message_fd < 0)
+						mlog(LV_ERR, "E-1742: %s: %s", pcontext->file_path.c_str(), strerror(errno));
 				} catch (const std::bad_alloc &) {
 					mlog(LV_ERR, "E-1467: ENOMEM");
 				}
@@ -1036,6 +1048,7 @@ static int imap_parser_wrdat_retrieve(imap_context *pcontext)
 						mlog(LV_ERR, "E-1427: lseek: %s", strerror(errno));
 					pcontext->literal_len = strtol(ptr1 + 1, nullptr, 0);
 					pcontext->current_len = 0;
+					pcontext->write_length += sprintf(&pcontext->write_buff[pcontext->write_length], "{%d}\r\n", pcontext->literal_len);
 					len = MAX_LINE_LENGTH - pcontext->write_length;
 					if (len > pcontext->literal_len)
 						len = pcontext->literal_len;
