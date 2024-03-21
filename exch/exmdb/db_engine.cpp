@@ -109,7 +109,7 @@ static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
-unsigned int g_exmdb_pvt_folder_softdel;
+unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id);
@@ -332,14 +332,40 @@ db_base::db_base() :
 	last_time(tp_now())
 {}
 
+void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
+{
+	static constexpr size_t unlimited = 0;
+	try {
+		if (eph != nullptr && g_exmdb_max_sqlite_spares != unlimited &&
+		    mx_sqlite_eph.size() < g_exmdb_max_sqlite_spares) {
+			mx_sqlite_eph.push_back(std::move(eph));
+			eph = nullptr;
+		}
+		if (main != nullptr && g_exmdb_max_sqlite_spares != unlimited &&
+		    mx_sqlite.size() < g_exmdb_max_sqlite_spares) {
+			mx_sqlite.push_back(std::move(main));
+			main = nullptr;
+		}
+	} catch (const std::bad_alloc &) {
+	}
+	if (eph != nullptr)
+		sqlite3_close(eph);
+	if (main != nullptr)
+		sqlite3_close(main);
+}
+
 db_conn::db_conn(db_base &base) :
 	m_base(&base), m_lock(base.giant_lock)
 {
 	++base.reference;
-	psqlite = std::move(base.mx_sqlite);
-	base.mx_sqlite = nullptr;
-	m_sqlite_eph = std::move(base.mx_sqlite_eph);
-	base.mx_sqlite_eph = nullptr;
+	if (base.mx_sqlite.size() > 0) {
+		psqlite = std::move(base.mx_sqlite.back());
+		base.mx_sqlite.pop_back();
+	}
+	if (base.mx_sqlite_eph.size() > 0) {
+		m_sqlite_eph = std::move(base.mx_sqlite_eph.back());
+		base.mx_sqlite_eph.pop_back();
+	}
 }
 
 db_conn::db_conn(db_conn &&o) :
@@ -356,12 +382,7 @@ db_conn::~db_conn()
 {
 	if (m_base == nullptr)
 		return;
-	/*
-	 * Keep the sqlite handles open for the next db_conn. There might be
-	 * change here once multiple sqlite handles per dir are possible.
-	 */
-	m_base->mx_sqlite = std::move(psqlite);
-	m_base->mx_sqlite_eph = std::move(m_sqlite_eph);
+	m_base->handle_spares(std::move(psqlite), std::move(m_sqlite_eph));
 	--m_base->reference;
 }
 
@@ -429,11 +450,11 @@ db_base::~db_base()
 	pdb->instance_list.clear();
 	dynamic_list.clear();
 	tables.table_list.clear();
-	if (mx_sqlite_eph != nullptr)
-		sqlite3_close(mx_sqlite_eph);
+	for (auto db : mx_sqlite_eph)
+		sqlite3_close(db);
 	pdb->last_time = {};
-	if (mx_sqlite != nullptr)
-		sqlite3_close(mx_sqlite);
+	for (auto db : mx_sqlite)
+		sqlite3_close(db);
 }
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,

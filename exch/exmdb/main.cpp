@@ -48,6 +48,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"exmdb_file_compression", "zstd-6"},
 	{"exmdb_hosts_allow", ""}, /* ::1 default set later during startup */
 	{"exmdb_listen_port", "5000"},
+	{"exmdb_max_sqlite_spares", "3", CFG_SIZE},
 	{"exmdb_pf_read_per_user", "1"},
 	{"exmdb_pf_read_states", "2"},
 	{"exmdb_private_folder_softdelete", "0", CFG_BOOL},
@@ -106,6 +107,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
+	g_exmdb_max_sqlite_spares = pconfig->get_ll("exmdb_max_sqlite_spares");
 	auto s = gxcfg->get_value("exmdb_ics_log_file");
 	if (s != nullptr)
 		g_exmdb_ics_log_file = s;

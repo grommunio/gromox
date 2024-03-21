@@ -105,8 +105,8 @@ struct prepared_statements {
  * db_conn.
  *
  * @reference: client reference count, db_base can be destroyed when count is 0
- * @mx_sqlite: cached sqlite handle for exchange.sqlite3
- * @mx_sqlite_eph: cached sqlite handle for tables.sqlite3
+ * @mx_sqlite: cached sqlite handles for exchange.sqlite3
+ * @mx_sqlite_eph: cached sqlite handles for tables.sqlite3
  */
 struct db_base {
 	db_base();
@@ -116,7 +116,7 @@ struct db_base {
 	std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
-	sqlite3 *mx_sqlite = nullptr, *mx_sqlite_eph = nullptr;
+	std::vector<sqlite3 *> mx_sqlite, mx_sqlite_eph;
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
@@ -131,6 +131,7 @@ struct db_base {
 	instance_node *get_instance(uint32_t);
 	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_base *>(this)->get_instance(id); }
 	const table_node *find_table(uint32_t) const;
+	void handle_spares(sqlite3 *, sqlite3 *);
 };
 
 class db_item_deleter;
@@ -190,3 +191,5 @@ extern unsigned long long g_exmdb_search_pacing_time, g_exmdb_lock_timeout;
 extern unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 extern unsigned int g_exmdb_pvt_folder_softdel;
 extern std::string g_exmdb_ics_log_file;
+/* Max number of cached DB connections per store, 0 = unlimited */
+extern unsigned int g_exmdb_max_sqlite_spares;
