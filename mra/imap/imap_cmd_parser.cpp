@@ -263,6 +263,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(mdi_list &plist,
 	if (tmp_argc < 1)
 		return FALSE;
 	b_macro = FALSE;
+	plist.emplace_back("UID");
 	for (int i = 0; i < tmp_argc; ++i) {
 		if (std::find_if(plist.cbegin(), plist.cend(),
 		    [&](const std::string &e) { return strcasecmp(e.c_str(), argv[i]) == 0; }) != plist.cend())
