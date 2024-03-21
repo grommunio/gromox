@@ -60,7 +60,10 @@ ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
 ec_error_t cvt_genaddr_to_smtpaddr(const char *addrtype, const char *emaddr,
     const char *org, cvt_id2user id2user, std::string &smtpaddr)
 {
-	if (strcasecmp(addrtype, "SMTP") == 0) {
+	if (*addrtype == '\0') {
+		/* OL 2013 */
+		return ecNullObject;
+	} else if (strcasecmp(addrtype, "SMTP") == 0) {
 		if (emaddr != nullptr)
 			smtpaddr = emaddr;
 		return emaddr != nullptr ? ecSuccess : ecNullObject;

@@ -547,8 +547,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 					
 		if (strcasecmp(ctype.c_str(), "TEXT") == 0) {
 			/* body lines */
-			memcpy(buff + offset, " NIL", 4);
-			offset += 4;
+			memcpy(buff + offset, " 0", 2);
+			offset += 2;
 		}
 		
 		if (NULL != storage_path && NULL != msg_filename &&
