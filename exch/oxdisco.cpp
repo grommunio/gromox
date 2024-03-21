@@ -669,6 +669,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			return -1;
 		}
 		DisplayName = buf.get();
+		mysql.get_user_ids(email, &user_id, &domain_id, nullptr);
 		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
 		    mysql.get_user_ids, mysql.get_domain_ids,
 		    essdn) != ecSuccess)
