@@ -2892,16 +2892,16 @@ static ec_error_t op_move_same(const rulexec_in &rp,
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
 		mlog(LV_DEBUG, "user=%s host=unknown  "
-			"Message %llu in folder %llu is going"
-			" to be moved to %llu in folder %llu by"
-			" rule", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id},
-			LLU{dst_mid}, LLU{dst_fid});
+			"OP_MOVE: message f-%llu.m-%llu is going to be moved "
+			"and become f-%llu.m-%llu",
+			rp.ev_to, LLU{rp.folder_id}, LLU{rp.message_id},
+			LLU{dst_fid}, LLU{dst_mid});
 	} else {
 		mlog(LV_DEBUG, "user=%s host=unknown  "
-			"Message %llu in folder %llu is going"
-			" to be copied to %llu in folder %llu by"
-			" rule", rp.ev_to, LLU{rp.message_id}, LLU{rp.folder_id},
-			LLU{dst_mid}, LLU{dst_fid});
+			"OP_COPY: message f-%llu.m-%llu is going to be copied "
+			" and become f-%llu.m-%llu",
+			rp.ev_to, LLU{rp.folder_id}, LLU{rp.message_id},
+			LLU{dst_fid}, LLU{dst_mid});
 	}
 	return ecSuccess;
 } catch (const std::bad_alloc &) {
