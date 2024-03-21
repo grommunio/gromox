@@ -193,7 +193,7 @@ BOOL exmdb_server::sum_hierarchy(const char *dir,
 	BOOL b_depth, uint32_t *pcount)
 {
 	uint64_t fid_val;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -213,7 +213,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	uint32_t table_id;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!exmdb_server::is_private())
@@ -285,7 +285,7 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	uint64_t fid_val;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -1050,7 +1050,7 @@ BOOL exmdb_server::load_content_table(const char *dir, cpid_t cpid,
 			if ((psorts->psort[i].type & MVI_FLAG) == MV_FLAG)
 				return false; // ecTooComplex
 	uint64_t fid_val;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*ptable_id = 0;
@@ -1065,7 +1065,7 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	uint32_t row_count;
 	char sql_string[128];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto &table_list = pdb->tables.table_list;
@@ -1144,7 +1144,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	uint32_t table_id;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -1317,7 +1317,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	uint32_t table_id;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -1373,7 +1373,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 {
 	char sql_string[128];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto &table_list = pdb->tables.table_list;
@@ -1392,7 +1392,7 @@ BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 BOOL exmdb_server::sum_table(const char *dir,
 	uint32_t table_id, uint32_t *prows)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	return table_sum_table_count(pdb, table_id, prows);
@@ -1863,7 +1863,7 @@ BOOL exmdb_server::query_table(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	pset->count = 0;
@@ -2279,7 +2279,7 @@ BOOL exmdb_server::match_table(const char *dir, const char *username,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -2311,7 +2311,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 	int idx;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -2513,7 +2513,7 @@ BOOL exmdb_server::read_table_row(const char *dir, const char *username,
     cpid_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -2538,7 +2538,7 @@ BOOL exmdb_server::mark_table(const char *dir,
 	uint32_t *pinst_num, uint32_t *prow_type)
 {
 	char sql_string[256];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*pinst_id = 0;
@@ -2596,7 +2596,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
     uint32_t table_id, PROPTAG_ARRAY *pproptags) try
 {
 	char sql_string[256];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -2791,7 +2791,7 @@ BOOL exmdb_server::expand_table(const char *dir,
 	uint64_t row_id;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -2898,7 +2898,7 @@ BOOL exmdb_server::collapse_table(const char *dir,
 	uint64_t prev_id;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -2990,7 +2990,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 	uint32_t tmp_proptag;
 	char sql_string[1024];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);
@@ -3273,7 +3273,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	*pposition = -1;
 	if (state_id == 0)
 		return TRUE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto ptnode = find_table(pdb, table_id);

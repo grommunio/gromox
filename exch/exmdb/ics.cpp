@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cstdio>
@@ -144,7 +144,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			return FALSE;
 	}
 	auto fid_val = rop_util_get_gc_value(folder_id);
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 
@@ -645,7 +645,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	    " folder_id INTEGER UNIQUE NOT NULL)") != SQLITE_OK)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 

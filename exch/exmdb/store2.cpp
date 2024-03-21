@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2022–2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
 // This file is part of Gromox.
 #define _GNU_SOURCE 1 /* AT_* */
 #include <algorithm>
@@ -50,7 +50,7 @@ BOOL exmdb_server::unload_store(const char *dir)
 BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return false;
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
@@ -267,7 +267,7 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 {
 	del_flags &= DEL_FOLDERS;
 
-	auto db = db_engine_get_db(dir, __func__);
+	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -476,7 +476,7 @@ static bool purg_clean_mid(const char *maildir, time_t upper_bound_ts)
 
 BOOL exmdb_server::purge_datafiles(const char *dir)
 {
-	auto db = db_engine_get_db(dir, __func__);
+	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	auto upper_bound_ts = time(nullptr) - 60;
@@ -489,7 +489,7 @@ BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
 {
 	if (window == 0)
 		window = INT64_MAX;
-	auto db = db_engine_get_db(dir, __func__);
+	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	auto adb = db->psqlite;
@@ -514,7 +514,7 @@ BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
 
 BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 {
-	auto db = db_engine_get_db(dir, __func__);
+	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	auto adb = db->psqlite;
@@ -531,7 +531,7 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 
 BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 {
-	auto db = db_engine_get_db(dir, __func__);
+	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	auto idb = db->psqlite;

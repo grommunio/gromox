@@ -39,7 +39,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	auto class_len = std::min(strlen(str_class), static_cast<size_t>(255));
 	memcpy(tmp_class, str_class, class_len);
 	tmp_class[class_len] = '\0';
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
@@ -85,7 +85,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (0 == folder_id) {
@@ -135,7 +135,7 @@ BOOL exmdb_server::get_folder_class_table(
 {
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
@@ -192,7 +192,7 @@ BOOL exmdb_server::get_folder_class_table(
 BOOL exmdb_server::is_folder_present(const char *dir,
 	uint64_t folder_id, BOOL *pb_exist)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	return cu_is_folder_present(pdb->psqlite,
@@ -203,7 +203,7 @@ BOOL exmdb_server::is_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
 	char sql_string[256];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_deleted "
@@ -222,7 +222,7 @@ BOOL exmdb_server::get_folder_by_name(const char *dir,
 {
 	uint64_t fid_val = 0;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!common_util_get_folder_by_name(pdb->psqlite,
@@ -298,7 +298,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		common_util_remove_propvals(pproperties, PR_FOLDER_TYPE);
 	}
 
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr) {
 		*errcode = ecError;
 		return FALSE;
@@ -468,7 +468,7 @@ BOOL exmdb_server::get_folder_all_proptags(const char *dir, uint64_t folder_id,
 {
 	std::vector<uint32_t> tags;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!cu_get_proptags(MAPI_FOLDER,
@@ -492,7 +492,7 @@ BOOL exmdb_server::get_folder_properties(const char *dir, cpid_t cpid,
     uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	return cu_get_properties(MAPI_FOLDER, rop_util_get_gc_value(folder_id),
@@ -505,7 +505,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
     PROBLEM_ARRAY *pproblems)
 {
 	unsigned int i;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -538,7 +538,7 @@ BOOL exmdb_server::set_folder_properties(const char *dir, cpid_t cpid,
 BOOL exmdb_server::remove_folder_properties(const char *dir,
 	uint64_t folder_id, const PROPTAG_ARRAY *pproptags)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -800,7 +800,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 {
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	BOOL b_search = false;
@@ -934,7 +934,7 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 {
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -993,7 +993,7 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 BOOL exmdb_server::is_descendant_folder(const char *dir,
     uint64_t parent_fid, uint64_t child_fid, BOOL *b_status)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!cu_is_descendant_folder(pdb->psqlite,
@@ -1449,7 +1449,7 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 	uint64_t dst_fid, BOOL *pb_collid, BOOL *pb_partial)
 {
 	char sql_string[256];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (account_id == 0)
@@ -1531,7 +1531,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 			}
 		}
 	}
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (account_id == 0)
@@ -1665,7 +1665,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -1760,7 +1760,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -1899,7 +1899,7 @@ BOOL exmdb_server::get_folder_perm(const char *dir,
 	uint64_t folder_id, const char *username,
 	uint32_t *ppermission)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	return cu_get_folder_permission(pdb->psqlite,
@@ -1909,7 +1909,7 @@ BOOL exmdb_server::get_folder_perm(const char *dir,
 BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 {
 	char sql_string[1024];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, 1024, "DELETE FROM permissions WHERE"
@@ -2089,7 +2089,7 @@ BOOL exmdb_server::update_folder_permission(const char *dir,
 	uint64_t folder_id, BOOL b_freebusy,
 	uint16_t count, const PERMISSION_DATA *prow)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -2120,7 +2120,7 @@ BOOL exmdb_server::update_folder_permission(const char *dir,
 BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 {
 	char sql_string[1024];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, 1024, "DELETE FROM rules WHERE "
@@ -2141,7 +2141,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	auto action_buff = std::make_unique<char[]>(bigbufsiz);
 	auto condition_buff = std::make_unique<char[]>(bigbufsiz);
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
@@ -2381,7 +2381,7 @@ BOOL exmdb_server::get_public_folder_unread_count(const char *dir,
 		*pcount = 0;
 		return TRUE;
 	}
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	exmdb_server::set_public_username(username);

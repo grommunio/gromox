@@ -116,7 +116,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
     BOOL b_move, BOOL *pb_result)
 {
 	*pb_result = false;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (account_id == 0)
@@ -260,7 +260,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 	uint32_t permission, folder_type;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (account_id == 0)
@@ -478,7 +478,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL tmp_propvals[5];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (account_id == 0)
@@ -709,7 +709,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	uint64_t attachment_id;
 	uint32_t proptag_buff[16];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -791,7 +791,7 @@ BOOL exmdb_server::is_msg_present(const char *dir,
 	char sql_string[256];
 	uint32_t folder_type;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -824,7 +824,7 @@ BOOL exmdb_server::is_msg_deleted(const char *dir,
 	uint64_t mid_val;
 	char sql_string[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -843,7 +843,7 @@ BOOL exmdb_server::get_message_rcpts(const char *dir,
 	uint64_t message_id, TARRAY_SET *pset)
 {
 	uint64_t mid_val;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -857,7 +857,7 @@ BOOL exmdb_server::get_message_properties(const char *dir,
     const char *username, cpid_t cpid, uint64_t message_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!exmdb_server::is_private())
@@ -882,7 +882,7 @@ BOOL exmdb_server::set_message_properties(const char *dir,
 	uint64_t fid_val;
 	uint64_t mid_val;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!exmdb_server::is_private())
@@ -915,7 +915,7 @@ BOOL exmdb_server::remove_message_properties(const char *dir, cpid_t cpid,
 	uint64_t fid_val;
 	uint64_t mid_val;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -952,7 +952,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 	char sql_string[128];
 	
 	mid_val = rop_util_get_gc_value(message_id);
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
@@ -1006,7 +1006,7 @@ BOOL exmdb_server::allocate_message_id(const char *dir,
 {
 	uint64_t eid_val;
 	uint64_t fid_val;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (0 == folder_id) {
@@ -1026,7 +1026,7 @@ BOOL exmdb_server::get_message_group_id(const char *dir,
 	uint64_t message_id, uint32_t **ppgroup_id)
 {
 	char sql_string[128];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT group_id "
@@ -1051,7 +1051,7 @@ BOOL exmdb_server::set_message_group_id(const char *dir,
 	uint64_t message_id, uint32_t group_id)
 {
 	char sql_string[128];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
@@ -1074,7 +1074,7 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 	auto indices_buff = std::make_unique<uint8_t[]>(idbuff_size);
 	auto proptags_buff = std::make_unique<uint8_t[]>(idbuff_size);
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -1120,7 +1120,7 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	cn_val = rop_util_get_gc_value(cn);
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -1193,7 +1193,7 @@ BOOL exmdb_server::mark_modified(const char *dir, uint64_t message_id)
 	uint64_t mid_val;
 	uint32_t *pmessage_flags;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -1215,7 +1215,7 @@ BOOL exmdb_server::try_mark_submit(const char *dir,
 	uint64_t mid_val;
 	uint32_t *pmessage_flags;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -1243,7 +1243,7 @@ BOOL exmdb_server::clear_submit(const char *dir,
 	char sql_string[256];
 	uint32_t *pmessage_flags;
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -1285,7 +1285,7 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	*pb_result = false;
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -1323,7 +1323,7 @@ BOOL exmdb_server::unlink_message(const char *dir,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -1347,7 +1347,7 @@ BOOL exmdb_server::set_message_timer(const char *dir,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
@@ -1367,7 +1367,7 @@ BOOL exmdb_server::get_message_timer(const char *dir,
 	
 	if (!exmdb_server::is_private())
 		return FALSE;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
@@ -3600,7 +3600,7 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 			return FALSE;
 		paccount ++;
 	}
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_PROHIBIT_RECEIVE_QUOTA)) {
@@ -3758,7 +3758,7 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 	}
 	b_exist = FALSE;
 	auto pmid = pmsgctnt->proplist.get<uint64_t>(PidTagMid);
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) ||
@@ -3820,7 +3820,7 @@ BOOL exmdb_server::read_message(const char *dir, const char *username,
     cpid_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt)
 {
 	uint64_t mid_val;
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (!exmdb_server::is_private())
@@ -3852,7 +3852,7 @@ BOOL exmdb_server::rule_new_message(const char *dir, const char *username,
 	uint64_t mid_val;
 	char *pmid_string = nullptr, tmp_path[256];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto is_pvt = exmdb_server::is_private();

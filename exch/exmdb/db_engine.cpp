@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2024 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -191,7 +191,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 }
 
 /* query or create DB_ITEM in hash table */
-db_item_ptr db_engine_get_db(const char *path, const char *parent_func)
+db_item_ptr db_engine_get_db(const char *path)
 {
 	char db_path[256];
 	DB_ITEM *pdb;
@@ -212,15 +212,12 @@ db_item_ptr db_engine_get_db(const char *path, const char *parent_func)
 			mlog(LV_WARN, "W-1620: contention on %s (%u waiters)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
-		auto func_then = znul(pdb->giant_lock_func);
 		if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
 			--pdb->reference;
-			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns (mailbox busy with <%s>/<%s>)",
-				path, g_exmdb_lock_timeout,
-				func_then, znul(pdb->giant_lock_func));
+			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns",
+				path, g_exmdb_lock_timeout);
 			return NULL;
 		}
-		pdb->giant_lock_func = parent_func;
 		return db_item_ptr(pdb);
 	}
 	if (g_hash_table.size() >= g_table_size) {
@@ -268,14 +265,13 @@ db_item_ptr db_engine_get_db(const char *path, const char *parent_func)
 void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
 	pdb->last_time = time(nullptr);
-	pdb->giant_lock_func = nullptr;
 	pdb->giant_lock.unlock();
 	pdb->reference --;
 }
 
 BOOL db_engine_vacuum(const char *path)
 {
-	auto db = db_engine_get_db(path, __func__);
+	auto db = db_engine_get_db(path);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
 	mlog(LV_INFO, "I-2102: Vacuuming %s (exchange.sqlite3)", path);
@@ -426,7 +422,7 @@ static bool db_reload(db_item_ptr &pdb, const char *dir)
 	if (g_exmdb_search_yield)
 		std::this_thread::yield(); /* +2 to +3% walltime */
 	exmdb_server::build_env(EM_PRIVATE, dir);
-	pdb = db_engine_get_db(dir, "db_engine_search_folder");
+	pdb = db_engine_get_db(dir);
 	return pdb != nullptr && pdb->psqlite != nullptr;
 }
 
@@ -434,7 +430,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
     uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction)
 {
 	char sql_string[128];
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
@@ -519,7 +515,7 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 {
 	char sql_string[128];
 	
-	auto pdb = db_engine_get_db(dir, __func__);
+	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
@@ -669,7 +665,7 @@ static void *mdpeng_thrwork(void *param)
 		}
 		if (g_notify_stop)
 			break;
-		auto pdb = db_engine_get_db(psearch->dir.c_str(), __func__);
+		auto pdb = db_engine_get_db(psearch->dir.c_str());
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
 		/* Stop animation (does nothing else in OL really) */
