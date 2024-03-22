@@ -257,6 +257,7 @@ db_item_ptr db_engine_get_db(const char *path)
 		return db_item_ptr(pdb);
 	}
 	gx_sql_exec(pdb->psqlite, "PRAGMA foreign_keys=ON");
+	gx_sql_exec(pdb->psqlite, "PRAGMA journal_mode=WAL");
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(pdb);
 	return db_item_ptr(pdb);

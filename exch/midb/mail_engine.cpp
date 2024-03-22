@@ -2085,6 +2085,7 @@ static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 			return {};
 		}
 		gx_sql_exec(pidb->psqlite, "PRAGMA foreign_keys=ON");
+		gx_sql_exec(pidb->psqlite, "PRAGMA journal_mode=WAL");
 		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
 		/* Delete obsolete field (old midb versions cannot use the db then however) */
 		// gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
