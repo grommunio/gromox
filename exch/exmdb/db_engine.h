@@ -127,6 +127,7 @@ struct DB_ITEM {
 	uint32_t next_instance_id() const;
 	instance_node *get_instance(uint32_t);
 	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<DB_ITEM *>(this)->get_instance(id); }
+	const table_node *find_table(uint32_t) const;
 
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
