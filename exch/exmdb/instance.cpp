@@ -300,8 +300,9 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static uint32_t next_instance_id(db_item_ptr &db)
+uint32_t DB_ITEM::next_instance_id() const
 {
+	auto db = this;
 	if (db->instance_list.empty())
 		return 1;
 	auto id = db->instance_list.back().instance_id + 1;
@@ -323,7 +324,7 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto instance_id = next_instance_id(pdb);
+	auto instance_id = pdb->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
 
@@ -377,17 +378,12 @@ BOOL exmdb_server::load_message_instance(const char *dir, const char *username,
 	return false;
 }
 
-static instance_node *instance_get_instance(db_item_ptr &pdb, uint32_t instance_id)
+instance_node *DB_ITEM::get_instance(uint32_t id)
 {
-	for (auto &i : pdb->instance_list)
-		if (i.instance_id == instance_id)
-			return &i;
+	for (auto &e : instance_list)
+		if (e.instance_id == id)
+			return &e;
 	return NULL;
-}
-
-static const instance_node *instance_get_instance_c(db_item_ptr &pdb, uint32_t id)
-{
-	return instance_get_instance(pdb, id);
 }
 
 BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
@@ -400,10 +396,10 @@ BOOL exmdb_server::load_embedded_instance(const char *dir, BOOL b_new,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto instance_id = next_instance_id(pdb);
+	auto instance_id = pdb->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
-	auto pinstance1 = instance_get_instance_c(pdb, attachment_instance_id);
+	auto pinstance1 = pdb->get_instance_c(attachment_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 		return FALSE;
 	auto pmsgctnt = static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent)->pembedded;
@@ -473,7 +469,7 @@ BOOL exmdb_server::get_embedded_cn(const char *dir, uint32_t instance_id,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -493,7 +489,7 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance(pdb, instance_id);
+	auto pinstance = pdb->get_instance(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	if (pinstance->b_new) {
@@ -515,7 +511,7 @@ BOOL exmdb_server::reload_message_instance(const char *dir,
 		if (pinstance->last_id < last_id)
 			pinstance->last_id = last_id;
 	} else {
-		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
+		auto pinstance1 = pdb->get_instance_c(pinstance->parent_id);
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 			return FALSE;
 		auto atx = static_cast<ATTACHMENT_CONTENT *>(pinstance1->pcontent);
@@ -548,7 +544,7 @@ BOOL exmdb_server::clear_message_instance(const char *dir, uint32_t instance_id)
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance(pdb, instance_id);
+	auto pinstance = pdb->get_instance(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -924,7 +920,7 @@ BOOL exmdb_server::read_message_instance(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	memset(pmsgctnt, 0, sizeof(MESSAGE_CONTENT));
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	return instance_read_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pmsgctnt);
@@ -976,7 +972,7 @@ BOOL exmdb_server::write_message_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance(pdb, instance_id);
+	auto pinstance = pdb->get_instance(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	pproblems->count = 0;
@@ -1106,10 +1102,10 @@ BOOL exmdb_server::load_attachment_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto instance_id = next_instance_id(pdb);
+	auto instance_id = pdb->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
-	auto pinstance1 = instance_get_instance_c(pdb, message_instance_id);
+	auto pinstance1 = pdb->get_instance_c(message_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent);
@@ -1157,10 +1153,10 @@ BOOL exmdb_server::create_attachment_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto instance_id = next_instance_id(pdb);
+	auto instance_id = pdb->next_instance_id();
 	if (instance_id == UINT32_MAX)
 		return false;
-	auto pinstance1 = instance_get_instance(pdb, message_instance_id);
+	auto pinstance1 = pdb->get_instance(message_instance_id);
 	if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent);
@@ -1203,7 +1199,7 @@ BOOL exmdb_server::read_attachment_instance(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	memset(pattctnt, 0, sizeof(ATTACHMENT_CONTENT));
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::attachment)
 		return FALSE;
 	return instance_read_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pattctnt);
@@ -1219,7 +1215,7 @@ BOOL exmdb_server::write_attachment_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::attachment)
 		return FALSE;
 	pproblems->count = 0;
@@ -1288,7 +1284,7 @@ BOOL exmdb_server::delete_message_instance_attachment(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, message_instance_id);
+	auto pinstance = pdb->get_instance_c(message_instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -1324,11 +1320,11 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance(pdb, instance_id);
+	auto pinstance = pdb->get_instance(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
 	if (pinstance->type == instance_type::attachment) {
-		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
+		auto pinstance1 = pdb->get_instance_c(pinstance->parent_id);
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::message)
 			return FALSE;
 		auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent);
@@ -1409,7 +1405,7 @@ BOOL exmdb_server::flush_instance(const char *dir, uint32_t instance_id,
 	}
 	pinstance->change_mask = 0;
 	if (0 != pinstance->parent_id) {
-		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
+		auto pinstance1 = pdb->get_instance_c(pinstance->parent_id);
 		if (pinstance1 == nullptr || pinstance1->type != instance_type::attachment)
 			return FALSE;
 		auto pmsgctnt = ict->dup();
@@ -1565,7 +1561,7 @@ BOOL exmdb_server::get_instance_all_proptags(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
 	return pinstance->type == instance_type::message ?
@@ -1866,11 +1862,11 @@ BOOL exmdb_server::get_instance_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
 	if (pinstance->type == instance_type::attachment) {
-		auto pinstance1 = instance_get_instance_c(pdb, pinstance->parent_id);
+		auto pinstance1 = pdb->get_instance_c(pinstance->parent_id);
 		if (pinstance1 == nullptr)
 			return FALSE;
 		auto pvalue = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent)->proplist.get<uint64_t>(PidTagMid);
@@ -2403,7 +2399,7 @@ BOOL exmdb_server::set_instance_properties(const char *dir,
 	auto db = db_engine_get_db(dir);
 	if (db == nullptr || db->psqlite == nullptr)
 		return false;
-	auto ins = instance_get_instance(db, instance_id);
+	auto ins = db->get_instance(instance_id);
 	if (ins == nullptr)
 		return false;
 	if (ins->type == instance_type::message)
@@ -2505,7 +2501,7 @@ BOOL exmdb_server::remove_instance_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr)
 		return FALSE;
 	pproblems->count = 0;
@@ -2524,13 +2520,13 @@ BOOL exmdb_server::is_descendant_instance(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, dst_instance_id);
+	auto pinstance = pdb->get_instance_c(dst_instance_id);
 	while (NULL != pinstance && 0 != pinstance->parent_id) {
 		if (pinstance->parent_id == src_instance_id) {
 			*pb_cycle = TRUE;
 			return TRUE;
 		}
-		pinstance = instance_get_instance_c(pdb, pinstance->parent_id);
+		pinstance = pdb->get_instance_c(pinstance->parent_id);
 	}
 	*pb_cycle = FALSE;
 	return TRUE;
@@ -2542,7 +2538,7 @@ BOOL exmdb_server::empty_message_instance_rcpts(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2559,7 +2555,7 @@ BOOL exmdb_server::get_message_instance_rcpts_num(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2574,7 +2570,7 @@ BOOL exmdb_server::get_message_instance_rcpts_all_proptags(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<const MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2614,7 +2610,7 @@ BOOL exmdb_server::get_message_instance_rcpts(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2680,7 +2676,7 @@ BOOL exmdb_server::update_message_instance_rcpts(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2734,14 +2730,14 @@ BOOL exmdb_server::copy_instance_rcpts(const char *dir, BOOL b_force,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance_src = instance_get_instance_c(pdb, src_instance_id);
+	auto pinstance_src = pdb->get_instance_c(src_instance_id);
 	if (pinstance_src == nullptr || pinstance_src->type != instance_type::message)
 		return FALSE;
 	if (static_cast<MESSAGE_CONTENT *>(pinstance_src->pcontent)->children.prcpts == nullptr) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	auto pinstance_dst = instance_get_instance_c(pdb, dst_instance_id);
+	auto pinstance_dst = pdb->get_instance_c(dst_instance_id);
 	if (pinstance_dst == nullptr || pinstance_dst->type != instance_type::message)
 		return FALSE;
 	if (!b_force && static_cast<MESSAGE_CONTENT *>(pinstance_dst->pcontent)->children.prcpts != nullptr) {
@@ -2765,7 +2761,7 @@ BOOL exmdb_server::empty_message_instance_attachments(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2782,7 +2778,7 @@ BOOL exmdb_server::get_message_instance_attachments_num(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2797,7 +2793,7 @@ BOOL exmdb_server::get_message_instance_attachment_table_all_proptags(const char
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2837,7 +2833,7 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance_src = instance_get_instance_c(pdb, src_instance_id);
+	auto pinstance_src = pdb->get_instance_c(src_instance_id);
 	if (pinstance_src == nullptr || pinstance_src->type != instance_type::message)
 		return FALSE;
 	auto srcmsg = static_cast<MESSAGE_CONTENT *>(pinstance_src->pcontent);
@@ -2845,7 +2841,7 @@ BOOL exmdb_server::copy_instance_attachments(const char *dir, BOOL b_force,
 		*pb_result = FALSE;
 		return TRUE;	
 	}
-	auto pinstance_dst = instance_get_instance_c(pdb, dst_instance_id);
+	auto pinstance_dst = pdb->get_instance_c(dst_instance_id);
 	if (pinstance_dst == nullptr || pinstance_dst->type != instance_type::message)
 		return FALSE;
 	auto dstmsg = static_cast<MESSAGE_CONTENT *>(pinstance_dst->pcontent);
@@ -2872,7 +2868,7 @@ BOOL exmdb_server::query_message_instance_attachment_table(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
@@ -2938,7 +2934,7 @@ BOOL exmdb_server::set_message_instance_conflict(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	auto pinstance = instance_get_instance_c(pdb, instance_id);
+	auto pinstance = pdb->get_instance_c(instance_id);
 	if (pinstance == nullptr || pinstance->type != instance_type::message)
 		return FALSE;
 	auto pmsg = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);

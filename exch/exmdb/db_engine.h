@@ -124,6 +124,9 @@ struct DB_ITEM {
 	static void commit_batch_mode_release(std::unique_ptr<DB_ITEM, db_item_deleter> &&pdb);
 	void cancel_batch_mode();
 	std::unique_ptr<prepared_statements> begin_optim();
+	uint32_t next_instance_id() const;
+	instance_node *get_instance(uint32_t);
+	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<DB_ITEM *>(this)->get_instance(id); }
 
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
