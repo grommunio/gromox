@@ -174,14 +174,11 @@ ec_error_t cvt_entryid_to_smtpaddr(const BINARY *bin, const char *org,
 }
 
 ec_error_t cvt_username_to_essdn(const char *username, const char *org,
-    GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids, std::string &essdn) try
+    unsigned int user_id, unsigned int domain_id, std::string &essdn) try
 {
 	const char *at = strchr(username, '@');
 	if (at == nullptr)
 		return ecInvalidParam;
-	unsigned int user_id = 0, domain_id = 0;
-	if (!get_uids(username, &user_id, &domain_id, nullptr))
-		return ecError;
 	essdn = fmt::format("/o={}/" EAG_RCPTS "/cn={:08x}{:08x}-",
 	        org, __builtin_bswap32(domain_id), __builtin_bswap32(user_id));
 	essdn += std::string_view(username, at - username);
@@ -200,6 +197,17 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
 	 *   - PR_SEARCH_KEY
 	 */
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+ec_error_t cvt_username_to_essdn(const char *username, const char *org,
+    GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids, std::string &essdn) try
+{
+	unsigned int user_id = 0, domain_id = 0;
+	if (!get_uids(username, &user_id, &domain_id, nullptr))
+		return ecError;
+	return cvt_username_to_essdn(username, org, user_id, domain_id, essdn);
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
 }

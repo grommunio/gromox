@@ -684,11 +684,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 {
 	unsigned int user_id = 0, domain_id = 0;
 	char *pdomain;
-	char x500dn[1024];
 	EXT_PUSH ext_push;
 	char tmp_name[UADDR_SIZE];
-	char hex_string[16];
-	char hex_string2[16];
 	ONEOFF_ENTRYID oneoff_entry;
 	auto dtypx = DT_MAILUSER;
 	
@@ -698,11 +695,11 @@ static BOOL common_util_username_to_entryid(const char *username,
 		if (pdomain == nullptr)
 			return FALSE;
 		*pdomain = '\0';
-		encode_hex_int(user_id, hex_string);
-		encode_hex_int(domain_id, hex_string2);
-		snprintf(x500dn, std::size(x500dn), "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-				g_org_name, hex_string2, hex_string, tmp_name);
-		if (!common_util_essdn_to_entryid(x500dn, pbin))
+		std::string essdn;
+		if (cvt_username_to_essdn(tmp_name, g_org_name, user_id,
+		    domain_id, essdn) != ecSuccess)
+			return false;
+		if (!common_util_essdn_to_entryid(essdn.c_str(), pbin))
 			return FALSE;
 		if (dtpp != nullptr)
 			*dtpp = dtypx;

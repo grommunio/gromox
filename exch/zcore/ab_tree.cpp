@@ -37,6 +37,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
@@ -693,16 +694,11 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 }
 
 static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
-    char *pbuff, int length)
+    char *pbuff, int length) try
 {
 	int id;
 	GUID guid;
-	char *ptoken;
-	int domain_id;
 	AB_BASE_REF pbase;
-	char username[UADDR_SIZE];
-	char hex_string[32];
-	char hex_string1[32];
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	if (pabnode->node_type == abnode_type::remote) {
@@ -727,46 +723,38 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		break;
 	case abnode_type::user: {
 		id = pabnode->id;
-		auto u = ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS);
-		gx_strlcpy(username, znul(u), sizeof(username));
-		ptoken = strchr(username, '@');
-		if (ptoken != nullptr)
-			*ptoken = '\0';
+		auto username = znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS));
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != abnode_type::domain)
 			return FALSE;
-		domain_id = pabnode->id;
-		encode_hex_int(id, hex_string);
-		encode_hex_int(domain_id, hex_string1);
-		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-			g_zcab_org_name, hex_string1, hex_string, username);
+		std::string essdn;
+		if (cvt_username_to_essdn(username, g_zcab_org_name, id,
+		    pabnode->id, essdn) != ecSuccess)
+			return false;
+		gx_strlcpy(pbuff, essdn.c_str(), length);
 		break;
 	}
-	case abnode_type::mlist: try {
+	case abnode_type::mlist: {
 		id = pabnode->id;
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		std::string ustr = obj->username;
-		auto pos = ustr.find('@');
-		if (pos != ustr.npos)
-			ustr.erase(pos);
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != abnode_type::domain)
 			return FALSE;
-		domain_id = pabnode->id;
-		encode_hex_int(id, hex_string);
-		encode_hex_int(domain_id, hex_string1);
-		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-			g_zcab_org_name, hex_string1, hex_string, ustr.c_str());
+		std::string essdn;
+		if (cvt_username_to_essdn(obj->username.c_str(), g_zcab_org_name, id,
+		    pabnode->id, essdn) != ecSuccess)
+			return false;
+		gx_strlcpy(pbuff, essdn.c_str(), length);
 		break;
-	} catch (...) {
-		return false;
 	}
 	default:
 		return FALSE;
 	}
 	return TRUE;	
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *pnode)

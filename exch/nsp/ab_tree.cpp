@@ -35,6 +35,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
+#include <gromox/usercvt.hpp>
 #include <gromox/util.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
@@ -695,15 +696,11 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	return true;
 }
 
-BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
+BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
+    char *pbuff, int length) try
 {
 	int id;
-	char *ptoken;
-	int domain_id;
 	AB_BASE_REF pbase;
-	char cusername[UADDR_SIZE];
-	char hex_string[32];
-	char hex_string1[32];
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	if (pabnode->node_type == abnode_type::remote) {
@@ -717,46 +714,40 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		pnode = &pabnode->stree;
 	}
 	switch (pabnode->node_type) {
-	case abnode_type::user:
+	case abnode_type::user: {
 		id = pabnode->id;
-		gx_strlcpy(cusername, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(cusername));
-		ptoken = strchr(cusername, '@');
-		if (ptoken != nullptr)
-			*ptoken = '\0';
+		auto username = znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS));
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != abnode_type::domain)
 			return FALSE;
-		domain_id = pabnode->id;
-		encode_hex_int(id, hex_string);
-		encode_hex_int(domain_id, hex_string1);
-		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-			g_nsp_org_name, hex_string1, hex_string, cusername);
+		std::string essdn;
+		if (cvt_username_to_essdn(username, g_nsp_org_name, id,
+		    pabnode->id, essdn) != ecSuccess)
+			break;
+		gx_strlcpy(pbuff, essdn.c_str(), length);
 		break;
-	case abnode_type::mlist: try {
+	}
+	case abnode_type::mlist: {
 		id = pabnode->id;
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
-		std::string username = obj->username;
-		auto pos = username.find('@');
-		if (pos != username.npos)
-			username.erase(pos);
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != abnode_type::domain)
 			return FALSE;
-		domain_id = pabnode->id;
-		encode_hex_int(id, hex_string);
-		encode_hex_int(domain_id, hex_string1);
-		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
-			g_nsp_org_name, hex_string1, hex_string, username.c_str());
+		std::string essdn;
+		if (cvt_username_to_essdn(obj->username.c_str(), g_nsp_org_name,
+		    id, pabnode->id, essdn) != ecSuccess)
+			return false;
+		gx_strlcpy(pbuff, essdn.c_str(), length);
 		break;
-	} catch (...) {
-		return false;
 	}
 	default:
 		return FALSE;
 	}
 	return TRUE;	
+} catch (const std::bad_alloc &) {
+	return false;
 }
 
 const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
