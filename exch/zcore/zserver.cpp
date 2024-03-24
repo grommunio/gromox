@@ -783,7 +783,6 @@ ec_error_t zs_uinfo(const char *username, BINARY *pentryid,
 	           essdn);
 	if (err != ecSuccess)
 		return err;
-	HX_strupper(essdn.data());
 	dispname.resize(strlen(dispname.c_str()));
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
@@ -2400,7 +2399,6 @@ ec_error_t zs_getstoreentryid(const char *mailbox_dn, BINARY *pentryid)
 		           system_services_get_domain_ids, essdn);
 		if (err != ecSuccess)
 			return err;
-		HX_strupper(essdn.data());
 		mailbox_dn = essdn.c_str();
 	}
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
@@ -3304,7 +3302,6 @@ static ec_error_t rectify_message(message_object *pmessage,
 	if (!system_services_get_user_displayname(account,
 	    sender_dispname.data(), sender_dispname.size()))
 		return ecError;
-	HX_strupper(sender_essdn.data());
 	sender_dispname.resize(strlen(sender_dispname.c_str()));
 	auto sender_eid = common_util_username_to_addressbook_entryid(account);
 	if (sender_eid == nullptr)
@@ -3323,7 +3320,6 @@ static ec_error_t rectify_message(message_object *pmessage,
 		if (!system_services_get_user_displayname(representing_username,
 		    repr_dispname.data(), repr_dispname.size()))
 			return ecError;
-		HX_strupper(repr_essdn.data());
 		repr_dispname.resize(strlen(repr_dispname.c_str()));
 		repr_eid = common_util_username_to_addressbook_entryid(representing_username);
 		if (repr_eid == nullptr)

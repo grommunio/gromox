@@ -644,7 +644,6 @@ BINARY* common_util_username_to_addressbook_entryid(
 	    system_services_get_user_ids, system_services_get_domain_ids,
 	    essdn) != ecSuccess)
 		return NULL;
-	HX_strupper(essdn.data());
 	tmp_entryid.flags = 0;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = DT_MAILUSER;
@@ -703,7 +702,6 @@ static BOOL common_util_username_to_entryid(const char *username,
 		encode_hex_int(domain_id, hex_string2);
 		snprintf(x500dn, std::size(x500dn), "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 				g_org_name, hex_string2, hex_string, tmp_name);
-		HX_strupper(x500dn);
 		if (!common_util_essdn_to_entryid(x500dn, pbin))
 			return FALSE;
 		if (dtpp != nullptr)
@@ -1468,7 +1466,6 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 		    essdn) != ecSuccess)
 			return NULL;	
 	}
-	HX_strupper(essdn.data());
 	store_entryid.pmailbox_dn = deconst(essdn.c_str());
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)

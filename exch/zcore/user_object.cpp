@@ -189,7 +189,6 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		auto s = common_util_dup(essdn.c_str());
 		if (s == nullptr)
 			return FALSE;
-		HX_strupper(s);
 		ppropvals->emplace_back(PR_EMAIL_ADDRESS, s);
 	}
 	if (w_dname && system_services_get_user_displayname(username,

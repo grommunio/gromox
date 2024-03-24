@@ -691,7 +691,6 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		} else {
 			return false;
 		}
-		HX_strupper(essdn.data());
 		auto tstr = cu_alloc<char>(essdn.size() + 1);
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)

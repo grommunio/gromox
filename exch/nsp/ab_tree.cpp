@@ -732,7 +732,6 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			g_nsp_org_name, hex_string1, hex_string, cusername);
-		HX_strupper(pbuff);
 		break;
 	case abnode_type::mlist: try {
 		id = pabnode->id;
@@ -750,7 +749,6 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		snprintf(pbuff, length, "/o=%s/" EAG_RCPTS "/cn=%s%s-%s",
 			g_nsp_org_name, hex_string1, hex_string, username.c_str());
-		HX_strupper(pbuff);
 		break;
 	} catch (...) {
 		return false;
@@ -988,7 +986,6 @@ void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode, char *dn, int length)
 	         username[2], username[3], username[4], username[5],
 	         username[6], username[7], username[8], username[9],
 	         username[10], username[11], hex_string, ptoken);
-	HX_strupper(dn);
 }
 
 void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,
