@@ -23,5 +23,7 @@ extern GX_EXPORT ec_error_t cvt_entryid_to_smtpaddr(const BINARY *, const char *
 extern GX_EXPORT ec_error_t cvt_username_to_essdn(const char *username, const char *org, unsigned int uid, unsigned int domid, std::string &);
 extern GX_EXPORT ec_error_t cvt_username_to_essdn(const char *username, const char *org, GET_USER_IDS, GET_DOMAIN_IDS, std::string &);
 extern GX_EXPORT ec_error_t cvt_username_to_mailboxid(const char *username, unsigned int id, std::string &);
+extern GX_EXPORT ec_error_t cvt_username_to_serverdn(const char *username, const char *org, unsigned int id, std::string &);
+extern GX_EXPORT ec_error_t cvt_username_to_mdbdn(const char *username, const char *org, unsigned int id, std::string &);
 
 }

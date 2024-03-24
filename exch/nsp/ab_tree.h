@@ -120,7 +120,7 @@ extern const char *ab_tree_get_user_info(const tree_node *, unsigned int type);
 extern void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *, char *mail_address, char *create_day, int *list_priv);
 extern void ab_tree_get_company_info(const SIMPLE_TREE_NODE *, char *name, char *address);
 extern void ab_tree_get_department_name(const SIMPLE_TREE_NODE *, char *name);
-extern void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *, char *dn, int len);
+extern ec_error_t ab_tree_get_mdbdn(const tree_node *, std::string &);
 int ab_tree_get_guid_base_id(GUID guid);
 extern ec_error_t ab_tree_proplist(const tree_node *, std::vector<uint32_t> &);
 extern ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *, cpid_t, unsigned int proptag, PROPERTY_VALUE *);

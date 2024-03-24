@@ -224,4 +224,30 @@ ec_error_t cvt_username_to_mailboxid(const char *username, unsigned int id,
 	return ecSuccess;
 }
 
+ec_error_t cvt_username_to_serverdn(const char *username, const char *org,
+    unsigned int id, std::string &out) try
+{
+	const char *at = strchr(username, '@');
+	if (at == nullptr)
+		return ecInvalidParam;
+	auto err = cvt_username_to_mailboxid(username, id, out);
+	if (err != ecSuccess)
+		return err;
+	out = fmt::format("/o={}/" EAG_SERVERS "/cn={}@{}", org, out, at + 1);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
+ec_error_t cvt_username_to_mdbdn(const char *username, const char *org,
+    unsigned int id, std::string &out) try
+{
+	auto err = cvt_username_to_serverdn(username, org, id, out);
+	if (err == ecSuccess)
+		out += "/cn=Microsoft Private MDB";
+	return err;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
 }

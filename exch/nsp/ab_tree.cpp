@@ -760,7 +760,7 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		return NULL;
 	if (strncasecmp(pdn, prefix_string, temp_len) == 0 &&
 	    strlen(pdn) >= static_cast<size_t>(temp_len) + 60) {
-		/* Reason for 60: see DN format in ab_tree_get_server_dn */
+		/* Reason for 60: see DN format in ab_tree_get_mdbdn */
 		auto id = decode_hex_int(pdn + temp_len + 60);
 		auto minid = ab_tree_make_minid(minid_type::address, id);
 		auto iter = pbase->phash.find(minid);
@@ -951,32 +951,15 @@ void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 		*plist_privilege = obj->list_priv;
 }
 
-void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode, char *dn, int length)
+ec_error_t ab_tree_get_mdbdn(const SIMPLE_TREE_NODE *pnode, std::string &mdbdn)
 {
-	char *ptoken;
-	char username[UADDR_SIZE];
-	char hex_string[32];
-	
 	auto xab = containerof(pnode, AB_NODE, stree);
 	if (xab->node_type >= abnode_type::containers)
-		return;
-	gx_strlcpy(username, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(username));
-	ptoken = strchr(username, '@');
-	HX_strlower(username);
-	if (ptoken != nullptr)
-		ptoken++;
-	else
-		ptoken = username;
-	if (xab->node_type == abnode_type::remote)
-		encode_hex_int(ab_tree_get_minid_value(xab->minid), hex_string);
-	else
-		encode_hex_int(xab->id, hex_string);
-	snprintf(dn, length, "/o=%s/" EAG_SERVERS ""
-	         "/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
-	         "-%02x%02x%s@%s", g_nsp_org_name, username[0], username[1],
-	         username[2], username[3], username[4], username[5],
-	         username[6], username[7], username[8], username[9],
-	         username[10], username[11], hex_string, ptoken);
+		return ecNotFound;
+	auto username = znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS));
+	auto id = xab->node_type == abnode_type::remote ?
+	          ab_tree_get_minid_value(xab->minid) : xab->id;
+	return cvt_username_to_mdbdn(username, g_nsp_org_name, id, mdbdn);
 }
 
 void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,

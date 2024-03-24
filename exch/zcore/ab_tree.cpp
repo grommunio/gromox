@@ -878,35 +878,6 @@ static void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 		*plist_privilege = obj->list_priv;
 }
 
-static void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode,
-    char *dn, int length)
-{
-	char *ptoken;
-	char username[UADDR_SIZE];
-	char hex_string[32];
-	auto xab = containerof(pnode, AB_NODE, stree);
-	
-	if (xab->node_type >= abnode_type::containers)
-		return;
-	gx_strlcpy(username, znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS)), sizeof(username));
-	ptoken = strchr(username, '@');
-	HX_strlower(username);
-	if (ptoken != nullptr)
-		ptoken++;
-	else
-		ptoken = username;
-	if (xab->node_type == abnode_type::remote)
-		encode_hex_int(ab_tree_get_minid_value(xab->minid), hex_string);
-	else
-		encode_hex_int(xab->id, hex_string);
-	snprintf(dn, length, "/o=%s/" EAG_SERVERS
-	         "/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
-	         "-%02x%02x%s@%s", g_zcab_org_name, username[0], username[1],
-	         username[2], username[3], username[4], username[5],
-	         username[6], username[7], username[8], username[9],
-	         username[10], username[11], hex_string, ptoken);
-}
-
 static void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address)
 {
@@ -1146,9 +1117,17 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_EMS_AB_HOME_MDB: {
 		if (node_type >= abnode_type::containers)
 			return TRUE;
-		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
-		HX_strlcat(dn, "/cn=Microsoft Private MDB", std::size(dn));
-		auto pvalue = common_util_dup(dn);
+		auto xab = containerof(pnode, AB_NODE, stree);
+		if (xab->node_type >= abnode_type::containers)
+			return ecNotFound;
+		auto username = znul(ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS));
+		auto id = xab->node_type == abnode_type::remote ?
+		          ab_tree_get_minid_value(xab->minid) : xab->id;
+		std::string mdbdn;
+		auto err = cvt_username_to_mdbdn(username, g_zcab_org_name, id, mdbdn);
+		if (err != ecSuccess)
+			return false;
+		auto pvalue = common_util_dup(mdbdn.c_str());
 		if (pvalue == nullptr)
 			return FALSE;
 		*ppvalue = pvalue;

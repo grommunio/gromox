@@ -134,22 +134,24 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		pprop->value.ftime = {};
 		return ecSuccess;
 	case PR_EMS_AB_HOME_MDB:
-	case PR_EMS_AB_HOME_MDB_A:
+	case PR_EMS_AB_HOME_MDB_A: {
 		if (node_type != abnode_type::user)
 			return ecNotFound;
-		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
-		HX_strlcat(dn, "/cn=Microsoft Private MDB", std::size(dn));
+		std::string mdbdn;
+		auto err = ab_tree_get_mdbdn(pnode, mdbdn);
+		if (err != ecSuccess)
+			return err;
 		if (NULL == pbuff) {
-			pprop->value.pv = ndr_stack_alloc(
-				NDR_STACK_OUT, strlen(dn) + 1);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, mdbdn.size() + 1);
 			if (pprop->value.pstr == nullptr)
 				return ecServerOOM;
-			strcpy(static_cast<char *>(pprop->value.pv), dn);
+			gx_strlcpy(static_cast<char *>(pprop->value.pv), mdbdn.c_str(), mdbdn.size() + 1);
 		} else {
 			pprop->value.pv = pbuff;
-			gx_strlcpy(pprop->value.pstr, dn, pbsize);
+			gx_strlcpy(pprop->value.pstr, mdbdn.c_str(), pbsize);
 		}
 		return ecSuccess;
+	}
 	case PR_EMS_AB_OBJECT_GUID:
 		if (!ab_tree_node_to_guid(pnode, &temp_guid))
 			return ecServerOOM;
