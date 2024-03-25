@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// SPDX-FileCopyrightText: 2022-2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <chrono>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
@@ -27,6 +28,7 @@
 #include <sys/types.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -72,7 +74,7 @@ template<typename T> struct sort_item {
 }
 
 static size_t g_base_size;
-static int g_ab_cache_interval;
+static gromox::time_duration g_ab_cache_interval;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_nsp_org_name[256];
@@ -171,7 +173,7 @@ void ab_tree_init(const char *org_name, size_t base_size, int cache_interval)
 {
 	gx_strlcpy(g_nsp_org_name, org_name, std::size(g_nsp_org_name));
 	g_base_size = base_size;
-	g_ab_cache_interval = cache_interval;
+	g_ab_cache_interval = std::chrono::seconds(cache_interval);
 	g_notify_stop = true;
 }
 
@@ -501,7 +503,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			bhold.unlock();
 			return nullptr;
 		}
-		pbase->load_time = time(nullptr);
+		pbase->load_time = tp_now();
 		bhold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
@@ -531,12 +533,13 @@ static void *nspab_scanwork(void *param)
 	
 	while (!g_notify_stop) {
 		pbase = NULL;
+		auto now = tp_now();
 		std::unique_lock bhold(g_base_lock);
 		for (auto &kvpair : g_base_hash) {
 			auto &base = kvpair.second;
 			if (base.status != BASE_STATUS_LIVING ||
 			    base.reference != 0 ||
-			    time(nullptr) - base.load_time < g_ab_cache_interval)
+			    now - base.load_time < g_ab_cache_interval)
 				continue;
 			pbase = &base;
 			pbase->status = BASE_STATUS_CONSTRUCTING;
@@ -560,7 +563,7 @@ static void *nspab_scanwork(void *param)
 			bhold.unlock();
 		} else {
 			bhold.lock();
-			pbase->load_time = time(nullptr);
+			pbase->load_time = tp_now();
 			pbase->status = BASE_STATUS_LIVING;
 			bhold.unlock();
 		}
@@ -1123,7 +1126,7 @@ void ab_tree_invalidate_cache()
 	mlog(LV_NOTICE, "nsp: Invalidating AB caches");
 	std::unique_lock bl_hold(g_base_lock);
 	for (auto &kvpair : g_base_hash)
-		kvpair.second.load_time = 0;
+		kvpair.second.load_time = {};
 }
 
 uint32_t ab_tree_get_dtyp(const tree_node *n)

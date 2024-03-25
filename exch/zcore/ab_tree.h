@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/ab_tree.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/simple_tree.hpp>
 
@@ -43,7 +44,7 @@ struct AB_BASE {
 	void unload();
 
 	std::atomic<int> status{0}, reference{0};
-	time_t load_time = 0;
+	gromox::time_point load_time{};
 	size_t gal_hidden_count = 0;
 	int base_id = 0;
 	std::vector<domain_node> domain_list;

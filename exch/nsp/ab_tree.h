@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/ab_tree.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
 #define USER_MAIL_ADDRESS					0
@@ -64,7 +65,7 @@ struct AB_BASE {
 
 	GUID guid{};
 	std::atomic<int> status{0}, reference{0};
-	time_t load_time = 0;
+	gromox::time_point load_time{};
 	/*
 	 * base_id==0: not permitted (contains e.g. the AAPI administrator)
 	 * base_id >0: Base is for an organization (multiple domains)

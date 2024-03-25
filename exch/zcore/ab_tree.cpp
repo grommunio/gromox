@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/cryptoutil.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
@@ -96,7 +97,7 @@ struct sort_item {
 }
 
 static size_t g_base_size;
-static int g_ab_cache_interval;
+static gromox::time_duration g_ab_cache_interval;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_zcab_org_name[256];
@@ -170,7 +171,7 @@ void ab_tree_init(const char *org_name, int base_size, int cache_interval)
 {
 	gx_strlcpy(g_zcab_org_name, org_name, std::size(g_zcab_org_name));
 	g_base_size = base_size;
-	g_ab_cache_interval = cache_interval;
+	g_ab_cache_interval = std::chrono::seconds(cache_interval);
 	g_notify_stop = true;
 }
 
@@ -485,7 +486,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 			g_base_hash.erase(it);
 			return nullptr;
 		}
-		pbase->load_time = time(nullptr);
+		pbase->load_time = tp_now();
 		bl_hold.lock();
 		pbase->status = BASE_STATUS_LIVING;
 	} else {
@@ -513,7 +514,7 @@ static void *zcoreab_scanwork(void *param)
 {
 	while (!g_notify_stop) {
 		AB_BASE *pbase = nullptr;
-		auto now = time(nullptr);
+		auto now = tp_now();
 		std::unique_lock bl_hold(g_base_lock);
 		for (auto &pair : g_base_hash) {
 			if (pair.second.status != BASE_STATUS_LIVING ||
@@ -539,7 +540,7 @@ static void *zcoreab_scanwork(void *param)
 			bl_hold.unlock();
 		} else {
 			bl_hold.lock();
-			pbase->load_time = time(nullptr);
+			pbase->load_time = tp_now();
 			pbase->status = BASE_STATUS_LIVING;
 			bl_hold.unlock();
 		}
@@ -1646,5 +1647,5 @@ void ab_tree_invalidate_cache()
 	mlog(LV_NOTICE, "zcore: Invalidating AB caches");
 	std::unique_lock bl_hold(g_base_lock);
 	for (auto &kvpair : g_base_hash)
-		kvpair.second.load_time = 0;
+		kvpair.second.load_time = {};
 }

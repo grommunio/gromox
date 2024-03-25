@@ -2559,7 +2559,7 @@ static ec_error_t message_bounce_message(const char *from_address,
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
-	auto ret = ems_send_vmail(imail, tmp_buff, rcpt_list);
+	auto ret = ems_send_vmail(std::move(imail), tmp_buff, rcpt_list);
 	if (ret != ecSuccess)
 		mlog(LV_ERR, "E-1187: ems_send_vmail: %s", mapi_strerror(ret));
 	return ecSuccess;
