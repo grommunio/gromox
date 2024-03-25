@@ -3551,7 +3551,8 @@ static ec_error_t message_rule_new_message(const rulexec_in &rp, seen_list &seen
 	get_digest(*rp.digest, "file", mid_string1, std::size(mid_string1));
 	snprintf(tmp_path1, std::size(tmp_path1), "%s/eml/%s",
 	         exmdb_server::get_dir(), mid_string1);
-	remove(tmp_path1);
+	if (::remove(tmp_path1) != 0 && errno != ENOENT)
+		mlog(LV_WARN, "W-1345: remove %s: %s", tmp_path1, strerror(errno));
 	return ecSuccess;
 }
 

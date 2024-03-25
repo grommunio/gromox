@@ -34,6 +34,7 @@ int main(int argc, char **argv)
 	static constexpr uint32_t tags[] = {PR_STORE_RECORD_KEY};
 	static constexpr PROPTAG_ARRAY ptags[] = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
-	exmdb_client::get_store_properties(g_storedir, CP_UTF8, ptags, &props);
+	if (!exmdb_client::get_store_properties(g_storedir, CP_UTF8, ptags, &props))
+		mlog(LV_ERR, "get_store_properties failed unexpectedly");
 	return 0;
 }
