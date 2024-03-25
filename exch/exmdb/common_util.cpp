@@ -1663,18 +1663,20 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		if (txt != nullptr) {
 			GUID guid;
 			guid.from_str(txt);
-			ep.p_uint16(1);
-			ep.p_guid(guid); /* PR_STORE_RECORD_KEY */
-			ep.p_uint16(5);
-			ep.p_guid(guid); /* PR_MAPPING_SIGNATURE */
+			if (ep.p_uint16(1) != pack_result::ok ||
+			    ep.p_guid(guid) != pack_result::ok || /* PR_STORE_RECORD_KEY */
+			    ep.p_uint16(5) != pack_result::ok ||
+			    ep.p_guid(guid) != pack_result::ok) /* PR_MAPPING_SIGNATURE */
+				return nullptr;
 		}
 	}
-	ep.p_uint16(2);
-	ep.p_guid(exc_replid2);
-	ep.p_uint16(3);
-	ep.p_guid(exc_replid3);
-	ep.p_uint16(4);
-	ep.p_guid(exc_replid4);
+	if (ep.p_uint16(2) != pack_result::ok ||
+	    ep.p_guid(exc_replid2) != pack_result::ok ||
+	    ep.p_uint16(3) != pack_result::ok ||
+	    ep.p_guid(exc_replid3) != pack_result::ok ||
+	    ep.p_uint16(4) != pack_result::ok ||
+	    ep.p_guid(exc_replid4) != pack_result::ok)
+		return nullptr;
 	stm = gx_sql_prep(db, "SELECT replid, replguid FROM replguidmap");
 	if (stm == nullptr)
 		return nullptr;
