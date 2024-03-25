@@ -636,27 +636,20 @@ BOOL common_util_parse_addressbook_entryid(BINARY entryid_bin, uint32_t *ptype,
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username)
 {
-	std::string essdn;
-	EXT_PUSH ext_push;
-	EMSAB_ENTRYID tmp_entryid;
+	std::string eidbuf;
 	
-	if (cvt_username_to_essdn(username, g_org_name,
+	if (cvt_username_to_abkeid(username, g_org_name, DT_MAILUSER,
 	    system_services_get_user_ids, system_services_get_domain_ids,
-	    essdn) != ecSuccess)
+	    eidbuf) != ecSuccess)
 		return NULL;
-	tmp_entryid.flags = 0;
-	tmp_entryid.version = 1;
-	tmp_entryid.type = DT_MAILUSER;
-	tmp_entryid.px500dn = deconst(essdn.c_str());
 	auto pbin = cu_alloc<BINARY>();
 	if (pbin == nullptr)
 		return NULL;
-	pbin->pv = common_util_alloc(1280);
-	if (pbin->pv == nullptr ||
-	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
+	pbin->cb = eidbuf.size();
+	pbin->pv = common_util_alloc(pbin->cb);
+	if (pbin->pv == nullptr)
 		return NULL;
-	pbin->cb = ext_push.m_offset;
+	memcpy(pbin->pv, eidbuf.data(), pbin->cb);
 	return pbin;
 }
 

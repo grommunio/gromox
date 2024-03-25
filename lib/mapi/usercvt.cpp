@@ -212,6 +212,30 @@ ec_error_t cvt_username_to_essdn(const char *username, const char *org,
 	return ecServerOOM;
 }
 
+ec_error_t cvt_username_to_abkeid(const char *username, const char *org,
+    enum display_type dtx, GET_USER_IDS get_uids, GET_DOMAIN_IDS get_dids,
+    std::string &eidbuf) try
+{
+	std::string essdn;
+	auto err = cvt_username_to_essdn(username, org, get_uids, get_dids, essdn);
+	if (err != ecSuccess)
+		return err;
+	EMSAB_ENTRYID te;
+	te.flags = 0;
+	te.version = 1;
+	te.type = dtx;
+	te.px500dn = deconst(essdn.c_str());
+	eidbuf.resize(1280);
+	EXT_PUSH ep;
+	if (!ep.init(eidbuf.data(), eidbuf.size(), EXT_FLAG_UTF16) ||
+	    ep.p_abk_eid(te) != pack_result::ok)
+		return ecError;
+	eidbuf.resize(ep.m_offset);
+	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	return ecServerOOM;
+}
+
 ec_error_t cvt_username_to_mailboxid(const char *username, unsigned int id,
     std::string &mailboxid)
 {
