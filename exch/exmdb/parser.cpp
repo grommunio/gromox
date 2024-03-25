@@ -221,6 +221,9 @@ static void *mdpps_thrwork(void *pparam)
 				if (write(pconnection->sockd, resp_buff, 1) != 1)
 					break;
 				continue;
+			} else if (buff_len >= UINT_MAX) {
+				/* make cov-scan happy that we tested for buff_len */
+				break;
 			}
 			pbuff = malloc(buff_len);
 			if (NULL == pbuff) {

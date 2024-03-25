@@ -132,7 +132,7 @@ static void *zcrp_thrwork(void *param)
 		goto NEXT_CLIFD;
 	}
 	read_len = read(clifd, &buff_len, sizeof(uint32_t));
-	if (read_len != sizeof(uint32_t)) {
+	if (read_len != sizeof(uint32_t) || buff_len >= UINT_MAX) {
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
