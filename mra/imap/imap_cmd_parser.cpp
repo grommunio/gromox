@@ -873,7 +873,7 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 			            "RFC822.SIZE %zd", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
 			auto pmime = mjson.get_mime("");
-			size_t ct_length = pmime->get_content_length();
+			size_t ct_length = pmime != nullptr ? pmime->get_content_length() : 0;
 			if (pmime != nullptr)
 				buff_len += gx_snprintf(buff + buff_len,
 				            std::size(buff) - buff_len,
@@ -899,6 +899,8 @@ static int imap_cmd_parser_process_fetch_item(imap_context *pcontext,
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			auto pbody = strchr(kw, '[');
 			auto pend = strchr(pbody + 1, ']');
+			if (pend == nullptr)
+				return 1800;
 			size_t offset = 0, length = -1;
 			if (pend[1] == '<') {
 				offset = strtol(pend + 2, nullptr, 0);
