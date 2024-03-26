@@ -316,7 +316,6 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		for (auto t : pvt_tags)
 			pproptags->emplace_back(t);
 	} else {
-		pproptags->emplace_back(PR_HIERARCHY_SERVER);
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if mail address of public folder exists. */
 	}
@@ -488,17 +487,6 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 		*v = g_max_extrule_len;
 		return TRUE;
 	}
-	case PR_HIERARCHY_SERVER: {
-		if (plogon->is_private())
-			return FALSE;
-		snprintf(temp_buff, std::size(temp_buff), EAG_F9 "@%s", plogon->account);
-		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
-		*ppvalue = tstr;
-		if (*ppvalue == nullptr)
-			return FALSE;
-		strcpy(tstr, temp_buff);
-		return TRUE;
-	}
 	case PR_LOCALE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_string;
@@ -584,13 +572,28 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
  * @ppropvals:	[out] requested property values
  *
  * The output order is not necessarily the same as the input order.
+ *
+ * PR_HIERARCHY_SERVER:
+ *
+ * When calling IMsgStore::GetProps(NULL) client-side to obtain the list of
+ * available store object property tags, MSMAPI implicitly and unconditionally
+ * adds PR_HIERARCHY_SERVER on its own, and also does not merge duplicates if
+ * the server had already responded with PR_HIERARCHY_SERVER. (The lack of
+ * merging is also apparent with PR_DISPLAY_NAME.) Naturally, MSMAPI also
+ * overrides any server-provided value, and instead presents the value from the
+ * <Server> element of a recent Autodiscover response.
+ *
+ * When OL2021 accesses EXC2019, oxdisco _omits_ EXCH/EXPR protocol sections
+ * normally, and thus there is also no <Server>. Subsequently, there is no
+ * PR_HIERARCHY_SERVER property on the store visible with MFCMAPI, which means
+ * EXC2019 also does not synthesize anything server-side in any way.
  */
 BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals) const
 {
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static const uint32_t err_code = ecError;
+	static const uint32_t err_code = ecError, invalid_code = ecInvalidParam;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
@@ -607,7 +610,10 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	for (unsigned int i = 0; i < pproptags->count; ++i) {
 		void *pvalue = nullptr;
 		const auto tag = pproptags->pproptag[i];
-		if (!logon_object_get_calculated_property(plogon, tag, &pvalue))
+
+		if (PROP_ID(tag) == PROP_ID(PR_HIERARCHY_SERVER))
+			ppropvals->emplace_back(CHANGE_PROP_TYPE(tag, PT_ERROR), &invalid_code);
+		else if (!logon_object_get_calculated_property(plogon, tag, &pvalue))
 			tmp_proptags.emplace_back(tag);
 		else if (pvalue != nullptr)
 			ppropvals->emplace_back(tag, pvalue);
