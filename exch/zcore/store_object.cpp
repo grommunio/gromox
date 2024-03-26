@@ -428,7 +428,6 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
 	} else {
-		pproptags->pproptag[pproptags->count++] = PR_HIERARCHY_SERVER;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
