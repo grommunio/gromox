@@ -324,10 +324,7 @@ ec_error_t rop_getstorestat(uint32_t *pstat, LOGMAP *plogmap,
 ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	GUID guid;
-	BOOL b_found;
 	ems_objtype object_type;
-	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
@@ -341,27 +338,19 @@ ec_error_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	pghost->ppservers = cu_alloc<char *>();
 	if (pghost->ppservers == nullptr)
 		return ecServerOOM;
-	replid = rop_util_get_replid(folder_id);
-	if (1 != replid) {
-		if (!exmdb_client::get_mapping_guid(plogon->get_dir(), replid,
-		    &b_found, &guid))
-			return ecError;
-		if (!b_found)
-			return ecNotFound;
-		auto domain_id = rop_util_get_domain_id(guid);
-		if (domain_id == -1)
-			return ecNotFound;
-		if (domain_id != plogon->account_id &&
-		    !common_util_check_same_org(domain_id, plogon->account_id))
-			return ecNotFound;
-	} else {
-		// domain_id = plogon->account_id;
-	}
-	static constexpr size_t dnmax = 256;
-	pghost->ppservers[0] = cu_alloc<char>(dnmax);
+	auto username = get_rpc_info().username;
+	unsigned int user_id = 0;
+	if (!common_util_get_user_ids(username, &user_id, nullptr, nullptr))
+		return ecUnknownUser;
+	std::string serverdn;
+	auto err = cvt_username_to_serverdn(username,
+	           g_emsmdb_org_name, user_id, serverdn);
+	if (err != ecSuccess)
+		return err;
+	pghost->ppservers[0] = cu_alloc<char>(serverdn.size() + 1);
 	if (pghost->ppservers[0] == nullptr)
 		return ecServerOOM;
-	common_util_domain_to_essdn(plogon->get_account(), pghost->ppservers[0], dnmax);
+	gx_strlcpy(pghost->ppservers[0], serverdn.c_str(), serverdn.size() + 1);
 	return ecSuccess;
 }
 
