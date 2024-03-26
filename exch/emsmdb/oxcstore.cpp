@@ -37,14 +37,6 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	if (!(open_flags & LOGON_OPEN_FLAG_USE_PER_MDB_REPLID_MAPPING))
 		/* MS-OXCSTOR v25 §3.2.5.1.1, §3.2.5.1.3 */
 		return ecInvalidParam;
-	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
-		auto pdomain = strchr(rpc_info.username, '@');
-		if (pdomain == nullptr)
-			return ecUnknownUser;
-		pdomain ++;
-		common_util_domain_to_essdn(pdomain, pessdn, dnmax);
-		return ecWrongServer;
-	}
 	std::string username;
 	auto ret = cvt_essdn_to_username(pessdn, g_emsmdb_org_name,
 	           cu_id2user, username);
@@ -53,6 +45,15 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	unsigned int user_id = 0, dom_id = 0;
 	if (!common_util_get_user_ids(username.c_str(), &user_id, &dom_id, nullptr))
 		return ecUnknownUser;
+	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
+		std::string serverdn;
+		auto err = cvt_username_to_serverdn(rpc_info.username,
+		           g_emsmdb_org_name, user_id, serverdn);
+		if (err != ecSuccess)
+			return err;
+		gx_strlcpy(pessdn, serverdn.c_str(), dnmax);
+		return ecWrongServer;
+	}
 	if (strcasecmp(username.c_str(), rpc_info.username) != 0) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE)
 			return ecLoginPerm;
