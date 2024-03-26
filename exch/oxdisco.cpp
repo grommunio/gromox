@@ -11,6 +11,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <tinyxml2.h>
 #include <fmt/core.h>
 #include <fmt/printf.h>
@@ -86,7 +87,7 @@ class OxdiscoPlugin {
 	int resp_eas(tinyxml2::XMLElement *, const char *) const;
 	http_status resp_json(int, const char *) const;
 	static void resp_mh(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool);
-	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &, const std::string &, const std::string &, const std::string &, bool) const;
+	void resp_rpch(XMLElement *, const char *home, const char *dom, const std::string &ews_url, const std::string &oab_url, const std::string &ecp_url, std::string &&serverdn, std::string &&mdbdn, const std::string &mailboxid, bool is_pvt) const;
 	http_status resp_autocfg(int, const char *) const;
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const char *);
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
@@ -108,7 +109,6 @@ static constexpr char
 	mailbox_base_url[] = "https://{}/mapi/{}/?MailboxId={}@{}",
 	ews_base_url[] = "https://{}/EWS/{}",
 	oab_base_url[] = "https://{}/OAB/",
-	server_base_dn[] = "/o={}/" EAG_SERVERS "/cn={}@{}",
 	public_folder[] = "Public Folder",
 	public_folder_email[] = "public.folder.root@";
 static unsigned int ok_code = 200, bad_address_code = 501;
@@ -658,7 +658,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	if (*homesrv == '\0')
 		homesrv = host_id.c_str();
 
-	std::string DisplayName, essdn, mailboxid;
+	std::string DisplayName, essdn, serverdn, mdbdn, mailboxid;
 	unsigned int user_id = 0, domain_id = 0;
 	if (is_private) {
 		if (!mysql.get_user_displayname(email, buf.get(), 4096)) {
@@ -674,6 +674,12 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 		auto err = cvt_username_to_mailboxid(email, user_id, mailboxid);
 		if (err != ecSuccess)
 			return -1;
+		err = cvt_username_to_serverdn(email, x500_org_name.c_str(),
+		      user_id, serverdn);
+		if (err != ecSuccess)
+			return -1;
+		err = cvt_username_to_mdbdn(email, x500_org_name.c_str(),
+		      user_id, mdbdn);
 	}
 	else {
 		DisplayName = public_folder;
@@ -707,7 +713,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			mailboxid, is_private);
 	if (advertise_prot(m_advertise_rpch, user_agent))
 		resp_rpch(resp_acc, homesrv, domain, ews_url, OABUrl, EcpUrl,
-			mailboxid, is_private);
+			std::move(serverdn), std::move(mdbdn), mailboxid, is_private);
 
 	std::vector<sql_user> hints;
 	if (is_private && strcasecmp(authuser, email) == 0) {
@@ -787,10 +793,9 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 }
 
 void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
-    const char *domain,
-    const std::string &ews_url, const std::string &OABUrl,
-    const std::string &EcpUrl, const std::string &mailboxid,
-    bool is_private) const
+    const char *domain, const std::string &ews_url, const std::string &OABUrl,
+    const std::string &EcpUrl, std::string &&serverdn, std::string &&mdbdn,
+    const std::string &mailboxid, bool is_private) const
 {
 	/*
 	 * EXC2019 omits EXCH/EXPR if the X-MapiHttpCapability header is
@@ -803,15 +808,10 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
 	auto depl_server = fmt::format("{}@{}", mailboxid, domain);
 	add_child(resp_prt, "Server", depl_server);
 	add_child(resp_prt, "ServerVersion", m_server_version.c_str());
-
-	auto ServerDN = fmt::format(server_base_dn,
-		x500_org_name.c_str(), mailboxid, domain);
-	add_child(resp_prt, "ServerDN", ServerDN);
-
-	auto MdbDN = fmt::format(server_base_dn,
-		x500_org_name.c_str(), mailboxid, domain);
-	MdbDN += "/cn=Microsoft Private MDB";
-	add_child(resp_prt, "MdbDN", MdbDN);
+	if (serverdn.size() > 0)
+		add_child(resp_prt, "ServerDN", std::move(serverdn));
+	if (mdbdn.size() > 0)
+		add_child(resp_prt, "MdbDN", std::move(mdbdn));
 
 	add_child(resp_prt, "AuthPackage", "anonymous");
 	add_child(resp_prt, "ServerExclusiveConnect", "off");
