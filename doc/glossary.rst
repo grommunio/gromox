@@ -137,6 +137,45 @@ MAPIHTTP MailboxId
 	4 LE bytes conveying the user ID, but the parameter is never really used,
 	because the user id is obtained from HTTP authentication headers.
 
+ESSDN
+	"Enterprise/site/server distinguished name", a.k.a. Legacy DN. In
+	Gromox and contemporary versions of Exchange Server, it is a fake X.500
+	Distinguished Name that is not tied to any real LDAP tree(s). The ESSDN
+	text representation is root-first and uses slash as a hierarchy
+	separator (``/DC=com/DC=example/CN=Users``), whereas MSAD/OpenLDAP DNs
+	are root-last using comma (``CN=Users,DC=example,DC=com``). Different
+	ESSDN have been identified, see below.
+
+ESSDN.User (Addressbook entry)
+	Typical form: ``/o=myexch/ou=EAG/cn=Recipients/cn=<guid>-<cn>``.
+	``myexch`` is a name chosen by the administrator during Gromox or
+	Exchange installation. The GUID part exists to accomodate multiple
+	users with same Common Name in the groupware system. In MSAD, the user
+	ESSDN can be found in the ``legacyExchangeDN`` attribute of the LDAP
+	object. The user/ABK ESSDN is used to open a particular store.
+	(Autodiscover is used to resolve SPN/email addresses to user ESSDNs as
+	necessary).
+
+ESSDN.Server
+	Typical form:
+	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=SRV-EXCHANGE-01``. In
+	MSAD, the server ESSDN can be found in the ``msExchHomeServer``
+	attribute of the LDAP object. This ESSDN kind does not appear to be
+	used outside of MSAD.
+
+ESSDN.MailboxServer
+	Typical form:
+	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>``.
+	Exchange and Gromox can generate this ESSDN kind for the ``<Server>``
+	element in Autodiscover responses. Practical use has to do with Public
+	Folders, but is only exercised in obscure ROPs.
+
+ESSDN.MdbDN
+	Typical form:
+	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=<mailboxid>@<emaildomain>``.
+	Exchange and Gromox can generate this ESSDN kind for the ``<MdbDN>``
+	element, but no practical use has been seen.
+
 Database GUID
 	Randomly-generated value on mailbox creation.
 	A value which is found in ``mdb01.edb`` in table ``MailboxIdentity``,
