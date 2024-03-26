@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021-2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <ctime>
 #include <libHX/string.h>
@@ -149,8 +151,6 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	char homedir[256];
 	GUID mailbox_guid;
 	const char *pdomain;
-	const char *pdomain1;
-	
 	
 	if (!(open_flags & LOGON_OPEN_FLAG_PUBLIC) ||
 	    (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER))
@@ -164,7 +164,7 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	if (!common_util_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecUnknownUser;
 	if (NULL != pessdn) {
-		pdomain1 = common_util_essdn_to_domain(pessdn);
+		auto pdomain1 = cvt_serverdn_to_domain(pessdn, g_emsmdb_org_name);
 		if (NULL != pdomain1 && 0 != strcasecmp(pdomain, pdomain1)) {
 			if (org_id == 0)
 				return ecLoginFailure;

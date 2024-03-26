@@ -185,13 +185,6 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnma
 	return FALSE;
 }
 
-const char* common_util_essdn_to_domain(const char *pessdn)
-{
-	char tmp_essdn[1024];
-	auto tmp_len = sprintf(tmp_essdn, "/o=%s/" EAG_SRV_F9 "@", g_emsmdb_org_name);
-	return strncasecmp(pessdn, tmp_essdn, tmp_len) == 0 ? &pessdn[tmp_len] : nullptr;
-}
-
 void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax)
 {
 	snprintf(pessdn, dnmax, "/o=%s/" EAG_SRV_F9 "@%s", g_emsmdb_org_name, pdomain);

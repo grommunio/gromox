@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
 // This file is part of Gromox.
+#include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -277,6 +278,23 @@ ec_error_t cvt_username_to_mdbdn(const char *username, const char *org,
 	return err;
 } catch (const std::bad_alloc &) {
 	return ecServerOOM;
+}
+
+const char *cvt_serverdn_to_domain(const char *essdn, const char *org) try
+{
+	auto prefix = fmt::format("/o={}/" EAG_SERVERS "/cn=", org);
+	if (strncasecmp(essdn, prefix.c_str(), prefix.size()) != 0) {
+		errno = 0;
+		return nullptr;
+	}
+	auto at = strchr(&essdn[prefix.size()], '@');
+	if (at != nullptr)
+		return at + 1;
+	errno = 0;
+	return nullptr;
+} catch (const std::bad_alloc &) {
+	errno = ENOMEM;
+	return nullptr;
 }
 
 }
