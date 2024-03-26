@@ -110,7 +110,7 @@ static constexpr char
 	oab_base_url[] = "https://{}/OAB/",
 	server_base_dn[] = "/o={}/" EAG_SERVERS "/cn={}@{}",
 	public_folder[] = "Public Folder",
-	public_folder_email[] = "public.folder.root@"; /* EXC: PUBS@thedomain */
+	public_folder_email[] = "public.folder.root@";
 static unsigned int ok_code = 200, bad_address_code = 501;
 static constexpr char bad_address_msg[] = "Bad Address";
 static unsigned int invalid_request_code = 600;
@@ -724,7 +724,7 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 			add_child(am, "Type", "Delegate");
 			auto em = user.username.c_str();
 			auto dn = user.propvals.find(PR_DISPLAY_NAME);
-			/* DispName is required as per OXDSCLI § */
+			/* DispName is required as per OXDSCLI v21 §2.2.4.1.1.2.5.1 */
 			add_child(am, "DisplayName", dn != user.propvals.end() ? dn->second.c_str() : em);
 			add_child(am, "SmtpAddress", em);
 			add_child(am, "OwnerSmtpAddress", em);
@@ -750,6 +750,11 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 	add_child(resp_prt, "OOFUrl", ews_url);
 	add_child(resp_prt, "OABUrl", OABUrl);
 
+	/*
+	 * EXC2019 emits EXHTTP depending on whether the User-Agent indicates a
+	 * new-enough Outlook. That is similar to using
+	 * oxdisco_advertise_mh=new_mso_only.
+	 */
 	add_child(resp_prt, "Type", "EXHTTP");
 	add_child(resp_prt, "Server", homesrv);
 	add_child(resp_prt, "SSL", "On");
@@ -766,8 +771,6 @@ void OxdiscoPlugin::resp_mh(XMLElement *resp_acc, const char *homesrv,
 		add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
 	}
 
-
-	/* Protocol Type=mapiHttp */
 	resp_prt = add_child(resp_acc, "Protocol");
 	resp_prt->SetAttribute("Type", "mapiHttp");
 	resp_prt->SetAttribute("Version", "1");
@@ -789,6 +792,11 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
     const std::string &EcpUrl, const std::string &mailboxid,
     bool is_private) const
 {
+	/*
+	 * EXC2019 omits EXCH/EXPR if the X-MapiHttpCapability header is
+	 * present. Gromox oxdisco_advertise_rpch=only_old_mso instead
+	 * evaluates User-Agent and does not look at X-MHC.
+	 */
 	auto resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "Type", "EXCH");
 
@@ -819,12 +827,13 @@ void OxdiscoPlugin::resp_rpch(XMLElement *resp_acc, const char *homesrv,
 		add_child(resp_prt, "EcpUrl-photo", "thumbnail.php");
 	}
 
-	/* Protocol EXPR */
+	/* Exchange Proxy RPC (RPCH) */
 	resp_prt = add_child(resp_acc, "Protocol");
 	add_child(resp_prt, "Type", "EXPR");
 	add_child(resp_prt, "Server", homesrv);
 	add_child(resp_prt, "SSL", "On");
 	add_child(resp_prt, "CertPrincipalName", "None");
+	/* could also advertise <AuthPackage>Ntlm</AuthPackage> */
 	add_child(resp_prt, "AuthPackage", "basic");
 	add_child(resp_prt, "ServerExclusiveConnect", "on");
 	if (is_private) {

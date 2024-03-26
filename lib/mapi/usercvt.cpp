@@ -19,6 +19,11 @@ using namespace std::string_literals;
 
 namespace gromox {
 
+/*
+ * As per MS-OXOABK v18 §2.2.1.1, the maximum DN length is roughly 1072 bytes
+ * (16 pieces of "/cn=<63 chars>")
+ */
+
 ec_error_t cvt_essdn_to_username(const char *idn, const char *org,
     cvt_id2user id2user, std::string &username) try
 {
