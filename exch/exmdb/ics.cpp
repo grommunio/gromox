@@ -175,7 +175,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 			" change_number, is_associated, message_size "
 			"FROM messages WHERE parent_fid=%llu AND "
 			"is_deleted=0", static_cast<unsigned long long>(fid_val));
-	auto stm_select_msg = gx_sql_prep(pdb->psqlite, sql_string);
+	auto stm_select_msg = pdb->prep(sql_string);
 	if (stm_select_msg == nullptr)
 		return false;
 	auto stm_insert_chg = gx_sql_prep(psqlite, b_ordered ?
@@ -189,11 +189,11 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	xstmt stm_insert_reads, stm_select_rcn, stm_select_rst;
 	if (NULL != pread) {
 		if (!b_private) {
-			stm_select_rcn = gx_sql_prep(pdb->psqlite, "SELECT read_cn FROM "
+			stm_select_rcn = pdb->prep("SELECT read_cn FROM "
 			                 "read_cns WHERE message_id=? AND username=?");
 			if (stm_select_rcn == nullptr)
 				return false;
-			stm_select_rst = gx_sql_prep(pdb->psqlite, "SELECT message_id FROM "
+			stm_select_rst = pdb->prep("SELECT message_id FROM "
 			                 "read_states WHERE message_id=? AND username=?");
 			if (stm_select_rst == nullptr)
 				return false;
@@ -204,7 +204,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	xstmt stm_select_mp;
 	if (b_ordered) {
-		stm_select_mp = gx_sql_prep(pdb->psqlite, "SELECT propval FROM "
+		stm_select_mp = pdb->prep("SELECT propval FROM "
 		                "message_properties WHERE proptag=? AND message_id=?");
 		if (stm_select_mp == nullptr)
 			return false;

@@ -42,7 +42,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
+	auto pstmt = pdb->prep("SELECT folder_id"
 	             " FROM receive_table WHERE class=?");
 	if (pstmt == nullptr)
 		return FALSE;
@@ -67,7 +67,7 @@ BOOL exmdb_server::get_folder_by_class(const char *dir,
 	*str_explicit = cu_alloc<char>(1);
 	if (*str_explicit == nullptr)
 		return false;
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*pid = pstmt.step() == SQLITE_ROW ?
@@ -89,7 +89,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	if (!pdb)
 		return FALSE;
 	if (0 == folder_id) {
-		auto pstmt = gx_sql_prep(pdb->psqlite, "DELETE FROM"
+		auto pstmt = pdb->prep("DELETE FROM"
 		             " receive_table WHERE class=?");
 		if (pstmt == nullptr)
 			return FALSE;
@@ -101,7 +101,7 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	}
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM folders WHERE"
 	          " folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
@@ -111,14 +111,14 @@ BOOL exmdb_server::set_folder_by_class(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 			"count(*) FROM receive_table");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_RECIEVE_FOLDERS)
 		return FALSE;
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "REPLACE INTO receive_table"
 	         " VALUES (?, ?, %llu)", LLU{rop_util_current_nttime()});
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_text(pstmt, 1, str_class, -1, SQLITE_STATIC);
@@ -140,7 +140,7 @@ BOOL exmdb_server::get_folder_class_table(
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 			"count(*) FROM receive_table");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	auto total_count = std::min(static_cast<uint64_t>(UINT32_MAX), pstmt.col_uint64(0));
@@ -155,7 +155,7 @@ BOOL exmdb_server::get_folder_class_table(
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT class, folder_id,"
 					" modified_time FROM receive_table");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	ptable->count = 0;
@@ -209,7 +209,7 @@ BOOL exmdb_server::is_folder_deleted(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "SELECT is_deleted "
 				"FROM folders WHERE folder_id=%llu",
 				LLU{rop_util_get_gc_value(folder_id)});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*pb_del = pstmt.step() != SQLITE_ROW || sqlite3_column_int64(pstmt, 0) != 0 ? TRUE : false;
@@ -318,7 +318,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		auto tmp_val = rop_util_get_gc_value(tmp_fid);
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
 		          " folders WHERE folder_id=%llu", LLU{tmp_val});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr) {
 			*errcode = ecError;
 			return FALSE;
@@ -341,7 +341,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	auto qstr = "SELECT 1 FROM folders AS f INNER JOIN folder_properties AS fp "
 	            "ON f.folder_id=fp.folder_id AND fp.proptag=? "
 	            "WHERE f.parent_id=? AND f.is_deleted=0 AND fp.propval=? COLLATE NOCASE";
-	auto pstmt = gx_sql_prep(pdb->psqlite, qstr);
+	auto pstmt = pdb->prep(qstr);
 	*errcode = ecError;
 	if (pstmt == nullptr)
 		return FALSE;
@@ -358,7 +358,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	if (type == FOLDER_GENERIC) {
 		snprintf(sql_string, std::size(sql_string), "SELECT "
 			"max(range_end) FROM allocated_eids");
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		max_eid = sqlite3_column_int64(pstmt, 0);
@@ -372,7 +372,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)", LLU{max_eid}, LLU{max_eid +
 			SYSTEM_ALLOCATED_EID_RANGE - 1}, LLD{time(nullptr)});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		uint64_t cur_eid = 0;
 		if (0 == tmp_fid) {
@@ -383,7 +383,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 			cur_eid = max_eid;
 		}
 		max_eid += SYSTEM_ALLOCATED_EID_RANGE;
-		pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO folders "
+		pstmt = pdb->prep("INSERT INTO folders "
 		        "(folder_id, parent_id, change_number, "
 		        "cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
 		if (pstmt == nullptr)
@@ -412,7 +412,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 		} else {
 			folder_id = rop_util_get_gc_value(tmp_fid);
 		}
-		pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO folders (folder_id,"
+		pstmt = pdb->prep("INSERT INTO folders (folder_id,"
 		        " parent_id, change_number, is_search, cur_eid, "
 		        "max_eid) VALUES (?, ?, ?, 1, 0, 0)");
 		if (pstmt == nullptr)
@@ -442,7 +442,7 @@ BOOL exmdb_server::create_folder(const char *dir, cpid_t cpid,
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		"proptag=%u", LLU{parent_id}, PR_HIERARCHY_CHANGE_NUM);
-	gx_sql_exec(pdb->psqlite, sql_string);
+	pdb->exec(sql_string);
 	cu_set_property(MAPI_FOLDER, parent_id, CP_ACP, pdb->psqlite,
 		PR_HIER_REV, &nt_time, &b_result);
 	cu_set_property(MAPI_FOLDER, folder_id, CP_ACP, pdb->psqlite,
@@ -589,7 +589,7 @@ static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
 		 "search_result ON messages.message_id="
 		 "search_result.message_id AND "
 		 "search_result.folder_id=%llu", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -620,7 +620,7 @@ static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
 		pdb->notify_message_deletion(parent_fid, message_id);
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM messages "
 			"WHERE message_id=%llu", LLU{message_id});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	return TRUE;
@@ -668,7 +668,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 		         " message_size, is_associated, is_deleted FROM messages "
 		         "WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
 		         LLU{folder_id}, s_normal, s_fai);
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW) {
@@ -706,13 +706,13 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 					snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 						"is_deleted=1 WHERE message_id=%llu",
 						LLU{message_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				if (pdb->exec(sql_string) != SQLITE_OK)
 					return FALSE;
 			}
 			if (!b_hard && !b_private) {
 				snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
 					" WHERE message_id=%llu", LLU{message_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				if (pdb->exec(sql_string) != SQLITE_OK)
 					return FALSE;
 			}
 		}
@@ -727,7 +727,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 				snprintf(sql_string, std::size(sql_string), "UPDATE messages SET is_deleted=1"
 				         " WHERE parent_fid=%llu AND is_associated IN (%s,%s)",
 				         LLU{folder_id}, s_normal, s_fai);
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 		}
 	}
@@ -736,7 +736,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
 	         " is_deleted FROM folders WHERE parent_id=%llu", LLU{folder_id});
 
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -784,7 +784,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
 			snprintf(sql_string, std::size(sql_string), "UPDATE folders SET "
 				"is_deleted=1 WHERE folder_id=%llu",
 				LLU{fid_val});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		pdb->notify_folder_deletion(folder_id, fid_val);
 	}
@@ -814,7 +814,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		if (pstmt.step() != SQLITE_ROW)
@@ -828,7 +828,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	if (!b_search) {
 		snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM "
 		          "folders WHERE parent_id=%llu", LLU{fid_val});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
@@ -839,7 +839,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM"
 		         " messages WHERE parent_fid=%llu AND"
 		         " is_deleted=0", LLU{fid_val});
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			return FALSE;
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
@@ -849,7 +849,7 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 	} else {
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM"
 		          " search_result WHERE folder_id=%llu", LLU{fid_val});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW)
@@ -887,23 +887,23 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 			" is_deleted=1 WHERE folder_id=%llu",
 			LLU{fid_val});
 	}
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	pdb->notify_folder_deletion(parent_id, fid_val);
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 	        "proptag=%u", LLU{parent_id}, PR_DELETED_FOLDER_COUNT);
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		 "proptag=%u", LLU{parent_id}, PR_HIERARCHY_CHANGE_NUM);
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties "
 		"SET propval=%llu WHERE folder_id=%llu AND proptag=?",
 		LLU{rop_util_current_nttime()}, LLU{parent_id});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 0, PR_HIER_REV);
@@ -952,7 +952,7 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 			"propval=propval+%u WHERE folder_id=%llu AND "
 			"proptag=%u", message_count, LLU{fid_val},
 		        PR_DELETED_COUNT_TOTAL);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (folder_count > 0) {
@@ -960,17 +960,17 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 			"propval=propval+%u WHERE folder_id=%llu AND "
 			"proptag=%u", folder_count, LLU{fid_val},
 		        PR_DELETED_FOLDER_COUNT);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		         "proptag=%u", LLU{fid_val}, PR_HIERARCHY_CHANGE_NUM);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 		         LLU{rop_util_current_nttime()}, LLU{fid_val}, PR_HIER_REV);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (message_count > 0 || folder_count > 0) {
@@ -978,7 +978,7 @@ BOOL exmdb_server::empty_folder(const char *dir, cpid_t cpid,
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU{rop_util_current_nttime()}, LLU{fid_val},
 		         PR_LOCAL_COMMIT_TIME_MAX);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (!cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE, normal_size, fai_size))
@@ -1127,19 +1127,19 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 		"%llu, %llu, 1, search_flags, search_criteria, 0, 0"
 		" FROM folders WHERE folder_id=%llu", LLU{last_eid},
 		LLU{dst_pid}, LLU{change_num}, LLU{src_fid});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO folder_properties "
 		"(folder_id, proptag, propval) SELECT %llu, proptag,"
 		" propval FROM folder_properties WHERE folder_id=%llu",
 		LLU{last_eid}, LLU{src_fid});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (b_guest) {
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions "
 					"(folder_id, username, permission) VALUES "
 					"(%llu, ?, ?)", LLU{last_eid});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
@@ -1153,7 +1153,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties"
 				" SET propval=? WHERE folder_id=%llu AND "
 				"proptag=?", LLU{last_eid});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, art);
@@ -1184,11 +1184,11 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result (folder_id, "
 		"message_id) SELECT %llu, message_id WHERE folder_id=%llu",
 		LLU{last_eid}, LLU{src_fid});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM "
 	          "search_result WHERE folder_id=%llu", LLU{last_eid});
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
@@ -1227,7 +1227,7 @@ static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
 	         "FROM messages JOIN search_result ON "
 	         "messages.message_id=search_result.message_id"
 	         " AND search_result.folder_id=%llu", LLU{fid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -1333,7 +1333,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		         "parent_fid=%llu AND is_associated IN (%s,%s)",
 		         LLU{fid_val}, s_normal, s_fai);
 
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (pstmt.step() == SQLITE_ROW) {
@@ -1384,7 +1384,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	}
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id "
 		  "FROM folders WHERE parent_id=%llu", LLU{fid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -1476,12 +1476,12 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		         "proptag=%u", LLU{dst_val}, PR_HIERARCHY_CHANGE_NUM);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 		         LLU{rop_util_current_nttime()}, LLU{dst_val}, PR_HIER_REV);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (normal_size + fai_size > 0 || folder_count > 0) {
@@ -1489,7 +1489,7 @@ BOOL exmdb_server::copy_folder_internal(const char *dir,
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU{rop_util_current_nttime()}, LLU{dst_val},
 		         PR_LOCAL_COMMIT_TIME_MAX);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
@@ -1564,12 +1564,12 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 	if (!b_copy) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE folders SET parent_id=%llu"
 		        " WHERE folder_id=%llu", LLU{dst_val}, LLU{src_val});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties "
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
 		        LLU{src_val}, PR_DISPLAY_NAME);
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, str_new, -1, SQLITE_STATIC);
@@ -1580,22 +1580,22 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 		         LLU{nt_time}, LLU{parent_val}, PR_LOCAL_COMMIT_TIME_MAX);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		        "proptag=%u", LLU{parent_val}, PR_DELETED_FOLDER_COUNT);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		         "proptag=%u", LLU{parent_val}, PR_HIERARCHY_CHANGE_NUM);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 		         LLU{nt_time}, LLU{parent_val}, PR_HIER_REV);
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		fid_val = src_val;
 		pdb->proc_dynamic_event(cpid, dynamic_event::move_folder,
@@ -1615,7 +1615,7 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties "
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
 		        LLU{fid_val}, PR_DISPLAY_NAME);
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, str_new, -1, SQLITE_STATIC);
@@ -1638,17 +1638,17 @@ BOOL exmdb_server::movecopy_folder(const char *dir, int account_id, cpid_t cpid,
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 		"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 	         LLU{nt_time}, LLU{dst_val}, PR_LOCAL_COMMIT_TIME_MAX);
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 		"propval=propval+1 WHERE folder_id=%llu AND "
 	         "proptag=%u", LLU{dst_val}, PR_HIERARCHY_CHANGE_NUM);
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folder_properties SET "
 		"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 	         LLU{nt_time}, LLU{dst_val}, PR_HIER_REV);
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (sql_transact.commit() != 0)
 		return false;
@@ -1672,7 +1672,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search,"
 				" search_flags, search_criteria FROM "
 				"folders WHERE folder_id=%llu", LLU{fid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW ||
@@ -1733,7 +1733,7 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM "
 	          "search_result WHERE folder_id=%llu", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
@@ -1742,7 +1742,7 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result"
 	        " WHERE folder_id=%llu", LLU{folder_id});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
 }
@@ -1779,7 +1779,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 	}
 	snprintf(sql_string, std::size(sql_string), "SELECT search_flags FROM"
 	          " folders WHERE folder_id=%llu", LLU{fid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	uint32_t original_flags = pstmt.col_uint64(0);
@@ -1789,7 +1789,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 		return false;
 	snprintf(sql_string, std::size(sql_string), "UPDATE folders SET search_flags=%u "
 	        "WHERE folder_id=%llu", search_flags, LLU{fid_val});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return false;
 	if (NULL != prestriction) {
 		if (!ext_push.init(tmp_buff.get(), buff_size, 0) ||
@@ -1797,7 +1797,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 			return false;
 		snprintf(sql_string, std::size(sql_string), "UPDATE folders SET "
 		          "search_criteria=? WHERE folder_id=%llu", LLU{fid_val});
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
 		sqlite3_bind_blob(pstmt, 1, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
@@ -1812,7 +1812,7 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 			return false;
 		snprintf(sql_string, std::size(sql_string), "SELECT search_criteria FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
 		if (pstmt.step() != SQLITE_ROW)
@@ -1830,14 +1830,14 @@ BOOL exmdb_server::set_search_criteria(const char *dir, cpid_t cpid,
 			return false;
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM search_scopes"
 		        " WHERE folder_id=%llu", LLU{fid_val});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO "
 		          "search_scopes VALUES (%llu, ?)", LLU{fid_val});
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT COUNT(*) "
+		auto pstmt1 = pdb->prep("SELECT COUNT(*) "
 		              "FROM folders WHERE folder_id=?");
 		if (pstmt1 == nullptr)
 			return false;
@@ -1914,7 +1914,7 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 		return FALSE;
 	snprintf(sql_string, 1024, "DELETE FROM permissions WHERE"
 	         " folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
 }
@@ -1955,7 +1955,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions"
 					" (folder_id, username, permission) VALUES"
 					" (%llu, ?, ?)", LLU{fid_val});
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
 	}
@@ -1983,7 +1983,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		snprintf(sql_string, std::size(sql_string), "SELECT member_id "
 			"FROM permissions WHERE folder_id=%llu AND "
 			"username=?", LLU{fid_val});
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt1 = pdb->prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
 		sqlite3_bind_text(pstmt1, 1, member_id == DEFAULT ? "default" : "", -1, SQLITE_STATIC);
@@ -1992,7 +1992,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT config_value "
 				"FROM configurations WHERE config_id=%d",
 				member_id == DEFAULT ? CONFIG_ID_DEFAULT_PERMISSION : CONFIG_ID_ANONYMOUS_PERMISSION);
-			pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+			pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
 			uint32_t permission = rightsNone;
@@ -2002,7 +2002,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			snprintf(sql_string, std::size(sql_string), "INSERT INTO permissions"
 						" (folder_id, username, permission) VALUES"
 						" (%llu, ?, ?)", LLU{fid_val});
-			pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+			pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
 			sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
@@ -2018,7 +2018,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	char sql_string[128];
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
 		  " permissions WHERE member_id=%llu", LLU{member_id});
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = pdb->prep(sql_string);
 	if (pstmt1 == nullptr)
 		return false;
 	if (pstmt1.step() != SQLITE_ROW ||
@@ -2042,7 +2042,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 	snprintf(sql_string, std::size(sql_string), "UPDATE permissions SET permission=%u"
 		" WHERE member_id=%llu", permission, LLU{member_id});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return false;
 	return true;
 }
@@ -2057,19 +2057,19 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"default\"", LLU{fid_val});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
 	} else if (*member_id == UINT64_MAX) {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"\"", LLU{fid_val});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
 	} else {
 		char sql_string[128];
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM"
 			  " permissions WHERE member_id=%llu", LLU{*member_id});
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt1 = pdb->prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
 		if (pstmt1.step() != SQLITE_ROW ||
@@ -2078,7 +2078,7 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		pstmt1.finalize();
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM permissions"
 			" WHERE member_id=%llu", LLU{*member_id});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return false;
 	}
 	return true;
@@ -2125,7 +2125,7 @@ BOOL exmdb_server::empty_folder_rule(const char *dir, uint64_t folder_id)
 		return FALSE;
 	snprintf(sql_string, 1024, "DELETE FROM rules WHERE "
 	         "folder_id=%llu", LLU{rop_util_get_gc_value(folder_id)});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
 }
@@ -2147,7 +2147,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT count(*) "
 	          "FROM rules WHERE folder_id=%llu", LLU{fid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	size_t rule_count = sqlite3_column_int64(pstmt, 0);
@@ -2172,7 +2172,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			if (num == nullptr) {
 				snprintf(sql_string, std::size(sql_string), "SELECT max(sequence)"
 				          " FROM rules WHERE folder_id=%llu", LLU{fid_val});
-				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+				auto pstmt1 = pdb->prep(sql_string);
 				if (pstmt1 == nullptr)
 					continue;
 				seq_id = pstmt1.step() != SQLITE_ROW ? 0 :
@@ -2206,7 +2206,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 					"(name, provider, sequence, state, level, user_flags,"
 					" provider_data, condition, actions, folder_id) VALUES"
 					" (?, ?, ?, ?, ?, ?, ?, ?, ?, %llu)", LLU{fid_val});
-				pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+				pstmt = pdb->prep(sql_string);
 				if (pstmt == nullptr)
 					return false;
 			}
@@ -2243,7 +2243,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			auto rule_id = rop_util_get_gc_value(*lnum);
 			snprintf(sql_string, std::size(sql_string), "SELECT folder_id "
 			          "FROM rules WHERE rule_id=%llu", LLU{rule_id});
-			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+			auto pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
 			if (pstmt1.step() != SQLITE_ROW ||
@@ -2254,7 +2254,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			if (NULL != pprovider) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET"
 				          " provider=? WHERE rule_id=%llu", LLU{rule_id});
-				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+				pstmt1 = pdb->prep(sql_string);
 				if (pstmt1 == nullptr)
 					return false;
 				sqlite3_bind_text(pstmt1, 1, pprovider, -1, SQLITE_STATIC);
@@ -2266,35 +2266,35 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			if (num != nullptr) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET sequence=%u"
 				        " WHERE rule_id=%llu", *num, LLU{rule_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				if (pdb->exec(sql_string) != SQLITE_OK)
 					return false;
 			}
 			num = prow[i].propvals.get<uint32_t>(PR_RULE_STATE);
 			if (num != nullptr) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET state=%u"
 				        " WHERE rule_id=%llu", *num, LLU{rule_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				if (pdb->exec(sql_string) != SQLITE_OK)
 					return false;
 			}
 			auto plevel = prow[i].propvals.get<uint32_t>(PR_RULE_LEVEL);
 			if (NULL != plevel) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET level=%u"
 				        " WHERE rule_id=%llu", *plevel, LLU{rule_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				if (pdb->exec(sql_string) != SQLITE_OK)
 					return false;
 			}
 			auto puser_flags = prow[i].propvals.get<uint32_t>(PR_RULE_USER_FLAGS);
 			if (NULL != puser_flags) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET user_flags=%u"
 				        " WHERE rule_id=%llu", *puser_flags, LLU{rule_id});
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				if (pdb->exec(sql_string) != SQLITE_OK)
 					return false;
 			}
 			auto pprovider_bin = prow[i].propvals.get<BINARY>(PR_RULE_PROVIDER_DATA);
 			if (NULL != pprovider_bin) {
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET "
 				          "provider_data=? WHERE rule_id=%llu", LLU{rule_id});
-				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+				pstmt1 = pdb->prep(sql_string);
 				if (pstmt1 == nullptr)
 					return false;
 				sqlite3_bind_blob(pstmt1, 1, pprovider_bin->pb,
@@ -2311,7 +2311,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 				int condition_len = ext_push.m_offset;
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET "
 				          "condition=? WHERE rule_id=%llu", LLU{rule_id});
-				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+				pstmt1 = pdb->prep(sql_string);
 				if (pstmt1 == nullptr)
 					return false;
 				sqlite3_bind_blob(pstmt1, 1, condition_buff.get(),
@@ -2328,7 +2328,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 				int action_len = ext_push.m_offset;
 				snprintf(sql_string, std::size(sql_string), "UPDATE rules SET "
 				          "actions=? WHERE rule_id=%llu", LLU{rule_id});
-				pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+				pstmt1 = pdb->prep(sql_string);
 				if (pstmt1 == nullptr)
 					return false;
 				sqlite3_bind_blob(pstmt1, 1, action_buff.get(),
@@ -2346,7 +2346,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			auto rule_id = rop_util_get_gc_value(*lnum);
 			snprintf(sql_string, std::size(sql_string), "SELECT folder_id "
 			          "FROM rules WHERE rule_id=%llu", LLU{rule_id});
-			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+			auto pstmt1 = pdb->prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
 			if (pstmt1.step() != SQLITE_ROW ||
@@ -2355,7 +2355,7 @@ BOOL exmdb_server::update_folder_rule(const char *dir, uint64_t folder_id,
 			pstmt1.finalize();
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM rules"
 			        " WHERE rule_id=%llu", LLU{rule_id});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return false;
 			break;
 		}

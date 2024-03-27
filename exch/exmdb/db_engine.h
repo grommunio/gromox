@@ -149,6 +149,8 @@ struct DB_ITEM {
 		sqlite3 *psqlite = nullptr;
 	} tables;
 
+	gromox::xstmt prep(const char *q) const { return gromox::gx_sql_prep(psqlite, q); }
+	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(tables.psqlite, q); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(tables.psqlite, q); }
 };

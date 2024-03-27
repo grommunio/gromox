@@ -41,7 +41,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 			"count(*) FROM named_properties");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	total_count = sqlite3_column_int64(pstmt, 0);
@@ -56,7 +56,7 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT"
 		" propid FROM named_properties");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	ppropids->count = 0;
@@ -113,7 +113,7 @@ BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
 
 	/* Implicit create (MS-OXCSTOR v25 §3.2.5.9) */
 	gx_strlcpy(sql_string, "INSERT INTO replguidmap (`replguid`) VALUES (?)", std::size(sql_string));
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	pstmt.bind_text(1, guid_string);
@@ -124,7 +124,7 @@ BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT replid FROM "
 	         "replguidmap WHERE replguid='%s'", guid_string);
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
@@ -254,7 +254,7 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	/* add in mlist permissions(?) */
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 		"username, permission FROM permissions");
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -314,7 +314,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
@@ -334,7 +334,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	          static_cast<unsigned long long>(tmp_eid),
 	          static_cast<unsigned long long>(tmp_eid + count),
 	          static_cast<long long>(time(nullptr)));
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	*pbegin_eid = rop_util_make_eid_ex(1, tmp_eid);
 	return TRUE;
@@ -467,7 +467,7 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 	proptags[1] = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
+	auto pstmt1 = pdb->prep("SELECT folder_id"
 	              " FROM folders WHERE parent_id=?");
 	if (pstmt1 == nullptr)
 		return FALSE;
@@ -476,7 +476,7 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	         "m.message_id=mp.message_id WHERE m.parent_fid=? AND "
 	         "mp.proptag IN (%u,%u,%u) AND mp.propval=? LIMIT 1",
 	         proptags[0], proptags[1], proptags[2]);
-	auto pstmt2 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt2 = pdb->prep(sql_string);
 	if (pstmt2 == nullptr)
 		return FALSE;
 	return table_check_address_in_contact_folder(pstmt1, pstmt2,

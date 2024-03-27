@@ -293,7 +293,7 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	         " FROM messages WHERE parent_fid=%llu AND "
 	         "(is_associated=%u AND is_deleted=%u)",
 	         LLU{fid_val}, !!b_fai, !!b_deleted);
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	*pcount = sqlite3_column_int64(pstmt, 0);
@@ -565,7 +565,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	} else {
 		snprintf(sql_string, std::size(sql_string), "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU{fid_val});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		if (pstmt.step() != SQLITE_ROW) {
@@ -837,7 +837,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		            " AND is_associated=0 AND is_deleted=%u",
 		            !!(table_flags & TABLE_FLAG_SOFTDELETES));
 	}
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return false;
 	uint64_t last_row_id = 0;
@@ -2613,7 +2613,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT DISTINCT proptag "
+		auto pstmt1 = pdb->prep("SELECT DISTINCT proptag "
 		              "FROM folder_properties WHERE folder_id=?");
 		if (pstmt1 == nullptr)
 			return FALSE;
@@ -2643,7 +2643,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT DISTINCT proptag "
+		auto pstmt1 = pdb->prep("SELECT DISTINCT proptag "
 		              "FROM message_properties WHERE message_id=?");
 		if (pstmt1 == nullptr)
 			return FALSE;

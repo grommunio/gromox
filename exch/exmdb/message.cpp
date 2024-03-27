@@ -136,7 +136,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 	char sql_string[256];
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id "
 	          "FROM messages WHERE message_id=%llu", LLU{dst_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() == SQLITE_ROW)
@@ -147,7 +147,7 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT parent_fid, is_associated"
 	          " FROM messages WHERE message_id=%llu", LLU{mid_val});
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW)
@@ -173,17 +173,17 @@ BOOL exmdb_server::movecopy_message(const char *dir, int32_t account_id,
 		if (exmdb_server::is_private()) {
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM messages"
 			        " WHERE message_id=%llu", LLU{mid_val});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 			b_update = FALSE;
 		} else {
 			snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 			        "is_deleted=1 WHERE message_id=%llu", LLU{mid_val});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM "
 			          "read_states message_id=%llu", LLU{mid_val});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 		}
 	}
@@ -290,7 +290,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	auto stm_find = gx_sql_prep(pdb->psqlite, "SELECT parent_fid, "
+	auto stm_find = pdb->prep("SELECT parent_fid, "
 	             "is_associated FROM messages WHERE message_id=?");
 	if (stm_find == nullptr)
 		return FALSE;
@@ -303,7 +303,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 		} else {
 			strcpy(sql_string, "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 		}
-		stm_del = gx_sql_prep(pdb->psqlite, sql_string);
+		stm_del = pdb->prep(sql_string);
 		if (stm_del == nullptr)
 			return FALSE;
 	}
@@ -384,7 +384,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, int32_t account_id,
 		if (!exmdb_server::is_private()) {
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
 			         " WHERE message_id=%llu", LLU{tmp_val});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return false;
 		}
 
@@ -507,11 +507,11 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!sql_transact)
 		return false;
-	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT parent_fid, is_associated, "
+	auto pstmt = pdb->prep("SELECT parent_fid, is_associated, "
 	             "message_size FROM messages WHERE message_id=?");
 	if (pstmt == nullptr)
 		return FALSE;
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, b_hard ?
+	auto pstmt1 = pdb->prep(b_hard ?
 	              "DELETE FROM messages WHERE message_id=?" :
 	              "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 	if (pstmt1 == nullptr)
@@ -576,7 +576,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		if (!b_hard && !is_private()) {
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
 			        " WHERE message_id=%llu", LLU{tmp_val});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				return FALSE;
 		}
 	}
@@ -715,7 +715,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 	mid_val = rop_util_get_gc_value(message_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
@@ -751,7 +751,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM "
 	          "attachments WHERE message_id=%llu", LLU{mid_val});
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
@@ -762,7 +762,7 @@ BOOL exmdb_server::get_message_brief(const char *dir, cpid_t cpid,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT attachment_id FROM "
 	          "attachments WHERE message_id=%llu", LLU{mid_val});
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	proptags.count = 1;
@@ -806,7 +806,7 @@ BOOL exmdb_server::is_msg_present(const char *dir,
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_fid FROM"
 					" messages WHERE message_id=%llu", LLU{mid_val});
 
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
@@ -830,7 +830,7 @@ BOOL exmdb_server::is_msg_deleted(const char *dir,
 	mid_val = rop_util_get_gc_value(message_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT is_deleted "
 	         "FROM messages WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*pb_del = pstmt.step() != SQLITE_ROW ||
@@ -968,7 +968,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO "
 				"read_cns VALUES (%llu, ?, %llu)",
 				LLU{mid_val}, LLU{read_cn});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
@@ -980,7 +980,7 @@ BOOL exmdb_server::set_message_read_state(const char *dir,
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 			"read_cn=%llu WHERE message_id=%llu",
 			LLU{read_cn}, LLU{mid_val});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 	if (!common_util_get_message_parent_folder(pdb->psqlite,
@@ -1032,7 +1032,7 @@ BOOL exmdb_server::get_message_group_id(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "SELECT group_id "
 				"FROM messages WHERE message_id=%llu",
 				LLU{rop_util_get_gc_value(message_id)});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW ||
@@ -1057,7 +1057,7 @@ BOOL exmdb_server::set_message_group_id(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" group_id=%u WHERE message_id=%llu",
 		XUI{group_id}, LLU{rop_util_get_gc_value(message_id)});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
 }
@@ -1081,13 +1081,13 @@ BOOL exmdb_server::save_change_indices(const char *dir, uint64_t message_id,
 	if (0 == pindices->count && 0 == pungroup_proptags->count) {
 		snprintf(sql_string, std::size(sql_string), "UPDATE messages SET "
 		          "group_id=? WHERE message_id=%llu", LLU{mid_val});
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = pdb->prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		sqlite3_bind_null(pstmt, 1);
 		return pstmt.step() == SQLITE_DONE ? TRUE : false;
 	}
-	auto pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO"
+	auto pstmt = pdb->prep("INSERT INTO"
 	             " message_changes VALUES (?, ?, ?, ?)");
 	if (pstmt == nullptr)
 		return FALSE;
@@ -1133,7 +1133,7 @@ BOOL exmdb_server::get_change_indices(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "SELECT change_number,"
 				" indices, proptags FROM message_changes"
 				" WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -1263,7 +1263,7 @@ BOOL exmdb_server::clear_submit(const char *dir,
 		return TRUE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 	          " timer_id=? WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_null(pstmt, 1);
@@ -1296,7 +1296,7 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 		return TRUE;
 	snprintf(sql_string, std::size(sql_string), "SELECT message_id FROM "
 	          "messages WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW)
@@ -1304,7 +1304,7 @@ BOOL exmdb_server::link_message(const char *dir, cpid_t cpid,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result"
 	        " VALUES (%llu, %llu)", LLU{fid_val}, LLU{mid_val});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 		fid_val, mid_val, 0);
@@ -1331,7 +1331,7 @@ BOOL exmdb_server::unlink_message(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result"
 		" WHERE folder_id=%llu AND message_id=%llu",
 		LLU{fid_val}, LLU{mid_val});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	pdb->proc_dynamic_event(cpid, dynamic_event::del_msg,
 		fid_val, mid_val, 0);
@@ -1353,7 +1353,7 @@ BOOL exmdb_server::set_message_timer(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "UPDATE messages SET"
 		" timer_id=%u WHERE message_id=%llu",
 		XUI{timer_id}, LLU{rop_util_get_gc_value(message_id)});
-	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	return TRUE;
 }
@@ -1373,7 +1373,7 @@ BOOL exmdb_server::get_message_timer(const char *dir,
 	mid_val = rop_util_get_gc_value(message_id);
 	snprintf(sql_string, std::size(sql_string), "SELECT timer_id FROM "
 	          "messages WHERE message_id=%llu", LLU{mid_val});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW ||

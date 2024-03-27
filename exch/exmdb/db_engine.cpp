@@ -125,7 +125,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
 		" search_flags, search_criteria FROM folders"
 		" WHERE is_search=1");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -267,8 +267,8 @@ db_item_ptr db_engine_get_db(const char *path)
 		--pdb->reference;
 		return nullptr;
 	}
-	gx_sql_exec(pdb->psqlite, "PRAGMA foreign_keys=ON");
-	gx_sql_exec(pdb->psqlite, "PRAGMA journal_mode=WAL");
+	pdb->exec("PRAGMA foreign_keys=ON");
+	pdb->exec("PRAGMA journal_mode=WAL");
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(pdb);
 	return db_item_ptr(pdb);
@@ -464,7 +464,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW)
@@ -478,7 +478,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		          " search_result WHERE folder_id=%llu",
 		          static_cast<unsigned long long>(scope_fid));
 	pstmt.finalize();
-	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	auto pmessage_ids = eid_array_init();
@@ -515,7 +515,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
 		         LLU{search_fid}, LLU{pmessage_ids->pids[i]});
-		auto ret = gx_sql_exec(pdb->psqlite, sql_string, SQLEXEC_SILENT_CONSTRAINT);
+		auto ret = pdb->exec(sql_string, SQLEXEC_SILENT_CONSTRAINT);
 		if (ret == SQLITE_CONSTRAINT)
 			/*
 			 * Search folder is closed (deleted) already, INSERT
@@ -549,7 +549,7 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU{folder_id});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW)
@@ -888,7 +888,7 @@ static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
 	snprintf(sql_string, std::size(sql_string), folder_type == FOLDER_SEARCH ?
 		 "SELECT message_id FROM search_result WHERE folder_id=%llu" :
 		 "SELECT message_id FROM messages WHERE parent_fid=%llu", LLU{id3});
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -907,7 +907,7 @@ static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
 				LLU{pdynamic->folder_id}, LLU{message_id});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 			continue;
 		}
@@ -917,7 +917,7 @@ static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
 			"(folder_id, message_id) VALUES (%llu, %llu)",
 			LLU{pdynamic->folder_id}, LLU{message_id});
-		if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
+		if (pdb->exec(sql_string) == SQLITE_OK) {
 			pdb->notify_link_creation(pdynamic->folder_id, message_id);
 			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 				pdynamic->folder_id, message_id, 0);
@@ -959,7 +959,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
 			"(folder_id, message_id) VALUES (%llu, %llu)",
 			LLU{pdynamic->folder_id}, LLU{id2});
-		if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
+		if (pdb->exec(sql_string) == SQLITE_OK) {
 			pdb->notify_link_creation(pdynamic->folder_id, id2);
 			pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 				pdynamic->folder_id, id2, 0);
@@ -981,7 +981,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result "
 			"WHERE folder_id=%llu AND message_id=%llu",
 			LLU{pdynamic->folder_id}, LLU{id2});
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		if (pdb->exec(sql_string) != SQLITE_OK)
 			mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		break;
 	case dynamic_event::modify_msg:
@@ -1004,7 +1004,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
 			snprintf(sql_string, std::size(sql_string), "INSERT INTO search_result "
 				"(folder_id, message_id) VALUES (%llu, %llu)",
 				LLU{pdynamic->folder_id}, LLU{id2});
-			if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK) {
+			if (pdb->exec(sql_string) == SQLITE_OK) {
 				pdb->notify_link_creation(pdynamic->folder_id, id2);
 				pdb->proc_dynamic_event(cpid, dynamic_event::new_msg,
 					pdynamic->folder_id, id2, 0);
@@ -1020,7 +1020,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM search_result "
 				"WHERE folder_id=%llu AND message_id=%llu",
 				LLU{pdynamic->folder_id}, LLU{id2});
-			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (pdb->exec(sql_string) != SQLITE_OK)
 				mlog(LV_DEBUG, "db_engine: failed to delete from search_result");
 		}
 		break;
@@ -2061,7 +2061,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
 			ptable->folder_id != parent_id) {
 			if (NULL == pstmt) {
-				pstmt = gx_sql_prep(pdb->psqlite, "SELECT parent_id "
+				pstmt = pdb->prep("SELECT parent_id "
 				        "FROM folders WHERE folder_id=?");
 				if (pstmt == nullptr) {
 					pstmt = NULL;
