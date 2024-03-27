@@ -148,6 +148,9 @@ struct DB_ITEM {
 		std::list<table_node> table_list;
 		sqlite3 *psqlite = nullptr;
 	} tables;
+
+	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(tables.psqlite, q); }
+	int eph_exec(const char *q) const { return gromox::gx_sql_exec(tables.psqlite, q); }
 };
 
 extern void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num);

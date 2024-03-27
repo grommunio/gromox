@@ -1344,7 +1344,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 			char sql_string[148];
 			snprintf(sql_string, std::size(sql_string), "SELECT "
 				"count(*) FROM t%u", ptable->table_id);
-			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			auto pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			uint32_t idx = sqlite3_column_int64(pstmt, 0);
@@ -1360,7 +1360,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 			} else {
 				snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id "
 						"FROM t%u WHERE idx=%u", ptable->table_id, idx);
-				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+				pstmt = pdb->eph_prep(sql_string);
 				if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 					continue;
 				row_id = sqlite3_column_int64(pstmt, 0);
@@ -1371,7 +1371,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 					" %u, 0, 0, %u)", ptable->table_id, LLU{message_id}, LLU{row_id},
 					CONTENT_ROW_MESSAGE, idx + 1);
 			}
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -1400,7 +1400,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 			char sql_string[148];
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id,"
 				" idx FROM t%u ORDER BY idx ASC", ptable->table_id);
-			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			auto pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr)
 				continue;
 			uint32_t idx = 0;
@@ -1434,7 +1434,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
 					"%u, 0, 0, 1)", ptable->table_id, LLU{message_id},
 					CONTENT_ROW_MESSAGE);
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				padded_row->after_row_id = 0;
 			} else if (!b_break) {
@@ -1442,7 +1442,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
 					" %u, 0, 0, %u)", ptable->table_id, LLU{message_id},
 					LLU{row_id1}, CONTENT_ROW_MESSAGE, idx + 1);
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				padded_row->after_row_id = inst_id1;
 			} else {
@@ -1452,11 +1452,11 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
 					" idx<0", ptable->table_id, idx, ptable->table_id);
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=NULL "
 					"WHERE row_id=%llu", ptable->table_id, LLU{row_id1});
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				if (row_id == 0)
 					snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
@@ -1468,12 +1468,12 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 						"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
 						" %u, 0, 0, %u)", ptable->table_id, LLU{message_id},
 						LLU{row_id}, CONTENT_ROW_MESSAGE, idx);
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
 				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%llu WHERE"
 				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				if (sql_transact.commit() != 0)
 					continue;
@@ -1541,31 +1541,31 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 		char sql_string[164];
 		snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id, "
 		         "value FROM t%u WHERE prev_id=?", ptable->table_id);
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id, "
 		         "row_type, row_stat, parent_id, depth, count, unread,"
 		         " inst_num, value, extremum, prev_id) VALUES (?, ?, "
 		         "?, ?, ?, ?, ?, ?, ?, ?, ?)", ptable->table_id);
-		auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 		         "prev_id=? WHERE row_id=?", ptable->table_id);
-		auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt2 = pdb->eph_prep(sql_string);
 		if (pstmt2 == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE row_id=?", ptable->table_id);
-		auto stm_sel_tx = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto stm_sel_tx = pdb->eph_prep(sql_string);
 		if (stm_sel_tx == nullptr)
 			continue;
 		xstmt stm_set_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 			         "extremum=? WHERE row_id=?", ptable->table_id);
-			stm_set_ex = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			stm_set_ex = pdb->eph_prep(sql_string);
 			if (stm_set_ex == nullptr)
 				continue;
 		}
@@ -1677,7 +1677,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 				         "UPDATE t%u SET count=count+1 WHERE row_id=%llu" :
 				         "UPDATE t%u SET count=count+1, unread=unread+1 WHERE row_id=%llu",
 				         ptable->table_id, LLU{row_id});
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					return;
 				db_engine_append_rowinfo_node(&notify_list, row_id);
 			}
@@ -1774,7 +1774,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%lld"
 			         " WHERE prev_id=%llu", ptable->table_id,
 			         LLD{prev_id1}, LLU{row_id});
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				return;
 			if (0 != row_id1) {
 				sqlite3_bind_int64(pstmt2, 1, row_id);
@@ -1789,16 +1789,16 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 		pstmt2.finalize();
 		stm_set_ex.finalize();
 		snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return;
 		snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat"
 		         " FROM t%u WHERE prev_id=?", ptable->table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return;
 		snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 		         " idx=? WHERE row_id=?", ptable->table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return;
 		uint32_t idx = 0;
@@ -1824,7 +1824,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 			 " t%u WHERE idx=?", ptable->table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		DOUBLE_LIST_NODE *pnode1;
@@ -2086,7 +2086,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 				continue;
 			snprintf(sql_string, std::size(sql_string), "SELECT idx FROM t%u"
 						" WHERE folder_id=?", ptable->table_id);
-			auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			auto pstmt1 = pdb->eph_prep(sql_string);
 			if (pstmt1 == nullptr)
 				continue;
 			idx = 0;
@@ -2115,14 +2115,14 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			if (sql_transact.commit() != 0)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
 				ptable->table_id, idx + 1, LLU{folder_id}, depth);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -2138,7 +2138,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id,"
 				" depth) VALUES (%llu, %u)", ptable->table_id,
 				LLU{folder_id}, depth);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
@@ -2153,7 +2153,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 			} else {
 				snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
 					"t%u WHERE idx=%u", ptable->table_id, idx - 1);
-				auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+				auto pstmt1 = pdb->eph_prep(sql_string);
 				if (pstmt1 == nullptr || pstmt1.step() != SQLITE_ROW)
 					continue;
 				padded_row->after_folder_id = sqlite3_column_int64(pstmt1, 0);
@@ -2221,7 +2221,7 @@ static void *db_engine_get_extremum_value(DB_ITEM *pdb, cpid_t cpid,
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT inst_id FROM t%u "
 				"WHERE parent_id=%llu", table_id, LLU{parent_id});
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return NULL;
 	pvalue = NULL;
@@ -2291,7 +2291,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id"
 							" FROM t%u WHERE inst_id=%llu",
 							ptable->table_id, LLU{message_id});
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			continue;
 		pstmt.finalize();
@@ -2318,7 +2318,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, idx,"
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
 					"inst_num=0", ptable->table_id, LLU{message_id});
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			uint64_t row_id = sqlite3_column_int64(pstmt, 0);
@@ -2330,21 +2330,21 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 				continue;
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u WHERE "
 				"row_id=%llu", ptable->table_id, LLU{row_id});
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%lld WHERE"
 					" idx=%u", ptable->table_id, LLD{prev_id}, idx + 1);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx-1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE sqlite_sequence SET seq="
 				"(SELECT count(*) FROM t%u) WHERE name='t%u'",
 				ptable->table_id, ptable->table_id);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			if (sql_transact.commit() != 0)
 				continue;
@@ -2373,7 +2373,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u "
 						"WHERE inst_id=%llu", ptable->table_id,
 						LLU{message_id});
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		while (pstmt.step() == SQLITE_ROW) {
@@ -2400,29 +2400,29 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u "
 					"WHERE row_id=?", ptable->table_id);
-		auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			continue;
 		xstmt pstmt2, stm_upd_previd, stm_sel_ex;
 		if (0 != ptable->extremum_tag) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 				"extremum=? WHERE row_id=?", ptable->table_id);
-			pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt2 = pdb->eph_prep(sql_string);
 			if (pstmt2 == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
-			stm_upd_previd = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			stm_upd_previd = pdb->eph_prep(sql_string);
 			if (stm_upd_previd == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id, "
 				"extremum FROM t%u WHERE prev_id=?", ptable->table_id);
-			stm_sel_ex = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			stm_sel_ex = pdb->eph_prep(sql_string);
 			if (stm_sel_ex == nullptr)
 				continue;
 		}
@@ -2441,7 +2441,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%lld"
 				" WHERE prev_id=%llu", ptable->table_id,
 				LLD{pdelnode->prev_id}, LLU{pdelnode->row_id});
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				break;
 			if (pdelnode->depth == ptable->psorts->ccategories &&
 			    ptable->instance_tag != 0)
@@ -2475,7 +2475,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			         "UPDATE t%u SET count=count-1 WHERE row_id=%llu" :
 			         "UPDATE t%u SET count=count-1, unread=unread-1 WHERE row_id=%llu",
 			         ptable->table_id, LLU{pdelnode->parent_id});
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				break;
 			prnode = cu_alloc<ROWINFO_NODE>();
 			if (prnode == nullptr)
@@ -2566,7 +2566,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%lld"
 					" WHERE prev_id=%llu", ptable->table_id,
 					LLD{prev_id1}, LLU{row_id});
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				break;
 			if (0 != row_id1) {
 				stm_upd_previd.bind_int64(1, row_id);
@@ -2587,16 +2587,16 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			continue;
 		if (b_index) {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat"
 					" FROM t%u WHERE prev_id=?", ptable->table_id);
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
-			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt1 = pdb->eph_prep(sql_string);
 			if (pstmt1 == nullptr)
 				continue;
 			idx = 0;
@@ -2647,12 +2647,12 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE idx=?", ptable->table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM "
 		         "t%u WHERE row_id=?", ptable->table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			continue;
 		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
@@ -2781,24 +2781,24 @@ static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT idx FROM t%u "
 			"WHERE folder_id=%llu", ptable->table_id, LLU{folder_id});
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			continue;	
 		idx = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u WHERE "
 			"folder_id=%llu", ptable->table_id, LLU{folder_id});
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx-1)"
 			" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 			" idx<0", ptable->table_id, idx, ptable->table_id);
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "UPDATE sqlite_sequence SET seq="
 			"(SELECT count(*) FROM t%u) WHERE name='t%u'",
 			ptable->table_id, ptable->table_id);
-		gx_sql_exec(pdb->tables.psqlite, sql_string);
+		pdb->eph_exec(sql_string);
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
@@ -2884,7 +2884,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT count(*)"
 							" FROM t%u WHERE inst_id=%llu",
 							ptable->table_id, LLU{message_id});
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW ||
 		    sqlite3_column_int64(pstmt, 0) == 0)
 			continue;
@@ -2908,7 +2908,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT idx FROM "
 					"t%u WHERE inst_id=%llu AND inst_num=0",
 					ptable->table_id, LLU{message_id});
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			idx = sqlite3_column_int64(pstmt, 0);
@@ -2919,7 +2919,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			} else {
 				snprintf(sql_string, std::size(sql_string), "SELECT inst_id FROM "
 					"t%u WHERE idx=%u", ptable->table_id, idx - 1);
-				pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+				pstmt = pdb->eph_prep(sql_string);
 				if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 					continue;
 				pmodified_row->after_row_id =
@@ -2950,14 +2950,14 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT idx FROM "
 					"t%u WHERE inst_id=%llu AND inst_num=0",
 					ptable->table_id, LLU{message_id});
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			idx = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
 			snprintf(sql_string, std::size(sql_string), "SELECT inst_id"
 				" FROM t%u WHERE idx=?", ptable->table_id);
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr)
 				continue;
 			if (1 == idx) {
@@ -3056,7 +3056,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			snprintf(sql_string, std::size(sql_string), "SELECT value, "
 			         "inst_num FROM t%u WHERE inst_id=%llu",
 			         ptable->table_id, LLU{message_id});
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr)
 				continue;
 			while (pstmt.step() == SQLITE_ROW) {
@@ -3099,13 +3099,13 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_id, value "
 		         "FROM t%u WHERE row_id=?", ptable->table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT row_id, prev_id,"
 		         " extremum FROM t%u WHERE inst_id=%llu AND"
 		         " inst_num=?", ptable->table_id, LLU{message_id});
-		auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			continue;
 		b_error = FALSE;
@@ -3157,7 +3157,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			if (0 != ptable->extremum_tag) {
 				snprintf(sql_string, std::size(sql_string), "SELECT extremum FROM t%u"
 				         " WHERE row_id=%llu", ptable->table_id, LLU{parent_id});
-				auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+				auto pstmt2 = pdb->eph_prep(sql_string);
 				if (pstmt2 == nullptr || pstmt2.step() != SQLITE_ROW) {
 					b_error = TRUE;
 					break;
@@ -3190,7 +3190,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 				} else {
 					snprintf(sql_string, std::size(sql_string), "SELECT inst_id FROM"
 					         " t%u WHERE row_id=%lld", ptable->table_id, LLD{prev_id});
-					auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+					auto pstmt2 = pdb->eph_prep(sql_string);
 					if (pstmt2 == nullptr  || pstmt2.step() != SQLITE_ROW) {
 						b_error = TRUE;
 						break;
@@ -3199,7 +3199,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 				}
 				snprintf(sql_string, std::size(sql_string), "SELECT inst_id FROM t%u"
 				         " WHERE prev_id=%llu", ptable->table_id, LLU{row_id1});
-				auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+				auto pstmt2 = pdb->eph_prep(sql_string);
 				if (pstmt2 == nullptr) {
 					b_error = TRUE;
 					break;
@@ -3274,7 +3274,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 				unread_delta = 0;
 			}
 			if (unread_delta != 0 &&
-			    gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK) {
+			    pdb->eph_exec(sql_string) != SQLITE_OK) {
 				b_error = TRUE;
 				break;
 			}
@@ -3295,7 +3295,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 				else
 					snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET unread=unread-1"
 					         " WHERE row_id=%llu", ptable->table_id, LLU{row_id});
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK) {
+				if (pdb->eph_exec(sql_string) != SQLITE_OK) {
 					b_error = TRUE;
 					break;
 				}
@@ -3323,12 +3323,12 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
 		         " t%u WHERE idx=?", ptable->table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM "
 		         "t%u WHERE row_id=?", ptable->table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			continue;
 
@@ -3487,7 +3487,7 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 		}
 		snprintf(sql_string, std::size(sql_string), "SELECT idx FROM t%u "
 		          "WHERE folder_id=%llu", ptable->table_id, LLU{folder_id});
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			continue;
 		datagram.id_array  = {1, deconst(&ptable->table_id)};
@@ -3507,7 +3507,7 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 				}
 				snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id)"
 				        " VALUES (%llu)", ptable->table_id, LLU{folder_id});
-				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
 				if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 					continue;
@@ -3523,7 +3523,7 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 					snprintf(sql_string, std::size(sql_string), "SELECT "
 						"folder_id FROM t%u WHERE idx=%u",
 						ptable->table_id, idx - 1);
-					pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+					pstmt = pdb->eph_prep(sql_string);
 					if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 						continue;
 					padded_row->after_folder_id =
@@ -3543,17 +3543,17 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 		    folder_id, ptable->prestriction)) {
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u WHERE "
 			        "folder_id=%llu", ptable->table_id, LLU{folder_id});
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx-1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE sqlite_sequence SET seq="
 				"(SELECT count(*) FROM t%u) WHERE name='t%u'",
 				ptable->table_id, ptable->table_id);
-			gx_sql_exec(pdb->tables.psqlite, sql_string);
+			pdb->eph_exec(sql_string);
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 				continue;
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
@@ -3593,7 +3593,7 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 		} else {
 			snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
 				"t%u WHERE idx=%u", ptable->table_id, idx - 1);
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 				continue;
 			pmodified_row->after_folder_id =

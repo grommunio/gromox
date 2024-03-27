@@ -75,7 +75,7 @@ static BOOL table_sum_table_count(db_item_ptr &pdb,
 	
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 			"count(idx) FROM t%u", table_id);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 		return FALSE;
 	*prows = sqlite3_column_int64(pstmt, 0);
@@ -233,7 +233,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 		"(idx INTEGER PRIMARY KEY AUTOINCREMENT, "
 		"folder_id INTEGER UNIQUE NOT NULL, "
 		"depth INTEGER NOT NULL)", table_id);
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 
 	std::list<table_node> holder;
@@ -262,7 +262,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	}
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (folder_id,"
 					" depth) VALUES (?, ?)", ptnode->table_id);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*prow_count = 0;
@@ -599,20 +599,20 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		"value NONE DEFAULT NULL, "
 		"extremum NONE DEFAULT NULL)",		/* read(unread) for message row */
 		table_id);
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (NULL != psorts && psorts->ccategories > 0) {
 		snprintf(sql_string, std::size(sql_string), "CREATE UNIQUE INDEX t%u_1 ON "
 			"t%u (inst_id, inst_num)", table_id, table_id);
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "CREATE INDEX t%u_2 ON"
 			" t%u (parent_id)", table_id, table_id);
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "CREATE INDEX t%u_3 ON t%u"
 			" (parent_id, value)", table_id, table_id);
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return FALSE;
 	}
 
@@ -743,7 +743,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		else
 			snprintf(sql_string, std::size(sql_string), "CREATE INDEX t%u_4 "
 				"ON t%u (inst_id)", table_id, table_id);
-		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
 			return false;
 		sql_len = snprintf(sql_string, std::size(sql_string), "INSERT INTO stbl VALUES (?");
 		for (size_t i = 0; i < tag_count; ++i)
@@ -758,7 +758,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u (inst_id,"
 			" prev_id, row_type, depth, inst_num, idx) VALUES "
 			"(?, ?, %u, 0, 0, ?)", table_id, CONTENT_ROW_MESSAGE);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
 	}
@@ -952,12 +952,12 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			    "(inst_id, row_type, row_stat, parent_id, depth, "
 			    "count, inst_num, value, extremum, prev_id) VALUES"
 			    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
-		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return false;
 		snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 		        " unread=? WHERE row_id=?", table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return false;
 		std::vector<condition_node> cond_list;
@@ -976,12 +976,12 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id,"
 			        " row_type, row_stat, depth, prev_id FROM"
 			        " t%u ORDER BY row_id", table_id);
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt = pdb->eph_prep(sql_string);
 			if (pstmt == nullptr)
 				return false;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 			        "idx=? WHERE row_id=?", table_id);
-			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+			pstmt1 = pdb->eph_prep(sql_string);
 			if (pstmt1 == nullptr)
 				return false;
 			size_t i = 1;
@@ -1012,7 +1012,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 			pstmt1.finalize();
 		} else {
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=row_id", table_id);
-			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+			if (pdb->eph_exec(sql_string) != SQLITE_OK)
 				return false;
 		}
 	}
@@ -1080,7 +1080,7 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	holder.splice(holder.end(), table_list, iter);
 	auto ptnode = &holder.back();
 	snprintf(sql_string, std::size(sql_string), "DROP TABLE t%u", table_id);
-	gx_sql_exec(pdb->tables.psqlite, sql_string);
+	pdb->eph_exec(sql_string);
 	b_result = table_load_content_table(pdb, ptnode->cpid,
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
@@ -1159,7 +1159,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
 		"AUTOINCREMENT, member_id INTEGER UNIQUE NOT NULL)", table_id);
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 
 	std::list<table_node> holder;
@@ -1176,7 +1176,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	ptnode->table_flags = table_flags;
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u "
 		"(member_id) VALUES (?)", ptnode->table_id);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*prow_count = 0;
@@ -1332,7 +1332,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
 		"AUTOINCREMENT, rule_id INTEGER UNIQUE NOT NULL)", table_id);
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 
 	std::list<table_node> holder;
@@ -1353,7 +1353,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	}
 	snprintf(sql_string, std::size(sql_string), "INSERT INTO t%u "
 		"(rule_id) VALUES (?)", ptnode->table_id);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*prow_count = 0;
@@ -1385,7 +1385,7 @@ BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 	std::list<table_node> holder;
 	holder.splice(holder.end(), table_list, iter);
 	snprintf(sql_string, std::size(sql_string), "DROP TABLE t%u", table_id);
-	gx_sql_exec(pdb->tables.psqlite, sql_string);
+	pdb->eph_exec(sql_string);
 	return TRUE;
 }
 
@@ -1581,7 +1581,7 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	}
 	if (pset->pparray == nullptr)
 		return FALSE;
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
@@ -1657,21 +1657,21 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	}
 	if (pset->pparray == nullptr)
 		return FALSE;
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	xstmt pstmt1, pstmt2;
 	if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
 	}
 	if (ptnode->psorts != nullptr) {
 		snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-		pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt2 = pdb->eph_prep(sql_string);
 		if (pstmt2 == nullptr)
 			return FALSE;
 	}
@@ -1752,7 +1752,7 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	}
 	if (pset->pparray == nullptr)
 		return FALSE;
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -1815,7 +1815,7 @@ static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	}
 	if (pset->pparray == nullptr)
 		return FALSE;
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -2055,7 +2055,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
 		         " idx, depth FROM t%u WHERE idx<=%u ORDER BY"
 		         " idx DESC", table_id, start_pos + 1);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
@@ -2132,19 +2132,19 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
 		         " WHERE idx<=%u ORDER BY idx DESC", table_id,
 		         start_pos + 1);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	xstmt pstmt1, pstmt2;
 	if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
 		         " t%u WHERE row_id=?", ptnode->table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 		         " t%u WHERE row_id=?", ptnode->table_id);
-		pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt2 = pdb->eph_prep(sql_string);
 		if (pstmt2 == nullptr)
 			return FALSE;
 	} else {
@@ -2234,7 +2234,7 @@ static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 		snprintf(sql_string, std::size(sql_string), "SELECT rule_id,"
 		         " idx FROM t%u WHERE idx<=%u ORDER BY"
 		         " idx DESC", table_id, start_pos + 1);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -2351,7 +2351,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 	default:
 		return FALSE;
 	}
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	*prow_type = 0;
@@ -2383,7 +2383,7 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 	}
 	snprintf(sql_string, std::size(sql_string), "SELECT depth FROM t%u"
 	         " WHERE folder_id=%llu", table_id, LLU{folder_id});
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
@@ -2444,7 +2444,7 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	snprintf(sql_string, std::size(sql_string), "SELECT * FROM t%u"
 	         " WHERE inst_id=%llu AND inst_num=%u",
 	         table_id, LLU{inst_id}, inst_num);
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW) {
@@ -2456,12 +2456,12 @@ static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
 	if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 		snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
 		         " t%u WHERE row_id=?", ptnode->table_id);
-		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
 		snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 		         " t%u WHERE row_id=?", ptnode->table_id);
-		pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		pstmt2 = pdb->eph_prep(sql_string);
 		if (pstmt2 == nullptr)
 			return FALSE;
 	} else {
@@ -2568,7 +2568,7 @@ BOOL exmdb_server::mark_table(const char *dir,
 	default:
 		return FALSE;
 	}
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() == SQLITE_ROW) {
@@ -2610,7 +2610,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		std::vector<uint32_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT DISTINCT proptag "
@@ -2640,7 +2640,7 @@ BOOL exmdb_server::get_table_all_proptags(const char *dir,
 		std::vector<uint32_t> tags;
 		snprintf(sql_string, std::size(sql_string), "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt = pdb->eph_prep(sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT DISTINCT proptag "
@@ -2808,7 +2808,7 @@ BOOL exmdb_server::expand_table(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_type, "
 			"row_stat, depth, idx FROM t%u WHERE inst_id=%llu"
 			" AND inst_num=0", ptnode->table_id, LLU{inst_id});
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW ||
@@ -2828,7 +2828,7 @@ BOOL exmdb_server::expand_table(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM"
 			" t%u WHERE parent_id=?", ptnode->table_id);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (ptnode->psorts->ccategories == depth + 1) {
@@ -2839,7 +2839,7 @@ BOOL exmdb_server::expand_table(const char *dir,
 	} else {
 		snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat "
 				"FROM t%u WHERE parent_id=?", ptnode->table_id);
-		auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		auto pstmt1 = pdb->eph_prep(sql_string);
 		if (pstmt1 == nullptr)
 			return FALSE;
 		*prow_count = 0;
@@ -2850,19 +2850,19 @@ BOOL exmdb_server::expand_table(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET row_stat=1 "
 	        "WHERE row_id=%llu", ptnode->table_id, LLU{row_id});
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	if (*prow_count == 0)
 		return TRUE;
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id "
 		"FROM t%u WHERE idx>%u ORDER BY idx DESC",
 		ptnode->table_id, idx);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=idx+%u"
 			" WHERE row_id=?", ptnode->table_id, *prow_count);
-	auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -2876,12 +2876,12 @@ BOOL exmdb_server::expand_table(const char *dir,
 	pstmt1.finalize();
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptnode->table_id);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
-	pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
 	return table_expand_sub_contents(ptnode->psorts->ccategories - depth - 1,
@@ -2915,7 +2915,7 @@ BOOL exmdb_server::collapse_table(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_type, "
 		"row_stat, depth, idx FROM t%u WHERE inst_id=%llu AND"
 		" inst_num=0", ptnode->table_id, LLU{inst_id});
-	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	if (pstmt.step() != SQLITE_ROW ||
@@ -2935,19 +2935,19 @@ BOOL exmdb_server::collapse_table(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET row_stat=0 "
 	        "WHERE row_id=%llu", ptnode->table_id, LLU{row_id});
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	*prow_count = 0;
 	prev_id = row_id;
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, "
 			"depth, prev_id FROM t%u WHERE idx>%u "
 			"ORDER BY idx ASC", ptnode->table_id, idx);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
-	auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -3168,7 +3168,7 @@ BOOL exmdb_server::store_table_state(const char *dir,
 
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, inst_id,"
 			" row_stat, depth FROM t%u", ptnode->table_id);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	sql_len = snprintf(sql_string, std::size(sql_string), "INSERT"
@@ -3183,12 +3183,12 @@ BOOL exmdb_server::store_table_state(const char *dir,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT parent_id FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-	auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto pstmt2 = pdb->eph_prep(sql_string);
 	if (pstmt2 == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-	auto stm_sel_vtx = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	auto stm_sel_vtx = pdb->eph_prep(sql_string);
 	if (stm_sel_vtx == nullptr)
 		return FALSE;
 	uint64_t inst_id1 = rop_util_get_replid(inst_id) == 2 ?
@@ -3339,12 +3339,12 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, "
 		"row_stat, depth FROM t%u WHERE row_type=%u",
 		ptnode->table_id, CONTENT_ROW_HEADER);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 		"row_stat=? WHERE row_id=?", ptnode->table_id);
-	pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
 	while (pstmt.step() == SQLITE_ROW) {
@@ -3376,17 +3376,17 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id FROM t%u WHERE"
 			" parent_id=? AND value IS NULL", ptnode->table_id);
-	pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id FROM t%u WHERE"
 				" parent_id=? AND value=?", ptnode->table_id);
-	pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt2 = pdb->eph_prep(sql_string);
 	if (pstmt2 == nullptr)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET "
 		"row_stat=? WHERE row_id=?", ptnode->table_id);
-	stm_upd_tx = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	stm_upd_tx = pdb->eph_prep(sql_string);
 	if (stm_upd_tx == nullptr)
 		return FALSE;
 	current_id = 0;
@@ -3438,16 +3438,16 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	sqlite3_close(psqlite);
 	cl_0.release();
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=NULL", ptnode->table_id);
-	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptnode->table_id);
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
-	pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt1 = pdb->eph_prep(sql_string);
 	if (pstmt1 == nullptr)
 		return false;
 	idx = 0;
@@ -3469,7 +3469,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	else
 		snprintf(sql_string, std::size(sql_string), "SELECT idx FROM t%u WHERE"
 		          " row_id=%llu", ptnode->table_id, LLU{row_id1});
-	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	pstmt = pdb->eph_prep(sql_string);
 	if (pstmt == nullptr)
 		return false;
 	*pposition = pstmt.step() == SQLITE_ROW ? sqlite3_column_int64(pstmt, 0) - 1 : -1;
