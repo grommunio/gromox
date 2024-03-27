@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
+#include <climits>
 #include <csignal>
 #include <cstdint>
 #include <cstdio>

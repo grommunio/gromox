@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <chrono>
+#include <climits>
 #include <condition_variable>
 #include <csignal>
 #include <cstdint>
