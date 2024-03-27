@@ -350,11 +350,11 @@ EXTRA_DIST = ${abkt_files} ${tzd_files} ${header_files} ${toolprogs} LICENSE.txt
 
 data/abkt.pak: ${abkt_files}
 	${AM_V_GEN}${MKDIR_P} data
-	${AM_V_at}${srcdir}/tools/mpak.sh $^ >$@
+	${AM_V_at}${srcdir}/tools/mpak.sh ${abkt_files} >$@
 
 data/timezone.pak: ${tzd_files}
 	${AM_V_GEN}${MKDIR_P} data
-	${AM_V_at}${srcdir}/tools/mpak.sh $^ >$@
+	${AM_V_at}${srcdir}/tools/mpak.sh ${tzd_files} >$@
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}${MKDIR_P} include/gromox
