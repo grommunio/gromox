@@ -629,11 +629,11 @@ db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return {};
 }
 
-static std::optional<ID_ARRAYS> db_engine_classify_id_array(const DB_ITEM *pdb,
+static std::optional<ID_ARRAYS> db_engine_classify_id_array(const DB_ITEM &db,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;
-	for (const auto &sub : pdb->nsub_list) {
+	for (const auto &sub : db.nsub_list) {
 		if (!(sub.notification_type & bits))
 			continue;
 		if (sub.b_whole || (sub.folder_id == folder_id &&
@@ -659,7 +659,7 @@ static void dbeng_notify_search_completion(db_item_ptr &pdb,
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb.get(),
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_SEARCH_COMPLETE, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -1927,7 +1927,7 @@ void DB_ITEM::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -1952,7 +1952,7 @@ void DB_ITEM::notify_new_mail(uint64_t folder_id, uint64_t message_id) try
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -1988,7 +1988,7 @@ void DB_ITEM::notify_message_creation(uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_CREATED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2021,7 +2021,7 @@ void DB_ITEM::notify_link_creation(uint64_t srch_fld, uint64_t message_id) try
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
@@ -2196,7 +2196,7 @@ void DB_ITEM::notify_folder_creation(uint64_t parent_id, uint64_t folder_id) try
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_CREATED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2726,7 +2726,7 @@ void DB_ITEM::notify_message_deletion(uint64_t folder_id, uint64_t message_id) t
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2759,7 +2759,7 @@ void DB_ITEM::notify_link_deletion(uint64_t parent_id, uint64_t message_id) try
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2851,7 +2851,7 @@ void DB_ITEM::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id) try
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_DELETED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3458,7 +3458,7 @@ void DB_ITEM::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_MODIFIED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -3636,7 +3636,7 @@ void DB_ITEM::notify_folder_modification(uint64_t parent_id, uint64_t folder_id)
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(pdb,
+	auto parrays = db_engine_classify_id_array(*pdb,
 	               NF_OBJECT_MODIFIED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
