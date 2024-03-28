@@ -251,9 +251,7 @@ db_item_ptr db_engine_get_db(const char *path)
 	if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
 		pdb->reference --;
 		return NULL;
-	}
-	pdb->postconstruct_init(path);
-	if (pdb->psqlite == nullptr) {
+	} else if (!pdb->postconstruct_init(path)) {
 		pdb->giant_lock.unlock();
 		--pdb->reference;
 		return nullptr;
@@ -366,7 +364,7 @@ DB_ITEM::DB_ITEM() :
 	 */
 }
 
-void DB_ITEM::postconstruct_init(const char *dir) try
+bool DB_ITEM::postconstruct_init(const char *dir) try
 {
 	tables.last_id = 0;
 	tables.b_batch = false;
@@ -375,24 +373,20 @@ void DB_ITEM::postconstruct_init(const char *dir) try
 	auto ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
-		psqlite = nullptr;
-		return;
+		return false;
 	}
 	ret = db_engine_autoupgrade(psqlite, dir);
-	if (ret != 0) {
-		sqlite3_close(psqlite);
-		psqlite = nullptr;
-		return;
-	} else if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK) {
-		sqlite3_close(psqlite);
-		psqlite = nullptr;
-		return;
-	}
+	if (ret != 0)
+		return false;
+	else if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
+		return false;
 	exec("PRAGMA journal_mode=WAL");
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this);
+	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1349: ENOMEM");
+	return false;
 }
 
 DB_ITEM::~DB_ITEM()
