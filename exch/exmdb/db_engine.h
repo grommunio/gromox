@@ -6,6 +6,7 @@
 #include <mutex>
 #include <sqlite3.h>
 #include <string>
+#include <gromox/clock.hpp>
 #include <gromox/database.h>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
@@ -100,7 +101,7 @@ struct prepared_statements {
 
 class db_item_deleter;
 struct DB_ITEM {
-	DB_ITEM() = default;
+	DB_ITEM();
 	~DB_ITEM();
 	NOMOVE(DB_ITEM);
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
@@ -131,7 +132,7 @@ struct DB_ITEM {
 
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
-	time_t last_time = 0;
+	gromox::time_point last_time{};
 	std::timed_mutex giant_lock; /* should be broken up */
 	sqlite3 *psqlite = nullptr;
 	std::vector<dynamic_node> dynamic_list; /* dynamic searches */

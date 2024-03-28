@@ -98,7 +98,7 @@ static size_t g_table_size; /* hash table size */
 static unsigned int g_threads_num;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scanning thread */
 static pthread_t g_scan_tid;
-static int g_cache_interval;	/* maximum living interval in table */
+static gromox::time_duration g_cache_interval; /* maximum living interval in table */
 static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
@@ -111,7 +111,7 @@ unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel;
 unsigned long long g_exmdb_lock_timeout = 60000000000ULL;
 
-static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_t);
+static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
 static void dbeng_notify_cttbl_modify_row(DB_ITEM *, uint64_t folder_id, uint64_t message_id);
 
 static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
@@ -233,7 +233,6 @@ db_item_ptr db_engine_get_db(const char *path)
 		mlog(LV_ERR, "E-1296: ENOMEM");
 		return NULL;
 	}
-	pdb->last_time = time(nullptr);
 	pdb->reference ++;
 	hhold.unlock();
 	if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
@@ -265,7 +264,7 @@ db_item_ptr db_engine_get_db(const char *path)
 
 void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
-	pdb->last_time = time(nullptr);
+	pdb->last_time = tp_now();
 	pdb->giant_lock.unlock();
 	pdb->reference --;
 }
@@ -291,7 +290,8 @@ BOOL db_engine_unload_db(const char *path)
 		auto it = g_hash_table.find(path);
 		if (it == g_hash_table.end())
 			return TRUE;
-		if (remove_from_hash(*it, time(nullptr) + g_cache_interval)) {
+		auto now = tp_now();
+		if (remove_from_hash(*it, now + g_cache_interval)) {
 			g_hash_table.erase(it);
 			return TRUE;
 		}
@@ -351,6 +351,11 @@ table_node::~table_node()
 		sortorder_set_free(psorts);
 }
 
+DB_ITEM::DB_ITEM() :
+	last_time(tp_now())
+{
+}
+
 DB_ITEM::~DB_ITEM()
 {
 	auto pdb = this;
@@ -362,14 +367,15 @@ DB_ITEM::~DB_ITEM()
 		sqlite3_close(pdb->tables.psqlite);
 		pdb->tables.psqlite = NULL;
 	}
-	pdb->last_time = 0;
+	pdb->last_time = {};
 	if (NULL != pdb->psqlite) {
 		sqlite3_close(pdb->psqlite);
 		pdb->psqlite = NULL;
 	}
 }
 
-static bool remove_from_hash(const decltype(g_hash_table)::value_type &it, time_t now)
+static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
+    time_point now)
 {
 	auto &pdb = it.second;
 	if (pdb.tables.table_list.size() > 0)
@@ -398,8 +404,7 @@ static void *mdpeng_scanwork(void *param)
 		}
 		count = 0;
 		std::lock_guard hhold(g_hash_lock);
-		auto now_time = time(nullptr);
-
+		auto now_time = tp_now();
 #if __cplusplus >= 202000L
 		std::erase_if(g_hash_table, [=](const auto &it) { return remove_from_hash(it, now_time); });
 #else
@@ -702,7 +707,7 @@ void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_
 {
 	g_notify_stop = true;
 	g_table_size = table_size;
-	g_cache_interval = cache_interval;
+	g_cache_interval = std::chrono::seconds{cache_interval};
 	g_threads_num = threads_num;
 	g_thread_ids.reserve(g_threads_num);
 }
