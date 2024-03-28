@@ -129,6 +129,7 @@ struct db_base {
 
 class db_item_deleter;
 struct db_conn : public db_base {
+	db_conn() : m_base(this) {}
 	bool postconstruct_init(const char *dir);
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 	void delete_dynamic(uint64_t folder_id);
@@ -156,6 +157,8 @@ struct db_conn : public db_base {
 	int exec(const char *q, unsigned int fl = 0) const { return gromox::gx_sql_exec(psqlite, q, fl); }
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(m_sqlite_eph, q); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(m_sqlite_eph, q); }
+
+	db_base *m_base = nullptr;
 };
 
 extern void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num);

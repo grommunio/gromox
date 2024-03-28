@@ -129,8 +129,9 @@ static void db_engine_load_dynamic_list(db_conn *pdb) try
 	auto pstmt = pdb->prep(sql_string);
 	if (pstmt == nullptr)
 		return;
+	auto dbase = pdb->m_base;
 	while (pstmt.step() == SQLITE_ROW) {
-		if (pdb->dynamic_list.size() >= MAX_DYNAMIC_NODES)
+		if (dbase->dynamic_list.size() >= MAX_DYNAMIC_NODES)
 			break;
 		search_flags = sqlite3_column_int64(pstmt, 1);
 		if (search_flags == 0 || (search_flags & (STATIC_SEARCH | STOP_SEARCH)))
@@ -154,7 +155,7 @@ static void db_engine_load_dynamic_list(db_conn *pdb) try
 			break;
 		memcpy(pdynamic->folder_ids.pll, tmp_fids.pll,
 					sizeof(uint64_t)*tmp_fids.count);
-		pdb->dynamic_list.push_back(std::move(dn));
+		dbase->dynamic_list.push_back(std::move(dn));
 	}
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1142: ENOMEM");
@@ -726,14 +727,15 @@ static void *sf_popul_thread(void *param)
 			pdb->psqlite, psearch->folder_id),
 			psearch->folder_id);
 		std::vector<uint32_t> table_ids;
+		auto dbase = pdb->m_base;
 		try {
-			table_ids.reserve(pdb->tables.table_list.size());
+			table_ids.reserve(dbase->tables.table_list.size());
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1649: ENOMEM");
 			sleep(60);
 			goto NEXT_SEARCH;
 		}
-		for (const auto &t : pdb->tables.table_list)
+		for (const auto &t : dbase->tables.table_list)
 			if (t.type == table_type::content &&
 			    psearch->folder_id == t.folder_id)
 				table_ids.push_back(t.table_id);
@@ -874,10 +876,11 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	if (dn.folder_ids.pll == nullptr)
 		return;
 	memcpy(dn.folder_ids.pll, pfolder_ids->pll, sizeof(*pfolder_ids->pll) * pfolder_ids->count);
-	auto i = std::find_if(pdb->dynamic_list.begin(), pdb->dynamic_list.end(),
+	auto dbase = pdb->m_base;
+	auto i = std::find_if(dbase->dynamic_list.begin(), dbase->dynamic_list.end(),
 	         [=](const dynamic_node &n) { return n.folder_id == folder_id; });
-	if (i == pdb->dynamic_list.end())
-		pdb->dynamic_list.push_back(std::move(dn));
+	if (i == dbase->dynamic_list.end())
+		dbase->dynamic_list.push_back(std::move(dn));
 	else
 		*i = std::move(dn);
 } catch (const std::bad_alloc &) {
@@ -886,8 +889,8 @@ void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 
 void db_conn::delete_dynamic(uint64_t folder_id)
 {
-	auto pdb = this;
-	gromox::erase_first_if(pdb->dynamic_list,
+	auto dbase = m_base;
+	gromox::erase_first_if(dbase->dynamic_list,
 		[=](const dynamic_node &n) { return n.folder_id == folder_id; });
 }
 
@@ -1077,8 +1080,9 @@ void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
 		mlog(LV_DEBUG, "db_engine: fatal error in %s", __PRETTY_FUNCTION__);
 		return;
 	}
+	const db_base *dbase = pdb->m_base;
 	/* Iterate over all search folders (event sinks)... */
-	for (auto &dn : pdb->dynamic_list) {
+	for (auto &dn : dbase->dynamic_list) {
 		auto pdynamic = &dn;
 		/*
 		 * Iterate over source folders (a.k.a. search scope; MS-OXCFOLD
@@ -1332,20 +1336,21 @@ static void dbeng_notify_cttbl_add_row(db_conn *pdb,
 		return;	
 	std::unique_ptr<prepared_statements> optim;
 	BOOL b_fai = pvb_enabled(pvalue0) ? TRUE : false;
-	for (auto &tnode : pdb->tables.table_list) {
+	auto dbase = pdb->m_base;
+	for (auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
 		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
 			continue;
-		if (pdb->tables.b_batch && ptable->b_hint)
+		if (dbase->tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->prestriction != nullptr &&
 		    !cu_eval_msg_restriction(pdb->psqlite,
 		    ptable->cpid, message_id, ptable->prestriction))
 			continue;
-		if (pdb->tables.b_batch) {
+		if (dbase->tables.b_batch) {
 			ptable->b_hint = TRUE;
 			continue;
 		}
@@ -2058,7 +2063,8 @@ static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
 	
 	padded_row = NULL;
-	for (const auto &tnode : pdb->tables.table_list) {
+	const db_base *dbase = pdb->m_base;
+	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
@@ -2302,12 +2308,13 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row = nullptr;
 	
 	pdeleted_row = NULL;
-	for (auto &tnode : pdb->tables.table_list) {
+	auto dbase = pdb->m_base;
+	for (auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
 			continue;
-		if (pdb->tables.b_batch && ptable->b_hint)
+		if (dbase->tables.b_batch && ptable->b_hint)
 			continue;
 		if (ptable->instance_tag == 0)
 			snprintf(sql_string, std::size(sql_string), "SELECT row_id "
@@ -2321,7 +2328,7 @@ static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
 		if (pstmt == nullptr || pstmt.step() != SQLITE_ROW)
 			continue;
 		pstmt.finalize();
-		if (pdb->tables.b_batch) {
+		if (dbase->tables.b_batch) {
 			ptable->b_hint = TRUE;
 			continue;
 		}
@@ -2792,7 +2799,8 @@ static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
 	
 	pdeleted_row = NULL;
-	for (const auto &tnode : pdb->tables.table_list) {
+	const db_base *dbase = pdb->m_base;
+	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
@@ -2898,7 +2906,8 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED *pmodified_row;
 	
 	pmodified_row = NULL;
-	for (const auto &tnode : pdb->tables.table_list) {
+	auto dbase = pdb->m_base;
+	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::content ||
 		    folder_id != ptable->folder_id)
@@ -3429,14 +3438,14 @@ static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
 	}
 	if (tmp_list.empty())
 		return;
-	std::swap(pdb->tables.table_list, tmp_list);
+	std::swap(dbase->tables.table_list, tmp_list);
 	dbeng_notify_cttbl_delete_row(pdb, folder_id, message_id);
 	dbeng_notify_cttbl_add_row(pdb, folder_id, message_id);
-	std::swap(pdb->tables.table_list, tmp_list);
+	std::swap(dbase->tables.table_list, tmp_list);
 	for (const auto &tnode : tmp_list) {
 		auto ptable = &tnode;
 		datagram.id_array = {1, deconst(&ptable->table_id)};
-		for (auto &tnode1 : pdb->tables.table_list) {
+		for (auto &tnode1 : dbase->tables.table_list) {
 			auto ptnode = &tnode1;
 			if (ptable->table_id != ptnode->table_id)
 				continue;
@@ -3498,7 +3507,8 @@ static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
 	padded_row = NULL;
 	pdeleted_row = NULL;
 	pmodified_row = NULL;
-	for (const auto &tnode : pdb->tables.table_list) {
+	const db_base *dbase = pdb->m_base;
+	for (const auto &tnode : dbase->tables.table_list) {
 		auto ptable = &tnode;
 		if (ptable->type != table_type::hierarchy)
 			continue;
@@ -3668,7 +3678,8 @@ void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
 
-	for (const auto &sub : pdb->nsub_list) {
+	const db_base *dbase = pdb->m_base;
+	for (const auto &sub : dbase->nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
 			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
@@ -3720,7 +3731,8 @@ void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 	auto dir = exmdb_server::get_dir();
 	std::vector<ID_NODE> tmp_list;
 
-	for (const auto &sub : pdb->nsub_list) {
+	const db_base *dbase = pdb->m_base;
+	for (const auto &sub : dbase->nsub_list) {
 		auto pnsub = &sub;
 		if (b_copy) {
 			if (!(pnsub->notification_type & NF_OBJECT_COPIED))
@@ -3770,7 +3782,8 @@ void db_conn::notify_cttbl_reload(uint32_t table_id)
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	
-	const auto &list = pdb->tables.table_list;
+	const db_base *dbase = pdb->m_base;
+	const auto &list = dbase->tables.table_list;
 	auto ptable = std::find_if(list.cbegin(), list.cend(),
 	              [=](const table_node &n) { return n.table_id == table_id; });
 	if (ptable == list.cend())
@@ -3788,17 +3801,18 @@ void db_conn::notify_cttbl_reload(uint32_t table_id)
 
 void db_conn::begin_batch_mode()
 {
-	auto pdb = this;
-	pdb->tables.b_batch = true;
+	auto dbase = m_base;
+	dbase->tables.b_batch = true;
 }
 
 void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb)
 {
-	auto table_num = pdb->tables.table_list.size();
+	auto dbase = pdb->m_base;
+	auto table_num = dbase->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
 	table_num = 0;
 	if (ptable_ids != nullptr) {
-		for (auto &tnode : pdb->tables.table_list) {
+		for (auto &tnode : dbase->tables.table_list) {
 			auto ptable = &tnode;
 			if (ptable->b_hint) {
 				ptable_ids[table_num++] = ptable->table_id;
@@ -3806,7 +3820,7 @@ void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb)
 			}
 		}
 	}
-	pdb->tables.b_batch = false;
+	dbase->tables.b_batch = false;
 	pdb.reset();
 	auto dir = exmdb_server::get_dir();
 	while (table_num-- > 0)
@@ -3815,8 +3829,8 @@ void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb)
 
 void db_conn::cancel_batch_mode()
 {
-	auto pdb = this;
-	for (auto &t : pdb->tables.table_list)
+	auto dbase = m_base;
+	for (auto &t : dbase->tables.table_list)
 		t.b_hint = false;
-	pdb->tables.b_batch = false;
+	dbase->tables.b_batch = false;
 }

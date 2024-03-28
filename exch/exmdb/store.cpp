@@ -349,8 +349,9 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	uint32_t last_id = pdb->nsub_list.size() == 0 ? 0 :
-	                   pdb->nsub_list.back().sub_id;
+	auto dbase = pdb->m_base;
+	uint32_t last_id = dbase->nsub_list.size() == 0 ? 0 :
+	                   dbase->nsub_list.back().sub_id;
 	nsub_node sub, *pnsub = &sub;
 	pnsub->sub_id = last_id + 1;
 	auto remote_id = exmdb_server::get_remote_id();
@@ -379,7 +380,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	}
 	pnsub->message_id = message_id == 0 ? 0 :
 	                    rop_util_get_gc_value(message_id);
-	pdb->nsub_list.push_back(std::move(sub));
+	dbase->nsub_list.push_back(std::move(sub));
 	*psub_id = last_id + 1;
 	return TRUE;
 } catch (const std::bad_alloc &) {
@@ -392,10 +393,11 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	auto i = std::find_if(pdb->nsub_list.begin(), pdb->nsub_list.end(),
+	auto dbase = pdb->m_base;
+	auto i = std::find_if(dbase->nsub_list.begin(), dbase->nsub_list.end(),
 		[&](const nsub_node &n) { return n.sub_id == sub_id; });
-	if (i != pdb->nsub_list.end())
-		pdb->nsub_list.erase(i);
+	if (i != dbase->nsub_list.end())
+		dbase->nsub_list.erase(i);
 	return TRUE;
 }
 
