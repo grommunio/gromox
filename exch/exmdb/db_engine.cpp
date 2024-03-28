@@ -194,8 +194,8 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 /**
  * Query or create DB_ITEM in hash table.
  *
- * Iff this function returns a non-null pointer, then pdb->psqlite is also
- * guaranteed to be viable.
+ * Iff this function returns a non-null pointer, then pdb->psqlite and
+ * pdb->tables.psqlite are also guaranteed to be viable.
  */
 db_item_ptr db_engine_get_db(const char *path)
 {
@@ -222,7 +222,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns",
 				path, g_exmdb_lock_timeout);
 			return NULL;
-		} else if (pdb->psqlite == nullptr) {
+		} else if (pdb->psqlite == nullptr || pdb->tables.psqlite == nullptr) {
 			pdb->giant_lock.unlock();
 			--pdb->reference;
 			return nullptr;
@@ -369,8 +369,14 @@ bool DB_ITEM::postconstruct_init(const char *dir) try
 	tables.last_id = 0;
 	tables.b_batch = false;
 	tables.psqlite = nullptr;
+	auto ret = sqlite3_open_v2(":memory:", &tables.psqlite,
+	           SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+	if (ret != SQLITE_OK) {
+		mlog(LV_ERR, "E-1350: sqlite_open_v2 MEM: %s", sqlite3_errstr(ret));
+		return false;
+	}
 	auto db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
-	auto ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
 		return false;
