@@ -222,7 +222,7 @@ BOOL exmdb_server::load_hierarchy_table(const char *dir, uint64_t folder_id,
 	fid_val = rop_util_get_gc_value(folder_id);
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
-	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u "
@@ -417,7 +417,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 			sqlite3_bind_int64(pstmt_insert, 10, prev_id);
 			if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 				return FALSE;
-			prev_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
+			prev_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 			sqlite3_reset(pstmt_insert);
 		}
 		return TRUE;
@@ -496,7 +496,7 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 		sqlite3_bind_int64(pstmt_insert, 10, prev_id);
 		if (gx_sql_step(pstmt_insert) != SQLITE_DONE)
 			return FALSE;
-		prev_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
+		prev_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 		sqlite3_reset(pstmt_insert);
 		tmp_cnode.proptag = tmp_proptag;
 		unread_count = 0;
@@ -573,7 +573,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 	}
 	auto cl_1 = make_scope_exit([]() { exmdb_server::set_public_username(nullptr); });
 	uint32_t table_id = *ptable_id != 0 ? *ptable_id : ++pdb->tables.last_id;
-	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u "
@@ -927,7 +927,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
 		if (pstmt1.step() != SQLITE_DONE)
 			return false;
 		if (psorts == nullptr)
-			last_row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
+			last_row_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 		sqlite3_reset(pstmt1);
 	}
 	if (NULL != psorts) {
@@ -1142,7 +1142,7 @@ BOOL exmdb_server::load_permission_table(const char *dir, uint64_t folder_id,
 	fid_val = rop_util_get_gc_value(folder_id);
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
-	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
@@ -1311,7 +1311,7 @@ BOOL exmdb_server::load_rule_table(const char *dir, uint64_t folder_id,
 	fid_val = rop_util_get_gc_value(folder_id);
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
-	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
 	snprintf(sql_string, std::size(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
@@ -3316,7 +3316,7 @@ BOOL exmdb_server::restore_table_state(const char *dir,
 	if (ptnode->psorts == nullptr || ptnode->psorts->ccategories == 0)
 		goto RESTORE_POSITION;
 	{
-	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+	auto table_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 	if (!table_transact)
 		return false;
 	/* reset table into initial state */

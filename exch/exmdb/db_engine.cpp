@@ -195,7 +195,7 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
  * Query or create DB_ITEM in hash table.
  *
  * Iff this function returns a non-null pointer, then pdb->psqlite and
- * pdb->tables.psqlite are also guaranteed to be viable.
+ * pdb->m_sqlite_eph are also guaranteed to be viable.
  */
 db_item_ptr db_engine_get_db(const char *path)
 {
@@ -222,7 +222,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns",
 				path, g_exmdb_lock_timeout);
 			return NULL;
-		} else if (pdb->psqlite == nullptr || pdb->tables.psqlite == nullptr) {
+		} else if (pdb->psqlite == nullptr || pdb->m_sqlite_eph == nullptr) {
 			pdb->giant_lock.unlock();
 			--pdb->reference;
 			return nullptr;
@@ -372,7 +372,7 @@ bool DB_ITEM::postconstruct_init(const char *dir) try
 		mlog(LV_ERR, "E-1351: unlink %s: %s", db_path.c_str(), strerror(errno));
 		return false;
 	}
-	ret = sqlite3_open_v2(db_path.c_str(), &tables.psqlite,
+	ret = sqlite3_open_v2(db_path.c_str(), &m_sqlite_eph,
 	      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2 MEM: %s", sqlite3_errstr(ret));
@@ -407,9 +407,9 @@ DB_ITEM::~DB_ITEM()
 	pdb->instance_list.clear();
 	dynamic_list.clear();
 	tables.table_list.clear();
-	if (NULL != pdb->tables.psqlite) {
-		sqlite3_close(pdb->tables.psqlite);
-		pdb->tables.psqlite = NULL;
+	if (pdb->m_sqlite_eph != nullptr) {
+		sqlite3_close(pdb->m_sqlite_eph);
+		pdb->m_sqlite_eph = nullptr;
 	}
 	pdb->last_time = {};
 	if (NULL != pdb->psqlite) {
@@ -1472,7 +1472,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 					continue;
 				padded_row->after_row_id = inst_id1;
 			} else {
-				auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+				auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 				if (!sql_transact)
 					continue;
 				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
@@ -1496,7 +1496,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 						LLU{row_id}, CONTENT_ROW_MESSAGE, idx);
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
 					continue;
-				row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
+				row_id = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 				snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET prev_id=%llu WHERE"
 				        " row_id=%llu", ptable->table_id, LLU{row_id}, LLU{row_id1});
 				if (pdb->eph_exec(sql_string) != SQLITE_OK)
@@ -1561,7 +1561,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 				}
 			}
 		}
-		auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+		auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 		if (!sql_transact)
 			continue;
 		char sql_string[164];
@@ -1639,7 +1639,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
  MATCH_SUB_HEADER:
 				parent_id = row_id1;
 			}
-			if (b_break && !db_engine_insert_categories(pdb->tables.psqlite,
+			if (b_break && !db_engine_insert_categories(pdb->m_sqlite_eph,
 			    i, parent_id, row_id, row_id1, ptable->psorts,
 			    propvals, pstmt1, pstmt2, &ptable->header_id,
 			    &notify_list, &parent_id))
@@ -1683,7 +1683,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 				pvalue = propvals[multi_index].pvalue;
 			}
 			if (!db_engine_insert_message(
-			    pdb->tables.psqlite, message_id, b_read,
+			    pdb->m_sqlite_eph, message_id, b_read,
 			    ptable->psorts->ccategories, inst_num,
 			    type, pvalue, parent_id, row_id, row_id1,
 			    pstmt1, pstmt2, &notify_list, &row_id))
@@ -2135,7 +2135,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 			pstmt1.finalize();
 			if (idx == 0)
 				goto APPEND_END_OF_TABLE;
-			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 			if (!sql_transact)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "UPDATE t%u SET idx=-(idx+1)"
@@ -2173,7 +2173,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
 			}
-			idx = sqlite3_last_insert_rowid(pdb->tables.psqlite);
+			idx = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 			if (1 == idx) {
 				padded_row->after_folder_id = 0;
 			} else {
@@ -2351,7 +2351,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
-			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 			if (!sql_transact)
 				continue;
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM t%u WHERE "
@@ -2421,7 +2421,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 			double_list_append_as_tail(&tmp_list, &pdelnode->node);
 		}
 		pstmt.finalize();
-		auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+		auto sql_transact = gx_sql_begin_trans(pdb->m_sqlite_eph);
 		if (!sql_transact)
 			continue;
 		snprintf(sql_string, std::size(sql_string), "SELECT * FROM"
@@ -3542,7 +3542,7 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 					if (h != nullptr && *h == ptable->handle_guid)
 						continue;
 				}
-				idx = sqlite3_last_insert_rowid(pdb->tables.psqlite);
+				idx = sqlite3_last_insert_rowid(pdb->m_sqlite_eph);
 				if (1 == idx) {
 					padded_row->after_folder_id = 0;
 				} else {
