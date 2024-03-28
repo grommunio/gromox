@@ -432,6 +432,11 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
 		/* there is still a client wanting notifications */
 		return false;
 	if (pdb.reference == 0 && pdb.psqlite == nullptr)
+		/*
+		 * Zombie cleanup. mdpeng_scanwork calls remove_from_hash every
+		 * 10s; without this clause, they would be cleaned within
+		 * g_cache_interval.
+		 */
 		return true;
 	if (pdb.reference != 0 || now - pdb.last_time <= g_cache_interval)
 		return false;
