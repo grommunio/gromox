@@ -99,6 +99,9 @@ struct prepared_statements {
 	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 
+/**
+ * @reference: client reference count, item can be closed only when count is 0
+ */
 class db_item_deleter;
 struct DB_ITEM {
 	DB_ITEM();
@@ -130,8 +133,7 @@ struct DB_ITEM {
 	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<DB_ITEM *>(this)->get_instance(id); }
 	const table_node *find_table(uint32_t) const;
 
-	/* client reference count, item can be flushed into file system only count is 0 */
-	std::atomic<int> reference{0};
+	std::atomic<int> reference;
 	gromox::time_point last_time{};
 	std::timed_mutex giant_lock; /* should be broken up */
 	sqlite3 *psqlite = nullptr;

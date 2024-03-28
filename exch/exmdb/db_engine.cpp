@@ -233,7 +233,6 @@ db_item_ptr db_engine_get_db(const char *path)
 		mlog(LV_ERR, "E-1296: ENOMEM");
 		return NULL;
 	}
-	pdb->reference ++;
 	hhold.unlock();
 	if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
 		pdb->reference --;
@@ -352,8 +351,19 @@ table_node::~table_node()
 }
 
 DB_ITEM::DB_ITEM() :
+	reference(1),
 	last_time(tp_now())
 {
+	/*
+	 * g_hash_lock is held while DB_ITEMs are constructed and added into
+	 * g_hash_table. Releasing g_hash_lock (in the caller) makes this new
+	 * DB_ITEM visible and grabbable to other threads, which is fine. But
+	 * the other threads should not utilize [parent_r()/parent_w()] an
+	 * obtained DB_ITEM until open() was run, so we will now take the
+	 * rwlock to give our instantiating thread the first pick at running
+	 * open().
+	 * Because of that, the refcount is also set to 1.
+	 */
 }
 
 DB_ITEM::~DB_ITEM()
