@@ -107,6 +107,7 @@ struct DB_ITEM {
 	DB_ITEM();
 	~DB_ITEM();
 	NOMOVE(DB_ITEM);
+	void postconstruct_init(const char *dir);
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 	void delete_dynamic(uint64_t folder_id);
 	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3);

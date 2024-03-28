@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 #include <gromox/atomic.hpp>
 #include <gromox/clock.hpp>
 #include <gromox/database.h>
@@ -198,7 +199,6 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
  */
 db_item_ptr db_engine_get_db(const char *path)
 {
-	char db_path[256];
 	DB_ITEM *pdb;
 	
 	std::unique_lock hhold(g_hash_lock);
@@ -242,35 +242,22 @@ db_item_ptr db_engine_get_db(const char *path)
 		mlog(LV_ERR, "E-1296: ENOMEM");
 		return NULL;
 	}
+	/*
+	 * Release central map lock (g_hash_lock) early to unblock map read
+	 * access looking for DBs of other dirs.
+	 */
 	hhold.unlock();
+	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
 	if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
 		pdb->reference --;
 		return NULL;
 	}
-	pdb->tables.last_id = 0;
-	pdb->tables.b_batch = false;
-	pdb->tables.psqlite = NULL;
-	sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
-	auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
-	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", db_path, sqlite3_errstr(ret));
-		pdb->psqlite = NULL;
+	pdb->postconstruct_init(path);
+	if (pdb->psqlite == nullptr) {
 		pdb->giant_lock.unlock();
 		--pdb->reference;
 		return nullptr;
 	}
-	ret = db_engine_autoupgrade(pdb->psqlite, db_path);
-	if (ret != 0) {
-		sqlite3_close(pdb->psqlite);
-		pdb->psqlite = nullptr;
-		pdb->giant_lock.unlock();
-		--pdb->reference;
-		return nullptr;
-	}
-	pdb->exec("PRAGMA foreign_keys=ON");
-	pdb->exec("PRAGMA journal_mode=WAL");
-	if (exmdb_server::is_private())
-		db_engine_load_dynamic_list(pdb);
 	return db_item_ptr(pdb);
 }
 
@@ -377,6 +364,32 @@ DB_ITEM::DB_ITEM() :
 	 * open().
 	 * Because of that, the refcount is also set to 1.
 	 */
+}
+
+void DB_ITEM::postconstruct_init(const char *dir) try
+{
+	tables.last_id = 0;
+	tables.b_batch = false;
+	tables.psqlite = nullptr;
+	auto db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
+	auto ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
+		psqlite = nullptr;
+		return;
+	}
+	ret = db_engine_autoupgrade(psqlite, dir);
+	if (ret != 0) {
+		sqlite3_close(psqlite);
+		psqlite = nullptr;
+		return;
+	}
+	exec("PRAGMA foreign_keys=ON");
+	exec("PRAGMA journal_mode=WAL");
+	if (exmdb_server::is_private())
+		db_engine_load_dynamic_list(this);
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "E-1349: ENOMEM");
 }
 
 DB_ITEM::~DB_ITEM()
