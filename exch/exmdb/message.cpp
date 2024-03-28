@@ -439,7 +439,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		return false;
 	if (b_batch) {
 		b_batch = false;
-		DB_ITEM::commit_batch_mode_release(std::move(pdb));
+		db_conn::commit_batch_mode_release(std::move(pdb));
 	}
 	return TRUE;
 }
@@ -640,7 +640,7 @@ BOOL exmdb_server::delete_messages(const char *dir, cpid_t cpid,
 		return false;
 	if (b_batch) {
 		b_batch = false;
-		DB_ITEM::commit_batch_mode_release(std::move(pdb));
+		db_conn::commit_batch_mode_release(std::move(pdb));
 	}
 	return TRUE;
 }

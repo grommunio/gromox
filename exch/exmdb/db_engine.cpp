@@ -103,7 +103,7 @@ static gromox::time_duration g_cache_interval; /* maximum living interval in tab
 static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
-static std::unordered_map<std::string, DB_ITEM> g_hash_table;
+static std::unordered_map<std::string, db_conn> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
@@ -113,9 +113,9 @@ unsigned int g_exmdb_pvt_folder_softdel;
 unsigned long long g_exmdb_lock_timeout = 60000000000ULL;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
-static void dbeng_notify_cttbl_modify_row(DB_ITEM *, uint64_t folder_id, uint64_t message_id);
+static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id);
 
-static void db_engine_load_dynamic_list(DB_ITEM *pdb) try
+static void db_engine_load_dynamic_list(db_conn *pdb) try
 {
 	EXT_PULL ext_pull;
 	char sql_string[256];
@@ -192,14 +192,14 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 }
 
 /**
- * Query or create DB_ITEM in hash table.
+ * Query or create db_conn in hash table.
  *
  * Iff this function returns a non-null pointer, then pdb->psqlite and
  * pdb->m_sqlite_eph are also guaranteed to be viable.
  */
-db_item_ptr db_engine_get_db(const char *path)
+db_conn_ptr db_engine_get_db(const char *path)
 {
-	DB_ITEM *pdb;
+	db_conn *pdb;
 	
 	if (*path == '\0')
 		return nullptr;
@@ -229,7 +229,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			--pdb->reference;
 			return nullptr;
 		}
-		return db_item_ptr(pdb);
+		return db_conn_ptr(pdb);
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
@@ -258,10 +258,10 @@ db_item_ptr db_engine_get_db(const char *path)
 		--pdb->reference;
 		return nullptr;
 	}
-	return db_item_ptr(pdb);
+	return db_conn_ptr(pdb);
 }
 
-void db_item_deleter::operator()(DB_ITEM *pdb) const
+void db_item_deleter::operator()(db_conn *pdb) const
 {
 	pdb->last_time = tp_now();
 	pdb->giant_lock.unlock();
@@ -350,23 +350,23 @@ table_node::~table_node()
 		sortorder_set_free(psorts);
 }
 
-DB_ITEM::DB_ITEM() :
+db_conn::db_conn() :
 	reference(1),
 	last_time(tp_now())
 {
 	/*
-	 * g_hash_lock is held while DB_ITEMs are constructed and added into
+	 * g_hash_lock is held while db_conns are constructed and added into
 	 * g_hash_table. Releasing g_hash_lock (in the caller) makes this new
-	 * DB_ITEM visible and grabbable to other threads, which is fine. But
+	 * db_conn visible and grabbable to other threads, which is fine. But
 	 * the other threads should not utilize [parent_r()/parent_w()] an
-	 * obtained DB_ITEM until open() was run, so we will now take the
+	 * obtained db_conn until open() was run, so we will now take the
 	 * rwlock to give our instantiating thread the first pick at running
 	 * open().
 	 * Because of that, the refcount is also set to 1.
 	 */
 }
 
-bool DB_ITEM::postconstruct_init(const char *dir) try
+bool db_conn::postconstruct_init(const char *dir) try
 {
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
 	auto ret = ::unlink(db_path.c_str());
@@ -404,7 +404,7 @@ bool DB_ITEM::postconstruct_init(const char *dir) try
 	return false;
 }
 
-DB_ITEM::~DB_ITEM()
+db_conn::~db_conn()
 {
 	auto pdb = this;
 	
@@ -472,7 +472,7 @@ static void *db_expiry_thread(void *param)
 	return nullptr;
 }
 
-static bool db_reload(db_item_ptr &pdb, const char *dir)
+static bool db_reload(db_conn_ptr &pdb, const char *dir)
 {
 	pdb.reset();
 	exmdb_server::free_env();
@@ -631,7 +631,7 @@ db_engine_classify_id_array(std::vector<ID_NODE> &&plist) try
 	return {};
 }
 
-static std::optional<ID_ARRAYS> db_engine_classify_id_array(const DB_ITEM &db,
+static std::optional<ID_ARRAYS> db_engine_classify_id_array(const db_conn &db,
     unsigned int bits, uint64_t folder_id, uint64_t message_id) try
 {
 	std::vector<ID_NODE> tmp_list;
@@ -656,7 +656,7 @@ static void dg_notify(DB_NOTIFY_DATAGRAM &&dg, ID_ARRAYS &&a)
 	}
 }
 
-static void dbeng_notify_search_completion(db_item_ptr &pdb,
+static void dbeng_notify_search_completion(db_conn_ptr &pdb,
     uint64_t folder_id) try
 {
 	DB_NOTIFY_DATAGRAM datagram;
@@ -867,7 +867,7 @@ bool db_engine_check_populating(const char *dir, uint64_t folder_id)
 	return false;
 }
 
-void DB_ITEM::update_dynamic(uint64_t folder_id, uint32_t search_flags,
+void db_conn::update_dynamic(uint64_t folder_id, uint32_t search_flags,
     const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids) try
 {
 	auto pdb = this;
@@ -893,14 +893,14 @@ void DB_ITEM::update_dynamic(uint64_t folder_id, uint32_t search_flags,
 	mlog(LV_ERR, "E-1143: ENOMEM");
 }
 
-void DB_ITEM::delete_dynamic(uint64_t folder_id)
+void db_conn::delete_dynamic(uint64_t folder_id)
 {
 	auto pdb = this;
 	gromox::erase_first_if(pdb->dynamic_list,
 		[=](const dynamic_node &n) { return n.folder_id == folder_id; });
 }
 
-static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
+static void dbeng_dynevt_1(db_conn *pdb, cpid_t cpid, uint64_t id1,
     uint64_t id2, uint64_t id3, uint32_t folder_type,
     const dynamic_node *pdynamic, size_t i)
 {
@@ -960,7 +960,7 @@ static void dbeng_dynevt_1(DB_ITEM *pdb, cpid_t cpid, uint64_t id1,
 	}
 }
 
-static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
+static void dbeng_dynevt_2(db_conn *pdb, cpid_t cpid, dynamic_event event_type,
     uint64_t id1, uint64_t id2, const dynamic_node *pdynamic, size_t i)
 {
 	BOOL b_exist;
@@ -1075,7 +1075,7 @@ static void dbeng_dynevt_2(DB_ITEM *pdb, cpid_t cpid, dynamic_event event_type,
  * folder itself (population/depopulation as a result of search criteria
  * change).
  */
-void DB_ITEM::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
+void db_conn::proc_dynamic_event(cpid_t cpid, dynamic_event event_type,
     uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	auto pdb = this;
@@ -1325,7 +1325,7 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 	return mv;
 }
 
-static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
+static void dbeng_notify_cttbl_add_row(db_conn *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	DB_NOTIFY_DATAGRAM datagram  = {deconst(exmdb_server::get_dir()), TRUE};
@@ -1930,7 +1930,7 @@ static void dbeng_notify_cttbl_add_row(DB_ITEM *pdb,
 	}
 }
 
-void DB_ITEM::transport_new_mail(uint64_t folder_id, uint64_t message_id,
+void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
     uint32_t message_flags, const char *pstr_class) try
 {
 	auto pdb = this;
@@ -1955,7 +1955,7 @@ void DB_ITEM::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	mlog(LV_ERR, "E-2119: ENOMEM");
 }
 	
-void DB_ITEM::notify_new_mail(uint64_t folder_id, uint64_t message_id) try
+void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id) try
 {
 	auto pdb = this;
 	void *pvalue;
@@ -1991,7 +1991,7 @@ void DB_ITEM::notify_new_mail(uint64_t folder_id, uint64_t message_id) try
 	mlog(LV_ERR, "E-2120: ENOMEM");
 }
 
-void DB_ITEM::notify_message_creation(uint64_t folder_id,
+void db_conn::notify_message_creation(uint64_t folder_id,
     uint64_t message_id) try
 {
 	auto pdb = this;
@@ -2020,7 +2020,7 @@ void DB_ITEM::notify_message_creation(uint64_t folder_id,
 	mlog(LV_ERR, "E-2121: ENOMEM");
 }
 
-void DB_ITEM::notify_link_creation(uint64_t srch_fld, uint64_t message_id) try
+void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id) try
 {
 	auto pdb = this;
 	uint64_t anchor_fld;
@@ -2054,7 +2054,7 @@ void DB_ITEM::notify_link_creation(uint64_t srch_fld, uint64_t message_id) try
 	mlog(LV_ERR, "E-2122: ENOMEM");
 }
 
-static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_add_row(db_conn *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	uint32_t idx;
@@ -2200,7 +2200,7 @@ static void dbeng_notify_hiertbl_add_row(DB_ITEM *pdb,
 	}
 }
 
-void DB_ITEM::notify_folder_creation(uint64_t parent_id, uint64_t folder_id) try
+void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -2243,7 +2243,7 @@ static void db_engine_update_prev_id(DOUBLE_LIST *plist,
 	}
 }
 
-static void *db_engine_get_extremum_value(DB_ITEM *pdb, cpid_t cpid,
+static void *db_engine_get_extremum_value(db_conn *pdb, cpid_t cpid,
     uint32_t table_id, uint32_t extremum_tag, uint64_t parent_id,
     uint8_t table_sort)
 {
@@ -2283,7 +2283,7 @@ static void *db_engine_get_extremum_value(DB_ITEM *pdb, cpid_t cpid,
 	return pvalue;
 }
 
-static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
+static void dbeng_notify_cttbl_delete_row(db_conn *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	int result;
@@ -2730,7 +2730,7 @@ static void dbeng_notify_cttbl_delete_row(DB_ITEM *pdb,
 	}
 }
 
-void DB_ITEM::notify_message_deletion(uint64_t folder_id, uint64_t message_id) try
+void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -2757,7 +2757,7 @@ void DB_ITEM::notify_message_deletion(uint64_t folder_id, uint64_t message_id) t
 	mlog(LV_ERR, "E-2124: ENOMEM");
 }
 
-void DB_ITEM::notify_link_deletion(uint64_t parent_id, uint64_t message_id) try
+void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id) try
 {
 	auto pdb = this;
 	uint64_t folder_id;
@@ -2791,7 +2791,7 @@ void DB_ITEM::notify_link_deletion(uint64_t parent_id, uint64_t message_id) try
 	mlog(LV_ERR, "E-2125: ENOMEM");
 }
 
-static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_delete_row(db_conn *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
@@ -2856,7 +2856,7 @@ static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
 	}
 }	
 
-void DB_ITEM::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id) try
+void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -2881,7 +2881,7 @@ void DB_ITEM::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id) try
 	mlog(LV_ERR, "E-2126: ENOMEM");
 }
 
-static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
+static void dbeng_notify_cttbl_modify_row(db_conn *pdb,
     uint64_t folder_id, uint64_t message_id)
 {
 	int result;
@@ -3463,7 +3463,7 @@ static void dbeng_notify_cttbl_modify_row(DB_ITEM *pdb,
 	}
 }
 
-void DB_ITEM::notify_message_modification(uint64_t folder_id, uint64_t message_id) try
+void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_id) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -3491,7 +3491,7 @@ void DB_ITEM::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	mlog(LV_ERR, "E-2127: ENOMEM");
 }
 
-static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
+static void dbeng_notify_hiertbl_modify_row(const db_conn *pdb,
     uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
@@ -3641,7 +3641,7 @@ static void dbeng_notify_hiertbl_modify_row(const DB_ITEM *pdb,
 	}
 }
 
-void DB_ITEM::notify_folder_modification(uint64_t parent_id, uint64_t folder_id) try
+void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id) try
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -3669,7 +3669,7 @@ void DB_ITEM::notify_folder_modification(uint64_t parent_id, uint64_t folder_id)
 	mlog(LV_ERR, "E-2128: ENOMEM");
 }
 
-void DB_ITEM::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
+void db_conn::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
     uint64_t message_id, uint64_t old_fid, uint64_t old_mid)
 {
 	auto pdb = this;
@@ -3721,7 +3721,7 @@ void DB_ITEM::notify_message_movecopy(BOOL b_copy, uint64_t folder_id,
 		pdb->psqlite, folder_id), folder_id);
 }
 
-void DB_ITEM::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
+void db_conn::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
     uint64_t folder_id, uint64_t old_pid, uint64_t old_fid)
 {
 	auto pdb = this;
@@ -3774,7 +3774,7 @@ void DB_ITEM::notify_folder_movecopy(BOOL b_copy, uint64_t parent_id,
 		pdb->psqlite, parent_id), parent_id);
 }
 
-void DB_ITEM::notify_cttbl_reload(uint32_t table_id)
+void db_conn::notify_cttbl_reload(uint32_t table_id)
 {
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
@@ -3795,13 +3795,13 @@ void DB_ITEM::notify_cttbl_reload(uint32_t table_id)
 		ptable->remote_id, &datagram);
 }
 
-void DB_ITEM::begin_batch_mode()
+void db_conn::begin_batch_mode()
 {
 	auto pdb = this;
 	pdb->tables.b_batch = true;
 }
 
-void DB_ITEM::commit_batch_mode_release(db_item_ptr &&pdb)
+void db_conn::commit_batch_mode_release(db_conn_ptr &&pdb)
 {
 	auto table_num = pdb->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
@@ -3822,7 +3822,7 @@ void DB_ITEM::commit_batch_mode_release(db_item_ptr &&pdb)
 		exmdb_server::reload_content_table(dir, ptable_ids[table_num]);
 }
 
-void DB_ITEM::cancel_batch_mode()
+void db_conn::cancel_batch_mode()
 {
 	auto pdb = this;
 	for (auto &t : pdb->tables.table_list)

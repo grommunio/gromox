@@ -137,7 +137,7 @@ int have_delete_perm(sqlite3 *db, const char *user, uint64_t fid, uint64_t mid)
  * @fai_size:    Size that the caller should subtract from store size/FAI
  * @msg_count:   Indicator for the caller to update the folder commit time
  */
-static bool folder_purge_softdel(db_item_ptr &db, cpid_t cpid,
+static bool folder_purge_softdel(db_conn_ptr &db, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
     bool *partial, uint64_t *normal_size, uint64_t *fai_size,
     uint32_t *msg_count, uint32_t *fld_count, mapitime_t cutoff)

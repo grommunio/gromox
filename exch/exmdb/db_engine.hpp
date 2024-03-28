@@ -103,10 +103,10 @@ struct prepared_statements {
  * @reference: client reference count, item can be closed only when count is 0
  */
 class db_item_deleter;
-struct DB_ITEM {
-	DB_ITEM();
-	~DB_ITEM();
-	NOMOVE(DB_ITEM);
+struct db_conn {
+	db_conn();
+	~db_conn();
+	NOMOVE(db_conn);
 	bool postconstruct_init(const char *dir);
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 	void delete_dynamic(uint64_t folder_id);
@@ -126,12 +126,12 @@ struct DB_ITEM {
 	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass);
 	void begin_batch_mode();
 	/* pdb will also be put */
-	static void commit_batch_mode_release(std::unique_ptr<DB_ITEM, db_item_deleter> &&pdb);
+	static void commit_batch_mode_release(std::unique_ptr<db_conn, db_item_deleter> &&pdb);
 	void cancel_batch_mode();
 	std::unique_ptr<prepared_statements> begin_optim();
 	uint32_t next_instance_id() const;
 	instance_node *get_instance(uint32_t);
-	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<DB_ITEM *>(this)->get_instance(id); }
+	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_conn *>(this)->get_instance(id); }
 	const table_node *find_table(uint32_t) const;
 
 	std::atomic<int> reference;
@@ -162,12 +162,12 @@ extern void db_engine_stop();
 
 class db_item_deleter {
 	public:
-	void operator()(DB_ITEM *) const;
+	void operator()(db_conn *) const;
 };
 
-using db_item_ptr = std::unique_ptr<DB_ITEM, db_item_deleter>;
+using db_conn_ptr = std::unique_ptr<db_conn, db_item_deleter>;
 
-extern db_item_ptr db_engine_get_db(const char *dir);
+extern db_conn_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);
 BOOL db_engine_unload_db(const char *path);
 extern BOOL db_engine_enqueue_populating_criteria(const char *dir, cpid_t, uint64_t folder_id, BOOL recursive, const RESTRICTION *, const LONGLONG_ARRAY *folder_ids);
