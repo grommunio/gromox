@@ -64,9 +64,6 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "0", CFG_SIZE},
-	{"mbox_contention_reject", "0", CFG_SIZE},
-	{"mbox_contention_reject_time", "60s", CFG_TIME_NS},
-	{"mbox_contention_warning", "10", CFG_SIZE},
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
@@ -77,7 +74,6 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 };
 
 unsigned int g_dbg_synth_content;
-unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
 static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
     std::shared_ptr<CONFIG_FILE> pconfig = nullptr)
@@ -102,14 +98,11 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
 	g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
-	g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");
-	g_mbox_contention_reject = pconfig->get_ll("mbox_contention_reject");
 	exmdb_body_autosynthesis = pconfig->get_ll("exmdb_body_autosynthesis");
 	exmdb_pf_read_per_user = pconfig->get_ll("exmdb_pf_read_per_user");
 	exmdb_pf_read_states = pconfig->get_ll("exmdb_pf_read_states");
 	g_exmdb_pvt_folder_softdel = pconfig->get_ll("exmdb_private_folder_softdelete");
 	g_exmdb_search_pacing = pconfig->get_ll("exmdb_search_pacing");
-	g_exmdb_lock_timeout = pconfig->get_ll("mbox_contention_reject_time");
 	g_exmdb_search_yield = pconfig->get_ll("exmdb_search_yield");
 	g_exmdb_search_nice = pconfig->get_ll("exmdb_search_nice");
 	g_exmdb_search_pacing_time = pconfig->get_ll("exmdb_search_pacing_time");
