@@ -103,7 +103,7 @@ static gromox::time_duration g_cache_interval; /* maximum living interval in tab
 static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_list_lock, g_hash_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
-static std::unordered_map<std::string, db_conn> g_hash_table;
+static std::unordered_map<std::string, db_base> g_hash_table;
 /* List of queued searchcriteria, and list of searchcriteria evaluated right now */
 static std::list<POPULATING_NODE> g_populating_list, g_populating_list_active;
 unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
@@ -199,28 +199,28 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
  */
 db_conn_ptr db_engine_get_db(const char *path)
 {
-	db_conn *pdb;
+	db_base *pdb;
 	
 	if (*path == '\0')
-		return nullptr;
+		return std::nullopt;
 	std::unique_lock hhold(g_hash_lock);
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
 		++pdb->reference;
 		hhold.unlock();
-		pdb->giant_lock.lock();
-		if (pdb->psqlite == nullptr || pdb->m_sqlite_eph == nullptr) {
-			pdb->giant_lock.unlock();
+		db_conn_ptr conn(*pdb);
+		if (!conn->open(path)) {
 			--pdb->reference;
-			return nullptr;
+			return std::nullopt;
 		}
-		return db_conn_ptr(pdb);
+		--pdb->reference;
+		return conn;
 	}
 	if (g_hash_table.size() >= g_table_size) {
 		hhold.unlock();
 		mlog(LV_ERR, "E-1297: too many sqlite files referenced at once (exmdb_provider.cfg:table_size=%zu)", g_table_size);
-		return NULL;
+		return std::nullopt;
 	}
 	try {
 		auto xp = g_hash_table.try_emplace(path);
@@ -228,7 +228,7 @@ db_conn_ptr db_engine_get_db(const char *path)
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
 		mlog(LV_ERR, "E-1296: ENOMEM");
-		return NULL;
+		return std::nullopt;
 	}
 	/*
 	 * Release central map lock (g_hash_lock) early to unblock map read
@@ -236,20 +236,13 @@ db_conn_ptr db_engine_get_db(const char *path)
 	 */
 	hhold.unlock();
 	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
-	pdb->giant_lock.lock();
-	if (!pdb->postconstruct_init(path)) {
-		pdb->giant_lock.unlock();
+	db_conn_ptr conn(*pdb);
+	if (!conn->open(path)) {
 		--pdb->reference;
-		return nullptr;
+		return std::nullopt;
 	}
-	return db_conn_ptr(pdb);
-}
-
-void db_item_deleter::operator()(db_conn *pdb) const
-{
-	pdb->last_time = tp_now();
-	pdb->giant_lock.unlock();
-	pdb->reference --;
+	--pdb->reference;
+	return conn;
 }
 
 BOOL db_engine_vacuum(const char *path)
@@ -339,8 +332,60 @@ db_base::db_base() :
 	last_time(tp_now())
 {}
 
-bool db_conn::postconstruct_init(const char *dir) try
+db_conn::db_conn(db_base &base) :
+	m_base(&base), m_lock(base.giant_lock)
 {
+	++base.reference;
+	psqlite = std::move(base.mx_sqlite);
+	base.mx_sqlite = nullptr;
+	m_sqlite_eph = std::move(base.mx_sqlite_eph);
+	base.mx_sqlite_eph = nullptr;
+}
+
+db_conn::db_conn(db_conn &&o) :
+	psqlite(std::move(o.psqlite)),
+	m_sqlite_eph(std::move(o.m_sqlite_eph)),
+	m_base(std::move(o.m_base)),
+	m_lock(std::move(o.m_lock))
+{
+	o.psqlite = o.m_sqlite_eph = nullptr;
+	o.m_base = nullptr;
+}
+
+db_conn::~db_conn()
+{
+	if (m_base == nullptr)
+		return;
+	/*
+	 * Keep the sqlite handles open for the next db_conn. There might be
+	 * change here once multiple sqlite handles per dir are possible.
+	 */
+	m_base->mx_sqlite = std::move(psqlite);
+	m_base->mx_sqlite_eph = std::move(m_sqlite_eph);
+	--m_base->reference;
+}
+
+db_conn &db_conn::operator=(db_conn &&o)
+{
+	psqlite = std::move(o.psqlite);
+	m_sqlite_eph = std::move(o.m_sqlite_eph);
+	o.psqlite = o.m_sqlite_eph = nullptr;
+	m_base = std::move(o.m_base);
+	o.m_base = nullptr;
+	return *this;
+}
+
+/**
+ * Create a new database connection (handle)
+ *
+ * @dir:  Store directory
+ */
+bool db_conn::open(const char *dir) try
+{
+	assert((psqlite == nullptr) == (m_sqlite_eph == nullptr));
+	if (psqlite != nullptr && m_sqlite_eph != nullptr)
+		return true;
+
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT) {
@@ -384,15 +429,11 @@ db_base::~db_base()
 	pdb->instance_list.clear();
 	dynamic_list.clear();
 	tables.table_list.clear();
-	if (pdb->m_sqlite_eph != nullptr) {
-		sqlite3_close(pdb->m_sqlite_eph);
-		pdb->m_sqlite_eph = nullptr;
-	}
+	if (mx_sqlite_eph != nullptr)
+		sqlite3_close(mx_sqlite_eph);
 	pdb->last_time = {};
-	if (NULL != pdb->psqlite) {
-		sqlite3_close(pdb->psqlite);
-		pdb->psqlite = NULL;
-	}
+	if (mx_sqlite != nullptr)
+		sqlite3_close(mx_sqlite);
 }
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
@@ -405,13 +446,6 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
 	if (pdb.nsub_list.size() > 0)
 		/* there is still a client wanting notifications */
 		return false;
-	if (pdb.reference == 0 && pdb.psqlite == nullptr)
-		/*
-		 * Zombie cleanup. db_expiry_thread calls remove_from_hash every
-		 * 10s; without this clause, they would be cleaned within
-		 * g_cache_interval.
-		 */
-		return true;
 	if (pdb.reference != 0 || now - pdb.last_time <= g_cache_interval)
 		return false;
 	return true;
