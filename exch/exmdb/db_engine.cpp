@@ -383,8 +383,11 @@ void DB_ITEM::postconstruct_init(const char *dir) try
 		sqlite3_close(psqlite);
 		psqlite = nullptr;
 		return;
+	} else if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK) {
+		sqlite3_close(psqlite);
+		psqlite = nullptr;
+		return;
 	}
-	exec("PRAGMA foreign_keys=ON");
 	exec("PRAGMA journal_mode=WAL");
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this);
