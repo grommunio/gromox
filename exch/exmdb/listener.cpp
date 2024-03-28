@@ -35,7 +35,7 @@ static char g_listen_ip[40];
 static std::vector<std::string> g_acl_list;
 static pthread_t g_listener_id;
 
-static void *mdpls_thrwork(void *param)
+static void *sockaccept_thread(void *param)
 {
 	socklen_t addrlen;
 	char client_hostip[40];
@@ -146,12 +146,12 @@ int exmdb_listener_trigger_accept()
 		return 0;
 	}
 	g_notify_stop = false;
-	auto ret = pthread_create4(&g_listener_id, nullptr, mdpls_thrwork, nullptr);
+	auto ret = pthread_create4(&g_listener_id, nullptr, sockaccept_thread, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create exmdb listener thread: %s", strerror(ret));
 		return -1;
 	}
-	pthread_setname_np(g_listener_id, "exmdb_listener");
+	pthread_setname_np(g_listener_id, "exmdb_accept");
 	return 0;
 }
 

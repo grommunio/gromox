@@ -430,7 +430,7 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
 		return false;
 	if (pdb.reference == 0 && pdb.psqlite == nullptr)
 		/*
-		 * Zombie cleanup. mdpeng_scanwork calls remove_from_hash every
+		 * Zombie cleanup. db_expiry_thread calls remove_from_hash every
 		 * 10s; without this clause, they would be cleaned within
 		 * g_cache_interval.
 		 */
@@ -440,7 +440,7 @@ static bool remove_from_hash(const decltype(g_hash_table)::value_type &it,
 	return true;
 }
 
-static void *mdpeng_scanwork(void *param)
+static void *db_expiry_thread(void *param)
 {
 	int count;
 
@@ -675,7 +675,11 @@ static void dbeng_notify_search_completion(db_item_ptr &pdb,
 	mlog(LV_ERR, "E-2118: ENOMEM");
 }
 
-static void *mdpeng_thrwork(void *param)
+/**
+ * Background task which is responsible for the initial filling of search
+ * folders (e.g. when they are created, or the search criteria has been reset).
+ */
+static void *sf_popul_thread(void *param)
 {
 	if (nice(g_exmdb_search_nice) < 0)
 		/* ignore */;
@@ -774,22 +778,23 @@ int db_engine_run()
 		return -2;
 	}
 	g_notify_stop = false;
-	auto ret = pthread_create4(&g_scan_tid, nullptr, mdpeng_scanwork, nullptr);
+	auto ret = pthread_create4(&g_scan_tid, nullptr,
+	           db_expiry_thread, nullptr);
 	if (ret != 0) {
 		mlog(LV_ERR, "exmdb_provider: failed to create db scan thread: %s", strerror(ret));
 		return -4;
 	}
-	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
+	pthread_setname_np(g_scan_tid, "db_expiry");
 	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		ret = pthread_create4(&tid, nullptr, mdpeng_thrwork, nullptr);
+		ret = pthread_create4(&tid, nullptr, sf_popul_thread, nullptr);
 		if (ret != 0) {
 			mlog(LV_ERR, "E-1448: pthread_create: %s", strerror(ret));
 			db_engine_stop();
 			return -5;
 		}
 		char buf[32];
-		snprintf(buf, sizeof(buf), "exmdbeng/%u", i);
+		snprintf(buf, sizeof(buf), "sfpop/%u", i);
 		pthread_setname_np(tid, buf);
 		g_thread_ids.push_back(tid);
 	}
