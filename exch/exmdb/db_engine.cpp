@@ -737,6 +737,8 @@ static void *sf_popul_thread(void *param)
 			table_ids.reserve(pdb->tables.table_list.size());
 		} catch (const std::bad_alloc &) {
 			mlog(LV_ERR, "E-1649: ENOMEM");
+			sleep(60);
+			goto NEXT_SEARCH;
 		}
 		for (const auto &t : pdb->tables.table_list)
 			if (t.type == table_type::content &&
