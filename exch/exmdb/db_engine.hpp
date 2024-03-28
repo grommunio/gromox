@@ -101,7 +101,12 @@ struct prepared_statements {
 };
 
 /**
+ * Per-mailbox state shared across multiple (and basically indepdent of)
+ * db_conn.
+ *
  * @reference: client reference count, db_base can be destroyed when count is 0
+ * @mx_sqlite: cached sqlite handle for exchange.sqlite3
+ * @mx_sqlite_eph: cached sqlite handle for tables.sqlite3
  */
 struct db_base {
 	db_base();
@@ -111,7 +116,7 @@ struct db_base {
 	std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
-	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
+	sqlite3 *mx_sqlite = nullptr, *mx_sqlite_eph = nullptr;
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
@@ -129,9 +134,14 @@ struct db_base {
 };
 
 class db_item_deleter;
-struct db_conn : public db_base {
-	db_conn() : m_base(this) {}
-	bool postconstruct_init(const char *dir);
+struct db_conn {
+	db_conn(db_base &);
+	~db_conn();
+	db_conn(db_conn &&);
+	db_conn &operator=(db_conn &&);
+	inline operator db_base &() { return *m_base; }
+	inline operator const db_base &() const { return *m_base; }
+	bool open(const char *dir);
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 	void delete_dynamic(uint64_t folder_id);
 	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3);
@@ -150,7 +160,7 @@ struct db_conn : public db_base {
 	void transport_new_mail(uint64_t folder_id, uint64_t msg_id, uint32_t msg_flags, const char *klass);
 	void begin_batch_mode();
 	/* pdb will also be put */
-	static void commit_batch_mode_release(std::unique_ptr<db_conn, db_item_deleter> &&pdb);
+	static void commit_batch_mode_release(std::optional<db_conn> &&pdb);
 	void cancel_batch_mode();
 	std::unique_ptr<prepared_statements> begin_optim();
 
@@ -159,19 +169,15 @@ struct db_conn : public db_base {
 	gromox::xstmt eph_prep(const char *q) const { return gromox::gx_sql_prep(m_sqlite_eph, q); }
 	int eph_exec(const char *q) const { return gromox::gx_sql_exec(m_sqlite_eph, q); }
 
+	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
 	db_base *m_base = nullptr;
+	std::unique_lock<std::shared_mutex> m_lock;
 };
+using db_conn_ptr = std::optional<db_conn>;
 
 extern void db_engine_init(size_t table_size, int cache_interval, unsigned int threads_num);
 extern int db_engine_run();
 extern void db_engine_stop();
-
-class db_item_deleter {
-	public:
-	void operator()(db_conn *) const;
-};
-
-using db_conn_ptr = std::unique_ptr<db_conn, db_item_deleter>;
 
 extern db_conn_ptr db_engine_get_db(const char *dir);
 extern BOOL db_engine_vacuum(const char *path);

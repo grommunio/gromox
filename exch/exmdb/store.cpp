@@ -27,7 +27,7 @@ static constexpr uint64_t GLOBCNT_MAX = 0x7fffffffffff;
 BOOL exmdb_server::ping_store(const char *dir)
 {
 	auto pdb = db_engine_get_db(dir);
-	return pdb != nullptr ? TRUE : false;
+	return !!pdb;
 }
 
 BOOL exmdb_server::get_all_named_propids(const char *dir,
