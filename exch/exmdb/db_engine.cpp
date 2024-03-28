@@ -263,7 +263,13 @@ db_item_ptr db_engine_get_db(const char *path)
 
 void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
-	pdb->last_time = tp_now();
+	/*
+	 * Only mark usable DB_ITEMs as fresh. postconstruct_init() may leave a
+	 * DB_ITEM in a "zombie" state after a failed sqlite_open_v2(), with
+	 * psqlite==nullptr.
+	 */
+	if (pdb->psqlite != nullptr)
+		pdb->last_time = tp_now();
 	pdb->giant_lock.unlock();
 	pdb->reference --;
 }
