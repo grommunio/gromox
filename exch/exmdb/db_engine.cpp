@@ -366,9 +366,6 @@ DB_ITEM::DB_ITEM() :
 
 bool DB_ITEM::postconstruct_init(const char *dir) try
 {
-	tables.last_id = 0;
-	tables.b_batch = false;
-	tables.psqlite = nullptr;
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT) {
