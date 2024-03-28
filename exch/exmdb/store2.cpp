@@ -51,7 +51,7 @@ BOOL exmdb_server::notify_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id)
 {
 	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
+	if (!pdb)
 		return false;
 	pdb->notify_new_mail(rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id));
@@ -268,7 +268,7 @@ BOOL exmdb_server::purge_softdelete(const char *dir, const char *username,
 	del_flags &= DEL_FOLDERS;
 
 	auto db = db_engine_get_db(dir);
-	if (db == nullptr || db->psqlite == nullptr)
+	if (!db)
 		return false;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto xact = gx_sql_begin_trans(db->psqlite);
@@ -477,7 +477,7 @@ static bool purg_clean_mid(const char *maildir, time_t upper_bound_ts)
 BOOL exmdb_server::purge_datafiles(const char *dir)
 {
 	auto db = db_engine_get_db(dir);
-	if (db == nullptr || db->psqlite == nullptr)
+	if (!db)
 		return false;
 	auto upper_bound_ts = time(nullptr) - 60;
 	return purg_clean_cid(db->psqlite, dir, upper_bound_ts) &&
@@ -490,7 +490,7 @@ BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
 	if (window == 0)
 		window = INT64_MAX;
 	auto db = db_engine_get_db(dir);
-	if (db == nullptr || db->psqlite == nullptr)
+	if (!db)
 		return false;
 	auto adb = db->psqlite;
 	auto stm = gx_sql_prep(adb, "SELECT `ts` FROM `autoreply_ts` WHERE `peer`=?");
@@ -515,7 +515,7 @@ BOOL exmdb_server::autoreply_tsquery(const char *dir, const char *peer,
 BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 {
 	auto db = db_engine_get_db(dir);
-	if (db == nullptr || db->psqlite == nullptr)
+	if (!db)
 		return false;
 	auto adb = db->psqlite;
 	auto stm = gx_sql_prep(adb, "REPLACE INTO `autoreply_ts` (`peer`,`ts`) VALUES (?,?)");
@@ -532,7 +532,7 @@ BOOL exmdb_server::autoreply_tsupdate(const char *dir, const char *peer) try
 BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 {
 	auto db = db_engine_get_db(dir);
-	if (db == nullptr || db->psqlite == nullptr)
+	if (!db)
 		return false;
 	auto idb = db->psqlite;
 	auto comp = [&](proptag_t tag, const char *wh) {

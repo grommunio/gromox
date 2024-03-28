@@ -190,7 +190,12 @@ static int db_engine_autoupgrade(sqlite3 *db, const char *filedesc)
 	return 0;
 }
 
-/* query or create DB_ITEM in hash table */
+/**
+ * Query or create DB_ITEM in hash table.
+ *
+ * Iff this function returns a non-null pointer, then pdb->psqlite is also
+ * guaranteed to be viable.
+ */
 db_item_ptr db_engine_get_db(const char *path)
 {
 	char db_path[256];
@@ -217,6 +222,10 @@ db_item_ptr db_engine_get_db(const char *path)
 			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns",
 				path, g_exmdb_lock_timeout);
 			return NULL;
+		} else if (pdb->psqlite == nullptr) {
+			pdb->giant_lock.unlock();
+			--pdb->reference;
+			return nullptr;
 		}
 		return db_item_ptr(pdb);
 	}
@@ -246,13 +255,17 @@ db_item_ptr db_engine_get_db(const char *path)
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", db_path, sqlite3_errstr(ret));
 		pdb->psqlite = NULL;
-		return db_item_ptr(pdb);
+		pdb->giant_lock.unlock();
+		--pdb->reference;
+		return nullptr;
 	}
 	ret = db_engine_autoupgrade(pdb->psqlite, db_path);
 	if (ret != 0) {
 		sqlite3_close(pdb->psqlite);
 		pdb->psqlite = nullptr;
-		return db_item_ptr(pdb);
+		pdb->giant_lock.unlock();
+		--pdb->reference;
+		return nullptr;
 	}
 	gx_sql_exec(pdb->psqlite, "PRAGMA foreign_keys=ON");
 	gx_sql_exec(pdb->psqlite, "PRAGMA journal_mode=WAL");
@@ -263,13 +276,7 @@ db_item_ptr db_engine_get_db(const char *path)
 
 void db_item_deleter::operator()(DB_ITEM *pdb) const
 {
-	/*
-	 * Only mark usable DB_ITEMs as fresh. postconstruct_init() may leave a
-	 * DB_ITEM in a "zombie" state after a failed sqlite_open_v2(), with
-	 * psqlite==nullptr.
-	 */
-	if (pdb->psqlite != nullptr)
-		pdb->last_time = tp_now();
+	pdb->last_time = tp_now();
 	pdb->giant_lock.unlock();
 	pdb->reference --;
 }
@@ -277,7 +284,7 @@ void db_item_deleter::operator()(DB_ITEM *pdb) const
 BOOL db_engine_vacuum(const char *path)
 {
 	auto db = db_engine_get_db(path);
-	if (db == nullptr || db->psqlite == nullptr)
+	if (!db)
 		return false;
 	mlog(LV_INFO, "I-2102: Vacuuming %s (exchange.sqlite3)", path);
 	if (gx_sql_exec(db->psqlite, "VACUUM") != SQLITE_OK)
@@ -445,7 +452,7 @@ static bool db_reload(db_item_ptr &pdb, const char *dir)
 		std::this_thread::yield(); /* +2 to +3% walltime */
 	exmdb_server::build_env(EM_PRIVATE, dir);
 	pdb = db_engine_get_db(dir);
-	return pdb != nullptr && pdb->psqlite != nullptr;
+	return !!pdb;
 }
 
 static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
@@ -453,7 +460,7 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 {
 	char sql_string[128];
 	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
+	if (!pdb)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
@@ -538,7 +545,7 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 	char sql_string[128];
 	
 	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
+	if (!pdb)
 		return FALSE;
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU{folder_id});
@@ -688,7 +695,7 @@ static void *mdpeng_thrwork(void *param)
 		if (g_notify_stop)
 			break;
 		auto pdb = db_engine_get_db(psearch->dir.c_str());
-		if (pdb == nullptr || pdb->psqlite == nullptr)
+		if (!pdb)
 			goto NEXT_SEARCH;
 		/* Stop animation (does nothing else in OL really) */
 		dbeng_notify_search_completion(pdb, psearch->folder_id);

@@ -145,7 +145,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	}
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
+	if (!pdb)
 		return FALSE;
 
 	/*
@@ -646,7 +646,7 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
+	if (!pdb)
 		return FALSE;
 
 	/* Query section 1 */
