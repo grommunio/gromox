@@ -45,4 +45,3 @@ extern void exmdb_parser_put_router(std::shared_ptr<ROUTER_CONNECTION> &&);
 extern BOOL exmdb_parser_remove_router(const std::shared_ptr<ROUTER_CONNECTION> &);
 
 extern unsigned int g_exrpc_debug, g_enable_dam;
-extern unsigned int g_mbox_contention_warning, g_mbox_contention_reject;

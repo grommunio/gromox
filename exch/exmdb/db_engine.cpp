@@ -110,7 +110,6 @@ unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel;
-unsigned long long g_exmdb_lock_timeout = 60000000000ULL;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id);
@@ -208,24 +207,10 @@ db_conn_ptr db_engine_get_db(const char *path)
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
-		auto refs = pdb->reference.load();
-		if (refs > 0 && g_mbox_contention_reject > 0 &&
-		    static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
-			hhold.unlock();
-			mlog(LV_ERR, "E-1593: contention on %s (%u waiters), rejecting db request", path, refs);
-			return NULL;
-		}
-		if (refs > 0 && g_mbox_contention_warning > 0 &&
-		    static_cast<unsigned int>(refs) > g_mbox_contention_warning)
-			mlog(LV_WARN, "W-1620: contention on %s (%u waiters)", path, refs);
 		++pdb->reference;
 		hhold.unlock();
-		if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
-			--pdb->reference;
-			mlog(LV_ERR, "E-2207: %s: could not obtain exclusive access within %llu ns",
-				path, g_exmdb_lock_timeout);
-			return NULL;
-		} else if (pdb->psqlite == nullptr || pdb->m_sqlite_eph == nullptr) {
+		pdb->giant_lock.lock();
+		if (pdb->psqlite == nullptr || pdb->m_sqlite_eph == nullptr) {
 			pdb->giant_lock.unlock();
 			--pdb->reference;
 			return nullptr;
@@ -251,10 +236,8 @@ db_conn_ptr db_engine_get_db(const char *path)
 	 */
 	hhold.unlock();
 	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
-	if (!pdb->giant_lock.try_lock_for(std::chrono::nanoseconds(g_exmdb_lock_timeout))) {
-		pdb->reference --;
-		return NULL;
-	} else if (!pdb->postconstruct_init(path)) {
+	pdb->giant_lock.lock();
+	if (!pdb->postconstruct_init(path)) {
 		pdb->giant_lock.unlock();
 		--pdb->reference;
 		return nullptr;

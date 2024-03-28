@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <sqlite3.h>
 #include <string>
 #include <gromox/clock.hpp>
@@ -107,7 +108,7 @@ struct db_base {
 	~db_base();
 	NOMOVE(db_base);
 
-	std::timed_mutex giant_lock; /* should be broken up */
+	std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
 	sqlite3 *psqlite = nullptr, *m_sqlite_eph = nullptr;
