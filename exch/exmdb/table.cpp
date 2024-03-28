@@ -68,7 +68,7 @@ struct HIERARCHY_ROW_PARAM {
 
 using TABLE_GET_ROW_PROPERTY = BOOL (*)(void *, uint32_t, void **);
 
-static BOOL table_sum_table_count(db_item_ptr &pdb,
+static BOOL table_sum_table_count(db_conn_ptr &pdb,
 	uint32_t table_id, uint32_t *prows)
 {
 	char sql_string[128];
@@ -312,7 +312,7 @@ static std::string table_cond_to_where(const std::vector<condition_node> &list)
 	return w;
 }
 
-static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
+static BOOL table_load_content(db_conn_ptr &pdb, sqlite3 *psqlite,
 	const SORTORDER_SET *psorts, int depth, uint64_t parent_id,
     std::vector<condition_node> &cond_list, sqlite3_stmt *pstmt_insert,
 	uint32_t *pheader_id, sqlite3_stmt *pstmt_update,
@@ -538,7 +538,7 @@ static inline const BINARY *get_conv_id(const RESTRICTION *x)
  *
  * Under public mode username, always available for read state.
  */
-static BOOL table_load_content_table(db_item_ptr &pdb, cpid_t cpid,
+static BOOL table_load_content_table(db_conn_ptr &pdb, cpid_t cpid,
 	uint64_t fid_val, const char *username, uint8_t table_flags,
 	const RESTRICTION *prestriction, const SORTORDER_SET *psorts,
    uint32_t *ptable_id, uint32_t *prow_count) try
@@ -1533,7 +1533,7 @@ static void table_truncate_string(cpid_t cpid, char *pstring)
 		strcpy(pstring, tmp_buff);
 }
 
-const table_node *DB_ITEM::find_table(uint32_t table_id) const
+const table_node *db_conn::find_table(uint32_t table_id) const
 {
 	for (const auto &t : tables.table_list)
 		if (t.table_id == table_id)
@@ -1541,7 +1541,7 @@ const table_node *DB_ITEM::find_table(uint32_t table_id) const
 	return nullptr;
 }
 
-static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
+static BOOL query_hierarchy(db_conn_ptr &&pdb, cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
     TARRAY_SET *pset)
 {
@@ -1619,7 +1619,7 @@ static BOOL query_hierarchy(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	return TRUE;
 }
 
-static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
+static BOOL query_content(db_conn_ptr &&pdb, cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
     const table_node *ptnode, TARRAY_SET *pset)
 {
@@ -1714,7 +1714,7 @@ static BOOL query_content(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	return TRUE;
 }
 
-static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
+static BOOL query_perm(db_conn_ptr &&pdb, cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
     const table_node *ptnode, TARRAY_SET *pset)
 {
@@ -1777,7 +1777,7 @@ static BOOL query_perm(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
 	return TRUE;
 }
 
-static BOOL query_rule(db_item_ptr &&pdb, cpid_t cpid, uint32_t table_id,
+static BOOL query_rule(db_conn_ptr &&pdb, cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint32_t start_pos, int32_t row_needed,
     TARRAY_SET *pset)
 {
@@ -2028,7 +2028,7 @@ static bool table_evaluate_row_restriction(const RESTRICTION *pres,
 
 static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
-    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn_ptr &pdb)
 {
 	char sql_string[1024];
 	int idx = 0;
@@ -2103,7 +2103,7 @@ static BOOL match_tbl_hier(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 
 static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
-    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb,
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn_ptr &pdb,
     const table_node *ptnode)
 {
 	char sql_string[1024];
@@ -2206,7 +2206,7 @@ static BOOL match_tbl_ctnt(cpid_t cpid, uint32_t table_id, BOOL b_forward,
 
 static BOOL match_tbl_rule(cpid_t cpid, uint32_t table_id, BOOL b_forward,
     uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
-    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_conn_ptr &pdb)
 {
 	char sql_string[1024];
 	int idx = 0;
@@ -2354,7 +2354,7 @@ BOOL exmdb_server::locate_table(const char *dir,
 
 static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
-    TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
+    TPROPVAL_ARRAY *ppropvals, db_conn_ptr &pdb)
 {
 	uint32_t depth;
 	uint64_t folder_id;
@@ -2419,7 +2419,7 @@ static BOOL read_tblrow_hier(cpid_t cpid, uint32_t table_id,
 
 static BOOL read_tblrow_ctnt(cpid_t cpid, uint32_t table_id,
     const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num,
-    TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, const table_node *ptnode)
+    TPROPVAL_ARRAY *ppropvals, db_conn_ptr &pdb, const table_node *ptnode)
 {
 	int row_type;
 	char sql_string[1024];

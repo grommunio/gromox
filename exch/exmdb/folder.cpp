@@ -572,7 +572,7 @@ BOOL exmdb_server::remove_folder_properties(const char *dir,
  * Because of #2, we need to perform additional permission checks, since
  * callers like emsmdb/zcore are generally indifferent to SFs.
  */
-static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
+static BOOL folder_empty_sf(db_conn_ptr &pdb, cpid_t cpid, const char *username,
     uint64_t folder_id, unsigned int del_flags, BOOL *pb_partial,
     uint64_t *pnormal_size, uint64_t *pfai_size, uint32_t *pmessage_count,
     uint32_t *pfolder_count)
@@ -629,7 +629,7 @@ static BOOL folder_empty_sf(db_item_ptr &pdb, cpid_t cpid, const char *username,
 /**
  * @username:   Used for SFOD permission checks and for adjusting readstates
  */
-static BOOL folder_empty_folder(db_item_ptr &pdb, cpid_t cpid,
+static BOOL folder_empty_folder(db_conn_ptr &pdb, cpid_t cpid,
     const char *username, uint64_t folder_id, unsigned int del_flags,
     BOOL *pb_partial, uint64_t *pnormal_size, uint64_t *pfai_size,
 	uint32_t *pmessage_count, uint32_t *pfolder_count)
@@ -1140,7 +1140,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 /**
  * @username:   Used for population of ACLs of newly created folders
  */
-static BOOL folder_copy_search_folder(db_item_ptr &pdb,
+static BOOL folder_copy_search_folder(db_conn_ptr &pdb,
     cpid_t cpid, BOOL b_guest, const char *username,
 	uint64_t src_fid, uint64_t dst_pid, uint64_t *pdst_fid)
 {
@@ -1237,7 +1237,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
  * @username:   Used for SFOD permission checks and for population of ACLs of
  *              newly created folders
  */
-static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
+static BOOL folder_copy_sf_int(db_conn_ptr &pdb, int account_id, cpid_t cpid,
     bool b_guest, const char *username, uint64_t fid_val, bool b_normal,
     bool b_fai, uint64_t dst_fid, BOOL *pb_partial, uint64_t *pnormal_size,
     uint64_t *pfai_size)
@@ -1322,7 +1322,7 @@ static BOOL folder_copy_sf_int(db_item_ptr &pdb, int account_id, cpid_t cpid,
  * @username:   Used for permission checks (SFOD & generic folders) and for
  *              population of ACLs of newly created folders.
  */
-static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
+static BOOL folder_copy_folder_internal(db_conn_ptr &pdb, int account_id,
     cpid_t cpid, BOOL b_guest,
 	const char *username, uint64_t src_fid, BOOL b_normal,
 	BOOL b_fai, BOOL b_sub, uint64_t dst_fid, BOOL *pb_partial,
@@ -1759,7 +1759,7 @@ BOOL exmdb_server::get_search_criteria(const char *dir, uint64_t folder_id,
 	return TRUE;
 }
 
-static BOOL folder_clear_search_folder(db_item_ptr &pdb,
+static BOOL folder_clear_search_folder(db_conn_ptr &pdb,
     cpid_t cpid, uint64_t folder_id)
 {
 	char sql_string[128];
@@ -1952,7 +1952,7 @@ BOOL exmdb_server::empty_folder_permission(const char *dir, uint64_t folder_id)
 	return TRUE;
 }
 
-static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
+static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
     bool b_freebusy, uint64_t fid_val, xstmt &pstmt) try
 {
 	auto bin = propvals.get<const BINARY>(PR_ENTRYID);
@@ -2003,7 +2003,7 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	return false;
 }
 
-static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
+static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
 	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
@@ -2080,7 +2080,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	return true;
 }
 
-static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
+static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_conn_ptr &pdb,
     uint64_t fid_val)
 {
 	auto member_id = propvals.get<const uint64_t>(PR_MEMBER_ID);
