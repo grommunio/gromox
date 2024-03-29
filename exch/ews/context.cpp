@@ -1656,7 +1656,8 @@ EWSContext::MCONT_PTR EWSContext::toContent(const std::string& dir, const sFolde
 	getNamedTags(dir, shape, true);
 
 	for(const TAGGED_PROPVAL& prop : shape.write())
-		content->proplist.set(prop);
+		if (content->proplist.set(prop) == -ENOMEM)
+			throw EWSError::NotEnoughMemory(E3217);
 	return content;
 }
 
