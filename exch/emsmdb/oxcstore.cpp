@@ -358,27 +358,14 @@ ec_error_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	ems_objtype object_type;
-	uint16_t replid;
-	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
 	if (object_type != ems_objtype::logon)
 		return ecNotSupported;
-	if (plogon->is_private()) {
-		*ppghost = NULL;
-		return ecSuccess;
-	}
-	replid = rop_util_get_replid(folder_id);
-	if (1 == replid) {
-		*ppghost = NULL;
-		return ecSuccess;
-	}
-	*ppghost = cu_alloc<GHOST_SERVER>();
-	if (*ppghost == nullptr)
-		return ecServerOOM;
-	return rop_getowningservers(folder_id,
-			*ppghost, plogmap, logon_id, hin);
+	/* Gromox does not have split-server public folders / ghosted content */
+	*ppghost = nullptr;
+	return ecSuccess;
 }
 
 ec_error_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
