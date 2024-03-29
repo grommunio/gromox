@@ -185,11 +185,6 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t dnma
 	return FALSE;
 }
 
-void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t dnmax)
-{
-	snprintf(pessdn, dnmax, "/o=%s/" EAG_SRV_F9 "@%s", g_emsmdb_org_name, pdomain);
-}
-
 BINARY *cu_username_to_oneoff(const char *username, const char *dispname)
 {
 	ONEOFF_ENTRYID e{};
@@ -520,27 +515,6 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	}
 	memcpy(pbin->pv, ptmp_bin->pv, pbin->cb);
 	rop_util_free_binary(ptmp_bin);
-	return pbin;
-}
-
-BINARY* common_util_to_folder_replica(
-	const LONG_TERM_ID *plongid, const char *essdn)
-{
-	EXT_PUSH ext_push;
-	
-	auto pbin = cu_alloc<BINARY>();
-	if (pbin == nullptr)
-		return NULL;
-	pbin->pv = common_util_alloc(1024);
-	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 1024, 0) ||
-	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
-	    ext_push.p_longterm(*plongid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
-	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
-	    ext_push.p_str(essdn) != EXT_ERR_SUCCESS)
-		return NULL;
-	pbin->cb = ext_push.m_offset;
 	return pbin;
 }
 

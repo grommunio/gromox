@@ -81,16 +81,11 @@ static std::unique_ptr<FOLDER_CONTENT>
 oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
     bool b_fai, bool b_normal, bool b_sub)
 {
-	BOOL b_found;
-	BINARY *pbin;
-	uint16_t replid;
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	char tmp_essdn[256];
 	uint32_t permission;
 	EID_ARRAY *pmessage_ids;
-	LONG_TERM_ID long_term_id;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	auto username = plogon->eff_user();
@@ -116,22 +111,10 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	for (size_t i = 0; i < tmp_propvals.count; ++i)
 		if (pproplist->set(tmp_propvals.ppropval[i]) != 0)
 			return NULL;
-	replid = rop_util_get_replid(folder_id);
-	if (1 != replid) {
-		if (!exmdb_client::get_mapping_guid(plogon->get_dir(), replid,
-		    &b_found, &long_term_id.guid) || !b_found)
-			return NULL;
-		long_term_id.global_counter = rop_util_get_gc_array(folder_id);
-		common_util_domain_to_essdn(plogon->get_account(),
-			tmp_essdn, std::size(tmp_essdn));
-		pbin = common_util_to_folder_replica(
-				&long_term_id, tmp_essdn);
-		if (pbin == nullptr)
-			return NULL;
-		if (pproplist->set(MetaTagNewFXFolder, pbin) != 0)
-			return NULL;
-		return pfldctnt;
-	}
+	/*
+	 * Gromox does not have split public folders, so no need to emit
+	 * MetaTagNewFXFolder in this spot.
+	 */
 	if (b_fai) {
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, TRUE);

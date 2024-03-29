@@ -36,7 +36,6 @@ extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *d
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
-void common_util_domain_to_essdn(const char *pdomain, char *pessdn, size_t);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 BINARY* common_util_public_to_addressbook_entryid(const char *domainname);
@@ -55,8 +54,6 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
 BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	const BINARY *pbin_pcl2);
-BINARY* common_util_to_folder_replica(
-	const LONG_TERM_ID *plongid, const char *essdn);
 BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid);
 /* must ensure there's enough buffer in ppropval */
