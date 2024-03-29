@@ -1662,8 +1662,8 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		auto txt = stm.col_text(0);
 		if (txt != nullptr) {
 			GUID guid;
-			guid.from_str(txt);
-			if (ep.p_uint16(1) != pack_result::ok ||
+			if (!guid.from_str(txt) ||
+			    ep.p_uint16(1) != pack_result::ok ||
 			    ep.p_guid(guid) != pack_result::ok || /* PR_STORE_RECORD_KEY */
 			    ep.p_uint16(5) != pack_result::ok ||
 			    ep.p_guid(guid) != pack_result::ok) /* PR_MAPPING_SIGNATURE */
@@ -1685,8 +1685,8 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		if (txt == nullptr)
 			continue;
 		GUID guid;
-		guid.from_str(txt);
-		if (ep.p_uint16(stm.col_int64(0)) != pack_result::success ||
+		if (!guid.from_str(txt) ||
+		    ep.p_uint16(stm.col_int64(0)) != pack_result::success ||
 		    ep.p_guid(std::move(guid)) != pack_result::success)
 			return nullptr;
 	}

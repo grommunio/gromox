@@ -391,7 +391,8 @@ bool DB_ITEM::postconstruct_init(const char *dir) try
 		return false;
 	else if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
 		return false;
-	exec("PRAGMA journal_mode=WAL");
+	if (exec("PRAGMA journal_mode=WAL") != SQLITE_OK)
+		/* ignore (stay in prior mode); exec will mlog */;
 	if (exmdb_server::is_private())
 		db_engine_load_dynamic_list(this);
 	return true;
@@ -2831,7 +2832,8 @@ static void dbeng_notify_hiertbl_delete_row(DB_ITEM *pdb,
 		snprintf(sql_string, std::size(sql_string), "UPDATE sqlite_sequence SET seq="
 			"(SELECT count(*) FROM t%u) WHERE name='t%u'",
 			ptable->table_id, ptable->table_id);
-		pdb->eph_exec(sql_string);
+		if (pdb->eph_exec(sql_string) != SQLITE_OK)
+			/* I guess ignore it? Autoincrement is just higher than expected. */;
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS)
 			continue;
 		if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {

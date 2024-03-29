@@ -255,7 +255,8 @@ static void *request_parser_thread(void *pparam)
 			stripslash(request->dir);
 		exmdb_response tmp_byte;
 		std::unique_ptr<exresp> response;
-		if (EXT_ERR_SUCCESS != status) {
+		if (status != pack_result::ok ||
+		    response == nullptr /* [cov-scan] same as status==pack_result::alloc */) {
 			tmp_byte = exmdb_response::pull_error;
 		} else if (!is_connected) {
 			if (request->call_id == exmdb_callid::connect) {

@@ -1072,7 +1072,8 @@ BOOL exmdb_server::reload_content_table(const char *dir, uint32_t table_id)
 	holder.splice(holder.end(), table_list, iter);
 	auto ptnode = &holder.back();
 	snprintf(sql_string, std::size(sql_string), "DROP TABLE t%u", table_id);
-	pdb->eph_exec(sql_string);
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
+		/* ignore; the id won't be reused anyway */;
 	b_result = table_load_content_table(pdb, ptnode->cpid,
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
@@ -1369,7 +1370,8 @@ BOOL exmdb_server::unload_table(const char *dir, uint32_t table_id)
 	std::list<table_node> holder;
 	holder.splice(holder.end(), table_list, iter);
 	snprintf(sql_string, std::size(sql_string), "DROP TABLE t%u", table_id);
-	pdb->eph_exec(sql_string);
+	if (pdb->eph_exec(sql_string) != SQLITE_OK)
+		/* ignore - table_id is not going to get reused anyway */;
 	return TRUE;
 }
 
