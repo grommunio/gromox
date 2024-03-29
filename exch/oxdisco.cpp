@@ -93,7 +93,6 @@ class OxdiscoPlugin {
 	static tinyxml2::XMLElement *add_child(tinyxml2::XMLElement *, const char *, const std::string &);
 	static const char *gtx(tinyxml2::XMLElement &, const char *);
 	std::string get_redirect_addr(const char *) const;
-	BOOL domainname_to_essdn(const char *, char *, size_t, unsigned int &) const;
 	static bool advertise_prot(enum adv_setting, const char *ua);
 };
 
@@ -683,12 +682,19 @@ int OxdiscoPlugin::resp_web(XMLElement *el, const char *authuser,
 	}
 	else {
 		DisplayName = public_folder;
-		if (!domainname_to_essdn(domain, buf.get(), 4096, domain_id))
+		if (cvt_username_to_essdn(email, x500_org_name.c_str(),
+		    mysql.get_user_ids, mysql.get_domain_ids,
+		    essdn) != ecSuccess)
 			return -1;
-		essdn = buf.get();
 		auto err = cvt_username_to_mailboxid(domain, domain_id, mailboxid);
 		if (err != ecSuccess)
 			return -1;
+		err = cvt_username_to_serverdn(email, x500_org_name.c_str(),
+		      user_id, serverdn);
+		if (err != ecSuccess)
+			return -1;
+		err = cvt_username_to_mdbdn(email, x500_org_name.c_str(),
+		      user_id, mdbdn);
 	}
 
 	add_child(resp_user, "DisplayName", DisplayName);
@@ -1046,19 +1052,6 @@ std::string OxdiscoPlugin::get_redirect_addr(const char *email) const
 	std::string username = s_email.substr(0, s_email.find('@') - 1);
 	std::string redirect_addr = username + "@" + RedirectAddr;
 	return redirect_addr;
-}
-
-BOOL OxdiscoPlugin::domainname_to_essdn(const char *domainname, char *pessdn,
-    size_t dnmax, unsigned int &domain_id) const
-{
-	char hex_string[16];
-	unsigned int org_id = 0;
-
-	mysql.get_domain_ids(domainname, &domain_id, &org_id);
-	encode_hex_int(domain_id, hex_string);
-	snprintf(pessdn, dnmax, "/o=%s/" EAG_RCPTS "/cn=%s00000000-public.folder.root",
-			x500_org_name.c_str(), hex_string);
-	return TRUE;
 }
 
 /**
