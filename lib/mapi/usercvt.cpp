@@ -247,9 +247,13 @@ ec_error_t cvt_username_to_mailboxid(const char *username, unsigned int id,
 {
 	FLATUID f{};
 	strncpy(reinterpret_cast<char *>(&f.ab[0]), username, 12);
-	cpu_to_le32p(&f.ab[12], id);
+	GUID g = f;
+	g.time_low = __builtin_bswap32(g.time_low);
+	g.time_mid = __builtin_bswap16(g.time_mid);
+	g.time_hi_and_version = __builtin_bswap16(g.time_hi_and_version);
+	cpu_to_le32p(&g.node[2], id);
 	char txt[37];
-	static_cast<GUID>(f).to_str(txt, std::size(txt), 36);
+	g.to_str(txt, std::size(txt), 36);
 	mailboxid = txt;
 	return ecSuccess;
 }
