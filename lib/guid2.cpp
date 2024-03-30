@@ -271,6 +271,10 @@ static const char guidfmt32[] = "%08x%04x%04x%02x%02x%02x%02x%02x%02x%02x%02x";
 static const char guidfmt36[] = "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x";
 static const char guidfmt38[] = "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}";
 
+/**
+ * NOTE! GUID::to_str generates host32/36/38 forms, NOT flatlsb32 (cf.
+ * glosssary.rst).
+ */
 void GUID::to_str(char *buf, size_t z, unsigned int type) const
 {
 	auto fmt = type == 32 ? guidfmt32 : type == 38 ? guidfmt38 : guidfmt36;
@@ -279,6 +283,9 @@ void GUID::to_str(char *buf, size_t z, unsigned int type) const
 	         node[3], node[4], node[5]);
 }
 
+/**
+ * NOTE! GUID::from_str only supports host32/36/38 forms, not flatlsb32.
+ */
 bool GUID::from_str(const char *s)
 {
 	auto z = strlen(s);

@@ -104,38 +104,61 @@ FLATUID
 GUID
 	Globally Unique Identifier. Also known as Universally Unique Identifier
 	(UUID). 128 bits in length. Not all bits are random; RFC 4122 defines
-	semantic meaning for certain bits. GUIDs are encoded little-endian so
-	byteorder is a concern for text representations. Common text forms are
-	32 chars (32 hex nibbles), 36 chars (added 4 dashes to make the RFC 4122
-	field separation visible), 38 chars (added 2 curly braces at the left
-	and right end).
+	semantic meaning for certain bits.
+
+GUID.Host36
+	Herein refers to a textual 36-character representation of a GUID, e.g.
+	``44332211-6655-8877-b0a0-fedbca987654``.
+
+GUID.Host38
+	Herein refers to a textual 38-character representation of a GUID, e.g.
+	``{44332211-6655-8877-b0a0-fedbca987654}``.
+
+GUID.beflat
+	Herein refers to a 16-byte encoding of a GUID. Per RFC 4122, the
+	flat form for the example GUID above is ``uint8_t x[] = {0x44, 0x33,
+	0x22, 0x11, 0x66, 0x55, 0x88, 0x77, 0xb0, 0xa0, 0xfe, 0xdb, 0xca, 0x98,
+	0x76, 0x54};``.
+
+GUID.dceflat
+	Herein refers to a 16-byte encoding of a GUID. DCE/MS UUIDs use a
+	mixed-endian format (3x le32, 2x u8, 1x be48). The flat form is
+	``uint8_t x[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xb0,
+	0xa0, 0xfe, 0xdb, 0xca, 0x98, 0x76, 0x54};``.
+
+GUID.dcetxt
+	Herein refers to a textual 32-character representation of a GUID, a
+	hexdump of a dceflat, e.g. ``1122334455667788a0b0fedbca987654``.
 
 Mailbox GUID
 	Randomly-generated value on mailbox creation.
-	It can found in ``mdb01.edb`` in table ``Mailbox``, column
-	``MailboxGuid``.
+	It can be found in MSAD in the ``msExchMailboxGuid`` attribute
+	in Host36 form.
+	It can be found in ``mdb01.edb`` in table ``Mailbox``, column
+	``MailboxGuid`` in dceflat/dcetxt form (dependent on esedbexport).
 	In the EWS protocol as spoken by Exchange Server, the "ItemId"
 	attribute contains the Mailbox GUID in ASCII from byte 4-28.
-	In shows up in MAPI store objects (MFCMAPI/OLSpy) in the 0x67070102
-	(MailboxDSGuid) property.
+	The GUID shows up in MAPI store objects (MFCMAPI/OLSpy) in the
+	0x67070102 (MailboxDSGuid) property.
+	The GUID shows up in ABK objects in the 0x8c730102 property.
+	In Gromox, the Mailbox GUID is constructed from 12 filler bytes plus 4
+	bytes conveying a user ID. Exchange just makes random GUIDs.
 
 Store GUID
 	Randomly-generated value on mailbox creation.
 	It can be found in ``mdb01.edb`` in table ``Mailbox``, column
-	``MailboxInstanceGuid``.
+	``MailboxInstanceGuid`` in dceflat/dcetxt form.
 	It can be found in ``exchange.sqlite3`` in table ``configurations``,
-	config_id 1.
+	config_id 1 in Host36 form.
 	It shows up in ``ropLogon`` responses in the ``MailboxGuid`` field.
 	It shows up in MAPI objects (MFCMAPI/OLSpy) in the
 	``PR_STORE_RECORD_KEY`` property.
 
-MAPIHTTP MailboxId
-	The MH request URI has a parameter ``MailboxId``. It is something like
+MAPIHTTP MailboxId parameter
+	Autodiscover responses contain a URL like
 	``https://g.net/mapi/emsmdb/?MailboxId=754af46e-6310-4e07-aea1-2c911e595644@domain.example``.
-	In Exchange, the parameter is the GUID36 rendition of the Mailbox GUID.
-	In Gromox, the parameter is a GUID36 rendition of 12 filler bytes plus
-	4 LE bytes conveying the user ID, but the parameter is never really used,
-	because the user id is obtained from HTTP authentication headers.
+	Though the value contains the Mailbox GUID, it is actually a copy of
+	the value in the ``<Server>`` element of an RPCH-enabled server.
 
 ESSDN
 	"Enterprise/site/server distinguished name", a.k.a. Legacy DN. In
@@ -146,22 +169,34 @@ ESSDN
 	are root-last using comma (``CN=Users,DC=example,DC=com``). Different
 	ESSDN have been identified, see below.
 
-ESSDN.User (Addressbook entry)
-	Typical form: ``/o=myexch/ou=EAG/cn=Recipients/cn=<guid>-<cn>``.
+ESSDN.User (Addressbook entry) in Exchange
+	Typical form:
+	``/o=myexch/ou=EAG/cn=Recipients/cn=<guid-32nibbles>-<cn>`` and
+	``/o=myexch/ou=EAG/cn=Recipients/cn=user<8nibbles>``. It can be found
+	in MSAD in the ``legacyExchangeDN`` attribute of a user object.
 	``myexch`` is a name chosen by the administrator during Gromox or
-	Exchange installation. The GUID part exists to accomodate multiple
-	users with same Common Name in the groupware system. In MSAD, the user
-	ESSDN can be found in the ``legacyExchangeDN`` attribute of the LDAP
-	object. The user/ABK ESSDN is used to open a particular store.
-	(Autodiscover is used to resolve SPN/email addresses to user ESSDNs as
-	necessary).
+	Exchange installation. The 8-nibble form is used when <cn> contains
+	reserved characters like '/', '=', non-ASCII or (presumably also)
+	non-printable. The GUID part probably exists to accomodate multiple
+	users with same Common Name in the LDAP tree/forest. It is unclear if
+	the GUID is flatlsb32 or host32. It is unclear if the 32-bit userid is
+	le32 or be32. In the ropLogon ROP, the user/ABK ESSDN is used to open a
+	particular store. (Autodiscover is used ahead of time to resolve
+	SPN/email addresses to user ESSDNs as necessary.) Logon to public
+	stores happens with the user's ESSDN plus a flag bit, rather than the
+	public store's ESSDN.
+
+ESSDN.User in Gromox
+	Typical form for private and public stores respectively:
+	``/o=myexch/ou=EAG/cn=Recipients/cn=<leuint32-domid><leuint32-userid>-<localpart>``,
+	``/o=myexch/ou=EAG/cn=Recipients/cn=<leuint32-domid>00000000-<domainpart>``.
 
 ESSDN.Server
 	Typical form:
 	``/o=myexch/ou=EAG/cn=Configuration/cn=Servers/cn=SRV-EXCHANGE-01``. In
 	MSAD, the server ESSDN can be found in the ``msExchHomeServer``
-	attribute of the LDAP object. This ESSDN kind does not appear to be
-	used outside of MSAD.
+	attribute of a user object. This ESSDN kind does not appear to be used
+	outside of MSAD.
 
 ESSDN.MailboxServer
 	Typical form:
@@ -179,7 +214,7 @@ ESSDN.MdbDN
 Database GUID
 	Randomly-generated value on mailbox creation.
 	A value which is found in ``mdb01.edb`` in table ``MailboxIdentity``,
-	column ``LocalIdGuid``.
+	column ``LocalIdGuid`` in flatlsb32 representation.
 	In Exchange, dbguid is distinct from Store GUID.
 	In Gromox, dbguid is the same value as GABUID.
 	In Outlook Cached Mode, every OST file has its own dbguid. (Deleting
