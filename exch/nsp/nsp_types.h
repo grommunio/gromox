@@ -87,11 +87,13 @@ struct NSP_PROPROW {
 	uint32_t reserved;
 	uint32_t cvalues;
 	PROPERTY_VALUE *pprops;
+	I_BEGIN_END(pprops, cvalues);
 };
 
 struct NSP_ROWSET {
 	uint32_t crows;
 	NSP_PROPROW *prows;
+	I_BEGIN_END(prows, crows);
 };
 
 struct NSPRES;
