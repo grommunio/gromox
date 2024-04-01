@@ -1,9 +1,10 @@
-Development 2.26.70
-===================
+Development 2.26.148
+====================
 
 Fixes:
 
 * email_lib: avoid splitting UTF-8 code units across lines
+* imap: avoid emitting NIL for body-fld-lines
 
 Enhancements:
 
@@ -16,6 +17,9 @@ Changes:
 
 * exch: start ICS Change Numbers at 0 rather than 2^47
   (new mailboxes only)
+* PR_MAILBOX_OWNER_ENTRYID is generated for public stores
+* exmdb database layer remodeled to support concurrent reads per mailbox in
+  the future
 
 
 Gromox 2.26 (2024-03-11)
