@@ -22,6 +22,7 @@ rendered version is at `docs.grommunio.com
 <https://docs.grommunio.com/man/gromox.7.html>`_.
 
 Instructions for compilation are in `doc/install.rst <doc/install.rst>`_.
+There is also other, mostly technical, documentation in the `<doc/>`_ directory.
 
 Gromox relies on other components to provide a sensibly complete mail system,
 
@@ -59,16 +60,7 @@ responsible disclosure, contact `dev@grommunio.com <dev@grommunio.com>`_.
 Standards and protocols
 =======================
 
-Gromox follows a number of protocols as described by the `Microsoft Exchange
-Server Protocol Documents
-<https://learn.microsoft.com/en-us/openspecs/exchange_server_protocols/ms-oxprotlp>`_ —
-OXCDATA, OXDSCLI, OXCFOLD, OXCFXICS, OXCICAL, OXCMAIL, OXCMAPIHTTP (plus yet
-undocumented encodings), OXCMSG, OXCNOTIF, OXNSPI, OXCPERM, OXCPRPT, OXCROPS,
-OXCRPC, OXCSTOR, OXCTABL, OXMSG, OXOABK, OXOABKT, OXOCAL, OXOCNTC, OXODLGT,
-OXOMSG, OXORULE, OXOSFLD, OXOSMIME, OXPROPS, OXTNEF, OXVCARD, and (partially)
-OXABREF, OXOCFG, OXRTFCP, OXWAVLS, OXWOOF, OXWSCDATA, OXWSCONT, OXWSCORE,
-OXWSFOLD, OXWSMSG, OXWSMTGS, OXWSPOST, OXWSRSLNM, OXWSSYNC, OXWSTASK, CFB, PST,
-as well as parts of the specifications of DCERPC/C7086, DTYP, RPCE and RPCH.
+See `<doc/protocols.rst>`_ for a discussion.
 
 
 Contributing
@@ -80,7 +72,7 @@ Contributing
   <https://git-scm.com/docs/git-format-patch>`_, then convey the git
   link/patches through our direct contact address (above).
 
-Coding style
-------------
+Coding and social style
+-----------------------
 
 When in Rome, do as the Romans do.

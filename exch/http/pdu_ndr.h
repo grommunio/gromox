@@ -179,8 +179,8 @@ using DCERPC_RTS = dcerpc_rts;
  * RTS PDU Header
  *
  * NCA = Network Connection Architecture
- * CN = Connection
- * DG = Datagram / Connectionless
+ * CN = Connection (ncacn)
+ * DG = Datagram / Connectionless (ncadg)
  *
  * C706 §12.6.1 / RPCH v19 §2.2.3.6.1
  */
