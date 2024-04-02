@@ -77,6 +77,7 @@ Makefile.in
 /tests/gxl-383
 /tests/jsontest
 /tests/lzxpress
+/tests/ucvttest
 /tests/utiltest
 /tests/vcard
 /tests/zendfake

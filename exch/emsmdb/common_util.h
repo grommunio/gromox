@@ -35,7 +35,6 @@ extern ssize_t common_util_mb_to_utf8(cpid_t cpid, const char *src, char *dst, s
 extern ssize_t common_util_convert_string(bool to_utf8, const char *src, char *dst, size_t len);
 void common_util_obfuscate_data(uint8_t *data, uint32_t size);
 BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
-BOOL common_util_public_to_essdn(const char *username, char *pessdn, size_t);
 extern BINARY *cu_username_to_oneoff(const char *username, const char *dispname);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 extern BINARY *cu_fid_to_entryid(logon_object *, uint64_t folder_id);
