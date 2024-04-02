@@ -135,10 +135,13 @@ ec_error_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	              user_id, dom_id, username.c_str(), maildir, *pmailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
+	g_last_rop_dir = plogon->get_dir();
 	/* create logon map and logon object */
 	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
-	if (handle < 0)
+	if (handle < 0) {
+		g_last_rop_dir = nullptr;
 		return aoh_to_error(handle);
+	}
 	*phout = handle;
 	return ecSuccess;
 }
@@ -211,10 +214,13 @@ ec_error_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	              pdomain, homedir, mailbox_guid);
 	if (plogon == nullptr)
 		return ecServerOOM;
+	g_last_rop_dir = plogon->get_dir();
 	/* create logon map and logon object */
 	auto handle = rop_processor_create_logon_item(plogmap, logon_id, std::move(plogon));
-	if (handle < 0)
+	if (handle < 0) {
+		g_last_rop_dir = nullptr;
 		return aoh_to_error(handle);
+	}
 	*phout = handle;
 	return ecSuccess;
 }

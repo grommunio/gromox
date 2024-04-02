@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
+#include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
@@ -251,6 +252,11 @@ void *rop_processor_get_object(LOGMAP *plogmap, uint8_t logon_id,
 	auto &plogitem = plogmap->p[logon_id];
 	if (plogitem == nullptr)
 		return NULL;
+	if (g_rop_debug >= 1 && plogitem->root != nullptr) {
+		auto lo = static_cast<logon_object *>(plogitem->root->pobject);
+		if (lo != nullptr)
+			g_last_rop_dir = lo->get_dir();
+	}
 	auto i = plogitem->phash.find(obj_handle);
 	if (i == plogitem->phash.end())
 		return NULL;
@@ -266,6 +272,16 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 	auto &plogitem = plogmap->p[logon_id];
 	if (plogitem == nullptr)
 		return;
+	if (g_rop_debug > 0) {
+		auto root = plogitem->root;
+		if (root != nullptr) {
+			auto obj = static_cast<logon_object *>(root->pobject);
+			/* obj->dir may go away with .erase */
+			static char lastdir[256];
+			gx_strlcpy(lastdir, obj->dir, std::size(lastdir));
+			g_last_rop_dir = lastdir;
+		}
+	}
 	auto i = plogitem->phash.find(obj_handle);
 	if (i == plogitem->phash.end())
 		return;
@@ -285,7 +301,9 @@ logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 	auto proot = plogitem->root;
 	if (proot == nullptr)
 		return nullptr;
-	return static_cast<logon_object *>(proot->pobject);
+	auto obj = static_cast<logon_object *>(proot->pobject);
+	g_last_rop_dir = obj->get_dir();
+	return obj;
 }
 
 static void *emsrop_scanwork(void *param)
@@ -349,6 +367,8 @@ void rop_processor_stop()
 
 static uint32_t rpcext_cutoff = 32U << 10; /* OXCRPC v23 3.1.4.2.1.2.2 */
 
+thread_local const char *g_last_rop_dir;
+
 static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
     uint32_t *pbuff_len, ROP_BUFFER *prop_buff, BOOL b_notify,
     DOUBLE_LIST *presponse_list) try
@@ -402,6 +422,7 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 		 * Think of it as close(open("nonexisting",O_RDONLY));
 		 */
 		rop_response *rsp = nullptr;
+		g_last_rop_dir = nullptr;
 		auto result = rop_dispatch(*req, rsp, prop_buff->phandles, prop_buff->hnum);
 		pnode1->pdata = rsp;
 		bool dbg = g_rop_debug >= 2;
@@ -411,15 +432,16 @@ static ec_error_t rop_processor_execute_and_push(uint8_t *pbuff,
 			dbg = true;
 		if (dbg) {
 			char e1[32], e2[32];
+			auto rpd = g_last_rop_dir != nullptr ? g_last_rop_dir : ".";
 			if (rsp != nullptr)
-				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%s RS=%s",
-					++rop_idx, rop_count,
+				mlog(LV_DEBUG, "[%zu/%zu] %s %s EC=%s RS=%s",
+					++rop_idx, rop_count, rpd,
 					rop_idtoname(req->rop_id),
 					mapi_errname_r(result, e1, std::size(e1)),
 					mapi_errname_r(rsp->result, e2, std::size(e2)));
 			else
-				mlog(LV_DEBUG, "[%zu/%zu] rop_dispatch(%s) EC=%s RS=none",
-					++rop_idx, rop_count,
+				mlog(LV_DEBUG, "[%zu/%zu] %s %s EC=%s RS=none",
+					++rop_idx, rop_count, rpd,
 					rop_idtoname(req->rop_id),
 					mapi_errname_r(result, e1, std::size(e1)));
 		}

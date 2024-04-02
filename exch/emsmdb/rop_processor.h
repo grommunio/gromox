@@ -52,6 +52,12 @@ extern void *rop_processor_get_object(LOGMAP *, uint8_t logon_id, uint32_t obj_h
 template<typename T> T *rop_proc_get_obj(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
 	return static_cast<T *>(rop_processor_get_object(l, id, oh, ty));
 }
+extern thread_local const char *g_last_rop_dir;
+template<> inline logon_object *rop_proc_get_obj<logon_object>(LOGMAP *l, uint8_t id, uint32_t oh, ems_objtype *ty) {
+	auto ob = static_cast<logon_object *>(rop_processor_get_object(l, id, oh, ty));
+	g_last_rop_dir = ob->get_dir();
+	return ob;
+}
 extern void rop_processor_release_object_handle(LOGMAP *, uint8_t logon_id, uint32_t obj_handle);
 extern logon_object *rop_processor_get_logon_object(LOGMAP *, uint8_t logon_id);
 extern ec_error_t aoh_to_error(int);
