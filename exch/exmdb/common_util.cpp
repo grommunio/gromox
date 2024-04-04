@@ -556,11 +556,13 @@ BOOL cu_get_proptags(mapi_object_type table_type, uint64_t id, sqlite3 *psqlite,
 	tags.clear();
 	tags.reserve(std::size(folder_tags) + 1);
 
+	auto b_private = exmdb_server::is_private();
 	switch (table_type) {
 	case MAPI_STORE:
 		gx_strlcpy(sql_string, "SELECT proptag FROM store_properties", std::size(sql_string));
 		tags.push_back(PR_INTERNET_ARTICLE_NUMBER);
-		tags.push_back(PidTagSerializedReplidGuidMap);
+		if (b_private)
+			tags.push_back(PidTagSerializedReplidGuidMap);
 		break;
 	case MAPI_FOLDER:
 		snprintf(sql_string, std::size(sql_string), "SELECT proptag FROM "
@@ -1698,6 +1700,7 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 	if (bin->pv == nullptr)
 		return nullptr;
 	memcpy(bin->pv, ep.m_udata, bin->cb);
+	printf("replmap is %u bytes\n", bin->cb);
 	return bin;
 }
 
@@ -1717,6 +1720,8 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 			return GP_ERR;
 		break;
 	case PidTagSerializedReplidGuidMap:
+		if (!exmdb_server::is_private())
+			return GP_UNHANDLED;
 		break;
 	default:
 		return GP_UNHANDLED;
