@@ -99,7 +99,7 @@ static constexpr cfg_directive pop3_cfg_defaults[] = {
 	{"pop3_auth_times", "10", CFG_SIZE, "1"},
 	{"pop3_cmd_debug", "0"},
 	{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
-	{"pop3_force_stls", "pop3_force_stls", CFG_ALIAS},
+	{"pop3_force_stls", "pop3_force_tls", CFG_ALIAS},
 	{"pop3_force_tls", "false", CFG_BOOL},
 	{"pop3_listen_addr", "::"},
 	{"pop3_listen_port", "110"},
