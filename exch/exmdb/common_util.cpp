@@ -1653,8 +1653,20 @@ enum GP_RESULT { GP_ADV, GP_UNHANDLED, GP_SKIP, GP_ERR };
 
 static BINARY *cu_get_replmap(sqlite3 *db)
 {
+	/*
+	 * The map *MUST* be bijective, and the results must match the observed
+	 * replid-replguid outputs from rop_idfromlongtermid &
+	 * rop_longtermidfromid.
+	 */
 	EXT_PUSH ep;
 	if (!ep.init(nullptr, 0, 0, nullptr))
+		return nullptr;
+	auto account_id = exmdb_server::get_account_id();
+	GUID dbguid = exmdb_server::is_private() ?
+	              rop_util_make_user_guid(account_id) :
+	              rop_util_make_domain_guid(account_id);
+	if (ep.p_uint16(1) != pack_result::ok ||
+	    ep.p_guid(dbguid) != pack_result::ok)
 		return nullptr;
 	auto stm = gx_sql_prep(db, "SELECT config_value FROM configurations"
 	           " WHERE config_id=1"); /* CONFIG_ID_MAILBOX_GUID */
@@ -1665,8 +1677,6 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 		if (txt != nullptr) {
 			GUID guid;
 			if (!guid.from_str(txt) ||
-			    ep.p_uint16(1) != pack_result::ok ||
-			    ep.p_guid(guid) != pack_result::ok || /* PR_STORE_RECORD_KEY */
 			    ep.p_uint16(5) != pack_result::ok ||
 			    ep.p_guid(guid) != pack_result::ok) /* PR_MAPPING_SIGNATURE */
 				return nullptr;

@@ -378,7 +378,7 @@ ReplidGuidMap, replguidmap
 	A per-mailbox table with a bijective mapping between 16-bit replids and
 	16-byte replguids.
 
-	It is found in ``mdb01.edb`` as ReplidGuidMap, containing:
+	It is found in ``mdb01.edb`` as table ``ReplidGuidMap``, containing:
 
 	* replid 1 generally contains the Database GUID (mandated by OXCFXICS
 	  etc.)
@@ -394,9 +394,9 @@ ReplidGuidMap, replguidmap
 	can hint at the trigger of the map entry creation, e.g. ``Admin``,
 	``Task``, ``IdFromLongTermId``, ``ExecuteSearch``.
 
-	In Gromox, the replguidmap is in ``exchange.sqlite3``. replid 1 and 5
+	In Gromox, the replguidmap is in ``exchange.sqlite3``. replid 1 to 5
 	are delivered by source rather than database (was easier than doing db
-	content upgrades in dbop_sqlite.cpp). replid 2 to 4 are not mapped.
+	content upgrades in dbop_sqlite.cpp).
 
 ropLogon ReplID, ReplGUID fields
 	Different replguidmaps lead to different values in ropLogon.ReplGUID
