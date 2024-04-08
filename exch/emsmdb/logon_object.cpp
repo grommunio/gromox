@@ -298,7 +298,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 
 	static constexpr uint32_t pvt_tags[] = {
 		PR_MAILBOX_OWNER_NAME,
-		PR_MAX_SUBMIT_MESSAGE_SIZE, PR_EMAIL_ADDRESS,
+		PR_MAX_SUBMIT_MESSAGE_SIZE,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 	};
 	static constexpr uint32_t tags[] = {
@@ -312,14 +312,11 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags) const
 		PR_MESSAGE_SIZE, PR_NORMAL_MESSAGE_SIZE, PR_USER_ENTRYID,
 		PR_CONTENT_COUNT, PR_ASSOC_CONTENT_COUNT, PR_TEST_LINE_SPEED,
 		PR_MAILBOX_OWNER_ENTRYID,
+		PR_EMAIL_ADDRESS,
 	};
-	if (plogon->is_private()) {
+	if (plogon->is_private())
 		for (auto t : pvt_tags)
 			pproptags->emplace_back(t);
-	} else {
-		/* TODO: For PR_EMAIL_ADDRESS,
-		check if mail address of public folder exists. */
-	}
 	for (auto t : tags)
 		pproptags->emplace_back(t);
 	return TRUE;
@@ -473,9 +470,8 @@ static BOOL logon_object_get_calculated_property(const logon_object *plogon,
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A: {
 		std::string essdn;
-		if (!plogon->is_private())
-			return false;
-		if (cvt_username_to_essdn(plogon->account, g_emsmdb_org_name,
+		if (cvt_username_to_essdn(plogon->is_private() ? plogon->account :
+		    account_to_domain(plogon->account), g_emsmdb_org_name,
 		    common_util_get_user_ids, common_util_get_domain_ids,
 		    essdn) != ecSuccess)
 			return false;
