@@ -113,7 +113,7 @@ struct db_base {
 	~db_base();
 	NOMOVE(db_base);
 
-	std::shared_mutex giant_lock;
+	mutable std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
 	std::vector<sqlite3 *> mx_sqlite, mx_sqlite_eph;
@@ -134,6 +134,17 @@ struct db_base {
 	void handle_spares(sqlite3 *, sqlite3 *);
 };
 
+struct db_base_unlock_rd {
+	inline void operator()(const db_base *b) const { b->giant_lock.unlock_shared(); }
+};
+
+struct db_base_unlock_wr {
+	inline void operator()(db_base *b) const { b->giant_lock.unlock(); }
+};
+
+using db_base_rd_ptr = std::unique_ptr<const db_base, db_base_unlock_rd>;
+using db_base_wr_ptr = std::unique_ptr<db_base, db_base_unlock_wr>;
+
 class db_item_deleter;
 struct db_conn {
 	db_conn(db_base &);
@@ -143,6 +154,8 @@ struct db_conn {
 	inline operator db_base &() { return *m_base; }
 	inline operator const db_base &() const { return *m_base; }
 	bool open(const char *dir);
+	db_base_rd_ptr lock_base_rd() const;
+	db_base_wr_ptr lock_base_wr();
 	void update_dynamic(uint64_t folder_id, uint32_t search_flags, const RESTRICTION *prestriction, const LONGLONG_ARRAY *pfolder_ids);
 	void delete_dynamic(uint64_t folder_id);
 	void proc_dynamic_event(cpid_t, enum dynamic_event, uint64_t id1, uint64_t id2, uint64_t id3, db_base *) __attribute__((nonnull(7)));
