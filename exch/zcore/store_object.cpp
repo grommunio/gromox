@@ -41,6 +41,12 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+static inline const char *account_to_domain(const char *u)
+{
+	auto at = strchr(u, '@');
+	return at != nullptr ? at + 1 : u;
+}
+
 static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 {
 	char guid[GUIDSTR_SIZE];
@@ -431,8 +437,6 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
-		/* TODO: For PR_EMAIL_ADDRESS,
-		check if the mail address of a public folder exists. */
 	}
 	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
@@ -682,14 +686,11 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	}
 	case PR_EMAIL_ADDRESS: {
 		std::string essdn;
-		if (pstore->b_private) {
-			if (cvt_username_to_essdn(pstore->account, g_org_name,
-			    system_services_get_user_ids,
-			    system_services_get_domain_ids, essdn) != ecSuccess)
-				return FALSE;	
-		} else {
-			return false;
-		}
+		if (cvt_username_to_essdn(pstore->b_private ? pstore->account :
+		    account_to_domain(pstore->account), g_org_name,
+		    system_services_get_user_ids,
+		    system_services_get_domain_ids, essdn) != ecSuccess)
+			return FALSE;
 		auto tstr = cu_alloc<char>(essdn.size() + 1);
 		*ppvalue = tstr;
 		if (*ppvalue == nullptr)
