@@ -443,6 +443,28 @@ bool db_conn::open(const char *dir) try
 	return false;
 }
 
+/**
+ * Get smart pointer to the shared control block,
+ * ensuring that the control block is read-locked.
+ */
+db_base_rd_ptr db_conn::lock_base_rd() const
+{
+	assert(m_base != nullptr);
+	m_base->giant_lock.lock_shared();
+	return db_base_rd_ptr(m_base);
+}
+
+/**
+ * Get smart pointer to the shared control block,
+ * ensuring that the control block is write-locked.
+ */
+db_base_wr_ptr db_conn::lock_base_wr()
+{
+	assert(m_base != nullptr);
+	m_base->giant_lock.lock();
+	return db_base_wr_ptr(m_base);
+}
+
 db_base::~db_base()
 {
 	auto pdb = this;
