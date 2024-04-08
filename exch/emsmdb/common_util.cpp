@@ -216,7 +216,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	return pbin;
 }
 
-BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_entryid(const logon_object *plogon, uint64_t folder_id)
 {
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -245,7 +245,7 @@ BINARY *cu_fid_to_entryid(logon_object *plogon, uint64_t folder_id)
 	return pbin;
 }
 
-BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
+BINARY *cu_fid_to_sk(const logon_object *plogon, uint64_t folder_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -268,7 +268,7 @@ BINARY *cu_fid_to_sk(logon_object *plogon, uint64_t folder_id)
 	return pbin;
 }
 
-BINARY *cu_mid_to_entryid(logon_object *plogon,
+BINARY *cu_mid_to_entryid(const logon_object *plogon,
 	uint64_t folder_id, uint64_t message_id)
 {
 	BINARY tmp_bin;
@@ -304,7 +304,7 @@ BINARY *cu_mid_to_entryid(logon_object *plogon,
 	return pbin;
 }
 
-BINARY *cu_mid_to_sk(logon_object *plogon, uint64_t message_id)
+BINARY *cu_mid_to_sk(const logon_object *plogon, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -325,7 +325,7 @@ BINARY *cu_mid_to_sk(logon_object *plogon, uint64_t message_id)
 	return pbin;
 }
 
-BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_fid(const logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id)
 {
 	uint16_t replid;
@@ -348,7 +348,7 @@ BOOL cu_entryid_to_fid(logon_object *plogon, const BINARY *pbin,
 	}
 }
 
-BOOL cu_entryid_to_mid(logon_object *plogon, const BINARY *pbin,
+BOOL cu_entryid_to_mid(const logon_object *plogon, const BINARY *pbin,
     uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	uint16_t freplid, mreplid;
