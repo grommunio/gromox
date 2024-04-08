@@ -1710,7 +1710,6 @@ static BINARY *cu_get_replmap(sqlite3 *db)
 	if (bin->pv == nullptr)
 		return nullptr;
 	memcpy(bin->pv, ep.m_udata, bin->cb);
-	printf("replmap is %u bytes\n", bin->cb);
 	return bin;
 }
 
