@@ -100,6 +100,12 @@ struct prepared_statements {
 	gromox::xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 
+struct db_close {
+	inline void operator()(sqlite3* sql) const { sqlite3_close_v2(sql); }
+};
+
+using db_handle = std::unique_ptr<sqlite3, db_close>;
+
 /**
  * Per-mailbox state shared across multiple (and basically indepdent of)
  * db_conn.
@@ -116,7 +122,7 @@ struct db_base {
 	mutable std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
-	std::vector<sqlite3 *> mx_sqlite, mx_sqlite_eph;
+	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
