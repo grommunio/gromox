@@ -114,7 +114,7 @@ unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base *) __attribute__((nonnull(1,4)));
 
-static void db_engine_load_dynamic_list(db_conn *pdb) try
+static void db_engine_load_dynamic_list(db_base *dbase, sqlite3* psqlite) try
 {
 	EXT_PULL ext_pull;
 	char sql_string[256];
@@ -125,10 +125,9 @@ static void db_engine_load_dynamic_list(db_conn *pdb) try
 	snprintf(sql_string, std::size(sql_string), "SELECT folder_id,"
 		" search_flags, search_criteria FROM folders"
 		" WHERE is_search=1");
-	auto pstmt = pdb->prep(sql_string);
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return;
-	auto dbase = pdb->m_base;
 	while (pstmt.step() == SQLITE_ROW) {
 		if (dbase->dynamic_list.size() >= MAX_DYNAMIC_NODES)
 			break;
@@ -145,7 +144,7 @@ static void db_engine_load_dynamic_list(db_conn *pdb) try
 		pdynamic->prestriction = tmp_restriction.dup();
 		if (pdynamic->prestriction == nullptr)
 			break;
-		if (!common_util_load_search_scopes(pdb->psqlite,
+		if (!common_util_load_search_scopes(psqlite,
 		    pdynamic->folder_id, &tmp_fids))
 			continue;
 		pdynamic->folder_ids.count = tmp_fids.count;
@@ -223,13 +222,18 @@ db_conn_ptr db_engine_get_db(const char *path)
 		return std::nullopt;
 	}
 	try {
-		auto xp = g_hash_table.try_emplace(path);
+		auto xp = g_hash_table.try_emplace(path, path);
 		pdb = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
 		mlog(LV_ERR, "E-1296: ENOMEM");
 		return std::nullopt;
+	} catch (const std::runtime_error& err) {
+		hhold.unlock();
+		mlog(LV_ERR, "%s", err.what());
+		return std::nullopt;
 	}
+
 	/*
 	 * Release central map lock (g_hash_lock) early to unblock map read
 	 * access looking for DBs of other dirs.
@@ -327,10 +331,32 @@ table_node::~table_node()
 		sortorder_set_free(psorts);
 }
 
-db_base::db_base() :
+db_base::db_base(const char* dir) :
 	reference(1),
 	last_time(tp_now())
-{}
+{
+	auto db_path = fmt::format("{}/tables.sqlite3", dir);
+	auto ret = ::unlink(db_path.c_str());
+	if (ret != 0 && errno != ENOENT)
+		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
+
+	sqlite3* psqlite;
+	db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
+	ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	db_handle hsql(psqlite); /* automatically close db if something goes wrong */
+	if (ret != SQLITE_OK)
+		throw std::runtime_error(fmt::format("E-1434: sqlite3_open {}: {}", dir, sqlite3_errstr(ret)));
+	ret = db_engine_autoupgrade(psqlite, dir);
+	if(ret != 0)
+		throw std::runtime_error(fmt::format("E-1438: autoupgrade {}: {}", dir, ret));
+	if ((ret = gx_sql_exec(psqlite, "PRAGMA foreign_keys=ON")) != SQLITE_OK)
+		throw std::runtime_error(fmt::format("E-1439: enable foreign keys {}: {}", dir, sqlite3_errstr(ret)));
+	if (gx_sql_exec(psqlite, "PRAGMA journal_mode=WAL") != SQLITE_OK)
+		/* ignore (stay in prior mode); exec will mlog */;
+	if (exmdb_server::is_private())
+		db_engine_load_dynamic_list(this, psqlite);
+	mx_sqlite.emplace_back(std::move(hsql));
+}
 
 void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 {
@@ -408,12 +434,7 @@ bool db_conn::open(const char *dir) try
 		return true;
 
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
-	auto ret = ::unlink(db_path.c_str());
-	if (ret != 0 && errno != ENOENT) {
-		mlog(LV_ERR, "E-1351: unlink %s: %s", db_path.c_str(), strerror(errno));
-		return false;
-	}
-	ret = sqlite3_open_v2(db_path.c_str(), &m_sqlite_eph,
+	auto ret = sqlite3_open_v2(db_path.c_str(), &m_sqlite_eph,
 	      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 	if (ret != SQLITE_OK) {
 		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s",
@@ -428,15 +449,10 @@ bool db_conn::open(const char *dir) try
 		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
 		return false;
 	}
-	ret = db_engine_autoupgrade(psqlite, dir);
-	if (ret != 0)
-		return false;
-	else if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
+	if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
 		return false;
 	if (exec("PRAGMA journal_mode=WAL") != SQLITE_OK)
 		/* ignore (stay in prior mode); exec will mlog */;
-	if (exmdb_server::is_private())
-		db_engine_load_dynamic_list(this);
 	return true;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1349: ENOMEM");
