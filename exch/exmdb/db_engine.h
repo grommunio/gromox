@@ -115,7 +115,7 @@ using db_handle = std::unique_ptr<sqlite3, db_close>;
  * @mx_sqlite_eph: cached sqlite handles for tables.sqlite3
  */
 struct db_base {
-	db_base();
+	explicit db_base(const char* dir);
 	~db_base();
 	NOMOVE(db_base);
 
