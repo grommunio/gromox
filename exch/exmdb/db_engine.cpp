@@ -746,7 +746,7 @@ static void dbeng_notify_search_completion(db_conn_ptr &pdb,
 {
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_SEARCH_COMPLETE, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -2025,7 +2025,7 @@ void db_conn::transport_new_mail(uint64_t folder_id, uint64_t message_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value() || parrays->count == 0)
 		return;
@@ -2051,7 +2051,7 @@ void db_conn::notify_new_mail(uint64_t folder_id, uint64_t message_id,
 	void *pvalue;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_NEW_MAIL, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2087,7 +2087,7 @@ void db_conn::notify_message_creation(uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_CREATED, folder_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2121,7 +2121,7 @@ void db_conn::notify_link_creation(uint64_t srch_fld, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_CREATED, anchor_fld, 0);
 	if (!parrays.has_value())
 		return;
@@ -2297,7 +2297,7 @@ void db_conn::notify_folder_creation(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_CREATED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -2829,7 +2829,7 @@ void db_conn::notify_message_deletion(uint64_t folder_id, uint64_t message_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2863,7 +2863,7 @@ void db_conn::notify_link_deletion(uint64_t parent_id, uint64_t message_id,
 		return;
 
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_DELETED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -2957,7 +2957,7 @@ void db_conn::notify_folder_deletion(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_DELETED, parent_id, 0);
 	if (!parrays.has_value())
 		return;
@@ -3565,7 +3565,7 @@ void db_conn::notify_message_modification(uint64_t folder_id, uint64_t message_i
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_MODIFIED, folder_id, message_id);
 	if (!parrays.has_value())
 		return;
@@ -3744,7 +3744,7 @@ void db_conn::notify_folder_modification(uint64_t parent_id, uint64_t folder_id,
 	auto pdb = this;
 	DB_NOTIFY_DATAGRAM datagram;
 	auto dir = exmdb_server::get_dir();
-	auto parrays = db_engine_classify_id_array(*pdb,
+	auto parrays = db_engine_classify_id_array(*pdb->m_base,
 	               NF_OBJECT_MODIFIED, folder_id, 0);
 	if (!parrays.has_value())
 		return;

@@ -165,8 +165,7 @@ struct db_conn {
 	~db_conn();
 	db_conn(db_conn &&);
 	db_conn &operator=(db_conn &&);
-	inline operator db_base &() { return *m_base; }
-	inline operator const db_base &() const { return *m_base; }
+
 	bool open(const char *dir);
 	db_base_rd_ptr lock_base_rd() const;
 	db_base_wr_ptr lock_base_wr();
