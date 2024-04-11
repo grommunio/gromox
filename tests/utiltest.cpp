@@ -439,6 +439,23 @@ static int t_mcg()
 	return 0;
 }
 
+static int t_eidcvt()
+{
+	uint8_t network_input[] = {2,0,0,0,0,0x1,0xff,0xfe};
+	EXT_PULL ep;
+	ep.init(network_input, sizeof(network_input), malloc, 0);
+	uint64_t eid = 0;
+	ep.g_uint64(&eid);
+	assert(rop_util_get_replid(eid) == 2);
+	assert(rop_util_get_gc_value(eid) == 0x1fffe);
+	auto gc = rop_util_get_gc_array(eid);
+	assert(memcmp(gc.ab, &network_input[2], 6) == 0);
+	assert(rop_util_gc_to_value(gc) == 0x1fffe);
+	assert(rop_util_make_eid(2, gc) == eid);
+	assert(rop_util_make_eid_ex(2, 0x1fffe) == eid);
+	return EXIT_SUCCESS;
+}
+
 static int runner()
 {
 	if (t_utf7() != 0)
@@ -487,6 +504,9 @@ static int runner()
 	if (ret != 0)
 		return ret;
 	ret = t_utf8_prefix();
+	if (ret != 0)
+		return ret;
+	ret = t_eidcvt();
 	if (ret != 0)
 		return ret;
 	return EXIT_SUCCESS;
