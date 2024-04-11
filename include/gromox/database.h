@@ -71,7 +71,7 @@ enum {
 };
 
 extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
-extern GX_EXPORT xtransaction gx_sql_begin(sqlite3 *, const std::string &);
+extern GX_EXPORT xtransaction gx_sql_begin(sqlite3 *, const std::string &, bool = true);
 #define gx_sql_begin_trans(db) gx_sql_begin((db), std::string(__FILE__) + ":" + std::to_string(__LINE__))
 extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query, unsigned int flags = 0);
 
