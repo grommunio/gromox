@@ -115,14 +115,15 @@ using db_handle = std::unique_ptr<sqlite3, db_close>;
  * @mx_sqlite_eph: cached sqlite handles for tables.sqlite3
  */
 struct db_base {
-	explicit db_base(const char* dir);
+	enum DB_TYPE : uint8_t {DB_MAIN = 0, DB_EPH = 1};
+
+	db_base();
 	~db_base();
 	NOMOVE(db_base);
 
 	mutable std::shared_mutex giant_lock;
 	std::atomic<int> reference;
 	gromox::time_point last_time{};
-	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 	/* memory database for holding rop table objects instance */
 	struct {
 		uint32_t last_id = 0;
@@ -138,6 +139,13 @@ struct db_base {
 	inline const instance_node *get_instance_c(uint32_t id) const { return const_cast<db_base *>(this)->get_instance(id); }
 	const table_node *find_table(uint32_t) const;
 	void handle_spares(sqlite3 *, sqlite3 *);
+
+	void open(const char* dir);
+
+	db_handle get_db(const char* dir, DB_TYPE type);
+
+private:
+	std::vector<db_handle> mx_sqlite, mx_sqlite_eph;
 };
 
 struct db_base_unlock_rd {
