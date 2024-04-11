@@ -206,14 +206,10 @@ db_conn_ptr db_engine_get_db(const char *path)
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
 		pdb = &it->second;
-		++pdb->reference;
-		hhold.unlock();
 		db_conn_ptr conn(*pdb);
-		if (!conn->open(path)) {
-			--pdb->reference;
+		hhold.unlock();
+		if (!conn->open(path))
 			return std::nullopt;
-		}
-		--pdb->reference;
 		return conn;
 	}
 	if (g_hash_table.size() >= g_table_size) {
@@ -222,15 +218,11 @@ db_conn_ptr db_engine_get_db(const char *path)
 		return std::nullopt;
 	}
 	try {
-		auto xp = g_hash_table.try_emplace(path, path);
+		auto xp = g_hash_table.try_emplace(path);
 		pdb = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
 		mlog(LV_ERR, "E-1296: ENOMEM");
-		return std::nullopt;
-	} catch (const std::runtime_error& err) {
-		hhold.unlock();
-		mlog(LV_ERR, "%s", err.what());
 		return std::nullopt;
 	}
 
@@ -239,13 +231,18 @@ db_conn_ptr db_engine_get_db(const char *path)
 	 * access looking for DBs of other dirs.
 	 */
 	hhold.unlock();
+	try {
+		pdb->open(path);
+	} catch (const std::runtime_error& err) {
+		mlog(LV_ERR, "%s", err.what());
+		return std::nullopt;
+	}
+
 	/* Wait for another thread's costly postconstruct_init (or any EXRPC) to finish. */
 	db_conn_ptr conn(*pdb);
 	if (!conn->open(path)) {
-		--pdb->reference;
 		return std::nullopt;
 	}
-	--pdb->reference;
 	return conn;
 }
 
@@ -331,31 +328,79 @@ table_node::~table_node()
 		sortorder_set_free(psorts);
 }
 
-db_base::db_base(const char* dir) :
-	reference(1),
+db_base::db_base() :
+	reference(1), // is decremented when open() is run.
 	last_time(tp_now())
 {
+	giant_lock.lock(); // prevent access until open() has completed
+}
+
+/**
+ * @brief      Get database handle
+ *
+ * @param      dir     User or domain base directory
+ * @param      type    Requested database type
+ *
+ * @return     SQLite database handle or nullptr on error
+ */
+db_handle db_base::get_db(const char* dir, DB_TYPE type)
+{
+	const char* name = type == DB_MAIN? "MAIN" : "EPH";
+	auto& spares = type == DB_MAIN? mx_sqlite : mx_sqlite_eph;
+	if(!spares.empty()) {
+		db_handle handle = std::move(spares.back());
+		spares.pop_back();
+		return handle;
+	}
+	auto path = type == DB_MAIN? fmt::format("{}/exmdb/exchange.sqlite3", dir) : fmt::format("{}/tables.sqlite3", dir);
+	int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX;
+	flags |= type == DB_MAIN? 0 : SQLITE_OPEN_CREATE;
+	sqlite3* db;
+	int ret = sqlite3_open_v2(path.c_str(), &db, flags, nullptr);
+	db_handle hdb(db); /* automatically close connection if something goes wrong */
+	if(ret != SQLITE_OK) {
+		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s (%d)", name, sqlite3_errstr(ret), ret);
+		return nullptr;
+	}
+	if((ret = gx_sql_exec(db, "PRAGMA foreign_keys=ON")) != SQLITE_OK) {
+		mlog(LV_ERR, "E-1439: enable foreign keys %s: %s (%d)", dir, sqlite3_errstr(ret), ret);
+		return nullptr;
+	}
+	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
+	if(type == DB_EPH)
+		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
+	return hdb;
+}
+
+/**
+ * @brief      Initialize and unlock database
+ *
+ * Perform database initializations that should not be run for each connection:
+ * - Remove residue ephemeral db
+ * - Perform schema upgrade
+ *
+ * @param      dir     User or domain base directory
+ *
+ * @throws     std::runtime_error  if any initialization step fails
+ */
+void db_base::open(const char* dir)
+{
+	auto unlock = make_scope_exit([this]{giant_lock.unlock(); --reference;}); /* unlock whenever we're done */
+
 	auto db_path = fmt::format("{}/tables.sqlite3", dir);
 	auto ret = ::unlink(db_path.c_str());
 	if (ret != 0 && errno != ENOENT)
 		throw std::runtime_error(fmt::format("E-1351: unlink {}: {}", db_path.c_str(), strerror(errno)));
 
-	sqlite3* psqlite;
-	db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
-	ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
-	db_handle hsql(psqlite); /* automatically close db if something goes wrong */
-	if (ret != SQLITE_OK)
-		throw std::runtime_error(fmt::format("E-1434: sqlite3_open {}: {}", dir, sqlite3_errstr(ret)));
-	ret = db_engine_autoupgrade(psqlite, dir);
+	db_handle hdb(get_db(dir, DB_MAIN));
+	if (!hdb)
+		throw std::runtime_error(fmt::format("E-1434: sqlite3_open {} failed", dir));
+	ret = db_engine_autoupgrade(hdb.get(), dir);
 	if(ret != 0)
 		throw std::runtime_error(fmt::format("E-1438: autoupgrade {}: {}", dir, ret));
-	if ((ret = gx_sql_exec(psqlite, "PRAGMA foreign_keys=ON")) != SQLITE_OK)
-		throw std::runtime_error(fmt::format("E-1439: enable foreign keys {}: {}", dir, sqlite3_errstr(ret)));
-	if (gx_sql_exec(psqlite, "PRAGMA journal_mode=WAL") != SQLITE_OK)
-		/* ignore (stay in prior mode); exec will mlog */;
 	if (exmdb_server::is_private())
-		db_engine_load_dynamic_list(this, psqlite);
-	mx_sqlite.emplace_back(std::move(hsql));
+		db_engine_load_dynamic_list(this, hdb.get());
+	mx_sqlite.emplace_back(std::move(hdb));
 }
 
 void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
@@ -381,17 +426,10 @@ void db_base::handle_spares(sqlite3 *main, sqlite3 *eph)
 }
 
 db_conn::db_conn(db_base &base) :
-	m_base(&base), m_lock(base.giant_lock)
+	m_base(&base),
+	m_lock(base.giant_lock, std::defer_lock) // will be acquired during open()
 {
 	++base.reference;
-	if (base.mx_sqlite.size() > 0) {
-		psqlite = base.mx_sqlite.back().release();
-		base.mx_sqlite.pop_back();
-	}
-	if (base.mx_sqlite_eph.size() > 0) {
-		m_sqlite_eph = base.mx_sqlite_eph.back().release();
-		base.mx_sqlite_eph.pop_back();
-	}
 }
 
 db_conn::db_conn(db_conn &&o) :
@@ -425,35 +463,16 @@ db_conn &db_conn::operator=(db_conn &&o)
 /**
  * Create a new database connection (handle)
  *
+ * Should be called exactly once after creation and before first usage.
+ *
  * @dir:  Store directory
  */
 bool db_conn::open(const char *dir) try
 {
-	assert((psqlite == nullptr) == (m_sqlite_eph == nullptr));
-	if (psqlite != nullptr && m_sqlite_eph != nullptr)
-		return true;
-
-	auto db_path = fmt::format("{}/tables.sqlite3", dir);
-	auto ret = sqlite3_open_v2(db_path.c_str(), &m_sqlite_eph,
-	      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
-	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s",
-			db_path.c_str(), sqlite3_errstr(ret));
-		return false;
-	}
-	if (eph_exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
-		return false;
-	db_path = fmt::format("{}/exmdb/exchange.sqlite3", dir);
-	ret = sqlite3_open_v2(db_path.c_str(), &psqlite, SQLITE_OPEN_READWRITE, nullptr);
-	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1434: sqlite3_open %s: %s", dir, sqlite3_errstr(ret));
-		return false;
-	}
-	if (exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
-		return false;
-	if (exec("PRAGMA journal_mode=WAL") != SQLITE_OK)
-		/* ignore (stay in prior mode); exec will mlog */;
-	return true;
+	m_lock.lock();
+	psqlite = m_base->get_db(dir, db_base::DB_MAIN).release();
+	m_sqlite_eph = m_base->get_db(dir, db_base::DB_EPH).release();
+	return psqlite && m_sqlite_eph;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1349: ENOMEM");
 	return false;
