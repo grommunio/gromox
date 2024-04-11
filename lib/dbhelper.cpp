@@ -77,7 +77,7 @@ int xtransaction::commit()
 	return ret;
 }
 
-xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos)
+xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos, bool write)
 {
 	{
 		std::unique_lock lk(active_xa_lock);
@@ -86,7 +86,7 @@ xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos)
 			mlog(LV_ERR, "Nested transaction attempted. DB %p, origin %s, now %s",
 				db, pair.first->second.c_str(), pos.c_str());
 	}
-	auto ret = gx_sql_exec(db, "BEGIN IMMEDIATE");
+	auto ret = gx_sql_exec(db, write? "BEGIN IMMEDIATE" : "BEGIN");
 	if (ret == SQLITE_OK)
 		return xtransaction(db);
 	std::unique_lock lk(active_xa_lock);
