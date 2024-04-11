@@ -81,7 +81,7 @@ int xtransaction::commit()
 	return ret;
 }
 
-xtransaction gx_sql_begin(sqlite3 *db, const std::string &pos, bool write)
+xtransaction gx_sql_begin(const std::string &pos, sqlite3 *db, bool write)
 {
 	{
 		std::unique_lock lk(active_xa_lock);
