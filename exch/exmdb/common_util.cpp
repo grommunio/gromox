@@ -5163,7 +5163,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		auto v = cu_alloc<uint8_t>();
 		if (v == nullptr)
 			return NULL;
-		*v = sqlite3_column_int64(pstmt, column_index);
+		*v = !!sqlite3_column_int64(pstmt, column_index);
 		return v;
 	}
 	case PT_CLSID: {
