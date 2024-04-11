@@ -1594,11 +1594,11 @@ void tCalendarItem::update(const sShape& shape)
 		Enum::ResponseTypeType responseType = Enum::Unknown;
 		switch(*responseStatus)
 		{
-			case olResponseOrganized:    responseType = Enum::Organizer; break;
-			case olResponseTentative:    responseType = Enum::Tentative; break;
-			case olResponseAccepted:     responseType = Enum::Accept; break;
-			case olResponseDeclined:     responseType = Enum::Decline; break;
-			case olResponseNotResponded: responseType = Enum::NoResponseReceived; break;
+			case respOrganized:    responseType = Enum::Organizer; break;
+			case respTentative:    responseType = Enum::Tentative; break;
+			case respAccepted:     responseType = Enum::Accept; break;
+			case respDeclined:     responseType = Enum::Decline; break;
+			case respNotResponded: responseType = Enum::NoResponseReceived; break;
 		}
 		MyResponseType.emplace(responseType);
 	}

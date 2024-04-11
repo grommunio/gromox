@@ -1474,12 +1474,12 @@ enum { /* for PidLidAppointmentStateFlags */
 };
 
 enum { /* for PidLidResponseStatus */
-	olResponseNone = 0,
-	olResponseOrganized,
-	olResponseTentative,
-	olResponseAccepted,
-	olResponseDeclined,
-	olResponseNotResponded,
+	respNone = 0,
+	respOrganized,
+	respTentative,
+	respAccepted,
+	respDeclined,
+	respNotResponded,
 };
 
 /*
