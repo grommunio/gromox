@@ -110,6 +110,7 @@ unsigned int g_exmdb_schema_upgrades, g_exmdb_search_pacing;
 unsigned long long g_exmdb_search_pacing_time = 2000000000;
 unsigned int g_exmdb_search_yield, g_exmdb_search_nice;
 unsigned int g_exmdb_pvt_folder_softdel, g_exmdb_max_sqlite_spares;
+unsigned long long g_sqlite_busy_timeout_ns;
 
 static bool remove_from_hash(const decltype(g_hash_table)::value_type &, time_point);
 static void dbeng_notify_cttbl_modify_row(db_conn *, uint64_t folder_id, uint64_t message_id, db_base *) __attribute__((nonnull(1,4)));
@@ -367,6 +368,7 @@ db_handle db_base::get_db(const char* dir, DB_TYPE type)
 		return nullptr;
 	}
 	gx_sql_exec(db, "PRAGMA journal_mode=WAL");
+	sqlite3_busy_timeout(db, int(g_sqlite_busy_timeout_ns / 1000000)); // ns -> ms
 	if(type == DB_EPH)
 		gx_sql_exec(db, "PRAGMA	synchronous=OFF"); /* completely disable disk synchronization for eph db */
 	return hdb;

@@ -220,3 +220,4 @@ extern unsigned int g_exmdb_pvt_folder_softdel;
 extern std::string g_exmdb_ics_log_file;
 /* Max number of cached DB connections per store, 0 = unlimited */
 extern unsigned int g_exmdb_max_sqlite_spares;
+extern unsigned long long g_sqlite_busy_timeout_ns;
