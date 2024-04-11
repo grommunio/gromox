@@ -1,6 +1,6 @@
 ..
 	SPDX-License-Identifier: CC-BY-SA-4.0 or-later
-	SPDX-FileCopyrightText: 2023 grommunio GmbH
+	SPDX-FileCopyrightText: 2023-2024 grommunio GmbH
 
 Overview
 ========
@@ -259,59 +259,89 @@ GLOBCNT / GCV
 	than random GCV assignment.
 
 	Some components can perform a *range reservation* (e.g.
-	``ropGetLocalReplicaIds`` and the gromox-exmdb ``create_folder`` RPC).
-	causing the *top-level* counter to make bigger jumps, while the
-	component that performed the reservation deals out GCVs objects from
-	that range and seemingly in backwards fashion. For example, in Gromox,
-	a created folder may receive GCV 0x10000 and because it reserves
-	0x10001..0x1ffff for messages, the next folder gets GCV 0x20000. Once
-	the first folder has exceeded its reservation, it will make another,
-	e.g. 0x30000..0x3ffff.
+	``ropGetLocalReplicaIds`` and the gromox-exmdb ``create_folder`` RPC),
+	which can cause GCV values to apparently jump around: For example, in
+	Gromox, a created folder may receive GCV 0x10000 and as
+	``create_folder`` reserves 0x10001..0x1ffff for messages, the next
+	folder gets GCV 0x20000. Once the first folder has exceeded its
+	reservation, it will make another, e.g. 0x30000..0x3ffff.
 
 	In Gromox (2.17), the SQLite fields ``folder_id`` and ``message_id``
-	are GCVs. (This may change at a later time.)
+	are GCVs rather than internal identifiers. (This may change at a later
+	time.)
 
-	On the wire, GLOBCNT is encoded as 6 octets, MSB-first (big-endian). In
-	Gromox source code, it is also MSB-first in certain representations
-	(e.g. ``struct GLOBCNT``)
+	Generally speaking,
+
+	* on the wire and in ``struct GLOBCNT``, GCVs are MSB-first (big-endian)
+	* when stored as part of a ``eid_t``/``uint64_t`` variable in source
+	  code that holds an *Internal Identifier* (see below), the GCV is in
+	  the upper 48 bits of the logical value, and reversed per groups of 8
+	  bits
+	* otherwise, a ``uint64_t`` holds the GCV in host-endian
+
+Change number / CN
+	Scope: one mailbox replica. Limit: 2^48. Every time a folder or message
+	is modified, a new change number is assigned. CNs are assigned in
+	strictly monotonically increasing order. There is no reservation; in a
+	sense, a replica in itself could be seen as a 2^48-sized reservation in
+	the space of unsigned 64-bit integers.
+
+	In Gromox (2.27), the SQLite field ``change_number`` contains this
+	48-bit CN for the server replica (replid 1).
+
+	Like GCVs, CNs may occur in MSB/GLOBCNT form, or be part of a 64-bit
+	aggregated integer (like *Internal Identifier*, see below), or be
+	host-endian stand-alone.
 
 Internal Identifier
-	The aggregation of the 48-bit *GLOBCNT* plus the 16-bit *replid* of the
+	The aggregation of the 16-bit *replid* plus the 48-bit *GLOBCNT* of the
 	creator. Scope: all replicas of a mailbox. Limit: not defined because
 	aggregate. Total size: 8 octets. IIDs have no particular order. On the
-	wire, GLOBCNT is MSB-first, but replid is LSB-first. Historic design
-	choices made it such that Gromox's source code keeps these as uint64_t
-	with mixed-endianess, cf. function ``rop_util_make_eid_ex``. Unparsed
-	IIDs look a bit weird in log messages because of this bit order.
+	wire, replid is LSB-first, but GLOBCNT is MSB-first. MS-OXCDATA
+	specifies IIDs as an aggregate, while MS-OXCROPS specifies them as
+	64-bit integers. Software like Gromox and the MAPI Inspector For
+	Fiddler indeed read/write IIDs from/to network as one leuint64 rather
+	than as one leuint16 and a beuint48. This causes the logical value to
+	have odd bit order too, e.g. the byte sequence ``01 00 00 00 00 00 00
+	0d`` (replid 1, folder 0xd) is 0xd00000000000001 when printed in gdb,
+	and functions like ``rop_util_get_gc_value`` are needed to make sense
+	of it. The type ``eid_t`` is being introduced in source code to markup
+	the places where this weird uint64 is in use.
 
 Folder Identifier, FID
 	Name for *internal identifier* when talking about a folder object. The
 	FID can be observed in *EX entryids* (with conditions) at bytes 38–46.
 	In Gromox source code (as of 2.17), ``fid`` as a variable name
-	sometimes refers to either the internal identifier or just the GCV.
-	``fid_val`` is almost exclusively the GCV form.
+	sometimes refers to either to the mixed-byteorder *Internal Identifier*
+	(see above) or the (host-endian) GCV. ``fid_val`` is almost exclusively
+	the host-endian GCV form.
 
 Message Identifier, MID
 	Name for *internal identifier* when talking about a message object. The
 	MID can be observed in *EX entryids* (with conditions) at bytes 62–70.
 	In Gromox source code (as of 2.17), ``mid`` as a variable name
-	sometimes refers to either the internal identifier or just the GCV.
-	``mid_val`` is almost exclusively the GCV form.
+	sometimes refers to either the mixed-byteorder *Internal Identifier*
+	(see above) or the (host-endian) GCV. ``mid_val`` is almost exclusively
+	the host-endian GCV form.
 
 Global Identifier, GID
-	The aggregation of the 128-bit dbguid plus the 48-bit *GLOBCNT*. Scope:
-	all replicas of a mailbox. Limit: not defined because aggregate. Total
-	size: 22 octets.
+	The aggregation of the 128-bit *Database GUID* plus the 48-bit
+	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
+	because aggregate. Total size: 22 octets.
 
-External Identifier for objects, XID
-	EX: 16-byte namespace GUID (which?) + GCV (6 bytes) = 22 bytes.
+External Identifier, XID
+	The aggregation of a 128-bit namespace GUID plus a storage-specific
+	*GLOBCNT*/*CN*. Scope: all replicas of a mailbox. Limit: not defined
+	because aggregate. Total size: varies, but at most 255 bytes.
 
-External Identifier for changesets (in PCL)
-	EX: 22 bytes
-	OST: 16-byte GUID + CN (4 bytes)
+	EX: 16-byte *Database GUID* + GCV/CN (6 bytes, MSB)
+	OST: 16-byte *Database GUID* + GCV/CN (4 bytes, MSB)
 
 LongTermID
-	XID (22 bytes) + 2 pad bytes = 24 bytes.
+	The aggregation of a *GID* (22 bytes) plus 2 NUL pad bytes. Total size:
+	24 octets. The pad bytes do not indicate a replid 0, because the
+	replica is already identified by the 16-byte GUID that is part of the
+	GID.
 
 Entryid
 	A variable-length identifier which refers to a folder or message in a
