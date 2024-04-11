@@ -5170,13 +5170,13 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		auto blob = sqlite3_column_blob(pstmt, column_index);
 		if (blob == nullptr)
 			return NULL;
-		ext_pull.init(blob, sqlite3_column_bytes(pstmt, column_index),
-			common_util_alloc, 0);
+		auto z = sqlite3_column_bytes(pstmt, column_index);
+		if (z < 0 || static_cast<size_t>(z) < sizeof(FLATUID))
+			return nullptr;
 		auto v = cu_alloc<GUID>();
 		if (v == nullptr)
 			return NULL;
-		if (ext_pull.g_guid(v) != EXT_ERR_SUCCESS)
-			return NULL;
+		*v = *static_cast<const FLATUID *>(blob);
 		return v;
 	}
 	case PT_SVREID: {
