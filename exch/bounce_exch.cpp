@@ -68,8 +68,7 @@ static bool bounce_producer_make_content(buff_t gul,
 	    HXformat_add(fa, "postmaster", bounce_gen_postmaster(), HXTYPE_STRING) < 0)
 		return false;
 	auto subj = pbrief->proplist.get<const char>(PR_SUBJECT);
-	if (HXformat_add(fa, "subject", subj != nullptr ? subj : "",
-	    HXTYPE_STRING) < 0)
+	if (HXformat_add(fa, "subject", znul(subj), HXTYPE_STRING) < 0)
 		return false;
 	HX_unit_size(date_buff, std::size(date_buff), *message_size, 1000, 0);
 	if (HXformat_add(fa, "length", date_buff, HXTYPE_STRING) < 0)

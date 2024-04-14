@@ -3938,7 +3938,7 @@ BOOL cu_get_folder_permission(sqlite3 *psqlite, uint64_t folder_id,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	sqlite3_bind_text(pstmt, 1, username == nullptr ? "" : username, -1, SQLITE_STATIC);
+	sqlite3_bind_text(pstmt, 1, znul(username), -1, SQLITE_STATIC);
 	if (pstmt.step() == SQLITE_ROW) {
 		*ppermission = sqlite3_column_int64(pstmt, 0);
 		return TRUE;

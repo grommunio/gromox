@@ -868,7 +868,7 @@ struct GX_EXPORT BINARY {
 		void *pv;
 	};
 
-	operator std::string_view() const { return std::string_view(pc != nullptr ? pc : "", cb); }
+	operator std::string_view() const { return std::string_view(gromox::znul(pc), cb); }
 	int compare(const BINARY &) const;
 	std::string repr(bool verbose = true) const;
 };

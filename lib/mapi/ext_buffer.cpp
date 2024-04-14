@@ -3459,7 +3459,7 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		TRY(pext->p_uint32(r->originalstartdate));
 	}
 	if (overrideflags & ARO_SUBJECT) {
-		auto subj = r->subject != nullptr ? r->subject : "";
+		auto subj = znul(r->subject);
 		auto tmp_len = strlen(subj) + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
@@ -3477,7 +3477,7 @@ static pack_result ext_buffer_push_extendedexception(EXT_PUSH *pext,
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
 	if (overrideflags & ARO_LOCATION) {
-		auto loc = r->location != nullptr ? r->location : "";
+		auto loc = znul(r->location);
 		auto tmp_len = strlen(loc) + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {

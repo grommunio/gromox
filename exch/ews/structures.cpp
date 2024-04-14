@@ -1855,7 +1855,7 @@ void tChangeDescription::convBody(const tinyxml2::XMLElement* xml, sShape& shape
 {
 	const char* bodyType = xml->Attribute("BodyType");
 	Enum::BodyTypeType type = bodyType? bodyType : Enum::Text;
-	const char* text = xml->GetText()? xml->GetText() : "";
+	auto text = znul(xml->GetText());
 	if(type == Enum::Text)
 		shape.write(TAGGED_PROPVAL{PR_BODY, const_cast<char*>(text)});
 	else {
@@ -3932,7 +3932,7 @@ void tSetItemField::put(sShape& shape) const
 		for(const tinyxml2::XMLElement* temp= item->FirstChildElement(); temp; temp = temp->FirstChildElement())
 			value = temp;
 		const char*	text = value->GetText(); // Life time of the XML node exceeds shape, no need to copy value
-		shape.write(TAGGED_PROPVAL{tag, const_cast<char*>(text? text : "")});
+		shape.write(TAGGED_PROPVAL{tag, const_cast<char *>(znul(text))});
 	} else
 		convProp(item->Name(), child->Name(), child, shape);
 }
