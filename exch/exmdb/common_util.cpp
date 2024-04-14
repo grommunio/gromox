@@ -5082,13 +5082,13 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		if (!ext_push.init(temp_buff, 16, 0) ||
 		    ext_push.p_guid(*static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
-		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
+		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
 	case PT_SVREID:
 		if (!ext_push.init(temp_buff, 256, 0) ||
 		    ext_push.p_svreid(*static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
-		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
+		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
 	case PT_OBJECT:
 	case PT_BINARY: {
