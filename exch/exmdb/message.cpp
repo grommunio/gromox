@@ -2699,8 +2699,6 @@ static BOOL message_make_dam(const rulexec_in &rp,
 {
 	if (!g_enable_dam)
 		return TRUE;
-	int i;
-	int id_count;
 	SVREID svreid;
 	BOOL b_result;
 	uint64_t tmp_eid;
@@ -2747,14 +2745,15 @@ static BOOL message_make_dam(const rulexec_in &rp,
 	if (actions.pblock == nullptr)
 		return FALSE;
 	actions.count = 0;
-	id_count = 0;
+	unsigned int id_count = 0;
 	for (auto &&node : dam_list) {
 		actions.pblock[actions.count++] = *node.pblock;
 		tmp_eid = rop_util_make_eid_ex(1, node.rule_id);
+		unsigned int i;
 		for (i = 0; i < id_count; ++i)
 			if (tmp_ids[i] == tmp_eid)
 				break;
-		if (i >= id_count)
+		if (i >= id_count && id_count < std::size(tmp_ids))
 			tmp_ids[id_count++] = tmp_eid;
 	}
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
