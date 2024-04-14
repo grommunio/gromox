@@ -5044,8 +5044,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	return pbin;
 }
 
-BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
-	int bind_index, uint16_t proptype, void *pvalue)
+BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt, int bind_index,
+    uint16_t proptype, const void *pvalue)
 {
 	EXT_PUSH ext_push;
 	char temp_buff[256];
@@ -5055,44 +5055,44 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	switch (proptype) {
 	case PT_STRING8:
 	case PT_UNICODE:
-		sqlite3_bind_text(pstmt, bind_index, static_cast<char *>(pvalue), -1, SQLITE_STATIC);
+		sqlite3_bind_text(pstmt, bind_index, static_cast<const char *>(pvalue), -1, SQLITE_STATIC);
 		break;
 	case PT_FLOAT:
-		sqlite3_bind_double(pstmt, bind_index, *static_cast<float *>(pvalue));
+		sqlite3_bind_double(pstmt, bind_index, *static_cast<const float *>(pvalue));
 		break;
 	case PT_DOUBLE:
 	case PT_APPTIME:
-		sqlite3_bind_double(pstmt, bind_index, *static_cast<double *>(pvalue));
+		sqlite3_bind_double(pstmt, bind_index, *static_cast<const double *>(pvalue));
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:
-		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint64_t *>(pvalue));
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<const uint64_t *>(pvalue));
 		break;
 	case PT_SHORT:
-		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint16_t *>(pvalue));
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<const uint16_t *>(pvalue));
 		break;
 	case PT_LONG:
-		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint32_t *>(pvalue));
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<const uint32_t *>(pvalue));
 		break;
 	case PT_BOOLEAN:
-		sqlite3_bind_int64(pstmt, bind_index, *static_cast<uint8_t *>(pvalue));
+		sqlite3_bind_int64(pstmt, bind_index, *static_cast<const uint8_t *>(pvalue));
 		break;
 	case PT_CLSID:
 		if (!ext_push.init(temp_buff, 16, 0) ||
-		    ext_push.p_guid(*static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(*static_cast<const GUID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
 	case PT_SVREID:
 		if (!ext_push.init(temp_buff, 256, 0) ||
-		    ext_push.p_svreid(*static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+		    ext_push.p_svreid(*static_cast<const SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_TRANSIENT);
 		break;
 	case PT_OBJECT:
 	case PT_BINARY: {
-		auto bv = static_cast<BINARY *>(pvalue);
+		auto bv = static_cast<const BINARY *>(pvalue);
 		if (bv->cb == 0)
 			sqlite3_bind_null(pstmt, bind_index);
 		else
