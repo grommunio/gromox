@@ -2364,7 +2364,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exreq_recalc_store_size &d)
 	E(purge_softdelete) \
 	E(autoreply_tsquery) \
 	E(autoreply_tsupdate) \
-	E(recalc_store_size)
+	E(recalc_store_size) \
+	E(write_message_v2)
 
 /**
  * This uses *& because we do not know which request type we are going to get
@@ -3632,6 +3633,20 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	return x.p_uint64(d.tdiff);
 }
 
+static pack_result exmdb_pull(EXT_PULL &x, exresp_write_message_v2 &d)
+{
+	TRY(x.g_uint64(&d.outmid));
+	TRY(x.g_uint64(&d.outcn));
+	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
+}
+
+static pack_result exmdb_push(EXT_PUSH &x, const exresp_write_message_v2 &d)
+{
+	TRY(x.p_uint64(d.outmid));
+	TRY(x.p_uint64(d.outcn));
+	return x.p_uint32(d.e_result);
+}
+
 #define RSP_WITHOUT_ARGS \
 	E(ping_store) \
 	E(remove_store_properties) \
@@ -3763,7 +3778,8 @@ static pack_result exmdb_push(EXT_PUSH &x, const exresp_autoreply_tsquery &d)
 	E(check_contact_address) \
 	E(get_public_folder_unread_count) \
 	E(store_eid_to_user) \
-	E(autoreply_tsquery)
+	E(autoreply_tsquery) \
+	E(write_message_v2)
 
 /* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 /*

@@ -165,6 +165,7 @@ enum class exmdb_callid : uint8_t {
 	recalc_store_size = 0x8a,
 	movecopy_folder = 0x8b,
 	create_folder = 0x8c,
+	write_message_v2 = 0x8d,
 	/* update exch/exmdb_provider/names.cpp:exmdb_rpc_idtoname! */
 };
 
@@ -773,6 +774,7 @@ struct exreq_write_message final : public exreq {
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;
 };
+using exreq_write_message_v2 = exreq_write_message;
 
 struct exreq_read_message final : public exreq {
 	char *username;
@@ -1290,6 +1292,11 @@ struct exresp_store_eid_to_user final : public exresp {
 
 struct exresp_autoreply_tsquery final : public exresp {
 	uint64_t tdiff = 0;
+};
+
+struct exresp_write_message_v2 final : public exresp {
+	uint64_t outmid = 0, outcn = 0;
+	ec_error_t e_result{};
 };
 
 using exreq_ping_store = exreq;

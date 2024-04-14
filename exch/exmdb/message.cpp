@@ -1701,9 +1701,20 @@ static ec_error_t message_rectify_message(const char *account,
 	return ecSuccess;
 }
 	
+/**
+ * Optional properties:
+ *
+ * - if PidTagChangeNumber is absent, one will be assigned and PR_CHANGE_KEY+PCL generated
+ * - if PidTagMid is absent, one will be assigned
+ *
+ * Side effects:
+ *
+ * - message's PR_INTERNET_ARTICLE_NUMBER is autoassigned
+ * - folder's PR_LOCAL_COMMIT_TIME_MAX is updated
+ */
 static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
     const char *account, cpid_t cpid, BOOL b_embedded, uint64_t parent_id,
-    const MESSAGE_CONTENT *pmsgctnt, uint64_t *pmessage_id,
+    const MESSAGE_CONTENT *pmsgctnt, uint64_t *pmessage_id, uint64_t *outcn,
     bool *partial_completion)
 {
 	BOOL b_cn;
@@ -1715,16 +1726,17 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	MESSAGE_CONTENT msgctnt;
 	PROBLEM_ARRAY tmp_problems;
 	static const uint32_t fake_uid = 1;
-	
+
 	*partial_completion = false;
 	const TPROPVAL_ARRAY *pproplist = &pmsgctnt->proplist;
 	auto cn_p = pproplist->get<const eid_t>(PidTagChangeNumber);
 	if (cn_p == nullptr) {
 		if (cu_allocate_cn(psqlite, &change_num) != ecSuccess)
 			return FALSE;
+		*outcn = change_num;
 		b_cn = FALSE;
 	} else {
-		change_num = rop_util_get_gc_value(*cn_p);
+		*outcn = change_num = rop_util_get_gc_value(*cn_p);
 		b_cn = TRUE;
 	}
 	if (!b_internal) {
@@ -1935,7 +1947,8 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				continue;
 			uint64_t message_id = 0;
 			if (!message_write_message(TRUE, psqlite, account, cpid, TRUE,
-			    tmp_id, at.pembedded, &message_id, partial_completion))
+			    tmp_id, at.pembedded, &message_id, &change_num,
+			    partial_completion))
 				return FALSE;
 			if (0 == message_id) {
 				*pmessage_id = 0;
@@ -2261,10 +2274,10 @@ static BOOL message_make_dem(const char *username,
 	auto tmp_eid = rop_util_make_eid_ex(1, rule_id);
 	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != 0)
 		return FALSE;
-	uint64_t mid_val = 0;
+	uint64_t mid_val = 0, cn_val = 0;
 	bool partial = false;
 	if (!message_write_message(false, psqlite, username, CP_ACP, false,
-	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &partial))
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &cn_val, &partial))
 		return FALSE;
 	pmsg.reset();
 	BOOL b_result = false;
@@ -2737,11 +2750,11 @@ static BOOL message_make_dam(const rulexec_in &rp,
 		return FALSE;
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
-	uint64_t mid_val = 0;
+	uint64_t mid_val = 0, cn_val = 0;
 	bool partial = false;
 	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
 	    !message_write_message(false, rp.sqlite, rp.ev_to, CP_ACP, false,
-	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &partial))
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg.get(), &mid_val, &cn_val, &partial))
 		return FALSE;
 	pmsg.reset();
 	BOOL b_result = false;
@@ -3555,7 +3568,6 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	bool b_oof;
 	uint64_t fid_val;
 	char tmp_path[256];
-	uint64_t message_id;
 	BINARY searchkey_bin;
 	const char *paccount;
 	char mid_string[128];
@@ -3646,8 +3658,9 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	if (!sql_transact)
 		return false;
 	bool partial = false;
-	if (!message_write_message(FALSE, pdb->psqlite,
-	    paccount, cpid, false, fid_val, &tmp_msg, &message_id, &partial))
+	uint64_t message_id = 0, new_cn = 0;
+	if (!message_write_message(FALSE, pdb->psqlite, paccount, cpid, false,
+	    fid_val, &tmp_msg, &message_id, &new_cn, &partial))
 		return FALSE;
 	if (0 == message_id) {
 		*presult = static_cast<uint32_t>(deliver_message_result::result_error);
@@ -3710,19 +3723,24 @@ BOOL exmdb_server::deliver_message(const char *dir, const char *from_address,
 	return false;
 }
 
-/* create or cover message under folder, if message exists
-	in somewhere except the folder, result will be FALSE */
-BOOL exmdb_server::write_message(const char *dir, const char *account,
+/**
+ * Required properties:
+ *
+ * - if PidTagChangeNumber is set, so should PR_CHANGE_KEY+PCL
+ *
+ * Optional properties:
+ *
+ * - If PidTagMid is set, that MID is used or (if it exists) the message
+ *   replaced.
+ * - If PR_LAST_MODIFICATION_TIME is not present, it will be set to now().
+ */
+BOOL exmdb_server::write_message_v2(const char *dir, const char *account,
     cpid_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
-    ec_error_t *pe_result)
+    uint64_t *outmid, uint64_t *outcn, ec_error_t *pe_result)
 {
 	BOOL b_exist;
-	uint64_t mid_val, fid_val1;
+	uint64_t mid_val = 0, cn_val = 0, fid_val1 = 0;
 	
-	if (!pmsgctnt->proplist.has(PidTagChangeNumber)) {
-		*pe_result = ecRpcFailed;
-		return TRUE;
-	}
 	b_exist = FALSE;
 	auto pmid = pmsgctnt->proplist.get<uint64_t>(PidTagMid);
 	auto pdb = db_engine_get_db(dir);
@@ -3756,8 +3774,8 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 	if (!sql_transact)
 		return false;
 	bool partial = false;
-	if (!message_write_message(FALSE, pdb->psqlite,
-	    account, cpid, false, fid_val, pmsgctnt, &mid_val, &partial))
+	if (!message_write_message(false, pdb->psqlite, account, cpid, false,
+	    fid_val, pmsgctnt, &mid_val, &cn_val, &partial))
 		return FALSE;
 	if (0 == mid_val) {
 		// auto rollback at end of scope
@@ -3778,6 +3796,19 @@ BOOL exmdb_server::write_message(const char *dir, const char *account,
 		pdb->notify_message_creation(fid_val, mid_val);
 	}
 	return TRUE;
+}
+
+BOOL exmdb_server::write_message(const char *dir, const char *account,
+    cpid_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *ctnt,
+    ec_error_t *e_result)
+{
+	if (!ctnt->proplist.has(PidTagChangeNumber)) {
+		*e_result = ecRpcFailed;
+		return TRUE;
+	}
+	uint64_t outmid = 0, outcn = 0;
+	return write_message_v2(dir, account, cpid, folder_id, ctnt,
+	       &outmid, &outcn, e_result);
 }
 
 /**
