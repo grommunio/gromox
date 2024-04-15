@@ -147,6 +147,13 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/*
+	 * Read-only transaction ensuring consistency of data across several blocks.
+	 * Nothing is ever written to pdb->psqlite, so no need to commit anything.
+	 */
+	xtransaction transact2 = gx_sql_begin_trans(pdb->psqlite, false);
+	if (!transact2)
+		return false;
 
 	/*
 	 * #1:
@@ -157,12 +164,6 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	auto transact1 = gx_sql_begin_trans(psqlite);
 	if (!transact1)
 		return false;
-	xtransaction transact2;
-	if (prestriction != nullptr) {
-		transact2 = gx_sql_begin_trans(pdb->psqlite);
-		if (!transact2)
-			return false;
-	}
 	char sql_string[256];
 	if (b_private)
 		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
@@ -319,7 +320,7 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
 	if (*plast_readcn != 0)
 		*plast_readcn = rop_util_make_eid_ex(1, *plast_readcn);
-	if (transact1.commit() != SQLITE_OK || transact2.commit() != SQLITE_OK)
+	if (transact1.commit() != SQLITE_OK)
 		return false;
 	} /* section 1 */
 
@@ -434,6 +435,8 @@ BOOL exmdb_server::get_content_sync(const char *dir,
 	eid_array_free(enum_param.pnolonger_mids);
 	} /* section 3 */
 
+	/* Rollback transaction (no changes were made anyway) */
+	transact2 = xtransaction();
 	pdb.reset();
 
 	/* Query section 4 - pgiven_mids: what the server has */
@@ -648,6 +651,9 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact2 = gx_sql_begin_trans(pdb->psqlite, false);
+	if (!sql_transact2)
+		return false;
 
 	/* Query section 1 */
 	{
@@ -698,9 +704,6 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 
 	/* Query section 3 */
 	{
-	auto sql_transact2 = gx_sql_begin_trans(pdb->psqlite);
-	if (!sql_transact2)
-		return false;
 	auto stm_select_chg = gx_sql_prep(psqlite,
 	                      "SELECT folder_id FROM changes ORDER BY idx ASC");
 	if (stm_select_chg == nullptr)
@@ -728,10 +731,9 @@ BOOL exmdb_server::get_hierarchy_sync(const char *dir,
 			return FALSE;
 	}
 	stm_select_chg.finalize();
-	if (sql_transact2.commit() != SQLITE_OK)
-		return false;
 	} /* section 3 */
 
+	sql_transact2 = xtransaction();
 	pdb.reset();
 
 	/* Query section 4 */
