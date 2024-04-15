@@ -185,6 +185,10 @@ static BOOL verify_password(const char *username, const char *password,
 BOOL mysql_adaptor_login2(const char *username, const char *password,
     std::string &encrypt_passwd, std::string &errstr) try
 {
+	if (!str_isascii(username)) {
+		errstr = "Incorrect password";
+		return false;
+	}
 	BOOL ret;
 	if (g_parm.enable_firsttimepw && encrypt_passwd.empty())
 		ret = firsttime_password(username, password, encrypt_passwd);
@@ -200,6 +204,8 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	char encrypt_passwd[40];
 	
@@ -296,6 +302,8 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, unsigned int *puser_
 bool mysql_adaptor_get_user_displayname(const char *username,
     char *pdisplayname, size_t dsize) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -333,6 +341,8 @@ bool mysql_adaptor_get_user_displayname(const char *username,
 BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
     uint32_t *pprivilege_bits) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -356,6 +366,8 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 
 bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_size) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -381,6 +393,8 @@ bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_s
 
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	std::string fq_string;
 	
@@ -398,6 +412,8 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 
 bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_size) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -423,6 +439,8 @@ bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_si
 
 BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	char temp_zone[128];
 	
@@ -441,6 +459,8 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 
 bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_size) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -464,6 +484,8 @@ bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_si
 
 bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsize) try
 {
+	if (!str_isascii(domainname))
+		return false;
 	char temp_name[UDOM_SIZE*2];
 	
 	mysql_adaptor_encode_squote(domainname, temp_name);
@@ -532,6 +554,8 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, unsigned int *pdomai
 BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
     unsigned int *pdomain_id, enum display_type *dtypx) try
 {
+	if (!str_isascii(username))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -567,6 +591,8 @@ BOOL mysql_adaptor_get_user_ids(const char *username, unsigned int *puser_id,
 BOOL mysql_adaptor_get_domain_ids(const char *domainname,
     unsigned int *pdomain_id, unsigned int *porg_id) try
 {
+	if (!str_isascii(domainname))
+		return false;
 	char temp_name[UDOM_SIZE*2];
 	
 	mysql_adaptor_encode_squote(domainname, temp_name);
@@ -724,6 +750,8 @@ BOOL mysql_adaptor_get_domain_groups(unsigned int domain_id,
 BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
     const char *account) try
 {
+	if (!str_isascii(mlist_name) || !str_isascii(account))
+		return false;
 	BOOL b_result;
 	char temp_name[UADDR_SIZE*2];
 	char *pencode_domain;
@@ -836,6 +864,8 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 {
 	if (strcasecmp(domainname1, domainname2) == 0)
 		return TRUE;
+	if (!str_isascii(domainname1) || !str_isascii(domainname2))
+		return false;
 	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);
@@ -886,6 +916,8 @@ static std::string strip_ext(std::string user, const char *delim)
 bool mysql_adaptor_check_user(const char *user_raw, const char *delim,
     char *path, size_t dsize) try
 {
+	if (!str_isascii(user_raw))
+		return false;
 	char temp_name[UADDR_SIZE*2];
 
 	if (path != nullptr)
@@ -920,13 +952,15 @@ bool mysql_adaptor_check_user(const char *user_raw, const char *delim,
 }
 
 /**
- * @from:	From address
  * @username:	Recipient address; mailing list
+ * @from:	From address
  * @pfile:	Output array - append, NO truncate
  */
-BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
+BOOL mysql_adaptor_get_mlist_memb(const char *username, const char *from,
     int *presult, std::vector<std::string> &pfile) try
 {
+	if (!str_isascii(username))
+		return false;
 	int i, rows;
 	BOOL b_chkintl;
 	char *pencode_domain;
@@ -1150,6 +1184,10 @@ BOOL mysql_adaptor_get_mlist_memb(const char *username,  const char *from,
 bool mysql_adaptor_get_user_info(const char *username, char *maildir,
     size_t msize, char *lang, size_t lsize, char *zone, size_t tsize) try
 {
+	if (!str_isascii(username)) {
+		maildir[0] = '\0';
+		return true;
+	}
 	char temp_name[UADDR_SIZE*2];
 
 	mysql_adaptor_encode_squote(username, temp_name);

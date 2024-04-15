@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -506,6 +507,8 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> &&cfg)
  */
 bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::string>& aliases) try
 {
+	if (!str_isascii(username))
+		return true;
 	char temp_name[UADDR_SIZE*2];
 	mysql_adaptor_encode_squote(username, temp_name);
 
@@ -520,7 +523,6 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
 	for(DB_ROW row = res.fetch_row(); row; row = res.fetch_row())
 		aliases.emplace_back(row[0]);
 	return true;
-
 } catch (const std::exception &e) {
 	mlog(LV_ERR, "%s: %s", __func__, e.what());
 	return false;
@@ -537,8 +539,10 @@ bool mysql_adaptor_get_user_aliases(const char *username, std::vector<std::strin
  *
  * @return     true if successful, false otherwise
  */
-bool mysql_adaptor_get_user_properties(const char* username, TPROPVAL_ARRAY& properties) try
+bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &properties) try
 {
+	if (!str_isascii(username))
+		return true; /* same as 0 rows */
 	char temp_name[UADDR_SIZE*2];
 	mysql_adaptor_encode_squote(username, temp_name);
 
