@@ -167,7 +167,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	           filter, attrs, true, nullptr, nullptr, nullptr, 2, msg);
+	           filter, attrs, true, nullptr, nullptr, nullptr, 1, msg);
 	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
 		/* try full reconnect */;
 	else if (ret != LDAP_SERVER_DOWN)
@@ -177,7 +177,7 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 	if (ld == nullptr)
 		return ret;
 	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
-	       filter, attrs, true, nullptr, nullptr, nullptr, 2, msg);
+	       filter, attrs, true, nullptr, nullptr, nullptr, 1, msg);
 }
 
 static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
@@ -190,9 +190,9 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	auto filter = attr + "="s + quoted;
 	auto ret = gx_ldap_search(tok_meta,
 	           base_dn.size() > 0 ? base_dn.c_str() : nullptr,
-	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
-	if (ret != LDAP_SUCCESS) {
-		mlog(LV_ERR, "ldap_adaptor: search with base \"%s\" filter \"%s\": %s",
+	           filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
+	if (ret != LDAP_SUCCESS && ret != LDAP_SIZELIMIT_EXCEEDED) {
+		mlog(LV_ERR, "ldap_adaptor: error during search in %s for %s: %s",
 		        base_dn.c_str(), filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
@@ -200,12 +200,12 @@ static BOOL ldaplogin_host(ldap_ptr &tok_meta, ldap_ptr &tok_bind,
 	if (matches < 0) {
 		return FALSE;
 	} else if (matches == 0) {
-		mlog(LV_DEBUG, "ldap_adaptor: search for %s=%s yielded 0 matches",
-			attr, username);
+		mlog(LV_DEBUG, "ldap_adaptor: search in %s for %s: 0 matches",
+			base_dn.c_str(), filter.c_str());
 		return false;
-	} else if (matches >= 2) {
-		mlog(LV_ERR, "ldap_adaptor: search for %s=%s yielded %d matches, ambiguous result",
-			attr, username, matches);
+	} else if (ret == LDAP_SIZELIMIT_EXCEEDED) {
+		mlog(LV_ERR, "ldap_adaptor: search in %s for %s: >1 match (ambiguous result)",
+			base_dn.c_str(), filter.c_str());
 		return false;
 	}
 	auto firstmsg = ldap_first_message(tok_meta.get(), msg.get());
