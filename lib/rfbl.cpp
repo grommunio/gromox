@@ -5,6 +5,7 @@
 #	include "config.h"
 #endif
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <climits>
 #include <clocale>
@@ -1690,6 +1691,24 @@ const std::string_view *archive::find(const std::string &file) const
 {
 	auto i = entries.find(file);
 	return i == entries.cend() ? nullptr : &i->second;
+}
+
+bool str_isascii(const char *s)
+{
+	for (; *s != '\0'; ++s)
+		if (!isascii(static_cast<unsigned char>(*s)))
+			return false;
+	return true;
+}
+
+bool str_isasciipr(const char *s)
+{
+	for (; *s != '\0'; ++s) {
+		unsigned char c = *s;
+		if (!isascii(c) && !isprint(c))
+			return false;
+	}
+	return true;
 }
 
 }

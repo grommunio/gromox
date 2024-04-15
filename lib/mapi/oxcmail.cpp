@@ -6,7 +6,6 @@
 #endif
 #include <algorithm>
 #include <cassert>
-#include <cctype>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -261,15 +260,9 @@ BOOL oxcmail_username_to_entryid(const char *username,
 	       username, pdisplay_name, pbin);
 }
 
-static inline bool oxcmail_is_ascii(const char *s)
-{
-	return std::all_of(s, s + strlen(s),
-	       [](unsigned char c) { return isascii(c); });
-}
-
 static unsigned int pick_strtype(const char *token)
 {
-	return oxcmail_is_ascii(token) ? PT_UNICODE : PT_STRING8;
+	return str_isascii(token) ? PT_UNICODE : PT_STRING8;
 }
 
 static inline bool oxcmail_check_crlf(const char *s)
@@ -398,8 +391,8 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			return FALSE;
 	}
 	std::string skb, essdn;
-	if (paddr->has_addr() && oxcmail_is_ascii(paddr->local_part) &&
-	    oxcmail_is_ascii(paddr->domain)) {
+	if (paddr->has_addr() && str_isascii(paddr->local_part) &&
+	    str_isascii(paddr->domain)) {
 		snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
 		auto dtypx = DT_MAILUSER;
 		std::string essdn, skb;
@@ -483,8 +476,8 @@ static BOOL oxcmail_parse_addresses(const char *charset, const char *field,
 		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
 
 		if (!email_addr.has_addr() ||
-		    !oxcmail_is_ascii(email_addr.local_part) ||
-		    !oxcmail_is_ascii(email_addr.domain))
+		    !str_isascii(email_addr.local_part) ||
+		    !str_isascii(email_addr.domain))
 			continue;
 		if (!oxcmail_parse_recipient(charset,
 		    &email_addr, rcpt_type, pset))
@@ -512,8 +505,8 @@ static BOOL oxcmail_parse_address(const char *field, uint32_t pr_name,
 		if (pproplist->set(pr_name, username) != 0)
 			return FALSE;
 	}
-	bool ok = paddr->has_addr() && oxcmail_is_ascii(paddr->local_part) &&
-	          oxcmail_is_ascii(paddr->domain);
+	bool ok = paddr->has_addr() && str_isascii(paddr->local_part) &&
+	          str_isascii(paddr->domain);
 	if (!ok)
 		return TRUE;
 	snprintf(username, std::size(username), "%s@%s", paddr->local_part, paddr->domain);
@@ -593,8 +586,8 @@ static BOOL oxcmail_parse_reply_to(const char *charset, const char *field,
 		gx_strlcpy(email_addr.domain, &emp[at+1], std::size(email_addr.domain));
 
 		if (!email_addr.has_addr() ||
-		    !oxcmail_is_ascii(email_addr.local_part) ||
-		    !oxcmail_is_ascii(email_addr.domain))
+		    !str_isascii(email_addr.local_part) ||
+		    !str_isascii(email_addr.domain))
 			continue;
 		snprintf(tmp_buff, std::size(tmp_buff), "%s@%s",
 			 email_addr.local_part, email_addr.domain);
@@ -1175,7 +1168,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		    PR_READ_RECEIPT_ENTRYID, &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "Message-ID") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_INTERNET_MESSAGE_ID : PR_INTERNET_MESSAGE_ID_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
@@ -1186,7 +1179,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 				return FALSE;
 		}
 	} else if (strcasecmp(key, "References") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_INTERNET_REFERENCES : PR_INTERNET_REFERENCES_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
@@ -1234,7 +1227,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		    &penum_param->pmsg->proplist))
 				return FALSE;
 	} else if (strcasecmp(key, "In-Reply-To") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_IN_REPLY_TO_ID : PR_IN_REPLY_TO_ID_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
@@ -1294,29 +1287,29 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		penum_param->b_flag_del = true;
 	} else if (strcasecmp(key, "List-Help") == 0 ||
 		strcasecmp(key, "X-List-Help") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_LIST_HELP : PR_LIST_HELP_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "List-Subscribe") == 0 ||
 		strcasecmp(key, "X-List-Subscribe") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_LIST_SUBSCRIBE : PR_LIST_SUBSCRIBE_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "List-Unsubscribe") == 0 ||
 		strcasecmp(key, "X-List-Unsubscribe") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_LIST_UNSUBSCRIBE : PR_LIST_UNSUBSCRIBE_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-Payload-Class") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_ATTACH_PAYLOAD_CLASS : PR_ATTACH_PAYLOAD_CLASS_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-MS-Exchange-Organization-PRD") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_PURPORTED_SENDER_DOMAIN : PR_PURPORTED_SENDER_DOMAIN_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
@@ -1359,25 +1352,25 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 		    &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (strcasecmp(key, "X-CallingTelephoneNumber") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_SENDER_TELEPHONE_NUMBER :
 		               PR_SENDER_TELEPHONE_NUMBER_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-VoiceMessageSenderName") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		                  PidTagVoiceMessageSenderName :
 		                  PidTagVoiceMessageSenderName_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-AttachmentOrder") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PidTagVoiceMessageAttachmentOrder :
 		               PidTagVoiceMessageAttachmentOrder_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (strcasecmp(key, "X-CallID") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PidTagCallId : PidTagCallId_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
@@ -1398,7 +1391,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 				         static_cast<int>(tmp_int32 - 2), &field[1]);
 				field = rw;
 			}
-			uint32_t tag = oxcmail_is_ascii(field) ?
+			uint32_t tag = str_isascii(field) ?
 			               PR_BODY_CONTENT_ID : PR_BODY_CONTENT_ID_A;
 			if (penum_param->pmsg->proplist.set(tag, field) != 0)
 				return FALSE;
@@ -1414,7 +1407,7 @@ static BOOL oxcmail_enum_mail_head(const char *key, const char *field, void *ppa
 			return FALSE;
 		penum_param->last_propid ++;
 	} else if (strcasecmp(key, "Content-Location") == 0) {
-		uint32_t tag = oxcmail_is_ascii(field) ?
+		uint32_t tag = str_isascii(field) ?
 		               PR_BODY_CONTENT_LOCATION : PR_BODY_CONTENT_LOCATION_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
@@ -1461,7 +1454,7 @@ static BOOL oxcmail_parse_transport_message_header(const MIME *pmime,
 	if (!pmime->read_head(tmp_buff, &tmp_len))
 		return TRUE;
 	tmp_buff[tmp_len] = '\0';
-	uint32_t tag = oxcmail_is_ascii(tmp_buff) ?
+	uint32_t tag = str_isascii(tmp_buff) ?
 	               PR_TRANSPORT_MESSAGE_HEADERS :
 	               PR_TRANSPORT_MESSAGE_HEADERS_A;
 	if (pproplist->set(tag, tmp_buff) != 0)
@@ -1660,21 +1653,21 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			if (tmp_buff[tmp_int32-1] == '>')
 				tmp_buff[tmp_int32 - 1] = '\0';
 			newval = tmp_buff[0] == '<' ? tmp_buff + 1 : tmp_buff;
-			uint32_t tag = oxcmail_is_ascii(newval) ?
+			uint32_t tag = str_isascii(newval) ?
 			                  PR_ATTACH_CONTENT_ID : PR_ATTACH_CONTENT_ID_A;
 			if (pattachment->proplist.set(tag, newval) != 0)
 				return;
 		}
 	}
 	if (pmime->get_field("Content-Location", tmp_buff, 1024)) {
-		uint32_t tag = oxcmail_is_ascii(tmp_buff) ?
+		uint32_t tag = str_isascii(tmp_buff) ?
 		                  PR_ATTACH_CONTENT_LOCATION :
 		                  PR_ATTACH_CONTENT_LOCATION_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0)
 			return;
 	}
 	if (pmime->get_field("Content-Base", tmp_buff, 1024)) {
-		uint32_t tag = oxcmail_is_ascii(tmp_buff) ?
+		uint32_t tag = str_isascii(tmp_buff) ?
 		                  PR_ATTACH_CONTENT_BASE : PR_ATTACH_CONTENT_BASE_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0)
 			return;
@@ -1806,7 +1799,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 		return;
 	if (strncasecmp(cttype, "text/", 5) == 0 &&
 	    oxcmail_get_content_param(pmime, "charset", tmp_buff, 32)) {
-		uint32_t tag = oxcmail_is_ascii(tmp_buff) ?
+		uint32_t tag = str_isascii(tmp_buff) ?
 		               PidTagTextAttachmentCharset :
 		               PidTagTextAttachmentCharset_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0)
@@ -2922,7 +2915,7 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 		return 0;
 	}
 
-	if (oxcmail_is_ascii(pstring) && !oxcmail_check_crlf(pstring)) {
+	if (str_isascii(pstring) && !oxcmail_check_crlf(pstring)) {
 		auto string_len = strlen(pstring);
 		if (string_len >= max_length)
 			return 0;

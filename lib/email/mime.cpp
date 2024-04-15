@@ -6,11 +6,11 @@
  * will then maintain its own buffer.
  */
 #include <algorithm>
-#include <cctype>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <unistd.h>
 #include <utility>
 #include <fmt/core.h>
@@ -27,7 +27,6 @@ using namespace gromox;
 
 static bool mime_parse_multiple(MIME *);
 static void mime_produce_boundary(MIME *pmime);
-static bool mime_is_asciipr(const char *s);
 
 bool MAIL::set_header(const char *hdr, const char *val)
 {
@@ -1447,7 +1446,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	char content_location[256], content_disposition[256], *ptoken;
 
 	strcpy(content_type, pmime->content_type);
-	if (!mime_is_asciipr(content_type))
+	if (!str_isasciipr(content_type))
 		strcpy(content_type, "application/octet-stream");
 	replace_qb(content_type);
 	HX_strrtrim(content_type);
@@ -1459,7 +1458,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 	digest["head"]  = Json::Value::UInt64(head_offset);
 	digest["begin"] = Json::Value::UInt64(*poffset);
 	if (!pmime->get_field("Content-Transfer-Encoding", encoding_buff, 128) ||
-	    !mime_is_asciipr(encoding_buff)) {
+	    !str_isasciipr(encoding_buff)) {
 		digest["encoding"] = "8bit";
 	} else {
 		replace_qb(encoding_buff);
@@ -1487,7 +1486,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 
 	digest["length"] = Json::Value::UInt64(content_len);
 	if (pmime->get_content_param("charset", charset_buff, 32) &&
-	    mime_is_asciipr(charset_buff)) {
+	    str_isasciipr(charset_buff)) {
 		replace_qb(charset_buff);
 		HX_strrtrim(charset_buff);
 		HX_strltrim(charset_buff);
@@ -1506,7 +1505,7 @@ static int mime_get_digest_single(const MIME *pmime, const char *id_string,
 		HX_strrtrim(content_disposition);
 		HX_strltrim(content_disposition);
 		if ('\0' != content_disposition[0] &&
-		    mime_is_asciipr(content_disposition)) {
+		    str_isasciipr(content_disposition)) {
 			replace_qb(content_disposition);
 			digest["cntdspn"] = content_disposition;
 		}
@@ -1640,7 +1639,7 @@ static int mime_get_struct_multi(const MIME *pmime, const char *id_string,
 	char temp_id[64], content_type[256];
 
 	strcpy(content_type, pmime->content_type);
-	if (!mime_is_asciipr(content_type))
+	if (!str_isasciipr(content_type))
 		strcpy(content_type, "multipart/mixed");
 	replace_qb(content_type);
 	HX_strrtrim(content_type);
@@ -1792,12 +1791,6 @@ static void mime_produce_boundary(MIME *pmime)
     temp_boundary[boundary_len] = '"';
     temp_boundary[boundary_len + 1] = '\0';
 	pmime->set_content_param("boundary", temp_boundary);
-}
-
-static bool mime_is_asciipr(const char *s)
-{
-	return std::all_of(s, s + strlen(s),
-	       [](unsigned char c) { return isascii(c) && isprint(c); });
 }
 
 MIME *MIME::get_child()
