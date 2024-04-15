@@ -1,3 +1,19 @@
+Development 2.27.30
+===================
+
+Fixes:
+
+* imap: repair messages not getting added to midb during 64K+ append
+* imap: cure client session hang when midb failed to add
+  a mail during 64K-append
+* mysql_adaptor: gracefully handle attempts to use Unicode in usernames
+  (treat as non-existing user rather than failing the user lookup altogether)
+
+Enhancements:
+
+* mysql_adaptor: allow Unicode in alternate usernames (altnames)
+
+
 Gromox 2.27 (2024-04-07)
 ========================
 
