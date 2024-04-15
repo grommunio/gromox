@@ -1119,10 +1119,10 @@ static void az_fmap_splice_rft2(const tarray_set &tset)
 		 * In PST, the receive folder with msgcls="" is of no
 		 * use because it points to the PST root.
 		 */
-		if (strcmp(msgcls, "IPM") == 0 && goodmatch < 2) {
+		if (strcasecmp(msgcls, "IPM") == 0 && goodmatch < 2) {
 			goodmatch = 2;
 			nid = *tgtfld;
-		} else if (strcmp(msgcls, "IPM.Note") == 0 && goodmatch < 3) {
+		} else if (strcasecmp(msgcls, "IPM.Note") == 0 && goodmatch < 3) {
 			goodmatch = 3;
 			nid = *tgtfld;
 		}

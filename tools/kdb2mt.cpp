@@ -857,10 +857,10 @@ void driver::fmap_setup_splice()
 		if (strcmp(xmsgcl, "") == 0 && goodmatch < 1) {
 			goodmatch = 1;
 			nid = xobjid;
-		} else if (strcmp(xmsgcl, "IPM") == 0 && goodmatch < 2) {
+		} else if (strcasecmp(xmsgcl, "IPM") == 0 && goodmatch < 2) {
 			goodmatch = 2;
 			nid = xobjid;
-		} else if (strcmp(xmsgcl, "IPM.Note") == 0 && goodmatch < 3) {
+		} else if (strcasecmp(xmsgcl, "IPM.Note") == 0 && goodmatch < 3) {
 			goodmatch = 3;
 			nid = xobjid;
 		}
