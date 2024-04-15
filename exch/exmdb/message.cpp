@@ -2418,10 +2418,10 @@ static BOOL message_auto_reply(const rulexec_in &rp, uint8_t action_type,
 	if (msgclass == nullptr)
 		return TRUE;
 	if (action_type == OP_REPLY) {
-		if (strncasecmp(msgclass, "IPM.Note.rules.ReplyTemplate.", 29) != 0)
+		if (class_match_prefix(msgclass, "IPM.Note.rules.ReplyTemplate") != 0)
 			return TRUE;
 	} else {
-		if (strncasecmp(msgclass, "IPM.Note.rules.", 15) != 0)
+		if (class_match_prefix(msgclass, "IPM.Note.rules") != 0)
 			return TRUE;
 	}
 	auto flag = pmsgctnt->proplist.get<const uint8_t>(PR_ASSOCIATED);

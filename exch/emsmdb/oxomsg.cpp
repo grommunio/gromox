@@ -246,7 +246,7 @@ static ec_error_t pass_scheduling(const char *code, const char *account,
 	 * organizer, not the delegator. So there is no delegation to
 	 * check/reject. oxcmail_export also checks message class again.
 	 */
-	if (cls != nullptr && strncasecmp(cls, "IPM.Schedule.", 13) == 0)
+	if (class_match_prefix(cls, "IPM.Schedule") == 0)
 		return ecSuccess;
 	mlog(LV_ERR, "%s: %s tried to send message %llxh (class %s) with repr/from=<%s>, "
 		"but user has no delegate/sendas permission.",

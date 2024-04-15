@@ -917,21 +917,21 @@ pack_result tnef_pull::g_attr(TNEF_ATTRIBUTE *r)
 
 static const char *tnef_to_msgclass(const char *s)
 {
-	if (strcasecmp(s, "IPM.Microsoft Mail.Note") == 0)
+	if (class_match_prefix(s, "IPM.Microsoft Mail.Note") == 0)
 		return "IPM.Note";
-	else if (strcasecmp(s, "IPM.Microsoft Mail.Read Receipt") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Mail.Read Receipt") == 0)
 		return "Report.IPM.Note.IPNRN";
-	else if (strcasecmp(s, "IPM.Microsoft Mail.Non-Delivery") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Mail.Non-Delivery") == 0)
 		return "Report.IPM.Note.NDR";
-	else if (strcasecmp(s, "IPM.Microsoft Schedule.MtgRespP") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Schedule.MtgRespP") == 0)
 		return "IPM.Schedule.Meeting.Resp.Pos";
-	else if (strcasecmp(s, "IPM.Microsoft Schedule.MtgRespN") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Schedule.MtgRespN") == 0)
 		return "IPM.Schedule.Meeting.Resp.Neg";
-	else if (strcasecmp(s, "IPM.Microsoft Schedule.MtgRespA") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Schedule.MtgRespA") == 0)
 		return "IPM.Schedule.Meeting.Resp.Tent";
-	else if (strcasecmp(s, "IPM.Microsoft Schedule.MtgReq") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Schedule.MtgReq") == 0)
 		return "IPM.Schedule.Meeting.Request";
-	else if (strcasecmp(s, "IPM.Microsoft Schedule.MtgCncl") == 0)
+	else if (class_match_prefix(s, "IPM.Microsoft Schedule.MtgCncl") == 0)
 		return "IPM.Schedule.Meeting.Canceled";
 	return s;
 }
@@ -1161,15 +1161,15 @@ static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
 
 static bool is_meeting_request(const char *s)
 {
-	return strcasecmp(s, "IPM.Schedule.Meeting.Request") == 0 ||
-	       strcasecmp(s, "IPM.Schedule.Meeting.Canceled") == 0;
+	return class_match_prefix(s, "IPM.Schedule.Meeting.Request") == 0 ||
+	       class_match_prefix(s, "IPM.Schedule.Meeting.Canceled") == 0;
 }
 
 static bool is_meeting_response(const char *s)
 {
-	return strcasecmp(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
-	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
-	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
+	return class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
+	       class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
+	       class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
 }
 
 static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
@@ -1948,21 +1948,21 @@ pack_result tnef_push::p_attr(uint8_t level, uint32_t attr_id, const void *value
 
 static const char* tnef_from_msgclass(const char *s)
 {
-	if (strcasecmp(s, "IPM.Note") == 0)
+	if (class_match_prefix(s, "IPM.Note") == 0)
 		return "IPM.Microsoft Mail.Note";
-	else if (strcasecmp(s, "Report.IPM.Note.IPNRN") == 0)
+	else if (class_match_prefix(s, "Report.IPM.Note.IPNRN") == 0)
 		return "IPM.Microsoft Mail.Read Receipt";
-	else if (strcasecmp(s, "Report.IPM.Note.NDR") == 0)
+	else if (class_match_prefix(s, "Report.IPM.Note.NDR") == 0)
 		return "IPM.Microsoft Mail.Non-Delivery";
-	else if (strcasecmp(s, "IPM.Schedule.Meeting.Resp.Pos") == 0)
+	else if (class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Pos") == 0)
 		return "IPM.Microsoft Schedule.MtgRespP";
-	else if (strcasecmp(s, "IPM.Schedule.Meeting.Resp.Neg") == 0)
+	else if (class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Neg") == 0)
 		return "IPM.Microsoft Schedule.MtgRespN";
-	else if (strcasecmp(s, "IPM.Schedule.Meeting.Resp.Tent") == 0)
+	else if (class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Tent") == 0)
 		return "IPM.Microsoft Schedule.MtgRespA";
-	else if (strcasecmp(s, "IPM.Schedule.Meeting.Request") == 0)
+	else if (class_match_prefix(s, "IPM.Schedule.Meeting.Request") == 0)
 		return "IPM.Microsoft Schedule.MtgReq";
-	else if (strcasecmp(s, "IPM.Schedule.Meeting.Canceled") == 0)
+	else if (class_match_prefix(s, "IPM.Schedule.Meeting.Canceled") == 0)
 		return "IPM.Microsoft Schedule.MtgCncl";
 	return s;
 }

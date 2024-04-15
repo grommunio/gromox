@@ -720,7 +720,7 @@ static BOOL oxcical_parse_recipients(const ical_component &main_ev,
 	if (pmessage_class == nullptr)
 		pmessage_class = "IPM.Note";
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (strcasecmp(pmessage_class, "IPM.Appointment") == 0)
+	if (class_match_prefix(pmessage_class, "IPM.Appointment") == 0)
 		return TRUE;
 	prcpts = tarray_set_init();
 	if (prcpts == nullptr)
@@ -1258,7 +1258,7 @@ static BOOL oxcical_parse_organizer(const ical_component &main_event,
 	if (pvalue == nullptr)
 		pvalue = "IPM.Note";
 	/* ignore ORGANIZER when METHOD is "REPLY" OR "COUNTER" */
-	if (strncasecmp(pvalue, "IPM.Schedule.Meeting.Resp.", 26) == 0)
+	if (class_match_prefix(pvalue, "IPM.Schedule.Meeting.Resp") == 0)
 		return TRUE;
 	paddress = piline->get_first_subvalue();
 	if (NULL != paddress) {
@@ -2726,9 +2726,9 @@ static ical_component *oxcical_export_timezone(ical &pical,
 
 static bool is_meeting_response(const char *s)
 {
-	return strcasecmp(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
-	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
-	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
+	return class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
+	       class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
+	       class_match_prefix(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
 }
 
 static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
@@ -2745,7 +2745,7 @@ static BOOL oxcical_export_recipient_table(ical_component &pevent_component,
 	if (str == nullptr)
 		str = "IPM.Note";
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
-	if (strcasecmp(str, "IPM.Appointment") == 0)
+	if (class_match_prefix(str, "IPM.Appointment") == 0)
 		return TRUE;
 	if (is_meeting_response(str)) {
 		str = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -3369,15 +3369,15 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 	bool b_proposal = false, b_exceptional = true, b_recurrence = false;
 	if (method == nullptr) {
 		b_exceptional = false;
-		if (strcasecmp(str, "IPM.Appointment") == 0) {
+		if (class_match_prefix(str, "IPM.Appointment") == 0) {
 			method = "PUBLISH";
-		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Request") == 0) {
+		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Request") == 0) {
 			method = "REQUEST";
 			partstat = "NEEDS-ACTION";
-		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Resp.Pos") == 0) {
+		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Pos") == 0) {
 			method = "REPLY";
 			partstat = "ACCEPTED";
-		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Resp.Tent") == 0) {
+		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Tent") == 0) {
 			partstat = "TENTATIVE";
 			PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, PidLidAppointmentCounterProposal};
 			const PROPNAME_ARRAY pna = {1, &pn};
@@ -3390,17 +3390,17 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 			} else {
 				method = "REPLY";
 			}
-		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Resp.Neg") == 0) {
+		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Resp.Neg") == 0) {
 			method = "REPLY";
 			partstat = "DECLINED";
-		} else if (strcasecmp(str, "IPM.Schedule.Meeting.Canceled") == 0) {
+		} else if (class_match_prefix(str, "IPM.Schedule.Meeting.Canceled") == 0) {
 			method = "CANCEL";
 			partstat = "NEEDS-ACTION";
-		} else if (strcasecmp(str, "IPM.Task") == 0) {
+		} else if (class_match_prefix(str, "IPM.Task") == 0) {
 			method = "";
 			icaltype = nullptr;
 			pical.m_name = "VTODO";
-		} else if (strcasecmp(str, "IPM.Activity") == 0) {
+		} else if (class_match_prefix(str, "IPM.Activity") == 0) {
 			method = "";
 			icaltype = nullptr;
 			pical.m_name = "VJOURNAL";
@@ -3755,7 +3755,7 @@ static std::string oxcical_export_internal(const char *method, const char *tzid,
 				str = pembedded->proplist.get<char>(PR_MESSAGE_CLASS_A);
 			if (str == nullptr)
 				str = "IPM.Note";
-			if (strcasecmp(str,
+			if (class_match_prefix(str,
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"))
 				continue;
 			if (!pembedded->proplist.has(proptag_xrt))

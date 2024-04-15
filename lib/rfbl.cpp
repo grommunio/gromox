@@ -1472,7 +1472,24 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 	return ENOMEM;
 }
 
-/*
+/**
+ * @h: class on message
+ * @n: class to test
+ *
+ * On match, 0 is returned; otherwise whatever strcasecmp would yield.
+ */
+int class_match_prefix(const char *h, const char *n)
+{
+	if (h == nullptr)
+		return -1;
+	size_t z = strlen(n);
+	auto ret = strncasecmp(h, n, z);
+	if (ret != 0)
+		return ret;
+	return h[z] == '\0' || h[z] == '.' ? 0 : 1;
+}
+
+/**
  * On match, 0 is returned; otherwise anything non-zero.
  */
 int class_match_suffix(const char *h, const char *n)

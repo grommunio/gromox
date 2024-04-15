@@ -3121,17 +3121,17 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 static BOOL oxcmail_export_content_class(
 	const char *pmessage_class, char *field)
 {
-	if (strcasecmp(pmessage_class, "IPM.Note.Microsoft.Fax") == 0)
+	if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Fax") == 0)
 		strcpy(field, "fax");
-	else if (strcasecmp(pmessage_class, "IPM.Note.Microsoft.Fax.CA") == 0)
+	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Fax.CA") == 0)
 		strcpy(field, "fax-ca");
-	else if (strcasecmp(pmessage_class, "IPM.Note.Microsoft.Missed.Voice") == 0)
+	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Missed.Voice") == 0)
 		strcpy(field, "missedcall");
-	else if (strcasecmp(pmessage_class, "IPM.Note.Microsoft.Conversation.Voice") == 0)
+	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Conversation.Voice") == 0)
 		strcpy(field, "voice-uc");
-	else if (strcasecmp(pmessage_class, "IPM.Note.Microsoft.Voicemail.UM.CA") == 0)
+	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Voicemail.UM.CA") == 0)
 		strcpy(field, "voice-ca");
-	else if (strcasecmp(pmessage_class, "IPM.Note.Microsoft.Voicemail.UM") == 0)
+	else if (class_match_prefix(pmessage_class, "IPM.Note.Microsoft.Voicemail.UM") == 0)
 		strcpy(field, "voice");
 	else if (strncasecmp(pmessage_class, "IPM.Note.Custom.", 16) == 0)
 		snprintf(field, 1024,
@@ -3144,21 +3144,20 @@ static BOOL oxcmail_export_content_class(
 
 static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 {
-	if (strcasecmp( pmessage_class, "IPM.Note.SMIME.MultipartSigned") == 0)
+	if (class_match_prefix( pmessage_class, "IPM.Note.SMIME.MultipartSigned") == 0)
 		return oxcmail_type::xsigned;
-	if (strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0 &&
-	    class_match_suffix(pmessage_class, ".SMIME.MultipartSigned") == 0)
-		return oxcmail_type::xsigned;
-	if (strcasecmp(pmessage_class, "IPM.Note.SMIME") == 0)
+	if (class_match_prefix(pmessage_class, "IPM.InfoPathForm") == 0) {
+		if (class_match_suffix(pmessage_class, ".SMIME.MultipartSigned") == 0)
+			return oxcmail_type::xsigned;
+		if (class_match_suffix(pmessage_class, ".SMIME") == 0)
+			return oxcmail_type::encrypted;
+	}
+	if (class_match_prefix(pmessage_class, "IPM.Note.SMIME") == 0)
 		return oxcmail_type::encrypted;
-	if (strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0 &&
-	    class_match_suffix(pmessage_class, ".SMIME") == 0)
-		return oxcmail_type::encrypted;
-	if (0 == strcasecmp(pmessage_class, "IPM.Note") ||
-		0 == strncasecmp(pmessage_class, "IPM.Note.", 9) ||
-	    strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0)
+	if (class_match_prefix(pmessage_class, "IPM.Note") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.InfoPathForm") == 0)
 		return oxcmail_type::normal;
-	if (strncasecmp(pmessage_class, "REPORT.", 7) == 0) {
+	if (class_match_prefix(pmessage_class, "REPORT") == 0) {
 		if (class_match_suffix(pmessage_class, ".DR") == 0 ||
 		    class_match_suffix(pmessage_class, ".Expanded.DR") == 0 ||
 		    class_match_suffix(pmessage_class, ".Relayed.DR") == 0 ||
@@ -3169,12 +3168,12 @@ static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 		    class_match_suffix(pmessage_class, ".IPNNRN") == 0)
 			return oxcmail_type::mdn;
 	}
-	if (0 == strcasecmp(pmessage_class, "IPM.Appointment") ||
-		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Request") ||
-		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Resp.Pos") ||
-		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Resp.Tent") ||
-		0 == strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Resp.Neg") ||
-	    strcasecmp(pmessage_class, "IPM.Schedule.Meeting.Canceled") == 0)
+	if (class_match_prefix(pmessage_class, "IPM.Appointment") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Schedule.Meeting.Request") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Schedule.Meeting.Resp.Tent") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
+	    class_match_prefix(pmessage_class, "IPM.Schedule.Meeting.Canceled") == 0)
 		return oxcmail_type::calendar;
 	return oxcmail_type::tnef;
 }
@@ -3440,9 +3439,8 @@ static bool oxcmail_export_tocc(const MESSAGE_CONTENT *pmsg,
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_CC, *mblist))
 		if (!phead->set_field("Cc", mblist->generate().c_str()))
 			return FALSE;
-	if (strncasecmp(pskeleton->pmessage_class, "IPM.Schedule.Meeting.", 21) == 0 ||
-	    strcasecmp(pskeleton->pmessage_class, "IPM.Task") == 0||
-	    strncasecmp(pskeleton->pmessage_class, "IPM.Task.", 9) == 0)
+	if (class_match_prefix(pskeleton->pmessage_class, "IPM.Schedule.Meeting") == 0 ||
+	    class_match_prefix(pskeleton->pmessage_class, "IPM.Task") == 0)
 		return true;
 	mblist = vmime::make_shared<vmime::mailboxList>();
 	if (oxcmail_export_addresses(*pmsg->children.prcpts, MAPI_BCC, *mblist))
@@ -3960,7 +3958,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		 * it as text/directory.
 		 */
 		auto str = pattachment->pembedded->proplist.get<const char>(PR_MESSAGE_CLASS);
-		if (str != nullptr && strcasecmp(str, "IPM.Contact") == 0)
+		if (class_match_prefix(str, "IPM.Contact") == 0)
 			b_vcard = TRUE;
 	}
 	

@@ -734,7 +734,7 @@ static void icsdownctx_object_trim_report_recipients(
 	MESSAGE_CONTENT *pmsgctnt)
 {
 	auto pvalue = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
-	if (pvalue != nullptr && strncasecmp(pvalue, "REPORT.IPM.Note.", 16) == 0)
+	if (class_match_prefix(pvalue, "REPORT.IPM.Note") == 0)
 		pmsgctnt->children.prcpts = NULL;
 	if (pmsgctnt->children.pattachments == nullptr)
 		return;

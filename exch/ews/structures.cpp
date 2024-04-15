@@ -3428,19 +3428,20 @@ sItem tItem::create(const sShape& shape)
 	const char* itemClass = shape.get<char>(PR_MESSAGE_CLASS, sShape::FL_ANY);
 	if(!itemClass)
 		return tItem(shape);
-	if(!strcasecmp(itemClass, "IPM.Note") || !strcasecmp(itemClass, "IPM.StickyNote"))
+	if (class_match_prefix(itemClass, "IPM.Note") == 0 ||
+	    class_match_prefix(itemClass, "IPM.StickyNote") == 0)
 		return tMessage(shape);
-	else if(!strcasecmp(itemClass, "IPM.Appointment"))
+	else if (class_match_prefix(itemClass, "IPM.Appointment") == 0)
 		return tCalendarItem(shape);
-	else if(!strcasecmp(itemClass, "IPM.Contact"))
+	else if (class_match_prefix(itemClass, "IPM.Contact") == 0)
 		return tContact(shape);
-	else if(!strcasecmp(itemClass, "IPM.Task"))
+	else if (class_match_prefix(itemClass, "IPM.Task") == 0)
 		return tTask(shape);
-	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Canceled"))
+	else if (class_match_prefix(itemClass, "IPM.Schedule.Meeting.Canceled") == 0)
 		return tMeetingCancellationMessage(shape);
-	else if(!strcasecmp(itemClass, "IPM.Schedule.Meeting.Request"))
+	else if (class_match_prefix(itemClass, "IPM.Schedule.Meeting.Request") == 0)
 		return tMeetingRequestMessage(shape);
-	else if(!strncasecmp(itemClass, "IPM.Schedule.Meeting.Resp", 25))
+	else if (class_match_prefix(itemClass, "IPM.Schedule.Meeting.Resp") == 0)
 		return tMeetingResponseMessage(shape);
 	return tItem(shape);
 }
