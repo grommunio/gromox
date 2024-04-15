@@ -490,6 +490,9 @@ BOOL exmdb_server::purge_datafiles(const char *dir)
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;
+	auto sql_transact = gx_sql_begin_trans(db->psqlite, false);
+	if (!sql_transact)
+		return false;
 	auto upper_bound_ts = time(nullptr) - 60;
 	return purg_clean_cid(db->psqlite, dir, upper_bound_ts) &&
 	       purg_clean_mid(dir, upper_bound_ts) ? TRUE : false;
@@ -545,6 +548,9 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	auto db = db_engine_get_db(dir);
 	if (!db)
 		return false;
+	auto sql_transact = gx_sql_begin_trans(db->psqlite);
+	if (!sql_transact)
+		return false;
 	auto idb = db->psqlite;
 	auto comp = [&](proptag_t tag, const char *wh) {
 		char query[240];
@@ -583,5 +589,5 @@ BOOL exmdb_server::recalc_store_size(const char *dir, uint32_t flags)
 	 * Currently folder sizes are calculated on-the-fly, but perhaps we
 	 * should keep a rolling number for folders too?
 	 */
-	return TRUE;
+	return sql_transact.commit() == SQLITE_OK ? TRUE : false;
 }

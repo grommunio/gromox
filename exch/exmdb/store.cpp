@@ -39,6 +39,9 @@ BOOL exmdb_server::get_all_named_propids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	if (!sql_transact)
+		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 			"count(*) FROM named_properties");
 	auto pstmt = pdb->prep(sql_string);
@@ -87,6 +90,7 @@ BOOL exmdb_server::get_named_propnames(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	return common_util_get_named_propnames(pdb->psqlite, ppropids, ppropnames);
 }
 
@@ -96,6 +100,7 @@ BOOL exmdb_server::get_mapping_guid(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	if (!common_util_get_mapping_guid(pdb->psqlite, replid, pb_found, pguid))
 		return FALSE;
 	*pb_found = TRUE;
@@ -108,6 +113,9 @@ BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	if (!sql_transact)
+		return false;
 	char guid_string[GUIDSTR_SIZE], sql_string[128];
 	guid.to_str(guid_string, std::size(guid_string));
 
@@ -136,6 +144,8 @@ BOOL exmdb_server::get_mapping_replid(const char *dir, GUID guid,
 		*e_result = ecParameterOverflow;
 		return TRUE;
 	}
+	if (sql_transact.commit() != SQLITE_OK)
+		return false;
 	*preplid  = replid;
 	*e_result = ecSuccess;
 	return TRUE;
@@ -147,6 +157,7 @@ BOOL exmdb_server::get_store_all_proptags(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	std::vector<uint32_t> tags;
 	if (!cu_get_proptags(MAPI_STORE, 0, pdb->psqlite, tags))
 		return FALSE;
@@ -164,6 +175,7 @@ BOOL exmdb_server::get_store_properties(const char *dir, cpid_t cpid,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* Only one SQL operation, no transaction needed. */
 	return cu_get_properties(MAPI_STORE, 0, cpid, pdb->psqlite,
 	       pproptags, ppropvals);
 }
@@ -215,6 +227,9 @@ BOOL exmdb_server::get_mbox_perm(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	if (!sql_transact)
+		return false;
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
@@ -295,7 +310,11 @@ BOOL exmdb_server::allocate_cn(const char *dir, uint64_t *pcn)
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
-	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	if (!sql_transact)
+		return false;
+	if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess ||
+	    sql_transact.commit() != SQLITE_OK)
 		return FALSE;
 	*pcn = rop_util_make_eid_ex(1, change_num);
 	return TRUE;
@@ -312,6 +331,9 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
+	if (!sql_transact)
+		return false;
 	snprintf(sql_string, std::size(sql_string), "SELECT "
 		"max(range_end) FROM allocated_eids");
 	auto pstmt = pdb->prep(sql_string);
@@ -334,7 +356,7 @@ BOOL exmdb_server::allocate_ids(const char *dir,
 	          static_cast<unsigned long long>(tmp_eid),
 	          static_cast<unsigned long long>(tmp_eid + count),
 	          static_cast<long long>(time(nullptr)));
-	if (pdb->exec(sql_string) != SQLITE_OK)
+	if (pdb->exec(sql_string) != SQLITE_OK || sql_transact.commit() != SQLITE_OK)
 		return FALSE;
 	*pbegin_eid = rop_util_make_eid_ex(1, tmp_eid);
 	return TRUE;
@@ -349,6 +371,7 @@ BOOL exmdb_server::subscribe_notification(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* No database access, so no transaction. */
 	auto dbase = pdb->m_base;
 	uint32_t last_id = dbase->nsub_list.size() == 0 ? 0 :
 	                   dbase->nsub_list.back().sub_id;
@@ -393,6 +416,7 @@ BOOL exmdb_server::unsubscribe_notification(const char *dir, uint32_t sub_id)
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* No database access, so no transaction. */
 	auto dbase = pdb->m_base;
 	auto i = std::find_if(dbase->nsub_list.begin(), dbase->nsub_list.end(),
 		[&](const nsub_node &n) { return n.sub_id == sub_id; });
@@ -407,6 +431,7 @@ BOOL exmdb_server::transport_new_mail(const char *dir, uint64_t folder_id,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	/* No database access, so no transaction. */
 	pdb->transport_new_mail(rop_util_get_gc_value(folder_id),
 		rop_util_get_gc_value(message_id), message_flags, pstr_class);
 	return TRUE;
@@ -454,6 +479,9 @@ BOOL exmdb_server::check_contact_address(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
 		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false);
+	if (!sql_transact)
+		return false;
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
 	for (size_t i = 0; i < std::size(propname_buff); ++i) {
