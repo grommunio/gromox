@@ -2446,7 +2446,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		imail.clear();
 		pbuff.reset();
 		pcontext->unlink_file();
-		return 1909;
+		return 1909 | DISPATCH_TAG;
 	}
 	auto str_name = pbuff.get() + sizeof(uint32_t);
 	name_len = strlen(str_name);
@@ -2484,22 +2484,21 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			mlog(LV_WARN, "W-1346: remove %s: %s",
 			        eml_path.c_str(), strerror(errno));
-		return 1909;
+		return 1909 | DISPATCH_TAG;
 	}
 	if (fd.close_wr() < 0) {
 		mlog(LV_WARN, "E-2395: write %s: %s", eml_path.c_str(), strerror(errno));
-		return 1909;
+		return 1909 | DISPATCH_TAG;
 	}
 	imail.clear();
 	pbuff.reset();
-	pcontext->unlink_file();
 	auto ssr = system_services_insert_mail(pcontext->maildir, temp_name,
 	           pcontext->mid.c_str(), flag_buff, tmp_time, &errnum);
+	auto cmid = std::move(pcontext->mid);
+	pcontext->unlink_file(); /* homedir/tmp/XX */
 	auto ret = m2icode(ssr, errnum);
-	pcontext->mid.clear();
 	if (ret != 0)
-		return ret;
-	pcontext->mid.clear();
+		return ret | DISPATCH_TAG;
 	imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
 	imap_parser_bcast_touch(nullptr, pcontext->username, pcontext->selected_folder);
 	if (pcontext->proto_stat == iproto_stat::select)
@@ -2514,7 +2513,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv,
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid,
 		    nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
-		    pcontext->mid.c_str(), &uid) == MIDB_RESULT_OK) {
+		    cmid.c_str(), &uid) == MIDB_RESULT_OK) {
 			buf = fmt::format("{} {} [APPENDUID {} {}] {}",
 			      pcontext->tag_string, imap_reply_str, uidvalid,
 			      uid, imap_reply_str1);
