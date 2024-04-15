@@ -1311,11 +1311,11 @@ sFolder tBaseFolderType::create(const sShape& shape)
 		folderType = SEARCH;
 	else if(frClass)
 	{
-		if(!strncmp(frClass, "IPF.Appointment", 15))
+		if (class_match_prefix(frClass, "IPF.Appointment") == 0)
 			folderType = CALENDAR;
-		else if(!strncmp(frClass, "IPF.Contact", 11))
+		else if (class_match_prefix(frClass, "IPF.Contact") == 0)
 			folderType = CONTACTS;
-		else if(!strncmp(frClass, "IPF.Task", 8))
+		else if (class_match_prefix(frClass, "IPF.Task") == 0)
 			folderType = TASKS;
 	}
 	switch(folderType)

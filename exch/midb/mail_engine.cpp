@@ -1775,14 +1775,9 @@ static uint64_t mail_engine_get_top_folder_id(
 	}
 }
 
-static bool skip_folder_class(const char *c)
+static inline bool ipf_note(const char *c)
 {
-	if (c == nullptr)
-		/* Absent class means it's IPF.Note */
-		return false;
-	if (strncasecmp(c, "IPF.Note", 8) == 0 && (c[8] == '\0' || c[8] == '.'))
-		return false;
-	return true;
+	return c == nullptr || class_match_prefix(c, "IPF.Note") == 0;
 }
 
 static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
@@ -1855,7 +1850,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb,
 			        dir, LLU{folder_id});
 			continue;
 		}
-		if (skip_folder_class(rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS))) {
+		if (!ipf_note(rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS))) {
 			mlog(LV_NOTICE, "sync_mailbox %s fld %llu skipped: PR_CONTAINER_CLASS not IPF.Note",
 			        dir, LLU{folder_id});
 			continue;
@@ -3955,7 +3950,7 @@ static BOOL mail_engine_add_notification_folder(
 		b_waited = true;
 		goto REQUERY_FOLDER;
 	}
-	if (skip_folder_class(cont_class))
+	if (!ipf_note(cont_class))
 		return FALSE;
 	auto lnum = propvals.get<const uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
 	auto commit_max = lnum != nullptr ? *lnum : 0;

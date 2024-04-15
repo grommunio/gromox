@@ -662,7 +662,7 @@ static BOOL container_object_query_folder_hierarchy(
 		if (pbool != nullptr && *pbool != 0)
 			continue;
 		auto cnclass = tmp_set.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
-		if (cnclass == nullptr || strcasecmp(cnclass, "IPF.Contact") != 0)
+		if (class_match_prefix(cnclass, "IPF.Contact") != 0)
 			continue;
 		auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 		if (pset->count + 1 >= count) {
