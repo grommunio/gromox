@@ -569,12 +569,13 @@ static bool db_reload(db_conn_ptr &pdb, const char *dir)
 }
 
 static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
-    uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction)
+    uint64_t search_fid, uint64_t scope_fid, const RESTRICTION *prestriction,
+    db_conn_ptr &pdb)
 {
 	char sql_string[128];
-	auto pdb = db_engine_get_db(dir);
-	if (!pdb)
-		return FALSE;
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
+	if (!sql_transact)
+		return false;
 	auto dbase = pdb->m_base;
 	snprintf(sql_string, std::size(sql_string), "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU{scope_fid});
@@ -612,17 +613,21 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			mlog(LV_DEBUG, "db_eng_sf: %u messages in %.2f seconds",
 				pmessage_ids->count, t_diff);
 	});
+	sql_transact = xtransaction();
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
-               auto t_msg = tp_now();
-               if (count >= g_exmdb_search_pacing ||
-                   (t_msg - t_start) >= std::chrono::nanoseconds(g_exmdb_search_pacing_time)) {
+		auto t_msg = tp_now();
+		if (count >= g_exmdb_search_pacing ||
+		    (t_msg - t_start) >= std::chrono::nanoseconds(g_exmdb_search_pacing_time)) {
 			if (!db_reload(pdb, dir))
 				return false;
 			count = 0;
 			t_start = tp_now();
 		}
+		auto sql_transact1 = gx_sql_begin_trans(pdb->psqlite, false); // ends before writes take place
+		if (!sql_transact1)
+			return false;
 		if (!cu_eval_msg_restriction(pdb->psqlite,
 		    cpid, pmessage_ids->pids[i], prestriction))
 			continue;
@@ -638,6 +643,8 @@ static BOOL db_engine_search_folder(const char *dir, cpid_t cpid,
 			break;
 		else if (ret != SQLITE_OK)
 			continue;
+		if (sql_transact1.commit() != SQLITE_OK)
+			return false;
 		/*
 		 * Update other search folders (seems like it is allowed to
 		 * have a search folder have a scope containing another search
@@ -802,19 +809,19 @@ static void *sf_popul_thread(void *param)
 			    psearch->b_recursive, psearch->folder_ids.pll[i], pfolder_ids))
 				goto NEXT_SEARCH;
 		}
+		auto pdb = db_engine_get_db(psearch->dir.c_str());
+		if (!pdb)
+			goto NEXT_SEARCH;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {
 			if (g_notify_stop)
 				break;
 			if (!db_engine_search_folder(psearch->dir.c_str(),
 			    psearch->cpid, psearch->folder_id,
-			    pfolder_ids->pids[i], psearch->prestriction))
+			    pfolder_ids->pids[i], psearch->prestriction, pdb))
 				break;	
 		}
 		if (g_notify_stop)
 			break;
-		auto pdb = db_engine_get_db(psearch->dir.c_str());
-		if (!pdb)
-			goto NEXT_SEARCH;
 		const db_base *dbase = pdb->m_base;
 		/* Stop animation (does nothing else in OL really) */
 		dbeng_notify_search_completion(pdb, psearch->folder_id);
