@@ -3147,26 +3147,26 @@ static enum oxcmail_type oxcmail_get_mail_type(const char *pmessage_class)
 	if (strcasecmp( pmessage_class, "IPM.Note.SMIME.MultipartSigned") == 0)
 		return oxcmail_type::xsigned;
 	if (strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0 &&
-	    strtailcase(pmessage_class, ".SMIME.MultipartSigned") == 0)
+	    class_match_suffix(pmessage_class, ".SMIME.MultipartSigned") == 0)
 		return oxcmail_type::xsigned;
 	if (strcasecmp(pmessage_class, "IPM.Note.SMIME") == 0)
 		return oxcmail_type::encrypted;
 	if (strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0 &&
-	    strtailcase(pmessage_class, ".SMIME") == 0)
+	    class_match_suffix(pmessage_class, ".SMIME") == 0)
 		return oxcmail_type::encrypted;
 	if (0 == strcasecmp(pmessage_class, "IPM.Note") ||
 		0 == strncasecmp(pmessage_class, "IPM.Note.", 9) ||
 	    strncasecmp(pmessage_class, "IPM.InfoPathForm.", 17) == 0)
 		return oxcmail_type::normal;
 	if (strncasecmp(pmessage_class, "REPORT.", 7) == 0) {
-		if (strtailcase(pmessage_class, ".DR") == 0 ||
-		    strtailcase(pmessage_class, ".Expanded.DR") == 0 ||
-		    strtailcase(pmessage_class, ".Relayed.DR") == 0 ||
-		    strtailcase(pmessage_class, ".Delayed.DR") == 0 ||
-		    strtailcase(pmessage_class, ".NDR") == 0)
+		if (class_match_suffix(pmessage_class, ".DR") == 0 ||
+		    class_match_suffix(pmessage_class, ".Expanded.DR") == 0 ||
+		    class_match_suffix(pmessage_class, ".Relayed.DR") == 0 ||
+		    class_match_suffix(pmessage_class, ".Delayed.DR") == 0 ||
+		    class_match_suffix(pmessage_class, ".NDR") == 0)
 			return oxcmail_type::dsn;
-		if (strtailcase(pmessage_class, ".IPNRN") == 0 ||
-		    strtailcase(pmessage_class, ".IPNNRN") == 0)
+		if (class_match_suffix(pmessage_class, ".IPNRN") == 0 ||
+		    class_match_suffix(pmessage_class, ".IPNNRN") == 0)
 			return oxcmail_type::mdn;
 	}
 	if (0 == strcasecmp(pmessage_class, "IPM.Appointment") ||
@@ -3810,15 +3810,15 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg, const char *charset,
 			return FALSE;
 	}
 	
-	if (strtailcase(pmessage_class, ".DR") == 0)
+	if (class_match_suffix(pmessage_class, ".DR") == 0)
 		strcpy(action, "delivered");
-	else if (strtailcase(pmessage_class, ".Expanded.DR") == 0)
+	else if (class_match_suffix(pmessage_class, ".Expanded.DR") == 0)
 		strcpy(action, "expanded");
-	else if (strtailcase(pmessage_class, ".Relayed.DR") == 0)
+	else if (class_match_suffix(pmessage_class, ".Relayed.DR") == 0)
 		strcpy(action, "relayed");
-	else if (strtailcase(pmessage_class, ".Delayed.DR") == 0)
+	else if (class_match_suffix(pmessage_class, ".Delayed.DR") == 0)
 		strcpy(action, "delayed");
-	else if (strtailcase(pmessage_class, ".NDR") == 0)
+	else if (class_match_suffix(pmessage_class, ".NDR") == 0)
 		strcpy(action, "failed");
 	else
 		*action = '\0';

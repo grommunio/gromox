@@ -293,7 +293,7 @@ static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int 
 	   as the Content-Type, so make the revision for these mimes
 	*/
 	auto temp_len = temp_mime.filename.size();
-	if (strtailcase(temp_mime.filename.c_str(), ".eml") == 0 &&
+	if (class_match_suffix(temp_mime.filename.c_str(), ".eml") == 0 &&
 	    !temp_mime.ctype_is_rfc822())
 		temp_mime.ctype = "message/rfc822";
 	auto pnode = pjson->stree.get_root();

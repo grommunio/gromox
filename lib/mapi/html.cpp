@@ -642,22 +642,22 @@ static ec_error_t html_write_style(RTF_WRITER *pwriter, const xmlNode *pelement)
 	}
 	if (html_match_style(pattribute,
 		"font-size", value, sizeof(value))) {
-		auto unit_point = strtailcase(value, "pt") == 0;
+		auto unit_point = class_match_suffix(value, "pt") == 0;
 		ERF(html_write_style_font_size(pwriter, strtol(value, nullptr, 0), unit_point));
 	}
 	if (html_match_style(pattribute,
 		"line-height", value, sizeof(value))) {
-		if (strtailcase(value, "px") == 0)
+		if (class_match_suffix(value, "px") == 0)
 			ERF(html_write_style_line_height(pwriter, strtol(value, nullptr, 0)));
 	}
 	if (html_match_style(pattribute,
 		"margin-top", value, sizeof(value))) {
-		if (strtailcase(value, "px") == 0)
+		if (class_match_suffix(value, "px") == 0)
 			ERF(html_write_style_margin_top(pwriter, strtol(value, nullptr, 0)));
 	}
 	if (html_match_style(pattribute,
 		"text-indent", value, sizeof(value))) {
-		if (strtailcase(value, "px") == 0)
+		if (class_match_suffix(value, "px") == 0)
 			ERF(html_write_style_text_indent(pwriter, strtol(value, nullptr, 0)));
 	}
 	if (html_match_style(pattribute,

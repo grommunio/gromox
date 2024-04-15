@@ -1475,7 +1475,7 @@ errno_t parse_imap_seq(imap_seq_list &r, const char *s) try
 /*
  * On match, 0 is returned; otherwise anything non-zero.
  */
-int strtailcase(const char *h, const char *n)
+int class_match_suffix(const char *h, const char *n)
 {
 	size_t hz = strlen(h), nz = strlen(n);
 	if (hz < nz)
