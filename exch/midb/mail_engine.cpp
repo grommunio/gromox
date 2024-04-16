@@ -2254,8 +2254,10 @@ static int mail_engine_mping(int argc, char **argv, int sockd)
 	return cmd_write(sockd, "TRUE\r\n");
 }
 
-/*
- * Emit the list of folders in the store.
+/**
+ * Emit the list of folders in the store. Special-use folders are not part of
+ * the list as imapd will unconditionally list them.
+ *
  * Request:
  * 	M-ENUM <store-dir>
  * Response:
