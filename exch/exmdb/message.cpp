@@ -506,6 +506,7 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		return FALSE;
 	uint64_t fai_size = 0, normal_size = 0;
 	int del_count = 0;
+	auto nt_time = rop_util_current_nttime();
 	for (auto mid : *pmessage_ids) {
 		auto tmp_val = rop_util_get_gc_value(mid);
 		sqlite3_bind_int64(pstmt, 1, tmp_val);
@@ -560,6 +561,43 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 		if (pstmt1.step() != SQLITE_DONE)
 			return FALSE;
 		sqlite3_reset(pstmt1);
+		if (!b_hard) {
+			uint64_t change_num = 0;
+			if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
+				return false;
+			change_num = rop_util_make_eid_ex(1, change_num);
+			TAGGED_PROPVAL nprop[5];
+			nprop[0].proptag = PidTagChangeNumber;
+			nprop[0].pvalue = &change_num;
+			nprop[1].proptag = PR_CHANGE_KEY;
+			nprop[1].pvalue = cu_xid_to_bin({
+				exmdb_server::is_private() ?
+					rop_util_make_user_guid(account_id) :
+					rop_util_make_domain_guid(account_id),
+				change_num});
+			if (nprop[1].pvalue == nullptr ||
+			    !cu_get_property(MAPI_MESSAGE, tmp_val, CP_ACP,
+			    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
+				return false;
+			nprop[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
+			nprop[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
+			                  static_cast<const BINARY *>(nprop[1].pvalue));
+			if (nprop[2].pvalue == nullptr)
+				return false;
+			nprop[3].proptag = PR_LAST_MODIFICATION_TIME;
+			nprop[3].pvalue = &nt_time;
+			/*
+			 * Something is weird: EXC2019 does not expose PR_DELETED_ON, and OL
+			 * knows to display PR_LAST_MODIFICATION_TIME in the "Recover Items"
+			 * dialog instead...
+			 */
+			nprop[4].proptag = PR_DELETED_ON;
+			nprop[4].pvalue = &nt_time;
+			PROBLEM_ARRAY problems;
+			const TPROPVAL_ARRAY npropds = {std::size(nprop), nprop};
+			cu_set_properties(MAPI_MESSAGE, tmp_val, CP_ACP, pdb->psqlite,
+				&npropds, &problems);
+		}
 		if (!b_hard && !is_private()) {
 			char sql_string[256];
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
@@ -598,7 +636,6 @@ BOOL exmdb_server::delete_messages(const char *dir, int32_t account_id,
 	                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 	if (tmp_propvals[2].pvalue == nullptr)
 		return FALSE;
-	auto nt_time = rop_util_current_nttime();
 	tmp_propvals[3].proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propvals[3].pvalue = &nt_time;
 	tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
