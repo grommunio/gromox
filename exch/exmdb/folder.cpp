@@ -883,6 +883,39 @@ BOOL exmdb_server::delete_folder(const char *dir, cpid_t cpid,
 		snprintf(sql_string, std::size(sql_string), "DELETE FROM folders"
 			" WHERE folder_id=%llu", LLU{fid_val});
 	} else {
+		int account_id = get_account_id();
+		auto nt_time = rop_util_current_nttime();
+		uint64_t change_num = 0;
+		void *pvalue = nullptr;
+		if (cu_allocate_cn(pdb->psqlite, &change_num) != ecSuccess)
+			return false;
+		change_num = rop_util_make_eid_ex(1, change_num);
+		TAGGED_PROPVAL nprop[5];
+		nprop[0].proptag = PidTagChangeNumber;
+		nprop[0].pvalue = &change_num;
+		nprop[1].proptag = PR_CHANGE_KEY;
+		nprop[1].pvalue = cu_xid_to_bin({
+			exmdb_server::is_private() ?
+				rop_util_make_user_guid(account_id) :
+				rop_util_make_domain_guid(account_id),
+			change_num});
+		if (nprop[1].pvalue == nullptr ||
+		    !cu_get_property(MAPI_FOLDER, fid_val, CP_ACP,
+		    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue))
+			return false;
+		nprop[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
+		nprop[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
+				  static_cast<const BINARY *>(nprop[1].pvalue));
+		if (nprop[2].pvalue == nullptr)
+			return false;
+		nprop[3].proptag = PR_LAST_MODIFICATION_TIME;
+		nprop[3].pvalue = &nt_time;
+		nprop[4].proptag = PR_DELETED_ON;
+		nprop[4].pvalue = &nt_time;
+		PROBLEM_ARRAY problems;
+		const TPROPVAL_ARRAY npropds = {std::size(nprop), nprop};
+		cu_set_properties(MAPI_FOLDER, fid_val, CP_ACP, pdb->psqlite,
+			&npropds, &problems);
 		snprintf(sql_string, std::size(sql_string), "UPDATE folders SET"
 			" is_deleted=1 WHERE folder_id=%llu",
 			LLU{fid_val});
