@@ -3,7 +3,7 @@ global:
 	HPM_*;
 	HOOK_*;
 	PROC_*;
-	SVC_LibMain;
+	SVC_*;
 	get_module;
 	pam_sm_authenticate;
 	pam_sm_setcred;

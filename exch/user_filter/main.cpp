@@ -19,7 +19,7 @@ using namespace gromox;
 
 DECLARE_SVC_API();
 
-static BOOL svc_str_filter(int reason, void **ppdata)
+BOOL SVC_user_filter(int reason, void **ppdata)
 {
 	char temp_buff[128];
 	int audit_max, audit_interval, audit_times, temp_list_size;
@@ -97,4 +97,3 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-SVC_ENTRY(svc_str_filter);

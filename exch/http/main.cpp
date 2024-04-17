@@ -66,13 +66,13 @@ static std::vector<static_module> g_dfl_proc_plugins = {
 	{"libgxp_exchange_rfr.so", PROC_exchange_rfr},
 };
 static std::vector<static_module> g_dfl_svc_plugins = {
-	{"libgxs_dnsbl_filter.so"},
-	{"libgxs_ldap_adaptor.so"},
-	{"libgxs_mysql_adaptor.so"},
-	{"libgxs_authmgr.so"},
-	{"libgxs_timer_agent.so"},
-	{"libgxs_user_filter.so"},
-	{"libgxs_exmdb_provider.so"},
+	{"libgxs_dnsbl_filter.so", SVC_dnsbl_filter},
+	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_authmgr.so", SVC_authmgr},
+	{"libgxs_timer_agent.so", SVC_timer_agent},
+	{"libgxs_user_filter.so", SVC_user_filter},
+	{"libgxs_exmdb_provider.so", SVC_exmdb_provider},
 };
 
 static void term_handler(int signo);
@@ -304,7 +304,7 @@ int main(int argc, const char **argv)
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), context_num, "http"});
+		g_dfl_svc_plugins, context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),

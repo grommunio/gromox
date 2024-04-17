@@ -33,9 +33,9 @@ using namespace gromox;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static std::mutex g_svc_once;
 static std::vector<static_module> g_dfl_svc_plugins = {
-	{"libgxs_ldap_adaptor.so"},
-	{"libgxs_mysql_adaptor.so"},
-	{"libgxs_authmgr.so"},
+	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_authmgr.so", SVC_authmgr},
 };
 
 static int converse(pam_handle_t *pamh, int nargs,
@@ -101,7 +101,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		config_dir = PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR;
 
 	std::lock_guard<std::mutex> holder(g_svc_once);
-	service_init({config_dir, "", "", std::move(g_dfl_svc_plugins), 1});
+	service_init({config_dir, "", "", g_dfl_svc_plugins, 1});
 	if (service_run_early() != 0)
 		return PAM_AUTH_ERR;
 	if (service_run() != 0)

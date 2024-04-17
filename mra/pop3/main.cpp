@@ -73,13 +73,13 @@ static struct HXoption g_options_table[] = {
 };
 
 static std::vector<static_module> g_dfl_svc_plugins = {
-	{"libgxs_dnsbl_filter.so"},
-	{"libgxs_event_proxy.so"},
-	{"libgxs_midb_agent.so"},
-	{"libgxs_ldap_adaptor.so"},
-	{"libgxs_mysql_adaptor.so"},
-	{"libgxs_authmgr.so"},
-	{"libgxs_user_filter.so"},
+	{"libgxs_dnsbl_filter.so", SVC_dnsbl_filter},
+	{"libgxs_event_proxy.so", SVC_event_proxy},
+	{"libgxs_midb_agent.so", SVC_midb_agent},
+	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_authmgr.so", SVC_authmgr},
+	{"libgxs_user_filter.so", SVC_user_filter},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
@@ -532,7 +532,7 @@ int main(int argc, const char **argv)
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), context_num});
+		g_dfl_svc_plugins, context_num});
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;

@@ -44,9 +44,9 @@ static std::vector<static_module> g_dfl_mpc_plugins = {
 	{"libgxm_remote_delivery.so", HOOK_remote_delivery},
 };
 static std::vector<static_module> g_dfl_svc_plugins = {
-	{"libgxs_ldap_adaptor.so"},
-	{"libgxs_mysql_adaptor.so"},
-	{"libgxs_authmgr.so"},
+	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_authmgr.so", SVC_authmgr},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
@@ -171,7 +171,7 @@ int main(int argc, const char **argv)
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), threads_max + free_contexts});
+		g_dfl_svc_plugins, threads_max + free_contexts});
 	if (service_run_early() != 0) {
 		mlog(LV_ERR, "system: failed to run PLUGIN_EARLY_INIT");
 		return EXIT_FAILURE;

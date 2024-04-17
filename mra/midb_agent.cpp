@@ -175,7 +175,7 @@ static bool midb_agent_reload(std::shared_ptr<CONFIG_FILE> &&cfg)
 	return true;
 }
 
-static BOOL svc_midb_agent(int reason, void **ppdata)
+BOOL SVC_midb_agent(int reason, void **ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:
@@ -244,7 +244,6 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-SVC_ENTRY(svc_midb_agent);
 
 static void *midbag_scanwork(void *param)
 {

@@ -124,7 +124,7 @@ static bool exmdb_provider_reload(std::shared_ptr<config_file> gxcfg = nullptr,
 	return true;
 }
 
-static BOOL svc_exmdb_provider(int reason, void **ppdata)
+BOOL SVC_exmdb_provider(int reason, void **ppdata)
 {
 	switch(reason) {
 	case PLUGIN_RELOAD:
@@ -277,5 +277,3 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-
-SVC_ENTRY(svc_exmdb_provider);

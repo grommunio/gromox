@@ -620,7 +620,7 @@ bool mysql_adaptor_get_user_properties(const char *username, TPROPVAL_ARRAY &pro
 	return false;
 }
 
-static BOOL svc_mysql_adaptor(int reason, void **data)
+BOOL SVC_mysql_adaptor(int reason, void **data)
 {
 	if (reason == PLUGIN_FREE) {
 		mysql_adaptor_stop();
@@ -689,4 +689,3 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 #undef E
 	return TRUE;
 }
-SVC_ENTRY(svc_mysql_adaptor);

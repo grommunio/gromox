@@ -49,7 +49,7 @@ static int read_line(int sockd, char *buff, int length);
 static int connect_event();
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
 
-static BOOL svc_event_stub(int reason, void **ppdata)
+BOOL SVC_event_stub(int reason, void **ppdata)
 {
 	int i, conn_num;
 	DOUBLE_LIST_NODE *pnode;
@@ -147,7 +147,6 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-SVC_ENTRY(svc_event_stub);
 
 static int read_line(int sockd, char *buff, int length)
 {

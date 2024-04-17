@@ -55,7 +55,7 @@ static constexpr HXoption g_options_table[] = {
 };
 
 static std::vector<static_module> g_dfl_svc_plugins =
-	{{"libgxs_mysql_adaptor.so"}};
+	{{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor}};
 
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
