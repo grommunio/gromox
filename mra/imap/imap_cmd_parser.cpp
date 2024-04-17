@@ -3385,6 +3385,8 @@ int imap_cmd_parser_dval(int argc, char **argv, imap_context *ctx,
 	char buff[1024];
 	const char *tag = (ret & DISPATCH_TAG) ? tag_or_bug(ctx->tag_string) :
 	                  argc == 0 ? "*" : tag_or_bug(argv[0]);
+	if (trycreate && strncmp(str, "NO ", 3) == 0)
+		str += 2; /* avoid double NO */
 	auto len = gx_snprintf(buff, std::size(buff), "%s%s %s%s", tag,
 	      trycreate ? " NO [TRYCREATE]" : "", str, znul(estr));
 	imap_parser_safe_write(ctx, buff, len);
