@@ -1,7 +1,7 @@
 {
 global:
 	HPM_LibMain;
-	HOOK_LibMain;
+	HOOK_*;
 	PROC_LibMain;
 	SVC_LibMain;
 	get_module;

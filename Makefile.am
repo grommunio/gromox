@@ -8,10 +8,10 @@ AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
+lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${mta_plugins}
 noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint
-pkglib_LTLIBRARIES = ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins} libmapi4zf.la
+pkglib_LTLIBRARIES = ${hpm_plugins} ${proc_plugins} ${svc_plugins} libmapi4zf.la
 default_sym = ${srcdir}/default.sym
 if WITH_GNU_LD
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -98,19 +98,19 @@ libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/ndr.cpp lib/rpc/ntlmssp.c
 libgromox_rpc_la_LIBADD = ${libcrypto_LIBS} ${libHX_LIBS} ${iconv_LIBS} libgromox_common.la
 
 delivery_SOURCES = lib/svc_loader.cpp mda/delivery_app/delivery.hpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/transporter.cpp
-delivery_LDADD = -lpthread ${dl_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+delivery_LDADD = -lpthread ${dl_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgxm_alias_resolve.la libgxm_exmdb_local.la libgxm_remote_delivery.la
 delivery_queue_SOURCES = lib/svc_loader.cpp mda/message_enqueue.cpp mda/smtp/flusher.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_cmd_handler.h mda/smtp/smtp_aux.hpp mda/smtp/smtp_parser.cpp mda/smtp/smtp_parser.h
 delivery_queue_LDADD = -lpthread ${libcrypto_LIBS} ${dl_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_epoll.la
 libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp mda/mlist_expand/bounce_producer.cpp mda/mlist_expand/bounce_producer.h lib/bounce_mda.cpp
-libgxm_alias_resolve_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_alias_resolve_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxm_alias_resolve_la_LIBADD = -lpthread ${libHX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = ${default_sym}
 libgxm_exmdb_local_la_SOURCES = lib/bounce_mda.cpp mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/exmdb_local.hpp
-libgxm_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_exmdb_local_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${libHX_LIBS} ${jsoncpp_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 EXTRA_libgxm_exmdb_local_la_DEPENDENCIES = ${default_sym}
 libgxm_remote_delivery_la_SOURCES = mda/remote_delivery.cpp
-libgxm_remote_delivery_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_remote_delivery_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxm_remote_delivery_la_LIBADD = -lpthread ${libssl_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
 

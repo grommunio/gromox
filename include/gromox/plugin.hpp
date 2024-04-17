@@ -35,6 +35,10 @@ enum{
 };
 
 using PLUGIN_MAIN = BOOL (*)(int, void **);
+using PLUGIN_DMAIN = BOOL (int, void **);
+
+extern "C" GX_EXPORT PLUGIN_DMAIN
+	HOOK_alias_resolve, HOOK_exmdb_local, HOOK_remote_delivery;
 
 namespace gromox {
 

@@ -85,8 +85,3 @@ DECLARE_HOOK_API(extern);
 	query_service1(put_context); \
 	query_service1(enqueue_context); \
 	query_service1(throw_context);
-#define HOOK_ENTRY(s) BOOL HOOK_LibMain(int r, void **p) { return (s)((r), (p)); }
-
-extern "C" { /* dlsym */
-extern GX_EXPORT BOOL HOOK_LibMain(int reason, void **ptrs);
-}

@@ -39,9 +39,9 @@ static constexpr HXoption g_options_table[] = {
 };
 
 static std::vector<static_module> g_dfl_mpc_plugins = {
-	{"libgxm_alias_resolve.so"},
-	{"libgxm_exmdb_local.so"},
-	{"libgxm_remote_delivery.so"},
+	{"libgxm_alias_resolve.so", HOOK_alias_resolve},
+	{"libgxm_exmdb_local.so", HOOK_exmdb_local},
+	{"libgxm_remote_delivery.so", HOOK_remote_delivery},
 };
 static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_ldap_adaptor.so"},
