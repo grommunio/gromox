@@ -32,8 +32,6 @@ struct SERVICE_NODE {
 struct FLH_PLUG_ENTITY {
 	~FLH_PLUG_ENTITY();
 	CANCEL_FUNCTION flush_cancel = nullptr;
-	std::vector<SERVICE_NODE> list_ref;
-	char file_name[256]{}, path[256]{};
 	bool completed_init = false;
 };
 
@@ -49,13 +47,8 @@ static std::atomic<int> g_current_ID;
 
 void flusher_init(size_t queue_len) try
 {
-	static constexpr char path[] = "libgxf_message_enqueue.so";
 	g_flusher_plug = std::make_unique<FLH_PLUG_ENTITY>();
 	g_flusher_plug->flush_cancel = NULL;
-	gx_strlcpy(g_flusher_plug->path, path, std::size(g_flusher_plug->path));
-	auto pname = strrchr(path, '/');
-	gx_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
-		std::size(g_flusher_plug->file_name));
 	g_max_queue_len = queue_len;
 } catch (const std::bad_alloc &) {
 }
@@ -145,14 +138,9 @@ FLH_PLUG_ENTITY::~FLH_PLUG_ENTITY()
 {
 	if (completed_init && !FLH_LibMain(PLUGIN_FREE)) {
 		mlog(LV_ERR, "flusher: error executing Flusher_LibMain with "
-			   "FLUSHER_LIB_FREE in plugin %s", path);
+			   "FLUSHER_LIB_FREE");
 		return;
 	}
-	mlog(LV_INFO, "flusher: unloading %s", path);
-	/* free the service reference of the plugin */
-	if (list_ref.size() > 0)
-		for (auto &svc : list_ref)
-			service_release(svc.service_name.c_str(), file_name);
 }
 
 static int flusher_increase_max_ID()
