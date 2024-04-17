@@ -11,7 +11,7 @@ AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint
-pkglib_LTLIBRARIES = ${exchange_plugins} ${mta_plugins} ${mra_plugins} libmapi4zf.la
+pkglib_LTLIBRARIES = ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins} libmapi4zf.la
 default_sym = ${srcdir}/default.sym
 if WITH_GNU_LD
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -39,21 +39,23 @@ dist_unit_DATA = system/gromox-delivery.service \
 	system/gromox-snapshot.service system/gromox-snapshot.timer \
 	system/gromox-timer.service system/gromox-zcore.service
 
+program_plugins = ${mta_plugins} ${hpm_plugins} ${proc_plugins} ${svc_plugins}
 mta_plugins = \
 	libgxm_alias_resolve.la \
 	libgxm_exmdb_local.la \
 	libgxm_remote_delivery.la
-mra_plugins = \
-	libgxs_event_proxy.la \
-	libgxs_event_stub.la \
-	libgxs_midb_agent.la
-exchange_plugins = \
-	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la \
+hpm_plugins = \
+	libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la
+proc_plugins = \
 	libgxp_exchange_emsmdb.la \
 	libgxp_exchange_nsp.la \
-	libgxp_exchange_rfr.la \
+	libgxp_exchange_rfr.la
+svc_plugins = \
 	libgxs_authmgr.la libgxs_dnsbl_filter.la \
 	libgxs_exmdb_provider.la \
+	libgxs_event_proxy.la \
+	libgxs_event_stub.la \
+	libgxs_midb_agent.la \
 	libgxs_timer_agent.la \
 	libgxs_ldap_adaptor.la \
 	libgxs_mysql_adaptor.la \
@@ -411,7 +413,7 @@ uninstall-hook:
 	rm -Rf ${DESTDIR}${pkgdatadir}/
 
 # On cross-compilation, dldcheck may fail to run, so allow exit code 126 (e.g. Linux) to pass
-dldcheck_files = ${lib_LTLIBRARIES} ${mta_plugins} ${mra_plugins} ${exchange_plugins} ${pamlib_LTLIBRARIES}
+dldcheck_files = ${lib_LTLIBRARIES} ${program_plugins} ${pamlib_LTLIBRARIES}
 dldcheck.stamp: dldcheck ${dldcheck_files}
 	${AM_V_GEN}LD_LIBRARY_PATH="${abs_builddir}/.libs:$$LD_LIBRARY_PATH" ./dldcheck "$@" ${dldcheck_files}; rv="$$?"; test "$$rv" != 2
 
