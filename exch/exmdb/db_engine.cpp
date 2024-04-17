@@ -3805,12 +3805,13 @@ void DB_ITEM::commit_batch_mode_release(db_item_ptr &&pdb)
 	auto table_num = pdb->tables.table_list.size();
 	auto ptable_ids = table_num > 0 ? cu_alloc<uint32_t>(table_num) : nullptr;
 	table_num = 0;
-	for (auto &tnode : pdb->tables.table_list) {
-		auto ptable = &tnode;
-		if (ptable->b_hint) {
-			if (ptable_ids != nullptr)
+	if (ptable_ids != nullptr) {
+		for (auto &tnode : pdb->tables.table_list) {
+			auto ptable = &tnode;
+			if (ptable->b_hint) {
 				ptable_ids[table_num++] = ptable->table_id;
-			ptable->b_hint = FALSE;
+				ptable->b_hint = FALSE;
+			}
 		}
 	}
 	pdb->tables.b_batch = false;
