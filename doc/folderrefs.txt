@@ -3,18 +3,30 @@ Exchange puts PR_IPM_SUBTREE_ENTRYID on S(Store),
 but PR_IPM_APPOINTMENT_ENTRYID on R(Root) and I(Inbox).
 T(Top of Information Store aka IPM_SUBTREE).
 
+The store properties are readonly in EXC2019 (MAPI_E_COMPUTED),
+the one inside the mailbox are writable.
+
 EX  GX  KDB  mnemonic
 ===============================================
+S   S   -   35D8  PR_ROOT_ENTRYID
 S   S   S   35E0  PR_IPM_SUBTREE_ENTRYID
+S   S   -   35E1  PR_IPM_INBOX_ENTRYID
 S   S   S   35E2  PR_IPM_OUTBOX_ENTRYID
 S   S   S   35E3  PR_IPM_WASTEBASKET_ENTRYID
 S   S   S   35E4  PR_IPM_SENTMAIL_ENTRYID
 S   S   S   35E5  PR_VIEWS_ENTRYID
 S   S   S   35E6  PR_COMMON_VIEWS_ENTRYID
 S   S   S   35E7  PR_FINDER_ENTRYID
+S   -   -   35E8  SpoolerQueueEntryId
 S   S   S   661E  PR_SCHEDULE_FOLDER_ENTRYID
 S   S   -   661F  PR_IPM_DAF_ENTRYID
 S   S   S   6630  PR_IPM_FAVORITES_ENTRYID
+S   -   -   6814  entryid to IPM.Microsoft.OOF.UserOofSettings message
+RI  -   -   120D  entryid to Calendar\Birthdays folder
+RI  -   -   35EB  PR_VOICEMAIL_FOLDER_ENTRYID
+RI  -   -   35EE  AllItemsFolderEntryId
+RI  -   -   35EF  IpmSharingEntryId
+RI  -   -   35FD  AdminDataEntryId
 RI  RI  RI  36D0  PR_IPM_APPOINTMENT_ENTRYID
 RI  RI  RI  36D1  PR_IPM_CONTACT_ENTRYID
 RI  RI  RI  36D2  PR_IPM_JOURNAL_ENTRYID
