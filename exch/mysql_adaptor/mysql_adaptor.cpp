@@ -847,13 +847,10 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 
 void mysql_adaptor_encode_squote(const char *in, char *out)
 {
-	int len, i, j;
-
-	len = strlen(in);
-	for (i=0, j=0; i<len; i++, j++) {
-		if ('\'' == in[i] || '\\' == in[i]) {
+	size_t len = strlen(in), j = 0;
+	for (size_t i = 0; i < len; ++i, ++j) {
+		if (in[i] == '\'' || in[i] == '\\')
 			out[j++] = '\\';
-	}
 		out[j] = in[i];
 	}
 	out[j] = '\0';
