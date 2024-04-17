@@ -2,7 +2,7 @@
 global:
 	HPM_LibMain;
 	HOOK_*;
-	PROC_LibMain;
+	PROC_*;
 	SVC_LibMain;
 	get_module;
 	pam_sm_authenticate;

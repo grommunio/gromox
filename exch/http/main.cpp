@@ -61,9 +61,9 @@ static std::vector<static_module> g_dfl_hpm_plugins = {
 	{"libgxh_oab.so"},
 };
 static std::vector<static_module> g_dfl_proc_plugins = {
-	{"libgxp_exchange_emsmdb.so"},
-	{"libgxp_exchange_nsp.so"},
-	{"libgxp_exchange_rfr.so"},
+	{"libgxp_exchange_emsmdb.so", PROC_exchange_emsmdb},
+	{"libgxp_exchange_nsp.so", PROC_exchange_nsp},
+	{"libgxp_exchange_rfr.so", PROC_exchange_rfr},
 };
 static std::vector<static_module> g_dfl_svc_plugins = {
 	{"libgxs_dnsbl_filter.so"},

@@ -38,7 +38,8 @@ using PLUGIN_MAIN = BOOL (*)(int, void **);
 using PLUGIN_DMAIN = BOOL (int, void **);
 
 extern "C" GX_EXPORT PLUGIN_DMAIN
-	HOOK_alias_resolve, HOOK_exmdb_local, HOOK_remote_delivery;
+	HOOK_alias_resolve, HOOK_exmdb_local, HOOK_remote_delivery,
+	PROC_exchange_emsmdb, PROC_exchange_nsp, PROC_exchange_rfr;
 
 namespace gromox {
 

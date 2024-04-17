@@ -63,7 +63,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	1, exchange_rfr_ndr_pull, exchange_rfr_dispatch, exchange_rfr_ndr_push,
 };
 
-static BOOL proc_exchange_rfr(int reason, void **ppdata)
+BOOL PROC_exchange_rfr(int reason, void **ppdata)
 {
 	if (reason == PLUGIN_FREE) {
 		unregister_interface(ep_6002, &interface);
@@ -99,7 +99,6 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-PROC_ENTRY(proc_exchange_rfr);
 
 static ec_error_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
     std::string &server)

@@ -69,8 +69,3 @@ DECLARE_PROC_API(extern);
 	query_service1(rpc_new_stack); \
 	query_service1(rpc_free_stack); \
 	query_service1(async_reply);
-#define PROC_ENTRY(s) BOOL PROC_LibMain(int r, void **p) { return (s)((r), (p)); }
-
-extern "C" { /* dlsym */
-extern GX_EXPORT BOOL PROC_LibMain(int reason, void **ptrs);
-}
