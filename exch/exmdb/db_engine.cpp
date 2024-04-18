@@ -201,6 +201,8 @@ db_item_ptr db_engine_get_db(const char *path)
 {
 	DB_ITEM *pdb;
 	
+	if (*path == '\0')
+		return nullptr;
 	std::unique_lock hhold(g_hash_lock);
 	auto it = g_hash_table.find(path);
 	if (it != g_hash_table.end()) {
@@ -375,7 +377,8 @@ bool DB_ITEM::postconstruct_init(const char *dir) try
 	ret = sqlite3_open_v2(db_path.c_str(), &m_sqlite_eph,
 	      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 	if (ret != SQLITE_OK) {
-		mlog(LV_ERR, "E-1350: sqlite_open_v2 MEM: %s", sqlite3_errstr(ret));
+		mlog(LV_ERR, "E-1350: sqlite_open_v2 %s: %s",
+			db_path.c_str(), sqlite3_errstr(ret));
 		return false;
 	}
 	if (eph_exec("PRAGMA foreign_keys=ON") != SQLITE_OK)
