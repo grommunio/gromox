@@ -60,7 +60,7 @@ struct hook_plug_entity {
 	std::vector<hook_entry> list_hook;
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
-	std::string file_name, full_path;
+	std::string file_name;
 	bool completed_init = false;
 };
 using HOOK_PLUG_ENTITY = hook_plug_entity;
@@ -118,7 +118,7 @@ static void transporter_log_info(const CONTROL_INFO &, int level, const char *fo
 hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
 	list_reference(std::move(o.list_reference)), handle(o.handle),
 	lib_main(o.lib_main), file_name(std::move(o.file_name)),
-	full_path(std::move(o.full_path)), completed_init(o.completed_init)
+	completed_init(o.completed_init)
 {
 	o.handle = nullptr;
 	o.lib_main = nullptr;
@@ -458,7 +458,6 @@ static void *dxp_scanwork(void *arg)
 int transporter_load_library(const char *path) try
 {
 	static void *const server_funcs[] = {reinterpret_cast<void *>(transporter_queryservice)};
-	const char *fake_path = path;
 
 	/* check whether the plugin is same as local or remote plugin */
 	if (g_local_path == path || path == g_remote_path) {
@@ -479,22 +478,21 @@ int transporter_load_library(const char *path) try
 	if (plug.handle == nullptr && strchr(path, '/') == nullptr)
 		plug.handle = dlopen((std::string(g_path) + "/" + path).c_str(), RTLD_LAZY);
 	if (plug.handle == nullptr) {
-		mlog(LV_ERR, "transporter: error loading %s: %s", fake_path, dlerror());
+		mlog(LV_ERR, "transporter: error loading %s: %s", path, dlerror());
         return PLUGIN_FAIL_OPEN;
     }
 	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HOOK_LibMain"));
 	if (plug.lib_main == nullptr) {
-		mlog(LV_ERR, "transporter: error finding the HOOK_LibMain function in %s", fake_path);
+		mlog(LV_ERR, "transporter: error finding the HOOK_LibMain function in %s", path);
         return PLUGIN_NO_MAIN;
     }
 	plug.file_name = path;
-	plug.full_path = fake_path;
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (!g_cur_lib->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
 		mlog(LV_ERR, "transporter: error executing the plugin's init function "
-                "in %s", fake_path);
+                "in %s", path);
 		g_cur_lib = NULL;
 		g_lib_list.pop_back();
 		return PLUGIN_FAIL_EXECUTEMAIN;
