@@ -8,10 +8,10 @@ AM_LDFLAGS  = ${my_LDFLAGS}
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-dcprefix='$${prefix}'
 AM_TESTS_ENVIRONMENT = export TEST_PATH=${top_srcdir}/data;
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${mta_plugins} ${proc_plugins}
+lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la ${hpm_plugins} ${mta_plugins} ${proc_plugins}
 noinst_LTLIBRARIES = libphp_mapi.la
 pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event gromox-snapshot http imap midb pop3 timer zcore tools/eidprint
-pkglib_LTLIBRARIES = ${hpm_plugins} ${svc_plugins} libmapi4zf.la
+pkglib_LTLIBRARIES = ${svc_plugins} libmapi4zf.la
 default_sym = ${srcdir}/default.sym
 if WITH_GNU_LD
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -132,7 +132,7 @@ libgxs_midb_agent_la_LIBADD = -lpthread ${libHX_LIBS} libgromox_common.la
 EXTRA_libgxs_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 http_SOURCES = exch/http/hpm_processor.cpp exch/http/hpm_processor.h exch/http/http_parser.cpp exch/http/http_parser.h exch/http/listener.cpp exch/http/listener.h exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_cache.hpp exch/http/mod_fastcgi.cpp exch/http/mod_fastcgi.h exch/http/mod_rewrite.cpp exch/http/mod_rewrite.h exch/http/pdu_ndr.cpp exch/http/pdu_ndr.h exch/http/pdu_ndr_ids.hpp exch/http/pdu_processor.cpp exch/http/pdu_processor.h exch/http/resource.h exch/http/system_services.cpp exch/http/system_services.hpp lib/svc_loader.cpp
-http_LDADD = -lpthread ${libcrypto_LIBS} ${dl_LIBS} ${fmt_LIBS} ${gss_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgxp_exchange_emsmdb.la libgxp_exchange_nsp.la libgxp_exchange_rfr.la
+http_LDADD = -lpthread ${libcrypto_LIBS} ${dl_LIBS} ${fmt_LIBS} ${gss_LIBS} ${libHX_LIBS} ${libssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgxh_ews.la libgxh_mh_emsmdb.la libgxh_mh_nsp.la libgxh_oab.la libgxh_oxdisco.la libgxp_exchange_emsmdb.la libgxp_exchange_nsp.la libgxp_exchange_rfr.la
 midb_SOURCES = exch/midb/cmd_parser.cpp exch/midb/cmd_parser.h exch/midb/common_util.cpp exch/midb/common_util.h exch/midb/exmdb_client.h exch/midb/mail_engine.cpp exch/midb/mail_engine.hpp exch/midb/main.cpp exch/midb/system_services.hpp lib/svc_loader.cpp
 midb_LDADD = -lpthread ${libHX_LIBS} ${dl_LIBS} ${fmt_LIBS} ${iconv_LIBS} ${jsoncpp_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_dbop.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 zcore_SOURCES = exch/zcore/ab_tree.cpp exch/zcore/ab_tree.h exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.hpp exch/zcore/common_util.cpp exch/zcore/common_util.h exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_client.h exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/ics_state.h exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/object_tree.h exch/zcore/objects.hpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_ext.h exch/zcore/rpc_parser.cpp exch/zcore/rpc_parser.hpp exch/zcore/store_object.cpp exch/zcore/store_object.h exch/zcore/system_services.hpp exch/zcore/table_object.cpp exch/zcore/table_object.h exch/zcore/user_object.cpp exch/zcore/zserver.cpp exch/zcore/zserver.hpp lib/svc_loader.cpp
@@ -158,23 +158,23 @@ libgxp_exchange_rfr_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxp_exchange_rfr_la_LIBADD = ${fmt_LIBS} ${libHX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libgxp_exchange_rfr_la_DEPENDENCIES = ${default_sym}
 libgxh_ews_la_SOURCES = exch/ews/ObjectCache.hpp exch/ews/context.cpp exch/ews/enums.hpp exch/ews/ews.cpp exch/ews/ews.hpp exch/ews/exceptions.hpp exch/ews/hash.hpp exch/ews/namedtags.hpp exch/ews/requests.cpp exch/ews/requests.hpp exch/ews/serialization.cpp exch/ews/serialization.hpp exch/ews/soaputil.cpp exch/ews/soaputil.hpp exch/ews/structures.cpp exch/ews/structures.hpp
-libgxh_ews_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_ews_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxh_ews_la_LIBADD = ${libHX_LIBS} ${fmt_LIBS} ${tinyxml2_LIBS} ${vmime_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_exrpc.la
 EXTRA_libgxh_ews_la_DEPENDENCIES = ${default_sym}
 libgxh_mh_emsmdb_la_SOURCES = exch/mh/emsmdb.cpp exch/mh/mh_common.cpp exch/mh/mh_common.hpp 
-libgxh_mh_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_mh_emsmdb_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxh_mh_emsmdb_la_LIBADD = -lpthread ${fmt_LIBS} libgromox_common.la libgromox_mapi.la
 EXTRA_libgxh_mh_emsmdb_la_DEPENDENCIES = ${default_sym}
 libgxh_mh_nsp_la_SOURCES = exch/mh/mh_common.cpp exch/mh/mh_common.hpp exch/mh/nsp.cpp exch/mh/nsp_bridge.cpp exch/mh/nsp_bridge.hpp exch/mh/nsp_common.cpp exch/mh/nsp_common.hpp exch/mh/nsp_ops.cpp exch/mh/nsp_ops.hpp
-libgxh_mh_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_mh_nsp_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxh_mh_nsp_la_LIBADD = -lpthread ${fmt_LIBS} libgromox_common.la libgromox_mapi.la
 EXTRA_libgxh_mh_nsp_la_DEPENDENCIES = ${default_sym}
 libgxh_oxdisco_la_SOURCES = exch/oxdisco.cpp
-libgxh_oxdisco_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_oxdisco_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxh_oxdisco_la_LIBADD = ${libHX_LIBS} ${fmt_LIBS} ${tinyxml2_LIBS} libgromox_common.la libgromox_mapi.la
 EXTRA_libgxh_oxdisco_la_DEPENDENCIES = ${default_sym}
 libgxh_oab_la_SOURCES = exch/oab.cpp
-libgxh_oab_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxh_oab_la_LDFLAGS = ${default_SYFLAGS${NO_VSYM}}
 libgxh_oab_la_LIBADD = libgromox_common.la
 EXTRA_libgxh_oab_la_DEPENDENCIES = ${default_sym}
 libgxs_authmgr_la_SOURCES = exch/authmgr.cpp exch/ldap_adaptor.hpp

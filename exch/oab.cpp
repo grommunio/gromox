@@ -113,7 +113,7 @@ static BOOL oab_init(void **apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-static BOOL oab_main(int reason, void **data)
+BOOL HPM_oab(int reason, void **data)
 {
 	if (reason == PLUGIN_INIT)
 		return oab_init(data);
@@ -121,4 +121,3 @@ static BOOL oab_main(int reason, void **data)
 		g_oab_plugin.reset();
 	return TRUE;
 }
-HPM_ENTRY(oab_main);

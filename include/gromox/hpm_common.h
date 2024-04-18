@@ -105,8 +105,3 @@ DECLARE_HPM_API(extern);
 	query_service1(ndr_stack_alloc); \
 	query_service1(rpc_new_stack); \
 	query_service1(rpc_free_stack);
-#define HPM_ENTRY(s) BOOL HPM_LibMain(int r, void **p) { return (s)((r), (p)); }
-
-extern "C" { /* dlsym */
-extern GX_EXPORT BOOL HPM_LibMain(int reason, void **ptrs);
-}

@@ -1,6 +1,6 @@
 {
 global:
-	HPM_LibMain;
+	HPM_*;
 	HOOK_*;
 	PROC_*;
 	SVC_LibMain;

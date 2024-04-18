@@ -327,7 +327,7 @@ static http_status nsp_proc(int, const void*, uint64_t);
  *
  * @return	TRUE if successful, false otherwise
  */
-static BOOL hpm_mh_nsp(int reason, void **plugdata)
+BOOL HPM_mh_nsp(int reason, void **plugdata)
 {
 	HPM_INTERFACE interface;
 
@@ -360,7 +360,6 @@ static BOOL hpm_mh_nsp(int reason, void **plugdata)
 	}
 	return false;
 }
-HPM_ENTRY(hpm_mh_nsp);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
