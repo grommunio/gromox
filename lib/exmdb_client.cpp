@@ -430,7 +430,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	return 0;
 }
 
-bool exmdb_client_check_local(const char *prefix, BOOL *pvt)
+bool exmdb_client_is_local(const char *prefix, BOOL *pvt)
 {
 	auto i = std::find_if(mdcl_server_list.cbegin(), mdcl_server_list.cend(),
 	         [&](const EXMDB_ITEM &s) {
