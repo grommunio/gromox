@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <dlfcn.h>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -60,7 +59,6 @@ struct hook_plug_entity {
 
 	std::vector<hook_service_node> list_reference;
 	std::vector<hook_entry> list_hook;
-	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	std::string file_name;
 	bool completed_init = false;
@@ -118,12 +116,10 @@ static MESSAGE_CONTEXT *transporter_dequeue_context();
 static void transporter_log_info(const CONTROL_INFO &, int level, const char *format, ...);
 
 hook_plug_entity::hook_plug_entity(hook_plug_entity &&o) noexcept :
-	list_reference(std::move(o.list_reference)), handle(o.handle),
-	lib_main(o.lib_main), file_name(std::move(o.file_name)),
-	completed_init(o.completed_init)
+	list_reference(std::move(o.list_reference)),
+	lib_main(std::move(o.lib_main)), file_name(std::move(o.file_name)),
+	completed_init(std::move(o.completed_init))
 {
-	o.handle = nullptr;
-	o.lib_main = nullptr;
 	o.completed_init = false;
 }
 
@@ -137,8 +133,6 @@ hook_plug_entity::~hook_plug_entity()
 		[this](const hook_entry *e) { return e->plib == this; }), g_hook_list.end());
 	for (const auto &nd : list_reference)
 		service_release(nd.service_name.c_str(), file_name.c_str());
-	if (handle != nullptr)
-		dlclose(handle);
 }
 
 /*
@@ -476,22 +470,7 @@ int transporter_load_library(static_module &&mod) try
 	}
 
 	hook_plug_entity plug;
-	if (mod.efunc != nullptr) {
-		plug.lib_main = mod.efunc;
-	} else {
-		plug.handle = dlopen(path, RTLD_LAZY);
-		if (plug.handle == nullptr && strchr(path, '/') == nullptr)
-			plug.handle = dlopen((std::string(g_path) + "/" + path).c_str(), RTLD_LAZY);
-		if (plug.handle == nullptr) {
-			mlog(LV_ERR, "dlopen %s: %s", path, dlerror());
-			return PLUGIN_FAIL_OPEN;
-		}
-		plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HOOK_LibMain"));
-		if (plug.lib_main == nullptr) {
-			mlog(LV_ERR, "%s: no HOOK_LibMain function", path);
-		        return PLUGIN_NO_MAIN;
-		}
-	}
+	plug.lib_main = mod.efunc;
 	plug.file_name = std::move(mod.path);
 	path = plug.file_name.c_str();
 	g_lib_list.push_back(std::move(plug));

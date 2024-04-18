@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <dlfcn.h>
 #include <list>
 #include <memory>
 #include <string>
@@ -158,22 +157,7 @@ static int service_load_library(static_module &&mod)
 		return PLUGIN_ALREADY_LOADED;
 	}
 	SVC_PLUG_ENTITY plug;
-	if (mod.efunc != nullptr) {
-		plug.lib_main = mod.efunc;
-	} else {
-		plug.handle = dlopen(path, RTLD_LAZY);
-		if (plug.handle == nullptr && strchr(path, '/') == nullptr)
-			plug.handle = dlopen((PKGLIBDIR + "/"s + path).c_str(), RTLD_LAZY);
-		if (plug.handle == nullptr) {
-			mlog(LV_ERR, "dlopen %s: %s", path, dlerror());
-			return PLUGIN_FAIL_OPEN;
-		}
-		plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "SVC_LibMain"));
-		if (plug.lib_main == nullptr) {
-			mlog(LV_ERR, "%s: no SVC_LibMain function", path);
-			return PLUGIN_NO_MAIN;
-		}
-	}
+	plug.lib_main = mod.efunc;
 	plug.file_name = std::move(mod.path);
 	g_list_plug.push_back(std::move(plug));
 	/*
@@ -388,16 +372,9 @@ void service_trigger_all(unsigned int ev)
 }
 
 generic_module::generic_module(generic_module &&o) noexcept :
-	file_name(std::move(o.file_name)), handle(o.handle),
-	lib_main(o.lib_main), completed_init(o.completed_init)
+	file_name(std::move(o.file_name)),
+	lib_main(std::move(o.lib_main)),
+	completed_init(std::move(o.completed_init))
 {
-	o.handle = nullptr;
-	o.lib_main = nullptr;
 	o.completed_init = false;
-}
-
-generic_module::~generic_module()
-{
-	if (handle != nullptr)
-		dlclose(handle);
 }

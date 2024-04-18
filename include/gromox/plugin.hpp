@@ -26,14 +26,6 @@ enum{
     PLUGIN_LOAD_OK = 0,
 };
 
-/* enumeration for the return value of xxx_unload_library */
-enum{
-    PLUGIN_UNABLE_UNLOAD = -3,
-    PLUGIN_SYSTEM_ERROR,
-    PLUGIN_NOT_FOUND,
-    PLUGIN_UNLOAD_OK = 0,
-};
-
 using PLUGIN_MAIN = BOOL (*)(int, void **);
 using PLUGIN_DMAIN = BOOL (int, void **);
 
@@ -60,11 +52,9 @@ struct static_module {
 struct generic_module {
 	generic_module() = default;
 	generic_module(generic_module &&) noexcept;
-	~generic_module();
 	void operator=(generic_module &&) noexcept = delete;
 
 	std::string file_name;
-	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	bool completed_init = false;
 };

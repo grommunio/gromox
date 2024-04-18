@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <dlfcn.h>
 #include <fcntl.h>
 #include <list>
 #include <memory>
@@ -3020,30 +3019,11 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 static int pdu_processor_load_library(static_module &&mod)
 {
 	static void *const server_funcs[] = {reinterpret_cast<void *>(pdu_processor_queryservice)};
-	auto plugin_name = mod.path.c_str();
-	auto fake_path = mod.path.c_str();
 	PROC_PLUGIN plug;
 
-	if (mod.efunc != nullptr) {
-		plug.lib_main = mod.efunc;
-	} else {
-	plug.handle = dlopen(plugin_name, RTLD_LAZY);
-	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
-		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
-	if (plug.handle == nullptr) {
-		mlog(LV_ERR, "pdu_processor: error loading %s: %s", fake_path,
-			dlerror());
-		return PLUGIN_FAIL_OPEN;
-    }
-	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "PROC_LibMain"));
-	if (plug.lib_main == nullptr) {
-		mlog(LV_ERR, "pdu_processor: error finding the PROC_LibMain "
-			"function in %s", fake_path);
-		return PLUGIN_NO_MAIN;
-	}
-	}
+	plug.lib_main = mod.efunc;
 	plug.file_name = std::move(mod.path);
-	plugin_name = fake_path = plug.file_name.c_str();
+	auto fake_path = plug.file_name.c_str();
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
 	
