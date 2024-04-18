@@ -25,6 +25,7 @@ using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
 namespace {
+
 /**
  * @rule_id:	if @extended, message id of the extrule, else rule id.
  * @folder_id:	(Current) enclosing folder for @msg_id,
@@ -81,6 +82,19 @@ using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, rx_delete>;
  * @del:          Message should be deleted at end of processing.
  */
 struct rxparam {
+	/**
+	 * @store_owner, @store_dir, @store_acctid: because EXRPCs APIs are terribly designed
+	 */
+	struct deleter {
+		void operator()(message_content *x) const { message_content_free(x); }
+	};
+
+	rxparam(message_node &&in);
+	ec_error_t run();
+	ec_error_t is_oof(bool *out) const;
+	ec_error_t load_std_rules(bool oof, std::vector<rule_node> &out) const;
+	ec_error_t load_ext_rules(bool oof, std::vector<rule_node> &out) const;
+
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
 	message_content_ptr ctnt;
@@ -226,20 +240,24 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 	return ecSuccess;
 }
 
-static ec_error_t rx_is_oof(const char *dir, bool *oof)
+ec_error_t rxparam::is_oof(bool *oof) const
 {
 	static constexpr uint32_t tags[] = {PR_OOF_STATE};
 	static constexpr PROPTAG_ARRAY pt = {std::size(tags), deconst(tags)};
 	TPROPVAL_ARRAY props{};
-	if (!exmdb_client::get_store_properties(dir, CP_UTF8, &pt, &props))
+	if (!exmdb_client::get_store_properties(cur.dirc(), CP_UTF8, &pt, &props))
 		return ecError;
 	auto flag = props.get<uint8_t>(PR_OOF_STATE);
 	*oof = flag != nullptr ? *flag : 0;
 	return ecSuccess;
 }
 
-static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
-    std::vector<rule_node> &rule_list)
+/**
+ * Preconditions: @this->cur needs to be set
+ * Postconditions: @rule_list has new rules appended to
+ */
+ec_error_t rxparam::load_std_rules(bool oof,
+    std::vector<rule_node> &rule_list) const
 {
 	uint32_t table_id = 0, row_count = 0;
 
@@ -253,7 +271,8 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 	RESTRICTION_AND_OR rst_7  = {std::size(rst_6), rst_6};
 	RESTRICTION rst_8         = {RES_AND, {&rst_7}};
 
-	if (!exmdb_client::load_rule_table(dir, fid, 0, &rst_8,
+	auto dir = cur.dirc();
+	if (!exmdb_client::load_rule_table(dir, cur.fid, 0, &rst_8,
 	    &table_id, &row_count))
 		return ecError;
 	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
@@ -283,14 +302,18 @@ static ec_error_t rx_load_std_rules(const char *dir, eid_t fid, bool oof,
 		rule.name = znul(row->get<const char>(PR_RULE_NAME));
 		rule.provider = znul(row->get<const char>(PR_RULE_PROVIDER));
 		rule.cond = row->get<RESTRICTION>(PR_RULE_CONDITION);
-		rule.act  = row->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
+		rule.act = row->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 		rule_list.push_back(std::move(rule));
 	}
 	return ecSuccess;
 }
 
-static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
-    std::vector<rule_node> &rule_list)
+/**
+ * Preconditions: @this->cur needs to be set
+ * Postconditions: @rule_list has new rules appended to
+ */
+ec_error_t rxparam::load_ext_rules(bool oof,
+    std::vector<rule_node> &rule_list) const
 {
 	uint32_t table_id = 0, row_count = 0;
 
@@ -308,7 +331,8 @@ static ec_error_t rx_load_ext_rules(const char *dir, eid_t fid, bool oof,
 
 	static constexpr SORT_ORDER sort_spec[] = {{PT_LONG, PROP_ID(PR_RULE_MSG_SEQUENCE), TABLE_SORT_ASCEND}};
 	static constexpr SORTORDER_SET sort_order = {std::size(sort_spec), 0, 0, deconst(sort_spec)};
-	if (!exmdb_client::load_content_table(dir, CP_ACP, fid, nullptr,
+	auto dir = cur.dirc();
+	if (!exmdb_client::load_content_table(dir, CP_ACP, cur.fid, nullptr,
 	    TABLE_FLAG_ASSOCIATED, &rst_10, &sort_order, &table_id, &row_count))
 		return ecError;
 	auto cl_0 = make_scope_exit([&]() { exmdb_client::unload_table(dir, table_id); });
@@ -793,18 +817,20 @@ static ec_error_t opx_process(rxparam &par, const rule_node &rule)
 	return ecSuccess;
 }
 
-ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
-    const char *ev_to, eid_t folder_id, eid_t msg_id) try
+rxparam::rxparam(message_node &&x) : cur(std::move(x))
+{}
+
+ec_error_t rxparam::run()
 {
 	bool oof = false;
-	auto err = rx_is_oof(dir, &oof);
+	auto err = is_oof(&oof);
 	if (err != ecSuccess)
 		return err;
 	std::vector<rule_node> rule_list;
-	err = rx_load_std_rules(dir, folder_id, oof, rule_list);
+	err = load_std_rules(oof, rule_list);
 	if (err != ecSuccess)
 		return err;
-	err = rx_load_ext_rules(dir, folder_id, oof, rule_list);
+	err = load_ext_rules(oof, rule_list);
 	if (err != ecSuccess)
 		return err;
 	/*
@@ -814,29 +840,36 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 	 */
 	std::sort(rule_list.begin(), rule_list.end());
 
-	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}};
-	if (!exmdb_client::read_message(par.cur.dirc(), nullptr, CP_ACP,
-	    par.cur.mid, &unique_tie(par.ctnt)))
+	if (!exmdb_client::read_message(cur.dirc(), nullptr, CP_ACP,
+	    cur.mid, &unique_tie(ctnt)))
 		return ecError;
 	for (auto &&rule : rule_list) {
-		err = rule.extended ? opx_process(par, rule) : op_process(par, rule);
+		err = rule.extended ? opx_process(*this, rule) : op_process(*this, rule);
 		if (err != ecSuccess)
 			return err;
-		if (par.del)
+		if (del)
 			break;
 	}
-	if (par.del) {
-		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&par.cur.mid)};
+	if (del) {
+		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&cur.mid)};
 		BOOL partial;
-		if (!exmdb_client::delete_messages(par.cur.dirc(), 0,
-		    CP_ACP, nullptr, par.cur.fid, &ids, true/*hard*/, &partial))
+		if (!exmdb_client::delete_messages(cur.dirc(), 0,
+		    CP_ACP, nullptr, cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 		return ecSuccess;
 	}
-	if (!exmdb_client::notify_new_mail(par.cur.dirc(),
-	    par.cur.fid, par.cur.mid))
+	if (!exmdb_client::notify_new_mail(cur.dirc(), cur.fid, cur.mid))
 		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
 	return ecSuccess;
+}
+
+ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
+    const char *ev_to, eid_t folder_id, eid_t msg_id) try
+{
+	rxparam p({dir, folder_id, msg_id});
+	p.ev_from = ev_from;
+	p.ev_to   = ev_to;
+	return std::move(p).run();
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1121: ENOMEM");
 	return ecServerOOM;
