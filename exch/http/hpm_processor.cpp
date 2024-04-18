@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -52,9 +54,9 @@ static unsigned int g_context_num;
 static thread_local HPM_PLUGIN *g_cur_plugin;
 static std::list<HPM_PLUGIN> g_plugin_list;
 static std::unique_ptr<HPM_CONTEXT[]> g_context_list;
-static std::vector<std::string> g_plugin_names;
+static std::vector<static_module> g_plugin_names;
 
-void hpm_processor_init(int context_num, std::vector<std::string> &&names)
+void hpm_processor_init(int context_num, std::vector<static_module> &&names)
 {
 	g_context_num = context_num;
 	g_plugin_names = std::move(names);
@@ -216,12 +218,16 @@ HPM_PLUGIN::~HPM_PLUGIN()
 		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
 }
 
-static int hpm_processor_load_library(const char *plugin_name)
+static int hpm_processor_load_library(static_module &&mod)
 {
 	static void *const server_funcs[] = {reinterpret_cast<void *>(hpm_processor_queryservice)};
-	const char *fake_path = plugin_name;
+	auto plugin_name = mod.path.c_str();
+	auto fake_path = mod.path.c_str();
 	HPM_PLUGIN plug;
 
+	if (mod.efunc != nullptr) {
+		plug.lib_main = mod.efunc;
+	} else {
 	plug.handle = dlopen(plugin_name, RTLD_LAZY);
 	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
 		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
@@ -235,7 +241,9 @@ static int hpm_processor_load_library(const char *plugin_name)
 			"HPM_LibMain function in %s", fake_path);
 		return PLUGIN_NO_MAIN;
 	}
-	plug.file_name = plugin_name;
+	}
+	plug.file_name = std::move(mod.path);
+	plugin_name = fake_path = plug.file_name.c_str();
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
@@ -257,8 +265,8 @@ static int hpm_processor_load_library(const char *plugin_name)
 int hpm_processor_run() try
 {
 	g_context_list = std::make_unique<HPM_CONTEXT[]>(g_context_num);
-	for (const auto &i : g_plugin_names) {
-		int ret = hpm_processor_load_library(i.c_str());
+	for (auto &&i : g_plugin_names) {
+		int ret = hpm_processor_load_library(std::move(i));
 		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}

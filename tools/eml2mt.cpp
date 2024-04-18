@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2023 grommunio GmbH
+// SPDX-FileCopyrightText: 2023–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
@@ -54,8 +54,8 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<std::string> g_svc_plugins =
-	{"libgxs_mysql_adaptor.so"};
+static std::vector<static_module> g_dfl_svc_plugins =
+	{{"libgxs_mysql_adaptor.so"}};
 
 static constexpr cfg_directive eml2mt_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
@@ -287,7 +287,7 @@ int main(int argc, const char **argv) try
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_svc_plugins), 1});
+		std::move(g_dfl_svc_plugins), 1});
 	auto cl_0 = make_scope_exit(service_stop);
 	if (service_run_early() != 0 || service_run() != 0) {
 		fprintf(stderr, "service_run: failed\n");

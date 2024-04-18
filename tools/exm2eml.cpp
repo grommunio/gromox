@@ -74,8 +74,8 @@ static void terse_help()
 	fprintf(stderr, "Usage: gromox-exm2eml -u source@mbox.de msgid >dump.eml\n");
 }
 
-static std::vector<std::string> g_svc_plugins =
-	{"libgxs_mysql_adaptor.so"};
+static std::vector<static_module> g_svc_plugins =
+	{{"libgxs_mysql_adaptor.so"}};
 
 static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},

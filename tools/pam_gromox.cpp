@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2024 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -32,10 +32,10 @@ using namespace gromox;
 
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static std::mutex g_svc_once;
-static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_ldap_adaptor.so",
-	"libgxs_mysql_adaptor.so",
-	"libgxs_authmgr.so",
+static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_ldap_adaptor.so"},
+	{"libgxs_mysql_adaptor.so"},
+	{"libgxs_authmgr.so"},
 };
 
 static int converse(pam_handle_t *pamh, int nargs,

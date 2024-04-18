@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -53,26 +53,26 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<std::string> g_dfl_hpm_plugins = {
-	"libgxh_ews.so",
-	"libgxh_mh_emsmdb.so",
-	"libgxh_mh_nsp.so",
-	"libgxh_oxdisco.so",
-	"libgxh_oab.so",
+static std::vector<static_module> g_dfl_hpm_plugins = {
+	{"libgxh_ews.so"},
+	{"libgxh_mh_emsmdb.so"},
+	{"libgxh_mh_nsp.so"},
+	{"libgxh_oxdisco.so"},
+	{"libgxh_oab.so"},
 };
-static std::vector<std::string> g_dfl_proc_plugins = {
-	"libgxp_exchange_emsmdb.so",
-	"libgxp_exchange_nsp.so",
-	"libgxp_exchange_rfr.so",
+static std::vector<static_module> g_dfl_proc_plugins = {
+	{"libgxp_exchange_emsmdb.so"},
+	{"libgxp_exchange_nsp.so"},
+	{"libgxp_exchange_rfr.so"},
 };
-static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_dnsbl_filter.so",
-	"libgxs_ldap_adaptor.so",
-	"libgxs_mysql_adaptor.so",
-	"libgxs_authmgr.so",
-	"libgxs_timer_agent.so",
-	"libgxs_user_filter.so",
-	"libgxs_exmdb_provider.so",
+static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_dnsbl_filter.so"},
+	{"libgxs_ldap_adaptor.so"},
+	{"libgxs_mysql_adaptor.so"},
+	{"libgxs_authmgr.so"},
+	{"libgxs_timer_agent.so"},
+	{"libgxs_user_filter.so"},
+	{"libgxs_exmdb_provider.so"},
 };
 
 static void term_handler(int signo);

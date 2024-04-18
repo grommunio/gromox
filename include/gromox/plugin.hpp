@@ -43,6 +43,11 @@ struct service_node {
 	std::string service_name;
 };
 
+struct static_module {
+	std::string path;
+	PLUGIN_MAIN efunc;
+};
+
 struct generic_module {
 	generic_module() = default;
 	generic_module(generic_module &&) noexcept;

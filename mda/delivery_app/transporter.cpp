@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <condition_variable>
 #include <csignal>
@@ -80,7 +82,7 @@ struct THREAD_DATA {
 }
 
 static char				g_path[256];
-static std::vector<std::string> g_plugin_names;
+static std::vector<static_module> g_plugin_names;
 static std::string g_local_path, g_remote_path;
 static HOOK_FUNCTION g_local_hook, g_remote_hook;
 static unsigned int g_threads_max, g_threads_min, g_free_num;
@@ -146,7 +148,7 @@ hook_plug_entity::~hook_plug_entity()
  *		threads_num				threads number to be created
  *		free_num				free contexts number for hooks to throw out
  */
-void transporter_init(const char *path, std::vector<std::string> &&names,
+void transporter_init(const char *path, std::vector<static_module> &&names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
     bool ignerr)
 {
@@ -190,11 +192,10 @@ int transporter_run()
 		g_free_list.push_back(&g_free_ptr[i]);
 	}
 
-	for (const auto &i : g_plugin_names) {
-		int ret = transporter_load_library(i.c_str());
-		if (ret != PLUGIN_LOAD_OK) {
+	for (auto &&i : g_plugin_names) {
+		int ret = transporter_load_library(std::move(i));
+		if (ret != PLUGIN_LOAD_OK)
 			return -7;
-		}
 	}
 
 	if (g_local_path.empty()) {
@@ -455,38 +456,44 @@ static void *dxp_scanwork(void *arg)
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-int transporter_load_library(const char *path) try
+int transporter_load_library(static_module &&mod) try
 {
 	static void *const server_funcs[] = {reinterpret_cast<void *>(transporter_queryservice)};
+	auto path = mod.path.c_str();
 
 	/* check whether the plugin is same as local or remote plugin */
-	if (g_local_path == path || path == g_remote_path) {
+	if (g_local_path == mod.path || g_remote_path == mod.path) {
 		mlog(LV_ERR, "transporter: %s is already loaded", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	
     /* check whether the library is already loaded */
 	auto it = std::find_if(g_lib_list.cbegin(), g_lib_list.cend(),
-	          [&](const hook_plug_entity &p) { return p.file_name == path; });
+	          [&](const hook_plug_entity &p) { return p.file_name == mod.path; });
 	if (it != g_lib_list.cend()) {
 		mlog(LV_ERR, "transporter: %s is already loaded", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 
 	hook_plug_entity plug;
-	plug.handle = dlopen(path, RTLD_LAZY);
-	if (plug.handle == nullptr && strchr(path, '/') == nullptr)
-		plug.handle = dlopen((std::string(g_path) + "/" + path).c_str(), RTLD_LAZY);
-	if (plug.handle == nullptr) {
-		mlog(LV_ERR, "transporter: error loading %s: %s", path, dlerror());
-        return PLUGIN_FAIL_OPEN;
-    }
-	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HOOK_LibMain"));
-	if (plug.lib_main == nullptr) {
-		mlog(LV_ERR, "transporter: error finding the HOOK_LibMain function in %s", path);
-        return PLUGIN_NO_MAIN;
-    }
-	plug.file_name = path;
+	if (mod.efunc != nullptr) {
+		plug.lib_main = mod.efunc;
+	} else {
+		plug.handle = dlopen(path, RTLD_LAZY);
+		if (plug.handle == nullptr && strchr(path, '/') == nullptr)
+			plug.handle = dlopen((std::string(g_path) + "/" + path).c_str(), RTLD_LAZY);
+		if (plug.handle == nullptr) {
+			mlog(LV_ERR, "dlopen %s: %s", path, dlerror());
+			return PLUGIN_FAIL_OPEN;
+		}
+		plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "HOOK_LibMain"));
+		if (plug.lib_main == nullptr) {
+			mlog(LV_ERR, "%s: no HOOK_LibMain function", path);
+		        return PLUGIN_NO_MAIN;
+		}
+	}
+	plug.file_name = std::move(mod.path);
+	path = plug.file_name.c_str();
 	g_lib_list.push_back(std::move(plug));
 	g_cur_lib = &g_lib_list.back();
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
@@ -496,10 +503,10 @@ int transporter_load_library(const char *path) try
 		g_cur_lib = NULL;
 		g_lib_list.pop_back();
 		return PLUGIN_FAIL_EXECUTEMAIN;
-    }
+	}
 	g_cur_lib->completed_init = true;
-    g_cur_lib = NULL;
-    return PLUGIN_LOAD_OK;
+	g_cur_lib = NULL;
+	return PLUGIN_LOAD_OK;
 } catch (const std::bad_alloc &) {
 	mlog(LV_ERR, "E-1473: ENOMEM");
 	return PLUGIN_FAIL_OPEN;

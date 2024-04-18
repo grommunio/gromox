@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2022–2024 grommunio GmbH
+// This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
@@ -60,7 +62,7 @@ struct SVC_PLUG_ENTITY : public gromox::generic_module {
 extern const char version_info_for_memory_dumps[];
 const char version_info_for_memory_dumps[] = "gromox " PACKAGE_VERSION;
 
-static int service_load_library(const char *);
+static int service_load_library(static_module &&);
 static void *service_query_service(const char *service, const std::type_info &);
 
 static char g_config_dir[256], g_data_dir[256], g_state_dir[256];
@@ -68,7 +70,7 @@ static std::list<SVC_PLUG_ENTITY> g_list_plug;
 static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static thread_local SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
-static std::vector<std::string> g_plugin_names;
+static std::vector<static_module> g_plugin_names;
 static const char *g_program_identifier;
 static SVC_PLUG_ENTITY g_system_image;
 
@@ -90,8 +92,8 @@ static void *const server_funcs[] = {reinterpret_cast<void *>(service_query_serv
 
 int service_run_early()
 {
-	for (const auto &i : g_plugin_names) {
-		int ret = service_load_library(i.c_str());
+	for (auto &&i : g_plugin_names) {
+		int ret = service_load_library(std::move(i));
 		if (ret == PLUGIN_LOAD_OK) {
 			if (g_cur_plug == nullptr)
 				continue;
@@ -137,9 +139,6 @@ void service_stop()
 /*
  *  load the plug-in in the specified path
  *
- *  @param
- *      path [in]       the plug-in path
- *
  *  @return
  *      PLUGIN_LOAD_OK              success
  *      PLUGIN_ALREADY_LOADED       already loaded by service module
@@ -148,34 +147,34 @@ void service_stop()
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
  *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
  */
-static int service_load_library(const char *path)
+static int service_load_library(static_module &&mod)
 {
-	const char *fake_path = path;
-
+	auto path = mod.path.c_str();
 	/* check whether the library is already loaded */
 	auto it = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
-	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == path; });
+	          [&](const SVC_PLUG_ENTITY &p) { return p.file_name == mod.path; });
 	if (it != g_list_plug.cend()) {
-		mlog(LV_ERR, "service: %s is already loaded by service module", path);
+		mlog(LV_ERR, "%s: already loaded", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	SVC_PLUG_ENTITY plug;
-	plug.handle = dlopen(path, RTLD_LAZY);
-	if (plug.handle == nullptr && strchr(path, '/') == nullptr)
-		plug.handle = dlopen((PKGLIBDIR + "/"s + path).c_str(), RTLD_LAZY);
-	if (plug.handle == nullptr) {
-		mlog(LV_ERR, "service: error loading %s: %s", fake_path, dlerror());
-		mlog(LV_ERR, "service: the plugin %s is not loaded", fake_path);
-		return PLUGIN_FAIL_OPEN;
+	if (mod.efunc != nullptr) {
+		plug.lib_main = mod.efunc;
+	} else {
+		plug.handle = dlopen(path, RTLD_LAZY);
+		if (plug.handle == nullptr && strchr(path, '/') == nullptr)
+			plug.handle = dlopen((PKGLIBDIR + "/"s + path).c_str(), RTLD_LAZY);
+		if (plug.handle == nullptr) {
+			mlog(LV_ERR, "dlopen %s: %s", path, dlerror());
+			return PLUGIN_FAIL_OPEN;
+		}
+		plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "SVC_LibMain"));
+		if (plug.lib_main == nullptr) {
+			mlog(LV_ERR, "%s: no SVC_LibMain function", path);
+			return PLUGIN_NO_MAIN;
+		}
 	}
-	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "SVC_LibMain"));
-	if (plug.lib_main == nullptr) {
-		mlog(LV_ERR, "service: error finding the SVC_LibMain function in %s",
-				fake_path);
-		mlog(LV_ERR, "service: the plugin %s is not loaded", fake_path);
-		return PLUGIN_NO_MAIN;
-	}
-	plug.file_name = path;
+	plug.file_name = std::move(mod.path);
 	g_list_plug.push_back(std::move(plug));
 	/*
 	 *  indicate the current lib node when plugin rigisters service

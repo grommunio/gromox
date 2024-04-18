@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
@@ -36,15 +38,15 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<std::string> g_dfl_mpc_plugins = {
-	"libgxm_alias_resolve.so",
-	"libgxm_exmdb_local.so",
-	"libgxm_remote_delivery.so",
+static std::vector<static_module> g_dfl_mpc_plugins = {
+	{"libgxm_alias_resolve.so"},
+	{"libgxm_exmdb_local.so"},
+	{"libgxm_remote_delivery.so"},
 };
-static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_ldap_adaptor.so",
-	"libgxs_mysql_adaptor.so",
-	"libgxs_authmgr.so",
+static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_ldap_adaptor.so"},
+	{"libgxs_mysql_adaptor.so"},
+	{"libgxs_authmgr.so"},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
