@@ -375,7 +375,7 @@ static std::unique_ptr<MhEmsmdbPlugin> g_mhems_plugin;
  *
  * @return	TRUE if successful, false otherwise
  */
-static BOOL hpm_mh_emsmdb(int reason, void **ppdata)
+BOOL HPM_mh_emsmdb(int reason, void **ppdata)
 {
 	HPM_INTERFACE interface;
 
@@ -411,7 +411,6 @@ static BOOL hpm_mh_emsmdb(int reason, void **ppdata)
 	}
 	return false;
 }
-HPM_ENTRY(hpm_mh_emsmdb);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Response generation

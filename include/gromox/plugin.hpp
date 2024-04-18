@@ -26,15 +26,16 @@ enum{
     PLUGIN_LOAD_OK = 0,
 };
 
-/* enumeration for the return value of xxx_unload_library */
-enum{
-    PLUGIN_UNABLE_UNLOAD = -3,
-    PLUGIN_SYSTEM_ERROR,
-    PLUGIN_NOT_FOUND,
-    PLUGIN_UNLOAD_OK = 0,
-};
-
 using PLUGIN_MAIN = BOOL (*)(int, void **);
+using PLUGIN_DMAIN = BOOL (int, void **);
+
+extern "C" GX_EXPORT PLUGIN_DMAIN
+	HOOK_alias_resolve, HOOK_exmdb_local, HOOK_remote_delivery,
+	PROC_exchange_emsmdb, PROC_exchange_nsp, PROC_exchange_rfr,
+	HPM_ews, HPM_mh_emsmdb, HPM_mh_nsp, HPM_oab, HPM_oxdisco,
+	SVC_authmgr, SVC_dnsbl_filter, SVC_exmdb_provider, SVC_ldap_adaptor,
+	SVC_mysql_adaptor, SVC_timer_agent, SVC_user_filter, SVC_event_proxy,
+	SVC_event_stub, SVC_midb_agent;
 
 namespace gromox {
 
@@ -43,14 +44,17 @@ struct service_node {
 	std::string service_name;
 };
 
+struct static_module {
+	std::string path;
+	PLUGIN_MAIN efunc;
+};
+
 struct generic_module {
 	generic_module() = default;
 	generic_module(generic_module &&) noexcept;
-	~generic_module();
 	void operator=(generic_module &&) noexcept = delete;
 
 	std::string file_name;
-	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	bool completed_init = false;
 };

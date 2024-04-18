@@ -476,7 +476,7 @@ static constexpr cfg_directive mdlgx_cfg_defaults[] = {
 
 DECLARE_HOOK_API();
 
-static BOOL hook_exmdb_local(int reason, void **ppdata)
+BOOL HOOK_exmdb_local(int reason, void **ppdata)
 {
 	char charset[32], org_name[256], temp_buff[45], cache_path[256];
 	int cache_interval, retrying_times;
@@ -588,4 +588,3 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-HOOK_ENTRY(hook_exmdb_local);

@@ -318,7 +318,7 @@ static bool authmgr_init()
 	return true;
 }
 
-static BOOL svc_authmgr(int reason, void **datap) try
+BOOL SVC_authmgr(int reason, void **datap) try
 {
 	if (reason == PLUGIN_RELOAD) {
 		authmgr_reload();
@@ -331,4 +331,3 @@ static BOOL svc_authmgr(int reason, void **datap) try
 } catch (...) {
 	return false;
 }
-SVC_ENTRY(svc_authmgr);

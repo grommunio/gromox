@@ -55,7 +55,7 @@ static constexpr DCERPC_INTERFACE interface = {
 	exchange_nsp_unbind,
 };
 
-static BOOL proc_exchange_nsp(int reason, void **ppdata)
+BOOL PROC_exchange_nsp(int reason, void **ppdata)
 {
 	BOOL b_check;
 	const char *org_name;
@@ -158,7 +158,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-PROC_ENTRY(proc_exchange_nsp);
 
 static int exchange_nsp_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, void *pin, void **ppout, uint32_t *ecode)

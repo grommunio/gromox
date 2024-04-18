@@ -1127,7 +1127,7 @@ static BOOL oxdisco_init(void **apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-static BOOL oxdisco_main(int reason, void **data)
+BOOL HPM_oxdisco(int reason, void **data)
 {
 	if (reason == PLUGIN_INIT)
 		return oxdisco_init(data);
@@ -1135,4 +1135,3 @@ static BOOL oxdisco_main(int reason, void **data)
 		g_oxdisco_plugin.reset();
 	return TRUE;
 }
-HPM_ENTRY(oxdisco_main);

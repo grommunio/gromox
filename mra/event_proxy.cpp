@@ -54,7 +54,7 @@ static void broadcast_select(const char *username, const char *folder);
 
 static void broadcast_unselect(const char *username, const char *folder);
 
-static BOOL svc_event_proxy(int reason, void **ppdata)
+BOOL SVC_event_proxy(int reason, void **ppdata)
 {
 	int i, conn_num;
 	
@@ -136,7 +136,6 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-SVC_ENTRY(svc_event_proxy);
 
 static void *evpx_scanwork(void *param)
 {

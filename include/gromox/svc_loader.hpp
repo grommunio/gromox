@@ -7,7 +7,7 @@
 
 struct service_init_param {
 	const char *config_dir = nullptr, *data_dir = nullptr, *state_dir = nullptr;
-	std::vector<std::string> plugin_list;
+	std::vector<gromox::static_module> plugin_list;
 	unsigned int context_num = 0;
 	const char *prog_id = nullptr;
 };

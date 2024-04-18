@@ -1,9 +1,9 @@
 {
 global:
-	HPM_LibMain;
-	HOOK_LibMain;
-	PROC_LibMain;
-	SVC_LibMain;
+	HPM_*;
+	HOOK_*;
+	PROC_*;
+	SVC_*;
 	get_module;
 	pam_sm_authenticate;
 	pam_sm_setcred;

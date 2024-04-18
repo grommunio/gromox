@@ -94,7 +94,7 @@ static bool dnsbl_check(const char *src, std::string &reason) try
 	return false;
 }
 
-static BOOL svc_dnsbl_filter(int reason, void **data)
+BOOL SVC_dnsbl_filter(int reason, void **data)
 {
 	if (reason != PLUGIN_INIT)
 		return TRUE;
@@ -114,4 +114,3 @@ static BOOL svc_dnsbl_filter(int reason, void **data)
 		return false;
 	return TRUE;
 }
-SVC_ENTRY(svc_dnsbl_filter);

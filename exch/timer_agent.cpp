@@ -60,7 +60,7 @@ static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
 
-static BOOL svc_timer_agent(int reason, void **ppdata)
+BOOL SVC_timer_agent(int reason, void **ppdata)
 {
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -128,7 +128,6 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-SVC_ENTRY(svc_timer_agent);
 
 static void *tmrag_scanwork(void *param)
 {

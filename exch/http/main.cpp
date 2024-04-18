@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2024 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
@@ -53,26 +53,26 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<std::string> g_dfl_hpm_plugins = {
-	"libgxh_ews.so",
-	"libgxh_mh_emsmdb.so",
-	"libgxh_mh_nsp.so",
-	"libgxh_oxdisco.so",
-	"libgxh_oab.so",
+static std::vector<static_module> g_dfl_hpm_plugins = {
+	{"libgxh_ews.so", HPM_ews},
+	{"libgxh_mh_emsmdb.so", HPM_mh_emsmdb},
+	{"libgxh_mh_nsp.so", HPM_mh_nsp},
+	{"libgxh_oxdisco.so", HPM_oxdisco},
+	{"libgxh_oab.so", HPM_oab},
 };
-static std::vector<std::string> g_dfl_proc_plugins = {
-	"libgxp_exchange_emsmdb.so",
-	"libgxp_exchange_nsp.so",
-	"libgxp_exchange_rfr.so",
+static std::vector<static_module> g_dfl_proc_plugins = {
+	{"libgxp_exchange_emsmdb.so", PROC_exchange_emsmdb},
+	{"libgxp_exchange_nsp.so", PROC_exchange_nsp},
+	{"libgxp_exchange_rfr.so", PROC_exchange_rfr},
 };
-static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_dnsbl_filter.so",
-	"libgxs_ldap_adaptor.so",
-	"libgxs_mysql_adaptor.so",
-	"libgxs_authmgr.so",
-	"libgxs_timer_agent.so",
-	"libgxs_user_filter.so",
-	"libgxs_exmdb_provider.so",
+static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_dnsbl_filter.so", SVC_dnsbl_filter},
+	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_authmgr.so", SVC_authmgr},
+	{"libgxs_timer_agent.so", SVC_timer_agent},
+	{"libgxs_user_filter.so", SVC_user_filter},
+	{"libgxs_exmdb_provider.so", SVC_exmdb_provider},
 };
 
 static void term_handler(int signo);
@@ -304,7 +304,7 @@ int main(int argc, const char **argv)
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), context_num, "http"});
+		g_dfl_svc_plugins, context_num, "http"});
 	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),

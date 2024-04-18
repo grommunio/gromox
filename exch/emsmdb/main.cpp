@@ -122,7 +122,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 };
 
 extern void emsmdb_report();
-static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
+BOOL PROC_exchange_emsmdb(int reason, void **ppdata)
 {
 	int max_mail;
 	int max_rcpt;
@@ -269,7 +269,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	}
 	return TRUE;
 }
-PROC_ENTRY(proc_exchange_emsmdb);
 
 static int exchange_emsmdb_dispatch(unsigned int opnum, const GUID *pobject,
     uint64_t handle, void *pin, void **ppout, uint32_t *ecode)

@@ -37,8 +37,3 @@ DECLARE_SVC_API(extern);
 	query_service1(get_prog_id); \
 	query_service1(ndr_stack_alloc); \
 } while (false)
-#define SVC_ENTRY(s) BOOL SVC_LibMain(int r, void **p) { return (s)((r), (p)); }
-
-extern "C" { /* dlsym */
-extern GX_EXPORT BOOL SVC_LibMain(int reason, void **ptrs);
-}

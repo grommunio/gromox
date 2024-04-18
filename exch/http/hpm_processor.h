@@ -20,7 +20,7 @@ struct HPM_PLUGIN : public gromox::generic_module {
 	std::vector<gromox::service_node> list_reference;
 };
 
-extern void hpm_processor_init(int context_num, std::vector<std::string> &&names);
+extern void hpm_processor_init(int context_num, std::vector<gromox::static_module> &&names);
 extern int hpm_processor_run();
 extern void hpm_processor_stop();
 extern http_status hpm_processor_take_request(http_context *);

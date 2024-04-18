@@ -321,7 +321,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> &&mcfg,
 	return true;
 }
 
-static BOOL xa_main(int reason, void **data)
+BOOL HOOK_alias_resolve(int reason, void **data)
 {
 	if (reason == PLUGIN_RELOAD) {
 		xa_reload_config(nullptr, nullptr);
@@ -373,4 +373,3 @@ static BOOL xa_main(int reason, void **data)
 	}
 	return true;
 }
-HOOK_ENTRY(xa_main);

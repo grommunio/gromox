@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <dlfcn.h>
 #include <fcntl.h>
 #include <list>
 #include <memory>
@@ -115,7 +116,7 @@ static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unordered_map<int, ASYNC_NODE *> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static std::vector<std::string> g_plugin_names;
+static std::vector<static_module> g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
@@ -124,7 +125,7 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	/* {71710533-beba-4937-8319-b5dbef9ccc36} */
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
-static int pdu_processor_load_library(const char* plugin_name);
+static int pdu_processor_load_library(static_module &&);
 
 dcerpc_call::dcerpc_call() :
 	pkt(b_bigendian)
@@ -177,7 +178,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, const char *netbios_name,
     const char *dns_name, const char *dns_domain, BOOL header_signing,
-    size_t max_request_mem, std::vector<std::string> &&names)
+    size_t max_request_mem, std::vector<static_module> &&names)
 {
 	static constexpr unsigned int connection_ratio = 10;
 	union {
@@ -200,8 +201,8 @@ void pdu_processor_init(int connection_num, const char *netbios_name,
 
 int pdu_processor_run()
 {
-	for (const auto &i : g_plugin_names) {
-		int ret = pdu_processor_load_library(i.c_str());
+	for (auto &&i : g_plugin_names) {
+		int ret = pdu_processor_load_library(std::move(i));
 		if (ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
@@ -3015,27 +3016,14 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
  *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
-static int pdu_processor_load_library(const char* plugin_name)
+static int pdu_processor_load_library(static_module &&mod)
 {
 	static void *const server_funcs[] = {reinterpret_cast<void *>(pdu_processor_queryservice)};
-	const char *fake_path = plugin_name;
 	PROC_PLUGIN plug;
 
-	plug.handle = dlopen(plugin_name, RTLD_LAZY);
-	if (plug.handle == nullptr && strchr(plugin_name, '/') == nullptr)
-		plug.handle = dlopen((PKGLIBDIR + "/"s + plugin_name).c_str(), RTLD_LAZY);
-	if (plug.handle == nullptr) {
-		mlog(LV_ERR, "pdu_processor: error loading %s: %s", fake_path,
-			dlerror());
-		return PLUGIN_FAIL_OPEN;
-    }
-	plug.lib_main = reinterpret_cast<decltype(plug.lib_main)>(dlsym(plug.handle, "PROC_LibMain"));
-	if (plug.lib_main == nullptr) {
-		mlog(LV_ERR, "pdu_processor: error finding the PROC_LibMain "
-			"function in %s", fake_path);
-		return PLUGIN_NO_MAIN;
-	}
-	plug.file_name = plugin_name;
+	plug.lib_main = mod.efunc;
+	plug.file_name = std::move(mod.path);
+	auto fake_path = plug.file_name.c_str();
 	g_plugin_list.push_back(std::move(plug));
 	g_cur_plugin = &g_plugin_list.back();
 	

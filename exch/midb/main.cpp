@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021–2024 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
 #include <csignal>
@@ -72,11 +74,11 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static std::vector<std::string> g_dfl_svc_plugins = {
-	"libgxs_event_proxy.so",
-	"libgxs_ldap_adaptor.so",
-	"libgxs_mysql_adaptor.so",
-	"libgxs_authmgr.so",
+static std::vector<static_module> g_dfl_svc_plugins = {
+	{"libgxs_event_proxy.so", SVC_event_proxy},
+	{"libgxs_ldap_adaptor.so", SVC_ldap_adaptor},
+	{"libgxs_mysql_adaptor.so", SVC_mysql_adaptor},
+	{"libgxs_authmgr.so", SVC_authmgr},
 };
 
 static constexpr cfg_directive gromox_cfg_defaults[] = {
@@ -360,7 +362,7 @@ int main(int argc, const char **argv)
 	service_init({g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
 		g_config_file->get_value("state_path"),
-		std::move(g_dfl_svc_plugins), threads_num});
+		g_dfl_svc_plugins, threads_num});
 	auto cl_0 = make_scope_exit(service_stop);
 	
 	exmdb_client_init(proxy_num, stub_num);

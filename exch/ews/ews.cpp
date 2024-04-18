@@ -609,7 +609,7 @@ static BOOL ews_init(void **apidata)
  *
  * @return     TRUE if successful, false otherwise
  */
-static BOOL ews_main(int reason, void **data)
+BOOL HPM_ews(int reason, void **data)
 {
 	if (reason == PLUGIN_INIT)
 		return ews_init(data);
@@ -617,8 +617,6 @@ static BOOL ews_main(int reason, void **data)
 		g_ews_plugin.reset();
 	return TRUE;
 }
-
-HPM_ENTRY(ews_main);
 
 /**
  * @brief      NotificationContext state management
