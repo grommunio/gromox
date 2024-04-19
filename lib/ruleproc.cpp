@@ -54,17 +54,9 @@ struct rule_node {
 	bool operator<(const struct rule_node &o) const { return seq < o.seq; }
 };
 
-struct folder_node {
+struct message_node {
 	std::string dir;
-	eid_t fid = 0;
-	inline bool operator<(const struct folder_node &o) const { return std::tie(dir, fid) < std::tie(o.dir, o.fid); }
-	inline bool operator==(const struct folder_node &o) const { return dir == o.dir && fid == o.fid; }
-};
-
-struct message_node : public folder_node {
-	eid_t mid = 0;
-	void operator<(const struct message_node &) = delete;
-	void operator==(const struct message_node &) = delete;
+	eid_t fid = 0, mid = 0;
 };
 
 struct rx_delete {
@@ -79,7 +71,6 @@ struct rx_delete {
 struct rxparam {
 	const char *ev_from = nullptr, *ev_to = nullptr;
 	message_node cur;
-	std::set<folder_node> loop_check;
 	MESSAGE_CONTENT *ctnt = nullptr;
 	bool del = false, exit = false;
 };
@@ -552,9 +543,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		dst_fid = rop_util_make_eid_ex(1, rop_util_gc_to_value(folder_eid.global_counter));
 	}
 
-	/* Loop & permission checks. */
-	if (par.loop_check.find({newdir, dst_fid}) != par.loop_check.end())
-		return ecRootFolder;
+	/*
+	 * This would be the place to add a check that the message does not
+	 * loop. However, as we only ever load one rule table, namely from the
+	 * Envelope-To INBOX folder, we know the execution is finite.
+	 */
 	uint32_t permission = 0;
 	if (!exmdb_client::get_folder_perm(newdir, dst_fid, par.ev_to, &permission))
 		return ecRpcFailed;
@@ -644,8 +637,6 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 	auto dst_fid = svreid.folder_id;
 	if (rop_util_get_replid(dst_fid) != 1)
 		return ecNotFound;
-	if (par.loop_check.find({par.cur.dir, dst_fid}) != par.loop_check.end())
-		return ecSuccess;
 	uint64_t dst_mid = 0;
 	BOOL result = false;
 	if (!exmdb_client::allocate_message_id(par.cur.dir.c_str(), dst_fid, &dst_mid))
@@ -808,7 +799,7 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 		return err;
 	std::sort(rule_list.begin(), rule_list.end());
 
-	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}, {{dir, folder_id}}};
+	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}};
 	if (!exmdb_client::read_message(par.cur.dir.c_str(), nullptr, CP_ACP,
 	    par.cur.mid, &par.ctnt))
 		return ecError;
