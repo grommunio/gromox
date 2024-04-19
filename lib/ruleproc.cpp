@@ -57,6 +57,7 @@ struct rule_node {
 struct message_node {
 	std::string dir;
 	eid_t fid = 0, mid = 0;
+	inline const char *dirc() const { return dir.c_str(); }
 };
 
 struct rx_delete {
@@ -193,10 +194,10 @@ static ec_error_t rx_npid_replace(rxparam &par, MESSAGE_CONTENT &ctnt,
 		rx_delete_local(src_name_arr);
 		free(dst_id_arr.ppropid);
 	});
-	if (!exmdb_client::get_named_propnames(par.cur.dir.c_str(),
+	if (!exmdb_client::get_named_propnames(par.cur.dirc(),
 	    &src_id_arr, &src_name_arr)) {
 		mlog(LV_DEBUG, "ruleproc: get_named_propnames(%s) failed",
-			par.cur.dir.c_str());
+			par.cur.dirc());
 		return ecRpcFailed;
 	}
 	if (src_name_arr.count != src_id_arr.count) {
@@ -514,7 +515,7 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 		return ecNotFound;
 	unsigned int user_id = 0, domain_id = 0;
 	char *newdir = nullptr;
-	if (!exmdb_client::store_eid_to_user(par.cur.dir.c_str(), &other_store,
+	if (!exmdb_client::store_eid_to_user(par.cur.dirc(), &other_store,
 	    &newdir, &user_id, &domain_id))
 		return ecRpcFailed;
 	if (newdir == nullptr)
@@ -615,11 +616,11 @@ static ec_error_t op_copy_other(rxparam &par, const rule_node &rule,
 	del_mids.count = 1;
 	del_mids.pids = reinterpret_cast<uint64_t *>(&par.cur.mid);
 	BOOL partial = false;
-	if (!exmdb_client::delete_messages(par.cur.dir.c_str(),
+	if (!exmdb_client::delete_messages(par.cur.dirc(),
 	    tgt_public ? domain_id : user_id, CP_UTF8,
 	    nullptr, par.cur.fid, &del_mids, true, &partial))
 		mlog(LV_ERR, "ruleproc: OP_MOVE del_msg %s:%llxh failed",
-			par.cur.dir.c_str(), LLU{rop_util_get_gc_value(par.cur.mid)});
+			par.cur.dirc(), LLU{rop_util_get_gc_value(par.cur.mid)});
 	par.cur.dir = newdir;
 	par.cur.fid = eid_t(dst_fid);
 	par.cur.mid = eid_t(dst_mid);
@@ -639,9 +640,9 @@ static ec_error_t op_copy(rxparam &par, const rule_node &rule,
 		return ecNotFound;
 	uint64_t dst_mid = 0;
 	BOOL result = false;
-	if (!exmdb_client::allocate_message_id(par.cur.dir.c_str(), dst_fid, &dst_mid))
+	if (!exmdb_client::allocate_message_id(par.cur.dirc(), dst_fid, &dst_mid))
 		return ecRpcFailed;
-	if (!exmdb_client::movecopy_message(par.cur.dir.c_str(), 0, CP_ACP,
+	if (!exmdb_client::movecopy_message(par.cur.dirc(), 0, CP_ACP,
 	    par.cur.mid, dst_fid, dst_mid, act_type == OP_MOVE ? TRUE : false, &result))
 		return ecRpcFailed;
 	if (act_type == OP_MOVE) {
@@ -673,7 +674,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 	if (setval == nullptr)
 		return ecSuccess;
 	uint64_t change_num = 0, modtime = 0;
-	if (!exmdb_client::allocate_cn(par.cur.dir.c_str(), &change_num))
+	if (!exmdb_client::allocate_cn(par.cur.dirc(), &change_num))
 		return ecRpcFailed;
 	auto change_key = xid_to_bin({GUID{}, change_num});
 	if (change_key == nullptr)
@@ -689,7 +690,7 @@ static ec_error_t op_tag(rxparam &par, const rule_node &rule,
 	if (valdata[1].pvalue == nullptr)
 		return ecServerOOM;
 	PROBLEM_ARRAY problems{};
-	if (!exmdb_client::set_message_properties(par.cur.dir.c_str(),
+	if (!exmdb_client::set_message_properties(par.cur.dirc(),
 	    nullptr, CP_ACP, par.cur.mid, &valhdr, &problems))
 		return ecRpcFailed;
 	return ecSuccess;
@@ -699,7 +700,7 @@ static ec_error_t op_read(rxparam &par, const rule_node &rule)
 {
 	uint64_t cn = 0;
 	/* XXX: this RPC cannot cope with nullptr username on public stores */
-	if (!exmdb_client::set_message_read_state(par.cur.dir.c_str(),
+	if (!exmdb_client::set_message_read_state(par.cur.dirc(),
 	    nullptr, par.cur.mid, true, &cn))
 		return ecRpcFailed;
 	return ecSuccess;
@@ -800,7 +801,7 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 	std::sort(rule_list.begin(), rule_list.end());
 
 	rxparam par = {ev_from, ev_to, {{dir, folder_id}, msg_id}};
-	if (!exmdb_client::read_message(par.cur.dir.c_str(), nullptr, CP_ACP,
+	if (!exmdb_client::read_message(par.cur.dirc(), nullptr, CP_ACP,
 	    par.cur.mid, &par.ctnt))
 		return ecError;
 	for (auto &&rule : rule_list) {
@@ -813,12 +814,12 @@ ec_error_t exmdb_local_rules_execute(const char *dir, const char *ev_from,
 	if (par.del) {
 		const EID_ARRAY ids = {1, reinterpret_cast<uint64_t *>(&par.cur.mid)};
 		BOOL partial;
-		if (!exmdb_client::delete_messages(par.cur.dir.c_str(), 0,
+		if (!exmdb_client::delete_messages(par.cur.dirc(), 0,
 		    CP_ACP, nullptr, par.cur.fid, &ids, true/*hard*/, &partial))
 			mlog(LV_DEBUG, "ruleproc: deletion unsuccessful");
 		return ecSuccess;
 	}
-	if (!exmdb_client::notify_new_mail(par.cur.dir.c_str(),
+	if (!exmdb_client::notify_new_mail(par.cur.dirc(),
 	    par.cur.fid, par.cur.mid))
 		mlog(LV_ERR, "ruleproc: newmail notification unsuccessful");
 	return ecSuccess;
